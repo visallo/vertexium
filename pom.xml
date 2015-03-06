@@ -1,0 +1,260 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>org.sonatype.oss</groupId>
+        <artifactId>oss-parent</artifactId>
+        <version>7</version>
+    </parent>
+
+    <groupId>org.neolumin.vertexium</groupId>
+    <artifactId>vertexium-root</artifactId>
+    <packaging>pom</packaging>
+    <version>0.9.0-SNAPSHOT</version>
+    <name>Vertexium</name>
+    <description>
+        Vertexium is an API to manipulate graphs, similar to blueprints. Unlike blueprints, every Vertexium method
+        requires authorizations and visibilities. Vertexium also supports multivalued properties as well as property
+        metadata.
+
+        The Vertexium API was designed to be generic, allowing for multiple implementations. The only implementation
+        provided currently is built on top of Apache Accumulo for data storage and Elastic Search for indexing.
+    </description>
+    <url>http://vertexium.org</url>
+    <inceptionYear>2014</inceptionYear>
+
+    <licenses>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <scm>
+        <url>scm:git:git@github.com:v5analytics/vertexium.git</url>
+        <connection>scm:git:git@github.com:v5analytics/vertexium.git</connection>
+        <developerConnection>scm:git:git@github.com:v5analytics/vertexium.git</developerConnection>
+        <tag>HEAD</tag>
+    </scm>
+
+    <issueManagement>
+        <system>GitHub Issues</system>
+        <url>https://github.com/v5analytics/vertexium/issues</url>
+    </issueManagement>
+
+    <developers>
+        <developer>
+            <name>Joe Ferner</name>
+            <url>https://github.com/joeferner</url>
+            <timezone>-5</timezone>
+            <email>joe.m.ferner@gmail.com</email>
+        </developer>
+    </developers>
+
+    <properties>
+        <java.compiler.showWarnings>true</java.compiler.showWarnings>
+        <java.source.version>1.7</java.source.version>
+        <java.target.version>1.7</java.target.version>
+
+        <junit.version>4.11</junit.version>
+        <slf4j.version>1.7.5</slf4j.version>
+        <log4j.version>1.2.17</log4j.version>
+        <commons-io.version>2.4</commons-io.version>
+        <json.version>20140107</json.version>
+        <commons-codec.version>1.8</commons-codec.version>
+        <jcommander.version>1.35</jcommander.version>
+
+        <maven.plugin.gpg.version>1.4</maven.plugin.gpg.version>
+        <maven.plugin.javadoc.version>2.9.1</maven.plugin.javadoc.version>
+        <maven.plugin.source.version>2.2.1</maven.plugin.source.version>
+        <maven.plugin.compiler.version>3.1</maven.plugin.compiler.version>
+        <maven.plugin.plugin.version>3.2</maven.plugin.plugin.version>
+        <maven.plugin.release.version>2.5</maven.plugin.release.version>
+        <maven.plugin.scm.version>1.8.1</maven.plugin.scm.version>
+
+        <!-- used by: elasticsearch* -->
+        <elasticsearch.version>1.4.0</elasticsearch.version>
+        <groovy.version>2.3.7</groovy.version>
+
+        <!-- used by: accumulo* -->
+        <accumulo.version>1.6.1</accumulo.version>
+        <zookeeper.version>3.4.5</zookeeper.version>
+        <hadoop.version>2.3.0</hadoop.version>
+
+        <!-- used by: examples-base -->
+        <miniweb.version>0.3.0</miniweb.version>
+        <jetty.version>9.2.5.v20141112</jetty.version>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>junit</groupId>
+                <artifactId>junit</artifactId>
+                <version>${junit.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-api</artifactId>
+                <version>${slf4j.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-log4j12</artifactId>
+                <version>${slf4j.version}</version>
+                <scope>runtime</scope>
+            </dependency>
+            <dependency>
+                <groupId>log4j</groupId>
+                <artifactId>log4j</artifactId>
+                <version>${log4j.version}</version>
+                <scope>runtime</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.json</groupId>
+                <artifactId>json</artifactId>
+                <version>${json.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>commons-codec</groupId>
+                <artifactId>commons-codec</artifactId>
+                <version>${commons-codec.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.beust</groupId>
+                <artifactId>jcommander</artifactId>
+                <version>${jcommander.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.codehaus.groovy</groupId>
+                <artifactId>groovy</artifactId>
+                <version>${groovy.version}</version>
+                <scope>test</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-scm-plugin</artifactId>
+                <version>${maven.plugin.scm.version}</version>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>${maven.plugin.compiler.version}</version>
+                <configuration>
+                    <source>${java.source.version}</source>
+                    <target>${java.target.version}</target>
+                    <showWarnings>${java.compiler.showWarnings}</showWarnings>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>${maven.plugin.source.version}</version>
+                <executions>
+                    <execution>
+                        <id>source-jar</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>${maven.plugin.javadoc.version}</version>
+                <executions>
+                    <execution>
+                        <id>javadocs-jar</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-release-plugin</artifactId>
+                <version>${maven.plugin.release.version}</version>
+                <configuration>
+                    <mavenExecutorId>forked-path</mavenExecutorId>
+                    <useReleaseProfile>false</useReleaseProfile>
+                    <arguments>-Psonatype-oss-release</arguments>
+                </configuration>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.apache.maven.scm</groupId>
+                        <artifactId>maven-scm-api</artifactId>
+                        <version>${maven.plugin.scm.version}</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>org.apache.maven.scm</groupId>
+                        <artifactId>maven-scm-provider-gitexe</artifactId>
+                        <version>${maven.plugin.scm.version}</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
+        </plugins>
+    </build>
+
+    <modules>
+        <module>core</module>
+        <module>test</module>
+        <module>blueprints</module>
+        <module>accumulo</module>
+        <module>accumulo-blueprints</module>
+        <module>blueprints-test</module>
+        <module>elasticsearch-base</module>
+        <module>elasticsearch</module>
+        <module>inmemory</module>
+        <module>tools</module>
+        <module>accumulo-iterators</module>
+        <module>kryo-serializer</module>
+        <module>elasticsearch-parentchild</module>
+        <module>elasticsearch-plugin</module>
+        <module>examples</module>
+        <module>accumulo-migrations</module>
+        <module>cli</module>
+    </modules>
+
+    <profiles>
+        <profile>
+            <id>release-tasks</id>
+            <activation>
+                <!-- mvn release:perform sets this to true -->
+                <property>
+                    <name>performRelease</name>
+                    <value>true</value>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <version>${maven.plugin.gpg.version}</version>
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+</project>
