@@ -8,13 +8,13 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>aggregations</artifactId>
+    <artifactId>vertexium-examples-aggregations</artifactId>
     <name>Vertexium: Examples: Aggregations</name>
 
     <dependencies>
         <dependency>
             <groupId>org.neolumin.vertexium.examples</groupId>
-            <artifactId>examples-base</artifactId>
+            <artifactId>vertexium-examples-base</artifactId>
             <version>${project.version}</version>
         </dependency>
     </dependencies>
