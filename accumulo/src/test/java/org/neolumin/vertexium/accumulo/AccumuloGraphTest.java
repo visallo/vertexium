@@ -36,11 +36,14 @@ public class AccumuloGraphTest extends GraphTestBase {
     private final String ACCUMULO_PASSWORD = "test";
     private File tempDir;
     private static MiniAccumuloCluster accumulo;
-    private static AccumuloGraphConfiguration config;
 
     @Override
     protected Graph createGraph() throws AccumuloSecurityException, AccumuloException, VertexiumException, InterruptedException, IOException, URISyntaxException {
-        return AccumuloGraph.create(config);
+        return AccumuloGraph.create(createConfiguration());
+    }
+
+    protected Connector createConnector() throws AccumuloSecurityException, AccumuloException {
+        return createConfiguration().createConnector();
     }
 
     @Override
@@ -52,11 +55,12 @@ public class AccumuloGraphTest extends GraphTestBase {
     @Override
     public void before() throws Exception {
         ensureAccumuloIsStarted();
-        Connector connector = config.createConnector();
-        ensureTableExists(connector, AccumuloGraphConfiguration.DEFAULT_TABLE_NAME_PREFIX);
-        dropGraph(connector, AccumuloGraph.getDataTableName(AccumuloGraphConfiguration.DEFAULT_TABLE_NAME_PREFIX));
-        dropGraph(connector, AccumuloGraph.getVerticesTableName(AccumuloGraphConfiguration.DEFAULT_TABLE_NAME_PREFIX));
-        dropGraph(connector, AccumuloGraph.getEdgesTableName(AccumuloGraphConfiguration.DEFAULT_TABLE_NAME_PREFIX));
+        Connector connector = createConnector();
+        AccumuloGraphTestUtils.ensureTableExists(connector, AccumuloGraphConfiguration.DEFAULT_TABLE_NAME_PREFIX);
+        AccumuloGraphTestUtils.dropGraph(connector, AccumuloGraph.getDataTableName(AccumuloGraphConfiguration.DEFAULT_TABLE_NAME_PREFIX));
+        AccumuloGraphTestUtils.dropGraph(connector, AccumuloGraph.getVerticesTableName(AccumuloGraphConfiguration.DEFAULT_TABLE_NAME_PREFIX));
+        AccumuloGraphTestUtils.dropGraph(connector, AccumuloGraph.getEdgesTableName(AccumuloGraphConfiguration.DEFAULT_TABLE_NAME_PREFIX));
+        AccumuloGraphTestUtils.dropGraph(connector, AccumuloGraph.getMetadataTableName(AccumuloGraphConfiguration.DEFAULT_TABLE_NAME_PREFIX));
         connector.securityOperations().changeUserAuthorizations(
                 AccumuloGraphConfiguration.DEFAULT_ACCUMULO_USERNAME,
                 new org.apache.accumulo.core.security.Authorizations(
@@ -208,9 +212,6 @@ public class AccumuloGraphTest extends GraphTestBase {
                 }
             }
         });
-
-        Map configMap = createConfig();
-        config = new AccumuloGraphConfiguration(configMap);
     }
 
     protected Map createConfig() {
@@ -225,7 +226,7 @@ public class AccumuloGraphTest extends GraphTestBase {
         return configMap;
     }
 
-    private void stop() throws IOException, InterruptedException {
+    protected void stop() throws IOException, InterruptedException {
         if (accumulo != null) {
             LOGGER.info("Stopping accumulo");
             accumulo.stop();
@@ -234,32 +235,15 @@ public class AccumuloGraphTest extends GraphTestBase {
         tempDir.delete();
     }
 
-    public void dropGraph(Connector connector, String graphDirectoryName) {
-        try {
-            if (connector.tableOperations().exists(graphDirectoryName)) {
-                connector.tableOperations().delete(graphDirectoryName);
-            }
-            connector.tableOperations().create(graphDirectoryName);
-        } catch (Exception e) {
-            throw new RuntimeException("Unable to drop graph: " + graphDirectoryName, e);
-        }
-    }
-
-    private void ensureTableExists(Connector connector, String tableName) {
-        try {
-            if (!connector.tableOperations().exists(tableName)) {
-                connector.tableOperations().create(tableName);
-            }
-        } catch (Exception e) {
-            throw new RuntimeException("Unable to create table " + tableName);
-        }
-    }
-
-    private void ensureAccumuloIsStarted() {
+    protected void ensureAccumuloIsStarted() {
         try {
             start();
         } catch (Exception e) {
             throw new RuntimeException("Failed to start Accumulo mini cluster", e);
         }
+    }
+
+    private AccumuloGraphConfiguration createConfiguration(){
+        return new AccumuloGraphConfiguration(createConfig());
     }
 }

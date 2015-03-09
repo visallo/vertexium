@@ -61,7 +61,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
     private BatchWriter edgesWriter;
     private BatchWriter dataWriter;
     private BatchWriter metadataWriter;
-    private ElementMutationBuilder elementMutationBuilder;
+    protected ElementMutationBuilder elementMutationBuilder;
     private final Queue<GraphEvent> graphEventQueue = new LinkedList<>();
     private Integer accumuloGraphVersion;
     private boolean foundValueSerializerMetadata;
@@ -161,7 +161,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
         }
     }
 
-    private static void ensureTableExists(Connector connector, String tableName) {
+    protected static void ensureTableExists(Connector connector, String tableName) {
         try {
             if (!connector.tableOperations().exists(tableName)) {
                 connector.tableOperations().create(tableName);
@@ -171,7 +171,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
         }
     }
 
-    private static void ensureRowDeletingIteratorIsAttached(Connector connector, String tableName) {
+    protected static void ensureRowDeletingIteratorIsAttached(Connector connector, String tableName) {
         try {
             synchronized (addIteratorLock) {
                 IteratorSetting is = new IteratorSetting(ROW_DELETING_ITERATOR_PRIORITY, ROW_DELETING_ITERATOR_NAME, RowDeletingIterator.class);
@@ -316,7 +316,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
         throw new VertexiumException("Unexpected element type: " + element.getClass().getName());
     }
 
-    private void addMutations(BatchWriter writer, Mutation... mutations) {
+    protected void addMutations(BatchWriter writer, Mutation... mutations) {
         try {
             for (Mutation mutation : mutations) {
                 writer.addMutation(mutation);
@@ -882,7 +882,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
         return getVerticesInRange(range, fetchHints, authorizations);
     }
 
-    private CloseableIterable<Vertex> getVerticesInRange(final Range range, final EnumSet<FetchHint> fetchHints, final Authorizations authorizations) {
+    protected CloseableIterable<Vertex> getVerticesInRange(final Range range, final EnumSet<FetchHint> fetchHints, final Authorizations authorizations) {
         final boolean includeHidden = fetchHints.contains(FetchHint.INCLUDE_HIDDEN);
 
         return new LookAheadIterable<Iterator<Map.Entry<Key, Value>>, Vertex>() {
@@ -914,11 +914,11 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
         };
     }
 
-    Scanner createVertexScanner(EnumSet<FetchHint> fetchHints, Authorizations authorizations) throws VertexiumException {
+    protected Scanner createVertexScanner(EnumSet<FetchHint> fetchHints, Authorizations authorizations) throws VertexiumException {
         return createElementVisibilityScanner(fetchHints, authorizations, ElementType.VERTEX);
     }
 
-    Scanner createEdgeScanner(EnumSet<FetchHint> fetchHints, Authorizations authorizations) throws VertexiumException {
+    protected Scanner createEdgeScanner(EnumSet<FetchHint> fetchHints, Authorizations authorizations) throws VertexiumException {
         return createElementVisibilityScanner(fetchHints, authorizations, ElementType.EDGE);
     }
 
@@ -943,11 +943,11 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
         }
     }
 
-    private BatchScanner createVertexBatchScanner(EnumSet<FetchHint> fetchHints, Authorizations authorizations, int numQueryThreads) throws VertexiumException {
+    protected BatchScanner createVertexBatchScanner(EnumSet<FetchHint> fetchHints, Authorizations authorizations, int numQueryThreads) throws VertexiumException {
         return createElementVisibilityWholeRowBatchScanner(fetchHints, authorizations, ElementType.VERTEX, numQueryThreads);
     }
 
-    private BatchScanner createEdgeBatchScanner(EnumSet<FetchHint> fetchHints, Authorizations authorizations, int numQueryThreads) throws VertexiumException {
+    protected BatchScanner createEdgeBatchScanner(EnumSet<FetchHint> fetchHints, Authorizations authorizations, int numQueryThreads) throws VertexiumException {
         return createElementVisibilityWholeRowBatchScanner(fetchHints, authorizations, ElementType.EDGE, numQueryThreads);
     }
 
@@ -1122,7 +1122,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
         };
     }
 
-    private CloseableIterable<Edge> getEdgesInRange(String startId, String endId, final EnumSet<FetchHint> fetchHints, final Authorizations authorizations) throws VertexiumException {
+    protected CloseableIterable<Edge> getEdgesInRange(String startId, String endId, final EnumSet<FetchHint> fetchHints, final Authorizations authorizations) throws VertexiumException {
         final AccumuloGraph graph = this;
         final boolean includeHidden = fetchHints.contains(FetchHint.INCLUDE_HIDDEN);
 

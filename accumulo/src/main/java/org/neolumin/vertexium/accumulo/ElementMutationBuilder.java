@@ -1,5 +1,6 @@
 package org.neolumin.vertexium.accumulo;
 
+import com.google.common.base.Joiner;
 import org.apache.accumulo.core.data.Mutation;
 import org.apache.accumulo.core.data.Value;
 import org.apache.accumulo.core.security.ColumnVisibility;
@@ -193,21 +194,6 @@ public abstract class ElementMutationBuilder {
         addPropertyRemoveMetadataToMutation(m, propertyRemove);
     }
 
-    static Text getPropertyColumnQualifier(PropertyRemoveMutation propertyRemove) {
-        return new Text(propertyRemove.getName() + VALUE_SEPARATOR + propertyRemove.getKey());
-    }
-
-    static Text getPropertyColumnQualifier(Property property) {
-        return new Text(property.getName() + VALUE_SEPARATOR + property.getKey());
-    }
-
-    static Text getPropertyMetadataColumnQualifier(Property property, String metadataKey) {
-        return new Text(property.getName() + VALUE_SEPARATOR + property.getKey() + VALUE_SEPARATOR + property.getVisibility().getVisibilityString() + VALUE_SEPARATOR + metadataKey);
-    }
-
-    static Text getPropertyColumnQualifierWithVisibilityString(Property property) {
-        return new Text(property.getName() + VALUE_SEPARATOR + property.getKey() + VALUE_SEPARATOR + property.getVisibility().getVisibilityString());
-    }
 
     public void addPropertyMetadataToMutation(Mutation m, Property property) {
         Metadata metadata = property.getMetadata();
@@ -279,7 +265,31 @@ public abstract class ElementMutationBuilder {
 
     protected abstract void saveDataMutation(Mutation dataMutation);
 
+    protected Text getPropertyColumnQualifier(PropertyRemoveMutation propertyRemove) {
+        return getValueSeparatedJoined(propertyRemove.getName(), propertyRemove.getKey());
+    }
+
+    protected Text getPropertyColumnQualifier(Property property) {
+        return getValueSeparatedJoined(property.getName(), property.getKey());
+    }
+
+    protected Text getPropertyMetadataColumnQualifier(Property property, String metadataKey) {
+        return getValueSeparatedJoined(property.getName(), property.getKey(), property.getVisibility().getVisibilityString(), metadataKey);
+    }
+
+    protected static Text getPropertyColumnQualifierWithVisibilityString(Property property) {
+        return getValueSeparatedJoined(property.getName(), property.getKey(), property.getVisibility().getVisibilityString());
+    }
+
+    protected static Text getValueSeparatedJoined(String... values){
+        return new Text(getStringValueSeparatorJoined(values));
+    }
+
+    protected static String getStringValueSeparatorJoined(String... values){
+        return Joiner.on(VALUE_SEPARATOR).join(values);
+    }
+
     private String createTableDataRowKey(String rowKey, Property property) {
-        return AccumuloConstants.DATA_ROW_KEY_PREFIX + rowKey + VALUE_SEPARATOR + property.getName() + VALUE_SEPARATOR + property.getKey();
+        return getStringValueSeparatorJoined(AccumuloConstants.DATA_ROW_KEY_PREFIX + rowKey, property.getName(), property.getKey());
     }
 }

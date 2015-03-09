@@ -25,8 +25,8 @@ public class EdgeMaker extends ElementMaker<Edge> {
 
     @Override
     protected void processColumn(Key key, Value value) {
-        Text columnFamily = key.getColumnFamily();
-        Text columnQualifier = key.getColumnQualifier();
+        Text columnFamily = getColumnFamily(key);
+        Text columnQualifier = getColumnQualifier(key);
 
         if (AccumuloEdge.CF_SIGNAL.compareTo(columnFamily) == 0) {
             this.label = columnQualifier.toString();
