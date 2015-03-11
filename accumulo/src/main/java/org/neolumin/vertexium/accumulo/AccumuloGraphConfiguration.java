@@ -1,11 +1,16 @@
 package org.neolumin.vertexium.accumulo;
 
+import com.beust.jcommander.internal.Lists;
+import com.beust.jcommander.internal.Maps;
+import com.google.common.base.Splitter;
 import org.apache.accumulo.core.client.AccumuloException;
 import org.apache.accumulo.core.client.AccumuloSecurityException;
 import org.apache.accumulo.core.client.Connector;
 import org.apache.accumulo.core.client.ZooKeeperInstance;
 import org.apache.accumulo.core.client.security.tokens.AuthenticationToken;
 import org.apache.accumulo.core.client.security.tokens.PasswordToken;
+import org.apache.commons.lang3.tuple.MutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.neolumin.vertexium.GraphConfiguration;
@@ -13,6 +18,7 @@ import org.neolumin.vertexium.VertexiumException;
 import org.neolumin.vertexium.accumulo.serializer.JavaValueSerializer;
 import org.neolumin.vertexium.accumulo.serializer.ValueSerializer;
 import org.neolumin.vertexium.util.ConfigurationUtils;
+import org.neolumin.vertexium.util.IterableUtils;
 import org.neolumin.vertexium.util.MapUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,7 +26,9 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class AccumuloGraphConfiguration extends GraphConfiguration {
@@ -33,6 +41,7 @@ public class AccumuloGraphConfiguration extends GraphConfiguration {
     public static final String ACCUMULO_PASSWORD = "password";
     public static final String ZOOKEEPER_SERVERS = "zookeeperServers";
     public static final String VALUE_SERIALIZER_PROP_PREFIX = "serializer";
+    public static final String SUBSTITUTION_TEMPLATE_PROP_PREFIX = "substitutiontemplate";
     public static final String TABLE_NAME_PREFIX = "tableNamePrefix";
     public static final String MAX_STREAMING_PROPERTY_VALUE_TABLE_DATA_SIZE = "maxStreamingPropertyValueTableDataSize";
     public static final String HDFS_USER = HDFS_CONFIG_PREFIX + ".user";
@@ -51,6 +60,7 @@ public class AccumuloGraphConfiguration extends GraphConfiguration {
     public static final String DEFAULT_HDFS_ROOT_DIR = "";
     public static final String DEFAULT_DATA_DIR = "/accumuloGraph";
     public static final boolean DEFAULT_USE_SERVER_SIDE_ELEMENT_VISIBILITY_ROW_FILTER = true;
+    private static final String DEFAULT_SUBSTITUTION_TEMPLATE = IdentitySubstitutionTemplate.class.getName();
 
     public AccumuloGraphConfiguration(Map config) {
         super(config);
@@ -138,5 +148,15 @@ public class AccumuloGraphConfiguration extends GraphConfiguration {
 
     public boolean isUseServerSideElementVisibilityRowFilter() {
         return getBoolean(USE_SERVER_SIDE_ELEMENT_VISIBILITY_ROW_FILTER, DEFAULT_USE_SERVER_SIDE_ELEMENT_VISIBILITY_ROW_FILTER);
+    }
+
+    public SubstitutionTemplate createSubstitutionTemplate() {
+        SubstitutionTemplate template = ConfigurationUtils.createProvider(this, SUBSTITUTION_TEMPLATE_PROP_PREFIX, DEFAULT_SUBSTITUTION_TEMPLATE);
+
+        if(template instanceof SimpleSubstitutionTemplate){
+            ((SimpleSubstitutionTemplate)template).setSubstitutionList(SimpleSubstitutionUtils.getSubstitionList(getConfig()));
+        }
+
+        return template;
     }
 }

@@ -1,11 +1,9 @@
-package org.neolumin.vertexium.accumulo.substitution;
+package org.neolumin.vertexium.accumulo;
 
 import org.apache.accumulo.core.data.Key;
 import org.apache.accumulo.core.data.Value;
 import org.apache.hadoop.io.Text;
 import org.neolumin.vertexium.Authorizations;
-import org.neolumin.vertexium.accumulo.AccumuloGraph;
-import org.neolumin.vertexium.accumulo.EdgeMaker;
 
 import java.util.Iterator;
 import java.util.Map;

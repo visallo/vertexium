@@ -1,25 +1,17 @@
-package org.neolumin.vertexium.accumulo.substitution;
+package org.neolumin.vertexium.accumulo;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import com.google.common.collect.Lists;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.List;
 
 public class SimpleSubstitutionTemplate implements SubstitutionTemplate {
-    private final List<Pair<String, String>> substitutionList;
+    private List<Pair<String, String>> substitutionList = Lists.newArrayList();
     private final Cache<String, String> deflateCache = CacheBuilder.newBuilder().maximumSize(1000L).build();
     private final Cache<String, String> inflateCache = CacheBuilder.newBuilder().maximumSize(1000L).build();
-    public static final String SUBS_PREFIX = "\u0002";
-
-    public SimpleSubstitutionTemplate(List<Pair<String, String>> substitutionList) {
-        this.substitutionList = substitutionList;
-
-        for(Pair<String, String> pair : this.substitutionList){
-            deflateCache.put(pair.getKey(), wrap(pair.getValue()));
-            inflateCache.put(wrap(pair.getValue()), pair.getKey());
-        }
-    }
+    public static final String SUBS_DELIM = "\u0002";
 
     @Override
     public String deflate(String value) {
@@ -42,7 +34,7 @@ public class SimpleSubstitutionTemplate implements SubstitutionTemplate {
 
     @Override
     public String inflate(String value) {
-        String cachedInflatedValue = inflateCache.getIfPresent(SUBS_PREFIX + value);
+        String cachedInflatedValue = inflateCache.getIfPresent(SUBS_DELIM + value);
 
         if(cachedInflatedValue != null){
             return cachedInflatedValue;
@@ -60,6 +52,15 @@ public class SimpleSubstitutionTemplate implements SubstitutionTemplate {
     }
 
     public static String wrap(String str){
-        return SUBS_PREFIX + str + SUBS_PREFIX;
+        return SUBS_DELIM + str + SUBS_DELIM;
+    }
+
+    public void setSubstitutionList(List<Pair<String, String>> substitutionList) {
+        this.substitutionList = substitutionList;
+
+        for(Pair<String, String> pair : this.substitutionList){
+            deflateCache.put(pair.getKey(), wrap(pair.getValue()));
+            inflateCache.put(wrap(pair.getValue()), pair.getKey());
+        }
     }
 }

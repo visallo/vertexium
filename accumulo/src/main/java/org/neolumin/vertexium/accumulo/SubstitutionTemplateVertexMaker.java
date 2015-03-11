@@ -1,10 +1,9 @@
-package org.neolumin.vertexium.accumulo.substitution;
+package org.neolumin.vertexium.accumulo;
 
 import org.apache.accumulo.core.data.Key;
 import org.apache.accumulo.core.data.Value;
 import org.apache.hadoop.io.Text;
 import org.neolumin.vertexium.Authorizations;
-import org.neolumin.vertexium.accumulo.VertexMaker;
 
 import java.util.Iterator;
 import java.util.Map;
@@ -12,8 +11,8 @@ import java.util.Map;
 public class SubstitutionTemplateVertexMaker extends VertexMaker {
     private SubstitutionTemplate substitutionTemplate;
 
-    public SubstitutionTemplateVertexMaker(SubstitutionAccumuloGraph substitutionAccumuloGraph, Iterator<Map.Entry<Key, Value>> next, Authorizations authorizations, SubstitutionTemplate substitutionTemplate) {
-        super(substitutionAccumuloGraph, next, authorizations);
+    public SubstitutionTemplateVertexMaker(AccumuloGraph accumuloGraph, Iterator<Map.Entry<Key, Value>> next, Authorizations authorizations, SubstitutionTemplate substitutionTemplate) {
+        super(accumuloGraph, next, authorizations);
         this.substitutionTemplate = substitutionTemplate;
     }
 

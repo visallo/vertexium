@@ -1,4 +1,4 @@
-package org.neolumin.vertexium.accumulo.substitution;
+package org.neolumin.vertexium.accumulo;
 
 import com.beust.jcommander.internal.Lists;
 import org.apache.commons.lang3.tuple.Pair;
@@ -7,7 +7,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
-import org.neolumin.vertexium.accumulo.substitution.SimpleSubstitutionTemplate;
+import org.neolumin.vertexium.accumulo.SimpleSubstitutionTemplate;
 
 import java.util.*;
 
@@ -33,7 +33,8 @@ public class SimpleSubstitutionTemplateTest {
 
     @Before
     public void before(){
-        testSubject = new SimpleSubstitutionTemplate(templatePashingTest);
+        testSubject = new SimpleSubstitutionTemplate();
+        testSubject.setSubstitutionList(templatePashingTest);
     }
 
     @Test
