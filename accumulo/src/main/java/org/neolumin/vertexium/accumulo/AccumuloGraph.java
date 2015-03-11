@@ -339,7 +339,8 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
                 if (this.verticesWriter != null) {
                     return this.verticesWriter;
                 }
-                BatchWriterConfig writerConfig =getConfiguration().createBatchWriterConfig();
+
+                BatchWriterConfig writerConfig = getConfiguration().createBatchWriterConfig();
                 this.verticesWriter = this.connector.createBatchWriter(getVerticesTableName(), writerConfig);
                 return this.verticesWriter;
             }
@@ -358,6 +359,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
                 if (this.edgesWriter != null) {
                     return this.edgesWriter;
                 }
+
                 BatchWriterConfig writerConfig = getConfiguration().createBatchWriterConfig();
                 this.edgesWriter = this.connector.createBatchWriter(getEdgesTableName(), writerConfig);
                 return this.edgesWriter;
@@ -387,6 +389,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
                 if (this.dataWriter != null) {
                     return this.dataWriter;
                 }
+
                 BatchWriterConfig writerConfig = getConfiguration().createBatchWriterConfig();
                 this.dataWriter = this.connector.createBatchWriter(getDataTableName(), writerConfig);
                 return this.dataWriter;
@@ -406,6 +409,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
                 if (this.metadataWriter != null) {
                     return this.metadataWriter;
                 }
+                
                 BatchWriterConfig writerConfig = getConfiguration().createBatchWriterConfig();
                 this.metadataWriter = this.connector.createBatchWriter(getMetadataTableName(), writerConfig);
                 return this.metadataWriter;
