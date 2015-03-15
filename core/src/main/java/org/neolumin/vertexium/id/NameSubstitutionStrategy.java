@@ -1,6 +1,7 @@
-package org.neolumin.vertexium.accumulo;
+package org.neolumin.vertexium.id;
 
-public interface SubstitutionTemplate {
+public interface NameSubstitutionStrategy {
     public String deflate(String value);
+
     public String inflate(String value);
 }

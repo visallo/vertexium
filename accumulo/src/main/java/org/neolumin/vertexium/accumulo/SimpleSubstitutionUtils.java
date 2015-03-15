@@ -14,33 +14,31 @@ import java.util.List;
 import java.util.Map;
 
 public class SimpleSubstitutionUtils {
-
     private static final Logger LOGGER = LoggerFactory.getLogger(SimpleSubstitutionUtils.class);
     public static final String SUBSTITUTION_MAP_PREFIX = "substitution";
     public static final String KEY_IDENTIFIER = "key";
     public static final String VALUE_IDENTIFIER = "value";
 
-    public static List<Pair<String, String>> getSubstitionList(Map configuration){
+    public static List<Pair<String, String>> getSubstitutionList(Map configuration) {
         Map<String, MutablePair<String, String>> substitutionMap = Maps.newHashMap();
 
         //parse the config arguments
-        for(Object objKey : configuration.keySet()){
+        for (Object objKey : configuration.keySet()) {
             String key = objKey.toString();
-            if(key.startsWith(SUBSTITUTION_MAP_PREFIX + ".")){
+            if (key.startsWith(SUBSTITUTION_MAP_PREFIX + ".")) {
                 List<String> parts = Lists.newArrayList(IterableUtils.toList(Splitter.on('.').split(key)));
                 String pairKey = parts.get(parts.size() - 2);
                 String valueType = parts.get(parts.size() - 1);
 
-                if(!substitutionMap.containsKey(pairKey)){
+                if (!substitutionMap.containsKey(pairKey)) {
                     substitutionMap.put(pairKey, new MutablePair<String, String>());
                 }
 
                 MutablePair<String, String> pair = substitutionMap.get(pairKey);
 
-                if(KEY_IDENTIFIER.equals(valueType)){
+                if (KEY_IDENTIFIER.equals(valueType)) {
                     pair.setLeft(configuration.get(key).toString());
-                }
-                else if(VALUE_IDENTIFIER.equals(valueType)){
+                } else if (VALUE_IDENTIFIER.equals(valueType)) {
                     pair.setValue(configuration.get(key).toString());
                 }
             }
@@ -51,7 +49,7 @@ public class SimpleSubstitutionUtils {
         Collections.sort(keys);
 
         List<Pair<String, String>> finalMap = Lists.newArrayList();
-        for(String key : keys){
+        for (String key : keys) {
             Pair<String, String> pair = substitutionMap.get(key);
             finalMap.add(pair);
             LOGGER.info(String.format("Using substitution %s -> %s", pair.getKey(), pair.getValue()));

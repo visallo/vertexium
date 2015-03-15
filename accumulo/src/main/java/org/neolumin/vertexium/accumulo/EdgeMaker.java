@@ -18,7 +18,11 @@ public class EdgeMaker extends ElementMaker<Edge> {
     private String label;
     private long timestamp;
 
-    public EdgeMaker(AccumuloGraph graph, Iterator<Map.Entry<Key, Value>> row, Authorizations authorizations) {
+    public EdgeMaker(
+            AccumuloGraph graph,
+            Iterator<Map.Entry<Key, Value>> row,
+            Authorizations authorizations
+    ) {
         super(graph, row, authorizations);
         this.graph = graph;
     }

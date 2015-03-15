@@ -16,6 +16,7 @@ import org.neolumin.vertexium.accumulo.iterator.ElementVisibilityRowFilter;
 import org.neolumin.vertexium.accumulo.serializer.ValueSerializer;
 import org.neolumin.vertexium.event.*;
 import org.neolumin.vertexium.id.IdGenerator;
+import org.neolumin.vertexium.id.NameSubstitutionStrategy;
 import org.neolumin.vertexium.mutation.AlterPropertyVisibility;
 import org.neolumin.vertexium.mutation.PropertyRemoveMutation;
 import org.neolumin.vertexium.mutation.SetPropertyMetadata;
@@ -65,44 +66,52 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
     private final Queue<GraphEvent> graphEventQueue = new LinkedList<>();
     private Integer accumuloGraphVersion;
     private boolean foundValueSerializerMetadata;
-    private final SubstitutionTemplate substitutionTemplate;
+    private final NameSubstitutionStrategy nameSubstitutionStrategy;
 
-    protected AccumuloGraph(AccumuloGraphConfiguration config, IdGenerator idGenerator, SearchIndex searchIndex, Connector connector, FileSystem fileSystem, ValueSerializer valueSerializer, SubstitutionTemplate template) {
+    protected AccumuloGraph(
+            AccumuloGraphConfiguration config,
+            IdGenerator idGenerator,
+            SearchIndex searchIndex,
+            Connector connector,
+            FileSystem fileSystem,
+            ValueSerializer valueSerializer,
+            NameSubstitutionStrategy nameSubstitutionStrategy
+    ) {
         super(config, idGenerator, searchIndex);
         this.connector = connector;
         this.valueSerializer = valueSerializer;
         this.fileSystem = fileSystem;
         this.dataDir = config.getDataDir();
-        this.substitutionTemplate = template;
+        this.nameSubstitutionStrategy = nameSubstitutionStrategy;
         long maxStreamingPropertyValueTableDataSize = config.getMaxStreamingPropertyValueTableDataSize();
         this.elementMutationBuilder = new ElementMutationBuilder(fileSystem, valueSerializer, maxStreamingPropertyValueTableDataSize, dataDir) {
-                @Override
-                protected Text getPropertyColumnQualifier(Property p){
-                    return getValueSeparatedJoined(substitutionTemplate.deflate(p.getName()), substitutionTemplate.deflate(p.getKey()));
-                }
+            @Override
+            protected Text getPropertyColumnQualifier(Property p) {
+                return getValueSeparatedJoined(AccumuloGraph.this.nameSubstitutionStrategy.deflate(p.getName()), AccumuloGraph.this.nameSubstitutionStrategy.deflate(p.getKey()));
+            }
 
-                @Override
-                protected void saveVertexMutation(Mutation m) {
-                    addMutations(getVerticesWriter(), m);
-                }
+            @Override
+            protected void saveVertexMutation(Mutation m) {
+                addMutations(getVerticesWriter(), m);
+            }
 
-                @Override
-                protected void saveEdgeMutation(Mutation m) {
-                    addMutations(getEdgesWriter(), m);
-                }
+            @Override
+            protected void saveEdgeMutation(Mutation m) {
+                addMutations(getEdgesWriter(), m);
+            }
 
-                @Override
-                protected void saveDataMutation(Mutation dataMutation) {
-                    addMutations(getDataWriter(), dataMutation);
-                }
+            @Override
+            protected void saveDataMutation(Mutation dataMutation) {
+                addMutations(getDataWriter(), dataMutation);
+            }
 
-                @Override
-                protected StreamingPropertyValueRef saveStreamingPropertyValue(String rowKey, Property property, StreamingPropertyValue propertyValue) {
-                    StreamingPropertyValueRef streamingPropertyValueRef = super.saveStreamingPropertyValue(rowKey, property, propertyValue);
-                    ((MutableProperty) property).setValue(streamingPropertyValueRef.toStreamingPropertyValue(AccumuloGraph.this));
-                    return streamingPropertyValueRef;
-                }
-            };
+            @Override
+            protected StreamingPropertyValueRef saveStreamingPropertyValue(String rowKey, Property property, StreamingPropertyValue propertyValue) {
+                StreamingPropertyValueRef streamingPropertyValueRef = super.saveStreamingPropertyValue(rowKey, property, propertyValue);
+                ((MutableProperty) property).setValue(streamingPropertyValueRef.toStreamingPropertyValue(AccumuloGraph.this));
+                return streamingPropertyValueRef;
+            }
+        };
     }
 
     public static AccumuloGraph create(AccumuloGraphConfiguration config) throws AccumuloSecurityException, AccumuloException, VertexiumException, InterruptedException, IOException, URISyntaxException {
@@ -114,7 +123,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
         ValueSerializer valueSerializer = config.createValueSerializer();
         SearchIndex searchIndex = config.createSearchIndex();
         IdGenerator idGenerator = config.createIdGenerator();
-        SubstitutionTemplate substitutionTemplate = config.createSubstitutionTemplate();
+        NameSubstitutionStrategy nameSubstitutionStrategy = config.createSubstitutionStrategy();
         ensureTableExists(connector, getVerticesTableName(config.getTableNamePrefix()));
         ensureTableExists(connector, getEdgesTableName(config.getTableNamePrefix()));
         ensureTableExists(connector, getDataTableName(config.getTableNamePrefix()));
@@ -122,7 +131,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
         ensureRowDeletingIteratorIsAttached(connector, getVerticesTableName(config.getTableNamePrefix()));
         ensureRowDeletingIteratorIsAttached(connector, getEdgesTableName(config.getTableNamePrefix()));
         ensureRowDeletingIteratorIsAttached(connector, getDataTableName(config.getTableNamePrefix()));
-        AccumuloGraph graph = new AccumuloGraph(config, idGenerator, searchIndex, connector, fs, valueSerializer, substitutionTemplate);
+        AccumuloGraph graph = new AccumuloGraph(config, idGenerator, searchIndex, connector, fs, valueSerializer, nameSubstitutionStrategy);
         graph.setup();
         return graph;
     }
@@ -417,7 +426,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
                 if (this.metadataWriter != null) {
                     return this.metadataWriter;
                 }
-                
+
                 BatchWriterConfig writerConfig = getConfiguration().createBatchWriterConfig();
                 this.metadataWriter = this.connector.createBatchWriter(getMetadataTableName(), writerConfig);
                 return this.metadataWriter;
@@ -569,6 +578,10 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
         }
 
         return edge;
+    }
+
+    public NameSubstitutionStrategy getNameSubstitutionStrategy() {
+        return nameSubstitutionStrategy;
     }
 
     private static abstract class AddEdgeToVertexRunnable {
@@ -1008,7 +1021,6 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
     }
 
 
-
     @SuppressWarnings("unused")
     private void printTable(Authorizations authorizations) {
         String[] tables = new String[]{getEdgesTableName(), getVerticesTableName(), getDataTableName()};
@@ -1351,7 +1363,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
 
             @Override
             protected Vertex convert(Iterator<Map.Entry<Key, Value>> next) {
-                VertexMaker maker = new SubstitutionTemplateVertexMaker(AccumuloGraph.this, next, authorizations, substitutionTemplate);
+                VertexMaker maker = new VertexMaker(AccumuloGraph.this, next, authorizations);
                 return maker.make(includeHidden);
             }
 
@@ -1395,7 +1407,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
             protected Vertex convert(Map.Entry<Key, Value> wholeRow) {
                 try {
                     SortedMap<Key, Value> row = WholeRowIterator.decodeRow(wholeRow.getKey(), wholeRow.getValue());
-                    VertexMaker maker = new SubstitutionTemplateVertexMaker(AccumuloGraph.this, row.entrySet().iterator(), authorizations, substitutionTemplate);
+                    VertexMaker maker = new VertexMaker(AccumuloGraph.this, row.entrySet().iterator(), authorizations);
                     return maker.make(includeHidden);
                 } catch (IOException ex) {
                     throw new VertexiumException("Could not recreate row", ex);
@@ -1442,7 +1454,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
             protected Edge convert(Map.Entry<Key, Value> wholeRow) {
                 try {
                     SortedMap<Key, Value> row = WholeRowIterator.decodeRow(wholeRow.getKey(), wholeRow.getValue());
-                    EdgeMaker maker = new SubstitiutionTemplateEdgeMaker(AccumuloGraph.this, row.entrySet().iterator(), authorizations, substitutionTemplate);
+                    EdgeMaker maker = new EdgeMaker(AccumuloGraph.this, row.entrySet().iterator(), authorizations);
                     return maker.make(includeHidden);
                 } catch (IOException ex) {
                     throw new VertexiumException("Could not recreate row", ex);
@@ -1492,7 +1504,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
 
             @Override
             protected Edge convert(Iterator<Map.Entry<Key, Value>> next) {
-                EdgeMaker maker = new SubstitiutionTemplateEdgeMaker(graph, next, authorizations, substitutionTemplate);
+                EdgeMaker maker = new EdgeMaker(graph, next, authorizations);
                 return maker.make(includeHidden);
             }
 

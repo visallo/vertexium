@@ -1,6 +1,6 @@
-package org.neolumin.vertexium.accumulo;
+package org.neolumin.vertexium.id;
 
-public class IdentitySubstitutionTemplate implements SubstitutionTemplate {
+public class IdentityNameSubstitutionStrategy implements NameSubstitutionStrategy {
     @Override
     public String deflate(String value) {
         return value;

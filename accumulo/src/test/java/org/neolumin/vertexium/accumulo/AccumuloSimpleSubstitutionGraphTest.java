@@ -14,6 +14,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.neolumin.vertexium.*;
+import org.neolumin.vertexium.id.SimpleNameSubstitutionStrategy;
 import org.neolumin.vertexium.test.GraphTestBase;
 import org.neolumin.vertexium.util.IterableUtils;
 import org.slf4j.Logger;
@@ -223,7 +224,7 @@ public class AccumuloSimpleSubstitutionGraphTest extends GraphTestBase {
         configMap.put(AccumuloGraphConfiguration.ACCUMULO_PASSWORD, ACCUMULO_PASSWORD);
         configMap.put(AccumuloGraphConfiguration.AUTO_FLUSH, true);
         configMap.put(AccumuloGraphConfiguration.MAX_STREAMING_PROPERTY_VALUE_TABLE_DATA_SIZE, GraphTestBase.LARGE_PROPERTY_VALUE_SIZE - 1);
-        configMap.put(AccumuloGraphConfiguration.SUBSTITUTION_TEMPLATE_PROP_PREFIX, SimpleSubstitutionTemplate.class.getName());
+        configMap.put(AccumuloGraphConfiguration.NAME_SUBSTITUTION_STRATEGY_PROP_PREFIX, SimpleNameSubstitutionStrategy.class.getName());
         configMap.put(Joiner.on('.').join(new String[] {SimpleSubstitutionUtils.SUBSTITUTION_MAP_PREFIX, "0", SimpleSubstitutionUtils.KEY_IDENTIFIER }), "k1");
         configMap.put(Joiner.on('.').join(new String[] {SimpleSubstitutionUtils.SUBSTITUTION_MAP_PREFIX, "0", SimpleSubstitutionUtils.VALUE_IDENTIFIER }), "k");
         configMap.put(AccumuloGraphConfiguration.DATA_DIR, "/tmp/");
