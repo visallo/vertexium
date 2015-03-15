@@ -1,9 +1,6 @@
 package org.neolumin.vertexium.accumulo;
 
-import org.apache.accumulo.core.client.AccumuloException;
-import org.apache.accumulo.core.client.AccumuloSecurityException;
-import org.apache.accumulo.core.client.Connector;
-import org.apache.accumulo.core.client.ZooKeeperInstance;
+import org.apache.accumulo.core.client.*;
 import org.apache.accumulo.core.client.security.tokens.AuthenticationToken;
 import org.apache.accumulo.core.client.security.tokens.PasswordToken;
 import org.apache.hadoop.conf.Configuration;
@@ -22,11 +19,13 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 public class AccumuloGraphConfiguration extends GraphConfiguration {
     private static final Logger LOGGER = LoggerFactory.getLogger(AccumuloGraphConfiguration.class);
 
     public static final String HDFS_CONFIG_PREFIX = "hdfs";
+    public static final String BATCHWRITER_CONFIG_PREFIX = "batchwriter";
 
     public static final String ACCUMULO_INSTANCE_NAME = "accumuloInstanceName";
     public static final String ACCUMULO_USERNAME = "username";
@@ -39,6 +38,10 @@ public class AccumuloGraphConfiguration extends GraphConfiguration {
     public static final String HDFS_ROOT_DIR = HDFS_CONFIG_PREFIX + ".rootDir";
     public static final String DATA_DIR = HDFS_CONFIG_PREFIX + ".dataDir";
     public static final String USE_SERVER_SIDE_ELEMENT_VISIBILITY_ROW_FILTER = "useServerSideElementVisibilityRowFilter";
+    public static final String BATCHWRITER_MAX_MEMORY = BATCHWRITER_CONFIG_PREFIX + ".maxMemory";
+    public static final String BATCHWRITER_MAX_LATENCY = BATCHWRITER_CONFIG_PREFIX + ".maxLatency";
+    public static final String BATCHWRITER_TIMEOUT = BATCHWRITER_CONFIG_PREFIX + ".timeout";
+    public static final String BATCHWRITER_MAX_WRITE_THREADS = BATCHWRITER_CONFIG_PREFIX + ".maxWriteThreads";
 
     public static final String DEFAULT_ACCUMULO_PASSWORD = "password";
     public static final String DEFAULT_VALUE_SERIALIZER = JavaValueSerializer.class.getName();
@@ -51,6 +54,10 @@ public class AccumuloGraphConfiguration extends GraphConfiguration {
     public static final String DEFAULT_HDFS_ROOT_DIR = "";
     public static final String DEFAULT_DATA_DIR = "/accumuloGraph";
     public static final boolean DEFAULT_USE_SERVER_SIDE_ELEMENT_VISIBILITY_ROW_FILTER = true;
+    public static final Long DEFAULT_BATCHWRITER_MAX_MEMORY = 50 * 1024 * 1024l;
+    public static final Long DEFAULT_BATCHWRITER_MAX_LATENCY = 2 * 60 * 1000l;
+    public static final Long DEFAULT_BATCHWRITER_TIMEOUT = Long.MAX_VALUE;
+    public static final Integer DEFAULT_BATCHWRITER_MAX_WRITE_THREADS = 3;
 
     public AccumuloGraphConfiguration(Map config) {
         super(config);
@@ -138,5 +145,19 @@ public class AccumuloGraphConfiguration extends GraphConfiguration {
 
     public boolean isUseServerSideElementVisibilityRowFilter() {
         return getBoolean(USE_SERVER_SIDE_ELEMENT_VISIBILITY_ROW_FILTER, DEFAULT_USE_SERVER_SIDE_ELEMENT_VISIBILITY_ROW_FILTER);
+    }
+
+    public BatchWriterConfig createBatchWriterConfig() {
+        long maxMemory = getConfigLong(BATCHWRITER_MAX_MEMORY, DEFAULT_BATCHWRITER_MAX_MEMORY);
+        long maxLatency = getConfigLong(BATCHWRITER_MAX_LATENCY, DEFAULT_BATCHWRITER_MAX_LATENCY);
+        int maxWriteThreads = getInt(BATCHWRITER_MAX_WRITE_THREADS, DEFAULT_BATCHWRITER_MAX_WRITE_THREADS);
+        long timeout = getConfigLong(BATCHWRITER_TIMEOUT, DEFAULT_BATCHWRITER_TIMEOUT);
+
+        BatchWriterConfig config = new BatchWriterConfig();
+        config.setMaxMemory(maxMemory);
+        config.setMaxLatency(maxLatency, TimeUnit.MILLISECONDS);
+        config.setMaxWriteThreads(maxWriteThreads);
+        config.setTimeout(timeout, TimeUnit.MILLISECONDS);
+        return config;
     }
 }
