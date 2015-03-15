@@ -18,15 +18,19 @@ public class EdgeMaker extends ElementMaker<Edge> {
     private String label;
     private long timestamp;
 
-    public EdgeMaker(AccumuloGraph graph, Iterator<Map.Entry<Key, Value>> row, Authorizations authorizations) {
+    public EdgeMaker(
+            AccumuloGraph graph,
+            Iterator<Map.Entry<Key, Value>> row,
+            Authorizations authorizations
+    ) {
         super(graph, row, authorizations);
         this.graph = graph;
     }
 
     @Override
     protected void processColumn(Key key, Value value) {
-        Text columnFamily = key.getColumnFamily();
-        Text columnQualifier = key.getColumnQualifier();
+        Text columnFamily = getColumnFamily(key);
+        Text columnQualifier = getColumnQualifier(key);
 
         if (AccumuloEdge.CF_SIGNAL.compareTo(columnFamily) == 0) {
             this.label = columnQualifier.toString();

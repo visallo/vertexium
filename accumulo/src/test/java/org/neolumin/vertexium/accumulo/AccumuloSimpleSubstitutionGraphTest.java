@@ -1,5 +1,6 @@
 package org.neolumin.vertexium.accumulo;
 
+import com.google.common.base.Joiner;
 import junit.framework.Assert;
 import org.apache.accumulo.core.client.*;
 import org.apache.accumulo.core.data.Key;
@@ -13,6 +14,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.neolumin.vertexium.*;
+import org.neolumin.vertexium.id.SimpleNameSubstitutionStrategy;
 import org.neolumin.vertexium.test.GraphTestBase;
 import org.neolumin.vertexium.util.IterableUtils;
 import org.slf4j.Logger;
@@ -30,8 +32,8 @@ import static junit.framework.Assert.*;
 import static org.junit.Assert.assertNotEquals;
 
 @RunWith(JUnit4.class)
-public class AccumuloGraphTest extends GraphTestBase {
-    private static final Logger LOGGER = LoggerFactory.getLogger(AccumuloGraphTest.class);
+public class AccumuloSimpleSubstitutionGraphTest extends GraphTestBase {
+    private static final Logger LOGGER = LoggerFactory.getLogger(AccumuloSimpleSubstitutionGraphTest.class);
     private final String ACCUMULO_USERNAME = "root";
     private final String ACCUMULO_PASSWORD = "test";
     private File tempDir;
@@ -206,7 +208,7 @@ public class AccumuloGraphTest extends GraphTestBase {
             @Override
             public void run() {
                 try {
-                    AccumuloGraphTest.this.stop();
+                    AccumuloSimpleSubstitutionGraphTest.this.stop();
                 } catch (Exception e) {
                     System.out.println("Failed to stop Accumulo test cluster");
                 }
@@ -222,6 +224,9 @@ public class AccumuloGraphTest extends GraphTestBase {
         configMap.put(AccumuloGraphConfiguration.ACCUMULO_PASSWORD, ACCUMULO_PASSWORD);
         configMap.put(AccumuloGraphConfiguration.AUTO_FLUSH, true);
         configMap.put(AccumuloGraphConfiguration.MAX_STREAMING_PROPERTY_VALUE_TABLE_DATA_SIZE, GraphTestBase.LARGE_PROPERTY_VALUE_SIZE - 1);
+        configMap.put(AccumuloGraphConfiguration.NAME_SUBSTITUTION_STRATEGY_PROP_PREFIX, SimpleNameSubstitutionStrategy.class.getName());
+        configMap.put(Joiner.on('.').join(new String[] {SimpleSubstitutionUtils.SUBSTITUTION_MAP_PREFIX, "0", SimpleSubstitutionUtils.KEY_IDENTIFIER }), "k1");
+        configMap.put(Joiner.on('.').join(new String[] {SimpleSubstitutionUtils.SUBSTITUTION_MAP_PREFIX, "0", SimpleSubstitutionUtils.VALUE_IDENTIFIER }), "k");
         configMap.put(AccumuloGraphConfiguration.DATA_DIR, "/tmp/");
         return configMap;
     }

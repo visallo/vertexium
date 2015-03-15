@@ -41,8 +41,9 @@ public abstract class ElementMaker<T> {
                 this.id = getIdFromRowKey(col.getKey().getRow().toString());
             }
 
-            Text columnFamily = col.getKey().getColumnFamily();
-            Text columnQualifier = col.getKey().getColumnQualifier();
+            Text columnFamily = getColumnFamily(col.getKey());
+            Text columnQualifier = getColumnQualifier(col.getKey());
+
             ColumnVisibility columnVisibility = AccumuloGraph.visibilityToAccumuloVisibility(col.getKey().getColumnVisibility().toString());
             Value value = col.getValue();
 
@@ -87,6 +88,18 @@ public abstract class ElementMaker<T> {
         }
 
         return makeElement(includeHidden);
+    }
+
+    protected Text getColumnFamily(Key key) {
+        return inflate(key.getColumnFamily());
+    }
+
+    protected Text getColumnQualifier(Key key) {
+        return inflate(key.getColumnQualifier());
+    }
+
+    private Text inflate(Text text) {
+        return new Text(getGraph().getNameSubstitutionStrategy().inflate(text.toString()));
     }
 
     protected abstract void processColumn(Key key, Value value);
@@ -207,7 +220,7 @@ public abstract class ElementMaker<T> {
     }
 
     private void extractPropertyData(Map.Entry<Key, Value> column, ColumnVisibility columnVisibility) {
-        Text columnQualifier = column.getKey().getColumnQualifier();
+        Text columnQualifier = getColumnQualifier(column.getKey());
         Value value = column.getValue();
         Visibility visibility = AccumuloGraph.accumuloVisibilityToVisibility(columnVisibility);
         String propertyName = getPropertyNameFromColumnQualifier(columnQualifier.toString());

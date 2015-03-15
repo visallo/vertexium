@@ -16,6 +16,7 @@ import org.neolumin.vertexium.accumulo.iterator.ElementVisibilityRowFilter;
 import org.neolumin.vertexium.accumulo.serializer.ValueSerializer;
 import org.neolumin.vertexium.event.*;
 import org.neolumin.vertexium.id.IdGenerator;
+import org.neolumin.vertexium.id.NameSubstitutionStrategy;
 import org.neolumin.vertexium.mutation.AlterPropertyVisibility;
 import org.neolumin.vertexium.mutation.PropertyRemoveMutation;
 import org.neolumin.vertexium.mutation.SetPropertyMetadata;
@@ -61,19 +62,34 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
     private BatchWriter edgesWriter;
     private BatchWriter dataWriter;
     private BatchWriter metadataWriter;
-    private ElementMutationBuilder elementMutationBuilder;
+    protected ElementMutationBuilder elementMutationBuilder;
     private final Queue<GraphEvent> graphEventQueue = new LinkedList<>();
     private Integer accumuloGraphVersion;
     private boolean foundValueSerializerMetadata;
+    private final NameSubstitutionStrategy nameSubstitutionStrategy;
 
-    protected AccumuloGraph(AccumuloGraphConfiguration config, IdGenerator idGenerator, SearchIndex searchIndex, Connector connector, FileSystem fileSystem, ValueSerializer valueSerializer) {
+    protected AccumuloGraph(
+            AccumuloGraphConfiguration config,
+            IdGenerator idGenerator,
+            SearchIndex searchIndex,
+            Connector connector,
+            FileSystem fileSystem,
+            ValueSerializer valueSerializer,
+            NameSubstitutionStrategy nameSubstitutionStrategy
+    ) {
         super(config, idGenerator, searchIndex);
         this.connector = connector;
         this.valueSerializer = valueSerializer;
         this.fileSystem = fileSystem;
         this.dataDir = config.getDataDir();
+        this.nameSubstitutionStrategy = nameSubstitutionStrategy;
         long maxStreamingPropertyValueTableDataSize = config.getMaxStreamingPropertyValueTableDataSize();
         this.elementMutationBuilder = new ElementMutationBuilder(fileSystem, valueSerializer, maxStreamingPropertyValueTableDataSize, dataDir) {
+            @Override
+            protected Text getPropertyColumnQualifier(Property p) {
+                return getValueSeparatedJoined(AccumuloGraph.this.nameSubstitutionStrategy.deflate(p.getName()), AccumuloGraph.this.nameSubstitutionStrategy.deflate(p.getKey()));
+            }
+
             @Override
             protected void saveVertexMutation(Mutation m) {
                 addMutations(getVerticesWriter(), m);
@@ -107,6 +123,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
         ValueSerializer valueSerializer = config.createValueSerializer();
         SearchIndex searchIndex = config.createSearchIndex();
         IdGenerator idGenerator = config.createIdGenerator();
+        NameSubstitutionStrategy nameSubstitutionStrategy = config.createSubstitutionStrategy();
         ensureTableExists(connector, getVerticesTableName(config.getTableNamePrefix()));
         ensureTableExists(connector, getEdgesTableName(config.getTableNamePrefix()));
         ensureTableExists(connector, getDataTableName(config.getTableNamePrefix()));
@@ -114,7 +131,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
         ensureRowDeletingIteratorIsAttached(connector, getVerticesTableName(config.getTableNamePrefix()));
         ensureRowDeletingIteratorIsAttached(connector, getEdgesTableName(config.getTableNamePrefix()));
         ensureRowDeletingIteratorIsAttached(connector, getDataTableName(config.getTableNamePrefix()));
-        AccumuloGraph graph = new AccumuloGraph(config, idGenerator, searchIndex, connector, fs, valueSerializer);
+        AccumuloGraph graph = new AccumuloGraph(config, idGenerator, searchIndex, connector, fs, valueSerializer, nameSubstitutionStrategy);
         graph.setup();
         return graph;
     }
@@ -161,7 +178,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
         }
     }
 
-    private static void ensureTableExists(Connector connector, String tableName) {
+    protected static void ensureTableExists(Connector connector, String tableName) {
         try {
             if (!connector.tableOperations().exists(tableName)) {
                 connector.tableOperations().create(tableName);
@@ -171,7 +188,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
         }
     }
 
-    private static void ensureRowDeletingIteratorIsAttached(Connector connector, String tableName) {
+    protected static void ensureRowDeletingIteratorIsAttached(Connector connector, String tableName) {
         try {
             synchronized (addIteratorLock) {
                 IteratorSetting is = new IteratorSetting(ROW_DELETING_ITERATOR_PRIORITY, ROW_DELETING_ITERATOR_NAME, RowDeletingIterator.class);
@@ -316,7 +333,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
         throw new VertexiumException("Unexpected element type: " + element.getClass().getName());
     }
 
-    private void addMutations(BatchWriter writer, Mutation... mutations) {
+    protected void addMutations(BatchWriter writer, Mutation... mutations) {
         try {
             for (Mutation mutation : mutations) {
                 writer.addMutation(mutation);
@@ -409,7 +426,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
                 if (this.metadataWriter != null) {
                     return this.metadataWriter;
                 }
-                
+
                 BatchWriterConfig writerConfig = getConfiguration().createBatchWriterConfig();
                 this.metadataWriter = this.connector.createBatchWriter(getMetadataTableName(), writerConfig);
                 return this.metadataWriter;
@@ -561,6 +578,10 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
         }
 
         return edge;
+    }
+
+    public NameSubstitutionStrategy getNameSubstitutionStrategy() {
+        return nameSubstitutionStrategy;
     }
 
     private static abstract class AddEdgeToVertexRunnable {
@@ -819,53 +840,6 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
         return null;
     }
 
-    @Override
-    public CloseableIterable<Vertex> getVertices(Iterable<String> ids, final EnumSet<FetchHint> fetchHints, final Authorizations authorizations) {
-        final AccumuloGraph graph = this;
-        final boolean includeHidden = fetchHints.contains(FetchHint.INCLUDE_HIDDEN);
-
-        final List<Range> ranges = new ArrayList<>();
-        for (String id : ids) {
-            Text rowKey = new Text(AccumuloConstants.VERTEX_ROW_KEY_PREFIX + id);
-            ranges.add(new Range(rowKey));
-        }
-        if (ranges.size() == 0) {
-            return new EmptyClosableIterable<>();
-        }
-
-        return new LookAheadIterable<Map.Entry<Key, Value>, Vertex>() {
-            public BatchScanner batchScanner;
-
-            @Override
-            protected boolean isIncluded(Map.Entry<Key, Value> src, Vertex dest) {
-                return dest != null;
-            }
-
-            @Override
-            protected Vertex convert(Map.Entry<Key, Value> wholeRow) {
-                try {
-                    SortedMap<Key, Value> row = WholeRowIterator.decodeRow(wholeRow.getKey(), wholeRow.getValue());
-                    VertexMaker maker = new VertexMaker(graph, row.entrySet().iterator(), authorizations);
-                    return maker.make(includeHidden);
-                } catch (IOException ex) {
-                    throw new VertexiumException("Could not recreate row", ex);
-                }
-            }
-
-            @Override
-            protected Iterator<Map.Entry<Key, Value>> createIterator() {
-                batchScanner = createVertexBatchScanner(fetchHints, authorizations, Math.min(Math.max(1, ranges.size() / 10), 10));
-                batchScanner.setRanges(ranges);
-                return batchScanner.iterator();
-            }
-
-            @Override
-            public void close() {
-                super.close();
-                batchScanner.close();
-            }
-        };
-    }
 
     private CloseableIterable<Vertex> getVerticesInRange(String startId, String endId, EnumSet<FetchHint> fetchHints, final Authorizations authorizations) throws VertexiumException {
         final Key startKey;
@@ -886,43 +860,11 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
         return getVerticesInRange(range, fetchHints, authorizations);
     }
 
-    private CloseableIterable<Vertex> getVerticesInRange(final Range range, final EnumSet<FetchHint> fetchHints, final Authorizations authorizations) {
-        final boolean includeHidden = fetchHints.contains(FetchHint.INCLUDE_HIDDEN);
-
-        return new LookAheadIterable<Iterator<Map.Entry<Key, Value>>, Vertex>() {
-            public Scanner scanner;
-
-            @Override
-            protected boolean isIncluded(Iterator<Map.Entry<Key, Value>> src, Vertex dest) {
-                return dest != null;
-            }
-
-            @Override
-            protected Vertex convert(Iterator<Map.Entry<Key, Value>> next) {
-                VertexMaker maker = new VertexMaker(AccumuloGraph.this, next, authorizations);
-                return maker.make(includeHidden);
-            }
-
-            @Override
-            protected Iterator<Iterator<Map.Entry<Key, Value>>> createIterator() {
-                scanner = createVertexScanner(fetchHints, authorizations);
-                scanner.setRange(range);
-                return new RowIterator(scanner.iterator());
-            }
-
-            @Override
-            public void close() {
-                super.close();
-                scanner.close();
-            }
-        };
-    }
-
-    Scanner createVertexScanner(EnumSet<FetchHint> fetchHints, Authorizations authorizations) throws VertexiumException {
+    protected Scanner createVertexScanner(EnumSet<FetchHint> fetchHints, Authorizations authorizations) throws VertexiumException {
         return createElementVisibilityScanner(fetchHints, authorizations, ElementType.VERTEX);
     }
 
-    Scanner createEdgeScanner(EnumSet<FetchHint> fetchHints, Authorizations authorizations) throws VertexiumException {
+    protected Scanner createEdgeScanner(EnumSet<FetchHint> fetchHints, Authorizations authorizations) throws VertexiumException {
         return createElementVisibilityScanner(fetchHints, authorizations, ElementType.EDGE);
     }
 
@@ -947,11 +889,11 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
         }
     }
 
-    private BatchScanner createVertexBatchScanner(EnumSet<FetchHint> fetchHints, Authorizations authorizations, int numQueryThreads) throws VertexiumException {
+    protected BatchScanner createVertexBatchScanner(EnumSet<FetchHint> fetchHints, Authorizations authorizations, int numQueryThreads) throws VertexiumException {
         return createElementVisibilityWholeRowBatchScanner(fetchHints, authorizations, ElementType.VERTEX, numQueryThreads);
     }
 
-    private BatchScanner createEdgeBatchScanner(EnumSet<FetchHint> fetchHints, Authorizations authorizations, int numQueryThreads) throws VertexiumException {
+    protected BatchScanner createEdgeBatchScanner(EnumSet<FetchHint> fetchHints, Authorizations authorizations, int numQueryThreads) throws VertexiumException {
         return createElementVisibilityWholeRowBatchScanner(fetchHints, authorizations, ElementType.EDGE, numQueryThreads);
     }
 
@@ -1078,100 +1020,6 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
         return null;
     }
 
-    @Override
-    public CloseableIterable<Edge> getEdges(Iterable<String> ids, final EnumSet<FetchHint> fetchHints, final Authorizations authorizations) {
-        final AccumuloGraph graph = this;
-        final boolean includeHidden = fetchHints.contains(FetchHint.INCLUDE_HIDDEN);
-
-        final List<Range> ranges = new ArrayList<>();
-        for (String id : ids) {
-            Text rowKey = new Text(AccumuloConstants.EDGE_ROW_KEY_PREFIX + id);
-            ranges.add(new Range(rowKey));
-        }
-        if (ranges.size() == 0) {
-            return new EmptyClosableIterable<>();
-        }
-
-        return new LookAheadIterable<Map.Entry<Key, Value>, Edge>() {
-            public BatchScanner batchScanner;
-
-            @Override
-            protected boolean isIncluded(Map.Entry<Key, Value> src, Edge dest) {
-                return dest != null;
-            }
-
-            @Override
-            protected Edge convert(Map.Entry<Key, Value> wholeRow) {
-                try {
-                    SortedMap<Key, Value> row = WholeRowIterator.decodeRow(wholeRow.getKey(), wholeRow.getValue());
-                    EdgeMaker maker = new EdgeMaker(graph, row.entrySet().iterator(), authorizations);
-                    return maker.make(includeHidden);
-                } catch (IOException ex) {
-                    throw new VertexiumException("Could not recreate row", ex);
-                }
-            }
-
-            @Override
-            protected Iterator<Map.Entry<Key, Value>> createIterator() {
-                batchScanner = createEdgeBatchScanner(fetchHints, authorizations, Math.min(Math.max(1, ranges.size() / 10), 10));
-                batchScanner.setRanges(ranges);
-                return batchScanner.iterator();
-            }
-
-            @Override
-            public void close() {
-                super.close();
-                batchScanner.close();
-            }
-        };
-    }
-
-    private CloseableIterable<Edge> getEdgesInRange(String startId, String endId, final EnumSet<FetchHint> fetchHints, final Authorizations authorizations) throws VertexiumException {
-        final AccumuloGraph graph = this;
-        final boolean includeHidden = fetchHints.contains(FetchHint.INCLUDE_HIDDEN);
-
-        final Key startKey;
-        if (startId == null) {
-            startKey = new Key(AccumuloConstants.EDGE_ROW_KEY_PREFIX);
-        } else {
-            startKey = new Key(AccumuloConstants.EDGE_ROW_KEY_PREFIX + startId);
-        }
-
-        final Key endKey;
-        if (endId == null) {
-            endKey = new Key(EDGE_AFTER_ROW_KEY_PREFIX);
-        } else {
-            endKey = new Key(AccumuloConstants.EDGE_ROW_KEY_PREFIX + endId + "~");
-        }
-
-        return new LookAheadIterable<Iterator<Map.Entry<Key, Value>>, Edge>() {
-            public Scanner scanner;
-
-            @Override
-            protected boolean isIncluded(Iterator<Map.Entry<Key, Value>> src, Edge dest) {
-                return dest != null;
-            }
-
-            @Override
-            protected Edge convert(Iterator<Map.Entry<Key, Value>> next) {
-                EdgeMaker maker = new EdgeMaker(graph, next, authorizations);
-                return maker.make(includeHidden);
-            }
-
-            @Override
-            protected Iterator<Iterator<Map.Entry<Key, Value>>> createIterator() {
-                scanner = createEdgeScanner(fetchHints, authorizations);
-                scanner.setRange(new Range(startKey, endKey));
-                return new RowIterator(scanner.iterator());
-            }
-
-            @Override
-            public void close() {
-                super.close();
-                scanner.close();
-            }
-        };
-    }
 
     @SuppressWarnings("unused")
     private void printTable(Authorizations authorizations) {
@@ -1500,5 +1348,178 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
             return null;
         }
         return entry.getValue();
+    }
+
+    protected CloseableIterable<Vertex> getVerticesInRange(final Range range, final EnumSet<FetchHint> fetchHints, final Authorizations authorizations) {
+        final boolean includeHidden = fetchHints.contains(FetchHint.INCLUDE_HIDDEN);
+
+        return new LookAheadIterable<Iterator<Map.Entry<Key, Value>>, Vertex>() {
+            public Scanner scanner;
+
+            @Override
+            protected boolean isIncluded(Iterator<Map.Entry<Key, Value>> src, Vertex dest) {
+                return dest != null;
+            }
+
+            @Override
+            protected Vertex convert(Iterator<Map.Entry<Key, Value>> next) {
+                VertexMaker maker = new VertexMaker(AccumuloGraph.this, next, authorizations);
+                return maker.make(includeHidden);
+            }
+
+            @Override
+            protected Iterator<Iterator<Map.Entry<Key, Value>>> createIterator() {
+                scanner = createVertexScanner(fetchHints, authorizations);
+                scanner.setRange(range);
+                return new RowIterator(scanner.iterator());
+            }
+
+            @Override
+            public void close() {
+                super.close();
+                scanner.close();
+            }
+        };
+    }
+
+    @Override
+    public CloseableIterable<Vertex> getVertices(Iterable<String> ids, final EnumSet<FetchHint> fetchHints, final Authorizations authorizations) {
+        final boolean includeHidden = fetchHints.contains(FetchHint.INCLUDE_HIDDEN);
+
+        final List<Range> ranges = new ArrayList<>();
+        for (String id : ids) {
+            Text rowKey = new Text(AccumuloConstants.VERTEX_ROW_KEY_PREFIX + id);
+            ranges.add(new Range(rowKey));
+        }
+        if (ranges.size() == 0) {
+            return new EmptyClosableIterable<>();
+        }
+
+        return new LookAheadIterable<Map.Entry<Key, Value>, Vertex>() {
+            public BatchScanner batchScanner;
+
+            @Override
+            protected boolean isIncluded(Map.Entry<Key, Value> src, Vertex dest) {
+                return dest != null;
+            }
+
+            @Override
+            protected Vertex convert(Map.Entry<Key, Value> wholeRow) {
+                try {
+                    SortedMap<Key, Value> row = WholeRowIterator.decodeRow(wholeRow.getKey(), wholeRow.getValue());
+                    VertexMaker maker = new VertexMaker(AccumuloGraph.this, row.entrySet().iterator(), authorizations);
+                    return maker.make(includeHidden);
+                } catch (IOException ex) {
+                    throw new VertexiumException("Could not recreate row", ex);
+                }
+            }
+
+            @Override
+            protected Iterator<Map.Entry<Key, Value>> createIterator() {
+                batchScanner = createVertexBatchScanner(fetchHints, authorizations, Math.min(Math.max(1, ranges.size() / 10), 10));
+                batchScanner.setRanges(ranges);
+                return batchScanner.iterator();
+            }
+
+            @Override
+            public void close() {
+                super.close();
+                batchScanner.close();
+            }
+        };
+    }
+
+    @Override
+    public CloseableIterable<Edge> getEdges(Iterable<String> ids, final EnumSet<FetchHint> fetchHints, final Authorizations authorizations) {
+        final boolean includeHidden = fetchHints.contains(FetchHint.INCLUDE_HIDDEN);
+
+        final List<Range> ranges = new ArrayList<>();
+        for (String id : ids) {
+            Text rowKey = new Text(AccumuloConstants.EDGE_ROW_KEY_PREFIX + id);
+            ranges.add(new Range(rowKey));
+        }
+        if (ranges.size() == 0) {
+            return new EmptyClosableIterable<>();
+        }
+
+        return new LookAheadIterable<Map.Entry<Key, Value>, Edge>() {
+            public BatchScanner batchScanner;
+
+            @Override
+            protected boolean isIncluded(Map.Entry<Key, Value> src, Edge dest) {
+                return dest != null;
+            }
+
+            @Override
+            protected Edge convert(Map.Entry<Key, Value> wholeRow) {
+                try {
+                    SortedMap<Key, Value> row = WholeRowIterator.decodeRow(wholeRow.getKey(), wholeRow.getValue());
+                    EdgeMaker maker = new EdgeMaker(AccumuloGraph.this, row.entrySet().iterator(), authorizations);
+                    return maker.make(includeHidden);
+                } catch (IOException ex) {
+                    throw new VertexiumException("Could not recreate row", ex);
+                }
+            }
+
+            @Override
+            protected Iterator<Map.Entry<Key, Value>> createIterator() {
+                batchScanner = createEdgeBatchScanner(fetchHints, authorizations, Math.min(Math.max(1, ranges.size() / 10), 10));
+                batchScanner.setRanges(ranges);
+                return batchScanner.iterator();
+            }
+
+            @Override
+            public void close() {
+                super.close();
+                batchScanner.close();
+            }
+        };
+    }
+
+    protected CloseableIterable<Edge> getEdgesInRange(String startId, String endId, final EnumSet<FetchHint> fetchHints, final Authorizations authorizations) throws VertexiumException {
+        final AccumuloGraph graph = this;
+        final boolean includeHidden = fetchHints.contains(FetchHint.INCLUDE_HIDDEN);
+
+        final Key startKey;
+        if (startId == null) {
+            startKey = new Key(AccumuloConstants.EDGE_ROW_KEY_PREFIX);
+        } else {
+            startKey = new Key(AccumuloConstants.EDGE_ROW_KEY_PREFIX + startId);
+        }
+
+        final Key endKey;
+        if (endId == null) {
+            endKey = new Key(EDGE_AFTER_ROW_KEY_PREFIX);
+        } else {
+            endKey = new Key(AccumuloConstants.EDGE_ROW_KEY_PREFIX + endId + "~");
+        }
+
+        return new LookAheadIterable<Iterator<Map.Entry<Key, Value>>, Edge>() {
+            public Scanner scanner;
+
+            @Override
+            protected boolean isIncluded(Iterator<Map.Entry<Key, Value>> src, Edge dest) {
+                return dest != null;
+            }
+
+            @Override
+            protected Edge convert(Iterator<Map.Entry<Key, Value>> next) {
+                EdgeMaker maker = new EdgeMaker(graph, next, authorizations);
+                return maker.make(includeHidden);
+            }
+
+            @Override
+            protected Iterator<Iterator<Map.Entry<Key, Value>>> createIterator() {
+                scanner = createEdgeScanner(fetchHints, authorizations);
+                scanner.setRange(new Range(startKey, endKey));
+                return new RowIterator(scanner.iterator());
+            }
+
+            @Override
+            public void close() {
+                super.close();
+                scanner.close();
+            }
+        };
     }
 }

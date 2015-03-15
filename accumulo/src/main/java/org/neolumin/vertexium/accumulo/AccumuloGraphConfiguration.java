@@ -9,6 +9,9 @@ import org.neolumin.vertexium.GraphConfiguration;
 import org.neolumin.vertexium.VertexiumException;
 import org.neolumin.vertexium.accumulo.serializer.JavaValueSerializer;
 import org.neolumin.vertexium.accumulo.serializer.ValueSerializer;
+import org.neolumin.vertexium.id.IdentityNameSubstitutionStrategy;
+import org.neolumin.vertexium.id.SimpleNameSubstitutionStrategy;
+import org.neolumin.vertexium.id.NameSubstitutionStrategy;
 import org.neolumin.vertexium.util.ConfigurationUtils;
 import org.neolumin.vertexium.util.MapUtils;
 import org.slf4j.Logger;
@@ -32,6 +35,7 @@ public class AccumuloGraphConfiguration extends GraphConfiguration {
     public static final String ACCUMULO_PASSWORD = "password";
     public static final String ZOOKEEPER_SERVERS = "zookeeperServers";
     public static final String VALUE_SERIALIZER_PROP_PREFIX = "serializer";
+    public static final String NAME_SUBSTITUTION_STRATEGY_PROP_PREFIX = "nameSubstitutionStrategy";
     public static final String TABLE_NAME_PREFIX = "tableNamePrefix";
     public static final String MAX_STREAMING_PROPERTY_VALUE_TABLE_DATA_SIZE = "maxStreamingPropertyValueTableDataSize";
     public static final String HDFS_USER = HDFS_CONFIG_PREFIX + ".user";
@@ -54,6 +58,7 @@ public class AccumuloGraphConfiguration extends GraphConfiguration {
     public static final String DEFAULT_HDFS_ROOT_DIR = "";
     public static final String DEFAULT_DATA_DIR = "/accumuloGraph";
     public static final boolean DEFAULT_USE_SERVER_SIDE_ELEMENT_VISIBILITY_ROW_FILTER = true;
+    private static final String DEFAULT_NAME_SUBSTITUTION_STRATEGY = IdentityNameSubstitutionStrategy.class.getName();
     public static final Long DEFAULT_BATCHWRITER_MAX_MEMORY = 50 * 1024 * 1024l;
     public static final Long DEFAULT_BATCHWRITER_MAX_LATENCY = 2 * 60 * 1000l;
     public static final Long DEFAULT_BATCHWRITER_TIMEOUT = Long.MAX_VALUE;
@@ -145,6 +150,16 @@ public class AccumuloGraphConfiguration extends GraphConfiguration {
 
     public boolean isUseServerSideElementVisibilityRowFilter() {
         return getBoolean(USE_SERVER_SIDE_ELEMENT_VISIBILITY_ROW_FILTER, DEFAULT_USE_SERVER_SIDE_ELEMENT_VISIBILITY_ROW_FILTER);
+    }
+
+    public NameSubstitutionStrategy createSubstitutionStrategy() {
+        NameSubstitutionStrategy strategy = ConfigurationUtils.createProvider(this, NAME_SUBSTITUTION_STRATEGY_PROP_PREFIX, DEFAULT_NAME_SUBSTITUTION_STRATEGY);
+
+        if (strategy instanceof SimpleNameSubstitutionStrategy) {
+            ((SimpleNameSubstitutionStrategy) strategy).setSubstitutionList(SimpleSubstitutionUtils.getSubstitutionList(getConfig()));
+        }
+
+        return strategy;
     }
 
     public BatchWriterConfig createBatchWriterConfig() {
