@@ -39,9 +39,9 @@
         </dependency>
 
         <dependency>
-            <groupId>com.altamiracorp.miniweb</groupId>
-            <artifactId>miniweb</artifactId>
-            <version>${miniweb.version}</version>
+            <groupId>org.neolumin.webster</groupId>
+            <artifactId>webster</artifactId>
+            <version>${webster.version}</version>
         </dependency>
         <dependency>
             <groupId>com.beust</groupId>

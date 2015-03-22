@@ -1,7 +1,5 @@
 package org.neolumin.vertexium.examples;
 
-import com.altamiracorp.miniweb.App;
-import com.altamiracorp.miniweb.HandlerChain;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.neolumin.vertexium.Authorizations;
@@ -9,6 +7,8 @@ import org.neolumin.vertexium.Vertex;
 import org.neolumin.vertexium.query.*;
 import org.neolumin.vertexium.type.GeoPoint;
 import org.neolumin.vertexium.type.GeoRect;
+import org.neolumin.webster.App;
+import org.neolumin.webster.HandlerChain;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -198,8 +198,7 @@ public class Aggregations extends ExampleBase {
         }
 
         private RenderedImage createMap(GeohashResult geohashResults, int precision) throws IOException {
-            InputStream worldmapGifIn = this.getClass().getResourceAsStream("/worldmap.png");
-            try {
+            try (InputStream worldmapGifIn = this.getClass().getResourceAsStream("/worldmap.png")) {
                 BufferedImage img = ImageIO.read(worldmapGifIn);
                 double maxCount = geohashResults.getMaxCount();
 
@@ -220,8 +219,6 @@ public class Aggregations extends ExampleBase {
                     g.dispose();
                 }
                 return img;
-            } finally {
-                worldmapGifIn.close();
             }
         }
     }

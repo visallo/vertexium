@@ -1,6 +1,6 @@
 package org.neolumin.vertexium.examples;
 
-import com.altamiracorp.miniweb.Handler;
+import org.neolumin.webster.Handler;
 
 import javax.servlet.http.HttpServletRequest;
 

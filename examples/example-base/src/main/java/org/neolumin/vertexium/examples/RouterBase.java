@@ -1,8 +1,8 @@
 package org.neolumin.vertexium.examples;
 
-import com.altamiracorp.miniweb.App;
-import com.altamiracorp.miniweb.StaticFileHandler;
-import com.altamiracorp.miniweb.StaticResourceHandler;
+import org.neolumin.webster.App;
+import org.neolumin.webster.handlers.StaticFileHandler;
+import org.neolumin.webster.handlers.StaticResourceHandler;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
@@ -20,13 +20,13 @@ public abstract class RouterBase extends HttpServlet {
     public void init(ServletConfig config) throws ServletException {
         super.init(config);
 
-        app = new App(config);
+        app = new App(config.getServletContext());
 
         initApp(config, app);
     }
 
     protected void initApp(ServletConfig config, App app) {
-        app.get("/", new StaticFileHandler(config, "/index.html"));
+        app.get("/", new StaticFileHandler(config.getServletContext(), "/index.html"));
         app.get("/jquery.js", new StaticResourceHandler(RouterBase.class, "/org/neolumin/vertexium/examples/jquery.js", "text/javascript"));
     }
 
