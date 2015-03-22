@@ -2,6 +2,7 @@ package org.neolumin.vertexium;
 
 import org.neolumin.vertexium.id.IdGenerator;
 import org.neolumin.vertexium.query.GraphQuery;
+import org.neolumin.vertexium.query.MultiVertexQuery;
 import org.neolumin.vertexium.query.SimilarToGraphQuery;
 import org.neolumin.vertexium.search.SearchIndex;
 import org.neolumin.vertexium.util.ToElementIterable;
@@ -72,6 +73,16 @@ public abstract class GraphBaseWithSearchIndex extends GraphBase implements Grap
     @Override
     public GraphQuery query(String queryString, Authorizations authorizations) {
         return getSearchIndex().queryGraph(this, queryString, authorizations);
+    }
+
+    @Override
+    public MultiVertexQuery query(String[] vertexIds, String queryString, Authorizations authorizations) {
+        return getSearchIndex().queryGraph(this, vertexIds, queryString, authorizations);
+    }
+
+    @Override
+    public MultiVertexQuery query(String[] vertexIds, Authorizations authorizations) {
+        return getSearchIndex().queryGraph(this, vertexIds, null, authorizations);
     }
 
     @Override

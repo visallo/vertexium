@@ -47,6 +47,11 @@ public class DefaultSearchIndex implements SearchIndex {
     }
 
     @Override
+    public MultiVertexQuery queryGraph(Graph graph, String[] vertexIds, String queryString, Authorizations authorizations) {
+        return new DefaultMultiVertexQuery(graph, vertexIds, queryString, this.propertyDefinitions, authorizations);
+    }
+
+    @Override
     public VertexQuery queryVertex(Graph graph, Vertex vertex, String queryString, Authorizations authorizations) {
         return new DefaultVertexQuery(graph, vertex, queryString, this.propertyDefinitions, authorizations);
     }

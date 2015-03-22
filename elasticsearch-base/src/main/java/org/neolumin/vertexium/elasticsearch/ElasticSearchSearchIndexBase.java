@@ -19,10 +19,7 @@ import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.neolumin.vertexium.*;
 import org.neolumin.vertexium.property.StreamingPropertyValue;
-import org.neolumin.vertexium.query.DefaultVertexQuery;
-import org.neolumin.vertexium.query.GraphQuery;
-import org.neolumin.vertexium.query.SimilarToGraphQuery;
-import org.neolumin.vertexium.query.VertexQuery;
+import org.neolumin.vertexium.query.*;
 import org.neolumin.vertexium.search.SearchIndex;
 import org.neolumin.vertexium.type.GeoPoint;
 import org.slf4j.Logger;
@@ -329,6 +326,11 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex {
 
     @Override
     public abstract GraphQuery queryGraph(Graph graph, String queryString, Authorizations authorizations);
+
+    @Override
+    public MultiVertexQuery queryGraph(Graph graph, String[] vertexIds, String queryString, Authorizations authorizations) {
+        return new DefaultMultiVertexQuery(graph, vertexIds, queryString, getAllPropertyDefinitions(), authorizations);
+    }
 
     @Override
     public boolean isQuerySimilarToTextSupported() {

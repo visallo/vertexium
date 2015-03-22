@@ -3,6 +3,7 @@ package org.neolumin.vertexium;
 import org.neolumin.vertexium.event.GraphEventListener;
 import org.neolumin.vertexium.id.IdGenerator;
 import org.neolumin.vertexium.query.GraphQuery;
+import org.neolumin.vertexium.query.MultiVertexQuery;
 import org.neolumin.vertexium.query.SimilarToGraphQuery;
 
 import java.util.EnumSet;
@@ -381,6 +382,10 @@ public interface Graph {
      * @return A query builder object.
      */
     GraphQuery query(Authorizations authorizations);
+
+    MultiVertexQuery query(String[] vertexIds, String queryString, Authorizations authorizations);
+
+    MultiVertexQuery query(String[] vertexIds, Authorizations authorizations);
 
     boolean isQuerySimilarToTextSupported();
 

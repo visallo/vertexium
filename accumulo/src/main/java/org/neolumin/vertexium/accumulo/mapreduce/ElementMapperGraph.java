@@ -4,6 +4,7 @@ import org.neolumin.vertexium.*;
 import org.neolumin.vertexium.accumulo.AccumuloAuthorizations;
 import org.neolumin.vertexium.id.IdGenerator;
 import org.neolumin.vertexium.query.GraphQuery;
+import org.neolumin.vertexium.query.MultiVertexQuery;
 
 import java.util.EnumSet;
 
@@ -66,6 +67,16 @@ public class ElementMapperGraph extends GraphBase {
 
     @Override
     public GraphQuery query(String queryString, Authorizations authorizations) {
+        throw new VertexiumException("Not supported");
+    }
+
+    @Override
+    public MultiVertexQuery query(String[] vertexIds, String queryString, Authorizations authorizations) {
+        throw new VertexiumException("Not supported");
+    }
+
+    @Override
+    public MultiVertexQuery query(String[] vertexIds, Authorizations authorizations) {
         throw new VertexiumException("Not supported");
     }
 

@@ -2,6 +2,7 @@ package org.neolumin.vertexium.search;
 
 import org.neolumin.vertexium.*;
 import org.neolumin.vertexium.query.GraphQuery;
+import org.neolumin.vertexium.query.MultiVertexQuery;
 import org.neolumin.vertexium.query.SimilarToGraphQuery;
 import org.neolumin.vertexium.query.VertexQuery;
 
@@ -26,6 +27,8 @@ public interface SearchIndex {
     void addElements(Graph graph, Iterable<? extends Element> elements, Authorizations authorizations);
 
     GraphQuery queryGraph(Graph graph, String queryString, Authorizations authorizations);
+
+    MultiVertexQuery queryGraph(Graph graph, String[] vertexIds, String queryString, Authorizations authorizations);
 
     VertexQuery queryVertex(Graph graph, Vertex vertex, String queryString, Authorizations authorizations);
 
