@@ -383,12 +383,39 @@ public interface Graph {
      */
     GraphQuery query(Authorizations authorizations);
 
+    /**
+     * Creates a query builder object used to query a list of vertices.
+     *
+     * @param vertexIds      The vertex ids to query.
+     * @param queryString    The string to search for in the text of an element. This will search all fields for the given text.
+     * @param authorizations The authorizations required to load the elements.
+     * @return A query builder object.
+     */
     MultiVertexQuery query(String[] vertexIds, String queryString, Authorizations authorizations);
 
+    /**
+     * Creates a query builder object used to query a list of vertices.
+     *
+     * @param vertexIds      The vertex ids to query.
+     * @param authorizations The authorizations required to load the elements.
+     * @return A query builder object.
+     */
     MultiVertexQuery query(String[] vertexIds, Authorizations authorizations);
 
+    /**
+     * Returns true if this graph supports similar to text queries.
+     */
     boolean isQuerySimilarToTextSupported();
 
+    /**
+     * Creates a query builder object that finds all vertices similar to the given text for the specified fields.
+     * This could be implemented similar to the ElasticSearch more like this query.
+     *
+     * @param fields         The fields to match against.
+     * @param text           The text to find similar to.
+     * @param authorizations The authorizations required to load the elements.
+     * @return A query builder object.
+     */
     SimilarToGraphQuery querySimilarTo(String[] fields, String text, Authorizations authorizations);
 
     /**
