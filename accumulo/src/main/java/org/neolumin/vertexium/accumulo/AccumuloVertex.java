@@ -226,6 +226,16 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
     }
 
     @Override
+    public Iterable<org.neolumin.vertexium.EdgeInfo> getEdgeInfos(Direction direction, Authorizations authorizations) {
+        return new ConvertingIterable<Map.Entry<String, EdgeInfo>, org.neolumin.vertexium.EdgeInfo>(getEdgeInfos(direction)) {
+            @Override
+            protected org.neolumin.vertexium.EdgeInfo convert(Map.Entry<String, EdgeInfo> o) {
+                return o.getValue();
+            }
+        };
+    }
+
+    @Override
     public Iterable<Vertex> getVertices(Direction direction, EnumSet<FetchHint> fetchHints, final Authorizations authorizations) {
         return getGraph().getVertices(getVertexIds(direction, authorizations), fetchHints, authorizations);
     }

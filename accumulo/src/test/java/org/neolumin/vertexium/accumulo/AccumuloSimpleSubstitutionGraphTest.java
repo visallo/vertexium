@@ -1,7 +1,6 @@
 package org.neolumin.vertexium.accumulo;
 
 import com.google.common.base.Joiner;
-import junit.framework.Assert;
 import org.apache.accumulo.core.client.*;
 import org.apache.accumulo.core.data.Key;
 import org.apache.accumulo.core.data.Range;
@@ -28,8 +27,8 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
-import static junit.framework.Assert.*;
-import static org.junit.Assert.assertNotEquals;
+import static junit.framework.TestCase.fail;
+import static org.junit.Assert.*;
 
 @RunWith(JUnit4.class)
 public class AccumuloSimpleSubstitutionGraphTest extends GraphTestBase {
@@ -97,53 +96,53 @@ public class AccumuloSimpleSubstitutionGraphTest extends GraphTestBase {
 
         v1 = graph.getVertex("v1", FetchHint.NONE, AUTHORIZATIONS_A);
         assertNotNull(v1);
-        Assert.assertEquals(0, IterableUtils.count(v1.getProperties()));
-        Assert.assertEquals(0, IterableUtils.count(v1.getEdges(Direction.IN, AUTHORIZATIONS_A)));
-        Assert.assertEquals(0, IterableUtils.count(v1.getEdges(Direction.OUT, AUTHORIZATIONS_A)));
+        assertEquals(0, IterableUtils.count(v1.getProperties()));
+        assertEquals(0, IterableUtils.count(v1.getEdges(Direction.IN, AUTHORIZATIONS_A)));
+        assertEquals(0, IterableUtils.count(v1.getEdges(Direction.OUT, AUTHORIZATIONS_A)));
 
         v1 = graph.getVertex("v1", FetchHint.ALL, AUTHORIZATIONS_A);
         assertNotNull(v1);
-        Assert.assertEquals(1, IterableUtils.count(v1.getProperties()));
-        Assert.assertEquals(1, IterableUtils.count(v1.getEdges(Direction.IN, AUTHORIZATIONS_A)));
-        Assert.assertEquals(1, IterableUtils.count(v1.getEdges(Direction.OUT, AUTHORIZATIONS_A)));
+        assertEquals(1, IterableUtils.count(v1.getProperties()));
+        assertEquals(1, IterableUtils.count(v1.getEdges(Direction.IN, AUTHORIZATIONS_A)));
+        assertEquals(1, IterableUtils.count(v1.getEdges(Direction.OUT, AUTHORIZATIONS_A)));
 
         v1 = graph.getVertex("v1", EnumSet.of(FetchHint.PROPERTIES), AUTHORIZATIONS_A);
         assertNotNull(v1);
-        Assert.assertEquals(1, IterableUtils.count(v1.getProperties()));
-        Assert.assertEquals(0, IterableUtils.count(v1.getEdges(Direction.IN, AUTHORIZATIONS_A)));
-        Assert.assertEquals(0, IterableUtils.count(v1.getEdges(Direction.OUT, AUTHORIZATIONS_A)));
+        assertEquals(1, IterableUtils.count(v1.getProperties()));
+        assertEquals(0, IterableUtils.count(v1.getEdges(Direction.IN, AUTHORIZATIONS_A)));
+        assertEquals(0, IterableUtils.count(v1.getEdges(Direction.OUT, AUTHORIZATIONS_A)));
 
         v1 = graph.getVertex("v1", FetchHint.EDGE_REFS, AUTHORIZATIONS_A);
         assertNotNull(v1);
-        Assert.assertEquals(0, IterableUtils.count(v1.getProperties()));
-        Assert.assertEquals(1, IterableUtils.count(v1.getEdges(Direction.IN, AUTHORIZATIONS_A)));
-        Assert.assertEquals(1, IterableUtils.count(v1.getEdges(Direction.OUT, AUTHORIZATIONS_A)));
+        assertEquals(0, IterableUtils.count(v1.getProperties()));
+        assertEquals(1, IterableUtils.count(v1.getEdges(Direction.IN, AUTHORIZATIONS_A)));
+        assertEquals(1, IterableUtils.count(v1.getEdges(Direction.OUT, AUTHORIZATIONS_A)));
 
         v1 = graph.getVertex("v1", EnumSet.of(FetchHint.IN_EDGE_REFS), AUTHORIZATIONS_A);
         assertNotNull(v1);
-        Assert.assertEquals(0, IterableUtils.count(v1.getProperties()));
-        Assert.assertEquals(1, IterableUtils.count(v1.getEdges(Direction.IN, AUTHORIZATIONS_A)));
-        Assert.assertEquals(0, IterableUtils.count(v1.getEdges(Direction.OUT, AUTHORIZATIONS_A)));
+        assertEquals(0, IterableUtils.count(v1.getProperties()));
+        assertEquals(1, IterableUtils.count(v1.getEdges(Direction.IN, AUTHORIZATIONS_A)));
+        assertEquals(0, IterableUtils.count(v1.getEdges(Direction.OUT, AUTHORIZATIONS_A)));
 
         v1 = graph.getVertex("v1", EnumSet.of(FetchHint.OUT_EDGE_REFS), AUTHORIZATIONS_A);
         assertNotNull(v1);
-        Assert.assertEquals(0, IterableUtils.count(v1.getProperties()));
-        Assert.assertEquals(0, IterableUtils.count(v1.getEdges(Direction.IN, AUTHORIZATIONS_A)));
-        Assert.assertEquals(1, IterableUtils.count(v1.getEdges(Direction.OUT, AUTHORIZATIONS_A)));
+        assertEquals(0, IterableUtils.count(v1.getProperties()));
+        assertEquals(0, IterableUtils.count(v1.getEdges(Direction.IN, AUTHORIZATIONS_A)));
+        assertEquals(1, IterableUtils.count(v1.getEdges(Direction.OUT, AUTHORIZATIONS_A)));
 
         e1 = graph.getEdge("e1", FetchHint.NONE, AUTHORIZATIONS_A);
         assertNotNull(e1);
-        Assert.assertEquals(0, IterableUtils.count(e1.getProperties()));
+        assertEquals(0, IterableUtils.count(e1.getProperties()));
         assertEquals("v1", e1.getVertexId(Direction.OUT));
         assertEquals("v2", e1.getVertexId(Direction.IN));
 
         e1 = graph.getEdge("e1", FetchHint.ALL, AUTHORIZATIONS_A);
-        Assert.assertEquals(1, IterableUtils.count(e1.getProperties()));
+        assertEquals(1, IterableUtils.count(e1.getProperties()));
         assertEquals("v1", e1.getVertexId(Direction.OUT));
         assertEquals("v2", e1.getVertexId(Direction.IN));
 
         e1 = graph.getEdge("e1", EnumSet.of(FetchHint.PROPERTIES), AUTHORIZATIONS_A);
-        Assert.assertEquals(1, IterableUtils.count(e1.getProperties()));
+        assertEquals(1, IterableUtils.count(e1.getProperties()));
         assertEquals("v1", e1.getVertexId(Direction.OUT));
         assertEquals("v2", e1.getVertexId(Direction.IN));
     }
@@ -225,8 +224,8 @@ public class AccumuloSimpleSubstitutionGraphTest extends GraphTestBase {
         configMap.put(AccumuloGraphConfiguration.AUTO_FLUSH, true);
         configMap.put(AccumuloGraphConfiguration.MAX_STREAMING_PROPERTY_VALUE_TABLE_DATA_SIZE, GraphTestBase.LARGE_PROPERTY_VALUE_SIZE - 1);
         configMap.put(AccumuloGraphConfiguration.NAME_SUBSTITUTION_STRATEGY_PROP_PREFIX, SimpleNameSubstitutionStrategy.class.getName());
-        configMap.put(Joiner.on('.').join(new String[] {SimpleSubstitutionUtils.SUBSTITUTION_MAP_PREFIX, "0", SimpleSubstitutionUtils.KEY_IDENTIFIER }), "k1");
-        configMap.put(Joiner.on('.').join(new String[] {SimpleSubstitutionUtils.SUBSTITUTION_MAP_PREFIX, "0", SimpleSubstitutionUtils.VALUE_IDENTIFIER }), "k");
+        configMap.put(Joiner.on('.').join(new String[]{SimpleSubstitutionUtils.SUBSTITUTION_MAP_PREFIX, "0", SimpleSubstitutionUtils.KEY_IDENTIFIER}), "k1");
+        configMap.put(Joiner.on('.').join(new String[]{SimpleSubstitutionUtils.SUBSTITUTION_MAP_PREFIX, "0", SimpleSubstitutionUtils.VALUE_IDENTIFIER}), "k");
         configMap.put(AccumuloGraphConfiguration.DATA_DIR, "/tmp/");
         return configMap;
     }
@@ -248,7 +247,7 @@ public class AccumuloSimpleSubstitutionGraphTest extends GraphTestBase {
         }
     }
 
-    private AccumuloGraphConfiguration createConfiguration(){
+    private AccumuloGraphConfiguration createConfiguration() {
         return new AccumuloGraphConfiguration(createConfig());
     }
 }

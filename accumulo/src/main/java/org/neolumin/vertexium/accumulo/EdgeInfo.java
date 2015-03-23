@@ -7,7 +7,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 // We are doing custom serialization to make this as fast as possible since this can get called many times
-public class EdgeInfo {
+public class EdgeInfo implements org.neolumin.vertexium.EdgeInfo {
     public static final String CHARSET_NAME = "UTF-8";
     private final byte[] bytes;
     private transient boolean decoded;

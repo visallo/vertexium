@@ -1,6 +1,5 @@
 package org.neolumin.vertexium.accumulo;
 
-import junit.framework.Assert;
 import org.apache.accumulo.core.client.*;
 import org.apache.accumulo.core.data.Key;
 import org.apache.accumulo.core.data.Range;
@@ -26,8 +25,8 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
-import static junit.framework.Assert.*;
-import static org.junit.Assert.assertNotEquals;
+import static junit.framework.TestCase.fail;
+import static org.junit.Assert.*;
 
 @RunWith(JUnit4.class)
 public class AccumuloGraphTest extends GraphTestBase {
@@ -95,53 +94,53 @@ public class AccumuloGraphTest extends GraphTestBase {
 
         v1 = graph.getVertex("v1", FetchHint.NONE, AUTHORIZATIONS_A);
         assertNotNull(v1);
-        Assert.assertEquals(0, IterableUtils.count(v1.getProperties()));
-        Assert.assertEquals(0, IterableUtils.count(v1.getEdges(Direction.IN, AUTHORIZATIONS_A)));
-        Assert.assertEquals(0, IterableUtils.count(v1.getEdges(Direction.OUT, AUTHORIZATIONS_A)));
+        assertEquals(0, IterableUtils.count(v1.getProperties()));
+        assertEquals(0, IterableUtils.count(v1.getEdges(Direction.IN, AUTHORIZATIONS_A)));
+        assertEquals(0, IterableUtils.count(v1.getEdges(Direction.OUT, AUTHORIZATIONS_A)));
 
         v1 = graph.getVertex("v1", FetchHint.ALL, AUTHORIZATIONS_A);
         assertNotNull(v1);
-        Assert.assertEquals(1, IterableUtils.count(v1.getProperties()));
-        Assert.assertEquals(1, IterableUtils.count(v1.getEdges(Direction.IN, AUTHORIZATIONS_A)));
-        Assert.assertEquals(1, IterableUtils.count(v1.getEdges(Direction.OUT, AUTHORIZATIONS_A)));
+        assertEquals(1, IterableUtils.count(v1.getProperties()));
+        assertEquals(1, IterableUtils.count(v1.getEdges(Direction.IN, AUTHORIZATIONS_A)));
+        assertEquals(1, IterableUtils.count(v1.getEdges(Direction.OUT, AUTHORIZATIONS_A)));
 
         v1 = graph.getVertex("v1", EnumSet.of(FetchHint.PROPERTIES), AUTHORIZATIONS_A);
         assertNotNull(v1);
-        Assert.assertEquals(1, IterableUtils.count(v1.getProperties()));
-        Assert.assertEquals(0, IterableUtils.count(v1.getEdges(Direction.IN, AUTHORIZATIONS_A)));
-        Assert.assertEquals(0, IterableUtils.count(v1.getEdges(Direction.OUT, AUTHORIZATIONS_A)));
+        assertEquals(1, IterableUtils.count(v1.getProperties()));
+        assertEquals(0, IterableUtils.count(v1.getEdges(Direction.IN, AUTHORIZATIONS_A)));
+        assertEquals(0, IterableUtils.count(v1.getEdges(Direction.OUT, AUTHORIZATIONS_A)));
 
         v1 = graph.getVertex("v1", FetchHint.EDGE_REFS, AUTHORIZATIONS_A);
         assertNotNull(v1);
-        Assert.assertEquals(0, IterableUtils.count(v1.getProperties()));
-        Assert.assertEquals(1, IterableUtils.count(v1.getEdges(Direction.IN, AUTHORIZATIONS_A)));
-        Assert.assertEquals(1, IterableUtils.count(v1.getEdges(Direction.OUT, AUTHORIZATIONS_A)));
+        assertEquals(0, IterableUtils.count(v1.getProperties()));
+        assertEquals(1, IterableUtils.count(v1.getEdges(Direction.IN, AUTHORIZATIONS_A)));
+        assertEquals(1, IterableUtils.count(v1.getEdges(Direction.OUT, AUTHORIZATIONS_A)));
 
         v1 = graph.getVertex("v1", EnumSet.of(FetchHint.IN_EDGE_REFS), AUTHORIZATIONS_A);
         assertNotNull(v1);
-        Assert.assertEquals(0, IterableUtils.count(v1.getProperties()));
-        Assert.assertEquals(1, IterableUtils.count(v1.getEdges(Direction.IN, AUTHORIZATIONS_A)));
-        Assert.assertEquals(0, IterableUtils.count(v1.getEdges(Direction.OUT, AUTHORIZATIONS_A)));
+        assertEquals(0, IterableUtils.count(v1.getProperties()));
+        assertEquals(1, IterableUtils.count(v1.getEdges(Direction.IN, AUTHORIZATIONS_A)));
+        assertEquals(0, IterableUtils.count(v1.getEdges(Direction.OUT, AUTHORIZATIONS_A)));
 
         v1 = graph.getVertex("v1", EnumSet.of(FetchHint.OUT_EDGE_REFS), AUTHORIZATIONS_A);
         assertNotNull(v1);
-        Assert.assertEquals(0, IterableUtils.count(v1.getProperties()));
-        Assert.assertEquals(0, IterableUtils.count(v1.getEdges(Direction.IN, AUTHORIZATIONS_A)));
-        Assert.assertEquals(1, IterableUtils.count(v1.getEdges(Direction.OUT, AUTHORIZATIONS_A)));
+        assertEquals(0, IterableUtils.count(v1.getProperties()));
+        assertEquals(0, IterableUtils.count(v1.getEdges(Direction.IN, AUTHORIZATIONS_A)));
+        assertEquals(1, IterableUtils.count(v1.getEdges(Direction.OUT, AUTHORIZATIONS_A)));
 
         e1 = graph.getEdge("e1", FetchHint.NONE, AUTHORIZATIONS_A);
         assertNotNull(e1);
-        Assert.assertEquals(0, IterableUtils.count(e1.getProperties()));
+        assertEquals(0, IterableUtils.count(e1.getProperties()));
         assertEquals("v1", e1.getVertexId(Direction.OUT));
         assertEquals("v2", e1.getVertexId(Direction.IN));
 
         e1 = graph.getEdge("e1", FetchHint.ALL, AUTHORIZATIONS_A);
-        Assert.assertEquals(1, IterableUtils.count(e1.getProperties()));
+        assertEquals(1, IterableUtils.count(e1.getProperties()));
         assertEquals("v1", e1.getVertexId(Direction.OUT));
         assertEquals("v2", e1.getVertexId(Direction.IN));
 
         e1 = graph.getEdge("e1", EnumSet.of(FetchHint.PROPERTIES), AUTHORIZATIONS_A);
-        Assert.assertEquals(1, IterableUtils.count(e1.getProperties()));
+        assertEquals(1, IterableUtils.count(e1.getProperties()));
         assertEquals("v1", e1.getVertexId(Direction.OUT));
         assertEquals("v2", e1.getVertexId(Direction.IN));
     }
@@ -243,7 +242,7 @@ public class AccumuloGraphTest extends GraphTestBase {
         }
     }
 
-    private AccumuloGraphConfiguration createConfiguration(){
+    private AccumuloGraphConfiguration createConfiguration() {
         return new AccumuloGraphConfiguration(createConfig());
     }
 }

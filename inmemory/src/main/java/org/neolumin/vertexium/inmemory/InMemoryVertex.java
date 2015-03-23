@@ -31,6 +31,26 @@ public class InMemoryVertex extends InMemoryElement implements Vertex {
     }
 
     @Override
+    public Iterable<EdgeInfo> getEdgeInfos(Direction direction, Authorizations authorizations) {
+        return new ConvertingIterable<Edge, EdgeInfo>(getEdges(direction, authorizations)) {
+            @Override
+            protected EdgeInfo convert(final Edge o) {
+                return new EdgeInfo() {
+                    @Override
+                    public String getLabel() {
+                        return o.getLabel();
+                    }
+
+                    @Override
+                    public String getVertexId() {
+                        return o.getOtherVertexId(InMemoryVertex.this.getId());
+                    }
+                };
+            }
+        };
+    }
+
+    @Override
     public Iterable<Edge> getEdges(final Direction direction, EnumSet<FetchHint> fetchHints, Authorizations authorizations) {
         return new FilterIterable<Edge>(getGraph().getEdgesFromVertex(getId(), fetchHints, authorizations)) {
             @Override

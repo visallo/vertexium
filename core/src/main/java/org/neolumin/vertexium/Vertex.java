@@ -144,11 +144,43 @@ public interface Vertex extends Element {
      */
     Iterable<Edge> getEdges(Vertex otherVertex, Direction direction, String[] labels, EnumSet<FetchHint> fetchHints, Authorizations authorizations);
 
+    /**
+     * Gets a list of edge ids between this vertex and another vertex.
+     *
+     * @param otherVertex    The other vertex to find edges on.
+     * @param direction      The direction of the edge.
+     * @param labels         The labels to search for.
+     * @param authorizations The authorizations used to find the edges.
+     * @return An Iterable of edge ids.
+     */
     Iterable<String> getEdgeIds(Vertex otherVertex, Direction direction, String[] labels, Authorizations authorizations);
 
+    /**
+     * Gets count of edges on this vertex.
+     *
+     * @param direction      The direction of the edges to get a count on.
+     * @param authorizations The authorizations used to find the edges.
+     * @return The count of edges.
+     */
     int getEdgeCount(Direction direction, Authorizations authorizations);
 
+    /**
+     * Gets a list of edge labels.
+     *
+     * @param direction      The direction of the edge.
+     * @param authorizations The authorizations used to find the edges.
+     * @return An Iterable of edge labels.
+     */
     Iterable<String> getEdgeLabels(Direction direction, Authorizations authorizations);
+
+    /**
+     * Get a list of EdgeInfo.
+     *
+     * @param direction      The direction of the edge.
+     * @param authorizations The authorizations used to find the edges.
+     * @return An Iterable of EdgeInfo.
+     */
+    Iterable<EdgeInfo> getEdgeInfos(Direction direction, Authorizations authorizations);
 
     /**
      * Similar to getEdges but gets the vertices on the other side of the edges attached to this vertex.
