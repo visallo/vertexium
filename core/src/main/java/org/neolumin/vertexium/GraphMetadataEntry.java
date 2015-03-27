@@ -1,12 +1,15 @@
 package org.neolumin.vertexium;
 
+import org.neolumin.vertexium.util.JavaSerializableUtils;
+
 public class GraphMetadataEntry {
     private String key;
-    private Object value;
+    private byte[] valueData;
+    private volatile Object value;
 
-    public GraphMetadataEntry(String key, Object value) {
+    public GraphMetadataEntry(String key, byte[] valueData) {
         this.key = key;
-        this.value = value;
+        this.valueData = valueData;
     }
 
     public String getKey() {
@@ -14,7 +17,10 @@ public class GraphMetadataEntry {
     }
 
     public Object getValue() {
-        return value;
+        if (value != null) {
+            return value;
+        }
+        return value = JavaSerializableUtils.bytesToObject(valueData);
     }
 
     @Override

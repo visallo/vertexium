@@ -1292,8 +1292,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
             @Override
             protected GraphMetadataEntry convert(Map.Entry<Key, Value> entry) {
                 String key = entry.getKey().getRow().toString();
-                Object value = JavaSerializableUtils.bytesToObject(entry.getValue().get());
-                return new GraphMetadataEntry(key, value);
+                return new GraphMetadataEntry(key, entry.getValue().get());
             }
 
             @Override
