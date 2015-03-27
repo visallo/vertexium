@@ -9,6 +9,7 @@ import org.neolumin.vertexium.mutation.SetPropertyMetadata;
 import org.neolumin.vertexium.search.IndexHint;
 import org.neolumin.vertexium.search.SearchIndex;
 import org.neolumin.vertexium.util.ConvertingIterable;
+import org.neolumin.vertexium.util.JavaSerializableUtils;
 import org.neolumin.vertexium.util.LookAheadIterable;
 
 import java.util.*;
@@ -20,7 +21,7 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
     private static final InMemoryGraphConfiguration DEFAULT_CONFIGURATION = new InMemoryGraphConfiguration(new HashMap());
     private final Map<String, InMemoryVertex> vertices;
     private final Map<String, InMemoryEdge> edges;
-    private final Map<String, Object> metadata = new HashMap<>();
+    private final Map<String, byte[]> metadata = new HashMap<>();
 
     protected InMemoryGraph(InMemoryGraphConfiguration configuration, IdGenerator idGenerator, SearchIndex searchIndex) {
         this(configuration, idGenerator, searchIndex, new HashMap<String, InMemoryVertex>(), new HashMap<String, InMemoryEdge>());
@@ -341,9 +342,9 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
 
     @Override
     public Iterable<GraphMetadataEntry> getMetadata() {
-        return new ConvertingIterable<Map.Entry<String, Object>, GraphMetadataEntry>(this.metadata.entrySet()) {
+        return new ConvertingIterable<Map.Entry<String, byte[]>, GraphMetadataEntry>(this.metadata.entrySet()) {
             @Override
-            protected GraphMetadataEntry convert(Map.Entry<String, Object> o) {
+            protected GraphMetadataEntry convert(Map.Entry<String, byte[]> o) {
                 return new GraphMetadataEntry(o.getKey(), o.getValue());
             }
         };
@@ -356,7 +357,7 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
 
     @Override
     public void setMetadata(String key, Object value) {
-        this.metadata.put(key, value);
+        this.metadata.put(key, JavaSerializableUtils.objectToBytes(value));
     }
 
     @Override
