@@ -38,21 +38,20 @@ public abstract class GraphBaseWithSearchIndex extends GraphBase implements Grap
     }
 
     protected void setupGraphMetadata(GraphMetadataEntry graphMetadataEntry) {
-        Object v = graphMetadataEntry.getValue();
         if (graphMetadataEntry.getKey().startsWith(METADATA_DEFINE_PROPERTY_PREFIX)) {
-            if (v instanceof PropertyDefinition) {
-                setupPropertyDefinition((PropertyDefinition) v);
+            if (graphMetadataEntry.getValue() instanceof PropertyDefinition) {
+                setupPropertyDefinition((PropertyDefinition) graphMetadataEntry.getValue());
             } else {
-                throw new VertexiumException("Invalid property definition metadata: " + graphMetadataEntry.getKey() + " expected " + PropertyDefinition.class.getName() + " found " + v.getClass().getName());
+                throw new VertexiumException("Invalid property definition metadata: " + graphMetadataEntry.getKey() + " expected " + PropertyDefinition.class.getName() + " found " + graphMetadataEntry.getValue().getClass().getName());
             }
         } else if (graphMetadataEntry.getKey().equals(METADATA_ID_GENERATOR_CLASSNAME)) {
-            if (v instanceof String) {
+            if (graphMetadataEntry.getValue() instanceof String) {
                 String idGeneratorClassname = (String) graphMetadataEntry.getValue();
                 if (idGeneratorClassname.equals(idGenerator.getClass().getName())) {
                     foundIdGeneratorClassnameInMetadata = true;
                 }
             } else {
-                throw new VertexiumException("Invalid " + METADATA_ID_GENERATOR_CLASSNAME + " expected String found " + v.getClass().getName());
+                throw new VertexiumException("Invalid " + METADATA_ID_GENERATOR_CLASSNAME + " expected String found " + graphMetadataEntry.getValue().getClass().getName());
             }
         }
     }
