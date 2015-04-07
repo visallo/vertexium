@@ -2660,6 +2660,34 @@ public abstract class GraphTestBase {
         assertEquals("v3", vertices.get(2).getId());
     }
 
+    @Test
+    public void testPropertyVersions() {
+        Metadata metadata = new Metadata();
+
+        Date time25 = createDate(2015, 4, 6, 16, 15, 0);
+        Date time30 = createDate(2015, 4, 6, 16, 16, 0);
+
+        graph.prepareVertex("v1", VISIBILITY_A)
+                .addPropertyValue("", "age", 25, metadata, time25.getTime(), VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
+
+        graph.prepareVertex("v1", VISIBILITY_A)
+                .addPropertyValue("", "age", 30, metadata, time30.getTime(), VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
+        graph.flush();
+
+        Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
+        List<HistoricalPropertyValue> values = toList(v1.getHistoricalPropertyValues("", "age", VISIBILITY_A, AUTHORIZATIONS_A));
+        assertEquals(2, values.size());
+        assertEquals(30, values.get(0).getValue());
+        assertEquals(time30, new Date(values.get(0).getTimestamp()));
+        assertEquals(25, values.get(1).getValue());
+        assertEquals(time25, new Date(values.get(1).getTimestamp()));
+
+        // make sure we get the correct age when we only ask for one value
+        assertEquals(30, v1.getPropertyValue("", "age"));
+    }
+
     private List<Vertex> getVertices(long count) {
         List<Vertex> vertices = new ArrayList<>();
         for (int i = 0; i < count; i++) {

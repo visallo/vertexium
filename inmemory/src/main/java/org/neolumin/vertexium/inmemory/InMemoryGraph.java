@@ -62,7 +62,16 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
         return new VertexBuilder(vertexId, visibility) {
             @Override
             public Vertex save(Authorizations authorizations) {
-                InMemoryVertex newVertex = new InMemoryVertex(InMemoryGraph.this, getVertexId(), getVisibility(), getProperties(), getPropertyRemoves(), null, authorizations);
+                InMemoryVertex newVertex = new InMemoryVertex(
+                        InMemoryGraph.this,
+                        getVertexId(),
+                        getVisibility(),
+                        getProperties(),
+                        new InMemoryHistoricalPropertyValues(),
+                        getPropertyRemoves(),
+                        null,
+                        authorizations
+                );
 
                 // to more closely simulate how accumulo works. add a potentially sparse (in case of an update) vertex to the search index.
                 if (getIndexHint() != IndexHint.DO_NOT_INDEX) {
@@ -271,6 +280,7 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
                 edgeLabel,
                 edgeBuilder.getVisibility(),
                 properties,
+                new InMemoryHistoricalPropertyValues(),
                 edgeBuilder.getPropertyRemoves(),
                 hiddenVisibilities,
                 authorizations
@@ -352,7 +362,7 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
 
     @Override
     public Object getMetadata(String key) {
-        return this.metadata.get(key);
+        return JavaSerializableUtils.bytesToObject(this.metadata.get(key));
     }
 
     @Override
@@ -524,7 +534,19 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
         Visibility visibility = edge.getVisibility();
         Iterable<Visibility> hiddenVisibilities = edge.getHiddenVisibilities();
         List<Property> properties = filterProperties(edge.getProperties(), includeHidden, authorizations);
-        return new InMemoryEdge(this, edgeId, outVertexId, inVertexId, label, visibility, properties, edge.getPropertyRemoveMutations(), hiddenVisibilities, authorizations);
+        return new InMemoryEdge(
+                this,
+                edgeId,
+                outVertexId,
+                inVertexId,
+                label,
+                visibility,
+                properties,
+                edge.getHistoricalPropertyValues(),
+                edge.getPropertyRemoveMutations(),
+                hiddenVisibilities,
+                authorizations
+        );
     }
 
     private Vertex filteredVertex(InMemoryVertex vertex, boolean includeHidden, Authorizations authorizations) {
@@ -532,7 +554,16 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
         Visibility visibility = vertex.getVisibility();
         Iterable<Visibility> hiddenVisibilities = vertex.getHiddenVisibilities();
         List<Property> properties = filterProperties(vertex.getProperties(), includeHidden, authorizations);
-        return new InMemoryVertex(this, vertexId, visibility, properties, vertex.getPropertyRemoveMutations(), hiddenVisibilities, authorizations);
+        return new InMemoryVertex(
+                this,
+                vertexId,
+                visibility,
+                properties,
+                vertex.getHistoricalPropertyValues(),
+                vertex.getPropertyRemoveMutations(),
+                hiddenVisibilities,
+                authorizations
+        );
     }
 
     private List<Property> filterProperties(Iterable<Property> properties, boolean includeHidden, Authorizations authorizations) {
@@ -622,5 +653,22 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
             throw new VertexiumException("Could not find edge " + edgeId);
         }
         edge.setLabel(newEdgeLabel);
+    }
+
+    public Iterable<HistoricalPropertyValue> getHistoricalPropertyValues(
+            Element element,
+            String propertyKey,
+            String propertyName,
+            Visibility propertyVisibility,
+            Authorizations authorizations
+    ) {
+        if (element instanceof InMemoryElement) {
+            return ((InMemoryElement) element).internalGetHistoricalPropertyValues(propertyKey, propertyName, propertyVisibility);
+        } else if (element instanceof Vertex) {
+            return this.vertices.get(element.getId()).internalGetHistoricalPropertyValues(propertyKey, propertyName, propertyVisibility);
+        } else if (element instanceof Edge) {
+            return this.edges.get(element.getId()).internalGetHistoricalPropertyValues(propertyKey, propertyName, propertyVisibility);
+        }
+        throw new VertexiumException("Unhandled element type: " + element);
     }
 }

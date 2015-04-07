@@ -19,11 +19,12 @@ public class InMemoryEdge extends InMemoryElement implements Edge {
             String label,
             Visibility visibility,
             Iterable<Property> properties,
+            InMemoryHistoricalPropertyValues historicalPropertyValues,
             Iterable<PropertyRemoveMutation> propertyRemoveMutations,
             Iterable<Visibility> hiddenVisibilities,
             Authorizations authorizations
     ) {
-        super(graph, edgeId, visibility, properties, propertyRemoveMutations, hiddenVisibilities, authorizations);
+        super(graph, edgeId, visibility, properties, historicalPropertyValues, propertyRemoveMutations, hiddenVisibilities, authorizations);
         this.outVertexId = outVertexId;
         this.inVertexId = inVertexId;
         this.label = label;

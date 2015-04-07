@@ -10,8 +10,8 @@ import org.neolumin.vertexium.VertexiumException;
 import org.neolumin.vertexium.accumulo.serializer.JavaValueSerializer;
 import org.neolumin.vertexium.accumulo.serializer.ValueSerializer;
 import org.neolumin.vertexium.id.IdentityNameSubstitutionStrategy;
-import org.neolumin.vertexium.id.SimpleNameSubstitutionStrategy;
 import org.neolumin.vertexium.id.NameSubstitutionStrategy;
+import org.neolumin.vertexium.id.SimpleNameSubstitutionStrategy;
 import org.neolumin.vertexium.util.ConfigurationUtils;
 import org.neolumin.vertexium.util.MapUtils;
 import org.slf4j.Logger;
@@ -34,6 +34,7 @@ public class AccumuloGraphConfiguration extends GraphConfiguration {
     public static final String ACCUMULO_USERNAME = "username";
     public static final String ACCUMULO_PASSWORD = "password";
     public static final String ZOOKEEPER_SERVERS = "zookeeperServers";
+    public static final String ACCUMULO_MAX_VERSIONS = "maxVersions";
     public static final String VALUE_SERIALIZER_PROP_PREFIX = "serializer";
     public static final String NAME_SUBSTITUTION_STRATEGY_PROP_PREFIX = "nameSubstitutionStrategy";
     public static final String TABLE_NAME_PREFIX = "tableNamePrefix";
@@ -63,6 +64,7 @@ public class AccumuloGraphConfiguration extends GraphConfiguration {
     public static final Long DEFAULT_BATCHWRITER_MAX_LATENCY = 2 * 60 * 1000l;
     public static final Long DEFAULT_BATCHWRITER_TIMEOUT = Long.MAX_VALUE;
     public static final Integer DEFAULT_BATCHWRITER_MAX_WRITE_THREADS = 3;
+    public static final Integer DEFAULT_ACCUMULO_MAX_VERSIONS = null;
 
     public AccumuloGraphConfiguration(Map config) {
         super(config);
@@ -174,5 +176,9 @@ public class AccumuloGraphConfiguration extends GraphConfiguration {
         config.setMaxWriteThreads(maxWriteThreads);
         config.setTimeout(timeout, TimeUnit.MILLISECONDS);
         return config;
+    }
+
+    public Integer getMaxVersions() {
+        return getInteger(ACCUMULO_MAX_VERSIONS, DEFAULT_ACCUMULO_MAX_VERSIONS);
     }
 }

@@ -1,7 +1,6 @@
 package org.neolumin.vertexium.accumulo;
 
 import org.neolumin.vertexium.Authorizations;
-import org.neolumin.vertexium.HasTimestamp;
 import org.neolumin.vertexium.Metadata;
 import org.neolumin.vertexium.Visibility;
 import org.neolumin.vertexium.accumulo.serializer.ValueSerializer;
@@ -10,12 +9,12 @@ import org.neolumin.vertexium.property.MutableProperty;
 import java.util.HashSet;
 import java.util.Set;
 
-public class LazyMutableProperty extends MutableProperty implements HasTimestamp {
+public class LazyMutableProperty extends MutableProperty {
     private final AccumuloGraph graph;
     private final ValueSerializer valueSerializer;
     private final String propertyKey;
     private final String propertyName;
-    private final long timestamp;
+    private Long timestamp;
     private Set<Visibility> hiddenVisibilities;
     private byte[] propertyValue;
     private final LazyPropertyMetadata metadata;
@@ -52,6 +51,11 @@ public class LazyMutableProperty extends MutableProperty implements HasTimestamp
     }
 
     @Override
+    public void setTimestamp(Long timestamp) {
+        this.timestamp = timestamp;
+    }
+
+    @Override
     public void setVisibility(Visibility visibility) {
         this.visibility = visibility;
     }
@@ -59,7 +63,7 @@ public class LazyMutableProperty extends MutableProperty implements HasTimestamp
     @Override
     public void addHiddenVisibility(Visibility visibility) {
         if (hiddenVisibilities == null) {
-            hiddenVisibilities = new HashSet<Visibility>();
+            hiddenVisibilities = new HashSet<>();
         }
         hiddenVisibilities.add(visibility);
     }
@@ -67,7 +71,7 @@ public class LazyMutableProperty extends MutableProperty implements HasTimestamp
     @Override
     public void removeHiddenVisibility(Visibility visibility) {
         if (hiddenVisibilities == null) {
-            hiddenVisibilities = new HashSet<Visibility>();
+            hiddenVisibilities = new HashSet<>();
         }
         hiddenVisibilities.remove(visibility);
     }
@@ -141,7 +145,7 @@ public class LazyMutableProperty extends MutableProperty implements HasTimestamp
     }
 
     @Override
-    public long getTimestamp() {
+    public Long getTimestamp() {
         return timestamp;
     }
 }

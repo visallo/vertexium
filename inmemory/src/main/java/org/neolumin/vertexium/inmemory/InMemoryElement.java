@@ -5,22 +5,30 @@ import org.neolumin.vertexium.mutation.EdgeMutation;
 import org.neolumin.vertexium.mutation.ExistingElementMutationImpl;
 import org.neolumin.vertexium.mutation.PropertyRemoveMutation;
 import org.neolumin.vertexium.property.MutableProperty;
+import org.neolumin.vertexium.property.PropertyValue;
 import org.neolumin.vertexium.property.StreamingPropertyValue;
 import org.neolumin.vertexium.util.StreamUtils;
 
 import java.io.IOException;
 
 public abstract class InMemoryElement extends ElementBase {
+    private InMemoryHistoricalPropertyValues historicalPropertyValues;
+
     protected InMemoryElement(
             Graph graph,
             String id,
             Visibility visibility,
             Iterable<Property> properties,
+            InMemoryHistoricalPropertyValues historicalPropertyValues,
             Iterable<PropertyRemoveMutation> propertyRemoveMutations,
             Iterable<Visibility> hiddenVisibilities,
             Authorizations authorizations
     ) {
         super(graph, id, visibility, properties, propertyRemoveMutations, hiddenVisibilities, authorizations);
+        if (this.historicalPropertyValues == null) {
+            this.historicalPropertyValues = new InMemoryHistoricalPropertyValues();
+        }
+        this.historicalPropertyValues.update(historicalPropertyValues);
     }
 
     @Override
@@ -148,5 +156,35 @@ public abstract class InMemoryElement extends ElementBase {
 
     protected void updateExisting(InMemoryVertex newVertex) {
         updatePropertiesInternal(newVertex.getProperties(), newVertex.getPropertyRemoveMutations());
+    }
+
+    @Override
+    public Iterable<HistoricalPropertyValue> getHistoricalPropertyValues(String key, String name, Visibility visibility, Authorizations authorizations) {
+        return getGraph().getHistoricalPropertyValues(this, key, name, visibility, authorizations);
+    }
+
+    public InMemoryHistoricalPropertyValues getHistoricalPropertyValues() {
+        return historicalPropertyValues;
+    }
+
+    @Override
+    protected void addPropertyInternal(Property property) {
+        super.addPropertyInternal(property);
+        Object propertyValue = property.getValue();
+        if (propertyValue instanceof PropertyValue && !((PropertyValue) propertyValue).isStore()) {
+            return;
+        }
+
+        if (historicalPropertyValues == null) {
+            historicalPropertyValues = new InMemoryHistoricalPropertyValues();
+        }
+        historicalPropertyValues.addProperty(property);
+    }
+
+    public Iterable<HistoricalPropertyValue> internalGetHistoricalPropertyValues(String propertyKey, String propertyName, Visibility propertyVisibility) {
+        if (historicalPropertyValues == null) {
+            historicalPropertyValues = new InMemoryHistoricalPropertyValues();
+        }
+        return historicalPropertyValues.get(propertyKey, propertyName, propertyVisibility);
     }
 }

@@ -11,6 +11,8 @@ import org.neolumin.vertexium.util.FilterIterable;
 import org.neolumin.vertexium.util.IterableUtils;
 
 import java.util.EnumSet;
+import java.util.List;
+import java.util.Map;
 
 public class InMemoryVertex extends InMemoryElement implements Vertex {
     public InMemoryVertex(
@@ -18,11 +20,12 @@ public class InMemoryVertex extends InMemoryElement implements Vertex {
             String id,
             Visibility visibility,
             Iterable<Property> properties,
+            InMemoryHistoricalPropertyValues historicalPropertyValues,
             Iterable<PropertyRemoveMutation> propertyRemoveMutations,
             Iterable<Visibility> hiddenVisibilities,
             Authorizations authorizations
     ) {
-        super(graph, id, visibility, properties, propertyRemoveMutations, hiddenVisibilities, authorizations);
+        super(graph, id, visibility, properties, historicalPropertyValues, propertyRemoveMutations, hiddenVisibilities, authorizations);
     }
 
     @Override

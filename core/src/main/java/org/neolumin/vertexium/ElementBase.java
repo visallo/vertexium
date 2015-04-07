@@ -196,22 +196,26 @@ public abstract class ElementBase implements Element {
         }
 
         for (Property property : properties) {
-            if (property.getKey() == null) {
-                throw new IllegalArgumentException("key is required for property");
-            }
-            Object propertyValue = property.getValue();
-            if (propertyValue instanceof PropertyValue && !((PropertyValue) propertyValue).isStore()) {
-                continue;
-            }
-            Property existingProperty = getProperty(property.getKey(), property.getName(), property.getVisibility());
-            if (existingProperty == null) {
-                this.properties.add(property);
+            addPropertyInternal(property);
+        }
+    }
+
+    protected void addPropertyInternal(Property property) {
+        if (property.getKey() == null) {
+            throw new IllegalArgumentException("key is required for property");
+        }
+        Object propertyValue = property.getValue();
+        if (propertyValue instanceof PropertyValue && !((PropertyValue) propertyValue).isStore()) {
+            return;
+        }
+        Property existingProperty = getProperty(property.getKey(), property.getName(), property.getVisibility());
+        if (existingProperty == null) {
+            this.properties.add(property);
+        } else {
+            if (existingProperty instanceof MutableProperty) {
+                ((MutableProperty) existingProperty).update(property);
             } else {
-                if (existingProperty instanceof MutableProperty) {
-                    ((MutableProperty) existingProperty).update(property);
-                } else {
-                    throw new VertexiumException("Could not update property of type: " + existingProperty.getClass().getName());
-                }
+                throw new VertexiumException("Could not update property of type: " + existingProperty.getClass().getName());
             }
         }
     }
@@ -364,5 +368,26 @@ public abstract class ElementBase implements Element {
             return null;
         }
         return new String[]{label};
+    }
+
+    @Override
+    public Iterable<HistoricalPropertyValue> getHistoricalPropertyValues(String key, String name, Visibility visibility, Authorizations authorizations) {
+        return getHistoricalPropertyValues(key, name, visibility, null, null, authorizations);
+    }
+
+    @Override
+    public Iterable<HistoricalPropertyValue> getHistoricalPropertyValues(String key, String name, Visibility visibility, final Long startTime, final Long endTime, Authorizations authorizations) {
+        return new FilterIterable<HistoricalPropertyValue>(getHistoricalPropertyValues(key, name, visibility, authorizations)) {
+            @Override
+            protected boolean isIncluded(HistoricalPropertyValue pv) {
+                if (startTime != null && pv.getTimestamp() < startTime) {
+                    return false;
+                }
+                if (endTime != null && pv.getTimestamp() > endTime) {
+                    return false;
+                }
+                return true;
+            }
+        };
     }
 }

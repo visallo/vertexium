@@ -165,7 +165,7 @@ public class AccumuloGraphTest extends GraphTestBase {
         assertEquals("metavalue1", metadata.getEntry("meta1", VISIBILITY_EMPTY).getValue());
 
         AccumuloGraph accumuloGraph = (AccumuloGraph) graph;
-        Scanner vertexScanner = accumuloGraph.createVertexScanner(FetchHint.ALL, AUTHORIZATIONS_EMPTY);
+        Scanner vertexScanner = accumuloGraph.createVertexScanner(FetchHint.ALL, AccumuloGraph.SINGLE_VERSION, AUTHORIZATIONS_EMPTY);
         vertexScanner.setRange(new Range("V", "W"));
         RowIterator rows = new RowIterator(vertexScanner.iterator());
         while (rows.hasNext()) {

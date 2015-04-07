@@ -6,7 +6,9 @@ import org.apache.accumulo.core.data.Key;
 import org.apache.accumulo.core.data.Mutation;
 import org.apache.accumulo.core.data.Range;
 import org.apache.accumulo.core.data.Value;
+import org.apache.accumulo.core.iterators.IteratorUtil;
 import org.apache.accumulo.core.iterators.user.RowDeletingIterator;
+import org.apache.accumulo.core.iterators.user.VersioningIterator;
 import org.apache.accumulo.core.iterators.user.WholeRowIterator;
 import org.apache.accumulo.core.security.ColumnVisibility;
 import org.apache.hadoop.fs.FileSystem;
@@ -54,6 +56,10 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
     private static final String METADATA_ACCUMULO_GRAPH_VERSION_KEY = "accumulo.graph.version";
     private static final String METADATA_VALUE_SERIALIZER = "accumulo.graph.valueSerializer";
     private static final Authorizations METADATA_AUTHORIZATIONS = new AccumuloAuthorizations();
+    public static final int SINGLE_VERSION = 1;
+    public static final Integer ALL_VERSIONS = null;
+    private static final int ACCUMULO_DEFAULT_VERSIONING_ITERATOR_PRIORITY = 20;
+    private static final String ACCUMULO_DEFAULT_VERSIONING_ITERATOR_NAME = "vers";
     private final Connector connector;
     private final ValueSerializer valueSerializer;
     private final FileSystem fileSystem;
@@ -124,10 +130,10 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
         SearchIndex searchIndex = config.createSearchIndex();
         IdGenerator idGenerator = config.createIdGenerator();
         NameSubstitutionStrategy nameSubstitutionStrategy = config.createSubstitutionStrategy();
-        ensureTableExists(connector, getVerticesTableName(config.getTableNamePrefix()));
-        ensureTableExists(connector, getEdgesTableName(config.getTableNamePrefix()));
-        ensureTableExists(connector, getDataTableName(config.getTableNamePrefix()));
-        ensureTableExists(connector, getMetadataTableName(config.getTableNamePrefix()));
+        ensureTableExists(connector, getVerticesTableName(config.getTableNamePrefix()), config.getMaxVersions());
+        ensureTableExists(connector, getEdgesTableName(config.getTableNamePrefix()), config.getMaxVersions());
+        ensureTableExists(connector, getDataTableName(config.getTableNamePrefix()), config.getMaxVersions());
+        ensureTableExists(connector, getMetadataTableName(config.getTableNamePrefix()), 1);
         ensureRowDeletingIteratorIsAttached(connector, getVerticesTableName(config.getTableNamePrefix()));
         ensureRowDeletingIteratorIsAttached(connector, getEdgesTableName(config.getTableNamePrefix()));
         ensureRowDeletingIteratorIsAttached(connector, getDataTableName(config.getTableNamePrefix()));
@@ -178,10 +184,22 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
         }
     }
 
-    protected static void ensureTableExists(Connector connector, String tableName) {
+    protected static void ensureTableExists(Connector connector, String tableName, Integer maxVersions) {
         try {
             if (!connector.tableOperations().exists(tableName)) {
-                connector.tableOperations().create(tableName);
+                connector.tableOperations().create(tableName, false);
+
+                if (maxVersions != null) {
+                    // The following parameters match the Accumulo defaults for the VersioningIterator
+                    IteratorSetting versioningSettings = new IteratorSetting(
+                            ACCUMULO_DEFAULT_VERSIONING_ITERATOR_PRIORITY,
+                            ACCUMULO_DEFAULT_VERSIONING_ITERATOR_NAME,
+                            VersioningIterator.class
+                    );
+                    VersioningIterator.setMaxVersions(versioningSettings, maxVersions);
+                    EnumSet<IteratorUtil.IteratorScope> scope = EnumSet.allOf(IteratorUtil.IteratorScope.class);
+                    connector.tableOperations().attachIterator(tableName, versioningSettings, scope);
+                }
             }
         } catch (Exception e) {
             throw new RuntimeException("Unable to create table " + tableName, e);
@@ -584,6 +602,54 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
         return nameSubstitutionStrategy;
     }
 
+    public Iterable<HistoricalPropertyValue> getHistoricalPropertyValues(Element element, String key, String name, Visibility visibility, Long startTime, Long endTime, Authorizations authorizations) {
+        ElementType elementType = ElementType.getTypeFromElement(element);
+        final Scanner scanner = createElementVisibilityScanner(FetchHint.ALL, elementType, ALL_VERSIONS, authorizations);
+        Text rowKey = new Text(getRowKey(element));
+        Text columnFamily = AccumuloElement.CF_PROPERTY;
+        Text columnQualifier = ElementMutationBuilder.getPropertyColumnQualifier(name, key);
+        ColumnVisibility columnVisibility = visibilityToAccumuloVisibility(visibility);
+        Key stopKey = new Key(rowKey, columnFamily, columnQualifier, columnVisibility, startTime == null ? 0 : startTime);
+        Key startKey = new Key(rowKey, columnFamily, columnQualifier, columnVisibility, endTime == null ? Long.MAX_VALUE : endTime);
+        Range range = new Range(startKey, stopKey, true, true, false, false);
+        scanner.setRange(range);
+        return new Iterable<HistoricalPropertyValue>() {
+            @Override
+            public Iterator<HistoricalPropertyValue> iterator() {
+                final Iterator<Map.Entry<Key, Value>> it = scanner.iterator();
+                return new Iterator<HistoricalPropertyValue>() {
+                    @Override
+                    public boolean hasNext() {
+                        return it.hasNext();
+                    }
+
+                    @Override
+                    public HistoricalPropertyValue next() {
+                        Map.Entry<Key, Value> v = it.next();
+                        long timestamp = v.getKey().getTimestamp();
+                        Object value = valueSerializer.valueToObject(v.getValue());
+                        return new HistoricalPropertyValue(timestamp, value);
+                    }
+
+                    @Override
+                    public void remove() {
+                        it.remove();
+                    }
+                };
+            }
+        };
+    }
+
+    private String getRowKey(Element element) {
+        if (element instanceof Vertex) {
+            return AccumuloConstants.VERTEX_ROW_KEY_PREFIX + element.getId();
+        }
+        if (element instanceof Edge) {
+            return AccumuloConstants.EDGE_ROW_KEY_PREFIX + element.getId();
+        }
+        throw new VertexiumException("Unhandled element type: " + element);
+    }
+
     private static abstract class AddEdgeToVertexRunnable {
         public abstract void run(AccumuloEdge edge);
     }
@@ -860,27 +926,37 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
         return getVerticesInRange(range, fetchHints, authorizations);
     }
 
-    protected Scanner createVertexScanner(EnumSet<FetchHint> fetchHints, Authorizations authorizations) throws VertexiumException {
-        return createElementVisibilityScanner(fetchHints, authorizations, ElementType.VERTEX);
+    protected Scanner createVertexScanner(EnumSet<FetchHint> fetchHints, Integer maxVersions, Authorizations authorizations) throws VertexiumException {
+        return createElementVisibilityScanner(fetchHints, ElementType.VERTEX, maxVersions, authorizations);
     }
 
-    protected Scanner createEdgeScanner(EnumSet<FetchHint> fetchHints, Authorizations authorizations) throws VertexiumException {
-        return createElementVisibilityScanner(fetchHints, authorizations, ElementType.EDGE);
+    protected Scanner createEdgeScanner(EnumSet<FetchHint> fetchHints, Integer maxVersions, Authorizations authorizations) throws VertexiumException {
+        return createElementVisibilityScanner(fetchHints, ElementType.EDGE, maxVersions, authorizations);
     }
 
-    private Scanner createElementVisibilityScanner(EnumSet<FetchHint> fetchHints, Authorizations authorizations, ElementType elementType) throws VertexiumException {
+    private Scanner createElementVisibilityScanner(EnumSet<FetchHint> fetchHints, ElementType elementType, Integer maxVersions, Authorizations authorizations) throws VertexiumException {
         try {
             String tableName = getTableNameFromElementType(elementType);
             Scanner scanner = connector.createScanner(tableName, toAccumuloAuthorizations(authorizations));
             if (getConfiguration().isUseServerSideElementVisibilityRowFilter()) {
-                IteratorSetting iteratorSetting = new IteratorSetting(
+                if (maxVersions != null) {
+                    IteratorSetting versioningIteratorSettings = new IteratorSetting(
+                            90,
+                            VersioningIterator.class.getSimpleName(),
+                            VersioningIterator.class
+                    );
+                    VersioningIterator.setMaxVersions(versioningIteratorSettings, maxVersions.intValue());
+                    scanner.addScanIterator(versioningIteratorSettings);
+                }
+
+                IteratorSetting elementVisibilityIteratorSettings = new IteratorSetting(
                         100,
                         ElementVisibilityRowFilter.class.getSimpleName(),
                         ElementVisibilityRowFilter.class
                 );
                 String elementMode = getElementModeFromElementType(elementType);
-                iteratorSetting.addOption(elementMode, Boolean.TRUE.toString());
-                scanner.addScanIterator(iteratorSetting);
+                elementVisibilityIteratorSettings.addOption(elementMode, Boolean.TRUE.toString());
+                scanner.addScanIterator(elementVisibilityIteratorSettings);
             }
             applyFetchHints(scanner, fetchHints, elementType);
             return scanner;
@@ -1368,7 +1444,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
 
             @Override
             protected Iterator<Iterator<Map.Entry<Key, Value>>> createIterator() {
-                scanner = createVertexScanner(fetchHints, authorizations);
+                scanner = createVertexScanner(fetchHints, SINGLE_VERSION, authorizations);
                 scanner.setRange(range);
                 return new RowIterator(scanner.iterator());
             }
@@ -1509,7 +1585,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
 
             @Override
             protected Iterator<Iterator<Map.Entry<Key, Value>>> createIterator() {
-                scanner = createEdgeScanner(fetchHints, authorizations);
+                scanner = createEdgeScanner(fetchHints, SINGLE_VERSION, authorizations);
                 scanner.setRange(new Range(startKey, endKey));
                 return new RowIterator(scanner.iterator());
             }

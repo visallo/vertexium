@@ -80,9 +80,14 @@ public abstract class ElementBuilder<T extends Element> implements ElementMutati
      * @param visibility The visibility to give this property.
      */
     public ElementBuilder<T> addPropertyValue(String key, String name, Object value, Metadata metadata, Visibility visibility) {
+        return addPropertyValue(key, name, value, metadata, null, visibility);
+    }
+
+    @Override
+    public ElementBuilder<T> addPropertyValue(String key, String name, Object value, Metadata metadata, Long timestamp, Visibility visibility) {
         checkNotNull(name, "property name cannot be null for property: " + name + ":" + key);
         checkNotNull(value, "property value cannot be null for property: " + name + ":" + key);
-        this.properties.add(new MutablePropertyImpl(key, name, value, metadata, null, visibility));
+        this.properties.add(new MutablePropertyImpl(key, name, value, metadata, timestamp, null, visibility));
         return this;
     }
 

@@ -7,6 +7,8 @@ import org.neolumin.vertexium.Visibility;
 public abstract class MutableProperty extends Property {
     public abstract void setValue(Object value);
 
+    public abstract void setTimestamp(Long timestamp);
+
     public abstract void setVisibility(Visibility visibility);
 
     public abstract void addHiddenVisibility(Visibility visibility);
@@ -25,6 +27,7 @@ public abstract class MutableProperty extends Property {
         }
 
         setValue(property.getValue());
+        setTimestamp(property.getTimestamp());
 
         for (Metadata.Entry m : property.getMetadata().entrySet()) {
             if (m.getValue() == null) {

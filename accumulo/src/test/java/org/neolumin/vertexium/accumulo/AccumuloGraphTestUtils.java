@@ -6,7 +6,7 @@ public class AccumuloGraphTestUtils {
     public static void ensureTableExists(Connector connector, String tableName) {
         try {
             if (!connector.tableOperations().exists(tableName)) {
-                connector.tableOperations().create(tableName);
+                connector.tableOperations().create(tableName, false);
             }
         } catch (Exception e) {
             throw new RuntimeException("Unable to create table " + tableName);
@@ -18,7 +18,7 @@ public class AccumuloGraphTestUtils {
             if (connector.tableOperations().exists(graphDirectoryName)) {
                 connector.tableOperations().delete(graphDirectoryName);
             }
-            connector.tableOperations().create(graphDirectoryName);
+            connector.tableOperations().create(graphDirectoryName, false);
         } catch (Exception e) {
             throw new RuntimeException("Unable to drop graph: " + graphDirectoryName, e);
         }

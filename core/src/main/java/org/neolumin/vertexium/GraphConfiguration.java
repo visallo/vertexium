@@ -90,6 +90,20 @@ public class GraphConfiguration {
         return Integer.valueOf(obj.toString());
     }
 
+    public Integer getInteger(String configKey, Integer defaultValue) {
+        Object obj = config.get(configKey);
+        if (obj == null) {
+            return defaultValue;
+        }
+        if (obj instanceof String) {
+            return Integer.parseInt((String) obj);
+        }
+        if (obj instanceof Integer) {
+            return (int) obj;
+        }
+        return Integer.valueOf(obj.toString());
+    }
+
     public long getConfigLong(String key, long defaultValue) {
         Object obj = config.get(key);
         if (obj == null) {

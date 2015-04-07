@@ -3,6 +3,8 @@ package org.neolumin.vertexium.mutation;
 import org.neolumin.vertexium.*;
 import org.neolumin.vertexium.search.IndexHint;
 
+import java.util.Date;
+
 public interface ElementMutation<T extends Element> {
     public static final String DEFAULT_KEY = "";
 
@@ -58,6 +60,18 @@ public interface ElementMutation<T extends Element> {
      * @param visibility The visibility to give this property.
      */
     ElementMutation<T> addPropertyValue(String key, String name, Object value, Metadata metadata, Visibility visibility);
+
+    /**
+     * Adds or updates a property.
+     *
+     * @param key        The unique key given to the property allowing for multi-valued properties.
+     * @param name       The name of the property.
+     * @param value      The value of the property.
+     * @param metadata   The metadata to assign to this property.
+     * @param timestamp  The timestamp of the property.
+     * @param visibility The visibility to give this property.
+     */
+    ElementMutation<T> addPropertyValue(String key, String name, Object value, Metadata metadata, Long timestamp, Visibility visibility);
 
     /**
      * Removes a property.

@@ -93,6 +93,11 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
     }
 
     @Override
+    public Iterable<HistoricalPropertyValue> getHistoricalPropertyValues(String key, String name, Visibility visibility, Long startTime, Long endTime, Authorizations authorizations) {
+        return getGraph().getHistoricalPropertyValues(this, key, name, visibility, startTime, endTime, authorizations);
+    }
+
+    @Override
     public long getTimestamp() {
         return timestamp;
     }

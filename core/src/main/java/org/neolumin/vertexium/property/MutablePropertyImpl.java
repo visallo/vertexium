@@ -13,9 +13,10 @@ public class MutablePropertyImpl extends MutableProperty {
     private Set<Visibility> hiddenVisibilities;
     private Object value;
     private Visibility visibility;
+    private Long timestamp;
     private final Metadata metadata;
 
-    public MutablePropertyImpl(String key, String name, Object value, Metadata metadata, Set<Visibility> hiddenVisibilities, Visibility visibility) {
+    public MutablePropertyImpl(String key, String name, Object value, Metadata metadata, Long timestamp, Set<Visibility> hiddenVisibilities, Visibility visibility) {
         if (metadata == null) {
             metadata = new Metadata();
         }
@@ -24,6 +25,7 @@ public class MutablePropertyImpl extends MutableProperty {
         this.name = name;
         this.value = value;
         this.metadata = metadata;
+        this.timestamp = timestamp;
         this.visibility = visibility;
         this.hiddenVisibilities = hiddenVisibilities;
     }
@@ -38,6 +40,11 @@ public class MutablePropertyImpl extends MutableProperty {
 
     public Object getValue() {
         return value;
+    }
+
+    @Override
+    public Long getTimestamp() {
+        return timestamp;
     }
 
     public Visibility getVisibility() {
@@ -69,6 +76,11 @@ public class MutablePropertyImpl extends MutableProperty {
         this.value = value;
     }
 
+    @Override
+    public void setTimestamp(Long timestamp) {
+        this.timestamp = timestamp;
+    }
+
     public void setVisibility(Visibility visibility) {
         this.visibility = visibility;
     }
@@ -76,7 +88,7 @@ public class MutablePropertyImpl extends MutableProperty {
     @Override
     public void addHiddenVisibility(Visibility visibility) {
         if (this.hiddenVisibilities == null) {
-            this.hiddenVisibilities = new HashSet<Visibility>();
+            this.hiddenVisibilities = new HashSet<>();
         }
         this.hiddenVisibilities.add(visibility);
     }
@@ -84,7 +96,7 @@ public class MutablePropertyImpl extends MutableProperty {
     @Override
     public void removeHiddenVisibility(Visibility visibility) {
         if (this.hiddenVisibilities == null) {
-            this.hiddenVisibilities = new HashSet<Visibility>();
+            this.hiddenVisibilities = new HashSet<>();
         }
         this.hiddenVisibilities.remove(visibility);
     }

@@ -1,5 +1,7 @@
 package org.neolumin.vertexium;
 
+import org.neolumin.vertexium.util.FilterIterable;
+
 public abstract class Property implements Comparable<Property> {
 
     public abstract String getKey();
@@ -7,6 +9,8 @@ public abstract class Property implements Comparable<Property> {
     public abstract String getName();
 
     public abstract Object getValue();
+
+    public abstract Long getTimestamp();
 
     public abstract Visibility getVisibility();
 

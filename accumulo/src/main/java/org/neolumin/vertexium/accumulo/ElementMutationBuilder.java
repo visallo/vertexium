@@ -183,7 +183,11 @@ public abstract class ElementMutationBuilder {
             propertyValue = ((DateOnly) propertyValue).getDate();
         }
         Value value = new Value(valueSerializer.objectToValue(propertyValue));
-        m.put(AccumuloElement.CF_PROPERTY, columnQualifier, columnVisibility, value);
+        if (property.getTimestamp() != null) {
+            m.put(AccumuloElement.CF_PROPERTY, columnQualifier, columnVisibility, property.getTimestamp(), value);
+        } else {
+            m.put(AccumuloElement.CF_PROPERTY, columnQualifier, columnVisibility, value);
+        }
         addPropertyMetadataToMutation(m, property);
     }
 
@@ -270,7 +274,11 @@ public abstract class ElementMutationBuilder {
     }
 
     protected Text getPropertyColumnQualifier(Property property) {
-        return getValueSeparatedJoined(property.getName(), property.getKey());
+        return getPropertyColumnQualifier(property.getName(), property.getKey());
+    }
+
+    public static Text getPropertyColumnQualifier(String propertyName, String propertyKey) {
+        return getValueSeparatedJoined(propertyName, propertyKey);
     }
 
     protected Text getPropertyMetadataColumnQualifier(Property property, String metadataKey) {
@@ -281,11 +289,11 @@ public abstract class ElementMutationBuilder {
         return getValueSeparatedJoined(property.getName(), property.getKey(), property.getVisibility().getVisibilityString());
     }
 
-    protected static Text getValueSeparatedJoined(String... values){
+    protected static Text getValueSeparatedJoined(String... values) {
         return new Text(getStringValueSeparatorJoined(values));
     }
 
-    protected static String getStringValueSeparatorJoined(String... values){
+    protected static String getStringValueSeparatorJoined(String... values) {
         return Joiner.on(VALUE_SEPARATOR).join(values);
     }
 
