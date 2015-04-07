@@ -160,7 +160,7 @@ public abstract class InMemoryElement extends ElementBase {
 
     @Override
     public Iterable<HistoricalPropertyValue> getHistoricalPropertyValues(String key, String name, Visibility visibility, Authorizations authorizations) {
-        return getGraph().getHistoricalPropertyValues(this, key, name, visibility, authorizations);
+        return getGraph().getHistoricalPropertyValues(this, key, name, visibility);
     }
 
     public InMemoryHistoricalPropertyValues getHistoricalPropertyValues() {
@@ -169,16 +169,15 @@ public abstract class InMemoryElement extends ElementBase {
 
     @Override
     protected void addPropertyInternal(Property property) {
-        super.addPropertyInternal(property);
         Object propertyValue = property.getValue();
-        if (propertyValue instanceof PropertyValue && !((PropertyValue) propertyValue).isStore()) {
-            return;
+        if (!(propertyValue instanceof PropertyValue) || ((PropertyValue) propertyValue).isStore()) {
+            if (historicalPropertyValues == null) {
+                historicalPropertyValues = new InMemoryHistoricalPropertyValues();
+            }
+            historicalPropertyValues.addProperty(property);
         }
 
-        if (historicalPropertyValues == null) {
-            historicalPropertyValues = new InMemoryHistoricalPropertyValues();
-        }
-        historicalPropertyValues.addProperty(property);
+        super.addPropertyInternal(property);
     }
 
     public Iterable<HistoricalPropertyValue> internalGetHistoricalPropertyValues(String propertyKey, String propertyName, Visibility propertyVisibility) {

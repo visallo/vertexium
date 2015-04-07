@@ -13,7 +13,7 @@ public class MutablePropertyImpl extends MutableProperty {
     private Set<Visibility> hiddenVisibilities;
     private Object value;
     private Visibility visibility;
-    private Long timestamp;
+    private long timestamp;
     private final Metadata metadata;
 
     public MutablePropertyImpl(String key, String name, Object value, Metadata metadata, Long timestamp, Set<Visibility> hiddenVisibilities, Visibility visibility) {
@@ -25,7 +25,7 @@ public class MutablePropertyImpl extends MutableProperty {
         this.name = name;
         this.value = value;
         this.metadata = metadata;
-        this.timestamp = timestamp;
+        this.timestamp = timestamp == null ? System.currentTimeMillis() : timestamp;
         this.visibility = visibility;
         this.hiddenVisibilities = hiddenVisibilities;
     }
@@ -43,7 +43,7 @@ public class MutablePropertyImpl extends MutableProperty {
     }
 
     @Override
-    public Long getTimestamp() {
+    public long getTimestamp() {
         return timestamp;
     }
 
@@ -77,7 +77,7 @@ public class MutablePropertyImpl extends MutableProperty {
     }
 
     @Override
-    public void setTimestamp(Long timestamp) {
+    public void setTimestamp(long timestamp) {
         this.timestamp = timestamp;
     }
 

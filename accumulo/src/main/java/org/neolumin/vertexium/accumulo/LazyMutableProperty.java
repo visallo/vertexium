@@ -14,7 +14,7 @@ public class LazyMutableProperty extends MutableProperty {
     private final ValueSerializer valueSerializer;
     private final String propertyKey;
     private final String propertyName;
-    private Long timestamp;
+    private long timestamp;
     private Set<Visibility> hiddenVisibilities;
     private byte[] propertyValue;
     private final LazyPropertyMetadata metadata;
@@ -51,7 +51,7 @@ public class LazyMutableProperty extends MutableProperty {
     }
 
     @Override
-    public void setTimestamp(Long timestamp) {
+    public void setTimestamp(long timestamp) {
         this.timestamp = timestamp;
     }
 
@@ -145,7 +145,7 @@ public class LazyMutableProperty extends MutableProperty {
     }
 
     @Override
-    public Long getTimestamp() {
+    public long getTimestamp() {
         return timestamp;
     }
 }

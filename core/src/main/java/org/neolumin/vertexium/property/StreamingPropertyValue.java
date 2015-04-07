@@ -6,11 +6,17 @@ import org.neolumin.vertexium.util.StreamUtils;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.Serializable;
 
-public class StreamingPropertyValue extends PropertyValue {
-    private final InputStream inputStream;
+public class StreamingPropertyValue extends PropertyValue implements Serializable {
+    static final long serialVersionUID = 42L;
+    private final transient InputStream inputStream;
     private final Class valueType;
     private final long length;
+
+    public StreamingPropertyValue() {
+        this(null, null);
+    }
 
     public StreamingPropertyValue(InputStream inputStream, Class valueType) {
         this(inputStream, valueType, -1);

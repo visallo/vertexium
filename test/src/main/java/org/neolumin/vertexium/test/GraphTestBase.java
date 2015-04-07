@@ -225,13 +225,14 @@ public abstract class GraphTestBase {
         assertEquals("metadata1Value", prop1Metadata.getEntry("metadata1", VISIBILITY_A).getValue());
         assertEquals("metadata2Value", prop1Metadata.getEntry("metadata2", VISIBILITY_A).getValue());
 
-        // make sure that when we update the value the metadata does not get destroyed
+        // make sure that when we update the value the metadata is the new metadata
         prop1Metadata = new Metadata();
-        v.setProperty("prop1", "value1", prop1Metadata, VISIBILITY_A, AUTHORIZATIONS_A_AND_B);
+        v.setProperty("prop1", "value2", prop1Metadata, VISIBILITY_A, AUTHORIZATIONS_A_AND_B);
 
         v = graph.getVertex("v1", AUTHORIZATIONS_A);
         Assert.assertEquals(1, IterableUtils.count(v.getProperties("prop1")));
         prop1 = v.getProperties("prop1").iterator().next();
+        assertEquals("value2", prop1.getValue());
         prop1Metadata = prop1.getMetadata();
         assertEquals(2, prop1Metadata.entrySet().size());
     }
@@ -2662,15 +2663,17 @@ public abstract class GraphTestBase {
 
     @Test
     public void testPropertyVersions() {
-        Metadata metadata = new Metadata();
-
         Date time25 = createDate(2015, 4, 6, 16, 15, 0);
         Date time30 = createDate(2015, 4, 6, 16, 16, 0);
 
+        Metadata metadata = new Metadata();
+        metadata.add("author", "author1", VISIBILITY_A);
         graph.prepareVertex("v1", VISIBILITY_A)
                 .addPropertyValue("", "age", 25, metadata, time25.getTime(), VISIBILITY_A)
                 .save(AUTHORIZATIONS_A);
 
+        metadata = new Metadata();
+        metadata.add("author", "author2", VISIBILITY_A);
         graph.prepareVertex("v1", VISIBILITY_A)
                 .addPropertyValue("", "age", 30, metadata, time30.getTime(), VISIBILITY_A)
                 .save(AUTHORIZATIONS_A);
@@ -2679,13 +2682,18 @@ public abstract class GraphTestBase {
         Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
         List<HistoricalPropertyValue> values = toList(v1.getHistoricalPropertyValues("", "age", VISIBILITY_A, AUTHORIZATIONS_A));
         assertEquals(2, values.size());
+
         assertEquals(30, values.get(0).getValue());
         assertEquals(time30, new Date(values.get(0).getTimestamp()));
+        assertEquals("author2", values.get(0).getMetadata().getValue("author", VISIBILITY_A));
+
         assertEquals(25, values.get(1).getValue());
         assertEquals(time25, new Date(values.get(1).getTimestamp()));
+        assertEquals("author1", values.get(1).getMetadata().getValue("author", VISIBILITY_A));
 
         // make sure we get the correct age when we only ask for one value
         assertEquals(30, v1.getPropertyValue("", "age"));
+        assertEquals("author2", v1.getProperty("", "age").getMetadata().getValue("author", VISIBILITY_A));
     }
 
     private List<Vertex> getVertices(long count) {

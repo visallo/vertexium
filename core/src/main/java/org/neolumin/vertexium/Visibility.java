@@ -1,8 +1,10 @@
 package org.neolumin.vertexium;
 
+import java.io.Serializable;
 import java.util.Set;
 
-public class Visibility implements Comparable<Visibility> {
+public class Visibility implements Serializable, Comparable<Visibility> {
+    static final long serialVersionUID = 42L;
     private final String visibilityString;
 
     public Visibility(String visibilityString) {

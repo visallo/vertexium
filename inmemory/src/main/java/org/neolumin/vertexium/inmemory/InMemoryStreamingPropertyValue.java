@@ -3,13 +3,18 @@ package org.neolumin.vertexium.inmemory;
 import org.neolumin.vertexium.property.StreamingPropertyValue;
 
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.io.InputStream;
+import java.io.Serializable;
 
-class InMemoryStreamingPropertyValue extends StreamingPropertyValue {
+public class InMemoryStreamingPropertyValue extends StreamingPropertyValue implements Serializable {
+    static final long serialVersionUID = 42L;
     private byte[] data;
 
-    InMemoryStreamingPropertyValue(byte[] data, Class valueType) throws IOException {
+    public InMemoryStreamingPropertyValue() {
+        this(null, null);
+    }
+
+    public InMemoryStreamingPropertyValue(byte[] data, Class valueType) {
         super(null, valueType, data.length);
         this.data = data;
     }

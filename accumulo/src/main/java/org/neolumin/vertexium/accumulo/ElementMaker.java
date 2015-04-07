@@ -203,18 +203,24 @@ public abstract class ElementMaker<T> {
         if (i < 0) {
             throw new VertexiumException("Invalid property metadata column qualifier: " + columnQualifierString);
         }
-        String propertyKey = columnQualifierString.substring(0, i);
         String metadataKey = columnQualifierString.substring(i + 1);
 
-        LazyPropertyMetadata lazyPropertyMetadata = getOrCreatePropertyMetadata(propertyKey);
+        // exclude the timestamp
+        i = columnQualifierString.lastIndexOf(ElementMutationBuilder.VALUE_SEPARATOR, i - 1);
+        if (i < 0) {
+            throw new VertexiumException("Invalid property metadata column qualifier: " + columnQualifierString);
+        }
+        String propertyIdentifier = columnQualifierString.substring(0, i);
+
+        LazyPropertyMetadata lazyPropertyMetadata = getOrCreatePropertyMetadata(propertyIdentifier);
         lazyPropertyMetadata.add(metadataKey, metadataVisibility, value.get());
     }
 
-    private LazyPropertyMetadata getOrCreatePropertyMetadata(String propertyKey) {
-        LazyPropertyMetadata lazyPropertyMetadata = propertyMetadata.get(propertyKey);
+    private LazyPropertyMetadata getOrCreatePropertyMetadata(String propertyIdentifier) {
+        LazyPropertyMetadata lazyPropertyMetadata = propertyMetadata.get(propertyIdentifier);
         if (lazyPropertyMetadata == null) {
             lazyPropertyMetadata = new LazyPropertyMetadata();
-            propertyMetadata.put(propertyKey, lazyPropertyMetadata);
+            propertyMetadata.put(propertyIdentifier, lazyPropertyMetadata);
         }
         return lazyPropertyMetadata;
     }
@@ -237,7 +243,7 @@ public abstract class ElementMaker<T> {
         return columnQualifier.toString() + ElementMutationBuilder.VALUE_SEPARATOR + visibility.toString();
     }
 
-    private String getPropertyNameFromColumnQualifier(String columnQualifier) {
+    public static String getPropertyNameFromColumnQualifier(String columnQualifier) {
         int i = columnQualifier.indexOf(ElementMutationBuilder.VALUE_SEPARATOR);
         if (i < 0) {
             throw new VertexiumException("Invalid property column qualifier");
@@ -245,7 +251,7 @@ public abstract class ElementMaker<T> {
         return columnQualifier.substring(0, i);
     }
 
-    private String getPropertyKeyFromColumnQualifier(String columnQualifier) {
+    public static String getPropertyKeyFromColumnQualifier(String columnQualifier) {
         int i = columnQualifier.indexOf(ElementMutationBuilder.VALUE_SEPARATOR);
         if (i < 0) {
             throw new VertexiumException("Invalid property column qualifier");

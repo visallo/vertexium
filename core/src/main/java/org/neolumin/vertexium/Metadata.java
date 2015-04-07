@@ -1,12 +1,14 @@
 package org.neolumin.vertexium;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-public class Metadata {
-    private Map<String, Entry> entries = new HashMap<String, Entry>();
+public class Metadata implements Serializable {
+    static final long serialVersionUID = 42L;
+    private Map<String, Entry> entries = new HashMap<>();
     public static final String KEY_SEPARATOR = "\u001f";
 
     public void add(String key, Object value, Visibility visibility) {
@@ -18,7 +20,7 @@ public class Metadata {
     }
 
     public void remove(String key) {
-        for (Map.Entry<String, Entry> e : new ArrayList<Map.Entry<String, Entry>>(entries.entrySet())) {
+        for (Map.Entry<String, Entry> e : new ArrayList<>(entries.entrySet())) {
             if (e.getValue().getKey().equals(key)) {
                 entries.remove(e.getKey());
             }
@@ -79,7 +81,8 @@ public class Metadata {
         return key + KEY_SEPARATOR + visibility.getVisibilityString();
     }
 
-    public static class Entry {
+    public static class Entry implements Serializable {
+        static final long serialVersionUID = 42L;
         private final String key;
         private final Object value;
         private final Visibility visibility;

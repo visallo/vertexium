@@ -1,5 +1,6 @@
 package org.neolumin.vertexium.accumulo;
 
+import com.google.common.base.Joiner;
 import org.apache.accumulo.core.client.*;
 import org.apache.accumulo.core.client.Scanner;
 import org.apache.accumulo.core.data.Key;
@@ -8,6 +9,7 @@ import org.apache.accumulo.core.data.Range;
 import org.apache.accumulo.core.data.Value;
 import org.apache.accumulo.core.iterators.IteratorUtil;
 import org.apache.accumulo.core.iterators.user.RowDeletingIterator;
+import org.apache.accumulo.core.iterators.user.TimestampFilter;
 import org.apache.accumulo.core.iterators.user.VersioningIterator;
 import org.apache.accumulo.core.iterators.user.WholeRowIterator;
 import org.apache.accumulo.core.security.ColumnVisibility;
@@ -604,40 +606,85 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
 
     public Iterable<HistoricalPropertyValue> getHistoricalPropertyValues(Element element, String key, String name, Visibility visibility, Long startTime, Long endTime, Authorizations authorizations) {
         ElementType elementType = ElementType.getTypeFromElement(element);
-        final Scanner scanner = createElementVisibilityScanner(FetchHint.ALL, elementType, ALL_VERSIONS, authorizations);
         Text rowKey = new Text(getRowKey(element));
-        Text columnFamily = AccumuloElement.CF_PROPERTY;
-        Text columnQualifier = ElementMutationBuilder.getPropertyColumnQualifier(name, key);
-        ColumnVisibility columnVisibility = visibilityToAccumuloVisibility(visibility);
-        Key stopKey = new Key(rowKey, columnFamily, columnQualifier, columnVisibility, startTime == null ? 0 : startTime);
-        Key startKey = new Key(rowKey, columnFamily, columnQualifier, columnVisibility, endTime == null ? Long.MAX_VALUE : endTime);
-        Range range = new Range(startKey, stopKey, true, true, false, false);
-        scanner.setRange(range);
-        return new Iterable<HistoricalPropertyValue>() {
-            @Override
-            public Iterator<HistoricalPropertyValue> iterator() {
-                final Iterator<Map.Entry<Key, Value>> it = scanner.iterator();
-                return new Iterator<HistoricalPropertyValue>() {
-                    @Override
-                    public boolean hasNext() {
-                        return it.hasNext();
-                    }
 
-                    @Override
-                    public HistoricalPropertyValue next() {
-                        Map.Entry<Key, Value> v = it.next();
-                        long timestamp = v.getKey().getTimestamp();
-                        Object value = valueSerializer.valueToObject(v.getValue());
-                        return new HistoricalPropertyValue(timestamp, value);
-                    }
+        final Scanner scanner = createElementVisibilityScanner(EnumSet.of(FetchHint.PROPERTIES, FetchHint.PROPERTY_METADATA), elementType, ALL_VERSIONS, authorizations);
 
-                    @Override
-                    public void remove() {
-                        it.remove();
-                    }
-                };
+        if (startTime != null || endTime != null) {
+            IteratorSetting iteratorSetting = new IteratorSetting(
+                    109,
+                    TimestampFilter.class.getSimpleName(),
+                    TimestampFilter.class
+            );
+            if (startTime != null) {
+                TimestampFilter.setStart(iteratorSetting, startTime, true);
             }
-        };
+            if (endTime != null) {
+                TimestampFilter.setEnd(iteratorSetting, endTime, true);
+            }
+            scanner.addScanIterator(iteratorSetting);
+        }
+
+        Range range = new Range(rowKey);
+        scanner.setRange(range);
+
+        try {
+            Map<String, HistoricalPropertyValue> results = new HashMap<>();
+            for (Map.Entry<Key, Value> column : scanner) {
+                String cq = column.getKey().getColumnQualifier().toString();
+                String columnVisibility = column.getKey().getColumnVisibility().toString();
+                if (column.getKey().getColumnFamily().equals(AccumuloElement.CF_PROPERTY)) {
+                    if (!columnVisibility.equals(visibility.getVisibilityString())) {
+                        continue;
+                    }
+                    String propertyName = ElementMaker.getPropertyNameFromColumnQualifier(cq);
+                    if (!propertyName.equals(name)) {
+                        continue;
+                    }
+                    String propertyKey = ElementMaker.getPropertyKeyFromColumnQualifier(cq);
+                    if (!propertyKey.equals(key)) {
+                        continue;
+                    }
+                    String resultsKey = Joiner.on(ElementMutationBuilder.VALUE_SEPARATOR).join(
+                            propertyName,
+                            propertyKey,
+                            columnVisibility,
+                            Long.toString(column.getKey().getTimestamp())
+                    );
+                    long timestamp = column.getKey().getTimestamp();
+                    Object value = valueSerializer.valueToObject(column.getValue());
+                    Metadata metadata = new Metadata();
+                    HistoricalPropertyValue hpv = new HistoricalPropertyValue(timestamp, value, metadata);
+                    results.put(resultsKey, hpv);
+                } else if (column.getKey().getColumnFamily().equals(AccumuloElement.CF_PROPERTY_METADATA)) {
+                    String[] cqParts = cq.split(ElementMutationBuilder.VALUE_SEPARATOR);
+                    if (cqParts.length != 5) {
+                        throw new VertexiumException("Unexpected number of parts on metadata. Expected 5, found " + cqParts.length);
+                    }
+                    String propertyName = cqParts[0];
+                    String propertyKey = cqParts[1];
+                    String visibilityString = cqParts[2];
+                    String timestampString = cqParts[3];
+                    String metadataKey = cqParts[4];
+                    String resultsKey = Joiner.on(ElementMutationBuilder.VALUE_SEPARATOR).join(
+                            propertyName,
+                            propertyKey,
+                            visibilityString,
+                            timestampString
+                    );
+                    HistoricalPropertyValue hpv = results.get(resultsKey);
+                    if (hpv == null) {
+                        continue;
+                    }
+                    Object value = valueSerializer.valueToObject(column.getValue());
+                    Visibility metadataVisibility = accumuloVisibilityToVisibility(columnVisibility);
+                    hpv.getMetadata().add(metadataKey, value, metadataVisibility);
+                }
+            }
+            return new TreeSet<>(results.values());
+        } finally {
+            scanner.close();
+        }
     }
 
     private String getRowKey(Element element) {
@@ -938,17 +985,18 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
         try {
             String tableName = getTableNameFromElementType(elementType);
             Scanner scanner = connector.createScanner(tableName, toAccumuloAuthorizations(authorizations));
-            if (getConfiguration().isUseServerSideElementVisibilityRowFilter()) {
-                if (maxVersions != null) {
-                    IteratorSetting versioningIteratorSettings = new IteratorSetting(
-                            90,
-                            VersioningIterator.class.getSimpleName(),
-                            VersioningIterator.class
-                    );
-                    VersioningIterator.setMaxVersions(versioningIteratorSettings, maxVersions.intValue());
-                    scanner.addScanIterator(versioningIteratorSettings);
-                }
 
+            if (maxVersions != null) {
+                IteratorSetting versioningIteratorSettings = new IteratorSetting(
+                        90,
+                        VersioningIterator.class.getSimpleName(),
+                        VersioningIterator.class
+                );
+                VersioningIterator.setMaxVersions(versioningIteratorSettings, maxVersions.intValue());
+                scanner.addScanIterator(versioningIteratorSettings);
+            }
+
+            if (getConfiguration().isUseServerSideElementVisibilityRowFilter()) {
                 IteratorSetting elementVisibilityIteratorSettings = new IteratorSetting(
                         100,
                         ElementVisibilityRowFilter.class.getSimpleName(),
@@ -958,6 +1006,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
                 elementVisibilityIteratorSettings.addOption(elementMode, Boolean.TRUE.toString());
                 scanner.addScanIterator(elementVisibilityIteratorSettings);
             }
+
             applyFetchHints(scanner, fetchHints, elementType);
             return scanner;
         } catch (TableNotFoundException e) {
@@ -965,16 +1014,16 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
         }
     }
 
-    protected BatchScanner createVertexBatchScanner(EnumSet<FetchHint> fetchHints, Authorizations authorizations, int numQueryThreads) throws VertexiumException {
-        return createElementVisibilityWholeRowBatchScanner(fetchHints, authorizations, ElementType.VERTEX, numQueryThreads);
+    protected BatchScanner createVertexBatchScanner(EnumSet<FetchHint> fetchHints, int numQueryThreads, Integer maxVersions, Authorizations authorizations) throws VertexiumException {
+        return createElementVisibilityWholeRowBatchScanner(fetchHints, ElementType.VERTEX, maxVersions, numQueryThreads, authorizations);
     }
 
-    protected BatchScanner createEdgeBatchScanner(EnumSet<FetchHint> fetchHints, Authorizations authorizations, int numQueryThreads) throws VertexiumException {
-        return createElementVisibilityWholeRowBatchScanner(fetchHints, authorizations, ElementType.EDGE, numQueryThreads);
+    protected BatchScanner createEdgeBatchScanner(EnumSet<FetchHint> fetchHints, int numQueryThreads, Integer maxVersions, Authorizations authorizations) throws VertexiumException {
+        return createElementVisibilityWholeRowBatchScanner(fetchHints, ElementType.EDGE, maxVersions, numQueryThreads, authorizations);
     }
 
-    private BatchScanner createElementVisibilityWholeRowBatchScanner(EnumSet<FetchHint> fetchHints, Authorizations authorizations, ElementType elementType, int numQueryThreads) throws VertexiumException {
-        BatchScanner scanner = createElementVisibilityBatchScanner(fetchHints, authorizations, elementType, numQueryThreads);
+    private BatchScanner createElementVisibilityWholeRowBatchScanner(EnumSet<FetchHint> fetchHints, ElementType elementType, Integer maxVersions, int numQueryThreads, Authorizations authorizations) throws VertexiumException {
+        BatchScanner scanner = createElementVisibilityBatchScanner(fetchHints, elementType, maxVersions, numQueryThreads, authorizations);
         IteratorSetting iteratorSetting;
 
         iteratorSetting = new IteratorSetting(
@@ -987,8 +1036,8 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
         return scanner;
     }
 
-    private BatchScanner createElementVisibilityBatchScanner(EnumSet<FetchHint> fetchHints, Authorizations authorizations, ElementType elementType, int numQueryThreads) {
-        BatchScanner scanner = createElementBatchScanner(fetchHints, authorizations, elementType, numQueryThreads);
+    private BatchScanner createElementVisibilityBatchScanner(EnumSet<FetchHint> fetchHints, ElementType elementType, Integer maxVersions, int numQueryThreads, Authorizations authorizations) {
+        BatchScanner scanner = createElementBatchScanner(fetchHints, elementType, maxVersions, numQueryThreads, authorizations);
         IteratorSetting iteratorSetting;
         if (getConfiguration().isUseServerSideElementVisibilityRowFilter()) {
             iteratorSetting = new IteratorSetting(
@@ -1003,10 +1052,21 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
         return scanner;
     }
 
-    private BatchScanner createElementBatchScanner(EnumSet<FetchHint> fetchHints, Authorizations authorizations, ElementType elementType, int numQueryThreads) {
+    private BatchScanner createElementBatchScanner(EnumSet<FetchHint> fetchHints, ElementType elementType, Integer maxVersions, int numQueryThreads, Authorizations authorizations) {
         try {
             String tableName = getTableNameFromElementType(elementType);
             BatchScanner scanner = connector.createBatchScanner(tableName, toAccumuloAuthorizations(authorizations), numQueryThreads);
+
+            if (maxVersions != null) {
+                IteratorSetting versioningIteratorSettings = new IteratorSetting(
+                        90,
+                        VersioningIterator.class.getSimpleName(),
+                        VersioningIterator.class
+                );
+                VersioningIterator.setMaxVersions(versioningIteratorSettings, maxVersions.intValue());
+                scanner.addScanIterator(versioningIteratorSettings);
+            }
+
             applyFetchHints(scanner, fetchHints, elementType);
             return scanner;
         } catch (TableNotFoundException e) {
@@ -1333,7 +1393,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
 
         int numQueryThreads = Math.min(Math.max(1, ranges.size() / 10), 10);
         // only fetch one size of the edge since we are scanning all vertices the edge will appear on the out on one of the vertices
-        BatchScanner batchScanner = createElementBatchScanner(EnumSet.of(FetchHint.OUT_EDGE_REFS), authorizations, ElementType.VERTEX, numQueryThreads);
+        BatchScanner batchScanner = createElementBatchScanner(EnumSet.of(FetchHint.OUT_EDGE_REFS), ElementType.VERTEX, 1, numQueryThreads, authorizations);
         try {
             batchScanner.setRanges(ranges);
 
@@ -1491,7 +1551,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
 
             @Override
             protected Iterator<Map.Entry<Key, Value>> createIterator() {
-                batchScanner = createVertexBatchScanner(fetchHints, authorizations, Math.min(Math.max(1, ranges.size() / 10), 10));
+                batchScanner = createVertexBatchScanner(fetchHints, Math.min(Math.max(1, ranges.size() / 10), 10), 1, authorizations);
                 batchScanner.setRanges(ranges);
                 return batchScanner.iterator();
             }
@@ -1538,7 +1598,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
 
             @Override
             protected Iterator<Map.Entry<Key, Value>> createIterator() {
-                batchScanner = createEdgeBatchScanner(fetchHints, authorizations, Math.min(Math.max(1, ranges.size() / 10), 10));
+                batchScanner = createEdgeBatchScanner(fetchHints, Math.min(Math.max(1, ranges.size() / 10), 10), 1, authorizations);
                 batchScanner.setRanges(ranges);
                 return batchScanner.iterator();
             }

@@ -10,7 +10,7 @@ public abstract class Property implements Comparable<Property> {
 
     public abstract Object getValue();
 
-    public abstract Long getTimestamp();
+    public abstract long getTimestamp();
 
     public abstract Visibility getVisibility();
 

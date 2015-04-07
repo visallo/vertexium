@@ -1,11 +1,13 @@
 package org.neolumin.vertexium;
 
+import java.io.Serializable;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
 
-public class DateOnly {
+public class DateOnly implements Serializable {
+    static final long serialVersionUID = 42L;
     private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd");
     private final Date date;
 

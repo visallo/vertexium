@@ -183,11 +183,7 @@ public abstract class ElementMutationBuilder {
             propertyValue = ((DateOnly) propertyValue).getDate();
         }
         Value value = new Value(valueSerializer.objectToValue(propertyValue));
-        if (property.getTimestamp() != null) {
-            m.put(AccumuloElement.CF_PROPERTY, columnQualifier, columnVisibility, property.getTimestamp(), value);
-        } else {
-            m.put(AccumuloElement.CF_PROPERTY, columnQualifier, columnVisibility, value);
-        }
+        m.put(AccumuloElement.CF_PROPERTY, columnQualifier, columnVisibility, property.getTimestamp(), value);
         addPropertyMetadataToMutation(m, property);
     }
 
@@ -277,12 +273,18 @@ public abstract class ElementMutationBuilder {
         return getPropertyColumnQualifier(property.getName(), property.getKey());
     }
 
-    public static Text getPropertyColumnQualifier(String propertyName, String propertyKey) {
+    protected Text getPropertyColumnQualifier(String propertyName, String propertyKey) {
         return getValueSeparatedJoined(propertyName, propertyKey);
     }
 
     protected Text getPropertyMetadataColumnQualifier(Property property, String metadataKey) {
-        return getValueSeparatedJoined(property.getName(), property.getKey(), property.getVisibility().getVisibilityString(), metadataKey);
+        return getValueSeparatedJoined(
+                property.getName(),
+                property.getKey(),
+                property.getVisibility().getVisibilityString(),
+                Long.toString(property.getTimestamp()),
+                metadataKey
+        );
     }
 
     protected static Text getPropertyColumnQualifierWithVisibilityString(Property property) {

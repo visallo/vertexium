@@ -659,8 +659,7 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
             Element element,
             String propertyKey,
             String propertyName,
-            Visibility propertyVisibility,
-            Authorizations authorizations
+            Visibility propertyVisibility
     ) {
         if (element instanceof InMemoryElement) {
             return ((InMemoryElement) element).internalGetHistoricalPropertyValues(propertyKey, propertyName, propertyVisibility);

@@ -7,7 +7,7 @@ import org.neolumin.vertexium.Visibility;
 public abstract class MutableProperty extends Property {
     public abstract void setValue(Object value);
 
-    public abstract void setTimestamp(Long timestamp);
+    public abstract void setTimestamp(long timestamp);
 
     public abstract void setVisibility(Visibility visibility);
 

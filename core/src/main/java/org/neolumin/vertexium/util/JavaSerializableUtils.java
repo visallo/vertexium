@@ -29,4 +29,8 @@ public class JavaSerializableUtils {
             throw new RuntimeException(e);
         }
     }
+
+    public static <T> T copy(T value) {
+        return (T) bytesToObject(objectToBytes(value));
+    }
 }

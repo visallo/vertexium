@@ -1,8 +1,15 @@
 package org.neolumin.vertexium.property;
 
-public class PropertyValue {
+import java.io.Serializable;
+
+public class PropertyValue implements Serializable {
+    static final long serialVersionUID = 42L;
     private boolean store = true;
     private boolean searchIndex = true;
+
+    public PropertyValue() {
+
+    }
 
     public PropertyValue store(boolean store) {
         this.store = store;
