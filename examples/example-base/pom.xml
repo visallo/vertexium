@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <groupId>org.neolumin.vertexium.examples</groupId>
+        <groupId>org.vertexium.examples</groupId>
         <artifactId>vertexium-examples</artifactId>
         <version>0.9.1-SNAPSHOT</version>
     </parent>
@@ -12,12 +12,12 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.neolumin.vertexium</groupId>
+            <groupId>org.vertexium</groupId>
             <artifactId>vertexium-core</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.neolumin.vertexium</groupId>
+            <groupId>org.vertexium</groupId>
             <artifactId>vertexium-accumulo</artifactId>
             <version>${project.version}</version>
             <exclusions>
@@ -28,12 +28,12 @@
             </exclusions>
         </dependency>
         <dependency>
-            <groupId>org.neolumin.vertexium</groupId>
+            <groupId>org.vertexium</groupId>
             <artifactId>vertexium-elasticsearch-parentchild</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.neolumin.vertexium</groupId>
+            <groupId>org.vertexium</groupId>
             <artifactId>vertexium-elasticsearch</artifactId>
             <version>${project.version}</version>
         </dependency>

@@ -22,22 +22,22 @@ Maven
 ```
 <dependencies>
     <dependency>
-        <groupId>org.neolumin.vertexium</groupId>
+        <groupId>org.vertexium</groupId>
         <artifactId>vertexium-core</artifactId>
         <version>${vertexium.version}</version>
     </dependency>
     <dependency>
-        <groupId>org.neolumin.vertexium</groupId>
+        <groupId>org.vertexium</groupId>
         <artifactId>vertexium-inmemory</artifactId>
         <version>${vertexium.version}</version>
     </dependency>
     <dependency>
-        <groupId>org.neolumin.vertexium</groupId>
+        <groupId>org.vertexium</groupId>
         <artifactId>vertexium-elasticsearch</artifactId>
         <version>${vertexium.version}</version>
     </dependency>
     <dependency>
-        <groupId>org.neolumin.vertexium</groupId>
+        <groupId>org.vertexium</groupId>
         <artifactId>vertexium-accumulo</artifactId>
         <version>${vertexium.version}</version>
     </dependency>
@@ -74,9 +74,9 @@ API Usage Examples
 import java.util.Map;
 import java.util.HashMap;
 
-import org.neolumin.vertexium.Graph;
-import org.neolumin.vertexium.accumulo.AccumuloGraph;
-import org.neolumin.vertexium.accumulo.AccumuloGraphConfiguration;
+import org.vertexium.Graph;
+import org.vertexium.accumulo.AccumuloGraph;
+import org.vertexium.accumulo.AccumuloGraphConfiguration;
 
 // specify Accumulo config, more options than shown are available
 Map mapConfig = new HashMap();
@@ -93,9 +93,9 @@ Graph graph = AccumuloGraph.create(graphConfig);
 ### add a vertex
 
 ```java
-import org.neolumin.vertexium.Authorizations;
-import org.neolumin.vertexium.Graph;
-import org.neolumin.vertexium.accumulo.AccumuloAuthorizations;
+import org.vertexium.Authorizations;
+import org.vertexium.Graph;
+import org.vertexium.accumulo.AccumuloAuthorizations;
 
 // visibility of vertex to be created
 Visibility visA = new Visibility("a");
@@ -133,8 +133,8 @@ Edge e = graph.addEdge(v1, v2, "label1", visA, authA);
 ### get all vertex edges
 
 ```java
-import org.neolumin.vertexium.Direction;
-import org.neolumin.vertexium.Edge;
+import org.vertexium.Direction;
+import org.vertexium.Edge;
 
 Authorizations authA = new AccumuloAuthorizations("a");
 Vertex v1 = graph.getVertex("v1", authA);
@@ -153,7 +153,7 @@ Configuration
 
 The Accumulo implementation has quite a few configuration properties, all with
 defaults. Please see the `public static final String` fields in
-[org.neolumin.vertexium.accumulo.AccumuloGraphConfiguration](vertexium-accumulo/src/main/java/org/neolumin/vertexium/accumulo/AccumuloGraphConfiguration.java?source=c#L29) for a full
+[org.vertexium.accumulo.AccumuloGraphConfiguration](vertexium-accumulo/src/main/java/org/neolumin/vertexium/accumulo/AccumuloGraphConfiguration.java?source=c#L29) for a full
 listing.
 
 Iterators

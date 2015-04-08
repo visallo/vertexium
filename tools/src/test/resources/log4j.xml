@@ -14,7 +14,7 @@
         </layout>
         </appender>
 
-        <logger name="org.neolumin.vertexium" additivity="false">
+        <logger name="org.vertexium" additivity="false">
         <level value="DEBUG" />
         <appender-ref ref="console" />
         </logger>
