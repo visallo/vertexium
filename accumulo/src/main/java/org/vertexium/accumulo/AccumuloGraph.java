@@ -14,12 +14,15 @@ import org.apache.accumulo.core.iterators.user.WholeRowIterator;
 import org.apache.accumulo.core.security.ColumnVisibility;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.io.Text;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.vertexium.*;
 import org.vertexium.accumulo.iterator.ElementVisibilityRowFilter;
 import org.vertexium.accumulo.keys.PropertyColumnQualifier;
 import org.vertexium.accumulo.keys.PropertyHiddenColumnQualifier;
 import org.vertexium.accumulo.keys.PropertyMetadataColumnQualifier;
 import org.vertexium.accumulo.serializer.ValueSerializer;
+import org.vertexium.event.*;
 import org.vertexium.id.IdGenerator;
 import org.vertexium.id.NameSubstitutionStrategy;
 import org.vertexium.mutation.AlterPropertyVisibility;
@@ -29,22 +32,11 @@ import org.vertexium.property.MutableProperty;
 import org.vertexium.property.StreamingPropertyValue;
 import org.vertexium.search.IndexHint;
 import org.vertexium.search.SearchIndex;
-import org.vertexium.util.CloseableIterable;
-import org.vertexium.util.EmptyClosableIterable;
-import org.vertexium.util.JavaSerializableUtils;
-import org.vertexium.util.LookAheadIterable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.vertexium.*;
-import org.vertexium.event.*;
 import org.vertexium.util.*;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.*;
-
-import static org.vertexium.util.IterableUtils.toSet;
-import static org.vertexium.util.Preconditions.checkNotNull;
 
 public class AccumuloGraph extends GraphBaseWithSearchIndex {
     private static final Logger LOGGER = LoggerFactory.getLogger(AccumuloGraph.class);
@@ -655,7 +647,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
                     results.put(resultsKey, hpv);
                 } else if (column.getKey().getColumnFamily().equals(AccumuloElement.CF_PROPERTY_METADATA)) {
                     PropertyMetadataColumnQualifier propertyMetadataColumnQualifier = new PropertyMetadataColumnQualifier(cq, getNameSubstitutionStrategy());
-                    String resultsKey = propertyMetadataColumnQualifier.getPropertyDiscriminator();
+                    String resultsKey = propertyMetadataColumnQualifier.getPropertyDiscriminator(column.getKey().getTimestamp());
                     HistoricalPropertyValue hpv = results.get(resultsKey);
                     if (hpv == null) {
                         continue;

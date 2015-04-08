@@ -72,7 +72,7 @@ public abstract class ElementMaker<T> {
             }
 
             if (AccumuloElement.CF_PROPERTY_METADATA.compareTo(columnFamily) == 0) {
-                extractPropertyMetadata(columnQualifier, columnVisibility, value);
+                extractPropertyMetadata(columnQualifier, columnVisibility, col.getKey().getTimestamp(), value);
                 continue;
             }
 
@@ -191,11 +191,11 @@ public abstract class ElementMaker<T> {
         this.hiddenProperties.add(hiddenProperty);
     }
 
-    private void extractPropertyMetadata(Text columnQualifier, ColumnVisibility columnVisibility, Value value) {
+    private void extractPropertyMetadata(Text columnQualifier, ColumnVisibility columnVisibility, long timestamp, Value value) {
         Visibility metadataVisibility = AccumuloGraph.accumuloVisibilityToVisibility(columnVisibility);
         PropertyMetadataColumnQualifier propertyMetadataColumnQualifier = new PropertyMetadataColumnQualifier(columnQualifier, getGraph().getNameSubstitutionStrategy());
 
-        String discriminator = propertyMetadataColumnQualifier.getPropertyDiscriminator();
+        String discriminator = propertyMetadataColumnQualifier.getPropertyDiscriminator(timestamp);
         LazyPropertyMetadata lazyPropertyMetadata = getOrCreatePropertyMetadata(discriminator);
         lazyPropertyMetadata.add(propertyMetadataColumnQualifier.getMetadataKey(), metadataVisibility, value.get());
     }

@@ -5,7 +5,8 @@ import org.apache.accumulo.core.data.Value;
 import org.apache.accumulo.core.security.ColumnVisibility;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.io.Text;
-import org.vertexium.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.vertexium.*;
 import org.vertexium.accumulo.keys.DataTableRowKey;
 import org.vertexium.accumulo.keys.PropertyColumnQualifier;
@@ -18,8 +19,6 @@ import org.vertexium.property.StreamingPropertyValue;
 import org.vertexium.util.LimitOutputStream;
 import org.vertexium.util.Preconditions;
 import org.vertexium.util.StreamUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
@@ -209,7 +208,7 @@ public abstract class ElementMutationBuilder {
                 m.putDelete(AccumuloElement.CF_PROPERTY_METADATA, columnQualifier, metadataVisibility);
             } else {
                 Value metadataValue = new Value(valueSerializer.objectToValue(metadataItem.getValue()));
-                m.put(AccumuloElement.CF_PROPERTY_METADATA, columnQualifier, metadataVisibility, metadataValue);
+                m.put(AccumuloElement.CF_PROPERTY_METADATA, columnQualifier, metadataVisibility, property.getTimestamp(), metadataValue);
             }
         }
     }
