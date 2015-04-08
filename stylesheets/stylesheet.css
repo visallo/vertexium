@@ -139,6 +139,7 @@ img {
   max-width: 739px;
   padding: 5px;
   margin: 10px 0 10px 0;
+  /*
   border: 1px solid #ebebeb;
 
   box-shadow: 0 0 5px #ebebeb;
@@ -146,6 +147,7 @@ img {
   -moz-box-shadow: 0 0 5px #ebebeb;
   -o-box-shadow: 0 0 5px #ebebeb;
   -ms-box-shadow: 0 0 5px #ebebeb;
+  */
 }
 
 p img {
@@ -201,14 +203,12 @@ ul, ol, dl {
 }
 
 ul {
-  list-style-position: inside;
-  list-style: disc;
+  list-style: inside;
   padding-left: 20px;
 }
 
 ol {
-  list-style-position: inside;
-  list-style: decimal;
+  list-style: decimal inside;
   padding-left: 20px;
 }
 
