@@ -19,6 +19,10 @@ public class Metadata implements Serializable {
         entries.remove(toMapKey(key, visibility));
     }
 
+    public void clear() {
+        entries.clear();
+    }
+
     public void remove(String key) {
         for (Map.Entry<String, Entry> e : new ArrayList<>(entries.entrySet())) {
             if (e.getValue().getKey().equals(key)) {

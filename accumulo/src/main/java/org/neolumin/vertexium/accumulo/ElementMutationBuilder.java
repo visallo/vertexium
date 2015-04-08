@@ -1,13 +1,16 @@
 package org.neolumin.vertexium.accumulo;
 
-import com.google.common.base.Joiner;
 import org.apache.accumulo.core.data.Mutation;
 import org.apache.accumulo.core.data.Value;
 import org.apache.accumulo.core.security.ColumnVisibility;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.io.Text;
 import org.neolumin.vertexium.*;
+import org.neolumin.vertexium.accumulo.keys.DataTableRowKey;
+import org.neolumin.vertexium.accumulo.keys.PropertyColumnQualifier;
+import org.neolumin.vertexium.accumulo.keys.PropertyMetadataColumnQualifier;
 import org.neolumin.vertexium.accumulo.serializer.ValueSerializer;
+import org.neolumin.vertexium.id.NameSubstitutionStrategy;
 import org.neolumin.vertexium.mutation.PropertyPropertyRemoveMutation;
 import org.neolumin.vertexium.mutation.PropertyRemoveMutation;
 import org.neolumin.vertexium.property.StreamingPropertyValue;
@@ -23,7 +26,6 @@ public abstract class ElementMutationBuilder {
     private static final Logger LOGGER = LoggerFactory.getLogger(ElementMutationBuilder.class);
     private static final Text EMPTY_TEXT = new Text("");
     public static final Value EMPTY_VALUE = new Value(new byte[0]);
-    public static final String VALUE_SEPARATOR = "\u001f";
 
     private final FileSystem fileSystem;
     private final ValueSerializer valueSerializer;
@@ -148,32 +150,32 @@ public abstract class ElementMutationBuilder {
         return true;
     }
 
-    public boolean alterEdgeVertexOutVertex(Mutation mvout, Edge edge, Visibility newVisibility) {
+    public boolean alterEdgeVertexOutVertex(Mutation vertexOutMutation, Edge edge, Visibility newVisibility) {
         ColumnVisibility currentColumnVisibility = visibilityToAccumuloVisibility(edge.getVisibility());
         ColumnVisibility newColumnVisibility = visibilityToAccumuloVisibility(newVisibility);
         if (currentColumnVisibility.equals(newColumnVisibility)) {
             return false;
         }
         EdgeInfo edgeInfo = new EdgeInfo(edge.getLabel(), edge.getVertexId(Direction.IN));
-        mvout.putDelete(AccumuloVertex.CF_OUT_EDGE, new Text(edge.getId()), currentColumnVisibility);
-        mvout.put(AccumuloVertex.CF_OUT_EDGE, new Text(edge.getId()), newColumnVisibility, edgeInfo.toValue());
+        vertexOutMutation.putDelete(AccumuloVertex.CF_OUT_EDGE, new Text(edge.getId()), currentColumnVisibility);
+        vertexOutMutation.put(AccumuloVertex.CF_OUT_EDGE, new Text(edge.getId()), newColumnVisibility, edgeInfo.toValue());
         return true;
     }
 
-    public boolean alterEdgeVertexInVertex(Mutation mvin, Edge edge, Visibility newVisibility) {
+    public boolean alterEdgeVertexInVertex(Mutation vertexInMutation, Edge edge, Visibility newVisibility) {
         ColumnVisibility currentColumnVisibility = visibilityToAccumuloVisibility(edge.getVisibility());
         ColumnVisibility newColumnVisibility = visibilityToAccumuloVisibility(newVisibility);
         if (currentColumnVisibility.equals(newColumnVisibility)) {
             return false;
         }
         EdgeInfo edgeInfo = new EdgeInfo(edge.getLabel(), edge.getVertexId(Direction.OUT));
-        mvin.putDelete(AccumuloVertex.CF_IN_EDGE, new Text(edge.getId()), currentColumnVisibility);
-        mvin.put(AccumuloVertex.CF_IN_EDGE, new Text(edge.getId()), newColumnVisibility, edgeInfo.toValue());
+        vertexInMutation.putDelete(AccumuloVertex.CF_IN_EDGE, new Text(edge.getId()), currentColumnVisibility);
+        vertexInMutation.put(AccumuloVertex.CF_IN_EDGE, new Text(edge.getId()), newColumnVisibility, edgeInfo.toValue());
         return true;
     }
 
     public void addPropertyToMutation(Mutation m, String rowKey, Property property) {
-        Text columnQualifier = getPropertyColumnQualifier(property);
+        Text columnQualifier = new PropertyColumnQualifier(property).getColumnQualifier(getNameSubstitutionStrategy());
         ColumnVisibility columnVisibility = visibilityToAccumuloVisibility(property.getVisibility());
         Object propertyValue = property.getValue();
         if (propertyValue instanceof StreamingPropertyValue) {
@@ -187,8 +189,10 @@ public abstract class ElementMutationBuilder {
         addPropertyMetadataToMutation(m, property);
     }
 
+    protected abstract NameSubstitutionStrategy getNameSubstitutionStrategy();
+
     public void addPropertyRemoveToMutation(Mutation m, PropertyRemoveMutation propertyRemove) {
-        Text columnQualifier = getPropertyColumnQualifier(propertyRemove);
+        Text columnQualifier = new PropertyColumnQualifier(propertyRemove).getColumnQualifier(getNameSubstitutionStrategy());
         ColumnVisibility columnVisibility = visibilityToAccumuloVisibility(propertyRemove.getVisibility());
         m.putDelete(AccumuloElement.CF_PROPERTY, columnQualifier, columnVisibility);
         addPropertyRemoveMetadataToMutation(m, propertyRemove);
@@ -198,7 +202,7 @@ public abstract class ElementMutationBuilder {
     public void addPropertyMetadataToMutation(Mutation m, Property property) {
         Metadata metadata = property.getMetadata();
         for (Metadata.Entry metadataItem : metadata.entrySet()) {
-            Text columnQualifier = getPropertyMetadataColumnQualifier(property, metadataItem.getKey());
+            Text columnQualifier = new PropertyMetadataColumnQualifier(property, metadataItem.getKey()).getColumnQualifier(getNameSubstitutionStrategy());
             ColumnVisibility metadataVisibility = visibilityToAccumuloVisibility(metadataItem.getVisibility());
             if (metadataItem.getValue() == null) {
                 m.putDelete(AccumuloElement.CF_PROPERTY_METADATA, columnQualifier, metadataVisibility);
@@ -214,7 +218,7 @@ public abstract class ElementMutationBuilder {
             Property property = ((PropertyPropertyRemoveMutation) propertyRemoveMutation).getProperty();
             Metadata metadata = property.getMetadata();
             for (Metadata.Entry metadataItem : metadata.entrySet()) {
-                Text columnQualifier = getPropertyMetadataColumnQualifier(property, metadataItem.getKey());
+                Text columnQualifier = new PropertyMetadataColumnQualifier(property, metadataItem.getKey()).getColumnQualifier(getNameSubstitutionStrategy());
                 ColumnVisibility metadataVisibility = visibilityToAccumuloVisibility(metadataItem.getVisibility());
                 m.putDelete(AccumuloElement.CF_PROPERTY_METADATA, columnQualifier, metadataVisibility);
             }
@@ -245,61 +249,23 @@ public abstract class ElementMutationBuilder {
     public void addPropertyRemoveToMutation(Mutation m, Property property) {
         Preconditions.checkNotNull(m, "mutation cannot be null");
         Preconditions.checkNotNull(property, "property cannot be null");
-        Text columnQualifier = getPropertyColumnQualifier(property);
+        Text columnQualifier = new PropertyColumnQualifier(property).getColumnQualifier(getNameSubstitutionStrategy());
         ColumnVisibility columnVisibility = visibilityToAccumuloVisibility(property.getVisibility());
         m.putDelete(AccumuloElement.CF_PROPERTY, columnQualifier, columnVisibility);
         for (Metadata.Entry metadataEntry : property.getMetadata().entrySet()) {
-            Text metadataEntryColumnQualifier = getPropertyMetadataColumnQualifier(property, metadataEntry.getKey());
+            Text metadataEntryColumnQualifier = new PropertyMetadataColumnQualifier(property, metadataEntry.getKey()).getColumnQualifier(getNameSubstitutionStrategy());
             ColumnVisibility metadataEntryVisibility = visibilityToAccumuloVisibility(metadataEntry.getVisibility());
             m.putDelete(AccumuloElement.CF_PROPERTY_METADATA, metadataEntryColumnQualifier, metadataEntryVisibility);
         }
     }
 
     private StreamingPropertyValueRef saveStreamingPropertyValueSmall(String rowKey, Property property, byte[] data, StreamingPropertyValue propertyValue) {
-        String dataRowKey = createTableDataRowKey(rowKey, property);
-        Mutation dataMutation = new Mutation(dataRowKey);
+        String dataTableRowKey = new DataTableRowKey(rowKey, property).getRowKey();
+        Mutation dataMutation = new Mutation(dataTableRowKey);
         dataMutation.put(EMPTY_TEXT, EMPTY_TEXT, new Value(data));
         saveDataMutation(dataMutation);
-        return new StreamingPropertyValueTableRef(dataRowKey, propertyValue, data);
+        return new StreamingPropertyValueTableRef(dataTableRowKey, propertyValue, data);
     }
 
     protected abstract void saveDataMutation(Mutation dataMutation);
-
-    protected Text getPropertyColumnQualifier(PropertyRemoveMutation propertyRemove) {
-        return getValueSeparatedJoined(propertyRemove.getName(), propertyRemove.getKey());
-    }
-
-    protected Text getPropertyColumnQualifier(Property property) {
-        return getPropertyColumnQualifier(property.getName(), property.getKey());
-    }
-
-    protected Text getPropertyColumnQualifier(String propertyName, String propertyKey) {
-        return getValueSeparatedJoined(propertyName, propertyKey);
-    }
-
-    protected Text getPropertyMetadataColumnQualifier(Property property, String metadataKey) {
-        return getValueSeparatedJoined(
-                property.getName(),
-                property.getKey(),
-                property.getVisibility().getVisibilityString(),
-                Long.toString(property.getTimestamp()),
-                metadataKey
-        );
-    }
-
-    protected static Text getPropertyColumnQualifierWithVisibilityString(Property property) {
-        return getValueSeparatedJoined(property.getName(), property.getKey(), property.getVisibility().getVisibilityString());
-    }
-
-    protected static Text getValueSeparatedJoined(String... values) {
-        return new Text(getStringValueSeparatorJoined(values));
-    }
-
-    protected static String getStringValueSeparatorJoined(String... values) {
-        return Joiner.on(VALUE_SEPARATOR).join(values);
-    }
-
-    private String createTableDataRowKey(String rowKey, Property property) {
-        return getStringValueSeparatorJoined(AccumuloConstants.DATA_ROW_KEY_PREFIX + rowKey, property.getName(), property.getKey());
-    }
 }

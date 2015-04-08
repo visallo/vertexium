@@ -9,7 +9,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class LazyPropertyMetadata {
-    private Map<String, Entry> entries = new HashMap<String, Entry>();
+    private Map<String, Entry> entries = new HashMap<>();
 
     public Metadata toMetadata(ValueSerializer valueSerializer) {
         Metadata metadata = new Metadata();

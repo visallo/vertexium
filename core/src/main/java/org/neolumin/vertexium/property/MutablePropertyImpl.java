@@ -2,8 +2,11 @@ package org.neolumin.vertexium.property;
 
 import org.neolumin.vertexium.Authorizations;
 import org.neolumin.vertexium.Metadata;
+import org.neolumin.vertexium.Property;
 import org.neolumin.vertexium.Visibility;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -102,12 +105,11 @@ public class MutablePropertyImpl extends MutableProperty {
     }
 
     @Override
-    protected void addMetadata(String key, Object value, Visibility visibility) {
-        this.metadata.add(key, value, visibility);
-    }
-
-    @Override
-    protected void removeMetadata(String key, Visibility visibility) {
-        this.metadata.remove(key, visibility);
+    protected void updateMetadata(Property property) {
+        Collection<Metadata.Entry> entries = new ArrayList<>(property.getMetadata().entrySet());
+        this.metadata.clear();
+        for (Metadata.Entry metadataEntry : entries) {
+            this.metadata.add(metadataEntry.getKey(), metadataEntry.getValue(), metadataEntry.getVisibility());
+        }
     }
 }

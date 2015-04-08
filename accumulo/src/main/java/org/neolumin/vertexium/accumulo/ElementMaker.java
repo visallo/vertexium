@@ -7,15 +7,16 @@ import org.apache.accumulo.core.security.ColumnVisibility;
 import org.apache.hadoop.io.Text;
 import org.neolumin.vertexium.Authorizations;
 import org.neolumin.vertexium.Property;
-import org.neolumin.vertexium.VertexiumException;
 import org.neolumin.vertexium.Visibility;
+import org.neolumin.vertexium.accumulo.keys.PropertyColumnQualifier;
+import org.neolumin.vertexium.accumulo.keys.PropertyHiddenColumnQualifier;
+import org.neolumin.vertexium.accumulo.keys.PropertyMetadataColumnQualifier;
 
 import java.util.*;
 
 public abstract class ElementMaker<T> {
     private final Iterator<Map.Entry<Key, Value>> row;
-    private final Map<String, String> propertyNames = new HashMap<>();
-    private final Map<String, String> propertyColumnQualifier = new HashMap<>();
+    private final Map<String, PropertyColumnQualifier> propertyColumnQualifiers = new HashMap<>();
     private final Map<String, byte[]> propertyValues = new HashMap<>();
     private final Map<String, Visibility> propertyVisibilities = new HashMap<>();
     private final Map<String, LazyPropertyMetadata> propertyMetadata = new HashMap<>();
@@ -130,8 +131,9 @@ public abstract class ElementMaker<T> {
         List<Property> results = new ArrayList<>(propertyValues.size());
         for (Map.Entry<String, byte[]> propertyValueEntry : propertyValues.entrySet()) {
             String key = propertyValueEntry.getKey();
-            String propertyKey = getPropertyKeyFromColumnQualifier(propertyColumnQualifier.get(key));
-            String propertyName = propertyNames.get(key);
+            PropertyColumnQualifier propertyColumnQualifier = propertyColumnQualifiers.get(key);
+            String propertyKey = propertyColumnQualifier.getPropertyKey();
+            String propertyName = propertyColumnQualifier.getPropertyName();
             byte[] propertyValue = propertyValueEntry.getValue();
             Visibility propertyVisibility = propertyVisibilities.get(key);
             long propertyTimestamp = propertyTimestamps.get(key);
@@ -179,48 +181,30 @@ public abstract class ElementMaker<T> {
     }
 
     private void extractPropertyHidden(Text columnQualifier, ColumnVisibility columnVisibility) {
-        String columnQualifierStr = columnQualifier.toString();
-        int nameKeySep = columnQualifierStr.indexOf(ElementMutationBuilder.VALUE_SEPARATOR);
-        if (nameKeySep < 0) {
-            throw new VertexiumException("Invalid property hidden column qualifier");
-        }
-        int keyVisSep = columnQualifierStr.indexOf(ElementMutationBuilder.VALUE_SEPARATOR, nameKeySep + 1);
-        if (nameKeySep < 0) {
-            throw new VertexiumException("Invalid property hidden column qualifier");
-        }
-
-        String name = columnQualifierStr.substring(0, nameKeySep);
-        String key = columnQualifierStr.substring(nameKeySep + 1, keyVisSep);
-        String vis = columnQualifierStr.substring(keyVisSep + 1);
-
-        this.hiddenProperties.add(new HiddenProperty(key, name, vis, AccumuloGraph.accumuloVisibilityToVisibility(columnVisibility)));
+        PropertyHiddenColumnQualifier propertyHiddenColumnQualifier = new PropertyHiddenColumnQualifier(columnQualifier, getGraph().getNameSubstitutionStrategy());
+        HiddenProperty hiddenProperty = new HiddenProperty(
+                propertyHiddenColumnQualifier.getPropertyKey(),
+                propertyHiddenColumnQualifier.getPropertyName(),
+                propertyHiddenColumnQualifier.getPropertyVisibilityString(),
+                AccumuloGraph.accumuloVisibilityToVisibility(columnVisibility)
+        );
+        this.hiddenProperties.add(hiddenProperty);
     }
 
     private void extractPropertyMetadata(Text columnQualifier, ColumnVisibility columnVisibility, Value value) {
         Visibility metadataVisibility = AccumuloGraph.accumuloVisibilityToVisibility(columnVisibility);
-        String columnQualifierString = columnQualifier.toString();
-        int i = columnQualifierString.lastIndexOf(ElementMutationBuilder.VALUE_SEPARATOR);
-        if (i < 0) {
-            throw new VertexiumException("Invalid property metadata column qualifier: " + columnQualifierString);
-        }
-        String metadataKey = columnQualifierString.substring(i + 1);
+        PropertyMetadataColumnQualifier propertyMetadataColumnQualifier = new PropertyMetadataColumnQualifier(columnQualifier, getGraph().getNameSubstitutionStrategy());
 
-        // exclude the timestamp
-        i = columnQualifierString.lastIndexOf(ElementMutationBuilder.VALUE_SEPARATOR, i - 1);
-        if (i < 0) {
-            throw new VertexiumException("Invalid property metadata column qualifier: " + columnQualifierString);
-        }
-        String propertyIdentifier = columnQualifierString.substring(0, i);
-
-        LazyPropertyMetadata lazyPropertyMetadata = getOrCreatePropertyMetadata(propertyIdentifier);
-        lazyPropertyMetadata.add(metadataKey, metadataVisibility, value.get());
+        String discriminator = propertyMetadataColumnQualifier.getPropertyDiscriminator();
+        LazyPropertyMetadata lazyPropertyMetadata = getOrCreatePropertyMetadata(discriminator);
+        lazyPropertyMetadata.add(propertyMetadataColumnQualifier.getMetadataKey(), metadataVisibility, value.get());
     }
 
-    private LazyPropertyMetadata getOrCreatePropertyMetadata(String propertyIdentifier) {
-        LazyPropertyMetadata lazyPropertyMetadata = propertyMetadata.get(propertyIdentifier);
+    private LazyPropertyMetadata getOrCreatePropertyMetadata(String discriminator) {
+        LazyPropertyMetadata lazyPropertyMetadata = propertyMetadata.get(discriminator);
         if (lazyPropertyMetadata == null) {
             lazyPropertyMetadata = new LazyPropertyMetadata();
-            propertyMetadata.put(propertyIdentifier, lazyPropertyMetadata);
+            propertyMetadata.put(discriminator, lazyPropertyMetadata);
         }
         return lazyPropertyMetadata;
     }
@@ -229,34 +213,13 @@ public abstract class ElementMaker<T> {
         Text columnQualifier = getColumnQualifier(column.getKey());
         Value value = column.getValue();
         Visibility visibility = AccumuloGraph.accumuloVisibilityToVisibility(columnVisibility);
-        String propertyName = getPropertyNameFromColumnQualifier(columnQualifier.toString());
-        String key = propertyColumnQualifierToKey(columnQualifier, visibility);
+        PropertyColumnQualifier propertyColumnQualifier = new PropertyColumnQualifier(columnQualifier, getGraph().getNameSubstitutionStrategy());
+        String mapKey = propertyColumnQualifier.getDiscriminator(visibility, column.getKey().getTimestamp());
         long timestamp = column.getKey().getTimestamp();
-        propertyColumnQualifier.put(key, columnQualifier.toString());
-        propertyNames.put(key, propertyName);
-        propertyValues.put(key, value.get());
-        propertyVisibilities.put(key, visibility);
-        propertyTimestamps.put(key, timestamp);
-    }
-
-    private String propertyColumnQualifierToKey(Text columnQualifier, Visibility visibility) {
-        return columnQualifier.toString() + ElementMutationBuilder.VALUE_SEPARATOR + visibility.toString();
-    }
-
-    public static String getPropertyNameFromColumnQualifier(String columnQualifier) {
-        int i = columnQualifier.indexOf(ElementMutationBuilder.VALUE_SEPARATOR);
-        if (i < 0) {
-            throw new VertexiumException("Invalid property column qualifier");
-        }
-        return columnQualifier.substring(0, i);
-    }
-
-    public static String getPropertyKeyFromColumnQualifier(String columnQualifier) {
-        int i = columnQualifier.indexOf(ElementMutationBuilder.VALUE_SEPARATOR);
-        if (i < 0) {
-            throw new VertexiumException("Invalid property column qualifier");
-        }
-        return columnQualifier.substring(i + 1);
+        propertyColumnQualifiers.put(mapKey, propertyColumnQualifier);
+        propertyValues.put(mapKey, value.get());
+        propertyVisibilities.put(mapKey, visibility);
+        propertyTimestamps.put(mapKey, timestamp);
     }
 
     public Authorizations getAuthorizations() {

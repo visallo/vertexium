@@ -2,6 +2,7 @@ package org.neolumin.vertexium;
 
 import org.neolumin.vertexium.event.GraphEventListener;
 import org.neolumin.vertexium.id.IdGenerator;
+import org.neolumin.vertexium.id.NameSubstitutionStrategy;
 import org.neolumin.vertexium.query.GraphQuery;
 import org.neolumin.vertexium.query.MultiVertexQuery;
 import org.neolumin.vertexium.query.SimilarToGraphQuery;

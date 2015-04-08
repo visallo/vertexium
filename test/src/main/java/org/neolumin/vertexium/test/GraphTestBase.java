@@ -225,7 +225,7 @@ public abstract class GraphTestBase {
         assertEquals("metadata1Value", prop1Metadata.getEntry("metadata1", VISIBILITY_A).getValue());
         assertEquals("metadata2Value", prop1Metadata.getEntry("metadata2", VISIBILITY_A).getValue());
 
-        // make sure that when we update the value the metadata is the new metadata
+        // make sure that when we update the value the metadata is not carried over
         prop1Metadata = new Metadata();
         v.setProperty("prop1", "value2", prop1Metadata, VISIBILITY_A, AUTHORIZATIONS_A_AND_B);
 
@@ -234,7 +234,7 @@ public abstract class GraphTestBase {
         prop1 = v.getProperties("prop1").iterator().next();
         assertEquals("value2", prop1.getValue());
         prop1Metadata = prop1.getMetadata();
-        assertEquals(2, prop1Metadata.entrySet().size());
+        assertEquals(0, prop1Metadata.entrySet().size());
     }
 
     @Test

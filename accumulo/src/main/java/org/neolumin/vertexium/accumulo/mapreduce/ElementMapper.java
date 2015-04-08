@@ -8,6 +8,7 @@ import org.neolumin.vertexium.*;
 import org.neolumin.vertexium.accumulo.*;
 import org.neolumin.vertexium.accumulo.serializer.ValueSerializer;
 import org.neolumin.vertexium.id.IdGenerator;
+import org.neolumin.vertexium.id.NameSubstitutionStrategy;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -16,6 +17,7 @@ public abstract class ElementMapper<KEYIN, VALUEIN, KEYOUT, VALUEOUT> extends Ma
     public static final String GRAPH_CONFIG_PREFIX = "graphConfigPrefix";
     private ElementMutationBuilder elementMutationBuilder;
     private ElementMapperGraph graph;
+    private NameSubstitutionStrategy nameSubstitutionStrategy;
 
     @Override
     protected void setup(final Context context) throws IOException, InterruptedException {
@@ -28,6 +30,7 @@ public abstract class ElementMapper<KEYIN, VALUEIN, KEYOUT, VALUEOUT> extends Ma
         final Text verticesTableName = new Text(AccumuloGraph.getVerticesTableName(tableNamePrefix));
         ValueSerializer valueSerializer = accumuloGraphConfiguration.createValueSerializer();
         long maxStreamingPropertyValueTableDataSize = accumuloGraphConfiguration.getMaxStreamingPropertyValueTableDataSize();
+        nameSubstitutionStrategy = accumuloGraphConfiguration.createSubstitutionStrategy();
         String dataDir = accumuloGraphConfiguration.getDataDir();
         FileSystem fileSystem;
         try {
@@ -53,6 +56,11 @@ public abstract class ElementMapper<KEYIN, VALUEIN, KEYOUT, VALUEOUT> extends Ma
                 } catch (Exception e) {
                     throw new RuntimeException("Could not save edge", e);
                 }
+            }
+
+            @Override
+            protected NameSubstitutionStrategy getNameSubstitutionStrategy() {
+                return nameSubstitutionStrategy;
             }
 
             @Override

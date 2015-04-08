@@ -17,7 +17,7 @@ import static org.neolumin.vertexium.util.IterableUtils.toList;
 public abstract class GraphBase implements Graph {
     private static final Logger LOGGER = LoggerFactory.getLogger(GraphBase.class);
     private final PathFindingAlgorithm pathFindingAlgorithm = new RecursivePathFindingAlgorithm();
-    private final List<GraphEventListener> graphEventListeners = new ArrayList<GraphEventListener>();
+    private final List<GraphEventListener> graphEventListeners = new ArrayList<>();
 
     protected GraphBase() {
 
@@ -35,7 +35,7 @@ public abstract class GraphBase implements Graph {
 
     @Override
     public Iterable<Vertex> addVertices(Iterable<ElementBuilder<Vertex>> vertices, Authorizations authorizations) {
-        List<Vertex> addedVertices = new ArrayList<Vertex>();
+        List<Vertex> addedVertices = new ArrayList<>();
         for (ElementBuilder<Vertex> vertexBuilder : vertices) {
             addedVertices.add(vertexBuilder.save(authorizations));
         }
@@ -91,7 +91,7 @@ public abstract class GraphBase implements Graph {
 
     @Override
     public Map<String, Boolean> doVerticesExist(List<String> ids, Authorizations authorizations) {
-        Map<String, Boolean> results = new HashMap<String, Boolean>();
+        Map<String, Boolean> results = new HashMap<>();
         for (String id : ids) {
             results.put(id, false);
         }
@@ -190,7 +190,7 @@ public abstract class GraphBase implements Graph {
 
     @Override
     public Map<String, Boolean> doEdgesExist(List<String> ids, Authorizations authorizations) {
-        Map<String, Boolean> results = new HashMap<String, Boolean>();
+        Map<String, Boolean> results = new HashMap<>();
         for (String id : ids) {
             results.put(id, false);
         }
@@ -283,11 +283,11 @@ public abstract class GraphBase implements Graph {
 
     @Override
     public Iterable<String> findRelatedEdges(Iterable<String> vertexIds, Authorizations authorizations) {
-        Set<String> results = new HashSet<String>();
+        Set<String> results = new HashSet<>();
         List<Vertex> vertices = toList(getVertices(vertexIds, authorizations));
 
         // since we are checking bi-directional edges we should only have to check v1->v2 and not v2->v1
-        Map<String, String> checkedCombinations = new HashMap<String, String>();
+        Map<String, String> checkedCombinations = new HashMap<>();
 
         for (Vertex sourceVertex : vertices) {
             for (Vertex destVertex : vertices) {

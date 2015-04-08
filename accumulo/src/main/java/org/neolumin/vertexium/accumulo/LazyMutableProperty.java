@@ -2,10 +2,13 @@ package org.neolumin.vertexium.accumulo;
 
 import org.neolumin.vertexium.Authorizations;
 import org.neolumin.vertexium.Metadata;
+import org.neolumin.vertexium.Property;
 import org.neolumin.vertexium.Visibility;
 import org.neolumin.vertexium.accumulo.serializer.ValueSerializer;
 import org.neolumin.vertexium.property.MutableProperty;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -17,7 +20,7 @@ public class LazyMutableProperty extends MutableProperty {
     private long timestamp;
     private Set<Visibility> hiddenVisibilities;
     private byte[] propertyValue;
-    private final LazyPropertyMetadata metadata;
+    private LazyPropertyMetadata metadata;
     private Visibility visibility;
     private transient Object cachedPropertyValue;
     private transient Metadata cachedMetadata;
@@ -77,13 +80,17 @@ public class LazyMutableProperty extends MutableProperty {
     }
 
     @Override
-    protected void addMetadata(String key, Object value, Visibility visibility) {
-        getMetadata().add(key, value, visibility);
-    }
-
-    @Override
-    protected void removeMetadata(String key, Visibility visibility) {
-        getMetadata().remove(key, visibility);
+    protected void updateMetadata(Property property) {
+        this.cachedMetadata = null;
+        if (property instanceof LazyMutableProperty) {
+            this.metadata = ((LazyMutableProperty) property).metadata;
+        } else {
+            Collection<Metadata.Entry> entries = new ArrayList<>(property.getMetadata().entrySet());
+            this.metadata = new LazyPropertyMetadata();
+            for (Metadata.Entry metadataEntry : entries) {
+                getMetadata().add(metadataEntry.getKey(), metadataEntry.getValue(), metadataEntry.getVisibility());
+            }
+        }
     }
 
     @Override

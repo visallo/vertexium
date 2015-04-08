@@ -1,6 +1,5 @@
 package org.neolumin.vertexium.property;
 
-import org.neolumin.vertexium.Metadata;
 import org.neolumin.vertexium.Property;
 import org.neolumin.vertexium.Visibility;
 
@@ -15,9 +14,7 @@ public abstract class MutableProperty extends Property {
 
     public abstract void removeHiddenVisibility(Visibility visibility);
 
-    protected abstract void addMetadata(String key, Object value, Visibility visibility);
-
-    protected abstract void removeMetadata(String key, Visibility visibility);
+    protected abstract void updateMetadata(Property property);
 
     public void update(Property property) {
         if (property.getHiddenVisibilities() != null) {
@@ -28,13 +25,6 @@ public abstract class MutableProperty extends Property {
 
         setValue(property.getValue());
         setTimestamp(property.getTimestamp());
-
-        for (Metadata.Entry m : property.getMetadata().entrySet()) {
-            if (m.getValue() == null) {
-                removeMetadata(m.getKey(), m.getVisibility());
-            } else {
-                addMetadata(m.getKey(), m.getValue(), m.getVisibility());
-            }
-        }
+        updateMetadata(property);
     }
 }

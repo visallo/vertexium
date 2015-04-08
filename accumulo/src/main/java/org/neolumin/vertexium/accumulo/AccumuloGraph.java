@@ -1,6 +1,5 @@
 package org.neolumin.vertexium.accumulo;
 
-import com.google.common.base.Joiner;
 import org.apache.accumulo.core.client.*;
 import org.apache.accumulo.core.client.Scanner;
 import org.apache.accumulo.core.data.Key;
@@ -17,6 +16,9 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.io.Text;
 import org.neolumin.vertexium.*;
 import org.neolumin.vertexium.accumulo.iterator.ElementVisibilityRowFilter;
+import org.neolumin.vertexium.accumulo.keys.PropertyColumnQualifier;
+import org.neolumin.vertexium.accumulo.keys.PropertyHiddenColumnQualifier;
+import org.neolumin.vertexium.accumulo.keys.PropertyMetadataColumnQualifier;
 import org.neolumin.vertexium.accumulo.serializer.ValueSerializer;
 import org.neolumin.vertexium.event.*;
 import org.neolumin.vertexium.id.IdGenerator;
@@ -94,11 +96,6 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
         long maxStreamingPropertyValueTableDataSize = config.getMaxStreamingPropertyValueTableDataSize();
         this.elementMutationBuilder = new ElementMutationBuilder(fileSystem, valueSerializer, maxStreamingPropertyValueTableDataSize, dataDir) {
             @Override
-            protected Text getPropertyColumnQualifier(Property p) {
-                return getValueSeparatedJoined(AccumuloGraph.this.nameSubstitutionStrategy.deflate(p.getName()), AccumuloGraph.this.nameSubstitutionStrategy.deflate(p.getKey()));
-            }
-
-            @Override
             protected void saveVertexMutation(Mutation m) {
                 addMutations(getVerticesWriter(), m);
             }
@@ -106,6 +103,11 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
             @Override
             protected void saveEdgeMutation(Mutation m) {
                 addMutations(getEdgesWriter(), m);
+            }
+
+            @Override
+            protected NameSubstitutionStrategy getNameSubstitutionStrategy() {
+                return AccumuloGraph.this.getNameSubstitutionStrategy();
             }
 
             @Override
@@ -631,54 +633,35 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
         try {
             Map<String, HistoricalPropertyValue> results = new HashMap<>();
             for (Map.Entry<Key, Value> column : scanner) {
-                String cq = column.getKey().getColumnQualifier().toString();
+                Text cq = column.getKey().getColumnQualifier();
                 String columnVisibility = column.getKey().getColumnVisibility().toString();
                 if (column.getKey().getColumnFamily().equals(AccumuloElement.CF_PROPERTY)) {
                     if (!columnVisibility.equals(visibility.getVisibilityString())) {
                         continue;
                     }
-                    String propertyName = ElementMaker.getPropertyNameFromColumnQualifier(cq);
-                    if (!propertyName.equals(name)) {
+                    PropertyColumnQualifier propertyColumnQualifier = new PropertyColumnQualifier(cq, getNameSubstitutionStrategy());
+                    if (!propertyColumnQualifier.getPropertyName().equals(name)) {
                         continue;
                     }
-                    String propertyKey = ElementMaker.getPropertyKeyFromColumnQualifier(cq);
-                    if (!propertyKey.equals(key)) {
+                    if (!propertyColumnQualifier.getPropertyKey().equals(key)) {
                         continue;
                     }
-                    String resultsKey = Joiner.on(ElementMutationBuilder.VALUE_SEPARATOR).join(
-                            propertyName,
-                            propertyKey,
-                            columnVisibility,
-                            Long.toString(column.getKey().getTimestamp())
-                    );
+                    String resultsKey = propertyColumnQualifier.getDiscriminator(columnVisibility, column.getKey().getTimestamp());
                     long timestamp = column.getKey().getTimestamp();
                     Object value = valueSerializer.valueToObject(column.getValue());
                     Metadata metadata = new Metadata();
                     HistoricalPropertyValue hpv = new HistoricalPropertyValue(timestamp, value, metadata);
                     results.put(resultsKey, hpv);
                 } else if (column.getKey().getColumnFamily().equals(AccumuloElement.CF_PROPERTY_METADATA)) {
-                    String[] cqParts = cq.split(ElementMutationBuilder.VALUE_SEPARATOR);
-                    if (cqParts.length != 5) {
-                        throw new VertexiumException("Unexpected number of parts on metadata. Expected 5, found " + cqParts.length);
-                    }
-                    String propertyName = cqParts[0];
-                    String propertyKey = cqParts[1];
-                    String visibilityString = cqParts[2];
-                    String timestampString = cqParts[3];
-                    String metadataKey = cqParts[4];
-                    String resultsKey = Joiner.on(ElementMutationBuilder.VALUE_SEPARATOR).join(
-                            propertyName,
-                            propertyKey,
-                            visibilityString,
-                            timestampString
-                    );
+                    PropertyMetadataColumnQualifier propertyMetadataColumnQualifier = new PropertyMetadataColumnQualifier(cq, getNameSubstitutionStrategy());
+                    String resultsKey = propertyMetadataColumnQualifier.getPropertyDiscriminator();
                     HistoricalPropertyValue hpv = results.get(resultsKey);
                     if (hpv == null) {
                         continue;
                     }
                     Object value = valueSerializer.valueToObject(column.getValue());
                     Visibility metadataVisibility = accumuloVisibilityToVisibility(columnVisibility);
-                    hpv.getMetadata().add(metadataKey, value, metadataVisibility);
+                    hpv.getMetadata().add(propertyMetadataColumnQualifier.getMetadataKey(), value, metadataVisibility);
                 }
             }
             return new TreeSet<>(results.values());
@@ -830,7 +813,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
 
     private Mutation getMarkHiddenPropertyMutation(String rowKey, Property property, ColumnVisibility visibility) {
         Mutation m = new Mutation(rowKey);
-        Text columnQualifier = ElementMutationBuilder.getPropertyColumnQualifierWithVisibilityString(property);
+        Text columnQualifier = new PropertyHiddenColumnQualifier(property).getColumnQualifier(getNameSubstitutionStrategy());
         m.put(AccumuloElement.CF_PROPERTY_HIDDEN, columnQualifier, visibility, AccumuloElement.HIDDEN_VALUE);
         return m;
     }
@@ -854,7 +837,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
 
     private Mutation getMarkVisiblePropertyMutation(String rowKey, Property property, ColumnVisibility visibility) {
         Mutation m = new Mutation(rowKey);
-        Text columnQualifier = ElementMutationBuilder.getPropertyColumnQualifierWithVisibilityString(property);
+        Text columnQualifier = new PropertyHiddenColumnQualifier(property).getColumnQualifier(getNameSubstitutionStrategy());
         m.putDelete(AccumuloElement.CF_PROPERTY_HIDDEN, columnQualifier, visibility);
         return m;
     }
@@ -1280,16 +1263,16 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
             BatchWriter vertexWriter = getVerticesWriter();
             Edge edge = (Edge) element;
 
-            String voutRowKey = AccumuloConstants.VERTEX_ROW_KEY_PREFIX + edge.getVertexId(Direction.OUT);
-            Mutation mvout = new Mutation(voutRowKey);
-            if (elementMutationBuilder.alterEdgeVertexOutVertex(mvout, edge, newVisibility)) {
-                addMutations(vertexWriter, mvout);
+            String vertexOutRowKey = AccumuloConstants.VERTEX_ROW_KEY_PREFIX + edge.getVertexId(Direction.OUT);
+            Mutation vertexOutMutation = new Mutation(vertexOutRowKey);
+            if (elementMutationBuilder.alterEdgeVertexOutVertex(vertexOutMutation, edge, newVisibility)) {
+                addMutations(vertexWriter, vertexOutMutation);
             }
 
-            String vinRowKey = AccumuloConstants.VERTEX_ROW_KEY_PREFIX + edge.getVertexId(Direction.IN);
-            Mutation mvin = new Mutation(vinRowKey);
-            if (elementMutationBuilder.alterEdgeVertexInVertex(mvin, edge, newVisibility)) {
-                addMutations(vertexWriter, mvin);
+            String vertexInRowKey = AccumuloConstants.VERTEX_ROW_KEY_PREFIX + edge.getVertexId(Direction.IN);
+            Mutation vertexInMutation = new Mutation(vertexInRowKey);
+            if (elementMutationBuilder.alterEdgeVertexInVertex(vertexInMutation, edge, newVisibility)) {
+                addMutations(vertexWriter, vertexInMutation);
             }
         }
 
