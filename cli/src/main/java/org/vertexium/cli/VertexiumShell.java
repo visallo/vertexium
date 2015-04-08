@@ -30,7 +30,10 @@ import java.lang.reflect.Field;
 import java.util.*;
 
 public class VertexiumShell {
-    private final Groovysh groovysh;
+    private Groovysh groovysh;
+
+    @Parameter(names = {"--help", "-h"}, description = "Print help", help = true)
+    private boolean help;
 
     @Parameter(names = {"-C"}, description = "Suppress colors")
     private boolean suppressColor;
@@ -53,8 +56,13 @@ public class VertexiumShell {
     @Parameter(description = "File names to execute")
     private List<String> fileNames = new ArrayList<>();
 
-    public VertexiumShell(String[] args) throws Exception {
-        new JCommander(this, args);
+    public void run(String[] args) throws Exception {
+        JCommander j = new JCommander(this, args);
+        if (help) {
+            j.usage();
+            return;
+        }
+
         setTerminalType(terminalType, suppressColor);
 
         Map config = loadConfig();
@@ -151,7 +159,7 @@ public class VertexiumShell {
     }
 
     public static void main(final String[] args) throws Exception {
-        new VertexiumShell(args);
+        new VertexiumShell().run(args);
     }
 
     /**

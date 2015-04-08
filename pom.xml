@@ -247,6 +247,7 @@
         <module>examples</module>
         <module>accumulo-migrations</module>
         <module>cli</module>
+        <module>dist</module>
     </modules>
 
     <profiles>
