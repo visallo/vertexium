@@ -86,6 +86,10 @@ public abstract class ElementMapper<KEYIN, VALUEIN, KEYOUT, VALUEOUT> extends Ma
         return prepareVertex(vertex.getId(), null, vertex.getVisibility());
     }
 
+    public VertexBuilder prepareVertex(String vertexId, Visibility visibility) {
+        return prepareVertex(vertexId, null, visibility);
+    }
+
     public VertexBuilder prepareVertex(String vertexId, Long timestamp, Visibility visibility) {
         if (vertexId == null) {
             vertexId = getIdGenerator().nextId();
@@ -132,7 +136,24 @@ public abstract class ElementMapper<KEYIN, VALUEIN, KEYOUT, VALUEOUT> extends Ma
         );
     }
 
-    public EdgeBuilderByVertexId prepareEdge(String edgeId, String outVertexId, String inVertexId, String label, Long timestamp, Visibility visibility) {
+    public EdgeBuilderByVertexId prepareEdge(
+            String edgeId,
+            String outVertexId,
+            String inVertexId,
+            String label,
+            Visibility visibility
+    ) {
+        return prepareEdge(edgeId, outVertexId, inVertexId, label, null, visibility);
+    }
+
+    public EdgeBuilderByVertexId prepareEdge(
+            String edgeId,
+            String outVertexId,
+            String inVertexId,
+            String label,
+            Long timestamp,
+            Visibility visibility
+    ) {
         if (edgeId == null) {
             edgeId = getIdGenerator().nextId();
         }
@@ -163,6 +184,10 @@ public abstract class ElementMapper<KEYIN, VALUEIN, KEYOUT, VALUEOUT> extends Ma
                 return edge;
             }
         };
+    }
+
+    public EdgeBuilder prepareEdge(String edgeId, Vertex outVertex, Vertex inVertex, String label, Visibility visibility) {
+        return prepareEdge(edgeId, outVertex, inVertex, label, null, visibility);
     }
 
     public EdgeBuilder prepareEdge(String edgeId, Vertex outVertex, Vertex inVertex, String label, Long timestamp, Visibility visibility) {
