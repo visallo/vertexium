@@ -19,8 +19,13 @@ public class LazyEdgeProperty extends LazyProperty {
     }
 
     @Override
+    protected Edge getE() {
+        return getGraph().getEdge(getEdgeId(), FetchHint.ALL, getTime(), getAuthorizations());
+    }
+
+    @Override
     protected Property getP() {
-        Edge edge = getGraph().getEdge(getEdgeId(), FetchHint.ALL, getTime(), getAuthorizations());
+        Edge edge = getE();
         if (edge == null) {
             return null;
         }

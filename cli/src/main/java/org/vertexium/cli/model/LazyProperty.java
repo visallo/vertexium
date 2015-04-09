@@ -1,12 +1,11 @@
 package org.vertexium.cli.model;
 
-import org.vertexium.Metadata;
-import org.vertexium.Property;
-import org.vertexium.Visibility;
+import org.vertexium.*;
 import org.vertexium.cli.VertexiumScript;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.Date;
 
 public abstract class LazyProperty extends ModelBase {
     private final String propertyKey;
@@ -38,6 +37,7 @@ public abstract class LazyProperty extends ModelBase {
         writer.println("  @|bold key:|@ " + prop.getKey());
         writer.println("  @|bold name:|@ " + prop.getName());
         writer.println("  @|bold visibility:|@ " + prop.getVisibility());
+        writer.println("  @|bold timestamp:|@ " + prop.getTimestamp());
 
         writer.println("  @|bold metadata:|@");
         for (Metadata.Entry m : prop.getMetadata().entrySet()) {
@@ -50,7 +50,31 @@ public abstract class LazyProperty extends ModelBase {
         return out.toString();
     }
 
+    public String getHistory() {
+        Element e = getE();
+        if (e == null) {
+            return null;
+        }
+        Iterable<HistoricalPropertyValue> historicalValues = e.getHistoricalPropertyValues(getKey(), getName(), getVisibility(), getAuthorizations());
+
+        StringWriter out = new StringWriter();
+        PrintWriter writer = new PrintWriter(out);
+        writer.println("@|bold history:|@");
+        for (HistoricalPropertyValue historicalValue : historicalValues) {
+            writer.println("  @|bold " + new Date(historicalValue.getTimestamp()) + " (" + historicalValue.getTimestamp() + "):|@");
+            writer.println("    @|bold value:|@");
+            writer.println(VertexiumScript.valueToString(historicalValue.getValue(), true));
+            writer.println("    @|bold metadata:|@");
+            for (Metadata.Entry m : historicalValue.getMetadata().entrySet()) {
+                writer.println("      " + m.getKey() + "[" + m.getVisibility() + "]: " + VertexiumScript.valueToString(m.getValue(), false));
+            }
+        }
+        return out.toString();
+    }
+
     protected abstract String getToStringHeaderLine();
+
+    protected abstract Element getE();
 
     protected abstract Property getP();
 

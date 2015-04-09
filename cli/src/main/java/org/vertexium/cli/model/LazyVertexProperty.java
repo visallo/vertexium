@@ -19,8 +19,13 @@ public class LazyVertexProperty extends LazyProperty {
     }
 
     @Override
+    protected Vertex getE() {
+        return getGraph().getVertex(getVertexId(), FetchHint.ALL, getTime(), getAuthorizations());
+    }
+
+    @Override
     protected Property getP() {
-        Vertex vertex = getGraph().getVertex(getVertexId(), FetchHint.ALL, getTime(), getAuthorizations());
+        Vertex vertex = getE();
         if (vertex == null) {
             return null;
         }
