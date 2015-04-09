@@ -9,7 +9,11 @@ public abstract class ModelBase {
         return VertexiumScript.getGraph();
     }
 
-    public Authorizations getAuthorizations() {
+    public static Authorizations getAuthorizations() {
         return VertexiumScript.getAuthorizations();
+    }
+
+    public static Long getTime() {
+        return VertexiumScript.getTime();
     }
 }

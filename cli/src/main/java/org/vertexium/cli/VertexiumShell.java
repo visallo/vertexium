@@ -21,8 +21,7 @@ import org.fusesource.jansi.Ansi;
 import org.fusesource.jansi.AnsiConsole;
 import org.vertexium.Graph;
 import org.vertexium.GraphFactory;
-import org.vertexium.cli.commands.GetAuthsCommand;
-import org.vertexium.cli.commands.SetAuthsCommand;
+import org.vertexium.cli.commands.*;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -55,6 +54,9 @@ public class VertexiumShell {
     @Parameter(names = {"-a"}, description = "Authorizations")
     private String authorizations = null;
 
+    @Parameter(names = {"-t"}, description = "Time")
+    private Long time = null;
+
     @Parameter(description = "File names to execute")
     private List<String> fileNames = new ArrayList<>();
 
@@ -83,6 +85,7 @@ public class VertexiumShell {
         if (authorizations != null) {
             VertexiumScript.setAuthorizations(graph.createAuthorizations(authorizations.split(",")));
         }
+        VertexiumScript.setTime(time);
         compilerConfiguration.setScriptBaseClass(VertexiumScript.class.getName());
 
         Binding binding = new Binding();
@@ -193,12 +196,17 @@ public class VertexiumShell {
         SecurityManager psm = System.getSecurityManager();
         System.setSecurityManager(new NoExitSecurityManager());
 
-        shell.register(new SetAuthsCommand(shell));
         shell.register(new GetAuthsCommand(shell));
+        shell.register(new SetAuthsCommand(shell));
+        shell.register(new GetTimeCommand(shell));
+        shell.register(new SetTimeCommand(shell));
+        shell.register(new NowCommand(shell));
 
         System.out.println("Global Properties:");
         System.out.println("  g     - the Graph object");
         System.out.println("  auths - the currently set query authorizations");
+        System.out.println("  time  - the currently set query time");
+        System.out.println("  now   - the current time");
         System.out.println("  v     - vertex map (usage: v['v1'])");
         System.out.println("  e     - edge map (usage: e['e1'])");
         try {

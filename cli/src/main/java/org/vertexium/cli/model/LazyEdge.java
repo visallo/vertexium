@@ -2,6 +2,7 @@ package org.vertexium.cli.model;
 
 import org.vertexium.Direction;
 import org.vertexium.Edge;
+import org.vertexium.FetchHint;
 import org.vertexium.Property;
 import org.vertexium.cli.VertexiumScript;
 
@@ -65,7 +66,7 @@ public class LazyEdge extends ModelBase {
     }
 
     private Edge getE() {
-        return getGraph().getEdge(getId(), getAuthorizations());
+        return getGraph().getEdge(getId(), FetchHint.ALL, getTime(), getAuthorizations());
     }
 
     public String getId() {

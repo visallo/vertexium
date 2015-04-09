@@ -1,7 +1,6 @@
 package org.vertexium.cli.model;
 
 import org.vertexium.*;
-import org.vertexium.*;
 import org.vertexium.cli.VertexiumScript;
 
 import java.io.PrintWriter;
@@ -21,10 +20,10 @@ public class LazyVertex extends ModelBase {
             return null;
         }
 
-        return toString(v, getAuthorizations());
+        return toString(v);
     }
 
-    public static String toString(Vertex v, Authorizations authorizations) {
+    public static String toString(Vertex v) {
         StringWriter out = new StringWriter();
         PrintWriter writer = new PrintWriter(out);
         writer.println("@|bold " + v.getId() + "|@");
@@ -46,7 +45,7 @@ public class LazyVertex extends ModelBase {
         int edgeIndex = 0;
 
         writer.println("  @|bold out edges:|@");
-        for (Edge edge : v.getEdges(Direction.OUT, authorizations)) {
+        for (Edge edge : v.getEdges(Direction.OUT, FetchHint.ALL, getTime(), getAuthorizations())) {
             String edgeIndexString = "e" + edgeIndex;
             writer.println("    @|bold " + edgeIndexString + ":|@ " + edge.getId() + ": " + edge.getLabel() + " -> " + edge.getOtherVertexId(v.getId()));
             LazyEdge lazyEdge = new LazyEdge(edge.getId());
@@ -55,7 +54,7 @@ public class LazyVertex extends ModelBase {
         }
 
         writer.println("  @|bold in edges:|@");
-        for (Edge edge : v.getEdges(Direction.IN, authorizations)) {
+        for (Edge edge : v.getEdges(Direction.IN, FetchHint.ALL, getTime(), getAuthorizations())) {
             String edgeIndexString = "e" + edgeIndex;
             writer.println("    @|bold " + edgeIndexString + ":|@ " + edge.getId() + ": " + edge.getLabel() + " -> " + edge.getOtherVertexId(v.getId()));
             LazyEdge lazyEdge = new LazyEdge(edge.getId());
@@ -67,7 +66,7 @@ public class LazyVertex extends ModelBase {
     }
 
     private Vertex getV() {
-        return getGraph().getVertex(getId(), getAuthorizations());
+        return getGraph().getVertex(getId(), FetchHint.ALL, getTime(), getAuthorizations());
     }
 
     public String getId() {

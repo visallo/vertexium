@@ -1,5 +1,6 @@
 package org.vertexium.cli.model;
 
+import org.vertexium.FetchHint;
 import org.vertexium.Property;
 import org.vertexium.Vertex;
 import org.vertexium.Visibility;
@@ -19,7 +20,7 @@ public class LazyVertexProperty extends LazyProperty {
 
     @Override
     protected Property getP() {
-        Vertex vertex = getGraph().getVertex(getVertexId(), getAuthorizations());
+        Vertex vertex = getGraph().getVertex(getVertexId(), FetchHint.ALL, getTime(), getAuthorizations());
         if (vertex == null) {
             return null;
         }

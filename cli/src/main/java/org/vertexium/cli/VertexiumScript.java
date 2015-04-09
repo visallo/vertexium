@@ -9,6 +9,7 @@ import org.vertexium.property.StreamingPropertyValue;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -18,6 +19,7 @@ public class VertexiumScript extends Script {
     private static final Map<String, LazyProperty> contextProperties = new HashMap<>();
     private static final Map<String, LazyEdge> contextEdges = new HashMap<>();
     private static final Map<String, LazyVertex> contextVertices = new HashMap<>();
+    private static Long time;
 
     public static void setGraph(Graph graph) {
         VertexiumScript.graph = graph;
@@ -25,6 +27,14 @@ public class VertexiumScript extends Script {
 
     public static Graph getGraph() {
         return graph;
+    }
+
+    public static void setTime(Long time) {
+        VertexiumScript.time = time;
+    }
+
+    public static Long getTime() {
+        return time;
     }
 
     @Override
@@ -48,6 +58,14 @@ public class VertexiumScript extends Script {
 
         if ("auths".equals(property)) {
             return getAuthorizations();
+        }
+
+        if ("time".equals(property)) {
+            return getTime();
+        }
+
+        if ("now".equals(property)) {
+            return System.currentTimeMillis();
         }
 
         Object contextProperty = contextProperties.get(property);
@@ -114,7 +132,7 @@ public class VertexiumScript extends Script {
 
     public static String resultToString(Object obj) {
         if (obj instanceof Vertex) {
-            return LazyVertex.toString((Vertex) obj, getAuthorizations());
+            return LazyVertex.toString((Vertex) obj);
         }
         if (obj instanceof Edge) {
             return LazyEdge.toString((Edge) obj);
@@ -123,5 +141,16 @@ public class VertexiumScript extends Script {
             return LazyProperty.toString((Property) obj, "property");
         }
         return InvokerHelper.toString(obj);
+    }
+
+    public static String getTimeString() {
+        return getTimeString(getTime());
+    }
+
+    public static String getTimeString(Long t) {
+        if (t == null) {
+            return null;
+        }
+        return new Date(t) + " (" + t + ")";
     }
 }

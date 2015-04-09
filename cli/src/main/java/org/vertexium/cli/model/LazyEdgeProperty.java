@@ -1,6 +1,7 @@
 package org.vertexium.cli.model;
 
 import org.vertexium.Edge;
+import org.vertexium.FetchHint;
 import org.vertexium.Property;
 import org.vertexium.Visibility;
 
@@ -19,7 +20,7 @@ public class LazyEdgeProperty extends LazyProperty {
 
     @Override
     protected Property getP() {
-        Edge edge = getGraph().getEdge(getEdgeId(), getAuthorizations());
+        Edge edge = getGraph().getEdge(getEdgeId(), FetchHint.ALL, getTime(), getAuthorizations());
         if (edge == null) {
             return null;
         }
