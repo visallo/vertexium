@@ -47,7 +47,7 @@ public abstract class VertexiumBlueprintsGraph implements com.tinkerpop.blueprin
     @Override
     public void removeVertex(Vertex vertex) {
         org.vertexium.Vertex sgVertex = VertexiumBlueprintsConvert.toVertexium(vertex);
-        getGraph().removeVertex(sgVertex, getAuthorizationsProvider().getAuthorizations());
+        getGraph().deleteVertex(sgVertex, getAuthorizationsProvider().getAuthorizations());
     }
 
     @Override
@@ -97,7 +97,7 @@ public abstract class VertexiumBlueprintsGraph implements com.tinkerpop.blueprin
     @Override
     public void removeEdge(Edge edge) {
         org.vertexium.Edge sgEdge = VertexiumBlueprintsConvert.toVertexium(edge);
-        getGraph().removeEdge(sgEdge, getAuthorizationsProvider().getAuthorizations());
+        getGraph().deleteEdge(sgEdge, getAuthorizationsProvider().getAuthorizations());
     }
 
     @Override

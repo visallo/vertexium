@@ -2750,25 +2750,33 @@ public abstract class GraphTestBase {
         Date time30 = createDate(2015, 4, 6, 16, 16, 0);
 
         Metadata metadata = new Metadata();
-        graph.prepareVertex("v1", time25.getTime(), VISIBILITY_A)
+        Vertex v1 = graph.prepareVertex("v1", time25.getTime(), VISIBILITY_A)
                 .addPropertyValue("", "age", 25, metadata, time25.getTime(), VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
+        Vertex v2 = graph.prepareVertex("v2", time25.getTime(), VISIBILITY_A)
+                .addPropertyValue("", "age", 20, metadata, time25.getTime(), VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
+        graph.prepareEdge("e1", v1, v2, "label1", time30.getTime(), VISIBILITY_A)
                 .save(AUTHORIZATIONS_A);
 
         graph.prepareVertex("v1", time30.getTime(), VISIBILITY_A)
                 .addPropertyValue("", "age", 30, metadata, time30.getTime(), VISIBILITY_A)
                 .save(AUTHORIZATIONS_A);
-        graph.prepareVertex("v2", time30.getTime(), VISIBILITY_A)
+        graph.prepareVertex("v3", time30.getTime(), VISIBILITY_A)
                 .addPropertyValue("", "age", 35, metadata, time30.getTime(), VISIBILITY_A)
                 .save(AUTHORIZATIONS_A);
         graph.flush();
 
         // verify current versions
         assertEquals(30, graph.getVertex("v1", AUTHORIZATIONS_A).getPropertyValue("", "age"));
-        assertEquals(35, graph.getVertex("v2", AUTHORIZATIONS_A).getPropertyValue("", "age"));
+        assertEquals(20, graph.getVertex("v2", AUTHORIZATIONS_A).getPropertyValue("", "age"));
+        assertEquals(35, graph.getVertex("v3", AUTHORIZATIONS_A).getPropertyValue("", "age"));
+        assertEquals(1, count(graph.getEdges(AUTHORIZATIONS_A)));
 
         // verify old version
         assertEquals(25, graph.getVertex("v1", FetchHint.ALL, time25.getTime(), AUTHORIZATIONS_A).getPropertyValue("", "age"));
-        assertNull("v2 should not exist at time25", graph.getVertex("v2", FetchHint.ALL, time25.getTime(), AUTHORIZATIONS_A));
+        assertNull("v3 should not exist at time25", graph.getVertex("v3", FetchHint.ALL, time25.getTime(), AUTHORIZATIONS_A));
+        assertEquals("e1 should not exist", 0, count(graph.getEdges(FetchHint.ALL, time25.getTime(), AUTHORIZATIONS_A)));
     }
 
     private List<Vertex> getVertices(long count) {

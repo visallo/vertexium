@@ -60,7 +60,7 @@ public abstract class VertexiumBlueprintsElement implements Element {
     @Override
     public <T> T removeProperty(String key) {
         T old = getProperty(key);
-        getVertexiumElement().removeProperty(DEFAULT_PROPERTY_ID, key, authorizations);
+        getVertexiumElement().deleteProperty(DEFAULT_PROPERTY_ID, key, authorizations);
         return old;
     }
 

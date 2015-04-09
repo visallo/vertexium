@@ -108,9 +108,9 @@ public abstract class ElementMutationBuilder {
             edgeLabel = edge.getNewEdgeLabel();
             m.putDelete(AccumuloEdge.CF_SIGNAL, new Text(edge.getLabel()), edgeColumnVisibility);
         }
-        m.put(AccumuloEdge.CF_SIGNAL, new Text(edgeLabel), edgeColumnVisibility, ElementMutationBuilder.EMPTY_VALUE);
-        m.put(AccumuloEdge.CF_OUT_VERTEX, new Text(edge.getVertexId(Direction.OUT)), edgeColumnVisibility, ElementMutationBuilder.EMPTY_VALUE);
-        m.put(AccumuloEdge.CF_IN_VERTEX, new Text(edge.getVertexId(Direction.IN)), edgeColumnVisibility, ElementMutationBuilder.EMPTY_VALUE);
+        m.put(AccumuloEdge.CF_SIGNAL, new Text(edgeLabel), edgeColumnVisibility, edge.getTimestamp(), ElementMutationBuilder.EMPTY_VALUE);
+        m.put(AccumuloEdge.CF_OUT_VERTEX, new Text(edge.getVertexId(Direction.OUT)), edgeColumnVisibility, edge.getTimestamp(), ElementMutationBuilder.EMPTY_VALUE);
+        m.put(AccumuloEdge.CF_IN_VERTEX, new Text(edge.getVertexId(Direction.IN)), edgeColumnVisibility, edge.getTimestamp(), ElementMutationBuilder.EMPTY_VALUE);
         for (PropertyDeleteMutation propertyDeleteMutation : edge.getPropertyDeleteMutations()) {
             addPropertyDeleteToMutation(m, propertyDeleteMutation);
         }
