@@ -5,7 +5,6 @@ import org.vertexium.cli.VertexiumScript;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.util.Date;
 
 public abstract class LazyProperty extends ModelBase {
     private final String propertyKey;
@@ -37,15 +36,14 @@ public abstract class LazyProperty extends ModelBase {
         writer.println("  @|bold key:|@ " + prop.getKey());
         writer.println("  @|bold name:|@ " + prop.getName());
         writer.println("  @|bold visibility:|@ " + prop.getVisibility());
-        writer.println("  @|bold timestamp:|@ " + prop.getTimestamp());
+        writer.println("  @|bold timestamp:|@ " + VertexiumScript.timestampToString(prop.getTimestamp()));
 
         writer.println("  @|bold metadata:|@");
         for (Metadata.Entry m : prop.getMetadata().entrySet()) {
             writer.println("    " + m.getKey() + "[" + m.getVisibility() + "]: " + VertexiumScript.valueToString(m.getValue(), false));
         }
 
-        writer.println("  @|bold value:|@");
-        writer.println(VertexiumScript.valueToString(prop.getValue(), true));
+        writer.println("  @|bold value:|@" + VertexiumScript.valueToString(prop.getValue(), true));
 
         return out.toString();
     }
@@ -61,9 +59,8 @@ public abstract class LazyProperty extends ModelBase {
         PrintWriter writer = new PrintWriter(out);
         writer.println("@|bold history:|@");
         for (HistoricalPropertyValue historicalValue : historicalValues) {
-            writer.println("  @|bold " + new Date(historicalValue.getTimestamp()) + " (" + historicalValue.getTimestamp() + "):|@");
-            writer.println("    @|bold value:|@");
-            writer.println(VertexiumScript.valueToString(historicalValue.getValue(), true));
+            writer.println("  @|bold " + VertexiumScript.timestampToString(historicalValue.getTimestamp()) + ":|@");
+            writer.println("    @|bold value:|@" + VertexiumScript.valueToString(historicalValue.getValue(), true));
             writer.println("    @|bold metadata:|@");
             for (Metadata.Entry m : historicalValue.getMetadata().entrySet()) {
                 writer.println("      " + m.getKey() + "[" + m.getVisibility() + "]: " + VertexiumScript.valueToString(m.getValue(), false));

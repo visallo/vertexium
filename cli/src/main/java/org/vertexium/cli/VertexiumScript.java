@@ -126,6 +126,12 @@ public class VertexiumScript extends Script {
                     }
                 }
             }
+            value = value.toString();
+            if (((String) value).indexOf('\n') >= 0) {
+                value = "\n" + value;
+            } else {
+                value = " " + value;
+            }
         }
         return value.toString();
     }
@@ -152,5 +158,9 @@ public class VertexiumScript extends Script {
             return null;
         }
         return new Date(t) + " (" + t + ")";
+    }
+
+    public static String timestampToString(long timestamp) {
+        return new Date(timestamp) + " (" + timestamp + ")";
     }
 }

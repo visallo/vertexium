@@ -28,7 +28,7 @@ public class LazyVertex extends ModelBase {
         PrintWriter writer = new PrintWriter(out);
         writer.println("@|bold " + v.getId() + "|@");
         writer.println("  @|bold visibility:|@ " + v.getVisibility());
-        writer.println("  @|bold timestamp:|@ " + v.getTimestamp());
+        writer.println("  @|bold timestamp:|@ " + VertexiumScript.timestampToString(v.getTimestamp()));
 
         writer.println("  @|bold properties:|@");
         VertexiumScript.getContextProperties().clear();

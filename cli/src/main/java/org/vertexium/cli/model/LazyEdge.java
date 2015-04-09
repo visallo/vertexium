@@ -32,7 +32,7 @@ public class LazyEdge extends ModelBase {
         writer.println("@|bold " + e.getId() + "|@");
         writer.println("  @|bold visibility:|@ " + e.getVisibility());
         writer.println("  @|bold label:|@ " + e.getLabel());
-        writer.println("  @|bold timestamp:|@ " + e.getTimestamp());
+        writer.println("  @|bold timestamp:|@ " + VertexiumScript.timestampToString(e.getTimestamp()));
 
         writer.println("  @|bold properties:|@");
         VertexiumScript.getContextProperties().clear();
