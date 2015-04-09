@@ -80,8 +80,8 @@ public class EdgeMaker extends ElementMaker<Edge> {
                 propertyDeleteMutations,
                 propertySoftDeleteMutations,
                 this.getHiddenVisibilities(),
-                this.getAuthorizations(),
-                this.timestamp
+                this.timestamp,
+                this.getAuthorizations()
         );
     }
 }

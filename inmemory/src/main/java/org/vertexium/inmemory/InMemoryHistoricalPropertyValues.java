@@ -8,6 +8,8 @@ import org.vertexium.util.JavaSerializableUtils;
 
 import java.util.*;
 
+import static org.vertexium.util.IterableUtils.toList;
+
 public class InMemoryHistoricalPropertyValues {
     private Map<String, Map<String, Map<String, SortedSet<HistoricalPropertyValue>>>> historicalPropertyValues = new HashMap<>();
 
@@ -20,7 +22,14 @@ public class InMemoryHistoricalPropertyValues {
         SortedSet<HistoricalPropertyValue> valuesByVisibility = getHistoricalPropertyValues(propertyName, propertyKey, visibilityString);
         Object valueCopy = JavaSerializableUtils.copy(property.getValue());
         Metadata metadataCopy = JavaSerializableUtils.copy(property.getMetadata());
-        valuesByVisibility.add(new HistoricalPropertyValue(timestamp, valueCopy, metadataCopy));
+        Iterable<Visibility> propertyHiddenVisibilities = property.getHiddenVisibilities();
+        Set<Visibility> hiddenVisibilities;
+        if (propertyHiddenVisibilities == null) {
+            hiddenVisibilities = null;
+        } else {
+            hiddenVisibilities = JavaSerializableUtils.copy(new HashSet<>(toList(propertyHiddenVisibilities)));
+        }
+        valuesByVisibility.add(new HistoricalPropertyValue(timestamp, valueCopy, metadataCopy, hiddenVisibilities));
     }
 
     private SortedSet<HistoricalPropertyValue> getHistoricalPropertyValues(String propertyName, String propertyKey, String visibilityString) {

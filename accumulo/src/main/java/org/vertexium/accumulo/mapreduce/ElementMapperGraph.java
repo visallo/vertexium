@@ -16,12 +16,12 @@ public class ElementMapperGraph extends GraphBase {
     }
 
     @Override
-    public VertexBuilder prepareVertex(String vertexId, Visibility visibility) {
-        return this.elementMapper.prepareVertex(vertexId, visibility);
+    public VertexBuilder prepareVertex(String vertexId, Long timestamp, Visibility visibility) {
+        return this.elementMapper.prepareVertex(vertexId, timestamp, visibility);
     }
 
     @Override
-    public Iterable<Vertex> getVertices(EnumSet<FetchHint> fetchHints, Authorizations authorizations) {
+    public Iterable<Vertex> getVertices(EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations) {
         throw new VertexiumException("Not supported");
     }
 
@@ -41,17 +41,17 @@ public class ElementMapperGraph extends GraphBase {
     }
 
     @Override
-    public EdgeBuilder prepareEdge(String edgeId, Vertex outVertex, Vertex inVertex, String label, Visibility visibility) {
-        return this.elementMapper.prepareEdge(edgeId, outVertex, inVertex, label, visibility);
+    public EdgeBuilder prepareEdge(String edgeId, Vertex outVertex, Vertex inVertex, String label, Long timestamp, Visibility visibility) {
+        return this.elementMapper.prepareEdge(edgeId, outVertex, inVertex, label, timestamp, visibility);
     }
 
     @Override
-    public EdgeBuilderByVertexId prepareEdge(String edgeId, String outVertexId, String inVertexId, String label, Visibility visibility) {
-        return this.elementMapper.prepareEdge(edgeId, outVertexId, inVertexId, label, visibility);
+    public EdgeBuilderByVertexId prepareEdge(String edgeId, String outVertexId, String inVertexId, String label, Long timestamp, Visibility visibility) {
+        return this.elementMapper.prepareEdge(edgeId, outVertexId, inVertexId, label, timestamp, visibility);
     }
 
     @Override
-    public Iterable<Edge> getEdges(EnumSet<FetchHint> fetchHints, Authorizations authorizations) {
+    public Iterable<Edge> getEdges(EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations) {
         throw new VertexiumException("Not supported");
     }
 

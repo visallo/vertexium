@@ -24,6 +24,8 @@ public class InMemoryEdge extends InMemoryElement implements Edge {
             Iterable<PropertyDeleteMutation> propertyDeleteMutations,
             Iterable<PropertySoftDeleteMutation> propertySoftDeleteMutations,
             Iterable<Visibility> hiddenVisibilities,
+            long startTime,
+            long timestamp,
             Authorizations authorizations
     ) {
         super(
@@ -35,6 +37,8 @@ public class InMemoryEdge extends InMemoryElement implements Edge {
                 propertyDeleteMutations,
                 propertySoftDeleteMutations,
                 hiddenVisibilities,
+                startTime,
+                timestamp,
                 authorizations
         );
         this.outVertexId = outVertexId;

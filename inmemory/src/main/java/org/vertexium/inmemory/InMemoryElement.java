@@ -14,6 +14,7 @@ import java.io.IOException;
 
 public abstract class InMemoryElement extends ElementBase {
     private InMemoryHistoricalPropertyValues historicalPropertyValues;
+    private long startTime;
 
     protected InMemoryElement(
             Graph graph,
@@ -24,9 +25,12 @@ public abstract class InMemoryElement extends ElementBase {
             Iterable<PropertyDeleteMutation> propertyDeleteMutations,
             Iterable<PropertySoftDeleteMutation> propertySoftDeleteMutations,
             Iterable<Visibility> hiddenVisibilities,
+            long startTime,
+            long timestamp,
             Authorizations authorizations
     ) {
-        super(graph, id, visibility, properties, propertyDeleteMutations, propertySoftDeleteMutations, hiddenVisibilities, authorizations);
+        super(graph, id, visibility, properties, propertyDeleteMutations, propertySoftDeleteMutations, hiddenVisibilities, timestamp, authorizations);
+        this.startTime = startTime;
         if (this.historicalPropertyValues == null) {
             this.historicalPropertyValues = new InMemoryHistoricalPropertyValues();
         }
@@ -222,5 +226,9 @@ public abstract class InMemoryElement extends ElementBase {
             historicalPropertyValues = new InMemoryHistoricalPropertyValues();
         }
         return historicalPropertyValues.get(propertyKey, propertyName, propertyVisibility);
+    }
+
+    public long getStartTime() {
+        return startTime;
     }
 }

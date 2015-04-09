@@ -50,7 +50,7 @@ public abstract class ElementMutationBuilder {
     private Mutation createMutationForVertex(AccumuloVertex vertex) {
         String vertexRowKey = AccumuloConstants.VERTEX_ROW_KEY_PREFIX + vertex.getId();
         Mutation m = new Mutation(vertexRowKey);
-        m.put(AccumuloVertex.CF_SIGNAL, EMPTY_TEXT, visibilityToAccumuloVisibility(vertex.getVisibility()), EMPTY_VALUE);
+        m.put(AccumuloVertex.CF_SIGNAL, EMPTY_TEXT, visibilityToAccumuloVisibility(vertex.getVisibility()), vertex.getTimestamp(), EMPTY_VALUE);
         for (PropertyDeleteMutation propertyDeleteMutation : vertex.getPropertyDeleteMutations()) {
             addPropertyDeleteToMutation(m, propertyDeleteMutation);
         }

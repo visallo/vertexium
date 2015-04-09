@@ -25,6 +25,17 @@ public interface Vertex extends Element {
      */
     Iterable<Edge> getEdges(Direction direction, EnumSet<FetchHint> fetchHints, Authorizations authorizations);
 
+    /**
+     * Gets all edges attached to this vertex.
+     *
+     * @param direction      The side of the edge that this vertex is attached to.
+     * @param fetchHints     Hint on what should be fetched from the datastore.
+     * @param endTime        Include all changes made up until the point in time.
+     * @param authorizations The authorizations used to find the edges.
+     * @return An Iterable of edges.
+     */
+    Iterable<Edge> getEdges(Direction direction, EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations);
+
     Iterable<String> getEdgeIds(Direction direction, Authorizations authorizations);
 
     /**

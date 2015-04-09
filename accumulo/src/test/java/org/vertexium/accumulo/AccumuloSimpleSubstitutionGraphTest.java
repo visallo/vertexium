@@ -13,13 +13,12 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
-import org.vertexium.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.vertexium.*;
 import org.vertexium.id.SimpleNameSubstitutionStrategy;
 import org.vertexium.test.GraphTestBase;
 import org.vertexium.util.IterableUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -169,7 +168,7 @@ public class AccumuloSimpleSubstitutionGraphTest extends GraphTestBase {
         assertEquals("metavalue1", metadata.getEntry("meta1", VISIBILITY_EMPTY).getValue());
 
         AccumuloGraph accumuloGraph = (AccumuloGraph) graph;
-        Scanner vertexScanner = accumuloGraph.createVertexScanner(FetchHint.ALL, AccumuloGraph.SINGLE_VERSION, AUTHORIZATIONS_EMPTY);
+        Scanner vertexScanner = accumuloGraph.createVertexScanner(FetchHint.ALL, AccumuloGraph.SINGLE_VERSION, null, null, AUTHORIZATIONS_EMPTY);
         vertexScanner.setRange(new Range("V", "W"));
         RowIterator rows = new RowIterator(vertexScanner.iterator());
         while (rows.hasNext()) {

@@ -50,6 +50,16 @@ public interface Graph {
 
     /**
      * Prepare a vertex to be added to the graph. This method provides a way to build up a vertex with it's properties to be inserted
+     * with a single operation. The id of the new vertex will be generated using an IdGenerator.
+     *
+     * @param timestamp  The timestamp of the vertex. null, to use the system generated time.
+     * @param visibility The visibility to assign to the new vertex.
+     * @return The vertex builder.
+     */
+    VertexBuilder prepareVertex(Long timestamp, Visibility visibility);
+
+    /**
+     * Prepare a vertex to be added to the graph. This method provides a way to build up a vertex with it's properties to be inserted
      * with a single operation.
      *
      * @param vertexId   The id to assign the new vertex.
@@ -57,6 +67,17 @@ public interface Graph {
      * @return The vertex builder.
      */
     VertexBuilder prepareVertex(String vertexId, Visibility visibility);
+
+    /**
+     * Prepare a vertex to be added to the graph. This method provides a way to build up a vertex with it's properties to be inserted
+     * with a single operation.
+     *
+     * @param vertexId   The id to assign the new vertex.
+     * @param timestamp  The timestamp of the vertex.
+     * @param visibility The visibility to assign to the new vertex.
+     * @return The vertex builder.
+     */
+    VertexBuilder prepareVertex(String vertexId, Long timestamp, Visibility visibility);
 
     /**
      * Tests the existence of a vertex with the given authorizations.
@@ -87,6 +108,17 @@ public interface Graph {
     Vertex getVertex(String vertexId, EnumSet<FetchHint> fetchHints, Authorizations authorizations);
 
     /**
+     * Get a vertex from the graph.
+     *
+     * @param vertexId       The vertex id to retrieve from the graph.
+     * @param fetchHints     Hint at what parts of the vertex to fetch.
+     * @param endTime        Include all changes made up until the point in time.
+     * @param authorizations The authorizations required to load the vertex.
+     * @return The vertex if successful. null if the vertex is not found or the required authorizations were not provided.
+     */
+    Vertex getVertex(String vertexId, EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations);
+
+    /**
      * Gets all vertices on the graph.
      *
      * @param authorizations The authorizations required to load the vertex.
@@ -102,6 +134,16 @@ public interface Graph {
      * @return An iterable of all the vertices.
      */
     Iterable<Vertex> getVertices(EnumSet<FetchHint> fetchHints, Authorizations authorizations);
+
+    /**
+     * Gets all vertices on the graph.
+     *
+     * @param fetchHints     Hint at what parts of the vertex to fetch.
+     * @param endTime        Include all changes made up until the point in time.
+     * @param authorizations The authorizations required to load the vertex.
+     * @return An iterable of all the vertices.
+     */
+    Iterable<Vertex> getVertices(EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations);
 
     /**
      * Tests the existence of vertices with the given authorizations.
@@ -134,6 +176,19 @@ public interface Graph {
      * @return An iterable of all the vertices.
      */
     Iterable<Vertex> getVertices(Iterable<String> ids, EnumSet<FetchHint> fetchHints, Authorizations authorizations);
+
+    /**
+     * Gets all vertices matching the given ids on the graph. The order of
+     * the returned vertices is not guaranteed {@link Graph#getVerticesInOrder(Iterable, Authorizations)}.
+     * Vertices are not kept in memory during the iteration.
+     *
+     * @param ids            The ids of the vertices to get.
+     * @param fetchHints     Hint at what parts of the vertex to fetch.
+     * @param endTime        Include all changes made up until the point in time.
+     * @param authorizations The authorizations required to load the vertex.
+     * @return An iterable of all the vertices.
+     */
+    Iterable<Vertex> getVertices(Iterable<String> ids, EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations);
 
     /**
      * Gets all vertices matching the given ids on the graph. This method is similar to
@@ -271,6 +326,20 @@ public interface Graph {
      * Prepare an edge to be added to the graph. This method provides a way to build up an edge with it's properties to be inserted
      * with a single operation.
      *
+     * @param edgeId     The id to assign the new edge.
+     * @param outVertex  The source vertex. The "out" side of the edge.
+     * @param inVertex   The destination vertex. The "in" side of the edge.
+     * @param label      The label to assign to the edge. eg knows, works at, etc.
+     * @param timestamp   The timestamp of the edge.
+     * @param visibility The visibility to assign to the new edge.
+     * @return The edge builder.
+     */
+    EdgeBuilder prepareEdge(String edgeId, Vertex outVertex, Vertex inVertex, String label, Long timestamp, Visibility visibility);
+
+    /**
+     * Prepare an edge to be added to the graph. This method provides a way to build up an edge with it's properties to be inserted
+     * with a single operation.
+     *
      * @param outVertexId The source vertex id. The "out" side of the edge.
      * @param inVertexId  The destination vertex id. The "in" side of the edge.
      * @param label       The label to assign to the edge. eg knows, works at, etc.
@@ -291,6 +360,20 @@ public interface Graph {
      * @return The edge builder.
      */
     EdgeBuilderByVertexId prepareEdge(String edgeId, String outVertexId, String inVertexId, String label, Visibility visibility);
+
+    /**
+     * Prepare an edge to be added to the graph. This method provides a way to build up an edge with it's properties to be inserted
+     * with a single operation.
+     *
+     * @param edgeId      The id to assign the new edge.
+     * @param outVertexId The source vertex id. The "out" side of the edge.
+     * @param inVertexId  The destination vertex id. The "in" side of the edge.
+     * @param label       The label to assign to the edge. eg knows, works at, etc.
+     * @param timestamp   The timestamp of the edge.
+     * @param visibility  The visibility to assign to the new edge.
+     * @return The edge builder.
+     */
+    EdgeBuilderByVertexId prepareEdge(String edgeId, String outVertexId, String inVertexId, String label, Long timestamp, Visibility visibility);
 
     /**
      * Tests the existence of a edge with the given authorizations.
@@ -321,6 +404,17 @@ public interface Graph {
     Edge getEdge(String edgeId, EnumSet<FetchHint> fetchHints, Authorizations authorizations);
 
     /**
+     * Get an edge from the graph.
+     *
+     * @param edgeId         The edge id to retrieve from the graph.
+     * @param fetchHints     Hint at what parts of the edge to fetch.
+     * @param endTime        Include all changes made up until the point in time.
+     * @param authorizations The authorizations required to load the edge.
+     * @return The edge if successful. null if the edge is not found or the required authorizations were not provided.
+     */
+    Edge getEdge(String edgeId, EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations);
+
+    /**
      * Gets all edges on the graph.
      *
      * @param authorizations The authorizations required to load the edge.
@@ -338,6 +432,16 @@ public interface Graph {
     Iterable<Edge> getEdges(EnumSet<FetchHint> fetchHints, Authorizations authorizations);
 
     /**
+     * Gets all edges on the graph.
+     *
+     * @param fetchHints     Hint at what parts of the edge to fetch.
+     * @param endTime        Include all changes made up until the point in time.
+     * @param authorizations The authorizations required to load the edge.
+     * @return An iterable of all the edges.
+     */
+    Iterable<Edge> getEdges(EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations);
+
+    /**
      * Tests the existence of edges with the given authorizations.
      *
      * @param ids            The edge ids to check existence of.
@@ -345,6 +449,16 @@ public interface Graph {
      * @return Maps of ids to exists status.
      */
     Map<String, Boolean> doEdgesExist(List<String> ids, Authorizations authorizations);
+
+    /**
+     * Tests the existence of edges with the given authorizations.
+     *
+     * @param ids            The edge ids to check existence of.
+     * @param endTime        Include all changes made up until the point in time.
+     * @param authorizations The authorizations required to load the edges.
+     * @return Maps of ids to exists status.
+     */
+    Map<String, Boolean> doEdgesExist(List<String> ids, Long endTime, Authorizations authorizations);
 
     /**
      * Gets all edges on the graph matching the given ids.
@@ -366,6 +480,17 @@ public interface Graph {
     Iterable<Edge> getEdges(Iterable<String> ids, EnumSet<FetchHint> fetchHints, Authorizations authorizations);
 
     /**
+     * Gets all edges on the graph matching the given ids.
+     *
+     * @param ids            The ids of the edges to get.
+     * @param fetchHints     Hint at what parts of the edge to fetch.
+     * @param endTime        Include all changes made up until the point in time.
+     * @param authorizations The authorizations required to load the edge.
+     * @return An iterable of all the edges.
+     */
+    Iterable<Edge> getEdges(Iterable<String> ids, EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations);
+
+    /**
      * Given a list of vertex ids, find all the edge ids that connect them.
      *
      * @param vertexIds      The list of vertex ids.
@@ -373,6 +498,16 @@ public interface Graph {
      * @return An iterable of all the edge ids between any two vertices.
      */
     Iterable<String> findRelatedEdges(Iterable<String> vertexIds, Authorizations authorizations);
+
+    /**
+     * Given a list of vertex ids, find all the edge ids that connect them.
+     *
+     * @param vertexIds      The list of vertex ids.
+     * @param endTime        Include all changes made up until the point in time.
+     * @param authorizations The authorizations required to load the edges.
+     * @return An iterable of all the edge ids between any two vertices.
+     */
+    Iterable<String> findRelatedEdges(Iterable<String> vertexIds, Long endTime, Authorizations authorizations);
 
     /**
      * Permanently deletes an edge from the graph.

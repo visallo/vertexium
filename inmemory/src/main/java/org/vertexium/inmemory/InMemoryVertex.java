@@ -23,6 +23,8 @@ public class InMemoryVertex extends InMemoryElement implements Vertex {
             Iterable<PropertyDeleteMutation> propertyDeleteMutations,
             Iterable<PropertySoftDeleteMutation> propertySoftDeleteMutations,
             Iterable<Visibility> hiddenVisibilities,
+            long startTime,
+            long timestamp,
             Authorizations authorizations
     ) {
         super(
@@ -34,6 +36,8 @@ public class InMemoryVertex extends InMemoryElement implements Vertex {
                 propertyDeleteMutations,
                 propertySoftDeleteMutations,
                 hiddenVisibilities,
+                startTime,
+                timestamp,
                 authorizations
         );
     }
@@ -64,8 +68,13 @@ public class InMemoryVertex extends InMemoryElement implements Vertex {
     }
 
     @Override
-    public Iterable<Edge> getEdges(final Direction direction, EnumSet<FetchHint> fetchHints, Authorizations authorizations) {
-        return new FilterIterable<Edge>(getGraph().getEdgesFromVertex(getId(), fetchHints, authorizations)) {
+    public Iterable<Edge> getEdges(Direction direction, EnumSet<FetchHint> fetchHints, Authorizations authorizations) {
+        return getEdges(direction, fetchHints, null, authorizations);
+    }
+
+    @Override
+    public Iterable<Edge> getEdges(final Direction direction, EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations) {
+        return new FilterIterable<Edge>(getGraph().getEdgesFromVertex(getId(), fetchHints, endTime, authorizations)) {
             @Override
             protected boolean isIncluded(Edge edge) {
                 switch (direction) {

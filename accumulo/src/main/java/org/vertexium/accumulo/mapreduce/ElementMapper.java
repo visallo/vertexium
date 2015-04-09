@@ -83,27 +83,33 @@ public abstract class ElementMapper<KEYIN, VALUEIN, KEYOUT, VALUEOUT> extends Ma
     protected abstract void saveVertexMutation(Context context, Text verticesTableName, Mutation m) throws IOException, InterruptedException;
 
     public VertexBuilder prepareVertex(Vertex vertex) {
-        return prepareVertex(vertex.getId(), vertex.getVisibility());
+        return prepareVertex(vertex.getId(), null, vertex.getVisibility());
     }
 
-    public VertexBuilder prepareVertex(String vertexId, Visibility visibility) {
+    public VertexBuilder prepareVertex(String vertexId, Long timestamp, Visibility visibility) {
         if (vertexId == null) {
             vertexId = getIdGenerator().nextId();
         }
+        if (timestamp == null) {
+            timestamp = System.currentTimeMillis();
+        }
+        final long timestampLong = timestamp;
 
         return new VertexBuilder(vertexId, visibility) {
             @Override
             public Vertex save(Authorizations authorizations) {
+                AccumuloGraph graph = null;
+                Iterable<Visibility> hiddenVisibilities = null;
                 AccumuloVertex vertex = new AccumuloVertex(
-                        null,
+                        graph,
                         getVertexId(),
                         getVisibility(),
                         getProperties(),
                         getPropertyDeletes(),
                         getPropertySoftDeletes(),
-                        null,
-                        authorizations,
-                        System.currentTimeMillis()
+                        hiddenVisibilities,
+                        timestampLong,
+                        authorizations
                 );
                 elementMutationBuilder.saveVertex(vertex);
                 return vertex;
@@ -112,7 +118,7 @@ public abstract class ElementMapper<KEYIN, VALUEIN, KEYOUT, VALUEOUT> extends Ma
     }
 
     public Edge addEdge(String edgeId, Vertex outVertex, Vertex inVertex, String label, Visibility visibility, Authorizations authorizations) {
-        return prepareEdge(edgeId, outVertex, inVertex, label, visibility).save(authorizations);
+        return prepareEdge(edgeId, outVertex, inVertex, label, null, visibility).save(authorizations);
     }
 
     public EdgeBuilderByVertexId prepareEdge(Edge edge) {
@@ -121,14 +127,19 @@ public abstract class ElementMapper<KEYIN, VALUEIN, KEYOUT, VALUEOUT> extends Ma
                 edge.getVertexId(Direction.OUT),
                 edge.getVertexId(Direction.IN),
                 edge.getLabel(),
+                edge.getTimestamp(),
                 edge.getVisibility()
         );
     }
 
-    public EdgeBuilderByVertexId prepareEdge(String edgeId, String outVertexId, String inVertexId, String label, Visibility visibility) {
+    public EdgeBuilderByVertexId prepareEdge(String edgeId, String outVertexId, String inVertexId, String label, Long timestamp, Visibility visibility) {
         if (edgeId == null) {
             edgeId = getIdGenerator().nextId();
         }
+        if (timestamp == null) {
+            timestamp = System.currentTimeMillis();
+        }
+        final long timestampLong = timestamp;
 
         return new EdgeBuilderByVertexId(edgeId, outVertexId, inVertexId, label, visibility) {
             @Override
@@ -145,8 +156,8 @@ public abstract class ElementMapper<KEYIN, VALUEIN, KEYOUT, VALUEOUT> extends Ma
                         getPropertyDeletes(),
                         getPropertySoftDeletes(),
                         null,
-                        authorizations,
-                        System.currentTimeMillis()
+                        timestampLong,
+                        authorizations
                 );
                 elementMutationBuilder.saveEdge(edge);
                 return edge;
@@ -154,10 +165,14 @@ public abstract class ElementMapper<KEYIN, VALUEIN, KEYOUT, VALUEOUT> extends Ma
         };
     }
 
-    public EdgeBuilder prepareEdge(String edgeId, Vertex outVertex, Vertex inVertex, String label, Visibility visibility) {
+    public EdgeBuilder prepareEdge(String edgeId, Vertex outVertex, Vertex inVertex, String label, Long timestamp, Visibility visibility) {
         if (edgeId == null) {
             edgeId = getIdGenerator().nextId();
         }
+        if (timestamp == null) {
+            timestamp = System.currentTimeMillis();
+        }
+        final long timestampLong = timestamp;
 
         return new EdgeBuilder(edgeId, outVertex, inVertex, label, visibility) {
             @Override
@@ -174,8 +189,8 @@ public abstract class ElementMapper<KEYIN, VALUEIN, KEYOUT, VALUEOUT> extends Ma
                         getPropertyDeletes(),
                         getPropertySoftDeletes(),
                         null,
-                        authorizations,
-                        System.currentTimeMillis()
+                        timestampLong,
+                        authorizations
                 );
                 elementMutationBuilder.saveEdge(edge);
                 return edge;

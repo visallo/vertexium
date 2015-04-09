@@ -21,6 +21,11 @@ public interface Element {
     Visibility getVisibility();
 
     /**
+     * The timestamp of when this element was updated.
+     */
+    long getTimestamp();
+
+    /**
      * an Iterable of all the properties on this element that you have access to based on the authorizations
      * used to retrieve the element.
      */

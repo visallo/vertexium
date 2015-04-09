@@ -91,8 +91,8 @@ public class VertexMaker extends ElementMaker<Vertex> {
                 this.getHiddenVisibilities(),
                 this.inEdges,
                 this.outEdges,
-                this.getAuthorizations(),
-                timestamp
+                timestamp,
+                this.getAuthorizations()
         );
     }
 

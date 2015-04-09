@@ -2710,7 +2710,7 @@ public abstract class GraphTestBase {
     }
 
     @Test
-    public void testPropertyVersions() {
+    public void testPropertyHistoricalVersions() {
         Date time25 = createDate(2015, 4, 6, 16, 15, 0);
         Date time30 = createDate(2015, 4, 6, 16, 16, 0);
 
@@ -2742,6 +2742,33 @@ public abstract class GraphTestBase {
         // make sure we get the correct age when we only ask for one value
         assertEquals(30, v1.getPropertyValue("", "age"));
         assertEquals("author2", v1.getProperty("", "age").getMetadata().getValue("author", VISIBILITY_A));
+    }
+
+    @Test
+    public void testGetVertexAtASpecificTimeInHistory() {
+        Date time25 = createDate(2015, 4, 6, 16, 15, 0);
+        Date time30 = createDate(2015, 4, 6, 16, 16, 0);
+
+        Metadata metadata = new Metadata();
+        graph.prepareVertex("v1", time25.getTime(), VISIBILITY_A)
+                .addPropertyValue("", "age", 25, metadata, time25.getTime(), VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
+
+        graph.prepareVertex("v1", time30.getTime(), VISIBILITY_A)
+                .addPropertyValue("", "age", 30, metadata, time30.getTime(), VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
+        graph.prepareVertex("v2", time30.getTime(), VISIBILITY_A)
+                .addPropertyValue("", "age", 35, metadata, time30.getTime(), VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
+        graph.flush();
+
+        // verify current versions
+        assertEquals(30, graph.getVertex("v1", AUTHORIZATIONS_A).getPropertyValue("", "age"));
+        assertEquals(35, graph.getVertex("v2", AUTHORIZATIONS_A).getPropertyValue("", "age"));
+
+        // verify old version
+        assertEquals(25, graph.getVertex("v1", FetchHint.ALL, time25.getTime(), AUTHORIZATIONS_A).getPropertyValue("", "age"));
+        assertNull("v2 should not exist at time25", graph.getVertex("v2", FetchHint.ALL, time25.getTime(), AUTHORIZATIONS_A));
     }
 
     private List<Vertex> getVertices(long count) {

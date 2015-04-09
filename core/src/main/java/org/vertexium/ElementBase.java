@@ -15,6 +15,7 @@ public abstract class ElementBase implements Element {
     private final Graph graph;
     private final String id;
     private Visibility visibility;
+    private final long timestamp;
     private Set<Visibility> hiddenVisibilities = new HashSet<>();
 
     private final ConcurrentSkipListSet<Property> properties;
@@ -31,11 +32,13 @@ public abstract class ElementBase implements Element {
             Iterable<PropertyDeleteMutation> propertyDeleteMutations,
             Iterable<PropertySoftDeleteMutation> propertySoftDeleteMutations,
             Iterable<Visibility> hiddenVisibilities,
+            long timestamp,
             Authorizations authorizations
     ) {
         this.graph = graph;
         this.id = id;
         this.visibility = visibility;
+        this.timestamp = timestamp;
         this.properties = new ConcurrentSkipListSet<>();
         this.softDeletedProperties = new ConcurrentSkipListSet<>();
         this.authorizations = authorizations;
@@ -150,6 +153,11 @@ public abstract class ElementBase implements Element {
     @Override
     public Visibility getVisibility() {
         return this.visibility;
+    }
+
+    @Override
+    public long getTimestamp() {
+        return timestamp;
     }
 
     protected void setVisibility(Visibility visibility) {

@@ -22,7 +22,6 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
     public static final Text CF_PROPERTY_HIDDEN = new Text("PROPH");
     public static final Text CF_PROPERTY_SOFT_DELETE = new Text("PROPD");
     public static final Text CF_PROPERTY_METADATA = new Text("PROPMETA");
-    private final long timestamp;
 
     protected AccumuloElement(
             Graph graph,
@@ -32,8 +31,8 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
             Iterable<PropertyDeleteMutation> propertyDeleteMutations,
             Iterable<PropertySoftDeleteMutation> propertySoftDeleteMutations,
             Iterable<Visibility> hiddenVisibilities,
-            Authorizations authorizations,
-            long timestamp
+            long timestamp,
+            Authorizations authorizations
     ) {
         super(
                 graph,
@@ -43,9 +42,9 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
                 propertyDeleteMutations,
                 propertySoftDeleteMutations,
                 hiddenVisibilities,
+                timestamp,
                 authorizations
         );
-        this.timestamp = timestamp;
     }
 
     @Override
@@ -134,10 +133,5 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
     @Override
     public Iterable<HistoricalPropertyValue> getHistoricalPropertyValues(String key, String name, Visibility visibility, Long startTime, Long endTime, Authorizations authorizations) {
         return getGraph().getHistoricalPropertyValues(this, key, name, visibility, startTime, endTime, authorizations);
-    }
-
-    @Override
-    public long getTimestamp() {
-        return timestamp;
     }
 }

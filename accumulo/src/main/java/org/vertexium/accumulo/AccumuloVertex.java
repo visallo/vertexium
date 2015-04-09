@@ -38,8 +38,8 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
             Iterable<PropertyDeleteMutation> propertyDeleteMutations,
             Iterable<PropertySoftDeleteMutation> propertySoftDeleteMutations,
             Iterable<Visibility> hiddenVisibilities,
-            Authorizations authorizations,
-            long timestamp
+            long timestamp,
+            Authorizations authorizations
     ) {
         this(
                 graph,
@@ -51,8 +51,8 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
                 hiddenVisibilities,
                 new HashMap<String, EdgeInfo>(),
                 new HashMap<String, EdgeInfo>(),
-                authorizations,
-                timestamp
+                timestamp,
+                authorizations
         );
     }
 
@@ -66,8 +66,8 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
             Iterable<Visibility> hiddenVisibilities,
             Map<String, EdgeInfo> inEdges,
             Map<String, EdgeInfo> outEdges,
-            Authorizations authorizations,
-            long timestamp
+            long timestamp,
+            Authorizations authorizations
     ) {
         super(
                 graph,
@@ -77,8 +77,8 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
                 propertyDeleteMutations,
                 propertySoftDeleteMutations,
                 hiddenVisibilities,
-                authorizations,
-                timestamp
+                timestamp,
+                authorizations
         );
         this.inEdges = inEdges;
         this.outEdges = outEdges;
@@ -91,7 +91,12 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
 
     @Override
     public Iterable<Edge> getEdges(Direction direction, EnumSet<FetchHint> fetchHints, Authorizations authorizations) {
-        return getGraph().getEdges(getEdgeIds(direction, authorizations), fetchHints, authorizations);
+        return getEdges(direction, fetchHints, null, authorizations);
+    }
+
+    @Override
+    public Iterable<Edge> getEdges(Direction direction, EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations) {
+        return getGraph().getEdges(getEdgeIds(direction, authorizations), fetchHints, endTime, authorizations);
     }
 
     @Override

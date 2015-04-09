@@ -29,8 +29,8 @@ public class AccumuloEdge extends AccumuloElement implements Edge {
             Iterable<PropertyDeleteMutation> propertyDeleteMutations,
             Iterable<PropertySoftDeleteMutation> propertySoftDeleteMutations,
             Iterable<Visibility> hiddenVisibilities,
-            Authorizations authorizations,
-            long timestamp
+            long timestamp,
+            Authorizations authorizations
     ) {
         super(
                 graph,
@@ -40,8 +40,8 @@ public class AccumuloEdge extends AccumuloElement implements Edge {
                 propertyDeleteMutations,
                 propertySoftDeleteMutations,
                 hiddenVisibilities,
-                authorizations,
-                timestamp
+                timestamp,
+                authorizations
         );
         this.outVertexId = outVertexId;
         this.inVertexId = inVertexId;

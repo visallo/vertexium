@@ -7,6 +7,7 @@ import org.vertexium.mutation.AlterPropertyVisibility;
 import org.vertexium.mutation.PropertyDeleteMutation;
 import org.vertexium.mutation.PropertySoftDeleteMutation;
 import org.vertexium.mutation.SetPropertyMetadata;
+import org.vertexium.property.MutablePropertyImpl;
 import org.vertexium.search.IndexHint;
 import org.vertexium.search.SearchIndex;
 import org.vertexium.util.ConvertingIterable;
@@ -77,14 +78,22 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
     }
 
     @Override
-    public VertexBuilder prepareVertex(String vertexId, Visibility visibility) {
+    public VertexBuilder prepareVertex(String vertexId, Long timestamp, Visibility visibility) {
         if (vertexId == null) {
             vertexId = getIdGenerator().nextId();
         }
+        if (timestamp == null) {
+            timestamp = System.currentTimeMillis();
+        }
+        final long timestampLong = timestamp;
 
         return new VertexBuilder(vertexId, visibility) {
             @Override
             public Vertex save(Authorizations authorizations) {
+                InMemoryVertex existingVertex = (InMemoryVertex) getVertex(getVertexId(), authorizations);
+                long startTime = existingVertex == null ? timestampLong : existingVertex.getStartTime();
+
+                Iterable<Visibility> hiddenVisibilities = null;
                 InMemoryVertex newVertex = new InMemoryVertex(
                         InMemoryGraph.this,
                         getVertexId(),
@@ -93,7 +102,9 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
                         new InMemoryHistoricalPropertyValues(),
                         getPropertyDeletes(),
                         getPropertySoftDeletes(),
-                        null,
+                        hiddenVisibilities,
+                        startTime,
+                        timestampLong,
                         authorizations
                 );
 
@@ -102,7 +113,6 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
                     getSearchIndex().addElement(InMemoryGraph.this, newVertex, authorizations);
                 }
 
-                InMemoryVertex existingVertex = (InMemoryVertex) getVertex(getVertexId(), authorizations);
                 InMemoryVertex vertex = InMemoryVertex.updateOrCreate(InMemoryGraph.this, existingVertex, newVertex, authorizations);
                 vertices.put(getVertexId(), vertex);
 
@@ -122,28 +132,18 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
     }
 
     @Override
-    public Iterable<Vertex> getVertices(EnumSet<FetchHint> fetchHints, final Authorizations authorizations) throws VertexiumException {
+    public Iterable<Vertex> getVertices(EnumSet<FetchHint> fetchHints, final Long endTime, final Authorizations authorizations) throws VertexiumException {
         final boolean includeHidden = fetchHints.contains(FetchHint.INCLUDE_HIDDEN);
 
         return new LookAheadIterable<InMemoryVertex, Vertex>() {
             @Override
             protected boolean isIncluded(InMemoryVertex src, Vertex vertex) {
-                if (!src.canRead(authorizations)) {
-                    return false;
-                }
-
-                if (!includeHidden) {
-                    if (src.isHidden(authorizations)) {
-                        return false;
-                    }
-                }
-
-                return true;
+                return InMemoryGraph.this.isIncluded(src, includeHidden, endTime, authorizations);
             }
 
             @Override
             protected Vertex convert(InMemoryVertex vertex) {
-                return filteredVertex(vertex, includeHidden, authorizations);
+                return filteredVertex(vertex, includeHidden, endTime, authorizations);
             }
 
             @Override
@@ -151,6 +151,22 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
                 return vertices.values().iterator();
             }
         };
+    }
+
+    private boolean isIncluded(InMemoryElement src, boolean includeHidden, Long endTime, Authorizations authorizations) {
+        if (!src.canRead(authorizations)) {
+            return false;
+        }
+
+        if (!includeHidden && src.isHidden(authorizations)) {
+            return false;
+        }
+
+        if (endTime != null && src.getStartTime() > endTime) {
+            return false;
+        }
+
+        return true;
     }
 
     @Override
@@ -264,7 +280,7 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
     }
 
     @Override
-    public EdgeBuilderByVertexId prepareEdge(String edgeId, String outVertexId, String inVertexId, String label, Visibility visibility) {
+    public EdgeBuilderByVertexId prepareEdge(String edgeId, String outVertexId, String inVertexId, String label, final Long timestamp, Visibility visibility) {
         if (edgeId == null) {
             edgeId = getIdGenerator().nextId();
         }
@@ -272,13 +288,13 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
         return new EdgeBuilderByVertexId(edgeId, outVertexId, inVertexId, label, visibility) {
             @Override
             public Edge save(Authorizations authorizations) {
-                return savePreparedEdge(this, getOutVertexId(), getInVertexId(), authorizations);
+                return savePreparedEdge(this, getOutVertexId(), getInVertexId(), timestamp, authorizations);
             }
         };
     }
 
     @Override
-    public EdgeBuilder prepareEdge(String edgeId, Vertex outVertex, Vertex inVertex, String label, Visibility visibility) {
+    public EdgeBuilder prepareEdge(String edgeId, Vertex outVertex, Vertex inVertex, String label, final Long timestamp, Visibility visibility) {
         if (edgeId == null) {
             edgeId = getIdGenerator().nextId();
         }
@@ -286,13 +302,18 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
         return new EdgeBuilder(edgeId, outVertex, inVertex, label, visibility) {
             @Override
             public Edge save(Authorizations authorizations) {
-                return savePreparedEdge(this, getOutVertex().getId(), getInVertex().getId(), authorizations);
+                return savePreparedEdge(this, getOutVertex().getId(), getInVertex().getId(), timestamp, authorizations);
             }
         };
     }
 
-    private Edge savePreparedEdge(EdgeBuilderBase edgeBuilder, String outVertexId, String inVertexId, Authorizations authorizations) {
+    private Edge savePreparedEdge(EdgeBuilderBase edgeBuilder, String outVertexId, String inVertexId, Long timestamp, Authorizations authorizations) {
         Edge existingEdge = getEdge(edgeBuilder.getEdgeId(), authorizations);
+        long startTime;
+
+        if (timestamp == null) {
+            timestamp = System.currentTimeMillis();
+        }
 
         Iterable<Property> properties;
         if (existingEdge == null) {
@@ -308,8 +329,13 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
         }
 
         Iterable<Visibility> hiddenVisibilities = null;
-        if (existingEdge instanceof InMemoryEdge) {
+        if (existingEdge == null) {
+            startTime = timestamp;
+        } else if (existingEdge instanceof InMemoryEdge) {
             hiddenVisibilities = ((InMemoryEdge) existingEdge).getHiddenVisibilities();
+            startTime = ((InMemoryEdge) existingEdge).getStartTime();
+        } else {
+            startTime = timestamp;
         }
 
         String edgeLabel = edgeBuilder.getNewEdgeLabel();
@@ -329,6 +355,8 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
                 edgeBuilder.getPropertyDeletes(),
                 edgeBuilder.getPropertySoftDeletes(),
                 hiddenVisibilities,
+                startTime,
+                timestamp,
                 authorizations
         );
         edges.put(edgeBuilder.getEdgeId(), edge);
@@ -351,28 +379,18 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
     }
 
     @Override
-    public Iterable<Edge> getEdges(EnumSet<FetchHint> fetchHints, final Authorizations authorizations) {
+    public Iterable<Edge> getEdges(EnumSet<FetchHint> fetchHints, final Long endTime, final Authorizations authorizations) {
         final boolean includeHidden = fetchHints.contains(FetchHint.INCLUDE_HIDDEN);
 
         return new LookAheadIterable<InMemoryEdge, Edge>() {
             @Override
             protected boolean isIncluded(InMemoryEdge src, Edge edge) {
-                if (!src.canRead(authorizations)) {
-                    return false;
-                }
-
-                if (!includeHidden) {
-                    if (src.isHidden(authorizations)) {
-                        return false;
-                    }
-                }
-
-                return true;
+                return InMemoryGraph.this.isIncluded(src, includeHidden, endTime, authorizations);
             }
 
             @Override
             protected Edge convert(InMemoryEdge edge) {
-                return filteredEdge(edge, includeHidden, authorizations);
+                return filteredEdge(edge, includeHidden, endTime, authorizations);
             }
 
             @Override
@@ -477,7 +495,7 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
         return new InMemoryAuthorizations(auths);
     }
 
-    public Iterable<Edge> getEdgesFromVertex(final String vertexId, EnumSet<FetchHint> fetchHints, final Authorizations authorizations) {
+    public Iterable<Edge> getEdgesFromVertex(final String vertexId, EnumSet<FetchHint> fetchHints, final Long endTime, final Authorizations authorizations) {
         final boolean includeHidden = fetchHints.contains(FetchHint.INCLUDE_HIDDEN);
 
         return new LookAheadIterable<InMemoryEdge, Edge>() {
@@ -507,7 +525,7 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
 
             @Override
             protected Edge convert(InMemoryEdge edge) {
-                return filteredEdge(edge, includeHidden, authorizations);
+                return filteredEdge(edge, includeHidden, endTime, authorizations);
             }
 
             @Override
@@ -622,14 +640,14 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
         }
     }
 
-    private Edge filteredEdge(InMemoryEdge edge, boolean includeHidden, Authorizations authorizations) {
+    private Edge filteredEdge(InMemoryEdge edge, boolean includeHidden, Long endTime, Authorizations authorizations) {
         String edgeId = edge.getId();
         String outVertexId = edge.getVertexId(Direction.OUT);
         String inVertexId = edge.getVertexId(Direction.IN);
         String label = edge.getLabel();
         Visibility visibility = edge.getVisibility();
         Iterable<Visibility> hiddenVisibilities = edge.getHiddenVisibilities();
-        List<Property> properties = filterProperties(edge.getProperties(), includeHidden, authorizations);
+        List<Property> properties = filterProperties(edge, edge.getProperties(), includeHidden, endTime, authorizations);
         return new InMemoryEdge(
                 this,
                 edgeId,
@@ -642,15 +660,17 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
                 edge.getPropertyDeleteMutations(),
                 edge.getPropertySoftDeleteMutations(),
                 hiddenVisibilities,
+                edge.getStartTime(),
+                edge.getTimestamp(),
                 authorizations
         );
     }
 
-    private Vertex filteredVertex(InMemoryVertex vertex, boolean includeHidden, Authorizations authorizations) {
+    private Vertex filteredVertex(InMemoryVertex vertex, boolean includeHidden, Long endTime, Authorizations authorizations) {
         String vertexId = vertex.getId();
         Visibility visibility = vertex.getVisibility();
         Iterable<Visibility> hiddenVisibilities = vertex.getHiddenVisibilities();
-        List<Property> properties = filterProperties(vertex.getProperties(), includeHidden, authorizations);
+        List<Property> properties = filterProperties(vertex, vertex.getProperties(), includeHidden, endTime, authorizations);
         return new InMemoryVertex(
                 this,
                 vertexId,
@@ -660,13 +680,31 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
                 vertex.getPropertyDeleteMutations(),
                 vertex.getPropertySoftDeleteMutations(),
                 hiddenVisibilities,
+                vertex.getStartTime(),
+                vertex.getTimestamp(),
                 authorizations
         );
     }
 
-    private List<Property> filterProperties(Iterable<Property> properties, boolean includeHidden, Authorizations authorizations) {
+    private List<Property> filterProperties(Element element, Iterable<Property> properties, boolean includeHidden, Long endTime, Authorizations authorizations) {
         List<Property> filteredProperties = new ArrayList<>();
         for (Property p : properties) {
+            if (endTime != null) {
+                HistoricalPropertyValue historicalPropertyValues = getHistoricalPropertyValue(element, p.getKey(), p.getName(), p.getVisibility(), endTime);
+                if (historicalPropertyValues == null) {
+                    continue;
+                }
+                p = new MutablePropertyImpl(
+                        p.getKey(),
+                        p.getName(),
+                        historicalPropertyValues.getValue(),
+                        historicalPropertyValues.getMetadata(),
+                        historicalPropertyValues.getTimestamp(),
+                        historicalPropertyValues.getHiddenVisibilities(),
+                        p.getVisibility()
+                );
+            }
+
             if (canRead(p.getVisibility(), authorizations) && (includeHidden || !p.isHidden(authorizations))) {
                 filteredProperties.add(p);
             }
@@ -751,6 +789,21 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
             throw new VertexiumException("Could not find edge " + edgeId);
         }
         edge.setLabel(newEdgeLabel);
+    }
+
+    public HistoricalPropertyValue getHistoricalPropertyValue(
+            Element element,
+            String propertyKey,
+            String propertyName,
+            Visibility propertyVisibility,
+            Long endTime
+    ) {
+        for (HistoricalPropertyValue hpv : getHistoricalPropertyValues(element, propertyKey, propertyName, propertyVisibility)) {
+            if (hpv.getTimestamp() <= endTime) {
+                return hpv;
+            }
+        }
+        return null;
     }
 
     public Iterable<HistoricalPropertyValue> getHistoricalPropertyValues(
