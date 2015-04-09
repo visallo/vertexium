@@ -21,6 +21,8 @@ import org.fusesource.jansi.Ansi;
 import org.fusesource.jansi.AnsiConsole;
 import org.vertexium.Graph;
 import org.vertexium.GraphFactory;
+import org.vertexium.cli.commands.GetAuthsCommand;
+import org.vertexium.cli.commands.SetAuthsCommand;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -191,6 +193,14 @@ public class VertexiumShell {
         SecurityManager psm = System.getSecurityManager();
         System.setSecurityManager(new NoExitSecurityManager());
 
+        shell.register(new SetAuthsCommand(shell));
+        shell.register(new GetAuthsCommand(shell));
+
+        System.out.println("Global Properties:");
+        System.out.println("  g     - the Graph object");
+        System.out.println("  auths - the currently set query authorizations");
+        System.out.println("  v     - vertex map (usage: v['v1'])");
+        System.out.println("  e     - edge map (usage: e['e1'])");
         try {
             code = shell.run(evalString, filenames);
         } finally {

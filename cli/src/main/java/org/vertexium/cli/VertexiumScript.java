@@ -4,15 +4,12 @@ import groovy.lang.Script;
 import org.apache.commons.io.IOUtils;
 import org.codehaus.groovy.runtime.InvokerHelper;
 import org.vertexium.*;
-import org.vertexium.*;
 import org.vertexium.cli.model.*;
 import org.vertexium.property.StreamingPropertyValue;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 public class VertexiumScript extends Script {
@@ -36,41 +33,6 @@ public class VertexiumScript extends Script {
     }
 
     @Override
-    public Object invokeMethod(String name, Object args) {
-        if ("setauths".equalsIgnoreCase(name)) {
-            return invokeSetAuths(args);
-        }
-
-        if ("getauths".equalsIgnoreCase(name)) {
-            return invokeGetAuths();
-        }
-
-        return super.invokeMethod(name, args);
-    }
-
-    private Object invokeGetAuths() {
-        return getAuthorizations();
-    }
-
-    private Object invokeSetAuths(Object args) {
-        String[] auths = invokeMethodArgsToStrings(args);
-        setAuthorizations(getGraph().createAuthorizations(auths));
-        return invokeGetAuths();
-    }
-
-    private String[] invokeMethodArgsToStrings(Object args) {
-        if (args == null) {
-            return new String[0];
-        }
-        Object[] authsObjects = (Object[]) args;
-        List<String> authsList = new ArrayList<>();
-        for (Object authObject : authsObjects) {
-            authsList.add(authObject.toString());
-        }
-        return authsList.toArray(new String[authsList.size()]);
-    }
-
-    @Override
     public Object getProperty(String property) {
         if ("v".equals(property)) {
             return new LazyVertexMap();
@@ -84,12 +46,8 @@ public class VertexiumScript extends Script {
             return getGraph();
         }
 
-        if ("setauths".equalsIgnoreCase(property)) {
-            return invokeSetAuths(null);
-        }
-
-        if ("getauths".equalsIgnoreCase(property)) {
-            return invokeGetAuths();
+        if ("auths".equals(property)) {
+            return getAuthorizations();
         }
 
         Object contextProperty = contextProperties.get(property);
