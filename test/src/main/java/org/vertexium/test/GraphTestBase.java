@@ -8,7 +8,10 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.vertexium.*;
+import org.vertexium.event.*;
 import org.vertexium.mutation.ElementMutation;
 import org.vertexium.mutation.ExistingElementMutation;
 import org.vertexium.property.PropertyValue;
@@ -22,10 +25,6 @@ import org.vertexium.type.GeoCircle;
 import org.vertexium.type.GeoPoint;
 import org.vertexium.util.ConvertingIterable;
 import org.vertexium.util.IterableUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.vertexium.*;
-import org.vertexium.event.*;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -35,6 +34,7 @@ import java.math.BigInteger;
 import java.util.*;
 
 import static org.junit.Assert.*;
+import static org.vertexium.util.IterableUtils.count;
 
 @RunWith(JUnit4.class)
 public abstract class GraphTestBase {
@@ -134,6 +134,7 @@ public abstract class GraphTestBase {
         );
     }
 
+    @SuppressWarnings("AssertEqualsBetweenInconvertibleTypes")
     @Test
     public void testAddStreamingPropertyValue() throws IOException, InterruptedException {
         String expectedLargeValue = IOUtils.toString(new LargeStringInputStream(LARGE_PROPERTY_VALUE_SIZE));
@@ -146,7 +147,7 @@ public abstract class GraphTestBase {
                 .save(AUTHORIZATIONS_A_AND_B);
 
         Iterable<Object> propSmallValues = v1.getPropertyValues("propSmall");
-        Assert.assertEquals(1, IterableUtils.count(propSmallValues));
+        Assert.assertEquals(1, count(propSmallValues));
         Object propSmallValue = propSmallValues.iterator().next();
         assertTrue("propSmallValue was " + propSmallValue.getClass().getName(), propSmallValue instanceof StreamingPropertyValue);
         StreamingPropertyValue value = (StreamingPropertyValue) propSmallValue;
@@ -156,7 +157,7 @@ public abstract class GraphTestBase {
         assertEquals("value1", IOUtils.toString(value.getInputStream()));
 
         Iterable<Object> propLargeValues = v1.getPropertyValues(largePropertyName);
-        Assert.assertEquals(1, IterableUtils.count(propLargeValues));
+        Assert.assertEquals(1, count(propLargeValues));
         Object propLargeValue = propLargeValues.iterator().next();
         assertTrue(largePropertyName + " was " + propLargeValue.getClass().getName(), propLargeValue instanceof StreamingPropertyValue);
         value = (StreamingPropertyValue) propLargeValue;
@@ -167,7 +168,7 @@ public abstract class GraphTestBase {
 
         v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
         propSmallValues = v1.getPropertyValues("propSmall");
-        Assert.assertEquals(1, IterableUtils.count(propSmallValues));
+        Assert.assertEquals(1, count(propSmallValues));
         propSmallValue = propSmallValues.iterator().next();
         assertTrue("propSmallValue was " + propSmallValue.getClass().getName(), propSmallValue instanceof StreamingPropertyValue);
         value = (StreamingPropertyValue) propSmallValue;
@@ -177,7 +178,7 @@ public abstract class GraphTestBase {
         assertEquals("value1", IOUtils.toString(value.getInputStream()));
 
         propLargeValues = v1.getPropertyValues(largePropertyName);
-        Assert.assertEquals(1, IterableUtils.count(propLargeValues));
+        Assert.assertEquals(1, count(propLargeValues));
         propLargeValue = propLargeValues.iterator().next();
         assertTrue(largePropertyName + " was " + propLargeValue.getClass().getName(), propLargeValue instanceof StreamingPropertyValue);
         value = (StreamingPropertyValue) propLargeValue;
@@ -201,10 +202,10 @@ public abstract class GraphTestBase {
             assertTrue("timestamp should be more than 0", ((HasTimestamp) v).getTimestamp() > 0);
         }
 
-        Assert.assertEquals(1, IterableUtils.count(v.getProperties("prop1")));
+        Assert.assertEquals(1, count(v.getProperties("prop1")));
         Property prop1 = v.getProperties("prop1").iterator().next();
         if (prop1 instanceof HasTimestamp) {
-            assertTrue("timestamp should be more than 0", ((HasTimestamp) prop1).getTimestamp() > 0);
+            assertTrue("timestamp should be more than 0", prop1.getTimestamp() > 0);
         }
 
         prop1Metadata = prop1.getMetadata();
@@ -218,7 +219,7 @@ public abstract class GraphTestBase {
                 .save(AUTHORIZATIONS_A_AND_B);
 
         v = graph.getVertex("v1", AUTHORIZATIONS_A);
-        Assert.assertEquals(1, IterableUtils.count(v.getProperties("prop1")));
+        Assert.assertEquals(1, count(v.getProperties("prop1")));
         prop1 = v.getProperties("prop1").iterator().next();
         prop1Metadata = prop1.getMetadata();
         assertEquals(2, prop1Metadata.entrySet().size());
@@ -230,7 +231,7 @@ public abstract class GraphTestBase {
         v.setProperty("prop1", "value2", prop1Metadata, VISIBILITY_A, AUTHORIZATIONS_A_AND_B);
 
         v = graph.getVertex("v1", AUTHORIZATIONS_A);
-        Assert.assertEquals(1, IterableUtils.count(v.getProperties("prop1")));
+        Assert.assertEquals(1, count(v.getProperties("prop1")));
         prop1 = v.getProperties("prop1").iterator().next();
         assertEquals("value2", prop1.getValue());
         prop1Metadata = prop1.getMetadata();
@@ -243,16 +244,16 @@ public abstract class GraphTestBase {
                 .setProperty("prop1", "value1", VISIBILITY_A)
                 .setProperty("prop2", "value2", VISIBILITY_B)
                 .save(AUTHORIZATIONS_A_AND_B);
-        Assert.assertEquals(1, IterableUtils.count(vertexAdded.getProperties("prop1")));
+        Assert.assertEquals(1, count(vertexAdded.getProperties("prop1")));
         assertEquals("value1", vertexAdded.getPropertyValues("prop1").iterator().next());
-        Assert.assertEquals(1, IterableUtils.count(vertexAdded.getProperties("prop2")));
+        Assert.assertEquals(1, count(vertexAdded.getProperties("prop2")));
         assertEquals("value2", vertexAdded.getPropertyValues("prop2").iterator().next());
         graph.flush();
 
         Vertex v = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B);
-        Assert.assertEquals(1, IterableUtils.count(v.getProperties("prop1")));
+        Assert.assertEquals(1, count(v.getProperties("prop1")));
         assertEquals("value1", v.getPropertyValues("prop1").iterator().next());
-        Assert.assertEquals(1, IterableUtils.count(v.getProperties("prop2")));
+        Assert.assertEquals(1, count(v.getProperties("prop2")));
         assertEquals("value2", v.getPropertyValues("prop2").iterator().next());
 
         assertEvents(
@@ -268,7 +269,7 @@ public abstract class GraphTestBase {
                 .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
         v = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B);
-        Assert.assertEquals(1, IterableUtils.count(v.getProperties("prop1Mutation")));
+        Assert.assertEquals(1, count(v.getProperties("prop1Mutation")));
         assertEquals("value1Mutation", v.getPropertyValues("prop1Mutation").iterator().next());
         assertEvents(
                 new AddPropertyEvent(graph, vertexAdded, vertexAdded.getProperty("prop1Mutation"))
@@ -310,17 +311,17 @@ public abstract class GraphTestBase {
                 .setProperty("prop1", "value1a", VISIBILITY_A)
                 .setProperty("prop1", "value1b", VISIBILITY_B)
                 .save(AUTHORIZATIONS_A_AND_B);
-        Assert.assertEquals(2, IterableUtils.count(v.getProperties("prop1")));
+        Assert.assertEquals(2, count(v.getProperties("prop1")));
 
         v = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B);
-        Assert.assertEquals(2, IterableUtils.count(v.getProperties("prop1")));
+        Assert.assertEquals(2, count(v.getProperties("prop1")));
 
         v = graph.getVertex("v1", AUTHORIZATIONS_A);
-        Assert.assertEquals(1, IterableUtils.count(v.getProperties("prop1")));
+        Assert.assertEquals(1, count(v.getProperties("prop1")));
         assertEquals("value1a", v.getPropertyValue("prop1"));
 
         v = graph.getVertex("v1", AUTHORIZATIONS_B);
-        Assert.assertEquals(1, IterableUtils.count(v.getProperties("prop1")));
+        Assert.assertEquals(1, count(v.getProperties("prop1")));
         assertEquals("value1b", v.getPropertyValue("prop1"));
     }
 
@@ -337,26 +338,26 @@ public abstract class GraphTestBase {
         assertEquals("value1a", v.getPropertyValues("prop1").iterator().next());
         assertEquals("value2a", v.getPropertyValues("prop2").iterator().next());
         assertEquals("value3a", v.getPropertyValues("prop3").iterator().next());
-        Assert.assertEquals(3, IterableUtils.count(v.getProperties()));
+        Assert.assertEquals(3, count(v.getProperties()));
 
         v.prepareMutation()
                 .addPropertyValue("propid1a", "prop1", "value1b", VISIBILITY_A)
                 .addPropertyValue("propid2a", "prop2", "value2b", VISIBILITY_A)
                 .save(AUTHORIZATIONS_A_AND_B);
         v = graph.getVertex("v1", AUTHORIZATIONS_A);
-        Assert.assertEquals(1, IterableUtils.count(v.getPropertyValues("prop1")));
+        Assert.assertEquals(1, count(v.getPropertyValues("prop1")));
         assertEquals("value1b", v.getPropertyValues("prop1").iterator().next());
-        Assert.assertEquals(1, IterableUtils.count(v.getPropertyValues("prop2")));
+        Assert.assertEquals(1, count(v.getPropertyValues("prop2")));
         assertEquals("value2b", v.getPropertyValues("prop2").iterator().next());
-        Assert.assertEquals(1, IterableUtils.count(v.getPropertyValues("prop3")));
+        Assert.assertEquals(1, count(v.getPropertyValues("prop3")));
         assertEquals("value3a", v.getPropertyValues("prop3").iterator().next());
-        Assert.assertEquals(3, IterableUtils.count(v.getProperties()));
+        Assert.assertEquals(3, count(v.getProperties()));
 
         v.addPropertyValue("propid1b", "prop1", "value1a-new", VISIBILITY_A, AUTHORIZATIONS_A_AND_B);
         v = graph.getVertex("v1", AUTHORIZATIONS_A);
         org.vertexium.test.util.IterableUtils.assertContains("value1b", v.getPropertyValues("prop1"));
         org.vertexium.test.util.IterableUtils.assertContains("value1a-new", v.getPropertyValues("prop1"));
-        Assert.assertEquals(4, IterableUtils.count(v.getProperties()));
+        Assert.assertEquals(4, count(v.getProperties()));
     }
 
     @Test
@@ -380,7 +381,7 @@ public abstract class GraphTestBase {
     }
 
     @Test
-    public void testRemoveProperty() {
+    public void testDeleteProperty() {
         Vertex v = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
 
         v.prepareMutation()
@@ -394,34 +395,34 @@ public abstract class GraphTestBase {
         v = graph.getVertex("v1", AUTHORIZATIONS_A);
         Property prop1_propid1a = v.getProperty("propid1a", "prop1");
         Property prop1_propid1b = v.getProperty("propid1b", "prop1");
-        v.removeProperty("prop1", AUTHORIZATIONS_A_AND_B);
+        v.deleteProperties("prop1", AUTHORIZATIONS_A_AND_B);
         graph.flush();
-        Assert.assertEquals(1, IterableUtils.count(v.getProperties()));
+        Assert.assertEquals(1, count(v.getProperties()));
         v = graph.getVertex("v1", AUTHORIZATIONS_A);
-        Assert.assertEquals(1, IterableUtils.count(v.getProperties()));
+        Assert.assertEquals(1, count(v.getProperties()));
 
-        Assert.assertEquals(1, IterableUtils.count(graph.query(AUTHORIZATIONS_A_AND_B).has("prop2", "value2a").vertices()));
-        Assert.assertEquals(0, IterableUtils.count(graph.query(AUTHORIZATIONS_A_AND_B).has("prop1", "value1a").vertices()));
+        Assert.assertEquals(1, count(graph.query(AUTHORIZATIONS_A_AND_B).has("prop2", "value2a").vertices()));
+        Assert.assertEquals(0, count(graph.query(AUTHORIZATIONS_A_AND_B).has("prop1", "value1a").vertices()));
         assertEvents(
-                new RemovePropertyEvent(graph, v, prop1_propid1a),
-                new RemovePropertyEvent(graph, v, prop1_propid1b)
+                new DeletePropertyEvent(graph, v, prop1_propid1a),
+                new DeletePropertyEvent(graph, v, prop1_propid1b)
         );
         this.graphEvents.clear();
 
         Property prop2_propid2a = v.getProperty("propid2a", "prop2");
-        v.removeProperty("propid2a", "prop2", AUTHORIZATIONS_A_AND_B);
+        v.deleteProperty("propid2a", "prop2", AUTHORIZATIONS_A_AND_B);
         graph.flush();
-        Assert.assertEquals(0, IterableUtils.count(v.getProperties()));
+        Assert.assertEquals(0, count(v.getProperties()));
         v = graph.getVertex("v1", AUTHORIZATIONS_A);
-        Assert.assertEquals(0, IterableUtils.count(v.getProperties()));
+        Assert.assertEquals(0, count(v.getProperties()));
 
         assertEvents(
-                new RemovePropertyEvent(graph, v, prop2_propid2a)
+                new DeletePropertyEvent(graph, v, prop2_propid2a)
         );
     }
 
     @Test
-    public void testRemovePropertyWithMutation() {
+    public void testDeletePropertyWithMutation() {
         Vertex v1 = graph.prepareVertex("v1", VISIBILITY_A)
                 .addPropertyValue("propid1a", "prop1", "value1a", VISIBILITY_A)
                 .addPropertyValue("propid1b", "prop1", "value1b", VISIBILITY_A)
@@ -434,57 +435,57 @@ public abstract class GraphTestBase {
         graph.flush();
         this.graphEvents.clear();
 
-        // remove multiple properties
+        // delete multiple properties
         v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
         Property prop1_propid1a = v1.getProperty("propid1a", "prop1");
         Property prop1_propid1b = v1.getProperty("propid1b", "prop1");
         v1.prepareMutation()
-                .removeProperties("prop1")
+                .deleteProperties("prop1")
                 .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
-        Assert.assertEquals(1, IterableUtils.count(v1.getProperties()));
+        Assert.assertEquals(1, count(v1.getProperties()));
         v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
-        Assert.assertEquals(1, IterableUtils.count(v1.getProperties()));
+        Assert.assertEquals(1, count(v1.getProperties()));
 
-        Assert.assertEquals(1, IterableUtils.count(graph.query(AUTHORIZATIONS_A_AND_B).has("prop2", "value2a").vertices()));
-        Assert.assertEquals(0, IterableUtils.count(graph.query(AUTHORIZATIONS_A_AND_B).has("prop1", "value1a").vertices()));
+        Assert.assertEquals(1, count(graph.query(AUTHORIZATIONS_A_AND_B).has("prop2", "value2a").vertices()));
+        Assert.assertEquals(0, count(graph.query(AUTHORIZATIONS_A_AND_B).has("prop1", "value1a").vertices()));
         assertEvents(
-                new RemovePropertyEvent(graph, v1, prop1_propid1a),
-                new RemovePropertyEvent(graph, v1, prop1_propid1b)
+                new DeletePropertyEvent(graph, v1, prop1_propid1a),
+                new DeletePropertyEvent(graph, v1, prop1_propid1b)
         );
         this.graphEvents.clear();
 
-        // remove property with key and name
+        // delete property with key and name
         Property prop2_propid2a = v1.getProperty("propid2a", "prop2");
         v1.prepareMutation()
-                .removeProperties("propid2a", "prop2")
+                .deleteProperties("propid2a", "prop2")
                 .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
-        Assert.assertEquals(0, IterableUtils.count(v1.getProperties()));
+        Assert.assertEquals(0, count(v1.getProperties()));
         v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
-        Assert.assertEquals(0, IterableUtils.count(v1.getProperties()));
+        Assert.assertEquals(0, count(v1.getProperties()));
         assertEvents(
-                new RemovePropertyEvent(graph, v1, prop2_propid2a)
+                new DeletePropertyEvent(graph, v1, prop2_propid2a)
         );
         this.graphEvents.clear();
 
-        // remove property from edge
+        // delete property from edge
         Edge e1 = graph.getEdge("e1", AUTHORIZATIONS_A);
         Property edgeProperty = e1.getProperty("key1", "prop1");
         e1.prepareMutation()
-                .removeProperties("key1", "prop1")
+                .deleteProperties("key1", "prop1")
                 .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
-        Assert.assertEquals(0, IterableUtils.count(e1.getProperties()));
+        Assert.assertEquals(0, count(e1.getProperties()));
         e1 = graph.getEdge("e1", AUTHORIZATIONS_A);
-        Assert.assertEquals(0, IterableUtils.count(e1.getProperties()));
+        Assert.assertEquals(0, count(e1.getProperties()));
         assertEvents(
-                new RemovePropertyEvent(graph, e1, edgeProperty)
+                new DeletePropertyEvent(graph, e1, edgeProperty)
         );
     }
 
     @Test
-    public void testRemoveElement() {
+    public void testDeleteElement() {
         Vertex v = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
 
         v.prepareMutation()
@@ -494,14 +495,71 @@ public abstract class GraphTestBase {
 
         v = graph.getVertex("v1", AUTHORIZATIONS_A);
         assertNotNull(v);
-        Assert.assertEquals(1, IterableUtils.count(graph.query(AUTHORIZATIONS_A_AND_B).has("prop1", "value1").vertices()));
+        Assert.assertEquals(1, count(graph.query(AUTHORIZATIONS_A_AND_B).has("prop1", "value1").vertices()));
 
-        graph.removeVertex(v, AUTHORIZATIONS_A_AND_B);
+        graph.deleteVertex(v.getId(), AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         v = graph.getVertex("v1", AUTHORIZATIONS_A);
         assertNull(v);
-        Assert.assertEquals(0, IterableUtils.count(graph.query(AUTHORIZATIONS_A_AND_B).has("prop1", "value1").vertices()));
+        Assert.assertEquals(0, count(graph.query(AUTHORIZATIONS_A_AND_B).has("prop1", "value1").vertices()));
+    }
+
+    @Test
+    public void testDeleteVertex() {
+        graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
+        Assert.assertEquals(1, count(graph.getVertices(AUTHORIZATIONS_A)));
+
+        graph.deleteVertex("v1", AUTHORIZATIONS_A);
+        Assert.assertEquals(0, count(graph.getVertices(AUTHORIZATIONS_A)));
+    }
+
+    @Test
+    public void testSoftDeleteVertex() {
+        graph.prepareVertex("v1", VISIBILITY_A)
+                .addPropertyValue("key1", "name1", "value1", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
+        graph.flush();
+        assertEquals(1, count(graph.getVertices(AUTHORIZATIONS_A)));
+        assertEquals(1, count(graph.query(AUTHORIZATIONS_A).has("name1", "value1").vertices()));
+
+        graph.softDeleteVertex("v1", AUTHORIZATIONS_A);
+        graph.flush();
+        assertEquals(0, count(graph.getVertices(AUTHORIZATIONS_A)));
+        assertEquals(0, count(graph.query(AUTHORIZATIONS_A).has("name1", "value1").vertices()));
+    }
+
+    @Test
+    public void testSoftDeleteProperty() {
+        graph.prepareVertex("v1", VISIBILITY_A)
+                .addPropertyValue("key1", "name1", "value1", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
+        graph.flush();
+        assertEquals(1, count(graph.getVertex("v1", AUTHORIZATIONS_A).getProperties()));
+        assertEquals(1, count(graph.query(AUTHORIZATIONS_A).has("name1", "value1").vertices()));
+
+        graph.getVertex("v1", AUTHORIZATIONS_A).softDeleteProperties("name1", AUTHORIZATIONS_A);
+        graph.flush();
+        assertEquals(0, count(graph.getVertex("v1", AUTHORIZATIONS_A).getProperties()));
+        assertEquals(0, count(graph.query(AUTHORIZATIONS_A).has("name1", "value1").vertices()));
+    }
+
+    @Test
+    public void testSoftDeletePropertyThroughMutation() {
+        graph.prepareVertex("v1", VISIBILITY_A)
+                .addPropertyValue("key1", "name1", "value1", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
+        graph.flush();
+        assertEquals(1, count(graph.getVertex("v1", AUTHORIZATIONS_A).getProperties()));
+        assertEquals(1, count(graph.query(AUTHORIZATIONS_A).has("name1", "value1").vertices()));
+
+        graph.getVertex("v1", AUTHORIZATIONS_A)
+                .prepareMutation()
+                .softDeleteProperties("name1")
+                .save(AUTHORIZATIONS_A);
+        graph.flush();
+        assertEquals(0, count(graph.getVertex("v1", AUTHORIZATIONS_A).getProperties()));
+        assertEquals(0, count(graph.query(AUTHORIZATIONS_A).has("name1", "value1").vertices()));
     }
 
     @Test
@@ -510,18 +568,18 @@ public abstract class GraphTestBase {
         graph.addVertex("v2", VISIBILITY_B, AUTHORIZATIONS_A);
 
         Iterable<Vertex> cVertices = graph.getVertices(AUTHORIZATIONS_C);
-        Assert.assertEquals(0, IterableUtils.count(cVertices));
+        Assert.assertEquals(0, count(cVertices));
 
         Iterable<Vertex> aVertices = graph.getVertices(AUTHORIZATIONS_A);
-        Assert.assertEquals(1, IterableUtils.count(aVertices));
+        Assert.assertEquals(1, count(aVertices));
         assertEquals("v1", aVertices.iterator().next().getId());
 
         Iterable<Vertex> bVertices = graph.getVertices(AUTHORIZATIONS_B);
-        Assert.assertEquals(1, IterableUtils.count(bVertices));
+        Assert.assertEquals(1, count(bVertices));
         assertEquals("v2", bVertices.iterator().next().getId());
 
         Iterable<Vertex> allVertices = graph.getVertices(AUTHORIZATIONS_A_AND_B);
-        Assert.assertEquals(2, IterableUtils.count(allVertices));
+        Assert.assertEquals(2, count(allVertices));
     }
 
     @Test
@@ -619,16 +677,6 @@ public abstract class GraphTestBase {
     }
 
     @Test
-    public void testRemoveVertex() {
-        Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
-
-        Assert.assertEquals(1, IterableUtils.count(graph.getVertices(AUTHORIZATIONS_A)));
-
-        graph.removeVertex(v1, AUTHORIZATIONS_A);
-        Assert.assertEquals(0, IterableUtils.count(graph.getVertices(AUTHORIZATIONS_A)));
-    }
-
-    @Test
     public void testMarkVertexHidden() {
         Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
         Vertex v2 = graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_A);
@@ -648,8 +696,8 @@ public abstract class GraphTestBase {
         assertTrue("v1 exists (auth A)", graph.doesVertexExist("v1", AUTHORIZATIONS_A));
         assertFalse("v1 exists (auth B)", graph.doesVertexExist("v1", AUTHORIZATIONS_B));
         assertTrue("v1 exists (auth A&B)", graph.doesVertexExist("v1", AUTHORIZATIONS_A_AND_B));
-        Assert.assertEquals(2, IterableUtils.count(graph.getVertices(AUTHORIZATIONS_A)));
-        Assert.assertEquals(1, IterableUtils.count(graph.getEdges(AUTHORIZATIONS_A)));
+        Assert.assertEquals(2, count(graph.getVertices(AUTHORIZATIONS_A)));
+        Assert.assertEquals(1, count(graph.getEdges(AUTHORIZATIONS_A)));
 
         graph.markVertexHidden(v1, VISIBILITY_A_AND_B, AUTHORIZATIONS_A);
         graph.flush();
@@ -657,10 +705,10 @@ public abstract class GraphTestBase {
         assertTrue("v1 exists (auth A)", graph.doesVertexExist("v1", AUTHORIZATIONS_A));
         assertFalse("v1 exists (auth B)", graph.doesVertexExist("v1", AUTHORIZATIONS_B));
         assertFalse("v1 exists (auth A&B)", graph.doesVertexExist("v1", AUTHORIZATIONS_A_AND_B));
-        Assert.assertEquals(1, IterableUtils.count(graph.getVertices(AUTHORIZATIONS_A_AND_B)));
-        Assert.assertEquals(2, IterableUtils.count(graph.getVertices(AUTHORIZATIONS_A)));
-        Assert.assertEquals(0, IterableUtils.count(graph.getVertices(AUTHORIZATIONS_B)));
-        Assert.assertEquals(1, IterableUtils.count(graph.getEdges(AUTHORIZATIONS_A)));
+        Assert.assertEquals(1, count(graph.getVertices(AUTHORIZATIONS_A_AND_B)));
+        Assert.assertEquals(2, count(graph.getVertices(AUTHORIZATIONS_A)));
+        Assert.assertEquals(0, count(graph.getVertices(AUTHORIZATIONS_B)));
+        Assert.assertEquals(1, count(graph.getEdges(AUTHORIZATIONS_A)));
 
         graph.markVertexHidden(v1, VISIBILITY_A, AUTHORIZATIONS_A);
         graph.flush();
@@ -668,10 +716,10 @@ public abstract class GraphTestBase {
         assertFalse("v1 exists (auth A)", graph.doesVertexExist("v1", AUTHORIZATIONS_A));
         assertFalse("v1 exists (auth B)", graph.doesVertexExist("v1", AUTHORIZATIONS_B));
         assertFalse("v1 exists (auth A&B)", graph.doesVertexExist("v1", AUTHORIZATIONS_A_AND_B));
-        Assert.assertEquals(1, IterableUtils.count(graph.getVertices(AUTHORIZATIONS_A_AND_B)));
-        Assert.assertEquals(1, IterableUtils.count(graph.getVertices(AUTHORIZATIONS_A)));
-        Assert.assertEquals(0, IterableUtils.count(graph.getVertices(AUTHORIZATIONS_B)));
-        Assert.assertEquals(0, IterableUtils.count(graph.getEdges(AUTHORIZATIONS_A)));
+        Assert.assertEquals(1, count(graph.getVertices(AUTHORIZATIONS_A_AND_B)));
+        Assert.assertEquals(1, count(graph.getVertices(AUTHORIZATIONS_A)));
+        Assert.assertEquals(0, count(graph.getVertices(AUTHORIZATIONS_B)));
+        Assert.assertEquals(0, count(graph.getEdges(AUTHORIZATIONS_A)));
         assertNull("found v1 but shouldn't have", graph.getVertex("v1", FetchHint.ALL, AUTHORIZATIONS_A));
         Vertex v1Hidden = graph.getVertex("v1", FetchHint.ALL_INCLUDING_HIDDEN, AUTHORIZATIONS_A);
         assertNotNull("did not find v1 but should have", v1Hidden);
@@ -683,10 +731,10 @@ public abstract class GraphTestBase {
         assertTrue("v1 exists (auth A)", graph.doesVertexExist("v1", AUTHORIZATIONS_A));
         assertFalse("v1 exists (auth B)", graph.doesVertexExist("v1", AUTHORIZATIONS_B));
         assertFalse("v1 exists (auth A&B)", graph.doesVertexExist("v1", AUTHORIZATIONS_A_AND_B));
-        Assert.assertEquals(1, IterableUtils.count(graph.getVertices(AUTHORIZATIONS_A_AND_B)));
-        Assert.assertEquals(2, IterableUtils.count(graph.getVertices(AUTHORIZATIONS_A)));
-        Assert.assertEquals(0, IterableUtils.count(graph.getVertices(AUTHORIZATIONS_B)));
-        Assert.assertEquals(1, IterableUtils.count(graph.getEdges(AUTHORIZATIONS_A)));
+        Assert.assertEquals(1, count(graph.getVertices(AUTHORIZATIONS_A_AND_B)));
+        Assert.assertEquals(2, count(graph.getVertices(AUTHORIZATIONS_A)));
+        Assert.assertEquals(0, count(graph.getVertices(AUTHORIZATIONS_B)));
+        Assert.assertEquals(1, count(graph.getEdges(AUTHORIZATIONS_A)));
 
         graph.markVertexVisible(v1, VISIBILITY_A_AND_B, AUTHORIZATIONS_A);
         graph.flush();
@@ -694,8 +742,8 @@ public abstract class GraphTestBase {
         assertTrue("v1 exists (auth A)", graph.doesVertexExist("v1", AUTHORIZATIONS_A));
         assertFalse("v1 exists (auth B)", graph.doesVertexExist("v1", AUTHORIZATIONS_B));
         assertTrue("v1 exists (auth A&B)", graph.doesVertexExist("v1", AUTHORIZATIONS_A_AND_B));
-        Assert.assertEquals(2, IterableUtils.count(graph.getVertices(AUTHORIZATIONS_A)));
-        Assert.assertEquals(1, IterableUtils.count(graph.getEdges(AUTHORIZATIONS_A)));
+        Assert.assertEquals(2, count(graph.getVertices(AUTHORIZATIONS_A)));
+        Assert.assertEquals(1, count(graph.getEdges(AUTHORIZATIONS_A)));
     }
 
     @Test
@@ -720,11 +768,11 @@ public abstract class GraphTestBase {
         assertTrue("v1tov2 exists (auth A)", graph.doesEdgeExist("v1tov2", AUTHORIZATIONS_A));
         assertFalse("v1tov2 exists (auth B)", graph.doesEdgeExist("v1tov2", AUTHORIZATIONS_B));
         assertTrue("v1tov2 exists (auth A&B)", graph.doesEdgeExist("v1tov2", AUTHORIZATIONS_A_AND_B));
-        Assert.assertEquals(3, IterableUtils.count(graph.getVertices(AUTHORIZATIONS_A)));
-        Assert.assertEquals(2, IterableUtils.count(graph.getEdges(AUTHORIZATIONS_A)));
-        Assert.assertEquals(1, IterableUtils.count(graph.getVertex("v1", AUTHORIZATIONS_A).getEdges(Direction.BOTH, AUTHORIZATIONS_A)));
-        Assert.assertEquals(1, IterableUtils.count(graph.findPaths("v1", "v3", 2, AUTHORIZATIONS_A_AND_B)));
-        Assert.assertEquals(1, IterableUtils.count(graph.findPaths("v1", "v3", 10, AUTHORIZATIONS_A_AND_B)));
+        Assert.assertEquals(3, count(graph.getVertices(AUTHORIZATIONS_A)));
+        Assert.assertEquals(2, count(graph.getEdges(AUTHORIZATIONS_A)));
+        Assert.assertEquals(1, count(graph.getVertex("v1", AUTHORIZATIONS_A).getEdges(Direction.BOTH, AUTHORIZATIONS_A)));
+        Assert.assertEquals(1, count(graph.findPaths("v1", "v3", 2, AUTHORIZATIONS_A_AND_B)));
+        Assert.assertEquals(1, count(graph.findPaths("v1", "v3", 10, AUTHORIZATIONS_A_AND_B)));
 
         graph.markEdgeHidden(e1, VISIBILITY_A_AND_B, AUTHORIZATIONS_A);
         graph.flush();
@@ -732,15 +780,15 @@ public abstract class GraphTestBase {
         assertTrue("v1tov2 exists (auth A)", graph.doesEdgeExist("v1tov2", AUTHORIZATIONS_A));
         assertFalse("v1tov2 exists (auth B)", graph.doesEdgeExist("v1tov2", AUTHORIZATIONS_B));
         assertFalse("v1tov2 exists (auth A&B)", graph.doesEdgeExist("v1tov2", AUTHORIZATIONS_A_AND_B));
-        Assert.assertEquals(2, IterableUtils.count(graph.getEdges(AUTHORIZATIONS_A)));
-        Assert.assertEquals(0, IterableUtils.count(graph.getEdges(AUTHORIZATIONS_B)));
-        Assert.assertEquals(1, IterableUtils.count(graph.getEdges(AUTHORIZATIONS_A_AND_B)));
-        Assert.assertEquals(1, IterableUtils.count(graph.getVertex("v1", AUTHORIZATIONS_A).getEdges(Direction.BOTH, AUTHORIZATIONS_A)));
-        Assert.assertEquals(0, IterableUtils.count(graph.getVertex("v1", AUTHORIZATIONS_A_AND_B).getEdges(Direction.BOTH, AUTHORIZATIONS_A_AND_B)));
-        Assert.assertEquals(1, IterableUtils.count(graph.getVertex("v1", FetchHint.ALL_INCLUDING_HIDDEN, AUTHORIZATIONS_A_AND_B).getEdges(Direction.BOTH, FetchHint.ALL_INCLUDING_HIDDEN, AUTHORIZATIONS_A_AND_B)));
-        Assert.assertEquals(0, IterableUtils.count(graph.findPaths("v1", "v3", 2, AUTHORIZATIONS_A_AND_B)));
-        Assert.assertEquals(0, IterableUtils.count(graph.findPaths("v1", "v3", 10, AUTHORIZATIONS_A_AND_B)));
-        Assert.assertEquals(1, IterableUtils.count(graph.findPaths("v1", "v3", 10, AUTHORIZATIONS_A)));
+        Assert.assertEquals(2, count(graph.getEdges(AUTHORIZATIONS_A)));
+        Assert.assertEquals(0, count(graph.getEdges(AUTHORIZATIONS_B)));
+        Assert.assertEquals(1, count(graph.getEdges(AUTHORIZATIONS_A_AND_B)));
+        Assert.assertEquals(1, count(graph.getVertex("v1", AUTHORIZATIONS_A).getEdges(Direction.BOTH, AUTHORIZATIONS_A)));
+        Assert.assertEquals(0, count(graph.getVertex("v1", AUTHORIZATIONS_A_AND_B).getEdges(Direction.BOTH, AUTHORIZATIONS_A_AND_B)));
+        Assert.assertEquals(1, count(graph.getVertex("v1", FetchHint.ALL_INCLUDING_HIDDEN, AUTHORIZATIONS_A_AND_B).getEdges(Direction.BOTH, FetchHint.ALL_INCLUDING_HIDDEN, AUTHORIZATIONS_A_AND_B)));
+        Assert.assertEquals(0, count(graph.findPaths("v1", "v3", 2, AUTHORIZATIONS_A_AND_B)));
+        Assert.assertEquals(0, count(graph.findPaths("v1", "v3", 10, AUTHORIZATIONS_A_AND_B)));
+        Assert.assertEquals(1, count(graph.findPaths("v1", "v3", 10, AUTHORIZATIONS_A)));
         assertNull("found e1 but shouldn't have", graph.getEdge("v1tov2", FetchHint.ALL, AUTHORIZATIONS_A_AND_B));
         Edge e1Hidden = graph.getEdge("v1tov2", FetchHint.ALL_INCLUDING_HIDDEN, AUTHORIZATIONS_A_AND_B);
         assertNotNull("did not find e1 but should have", e1Hidden);
@@ -752,11 +800,11 @@ public abstract class GraphTestBase {
         assertTrue("v1tov2 exists (auth A)", graph.doesEdgeExist("v1tov2", AUTHORIZATIONS_A));
         assertFalse("v1tov2 exists (auth B)", graph.doesEdgeExist("v1tov2", AUTHORIZATIONS_B));
         assertTrue("v1tov2 exists (auth A&B)", graph.doesEdgeExist("v1tov2", AUTHORIZATIONS_A_AND_B));
-        Assert.assertEquals(3, IterableUtils.count(graph.getVertices(AUTHORIZATIONS_A)));
-        Assert.assertEquals(2, IterableUtils.count(graph.getEdges(AUTHORIZATIONS_A)));
-        Assert.assertEquals(1, IterableUtils.count(graph.getVertex("v1", AUTHORIZATIONS_A).getEdges(Direction.BOTH, AUTHORIZATIONS_A)));
-        Assert.assertEquals(1, IterableUtils.count(graph.findPaths("v1", "v3", 2, AUTHORIZATIONS_A_AND_B)));
-        Assert.assertEquals(1, IterableUtils.count(graph.findPaths("v1", "v3", 10, AUTHORIZATIONS_A_AND_B)));
+        Assert.assertEquals(3, count(graph.getVertices(AUTHORIZATIONS_A)));
+        Assert.assertEquals(2, count(graph.getEdges(AUTHORIZATIONS_A)));
+        Assert.assertEquals(1, count(graph.getVertex("v1", AUTHORIZATIONS_A).getEdges(Direction.BOTH, AUTHORIZATIONS_A)));
+        Assert.assertEquals(1, count(graph.findPaths("v1", "v3", 2, AUTHORIZATIONS_A_AND_B)));
+        Assert.assertEquals(1, count(graph.findPaths("v1", "v3", 10, AUTHORIZATIONS_A_AND_B)));
     }
 
     @Test
@@ -767,12 +815,12 @@ public abstract class GraphTestBase {
                 .addPropertyValue("key2", "prop1", "value1", VISIBILITY_A)
                 .save(AUTHORIZATIONS_A);
 
-        Assert.assertEquals(3, IterableUtils.count(graph.getVertex("v1", AUTHORIZATIONS_A_AND_B).getProperties("prop1")));
+        Assert.assertEquals(3, count(graph.getVertex("v1", AUTHORIZATIONS_A_AND_B).getProperties("prop1")));
 
         v1.markPropertyHidden("key1", "prop1", VISIBILITY_A, VISIBILITY_A_AND_B, AUTHORIZATIONS_A_AND_B);
 
         List<Property> properties = IterableUtils.toList(graph.getVertex("v1", AUTHORIZATIONS_A_AND_B).getProperties("prop1"));
-        Assert.assertEquals(2, IterableUtils.count(properties));
+        Assert.assertEquals(2, count(properties));
         boolean foundProp1Key2 = false;
         boolean foundProp1Key1VisB = false;
         for (Property property : properties) {
@@ -829,7 +877,7 @@ public abstract class GraphTestBase {
 
         v1.markPropertyVisible("key1", "prop1", VISIBILITY_A, VISIBILITY_A_AND_B, AUTHORIZATIONS_A_AND_B);
 
-        Assert.assertEquals(3, IterableUtils.count(graph.getVertex("v1", AUTHORIZATIONS_A_AND_B).getProperties("prop1")));
+        Assert.assertEquals(3, count(graph.getVertex("v1", AUTHORIZATIONS_A_AND_B).getProperties("prop1")));
     }
 
     /**
@@ -854,14 +902,14 @@ public abstract class GraphTestBase {
         graph.markVertexHidden(e1, VISIBILITY_A, AUTHORIZATIONS_EMPTY);
         graph.flush();
 
-        w1 = graph.getVertex("w1", AUTHORIZATIONS_A);
-        graph.removeVertex(w1, AUTHORIZATIONS_A);
+        graph.getVertex("w1", AUTHORIZATIONS_A);
+        graph.deleteVertex("w1", AUTHORIZATIONS_A);
         graph.flush();
 
-        Assert.assertEquals(1, IterableUtils.count(graph.getVertices(AUTHORIZATIONS_A)));
+        Assert.assertEquals(1, count(graph.getVertices(AUTHORIZATIONS_A)));
         assertEquals("e2", IterableUtils.toList(graph.getVertices(AUTHORIZATIONS_A)).get(0).getId());
 
-        Assert.assertEquals(3, IterableUtils.count(graph.getVertices(AUTHORIZATIONS_B)));
+        Assert.assertEquals(3, count(graph.getVertices(AUTHORIZATIONS_B)));
         boolean foundW2 = false;
         boolean foundE1 = false;
         boolean foundE2 = false;
@@ -882,22 +930,22 @@ public abstract class GraphTestBase {
     }
 
     @Test
-    public void testRemoveVertexWithProperties() {
+    public void testDeleteVertexWithProperties() {
         Vertex v1 = graph.prepareVertex("v1", VISIBILITY_A)
                 .setProperty("prop1", "value1", VISIBILITY_B)
                 .save(AUTHORIZATIONS_A_AND_B);
         Property prop1 = v1.getProperty("prop1");
 
-        Assert.assertEquals(1, IterableUtils.count(graph.getVertices(AUTHORIZATIONS_A)));
+        Assert.assertEquals(1, count(graph.getVertices(AUTHORIZATIONS_A)));
 
-        graph.removeVertex(v1, AUTHORIZATIONS_A);
-        Assert.assertEquals(0, IterableUtils.count(graph.getVertices(AUTHORIZATIONS_A_AND_B)));
+        graph.deleteVertex("v1", AUTHORIZATIONS_A);
+        Assert.assertEquals(0, count(graph.getVertices(AUTHORIZATIONS_A_AND_B)));
 
         graph.flush();
         assertEvents(
                 new AddVertexEvent(graph, v1),
                 new AddPropertyEvent(graph, v1, prop1),
-                new RemoveVertexEvent(graph, v1)
+                new DeleteVertexEvent(graph, v1)
         );
     }
 
@@ -957,18 +1005,18 @@ public abstract class GraphTestBase {
 
         v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
 
-        Assert.assertEquals(3, IterableUtils.count(v1.getEdges(Direction.BOTH, AUTHORIZATIONS_A)));
-        Assert.assertEquals(2, IterableUtils.count(v1.getEdges(Direction.OUT, AUTHORIZATIONS_A)));
-        Assert.assertEquals(1, IterableUtils.count(v1.getEdges(Direction.IN, AUTHORIZATIONS_A)));
-        Assert.assertEquals(3, IterableUtils.count(v1.getEdges(v2, Direction.BOTH, AUTHORIZATIONS_A)));
-        Assert.assertEquals(2, IterableUtils.count(v1.getEdges(v2, Direction.OUT, AUTHORIZATIONS_A)));
-        Assert.assertEquals(1, IterableUtils.count(v1.getEdges(v2, Direction.IN, AUTHORIZATIONS_A)));
-        Assert.assertEquals(2, IterableUtils.count(v1.getEdges(v2, Direction.BOTH, "label1", AUTHORIZATIONS_A)));
-        Assert.assertEquals(1, IterableUtils.count(v1.getEdges(v2, Direction.OUT, "label1", AUTHORIZATIONS_A)));
-        Assert.assertEquals(1, IterableUtils.count(v1.getEdges(v2, Direction.IN, "label1", AUTHORIZATIONS_A)));
-        Assert.assertEquals(3, IterableUtils.count(v1.getEdges(v2, Direction.BOTH, new String[]{"label1", "label2"}, AUTHORIZATIONS_A)));
-        Assert.assertEquals(2, IterableUtils.count(v1.getEdges(v2, Direction.OUT, new String[]{"label1", "label2"}, AUTHORIZATIONS_A)));
-        Assert.assertEquals(1, IterableUtils.count(v1.getEdges(v2, Direction.IN, new String[]{"label1", "label2"}, AUTHORIZATIONS_A)));
+        Assert.assertEquals(3, count(v1.getEdges(Direction.BOTH, AUTHORIZATIONS_A)));
+        Assert.assertEquals(2, count(v1.getEdges(Direction.OUT, AUTHORIZATIONS_A)));
+        Assert.assertEquals(1, count(v1.getEdges(Direction.IN, AUTHORIZATIONS_A)));
+        Assert.assertEquals(3, count(v1.getEdges(v2, Direction.BOTH, AUTHORIZATIONS_A)));
+        Assert.assertEquals(2, count(v1.getEdges(v2, Direction.OUT, AUTHORIZATIONS_A)));
+        Assert.assertEquals(1, count(v1.getEdges(v2, Direction.IN, AUTHORIZATIONS_A)));
+        Assert.assertEquals(2, count(v1.getEdges(v2, Direction.BOTH, "label1", AUTHORIZATIONS_A)));
+        Assert.assertEquals(1, count(v1.getEdges(v2, Direction.OUT, "label1", AUTHORIZATIONS_A)));
+        Assert.assertEquals(1, count(v1.getEdges(v2, Direction.IN, "label1", AUTHORIZATIONS_A)));
+        Assert.assertEquals(3, count(v1.getEdges(v2, Direction.BOTH, new String[]{"label1", "label2"}, AUTHORIZATIONS_A)));
+        Assert.assertEquals(2, count(v1.getEdges(v2, Direction.OUT, new String[]{"label1", "label2"}, AUTHORIZATIONS_A)));
+        Assert.assertEquals(1, count(v1.getEdges(v2, Direction.IN, new String[]{"label1", "label2"}, AUTHORIZATIONS_A)));
 
         Assert.assertArrayEquals(new String[]{"label1", "label2"}, IterableUtils.toArray(v1.getEdgeLabels(Direction.OUT, AUTHORIZATIONS_A), String.class));
         Assert.assertArrayEquals(new String[]{"label1"}, IterableUtils.toArray(v1.getEdgeLabels(Direction.IN, AUTHORIZATIONS_A), String.class));
@@ -985,12 +1033,12 @@ public abstract class GraphTestBase {
                 .save(AUTHORIZATIONS_A_AND_B);
 
         Edge e = graph.getEdge("e1", AUTHORIZATIONS_A);
-        Assert.assertEquals(1, IterableUtils.count(e.getProperties()));
+        Assert.assertEquals(1, count(e.getProperties()));
         assertEquals("valueA", e.getPropertyValues("propA").iterator().next());
-        Assert.assertEquals(0, IterableUtils.count(e.getPropertyValues("propB")));
+        Assert.assertEquals(0, count(e.getPropertyValues("propB")));
 
         e = graph.getEdge("e1", AUTHORIZATIONS_A_AND_B);
-        Assert.assertEquals(2, IterableUtils.count(e.getProperties()));
+        Assert.assertEquals(2, count(e.getProperties()));
         assertEquals("valueA", e.getPropertyValues("propA").iterator().next());
         assertEquals("valueB", e.getPropertyValues("propB").iterator().next());
         assertEquals("valueA", e.getPropertyValue("propA"));
@@ -1016,11 +1064,11 @@ public abstract class GraphTestBase {
 
         Edge e = graph.getEdge("e1", AUTHORIZATIONS_A);
         assertEquals("label1", e.getLabel());
-        Assert.assertEquals(1, IterableUtils.count(e.getProperties()));
+        Assert.assertEquals(1, count(e.getProperties()));
         assertEquals("valueA", e.getPropertyValues("propA").iterator().next());
-        Assert.assertEquals(1, IterableUtils.count(v1.getEdges(Direction.OUT, AUTHORIZATIONS_A)));
+        Assert.assertEquals(1, count(v1.getEdges(Direction.OUT, AUTHORIZATIONS_A)));
         Assert.assertEquals("label1", IterableUtils.single(v1.getEdgeLabels(Direction.OUT, AUTHORIZATIONS_A)));
-        Assert.assertEquals(1, IterableUtils.count(v2.getEdges(Direction.IN, AUTHORIZATIONS_A)));
+        Assert.assertEquals(1, count(v2.getEdges(Direction.IN, AUTHORIZATIONS_A)));
         Assert.assertEquals("label1", IterableUtils.single(v2.getEdgeLabels(Direction.IN, AUTHORIZATIONS_A)));
 
         e.prepareMutation()
@@ -1028,13 +1076,13 @@ public abstract class GraphTestBase {
                 .save(AUTHORIZATIONS_A);
         e = graph.getEdge("e1", AUTHORIZATIONS_A);
         assertEquals("label2", e.getLabel());
-        Assert.assertEquals(1, IterableUtils.count(e.getProperties()));
+        Assert.assertEquals(1, count(e.getProperties()));
         assertEquals("valueA", e.getPropertyValues("propA").iterator().next());
         v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
-        Assert.assertEquals(1, IterableUtils.count(v1.getEdges(Direction.OUT, AUTHORIZATIONS_A)));
+        Assert.assertEquals(1, count(v1.getEdges(Direction.OUT, AUTHORIZATIONS_A)));
         Assert.assertEquals("label2", IterableUtils.single(v1.getEdgeLabels(Direction.OUT, AUTHORIZATIONS_A)));
         v2 = graph.getVertex("v2", AUTHORIZATIONS_A);
-        Assert.assertEquals(1, IterableUtils.count(v2.getEdges(Direction.IN, AUTHORIZATIONS_A)));
+        Assert.assertEquals(1, count(v2.getEdges(Direction.IN, AUTHORIZATIONS_A)));
         Assert.assertEquals("label2", IterableUtils.single(v2.getEdgeLabels(Direction.IN, AUTHORIZATIONS_A)));
 
         graph.prepareEdge(e.getId(), e.getVertexId(Direction.OUT), e.getVertexId(Direction.IN), e.getLabel(), e.getVisibility())
@@ -1042,45 +1090,45 @@ public abstract class GraphTestBase {
                 .save(AUTHORIZATIONS_A);
         e = graph.getEdge("e1", AUTHORIZATIONS_A);
         assertEquals("label3", e.getLabel());
-        Assert.assertEquals(1, IterableUtils.count(e.getProperties()));
+        Assert.assertEquals(1, count(e.getProperties()));
         assertEquals("valueA", e.getPropertyValues("propA").iterator().next());
         v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
-        Assert.assertEquals(1, IterableUtils.count(v1.getEdges(Direction.OUT, AUTHORIZATIONS_A)));
+        Assert.assertEquals(1, count(v1.getEdges(Direction.OUT, AUTHORIZATIONS_A)));
         Assert.assertEquals("label3", IterableUtils.single(v1.getEdgeLabels(Direction.OUT, AUTHORIZATIONS_A)));
         v2 = graph.getVertex("v2", AUTHORIZATIONS_A);
-        Assert.assertEquals(1, IterableUtils.count(v2.getEdges(Direction.IN, AUTHORIZATIONS_A)));
+        Assert.assertEquals(1, count(v2.getEdges(Direction.IN, AUTHORIZATIONS_A)));
         Assert.assertEquals("label3", IterableUtils.single(v2.getEdgeLabels(Direction.IN, AUTHORIZATIONS_A)));
     }
 
     @Test
-    public void testRemoveEdge() {
+    public void testDeleteEdge() {
         Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
         Vertex v2 = graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_A);
         Edge addedEdge = graph.addEdge("e1", v1, v2, "label1", VISIBILITY_A, AUTHORIZATIONS_A);
 
-        Assert.assertEquals(1, IterableUtils.count(graph.getEdges(AUTHORIZATIONS_A)));
+        Assert.assertEquals(1, count(graph.getEdges(AUTHORIZATIONS_A)));
 
         try {
-            graph.removeEdge("e1", AUTHORIZATIONS_B);
-        } catch (IllegalArgumentException e) {
+            graph.deleteEdge("e1", AUTHORIZATIONS_B);
+        } catch (NullPointerException e) {
             // expected
         }
-        Assert.assertEquals(1, IterableUtils.count(graph.getEdges(AUTHORIZATIONS_A)));
+        Assert.assertEquals(1, count(graph.getEdges(AUTHORIZATIONS_A)));
 
-        graph.removeEdge("e1", AUTHORIZATIONS_A);
-        Assert.assertEquals(0, IterableUtils.count(graph.getEdges(AUTHORIZATIONS_A)));
+        graph.deleteEdge("e1", AUTHORIZATIONS_A);
+        Assert.assertEquals(0, count(graph.getEdges(AUTHORIZATIONS_A)));
 
         v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
-        Assert.assertEquals(0, IterableUtils.count(v1.getVertices(Direction.BOTH, AUTHORIZATIONS_A)));
+        Assert.assertEquals(0, count(v1.getVertices(Direction.BOTH, AUTHORIZATIONS_A)));
         v2 = graph.getVertex("v2", AUTHORIZATIONS_A);
-        Assert.assertEquals(0, IterableUtils.count(v2.getVertices(Direction.BOTH, AUTHORIZATIONS_A)));
+        Assert.assertEquals(0, count(v2.getVertices(Direction.BOTH, AUTHORIZATIONS_A)));
 
         graph.flush();
         assertEvents(
                 new AddVertexEvent(graph, v1),
                 new AddVertexEvent(graph, v2),
                 new AddEdgeEvent(graph, addedEdge),
-                new RemoveEdgeEvent(graph, addedEdge)
+                new DeleteEdgeEvent(graph, addedEdge)
         );
     }
 
@@ -1092,19 +1140,19 @@ public abstract class GraphTestBase {
         graph.addEdge("e2", v1, v2, "edgeB", VISIBILITY_B, AUTHORIZATIONS_B);
 
         Iterable<Edge> aEdges = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B).getEdges(Direction.BOTH, AUTHORIZATIONS_A);
-        Assert.assertEquals(1, IterableUtils.count(aEdges));
+        Assert.assertEquals(1, count(aEdges));
         Edge e1 = aEdges.iterator().next();
         assertNotNull(e1);
         assertEquals("edgeA", e1.getLabel());
 
         Iterable<Edge> bEdges = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B).getEdges(Direction.BOTH, AUTHORIZATIONS_B);
-        Assert.assertEquals(1, IterableUtils.count(bEdges));
+        Assert.assertEquals(1, count(bEdges));
         Edge e2 = bEdges.iterator().next();
         assertNotNull(e2);
         assertEquals("edgeB", e2.getLabel());
 
         Iterable<Edge> allEdges = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B).getEdges(Direction.BOTH, AUTHORIZATIONS_A_AND_B);
-        Assert.assertEquals(2, IterableUtils.count(allEdges));
+        Assert.assertEquals(2, count(allEdges));
     }
 
     @Test
@@ -1115,25 +1163,25 @@ public abstract class GraphTestBase {
         graph.flush();
 
         Iterable<Vertex> vertices = graph.query(AUTHORIZATIONS_A).vertices();
-        Assert.assertEquals(2, IterableUtils.count(vertices));
+        Assert.assertEquals(2, count(vertices));
 
         vertices = graph.query(AUTHORIZATIONS_A).skip(1).vertices();
-        Assert.assertEquals(1, IterableUtils.count(vertices));
+        Assert.assertEquals(1, count(vertices));
 
         vertices = graph.query(AUTHORIZATIONS_A).limit(1).vertices();
-        Assert.assertEquals(1, IterableUtils.count(vertices));
+        Assert.assertEquals(1, count(vertices));
 
         vertices = graph.query(AUTHORIZATIONS_A).skip(1).limit(1).vertices();
-        Assert.assertEquals(1, IterableUtils.count(vertices));
+        Assert.assertEquals(1, count(vertices));
 
         vertices = graph.query(AUTHORIZATIONS_A).skip(2).vertices();
-        Assert.assertEquals(0, IterableUtils.count(vertices));
+        Assert.assertEquals(0, count(vertices));
 
         vertices = graph.query(AUTHORIZATIONS_A).skip(1).limit(2).vertices();
-        Assert.assertEquals(1, IterableUtils.count(vertices));
+        Assert.assertEquals(1, count(vertices));
 
         Iterable<Edge> edges = graph.query(AUTHORIZATIONS_A).edges();
-        Assert.assertEquals(1, IterableUtils.count(edges));
+        Assert.assertEquals(1, count(edges));
     }
 
     @Test
@@ -1144,13 +1192,13 @@ public abstract class GraphTestBase {
         v2.setProperty("description", "This is vertex 2 - cat.", VISIBILITY_A, AUTHORIZATIONS_A_AND_B);
 
         Iterable<Vertex> vertices = graph.query("vertex", AUTHORIZATIONS_A).vertices();
-        Assert.assertEquals(2, IterableUtils.count(vertices));
+        Assert.assertEquals(2, count(vertices));
 
         vertices = graph.query("dog", AUTHORIZATIONS_A).vertices();
-        Assert.assertEquals(1, IterableUtils.count(vertices));
+        Assert.assertEquals(1, count(vertices));
 
         vertices = graph.query("dog", AUTHORIZATIONS_B).vertices();
-        Assert.assertEquals(0, IterableUtils.count(vertices));
+        Assert.assertEquals(0, count(vertices));
     }
 
     @Test
@@ -1171,86 +1219,86 @@ public abstract class GraphTestBase {
         Iterable<Vertex> vertices = graph.query(AUTHORIZATIONS_A)
                 .has("age", Compare.EQUAL, 25)
                 .vertices();
-        Assert.assertEquals(1, IterableUtils.count(vertices));
+        Assert.assertEquals(1, count(vertices));
 
         vertices = graph.query(AUTHORIZATIONS_A)
                 .has("age", Compare.EQUAL, 25)
                 .has("birthDate", Compare.EQUAL, createDate(1989, 1, 5))
                 .vertices();
-        Assert.assertEquals(1, IterableUtils.count(vertices));
+        Assert.assertEquals(1, count(vertices));
 
         vertices = graph.query("hello", AUTHORIZATIONS_A)
                 .has("age", Compare.EQUAL, 25)
                 .has("birthDate", Compare.EQUAL, createDate(1989, 1, 5))
                 .vertices();
-        Assert.assertEquals(1, IterableUtils.count(vertices));
+        Assert.assertEquals(1, count(vertices));
 
         vertices = graph.query(AUTHORIZATIONS_A)
                 .has("birthDate", Compare.EQUAL, createDate(1989, 1, 5))
                 .vertices();
-        Assert.assertEquals(1, IterableUtils.count(vertices));
+        Assert.assertEquals(1, count(vertices));
 
         vertices = graph.query(AUTHORIZATIONS_A)
                 .has("lastAccessed", Compare.EQUAL, createDate(2014, 2, 24, 13, 0, 5))
                 .vertices();
-        Assert.assertEquals(1, IterableUtils.count(vertices));
+        Assert.assertEquals(1, count(vertices));
 
         vertices = graph.query(AUTHORIZATIONS_A)
                 .has("age", 25)
                 .vertices();
-        Assert.assertEquals(1, IterableUtils.count(vertices));
+        Assert.assertEquals(1, count(vertices));
 
         vertices = graph.query(AUTHORIZATIONS_A)
                 .has("age", Compare.GREATER_THAN_EQUAL, 25)
                 .vertices();
-        Assert.assertEquals(2, IterableUtils.count(vertices));
+        Assert.assertEquals(2, count(vertices));
 
         vertices = graph.query(AUTHORIZATIONS_A)
                 .has("age", Compare.IN, new Integer[]{25})
                 .vertices();
-        Assert.assertEquals(1, IterableUtils.count(vertices));
+        Assert.assertEquals(1, count(vertices));
 
         vertices = graph.query(AUTHORIZATIONS_A)
                 .has("age", Compare.IN, new Integer[]{25, 30})
                 .vertices();
-        Assert.assertEquals(2, IterableUtils.count(vertices));
+        Assert.assertEquals(2, count(vertices));
 
         vertices = graph.query(AUTHORIZATIONS_A)
                 .has("age", Compare.GREATER_THAN, 25)
                 .vertices();
-        Assert.assertEquals(1, IterableUtils.count(vertices));
+        Assert.assertEquals(1, count(vertices));
 
         vertices = graph.query(AUTHORIZATIONS_A)
                 .has("age", Compare.LESS_THAN, 26)
                 .vertices();
-        Assert.assertEquals(1, IterableUtils.count(vertices));
+        Assert.assertEquals(1, count(vertices));
 
         vertices = graph.query(AUTHORIZATIONS_A)
                 .has("age", Compare.LESS_THAN_EQUAL, 25)
                 .vertices();
-        Assert.assertEquals(1, IterableUtils.count(vertices));
+        Assert.assertEquals(1, count(vertices));
 
         vertices = graph.query(AUTHORIZATIONS_A)
                 .has("age", Compare.NOT_EQUAL, 25)
                 .vertices();
-        Assert.assertEquals(1, IterableUtils.count(vertices));
+        Assert.assertEquals(1, count(vertices));
 
         vertices = graph.query(AUTHORIZATIONS_A)
                 .has("lastAccessed", Compare.EQUAL, new DateOnly(2014, 2, 24))
                 .vertices();
-        Assert.assertEquals(1, IterableUtils.count(vertices));
+        Assert.assertEquals(1, count(vertices));
 
         vertices = graph.query("*", AUTHORIZATIONS_A)
                 .has("age", Compare.IN, new Integer[]{25, 30})
                 .vertices();
-        Assert.assertEquals(2, IterableUtils.count(vertices));
+        Assert.assertEquals(2, count(vertices));
 
         vertices = new CompositeGraphQuery(
                 graph.query(AUTHORIZATIONS_A).has("age", 25),
                 graph.query(AUTHORIZATIONS_A).has("age", 25),
                 graph.query(AUTHORIZATIONS_A).has("age", 30)
         ).vertices();
-        Assert.assertEquals(2, IterableUtils.count(vertices));
+        Assert.assertEquals(2, count(vertices));
     }
 
     @Test
@@ -1265,17 +1313,17 @@ public abstract class GraphTestBase {
         Iterable<Vertex> vertices = graph.query(AUTHORIZATIONS_A)
                 .has("age", Compare.EQUAL, 25)
                 .vertices();
-        Assert.assertEquals(1, IterableUtils.count(vertices));
+        Assert.assertEquals(1, count(vertices));
 
         vertices = graph.query(AUTHORIZATIONS_B)
                 .has("age", Compare.EQUAL, 25)
                 .vertices();
-        Assert.assertEquals(0, IterableUtils.count(vertices)); // need auth A to see the v2 node itself
+        Assert.assertEquals(0, count(vertices)); // need auth A to see the v2 node itself
 
         vertices = graph.query(AUTHORIZATIONS_A_AND_B)
                 .has("age", Compare.EQUAL, 25)
                 .vertices();
-        Assert.assertEquals(2, IterableUtils.count(vertices));
+        Assert.assertEquals(2, count(vertices));
     }
 
     @Test
@@ -1305,18 +1353,18 @@ public abstract class GraphTestBase {
             }
         }
         if (graph.getSearchIndexSecurityGranularity() == SearchIndexSecurityGranularity.DOCUMENT) {
-            Assert.assertEquals(1, IterableUtils.count(vertices));
+            Assert.assertEquals(1, count(vertices));
             assertTrue("has a", hasAgeVisA);
             assertFalse("has b", hasAgeVisB);
         } else if (graph.getSearchIndexSecurityGranularity() == SearchIndexSecurityGranularity.PROPERTY) {
-            Assert.assertEquals(2, IterableUtils.count(vertices));
+            Assert.assertEquals(2, count(vertices));
             assertTrue("has a", hasAgeVisA);
             assertFalse("has b", hasAgeVisB);
         }
 
         vertices = graph.query(AUTHORIZATIONS_A_AND_B)
                 .vertices();
-        Assert.assertEquals(2, IterableUtils.count(vertices));
+        Assert.assertEquals(2, count(vertices));
     }
 
     @Test
@@ -1331,7 +1379,7 @@ public abstract class GraphTestBase {
         Iterable<Vertex> vertices = graph.query(AUTHORIZATIONS_MIXED_CASE_a_AND_B)
                 .has("age", Compare.EQUAL, 25)
                 .vertices();
-        Assert.assertEquals(1, IterableUtils.count(vertices));
+        Assert.assertEquals(1, count(vertices));
     }
 
     @Test
@@ -1345,11 +1393,11 @@ public abstract class GraphTestBase {
         Iterable<Vertex> vertices = graph.query("hello", AUTHORIZATIONS_A_AND_B)
                 .has("age", Compare.EQUAL, 25)
                 .vertices();
-        Assert.assertEquals(1, IterableUtils.count(vertices));
+        Assert.assertEquals(1, count(vertices));
 
         vertices = graph.query("hello", AUTHORIZATIONS_A_AND_B)
                 .vertices();
-        Assert.assertEquals(1, IterableUtils.count(vertices));
+        Assert.assertEquals(1, count(vertices));
     }
 
     @Test
@@ -1361,7 +1409,7 @@ public abstract class GraphTestBase {
         Iterable<Vertex> vertices = graph.query(AUTHORIZATIONS_A)
                 .has("age", Compare.EQUAL, 25)
                 .vertices();
-        Assert.assertEquals(0, IterableUtils.count(vertices));
+        Assert.assertEquals(0, count(vertices));
     }
 
     @Test
@@ -1373,7 +1421,7 @@ public abstract class GraphTestBase {
         Iterable<Vertex> vertices = graph.query(AUTHORIZATIONS_A)
                 .has("age", Compare.EQUAL, 25)
                 .vertices();
-        Assert.assertEquals(0, IterableUtils.count(vertices));
+        Assert.assertEquals(0, count(vertices));
     }
 
     @Test
@@ -1392,7 +1440,7 @@ public abstract class GraphTestBase {
         Iterable<Edge> edges = graph.query(AUTHORIZATIONS_A)
                 .has("age", Compare.EQUAL, 25)
                 .edges();
-        Assert.assertEquals(1, IterableUtils.count(edges));
+        Assert.assertEquals(1, count(edges));
     }
 
     @Test
@@ -1421,7 +1469,7 @@ public abstract class GraphTestBase {
         graph.flush();
 
         List<Vertex> allVertices = IterableUtils.toList(graph.query(AUTHORIZATIONS_A_AND_B).vertices());
-        Assert.assertEquals(3, IterableUtils.count(allVertices));
+        Assert.assertEquals(3, count(allVertices));
         if (disableUpdateEdgeCountInSearchIndexSuccess) {
             assertEquals(
                     "if edge indexing was disabled and updating vertices does not destroy the edge counts " +
@@ -1432,18 +1480,18 @@ public abstract class GraphTestBase {
         Iterable<Vertex> vertices = graph.query(AUTHORIZATIONS_A_AND_B)
                 .has("age", Compare.EQUAL, 25)
                 .vertices();
-        Assert.assertEquals(1, IterableUtils.count(vertices));
+        Assert.assertEquals(1, count(vertices));
 
         vertices = graph.query(AUTHORIZATIONS_A_AND_B)
                 .has("name", Compare.EQUAL, "Joe")
                 .vertices();
-        Assert.assertEquals(1, IterableUtils.count(vertices));
+        Assert.assertEquals(1, count(vertices));
 
         vertices = graph.query(AUTHORIZATIONS_A_AND_B)
                 .has("age", Compare.EQUAL, 25)
                 .has("name", Compare.EQUAL, "Joe")
                 .vertices();
-        Assert.assertEquals(1, IterableUtils.count(vertices));
+        Assert.assertEquals(1, count(vertices));
     }
 
     @Test
@@ -1497,7 +1545,7 @@ public abstract class GraphTestBase {
         Iterable<Edge> edges = graph.query(AUTHORIZATIONS_A)
                 .has("prop1", "value1")
                 .edges();
-        Assert.assertEquals(0, IterableUtils.count(edges));
+        Assert.assertEquals(0, count(edges));
     }
 
     @Test
@@ -1512,16 +1560,16 @@ public abstract class GraphTestBase {
 
         Iterable<Vertex> vertices = graph.query("Ferner", AUTHORIZATIONS_A)
                 .vertices();
-        Assert.assertEquals(1, IterableUtils.count(vertices));
+        Assert.assertEquals(1, count(vertices));
 
         vertices = graph.query("joe", AUTHORIZATIONS_A)
                 .vertices();
-        Assert.assertEquals(2, IterableUtils.count(vertices));
+        Assert.assertEquals(2, count(vertices));
 
         if (!isUsingDefaultQuery(graph)) {
             vertices = graph.query("joe AND ferner", AUTHORIZATIONS_A)
                     .vertices();
-            Assert.assertEquals(1, IterableUtils.count(vertices));
+            Assert.assertEquals(1, count(vertices));
         }
 
         if (!isUsingDefaultQuery(graph)) {
@@ -1547,23 +1595,23 @@ public abstract class GraphTestBase {
         vertices = graph.query(AUTHORIZATIONS_A)
                 .has("name", TextPredicate.CONTAINS, "Ferner")
                 .vertices();
-        Assert.assertEquals(1, IterableUtils.count(vertices));
+        Assert.assertEquals(1, count(vertices));
 
         vertices = graph.query(AUTHORIZATIONS_A)
                 .has("name", TextPredicate.CONTAINS, "Joe")
                 .has("name", TextPredicate.CONTAINS, "Ferner")
                 .vertices();
-        Assert.assertEquals(1, IterableUtils.count(vertices));
+        Assert.assertEquals(1, count(vertices));
 
         vertices = graph.query(AUTHORIZATIONS_A)
                 .has("name", TextPredicate.CONTAINS, "Joe Ferner")
                 .vertices();
-        Assert.assertEquals(1, IterableUtils.count(vertices));
+        Assert.assertEquals(1, count(vertices));
 
         vertices = graph.query(AUTHORIZATIONS_A)
                 .has("propWithHyphen", TextPredicate.CONTAINS, "hyphen-word")
                 .vertices();
-        Assert.assertEquals(1, IterableUtils.count(vertices));
+        Assert.assertEquals(1, count(vertices));
     }
 
     @Test
@@ -1579,7 +1627,7 @@ public abstract class GraphTestBase {
         if (!isUsingDefaultQuery(graph)) {
             Iterable<Vertex> vertices = graph.query("name:\"joe ferner\"", AUTHORIZATIONS_A)
                     .vertices();
-            Assert.assertEquals(1, IterableUtils.count(vertices));
+            Assert.assertEquals(1, count(vertices));
         }
     }
 
@@ -1599,7 +1647,7 @@ public abstract class GraphTestBase {
         List<Vertex> vertices = IterableUtils.toList(graph.query(AUTHORIZATIONS_A)
                 .has("location", GeoCompare.WITHIN, new GeoCircle(38.9186, -77.2297, 1))
                 .vertices());
-        Assert.assertEquals(1, IterableUtils.count(vertices));
+        Assert.assertEquals(1, count(vertices));
         GeoPoint geoPoint = (GeoPoint) vertices.get(0).getPropertyValue("location");
         assertEquals(38.9186, geoPoint.getLatitude(), 0.001);
         assertEquals(-77.2297, geoPoint.getLongitude(), 0.001);
@@ -1608,12 +1656,12 @@ public abstract class GraphTestBase {
         vertices = IterableUtils.toList(graph.query(AUTHORIZATIONS_A)
                 .has("location", GeoCompare.WITHIN, new GeoCircle(38.9186, -77.2297, 25))
                 .vertices());
-        Assert.assertEquals(2, IterableUtils.count(vertices));
+        Assert.assertEquals(2, count(vertices));
 
         vertices = IterableUtils.toList(graph.query(AUTHORIZATIONS_A)
                 .has("location", TextPredicate.CONTAINS, "Reston")
                 .vertices());
-        Assert.assertEquals(2, IterableUtils.count(vertices));
+        Assert.assertEquals(2, count(vertices));
     }
 
     private Date createDate(int year, int month, int day) {
@@ -1636,17 +1684,17 @@ public abstract class GraphTestBase {
         Iterable<Vertex> vertices = graph.query(AUTHORIZATIONS_A)
                 .range("age", 25, 25)
                 .vertices();
-        Assert.assertEquals(1, IterableUtils.count(vertices));
+        Assert.assertEquals(1, count(vertices));
 
         vertices = graph.query(AUTHORIZATIONS_A)
                 .range("age", 20, 29)
                 .vertices();
-        Assert.assertEquals(1, IterableUtils.count(vertices));
+        Assert.assertEquals(1, count(vertices));
 
         vertices = graph.query(AUTHORIZATIONS_A)
                 .range("age", 25, 30)
                 .vertices();
-        Assert.assertEquals(2, IterableUtils.count(vertices));
+        Assert.assertEquals(2, count(vertices));
     }
 
     @Test
@@ -1665,23 +1713,23 @@ public abstract class GraphTestBase {
 
         v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
         Iterable<Vertex> vertices = v1.query(AUTHORIZATIONS_A).vertices();
-        Assert.assertEquals(2, IterableUtils.count(vertices));
+        Assert.assertEquals(2, count(vertices));
         org.vertexium.test.util.IterableUtils.assertContains(v2, vertices);
         org.vertexium.test.util.IterableUtils.assertContains(v3, vertices);
 
         vertices = v1.query(AUTHORIZATIONS_A)
                 .has("prop1", "value2")
                 .vertices();
-        Assert.assertEquals(1, IterableUtils.count(vertices));
+        Assert.assertEquals(1, count(vertices));
         org.vertexium.test.util.IterableUtils.assertContains(v2, vertices);
 
         Iterable<Edge> edges = v1.query(AUTHORIZATIONS_A).edges();
-        Assert.assertEquals(2, IterableUtils.count(edges));
+        Assert.assertEquals(2, count(edges));
         org.vertexium.test.util.IterableUtils.assertContains(ev1v2, edges);
         org.vertexium.test.util.IterableUtils.assertContains(ev1v3, edges);
 
         edges = v1.query(AUTHORIZATIONS_A).edges(Direction.OUT);
-        Assert.assertEquals(2, IterableUtils.count(edges));
+        Assert.assertEquals(2, count(edges));
         org.vertexium.test.util.IterableUtils.assertContains(ev1v2, edges);
         org.vertexium.test.util.IterableUtils.assertContains(ev1v3, edges);
     }
@@ -1891,24 +1939,24 @@ public abstract class GraphTestBase {
         graph.addEdge(v2, v3, "knows", VISIBILITY_A, AUTHORIZATIONS_A);
 
         v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
-        Assert.assertEquals(3, IterableUtils.count(v1.getVertices(Direction.BOTH, AUTHORIZATIONS_A)));
-        Assert.assertEquals(3, IterableUtils.count(v1.getVertices(Direction.OUT, AUTHORIZATIONS_A)));
-        Assert.assertEquals(0, IterableUtils.count(v1.getVertices(Direction.IN, AUTHORIZATIONS_A)));
+        Assert.assertEquals(3, count(v1.getVertices(Direction.BOTH, AUTHORIZATIONS_A)));
+        Assert.assertEquals(3, count(v1.getVertices(Direction.OUT, AUTHORIZATIONS_A)));
+        Assert.assertEquals(0, count(v1.getVertices(Direction.IN, AUTHORIZATIONS_A)));
 
         v2 = graph.getVertex("v2", AUTHORIZATIONS_A);
-        Assert.assertEquals(2, IterableUtils.count(v2.getVertices(Direction.BOTH, AUTHORIZATIONS_A)));
-        Assert.assertEquals(1, IterableUtils.count(v2.getVertices(Direction.OUT, AUTHORIZATIONS_A)));
-        Assert.assertEquals(1, IterableUtils.count(v2.getVertices(Direction.IN, AUTHORIZATIONS_A)));
+        Assert.assertEquals(2, count(v2.getVertices(Direction.BOTH, AUTHORIZATIONS_A)));
+        Assert.assertEquals(1, count(v2.getVertices(Direction.OUT, AUTHORIZATIONS_A)));
+        Assert.assertEquals(1, count(v2.getVertices(Direction.IN, AUTHORIZATIONS_A)));
 
         v3 = graph.getVertex("v3", AUTHORIZATIONS_A);
-        Assert.assertEquals(2, IterableUtils.count(v3.getVertices(Direction.BOTH, AUTHORIZATIONS_A)));
-        Assert.assertEquals(0, IterableUtils.count(v3.getVertices(Direction.OUT, AUTHORIZATIONS_A)));
-        Assert.assertEquals(2, IterableUtils.count(v3.getVertices(Direction.IN, AUTHORIZATIONS_A)));
+        Assert.assertEquals(2, count(v3.getVertices(Direction.BOTH, AUTHORIZATIONS_A)));
+        Assert.assertEquals(0, count(v3.getVertices(Direction.OUT, AUTHORIZATIONS_A)));
+        Assert.assertEquals(2, count(v3.getVertices(Direction.IN, AUTHORIZATIONS_A)));
 
         v4 = graph.getVertex("v4", AUTHORIZATIONS_A);
-        Assert.assertEquals(1, IterableUtils.count(v4.getVertices(Direction.BOTH, AUTHORIZATIONS_A)));
-        Assert.assertEquals(0, IterableUtils.count(v4.getVertices(Direction.OUT, AUTHORIZATIONS_A)));
-        Assert.assertEquals(1, IterableUtils.count(v4.getVertices(Direction.IN, AUTHORIZATIONS_A)));
+        Assert.assertEquals(1, count(v4.getVertices(Direction.BOTH, AUTHORIZATIONS_A)));
+        Assert.assertEquals(0, count(v4.getVertices(Direction.OUT, AUTHORIZATIONS_A)));
+        Assert.assertEquals(1, count(v4.getVertices(Direction.IN, AUTHORIZATIONS_A)));
     }
 
     @Test
@@ -1931,11 +1979,11 @@ public abstract class GraphTestBase {
         ElementMutation<Vertex> m = v.prepareMutation()
                 .setProperty("prop1", "value2", VISIBILITY_A)
                 .setProperty("prop2", "value2", VISIBILITY_A);
-        Assert.assertEquals(1, IterableUtils.count(v.getProperties()));
+        Assert.assertEquals(1, count(v.getProperties()));
         assertEquals("value1", v.getPropertyValue("prop1"));
 
         m.save(AUTHORIZATIONS_A_AND_B);
-        Assert.assertEquals(2, IterableUtils.count(v.getProperties()));
+        Assert.assertEquals(2, count(v.getProperties()));
         assertEquals("value2", v.getPropertyValue("prop1"));
         assertEquals("value2", v.getPropertyValue("prop2"));
     }
@@ -1957,7 +2005,7 @@ public abstract class GraphTestBase {
         vertexIds.add("v2");
         vertexIds.add("v3");
         Iterable<String> edgeIds = IterableUtils.toList(graph.findRelatedEdges(vertexIds, AUTHORIZATIONS_A));
-        Assert.assertEquals(4, IterableUtils.count(edgeIds));
+        Assert.assertEquals(4, count(edgeIds));
         org.vertexium.test.util.IterableUtils.assertContains(ev1v2.getId(), edgeIds);
         org.vertexium.test.util.IterableUtils.assertContains(ev1v3.getId(), edgeIds);
         org.vertexium.test.util.IterableUtils.assertContains(ev2v3.getId(), edgeIds);
@@ -2002,7 +2050,7 @@ public abstract class GraphTestBase {
 
         startTime = new Date();
         Iterable<String> edgeIds = IterableUtils.toList(graph.findRelatedEdges(vertexIds, AUTHORIZATIONS_A));
-        IterableUtils.count(edgeIds);
+        count(edgeIds);
         endTime = new Date();
         long findRelatedEdgesTime = endTime.getTime() - startTime.getTime();
 
@@ -2043,15 +2091,15 @@ public abstract class GraphTestBase {
         assertEquals("Test Value", v1.getPropertyValue("fullText"));
         assertEquals("Test Value", v1.getPropertyValue("exactMatch"));
 
-        Assert.assertEquals(1, IterableUtils.count(graph.query(AUTHORIZATIONS_A).has("both", TextPredicate.CONTAINS, "Test").vertices()));
-        Assert.assertEquals(1, IterableUtils.count(graph.query(AUTHORIZATIONS_A).has("fullText", TextPredicate.CONTAINS, "Test").vertices()));
-        Assert.assertEquals("exact match shouldn't match partials", 0, IterableUtils.count(graph.query(AUTHORIZATIONS_A).has("exactMatch", "Test").vertices()));
-        Assert.assertEquals("un-indexed property shouldn't match partials", 0, IterableUtils.count(graph.query(AUTHORIZATIONS_A).has("none", "Test").vertices()));
+        Assert.assertEquals(1, count(graph.query(AUTHORIZATIONS_A).has("both", TextPredicate.CONTAINS, "Test").vertices()));
+        Assert.assertEquals(1, count(graph.query(AUTHORIZATIONS_A).has("fullText", TextPredicate.CONTAINS, "Test").vertices()));
+        Assert.assertEquals("exact match shouldn't match partials", 0, count(graph.query(AUTHORIZATIONS_A).has("exactMatch", "Test").vertices()));
+        Assert.assertEquals("un-indexed property shouldn't match partials", 0, count(graph.query(AUTHORIZATIONS_A).has("none", "Test").vertices()));
 
-        Assert.assertEquals(1, IterableUtils.count(graph.query(AUTHORIZATIONS_A).has("both", "Test Value").vertices()));
-        Assert.assertEquals("default has predicate is equals which shouldn't work for full text", 0, IterableUtils.count(graph.query(AUTHORIZATIONS_A).has("fullText", "Test Value").vertices()));
-        Assert.assertEquals(1, IterableUtils.count(graph.query(AUTHORIZATIONS_A).has("exactMatch", "Test Value").vertices()));
-        if (IterableUtils.count(graph.query(AUTHORIZATIONS_A).has("none", "Test Value").vertices()) != 0) {
+        Assert.assertEquals(1, count(graph.query(AUTHORIZATIONS_A).has("both", "Test Value").vertices()));
+        Assert.assertEquals("default has predicate is equals which shouldn't work for full text", 0, count(graph.query(AUTHORIZATIONS_A).has("fullText", "Test Value").vertices()));
+        Assert.assertEquals(1, count(graph.query(AUTHORIZATIONS_A).has("exactMatch", "Test Value").vertices()));
+        if (count(graph.query(AUTHORIZATIONS_A).has("none", "Test Value").vertices()) != 0) {
             LOGGER.warn("default has predicate is equals which shouldn't work for un-indexed");
         }
     }
@@ -2068,10 +2116,10 @@ public abstract class GraphTestBase {
                 .setProperty("fullText", StreamingPropertyValue.create("Test Value"), VISIBILITY_A)
                 .save(AUTHORIZATIONS_A_AND_B);
 
-        Assert.assertEquals(1, IterableUtils.count(graph.query(AUTHORIZATIONS_A).has("both", TextPredicate.CONTAINS, "Test").vertices()));
-        Assert.assertEquals(1, IterableUtils.count(graph.query(AUTHORIZATIONS_A).has("fullText", TextPredicate.CONTAINS, "Test").vertices()));
-        Assert.assertEquals("un-indexed property shouldn't match partials", 0, IterableUtils.count(graph.query(AUTHORIZATIONS_A).has("none", "Test").vertices()));
-        Assert.assertEquals("un-indexed property shouldn't match partials", 0, IterableUtils.count(graph.query(AUTHORIZATIONS_A).has("none", TextPredicate.CONTAINS, "Test").vertices()));
+        Assert.assertEquals(1, count(graph.query(AUTHORIZATIONS_A).has("both", TextPredicate.CONTAINS, "Test").vertices()));
+        Assert.assertEquals(1, count(graph.query(AUTHORIZATIONS_A).has("fullText", TextPredicate.CONTAINS, "Test").vertices()));
+        Assert.assertEquals("un-indexed property shouldn't match partials", 0, count(graph.query(AUTHORIZATIONS_A).has("none", "Test").vertices()));
+        Assert.assertEquals("un-indexed property shouldn't match partials", 0, count(graph.query(AUTHORIZATIONS_A).has("none", TextPredicate.CONTAINS, "Test").vertices()));
     }
 
     @Test
@@ -2146,20 +2194,20 @@ public abstract class GraphTestBase {
                 .setProperty("date", date, VISIBILITY_A)
                 .save(AUTHORIZATIONS_A_AND_B);
 
-        Assert.assertEquals(1, IterableUtils.count(graph.query(AUTHORIZATIONS_A).has("int", 5).vertices()));
-        Assert.assertEquals(1, IterableUtils.count(graph.query(AUTHORIZATIONS_A).has("double", 5.6).vertices()));
-        Assert.assertEquals(1, IterableUtils.count(graph.query(AUTHORIZATIONS_A).has("float", 6.4f).vertices()));
-        Assert.assertEquals(1, IterableUtils.count(graph.query(AUTHORIZATIONS_A).has("string", "test").vertices()));
-        Assert.assertEquals(1, IterableUtils.count(graph.query(AUTHORIZATIONS_A).has("byte", 5).vertices()));
-        Assert.assertEquals(1, IterableUtils.count(graph.query(AUTHORIZATIONS_A).has("long", 5).vertices()));
-        Assert.assertEquals(1, IterableUtils.count(graph.query(AUTHORIZATIONS_A).has("boolean", true).vertices()));
-        Assert.assertEquals(1, IterableUtils.count(graph.query(AUTHORIZATIONS_A).has("short", 5).vertices()));
-        Assert.assertEquals(1, IterableUtils.count(graph.query(AUTHORIZATIONS_A).has("date", date).vertices()));
-        Assert.assertEquals(1, IterableUtils.count(graph.query(AUTHORIZATIONS_A).has("bigInteger", BigInteger.valueOf(10)).vertices()));
-        Assert.assertEquals(1, IterableUtils.count(graph.query(AUTHORIZATIONS_A).has("bigInteger", 10).vertices()));
-        Assert.assertEquals(1, IterableUtils.count(graph.query(AUTHORIZATIONS_A).has("bigDecimal", BigDecimal.valueOf(1.1)).vertices()));
-        Assert.assertEquals(1, IterableUtils.count(graph.query(AUTHORIZATIONS_A).has("bigDecimal", 1.1).vertices()));
-        Assert.assertEquals(1, IterableUtils.count(graph.query(AUTHORIZATIONS_A).has("geopoint", GeoCompare.WITHIN, new GeoCircle(77, -33, 1)).vertices()));
+        Assert.assertEquals(1, count(graph.query(AUTHORIZATIONS_A).has("int", 5).vertices()));
+        Assert.assertEquals(1, count(graph.query(AUTHORIZATIONS_A).has("double", 5.6).vertices()));
+        Assert.assertEquals(1, count(graph.query(AUTHORIZATIONS_A).has("float", 6.4f).vertices()));
+        Assert.assertEquals(1, count(graph.query(AUTHORIZATIONS_A).has("string", "test").vertices()));
+        Assert.assertEquals(1, count(graph.query(AUTHORIZATIONS_A).has("byte", 5).vertices()));
+        Assert.assertEquals(1, count(graph.query(AUTHORIZATIONS_A).has("long", 5).vertices()));
+        Assert.assertEquals(1, count(graph.query(AUTHORIZATIONS_A).has("boolean", true).vertices()));
+        Assert.assertEquals(1, count(graph.query(AUTHORIZATIONS_A).has("short", 5).vertices()));
+        Assert.assertEquals(1, count(graph.query(AUTHORIZATIONS_A).has("date", date).vertices()));
+        Assert.assertEquals(1, count(graph.query(AUTHORIZATIONS_A).has("bigInteger", BigInteger.valueOf(10)).vertices()));
+        Assert.assertEquals(1, count(graph.query(AUTHORIZATIONS_A).has("bigInteger", 10).vertices()));
+        Assert.assertEquals(1, count(graph.query(AUTHORIZATIONS_A).has("bigDecimal", BigDecimal.valueOf(1.1)).vertices()));
+        Assert.assertEquals(1, count(graph.query(AUTHORIZATIONS_A).has("bigDecimal", 1.1).vertices()));
+        Assert.assertEquals(1, count(graph.query(AUTHORIZATIONS_A).has("geopoint", GeoCompare.WITHIN, new GeoCircle(77, -33, 1)).vertices()));
     }
 
     @Test
@@ -2212,8 +2260,8 @@ public abstract class GraphTestBase {
         assertNull(v1.getProperty("prop1"));
         assertNotNull(v1.getProperty("prop2"));
 
-        Assert.assertEquals(1, IterableUtils.count(graph.query(AUTHORIZATIONS_A_AND_B).has("prop1", "value1").vertices()));
-        Assert.assertEquals(0, IterableUtils.count(graph.query(AUTHORIZATIONS_A).has("prop1", "value1").vertices()));
+        Assert.assertEquals(1, count(graph.query(AUTHORIZATIONS_A_AND_B).has("prop1", "value1").vertices()));
+        Assert.assertEquals(0, count(graph.query(AUTHORIZATIONS_A).has("prop1", "value1").vertices()));
 
         v1 = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B);
         Property v1Prop1 = v1.getProperty("prop1");
@@ -2258,9 +2306,9 @@ public abstract class GraphTestBase {
 
         // test that we can see the edge with A and not B
         v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
-        Assert.assertEquals(0, IterableUtils.count(v1.getEdges(Direction.BOTH, AUTHORIZATIONS_B)));
+        Assert.assertEquals(0, count(v1.getEdges(Direction.BOTH, AUTHORIZATIONS_B)));
         v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
-        Assert.assertEquals(1, IterableUtils.count(v1.getEdges(Direction.BOTH, AUTHORIZATIONS_A)));
+        Assert.assertEquals(1, count(v1.getEdges(Direction.BOTH, AUTHORIZATIONS_A)));
 
         // change the edge
         Edge e1 = graph.getEdge("e1", AUTHORIZATIONS_A);
@@ -2270,9 +2318,9 @@ public abstract class GraphTestBase {
 
         // test that we can see the edge with B and not A
         v1 = graph.getVertex("v1", AUTHORIZATIONS_B);
-        Assert.assertEquals(1, IterableUtils.count(v1.getEdges(Direction.BOTH, AUTHORIZATIONS_B)));
+        Assert.assertEquals(1, count(v1.getEdges(Direction.BOTH, AUTHORIZATIONS_B)));
         v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
-        Assert.assertEquals(0, IterableUtils.count(v1.getEdges(Direction.BOTH, AUTHORIZATIONS_A)));
+        Assert.assertEquals(0, count(v1.getEdges(Direction.BOTH, AUTHORIZATIONS_A)));
 
         // change the edge visibility to same
         e1 = graph.getEdge("e1", AUTHORIZATIONS_B);
@@ -2282,9 +2330,9 @@ public abstract class GraphTestBase {
 
         // test that we can see the edge with B and not A
         v1 = graph.getVertex("v1", AUTHORIZATIONS_B);
-        Assert.assertEquals(1, IterableUtils.count(v1.getEdges(Direction.BOTH, AUTHORIZATIONS_B)));
+        Assert.assertEquals(1, count(v1.getEdges(Direction.BOTH, AUTHORIZATIONS_B)));
         v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
-        Assert.assertEquals(0, IterableUtils.count(v1.getEdges(Direction.BOTH, AUTHORIZATIONS_A)));
+        Assert.assertEquals(0, count(v1.getEdges(Direction.BOTH, AUTHORIZATIONS_A)));
     }
 
     @Test
@@ -2315,21 +2363,21 @@ public abstract class GraphTestBase {
                 .setProperty("propSmall", propSmall, VISIBILITY_A)
                 .setProperty(largePropertyName, propLarge, VISIBILITY_A)
                 .save(AUTHORIZATIONS_A_AND_B);
-        Assert.assertEquals(2, IterableUtils.count(graph.getVertex("v1", AUTHORIZATIONS_A).getProperties()));
+        Assert.assertEquals(2, count(graph.getVertex("v1", AUTHORIZATIONS_A).getProperties()));
 
         graph.getVertex("v1", AUTHORIZATIONS_A)
                 .prepareMutation()
                 .alterPropertyVisibility("propSmall", VISIBILITY_B)
                 .save(AUTHORIZATIONS_A_AND_B);
-        Assert.assertEquals(1, IterableUtils.count(graph.getVertex("v1", AUTHORIZATIONS_A).getProperties()));
+        Assert.assertEquals(1, count(graph.getVertex("v1", AUTHORIZATIONS_A).getProperties()));
 
         graph.getVertex("v1", AUTHORIZATIONS_A)
                 .prepareMutation()
                 .alterPropertyVisibility(largePropertyName, VISIBILITY_B)
                 .save(AUTHORIZATIONS_A_AND_B);
-        Assert.assertEquals(0, IterableUtils.count(graph.getVertex("v1", AUTHORIZATIONS_A).getProperties()));
+        Assert.assertEquals(0, count(graph.getVertex("v1", AUTHORIZATIONS_A).getProperties()));
 
-        Assert.assertEquals(2, IterableUtils.count(graph.getVertex("v1", AUTHORIZATIONS_A_AND_B).getProperties()));
+        Assert.assertEquals(2, count(graph.getVertex("v1", AUTHORIZATIONS_A_AND_B).getProperties()));
     }
 
     @Test

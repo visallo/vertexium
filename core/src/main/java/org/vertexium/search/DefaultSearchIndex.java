@@ -21,17 +21,17 @@ public class DefaultSearchIndex implements SearchIndex {
     }
 
     @Override
-    public void removeElement(Graph graph, Element element, Authorizations authorizations) {
+    public void deleteElement(Graph graph, Element element, Authorizations authorizations) {
 
     }
 
     @Override
-    public void removeProperty(Graph graph, Element element, Property property, Authorizations authorizations) {
+    public void deleteProperty(Graph graph, Element element, Property property, Authorizations authorizations) {
 
     }
 
     @Override
-    public void removeProperty(Graph graph, Element element, String propertyKey, String propertyName, Visibility propertyVisibility, Authorizations authorizations) {
+    public void deleteProperty(Graph graph, Element element, String propertyKey, String propertyName, Visibility propertyVisibility, Authorizations authorizations) {
 
     }
 

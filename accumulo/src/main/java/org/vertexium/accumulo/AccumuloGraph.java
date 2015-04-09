@@ -26,7 +26,8 @@ import org.vertexium.event.*;
 import org.vertexium.id.IdGenerator;
 import org.vertexium.id.NameSubstitutionStrategy;
 import org.vertexium.mutation.AlterPropertyVisibility;
-import org.vertexium.mutation.PropertyRemoveMutation;
+import org.vertexium.mutation.PropertyDeleteMutation;
+import org.vertexium.mutation.PropertySoftDeleteMutation;
 import org.vertexium.mutation.SetPropertyMetadata;
 import org.vertexium.property.MutableProperty;
 import org.vertexium.property.StreamingPropertyValue;
@@ -37,6 +38,8 @@ import org.vertexium.util.*;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.*;
+
+import static org.vertexium.util.Preconditions.checkNotNull;
 
 public class AccumuloGraph extends GraphBaseWithSearchIndex {
     private static final Logger LOGGER = LoggerFactory.getLogger(AccumuloGraph.class);
@@ -249,7 +252,8 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
                         getVertexId(),
                         getVisibility(),
                         getProperties(),
-                        getPropertyRemoves(),
+                        getPropertyDeletes(),
+                        getPropertySoftDeletes(),
                         null,
                         authorizations,
                         System.currentTimeMillis()
@@ -266,8 +270,8 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
                     for (Property property : getProperties()) {
                         queueEvent(new AddPropertyEvent(AccumuloGraph.this, vertex, property));
                     }
-                    for (PropertyRemoveMutation propertyRemoveMutation : getPropertyRemoves()) {
-                        queueEvent(new RemovePropertyEvent(AccumuloGraph.this, vertex, propertyRemoveMutation));
+                    for (PropertyDeleteMutation propertyDeleteMutation : getPropertyDeletes()) {
+                        queueEvent(new DeletePropertyEvent(AccumuloGraph.this, vertex, propertyDeleteMutation));
                     }
                 }
 
@@ -282,15 +286,26 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
         }
     }
 
-    void saveProperties(AccumuloElement element, Iterable<Property> properties, Iterable<PropertyRemoveMutation> propertyRemoves, IndexHint indexHint, Authorizations authorizations) {
+    void saveProperties(
+            AccumuloElement element,
+            Iterable<Property> properties,
+            Iterable<PropertyDeleteMutation> propertyDeletes,
+            Iterable<PropertySoftDeleteMutation> propertySoftDeletes,
+            IndexHint indexHint,
+            Authorizations authorizations
+    ) {
         String rowPrefix = getRowPrefixForElement(element);
 
         String elementRowKey = rowPrefix + element.getId();
         Mutation m = new Mutation(elementRowKey);
         boolean hasProperty = false;
-        for (PropertyRemoveMutation propertyRemove : propertyRemoves) {
+        for (PropertyDeleteMutation propertyDelete : propertyDeletes) {
             hasProperty = true;
-            elementMutationBuilder.addPropertyRemoveToMutation(m, propertyRemove);
+            elementMutationBuilder.addPropertyDeleteToMutation(m, propertyDelete);
+        }
+        for (PropertySoftDeleteMutation propertySoftDelete : propertySoftDeletes) {
+            hasProperty = true;
+            elementMutationBuilder.addPropertySoftDeleteToMutation(m, propertySoftDelete);
         }
         for (Property property : properties) {
             hasProperty = true;
@@ -301,13 +316,23 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
         }
 
         if (indexHint != IndexHint.DO_NOT_INDEX) {
-            for (PropertyRemoveMutation propertyRemoveMutation : propertyRemoves) {
-                getSearchIndex().removeProperty(
+            for (PropertyDeleteMutation propertyDeleteMutation : propertyDeletes) {
+                getSearchIndex().deleteProperty(
                         this,
                         element,
-                        propertyRemoveMutation.getKey(),
-                        propertyRemoveMutation.getName(),
-                        propertyRemoveMutation.getVisibility(),
+                        propertyDeleteMutation.getKey(),
+                        propertyDeleteMutation.getName(),
+                        propertyDeleteMutation.getVisibility(),
+                        authorizations
+                );
+            }
+            for (PropertySoftDeleteMutation propertySoftDeleteMutation : propertySoftDeletes) {
+                getSearchIndex().deleteProperty(
+                        this,
+                        element,
+                        propertySoftDeleteMutation.getKey(),
+                        propertySoftDeleteMutation.getName(),
+                        propertySoftDeleteMutation.getVisibility(),
                         authorizations
                 );
             }
@@ -318,23 +343,40 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
             for (Property property : properties) {
                 queueEvent(new AddPropertyEvent(AccumuloGraph.this, element, property));
             }
-            for (PropertyRemoveMutation propertyRemoveMutation : propertyRemoves) {
-                queueEvent(new RemovePropertyEvent(AccumuloGraph.this, element, propertyRemoveMutation));
+            for (PropertyDeleteMutation propertyDeleteMutation : propertyDeletes) {
+                queueEvent(new DeletePropertyEvent(AccumuloGraph.this, element, propertyDeleteMutation));
+            }
+            for (PropertySoftDeleteMutation propertySoftDeleteMutation : propertySoftDeletes) {
+                queueEvent(new SoftDeletePropertyEvent(AccumuloGraph.this, element, propertySoftDeleteMutation));
             }
         }
     }
 
-    void removeProperty(AccumuloElement element, Property property, Authorizations authorizations) {
+    void deleteProperty(AccumuloElement element, Property property, Authorizations authorizations) {
         String rowPrefix = getRowPrefixForElement(element);
 
         Mutation m = new Mutation(rowPrefix + element.getId());
-        elementMutationBuilder.addPropertyRemoveToMutation(m, property);
+        elementMutationBuilder.addPropertyDeleteToMutation(m, property);
         addMutations(getWriterFromElementType(element), m);
 
-        getSearchIndex().removeProperty(this, element, property, authorizations);
+        getSearchIndex().deleteProperty(this, element, property, authorizations);
 
         if (hasEventListeners()) {
-            queueEvent(new RemovePropertyEvent(this, element, property));
+            queueEvent(new DeletePropertyEvent(this, element, property));
+        }
+    }
+
+    void softDeleteProperty(AccumuloElement element, Property property, Authorizations authorizations) {
+        String rowPrefix = getRowPrefixForElement(element);
+
+        Mutation m = new Mutation(rowPrefix + element.getId());
+        elementMutationBuilder.addPropertySoftDeleteToMutation(m, property);
+        addMutations(getWriterFromElementType(element), m);
+
+        getSearchIndex().deleteProperty(this, element, property, authorizations);
+
+        if (hasEventListeners()) {
+            queueEvent(new SoftDeletePropertyEvent(this, element, property));
         }
     }
 
@@ -457,32 +499,48 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
     }
 
     @Override
-    public void removeVertex(Vertex vertex, Authorizations authorizations) {
-        if (vertex == null) {
-            throw new IllegalArgumentException("vertex cannot be null");
-        }
+    public void deleteVertex(Vertex vertex, Authorizations authorizations) {
+        checkNotNull(vertex, "vertex cannot be null");
 
-        getSearchIndex().removeElement(this, vertex, authorizations);
+        getSearchIndex().deleteElement(this, vertex, authorizations);
 
-        // Remove all edges that this vertex participates.
+        // Delete all edges that this vertex participates.
         for (Edge edge : vertex.getEdges(Direction.BOTH, authorizations)) {
-            removeEdge(edge, authorizations);
+            deleteEdge(edge, authorizations);
         }
 
         addMutations(getVerticesWriter(), getDeleteRowMutation(AccumuloConstants.VERTEX_ROW_KEY_PREFIX + vertex.getId()));
 
         if (hasEventListeners()) {
-            queueEvent(new RemoveVertexEvent(this, vertex));
+            queueEvent(new DeleteVertexEvent(this, vertex));
+        }
+    }
+
+    @Override
+    public void softDeleteVertex(Vertex vertex, Authorizations authorizations) {
+        checkNotNull(vertex, "vertex cannot be null");
+
+        getSearchIndex().deleteElement(this, vertex, authorizations);
+
+        // Delete all edges that this vertex participates.
+        for (Edge edge : vertex.getEdges(Direction.BOTH, authorizations)) {
+            softDeleteEdge(edge, authorizations);
+        }
+
+        addMutations(getVerticesWriter(), getSoftDeleteRowMutation(AccumuloConstants.VERTEX_ROW_KEY_PREFIX + vertex.getId()));
+
+        if (hasEventListeners()) {
+            queueEvent(new SoftDeleteVertexEvent(this, vertex));
         }
     }
 
     @Override
     public void markVertexHidden(Vertex vertex, Visibility visibility, Authorizations authorizations) {
-        Preconditions.checkNotNull(vertex, "vertex cannot be null");
+        checkNotNull(vertex, "vertex cannot be null");
 
         ColumnVisibility columnVisibility = visibilityToAccumuloVisibility(visibility);
 
-        // Remove all edges that this vertex participates.
+        // Delete all edges that this vertex participates.
         for (Edge edge : vertex.getEdges(Direction.BOTH, authorizations)) {
             markEdgeHidden(edge, visibility, authorizations);
         }
@@ -496,11 +554,11 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
 
     @Override
     public void markVertexVisible(Vertex vertex, Visibility visibility, Authorizations authorizations) {
-        Preconditions.checkNotNull(vertex, "vertex cannot be null");
+        checkNotNull(vertex, "vertex cannot be null");
 
         ColumnVisibility columnVisibility = visibilityToAccumuloVisibility(visibility);
 
-        // Remove all edges that this vertex participates.
+        // Delete all edges that this vertex participates.
         for (Edge edge : vertex.getEdges(Direction.BOTH, FetchHint.ALL_INCLUDING_HIDDEN, authorizations)) {
             markEdgeVisible(edge, visibility, authorizations);
         }
@@ -567,7 +625,8 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
                 edgeBuilder.getNewEdgeLabel(),
                 edgeBuilder.getVisibility(),
                 edgeBuilder.getProperties(),
-                edgeBuilder.getPropertyRemoves(),
+                edgeBuilder.getPropertyDeletes(),
+                edgeBuilder.getPropertySoftDeletes(),
                 null,
                 authorizations,
                 System.currentTimeMillis()
@@ -587,8 +646,11 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
             for (Property property : edgeBuilder.getProperties()) {
                 queueEvent(new AddPropertyEvent(AccumuloGraph.this, edge, property));
             }
-            for (PropertyRemoveMutation propertyRemoveMutation : edgeBuilder.getPropertyRemoves()) {
-                queueEvent(new RemovePropertyEvent(AccumuloGraph.this, edge, propertyRemoveMutation));
+            for (PropertyDeleteMutation propertyDeleteMutation : edgeBuilder.getPropertyDeletes()) {
+                queueEvent(new DeletePropertyEvent(AccumuloGraph.this, edge, propertyDeleteMutation));
+            }
+            for (PropertySoftDeleteMutation propertySoftDeleteMutation : edgeBuilder.getPropertySoftDeletes()) {
+                queueEvent(new SoftDeletePropertyEvent(AccumuloGraph.this, edge, propertySoftDeleteMutation));
             }
         }
 
@@ -683,10 +745,10 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
     }
 
     @Override
-    public void removeEdge(Edge edge, Authorizations authorizations) {
-        Preconditions.checkNotNull(edge);
+    public void deleteEdge(Edge edge, Authorizations authorizations) {
+        checkNotNull(edge);
 
-        getSearchIndex().removeElement(this, edge, authorizations);
+        getSearchIndex().deleteElement(this, edge, authorizations);
 
         ColumnVisibility visibility = visibilityToAccumuloVisibility(edge.getVisibility());
 
@@ -698,17 +760,41 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
 
         addMutations(getVerticesWriter(), outMutation, inMutation);
 
-        // Remove everything else related to edge.
+        // Deletes everything else related to edge.
         addMutations(getEdgesWriter(), getDeleteRowMutation(AccumuloConstants.EDGE_ROW_KEY_PREFIX + edge.getId()));
 
         if (hasEventListeners()) {
-            queueEvent(new RemoveEdgeEvent(this, edge));
+            queueEvent(new DeleteEdgeEvent(this, edge));
+        }
+    }
+
+    @Override
+    public void softDeleteEdge(Edge edge, Authorizations authorizations) {
+        checkNotNull(edge);
+
+        getSearchIndex().deleteElement(this, edge, authorizations);
+
+        ColumnVisibility visibility = visibilityToAccumuloVisibility(edge.getVisibility());
+
+        Mutation outMutation = new Mutation(AccumuloConstants.VERTEX_ROW_KEY_PREFIX + edge.getVertexId(Direction.OUT));
+        outMutation.put(AccumuloVertex.CF_OUT_EDGE_SOFT_DELETE, new Text(edge.getId()), visibility, AccumuloElement.SOFT_DELETE_VALUE);
+
+        Mutation inMutation = new Mutation(AccumuloConstants.VERTEX_ROW_KEY_PREFIX + edge.getVertexId(Direction.IN));
+        inMutation.put(AccumuloVertex.CF_IN_EDGE_SOFT_DELETE, new Text(edge.getId()), visibility, AccumuloElement.SOFT_DELETE_VALUE);
+
+        addMutations(getVerticesWriter(), outMutation, inMutation);
+
+        // Soft deletes everything else related to edge.
+        addMutations(getEdgesWriter(), getSoftDeleteRowMutation(AccumuloConstants.EDGE_ROW_KEY_PREFIX + edge.getId()));
+
+        if (hasEventListeners()) {
+            queueEvent(new SoftDeleteEdgeEvent(this, edge));
         }
     }
 
     @Override
     public void markEdgeHidden(Edge edge, Visibility visibility, Authorizations authorizations) {
-        Preconditions.checkNotNull(edge);
+        checkNotNull(edge);
 
         Vertex out = edge.getVertex(Direction.OUT, authorizations);
         if (out == null) {
@@ -729,7 +815,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
 
         addMutations(getVerticesWriter(), outMutation, inMutation);
 
-        // Remove everything else related to edge.
+        // Delete everything else related to edge.
         addMutations(getEdgesWriter(), getMarkHiddenRowMutation(AccumuloConstants.EDGE_ROW_KEY_PREFIX + edge.getId(), columnVisibility));
 
         if (out instanceof AccumuloVertex) {
@@ -746,7 +832,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
 
     @Override
     public void markEdgeVisible(Edge edge, Visibility visibility, Authorizations authorizations) {
-        Preconditions.checkNotNull(edge);
+        checkNotNull(edge);
 
         Vertex out = edge.getVertex(Direction.OUT, FetchHint.ALL_INCLUDING_HIDDEN, authorizations);
         if (out == null) {
@@ -767,7 +853,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
 
         addMutations(getVerticesWriter(), outMutation, inMutation);
 
-        // Remove everything else related to edge.
+        // Delete everything else related to edge.
         addMutations(getEdgesWriter(), getMarkVisibleRowMutation(AccumuloConstants.EDGE_ROW_KEY_PREFIX + edge.getId(), columnVisibility));
 
         if (out instanceof AccumuloVertex) {
@@ -789,7 +875,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
 
     @SuppressWarnings("unused")
     public void markPropertyHidden(AccumuloElement element, Property property, Visibility visibility, Authorizations authorizations) {
-        Preconditions.checkNotNull(element);
+        checkNotNull(element);
 
         ColumnVisibility columnVisibility = visibilityToAccumuloVisibility(visibility);
 
@@ -813,7 +899,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
 
     @SuppressWarnings("unused")
     public void markPropertyVisible(AccumuloElement element, Property property, Visibility visibility, Authorizations authorizations) {
-        Preconditions.checkNotNull(element);
+        checkNotNull(element);
 
         ColumnVisibility columnVisibility = visibilityToAccumuloVisibility(visibility);
 
@@ -896,6 +982,12 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
     private Mutation getDeleteRowMutation(String rowKey) {
         Mutation m = new Mutation(rowKey);
         m.put(DELETE_ROW_COLUMN_FAMILY, DELETE_ROW_COLUMN_QUALIFIER, RowDeletingIterator.DELETE_ROW_VALUE);
+        return m;
+    }
+
+    private Mutation getSoftDeleteRowMutation(String rowKey) {
+        Mutation m = new Mutation(rowKey);
+        m.put(AccumuloElement.CF_SOFT_DELETE, AccumuloElement.CQ_SOFT_DELETE, AccumuloElement.SOFT_DELETE_VALUE);
         return m;
     }
 
@@ -1298,7 +1390,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
             if (property.getVisibility().equals(apv.getVisibility())) {
                 continue;
             }
-            elementMutationBuilder.addPropertyRemoveToMutation(m, property);
+            elementMutationBuilder.addPropertyDeleteToMutation(m, property);
             property.setVisibility(apv.getVisibility());
             elementMutationBuilder.addPropertyToMutation(m, elementRowKey, property);
             propertyChanged = true;

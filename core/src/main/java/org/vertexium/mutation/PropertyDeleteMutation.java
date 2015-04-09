@@ -2,7 +2,7 @@ package org.vertexium.mutation;
 
 import org.vertexium.Visibility;
 
-public abstract class PropertyRemoveMutation implements Comparable<PropertyRemoveMutation> {
+public abstract class PropertyDeleteMutation implements Comparable<PropertyDeleteMutation> {
     public abstract String getKey();
 
     public abstract String getName();
@@ -14,11 +14,11 @@ public abstract class PropertyRemoveMutation implements Comparable<PropertyRemov
         if (this == o) {
             return true;
         }
-        if (o == null || !(o instanceof PropertyRemoveMutation)) {
+        if (o == null || !(o instanceof PropertyDeleteMutation)) {
             return false;
         }
 
-        PropertyRemoveMutation that = (PropertyRemoveMutation) o;
+        PropertyDeleteMutation that = (PropertyDeleteMutation) o;
 
         if (getKey() != null ? !getKey().equals(that.getKey()) : that.getKey() != null) {
             return false;
@@ -34,7 +34,7 @@ public abstract class PropertyRemoveMutation implements Comparable<PropertyRemov
     }
 
     @Override
-    public int compareTo(PropertyRemoveMutation that) {
+    public int compareTo(PropertyDeleteMutation that) {
         if (this == that) {
             return 0;
         }
@@ -94,7 +94,7 @@ public abstract class PropertyRemoveMutation implements Comparable<PropertyRemov
 
     @Override
     public String toString() {
-        return "PropertyRemoveMutation{" +
+        return this.getClass().getSimpleName() + "{" +
                 "key='" + getKey() + '\'' +
                 ", name='" + getName() + '\'' +
                 ", visibility=" + getVisibility() +

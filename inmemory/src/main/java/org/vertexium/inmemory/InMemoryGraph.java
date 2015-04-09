@@ -1,19 +1,18 @@
 package org.vertexium.inmemory;
 
 import org.vertexium.*;
+import org.vertexium.event.*;
 import org.vertexium.id.IdGenerator;
 import org.vertexium.mutation.AlterPropertyVisibility;
-import org.vertexium.mutation.PropertyRemoveMutation;
+import org.vertexium.mutation.PropertyDeleteMutation;
+import org.vertexium.mutation.PropertySoftDeleteMutation;
 import org.vertexium.mutation.SetPropertyMetadata;
 import org.vertexium.search.IndexHint;
 import org.vertexium.search.SearchIndex;
 import org.vertexium.util.ConvertingIterable;
+import org.vertexium.util.IterableUtils;
 import org.vertexium.util.JavaSerializableUtils;
 import org.vertexium.util.LookAheadIterable;
-import org.vertexium.*;
-import org.vertexium.event.*;
-import org.vertexium.util.IterableUtils;
-import org.vertexium.util.Preconditions;
 
 import java.util.*;
 
@@ -22,19 +21,40 @@ import static org.vertexium.util.Preconditions.checkNotNull;
 public class InMemoryGraph extends GraphBaseWithSearchIndex {
     private static final InMemoryGraphConfiguration DEFAULT_CONFIGURATION = new InMemoryGraphConfiguration(new HashMap());
     private final Map<String, InMemoryVertex> vertices;
+    private final Map<String, InMemoryVertex> softDeletedVertices;
     private final Map<String, InMemoryEdge> edges;
+    private final Map<String, InMemoryEdge> softDeletedEdges;
     private final Map<String, byte[]> metadata = new HashMap<>();
 
     protected InMemoryGraph(InMemoryGraphConfiguration configuration, IdGenerator idGenerator, SearchIndex searchIndex) {
-        this(configuration, idGenerator, searchIndex, new HashMap<String, InMemoryVertex>(), new HashMap<String, InMemoryEdge>());
+        this(
+                configuration,
+                idGenerator,
+                searchIndex,
+                new HashMap<String, InMemoryVertex>(),
+                new HashMap<String, InMemoryVertex>(),
+                new HashMap<String, InMemoryEdge>(),
+                new HashMap<String, InMemoryEdge>()
+        );
     }
 
-    protected InMemoryGraph(InMemoryGraphConfiguration configuration, IdGenerator idGenerator, SearchIndex searchIndex, Map<String, InMemoryVertex> vertices, Map<String, InMemoryEdge> edges) {
+    protected InMemoryGraph(
+            InMemoryGraphConfiguration configuration,
+            IdGenerator idGenerator,
+            SearchIndex searchIndex,
+            Map<String, InMemoryVertex> vertices,
+            Map<String, InMemoryVertex> softDeletedVertices,
+            Map<String, InMemoryEdge> edges,
+            Map<String, InMemoryEdge> softDeletedEdges
+    ) {
         super(configuration, idGenerator, searchIndex);
         this.vertices = vertices;
+        this.softDeletedVertices = softDeletedVertices;
         this.edges = edges;
+        this.softDeletedEdges = softDeletedEdges;
     }
 
+    @SuppressWarnings("unused")
     public static InMemoryGraph create() {
         return create(DEFAULT_CONFIGURATION);
     }
@@ -51,6 +71,7 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
         return graph;
     }
 
+    @SuppressWarnings("unused")
     public static InMemoryGraph create(Map config) {
         return create(new InMemoryGraphConfiguration(config));
     }
@@ -70,7 +91,8 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
                         getVisibility(),
                         getProperties(),
                         new InMemoryHistoricalPropertyValues(),
-                        getPropertyRemoves(),
+                        getPropertyDeletes(),
+                        getPropertySoftDeletes(),
                         null,
                         authorizations
                 );
@@ -89,8 +111,8 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
                     for (Property property : getProperties()) {
                         fireGraphEvent(new AddPropertyEvent(InMemoryGraph.this, vertex, property));
                     }
-                    for (PropertyRemoveMutation propertyRemoveMutation : getPropertyRemoves()) {
-                        fireGraphEvent(new RemovePropertyEvent(InMemoryGraph.this, vertex, propertyRemoveMutation));
+                    for (PropertyDeleteMutation propertyDeleteMutation : getPropertyDeletes()) {
+                        fireGraphEvent(new DeletePropertyEvent(InMemoryGraph.this, vertex, propertyDeleteMutation));
                     }
                 }
 
@@ -132,21 +154,42 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
     }
 
     @Override
-    public void removeVertex(Vertex vertex, Authorizations authorizations) {
+    public void deleteVertex(Vertex vertex, Authorizations authorizations) {
         if (!((InMemoryVertex) vertex).canRead(authorizations)) {
             return;
         }
 
-        List<Edge> edgesToRemove = IterableUtils.toList(vertex.getEdges(Direction.BOTH, authorizations));
-        for (Edge edgeToRemove : edgesToRemove) {
-            removeEdge(edgeToRemove, authorizations);
+        List<Edge> edgesToDelete = IterableUtils.toList(vertex.getEdges(Direction.BOTH, authorizations));
+        for (Edge edgeToDelete : edgesToDelete) {
+            deleteEdge(edgeToDelete, authorizations);
         }
 
         this.vertices.remove(vertex.getId());
-        getSearchIndex().removeElement(this, vertex, authorizations);
+        getSearchIndex().deleteElement(this, vertex, authorizations);
 
         if (hasEventListeners()) {
-            fireGraphEvent(new RemoveVertexEvent(this, vertex));
+            fireGraphEvent(new DeleteVertexEvent(this, vertex));
+        }
+    }
+
+    @Override
+    public void softDeleteVertex(Vertex vertex, Authorizations authorizations) {
+        if (!((InMemoryVertex) vertex).canRead(authorizations)) {
+            return;
+        }
+
+        List<Edge> edgesToSoftDelete = IterableUtils.toList(vertex.getEdges(Direction.BOTH, authorizations));
+        for (Edge edgeToSoftDelete : edgesToSoftDelete) {
+            softDeleteEdge(edgeToSoftDelete, authorizations);
+        }
+
+        this.vertices.remove(vertex.getId());
+        this.softDeletedVertices.put(vertex.getId(), (InMemoryVertex) vertex);
+
+        getSearchIndex().deleteElement(this, vertex, authorizations);
+
+        if (hasEventListeners()) {
+            fireGraphEvent(new SoftDeleteVertexEvent(this, vertex));
         }
     }
 
@@ -157,8 +200,8 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
         }
 
         List<Edge> edgesToMarkHidden = IterableUtils.toList(vertex.getEdges(Direction.BOTH, authorizations));
-        for (Edge edgeToRemove : edgesToMarkHidden) {
-            markEdgeHidden(edgeToRemove, visibility, authorizations);
+        for (Edge edgeToMarkHidden : edgesToMarkHidden) {
+            markEdgeHidden(edgeToMarkHidden, visibility, authorizations);
         }
 
         this.vertices.get(vertex.getId()).addHiddenVisibility(visibility);
@@ -283,7 +326,8 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
                 edgeBuilder.getVisibility(),
                 properties,
                 new InMemoryHistoricalPropertyValues(),
-                edgeBuilder.getPropertyRemoves(),
+                edgeBuilder.getPropertyDeletes(),
+                edgeBuilder.getPropertySoftDeletes(),
                 hiddenVisibilities,
                 authorizations
         );
@@ -298,8 +342,8 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
             for (Property property : edgeBuilder.getProperties()) {
                 fireGraphEvent(new AddPropertyEvent(InMemoryGraph.this, edge, property));
             }
-            for (PropertyRemoveMutation propertyRemoveMutation : edgeBuilder.getPropertyRemoves()) {
-                fireGraphEvent(new RemovePropertyEvent(InMemoryGraph.this, edge, propertyRemoveMutation));
+            for (PropertyDeleteMutation propertyDeleteMutation : edgeBuilder.getPropertyDeletes()) {
+                fireGraphEvent(new DeletePropertyEvent(InMemoryGraph.this, edge, propertyDeleteMutation));
             }
         }
 
@@ -339,16 +383,34 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
     }
 
     @Override
-    public void removeEdge(Edge edge, Authorizations authorizations) {
+    public void deleteEdge(Edge edge, Authorizations authorizations) {
+        checkNotNull(edge, "Edge cannot be null");
         if (!((InMemoryEdge) edge).canRead(authorizations)) {
             return;
         }
 
         this.edges.remove(edge.getId());
-        getSearchIndex().removeElement(this, edge, authorizations);
+        getSearchIndex().deleteElement(this, edge, authorizations);
 
         if (hasEventListeners()) {
-            fireGraphEvent(new RemoveEdgeEvent(this, edge));
+            fireGraphEvent(new DeleteEdgeEvent(this, edge));
+        }
+    }
+
+    @Override
+    public void softDeleteEdge(Edge edge, Authorizations authorizations) {
+        checkNotNull(edge, "Edge cannot be null");
+        if (!((InMemoryEdge) edge).canRead(authorizations)) {
+            return;
+        }
+
+        this.edges.remove(edge.getId());
+        this.softDeletedEdges.put(edge.getId(), (InMemoryEdge) edge);
+
+        getSearchIndex().deleteElement(this, edge, authorizations);
+
+        if (hasEventListeners()) {
+            fireGraphEvent(new SoftDeleteEdgeEvent(this, edge));
         }
     }
 
@@ -379,9 +441,9 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
         }
 
         Vertex inVertex = getVertex(edge.getVertexId(Direction.IN), authorizations);
-        Preconditions.checkNotNull(inVertex, "Could not find in vertex: " + edge.getVertexId(Direction.IN));
+        checkNotNull(inVertex, "Could not find in vertex: " + edge.getVertexId(Direction.IN));
         Vertex outVertex = getVertex(edge.getVertexId(Direction.OUT), authorizations);
-        Preconditions.checkNotNull(outVertex, "Could not find out vertex: " + edge.getVertexId(Direction.OUT));
+        checkNotNull(outVertex, "Could not find out vertex: " + edge.getVertexId(Direction.OUT));
 
         this.edges.get(edge.getId()).addHiddenVisibility(visibility);
         getSearchIndex().addElement(this, edge, authorizations);
@@ -398,9 +460,9 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
         }
 
         Vertex inVertex = getVertex(edge.getVertexId(Direction.IN), FetchHint.ALL_INCLUDING_HIDDEN, authorizations);
-        Preconditions.checkNotNull(inVertex, "Could not find in vertex: " + edge.getVertexId(Direction.IN));
+        checkNotNull(inVertex, "Could not find in vertex: " + edge.getVertexId(Direction.IN));
         Vertex outVertex = getVertex(edge.getVertexId(Direction.OUT), FetchHint.ALL_INCLUDING_HIDDEN, authorizations);
-        Preconditions.checkNotNull(outVertex, "Could not find out vertex: " + edge.getVertexId(Direction.OUT));
+        checkNotNull(outVertex, "Could not find out vertex: " + edge.getVertexId(Direction.OUT));
 
         this.edges.get(edge.getId()).removeHiddenVisibility(visibility);
         getSearchIndex().addElement(this, edge, authorizations);
@@ -422,9 +484,9 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
             @Override
             protected boolean isIncluded(InMemoryEdge src, Edge edge) {
                 String inVertexId = src.getVertexId(Direction.IN);
-                Preconditions.checkNotNull(inVertexId, "inVertexId was null");
+                checkNotNull(inVertexId, "inVertexId was null");
                 String outVertexId = src.getVertexId(Direction.OUT);
-                Preconditions.checkNotNull(outVertexId, "outVertexId was null");
+                checkNotNull(outVertexId, "outVertexId was null");
 
                 if (!inVertexId.equals(vertexId) && !outVertexId.equals(vertexId)) {
                     return false;
@@ -457,6 +519,7 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
 
     private boolean canRead(Visibility visibility, Authorizations authorizations) {
         // this is just a shortcut so that we don't need to construct evaluators and visibility objects to check for an empty string.
+        //noinspection SimplifiableIfStatement
         if (visibility.getVisibilityString().length() == 0) {
             return true;
         }
@@ -467,28 +530,39 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
     public void saveProperties(
             Element element,
             Iterable<Property> properties,
-            Iterable<PropertyRemoveMutation> propertyRemoves,
+            Iterable<PropertyDeleteMutation> propertyDeleteMutations,
+            Iterable<PropertySoftDeleteMutation> propertySoftDeleteMutations,
             IndexHint indexHint,
             Authorizations authorizations
     ) {
         if (element instanceof Vertex) {
             InMemoryVertex vertex = vertices.get(element.getId());
-            vertex.updatePropertiesInternal(properties, propertyRemoves);
+            vertex.updatePropertiesInternal(properties, propertyDeleteMutations, propertySoftDeleteMutations);
         } else if (element instanceof Edge) {
             InMemoryEdge edge = edges.get(element.getId());
-            edge.updatePropertiesInternal(properties, propertyRemoves);
+            edge.updatePropertiesInternal(properties, propertyDeleteMutations, propertySoftDeleteMutations);
         } else {
             throw new IllegalArgumentException("Unexpected element type: " + element.getClass().getName());
         }
 
         if (indexHint != IndexHint.DO_NOT_INDEX) {
-            for (PropertyRemoveMutation propertyRemoveMutation : propertyRemoves) {
-                getSearchIndex().removeProperty(
+            for (PropertyDeleteMutation propertyDeleteMutation : propertyDeleteMutations) {
+                getSearchIndex().deleteProperty(
                         this,
                         element,
-                        propertyRemoveMutation.getKey(),
-                        propertyRemoveMutation.getName(),
-                        propertyRemoveMutation.getVisibility(),
+                        propertyDeleteMutation.getKey(),
+                        propertyDeleteMutation.getName(),
+                        propertyDeleteMutation.getVisibility(),
+                        authorizations
+                );
+            }
+            for (PropertySoftDeleteMutation propertySoftDeleteMutation : propertySoftDeleteMutations) {
+                getSearchIndex().deleteProperty(
+                        this,
+                        element,
+                        propertySoftDeleteMutation.getKey(),
+                        propertySoftDeleteMutation.getName(),
+                        propertySoftDeleteMutation.getVisibility(),
                         authorizations
                 );
             }
@@ -505,13 +579,16 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
             for (Property property : properties) {
                 fireGraphEvent(new AddPropertyEvent(InMemoryGraph.this, inMemoryElement, property));
             }
-            for (PropertyRemoveMutation propertyRemoveMutation : propertyRemoves) {
-                fireGraphEvent(new RemovePropertyEvent(InMemoryGraph.this, inMemoryElement, propertyRemoveMutation));
+            for (PropertyDeleteMutation propertyDeleteMutation : propertyDeleteMutations) {
+                fireGraphEvent(new DeletePropertyEvent(InMemoryGraph.this, inMemoryElement, propertyDeleteMutation));
+            }
+            for (PropertySoftDeleteMutation propertySoftDeleteMutation : propertySoftDeleteMutations) {
+                fireGraphEvent(new SoftDeletePropertyEvent(InMemoryGraph.this, inMemoryElement, propertySoftDeleteMutation));
             }
         }
     }
 
-    public void removeProperty(Element element, Property property, Authorizations authorizations) {
+    public void deleteProperty(Element element, Property property, Authorizations authorizations) {
         if (element instanceof Vertex) {
             InMemoryVertex vertex = vertices.get(element.getId());
             vertex.removePropertyInternal(property.getKey(), property.getName());
@@ -521,10 +598,27 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
         } else {
             throw new IllegalArgumentException("Unexpected element type: " + element.getClass().getName());
         }
-        getSearchIndex().removeProperty(this, element, property, authorizations);
+        getSearchIndex().deleteProperty(this, element, property, authorizations);
 
         if (hasEventListeners()) {
-            fireGraphEvent(new RemovePropertyEvent(this, element, property));
+            fireGraphEvent(new DeletePropertyEvent(this, element, property));
+        }
+    }
+
+    public void softDeleteProperty(Element element, Property property, Authorizations authorizations) {
+        if (element instanceof Vertex) {
+            InMemoryVertex vertex = vertices.get(element.getId());
+            vertex.softDeletePropertyInternal(property.getKey(), property.getName());
+        } else if (element instanceof Edge) {
+            InMemoryEdge edge = edges.get(element.getId());
+            edge.softDeletePropertyInternal(property.getKey(), property.getName());
+        } else {
+            throw new IllegalArgumentException("Unexpected element type: " + element.getClass().getName());
+        }
+        getSearchIndex().deleteProperty(this, element, property, authorizations);
+
+        if (hasEventListeners()) {
+            fireGraphEvent(new SoftDeletePropertyEvent(this, element, property));
         }
     }
 
@@ -545,7 +639,8 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
                 visibility,
                 properties,
                 edge.getHistoricalPropertyValues(),
-                edge.getPropertyRemoveMutations(),
+                edge.getPropertyDeleteMutations(),
+                edge.getPropertySoftDeleteMutations(),
                 hiddenVisibilities,
                 authorizations
         );
@@ -562,7 +657,8 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
                 visibility,
                 properties,
                 vertex.getHistoricalPropertyValues(),
-                vertex.getPropertyRemoveMutations(),
+                vertex.getPropertyDeleteMutations(),
+                vertex.getPropertySoftDeleteMutations(),
                 hiddenVisibilities,
                 authorizations
         );
@@ -613,7 +709,7 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
             Object value = property.getValue();
             Metadata metadata = property.getMetadata();
 
-            element.removeProperty(apv.getKey(), apv.getName(), authorizations);
+            element.deleteProperty(apv.getKey(), apv.getName(), authorizations);
             element.addPropertyValue(apv.getKey(), apv.getName(), value, metadata, apv.getVisibility(), authorizations);
         }
     }

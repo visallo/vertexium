@@ -1,9 +1,9 @@
 package org.vertexium.inmemory;
 
 import org.vertexium.*;
-import org.vertexium.*;
 import org.vertexium.mutation.ExistingEdgeMutation;
-import org.vertexium.mutation.PropertyRemoveMutation;
+import org.vertexium.mutation.PropertyDeleteMutation;
+import org.vertexium.mutation.PropertySoftDeleteMutation;
 
 import java.util.EnumSet;
 
@@ -21,11 +21,22 @@ public class InMemoryEdge extends InMemoryElement implements Edge {
             Visibility visibility,
             Iterable<Property> properties,
             InMemoryHistoricalPropertyValues historicalPropertyValues,
-            Iterable<PropertyRemoveMutation> propertyRemoveMutations,
+            Iterable<PropertyDeleteMutation> propertyDeleteMutations,
+            Iterable<PropertySoftDeleteMutation> propertySoftDeleteMutations,
             Iterable<Visibility> hiddenVisibilities,
             Authorizations authorizations
     ) {
-        super(graph, edgeId, visibility, properties, historicalPropertyValues, propertyRemoveMutations, hiddenVisibilities, authorizations);
+        super(
+                graph,
+                edgeId,
+                visibility,
+                properties,
+                historicalPropertyValues,
+                propertyDeleteMutations,
+                propertySoftDeleteMutations,
+                hiddenVisibilities,
+                authorizations
+        );
         this.outVertexId = outVertexId;
         this.inVertexId = inVertexId;
         this.label = label;

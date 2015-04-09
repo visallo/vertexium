@@ -4,12 +4,12 @@ import org.vertexium.*;
 import org.vertexium.inmemory.util.EdgeToEdgeIdIterable;
 import org.vertexium.mutation.ExistingElementMutation;
 import org.vertexium.mutation.ExistingElementMutationImpl;
-import org.vertexium.mutation.PropertyRemoveMutation;
+import org.vertexium.mutation.PropertyDeleteMutation;
+import org.vertexium.mutation.PropertySoftDeleteMutation;
 import org.vertexium.query.VertexQuery;
 import org.vertexium.util.ConvertingIterable;
 import org.vertexium.util.FilterIterable;
 import org.vertexium.util.IterableUtils;
-import org.vertexium.*;
 
 import java.util.EnumSet;
 
@@ -20,11 +20,22 @@ public class InMemoryVertex extends InMemoryElement implements Vertex {
             Visibility visibility,
             Iterable<Property> properties,
             InMemoryHistoricalPropertyValues historicalPropertyValues,
-            Iterable<PropertyRemoveMutation> propertyRemoveMutations,
+            Iterable<PropertyDeleteMutation> propertyDeleteMutations,
+            Iterable<PropertySoftDeleteMutation> propertySoftDeleteMutations,
             Iterable<Visibility> hiddenVisibilities,
             Authorizations authorizations
     ) {
-        super(graph, id, visibility, properties, historicalPropertyValues, propertyRemoveMutations, hiddenVisibilities, authorizations);
+        super(
+                graph,
+                id,
+                visibility,
+                properties,
+                historicalPropertyValues,
+                propertyDeleteMutations,
+                propertySoftDeleteMutations,
+                hiddenVisibilities,
+                authorizations
+        );
     }
 
     @Override

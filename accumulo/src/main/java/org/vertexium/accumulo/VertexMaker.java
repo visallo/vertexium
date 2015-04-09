@@ -6,6 +6,8 @@ import org.apache.hadoop.io.Text;
 import org.vertexium.Authorizations;
 import org.vertexium.Vertex;
 import org.vertexium.VertexiumException;
+import org.vertexium.mutation.PropertyDeleteMutation;
+import org.vertexium.mutation.PropertySoftDeleteMutation;
 
 import java.util.*;
 
@@ -77,12 +79,15 @@ public class VertexMaker extends ElementMaker<Vertex> {
             }
         }
 
+        Iterable<PropertyDeleteMutation> propertyDeleteMutations = null;
+        Iterable<PropertySoftDeleteMutation> propertySoftDeleteMutations = null;
         return new AccumuloVertex(
                 this.graph,
                 this.getId(),
                 this.getVisibility(),
                 this.getProperties(includeHidden),
-                null,
+                propertyDeleteMutations,
+                propertySoftDeleteMutations,
                 this.getHiddenVisibilities(),
                 this.inEdges,
                 this.outEdges,

@@ -69,19 +69,34 @@ public interface ExistingElementMutation<T extends Element> extends ElementMutat
     ExistingElementMutation<T> setPropertyMetadata(String propertyName, String metadataName, Object newValue, Visibility visibility);
 
     /**
-     * Removes all default properties with that name irregardless of visibility.
+     * Permanently deletes all default properties with that name irregardless of visibility.
      *
-     * @param name the property name to remove.
+     * @param name the property name to delete.
      */
-    ExistingElementMutation<T> removeProperties(String name);
+    ExistingElementMutation<T> deleteProperties(String name);
 
     /**
-     * Removes all properties with this key and name irregardless of visibility.
+     * Permanently deletes all properties with this key and name irregardless of visibility.
      *
-     * @param key  the key of the property to remove.
-     * @param name the name of the property to remove.
+     * @param key  the key of the property to delete.
+     * @param name the name of the property to delete.
      */
-    ExistingElementMutation<T> removeProperties(String key, String name);
+    ExistingElementMutation<T> deleteProperties(String key, String name);
+
+    /**
+     * Soft deletes all default properties with that name irregardless of visibility.
+     *
+     * @param name the property name to delete.
+     */
+    ExistingElementMutation<T> softDeleteProperties(String name);
+
+    /**
+     * Soft deletes all properties with this key and name irregardless of visibility.
+     *
+     * @param key  the key of the property to delete.
+     * @param name the name of the property to delete.
+     */
+    ExistingElementMutation<T> softDeleteProperties(String key, String name);
 
     /**
      * Gets the element this mutation is affecting.

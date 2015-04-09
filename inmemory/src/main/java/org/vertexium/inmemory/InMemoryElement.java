@@ -3,12 +3,12 @@ package org.vertexium.inmemory;
 import org.vertexium.*;
 import org.vertexium.mutation.EdgeMutation;
 import org.vertexium.mutation.ExistingElementMutationImpl;
-import org.vertexium.mutation.PropertyRemoveMutation;
+import org.vertexium.mutation.PropertyDeleteMutation;
+import org.vertexium.mutation.PropertySoftDeleteMutation;
 import org.vertexium.property.MutableProperty;
 import org.vertexium.property.PropertyValue;
 import org.vertexium.property.StreamingPropertyValue;
 import org.vertexium.util.StreamUtils;
-import org.vertexium.*;
 
 import java.io.IOException;
 
@@ -21,30 +21,59 @@ public abstract class InMemoryElement extends ElementBase {
             Visibility visibility,
             Iterable<Property> properties,
             InMemoryHistoricalPropertyValues historicalPropertyValues,
-            Iterable<PropertyRemoveMutation> propertyRemoveMutations,
+            Iterable<PropertyDeleteMutation> propertyDeleteMutations,
+            Iterable<PropertySoftDeleteMutation> propertySoftDeleteMutations,
             Iterable<Visibility> hiddenVisibilities,
             Authorizations authorizations
     ) {
-        super(graph, id, visibility, properties, propertyRemoveMutations, hiddenVisibilities, authorizations);
+        super(graph, id, visibility, properties, propertyDeleteMutations, propertySoftDeleteMutations, hiddenVisibilities, authorizations);
         if (this.historicalPropertyValues == null) {
             this.historicalPropertyValues = new InMemoryHistoricalPropertyValues();
         }
         this.historicalPropertyValues.update(historicalPropertyValues);
     }
 
+    public Property removePropertyInternal(String key, String name) {
+        return super.removePropertyInternal(key, name);
+    }
+
+    public Property softDeletePropertyInternal(String key, String name) {
+        return super.softDeletePropertyInternal(key, name);
+    }
+
+    public Iterable<Property> softDeletePropertyInternal(String name) {
+        return super.softDeletePropertyInternal(name);
+    }
+
     @Override
-    public void removeProperty(String key, String name, Authorizations authorizations) {
+    public void deleteProperty(String key, String name, Authorizations authorizations) {
         Property property = removePropertyInternal(key, name);
         if (property != null) {
-            getGraph().removeProperty(this, property, authorizations);
+            getGraph().deleteProperty(this, property, authorizations);
         }
     }
 
     @Override
-    public void removeProperty(String name, Authorizations authorizations) {
+    public void deleteProperties(String name, Authorizations authorizations) {
         Iterable<Property> properties = removePropertyInternal(name);
         for (Property property : properties) {
-            getGraph().removeProperty(this, property, authorizations);
+            getGraph().deleteProperty(this, property, authorizations);
+        }
+    }
+
+    @Override
+    public void softDeleteProperty(String key, String name, Authorizations authorizations) {
+        Property property = softDeletePropertyInternal(key, name);
+        if (property != null) {
+            getGraph().softDeleteProperty(this, property, authorizations);
+        }
+    }
+
+    @Override
+    public void softDeleteProperties(String name, Authorizations authorizations) {
+        Iterable<Property> properties = softDeletePropertyInternal(name);
+        for (Property property : properties) {
+            getGraph().softDeleteProperty(this, property, authorizations);
         }
     }
 
@@ -64,7 +93,11 @@ public abstract class InMemoryElement extends ElementBase {
     }
 
     @Override
-    protected void updatePropertiesInternal(Iterable<Property> properties, Iterable<PropertyRemoveMutation> propertyRemoveMutations) {
+    protected void updatePropertiesInternal(
+            Iterable<Property> properties,
+            Iterable<PropertyDeleteMutation> propertyDeleteMutations,
+            Iterable<PropertySoftDeleteMutation> propertySoftDeleteMutations
+    ) {
         try {
             for (Property property : properties) {
                 if (property.getValue() instanceof StreamingPropertyValue) {
@@ -73,27 +106,25 @@ public abstract class InMemoryElement extends ElementBase {
                     ((MutableProperty) property).setValue(new InMemoryStreamingPropertyValue(valueData, value.getValueType()));
                 }
             }
-            super.updatePropertiesInternal(properties, propertyRemoveMutations);
+            super.updatePropertiesInternal(properties, propertyDeleteMutations, propertySoftDeleteMutations);
         } catch (IOException ex) {
             throw new VertexiumException(ex);
         }
     }
 
-    @Override
-    protected Iterable<Property> removePropertyInternal(String name) {
-        return super.removePropertyInternal(name);
-    }
-
-    @Override
-    protected Property removePropertyInternal(String key, String name) {
-        return super.removePropertyInternal(key, name);
-    }
-
     protected <TElement extends Element> void saveExistingElementMutation(ExistingElementMutationImpl<TElement> mutation, Authorizations authorizations) {
         Iterable<Property> properties = mutation.getProperties();
-        Iterable<PropertyRemoveMutation> propertyRemoves = mutation.getPropertyRemoves();
-        updatePropertiesInternal(properties, propertyRemoves);
-        getGraph().saveProperties(mutation.getElement(), properties, propertyRemoves, mutation.getIndexHint(), authorizations);
+        Iterable<PropertyDeleteMutation> propertyDeleteMutations = mutation.getPropertyDeletes();
+        Iterable<PropertySoftDeleteMutation> propertySoftDeleteMutations = mutation.getPropertySoftDeletes();
+        updatePropertiesInternal(properties, propertyDeleteMutations, propertySoftDeleteMutations);
+        getGraph().saveProperties(
+                mutation.getElement(),
+                properties,
+                propertyDeleteMutations,
+                propertySoftDeleteMutations,
+                mutation.getIndexHint(),
+                authorizations
+        );
 
         if (mutation.getElement() instanceof Edge) {
             if (mutation.getNewElementVisibility() != null) {
@@ -132,11 +163,12 @@ public abstract class InMemoryElement extends ElementBase {
 
     public boolean canRead(Authorizations authorizations) {
         // this is just a shortcut so that we don't need to construct evaluators and visibility objects to check for an empty string.
-        if (getVisibility().getVisibilityString().length() > 0 && !authorizations.canRead(getVisibility())) {
-            return false;
+        //noinspection SimplifiableIfStatement
+        if (getVisibility().getVisibilityString().length() == 0) {
+            return true;
         }
 
-        return true;
+        return authorizations.canRead(getVisibility());
     }
 
     void markPropertyHiddenInternal(Property property, Visibility visibility) {
@@ -156,7 +188,11 @@ public abstract class InMemoryElement extends ElementBase {
     }
 
     protected void updateExisting(InMemoryVertex newVertex) {
-        updatePropertiesInternal(newVertex.getProperties(), newVertex.getPropertyRemoveMutations());
+        updatePropertiesInternal(
+                newVertex.getProperties(),
+                newVertex.getPropertyDeleteMutations(),
+                newVertex.getPropertySoftDeleteMutations()
+        );
     }
 
     @Override

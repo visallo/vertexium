@@ -24,7 +24,6 @@ import org.vertexium.search.SearchIndex;
 import org.vertexium.type.GeoPoint;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.vertexium.*;
 import org.vertexium.util.IterableUtils;
 import org.vertexium.util.Preconditions;
 
@@ -298,15 +297,15 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex {
     public abstract void addElement(Graph graph, Element element, Authorizations authorizations);
 
     @Override
-    public abstract void removeElement(Graph graph, Element element, Authorizations authorizations);
+    public abstract void deleteElement(Graph graph, Element element, Authorizations authorizations);
 
     @Override
-    public void removeProperty(Graph graph, Element element, Property property, Authorizations authorizations) {
-        removeProperty(graph, element, property.getKey(), property.getName(), property.getVisibility(), authorizations);
+    public void deleteProperty(Graph graph, Element element, Property property, Authorizations authorizations) {
+        deleteProperty(graph, element, property.getKey(), property.getName(), property.getVisibility(), authorizations);
     }
 
     @Override
-    public void removeProperty(Graph graph, Element element, String propertyKey, String propertyName, Visibility propertyVisibility, Authorizations authorizations) {
+    public void deleteProperty(Graph graph, Element element, String propertyKey, String propertyName, Visibility propertyVisibility, Authorizations authorizations) {
         addElement(graph, element, authorizations);
     }
 

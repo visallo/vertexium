@@ -5,7 +5,6 @@ import org.vertexium.accumulo.AccumuloAuthorizations;
 import org.vertexium.id.IdGenerator;
 import org.vertexium.query.GraphQuery;
 import org.vertexium.query.MultiVertexQuery;
-import org.vertexium.*;
 
 import java.util.EnumSet;
 
@@ -27,7 +26,17 @@ public class ElementMapperGraph extends GraphBase {
     }
 
     @Override
-    public void removeVertex(Vertex vertex, Authorizations authorizations) {
+    public void deleteVertex(Vertex vertex, Authorizations authorizations) {
+        throw new VertexiumException("Not supported");
+    }
+
+    @Override
+    public void softDeleteVertex(Vertex vertex, Authorizations authorizations) {
+        throw new VertexiumException("Not supported");
+    }
+
+    @Override
+    public void softDeleteEdge(Edge edge, Authorizations authorizations) {
         throw new VertexiumException("Not supported");
     }
 
@@ -47,7 +56,7 @@ public class ElementMapperGraph extends GraphBase {
     }
 
     @Override
-    public void removeEdge(Edge edge, Authorizations authorizations) {
+    public void deleteEdge(Edge edge, Authorizations authorizations) {
         throw new VertexiumException("Not supported");
     }
 

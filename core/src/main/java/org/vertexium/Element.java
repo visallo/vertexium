@@ -178,20 +178,38 @@ public interface Element {
     <T extends Element> ExistingElementMutation<T> prepareMutation();
 
     /**
-     * Removes a property given it's key and name from the element. Only properties which you have access to can be removed using
-     * this method.
+     * Permanently deletes a property given it's key and name from the element. Only properties which you have access
+     * to can be deleted using this method.
      *
      * @param key  The property key.
      * @param name The property name.
      */
-    void removeProperty(String key, String name, Authorizations authorizations);
+    void deleteProperty(String key, String name, Authorizations authorizations);
 
     /**
-     * Removes all properties with the given name that you have access to. Only properties which you have access to will be removed.
+     * Permanently deletes all properties with the given name that you have access to. Only properties which you have
+     * access to will be deleted.
      *
-     * @param name The name of the property to remove.
+     * @param name The name of the property to delete.
      */
-    void removeProperty(String name, Authorizations authorizations);
+    void deleteProperties(String name, Authorizations authorizations);
+
+    /**
+     * Soft deletes a property given it's key and name from the element. Only properties which you have access
+     * to can be soft deleted using this method.
+     *
+     * @param key  The property key.
+     * @param name The property name.
+     */
+    void softDeleteProperty(String key, String name, Authorizations authorizations);
+
+    /**
+     * Soft deletes all properties with the given name that you have access to. Only properties which you have
+     * access to will be soft deleted.
+     *
+     * @param name The name of the property to delete.
+     */
+    void softDeleteProperties(String name, Authorizations authorizations);
 
     /**
      * Gets the graph that this element belongs to.

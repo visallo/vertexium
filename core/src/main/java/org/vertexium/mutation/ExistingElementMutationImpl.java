@@ -1,7 +1,6 @@
 package org.vertexium.mutation;
 
 import org.vertexium.*;
-import org.vertexium.*;
 import org.vertexium.property.MutablePropertyImpl;
 import org.vertexium.search.IndexHint;
 import org.vertexium.util.Preconditions;
@@ -9,11 +8,10 @@ import org.vertexium.util.Preconditions;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.vertexium.util.Preconditions.checkNotNull;
-
 public abstract class ExistingElementMutationImpl<T extends Element> implements ElementMutation<T>, ExistingElementMutation<T> {
     private final List<Property> properties = new ArrayList<>();
-    private final List<PropertyRemoveMutation> propertyRemoves = new ArrayList<>();
+    private final List<PropertyDeleteMutation> propertyDeletes = new ArrayList<>();
+    private final List<PropertySoftDeleteMutation> propertySoftDeletes = new ArrayList<>();
     private Visibility newElementVisibility;
     private final List<AlterPropertyVisibility> alterPropertyVisibilities = new ArrayList<>();
     private final List<SetPropertyMetadata> setPropertyMetadatas = new ArrayList<>();
@@ -55,47 +53,93 @@ public abstract class ExistingElementMutationImpl<T extends Element> implements 
     }
 
     @Override
-    public Iterable<PropertyRemoveMutation> getPropertyRemoves() {
-        return propertyRemoves;
+    public Iterable<PropertyDeleteMutation> getPropertyDeletes() {
+        return propertyDeletes;
     }
 
     @Override
-    public ElementMutation<T> removeProperty(Property property) {
+    public Iterable<PropertySoftDeleteMutation> getPropertySoftDeletes() {
+        return propertySoftDeletes;
+    }
+
+    @Override
+    public ElementMutation<T> deleteProperty(Property property) {
         Preconditions.checkNotNull(property, "property cannot be null");
-        propertyRemoves.add(new PropertyPropertyRemoveMutation(property));
+        propertyDeletes.add(new PropertyPropertyDeleteMutation(property));
         return this;
     }
 
     @Override
-    public ExistingElementMutation<T> removeProperties(String name) {
+    public ExistingElementMutation<T> deleteProperties(String name) {
         for (Property prop : this.element.getProperties(name)) {
-            removeProperty(prop);
+            deleteProperty(prop);
         }
         return this;
     }
 
     @Override
-    public ExistingElementMutation<T> removeProperties(String key, String name) {
+    public ExistingElementMutation<T> deleteProperties(String key, String name) {
         for (Property prop : this.element.getProperties(key, name)) {
-            removeProperty(prop);
+            deleteProperty(prop);
         }
         return this;
     }
 
     @Override
-    public ElementMutation<T> removeProperty(String name, Visibility visibility) {
+    public ElementMutation<T> deleteProperty(String name, Visibility visibility) {
         Property property = this.element.getProperty(name, visibility);
         if (property != null) {
-            removeProperty(property);
+            deleteProperty(property);
         }
         return this;
     }
 
     @Override
-    public ElementMutation<T> removeProperty(String key, String name, Visibility visibility) {
+    public ElementMutation<T> deleteProperty(String key, String name, Visibility visibility) {
         Property property = this.element.getProperty(key, name, visibility);
         if (property != null) {
-            removeProperty(property);
+            deleteProperty(property);
+        }
+        return this;
+    }
+
+    @Override
+    public ElementMutation<T> softDeleteProperty(Property property) {
+        Preconditions.checkNotNull(property, "property cannot be null");
+        propertySoftDeletes.add(new PropertyPropertySoftDeleteMutation(property));
+        return this;
+    }
+
+    @Override
+    public ExistingElementMutation<T> softDeleteProperties(String name) {
+        for (Property prop : this.element.getProperties(name)) {
+            softDeleteProperty(prop);
+        }
+        return this;
+    }
+
+    @Override
+    public ExistingElementMutation<T> softDeleteProperties(String key, String name) {
+        for (Property prop : this.element.getProperties(key, name)) {
+            softDeleteProperty(prop);
+        }
+        return this;
+    }
+
+    @Override
+    public ElementMutation<T> softDeleteProperty(String name, Visibility visibility) {
+        Property property = this.element.getProperty(name, visibility);
+        if (property != null) {
+            softDeleteProperty(property);
+        }
+        return this;
+    }
+
+    @Override
+    public ElementMutation<T> softDeleteProperty(String key, String name, Visibility visibility) {
+        Property property = this.element.getProperty(key, name, visibility);
+        if (property != null) {
+            softDeleteProperty(property);
         }
         return this;
     }

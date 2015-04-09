@@ -3,10 +3,10 @@ package org.vertexium.event;
 import org.vertexium.Graph;
 import org.vertexium.Vertex;
 
-public class RemoveVertexEvent extends GraphEvent {
+public class DeleteVertexEvent extends GraphEvent {
     private final Vertex vertex;
 
-    public RemoveVertexEvent(Graph graph, Vertex vertex) {
+    public DeleteVertexEvent(Graph graph, Vertex vertex) {
         super(graph);
         this.vertex = vertex;
     }
@@ -17,7 +17,7 @@ public class RemoveVertexEvent extends GraphEvent {
 
     @Override
     public String toString() {
-        return "RemoveVertexEvent{vertex=" + vertex + '}';
+        return this.getClass().getSimpleName() + "{vertex=" + vertex + '}';
     }
 
     @Override
@@ -27,11 +27,11 @@ public class RemoveVertexEvent extends GraphEvent {
 
     @Override
     public boolean equals(Object obj) {
-        if (!(obj instanceof RemoveVertexEvent)) {
+        if (!(obj instanceof DeleteVertexEvent)) {
             return false;
         }
 
-        RemoveVertexEvent other = (RemoveVertexEvent) obj;
+        DeleteVertexEvent other = (DeleteVertexEvent) obj;
         return getVertex().equals(other.getVertex()) && super.equals(obj);
     }
 }

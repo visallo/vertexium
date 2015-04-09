@@ -3,10 +3,10 @@ package org.vertexium.event;
 import org.vertexium.Edge;
 import org.vertexium.Graph;
 
-public class RemoveEdgeEvent extends GraphEvent {
+public class SoftDeleteEdgeEvent extends GraphEvent {
     private final Edge edge;
 
-    public RemoveEdgeEvent(Graph graph, Edge edge) {
+    public SoftDeleteEdgeEvent(Graph graph, Edge edge) {
         super(graph);
         this.edge = edge;
     }
@@ -17,7 +17,7 @@ public class RemoveEdgeEvent extends GraphEvent {
 
     @Override
     public String toString() {
-        return "RemoveEdgeEvent{edge=" + edge + '}';
+        return this.getClass().getSimpleName() + "{edge=" + edge + '}';
     }
 
     @Override
@@ -27,11 +27,11 @@ public class RemoveEdgeEvent extends GraphEvent {
 
     @Override
     public boolean equals(Object obj) {
-        if (!(obj instanceof RemoveEdgeEvent)) {
+        if (!(obj instanceof SoftDeleteEdgeEvent)) {
             return false;
         }
 
-        RemoveEdgeEvent other = (RemoveEdgeEvent) obj;
+        SoftDeleteEdgeEvent other = (SoftDeleteEdgeEvent) obj;
         return getEdge().equals(other.getEdge()) && super.equals(obj);
     }
 }

@@ -5,8 +5,8 @@ import org.apache.hadoop.io.Text;
 import org.vertexium.*;
 import org.vertexium.mutation.EdgeMutation;
 import org.vertexium.mutation.ExistingElementMutationImpl;
-import org.vertexium.mutation.PropertyRemoveMutation;
-import org.vertexium.*;
+import org.vertexium.mutation.PropertyDeleteMutation;
+import org.vertexium.mutation.PropertySoftDeleteMutation;
 
 import java.io.Serializable;
 
@@ -14,9 +14,13 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
     private static final long serialVersionUID = 1L;
     public static final Text CF_HIDDEN = new Text("H");
     public static final Text CQ_HIDDEN = new Text("H");
+    public static final Text CF_SOFT_DELETE = new Text("D");
+    public static final Text CQ_SOFT_DELETE = new Text("D");
     public static final Value HIDDEN_VALUE = new Value("".getBytes());
+    public static final Value SOFT_DELETE_VALUE = new Value("".getBytes());
     public static final Text CF_PROPERTY = new Text("PROP");
     public static final Text CF_PROPERTY_HIDDEN = new Text("PROPH");
+    public static final Text CF_PROPERTY_SOFT_DELETE = new Text("PROPD");
     public static final Text CF_PROPERTY_METADATA = new Text("PROPMETA");
     private final long timestamp;
 
@@ -25,28 +29,54 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
             String id,
             Visibility visibility,
             Iterable<Property> properties,
-            Iterable<PropertyRemoveMutation> propertyRemoveMutations,
+            Iterable<PropertyDeleteMutation> propertyDeleteMutations,
+            Iterable<PropertySoftDeleteMutation> propertySoftDeleteMutations,
             Iterable<Visibility> hiddenVisibilities,
             Authorizations authorizations,
             long timestamp
     ) {
-        super(graph, id, visibility, properties, propertyRemoveMutations, hiddenVisibilities, authorizations);
+        super(
+                graph,
+                id,
+                visibility,
+                properties,
+                propertyDeleteMutations,
+                propertySoftDeleteMutations,
+                hiddenVisibilities,
+                authorizations
+        );
         this.timestamp = timestamp;
     }
 
     @Override
-    public void removeProperty(String key, String name, Authorizations authorizations) {
+    public void deleteProperty(String key, String name, Authorizations authorizations) {
         Property property = super.removePropertyInternal(key, name);
         if (property != null) {
-            getGraph().removeProperty(this, property, authorizations);
+            getGraph().deleteProperty(this, property, authorizations);
         }
     }
 
     @Override
-    public void removeProperty(String name, Authorizations authorizations) {
+    public void softDeleteProperty(String key, String name, Authorizations authorizations) {
+        Property property = super.removePropertyInternal(key, name);
+        if (property != null) {
+            getGraph().softDeleteProperty(this, property, authorizations);
+        }
+    }
+
+    @Override
+    public void deleteProperties(String name, Authorizations authorizations) {
         Iterable<Property> properties = super.removePropertyInternal(name);
         for (Property property : properties) {
-            getGraph().removeProperty(this, property, authorizations);
+            getGraph().deleteProperty(this, property, authorizations);
+        }
+    }
+
+    @Override
+    public void softDeleteProperties(String name, Authorizations authorizations) {
+        Iterable<Property> properties = super.removePropertyInternal(name);
+        for (Property property : properties) {
+            getGraph().softDeleteProperty(this, property, authorizations);
         }
     }
 
@@ -74,10 +104,18 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
         // altering properties comes next because alterElementVisibility may alter the vertex and we won't find it
         getGraph().alterElementPropertyVisibilities((AccumuloElement) mutation.getElement(), mutation.getAlterPropertyVisibilities());
 
-        Iterable<PropertyRemoveMutation> propertyRemoves = mutation.getPropertyRemoves();
+        Iterable<PropertyDeleteMutation> propertyDeletes = mutation.getPropertyDeletes();
+        Iterable<PropertySoftDeleteMutation> propertySoftDeletes = mutation.getPropertySoftDeletes();
         Iterable<Property> properties = mutation.getProperties();
-        updatePropertiesInternal(properties, propertyRemoves);
-        getGraph().saveProperties((AccumuloElement) mutation.getElement(), properties, propertyRemoves, mutation.getIndexHint(), authorizations);
+        updatePropertiesInternal(properties, propertyDeletes, propertySoftDeletes);
+        getGraph().saveProperties(
+                (AccumuloElement) mutation.getElement(),
+                properties,
+                propertyDeletes,
+                propertySoftDeletes,
+                mutation.getIndexHint(),
+                authorizations
+        );
 
         if (mutation.getNewElementVisibility() != null) {
             getGraph().alterElementVisibility((AccumuloElement) mutation.getElement(), mutation.getNewElementVisibility());

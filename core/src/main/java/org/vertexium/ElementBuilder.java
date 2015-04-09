@@ -1,9 +1,6 @@
 package org.vertexium;
 
-import org.vertexium.mutation.ElementMutation;
-import org.vertexium.mutation.KeyNameVisibilityPropertyRemoveMutation;
-import org.vertexium.mutation.PropertyPropertyRemoveMutation;
-import org.vertexium.mutation.PropertyRemoveMutation;
+import org.vertexium.mutation.*;
 import org.vertexium.property.MutablePropertyImpl;
 import org.vertexium.search.IndexHint;
 import org.vertexium.util.Preconditions;
@@ -11,11 +8,10 @@ import org.vertexium.util.Preconditions;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.vertexium.util.Preconditions.checkNotNull;
-
 public abstract class ElementBuilder<T extends Element> implements ElementMutation<T> {
     private final List<Property> properties = new ArrayList<>();
-    private final List<PropertyRemoveMutation> propertyRemoves = new ArrayList<>();
+    private final List<PropertyDeleteMutation> propertyDeletes = new ArrayList<>();
+    private final List<PropertySoftDeleteMutation> propertySoftDeletes = new ArrayList<>();
     private IndexHint indexHint = IndexHint.INDEX;
 
     /**
@@ -92,18 +88,39 @@ public abstract class ElementBuilder<T extends Element> implements ElementMutati
         return this;
     }
 
-    public ElementBuilder<T> removeProperty(Property property) {
-        propertyRemoves.add(new PropertyPropertyRemoveMutation(property));
+    @Override
+    public ElementBuilder<T> deleteProperty(Property property) {
+        propertyDeletes.add(new PropertyPropertyDeleteMutation(property));
         return this;
     }
 
-    public ElementBuilder<T> removeProperty(String name, Visibility visibility) {
-        return removeProperty(ElementMutation.DEFAULT_KEY, name, visibility);
+    @Override
+    public ElementBuilder<T> deleteProperty(String name, Visibility visibility) {
+        return deleteProperty(ElementMutation.DEFAULT_KEY, name, visibility);
     }
 
-    public ElementBuilder<T> removeProperty(String key, String name, Visibility visibility) {
+    @Override
+    public ElementBuilder<T> deleteProperty(String key, String name, Visibility visibility) {
         Preconditions.checkNotNull(name, "property name cannot be null for property: " + name + ":" + key);
-        propertyRemoves.add(new KeyNameVisibilityPropertyRemoveMutation(key, name, visibility));
+        propertyDeletes.add(new KeyNameVisibilityPropertyDeleteMutation(key, name, visibility));
+        return this;
+    }
+
+    @Override
+    public ElementBuilder<T> softDeleteProperty(Property property) {
+        propertySoftDeletes.add(new PropertyPropertySoftDeleteMutation(property));
+        return this;
+    }
+
+    @Override
+    public ElementBuilder<T> softDeleteProperty(String name, Visibility visibility) {
+        return softDeleteProperty(ElementMutation.DEFAULT_KEY, name, visibility);
+    }
+
+    @Override
+    public ElementBuilder<T> softDeleteProperty(String key, String name, Visibility visibility) {
+        Preconditions.checkNotNull(name, "property name cannot be null for property: " + name + ":" + key);
+        propertySoftDeletes.add(new KeyNameVisibilityPropertySoftDeleteMutation(key, name, visibility));
         return this;
     }
 
@@ -118,8 +135,12 @@ public abstract class ElementBuilder<T extends Element> implements ElementMutati
         return properties;
     }
 
-    public Iterable<PropertyRemoveMutation> getPropertyRemoves() {
-        return propertyRemoves;
+    public Iterable<PropertyDeleteMutation> getPropertyDeletes() {
+        return propertyDeletes;
+    }
+
+    public Iterable<PropertySoftDeleteMutation> getPropertySoftDeletes() {
+        return propertySoftDeletes;
     }
 
     public IndexHint getIndexHint() {

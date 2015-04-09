@@ -22,6 +22,7 @@ public abstract class ElementMaker<T> {
     private final Map<String, LazyPropertyMetadata> propertyMetadata = new HashMap<>();
     private final Map<String, Long> propertyTimestamps = new HashMap<>();
     private final Set<HiddenProperty> hiddenProperties = new HashSet<>();
+    private final Set<SoftDeletedProperty> softDeletedProperties = new HashSet<>();
     private final Set<Visibility> hiddenVisibilities = new HashSet<>();
     private final AccumuloGraph graph;
     private final Authorizations authorizations;
@@ -54,6 +55,12 @@ public abstract class ElementMaker<T> {
                 return null;
             }
 
+            if (columnFamily.equals(AccumuloElement.CF_SOFT_DELETE)
+                    && columnQualifier.equals(AccumuloElement.CQ_SOFT_DELETE)
+                    && value.equals(AccumuloElement.SOFT_DELETE_VALUE)) {
+                return null;
+            }
+
             if (columnFamily.equals(AccumuloElement.CF_HIDDEN)) {
                 if (includeHidden) {
                     this.hiddenVisibilities.add(AccumuloGraph.accumuloVisibilityToVisibility(columnVisibility));
@@ -64,6 +71,10 @@ public abstract class ElementMaker<T> {
 
             if (columnFamily.equals(AccumuloElement.CF_PROPERTY_HIDDEN)) {
                 extractPropertyHidden(columnQualifier, columnVisibility);
+            }
+
+            if (columnFamily.equals(AccumuloElement.CF_PROPERTY_SOFT_DELETE)) {
+                extractPropertySoftDelete(columnQualifier, columnVisibility);
             }
 
             if (AccumuloElement.CF_PROPERTY.compareTo(columnFamily) == 0) {
@@ -141,6 +152,9 @@ public abstract class ElementMaker<T> {
             if (!includeHidden && isHidden(propertyKey, propertyName, propertyVisibility)) {
                 continue;
             }
+            if (isPropertyDeleted(propertyKey, propertyName, propertyVisibility)) {
+                continue;
+            }
             LazyPropertyMetadata metadata = propertyMetadata.get(key);
             LazyMutableProperty property = new LazyMutableProperty(
                     getGraph(),
@@ -171,9 +185,18 @@ public abstract class ElementMaker<T> {
         return hiddenVisibilities;
     }
 
-    private boolean isHidden(String propertyKey, String propertyName, Visibility visibility) {
+    private boolean isHidden(String propertyKey, String propertyName, Visibility propertyVisibility) {
         for (HiddenProperty hiddenProperty : hiddenProperties) {
-            if (hiddenProperty.matches(propertyKey, propertyName, visibility)) {
+            if (hiddenProperty.matches(propertyKey, propertyName, propertyVisibility)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean isPropertyDeleted(String propertyKey, String propertyName, Visibility propertyVisibility) {
+        for (SoftDeletedProperty softDeletedProperty : softDeletedProperties) {
+            if (softDeletedProperty.matches(propertyKey, propertyName, propertyVisibility)) {
                 return true;
             }
         }
@@ -189,6 +212,16 @@ public abstract class ElementMaker<T> {
                 AccumuloGraph.accumuloVisibilityToVisibility(columnVisibility)
         );
         this.hiddenProperties.add(hiddenProperty);
+    }
+
+    private void extractPropertySoftDelete(Text columnQualifier, ColumnVisibility columnVisibility) {
+        PropertyColumnQualifier propertyColumnQualifier = new PropertyColumnQualifier(columnQualifier, getGraph().getNameSubstitutionStrategy());
+        SoftDeletedProperty softDeletedProperty = new SoftDeletedProperty(
+                propertyColumnQualifier.getPropertyKey(),
+                propertyColumnQualifier.getPropertyName(),
+                AccumuloGraph.accumuloVisibilityToVisibility(columnVisibility)
+        );
+        this.softDeletedProperties.add(softDeletedProperty);
     }
 
     private void extractPropertyMetadata(Text columnQualifier, ColumnVisibility columnVisibility, long timestamp, Value value) {
@@ -224,6 +257,56 @@ public abstract class ElementMaker<T> {
 
     public Authorizations getAuthorizations() {
         return authorizations;
+    }
+
+    private static class SoftDeletedProperty {
+        private final String propertyKey;
+        private final String propertyName;
+        private final Visibility visibility;
+
+        public SoftDeletedProperty(String propertyKey, String propertyName, Visibility visibility) {
+            this.propertyKey = propertyKey;
+            this.propertyName = propertyName;
+            this.visibility = visibility;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+
+            SoftDeletedProperty that = (SoftDeletedProperty) o;
+
+            if (propertyKey != null ? !propertyKey.equals(that.propertyKey) : that.propertyKey != null) {
+                return false;
+            }
+            if (propertyName != null ? !propertyName.equals(that.propertyName) : that.propertyName != null) {
+                return false;
+            }
+            if (visibility != null ? !visibility.equals(that.visibility) : that.visibility != null) {
+                return false;
+            }
+
+            return true;
+        }
+
+        @Override
+        public int hashCode() {
+            int result = propertyKey != null ? propertyKey.hashCode() : 0;
+            result = 31 * result + (propertyName != null ? propertyName.hashCode() : 0);
+            result = 31 * result + (visibility != null ? visibility.hashCode() : 0);
+            return result;
+        }
+
+        public boolean matches(String propertyKey, String propertyName, Visibility visibility) {
+            return propertyKey.equals(this.propertyKey)
+                    && propertyName.equals(this.propertyName)
+                    && visibility.equals(this.visibility);
+        }
     }
 
     private static class HiddenProperty {

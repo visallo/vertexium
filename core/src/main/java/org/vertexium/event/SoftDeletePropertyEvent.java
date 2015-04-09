@@ -4,15 +4,15 @@ import org.vertexium.Element;
 import org.vertexium.Graph;
 import org.vertexium.Property;
 import org.vertexium.Visibility;
-import org.vertexium.mutation.PropertyRemoveMutation;
+import org.vertexium.mutation.PropertySoftDeleteMutation;
 
-public class RemovePropertyEvent extends GraphEvent {
+public class SoftDeletePropertyEvent extends GraphEvent {
     private final Element element;
     private final String key;
     private final String name;
     private final Visibility visibility;
 
-    public RemovePropertyEvent(Graph graph, Element element, Property property) {
+    public SoftDeletePropertyEvent(Graph graph, Element element, Property property) {
         super(graph);
         this.element = element;
         this.key = property.getKey();
@@ -20,12 +20,12 @@ public class RemovePropertyEvent extends GraphEvent {
         this.visibility = property.getVisibility();
     }
 
-    public RemovePropertyEvent(Graph graph, Element element, PropertyRemoveMutation propertyRemoveMutation) {
+    public SoftDeletePropertyEvent(Graph graph, Element element, PropertySoftDeleteMutation propertySoftDeleteMutation) {
         super(graph);
         this.element = element;
-        this.key = propertyRemoveMutation.getKey();
-        this.name = propertyRemoveMutation.getName();
-        this.visibility = propertyRemoveMutation.getVisibility();
+        this.key = propertySoftDeleteMutation.getKey();
+        this.name = propertySoftDeleteMutation.getName();
+        this.visibility = propertySoftDeleteMutation.getVisibility();
     }
 
     public Element getElement() {
@@ -51,16 +51,16 @@ public class RemovePropertyEvent extends GraphEvent {
 
     @Override
     public String toString() {
-        return "RemovePropertyEvent{element=" + getElement() + ", property=" + getKey() + ":" + getName() + ":" + getVisibility() + '}';
+        return this.getClass().getSimpleName() + "{element=" + getElement() + ", property=" + getKey() + ":" + getName() + ":" + getVisibility() + '}';
     }
 
     @Override
     public boolean equals(Object obj) {
-        if (!(obj instanceof RemovePropertyEvent)) {
+        if (!(obj instanceof SoftDeletePropertyEvent)) {
             return false;
         }
 
-        RemovePropertyEvent other = (RemovePropertyEvent) obj;
+        SoftDeletePropertyEvent other = (SoftDeletePropertyEvent) obj;
         return getElement().equals(other.getElement())
                 && getKey().equals(other.getKey())
                 && getName().equals(other.getName())

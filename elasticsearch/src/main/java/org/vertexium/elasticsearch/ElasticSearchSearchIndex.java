@@ -76,7 +76,7 @@ public class ElasticSearchSearchIndex extends ElasticSearchSearchIndexBase {
     }
 
     @Override
-    public void removeElement(Graph graph, Element element, Authorizations authorizations) {
+    public void deleteElement(Graph graph, Element element, Authorizations authorizations) {
         String indexName = getIndexName(element);
         String id = element.getId();
         LOGGER.debug("deleting document " + id);
@@ -86,7 +86,7 @@ public class ElasticSearchSearchIndex extends ElasticSearchSearchIndexBase {
                         .request()
         ).actionGet();
         if (!deleteResponse.isFound()) {
-            throw new VertexiumException("Could not remove element " + element.getId());
+            throw new VertexiumException("Could not delete element " + element.getId());
         }
     }
 

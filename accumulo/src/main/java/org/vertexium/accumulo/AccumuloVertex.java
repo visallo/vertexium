@@ -2,10 +2,10 @@ package org.vertexium.accumulo;
 
 import org.apache.hadoop.io.Text;
 import org.vertexium.*;
-import org.vertexium.*;
 import org.vertexium.mutation.ExistingElementMutation;
 import org.vertexium.mutation.ExistingElementMutationImpl;
-import org.vertexium.mutation.PropertyRemoveMutation;
+import org.vertexium.mutation.PropertyDeleteMutation;
+import org.vertexium.mutation.PropertySoftDeleteMutation;
 import org.vertexium.query.VertexQuery;
 import org.vertexium.util.ConvertingIterable;
 import org.vertexium.util.JoinIterable;
@@ -23,8 +23,10 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
     public static final Text CF_SIGNAL = new Text("V");
     public static final Text CF_OUT_EDGE = new Text("EOUT");
     public static final Text CF_OUT_EDGE_HIDDEN = new Text("EOUTH");
+    public static final Text CF_OUT_EDGE_SOFT_DELETE = new Text("EOUTD");
     public static final Text CF_IN_EDGE = new Text("EIN");
     public static final Text CF_IN_EDGE_HIDDEN = new Text("EINH");
+    public static final Text CF_IN_EDGE_SOFT_DELETE = new Text("EIND");
     private final Map<String, EdgeInfo> inEdges;
     private final Map<String, EdgeInfo> outEdges;
 
@@ -33,7 +35,8 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
             String vertexId,
             Visibility vertexVisibility,
             Iterable<Property> properties,
-            Iterable<PropertyRemoveMutation> propertyRemoveMutations,
+            Iterable<PropertyDeleteMutation> propertyDeleteMutations,
+            Iterable<PropertySoftDeleteMutation> propertySoftDeleteMutations,
             Iterable<Visibility> hiddenVisibilities,
             Authorizations authorizations,
             long timestamp
@@ -43,7 +46,8 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
                 vertexId,
                 vertexVisibility,
                 properties,
-                propertyRemoveMutations,
+                propertyDeleteMutations,
+                propertySoftDeleteMutations,
                 hiddenVisibilities,
                 new HashMap<String, EdgeInfo>(),
                 new HashMap<String, EdgeInfo>(),
@@ -57,14 +61,25 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
             String vertexId,
             Visibility vertexVisibility,
             Iterable<Property> properties,
-            Iterable<PropertyRemoveMutation> propertyRemoveMutations,
+            Iterable<PropertyDeleteMutation> propertyDeleteMutations,
+            Iterable<PropertySoftDeleteMutation> propertySoftDeleteMutations,
             Iterable<Visibility> hiddenVisibilities,
             Map<String, EdgeInfo> inEdges,
             Map<String, EdgeInfo> outEdges,
             Authorizations authorizations,
             long timestamp
     ) {
-        super(graph, vertexId, vertexVisibility, properties, propertyRemoveMutations, hiddenVisibilities, authorizations, timestamp);
+        super(
+                graph,
+                vertexId,
+                vertexVisibility,
+                properties,
+                propertyDeleteMutations,
+                propertySoftDeleteMutations,
+                hiddenVisibilities,
+                authorizations,
+                timestamp
+        );
         this.inEdges = inEdges;
         this.outEdges = outEdges;
     }

@@ -6,6 +6,8 @@ import org.apache.hadoop.io.Text;
 import org.vertexium.Authorizations;
 import org.vertexium.Edge;
 import org.vertexium.VertexiumException;
+import org.vertexium.mutation.PropertyDeleteMutation;
+import org.vertexium.mutation.PropertySoftDeleteMutation;
 
 import java.util.Iterator;
 import java.util.Map;
@@ -63,16 +65,20 @@ public class EdgeMaker extends ElementMaker<Edge> {
 
     @Override
     protected Edge makeElement(boolean includeHidden) {
+        String newEdgeLabel = null;
+        Iterable<PropertyDeleteMutation> propertyDeleteMutations = null;
+        Iterable<PropertySoftDeleteMutation> propertySoftDeleteMutations = null;
         return new AccumuloEdge(
                 this.graph,
                 this.getId(),
                 this.outVertexId,
                 this.inVertexId,
                 this.label,
-                null,
+                newEdgeLabel,
                 this.getVisibility(),
                 this.getProperties(includeHidden),
-                null,
+                propertyDeleteMutations,
+                propertySoftDeleteMutations,
                 this.getHiddenVisibilities(),
                 this.getAuthorizations(),
                 this.timestamp

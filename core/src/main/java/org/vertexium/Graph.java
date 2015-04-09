@@ -161,12 +161,36 @@ public interface Graph {
     List<Vertex> getVerticesInOrder(Iterable<String> ids, EnumSet<FetchHint> fetchHints, Authorizations authorizations);
 
     /**
-     * Removes a vertex from the graph.
+     * Permanently deletes a vertex from the graph.
      *
-     * @param vertex         The vertex to remove.
-     * @param authorizations The authorizations required to remove the vertex.
+     * @param vertex         The vertex to delete.
+     * @param authorizations The authorizations required to delete the vertex.
      */
-    void removeVertex(Vertex vertex, Authorizations authorizations);
+    void deleteVertex(Vertex vertex, Authorizations authorizations);
+
+    /**
+     * Permanently deletes a vertex from the graph.
+     *
+     * @param vertexId       The vertex id to delete.
+     * @param authorizations The authorizations required to delete the vertex.
+     */
+    void deleteVertex(String vertexId, Authorizations authorizations);
+
+    /**
+     * Soft deletes a vertex from the graph.
+     *
+     * @param vertex         The vertex to soft delete.
+     * @param authorizations The authorizations required to soft delete the vertex.
+     */
+    void softDeleteVertex(Vertex vertex, Authorizations authorizations);
+
+    /**
+     * Soft deletes a vertex from the graph.
+     *
+     * @param vertexId       The vertex id to soft delete.
+     * @param authorizations The authorizations required to soft delete the vertex.
+     */
+    void softDeleteVertex(String vertexId, Authorizations authorizations);
 
     /**
      * Adds an edge between two vertices. The id of the new vertex will be generated using an IdGenerator.
@@ -351,20 +375,36 @@ public interface Graph {
     Iterable<String> findRelatedEdges(Iterable<String> vertexIds, Authorizations authorizations);
 
     /**
-     * Removes an edge from the graph.
+     * Permanently deletes an edge from the graph.
      *
-     * @param edge           The edge to remove.
-     * @param authorizations The authorizations required to remove the edge.
+     * @param edge           The edge to delete from the graph.
+     * @param authorizations The authorizations required to delete the edge.
      */
-    void removeEdge(Edge edge, Authorizations authorizations);
+    void deleteEdge(Edge edge, Authorizations authorizations);
 
     /**
-     * Removes an edge from the graph.
+     * Permanently deletes an edge from the graph. This method requires fetching the edge before deletion.
      *
-     * @param edgeId         The edge id of the vertex to remove from the graph.
-     * @param authorizations The authorizations required to remove the edge.
+     * @param edgeId         The edge id of the edge to delete from the graph.
+     * @param authorizations The authorizations required to delete the edge.
      */
-    void removeEdge(String edgeId, Authorizations authorizations);
+    void deleteEdge(String edgeId, Authorizations authorizations);
+
+    /**
+     * Soft deletes an edge from the graph.
+     *
+     * @param edge           The edge to soft delete from the graph.
+     * @param authorizations The authorizations required to delete the edge.
+     */
+    void softDeleteEdge(Edge edge, Authorizations authorizations);
+
+    /**
+     * Soft deletes an edge from the graph. This method requires fetching the edge before soft deletion.
+     *
+     * @param edgeId         The edge id of the vertex to soft delete from the graph.
+     * @param authorizations The authorizations required to delete the edge.
+     */
+    void softDeleteEdge(String edgeId, Authorizations authorizations);
 
     /**
      * Creates a query builder object used to query the graph.

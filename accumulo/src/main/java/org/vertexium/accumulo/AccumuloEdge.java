@@ -2,9 +2,9 @@ package org.vertexium.accumulo;
 
 import org.apache.hadoop.io.Text;
 import org.vertexium.*;
-import org.vertexium.*;
 import org.vertexium.mutation.ExistingEdgeMutation;
-import org.vertexium.mutation.PropertyRemoveMutation;
+import org.vertexium.mutation.PropertyDeleteMutation;
+import org.vertexium.mutation.PropertySoftDeleteMutation;
 
 import java.util.EnumSet;
 
@@ -26,12 +26,23 @@ public class AccumuloEdge extends AccumuloElement implements Edge {
             String newEdgeLabel,
             Visibility visibility,
             Iterable<Property> properties,
-            Iterable<PropertyRemoveMutation> propertyRemoveMutations,
+            Iterable<PropertyDeleteMutation> propertyDeleteMutations,
+            Iterable<PropertySoftDeleteMutation> propertySoftDeleteMutations,
             Iterable<Visibility> hiddenVisibilities,
             Authorizations authorizations,
             long timestamp
     ) {
-        super(graph, id, visibility, properties, propertyRemoveMutations, hiddenVisibilities, authorizations, timestamp);
+        super(
+                graph,
+                id,
+                visibility,
+                properties,
+                propertyDeleteMutations,
+                propertySoftDeleteMutations,
+                hiddenVisibilities,
+                authorizations,
+                timestamp
+        );
         this.outVertexId = outVertexId;
         this.inVertexId = inVertexId;
         this.label = label;

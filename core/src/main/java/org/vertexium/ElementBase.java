@@ -1,7 +1,8 @@
 package org.vertexium;
 
 import org.vertexium.mutation.ElementMutation;
-import org.vertexium.mutation.PropertyRemoveMutation;
+import org.vertexium.mutation.PropertyDeleteMutation;
+import org.vertexium.mutation.PropertySoftDeleteMutation;
 import org.vertexium.property.MutableProperty;
 import org.vertexium.property.PropertyValue;
 import org.vertexium.util.ConvertingIterable;
@@ -17,7 +18,9 @@ public abstract class ElementBase implements Element {
     private Set<Visibility> hiddenVisibilities = new HashSet<>();
 
     private final ConcurrentSkipListSet<Property> properties;
-    private ConcurrentSkipListSet<PropertyRemoveMutation> propertyRemoveMutations;
+    private final ConcurrentSkipListSet<Property> softDeletedProperties;
+    private ConcurrentSkipListSet<PropertyDeleteMutation> propertyDeleteMutations;
+    private ConcurrentSkipListSet<PropertySoftDeleteMutation> propertySoftDeleteMutations;
     private final Authorizations authorizations;
 
     protected ElementBase(
@@ -25,7 +28,8 @@ public abstract class ElementBase implements Element {
             String id,
             Visibility visibility,
             Iterable<Property> properties,
-            Iterable<PropertyRemoveMutation> propertyRemoveMutations,
+            Iterable<PropertyDeleteMutation> propertyDeleteMutations,
+            Iterable<PropertySoftDeleteMutation> propertySoftDeleteMutations,
             Iterable<Visibility> hiddenVisibilities,
             Authorizations authorizations
     ) {
@@ -33,13 +37,14 @@ public abstract class ElementBase implements Element {
         this.id = id;
         this.visibility = visibility;
         this.properties = new ConcurrentSkipListSet<>();
+        this.softDeletedProperties = new ConcurrentSkipListSet<>();
         this.authorizations = authorizations;
         if (hiddenVisibilities != null) {
             for (Visibility v : hiddenVisibilities) {
                 this.hiddenVisibilities.add(v);
             }
         }
-        updatePropertiesInternal(properties, propertyRemoveMutations);
+        updatePropertiesInternal(properties, propertyDeleteMutations, propertySoftDeleteMutations);
     }
 
     @Override
@@ -156,8 +161,12 @@ public abstract class ElementBase implements Element {
         return this.properties;
     }
 
-    public Iterable<PropertyRemoveMutation> getPropertyRemoveMutations() {
-        return this.propertyRemoveMutations;
+    public Iterable<PropertyDeleteMutation> getPropertyDeleteMutations() {
+        return this.propertyDeleteMutations;
+    }
+
+    public Iterable<PropertySoftDeleteMutation> getPropertySoftDeleteMutations() {
+        return this.propertySoftDeleteMutations;
     }
 
     @Override
@@ -182,16 +191,31 @@ public abstract class ElementBase implements Element {
     }
 
     // this method differs setProperties in that it only updates the in memory representation of the properties
-    protected void updatePropertiesInternal(Iterable<Property> properties, Iterable<PropertyRemoveMutation> propertyRemoves) {
-        if (propertyRemoves != null) {
-            this.propertyRemoveMutations = new ConcurrentSkipListSet<>();
-            for (PropertyRemoveMutation propertyRemoveMutation : propertyRemoves) {
+    protected void updatePropertiesInternal(
+            Iterable<Property> properties,
+            Iterable<PropertyDeleteMutation> propertyDeleteMutations,
+            Iterable<PropertySoftDeleteMutation> propertySoftDeleteMutations
+    ) {
+        if (propertyDeleteMutations != null) {
+            this.propertyDeleteMutations = new ConcurrentSkipListSet<>();
+            for (PropertyDeleteMutation propertyDeleteMutation : propertyDeleteMutations) {
                 removePropertyInternal(
-                        propertyRemoveMutation.getKey(),
-                        propertyRemoveMutation.getName(),
-                        propertyRemoveMutation.getVisibility()
+                        propertyDeleteMutation.getKey(),
+                        propertyDeleteMutation.getName(),
+                        propertyDeleteMutation.getVisibility()
                 );
-                this.propertyRemoveMutations.add(propertyRemoveMutation);
+                this.propertyDeleteMutations.add(propertyDeleteMutation);
+            }
+        }
+        if (propertySoftDeleteMutations != null) {
+            this.propertySoftDeleteMutations = new ConcurrentSkipListSet<>();
+            for (PropertySoftDeleteMutation propertySoftDeleteMutation : propertySoftDeleteMutations) {
+                removePropertyInternal(
+                        propertySoftDeleteMutation.getKey(),
+                        propertySoftDeleteMutation.getName(),
+                        propertySoftDeleteMutation.getVisibility()
+                );
+                this.propertySoftDeleteMutations.add(propertySoftDeleteMutation);
             }
         }
 
@@ -236,6 +260,15 @@ public abstract class ElementBase implements Element {
         return property;
     }
 
+    protected Property softDeletePropertyInternal(String key, String name) {
+        Property property = getProperty(key, name);
+        if (property != null) {
+            this.properties.remove(property);
+        }
+        this.softDeletedProperties.add(property);
+        return property;
+    }
+
     protected Iterable<Property> removePropertyInternal(String name) {
         List<Property> removedProperties = new ArrayList<>();
         for (Property p : this.properties) {
@@ -249,6 +282,22 @@ public abstract class ElementBase implements Element {
         }
 
         return removedProperties;
+    }
+
+    protected Iterable<Property> softDeletePropertyInternal(String name) {
+        List<Property> softDeletedProperties = new ArrayList<>();
+        for (Property p : this.properties) {
+            if (p.getName().equals(name)) {
+                softDeletedProperties.add(p);
+            }
+        }
+
+        for (Property p : softDeletedProperties) {
+            this.properties.remove(p);
+            this.softDeletedProperties.add(p);
+        }
+
+        return softDeletedProperties;
     }
 
     public Graph getGraph() {
@@ -279,7 +328,16 @@ public abstract class ElementBase implements Element {
     }
 
     @Override
-    public abstract void removeProperty(String key, String name, Authorizations authorizations);
+    public abstract void deleteProperty(String key, String name, Authorizations authorizations);
+
+    @Override
+    public abstract void deleteProperties(String name, Authorizations authorizations);
+
+    @Override
+    public abstract void softDeleteProperty(String key, String name, Authorizations authorizations);
+
+    @Override
+    public abstract void softDeleteProperties(String name, Authorizations authorizations);
 
     @Override
     public void addPropertyValue(String key, String name, Object value, Visibility visibility, Authorizations authorizations) {
@@ -324,9 +382,6 @@ public abstract class ElementBase implements Element {
         }
         throw new IllegalArgumentException("Could not find property " + key + " : " + name + " : " + propertyVisibility);
     }
-
-    @Override
-    public abstract void removeProperty(String name, Authorizations authorizations);
 
     @Override
     public Authorizations getAuthorizations() {

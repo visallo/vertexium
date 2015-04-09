@@ -5,7 +5,6 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.vertexium.*;
-import org.vertexium.*;
 import org.vertexium.accumulo.*;
 import org.vertexium.accumulo.serializer.ValueSerializer;
 import org.vertexium.id.IdGenerator;
@@ -100,7 +99,8 @@ public abstract class ElementMapper<KEYIN, VALUEIN, KEYOUT, VALUEOUT> extends Ma
                         getVertexId(),
                         getVisibility(),
                         getProperties(),
-                        getPropertyRemoves(),
+                        getPropertyDeletes(),
+                        getPropertySoftDeletes(),
                         null,
                         authorizations,
                         System.currentTimeMillis()
@@ -142,7 +142,8 @@ public abstract class ElementMapper<KEYIN, VALUEIN, KEYOUT, VALUEOUT> extends Ma
                         getNewEdgeLabel(),
                         getVisibility(),
                         getProperties(),
-                        getPropertyRemoves(),
+                        getPropertyDeletes(),
+                        getPropertySoftDeletes(),
                         null,
                         authorizations,
                         System.currentTimeMillis()
@@ -170,7 +171,8 @@ public abstract class ElementMapper<KEYIN, VALUEIN, KEYOUT, VALUEOUT> extends Ma
                         getNewEdgeLabel(),
                         getVisibility(),
                         getProperties(),
-                        getPropertyRemoves(),
+                        getPropertyDeletes(),
+                        getPropertySoftDeletes(),
                         null,
                         authorizations,
                         System.currentTimeMillis()

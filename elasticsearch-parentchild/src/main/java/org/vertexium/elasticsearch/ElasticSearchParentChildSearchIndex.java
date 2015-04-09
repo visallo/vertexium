@@ -93,7 +93,7 @@ public class ElasticSearchParentChildSearchIndex extends ElasticSearchSearchInde
     }
 
     @Override
-    public void removeElement(Graph graph, Element element, Authorizations authorizations) {
+    public void deleteElement(Graph graph, Element element, Authorizations authorizations) {
         String indexName = getIndexName(element);
         deleteChildDocuments(indexName, element);
         deleteParentDocument(indexName, element);
@@ -110,7 +110,7 @@ public class ElasticSearchParentChildSearchIndex extends ElasticSearchSearchInde
                 .execute()
                 .actionGet();
         if (response.status() != RestStatus.OK) {
-            throw new VertexiumException("Could not remove child elements " + element.getId() + " (status: " + response.status() + ")");
+            throw new VertexiumException("Could not delete child elements " + element.getId() + " (status: " + response.status() + ")");
         }
         if (LOGGER.isDebugEnabled()) {
             for (IndexDeleteByQueryResponse r : response) {
@@ -128,12 +128,12 @@ public class ElasticSearchParentChildSearchIndex extends ElasticSearchSearchInde
                         .request()
         ).actionGet();
         if (!deleteResponse.isFound()) {
-            LOGGER.warn("Could not remove element " + element.getId());
+            LOGGER.warn("Could not delete element " + element.getId());
         }
     }
 
     @Override
-    public void removeProperty(
+    public void deleteProperty(
             Graph graph,
             Element element,
             String propertyKey,
@@ -150,7 +150,7 @@ public class ElasticSearchParentChildSearchIndex extends ElasticSearchSearchInde
                         .request()
         ).actionGet();
         if (!deleteResponse.isFound()) {
-            LOGGER.warn("Could not remove property " + element.getId() + " " + propertyString);
+            LOGGER.warn("Could not delete property " + element.getId() + " " + propertyString);
         }
         LOGGER.debug("deleted property " + element.getId() + " " + propertyString);
     }

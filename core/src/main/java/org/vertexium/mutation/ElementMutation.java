@@ -2,7 +2,6 @@ package org.vertexium.mutation;
 
 import org.vertexium.*;
 import org.vertexium.search.IndexHint;
-import org.vertexium.*;
 
 public interface ElementMutation<T extends Element> {
     public static final String DEFAULT_KEY = "";
@@ -73,28 +72,52 @@ public interface ElementMutation<T extends Element> {
     ElementMutation<T> addPropertyValue(String key, String name, Object value, Metadata metadata, Long timestamp, Visibility visibility);
 
     /**
-     * Removes a property.
+     * Deletes a property.
      *
-     * @param property the property to remove.
+     * @param property the property to delete.
      */
-    ElementMutation<T> removeProperty(Property property);
+    ElementMutation<T> deleteProperty(Property property);
 
     /**
-     * Removes the default property with that name.
+     * Soft deletes a property.
      *
-     * @param name       the property name to remove.
-     * @param visibility the visibility of the property to remove.
+     * @param property the property to soft delete.
      */
-    ElementMutation<T> removeProperty(String name, Visibility visibility);
+    ElementMutation<T> softDeleteProperty(Property property);
 
     /**
-     * Removes a property.
+     * Deletes the default property with that name.
      *
-     * @param key        the key of the property to remove.
-     * @param name       the name of the property to remove.
-     * @param visibility the visibility of the property to remove.
+     * @param name       the property name to delete.
+     * @param visibility the visibility of the property to delete.
      */
-    ElementMutation<T> removeProperty(String key, String name, Visibility visibility);
+    ElementMutation<T> deleteProperty(String name, Visibility visibility);
+
+    /**
+     * Soft deletes the default property with that name.
+     *
+     * @param name       the property name to soft delete.
+     * @param visibility the visibility of the property to soft delete.
+     */
+    ElementMutation<T> softDeleteProperty(String name, Visibility visibility);
+
+    /**
+     * Deletes a property.
+     *
+     * @param key        the key of the property to delete.
+     * @param name       the name of the property to delete.
+     * @param visibility the visibility of the property to delete.
+     */
+    ElementMutation<T> deleteProperty(String key, String name, Visibility visibility);
+
+    /**
+     * Soft deletes a property.
+     *
+     * @param key        the key of the property to soft delete.
+     * @param name       the name of the property to soft delete.
+     * @param visibility the visibility of the property to soft delete.
+     */
+    ElementMutation<T> softDeleteProperty(String key, String name, Visibility visibility);
 
     /**
      * Gets the properties currently in this mutation.
@@ -102,9 +125,14 @@ public interface ElementMutation<T extends Element> {
     Iterable<Property> getProperties();
 
     /**
-     * Gets the properties currently being removed in this mutation.
+     * Gets the properties currently being deleted in this mutation.
      */
-    Iterable<PropertyRemoveMutation> getPropertyRemoves();
+    Iterable<PropertyDeleteMutation> getPropertyDeletes();
+
+    /**
+     * Gets the properties currently being soft deleted in this mutation.
+     */
+    Iterable<PropertySoftDeleteMutation> getPropertySoftDeletes();
 
     /**
      * Sets the index hint of this element.

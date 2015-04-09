@@ -3,10 +3,10 @@ package org.vertexium.mutation;
 import org.vertexium.Property;
 import org.vertexium.Visibility;
 
-public class PropertyPropertyRemoveMutation extends PropertyRemoveMutation {
+public class PropertyPropertySoftDeleteMutation extends PropertySoftDeleteMutation {
     private final Property property;
 
-    public PropertyPropertyRemoveMutation(Property property) {
+    public PropertyPropertySoftDeleteMutation(Property property) {
         this.property = property;
     }
 

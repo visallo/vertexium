@@ -1,15 +1,15 @@
 package org.vertexium;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.vertexium.event.GraphEvent;
 import org.vertexium.event.GraphEventListener;
 import org.vertexium.path.PathFindingAlgorithm;
 import org.vertexium.path.RecursivePathFindingAlgorithm;
 import org.vertexium.query.GraphQuery;
 import org.vertexium.query.SimilarToGraphQuery;
-import org.vertexium.util.LookAheadIterable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.vertexium.util.IterableUtils;
+import org.vertexium.util.LookAheadIterable;
 
 import java.util.*;
 
@@ -134,9 +134,6 @@ public abstract class GraphBase implements Graph {
     public abstract Iterable<Vertex> getVertices(EnumSet<FetchHint> fetchHints, Authorizations authorizations);
 
     @Override
-    public abstract void removeVertex(Vertex vertex, Authorizations authorizations);
-
-    @Override
     public Edge addEdge(Vertex outVertex, Vertex inVertex, String label, Visibility visibility, Authorizations authorizations) {
         return prepareEdge(outVertex, inVertex, label, visibility).save(authorizations);
     }
@@ -200,6 +197,26 @@ public abstract class GraphBase implements Graph {
     }
 
     @Override
+    public void deleteVertex(String vertexId, Authorizations authorizations) {
+        deleteVertex(getVertex(vertexId, authorizations), authorizations);
+    }
+
+    @Override
+    public void deleteEdge(String edgeId, Authorizations authorizations) {
+        deleteEdge(getEdge(edgeId, authorizations), authorizations);
+    }
+
+    @Override
+    public void softDeleteVertex(String vertexId, Authorizations authorizations) {
+        softDeleteVertex(getVertex(vertexId, authorizations), authorizations);
+    }
+
+    @Override
+    public void softDeleteEdge(String edgeId, Authorizations authorizations) {
+        softDeleteEdge(getEdge(edgeId, authorizations), authorizations);
+    }
+
+    @Override
     public Iterable<Edge> getEdges(final Iterable<String> ids, EnumSet<FetchHint> fetchHints, final Authorizations authorizations) {
         LOGGER.warn("Getting each edge one by one! Override getEdges(java.lang.Iterable<java.lang.String>, Authorizations)");
         return new LookAheadIterable<String, Edge>() {
@@ -232,9 +249,6 @@ public abstract class GraphBase implements Graph {
 
     @Override
     public abstract Iterable<Edge> getEdges(EnumSet<FetchHint> fetchHints, Authorizations authorizations);
-
-    @Override
-    public abstract void removeEdge(Edge edge, Authorizations authorizations);
 
     @Override
     public Iterable<Path> findPaths(Vertex sourceVertex, Vertex destVertex, int maxHops, Authorizations authorizations) {
@@ -302,15 +316,6 @@ public abstract class GraphBase implements Graph {
             }
         }
         return results;
-    }
-
-    @Override
-    public void removeEdge(String edgeId, Authorizations authorizations) {
-        Edge edge = getEdge(edgeId, authorizations);
-        if (edge == null) {
-            throw new IllegalArgumentException("Could not find edge with id: " + edgeId);
-        }
-        removeEdge(edge, authorizations);
     }
 
     @Override

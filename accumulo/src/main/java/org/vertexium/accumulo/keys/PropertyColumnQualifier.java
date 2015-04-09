@@ -7,7 +7,8 @@ import org.vertexium.VertexiumException;
 import org.vertexium.Visibility;
 import org.vertexium.accumulo.AccumuloGraph;
 import org.vertexium.id.NameSubstitutionStrategy;
-import org.vertexium.mutation.PropertyRemoveMutation;
+import org.vertexium.mutation.PropertyDeleteMutation;
+import org.vertexium.mutation.PropertySoftDeleteMutation;
 
 public class PropertyColumnQualifier extends KeyBase {
     private static final int PART_INDEX_PROPERTY_NAME = 0;
@@ -37,10 +38,17 @@ public class PropertyColumnQualifier extends KeyBase {
         };
     }
 
-    public PropertyColumnQualifier(PropertyRemoveMutation propertyRemove) {
+    public PropertyColumnQualifier(PropertyDeleteMutation propertyDeleteMutation) {
         this.parts = new String[]{
-                propertyRemove.getName(),
-                propertyRemove.getKey()
+                propertyDeleteMutation.getName(),
+                propertyDeleteMutation.getKey()
+        };
+    }
+
+    public PropertyColumnQualifier(PropertySoftDeleteMutation propertySoftDeleteMutation) {
+        this.parts = new String[]{
+                propertySoftDeleteMutation.getName(),
+                propertySoftDeleteMutation.getKey()
         };
     }
 
