@@ -132,7 +132,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
         NameSubstitutionStrategy nameSubstitutionStrategy = config.createSubstitutionStrategy();
         ensureTableExists(connector, getVerticesTableName(config.getTableNamePrefix()), config.getMaxVersions());
         ensureTableExists(connector, getEdgesTableName(config.getTableNamePrefix()), config.getMaxVersions());
-        ensureTableExists(connector, getDataTableName(config.getTableNamePrefix()), config.getMaxVersions());
+        ensureTableExists(connector, getDataTableName(config.getTableNamePrefix()), 1);
         ensureTableExists(connector, getMetadataTableName(config.getTableNamePrefix()), 1);
         ensureRowDeletingIteratorIsAttached(connector, getVerticesTableName(config.getTableNamePrefix()));
         ensureRowDeletingIteratorIsAttached(connector, getEdgesTableName(config.getTableNamePrefix()));
@@ -704,6 +704,9 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
                     Object value = valueSerializer.valueToObject(column.getValue());
                     Metadata metadata = new Metadata();
                     Set<Visibility> hiddenVisibilities = null; // TODO should we preserve these over time
+                    if (value instanceof StreamingPropertyValueTableRef) {
+                        value = ((StreamingPropertyValueTableRef) value).toStreamingPropertyValue(this);
+                    }
                     HistoricalPropertyValue hpv = new HistoricalPropertyValue(timestamp, value, metadata, hiddenVisibilities);
                     results.put(resultsKey, hpv);
                 } else if (column.getKey().getColumnFamily().equals(AccumuloElement.CF_PROPERTY_METADATA)) {

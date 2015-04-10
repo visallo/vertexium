@@ -3,7 +3,7 @@ package org.vertexium.accumulo;
 import org.vertexium.property.StreamingPropertyValue;
 
 public class StreamingPropertyValueTableRef extends StreamingPropertyValueRef {
-    private String dataRowKey;
+    private final String dataRowKey;
     private transient byte[] data;
 
     protected StreamingPropertyValueTableRef() {

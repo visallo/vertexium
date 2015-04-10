@@ -7,8 +7,8 @@ The graph is stored in a hand full of tables with the following schema.
 ### data
 
 <table>
-<tr><th>Row</th>                                          <th>CF</th>         <th>CQ</th>              <th>Value</th>       <th>Description</th></tr>
-<tr><td>D[V/E[id]]\x1f[propertyName]\x1f[propertyId]</td> <td>-</td>          <td>-</td>               <td>data</td>        <td>Stores the data for StreamingPropertyValue</td></tr>
+<tr><th>Row</th>                                                                  <th>CF</th>         <th>CQ</th>              <th>Value</th>       <th>Description</th></tr>
+<tr><td>D[V/E[id]]\x1f[propertyName]\x1f[propertyKey]\x1f[propertyTimestamp]</td> <td>-</td>          <td>-</td>               <td>data</td>        <td>Stores the data for StreamingPropertyValue</td></tr>
 </table>
 
 ### vertex

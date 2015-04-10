@@ -2745,6 +2745,37 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    public void testStreamingPropertyHistoricalVersions() {
+        Date time25 = createDate(2015, 4, 6, 16, 15, 0);
+        Date time30 = createDate(2015, 4, 6, 16, 16, 0);
+
+        Metadata metadata = new Metadata();
+        StreamingPropertyValue value1 = StreamingPropertyValue.create("value1");
+        graph.prepareVertex("v1", VISIBILITY_A)
+                .addPropertyValue("", "text", value1, metadata, time25.getTime(), VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
+
+        StreamingPropertyValue value2 = StreamingPropertyValue.create("value2");
+        graph.prepareVertex("v1", VISIBILITY_A)
+                .addPropertyValue("", "text", value2, metadata, time30.getTime(), VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
+        graph.flush();
+
+        Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
+        List<HistoricalPropertyValue> values = IterableUtils.toList(v1.getHistoricalPropertyValues("", "text", VISIBILITY_A, AUTHORIZATIONS_A));
+        assertEquals(2, values.size());
+
+        assertEquals("value2", ((StreamingPropertyValue) values.get(0).getValue()).readToString());
+        assertEquals(time30, new Date(values.get(0).getTimestamp()));
+
+        assertEquals("value1", ((StreamingPropertyValue) values.get(1).getValue()).readToString());
+        assertEquals(time25, new Date(values.get(1).getTimestamp()));
+
+        // make sure we get the correct age when we only ask for one value
+        assertEquals("value2", ((StreamingPropertyValue) v1.getPropertyValue("", "text")).readToString());
+    }
+
+    @Test
     public void testGetVertexAtASpecificTimeInHistory() {
         Date time25 = createDate(2015, 4, 6, 16, 15, 0);
         Date time30 = createDate(2015, 4, 6, 16, 16, 0);
