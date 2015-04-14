@@ -28,6 +28,7 @@ public abstract class ElementMaker<T> {
     private final Authorizations authorizations;
     private String id;
     private Visibility visibility;
+    private long elementSoftDeleteTimestamp;
 
     public ElementMaker(AccumuloGraph graph, Iterator<Map.Entry<Key, Value>> row, Authorizations authorizations) {
         this.graph = graph;
@@ -45,6 +46,7 @@ public abstract class ElementMaker<T> {
 
             Text columnFamily = getColumnFamily(col.getKey());
             Text columnQualifier = getColumnQualifier(col.getKey());
+            long timestamp = col.getKey().getTimestamp();
 
             ColumnVisibility columnVisibility = AccumuloGraph.visibilityToAccumuloVisibility(col.getKey().getColumnVisibility().toString());
             Value value = col.getValue();
@@ -58,7 +60,8 @@ public abstract class ElementMaker<T> {
             if (columnFamily.equals(AccumuloElement.CF_SOFT_DELETE)
                     && columnQualifier.equals(AccumuloElement.CQ_SOFT_DELETE)
                     && value.equals(AccumuloElement.SOFT_DELETE_VALUE)) {
-                return null;
+                elementSoftDeleteTimestamp = timestamp;
+                continue;
             }
 
             if (columnFamily.equals(AccumuloElement.CF_HIDDEN)) {
@@ -74,7 +77,7 @@ public abstract class ElementMaker<T> {
             }
 
             if (columnFamily.equals(AccumuloElement.CF_PROPERTY_SOFT_DELETE)) {
-                extractPropertySoftDelete(columnQualifier, columnVisibility);
+                extractPropertySoftDelete(columnQualifier, timestamp, columnVisibility);
             }
 
             if (AccumuloElement.CF_PROPERTY.compareTo(columnFamily) == 0) {
@@ -83,7 +86,7 @@ public abstract class ElementMaker<T> {
             }
 
             if (AccumuloElement.CF_PROPERTY_METADATA.compareTo(columnFamily) == 0) {
-                extractPropertyMetadata(columnQualifier, columnVisibility, col.getKey().getTimestamp(), value);
+                extractPropertyMetadata(columnQualifier, columnVisibility, timestamp, value);
                 continue;
             }
 
@@ -99,8 +102,14 @@ public abstract class ElementMaker<T> {
             return null;
         }
 
+        if (this.elementSoftDeleteTimestamp >= getElementTimestamp()) {
+            return null;
+        }
+
         return makeElement(includeHidden);
     }
+
+    protected abstract long getElementTimestamp();
 
     protected Text getColumnFamily(Key key) {
         return inflate(key.getColumnFamily());
@@ -152,7 +161,7 @@ public abstract class ElementMaker<T> {
             if (!includeHidden && isHidden(propertyKey, propertyName, propertyVisibility)) {
                 continue;
             }
-            if (isPropertyDeleted(propertyKey, propertyName, propertyVisibility)) {
+            if (isPropertyDeleted(propertyKey, propertyName, propertyTimestamp, propertyVisibility)) {
                 continue;
             }
             LazyPropertyMetadata metadata = propertyMetadata.get(key);
@@ -194,10 +203,10 @@ public abstract class ElementMaker<T> {
         return false;
     }
 
-    private boolean isPropertyDeleted(String propertyKey, String propertyName, Visibility propertyVisibility) {
+    private boolean isPropertyDeleted(String propertyKey, String propertyName, long propertyTimestamp, Visibility propertyVisibility) {
         for (SoftDeletedProperty softDeletedProperty : softDeletedProperties) {
             if (softDeletedProperty.matches(propertyKey, propertyName, propertyVisibility)) {
-                return true;
+                return softDeletedProperty.getTimestamp() >= propertyTimestamp;
             }
         }
         return false;
@@ -214,11 +223,12 @@ public abstract class ElementMaker<T> {
         this.hiddenProperties.add(hiddenProperty);
     }
 
-    private void extractPropertySoftDelete(Text columnQualifier, ColumnVisibility columnVisibility) {
+    private void extractPropertySoftDelete(Text columnQualifier, long timestamp, ColumnVisibility columnVisibility) {
         PropertyColumnQualifier propertyColumnQualifier = new PropertyColumnQualifier(columnQualifier, getGraph().getNameSubstitutionStrategy());
         SoftDeletedProperty softDeletedProperty = new SoftDeletedProperty(
                 propertyColumnQualifier.getPropertyKey(),
                 propertyColumnQualifier.getPropertyName(),
+                timestamp,
                 AccumuloGraph.accumuloVisibilityToVisibility(columnVisibility)
         );
         this.softDeletedProperties.add(softDeletedProperty);
@@ -262,12 +272,18 @@ public abstract class ElementMaker<T> {
     private static class SoftDeletedProperty {
         private final String propertyKey;
         private final String propertyName;
+        private final long timestamp;
         private final Visibility visibility;
 
-        public SoftDeletedProperty(String propertyKey, String propertyName, Visibility visibility) {
+        public SoftDeletedProperty(String propertyKey, String propertyName, long timestamp, Visibility visibility) {
             this.propertyKey = propertyKey;
             this.propertyName = propertyName;
+            this.timestamp = timestamp;
             this.visibility = visibility;
+        }
+
+        public long getTimestamp() {
+            return timestamp;
         }
 
         @Override

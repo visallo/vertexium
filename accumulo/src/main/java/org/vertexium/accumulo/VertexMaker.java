@@ -26,6 +26,11 @@ public class VertexMaker extends ElementMaker<Vertex> {
     }
 
     @Override
+    protected long getElementTimestamp() {
+        return this.timestamp;
+    }
+
+    @Override
     protected void processColumn(Key key, Value value) {
         Text columnFamily = getColumnFamily(key);
         Text columnQualifier = getColumnQualifier(key);
