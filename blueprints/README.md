@@ -3,12 +3,12 @@ Setting up Gremlin command line interface
 -----------------------------------------
 
 1. [Download](https://github.com/tinkerpop/gremlin/wiki/Downloads) and extract Gremlin (tested with 2.6.0)
-1. Create a file called `gremlin-sg-accumulo.config` with the following contents:
+1. Create a file called `gremlin-vertexium-accumulo.config` with the following contents:
 
         storage=AccumuloVertexiumBlueprintsGraphFactory
         storage.graph.useServerSideElementVisibilityRowFilter=false
-        storage.graph.tableNamePrefix=sg
-        storage.graph.accumuloInstanceName=sg
+        storage.graph.tableNamePrefix=vertexium
+        storage.graph.accumuloInstanceName=vertexium
         storage.graph.zookeeperServers=localhost
         storage.graph.username=root
         storage.graph.password=password
@@ -16,7 +16,7 @@ Setting up Gremlin command line interface
 
         storage.graph.search=ElasticSearchSearchIndex
         storage.graph.search.locations=localhost
-        storage.graph.search.indexName=sg
+        storage.graph.search.indexName=vertexium
 
         storage.graph.serializer=JavaValueSerializer
 
@@ -27,9 +27,9 @@ Setting up Gremlin command line interface
         storage.authorizationsProvider=AccumuloAuthorizationsProvider
         storage.authorizationsProvider.auths=auth1,auth2
 
-1. Create a file called `gremlin-sg.script` with the following contents:
+1. Create a file called `gremlin-vertexium.script` with the following contents:
 
-        g = VertexiumBlueprintsFactory.open('gremlin-sg-accumulo.config')
+        g = VertexiumBlueprintsFactory.open('gremlin-vertexium-accumulo.config')
 
 1. Run `mvn package -DskipTests` from the root of vertexium.
 1. Run
@@ -70,7 +70,7 @@ Setting up Gremlin command line interface
 
         rm lucene-core-3.6.2.jar
 
-1. Run `${GREMLIN_HOME}/bin/gremlin.sh gremlin-sg.script`
+1. Run `${GREMLIN_HOME}/bin/gremlin.sh gremlin-vertexium.script`
 1. Test is out:
         
         v = g.addVertex()
@@ -100,7 +100,7 @@ Setting up Rexster
             <graph-accumuloInstanceName>accumulo</graph-accumuloInstanceName>
             <graph-username>root</graph-username>
             <graph-password>password</graph-password>
-            <graph-tableNamePrefix>sg</graph-tableNamePrefix>
+            <graph-tableNamePrefix>vertexium</graph-tableNamePrefix>
             <graph-zookeeperServers>192.168.33.10,192.168.33.10</graph-zookeeperServers>
             <graph-serializer>JavaValueSerializer</graph-serializer>
             <graph-idgenerator>UUIDIdGenerator</graph-idgenerator>
