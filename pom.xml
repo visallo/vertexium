@@ -248,6 +248,7 @@
         <module>accumulo-migrations</module>
         <module>cli</module>
         <module>dist</module>
+        <module>benchmark</module>
     </modules>
 
     <profiles>
