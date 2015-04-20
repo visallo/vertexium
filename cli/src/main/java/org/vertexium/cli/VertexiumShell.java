@@ -60,11 +60,11 @@ public class VertexiumShell {
     @Parameter(description = "File names to execute")
     private List<String> fileNames = new ArrayList<>();
 
-    public void run(String[] args) throws Exception {
+    public int run(String[] args) throws Exception {
         JCommander j = new JCommander(this, args);
         if (help) {
             j.usage();
-            return;
+            return -1;
         }
 
         setTerminalType(terminalType, suppressColor);
@@ -110,6 +110,7 @@ public class VertexiumShell {
         setResultHook(groovysh, resultHook);
 
         startGroovysh(evalString, fileNames);
+        return 0;
     }
 
     private Map loadConfig() throws IOException {
@@ -164,7 +165,8 @@ public class VertexiumShell {
     }
 
     public static void main(final String[] args) throws Exception {
-        new VertexiumShell().run(args);
+        int result = new VertexiumShell().run(args);
+        System.exit(result);
     }
 
     /**
