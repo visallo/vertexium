@@ -195,13 +195,15 @@ public class ElasticSearchParentChildSearchIndex extends ElasticSearchSearchInde
 
     @Override
     public void flush() {
+        ArrayList<BulkRequest> bulkRequests;
         synchronized (bulkRequestsByIndexInfo) {
-            for (BulkRequest bulkRequest : this.bulkRequestsByIndexInfo.values()) {
-                if (bulkRequest.numberOfActions() > 0) {
-                    doBulkRequest(bulkRequest);
-                }
-            }
+            bulkRequests = new ArrayList<>(this.bulkRequestsByIndexInfo.values());
             this.bulkRequestsByIndexInfo.clear();
+        }
+        for (BulkRequest bulkRequest : bulkRequests) {
+            if (bulkRequest.numberOfActions() > 0) {
+                doBulkRequest(bulkRequest);
+            }
         }
         super.flush();
     }
