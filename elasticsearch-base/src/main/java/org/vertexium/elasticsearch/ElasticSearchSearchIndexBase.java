@@ -357,7 +357,7 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex {
 
     @Override
     public void flush() {
-        client.admin().indices().prepareFlush(getIndexNamesAsArray()).execute().actionGet();
+        client.admin().indices().prepareRefresh(getIndexNamesAsArray()).execute().actionGet();
     }
 
     protected String[] getIndexNamesAsArray() {
