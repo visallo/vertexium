@@ -12,7 +12,8 @@ import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.rest.RestStatus;
-import org.vertexium.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.vertexium.*;
 import org.vertexium.elasticsearch.utils.GetResponseUtil;
 import org.vertexium.property.StreamingPropertyValue;
@@ -20,8 +21,6 @@ import org.vertexium.query.GraphQuery;
 import org.vertexium.query.SimilarToGraphQuery;
 import org.vertexium.type.GeoPoint;
 import org.vertexium.util.StreamUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -35,6 +34,7 @@ public class ElasticSearchParentChildSearchIndex extends ElasticSearchSearchInde
     public static final String PROPERTY_TYPE = "property";
     public static final int BATCH_SIZE = 1000;
     private String[] parentDocumentFields;
+    private final Map<IndexInfo, BulkRequest> bulkRequestsByIndexInfo = new HashMap<>();
 
     public ElasticSearchParentChildSearchIndex(GraphConfiguration config) {
         super(config);
@@ -170,21 +170,42 @@ public class ElasticSearchParentChildSearchIndex extends ElasticSearchSearchInde
         IndexInfo indexInfo = addPropertiesToIndex(element, element.getProperties());
 
         try {
-            BulkRequest bulkRequest = new BulkRequest();
-
+            BulkRequest bulkRequest = getBulkRequest(indexInfo);
             addElementToBulkRequest(graph, bulkRequest, indexInfo, element, authorizations);
-            if (bulkRequest.numberOfActions() > 0) {
-                doBulkRequest(bulkRequest);
-
-                if (getConfig().isAutoFlush()) {
-                    flush();
-                }
+            if (getConfig().isAutoFlush()) {
+                flush();
             }
         } catch (Exception e) {
             throw new VertexiumException("Could not add element", e);
         }
 
         getConfig().getScoringStrategy().addElement(this, graph, element, authorizations);
+    }
+
+    private BulkRequest getBulkRequest(IndexInfo indexInfo) {
+        synchronized (bulkRequestsByIndexInfo) {
+            BulkRequest result = bulkRequestsByIndexInfo.get(indexInfo);
+            if (result == null) {
+                result = new BulkRequest();
+                bulkRequestsByIndexInfo.put(indexInfo, result);
+            }
+            return result;
+        }
+    }
+
+    @Override
+    public void flush() {
+        ArrayList<BulkRequest> bulkRequests;
+        synchronized (bulkRequestsByIndexInfo) {
+            bulkRequests = new ArrayList<>(this.bulkRequestsByIndexInfo.values());
+            this.bulkRequestsByIndexInfo.clear();
+        }
+        for (BulkRequest bulkRequest : bulkRequests) {
+            if (bulkRequest.numberOfActions() > 0) {
+                doBulkRequest(bulkRequest);
+            }
+        }
+        super.flush();
     }
 
     @Override

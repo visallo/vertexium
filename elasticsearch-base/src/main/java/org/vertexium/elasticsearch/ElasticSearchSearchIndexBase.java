@@ -17,21 +17,18 @@ import org.elasticsearch.common.settings.ImmutableSettings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.vertexium.*;
 import org.vertexium.property.StreamingPropertyValue;
 import org.vertexium.query.*;
 import org.vertexium.search.SearchIndex;
 import org.vertexium.type.GeoPoint;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.vertexium.util.IterableUtils;
 import org.vertexium.util.Preconditions;
 
 import java.io.IOException;
 import java.util.*;
-
-import static org.vertexium.util.IterableUtils.toSet;
-import static org.vertexium.util.Preconditions.checkNotNull;
 
 public abstract class ElasticSearchSearchIndexBase implements SearchIndex {
     private static final Logger LOGGER = LoggerFactory.getLogger(ElasticSearchSearchIndexBase.class);
