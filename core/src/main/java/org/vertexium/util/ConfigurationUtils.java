@@ -1,23 +1,27 @@
 package org.vertexium.util;
 
-import org.vertexium.GraphConfiguration;
-import org.vertexium.VertexiumException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.vertexium.GraphConfiguration;
+import org.vertexium.VertexiumException;
 
 import java.lang.reflect.Constructor;
 import java.util.Map;
+
+import static org.vertexium.util.Preconditions.checkNotNull;
 
 public class ConfigurationUtils {
     private static final Logger LOGGER = LoggerFactory.getLogger(ConfigurationUtils.class);
 
     public static <T> T createProvider(GraphConfiguration config, String propPrefix, String defaultProvider) throws VertexiumException {
         String implClass = config.getString(propPrefix, defaultProvider);
+        checkNotNull(implClass, "createProvider could not find " + propPrefix + " configuration item");
         return createProvider(implClass, config);
     }
 
     @SuppressWarnings("unchecked")
     public static <T> T createProvider(String className, GraphConfiguration config) throws VertexiumException {
+        checkNotNull(className, "className is required");
         LOGGER.debug("creating provider " + className);
         Class<GraphConfiguration> constructorParameterClass = GraphConfiguration.class;
         try {
