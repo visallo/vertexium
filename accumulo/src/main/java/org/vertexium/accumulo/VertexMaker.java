@@ -18,6 +18,8 @@ public class VertexMaker extends ElementMaker<Vertex> {
     private final Map<String, EdgeInfo> outEdges = new HashMap<>();
     private final Map<String, EdgeInfo> inEdges = new HashMap<>();
     private final Set<String> hiddenEdges = new HashSet<>();
+    private final List<SoftDeleteEdgeInfo> outSoftDeletes = new ArrayList<>();
+    private final List<SoftDeleteEdgeInfo> inSoftDeletes = new ArrayList<>();
     private long timestamp;
 
     public VertexMaker(AccumuloGraph graph, Iterator<Map.Entry<Key, Value>> row, Authorizations authorizations) {
@@ -47,16 +49,26 @@ public class VertexMaker extends ElementMaker<Vertex> {
             return;
         }
 
+        if (AccumuloVertex.CF_IN_EDGE_SOFT_DELETE.compareTo(columnFamily) == 0) {
+            String edgeId = columnQualifier.toString();
+            inSoftDeletes.add(new SoftDeleteEdgeInfo(edgeId, key.getTimestamp()));
+        }
+
+        if (AccumuloVertex.CF_OUT_EDGE_SOFT_DELETE.compareTo(columnFamily) == 0) {
+            String edgeId = columnQualifier.toString();
+            outSoftDeletes.add(new SoftDeleteEdgeInfo(edgeId, key.getTimestamp()));
+        }
+
         if (AccumuloVertex.CF_OUT_EDGE.compareTo(columnFamily) == 0) {
             String edgeId = columnQualifier.toString();
-            EdgeInfo edgeInfo = EdgeInfo.parse(value);
+            EdgeInfo edgeInfo = EdgeInfo.parse(value, key.getTimestamp());
             outEdges.put(edgeId, edgeInfo);
             return;
         }
 
         if (AccumuloVertex.CF_IN_EDGE.compareTo(columnFamily) == 0) {
             String edgeId = columnQualifier.toString();
-            EdgeInfo edgeInfo = EdgeInfo.parse(value);
+            EdgeInfo edgeInfo = EdgeInfo.parse(value, key.getTimestamp());
             inEdges.put(edgeId, edgeInfo);
             return;
         }
@@ -84,6 +96,20 @@ public class VertexMaker extends ElementMaker<Vertex> {
             }
         }
 
+        for (SoftDeleteEdgeInfo inSoftDelete : inSoftDeletes) {
+            EdgeInfo inEdge = this.inEdges.get(inSoftDelete.getEdgeId());
+            if (inEdge != null && inSoftDelete.getTimestamp() >= inEdge.getTimestamp()) {
+                this.inEdges.remove(inSoftDelete.getEdgeId());
+            }
+        }
+
+        for (SoftDeleteEdgeInfo outSoftDelete : outSoftDeletes) {
+            EdgeInfo outEdge = this.outEdges.get(outSoftDelete.getEdgeId());
+            if (outEdge != null && outSoftDelete.getTimestamp() >= outEdge.getTimestamp()) {
+                this.outEdges.remove(outSoftDelete.getEdgeId());
+            }
+        }
+
         Iterable<PropertyDeleteMutation> propertyDeleteMutations = null;
         Iterable<PropertySoftDeleteMutation> propertySoftDeleteMutations = null;
         return new AccumuloVertex(
@@ -101,4 +127,21 @@ public class VertexMaker extends ElementMaker<Vertex> {
         );
     }
 
+    private static class SoftDeleteEdgeInfo {
+        private final String edgeId;
+        private final long timestamp;
+
+        private SoftDeleteEdgeInfo(String edgeId, long timestamp) {
+            this.edgeId = edgeId;
+            this.timestamp = timestamp;
+        }
+
+        public String getEdgeId() {
+            return edgeId;
+        }
+
+        public long getTimestamp() {
+            return timestamp;
+        }
+    }
 }

@@ -1582,7 +1582,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
                 if (!c.getKey().getColumnFamily().equals(AccumuloVertex.CF_OUT_EDGE)) {
                     continue;
                 }
-                EdgeInfo edgeInfo = EdgeInfo.parse(c.getValue());
+                EdgeInfo edgeInfo = EdgeInfo.parse(c.getValue(), c.getKey().getTimestamp());
                 if (vertexIdsSet.contains(edgeInfo.getVertexId())) {
                     String edgeId = c.getKey().getColumnQualifier().toString();
                     edgeIds.add(edgeId);

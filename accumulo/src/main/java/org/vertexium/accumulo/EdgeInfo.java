@@ -10,11 +10,14 @@ import java.nio.ByteBuffer;
 public class EdgeInfo implements org.vertexium.EdgeInfo {
     public static final String CHARSET_NAME = "UTF-8";
     private final byte[] bytes;
+    private transient long timestamp;
     private transient boolean decoded;
     private transient String label;
     private transient String vertexId;
 
     public EdgeInfo(String label, String vertexId) {
+        this.timestamp = System.currentTimeMillis();
+
         try {
             byte[] labelBytes;
             int labelBytesLength;
@@ -53,7 +56,8 @@ public class EdgeInfo implements org.vertexium.EdgeInfo {
         }
     }
 
-    public EdgeInfo(byte[] bytes) {
+    public EdgeInfo(byte[] bytes, long timestamp) {
+        this.timestamp = timestamp;
         this.bytes = bytes;
     }
 
@@ -91,11 +95,15 @@ public class EdgeInfo implements org.vertexium.EdgeInfo {
         }
     }
 
-    public static EdgeInfo parse(Value value) {
-        return new EdgeInfo(value.get());
+    public static EdgeInfo parse(Value value, long timestamp) {
+        return new EdgeInfo(value.get(), timestamp);
     }
 
     public Value toValue() {
         return new Value(this.bytes);
+    }
+
+    public long getTimestamp() {
+        return timestamp;
     }
 }
