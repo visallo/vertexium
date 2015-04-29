@@ -542,6 +542,24 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    public void testSoftDeleteEdge() {
+        Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A_AND_B);
+        Vertex v2 = graph.addVertex("v2", VISIBILITY_B, AUTHORIZATIONS_A_AND_B);
+        graph.addEdge("e1", v1, v2, "label1", VISIBILITY_B, AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        Edge e1 = graph.getEdge("e1", AUTHORIZATIONS_A_AND_B);
+        graph.softDeleteEdge(e1, AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        v1 = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B);
+        assertEquals(0, count(v1.getEdges(Direction.BOTH, AUTHORIZATIONS_A_AND_B)));
+
+        v2 = graph.getVertex("v2", AUTHORIZATIONS_A_AND_B);
+        assertEquals(0, count(v2.getEdges(Direction.BOTH, AUTHORIZATIONS_A_AND_B)));
+    }
+
+    @Test
     public void testSoftDeleteProperty() {
         graph.prepareVertex("v1", VISIBILITY_A)
                 .addPropertyValue("key1", "name1", "value1", VISIBILITY_A)
