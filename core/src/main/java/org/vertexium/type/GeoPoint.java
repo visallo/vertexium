@@ -3,11 +3,14 @@ package org.vertexium.type;
 import org.vertexium.VertexiumException;
 
 import java.io.Serializable;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class GeoPoint implements Serializable, GeoShape, Comparable<GeoPoint> {
     private static final long serialVersionUID = 1L;
     private static final double COMPARE_TOLERANCE = 0.00001;
     private static double EARTH_RADIUS = 6371; // km
+    private static final Pattern HOUR_MIN_SECOND_PATTERN = Pattern.compile("\\s*(-)?([0-9\\.]+)°(\\s*([0-9\\.]+)'(\\s*([0-9\\.]+)\")?)?");
     private double latitude;
     private double longitude;
     private Double altitude;
@@ -83,10 +86,7 @@ public class GeoPoint implements Serializable, GeoShape, Comparable<GeoPoint> {
             return false;
         }
         final GeoPoint other = (GeoPoint) obj;
-        if (Double.doubleToLongBits(this.latitude) != Double.doubleToLongBits(other.latitude)) {
-            return false;
-        }
-        if (Double.doubleToLongBits(this.longitude) != Double.doubleToLongBits(other.longitude)) {
+        if (Math.abs(distanceBetween(this, other)) > 0.0001) {
             return false;
         }
         if (this.altitude != other.altitude && (this.altitude == null || !this.altitude.equals(other.altitude))) {
@@ -149,5 +149,43 @@ public class GeoPoint implements Serializable, GeoShape, Comparable<GeoPoint> {
             return 1;
         }
         return 0;
+    }
+
+    public static GeoPoint parse(String str) {
+        String[] parts = str.split(",");
+        if (parts.length < 2) {
+            throw new VertexiumException("Too few parts to GeoPoint string. Expected at least 2 found " + parts.length + " for string: " + str);
+        }
+        if (parts.length >= 4) {
+            throw new VertexiumException("Too many parts to GeoPoint string. Expected less than or equal to 3 found " + parts.length + " for string: " + str);
+        }
+        double latitude = parsePart(parts[0]);
+        double longitude = parsePart(parts[1]);
+        Double altitude = null;
+        if (parts.length >= 3) {
+            altitude = Double.parseDouble(parts[2]);
+        }
+        return new GeoPoint(latitude, longitude, altitude);
+    }
+
+    private static double parsePart(String part) {
+        Matcher m = HOUR_MIN_SECOND_PATTERN.matcher(part);
+        if (m.matches()) {
+            String deg = m.group(2);
+            double result = Double.parseDouble(deg);
+            if (m.groupCount() >= 4) {
+                String minutes = m.group(4);
+                result += Double.parseDouble(minutes) / 60.0;
+                if (m.groupCount() >= 6) {
+                    String seconds = m.group(6);
+                    result += Double.parseDouble(seconds) / (60.0 * 60.0);
+                }
+            }
+            if (m.group(1) != null && m.group(1).equals("-")) {
+                result = -result;
+            }
+            return result;
+        }
+        return Double.parseDouble(part);
     }
 }
