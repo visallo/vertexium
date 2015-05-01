@@ -1682,9 +1682,16 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
 
             @Override
             protected Iterator<Iterator<Map.Entry<Key, Value>>> createIterator() {
-                scanner = createVertexScanner(fetchHints, SINGLE_VERSION, null, endTime, authorizations);
-                scanner.setRange(range);
-                return new RowIterator(scanner.iterator());
+                try {
+                    scanner = createVertexScanner(fetchHints, SINGLE_VERSION, null, endTime, authorizations);
+                    scanner.setRange(range);
+                    return new RowIterator(scanner.iterator());
+                } catch (RuntimeException ex) {
+                    if (ex.getCause() instanceof AccumuloSecurityException) {
+                        throw new SecurityVertexiumException("Could not get vertices with authorizations: " + authorizations, authorizations, ex.getCause());
+                    }
+                    throw ex;
+                }
             }
 
             @Override

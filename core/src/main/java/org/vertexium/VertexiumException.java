@@ -5,7 +5,7 @@ public class VertexiumException extends RuntimeException {
         super(e);
     }
 
-    public VertexiumException(String msg, Exception e) {
+    public VertexiumException(String msg, Throwable e) {
         super(msg, e);
     }
 

@@ -54,6 +54,8 @@ public abstract class GraphTestBase {
     public final Authorizations AUTHORIZATIONS_MIXED_CASE_a_AND_B;
     public final Authorizations AUTHORIZATIONS_A_AND_B;
     public final Authorizations AUTHORIZATIONS_EMPTY;
+    public final Authorizations AUTHORIZATIONS_BAD;
+    public final Authorizations AUTHORIZATIONS_ALL;
     public static final int LARGE_PROPERTY_VALUE_SIZE = 1024 + 1;
 
     protected Graph graph;
@@ -72,6 +74,8 @@ public abstract class GraphTestBase {
         AUTHORIZATIONS_A_AND_B = createAuthorizations("a", "b");
         AUTHORIZATIONS_MIXED_CASE_a_AND_B = createAuthorizations("MIXED_CASE_a", "b");
         AUTHORIZATIONS_EMPTY = createAuthorizations();
+        AUTHORIZATIONS_BAD = createAuthorizations("bad");
+        AUTHORIZATIONS_ALL = createAuthorizations("a", "b", "c", "MIXED_CASE_a");
     }
 
     protected abstract Authorizations createAuthorizations(String... auths);
@@ -382,13 +386,13 @@ public abstract class GraphTestBase {
 
     @Test
     public void testDeleteProperty() {
-        Vertex v = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
+        Vertex v = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_ALL);
 
         v.prepareMutation()
                 .addPropertyValue("propid1a", "prop1", "value1a", VISIBILITY_A)
                 .addPropertyValue("propid1b", "prop1", "value1b", VISIBILITY_A)
                 .addPropertyValue("propid2a", "prop2", "value2a", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+                .save(AUTHORIZATIONS_ALL);
         graph.flush();
         this.graphEvents.clear();
 
@@ -486,11 +490,11 @@ public abstract class GraphTestBase {
 
     @Test
     public void testDeleteElement() {
-        Vertex v = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
+        Vertex v = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_ALL);
 
         v.prepareMutation()
                 .setProperty("prop1", "value1", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+                .save(AUTHORIZATIONS_ALL);
         graph.flush();
 
         v = graph.getVertex("v1", AUTHORIZATIONS_A);
@@ -623,8 +627,8 @@ public abstract class GraphTestBase {
 
     @Test
     public void testAddVertexWithVisibility() {
-        graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
-        graph.addVertex("v2", VISIBILITY_B, AUTHORIZATIONS_A);
+        graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_ALL);
+        graph.addVertex("v2", VISIBILITY_B, AUTHORIZATIONS_ALL);
 
         Iterable<Vertex> cVertices = graph.getVertices(AUTHORIZATIONS_C);
         Assert.assertEquals(0, count(cVertices));
@@ -737,9 +741,9 @@ public abstract class GraphTestBase {
 
     @Test
     public void testMarkVertexHidden() {
-        Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
-        Vertex v2 = graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_A);
-        graph.addEdge("v1tov2", v1, v2, "test", VISIBILITY_A, AUTHORIZATIONS_A);
+        Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_ALL);
+        Vertex v2 = graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_ALL);
+        graph.addEdge("v1tov2", v1, v2, "test", VISIBILITY_A, AUTHORIZATIONS_ALL);
         graph.flush();
 
         List<String> vertexIdList = new ArrayList<>();
@@ -807,11 +811,11 @@ public abstract class GraphTestBase {
 
     @Test
     public void testMarkEdgeHidden() {
-        Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
-        Vertex v2 = graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_A);
-        Vertex v3 = graph.addVertex("v3", VISIBILITY_A, AUTHORIZATIONS_A);
-        Edge e1 = graph.addEdge("v1tov2", v1, v2, "test", VISIBILITY_A, AUTHORIZATIONS_A);
-        graph.addEdge("v2tov3", v2, v3, "test", VISIBILITY_A, AUTHORIZATIONS_A);
+        Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_ALL);
+        Vertex v2 = graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_ALL);
+        Vertex v3 = graph.addVertex("v3", VISIBILITY_A, AUTHORIZATIONS_ALL);
+        Edge e1 = graph.addEdge("v1tov2", v1, v2, "test", VISIBILITY_A, AUTHORIZATIONS_ALL);
+        graph.addEdge("v2tov3", v2, v3, "test", VISIBILITY_A, AUTHORIZATIONS_ALL);
         graph.flush();
 
         List<String> edgeIdList = new ArrayList<>();
@@ -872,7 +876,7 @@ public abstract class GraphTestBase {
                 .addPropertyValue("key1", "prop1", "value1", VISIBILITY_A)
                 .addPropertyValue("key1", "prop1", "value1", VISIBILITY_B)
                 .addPropertyValue("key2", "prop1", "value1", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
+                .save(AUTHORIZATIONS_ALL);
 
         Assert.assertEquals(3, count(graph.getVertex("v1", AUTHORIZATIONS_A_AND_B).getProperties("prop1")));
 
@@ -1245,10 +1249,10 @@ public abstract class GraphTestBase {
 
     @Test
     public void testGraphQueryWithQueryString() {
-        Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
-        v1.setProperty("description", "This is vertex 1 - dog.", VISIBILITY_A, AUTHORIZATIONS_A_AND_B);
-        Vertex v2 = graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_A);
-        v2.setProperty("description", "This is vertex 2 - cat.", VISIBILITY_A, AUTHORIZATIONS_A_AND_B);
+        Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_ALL);
+        v1.setProperty("description", "This is vertex 1 - dog.", VISIBILITY_A, AUTHORIZATIONS_ALL);
+        Vertex v2 = graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_ALL);
+        v2.setProperty("description", "This is vertex 2 - cat.", VISIBILITY_A, AUTHORIZATIONS_ALL);
 
         Iterable<Vertex> vertices = graph.query("vertex", AUTHORIZATIONS_A).vertices();
         Assert.assertEquals(2, count(vertices));
@@ -1430,15 +1434,28 @@ public abstract class GraphTestBase {
     public void testGraphQueryVertexHasWithSecurityComplexFormula() {
         graph.prepareVertex("v1", VISIBILITY_MIXED_CASE_a)
                 .setProperty("age", 25, VISIBILITY_MIXED_CASE_a)
-                .save(AUTHORIZATIONS_A_AND_B);
+                .save(AUTHORIZATIONS_ALL);
         graph.prepareVertex("v2", VISIBILITY_A)
                 .setProperty("age", 25, VISIBILITY_B)
-                .save(AUTHORIZATIONS_A_AND_B);
+                .save(AUTHORIZATIONS_ALL);
 
         Iterable<Vertex> vertices = graph.query(AUTHORIZATIONS_MIXED_CASE_a_AND_B)
                 .has("age", Compare.EQUAL, 25)
                 .vertices();
         Assert.assertEquals(1, count(vertices));
+    }
+
+    @Test
+    public void testGetVertexWithBadAuthorizations() {
+        graph.addVertex("v1", VISIBILITY_EMPTY, AUTHORIZATIONS_A);
+        graph.flush();
+
+        try {
+            graph.getVertex("v1", AUTHORIZATIONS_BAD);
+            throw new RuntimeException("Should throw " + SecurityVertexiumException.class.getSimpleName());
+        } catch (SecurityVertexiumException ex) {
+            // ok
+        }
     }
 
     @Test

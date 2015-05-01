@@ -26,6 +26,7 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
     private final Map<String, InMemoryEdge> edges;
     private final Map<String, InMemoryEdge> softDeletedEdges;
     private final Map<String, byte[]> metadata = new HashMap<>();
+    private final Set<String> validAuthorizations = new HashSet<>();
 
     protected InMemoryGraph(InMemoryGraphConfiguration configuration, IdGenerator idGenerator, SearchIndex searchIndex) {
         this(
@@ -90,6 +91,7 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
         return new VertexBuilder(vertexId, visibility) {
             @Override
             public Vertex save(Authorizations authorizations) {
+                addValidAuthorizations(authorizations);
                 InMemoryVertex existingVertex = (InMemoryVertex) getVertex(getVertexId(), authorizations);
                 long startTime = existingVertex == null ? timestampLong : existingVertex.getStartTime();
 
@@ -131,8 +133,13 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
         };
     }
 
+    private void addValidAuthorizations(Authorizations authorizations) {
+        Collections.addAll(this.validAuthorizations, authorizations.getAuthorizations());
+    }
+
     @Override
     public Iterable<Vertex> getVertices(EnumSet<FetchHint> fetchHints, final Long endTime, final Authorizations authorizations) throws VertexiumException {
+        validateAuthorizations(authorizations);
         final boolean includeHidden = fetchHints.contains(FetchHint.INCLUDE_HIDDEN);
 
         return new LookAheadIterable<InMemoryVertex, Vertex>() {
@@ -151,6 +158,14 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
                 return vertices.values().iterator();
             }
         };
+    }
+
+    private void validateAuthorizations(Authorizations authorizations) {
+        for (String auth : authorizations.getAuthorizations()) {
+            if (!this.validAuthorizations.contains(auth)) {
+                throw new SecurityVertexiumException("Invalid authorizations", authorizations);
+            }
+        }
     }
 
     private boolean isIncluded(InMemoryElement src, boolean includeHidden, Long endTime, Authorizations authorizations) {
@@ -288,6 +303,7 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
         return new EdgeBuilderByVertexId(edgeId, outVertexId, inVertexId, label, visibility) {
             @Override
             public Edge save(Authorizations authorizations) {
+                addValidAuthorizations(authorizations);
                 return savePreparedEdge(this, getOutVertexId(), getInVertexId(), timestamp, authorizations);
             }
         };
@@ -302,6 +318,7 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
         return new EdgeBuilder(edgeId, outVertex, inVertex, label, visibility) {
             @Override
             public Edge save(Authorizations authorizations) {
+                addValidAuthorizations(authorizations);
                 return savePreparedEdge(this, getOutVertex().getId(), getInVertex().getId(), timestamp, authorizations);
             }
         };
