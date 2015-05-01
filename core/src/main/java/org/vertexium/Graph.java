@@ -6,6 +6,7 @@ import org.vertexium.query.GraphQuery;
 import org.vertexium.query.MultiVertexQuery;
 import org.vertexium.query.SimilarToGraphQuery;
 
+import java.util.Collection;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
@@ -330,7 +331,7 @@ public interface Graph {
      * @param outVertex  The source vertex. The "out" side of the edge.
      * @param inVertex   The destination vertex. The "in" side of the edge.
      * @param label      The label to assign to the edge. eg knows, works at, etc.
-     * @param timestamp   The timestamp of the edge.
+     * @param timestamp  The timestamp of the edge.
      * @param visibility The visibility to assign to the new edge.
      * @return The edge builder.
      */
@@ -769,4 +770,30 @@ public interface Graph {
      * @return A new authorizations object
      */
     Authorizations createAuthorizations(String... auths);
+
+    /**
+     * Creates an authorizations object.
+     *
+     * @param auths The authorizations granted.
+     * @return A new authorizations object
+     */
+    Authorizations createAuthorizations(Collection<String> auths);
+
+    /**
+     * Creates an authorizations object combining auths and additionalAuthorizations.
+     *
+     * @param auths                    The authorizations granted.
+     * @param additionalAuthorizations additional authorizations
+     * @return A new authorizations object
+     */
+    Authorizations createAuthorizations(Authorizations auths, String... additionalAuthorizations);
+
+    /**
+     * Creates an authorizations object combining auths and additionalAuthorizations.
+     *
+     * @param auths                    The authorizations granted.
+     * @param additionalAuthorizations additional authorizations
+     * @return A new authorizations object
+     */
+    Authorizations createAuthorizations(Authorizations auths, Collection<String> additionalAuthorizations);
 }

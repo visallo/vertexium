@@ -451,4 +451,22 @@ public abstract class GraphBase implements Graph {
     public SimilarToGraphQuery querySimilarTo(String[] fields, String text, Authorizations authorizations) {
         throw new VertexiumException("querySimilarTo not supported");
     }
+
+    @Override
+    public Authorizations createAuthorizations(Collection<String> auths) {
+        return createAuthorizations(auths.toArray(new String[auths.size()]));
+    }
+
+    @Override
+    public Authorizations createAuthorizations(Authorizations auths, String... additionalAuthorizations) {
+        Set<String> newAuths = new HashSet<>();
+        Collections.addAll(newAuths, auths.getAuthorizations());
+        Collections.addAll(newAuths, additionalAuthorizations);
+        return createAuthorizations(newAuths);
+    }
+
+    @Override
+    public Authorizations createAuthorizations(Authorizations auths, Collection<String> additionalAuthorizations) {
+        return createAuthorizations(auths, additionalAuthorizations.toArray(new String[additionalAuthorizations.size()]));
+    }
 }
