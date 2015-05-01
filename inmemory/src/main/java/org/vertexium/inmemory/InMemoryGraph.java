@@ -91,7 +91,7 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
         return new VertexBuilder(vertexId, visibility) {
             @Override
             public Vertex save(Authorizations authorizations) {
-                addValidAuthorizations(authorizations);
+                addValidAuthorizations(authorizations.getAuthorizations());
                 InMemoryVertex existingVertex = (InMemoryVertex) getVertex(getVertexId(), authorizations);
                 long startTime = existingVertex == null ? timestampLong : existingVertex.getStartTime();
 
@@ -133,8 +133,8 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
         };
     }
 
-    private void addValidAuthorizations(Authorizations authorizations) {
-        Collections.addAll(this.validAuthorizations, authorizations.getAuthorizations());
+    private void addValidAuthorizations(String[] authorizations) {
+        Collections.addAll(this.validAuthorizations, authorizations);
     }
 
     @Override
@@ -303,7 +303,7 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
         return new EdgeBuilderByVertexId(edgeId, outVertexId, inVertexId, label, visibility) {
             @Override
             public Edge save(Authorizations authorizations) {
-                addValidAuthorizations(authorizations);
+                addValidAuthorizations(authorizations.getAuthorizations());
                 return savePreparedEdge(this, getOutVertexId(), getInVertexId(), timestamp, authorizations);
             }
         };
@@ -318,7 +318,7 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
         return new EdgeBuilder(edgeId, outVertex, inVertex, label, visibility) {
             @Override
             public Edge save(Authorizations authorizations) {
-                addValidAuthorizations(authorizations);
+                addValidAuthorizations(authorizations.getAuthorizations());
                 return savePreparedEdge(this, getOutVertex().getId(), getInVertex().getId(), timestamp, authorizations);
             }
         };
@@ -509,6 +509,7 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
 
     @Override
     public Authorizations createAuthorizations(String... auths) {
+        addValidAuthorizations(auths);
         return new InMemoryAuthorizations(auths);
     }
 
