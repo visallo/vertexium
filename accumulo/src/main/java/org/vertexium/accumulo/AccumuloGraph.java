@@ -64,10 +64,10 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
     private final ValueSerializer valueSerializer;
     private final FileSystem fileSystem;
     private final String dataDir;
-    private BatchWriter verticesWriter;
-    private BatchWriter edgesWriter;
-    private BatchWriter dataWriter;
-    private BatchWriter metadataWriter;
+    private ThreadLocal<BatchWriter> verticesWriter = new ThreadLocal<>();
+    private ThreadLocal<BatchWriter> edgesWriter = new ThreadLocal<>();
+    private ThreadLocal<BatchWriter> dataWriter = new ThreadLocal<>();
+    private ThreadLocal<BatchWriter> metadataWriter = new ThreadLocal<>();
     protected ElementMutationBuilder elementMutationBuilder;
     private final Queue<GraphEvent> graphEventQueue = new LinkedList<>();
     private Integer accumuloGraphVersion;
@@ -405,19 +405,12 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
 
     protected BatchWriter getVerticesWriter() {
         try {
-            // to avoid a synchronized block check verticesWriter first and return it.
-            if (this.verticesWriter != null) {
-                return this.verticesWriter;
+            if (this.verticesWriter.get() != null) {
+                return this.verticesWriter.get();
             }
-            synchronized (this) {
-                if (this.verticesWriter != null) {
-                    return this.verticesWriter;
-                }
-
-                BatchWriterConfig writerConfig = getConfiguration().createBatchWriterConfig();
-                this.verticesWriter = this.connector.createBatchWriter(getVerticesTableName(), writerConfig);
-                return this.verticesWriter;
-            }
+            BatchWriterConfig writerConfig = getConfiguration().createBatchWriterConfig();
+            this.verticesWriter.set(this.connector.createBatchWriter(getVerticesTableName(), writerConfig));
+            return this.verticesWriter.get();
         } catch (TableNotFoundException ex) {
             throw new RuntimeException("Could not create batch writer", ex);
         }
@@ -425,19 +418,12 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
 
     protected BatchWriter getEdgesWriter() {
         try {
-            // to avoid a synchronized block check edgesWriter first and return it.
-            if (this.edgesWriter != null) {
-                return this.edgesWriter;
+            if (this.edgesWriter.get() != null) {
+                return this.edgesWriter.get();
             }
-            synchronized (this) {
-                if (this.edgesWriter != null) {
-                    return this.edgesWriter;
-                }
-
-                BatchWriterConfig writerConfig = getConfiguration().createBatchWriterConfig();
-                this.edgesWriter = this.connector.createBatchWriter(getEdgesTableName(), writerConfig);
-                return this.edgesWriter;
-            }
+            BatchWriterConfig writerConfig = getConfiguration().createBatchWriterConfig();
+            this.edgesWriter.set(this.connector.createBatchWriter(getEdgesTableName(), writerConfig));
+            return this.edgesWriter.get();
         } catch (TableNotFoundException ex) {
             throw new RuntimeException("Could not create batch writer", ex);
         }
@@ -455,19 +441,12 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
 
     protected BatchWriter getDataWriter() {
         try {
-            // to avoid a synchronized block check dataWriter first and return it.
-            if (this.dataWriter != null) {
-                return this.dataWriter;
+            if (this.dataWriter.get() != null) {
+                return this.dataWriter.get();
             }
-            synchronized (this) {
-                if (this.dataWriter != null) {
-                    return this.dataWriter;
-                }
-
-                BatchWriterConfig writerConfig = getConfiguration().createBatchWriterConfig();
-                this.dataWriter = this.connector.createBatchWriter(getDataTableName(), writerConfig);
-                return this.dataWriter;
-            }
+            BatchWriterConfig writerConfig = getConfiguration().createBatchWriterConfig();
+            this.dataWriter.set(this.connector.createBatchWriter(getDataTableName(), writerConfig));
+            return this.dataWriter.get();
         } catch (TableNotFoundException ex) {
             throw new RuntimeException("Could not create batch writer", ex);
         }
@@ -475,19 +454,12 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
 
     protected BatchWriter getMetadataWriter() {
         try {
-            // to avoid a synchronized block check dataWriter first and return it.
-            if (this.metadataWriter != null) {
-                return this.metadataWriter;
+            if (this.metadataWriter.get() != null) {
+                return this.metadataWriter.get();
             }
-            synchronized (this) {
-                if (this.metadataWriter != null) {
-                    return this.metadataWriter;
-                }
-
-                BatchWriterConfig writerConfig = getConfiguration().createBatchWriterConfig();
-                this.metadataWriter = this.connector.createBatchWriter(getMetadataTableName(), writerConfig);
-                return this.metadataWriter;
-            }
+            BatchWriterConfig writerConfig = getConfiguration().createBatchWriterConfig();
+            this.metadataWriter.set(this.connector.createBatchWriter(getMetadataTableName(), writerConfig));
+            return this.metadataWriter.get();
         } catch (TableNotFoundException ex) {
             throw new RuntimeException("Could not create batch writer", ex);
         }
@@ -936,9 +908,9 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
     }
 
     private void flushWritersAndSuper() {
-        flushWriter(this.dataWriter);
-        flushWriter(this.verticesWriter);
-        flushWriter(this.edgesWriter);
+        flushWriter(this.dataWriter.get());
+        flushWriter(this.verticesWriter.get());
+        flushWriter(this.edgesWriter.get());
         super.flush();
     }
 
@@ -963,18 +935,6 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
     public void shutdown() {
         try {
             flush();
-            if (this.dataWriter != null) {
-                this.dataWriter.close();
-                this.dataWriter = null;
-            }
-            if (this.verticesWriter != null) {
-                this.verticesWriter.close();
-                this.verticesWriter = null;
-            }
-            if (this.edgesWriter != null) {
-                this.edgesWriter.close();
-                this.edgesWriter = null;
-            }
             super.shutdown();
         } catch (Exception ex) {
             throw new VertexiumException(ex);

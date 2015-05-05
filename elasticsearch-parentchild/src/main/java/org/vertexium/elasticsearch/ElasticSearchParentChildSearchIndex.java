@@ -34,7 +34,12 @@ public class ElasticSearchParentChildSearchIndex extends ElasticSearchSearchInde
     public static final String PROPERTY_TYPE = "property";
     public static final int BATCH_SIZE = 1000;
     private String[] parentDocumentFields;
-    private final Map<IndexInfo, BulkRequest> bulkRequestsByIndexInfo = new HashMap<>();
+    private final ThreadLocal<Map<IndexInfo, BulkRequest>> bulkRequestsByIndexInfo = new ThreadLocal<Map<IndexInfo, BulkRequest>>() {
+        @Override
+        protected Map<IndexInfo, BulkRequest> initialValue() {
+            return new HashMap<>();
+        }
+    };
 
     public ElasticSearchParentChildSearchIndex(GraphConfiguration config) {
         super(config);
@@ -183,27 +188,24 @@ public class ElasticSearchParentChildSearchIndex extends ElasticSearchSearchInde
     }
 
     private BulkRequest getBulkRequest(IndexInfo indexInfo) {
-        synchronized (bulkRequestsByIndexInfo) {
-            BulkRequest result = bulkRequestsByIndexInfo.get(indexInfo);
-            if (result == null) {
-                result = new BulkRequest();
-                bulkRequestsByIndexInfo.put(indexInfo, result);
-            }
-            return result;
+        BulkRequest result = bulkRequestsByIndexInfo.get().get(indexInfo);
+        if (result == null) {
+            result = new BulkRequest();
+            bulkRequestsByIndexInfo.get().put(indexInfo, result);
         }
+        return result;
     }
 
     @Override
     public void flush() {
-        ArrayList<BulkRequest> bulkRequests;
-        synchronized (bulkRequestsByIndexInfo) {
-            bulkRequests = new ArrayList<>(this.bulkRequestsByIndexInfo.values());
-            this.bulkRequestsByIndexInfo.clear();
-        }
-        for (BulkRequest bulkRequest : bulkRequests) {
-            if (bulkRequest.numberOfActions() > 0) {
-                doBulkRequest(bulkRequest);
+        try {
+            for (Map.Entry<IndexInfo, BulkRequest> bulkRequest : this.bulkRequestsByIndexInfo.get().entrySet()) {
+                if (bulkRequest.getValue().numberOfActions() > 0) {
+                    doBulkRequest(bulkRequest.getValue());
+                }
             }
+        } finally {
+            this.bulkRequestsByIndexInfo.get().clear();
         }
         super.flush();
     }
