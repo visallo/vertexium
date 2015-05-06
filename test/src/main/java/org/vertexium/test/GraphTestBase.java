@@ -626,6 +626,24 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    public void testSoftDeletePropertyWithVisibility() {
+        Vertex v1 = graph.prepareVertex("v1", VISIBILITY_A)
+                .addPropertyValue("key1", "name1", "value1", VISIBILITY_A)
+                .addPropertyValue("key1", "name1", "value2", VISIBILITY_B)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+        assertEquals(2, count(graph.getVertex("v1", AUTHORIZATIONS_A_AND_B).getProperties()));
+        org.vertexium.test.util.IterableUtils.assertContains("value1", v1.getPropertyValues("name1"));
+        org.vertexium.test.util.IterableUtils.assertContains("value2", v1.getPropertyValues("name1"));
+
+        graph.getVertex("v1", AUTHORIZATIONS_A_AND_B).softDeleteProperty("key1", "name1", VISIBILITY_A, AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+        assertEquals(1, count(graph.getVertex("v1", AUTHORIZATIONS_A_AND_B).getProperties()));
+        assertEquals(1, count(graph.getVertex("v1", AUTHORIZATIONS_A_AND_B).getPropertyValues("key1", "name1")));
+        org.vertexium.test.util.IterableUtils.assertContains("value2", graph.getVertex("v1", AUTHORIZATIONS_A_AND_B).getPropertyValues("name1"));
+    }
+
+    @Test
     public void testSoftDeletePropertyThroughMutationWithVisibility() {
         Vertex v1 = graph.prepareVertex("v1", VISIBILITY_A)
                 .addPropertyValue("key1", "name1", "value1", VISIBILITY_A)
