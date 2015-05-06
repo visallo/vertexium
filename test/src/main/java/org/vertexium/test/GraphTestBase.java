@@ -331,13 +331,13 @@ public abstract class GraphTestBase {
 
     @Test
     public void testMultivaluedProperties() {
-        Vertex v = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
+        Vertex v = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_ALL);
 
         v.prepareMutation()
                 .addPropertyValue("propid1a", "prop1", "value1a", VISIBILITY_A)
                 .addPropertyValue("propid2a", "prop2", "value2a", VISIBILITY_A)
                 .addPropertyValue("propid3a", "prop3", "value3a", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+                .save(AUTHORIZATIONS_ALL);
         v = graph.getVertex("v1", AUTHORIZATIONS_A);
         assertEquals("value1a", v.getPropertyValues("prop1").iterator().next());
         assertEquals("value2a", v.getPropertyValues("prop2").iterator().next());
@@ -1775,14 +1775,14 @@ public abstract class GraphTestBase {
 
     @Test
     public void testVertexQuery() {
-        Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
-        v1.setProperty("prop1", "value1", VISIBILITY_A, AUTHORIZATIONS_A_AND_B);
+        Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_ALL);
+        v1.setProperty("prop1", "value1", VISIBILITY_A, AUTHORIZATIONS_ALL);
 
-        Vertex v2 = graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_A);
-        v2.setProperty("prop1", "value2", VISIBILITY_A, AUTHORIZATIONS_A_AND_B);
+        Vertex v2 = graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_ALL);
+        v2.setProperty("prop1", "value2", VISIBILITY_A, AUTHORIZATIONS_ALL);
 
-        Vertex v3 = graph.addVertex("v3", VISIBILITY_A, AUTHORIZATIONS_A);
-        v3.setProperty("prop1", "value3", VISIBILITY_A, AUTHORIZATIONS_A_AND_B);
+        Vertex v3 = graph.addVertex("v3", VISIBILITY_A, AUTHORIZATIONS_ALL);
+        v3.setProperty("prop1", "value3", VISIBILITY_A, AUTHORIZATIONS_ALL);
 
         Edge ev1v2 = graph.addEdge("e v1->v2", v1, v2, "edgeA", VISIBILITY_A, AUTHORIZATIONS_A);
         Edge ev1v3 = graph.addEdge("e v1->v3", v1, v3, "edgeA", VISIBILITY_A, AUTHORIZATIONS_A);
@@ -2049,8 +2049,8 @@ public abstract class GraphTestBase {
 
     @Test
     public void testElementMutationDoesntChangeObjectUntilSave() {
-        Vertex v = graph.addVertex("v1", VISIBILITY_EMPTY, AUTHORIZATIONS_EMPTY);
-        v.setProperty("prop1", "value1", VISIBILITY_A, AUTHORIZATIONS_A_AND_B);
+        Vertex v = graph.addVertex("v1", VISIBILITY_EMPTY, AUTHORIZATIONS_ALL);
+        v.setProperty("prop1", "value1", VISIBILITY_A, AUTHORIZATIONS_ALL);
 
         ElementMutation<Vertex> m = v.prepareMutation()
                 .setProperty("prop1", "value2", VISIBILITY_A)
@@ -2142,8 +2142,8 @@ public abstract class GraphTestBase {
 
     @Test
     public void testEmptyPropertyMutation() {
-        Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
-        v1.prepareMutation().save(AUTHORIZATIONS_A_AND_B);
+        Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_ALL);
+        v1.prepareMutation().save(AUTHORIZATIONS_ALL);
     }
 
     @Test
@@ -2584,14 +2584,14 @@ public abstract class GraphTestBase {
                 .save(AUTHORIZATIONS_A);
         graph.flush();
 
-        Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B);
+        Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
         v1.prepareMutation()
                 .setProperty("prop1", "value1", VISIBILITY_A)
                 .setIndexHint(IndexHint.DO_NOT_INDEX)
                 .save(AUTHORIZATIONS_A);
         graph.flush();
 
-        Iterable<Vertex> vertices = graph.query(AUTHORIZATIONS_A_AND_B)
+        Iterable<Vertex> vertices = graph.query(AUTHORIZATIONS_A)
                 .has("prop1", "value1")
                 .vertices();
         assertVertexIds(vertices, new String[]{});
