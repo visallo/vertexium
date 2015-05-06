@@ -209,6 +209,16 @@ public interface Element {
     void softDeleteProperty(String key, String name, Authorizations authorizations);
 
     /**
+     * Soft deletes a property given it's key and name from the element for a given visibility. Only properties which you have access
+     * to can be soft deleted using this method.
+     *
+     * @param key  The property key.
+     * @param name The property name.
+     * @param visibility The visibility string of the property to soft delete.
+     */
+    void softDeleteProperty(String key, String name, Visibility visibility, Authorizations authorizations);
+
+    /**
      * Soft deletes all properties with the given name that you have access to. Only properties which you have
      * access to will be soft deleted.
      *

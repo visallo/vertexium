@@ -74,6 +74,14 @@ public abstract class InMemoryElement extends ElementBase {
     }
 
     @Override
+    public void softDeleteProperty(String key, String name, Visibility visibility, Authorizations authorizations) {
+        Property property = softDeletePropertyInternal(key, name, visibility);
+        if (property != null) {
+            getGraph().softDeleteProperty(this, property, authorizations);
+        }
+    }
+
+    @Override
     public void softDeleteProperties(String name, Authorizations authorizations) {
         Iterable<Property> properties = softDeletePropertyInternal(name);
         for (Property property : properties) {

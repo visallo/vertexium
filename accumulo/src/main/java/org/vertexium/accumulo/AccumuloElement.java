@@ -57,7 +57,15 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
 
     @Override
     public void softDeleteProperty(String key, String name, Authorizations authorizations) {
-        Property property = super.removePropertyInternal(key, name);
+        Property property = super.softDeletePropertyInternal(key, name);
+        if (property != null) {
+            getGraph().softDeleteProperty(this, property, authorizations);
+        }
+    }
+
+    @Override
+    public void softDeleteProperty(String key, String name, Visibility visibility, Authorizations authorizations) {
+        Property property = super.softDeletePropertyInternal(key, name, visibility);
         if (property != null) {
             getGraph().softDeleteProperty(this, property, authorizations);
         }

@@ -277,6 +277,15 @@ public abstract class ElementBase implements Element {
         return property;
     }
 
+    protected Property softDeletePropertyInternal(String key, String name, Visibility visibility) {
+        Property property = getProperty(key, name, visibility);
+        if (property != null) {
+            this.properties.remove(property);
+        }
+        this.softDeletedProperties.add(property);
+        return property;
+    }
+
     protected Iterable<Property> removePropertyInternal(String name) {
         List<Property> removedProperties = new ArrayList<>();
         for (Property p : this.properties) {
@@ -343,6 +352,9 @@ public abstract class ElementBase implements Element {
 
     @Override
     public abstract void softDeleteProperty(String key, String name, Authorizations authorizations);
+
+    @Override
+    public abstract void softDeleteProperty(String key, String name, Visibility visibility, Authorizations authorizations);
 
     @Override
     public abstract void softDeleteProperties(String name, Authorizations authorizations);
