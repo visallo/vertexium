@@ -644,10 +644,10 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
     public void softDeleteProperty(Element element, Property property, Authorizations authorizations) {
         if (element instanceof Vertex) {
             InMemoryVertex vertex = vertices.get(element.getId());
-            vertex.softDeletePropertyInternal(property.getKey(), property.getName());
+            vertex.softDeletePropertyInternal(property.getKey(), property.getName(), property.getVisibility());
         } else if (element instanceof Edge) {
             InMemoryEdge edge = edges.get(element.getId());
-            edge.softDeletePropertyInternal(property.getKey(), property.getName());
+            edge.softDeletePropertyInternal(property.getKey(), property.getName(), property.getVisibility());
         } else {
             throw new IllegalArgumentException("Unexpected element type: " + element.getClass().getName());
         }
