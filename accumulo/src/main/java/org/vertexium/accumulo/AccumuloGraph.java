@@ -1210,6 +1210,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
         }
 
         scanner.fetchColumnFamily(AccumuloElement.CF_HIDDEN);
+        scanner.fetchColumnFamily(AccumuloElement.CF_PROPERTY_SOFT_DELETE);
 
         if (elementType == ElementType.VERTEX) {
             scanner.fetchColumnFamily(AccumuloVertex.CF_SIGNAL);
