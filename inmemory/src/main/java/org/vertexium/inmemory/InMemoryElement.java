@@ -41,8 +41,8 @@ public abstract class InMemoryElement extends ElementBase {
         return super.removePropertyInternal(key, name);
     }
 
-    public Property softDeletePropertyInternal(String key, String name) {
-        return super.softDeletePropertyInternal(key, name);
+    public Property softDeletePropertyInternal(String key, String name, Visibility visibility) {
+        return super.softDeletePropertyInternal(key, name, visibility);
     }
 
     public Iterable<Property> softDeletePropertyInternal(String name) {
