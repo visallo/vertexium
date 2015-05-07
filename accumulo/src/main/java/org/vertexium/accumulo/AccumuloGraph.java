@@ -983,6 +983,11 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
         return null;
     }
 
+    @Override
+    public Iterable<Vertex> getVerticesWithPrefix(String vertexIdPrefix, EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations) {
+        Range range = Range.prefix(AccumuloConstants.VERTEX_ROW_KEY_PREFIX + vertexIdPrefix);
+        return getVerticesInRange(range, fetchHints, endTime, authorizations);
+    }
 
     private CloseableIterable<Vertex> getVerticesInRange(String startId, String endId, EnumSet<FetchHint> fetchHints, Long timestamp, final Authorizations authorizations) throws VertexiumException {
         final Key startKey;

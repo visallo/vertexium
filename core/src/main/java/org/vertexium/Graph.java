@@ -120,6 +120,36 @@ public interface Graph {
     Vertex getVertex(String vertexId, EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations);
 
     /**
+     * Gets vertices from the graph given the prefix.
+     *
+     * @param vertexIdPrefix The prefix of the vertex ids to retrieve from the graph.
+     * @param authorizations The authorizations required to load the vertex.
+     * @return The vertex if successful. null if the vertex is not found or the required authorizations were not provided.
+     */
+    Iterable<Vertex> getVerticesWithPrefix(String vertexIdPrefix, Authorizations authorizations);
+
+    /**
+     * Gets vertices from the graph given the prefix.
+     *
+     * @param vertexIdPrefix The prefix of the vertex ids to retrieve from the graph.
+     * @param fetchHints     Hint at what parts of the vertex to fetch.
+     * @param authorizations The authorizations required to load the vertex.
+     * @return The vertex if successful. null if the vertex is not found or the required authorizations were not provided.
+     */
+    Iterable<Vertex> getVerticesWithPrefix(String vertexIdPrefix, EnumSet<FetchHint> fetchHints, Authorizations authorizations);
+
+    /**
+     * Gets vertices from the graph given the prefix.
+     *
+     * @param vertexIdPrefix The prefix of the vertex ids to retrieve from the graph.
+     * @param fetchHints     Hint at what parts of the vertex to fetch.
+     * @param endTime        Include all changes made up until the point in time.
+     * @param authorizations The authorizations required to load the vertex.
+     * @return The vertex if successful. null if the vertex is not found or the required authorizations were not provided.
+     */
+    Iterable<Vertex> getVerticesWithPrefix(String vertexIdPrefix, EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations);
+
+    /**
      * Gets all vertices on the graph.
      *
      * @param authorizations The authorizations required to load the vertex.

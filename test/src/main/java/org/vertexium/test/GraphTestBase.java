@@ -35,6 +35,7 @@ import java.util.*;
 
 import static org.junit.Assert.*;
 import static org.vertexium.util.IterableUtils.count;
+import static org.vertexium.util.IterableUtils.toList;
 
 @RunWith(JUnit4.class)
 public abstract class GraphTestBase {
@@ -741,6 +742,24 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    public void testGetVerticesWithPrefix() {
+        graph.addVertex("a", VISIBILITY_EMPTY, AUTHORIZATIONS_ALL);
+        graph.addVertex("aa", VISIBILITY_EMPTY, AUTHORIZATIONS_ALL);
+        graph.addVertex("az", VISIBILITY_EMPTY, AUTHORIZATIONS_ALL);
+        graph.addVertex("b", VISIBILITY_EMPTY, AUTHORIZATIONS_ALL);
+        graph.flush();
+
+        List<Vertex> vertices = sortById(toList(graph.getVerticesWithPrefix("a", AUTHORIZATIONS_ALL)));
+        assertVertexIds(vertices, new String[]{"a", "aa", "az"});
+
+        vertices = sortById(toList(graph.getVerticesWithPrefix("b", AUTHORIZATIONS_ALL)));
+        assertVertexIds(vertices, new String[]{"b"});
+
+        vertices = sortById(toList(graph.getVerticesWithPrefix("c", AUTHORIZATIONS_ALL)));
+        assertVertexIds(vertices, new String[]{});
+    }
+
+    @Test
     public void testGetEdgesWithIds() {
         Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
         Vertex v2 = graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_A);
@@ -921,7 +940,7 @@ public abstract class GraphTestBase {
 
         v1.markPropertyHidden("key1", "prop1", VISIBILITY_A, VISIBILITY_A_AND_B, AUTHORIZATIONS_A_AND_B);
 
-        List<Property> properties = IterableUtils.toList(graph.getVertex("v1", AUTHORIZATIONS_A_AND_B).getProperties("prop1"));
+        List<Property> properties = toList(graph.getVertex("v1", AUTHORIZATIONS_A_AND_B).getProperties("prop1"));
         Assert.assertEquals(2, count(properties));
         boolean foundProp1Key2 = false;
         boolean foundProp1Key1VisB = false;
@@ -945,7 +964,7 @@ public abstract class GraphTestBase {
         assertTrue("Prop1Key2 not found", foundProp1Key2);
         assertTrue("Prop1Key1VisB not found", foundProp1Key1VisB);
 
-        List<Property> hiddenProperties = IterableUtils.toList(graph.getVertex("v1", FetchHint.ALL_INCLUDING_HIDDEN, AUTHORIZATIONS_A_AND_B).getProperties());
+        List<Property> hiddenProperties = toList(graph.getVertex("v1", FetchHint.ALL_INCLUDING_HIDDEN, AUTHORIZATIONS_A_AND_B).getProperties());
         assertEquals(3, hiddenProperties.size());
         boolean foundProp1Key1VisA = false;
         foundProp1Key2 = false;
@@ -1009,7 +1028,7 @@ public abstract class GraphTestBase {
         graph.flush();
 
         Assert.assertEquals(1, count(graph.getVertices(AUTHORIZATIONS_A)));
-        assertEquals("e2", IterableUtils.toList(graph.getVertices(AUTHORIZATIONS_A)).get(0).getId());
+        assertEquals("e2", toList(graph.getVertices(AUTHORIZATIONS_A)).get(0).getId());
 
         Assert.assertEquals(3, count(graph.getVertices(AUTHORIZATIONS_B)));
         boolean foundW2 = false;
@@ -1583,7 +1602,7 @@ public abstract class GraphTestBase {
                 .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
-        List<Vertex> allVertices = IterableUtils.toList(graph.query(AUTHORIZATIONS_A_AND_B).vertices());
+        List<Vertex> allVertices = toList(graph.query(AUTHORIZATIONS_A_AND_B).vertices());
         Assert.assertEquals(3, count(allVertices));
         if (disableUpdateEdgeCountInSearchIndexSuccess) {
             assertEquals(
@@ -1622,17 +1641,17 @@ public abstract class GraphTestBase {
                 .save(AUTHORIZATIONS_A);
         graph.flush();
 
-        List<Vertex> vertices = IterableUtils.toList(graph.query(new String[]{"v1", "v2"}, AUTHORIZATIONS_A)
+        List<Vertex> vertices = toList(graph.query(new String[]{"v1", "v2"}, AUTHORIZATIONS_A)
                 .has("age", Compare.GREATER_THAN, 27)
                 .vertices());
         Assert.assertEquals(1, vertices.size());
         assertEquals("v2", vertices.get(0).getId());
 
-        vertices = IterableUtils.toList(graph.query(new String[]{"v1", "v2", "v3"}, AUTHORIZATIONS_A)
+        vertices = toList(graph.query(new String[]{"v1", "v2", "v3"}, AUTHORIZATIONS_A)
                 .has("age", Compare.GREATER_THAN, 27)
                 .vertices());
         Assert.assertEquals(2, vertices.size());
-        List<String> vertexIds = IterableUtils.toList(new ConvertingIterable<Vertex, String>(vertices) {
+        List<String> vertexIds = toList(new ConvertingIterable<Vertex, String>(vertices) {
             @Override
             protected String convert(Vertex o) {
                 return o.getId();
@@ -1690,7 +1709,7 @@ public abstract class GraphTestBase {
         if (!isUsingDefaultQuery(graph)) {
             vertices = graph.query("joe smith", AUTHORIZATIONS_A)
                     .vertices();
-            List<Vertex> verticesList = IterableUtils.toList(vertices);
+            List<Vertex> verticesList = toList(vertices);
             assertEquals(2, verticesList.size());
             boolean foundV1 = false;
             boolean foundV2 = false;
@@ -1759,7 +1778,7 @@ public abstract class GraphTestBase {
                 .setProperty("location", new GeoPoint(38.9544, -77.3464, "Reston, VA"), VISIBILITY_A)
                 .save(AUTHORIZATIONS_A_AND_B);
 
-        List<Vertex> vertices = IterableUtils.toList(graph.query(AUTHORIZATIONS_A)
+        List<Vertex> vertices = toList(graph.query(AUTHORIZATIONS_A)
                 .has("location", GeoCompare.WITHIN, new GeoCircle(38.9186, -77.2297, 1))
                 .vertices());
         Assert.assertEquals(1, count(vertices));
@@ -1768,12 +1787,12 @@ public abstract class GraphTestBase {
         assertEquals(-77.2297, geoPoint.getLongitude(), 0.001);
         assertEquals("Reston, VA", geoPoint.getDescription());
 
-        vertices = IterableUtils.toList(graph.query(AUTHORIZATIONS_A)
+        vertices = toList(graph.query(AUTHORIZATIONS_A)
                 .has("location", GeoCompare.WITHIN, new GeoCircle(38.9186, -77.2297, 25))
                 .vertices());
         Assert.assertEquals(2, count(vertices));
 
-        vertices = IterableUtils.toList(graph.query(AUTHORIZATIONS_A)
+        vertices = toList(graph.query(AUTHORIZATIONS_A)
                 .has("location", TextPredicate.CONTAINS, "Reston")
                 .vertices());
         Assert.assertEquals(2, count(vertices));
@@ -1862,7 +1881,7 @@ public abstract class GraphTestBase {
 
         v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
         v4 = graph.getVertex("v4", AUTHORIZATIONS_A);
-        List<Path> paths = IterableUtils.toList(graph.findPaths(v1, v4, 2, AUTHORIZATIONS_A));
+        List<Path> paths = toList(graph.findPaths(v1, v4, 2, AUTHORIZATIONS_A));
         // v1 -> v2 -> v4
         // v1 -> v3 -> v4
         assertEquals(2, paths.size());
@@ -1893,7 +1912,7 @@ public abstract class GraphTestBase {
 
         v4 = graph.getVertex("v4", AUTHORIZATIONS_A);
         v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
-        paths = IterableUtils.toList(graph.findPaths(v4, v1, 2, AUTHORIZATIONS_A));
+        paths = toList(graph.findPaths(v4, v1, 2, AUTHORIZATIONS_A));
         // v4 -> v2 -> v1
         // v4 -> v3 -> v1
         assertEquals(2, paths.size());
@@ -1942,7 +1961,7 @@ public abstract class GraphTestBase {
         v2 = graph.getVertex("v2", AUTHORIZATIONS_A);
         v5 = graph.getVertex("v5", AUTHORIZATIONS_A);
 
-        List<Path> paths = IterableUtils.toList(graph.findPaths(v1, v2, 2, AUTHORIZATIONS_A));
+        List<Path> paths = toList(graph.findPaths(v1, v2, 2, AUTHORIZATIONS_A));
         // v1 -> v4 -> v2
         // v1 -> v3 -> v2
         assertEquals(2, paths.size());
@@ -1971,7 +1990,7 @@ public abstract class GraphTestBase {
         assertTrue("v3 not found in path", found3);
         assertTrue("v4 not found in path", found4);
 
-        paths = IterableUtils.toList(graph.findPaths(v1, v2, 3, AUTHORIZATIONS_A));
+        paths = toList(graph.findPaths(v1, v2, 3, AUTHORIZATIONS_A));
         // v1 -> v4 -> v2
         // v1 -> v3 -> v2
         // v1 -> v3 -> v4 -> v2
@@ -2007,10 +2026,10 @@ public abstract class GraphTestBase {
         assertTrue("v3 not found in path", found3);
         assertTrue("v4 not found in path", found4);
 
-        paths = IterableUtils.toList(graph.findPaths(v1, v5, 2, AUTHORIZATIONS_A));
+        paths = toList(graph.findPaths(v1, v5, 2, AUTHORIZATIONS_A));
         assertEquals(0, paths.size());
 
-        paths = IterableUtils.toList(graph.findPaths(v1, v5, 3, AUTHORIZATIONS_A));
+        paths = toList(graph.findPaths(v1, v5, 3, AUTHORIZATIONS_A));
         // v1 -> v4 -> v2 -> v5
         // v1 -> v3 -> v2 -> v5
         assertEquals(2, paths.size());
@@ -2119,7 +2138,7 @@ public abstract class GraphTestBase {
         vertexIds.add("v1");
         vertexIds.add("v2");
         vertexIds.add("v3");
-        Iterable<String> edgeIds = IterableUtils.toList(graph.findRelatedEdges(vertexIds, AUTHORIZATIONS_A));
+        Iterable<String> edgeIds = toList(graph.findRelatedEdges(vertexIds, AUTHORIZATIONS_A));
         Assert.assertEquals(4, count(edgeIds));
         org.vertexium.test.util.IterableUtils.assertContains(ev1v2.getId(), edgeIds);
         org.vertexium.test.util.IterableUtils.assertContains(ev1v3.getId(), edgeIds);
@@ -2164,7 +2183,7 @@ public abstract class GraphTestBase {
         }
 
         startTime = new Date();
-        Iterable<String> edgeIds = IterableUtils.toList(graph.findRelatedEdges(vertexIds, AUTHORIZATIONS_A));
+        Iterable<String> edgeIds = toList(graph.findRelatedEdges(vertexIds, AUTHORIZATIONS_A));
         count(edgeIds);
         endTime = new Date();
         long findRelatedEdgesTime = endTime.getTime() - startTime.getTime();
@@ -2381,7 +2400,7 @@ public abstract class GraphTestBase {
         v1 = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B);
         Property v1Prop1 = v1.getProperty("prop1");
         assertNotNull(v1Prop1);
-        Assert.assertEquals(1, IterableUtils.toList(v1Prop1.getMetadata().entrySet()).size());
+        Assert.assertEquals(1, toList(v1Prop1.getMetadata().entrySet()).size());
         assertEquals("value1", v1Prop1.getMetadata().getValue("prop1_key1"));
         assertNotNull(v1.getProperty("prop2"));
 
@@ -2753,7 +2772,7 @@ public abstract class GraphTestBase {
 
     @Test
     public void testGraphMetadata() {
-        List<GraphMetadataEntry> existingMetadata = IterableUtils.toList(graph.getMetadata());
+        List<GraphMetadataEntry> existingMetadata = toList(graph.getMetadata());
 
         graph.setMetadata("test1", "value1");
         graph.setMetadata("test2", "value2");
@@ -2761,7 +2780,7 @@ public abstract class GraphTestBase {
         assertEquals("value1", graph.getMetadata("test1"));
         assertEquals("value2", graph.getMetadata("test2"));
 
-        List<GraphMetadataEntry> newMetadata = IterableUtils.toList(graph.getMetadata());
+        List<GraphMetadataEntry> newMetadata = toList(graph.getMetadata());
         assertEquals(existingMetadata.size() + 2, newMetadata.size());
     }
 
@@ -2792,7 +2811,7 @@ public abstract class GraphTestBase {
                 .save(AUTHORIZATIONS_A);
         graph.flush();
 
-        List<Vertex> vertices = IterableUtils.toList(
+        List<Vertex> vertices = toList(
                 graph.querySimilarTo(new String[]{"text"}, "Mary had a little lamb, His fleece was white as snow", AUTHORIZATIONS_A_AND_B)
                         .minTermFrequency(1)
                         .maxQueryTerms(25)
@@ -2808,7 +2827,7 @@ public abstract class GraphTestBase {
         assertEquals("v4", vertices.get(2).getId());
         assertEquals("v3", vertices.get(3).getId());
 
-        vertices = IterableUtils.toList(
+        vertices = toList(
                 graph.querySimilarTo(new String[]{"text"}, "Mary had a little lamb, His fleece was white as snow", AUTHORIZATIONS_A)
                         .minTermFrequency(1)
                         .maxQueryTerms(25)
@@ -2843,7 +2862,7 @@ public abstract class GraphTestBase {
         graph.flush();
 
         Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
-        List<HistoricalPropertyValue> values = IterableUtils.toList(v1.getHistoricalPropertyValues("", "age", VISIBILITY_A, AUTHORIZATIONS_A));
+        List<HistoricalPropertyValue> values = toList(v1.getHistoricalPropertyValues("", "age", VISIBILITY_A, AUTHORIZATIONS_A));
         assertEquals(2, values.size());
 
         assertEquals(30, values.get(0).getValue());
@@ -2877,7 +2896,7 @@ public abstract class GraphTestBase {
         graph.flush();
 
         Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
-        List<HistoricalPropertyValue> values = IterableUtils.toList(v1.getHistoricalPropertyValues("", "text", VISIBILITY_A, AUTHORIZATIONS_A));
+        List<HistoricalPropertyValue> values = toList(v1.getHistoricalPropertyValues("", "text", VISIBILITY_A, AUTHORIZATIONS_A));
         assertEquals(2, values.size());
 
         assertEquals("value2", ((StreamingPropertyValue) values.get(0).getValue()).readToString());
@@ -2943,10 +2962,20 @@ public abstract class GraphTestBase {
         return graphBaseWithSearchIndex.getSearchIndex() instanceof DefaultSearchIndex;
     }
 
+    protected List<Vertex> sortById(List<Vertex> vertices) {
+        Collections.sort(vertices, new Comparator<Vertex>() {
+            @Override
+            public int compare(Vertex o1, Vertex o2) {
+                return o1.getId().compareTo(o2.getId());
+            }
+        });
+        return vertices;
+    }
+
     protected void assertVertexIds(Iterable<Vertex> vertices, String[] expectedIds) {
         String verticesIdsString = idsToString(vertices);
         String expectedIdsString = idsToString(expectedIds);
-        List<Vertex> verticesList = IterableUtils.toList(vertices);
+        List<Vertex> verticesList = toList(vertices);
         assertEquals("ids length mismatch found:[" + verticesIdsString + "] expected:[" + expectedIdsString + "]", expectedIds.length, verticesList.size());
         for (int i = 0; i < expectedIds.length; i++) {
             assertEquals("at offset: " + i + " found:[" + verticesIdsString + "] expected:[" + expectedIdsString + "]", expectedIds[i], verticesList.get(i).getId());
@@ -2967,7 +2996,7 @@ public abstract class GraphTestBase {
     }
 
     private String idsToString(Iterable<Vertex> vertices) {
-        List<String> idsList = IterableUtils.toList(new ConvertingIterable<Vertex, String>(vertices) {
+        List<String> idsList = toList(new ConvertingIterable<Vertex, String>(vertices) {
             @Override
             protected String convert(Vertex o) {
                 return o.getId();
@@ -2986,7 +3015,7 @@ public abstract class GraphTestBase {
     }
 
     protected void assertEdgeIds(Iterable<Edge> edges, String[] ids) {
-        List<Edge> edgesList = IterableUtils.toList(edges);
+        List<Edge> edgesList = toList(edges);
         assertEquals("ids length mismatch", ids.length, edgesList.size());
         for (int i = 0; i < ids.length; i++) {
             assertEquals("at offset: " + i, ids[i], edgesList.get(i).getId());

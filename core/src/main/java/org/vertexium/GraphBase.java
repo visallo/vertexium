@@ -8,6 +8,7 @@ import org.vertexium.path.PathFindingAlgorithm;
 import org.vertexium.path.RecursivePathFindingAlgorithm;
 import org.vertexium.query.GraphQuery;
 import org.vertexium.query.SimilarToGraphQuery;
+import org.vertexium.util.FilterIterable;
 import org.vertexium.util.IterableUtils;
 import org.vertexium.util.LookAheadIterable;
 
@@ -83,6 +84,28 @@ public abstract class GraphBase implements Graph {
     @Override
     public Vertex getVertex(String vertexId, Authorizations authorizations) throws VertexiumException {
         return getVertex(vertexId, FetchHint.ALL, authorizations);
+    }
+
+    @Override
+    public Iterable<Vertex> getVerticesWithPrefix(String vertexIdPrefix, Authorizations authorizations) {
+        return getVerticesWithPrefix(vertexIdPrefix, FetchHint.ALL, authorizations);
+    }
+
+    @Override
+    public Iterable<Vertex> getVerticesWithPrefix(String vertexIdPrefix, EnumSet<FetchHint> fetchHints, Authorizations authorizations) {
+        return getVerticesWithPrefix(vertexIdPrefix, fetchHints, null, authorizations);
+    }
+
+    @Override
+    public Iterable<Vertex> getVerticesWithPrefix(final String vertexIdPrefix, EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations) {
+        LOGGER.warn("Performing scan of all vertices! Override getVerticesWithPrefix.");
+        Iterable<Vertex> vertices = getVertices(fetchHints, endTime, authorizations);
+        return new FilterIterable<Vertex>(vertices) {
+            @Override
+            protected boolean isIncluded(Vertex v) {
+                return v.getId().startsWith(vertexIdPrefix);
+            }
+        };
     }
 
     @Override
