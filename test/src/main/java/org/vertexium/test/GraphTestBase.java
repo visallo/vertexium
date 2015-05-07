@@ -665,6 +665,97 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    public void testMarkHiddenWithVisibilityChange() {
+        Vertex v1 = graph.prepareVertex("v1", VISIBILITY_A)
+                .addPropertyValue("key1", "firstName", "Joe", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+        assertEquals(1, count(v1.getProperties()));
+        org.vertexium.test.util.IterableUtils.assertContains("Joe", v1.getPropertyValues("firstName"));
+
+        v1 = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B);
+        v1.markPropertyHidden("key1", "firstName", VISIBILITY_A, VISIBILITY_B, AUTHORIZATIONS_A_AND_B);
+        v1.addPropertyValue("key1", "firstName", "Joseph", VISIBILITY_B, AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        List<Property> properties = IterableUtils.toList(graph.getVertex("v1", FetchHint.ALL_INCLUDING_HIDDEN, AUTHORIZATIONS_A_AND_B).getProperties());
+        assertEquals(2, count(properties));
+
+        boolean foundJoeProp = false;
+        boolean foundJosephProp = false;
+        for (Property property : properties) {
+            if (property.getName().equals("firstName")) {
+                if (property.getKey().equals("key1") && property.getValue().equals("Joe")) {
+                    foundJoeProp = true;
+                    assertTrue("should be hidden", property.isHidden(AUTHORIZATIONS_A_AND_B));
+                    assertFalse("should not be hidden", property.isHidden(AUTHORIZATIONS_A));
+                } else if (property.getKey().equals("key1") && property.getValue().equals("Joseph")) {
+                    if (property.getVisibility().equals(VISIBILITY_B)) {
+                        foundJosephProp = true;
+                        assertFalse("should not be hidden", property.isHidden(AUTHORIZATIONS_A_AND_B));
+                    } else {
+                        throw new RuntimeException("Unexpected visibility " + property.getVisibility());
+                    }
+                } else {
+                    throw new RuntimeException("Unexpected property key " + property.getKey());
+                }
+            } else {
+                throw new RuntimeException("Unexpected property name " + property.getName());
+            }
+        }
+        assertTrue("Joseph property value not found", foundJosephProp);
+        assertTrue("Joe property value not found", foundJoeProp);
+    }
+
+    @Test
+    public void testSoftDeleteWithVisibilityChanges() {
+        Vertex v1 = graph.prepareVertex("v1", VISIBILITY_A)
+                .addPropertyValue("key1", "firstName", "Joe", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+        assertEquals(1, count(v1.getProperties()));
+        org.vertexium.test.util.IterableUtils.assertContains("Joe", v1.getPropertyValues("firstName"));
+
+        v1 = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B);
+        v1.markPropertyHidden("key1", "firstName", VISIBILITY_A, VISIBILITY_B, AUTHORIZATIONS_A_AND_B);
+        v1.addPropertyValue("key1", "firstName", "Joseph", VISIBILITY_B, AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+        v1.softDeleteProperty("key1", "firstName", VISIBILITY_B, AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+        v1.addPropertyValue("key1", "firstName", "Joseph", VISIBILITY_A, AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        List<Property> properties = IterableUtils.toList(graph.getVertex("v1", FetchHint.ALL_INCLUDING_HIDDEN, AUTHORIZATIONS_A_AND_B).getProperties());
+        assertEquals(1, count(properties));
+        Property property = properties.iterator().next();
+        assertEquals(VISIBILITY_A, property.getVisibility());
+        assertEquals("Joseph", property.getValue());
+        assertEquals(1, count(property.getHiddenVisibilities()));
+
+        Vertex v2 = graph.prepareVertex("v2", VISIBILITY_A)
+                .addPropertyValue("key1", "firstName", "Joe", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+        assertEquals(1, count(v2.getProperties()));
+        org.vertexium.test.util.IterableUtils.assertContains("Joe", v2.getPropertyValues("firstName"));
+
+        v2 = graph.getVertex("v2", AUTHORIZATIONS_A_AND_B);
+        v2.markPropertyHidden("key1", "firstName", VISIBILITY_A, VISIBILITY_B, AUTHORIZATIONS_A_AND_B);
+        v2.addPropertyValue("key1", "firstName", "Joseph", VISIBILITY_B, AUTHORIZATIONS_A_AND_B);
+        v2.softDeleteProperty("key1", "firstName", VISIBILITY_B, AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+        v2.addPropertyValue("key1", "firstName", "Joe", VISIBILITY_A, AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        properties = IterableUtils.toList(graph.getVertex("v2", FetchHint.ALL_INCLUDING_HIDDEN, AUTHORIZATIONS_A_AND_B).getProperties());
+        assertEquals(1, count(properties));
+        property = properties.iterator().next();
+        assertEquals(VISIBILITY_A, property.getVisibility());
+        assertEquals("Joe", property.getValue());
+        assertEquals(1, count(property.getHiddenVisibilities()));
+    }
+
+    @Test
     public void testAddVertexWithVisibility() {
         graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_ALL);
         graph.addVertex("v2", VISIBILITY_B, AUTHORIZATIONS_ALL);
