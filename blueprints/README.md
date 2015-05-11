@@ -68,9 +68,9 @@ Setting up Rexster
             <graph-search>org.vertexium.elasticsearch.ElasticSearchSearchIndex</graph-search>
             <graph-search-locations>192.168.33.10</graph-search-locations>
             <graph-search-indexName>vertexium</graph-search-indexName>
-            <graph-visibilityProvider>org.vertexium.blueprints.DefaultVisibilityProvider</visibilityProvider>
-            <graph-authorizationsProvider>org.vertexium.accumulo.blueprints.AccumuloAuthorizationsProvider</authorizationsProvider>
-            <graph-authorizationsProvider-auths>auth1,auth2</authorizationsProvider-auths>
+            <graph-visibilityProvider>org.vertexium.blueprints.DefaultVisibilityProvider</graph.visibilityProvider>
+            <graph-authorizationsProvider>org.vertexium.accumulo.blueprints.AccumuloAuthorizationsProvider</graph.authorizationsProvider>
+            <graph-authorizationsProvider-auths>auth1,auth2</graph.authorizationsProvider-auths>
             <extensions>
                 <allows>
                     <allow>tp:gremlin</allow>
