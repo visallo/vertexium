@@ -39,7 +39,7 @@
         </dependency>
 
         <dependency>
-            <groupId>org.neolumin.webster</groupId>
+            <groupId>com.v5analytics.webster</groupId>
             <artifactId>webster</artifactId>
             <version>${webster.version}</version>
         </dependency>

@@ -1,8 +1,8 @@
 package org.vertexium.accumulo.blueprints;
 
 import com.tinkerpop.blueprints.Graph;
+import com.tinkerpop.rexster.config.GraphConfigurationContext;
 import com.tinkerpop.rexster.config.GraphConfigurationException;
-import org.apache.commons.configuration.Configuration;
 import org.vertexium.blueprints.VertexiumRexsterGraphConfiguration;
 import org.vertexium.util.ApacheConfigurationUtils;
 
@@ -13,8 +13,8 @@ import java.util.Map;
 
 public class AccumuloVertexiumRexsterGraphConfiguration extends VertexiumRexsterGraphConfiguration {
     @Override
-    public Graph configureGraphInstance(Configuration configuration) throws GraphConfigurationException {
-        Map configurationMap = ApacheConfigurationUtils.toMap(configuration);
+    public Graph configureGraphInstance(GraphConfigurationContext configuration) throws GraphConfigurationException {
+        Map configurationMap = ApacheConfigurationUtils.toMap(configuration.getProperties());
         Map convertedConfigurationMap = new HashMap();
         for (Object key : configurationMap.keySet()) {
             Object convertedKey = key.toString().replaceAll("-", ".");

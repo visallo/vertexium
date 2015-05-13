@@ -1,6 +1,6 @@
 package org.vertexium.examples;
 
-import org.neolumin.webster.Handler;
+import com.v5analytics.webster.Handler;
 
 import javax.servlet.http.HttpServletRequest;
 

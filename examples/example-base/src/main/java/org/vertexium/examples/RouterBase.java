@@ -1,8 +1,8 @@
 package org.vertexium.examples;
 
-import org.neolumin.webster.App;
-import org.neolumin.webster.handlers.StaticFileHandler;
-import org.neolumin.webster.handlers.StaticResourceHandler;
+import com.v5analytics.webster.App;
+import com.v5analytics.webster.handlers.StaticFileHandler;
+import com.v5analytics.webster.handlers.StaticResourceHandler;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;

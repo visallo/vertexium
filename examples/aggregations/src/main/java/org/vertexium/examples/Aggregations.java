@@ -1,16 +1,16 @@
 package org.vertexium.examples;
 
+import com.v5analytics.webster.App;
+import com.v5analytics.webster.HandlerChain;
 import org.json.JSONArray;
 import org.json.JSONObject;
-import org.vertexium.Authorizations;
-import org.vertexium.Vertex;
-import org.vertexium.type.GeoPoint;
-import org.vertexium.type.GeoRect;
-import org.neolumin.webster.App;
-import org.neolumin.webster.HandlerChain;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.vertexium.Authorizations;
+import org.vertexium.Vertex;
 import org.vertexium.query.*;
+import org.vertexium.type.GeoPoint;
+import org.vertexium.type.GeoRect;
 
 import javax.imageio.ImageIO;
 import javax.servlet.Servlet;

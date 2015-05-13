@@ -11,8 +11,8 @@
     <name>Vertexium: Blueprints</name>
 
     <properties>
-        <blueprints.version>2.4.0</blueprints.version>
-        <rexster.version>2.4.0</rexster.version>
+        <blueprints.version>2.6.0</blueprints.version>
+        <rexster.version>2.6.0</rexster.version>
     </properties>
 
     <dependencies>
