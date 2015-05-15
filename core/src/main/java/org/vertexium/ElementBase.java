@@ -1,6 +1,7 @@
 package org.vertexium;
 
 import org.vertexium.mutation.ElementMutation;
+import org.vertexium.mutation.ExistingElementMutation;
 import org.vertexium.mutation.PropertyDeleteMutation;
 import org.vertexium.mutation.PropertySoftDeleteMutation;
 import org.vertexium.property.MutableProperty;
@@ -19,7 +20,6 @@ public abstract class ElementBase implements Element {
     private Set<Visibility> hiddenVisibilities = new HashSet<>();
 
     private final ConcurrentSkipListSet<Property> properties;
-    private final ConcurrentSkipListSet<Property> softDeletedProperties;
     private ConcurrentSkipListSet<PropertyDeleteMutation> propertyDeleteMutations;
     private ConcurrentSkipListSet<PropertySoftDeleteMutation> propertySoftDeleteMutations;
     private final Authorizations authorizations;
@@ -40,7 +40,6 @@ public abstract class ElementBase implements Element {
         this.visibility = visibility;
         this.timestamp = timestamp;
         this.properties = new ConcurrentSkipListSet<>();
-        this.softDeletedProperties = new ConcurrentSkipListSet<>();
         this.authorizations = authorizations;
         if (hiddenVisibilities != null) {
             for (Visibility v : hiddenVisibilities) {
@@ -273,7 +272,6 @@ public abstract class ElementBase implements Element {
         if (property != null) {
             this.properties.remove(property);
         }
-        this.softDeletedProperties.add(property);
         return property;
     }
 
@@ -282,7 +280,6 @@ public abstract class ElementBase implements Element {
         if (property != null) {
             this.properties.remove(property);
         }
-        this.softDeletedProperties.add(property);
         return property;
     }
 
@@ -299,22 +296,6 @@ public abstract class ElementBase implements Element {
         }
 
         return removedProperties;
-    }
-
-    protected Iterable<Property> softDeletePropertyInternal(String name) {
-        List<Property> softDeletedProperties = new ArrayList<>();
-        for (Property p : this.properties) {
-            if (p.getName().equals(name)) {
-                softDeletedProperties.add(p);
-            }
-        }
-
-        for (Property p : softDeletedProperties) {
-            this.properties.remove(p);
-            this.softDeletedProperties.add(p);
-        }
-
-        return softDeletedProperties;
     }
 
     public Graph getGraph() {
@@ -380,11 +361,33 @@ public abstract class ElementBase implements Element {
     }
 
     @Override
-    public void markPropertyHidden(String key, String name, Visibility propertyVisibility, Visibility visibility, Authorizations authorizations) {
+    public void markPropertyHidden(String key, String name, Visibility propertyVisibility, Long timestamp, Visibility visibility, Authorizations authorizations) {
         Iterable<Property> properties = getProperties(key, name);
         for (Property property : properties) {
             if (property.getVisibility().equals(propertyVisibility)) {
-                markPropertyHidden(property, visibility, authorizations);
+                markPropertyHidden(property, timestamp, visibility, authorizations);
+                return;
+            }
+        }
+        throw new IllegalArgumentException("Could not find property " + key + " : " + name + " : " + propertyVisibility);
+    }
+
+    @Override
+    public void markPropertyHidden(String key, String name, Visibility propertyVisibility, Visibility visibility, Authorizations authorizations) {
+        markPropertyHidden(key, name, propertyVisibility, null, visibility, authorizations);
+    }
+
+    @Override
+    public void markPropertyHidden(Property property, Visibility visibility, Authorizations authorizations) {
+        markPropertyHidden(property, null, visibility, authorizations);
+    }
+
+    @Override
+    public void markPropertyVisible(String key, String name, Visibility propertyVisibility, Long timestamp, Visibility visibility, Authorizations authorizations) {
+        Iterable<Property> properties = getProperties(key, name);
+        for (Property property : properties) {
+            if (property.getVisibility().equals(propertyVisibility)) {
+                markPropertyVisible(property, timestamp, visibility, authorizations);
                 return;
             }
         }
@@ -393,15 +396,22 @@ public abstract class ElementBase implements Element {
 
     @Override
     public void markPropertyVisible(String key, String name, Visibility propertyVisibility, Visibility visibility, Authorizations authorizations) {
-        Iterable<Property> properties = getProperties(key, name);
-        for (Property property : properties) {
-            if (property.getVisibility().equals(propertyVisibility)) {
-                markPropertyVisible(property, visibility, authorizations);
-                return;
-            }
-        }
-        throw new IllegalArgumentException("Could not find property " + key + " : " + name + " : " + propertyVisibility);
+        markPropertyVisible(key, name, propertyVisibility, null, visibility, authorizations);
     }
+
+    @Override
+    public void markPropertyVisible(Property property, Visibility visibility, Authorizations authorizations) {
+        markPropertyVisible(property, null, visibility, authorizations);
+    }
+
+    @Override
+    public abstract <T extends Element> ExistingElementMutation<T> prepareMutation();
+
+    @Override
+    public abstract void markPropertyHidden(Property property, Long timestamp, Visibility visibility, Authorizations authorizations);
+
+    @Override
+    public abstract void markPropertyVisible(Property property, Long timestamp, Visibility visibility, Authorizations authorizations);
 
     @Override
     public Authorizations getAuthorizations() {
@@ -428,21 +438,6 @@ public abstract class ElementBase implements Element {
             }
         }
         return false;
-    }
-
-    protected void addHiddenVisibility(Visibility visibility) {
-        this.hiddenVisibilities.add(visibility);
-    }
-
-    protected void removeHiddenVisibility(Visibility visibility) {
-        this.hiddenVisibilities.remove(visibility);
-    }
-
-    protected String[] labelToArrayOrNull(String label) {
-        if (label == null) {
-            return null;
-        }
-        return new String[]{label};
     }
 
     @Override

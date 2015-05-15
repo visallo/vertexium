@@ -5,7 +5,7 @@ import org.vertexium.Visibility;
 public class AlterPropertyVisibility {
     private final String key;
     private final String name;
-    private final Visibility existingVisibility;
+    private Visibility existingVisibility;
     private final Visibility visibility;
 
     public AlterPropertyVisibility(String key, String name, Visibility existingVisibility, Visibility visibility) {
@@ -25,6 +25,10 @@ public class AlterPropertyVisibility {
 
     public Visibility getExistingVisibility() {
         return existingVisibility;
+    }
+
+    public void setExistingVisibility(Visibility existingVisibility) {
+        this.existingVisibility = existingVisibility;
     }
 
     public Visibility getVisibility() {

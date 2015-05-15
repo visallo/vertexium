@@ -1,63 +1,40 @@
 package org.vertexium.inmemory;
 
 import org.vertexium.*;
+import org.vertexium.inmemory.mutations.AlterEdgeLabelMutation;
+import org.vertexium.inmemory.mutations.EdgeSetupMutation;
 import org.vertexium.mutation.ExistingEdgeMutation;
-import org.vertexium.mutation.PropertyDeleteMutation;
-import org.vertexium.mutation.PropertySoftDeleteMutation;
+import org.vertexium.search.IndexHint;
 
 import java.util.EnumSet;
 
 public class InMemoryEdge extends InMemoryElement implements Edge {
-    private final String outVertexId;
-    private final String inVertexId;
-    private String label;
+    private final EdgeSetupMutation edgeSetupMutation;
 
-    protected InMemoryEdge(
-            Graph graph,
-            String edgeId,
-            String outVertexId,
-            String inVertexId,
-            String label,
-            Visibility visibility,
-            Iterable<Property> properties,
-            InMemoryHistoricalPropertyValues historicalPropertyValues,
-            Iterable<PropertyDeleteMutation> propertyDeleteMutations,
-            Iterable<PropertySoftDeleteMutation> propertySoftDeleteMutations,
-            Iterable<Visibility> hiddenVisibilities,
-            long startTime,
-            long timestamp,
+    InMemoryEdge(
+            InMemoryGraph graph,
+            String id,
+            InMemoryTableEdge inMemoryTableElement,
+            boolean includeHidden,
+            Long endTime,
             Authorizations authorizations
     ) {
-        super(
-                graph,
-                edgeId,
-                visibility,
-                properties,
-                historicalPropertyValues,
-                propertyDeleteMutations,
-                propertySoftDeleteMutations,
-                hiddenVisibilities,
-                startTime,
-                timestamp,
-                authorizations
-        );
-        this.outVertexId = outVertexId;
-        this.inVertexId = inVertexId;
-        this.label = label;
+        super(graph, id, inMemoryTableElement, includeHidden, endTime, authorizations);
+        edgeSetupMutation = inMemoryTableElement.findLastMutation(EdgeSetupMutation.class);
     }
 
     @Override
     public String getLabel() {
-        return this.label;
+        return ((AlterEdgeLabelMutation) inMemoryTableElement.findLastMutation(AlterEdgeLabelMutation.class)).getNewEdgeLabel();
     }
 
     @Override
     public String getVertexId(Direction direction) {
         switch (direction) {
             case IN:
-                return inVertexId;
+                return edgeSetupMutation.getInVertexId();
             case OUT:
-                return outVertexId;
+                return edgeSetupMutation.getOutVertexId();
             default:
                 throw new IllegalArgumentException("Unexpected direction: " + direction);
         }
@@ -75,10 +52,10 @@ public class InMemoryEdge extends InMemoryElement implements Edge {
 
     @Override
     public String getOtherVertexId(String myVertexId) {
-        if (inVertexId.equals(myVertexId)) {
-            return outVertexId;
-        } else if (outVertexId.equals(myVertexId)) {
-            return inVertexId;
+        if (edgeSetupMutation.getInVertexId().equals(myVertexId)) {
+            return edgeSetupMutation.getOutVertexId();
+        } else if (edgeSetupMutation.getOutVertexId().equals(myVertexId)) {
+            return edgeSetupMutation.getInVertexId();
         }
         throw new VertexiumException("myVertexId does not appear on either the in or the out.");
     }
@@ -100,12 +77,12 @@ public class InMemoryEdge extends InMemoryElement implements Edge {
             @Override
             public Edge save(Authorizations authorizations) {
                 saveExistingElementMutation(this, authorizations);
-                return getElement();
+                Edge edge = getElement();
+                if (getIndexHint() != IndexHint.DO_NOT_INDEX) {
+                    saveMutationToSearchIndex(edge, getAlterPropertyVisibilities(), authorizations);
+                }
+                return edge;
             }
         };
-    }
-
-    void setLabel(String newEdgeLabel) {
-        this.label = newEdgeLabel;
     }
 }

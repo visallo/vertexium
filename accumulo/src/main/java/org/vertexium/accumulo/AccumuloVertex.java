@@ -344,4 +344,8 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
             }
         };
     }
+
+    private static String[] labelToArrayOrNull(String label) {
+        return label == null ? null : new String[]{label};
+    }
 }

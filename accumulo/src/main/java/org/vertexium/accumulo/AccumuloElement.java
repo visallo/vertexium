@@ -17,6 +17,7 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
     public static final Text CF_SOFT_DELETE = new Text("D");
     public static final Text CQ_SOFT_DELETE = new Text("D");
     public static final Value HIDDEN_VALUE = new Value("".getBytes());
+    public static final Value HIDDEN_VALUE_DELETED = new Value("X".getBytes());
     public static final Value SOFT_DELETE_VALUE = new Value("".getBytes());
     public static final Text CF_PROPERTY = new Text("PROP");
     public static final Text CF_PROPERTY_HIDDEN = new Text("PROPH");
@@ -56,6 +57,14 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
     }
 
     @Override
+    public void deleteProperty(String key, String name, Visibility visibility, Authorizations authorizations) {
+        Property property = super.removePropertyInternal(key, name, visibility);
+        if (property != null) {
+            getGraph().deleteProperty(this, property, authorizations);
+        }
+    }
+
+    @Override
     public void softDeleteProperty(String key, String name, Authorizations authorizations) {
         Property property = super.softDeletePropertyInternal(key, name);
         if (property != null) {
@@ -88,13 +97,13 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
     }
 
     @Override
-    public void markPropertyHidden(Property property, Visibility visibility, Authorizations authorizations) {
-        getGraph().markPropertyHidden(this, property, visibility, authorizations);
+    public void markPropertyHidden(Property property, Long timestamp, Visibility visibility, Authorizations authorizations) {
+        getGraph().markPropertyHidden(this, property, timestamp, visibility, authorizations);
     }
 
     @Override
-    public void markPropertyVisible(Property property, Visibility visibility, Authorizations authorizations) {
-        getGraph().markPropertyVisible(this, property, visibility, authorizations);
+    public void markPropertyVisible(Property property, Long timestamp, Visibility visibility, Authorizations authorizations) {
+        getGraph().markPropertyVisible(this, property, timestamp, visibility, authorizations);
     }
 
     @Override

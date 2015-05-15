@@ -1,6 +1,8 @@
 package org.vertexium;
 
 import org.vertexium.mutation.ExistingElementMutation;
+import org.vertexium.mutation.PropertyDeleteMutation;
+import org.vertexium.mutation.PropertySoftDeleteMutation;
 
 /**
  * An element on the graph. This can be either a vertex or edge.
@@ -192,6 +194,16 @@ public interface Element {
     void deleteProperty(String key, String name, Authorizations authorizations);
 
     /**
+     * Permanently deletes a property given it's key and name from the element. Only properties which you have access
+     * to can be deleted using this method.
+     *
+     * @param key        The property key.
+     * @param name       The property name.
+     * @param visibility The property visibility.
+     */
+    void deleteProperty(String key, String name, Visibility visibility, Authorizations authorizations);
+
+    /**
      * Permanently deletes all properties with the given name that you have access to. Only properties which you have
      * access to will be deleted.
      *
@@ -212,8 +224,8 @@ public interface Element {
      * Soft deletes a property given it's key and name from the element for a given visibility. Only properties which you have access
      * to can be soft deleted using this method.
      *
-     * @param key  The property key.
-     * @param name The property name.
+     * @param key        The property key.
+     * @param name       The property name.
      * @param visibility The visibility string of the property to soft delete.
      */
     void softDeleteProperty(String key, String name, Visibility visibility, Authorizations authorizations);
@@ -305,6 +317,20 @@ public interface Element {
     /**
      * Marks a property as hidden for a given visibility.
      *
+     * @param key                The key of the property.
+     * @param name               The name of the property.
+     * @param propertyVisibility The visibility of the property.
+     * @param timestamp          The timestamp.
+     * @param visibility         The visibility string under which this property is hidden.
+     *                           This visibility can be a superset of the property visibility to mark
+     *                           it as hidden for only a subset of authorizations.
+     * @param authorizations     The authorizations used.
+     */
+    void markPropertyHidden(String key, String name, Visibility propertyVisibility, Long timestamp, Visibility visibility, Authorizations authorizations);
+
+    /**
+     * Marks a property as hidden for a given visibility.
+     *
      * @param property       The property.
      * @param visibility     The visibility string under which this property is hidden.
      *                       This visibility can be a superset of the property visibility to mark
@@ -312,6 +338,18 @@ public interface Element {
      * @param authorizations The authorizations used.
      */
     void markPropertyHidden(Property property, Visibility visibility, Authorizations authorizations);
+
+    /**
+     * Marks a property as hidden for a given visibility.
+     *
+     * @param property       The property.
+     * @param timestamp      The timestamp.
+     * @param visibility     The visibility string under which this property is hidden.
+     *                       This visibility can be a superset of the property visibility to mark
+     *                       it as hidden for only a subset of authorizations.
+     * @param authorizations The authorizations used.
+     */
+    void markPropertyHidden(Property property, Long timestamp, Visibility visibility, Authorizations authorizations);
 
     /**
      * Marks a property as visible for a given visibility, effectively undoing markPropertyHidden.
@@ -327,11 +365,33 @@ public interface Element {
     /**
      * Marks a property as visible for a given visibility, effectively undoing markPropertyHidden.
      *
+     * @param key                The key of the property.
+     * @param name               The name of the property.
+     * @param propertyVisibility The visibility of the property.
+     * @param timestamp          The timestamp.
+     * @param visibility         The visibility string under which this property is now visible.
+     * @param authorizations     The authorizations used.
+     */
+    void markPropertyVisible(String key, String name, Visibility propertyVisibility, Long timestamp, Visibility visibility, Authorizations authorizations);
+
+    /**
+     * Marks a property as visible for a given visibility, effectively undoing markPropertyHidden.
+     *
      * @param property       The property.
      * @param visibility     The visibility string under which this property is now visible.
      * @param authorizations The authorizations used.
      */
     void markPropertyVisible(Property property, Visibility visibility, Authorizations authorizations);
+
+    /**
+     * Marks a property as visible for a given visibility, effectively undoing markPropertyHidden.
+     *
+     * @param property       The property.
+     * @param timestamp      The timestamp.
+     * @param visibility     The visibility string under which this property is now visible.
+     * @param authorizations The authorizations used.
+     */
+    void markPropertyVisible(Property property, Long timestamp, Visibility visibility, Authorizations authorizations);
 
     /**
      * Given the supplied authorizations is this element hidden?

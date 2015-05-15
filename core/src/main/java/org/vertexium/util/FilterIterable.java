@@ -3,9 +3,9 @@ package org.vertexium.util;
 import java.util.Iterator;
 
 public abstract class FilterIterable<T> extends LookAheadIterable<T, T> implements Iterable<T> {
-    private final Iterable<T> iterable;
+    private final Iterable<? extends T> iterable;
 
-    public FilterIterable(Iterable<T> iterable) {
+    public FilterIterable(Iterable<? extends T> iterable) {
         this.iterable = iterable;
     }
 
@@ -16,7 +16,7 @@ public abstract class FilterIterable<T> extends LookAheadIterable<T, T> implemen
 
     @Override
     protected Iterator<T> createIterator() {
-        return this.iterable.iterator();
+        return (Iterator<T>) this.iterable.iterator();
     }
 
     protected final boolean isIncluded(T src, T dest) {

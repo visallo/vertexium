@@ -73,7 +73,7 @@ public abstract class ElementMaker<T> {
             }
 
             if (columnFamily.equals(AccumuloElement.CF_PROPERTY_HIDDEN)) {
-                extractPropertyHidden(columnQualifier, columnVisibility);
+                extractPropertyHidden(columnQualifier, columnVisibility, value);
             }
 
             if (columnFamily.equals(AccumuloElement.CF_PROPERTY_SOFT_DELETE)) {
@@ -212,7 +212,10 @@ public abstract class ElementMaker<T> {
         return false;
     }
 
-    private void extractPropertyHidden(Text columnQualifier, ColumnVisibility columnVisibility) {
+    private void extractPropertyHidden(Text columnQualifier, ColumnVisibility columnVisibility, Value value) {
+        if (value.equals(AccumuloElement.HIDDEN_VALUE_DELETED)) {
+            return;
+        }
         PropertyHiddenColumnQualifier propertyHiddenColumnQualifier = new PropertyHiddenColumnQualifier(columnQualifier, getGraph().getNameSubstitutionStrategy());
         HiddenProperty hiddenProperty = new HiddenProperty(
                 propertyHiddenColumnQualifier.getPropertyKey(),

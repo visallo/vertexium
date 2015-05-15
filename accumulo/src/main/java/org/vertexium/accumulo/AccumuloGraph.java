@@ -847,16 +847,19 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
         return new AccumuloAuthorizations(auths);
     }
 
-    @SuppressWarnings("unused")
-    public void markPropertyHidden(AccumuloElement element, Property property, Visibility visibility, Authorizations authorizations) {
+    public void markPropertyHidden(AccumuloElement element, Property property, Long timestamp, Visibility visibility, Authorizations authorizations) {
         checkNotNull(element);
+
+        if (timestamp == null) {
+            timestamp = System.currentTimeMillis();
+        }
 
         ColumnVisibility columnVisibility = visibilityToAccumuloVisibility(visibility);
 
         if (element instanceof Vertex) {
-            addMutations(getVerticesWriter(), getMarkHiddenPropertyMutation(AccumuloConstants.VERTEX_ROW_KEY_PREFIX + element.getId(), property, columnVisibility));
+            addMutations(getVerticesWriter(), getMarkHiddenPropertyMutation(AccumuloConstants.VERTEX_ROW_KEY_PREFIX + element.getId(), property, timestamp, columnVisibility));
         } else if (element instanceof Edge) {
-            addMutations(getVerticesWriter(), getMarkHiddenPropertyMutation(AccumuloConstants.EDGE_ROW_KEY_PREFIX + element.getId(), property, columnVisibility));
+            addMutations(getVerticesWriter(), getMarkHiddenPropertyMutation(AccumuloConstants.EDGE_ROW_KEY_PREFIX + element.getId(), property, timestamp, columnVisibility));
         }
 
         if (hasEventListeners()) {
@@ -864,23 +867,26 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
         }
     }
 
-    private Mutation getMarkHiddenPropertyMutation(String rowKey, Property property, ColumnVisibility visibility) {
+    private Mutation getMarkHiddenPropertyMutation(String rowKey, Property property, long timestamp, ColumnVisibility visibility) {
         Mutation m = new Mutation(rowKey);
         Text columnQualifier = new PropertyHiddenColumnQualifier(property).getColumnQualifier(getNameSubstitutionStrategy());
-        m.put(AccumuloElement.CF_PROPERTY_HIDDEN, columnQualifier, visibility, AccumuloElement.HIDDEN_VALUE);
+        m.put(AccumuloElement.CF_PROPERTY_HIDDEN, columnQualifier, visibility, timestamp, AccumuloElement.HIDDEN_VALUE);
         return m;
     }
 
     @SuppressWarnings("unused")
-    public void markPropertyVisible(AccumuloElement element, Property property, Visibility visibility, Authorizations authorizations) {
+    public void markPropertyVisible(AccumuloElement element, Property property, Long timestamp, Visibility visibility, Authorizations authorizations) {
         checkNotNull(element);
+        if (timestamp == null) {
+            timestamp = System.currentTimeMillis();
+        }
 
         ColumnVisibility columnVisibility = visibilityToAccumuloVisibility(visibility);
 
         if (element instanceof Vertex) {
-            addMutations(getVerticesWriter(), getMarkVisiblePropertyMutation(AccumuloConstants.VERTEX_ROW_KEY_PREFIX + element.getId(), property, columnVisibility));
+            addMutations(getVerticesWriter(), getMarkVisiblePropertyMutation(AccumuloConstants.VERTEX_ROW_KEY_PREFIX + element.getId(), property, timestamp, columnVisibility));
         } else if (element instanceof Edge) {
-            addMutations(getVerticesWriter(), getMarkVisiblePropertyMutation(AccumuloConstants.EDGE_ROW_KEY_PREFIX + element.getId(), property, columnVisibility));
+            addMutations(getVerticesWriter(), getMarkVisiblePropertyMutation(AccumuloConstants.EDGE_ROW_KEY_PREFIX + element.getId(), property, timestamp, columnVisibility));
         }
 
         if (hasEventListeners()) {
@@ -888,10 +894,10 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
         }
     }
 
-    private Mutation getMarkVisiblePropertyMutation(String rowKey, Property property, ColumnVisibility visibility) {
+    private Mutation getMarkVisiblePropertyMutation(String rowKey, Property property, long timestamp, ColumnVisibility visibility) {
         Mutation m = new Mutation(rowKey);
         Text columnQualifier = new PropertyHiddenColumnQualifier(property).getColumnQualifier(getNameSubstitutionStrategy());
-        m.putDelete(AccumuloElement.CF_PROPERTY_HIDDEN, columnQualifier, visibility);
+        m.put(AccumuloElement.CF_PROPERTY_HIDDEN, columnQualifier, visibility, timestamp, AccumuloElement.HIDDEN_VALUE_DELETED);
         return m;
     }
 
@@ -1456,6 +1462,9 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
             }
             if (property.getVisibility().equals(apv.getVisibility())) {
                 continue;
+            }
+            if (apv.getExistingVisibility() == null) {
+                apv.setExistingVisibility(property.getVisibility());
             }
             elementMutationBuilder.addPropertyDeleteToMutation(m, property);
             property.setVisibility(apv.getVisibility());

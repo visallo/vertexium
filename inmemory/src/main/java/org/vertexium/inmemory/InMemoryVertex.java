@@ -4,9 +4,8 @@ import org.vertexium.*;
 import org.vertexium.inmemory.util.EdgeToEdgeIdIterable;
 import org.vertexium.mutation.ExistingElementMutation;
 import org.vertexium.mutation.ExistingElementMutationImpl;
-import org.vertexium.mutation.PropertyDeleteMutation;
-import org.vertexium.mutation.PropertySoftDeleteMutation;
 import org.vertexium.query.VertexQuery;
+import org.vertexium.search.IndexHint;
 import org.vertexium.util.ConvertingIterable;
 import org.vertexium.util.FilterIterable;
 import org.vertexium.util.IterableUtils;
@@ -14,30 +13,20 @@ import org.vertexium.util.IterableUtils;
 import java.util.EnumSet;
 
 public class InMemoryVertex extends InMemoryElement implements Vertex {
-    public InMemoryVertex(
-            Graph graph,
+    InMemoryVertex(
+            InMemoryGraph graph,
             String id,
-            Visibility visibility,
-            Iterable<Property> properties,
-            InMemoryHistoricalPropertyValues historicalPropertyValues,
-            Iterable<PropertyDeleteMutation> propertyDeleteMutations,
-            Iterable<PropertySoftDeleteMutation> propertySoftDeleteMutations,
-            Iterable<Visibility> hiddenVisibilities,
-            long startTime,
-            long timestamp,
+            InMemoryTableElement inMemoryTableElement,
+            boolean includeHidden,
+            Long endTime,
             Authorizations authorizations
     ) {
         super(
                 graph,
                 id,
-                visibility,
-                properties,
-                historicalPropertyValues,
-                propertyDeleteMutations,
-                propertySoftDeleteMutations,
-                hiddenVisibilities,
-                startTime,
-                timestamp,
+                inMemoryTableElement,
+                includeHidden,
+                endTime,
                 authorizations
         );
     }
@@ -306,18 +295,16 @@ public class InMemoryVertex extends InMemoryElement implements Vertex {
             @Override
             public Vertex save(Authorizations authorizations) {
                 saveExistingElementMutation(this, authorizations);
-                return getElement();
+                Vertex vertex = getElement();
+                if (getIndexHint() != IndexHint.DO_NOT_INDEX) {
+                    saveMutationToSearchIndex(vertex, getAlterPropertyVisibilities(), authorizations);
+                }
+                return vertex;
             }
         };
     }
 
-    @SuppressWarnings("unused")
-    public static InMemoryVertex updateOrCreate(InMemoryGraph graph, InMemoryVertex existingVertex, InMemoryVertex newVertex, Authorizations authorizations) {
-        if (existingVertex == null) {
-            return newVertex;
-        }
-
-        existingVertex.updateExisting(newVertex);
-        return existingVertex;
+    private static String[] labelToArrayOrNull(String label) {
+        return label == null ? null : new String[]{label};
     }
 }

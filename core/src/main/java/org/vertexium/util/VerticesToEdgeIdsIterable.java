@@ -7,10 +7,10 @@ import org.vertexium.Vertex;
 import java.util.Iterator;
 
 public class VerticesToEdgeIdsIterable implements Iterable<String> {
-    private final Iterable<Vertex> vertices;
+    private final Iterable<? extends Vertex> vertices;
     private final Authorizations authorizations;
 
-    public VerticesToEdgeIdsIterable(Iterable<Vertex> vertices, Authorizations authorizations) {
+    public VerticesToEdgeIdsIterable(Iterable<? extends Vertex> vertices, Authorizations authorizations) {
         this.vertices = vertices;
         this.authorizations = authorizations;
     }

@@ -3,19 +3,19 @@ package org.vertexium.util;
 import java.util.Iterator;
 
 public abstract class SelectManyIterable<TSource, TDest> implements Iterable<TDest> {
-    private final Iterable<TSource> source;
+    private final Iterable<? extends TSource> source;
 
-    public SelectManyIterable(Iterable<TSource> source) {
+    public SelectManyIterable(Iterable<? extends TSource> source) {
         this.source = source;
     }
 
     @Override
     public Iterator<TDest> iterator() {
-        final Iterator<TSource> it = source.iterator();
+        final Iterator<? extends TSource> it = source.iterator();
         return new Iterator<TDest>() {
             private TDest next;
             private TDest current;
-            public Iterator<TDest> innerIterator = null;
+            public Iterator<? extends TDest> innerIterator = null;
 
             @Override
             public boolean hasNext() {
@@ -68,5 +68,5 @@ public abstract class SelectManyIterable<TSource, TDest> implements Iterable<TDe
         return true;
     }
 
-    protected abstract Iterable<TDest> getIterable(TSource source);
+    protected abstract Iterable<? extends TDest> getIterable(TSource source);
 }

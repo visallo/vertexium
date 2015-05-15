@@ -1,7 +1,6 @@
 package org.vertexium.query;
 
 import org.vertexium.*;
-import org.vertexium.*;
 import org.vertexium.util.FilterIterable;
 
 import java.util.EnumSet;

@@ -3,15 +3,15 @@ package org.vertexium.util;
 import java.util.Iterator;
 
 public abstract class ConvertingIterable<TSource, TDest> implements Iterable<TDest> {
-    private final Iterable<TSource> iterable;
+    private final Iterable<? extends TSource> iterable;
 
-    public ConvertingIterable(Iterable<TSource> iterable) {
+    public ConvertingIterable(Iterable<? extends TSource> iterable) {
         this.iterable = iterable;
     }
 
     @Override
     public Iterator<TDest> iterator() {
-        final Iterator<TSource> it = iterable.iterator();
+        final Iterator<? extends TSource> it = iterable.iterator();
         return new Iterator<TDest>() {
             @Override
             public boolean hasNext() {
