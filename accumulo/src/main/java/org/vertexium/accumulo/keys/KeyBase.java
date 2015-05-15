@@ -1,6 +1,7 @@
 package org.vertexium.accumulo.keys;
 
 import org.apache.hadoop.io.Text;
+import org.vertexium.VertexiumException;
 
 import java.util.ArrayList;
 
@@ -23,5 +24,11 @@ public abstract class KeyBase {
             }
         }
         return results.toArray(new String[results.size()]);
+    }
+
+    protected void assertNoValueSeparator(String str) {
+        if (str.indexOf(VALUE_SEPARATOR) >= 0) {
+            throw new VertexiumException("String cannot contain '" + VALUE_SEPARATOR + "' (0x1f): " + str);
+        }
     }
 }

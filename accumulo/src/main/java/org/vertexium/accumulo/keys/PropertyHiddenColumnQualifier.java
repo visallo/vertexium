@@ -41,10 +41,12 @@ public class PropertyHiddenColumnQualifier extends KeyBase {
     }
 
     public Text getColumnQualifier(NameSubstitutionStrategy nameSubstitutionStrategy) {
-        return new Text(
-                nameSubstitutionStrategy.deflate(getPropertyName())
-                        + VALUE_SEPARATOR + nameSubstitutionStrategy.deflate(getPropertyKey())
-                        + VALUE_SEPARATOR + getPropertyVisibilityString()
-        );
+        String name = nameSubstitutionStrategy.deflate(getPropertyName());
+        String key = nameSubstitutionStrategy.deflate(getPropertyKey());
+        String visibilityString = getPropertyVisibilityString();
+        assertNoValueSeparator(name);
+        assertNoValueSeparator(key);
+        assertNoValueSeparator(visibilityString);
+        return new Text(name + VALUE_SEPARATOR + key + VALUE_SEPARATOR + visibilityString);
     }
 }

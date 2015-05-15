@@ -20,6 +20,9 @@ public class DataTableRowKey extends KeyBase {
     }
 
     public String getRowKey() {
+        assertNoValueSeparator(getElementRowKey());
+        assertNoValueSeparator(getPropertyName());
+        assertNoValueSeparator(getPropertyKey());
         return AccumuloConstants.DATA_ROW_KEY_PREFIX
                 + getElementRowKey()
                 + VALUE_SEPARATOR + getPropertyName()

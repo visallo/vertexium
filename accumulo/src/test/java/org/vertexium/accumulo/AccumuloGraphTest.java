@@ -15,6 +15,7 @@ import org.junit.runners.JUnit4;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.vertexium.*;
+import org.vertexium.accumulo.keys.KeyBase;
 import org.vertexium.test.GraphTestBase;
 import org.vertexium.util.IterableUtils;
 
@@ -183,6 +184,18 @@ public class AccumuloGraphTest extends GraphTestBase {
                     }
                 }
             }
+        }
+    }
+
+    @Test
+    public void testPropertyWithValueSeparator() {
+        try {
+            graph.prepareVertex("v1", VISIBILITY_EMPTY)
+                    .addPropertyValue("prop1" + KeyBase.VALUE_SEPARATOR, "name1", "test", VISIBILITY_EMPTY)
+                    .save(AUTHORIZATIONS_EMPTY);
+            throw new RuntimeException("Should have thrown a bad character exception");
+        } catch (VertexiumException ex) {
+            // ok
         }
     }
 

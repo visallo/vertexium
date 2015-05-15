@@ -69,10 +69,17 @@ public class PropertyColumnQualifier extends KeyBase {
     }
 
     public String getDiscriminator(String visibilityString, long timestamp) {
+        assertNoValueSeparator(getPropertyName());
+        assertNoValueSeparator(getPropertyKey());
+        assertNoValueSeparator(visibilityString);
         return getPropertyName() + VALUE_SEPARATOR + getPropertyKey() + VALUE_SEPARATOR + visibilityString + VALUE_SEPARATOR + timestamp;
     }
 
     public Text getColumnQualifier(NameSubstitutionStrategy nameSubstitutionStrategy) {
-        return new Text(nameSubstitutionStrategy.deflate(getPropertyName()) + VALUE_SEPARATOR + nameSubstitutionStrategy.deflate(getPropertyKey()));
+        String name = nameSubstitutionStrategy.deflate(getPropertyName());
+        String key = nameSubstitutionStrategy.deflate(getPropertyKey());
+        assertNoValueSeparator(name);
+        assertNoValueSeparator(key);
+        return new Text(name + VALUE_SEPARATOR + key);
     }
 }
