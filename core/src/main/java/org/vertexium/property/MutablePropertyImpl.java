@@ -60,6 +60,9 @@ public class MutablePropertyImpl extends MutableProperty {
 
     @Override
     public Iterable<Visibility> getHiddenVisibilities() {
+        if (this.hiddenVisibilities == null) {
+            return new ArrayList<>();
+        }
         return this.hiddenVisibilities;
     }
 

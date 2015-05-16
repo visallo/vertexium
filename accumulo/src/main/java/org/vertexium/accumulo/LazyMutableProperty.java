@@ -136,6 +136,9 @@ public class LazyMutableProperty extends MutableProperty {
 
     @Override
     public Iterable<Visibility> getHiddenVisibilities() {
+        if (hiddenVisibilities == null) {
+            return new ArrayList<>();
+        }
         return hiddenVisibilities;
     }
 
