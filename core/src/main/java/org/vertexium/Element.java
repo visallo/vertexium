@@ -1,8 +1,6 @@
 package org.vertexium;
 
 import org.vertexium.mutation.ExistingElementMutation;
-import org.vertexium.mutation.PropertyDeleteMutation;
-import org.vertexium.mutation.PropertySoftDeleteMutation;
 
 /**
  * An element on the graph. This can be either a vertex or edge.
@@ -400,4 +398,9 @@ public interface Element {
      * @return true, if it would be hidden from those authorizations.
      */
     boolean isHidden(Authorizations authorizations);
+
+    /**
+     * Gets the list of hidden visibilities
+     */
+    Iterable<Visibility> getHiddenVisibilities();
 }

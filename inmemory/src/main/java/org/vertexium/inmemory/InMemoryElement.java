@@ -1,6 +1,7 @@
 package org.vertexium.inmemory;
 
 import org.vertexium.*;
+import org.vertexium.inmemory.mutations.Mutation;
 import org.vertexium.mutation.*;
 import org.vertexium.property.MutableProperty;
 import org.vertexium.property.StreamingPropertyValue;
@@ -9,8 +10,7 @@ import org.vertexium.util.FilterIterable;
 import org.vertexium.util.StreamUtils;
 
 import java.io.IOException;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 public abstract class InMemoryElement<TElement extends InMemoryElement> implements Element {
     private final String id;
@@ -426,5 +426,10 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> implemen
 
     public boolean canRead(Authorizations authorizations) {
         return inMemoryTableElement.canRead(authorizations);
+    }
+
+    @Override
+    public Iterable<Visibility> getHiddenVisibilities() {
+        return inMemoryTableElement.getHiddenVisibilities();
     }
 }
