@@ -20,7 +20,7 @@ public class LazyVertexProperty extends LazyProperty {
 
     @Override
     protected Vertex getE() {
-        return getGraph().getVertex(getVertexId(), FetchHint.ALL, getTime(), getAuthorizations());
+        return getGraph().getVertex(getVertexId(), FetchHint.ALL_INCLUDING_HIDDEN, getTime(), getAuthorizations());
     }
 
     @Override

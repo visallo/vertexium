@@ -1,13 +1,13 @@
 package org.vertexium.cli.model;
 
-import org.vertexium.Direction;
-import org.vertexium.Edge;
-import org.vertexium.FetchHint;
-import org.vertexium.Property;
+import org.vertexium.*;
 import org.vertexium.cli.VertexiumScript;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.List;
+
+import static org.vertexium.util.IterableUtils.toList;
 
 public class LazyEdge extends ModelBase {
     private final String edgeId;
@@ -30,9 +30,20 @@ public class LazyEdge extends ModelBase {
         StringWriter out = new StringWriter();
         PrintWriter writer = new PrintWriter(out);
         writer.println("@|bold " + e.getId() + "|@");
+        writer.println("  @|bold hidden:|@ " + e.isHidden(getAuthorizations()));
         writer.println("  @|bold visibility:|@ " + e.getVisibility());
         writer.println("  @|bold label:|@ " + e.getLabel());
         writer.println("  @|bold timestamp:|@ " + VertexiumScript.timestampToString(e.getTimestamp()));
+
+        writer.println("  @|bold hidden visibilities:|@");
+        List<Visibility> hiddenVisibilities = toList(e.getHiddenVisibilities());
+        if (hiddenVisibilities.size() == 0) {
+            writer.println("    none");
+        } else {
+            for (Visibility hiddenVisibility : hiddenVisibilities) {
+                writer.println("    " + hiddenVisibility.getVisibilityString());
+            }
+        }
 
         writer.println("  @|bold properties:|@");
         VertexiumScript.getContextProperties().clear();
@@ -40,7 +51,15 @@ public class LazyEdge extends ModelBase {
         for (Property prop : e.getProperties()) {
             String propertyIndexString = "p" + propIndex;
             String valueString = VertexiumScript.valueToString(prop.getValue(), false);
-            writer.println("    @|bold " + propertyIndexString + ":|@ " + prop.getName() + ":" + prop.getKey() + "[" + prop.getVisibility().getVisibilityString() + "] = " + valueString);
+            boolean isHidden = prop.isHidden(getAuthorizations());
+            writer.println(
+                    "    @|bold " + propertyIndexString + ":|@ "
+                            + prop.getName() + ":"
+                            + prop.getKey()
+                            + "[" + prop.getVisibility().getVisibilityString() + "] "
+                            + "= " + valueString
+                            + (isHidden ? " @|red (hidden)|@" : "")
+            );
             LazyProperty lazyProperty = new LazyEdgeProperty(e.getId(), prop.getKey(), prop.getName(), prop.getVisibility());
             VertexiumScript.getContextProperties().put(propertyIndexString, lazyProperty);
             propIndex++;
@@ -67,7 +86,7 @@ public class LazyEdge extends ModelBase {
     }
 
     private Edge getE() {
-        return getGraph().getEdge(getId(), FetchHint.ALL, getTime(), getAuthorizations());
+        return getGraph().getEdge(getId(), FetchHint.ALL_INCLUDING_HIDDEN, getTime(), getAuthorizations());
     }
 
     public String getId() {

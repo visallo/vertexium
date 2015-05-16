@@ -5,6 +5,10 @@ import org.vertexium.cli.VertexiumScript;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.Collection;
+import java.util.List;
+
+import static org.vertexium.util.IterableUtils.toList;
 
 public abstract class LazyProperty extends ModelBase {
     private final String propertyKey;
@@ -39,8 +43,23 @@ public abstract class LazyProperty extends ModelBase {
         writer.println("  @|bold timestamp:|@ " + VertexiumScript.timestampToString(prop.getTimestamp()));
 
         writer.println("  @|bold metadata:|@");
-        for (Metadata.Entry m : prop.getMetadata().entrySet()) {
-            writer.println("    " + m.getKey() + "[" + m.getVisibility() + "]: " + VertexiumScript.valueToString(m.getValue(), false));
+        Collection<Metadata.Entry> metadataEntries = prop.getMetadata().entrySet();
+        if (metadataEntries.size() == 0) {
+            writer.println("    none");
+        } else {
+            for (Metadata.Entry m : metadataEntries) {
+                writer.println("    " + m.getKey() + "[" + m.getVisibility() + "]: " + VertexiumScript.valueToString(m.getValue(), false));
+            }
+        }
+
+        writer.println("  @|bold hidden visibilities:|@");
+        List<Visibility> hiddenVisibilities = toList(prop.getHiddenVisibilities());
+        if (hiddenVisibilities.size() == 0) {
+            writer.println("    none");
+        } else {
+            for (Visibility hiddenVisibility : hiddenVisibilities) {
+                writer.println("    " + hiddenVisibility.getVisibilityString());
+            }
         }
 
         writer.println("  @|bold value:|@" + VertexiumScript.valueToString(prop.getValue(), true));
