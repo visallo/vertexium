@@ -399,7 +399,7 @@ public abstract class InMemoryTableElement<TElement extends InMemoryElement> {
         return createElementInternal(graph, includeHidden, endTime, authorizations);
     }
 
-    private boolean isDeleted(Long endTime, Authorizations authorizations) {
+    public boolean isDeleted(Long endTime, Authorizations authorizations) {
         boolean deleted = false;
         for (Mutation m : this.mutations) {
             if (!canRead(m.getVisibility(), authorizations)) {
