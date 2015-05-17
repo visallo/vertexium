@@ -540,14 +540,20 @@ public abstract class GraphTestBase {
         graph.prepareVertex("v1", VISIBILITY_A)
                 .addPropertyValue("key1", "name1", "value1", VISIBILITY_A)
                 .save(AUTHORIZATIONS_A);
+        graph.prepareVertex("v2", VISIBILITY_A)
+                .addPropertyValue("key1", "name1", "value1", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
+        graph.prepareVertex("v3", VISIBILITY_A)
+                .addPropertyValue("key1", "name1", "value1", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
         graph.flush();
-        assertEquals(1, count(graph.getVertices(AUTHORIZATIONS_A)));
-        assertEquals(1, count(graph.query(AUTHORIZATIONS_A).has("name1", "value1").vertices()));
+        assertEquals(3, count(graph.getVertices(AUTHORIZATIONS_A)));
+        assertEquals(3, count(graph.query(AUTHORIZATIONS_A).has("name1", "value1").vertices()));
 
-        graph.softDeleteVertex("v1", AUTHORIZATIONS_A);
+        graph.softDeleteVertex("v2", AUTHORIZATIONS_A);
         graph.flush();
-        assertEquals(0, count(graph.getVertices(AUTHORIZATIONS_A)));
-        assertEquals(0, count(graph.query(AUTHORIZATIONS_A).has("name1", "value1").vertices()));
+        assertEquals(2, count(graph.getVertices(AUTHORIZATIONS_A)));
+        assertEquals(2, count(graph.query(AUTHORIZATIONS_A).has("name1", "value1").vertices()));
     }
 
     @Test
@@ -1305,6 +1311,7 @@ public abstract class GraphTestBase {
         graph.prepareEdge("e1", v1, v2, "label1", VISIBILITY_A)
                 .setProperty("propA", "valueA", VISIBILITY_A)
                 .save(AUTHORIZATIONS_A);
+        graph.flush();
 
         Edge e = graph.getEdge("e1", AUTHORIZATIONS_A);
         assertEquals("label1", e.getLabel());
@@ -1318,6 +1325,7 @@ public abstract class GraphTestBase {
         e.prepareMutation()
                 .alterEdgeLabel("label2")
                 .save(AUTHORIZATIONS_A);
+        graph.flush();
         e = graph.getEdge("e1", AUTHORIZATIONS_A);
         assertEquals("label2", e.getLabel());
         Assert.assertEquals(1, count(e.getProperties()));
@@ -1332,6 +1340,7 @@ public abstract class GraphTestBase {
         graph.prepareEdge(e.getId(), e.getVertexId(Direction.OUT), e.getVertexId(Direction.IN), e.getLabel(), e.getVisibility())
                 .alterEdgeLabel("label3")
                 .save(AUTHORIZATIONS_A);
+        graph.flush();
         e = graph.getEdge("e1", AUTHORIZATIONS_A);
         assertEquals("label3", e.getLabel());
         Assert.assertEquals(1, count(e.getProperties()));
@@ -2473,11 +2482,13 @@ public abstract class GraphTestBase {
     public void testChangeVisibilityVertex() {
         graph.prepareVertex("v1", VISIBILITY_A)
                 .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
 
         Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
         v1.prepareMutation()
                 .alterElementVisibility(VISIBILITY_B)
                 .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
 
         v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
         assertNull(v1);
@@ -2536,6 +2547,7 @@ public abstract class GraphTestBase {
                 .alterPropertyVisibility("prop1", VISIBILITY_A)
                 .setProperty("prop1", "value1New", VISIBILITY_A)
                 .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
 
         v1 = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B);
         assertNotNull(v1.getProperty("prop1"));
@@ -2547,6 +2559,7 @@ public abstract class GraphTestBase {
                 .alterPropertyVisibility("prop1", VISIBILITY_A)
                 .setProperty("prop1", "value1New2", VISIBILITY_A)
                 .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
 
         v1 = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B);
         assertNotNull(v1.getProperty("prop1"));

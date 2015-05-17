@@ -67,8 +67,11 @@ abstract class InMemoryTable<TElement extends InMemoryElement> {
         if (!src.canRead(authorizations)) {
             return false;
         }
-
         if (!includeHidden && src.isHidden(authorizations)) {
+            return false;
+        }
+
+        if (src.isDeleted(endTime, authorizations)) {
             return false;
         }
 
