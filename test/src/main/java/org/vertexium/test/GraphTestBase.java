@@ -536,18 +536,6 @@ public abstract class GraphTestBase {
         graph.flush();
         assertEquals(0, count(graph.getVertices(AUTHORIZATIONS_A)));
         assertEquals(0, count(graph.query(AUTHORIZATIONS_A).has("name1", "value1").vertices()));
-
-        graph.prepareVertex("v1", VISIBILITY_A)
-                .addPropertyValue("key1", "name1", "value1", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
-        graph.flush();
-        assertEquals(1, count(graph.getVertices(AUTHORIZATIONS_A)));
-        assertEquals(1, count(graph.query(AUTHORIZATIONS_A).has("name1", "value1").vertices()));
-
-        graph.softDeleteVertex("v1", AUTHORIZATIONS_A);
-        graph.flush();
-        assertEquals(0, count(graph.getVertices(AUTHORIZATIONS_A)));
-        assertEquals(0, count(graph.query(AUTHORIZATIONS_A).has("name1", "value1").vertices()));
     }
 
     @Test
