@@ -6,7 +6,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.vertexium.*;
-import org.vertexium.*;
 import org.vertexium.id.UUIDIdGenerator;
 import org.vertexium.inmemory.InMemoryAuthorizations;
 import org.vertexium.inmemory.InMemoryGraph;
@@ -71,17 +70,13 @@ public class BackupRestoreTest {
         graph.addEdge("e1to3", v1, v3, "label1", GraphTestBase.VISIBILITY_B, AUTHORIZATIONS_B);
 
         File tmp = File.createTempFile(getClass().getName(), ".json");
-        FileOutputStream out = new FileOutputStream(tmp);
-        try {
+        try (FileOutputStream out = new FileOutputStream(tmp)) {
             System.out.println("saving graph to: " + tmp);
             GraphBackup graphBackup = new GraphBackup();
             graphBackup.save(graph, out, AUTHORIZATIONS_A_AND_B);
-        } finally {
-            out.close();
         }
 
-        FileInputStream in = new FileInputStream(tmp);
-        try {
+        try (FileInputStream in = new FileInputStream(tmp)) {
             Graph loadedGraph = createGraph();
             GraphRestore graphRestore = new GraphRestore();
             graphRestore.restore(loadedGraph, in, AUTHORIZATIONS_A_AND_B);
@@ -123,8 +118,6 @@ public class BackupRestoreTest {
 
             v3 = loadedGraph.getVertex("v3", AUTHORIZATIONS_A_AND_B);
             Assert.assertEquals(1, IterableUtils.count(v3.getEdges(Direction.BOTH, AUTHORIZATIONS_A_AND_B)));
-        } finally {
-            in.close();
         }
 
         tmp.delete();

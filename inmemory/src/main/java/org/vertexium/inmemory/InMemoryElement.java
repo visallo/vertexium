@@ -1,16 +1,14 @@
 package org.vertexium.inmemory;
 
 import org.vertexium.*;
-import org.vertexium.inmemory.mutations.Mutation;
 import org.vertexium.mutation.*;
 import org.vertexium.property.MutableProperty;
 import org.vertexium.property.StreamingPropertyValue;
 import org.vertexium.util.ConvertingIterable;
 import org.vertexium.util.FilterIterable;
-import org.vertexium.util.StreamUtils;
 
-import java.io.IOException;
-import java.util.*;
+import java.util.Iterator;
+import java.util.List;
 
 public abstract class InMemoryElement<TElement extends InMemoryElement> implements Element {
     private final String id;
@@ -340,17 +338,12 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> implemen
             Iterable<PropertySoftDeleteMutation> propertySoftDeleteMutations
     ) {
         long timestamp = System.currentTimeMillis();
-        try {
-            for (Property property : properties) {
-                if (property.getValue() instanceof StreamingPropertyValue) {
-                    StreamingPropertyValue value = (StreamingPropertyValue) property.getValue();
-                    byte[] valueData = StreamUtils.toBytes(value.getInputStream());
-                    ((MutableProperty) property).setValue(new InMemoryStreamingPropertyValue(valueData, value.getValueType()));
-                }
-                addPropertyValue(property.getKey(), property.getName(), property.getValue(), property.getMetadata(), property.getVisibility(), property.getTimestamp(), false, authorizations);
+        for (Property property : properties) {
+            Object propertyValue = property.getValue();
+            if (propertyValue instanceof StreamingPropertyValue) {
+                ((MutableProperty) property).setValue(InMemoryStreamingPropertyValue.saveStreamingPropertyValue(propertyValue));
             }
-        } catch (IOException ex) {
-            throw new VertexiumException(ex);
+            addPropertyValue(property.getKey(), property.getName(), property.getValue(), property.getMetadata(), property.getVisibility(), property.getTimestamp(), false, authorizations);
         }
         for (PropertyDeleteMutation propertyDeleteMutation : propertyDeleteMutations) {
             deleteProperty(propertyDeleteMutation.getKey(), propertyDeleteMutation.getName(), propertyDeleteMutation.getVisibility(), authorizations);

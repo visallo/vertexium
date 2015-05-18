@@ -318,6 +318,7 @@ public abstract class InMemoryTableElement<TElement extends InMemoryElement> {
         if (timestamp == null) {
             timestamp = System.currentTimeMillis();
         }
+        value = InMemoryStreamingPropertyValue.saveStreamingPropertyValue(value);
         this.mutations.add(new AddPropertyValueMutation(timestamp, key, name, value, metadata, visibility));
     }
 

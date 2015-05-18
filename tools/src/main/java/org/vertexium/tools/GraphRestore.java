@@ -7,7 +7,6 @@ import org.json.JSONObject;
 import org.vertexium.*;
 import org.vertexium.property.StreamingPropertyValue;
 import org.vertexium.util.JavaSerializableUtils;
-import org.vertexium.*;
 
 import java.io.*;
 
@@ -66,7 +65,7 @@ public class GraphRestore extends GraphToolBase {
                 }
                 lastType = type;
             } catch (Exception ex) {
-                throw new IOException("Invalid line", ex);
+                throw new IOException("Invalid line: " + line, ex);
             }
         }
     }
