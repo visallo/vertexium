@@ -30,6 +30,7 @@ public class VertexiumBlueprintsGraphFeatures extends Features {
         supportsSelfLoops = true;
         supportsStringProperty = true;
         supportsThreadedTransactions = false;
+        supportsThreadIsolatedTransactions = false;
         supportsTransactions = false;
         supportsVertexIndex = false;
         supportsVertexIteration = true;

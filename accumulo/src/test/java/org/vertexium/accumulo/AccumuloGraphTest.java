@@ -206,7 +206,7 @@ public class AccumuloGraphTest extends GraphTestBase {
 
         LOGGER.info("Starting accumulo");
 
-        tempDir = File.createTempFile("blueprints-accumulo-temp", Long.toString(System.nanoTime()));
+        tempDir = File.createTempFile("accumulo-temp", Long.toString(System.nanoTime()));
         tempDir.delete();
         tempDir.mkdir();
         LOGGER.info("writing to: " + tempDir);
