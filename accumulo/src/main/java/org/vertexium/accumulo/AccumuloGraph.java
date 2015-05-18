@@ -942,6 +942,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
         try {
             flush();
             super.shutdown();
+            fileSystem.close();
         } catch (Exception ex) {
             throw new VertexiumException(ex);
         }
