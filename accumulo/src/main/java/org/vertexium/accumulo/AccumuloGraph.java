@@ -1222,10 +1222,13 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
         }
 
         scanner.fetchColumnFamily(AccumuloElement.CF_HIDDEN);
+        scanner.fetchColumnFamily(AccumuloElement.CF_SOFT_DELETE);
         scanner.fetchColumnFamily(AccumuloElement.CF_PROPERTY_SOFT_DELETE);
 
         if (elementType == ElementType.VERTEX) {
             scanner.fetchColumnFamily(AccumuloVertex.CF_SIGNAL);
+            scanner.fetchColumnFamily(AccumuloVertex.CF_IN_EDGE_SOFT_DELETE);
+            scanner.fetchColumnFamily(AccumuloVertex.CF_OUT_EDGE_SOFT_DELETE);
         } else if (elementType == ElementType.EDGE) {
             scanner.fetchColumnFamily(AccumuloEdge.CF_SIGNAL);
             scanner.fetchColumnFamily(AccumuloEdge.CF_IN_VERTEX);
