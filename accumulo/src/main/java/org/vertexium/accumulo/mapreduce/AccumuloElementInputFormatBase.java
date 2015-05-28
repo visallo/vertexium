@@ -1,6 +1,7 @@
 package org.vertexium.accumulo.mapreduce;
 
 import org.apache.accumulo.core.client.AccumuloSecurityException;
+import org.apache.accumulo.core.client.ClientConfiguration;
 import org.apache.accumulo.core.client.mapreduce.AccumuloRowInputFormat;
 import org.apache.accumulo.core.client.security.tokens.AuthenticationToken;
 import org.apache.accumulo.core.data.Key;
@@ -29,7 +30,10 @@ public abstract class AccumuloElementInputFormatBase<TValue extends Element> ext
     protected static void setInputInfo(Job job, String instanceName, String zooKeepers, String principal, AuthenticationToken token, String[] authorizations, String tableName) throws AccumuloSecurityException {
         AccumuloRowInputFormat.setInputTableName(job, tableName);
         AccumuloRowInputFormat.setConnectorInfo(job, principal, token);
-        AccumuloRowInputFormat.setZooKeeperInstance(job, instanceName, zooKeepers);
+        ClientConfiguration clientConfig = new ClientConfiguration()
+                .withInstance(instanceName)
+                .withZkHosts(zooKeepers);
+        AccumuloRowInputFormat.setZooKeeperInstance(job, clientConfig);
         AccumuloRowInputFormat.setScanAuthorizations(job, new org.apache.accumulo.core.security.Authorizations(authorizations));
         job.getConfiguration().setStrings(VertexiumMRUtils.CONFIG_AUTHORIZATIONS, authorizations);
     }

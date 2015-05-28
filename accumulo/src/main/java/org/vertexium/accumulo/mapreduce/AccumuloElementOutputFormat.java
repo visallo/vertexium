@@ -1,6 +1,7 @@
 package org.vertexium.accumulo.mapreduce;
 
 import org.apache.accumulo.core.client.AccumuloSecurityException;
+import org.apache.accumulo.core.client.ClientConfiguration;
 import org.apache.accumulo.core.client.mapreduce.AccumuloOutputFormat;
 import org.apache.accumulo.core.client.security.tokens.AuthenticationToken;
 import org.apache.accumulo.core.data.Mutation;
@@ -14,7 +15,10 @@ public class AccumuloElementOutputFormat extends OutputFormat<Text, Mutation> {
 
     public static void setOutputInfo(Job job, String instanceName, String zooKeepers, String principal, AuthenticationToken token) throws AccumuloSecurityException {
         AccumuloOutputFormat.setConnectorInfo(job, principal, token);
-        AccumuloOutputFormat.setZooKeeperInstance(job, instanceName, zooKeepers);
+        ClientConfiguration clientConfig = new ClientConfiguration()
+                .withInstance(instanceName)
+                .withZkHosts(zooKeepers);
+        AccumuloOutputFormat.setZooKeeperInstance(job, clientConfig);
         job.setMapOutputKeyClass(Text.class);
         job.setMapOutputValueClass(Mutation.class);
     }
