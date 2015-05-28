@@ -135,7 +135,7 @@ public abstract class GraphBase implements Graph {
     }
 
     @Override
-    public Map<String, Boolean> doVerticesExist(List<String> ids, Authorizations authorizations) {
+    public Map<String, Boolean> doVerticesExist(Iterable<String> ids, Authorizations authorizations) {
         Map<String, Boolean> results = new HashMap<>();
         for (String id : ids) {
             results.put(id, false);
@@ -257,12 +257,12 @@ public abstract class GraphBase implements Graph {
     }
 
     @Override
-    public Map<String, Boolean> doEdgesExist(List<String> ids, Authorizations authorizations) {
+    public Map<String, Boolean> doEdgesExist(Iterable<String> ids, Authorizations authorizations) {
         return doEdgesExist(ids, null, authorizations);
     }
 
     @Override
-    public Map<String, Boolean> doEdgesExist(List<String> ids, Long endTime, Authorizations authorizations) {
+    public Map<String, Boolean> doEdgesExist(Iterable<String> ids, Long endTime, Authorizations authorizations) {
         Map<String, Boolean> results = new HashMap<>();
         for (String id : ids) {
             results.put(id, false);

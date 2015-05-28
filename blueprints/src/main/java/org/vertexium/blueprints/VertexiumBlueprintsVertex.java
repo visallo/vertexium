@@ -7,6 +7,11 @@ import com.tinkerpop.blueprints.VertexQuery;
 import com.tinkerpop.blueprints.util.DefaultVertexQuery;
 import org.vertexium.Authorizations;
 import org.vertexium.util.ConvertingIterable;
+import org.vertexium.util.LookAheadIterable;
+
+import java.util.*;
+
+import static org.vertexium.util.IterableUtils.toList;
 
 public class VertexiumBlueprintsVertex extends VertexiumBlueprintsElement implements Vertex {
     protected VertexiumBlueprintsVertex(VertexiumBlueprintsGraph graph, org.vertexium.Vertex vertex, Authorizations authorizations) {
@@ -24,12 +29,47 @@ public class VertexiumBlueprintsVertex extends VertexiumBlueprintsElement implem
     public Iterable<Edge> getEdges(Direction direction, final String... labels) {
         final org.vertexium.Direction sgDirection = VertexiumBlueprintsConvert.toVertexium(direction);
         final Authorizations authorizations = getGraph().getAuthorizationsProvider().getAuthorizations();
-        return new ConvertingIterable<org.vertexium.Edge, Edge>(getVertexiumElement().getEdges(sgDirection, labels, authorizations)) {
+        final List<org.vertexium.Edge> vertexiumEdges = toList(getVertexiumElement().getEdges(sgDirection, labels, authorizations));
+        final Set<String> visibleVertexIds = getVisibleVertexIds(vertexiumEdges, authorizations);
+        return new LookAheadIterable<org.vertexium.Edge, Edge>() {
             @Override
-            protected Edge convert(org.vertexium.Edge edge) {
-                return VertexiumBlueprintsEdge.create(getGraph(), edge, authorizations);
+            protected boolean isIncluded(org.vertexium.Edge src, Edge edge) {
+                return edge != null;
+            }
+
+            @Override
+            protected Edge convert(org.vertexium.Edge vertexiumEdge) {
+                if (!canSeeBothVertices(vertexiumEdge)) {
+                    return null;
+                }
+                return VertexiumBlueprintsEdge.create(getGraph(), vertexiumEdge, authorizations);
+            }
+
+            private boolean canSeeBothVertices(org.vertexium.Edge vertexiumEdge) {
+                return visibleVertexIds.contains(vertexiumEdge.getVertexId(org.vertexium.Direction.OUT))
+                        && visibleVertexIds.contains(vertexiumEdge.getVertexId(org.vertexium.Direction.IN));
+            }
+
+            @Override
+            protected Iterator<org.vertexium.Edge> createIterator() {
+                return vertexiumEdges.iterator();
             }
         };
+    }
+
+    private Set<String> getVisibleVertexIds(List<org.vertexium.Edge> edges, Authorizations authorizations) {
+        Set<String> results = new HashSet<>();
+        for (org.vertexium.Edge edge : edges) {
+            results.add(edge.getVertexId(org.vertexium.Direction.IN));
+            results.add(edge.getVertexId(org.vertexium.Direction.OUT));
+        }
+        Map<String, Boolean> exists = getGraph().getGraph().doVerticesExist(results, authorizations);
+        for (Map.Entry<String, Boolean> exist : exists.entrySet()) {
+            if (!exist.getValue()) {
+                results.remove(exist.getKey());
+            }
+        }
+        return results;
     }
 
     @Override
