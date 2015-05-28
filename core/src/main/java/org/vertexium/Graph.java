@@ -183,7 +183,7 @@ public interface Graph {
      * @param authorizations The authorizations required to load the vertices.
      * @return Map of ids to exists status.
      */
-    Map<String, Boolean> doVerticesExist(List<String> ids, Authorizations authorizations);
+    Map<String, Boolean> doVerticesExist(Iterable<String> ids, Authorizations authorizations);
 
     /**
      * Gets all vertices matching the given ids on the graph. The order of
@@ -479,7 +479,7 @@ public interface Graph {
      * @param authorizations The authorizations required to load the edges.
      * @return Maps of ids to exists status.
      */
-    Map<String, Boolean> doEdgesExist(List<String> ids, Authorizations authorizations);
+    Map<String, Boolean> doEdgesExist(Iterable<String> ids, Authorizations authorizations);
 
     /**
      * Tests the existence of edges with the given authorizations.
@@ -489,7 +489,7 @@ public interface Graph {
      * @param authorizations The authorizations required to load the edges.
      * @return Maps of ids to exists status.
      */
-    Map<String, Boolean> doEdgesExist(List<String> ids, Long endTime, Authorizations authorizations);
+    Map<String, Boolean> doEdgesExist(Iterable<String> ids, Long endTime, Authorizations authorizations);
 
     /**
      * Gets all edges on the graph matching the given ids.
