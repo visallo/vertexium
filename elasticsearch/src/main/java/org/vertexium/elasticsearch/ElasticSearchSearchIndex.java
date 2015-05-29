@@ -7,25 +7,24 @@ import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.vertexium.*;
 import org.vertexium.property.StreamingPropertyValue;
 import org.vertexium.query.GraphQuery;
 import org.vertexium.query.SimilarToGraphQuery;
+import org.vertexium.type.GeoCircle;
 import org.vertexium.type.GeoPoint;
 import org.vertexium.util.StreamUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.vertexium.*;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 
 public class ElasticSearchSearchIndex extends ElasticSearchSearchIndexBase {
-    private static final Logger LOGGER = LoggerFactory.getLogger(ElasticSearchSearchIndexBase.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ElasticSearchSearchIndex.class);
+    private static final Logger ADD_ELEMENT_LOGGER = LoggerFactory.getLogger(ElasticSearchSearchIndex.class.getName() + ".ADDELEMENT");
 
     public ElasticSearchSearchIndex(GraphConfiguration config) {
         super(config);
@@ -33,8 +32,8 @@ public class ElasticSearchSearchIndex extends ElasticSearchSearchIndexBase {
 
     @Override
     public void addElement(Graph graph, Element element, Authorizations authorizations) {
-        if (LOGGER.isTraceEnabled()) {
-            LOGGER.trace("addElement: " + element.getId());
+        if (ADD_ELEMENT_LOGGER.isTraceEnabled()) {
+            ADD_ELEMENT_LOGGER.trace("addElement: " + element.getId());
         }
         if (!getConfig().isIndexEdges() && element instanceof Edge) {
             return;
@@ -44,10 +43,14 @@ public class ElasticSearchSearchIndex extends ElasticSearchSearchIndexBase {
 
         try {
             XContentBuilder jsonBuilder = buildJsonContentFromElement(graph, indexInfo, element, authorizations);
+            XContentBuilder source = jsonBuilder.endObject();
+            if (ADD_ELEMENT_LOGGER.isTraceEnabled()) {
+                ADD_ELEMENT_LOGGER.trace("addElement json: " + source.string());
+            }
 
             IndexResponse response = getClient()
                     .prepareIndex(indexInfo.getIndexName(), ELEMENT_TYPE, element.getId())
-                    .setSource(jsonBuilder.endObject())
+                    .setSource(source)
                     .execute()
                     .actionGet();
             if (response.getId() == null) {
@@ -127,14 +130,10 @@ public class ElasticSearchSearchIndex extends ElasticSearchSearchIndexBase {
             if (propertyValue != null && shouldIgnoreType(propertyValue.getClass())) {
                 continue;
             } else if (propertyValue instanceof GeoPoint) {
-                GeoPoint geoPoint = (GeoPoint) propertyValue;
-                Map<String, Object> propertyValueMap = new HashMap<>();
-                propertyValueMap.put("lat", geoPoint.getLatitude());
-                propertyValueMap.put("lon", geoPoint.getLongitude());
-                jsonBuilder.field(property.getName() + GEO_PROPERTY_NAME_SUFFIX, propertyValueMap);
-                if (geoPoint.getDescription() != null) {
-                    jsonBuilder.field(property.getName(), geoPoint.getDescription());
-                }
+                convertGeoPoint(jsonBuilder, property, (GeoPoint) propertyValue);
+                continue;
+            } else if (propertyValue instanceof GeoCircle) {
+                convertGeoCircle(jsonBuilder, property, (GeoCircle) propertyValue);
                 continue;
             } else if (propertyValue instanceof StreamingPropertyValue) {
                 StreamingPropertyValue streamingPropertyValue = (StreamingPropertyValue) propertyValue;
@@ -220,8 +219,11 @@ public class ElasticSearchSearchIndex extends ElasticSearchSearchIndexBase {
                 .endObject()
                 .endObject()
                 .endObject();
+        if (LOGGER.isTraceEnabled()) {
+            LOGGER.trace("addPropertyToIndex: " + dataType.getName() + ": " + mapping.string());
+        }
 
-        PutMappingResponse response = getClient()
+        getClient()
                 .admin()
                 .indices()
                 .preparePutMapping(indexInfo.getIndexName())
@@ -230,7 +232,6 @@ public class ElasticSearchSearchIndex extends ElasticSearchSearchIndexBase {
                 .setSource(mapping)
                 .execute()
                 .actionGet();
-        LOGGER.debug(response.toString());
 
         indexInfo.addPropertyDefinition(propertyName, new PropertyDefinition(propertyName, dataType, TextIndexHint.ALL));
     }

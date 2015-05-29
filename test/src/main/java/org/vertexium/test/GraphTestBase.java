@@ -1915,7 +1915,7 @@ public abstract class GraphTestBase {
     }
 
     @Test
-    public void testGraphQueryGeoPoint() {
+    public void testStoreGeoPoint() {
         graph.prepareVertex("v1", VISIBILITY_A)
                 .setProperty("location", new GeoPoint(38.9186, -77.2297, "Reston, VA"), VISIBILITY_A)
                 .save(AUTHORIZATIONS_A_AND_B);
@@ -1941,6 +1941,23 @@ public abstract class GraphTestBase {
                 .has("location", TextPredicate.CONTAINS, "Reston")
                 .vertices());
         Assert.assertEquals(2, count(vertices));
+    }
+
+    @Test
+    public void testStoreGeoCircle() {
+        graph.prepareVertex("v1", VISIBILITY_A)
+                .setProperty("location", new GeoCircle(38.9186, -77.2297, 100, "Reston, VA"), VISIBILITY_A)
+                .save(AUTHORIZATIONS_A_AND_B);
+
+        List<Vertex> vertices = toList(graph.query(AUTHORIZATIONS_A_AND_B)
+                .has("location", GeoCompare.WITHIN, new GeoCircle(38.92, -77.23, 10))
+                .vertices());
+        Assert.assertEquals(1, count(vertices));
+        GeoCircle geoCircle = (GeoCircle) vertices.get(0).getPropertyValue("location");
+        assertEquals(38.9186, geoCircle.getLatitude(), 0.001);
+        assertEquals(-77.2297, geoCircle.getLongitude(), 0.001);
+        assertEquals(100.0, geoCircle.getRadius(), 0.001);
+        assertEquals("Reston, VA", geoCircle.getDescription());
     }
 
     private Date createDate(int year, int month, int day) {

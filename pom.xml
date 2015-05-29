@@ -76,9 +76,12 @@
         <maven.plugin.scm.version>1.8.1</maven.plugin.scm.version>
         <maven.plugin.surefire.version>2.16</maven.plugin.surefire.version>
 
-        <!-- used by: elasticsearch* -->
+        <!-- used by: elasticsearch -->
         <elasticsearch.version>1.4.0</elasticsearch.version>
+        <!-- used by: elasticsearch boost formulas -->
         <groovy.version>2.3.7</groovy.version>
+        <!-- used by: elasticsearch geo_shape type -->
+        <jts.version>1.13</jts.version>
 
         <!-- used by: accumulo* -->
         <accumulo.version>1.6.1</accumulo.version>

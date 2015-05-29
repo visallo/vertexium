@@ -1,6 +1,5 @@
 package org.vertexium.elasticsearch;
 
-import org.elasticsearch.action.admin.indices.mapping.put.PutMappingResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.delete.DeleteResponse;
 import org.elasticsearch.action.deletebyquery.DeleteByQueryResponse;
@@ -19,6 +18,7 @@ import org.vertexium.elasticsearch.utils.GetResponseUtil;
 import org.vertexium.property.StreamingPropertyValue;
 import org.vertexium.query.GraphQuery;
 import org.vertexium.query.SimilarToGraphQuery;
+import org.vertexium.type.GeoCircle;
 import org.vertexium.type.GeoPoint;
 import org.vertexium.util.StreamUtils;
 
@@ -31,6 +31,7 @@ import java.util.Map;
 
 public class ElasticSearchParentChildSearchIndex extends ElasticSearchSearchIndexBase {
     private static final Logger LOGGER = LoggerFactory.getLogger(ElasticSearchParentChildSearchIndex.class);
+    private static final Logger ADD_ELEMENT_LOGGER = LoggerFactory.getLogger(ElasticSearchParentChildSearchIndex.class.getName() + ".ADDELEMENT");
     public static final String PROPERTY_TYPE = "property";
     public static final int BATCH_SIZE = 1000;
     private String[] parentDocumentFields;
@@ -66,13 +67,12 @@ public class ElasticSearchParentChildSearchIndex extends ElasticSearchSearchInde
                 XContentBuilder mapping = mappingBuilder.endObject()
                         .endObject();
 
-                PutMappingResponse putMappingResponse = getClient().admin().indices().preparePutMapping(indexInfo.getIndexName())
+                getClient().admin().indices().preparePutMapping(indexInfo.getIndexName())
                         .setIgnoreConflicts(false)
                         .setType(PROPERTY_TYPE)
                         .setSource(mapping)
                         .execute()
                         .actionGet();
-                LOGGER.debug(putMappingResponse.toString());
                 parentChildIndexInfo.setPropertyTypeDefined(true);
             } catch (IOException e) {
                 throw new VertexiumException("Could not add mappings to index: " + indexInfo.getIndexName(), e);
@@ -162,12 +162,12 @@ public class ElasticSearchParentChildSearchIndex extends ElasticSearchSearchInde
 
     @Override
     public void addElement(Graph graph, Element element, Authorizations authorizations) {
-        if (LOGGER.isTraceEnabled()) {
-            LOGGER.trace("addElement: " + element.getId());
+        if (ADD_ELEMENT_LOGGER.isTraceEnabled()) {
+            ADD_ELEMENT_LOGGER.trace("addElement: " + element.getId());
         }
         if (!getConfig().isIndexEdges() && element instanceof Edge) {
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("skipping edge: " + element.getId());
+            if (ADD_ELEMENT_LOGGER.isDebugEnabled()) {
+                ADD_ELEMENT_LOGGER.debug("skipping edge: " + element.getId());
             }
             return;
         }
@@ -279,7 +279,10 @@ public class ElasticSearchParentChildSearchIndex extends ElasticSearchSearchInde
 
         String id = getChildDocId(element, property);
 
-        //LOGGER.debug(jsonBuilder.string());
+        if (ADD_ELEMENT_LOGGER.isTraceEnabled()) {
+            ADD_ELEMENT_LOGGER.trace("addElement child (" + element.getId() + "): " + jsonBuilder.string());
+        }
+
         IndexRequestBuilder builder = getClient().prepareIndex(indexInfo.getIndexName(), PROPERTY_TYPE, id);
         builder = builder.setParent(element.getId());
         builder = builder.setSource(jsonBuilder);
@@ -335,6 +338,9 @@ public class ElasticSearchParentChildSearchIndex extends ElasticSearchSearchInde
         if (!changed) {
             return null;
         }
+        if (ADD_ELEMENT_LOGGER.isTraceEnabled()) {
+            ADD_ELEMENT_LOGGER.trace("addElement parent: " + jsonBuilder.string());
+        }
         return new IndexRequest(indexInfo.getIndexName(), ELEMENT_TYPE, id).source(jsonBuilder);
     }
 
@@ -374,15 +380,9 @@ public class ElasticSearchParentChildSearchIndex extends ElasticSearchSearchInde
         if (propertyValue != null && shouldIgnoreType(propertyValue.getClass())) {
             return null;
         } else if (propertyValue instanceof GeoPoint) {
-            GeoPoint geoPoint = (GeoPoint) propertyValue;
-            Map<String, Object> propertyValueMap = new HashMap<>();
-            propertyValueMap.put("lat", geoPoint.getLatitude());
-            propertyValueMap.put("lon", geoPoint.getLongitude());
-
-            jsonBuilder.field(property.getName() + GEO_PROPERTY_NAME_SUFFIX, propertyValueMap);
-            if (geoPoint.getDescription() != null) {
-                jsonBuilder.field(property.getName(), geoPoint.getDescription());
-            }
+            convertGeoPoint(jsonBuilder, property, (GeoPoint) propertyValue);
+        } else if (propertyValue instanceof GeoCircle) {
+            convertGeoCircle(jsonBuilder, property, (GeoCircle) propertyValue);
         } else if (propertyValue instanceof StreamingPropertyValue) {
             StreamingPropertyValue streamingPropertyValue = (StreamingPropertyValue) propertyValue;
             if (!streamingPropertyValue.isSearchIndex()) {
@@ -472,7 +472,7 @@ public class ElasticSearchParentChildSearchIndex extends ElasticSearchSearchInde
                 .endObject()
                 .endObject();
 
-        PutMappingResponse response = getClient()
+        getClient()
                 .admin()
                 .indices()
                 .preparePutMapping(indexInfo.getIndexName())
@@ -481,7 +481,6 @@ public class ElasticSearchParentChildSearchIndex extends ElasticSearchSearchInde
                 .setSource(mapping)
                 .execute()
                 .actionGet();
-        LOGGER.debug(response.toString());
 
         indexInfo.addPropertyDefinition(propertyName, new PropertyDefinition(propertyName, dataType, TextIndexHint.ALL));
     }

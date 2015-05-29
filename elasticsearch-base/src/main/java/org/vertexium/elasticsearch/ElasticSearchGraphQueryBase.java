@@ -3,19 +3,19 @@ package org.vertexium.elasticsearch;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.common.geo.builders.ShapeBuilder;
 import org.elasticsearch.common.unit.DistanceUnit;
 import org.elasticsearch.index.query.*;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
-import org.vertexium.*;
-import org.vertexium.elasticsearch.score.ScoringStrategy;
-import org.vertexium.type.GeoCircle;
-import org.vertexium.util.ConvertingIterable;
-import org.vertexium.util.IterableUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.vertexium.*;
+import org.vertexium.elasticsearch.score.ScoringStrategy;
 import org.vertexium.query.*;
+import org.vertexium.type.GeoCircle;
+import org.vertexium.util.ConvertingIterable;
+import org.vertexium.util.IterableUtils;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -24,6 +24,7 @@ import java.util.Map;
 
 public abstract class ElasticSearchGraphQueryBase extends GraphQueryBase {
     private static final Logger LOGGER = LoggerFactory.getLogger(ElasticSearchGraphQueryBase.class);
+    private static final Logger QUERY_LOGGER = LoggerFactory.getLogger(ElasticSearchGraphQueryBase.class.getName() + ".QUERY");
     private final TransportClient client;
     private final boolean evaluateHasContainers;
     private String[] indicesToQuery;
@@ -122,7 +123,9 @@ public abstract class ElasticSearchGraphQueryBase extends GraphQueryBase {
         query = scoringStrategy.updateQuery(query);
         SearchRequestBuilder q = getSearchRequestBuilder(filters, query);
 
-        LOGGER.debug("query: " + q);
+        if (QUERY_LOGGER.isTraceEnabled()) {
+            QUERY_LOGGER.trace("query: " + q);
+        }
         return q.execute()
                 .actionGet();
     }
@@ -187,6 +190,7 @@ public abstract class ElasticSearchGraphQueryBase extends GraphQueryBase {
                 }
             } else if (has.predicate instanceof GeoCompare) {
                 GeoCompare compare = (GeoCompare) has.predicate;
+                String propertyName = has.key + ElasticSearchSearchIndexBase.GEO_PROPERTY_NAME_SUFFIX;
                 switch (compare) {
                     case WITHIN:
                         if (has.value instanceof GeoCircle) {
@@ -194,11 +198,21 @@ public abstract class ElasticSearchGraphQueryBase extends GraphQueryBase {
                             double lat = geoCircle.getLatitude();
                             double lon = geoCircle.getLongitude();
                             double distance = geoCircle.getRadius();
-                            filters
-                                    .add(FilterBuilders
-                                            .geoDistanceFilter(has.key + ElasticSearchSearchIndexBase.GEO_PROPERTY_NAME_SUFFIX)
-                                            .point(lat, lon)
-                                            .distance(distance, DistanceUnit.KILOMETERS));
+
+                            PropertyDefinition propertyDefinition = this.getPropertyDefinitions().get(propertyName);
+                            if (propertyDefinition != null && propertyDefinition.getDataType() == GeoCircle.class) {
+                                ShapeBuilder shapeBuilder = ShapeBuilder.newCircleBuilder()
+                                        .center(lon, lat)
+                                        .radius(distance, DistanceUnit.KILOMETERS);
+                                filters
+                                        .add(new GeoShapeFilterBuilder(propertyName, shapeBuilder));
+                            } else {
+                                filters
+                                        .add(FilterBuilders
+                                                .geoDistanceFilter(propertyName)
+                                                .point(lat, lon)
+                                                .distance(distance, DistanceUnit.KILOMETERS));
+                            }
                         } else {
                             throw new VertexiumException("Unexpected has value type " + has.value.getClass().getName());
                         }

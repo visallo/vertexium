@@ -23,6 +23,7 @@ import org.vertexium.*;
 import org.vertexium.property.StreamingPropertyValue;
 import org.vertexium.query.*;
 import org.vertexium.search.SearchIndex;
+import org.vertexium.type.GeoCircle;
 import org.vertexium.type.GeoPoint;
 import org.vertexium.util.IterableUtils;
 import org.vertexium.util.Preconditions;
@@ -143,7 +144,6 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex {
                         .setSource(mapping)
                         .execute()
                         .actionGet();
-                LOGGER.debug(putMappingResponse.toString());
                 indexInfo.setElementTypeDefined(true);
             } catch (IOException e) {
                 throw new VertexiumException("Could not add mappings to index: " + indexInfo.getIndexName(), e);
@@ -154,7 +154,6 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex {
     @SuppressWarnings("unused")
     protected void createIndex(String indexName, boolean storeSourceData) throws IOException {
         CreateIndexResponse createResponse = client.admin().indices().prepareCreate(indexName).execute().actionGet();
-        LOGGER.debug(createResponse.toString());
 
         ClusterHealthResponse health = client.admin().cluster().prepareHealth(indexName)
                 .setWaitForGreenStatus()
@@ -387,8 +386,9 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex {
                 if (propertyDefinition.getTextIndexHints().contains(TextIndexHint.FULL_TEXT)) {
                     addPropertyToIndex(indexInfo, propertyDefinition.getPropertyName(), String.class, true, propertyDefinition.getBoost());
                 }
-            } else if (propertyDefinition.getDataType() == GeoPoint.class) {
-                addPropertyToIndex(indexInfo, propertyDefinition.getPropertyName() + GEO_PROPERTY_NAME_SUFFIX, GeoPoint.class, true, propertyDefinition.getBoost());
+            } else if (propertyDefinition.getDataType() == GeoPoint.class
+                    || propertyDefinition.getDataType() == GeoCircle.class) {
+                addPropertyToIndex(indexInfo, propertyDefinition.getPropertyName() + GEO_PROPERTY_NAME_SUFFIX, propertyDefinition.getDataType(), true, propertyDefinition.getBoost());
                 addPropertyToIndex(indexInfo, propertyDefinition.getPropertyName(), String.class, true, propertyDefinition.getBoost());
             } else {
                 addPropertyToIndex(indexInfo, propertyDefinition);
@@ -459,6 +459,9 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex {
         } else if (propertyValue instanceof GeoPoint) {
             addPropertyToIndex(indexInfo, propertyName + GEO_PROPERTY_NAME_SUFFIX, GeoPoint.class, true);
             addPropertyToIndex(indexInfo, propertyName, String.class, true);
+        } else if (propertyValue instanceof GeoCircle) {
+            addPropertyToIndex(indexInfo, propertyName + GEO_PROPERTY_NAME_SUFFIX, GeoCircle.class, true);
+            addPropertyToIndex(indexInfo, propertyName, String.class, true);
         } else {
             Preconditions.checkNotNull(propertyValue, "property value cannot be null for property: " + propertyName);
             dataType = propertyValue.getClass();
@@ -514,6 +517,11 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex {
         } else if (dataType == GeoPoint.class) {
             LOGGER.debug("Registering geo_point type for {}", propertyName);
             mapping.field("type", "geo_point");
+        } else if (dataType == GeoCircle.class) {
+            LOGGER.debug("Registering geo_shape type for {}", propertyName);
+            mapping.field("type", "geo_shape");
+            mapping.field("tree", "quadtree");
+            mapping.field("precision", "100m");
         } else if (Number.class.isAssignableFrom(dataType)) {
             LOGGER.debug("Registering double type for {}", propertyName);
             mapping.field("type", "double");
@@ -555,4 +563,28 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex {
     }
 
     public abstract void addElementToBulkRequest(Graph graph, BulkRequest bulkRequest, IndexInfo indexInfo, Element element, Authorizations authorizations);
+
+    protected void convertGeoPoint(XContentBuilder jsonBuilder, Property property, GeoPoint geoPoint) throws IOException {
+        Map<String, Object> propertyValueMap = new HashMap<>();
+        propertyValueMap.put("lat", geoPoint.getLatitude());
+        propertyValueMap.put("lon", geoPoint.getLongitude());
+        jsonBuilder.field(property.getName() + GEO_PROPERTY_NAME_SUFFIX, propertyValueMap);
+        if (geoPoint.getDescription() != null) {
+            jsonBuilder.field(property.getName(), geoPoint.getDescription());
+        }
+    }
+
+    protected void convertGeoCircle(XContentBuilder jsonBuilder, Property property, GeoCircle geoCircle) throws IOException {
+        Map<String, Object> propertyValueMap = new HashMap<>();
+        propertyValueMap.put("type", "circle");
+        List<Double> coordinates = new ArrayList<>();
+        coordinates.add(geoCircle.getLongitude());
+        coordinates.add(geoCircle.getLatitude());
+        propertyValueMap.put("coordinates", coordinates);
+        propertyValueMap.put("radius", geoCircle.getRadius() + "km");
+        jsonBuilder.field(property.getName() + GEO_PROPERTY_NAME_SUFFIX, propertyValueMap);
+        if (geoCircle.getDescription() != null) {
+            jsonBuilder.field(property.getName(), geoCircle.getDescription());
+        }
+    }
 }

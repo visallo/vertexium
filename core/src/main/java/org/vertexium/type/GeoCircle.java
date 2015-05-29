@@ -9,11 +9,23 @@ public class GeoCircle implements Serializable, GeoShape {
     private final double latitude;
     private final double longitude;
     private final double radius;
+    private final String description;
 
+    /**
+     * @param radius radius is specified in kilometers
+     */
     public GeoCircle(double latitude, double longitude, double radius) {
+        this(latitude, longitude, radius, null);
+    }
+
+    /**
+     * @param radius radius is specified in kilometers
+     */
+    public GeoCircle(double latitude, double longitude, double radius, String description) {
         this.latitude = latitude;
         this.longitude = longitude;
         this.radius = radius;
+        this.description = description;
     }
 
     public double getLatitude() {
@@ -24,8 +36,15 @@ public class GeoCircle implements Serializable, GeoShape {
         return longitude;
     }
 
+    /**
+     * radius of circle in kilometers
+     */
     public double getRadius() {
         return radius;
+    }
+
+    public String getDescription() {
+        return description;
     }
 
     @Override
@@ -33,6 +52,10 @@ public class GeoCircle implements Serializable, GeoShape {
         if (geoShape instanceof GeoPoint) {
             GeoPoint pt = (GeoPoint) geoShape;
             return GeoPoint.distanceBetween(getLatitude(), getLongitude(), pt.getLatitude(), pt.getLongitude()) <= getRadius();
+        } else if (geoShape instanceof GeoCircle) {
+            GeoCircle circle = (GeoCircle) geoShape;
+            double distance = GeoPoint.distanceBetween(getLatitude(), getLongitude(), circle.getLatitude(), circle.getLongitude());
+            return distance <= getRadius() + circle.getRadius();
         }
         throw new VertexiumException("Not implemented for argument type " + geoShape.getClass().getName());
     }
