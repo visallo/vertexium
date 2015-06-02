@@ -394,7 +394,7 @@ public class ColumnVisibility {
      * @param expression An expression of the rights needed to see this mutation. The expression is a sequence of characters from the set [A-Za-z0-9_-] along with the
      *                   binary operators "&amp;" and "|" indicating that both operands are necessary, or that either is necessary. The following are valid expressions for
      *                   visibility:
-     *                   <p/>
+     *                   
      *                   <pre>
      *                   A
      *                   A|B
@@ -402,10 +402,10 @@ public class ColumnVisibility {
      *                   orange|(red&amp;yellow)
      *
      *                   </pre>
-     *                   <p/>
-     *                   <p/>
+     *                   
+     *                   
      *                   The following are not valid expressions for visibility:
-     *                   <p/>
+     *                   
      *                   <pre>
      *                   A|B&amp;C
      *                   A=B
@@ -415,13 +415,13 @@ public class ColumnVisibility {
      *                   )
      *                   dog|!cat
      *                   </pre>
-     *                   <p/>
-     *                   <p/>
+     *                   
+     *                   
      *                   You can use any character you like in your column visibility expression with quoting. If your quoted term contains '&quot;' or '\' then escape
      *                   them with '\'. The {@link #quote(String)} method will properly quote and escape terms for you.
-     *                   <p/>
+     *                   
      *                   <pre>
-     *                   &quot;A#C&quot;<span />&amp;<span />B
+     *                   &quot;A#C&quot;&amp;B
      *                   </pre>
      */
     public ColumnVisibility(String expression) {
@@ -479,10 +479,10 @@ public class ColumnVisibility {
 
     /**
      * Properly quotes terms in a column visibility expression. If no quoting is needed, then nothing is done.
-     * <p/>
-     * <p/>
+     * 
+     * 
      * Examples of using quote :
-     * <p/>
+     * 
      * <pre>
      * import static org.apache.accumulo.core.security.ColumnVisibility.quote;
      *   .
