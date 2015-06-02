@@ -516,7 +516,7 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
             Object value = property.getValue();
             Metadata metadata = property.getMetadata();
 
-            inMemoryTableElement.deleteProperty(apv.getKey(), apv.getName(), authorizations);
+            inMemoryTableElement.deleteProperty(apv.getKey(), apv.getName(), apv.getExistingVisibility(), authorizations);
             inMemoryTableElement.appendAddPropertyMutation(apv.getKey(), apv.getName(), value, metadata, apv.getVisibility(), timestamp);
         }
     }
