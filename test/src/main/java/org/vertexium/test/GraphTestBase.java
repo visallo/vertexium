@@ -1146,7 +1146,6 @@ public abstract class GraphTestBase {
      * This tests simulates two workspaces w1 (via A) and w1 (vis B).
      * Both w1 and w2 has e1 on it.
      * e1 is linked to e2.
-
      * What happens if w1 (vis A) marks e1 hidden, then deletes itself?
      */
     @Test

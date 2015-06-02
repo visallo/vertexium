@@ -4,7 +4,7 @@ import org.vertexium.mutation.ExistingElementMutation;
 
 /**
  * An element on the graph. This can be either a vertex or edge.
- * <p/>
+ *
  * Elements also contain properties. These properties are unique given their key, name, and visibility.
  * For example a property with key "key1" and name "age" could have to values, one with visibility "a" and one
  * with visibility "b".
@@ -122,7 +122,7 @@ public interface Element {
     /**
      * Convenience method to retrieve the first value of the property with the given name. This method calls
      * Element#getPropertyValue(java.lang.String, int) with an index of 0.
-     * <p/>
+     *
      * This method makes no attempt to verify that one and only one value exists given the name.
      *
      * @param name The name of the property to retrieve
@@ -133,7 +133,7 @@ public interface Element {
     /**
      * Convenience method to retrieve the first value of the property with the given name. This method calls
      * Element#getPropertyValue(java.lang.String, java.lang.String, int) with an index of 0.
-     * <p/>
+     *
      * This method makes no attempt to verify that one and only one value exists given the name.
      *
      * @param key  The key of the property
@@ -145,10 +145,10 @@ public interface Element {
     /**
      * Gets the nth property value of the named property. If the named property has multiple values this method
      * provides an easy way to get the value by index.
-     * <p/>
+     *
      * This method is a convenience method and calls Element#getPropertyValues(java.lang.String)
      * and iterates over that list until the nth value.
-     * <p/>
+     *
      * This method assumes the property values are retrieved in a deterministic order.
      *
      * @param name  The name of the property to retrieve.
@@ -160,10 +160,10 @@ public interface Element {
     /**
      * Gets the nth property value of the named property. If the named property has multiple values this method
      * provides an easy way to get the value by index.
-     * <p/>
+     *
      * This method is a convenience method and calls Element#getPropertyValues(java.lang.String, java.lang.String)
      * and iterates over that list until the nth value.
-     * <p/>
+     *
      * This method assumes the property values are retrieved in a deterministic order.
      *
      * @param key   The property key
