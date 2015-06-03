@@ -34,7 +34,7 @@ public class GeoRect implements GeoShape {
         return "[" + getNorthWest() + "," + getSouthEast() + "]";
     }
 
-    public boolean intersect(GeoShape geoShape) {
+    public boolean intersects(GeoShape geoShape) {
         if (geoShape instanceof GeoRect) {
             GeoRect rect = (GeoRect) geoShape;
             return getNorthWest().isNorthWestOf(rect.getSouthEast())
