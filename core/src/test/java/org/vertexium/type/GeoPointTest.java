@@ -3,7 +3,7 @@ package org.vertexium.type;
 import org.junit.Test;
 import org.vertexium.VertexiumException;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 public class GeoPointTest {
     @Test
@@ -25,5 +25,44 @@ public class GeoPointTest {
         } catch (VertexiumException ex) {
             // expected
         }
+    }
+
+    @Test
+    public void testLongitudinalDistanceTo() {
+        GeoPoint topLeft = new GeoPoint(10.0, 0.0);
+        GeoPoint bottomRight = new GeoPoint(0.0, 10.0);
+        assertEquals(-10.0, topLeft.longitudinalDistanceTo(bottomRight), 0.01);
+        assertEquals(10.0, bottomRight.longitudinalDistanceTo(topLeft), 0.01);
+
+        topLeft = new GeoPoint(10.0, -170);
+        bottomRight = new GeoPoint(0.0, 170);
+        assertEquals(-20.0, topLeft.longitudinalDistanceTo(bottomRight), 0.01);
+        assertEquals(20.0, bottomRight.longitudinalDistanceTo(topLeft), 0.01);
+    }
+
+    @Test
+    public void testIsSouthEastOf() {
+        GeoPoint topLeft = new GeoPoint(10.0, 0.0);
+        GeoPoint bottomRight = new GeoPoint(0.0, 10.0);
+        assertFalse(topLeft.isSouthEastOf(bottomRight));
+        assertTrue(bottomRight.isSouthEastOf(topLeft));
+
+        topLeft = new GeoPoint(10.0, -170);
+        bottomRight = new GeoPoint(0.0, 170);
+        assertFalse(topLeft.isSouthEastOf(bottomRight));
+        assertTrue(bottomRight.isSouthEastOf(topLeft));
+    }
+
+    @Test
+    public void testIsNorthWestOf() {
+        GeoPoint topLeft = new GeoPoint(10.0, 0.0);
+        GeoPoint bottomRight = new GeoPoint(0.0, 10.0);
+        assertTrue(topLeft.isNorthWestOf(bottomRight));
+        assertFalse(bottomRight.isNorthWestOf(topLeft));
+
+        topLeft = new GeoPoint(10.0, -170);
+        bottomRight = new GeoPoint(0.0, 170);
+        assertTrue(topLeft.isNorthWestOf(bottomRight));
+        assertFalse(bottomRight.isNorthWestOf(topLeft));
     }
 }

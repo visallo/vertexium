@@ -188,4 +188,41 @@ public class GeoPoint implements Serializable, GeoShape, Comparable<GeoPoint> {
         }
         return Double.parseDouble(part);
     }
+
+    public boolean isSouthEastOf(GeoPoint pt) {
+        return isSouthOf(pt) && isEastOf(pt);
+    }
+
+    private boolean isEastOf(GeoPoint pt) {
+        return longitudinalDistanceTo(pt) > 0;
+    }
+
+    public boolean isSouthOf(GeoPoint pt) {
+        return getLatitude() < pt.getLatitude();
+    }
+
+    public boolean isNorthWestOf(GeoPoint pt) {
+        return isNorthOf(pt) && isWestOf(pt);
+    }
+
+    private boolean isWestOf(GeoPoint pt) {
+        return longitudinalDistanceTo(pt) < 0;
+    }
+
+    public double longitudinalDistanceTo(GeoPoint pt) {
+        double me = getLongitude();
+        double them = pt.getLongitude();
+        double result = Math.abs(me - them) > 180.0 ? (them - me) : (me - them);
+        if (result > 180.0) {
+            result -= 360.0;
+        }
+        if (result < -180.0) {
+            result += 360.0;
+        }
+        return result;
+    }
+
+    public boolean isNorthOf(GeoPoint pt) {
+        return getLatitude() > pt.getLatitude();
+    }
 }
