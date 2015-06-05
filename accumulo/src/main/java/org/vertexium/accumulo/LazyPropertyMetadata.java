@@ -26,7 +26,7 @@ public class LazyPropertyMetadata {
     }
 
     public void add(String metadataKey, Visibility metadataVisibility, byte[] value) {
-        this.entries.put(metadataKey + metadataVisibility.getVisibilityString(), new Entry(metadataKey, metadataVisibility, value));
+        this.entries.put(metadataKey.concat(metadataVisibility.getVisibilityString()), new Entry(metadataKey, metadataVisibility, value));
     }
 
     private static class Entry {
