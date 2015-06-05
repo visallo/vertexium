@@ -60,6 +60,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
     public static final Integer ALL_VERSIONS = null;
     private static final int ACCUMULO_DEFAULT_VERSIONING_ITERATOR_PRIORITY = 20;
     private static final String ACCUMULO_DEFAULT_VERSIONING_ITERATOR_NAME = "vers";
+    private static final ColumnVisibility EMPTY_COLUMN_VISIBILITY = new ColumnVisibility();
     private final Connector connector;
     private final ValueSerializer valueSerializer;
     private final FileSystem fileSystem;
@@ -1361,13 +1362,22 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
     }
 
     public static Visibility accumuloVisibilityToVisibility(ColumnVisibility columnVisibility) {
+        if (columnVisibility.equals(EMPTY_COLUMN_VISIBILITY)) {
+            return Visibility.EMPTY;
+        }
         String columnVisibilityString = columnVisibility.toString();
         return accumuloVisibilityToVisibility(columnVisibilityString);
     }
 
     public static Visibility accumuloVisibilityToVisibility(String columnVisibilityString) {
         if (columnVisibilityString.startsWith("[") && columnVisibilityString.endsWith("]")) {
-            return new Visibility(columnVisibilityString.substring(1, columnVisibilityString.length() - 1));
+            if (columnVisibilityString.length() == 2) {
+                return Visibility.EMPTY;
+            }
+            columnVisibilityString = columnVisibilityString.substring(1, columnVisibilityString.length() - 1);
+        }
+        if (columnVisibilityString.length() == 0) {
+            return Visibility.EMPTY;
         }
         return new Visibility(columnVisibilityString);
     }
