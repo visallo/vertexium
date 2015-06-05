@@ -59,7 +59,14 @@ public class PropertyMetadataColumnQualifier extends KeyBase {
         assertNoValueSeparator(key);
         assertNoValueSeparator(visibilityString);
         assertNoValueSeparator(metadataKey);
-        return new Text(name + VALUE_SEPARATOR + key + VALUE_SEPARATOR + visibilityString + VALUE_SEPARATOR + metadataKey);
+        return new Text(new StringBuilder(name.length() + key.length() + visibilityString.length() + metadataKey.length() + 3)
+                .append(name)
+                .append(VALUE_SEPARATOR)
+                .append(key)
+                .append(VALUE_SEPARATOR)
+                .append(visibilityString)
+                .append(VALUE_SEPARATOR)
+                .append(metadataKey).toString());
     }
 
     public String getPropertyDiscriminator(long propertyTimestamp) {
