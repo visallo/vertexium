@@ -3,7 +3,6 @@ package org.vertexium.elasticsearch;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
 import org.elasticsearch.action.admin.indices.create.CreateIndexResponse;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
-import org.elasticsearch.action.admin.indices.mapping.put.PutMappingResponse;
 import org.elasticsearch.action.admin.indices.stats.IndexStats;
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
@@ -40,6 +39,8 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex {
     public static final String ELEMENT_TYPE_EDGE = "edge";
     public static final String EXACT_MATCH_PROPERTY_NAME_SUFFIX = "_exactMatch";
     public static final String GEO_PROPERTY_NAME_SUFFIX = "_geo";
+    public static final int MAX_BATCH_COUNT = 25000;
+    public static final long MAX_BATCH_SIZE = 15 * 1024 * 1024;
     private final TransportClient client;
     private final ElasticSearchSearchIndexConfiguration config;
     private final Map<String, IndexInfo> indexInfos = new HashMap<>();
@@ -139,7 +140,7 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex {
                 XContentBuilder mapping = mappingBuilder.endObject()
                         .endObject();
 
-                PutMappingResponse putMappingResponse = client.admin().indices().preparePutMapping(indexInfo.getIndexName())
+                client.admin().indices().preparePutMapping(indexInfo.getIndexName())
                         .setType(ELEMENT_TYPE)
                         .setSource(mapping)
                         .execute()
@@ -307,16 +308,40 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex {
 
     @Override
     public void addElements(Graph graph, Iterable<? extends Element> elements, Authorizations authorizations) {
-        // TODO change this to use elastic search bulk import
-        int count = 0;
+        int totalCount = 0;
+        Map<IndexInfo, BulkRequest> bulkRequests = new HashMap<>();
         for (Element element : elements) {
-            count++;
-            if (count % 1000 == 0) {
-                LOGGER.debug("adding elements... " + count);
+            String indexName = getIndexName(element);
+            IndexInfo indexInfo = ensureIndexCreatedAndInitialized(indexName, getConfig().isStoreSourceData());
+            BulkRequest bulkRequest = bulkRequests.get(indexInfo);
+            if (bulkRequest == null) {
+                bulkRequest = new BulkRequest();
+                bulkRequests.put(indexInfo, bulkRequest);
             }
-            addElement(graph, element, authorizations);
+
+            if (bulkRequest.numberOfActions() >= MAX_BATCH_COUNT || bulkRequest.estimatedSizeInBytes() > MAX_BATCH_SIZE) {
+                LOGGER.debug("adding elements... " + bulkRequest.numberOfActions() + " (est size " + bulkRequest.estimatedSizeInBytes() + ")");
+                totalCount += bulkRequest.numberOfActions();
+                doBulkRequest(bulkRequest);
+                bulkRequest = new BulkRequest();
+                bulkRequests.put(indexInfo, bulkRequest);
+            }
+            addElementToBulkRequest(graph, bulkRequest, indexInfo, element, authorizations);
+
+            getConfig().getScoringStrategy().addElement(this, graph, bulkRequest, indexInfo, element, authorizations);
         }
-        LOGGER.debug("added " + count + " elements");
+        for (BulkRequest bulkRequest : bulkRequests.values()) {
+            if (bulkRequest.numberOfActions() > 0) {
+                LOGGER.debug("adding elements... " + bulkRequest.numberOfActions() + " (est size " + bulkRequest.estimatedSizeInBytes() + ")");
+                totalCount += bulkRequest.numberOfActions();
+                doBulkRequest(bulkRequest);
+            }
+        }
+        LOGGER.debug("added " + totalCount + " elements");
+
+        if (getConfig().isAutoFlush()) {
+            flush();
+        }
     }
 
     @Override

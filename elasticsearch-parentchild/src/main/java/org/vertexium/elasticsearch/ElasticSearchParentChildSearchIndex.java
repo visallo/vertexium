@@ -33,7 +33,6 @@ public class ElasticSearchParentChildSearchIndex extends ElasticSearchSearchInde
     private static final Logger LOGGER = LoggerFactory.getLogger(ElasticSearchParentChildSearchIndex.class);
     private static final Logger ADD_ELEMENT_LOGGER = LoggerFactory.getLogger(ElasticSearchParentChildSearchIndex.class.getName() + ".ADDELEMENT");
     public static final String PROPERTY_TYPE = "property";
-    public static final int BATCH_SIZE = 1000;
     private String[] parentDocumentFields;
     private final ThreadLocal<Map<IndexInfo, BulkRequest>> bulkRequestsByIndexInfo = new ThreadLocal<Map<IndexInfo, BulkRequest>>() {
         @Override
@@ -208,42 +207,6 @@ public class ElasticSearchParentChildSearchIndex extends ElasticSearchSearchInde
             this.bulkRequestsByIndexInfo.get().clear();
         }
         super.flush();
-    }
-
-    @Override
-    public void addElements(Graph graph, Iterable<? extends Element> elements, Authorizations authorizations) {
-        int totalCount = 0;
-        Map<IndexInfo, BulkRequestWithCount> bulkRequests = new HashMap<>();
-        for (Element element : elements) {
-            String indexName = getIndexName(element);
-            IndexInfo indexInfo = ensureIndexCreatedAndInitialized(indexName, getConfig().isStoreSourceData());
-            BulkRequestWithCount bulkRequestWithCount = bulkRequests.get(indexInfo);
-            if (bulkRequestWithCount == null) {
-                bulkRequestWithCount = new BulkRequestWithCount();
-                bulkRequests.put(indexInfo, bulkRequestWithCount);
-            }
-
-            if (bulkRequestWithCount.getCount() >= BATCH_SIZE) {
-                LOGGER.debug("adding elements... " + totalCount);
-                doBulkRequest(bulkRequestWithCount.getBulkRequest());
-                bulkRequestWithCount.clear();
-            }
-            addElementToBulkRequest(graph, bulkRequestWithCount.getBulkRequest(), indexInfo, element, authorizations);
-            bulkRequestWithCount.incrementCount();
-            totalCount++;
-
-            totalCount += getConfig().getScoringStrategy().addElement(this, graph, bulkRequestWithCount, indexInfo, element, authorizations);
-        }
-        for (BulkRequestWithCount bulkRequestWithCount : bulkRequests.values()) {
-            if (bulkRequestWithCount.getCount() > 0) {
-                doBulkRequest(bulkRequestWithCount.getBulkRequest());
-            }
-        }
-        LOGGER.debug("added " + totalCount + " elements");
-
-        if (getConfig().isAutoFlush()) {
-            flush();
-        }
     }
 
     @Override

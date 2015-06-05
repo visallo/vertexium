@@ -1,5 +1,6 @@
 package org.vertexium.elasticsearch.score;
 
+import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -7,8 +8,6 @@ import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.functionscore.ScoreFunctionBuilder;
 import org.elasticsearch.index.query.functionscore.ScoreFunctionBuilders;
 import org.vertexium.*;
-import org.vertexium.*;
-import org.vertexium.elasticsearch.BulkRequestWithCount;
 import org.vertexium.elasticsearch.ElasticSearchSearchIndexBase;
 import org.vertexium.elasticsearch.IndexInfo;
 import org.vertexium.elasticsearch.utils.GetResponseUtil;
@@ -50,7 +49,7 @@ public class EdgeCountScoringStrategy extends ScoringStrategy {
     }
 
     @Override
-    public int addElement(ElasticSearchSearchIndexBase searchIndex, Graph graph, BulkRequestWithCount bulkRequestWithCount, IndexInfo indexInfo, Element element, Authorizations authorizations) {
+    public int addElement(ElasticSearchSearchIndexBase searchIndex, Graph graph, BulkRequest bulkRequest, IndexInfo indexInfo, Element element, Authorizations authorizations) {
         int totalCount = 0;
 
         if (!getConfig().isUpdateEdgeBoost()) {
@@ -62,15 +61,13 @@ public class EdgeCountScoringStrategy extends ScoringStrategy {
 
         Element vOut = ((Edge) element).getVertex(Direction.OUT, authorizations);
         if (vOut != null) {
-            searchIndex.addElementToBulkRequest(graph, bulkRequestWithCount.getBulkRequest(), indexInfo, vOut, authorizations);
-            bulkRequestWithCount.incrementCount();
+            searchIndex.addElementToBulkRequest(graph, bulkRequest, indexInfo, vOut, authorizations);
             totalCount++;
         }
 
         Element vIn = ((Edge) element).getVertex(Direction.IN, authorizations);
         if (vIn != null) {
-            searchIndex.addElementToBulkRequest(graph, bulkRequestWithCount.getBulkRequest(), indexInfo, vIn, authorizations);
-            bulkRequestWithCount.incrementCount();
+            searchIndex.addElementToBulkRequest(graph, bulkRequest, indexInfo, vIn, authorizations);
             totalCount++;
         }
 

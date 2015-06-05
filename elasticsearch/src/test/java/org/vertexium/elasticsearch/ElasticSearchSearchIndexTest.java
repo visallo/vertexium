@@ -4,7 +4,6 @@ import org.apache.commons.io.IOUtils;
 import org.json.JSONObject;
 import org.junit.*;
 import org.vertexium.*;
-import org.vertexium.*;
 import org.vertexium.elasticsearch.helpers.ElasticSearchSearchIndexTestHelpers;
 import org.vertexium.elasticsearch.score.EdgeCountScoringStrategy;
 import org.vertexium.elasticsearch.score.EdgeCountScoringStrategyConfiguration;
