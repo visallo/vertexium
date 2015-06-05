@@ -4,7 +4,6 @@ import org.apache.hadoop.io.Text;
 import org.vertexium.Property;
 import org.vertexium.VertexiumException;
 import org.vertexium.accumulo.AccumuloNameSubstitutionStrategy;
-import org.vertexium.id.NameSubstitutionStrategy;
 
 public class PropertyHiddenColumnQualifier extends KeyBase {
     private static final int PART_INDEX_PROPERTY_NAME = 0;
@@ -48,6 +47,13 @@ public class PropertyHiddenColumnQualifier extends KeyBase {
         assertNoValueSeparator(name);
         assertNoValueSeparator(key);
         assertNoValueSeparator(visibilityString);
-        return new Text(name + VALUE_SEPARATOR + key + VALUE_SEPARATOR + visibilityString);
+        return new Text(new StringBuilder(name.length() + 1 + key.length() + 1 + visibilityString.length())
+                .append(name)
+                .append(VALUE_SEPARATOR)
+                .append(key)
+                .append(VALUE_SEPARATOR)
+                .append(visibilityString)
+                .toString()
+        );
     }
 }

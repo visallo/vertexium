@@ -91,6 +91,11 @@ public class PropertyColumnQualifier extends KeyBase {
         String key = nameSubstitutionStrategy.deflate(getPropertyKey());
         assertNoValueSeparator(name);
         assertNoValueSeparator(key);
-        return new Text(name + VALUE_SEPARATOR + key);
+        return new Text(new StringBuilder(name.length() + 1 + key.length())
+                .append(name)
+                .append(VALUE_SEPARATOR)
+                .append(key)
+                .toString()
+        );
     }
 }
