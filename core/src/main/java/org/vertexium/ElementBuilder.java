@@ -82,8 +82,12 @@ public abstract class ElementBuilder<T extends Element> implements ElementMutati
 
     @Override
     public ElementBuilder<T> addPropertyValue(String key, String name, Object value, Metadata metadata, Long timestamp, Visibility visibility) {
-        Preconditions.checkNotNull(name, "property name cannot be null for property: " + name + ":" + key);
-        Preconditions.checkNotNull(value, "property value cannot be null for property: " + name + ":" + key);
+        if (name == null) {
+            throw new NullPointerException("property name cannot be null for property: " + name + ":" + key);
+        }
+        if (value == null) {
+            throw new NullPointerException("property value cannot be null for property: " + name + ":" + key);
+        }
         this.properties.add(new MutablePropertyImpl(key, name, value, metadata, timestamp, null, visibility));
         return this;
     }
