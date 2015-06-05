@@ -73,7 +73,17 @@ public class PropertyColumnQualifier extends KeyBase {
         assertNoValueSeparator(getPropertyName());
         assertNoValueSeparator(getPropertyKey());
         assertNoValueSeparator(visibilityString);
-        return getPropertyName() + VALUE_SEPARATOR + getPropertyKey() + VALUE_SEPARATOR + visibilityString + VALUE_SEPARATOR + timestamp;
+        String timestampString = Long.toString(timestamp);
+        int length = getPropertyName().length() + 1 + getPropertyKey().length() + 1 + visibilityString.length() + 1 + timestampString.length();
+        return new StringBuilder(length)
+                .append(getPropertyName())
+                .append(VALUE_SEPARATOR)
+                .append(getPropertyKey())
+                .append(VALUE_SEPARATOR)
+                .append(visibilityString)
+                .append(VALUE_SEPARATOR)
+                .append(timestamp)
+                .toString();
     }
 
     public Text getColumnQualifier(NameSubstitutionStrategy nameSubstitutionStrategy) {
