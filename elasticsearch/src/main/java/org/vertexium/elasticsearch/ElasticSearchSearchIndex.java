@@ -190,7 +190,9 @@ public class ElasticSearchSearchIndex extends ElasticSearchSearchIndexBase {
             return element;
         }
 
-        LOGGER.debug("Reindexing element " + element.getId());
+        if (ADD_ELEMENT_LOGGER.isTraceEnabled()) {
+            ADD_ELEMENT_LOGGER.debug("Reindexing element " + element.getId());
+        }
         existingElement.mergeProperties(element);
 
         return existingElement;

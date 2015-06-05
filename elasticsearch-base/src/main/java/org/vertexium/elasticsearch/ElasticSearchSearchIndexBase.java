@@ -310,11 +310,11 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex {
         // TODO change this to use elastic search bulk import
         int count = 0;
         for (Element element : elements) {
+            count++;
             if (count % 1000 == 0) {
                 LOGGER.debug("adding elements... " + count);
             }
             addElement(graph, element, authorizations);
-            count++;
         }
         LOGGER.debug("added " + count + " elements");
     }
