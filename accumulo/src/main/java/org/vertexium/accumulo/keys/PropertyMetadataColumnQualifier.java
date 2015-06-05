@@ -6,7 +6,17 @@ import org.vertexium.VertexiumException;
 import org.vertexium.accumulo.AccumuloNameSubstitutionStrategy;
 import org.vertexium.id.NameSubstitutionStrategy;
 
+import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
+import java.nio.charset.*;
+
 public class PropertyMetadataColumnQualifier extends KeyBase {
+    private static ThreadLocal<CharsetEncoder> ENCODER_FACTORY = new ThreadLocal() {
+        protected CharsetEncoder initialValue() {
+            return Charset.forName("UTF-8").newEncoder().onMalformedInput(CodingErrorAction.REPLACE).onUnmappableCharacter(CodingErrorAction.REPLACE);
+        }
+    };
+
     private static final int PART_INDEX_PROPERTY_NAME = 0;
     private static final int PART_INDEX_PROPERTY_KEY = 1;
     private static final int PART_INDEX_PROPERTY_VISIBILITY = 2;
@@ -60,14 +70,25 @@ public class PropertyMetadataColumnQualifier extends KeyBase {
         assertNoValueSeparator(key);
         assertNoValueSeparator(visibilityString);
         assertNoValueSeparator(metadataKey);
-        return new Text(new StringBuilder(name.length() + key.length() + visibilityString.length() + metadataKey.length() + 3)
-                .append(name)
-                .append(VALUE_SEPARATOR)
-                .append(key)
-                .append(VALUE_SEPARATOR)
-                .append(visibilityString)
-                .append(VALUE_SEPARATOR)
-                .append(metadataKey).toString());
+
+        int charCount = name.length() + key.length() + visibilityString.length() + metadataKey.length() + 3;
+        CharBuffer qualifierChars = (CharBuffer)CharBuffer.allocate(charCount)
+                .put(name).put(VALUE_SEPARATOR)
+                .put(key).put(VALUE_SEPARATOR)
+                .put(visibilityString).put(VALUE_SEPARATOR)
+                .put(metadataKey).flip();
+
+        CharsetEncoder encoder = ENCODER_FACTORY.get();
+        encoder.reset();
+
+        try {
+            ByteBuffer encodedQualifier = encoder.encode(qualifierChars);
+            Text result = new Text();
+            result.set(encodedQualifier.array(), 0, encodedQualifier.limit());
+            return result;
+        } catch (CharacterCodingException cce) {
+            throw new RuntimeException("This should never happen", cce);
+        }
     }
 
     public String getPropertyDiscriminator(long propertyTimestamp) {
