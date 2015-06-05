@@ -120,7 +120,7 @@ public abstract class ElementMaker<T> {
     }
 
     private Text inflate(Text text) {
-        return new Text(getGraph().getNameSubstitutionStrategy().inflate(text.toString()));
+        return getGraph().getNameSubstitutionStrategy().inflate(text);
     }
 
     protected abstract void processColumn(Key key, Value value);

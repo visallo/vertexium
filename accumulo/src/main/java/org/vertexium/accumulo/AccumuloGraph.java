@@ -73,7 +73,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
     private final Queue<GraphEvent> graphEventQueue = new LinkedList<>();
     private Integer accumuloGraphVersion;
     private boolean foundValueSerializerMetadata;
-    private final NameSubstitutionStrategy nameSubstitutionStrategy;
+    private final AccumuloNameSubstitutionStrategy nameSubstitutionStrategy;
 
     protected AccumuloGraph(
             AccumuloGraphConfiguration config,
@@ -89,7 +89,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
         this.valueSerializer = valueSerializer;
         this.fileSystem = fileSystem;
         this.dataDir = config.getDataDir();
-        this.nameSubstitutionStrategy = nameSubstitutionStrategy;
+        this.nameSubstitutionStrategy = AccumuloNameSubstitutionStrategy.create(nameSubstitutionStrategy);
         long maxStreamingPropertyValueTableDataSize = config.getMaxStreamingPropertyValueTableDataSize();
         this.elementMutationBuilder = new ElementMutationBuilder(fileSystem, valueSerializer, maxStreamingPropertyValueTableDataSize, dataDir) {
             @Override
@@ -103,7 +103,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
             }
 
             @Override
-            protected NameSubstitutionStrategy getNameSubstitutionStrategy() {
+            protected AccumuloNameSubstitutionStrategy getNameSubstitutionStrategy() {
                 return AccumuloGraph.this.getNameSubstitutionStrategy();
             }
 
@@ -642,7 +642,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
         return edge;
     }
 
-    public NameSubstitutionStrategy getNameSubstitutionStrategy() {
+    public AccumuloNameSubstitutionStrategy getNameSubstitutionStrategy() {
         return nameSubstitutionStrategy;
     }
 

@@ -3,6 +3,7 @@ package org.vertexium.accumulo.keys;
 import org.apache.hadoop.io.Text;
 import org.vertexium.Property;
 import org.vertexium.VertexiumException;
+import org.vertexium.accumulo.AccumuloNameSubstitutionStrategy;
 import org.vertexium.id.NameSubstitutionStrategy;
 
 public class PropertyMetadataColumnQualifier extends KeyBase {
@@ -12,7 +13,7 @@ public class PropertyMetadataColumnQualifier extends KeyBase {
     private static final int PART_INDEX_METADATA_KEY = 3;
     private final String[] parts;
 
-    public PropertyMetadataColumnQualifier(Text columnQualifier, NameSubstitutionStrategy nameSubstitutionStrategy) {
+    public PropertyMetadataColumnQualifier(Text columnQualifier, AccumuloNameSubstitutionStrategy nameSubstitutionStrategy) {
         this.parts = splitOnValueSeparator(columnQualifier);
         if (this.parts.length != 4) {
             throw new VertexiumException("Invalid property metadata column qualifier: " + columnQualifier + ". Expected 4 parts, found " + this.parts.length);
