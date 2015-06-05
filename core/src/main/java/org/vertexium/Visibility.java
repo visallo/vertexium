@@ -5,6 +5,7 @@ import java.util.Set;
 
 public class Visibility implements Serializable, Comparable<Visibility> {
     static final long serialVersionUID = 42L;
+    public static final Visibility EMPTY = new Visibility("");
     private final String visibilityString;
 
     public Visibility(String visibilityString) {
