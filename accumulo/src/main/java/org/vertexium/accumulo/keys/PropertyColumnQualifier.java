@@ -6,6 +6,7 @@ import org.vertexium.Property;
 import org.vertexium.VertexiumException;
 import org.vertexium.Visibility;
 import org.vertexium.accumulo.AccumuloGraph;
+import org.vertexium.accumulo.AccumuloNameSubstitutionStrategy;
 import org.vertexium.id.NameSubstitutionStrategy;
 import org.vertexium.mutation.PropertyDeleteMutation;
 import org.vertexium.mutation.PropertySoftDeleteMutation;
@@ -15,7 +16,7 @@ public class PropertyColumnQualifier extends KeyBase {
     private static final int PART_INDEX_PROPERTY_KEY = 1;
     private final String[] parts;
 
-    public PropertyColumnQualifier(Text columnQualifier, NameSubstitutionStrategy nameSubstitutionStrategy) {
+    public PropertyColumnQualifier(Text columnQualifier, AccumuloNameSubstitutionStrategy nameSubstitutionStrategy) {
         this.parts = splitOnValueSeparator(columnQualifier);
         if (this.parts.length != 2) {
             throw new VertexiumException("Invalid property column qualifier: " + columnQualifier + ". Expected 2 parts, found " + this.parts.length);
