@@ -3,11 +3,9 @@ package org.vertexium.elasticsearch;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.index.query.*;
-import org.vertexium.Authorizations;
-import org.vertexium.Graph;
-import org.vertexium.PropertyDefinition;
-import org.vertexium.VertexiumException;
+import org.vertexium.*;
 import org.vertexium.elasticsearch.score.ScoringStrategy;
+import org.vertexium.query.Contains;
 import org.vertexium.query.QueryParameters;
 import org.vertexium.query.QueryStringQueryParameters;
 import org.vertexium.query.SimilarToTextQueryParameters;
@@ -123,5 +121,21 @@ public class ElasticSearchParentChildGraphQuery extends ElasticSearchGraphQueryB
                         FilterBuilders.notFilter(FilterBuilders.inFilter(key, value))
                 )
         );
+    }
+
+    @Override
+    protected void getFiltersForHasNotPropertyContainer(List<FilterBuilder> filters, HasNotPropertyContainer hasNotProperty) {
+        throw new VertexiumNotSupportedException("hasNot cannot be performed in ES with parent/child indexing.");
+    }
+
+    @Override
+    protected void getFiltersForContainsPredicate(List<FilterBuilder> filters, Contains contains, HasValueContainer has) {
+        switch (contains) {
+            case NOT_IN:
+                throw new VertexiumNotSupportedException("NOT_IN cannot be performed in ES with parent/child indexing.");
+            default:
+                super.getFiltersForContainsPredicate(filters, contains, has);
+                return;
+        }
     }
 }

@@ -30,6 +30,18 @@ public interface Query {
     <T> Query range(String propertyName, T startValue, T endValue);
 
     /**
+     * Queries for properties in the given range.
+     *
+     * @param propertyName        Name of property.
+     * @param startValue          Inclusive start value.
+     * @param inclusiveStartValue true, to include the start value
+     * @param endValue            Inclusive end value.
+     * @param inclusiveEndValue   true, to include the end value
+     * @return this
+     */
+    <T> Query range(String propertyName, T startValue, boolean inclusiveStartValue, T endValue, boolean inclusiveEndValue);
+
+    /**
      * Adds an {@link Compare#EQUAL} filter to the query.
      *
      * @param propertyName The name of the property to query on.
@@ -37,6 +49,31 @@ public interface Query {
      * @return The query object, allowing you to chain methods.
      */
     <T> Query has(String propertyName, T value);
+
+    /**
+     * Adds an {@link Contains#NOT_IN} filter to the query.
+     *
+     * @param propertyName The name of the property to query on.
+     * @param value        The value of the property to query for.
+     * @return The query object, allowing you to chain methods.
+     */
+    <T> Query hasNot(String propertyName, T value);
+
+    /**
+     * Adds a has filter to the query.
+     *
+     * @param propertyName The name of the property the element must contain.
+     * @return The query object, allowing you to chain methods.
+     */
+    Query has(String propertyName);
+
+    /**
+     * Adds a hasNot filter to the query.
+     *
+     * @param propertyName The name of the property the element must not contain.
+     * @return The query object, allowing you to chain methods.
+     */
+    Query hasNot(String propertyName);
 
     /**
      * Adds a filter to the query.

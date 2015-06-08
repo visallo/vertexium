@@ -56,20 +56,43 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
 
     @Override
     public <T> Query range(String propertyName, T startValue, T endValue) {
-        this.parameters.addHasContainer(new HasContainer(propertyName, Compare.GREATER_THAN_EQUAL, startValue, this.propertyDefinitions));
-        this.parameters.addHasContainer(new HasContainer(propertyName, Compare.LESS_THAN_EQUAL, endValue, this.propertyDefinitions));
+        return range(propertyName, startValue, true, endValue, true);
+    }
+
+    @Override
+    public <T> Query range(String propertyName, T startValue, boolean inclusiveStartValue, T endValue, boolean inclusiveEndValue) {
+        this.parameters.addHasContainer(new HasValueContainer(propertyName, inclusiveStartValue ? Compare.GREATER_THAN_EQUAL : Compare.GREATER_THAN, startValue, this.propertyDefinitions));
+        this.parameters.addHasContainer(new HasValueContainer(propertyName, inclusiveEndValue ? Compare.LESS_THAN_EQUAL : Compare.LESS_THAN, endValue, this.propertyDefinitions));
         return this;
     }
 
     @Override
     public <T> Query has(String propertyName, T value) {
-        this.parameters.addHasContainer(new HasContainer(propertyName, Compare.EQUAL, value, this.propertyDefinitions));
+        this.parameters.addHasContainer(new HasValueContainer(propertyName, Compare.EQUAL, value, this.propertyDefinitions));
+        return this;
+    }
+
+    @Override
+    public <T> Query hasNot(String propertyName, T value) {
+        this.parameters.addHasContainer(new HasValueContainer(propertyName, Contains.NOT_IN, new Object[]{value}, this.propertyDefinitions));
         return this;
     }
 
     @Override
     public <T> Query has(String propertyName, Predicate predicate, T value) {
-        this.parameters.addHasContainer(new HasContainer(propertyName, predicate, value, this.propertyDefinitions));
+        this.parameters.addHasContainer(new HasValueContainer(propertyName, predicate, value, this.propertyDefinitions));
+        return this;
+    }
+
+    @Override
+    public Query has(String propertyName) {
+        this.parameters.addHasContainer(new HasPropertyContainer(propertyName));
+        return this;
+    }
+
+    @Override
+    public Query hasNot(String propertyName) {
+        this.parameters.addHasContainer(new HasNotPropertyContainer(propertyName));
         return this;
     }
 
@@ -97,13 +120,17 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
         return propertyDefinitions;
     }
 
-    public static class HasContainer {
+    public static abstract class HasContainer {
+        public abstract boolean isMatch(Element elem);
+    }
+
+    public static class HasValueContainer extends HasContainer {
         public String key;
         public Object value;
         public Predicate predicate;
         private final Map<String, PropertyDefinition> propertyDefinitions;
 
-        public HasContainer(final String key, final Predicate predicate, final Object value, Map<String, PropertyDefinition> propertyDefinitions) {
+        public HasValueContainer(final String key, final Predicate predicate, final Object value, Map<String, PropertyDefinition> propertyDefinitions) {
             this.key = key;
             this.value = value;
             this.predicate = predicate;
@@ -112,6 +139,50 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
 
         public boolean isMatch(Element elem) {
             return this.predicate.evaluate(elem.getProperties(this.key), this.value, this.propertyDefinitions);
+        }
+    }
+
+    public static class HasPropertyContainer extends HasContainer {
+        private final String key;
+
+        public HasPropertyContainer(String key) {
+            this.key = key;
+        }
+
+        @Override
+        public boolean isMatch(Element elem) {
+            for (Property prop : elem.getProperties()) {
+                if (prop.getName().equals(this.key)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public String getKey() {
+            return key;
+        }
+    }
+
+    public static class HasNotPropertyContainer extends HasContainer {
+        private final String key;
+
+        public HasNotPropertyContainer(String key) {
+            this.key = key;
+        }
+
+        @Override
+        public boolean isMatch(Element elem) {
+            for (Property prop : elem.getProperties()) {
+                if (prop.getName().equals(this.key)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        public String getKey() {
+            return key;
         }
     }
 

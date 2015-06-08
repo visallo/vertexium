@@ -134,97 +134,146 @@ public abstract class ElasticSearchGraphQueryBase extends GraphQueryBase {
         List<FilterBuilder> filters = new ArrayList<>();
         addElementTypeFilter(filters, elementType);
         for (HasContainer has : getParameters().getHasContainers()) {
-            if (has.predicate instanceof Compare) {
-                Compare compare = (Compare) has.predicate;
-                Object value = has.value;
-                String key = has.key;
-                if (value instanceof String || value instanceof String[]) {
-                    key = key + ElasticSearchSearchIndexBase.EXACT_MATCH_PROPERTY_NAME_SUFFIX;
-                }
-                switch (compare) {
-                    case EQUAL:
-                        if (value instanceof DateOnly) {
-                            DateOnly dateOnlyValue = ((DateOnly) value);
-                            filters.add(FilterBuilders.rangeFilter(key).from(dateOnlyValue.toString()).to(dateOnlyValue.toString()));
-                        } else {
-                            filters.add(FilterBuilders.termFilter(key, value));
-                        }
-                        break;
-                    case GREATER_THAN_EQUAL:
-                        filters.add(FilterBuilders.rangeFilter(key).gte(value));
-                        break;
-                    case GREATER_THAN:
-                        filters.add(FilterBuilders.rangeFilter(key).gt(value));
-                        break;
-                    case LESS_THAN_EQUAL:
-                        filters.add(FilterBuilders.rangeFilter(key).lte(value));
-                        break;
-                    case LESS_THAN:
-                        filters.add(FilterBuilders.rangeFilter(key).lt(value));
-                        break;
-                    case NOT_EQUAL:
-                        addNotFilter(filters, key, value);
-                        break;
-                    case IN:
-                        filters.add(FilterBuilders.inFilter(key, (Object[]) has.value));
-                        break;
-                    default:
-                        throw new VertexiumException("Unexpected Compare predicate " + has.predicate);
-                }
-            } else if (has.predicate instanceof TextPredicate) {
-                TextPredicate compare = (TextPredicate) has.predicate;
-                Object value = has.value;
-                if (value instanceof String) {
-                    value = ((String) value).toLowerCase(); // using the standard analyzer all strings are lower-cased.
-                }
-                switch (compare) {
-                    case CONTAINS:
-                        if (value instanceof String) {
-                            filters.add(FilterBuilders.termsFilter(has.key, splitStringIntoTerms((String) value)).execution("and"));
-                        } else {
-                            filters.add(FilterBuilders.termFilter(has.key, value));
-                        }
-                        break;
-                    default:
-                        throw new VertexiumException("Unexpected text predicate " + has.predicate);
-                }
-            } else if (has.predicate instanceof GeoCompare) {
-                GeoCompare compare = (GeoCompare) has.predicate;
-                String propertyName = has.key + ElasticSearchSearchIndexBase.GEO_PROPERTY_NAME_SUFFIX;
-                switch (compare) {
-                    case WITHIN:
-                        if (has.value instanceof GeoCircle) {
-                            GeoCircle geoCircle = (GeoCircle) has.value;
-                            double lat = geoCircle.getLatitude();
-                            double lon = geoCircle.getLongitude();
-                            double distance = geoCircle.getRadius();
-
-                            PropertyDefinition propertyDefinition = this.getPropertyDefinitions().get(propertyName);
-                            if (propertyDefinition != null && propertyDefinition.getDataType() == GeoCircle.class) {
-                                ShapeBuilder shapeBuilder = ShapeBuilder.newCircleBuilder()
-                                        .center(lon, lat)
-                                        .radius(distance, DistanceUnit.KILOMETERS);
-                                filters
-                                        .add(new GeoShapeFilterBuilder(propertyName, shapeBuilder));
-                            } else {
-                                filters
-                                        .add(FilterBuilders
-                                                .geoDistanceFilter(propertyName)
-                                                .point(lat, lon)
-                                                .distance(distance, DistanceUnit.KILOMETERS));
-                            }
-                        } else {
-                            throw new VertexiumException("Unexpected has value type " + has.value.getClass().getName());
-                        }
-                        break;
-                    default:
-                        throw new VertexiumException("Unexpected GeoCompare predicate " + has.predicate);
-                }
+            if (has instanceof HasValueContainer) {
+                getFiltersForHasValueContainer(filters, (HasValueContainer) has);
+            } else if (has instanceof HasPropertyContainer) {
+                getFiltersForHasPropertyContainer(filters, (HasPropertyContainer) has);
+            } else if (has instanceof HasNotPropertyContainer) {
+                getFiltersForHasNotPropertyContainer(filters, (HasNotPropertyContainer) has);
             } else {
-                throw new VertexiumException("Unexpected predicate type " + has.predicate.getClass().getName());
+                throw new VertexiumException("Unexpected type " + has.getClass().getName());
             }
         }
         return filters;
+    }
+
+    protected void getFiltersForHasNotPropertyContainer(List<FilterBuilder> filters, HasNotPropertyContainer hasNotProperty) {
+        filters.add(FilterBuilders.notFilter(FilterBuilders.existsFilter(hasNotProperty.getKey())));
+    }
+
+    protected void getFiltersForHasPropertyContainer(List<FilterBuilder> filters, HasPropertyContainer hasProperty) {
+        filters.add(FilterBuilders.existsFilter(hasProperty.getKey()));
+    }
+
+    protected void getFiltersForHasValueContainer(List<FilterBuilder> filters, HasValueContainer has) {
+        if (has.predicate instanceof Compare) {
+            getFiltersForComparePredicate(filters, (Compare) has.predicate, has);
+        } else if (has.predicate instanceof Contains) {
+            getFiltersForContainsPredicate(filters, (Contains) has.predicate, has);
+        } else if (has.predicate instanceof TextPredicate) {
+            getFiltersForTextPredicate(filters, (TextPredicate) has.predicate, has);
+        } else if (has.predicate instanceof GeoCompare) {
+            getFiltersForGeoComparePredicate(filters, (GeoCompare) has.predicate, has);
+        } else {
+            throw new VertexiumException("Unexpected predicate type " + has.predicate.getClass().getName());
+        }
+    }
+
+    protected void getFiltersForGeoComparePredicate(List<FilterBuilder> filters, GeoCompare compare, HasValueContainer has) {
+        String propertyName = has.key + ElasticSearchSearchIndexBase.GEO_PROPERTY_NAME_SUFFIX;
+        switch (compare) {
+            case WITHIN:
+                if (has.value instanceof GeoCircle) {
+                    GeoCircle geoCircle = (GeoCircle) has.value;
+                    double lat = geoCircle.getLatitude();
+                    double lon = geoCircle.getLongitude();
+                    double distance = geoCircle.getRadius();
+
+                    PropertyDefinition propertyDefinition = this.getPropertyDefinitions().get(propertyName);
+                    if (propertyDefinition != null && propertyDefinition.getDataType() == GeoCircle.class) {
+                        ShapeBuilder shapeBuilder = ShapeBuilder.newCircleBuilder()
+                                .center(lon, lat)
+                                .radius(distance, DistanceUnit.KILOMETERS);
+                        filters
+                                .add(new GeoShapeFilterBuilder(propertyName, shapeBuilder));
+                    } else {
+                        filters
+                                .add(FilterBuilders
+                                        .geoDistanceFilter(propertyName)
+                                        .point(lat, lon)
+                                        .distance(distance, DistanceUnit.KILOMETERS));
+                    }
+                } else {
+                    throw new VertexiumException("Unexpected has value type " + has.value.getClass().getName());
+                }
+                break;
+            default:
+                throw new VertexiumException("Unexpected GeoCompare predicate " + has.predicate);
+        }
+    }
+
+    protected void getFiltersForTextPredicate(List<FilterBuilder> filters, TextPredicate compare, HasValueContainer has) {
+        Object value = has.value;
+        if (value instanceof String) {
+            value = ((String) value).toLowerCase(); // using the standard analyzer all strings are lower-cased.
+        }
+        switch (compare) {
+            case CONTAINS:
+                if (value instanceof String) {
+                    filters.add(FilterBuilders.termsFilter(has.key, splitStringIntoTerms((String) value)).execution("and"));
+                } else {
+                    filters.add(FilterBuilders.termFilter(has.key, value));
+                }
+                break;
+            default:
+                throw new VertexiumException("Unexpected text predicate " + has.predicate);
+        }
+    }
+
+    protected void getFiltersForContainsPredicate(List<FilterBuilder> filters, Contains contains, HasValueContainer has) {
+        Object value = has.value;
+        String key = has.key;
+        if (value instanceof String || value instanceof String[]) {
+            key = key + ElasticSearchSearchIndexBase.EXACT_MATCH_PROPERTY_NAME_SUFFIX;
+        }
+        if (has.value instanceof Iterable) {
+            has.value = IterableUtils.toArray((Iterable<?>) has.value, Object.class);
+        }
+        switch (contains) {
+            case IN:
+                filters.add(FilterBuilders.inFilter(key, (Object[]) has.value));
+                break;
+            case NOT_IN:
+                filters.add(FilterBuilders.notFilter(FilterBuilders.inFilter(key, (Object[]) has.value)));
+                break;
+            default:
+                throw new VertexiumException("Unexpected Contains predicate " + has.predicate);
+        }
+    }
+
+    protected void getFiltersForComparePredicate(List<FilterBuilder> filters, Compare compare, HasValueContainer has) {
+        Object value = has.value;
+        String key = has.key;
+        if (value instanceof String || value instanceof String[]) {
+            key = key + ElasticSearchSearchIndexBase.EXACT_MATCH_PROPERTY_NAME_SUFFIX;
+        }
+        switch (compare) {
+            case EQUAL:
+                if (value instanceof DateOnly) {
+                    DateOnly dateOnlyValue = ((DateOnly) value);
+                    filters.add(FilterBuilders.rangeFilter(key).from(dateOnlyValue.toString()).to(dateOnlyValue.toString()));
+                } else {
+                    filters.add(FilterBuilders.termFilter(key, value));
+                }
+                break;
+            case GREATER_THAN_EQUAL:
+                filters.add(FilterBuilders.rangeFilter(key).gte(value));
+                break;
+            case GREATER_THAN:
+                filters.add(FilterBuilders.rangeFilter(key).gt(value));
+                break;
+            case LESS_THAN_EQUAL:
+                filters.add(FilterBuilders.rangeFilter(key).lte(value));
+                break;
+            case LESS_THAN:
+                filters.add(FilterBuilders.rangeFilter(key).lt(value));
+                break;
+            case NOT_EQUAL:
+                addNotFilter(filters, key, value);
+                break;
+            default:
+                throw new VertexiumException("Unexpected Compare predicate " + has.predicate);
+        }
     }
 
     protected void addElementTypeFilter(List<FilterBuilder> filters, String elementType) {

@@ -102,6 +102,14 @@ public class CompositeGraphQuery implements Query {
     }
 
     @Override
+    public <T> Query range(String propertyName, T startValue, boolean inclusiveStartValue, T endValue, boolean inclusiveEndValue) {
+        for (Query query : queries) {
+            query.range(propertyName, startValue, inclusiveStartValue, endValue, inclusiveEndValue);
+        }
+        return this;
+    }
+
+    @Override
     public <T> Query has(String propertyName, T value) {
         for (Query query : queries) {
             query.has(propertyName, value);
@@ -110,9 +118,33 @@ public class CompositeGraphQuery implements Query {
     }
 
     @Override
+    public <T> Query hasNot(String propertyName, T value) {
+        for (Query query : queries) {
+            query.hasNot(propertyName, value);
+        }
+        return this;
+    }
+
+    @Override
     public <T> Query has(String propertyName, Predicate predicate, T value) {
         for (Query query : queries) {
             query.has(propertyName, predicate, value);
+        }
+        return this;
+    }
+
+    @Override
+    public Query has(String propertyName) {
+        for (Query query : queries) {
+            query.has(propertyName);
+        }
+        return this;
+    }
+
+    @Override
+    public Query hasNot(String propertyName) {
+        for (Query query : queries) {
+            query.hasNot(propertyName);
         }
         return this;
     }

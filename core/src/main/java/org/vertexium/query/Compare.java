@@ -10,7 +10,7 @@ import java.util.Date;
 import java.util.Map;
 
 public enum Compare implements Predicate {
-    EQUAL, NOT_EQUAL, GREATER_THAN, GREATER_THAN_EQUAL, LESS_THAN, LESS_THAN_EQUAL, IN;
+    EQUAL, NOT_EQUAL, GREATER_THAN, GREATER_THAN_EQUAL, LESS_THAN, LESS_THAN_EQUAL;
 
     @Override
     public boolean evaluate(final Iterable<Property> properties, final Object second, Map<String, PropertyDefinition> propertyDefinitions) {
@@ -25,7 +25,12 @@ public enum Compare implements Predicate {
 
     private boolean evaluate(Property property, Object second, PropertyDefinition propertyDefinition) {
         Object first = property.getValue();
+        Compare comparePredicate = this;
 
+        return evaluate(first, comparePredicate, second, propertyDefinition);
+    }
+
+    static boolean evaluate(Object first, Compare comparePredicate, Object second, PropertyDefinition propertyDefinition) {
         if (first instanceof DateOnly) {
             first = ((DateOnly) first).getDate();
             if (second instanceof Date) {
@@ -39,7 +44,7 @@ public enum Compare implements Predicate {
             }
         }
 
-        switch (this) {
+        switch (comparePredicate) {
             case EQUAL:
                 if (null == first) {
                     return second == null;
@@ -73,14 +78,12 @@ public enum Compare implements Predicate {
                     return false;
                 }
                 return compare(first, second) <= 0;
-            case IN:
-                return evaluateIn(first, (Object[]) second);
             default:
-                throw new IllegalArgumentException("Invalid compare: " + this);
+                throw new IllegalArgumentException("Invalid compare: " + comparePredicate);
         }
     }
 
-    private int compare(Object first, Object second) {
+    private static int compare(Object first, Object second) {
         if (first instanceof StreamingPropertyValue && ((StreamingPropertyValue) first).getValueType() == String.class) {
             first = ((StreamingPropertyValue) first).readToString();
         }
@@ -110,14 +113,5 @@ public enum Compare implements Predicate {
             return ((Comparable) second).compareTo(first);
         }
         return first.equals(second) ? 0 : 1;
-    }
-
-    private boolean evaluateIn(Object first, Object[] second) {
-        for (Object o : second) {
-            if (first.equals(o)) {
-                return true;
-            }
-        }
-        return false;
     }
 }

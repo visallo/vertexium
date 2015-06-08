@@ -4,7 +4,6 @@ import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Features;
 import com.tinkerpop.blueprints.GraphQuery;
 import com.tinkerpop.blueprints.Vertex;
-import com.tinkerpop.blueprints.util.DefaultGraphQuery;
 import org.vertexium.Authorizations;
 import org.vertexium.Graph;
 import org.vertexium.Visibility;
@@ -124,7 +123,8 @@ public abstract class VertexiumBlueprintsGraph implements com.tinkerpop.blueprin
 
     @Override
     public GraphQuery query() {
-        return new DefaultGraphQuery(this); // TODO implement this
+        final Authorizations authorizations = getAuthorizationsProvider().getAuthorizations();
+        return new VertexiumBlueprintsGraphQuery(this, authorizations);
     }
 
     @Override

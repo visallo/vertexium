@@ -1146,7 +1146,7 @@ public abstract class GraphTestBase {
      * This tests simulates two workspaces w1 (via A) and w1 (vis B).
      * Both w1 and w2 has e1 on it.
      * e1 is linked to e2.
-     *
+     * <p/>
      * What happens if w1 (vis A) marks e1 hidden, then deletes itself?
      */
     @Test
@@ -1483,6 +1483,20 @@ public abstract class GraphTestBase {
                 .save(AUTHORIZATIONS_A_AND_B);
 
         Iterable<Vertex> vertices = graph.query(AUTHORIZATIONS_A)
+                .has("age")
+                .vertices();
+        Assert.assertEquals(2, count(vertices));
+
+        try {
+            vertices = graph.query(AUTHORIZATIONS_A)
+                    .hasNot("age")
+                    .vertices();
+            Assert.assertEquals(0, count(vertices));
+        } catch (VertexiumNotSupportedException ex) {
+            LOGGER.warn("skipping. Not supported", ex);
+        }
+
+        vertices = graph.query(AUTHORIZATIONS_A)
                 .has("age", Compare.EQUAL, 25)
                 .vertices();
         Assert.assertEquals(1, count(vertices));
@@ -1513,6 +1527,17 @@ public abstract class GraphTestBase {
                 .has("age", 25)
                 .vertices();
         Assert.assertEquals(1, count(vertices));
+        Assert.assertEquals(25, (int) toList(vertices).get(0).getPropertyValue("age"));
+
+        try {
+            vertices = graph.query(AUTHORIZATIONS_A)
+                    .hasNot("age", 25)
+                    .vertices();
+            Assert.assertEquals(1, count(vertices));
+            Assert.assertEquals(30, (int) toList(vertices).get(0).getPropertyValue("age"));
+        } catch (VertexiumNotSupportedException ex) {
+            LOGGER.warn("skipping. Not supported", ex);
+        }
 
         vertices = graph.query(AUTHORIZATIONS_A)
                 .has("age", Compare.GREATER_THAN_EQUAL, 25)
@@ -1520,12 +1545,23 @@ public abstract class GraphTestBase {
         Assert.assertEquals(2, count(vertices));
 
         vertices = graph.query(AUTHORIZATIONS_A)
-                .has("age", Compare.IN, new Integer[]{25})
+                .has("age", Contains.IN, new Integer[]{25})
                 .vertices();
         Assert.assertEquals(1, count(vertices));
+        Assert.assertEquals(25, (int) toList(vertices).get(0).getPropertyValue("age"));
+
+        try {
+            vertices = graph.query(AUTHORIZATIONS_A)
+                    .has("age", Contains.NOT_IN, new Integer[]{25})
+                    .vertices();
+            Assert.assertEquals(1, count(vertices));
+            Assert.assertEquals(30, (int) toList(vertices).get(0).getPropertyValue("age"));
+        } catch (VertexiumNotSupportedException ex) {
+            LOGGER.warn("skipping. Not supported", ex);
+        }
 
         vertices = graph.query(AUTHORIZATIONS_A)
-                .has("age", Compare.IN, new Integer[]{25, 30})
+                .has("age", Contains.IN, new Integer[]{25, 30})
                 .vertices();
         Assert.assertEquals(2, count(vertices));
 
@@ -1555,7 +1591,7 @@ public abstract class GraphTestBase {
         Assert.assertEquals(1, count(vertices));
 
         vertices = graph.query("*", AUTHORIZATIONS_A)
-                .has("age", Compare.IN, new Integer[]{25, 30})
+                .has("age", Contains.IN, new Integer[]{25, 30})
                 .vertices();
         Assert.assertEquals(2, count(vertices));
 
@@ -1991,6 +2027,28 @@ public abstract class GraphTestBase {
                 .range("age", 25, 30)
                 .vertices();
         Assert.assertEquals(2, count(vertices));
+
+        vertices = graph.query(AUTHORIZATIONS_A)
+                .range("age", 25, true, 30, false)
+                .vertices();
+        Assert.assertEquals(1, count(vertices));
+        Assert.assertEquals(25, toList(vertices).get(0).getPropertyValue("age"));
+
+        vertices = graph.query(AUTHORIZATIONS_A)
+                .range("age", 25, false, 30, true)
+                .vertices();
+        Assert.assertEquals(1, count(vertices));
+        Assert.assertEquals(30, toList(vertices).get(0).getPropertyValue("age"));
+
+        vertices = graph.query(AUTHORIZATIONS_A)
+                .range("age", 25, true, 30, true)
+                .vertices();
+        Assert.assertEquals(2, count(vertices));
+
+        vertices = graph.query(AUTHORIZATIONS_A)
+                .range("age", 25, false, 30, false)
+                .vertices();
+        Assert.assertEquals(0, count(vertices));
     }
 
     @Test

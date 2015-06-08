@@ -3,6 +3,8 @@ package org.vertexium.blueprints;
 import com.tinkerpop.blueprints.Direction;
 import com.tinkerpop.blueprints.Edge;
 import com.tinkerpop.blueprints.Vertex;
+import org.vertexium.Authorizations;
+import org.vertexium.util.ConvertingIterable;
 
 public class VertexiumBlueprintsConvert {
     public static org.vertexium.Vertex toVertexium(Vertex vertex) {
@@ -46,5 +48,31 @@ public class VertexiumBlueprintsConvert {
             return (String) id;
         }
         return id.toString();
+    }
+
+    public static Iterable<Vertex> toBlueprintsVertices(
+            final VertexiumBlueprintsGraph graph,
+            Iterable<org.vertexium.Vertex> vertices,
+            final Authorizations authorizations
+    ) {
+        return new ConvertingIterable<org.vertexium.Vertex, Vertex>(vertices) {
+            @Override
+            protected Vertex convert(org.vertexium.Vertex vertex) {
+                return VertexiumBlueprintsVertex.create(graph, vertex, authorizations);
+            }
+        };
+    }
+
+    public static Iterable<Edge> toBlueprintsEdges(
+            final VertexiumBlueprintsGraph graph,
+            Iterable<org.vertexium.Edge> edges,
+            final Authorizations authorizations
+    ) {
+        return new ConvertingIterable<org.vertexium.Edge, Edge>(edges) {
+            @Override
+            protected Edge convert(org.vertexium.Edge edge) {
+                return VertexiumBlueprintsEdge.create(graph, edge, authorizations);
+            }
+        };
     }
 }
