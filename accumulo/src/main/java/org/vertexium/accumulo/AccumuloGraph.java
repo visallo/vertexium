@@ -491,17 +491,20 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
     }
 
     @Override
-    public void softDeleteVertex(Vertex vertex, Authorizations authorizations) {
+    public void softDeleteVertex(Vertex vertex, Long timestamp, Authorizations authorizations) {
         checkNotNull(vertex, "vertex cannot be null");
+        if (timestamp == null) {
+            timestamp = System.currentTimeMillis();
+        }
 
         getSearchIndex().deleteElement(this, vertex, authorizations);
 
         // Delete all edges that this vertex participates.
         for (Edge edge : vertex.getEdges(Direction.BOTH, authorizations)) {
-            softDeleteEdge(edge, authorizations);
+            softDeleteEdge(edge, timestamp, authorizations);
         }
 
-        addMutations(getVerticesWriter(), getSoftDeleteRowMutation(AccumuloConstants.VERTEX_ROW_KEY_PREFIX + vertex.getId()));
+        addMutations(getVerticesWriter(), getSoftDeleteRowMutation(AccumuloConstants.VERTEX_ROW_KEY_PREFIX + vertex.getId(), timestamp));
 
         if (hasEventListeners()) {
             queueEvent(new SoftDeleteVertexEvent(this, vertex));
@@ -745,23 +748,26 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
     }
 
     @Override
-    public void softDeleteEdge(Edge edge, Authorizations authorizations) {
+    public void softDeleteEdge(Edge edge, Long timestamp, Authorizations authorizations) {
         checkNotNull(edge);
+        if (timestamp == null) {
+            timestamp = System.currentTimeMillis();
+        }
 
         getSearchIndex().deleteElement(this, edge, authorizations);
 
         ColumnVisibility visibility = visibilityToAccumuloVisibility(edge.getVisibility());
 
         Mutation outMutation = new Mutation(AccumuloConstants.VERTEX_ROW_KEY_PREFIX + edge.getVertexId(Direction.OUT));
-        outMutation.put(AccumuloVertex.CF_OUT_EDGE_SOFT_DELETE, new Text(edge.getId()), visibility, AccumuloElement.SOFT_DELETE_VALUE);
+        outMutation.put(AccumuloVertex.CF_OUT_EDGE_SOFT_DELETE, new Text(edge.getId()), visibility, timestamp, AccumuloElement.SOFT_DELETE_VALUE);
 
         Mutation inMutation = new Mutation(AccumuloConstants.VERTEX_ROW_KEY_PREFIX + edge.getVertexId(Direction.IN));
-        inMutation.put(AccumuloVertex.CF_IN_EDGE_SOFT_DELETE, new Text(edge.getId()), visibility, AccumuloElement.SOFT_DELETE_VALUE);
+        inMutation.put(AccumuloVertex.CF_IN_EDGE_SOFT_DELETE, new Text(edge.getId()), visibility, timestamp, AccumuloElement.SOFT_DELETE_VALUE);
 
         addMutations(getVerticesWriter(), outMutation, inMutation);
 
         // Soft deletes everything else related to edge.
-        addMutations(getEdgesWriter(), getSoftDeleteRowMutation(AccumuloConstants.EDGE_ROW_KEY_PREFIX + edge.getId()));
+        addMutations(getEdgesWriter(), getSoftDeleteRowMutation(AccumuloConstants.EDGE_ROW_KEY_PREFIX + edge.getId(), timestamp));
 
         if (hasEventListeners()) {
             queueEvent(new SoftDeleteEdgeEvent(this, edge));
@@ -956,9 +962,9 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
         return m;
     }
 
-    private Mutation getSoftDeleteRowMutation(String rowKey) {
+    private Mutation getSoftDeleteRowMutation(String rowKey, long timestamp) {
         Mutation m = new Mutation(rowKey);
-        m.put(AccumuloElement.CF_SOFT_DELETE, AccumuloElement.CQ_SOFT_DELETE, AccumuloElement.SOFT_DELETE_VALUE);
+        m.put(AccumuloElement.CF_SOFT_DELETE, AccumuloElement.CQ_SOFT_DELETE, timestamp, AccumuloElement.SOFT_DELETE_VALUE);
         return m;
     }
 
@@ -1258,7 +1264,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
         }
     }
 
-    private String getTableNameFromElementType(ElementType elementType) {
+    public String getTableNameFromElementType(ElementType elementType) {
         String tableName;
         switch (elementType) {
             case VERTEX:
@@ -1288,7 +1294,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
         return elementMode;
     }
 
-    private org.apache.accumulo.core.security.Authorizations toAccumuloAuthorizations(Authorizations authorizations) {
+    public org.apache.accumulo.core.security.Authorizations toAccumuloAuthorizations(Authorizations authorizations) {
         if (authorizations == null) {
             throw new NullPointerException("authorizations is required");
         }

@@ -285,13 +285,39 @@ public abstract class GraphBase implements Graph {
 
     @Override
     public void softDeleteVertex(String vertexId, Authorizations authorizations) {
-        softDeleteVertex(getVertex(vertexId, authorizations), authorizations);
+        softDeleteVertex(getVertex(vertexId, authorizations), null, authorizations);
     }
 
     @Override
-    public void softDeleteEdge(String edgeId, Authorizations authorizations) {
-        softDeleteEdge(getEdge(edgeId, authorizations), authorizations);
+    public void softDeleteVertex(String vertexId, Long timestamp, Authorizations authorizations) {
+        softDeleteVertex(getVertex(vertexId, authorizations), timestamp, authorizations);
     }
+
+    @Override
+    public void softDeleteVertex(Vertex vertex, Authorizations authorizations) {
+        softDeleteVertex(vertex, null, authorizations);
+    }
+
+    @Override
+    public abstract void softDeleteVertex(Vertex vertex, Long timestamp, Authorizations authorizations);
+
+    @Override
+    public void softDeleteEdge(String edgeId, Authorizations authorizations) {
+        softDeleteEdge(getEdge(edgeId, authorizations), null, authorizations);
+    }
+
+    @Override
+    public void softDeleteEdge(String edgeId, Long timestamp, Authorizations authorizations) {
+        softDeleteEdge(getEdge(edgeId, authorizations), timestamp, authorizations);
+    }
+
+    @Override
+    public void softDeleteEdge(Edge edge, Authorizations authorizations) {
+        softDeleteEdge(edge, null, authorizations);
+    }
+
+    @Override
+    public abstract void softDeleteEdge(Edge edge, Long timestamp, Authorizations authorizations);
 
     @Override
     public Iterable<Edge> getEdges(final Iterable<String> ids, final EnumSet<FetchHint> fetchHints, final Authorizations authorizations) {

@@ -18,6 +18,15 @@ public class IterableUtils {
         return results;
     }
 
+    public static <T> List<T> toList(Iterator<T> iterator) {
+        List<T> results = new ArrayList<T>();
+        while (iterator.hasNext()) {
+            T o = iterator.next();
+            results.add(o);
+        }
+        return results;
+    }
+
     @SuppressWarnings("unchecked")
     public static <T> Set<T> toSet(Iterable<? extends T> iterable) {
         if (iterable instanceof Set) {

@@ -162,17 +162,20 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
     }
 
     @Override
-    public void softDeleteVertex(Vertex vertex, Authorizations authorizations) {
+    public void softDeleteVertex(Vertex vertex, Long timestamp, Authorizations authorizations) {
         if (!((InMemoryVertex) vertex).canRead(authorizations)) {
             return;
+        }
+        if (timestamp == null) {
+            timestamp = System.currentTimeMillis();
         }
 
         List<Edge> edgesToSoftDelete = IterableUtils.toList(vertex.getEdges(Direction.BOTH, authorizations));
         for (Edge edgeToSoftDelete : edgesToSoftDelete) {
-            softDeleteEdge(edgeToSoftDelete, authorizations);
+            softDeleteEdge(edgeToSoftDelete, timestamp, authorizations);
         }
 
-        this.vertices.getTableElement(vertex.getId()).appendSoftDeleteMutation();
+        this.vertices.getTableElement(vertex.getId()).appendSoftDeleteMutation(timestamp);
 
         getSearchIndex().deleteElement(this, vertex, authorizations);
 
@@ -334,13 +337,16 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
     }
 
     @Override
-    public void softDeleteEdge(Edge edge, Authorizations authorizations) {
+    public void softDeleteEdge(Edge edge, Long timestamp, Authorizations authorizations) {
         checkNotNull(edge, "Edge cannot be null");
         if (!((InMemoryEdge) edge).canRead(authorizations)) {
             return;
         }
+        if (timestamp == null) {
+            timestamp = System.currentTimeMillis();
+        }
 
-        this.edges.getTableElement(edge.getId()).appendSoftDeleteMutation();
+        this.edges.getTableElement(edge.getId()).appendSoftDeleteMutation(timestamp);
 
         getSearchIndex().deleteElement(this, edge, authorizations);
 

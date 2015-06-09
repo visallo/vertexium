@@ -269,8 +269,10 @@ public abstract class InMemoryTableElement<TElement extends InMemoryElement> {
         return m.getPropertyName() + m.getPropertyKey() + m.getPropertyVisibility().getVisibilityString();
     }
 
-    public void appendSoftDeleteMutation() {
-        long timestamp = System.currentTimeMillis();
+    public void appendSoftDeleteMutation(Long timestamp) {
+        if (timestamp == null) {
+            timestamp = System.currentTimeMillis();
+        }
         this.mutations.add(new SoftDeleteMutation(timestamp));
     }
 

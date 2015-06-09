@@ -273,10 +273,26 @@ public interface Graph {
     /**
      * Soft deletes a vertex from the graph.
      *
+     * @param vertex         The vertex to soft delete.
+     * @param authorizations The authorizations required to soft delete the vertex.
+     */
+    void softDeleteVertex(Vertex vertex, Long timestamp, Authorizations authorizations);
+
+    /**
+     * Soft deletes a vertex from the graph.
+     *
      * @param vertexId       The vertex id to soft delete.
      * @param authorizations The authorizations required to soft delete the vertex.
      */
     void softDeleteVertex(String vertexId, Authorizations authorizations);
+
+    /**
+     * Soft deletes a vertex from the graph.
+     *
+     * @param vertexId       The vertex id to soft delete.
+     * @param authorizations The authorizations required to soft delete the vertex.
+     */
+    void softDeleteVertex(String vertexId, Long timestamp, Authorizations authorizations);
 
     /**
      * Adds an edge between two vertices. The id of the new vertex will be generated using an IdGenerator.
@@ -565,12 +581,28 @@ public interface Graph {
     void softDeleteEdge(Edge edge, Authorizations authorizations);
 
     /**
+     * Soft deletes an edge from the graph.
+     *
+     * @param edge           The edge to soft delete from the graph.
+     * @param authorizations The authorizations required to delete the edge.
+     */
+    void softDeleteEdge(Edge edge, Long timestamp, Authorizations authorizations);
+
+    /**
      * Soft deletes an edge from the graph. This method requires fetching the edge before soft deletion.
      *
      * @param edgeId         The edge id of the vertex to soft delete from the graph.
      * @param authorizations The authorizations required to delete the edge.
      */
     void softDeleteEdge(String edgeId, Authorizations authorizations);
+
+    /**
+     * Soft deletes an edge from the graph. This method requires fetching the edge before soft deletion.
+     *
+     * @param edgeId         The edge id of the vertex to soft delete from the graph.
+     * @param authorizations The authorizations required to delete the edge.
+     */
+    void softDeleteEdge(String edgeId, Long timestamp, Authorizations authorizations);
 
     /**
      * Creates a query builder object used to query the graph.
