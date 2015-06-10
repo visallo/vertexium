@@ -37,8 +37,8 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex {
     public static final String VISIBILITY_FIELD_NAME = "__visibility";
     public static final String ELEMENT_TYPE_VERTEX = "vertex";
     public static final String ELEMENT_TYPE_EDGE = "edge";
-    public static final String EXACT_MATCH_PROPERTY_NAME_SUFFIX = "_exactMatch";
-    public static final String GEO_PROPERTY_NAME_SUFFIX = "_geo";
+    public static final String EXACT_MATCH_PROPERTY_NAME_SUFFIX = "_e";
+    public static final String GEO_PROPERTY_NAME_SUFFIX = "_g";
     public static final int MAX_BATCH_COUNT = 25000;
     public static final long MAX_BATCH_SIZE = 15 * 1024 * 1024;
     private final TransportClient client;
