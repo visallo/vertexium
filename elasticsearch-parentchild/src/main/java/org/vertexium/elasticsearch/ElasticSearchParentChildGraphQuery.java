@@ -135,7 +135,7 @@ public class ElasticSearchParentChildGraphQuery extends ElasticSearchGraphQueryB
                 throw new VertexiumNotSupportedException("NOT_IN cannot be performed in ES with parent/child indexing.");
             default:
                 super.getFiltersForContainsPredicate(filters, contains, has);
-                return;
+                break;
         }
     }
 }

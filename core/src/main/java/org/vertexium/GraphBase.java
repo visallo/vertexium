@@ -518,4 +518,22 @@ public abstract class GraphBase implements Graph {
     public Authorizations createAuthorizations(Authorizations auths, Collection<String> additionalAuthorizations) {
         return createAuthorizations(auths, additionalAuthorizations.toArray(new String[additionalAuthorizations.size()]));
     }
+
+    @Override
+    public Map<Object, Long> getVertexPropertyCountByValue(String propertyName, Authorizations authorizations) {
+        Map<Object, Long> countsByValue = new HashMap<>();
+        for (Vertex v : getVertices(authorizations)) {
+            for (Property p : v.getProperties()) {
+                if (propertyName.equals(p.getName())) {
+                    Long currentValue = countsByValue.get(p.getValue());
+                    if (currentValue == null) {
+                        countsByValue.put(p.getValue(), 1L);
+                    } else {
+                        countsByValue.put(p.getValue(), currentValue + 1);
+                    }
+                }
+            }
+        }
+        return countsByValue;
+    }
 }

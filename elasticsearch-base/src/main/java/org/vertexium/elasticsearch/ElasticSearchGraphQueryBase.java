@@ -8,6 +8,11 @@ import org.elasticsearch.common.unit.DistanceUnit;
 import org.elasticsearch.index.query.*;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
+import org.elasticsearch.search.aggregations.AggregationBuilders;
+import org.elasticsearch.search.aggregations.bucket.geogrid.GeoHashGridBuilder;
+import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramBuilder;
+import org.elasticsearch.search.aggregations.bucket.histogram.HistogramBuilder;
+import org.elasticsearch.search.aggregations.bucket.terms.TermsBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.vertexium.*;
@@ -17,14 +22,11 @@ import org.vertexium.type.GeoCircle;
 import org.vertexium.util.ConvertingIterable;
 import org.vertexium.util.IterableUtils;
 
-import java.util.ArrayList;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public abstract class ElasticSearchGraphQueryBase extends GraphQueryBase {
     private static final Logger LOGGER = LoggerFactory.getLogger(ElasticSearchGraphQueryBase.class);
-    private static final Logger QUERY_LOGGER = LoggerFactory.getLogger(ElasticSearchGraphQueryBase.class.getName() + ".QUERY");
+    public static final Logger QUERY_LOGGER = LoggerFactory.getLogger(ElasticSearchGraphQueryBase.class.getName() + ".QUERY");
     private final TransportClient client;
     private final boolean evaluateHasContainers;
     private String[] indicesToQuery;
@@ -311,7 +313,6 @@ public abstract class ElasticSearchGraphQueryBase extends GraphQueryBase {
     }
 
     protected QueryBuilder createQuery(QueryParameters queryParameters, String elementType, List<FilterBuilder> filters) {
-        QueryBuilder query;
         if (queryParameters instanceof QueryStringQueryParameters) {
             String queryString = ((QueryStringQueryParameters) queryParameters).getQueryString();
             if (queryString == null || queryString.equals("*")) {
@@ -352,5 +353,49 @@ public abstract class ElasticSearchGraphQueryBase extends GraphQueryBase {
 
     public String[] getIndicesToQuery() {
         return indicesToQuery;
+    }
+
+    protected static void addGeohashQueryToSearchRequestBuilder(SearchRequestBuilder searchRequestBuilder, List<GeohashQueryItem> geohashQueryItems) {
+        for (GeohashQueryItem geohashQueryItem : geohashQueryItems) {
+            GeoHashGridBuilder agg = AggregationBuilders.geohashGrid(geohashQueryItem.getAggregationName());
+            agg.field(geohashQueryItem.getFieldName());
+            agg.precision(geohashQueryItem.getPrecision());
+            searchRequestBuilder.addAggregation(agg);
+        }
+    }
+
+    protected static void addTermsQueryToSearchRequestBuilder(SearchRequestBuilder searchRequestBuilder, List<TermsQueryItem> termsQueryItems, Map<String, PropertyDefinition> propertyDefinitions) {
+        for (TermsQueryItem termsQueryItem : termsQueryItems) {
+            String fieldName = termsQueryItem.getFieldName();
+            PropertyDefinition propertyDefinition = propertyDefinitions.get(fieldName);
+            if (propertyDefinition != null && propertyDefinition.getTextIndexHints().contains(TextIndexHint.EXACT_MATCH)) {
+                fieldName = propertyDefinition.getPropertyName() + ElasticSearchSearchIndexBase.EXACT_MATCH_PROPERTY_NAME_SUFFIX;
+            }
+
+            TermsBuilder agg = AggregationBuilders.terms(termsQueryItem.getAggregationName());
+            agg.field(fieldName);
+            searchRequestBuilder.addAggregation(agg);
+        }
+    }
+
+    protected static void addHistogramQueryToSearchRequestBuilder(SearchRequestBuilder searchRequestBuilder, List<HistogramQueryItem> histogramQueryItems, Map<String, PropertyDefinition> propertyDefinitions) {
+        for (HistogramQueryItem histogramQueryItem : histogramQueryItems) {
+            PropertyDefinition propertyDefinition = propertyDefinitions.get(histogramQueryItem.getFieldName());
+            if (propertyDefinition == null) {
+                throw new VertexiumException("Could not find mapping for property: " + histogramQueryItem.getFieldName());
+            }
+            Class propertyDataType = propertyDefinition.getDataType();
+            if (propertyDataType == Date.class) {
+                DateHistogramBuilder agg = AggregationBuilders.dateHistogram(histogramQueryItem.getAggregationName());
+                agg.field(histogramQueryItem.getFieldName());
+                agg.interval(Long.parseLong(histogramQueryItem.getInterval()));
+                searchRequestBuilder.addAggregation(agg);
+            } else {
+                HistogramBuilder agg = AggregationBuilders.histogram(histogramQueryItem.getAggregationName());
+                agg.field(histogramQueryItem.getFieldName());
+                agg.interval(Long.parseLong(histogramQueryItem.getInterval()));
+                searchRequestBuilder.addAggregation(agg);
+            }
+        }
     }
 }

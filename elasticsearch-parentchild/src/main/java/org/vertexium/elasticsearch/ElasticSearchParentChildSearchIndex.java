@@ -7,10 +7,15 @@ import org.elasticsearch.action.deletebyquery.IndexDeleteByQueryResponse;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexRequestBuilder;
+import org.elasticsearch.action.search.SearchRequestBuilder;
+import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.search.SearchType;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
-import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.index.query.*;
 import org.elasticsearch.rest.RestStatus;
+import org.elasticsearch.search.aggregations.bucket.terms.Terms;
+import org.elasticsearch.search.aggregations.bucket.terms.TermsBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.vertexium.*;
@@ -410,6 +415,11 @@ public class ElasticSearchParentChildSearchIndex extends ElasticSearchSearchInde
     }
 
     @Override
+    public boolean isFieldLevelSecuritySupported() {
+        return true;
+    }
+
+    @Override
     protected void addPropertyToIndex(IndexInfo indexInfo, String propertyName, Class dataType, boolean analyzed, Double boost) throws IOException {
         if (indexInfo.isPropertyDefined(propertyName)) {
             return;
@@ -451,5 +461,44 @@ public class ElasticSearchParentChildSearchIndex extends ElasticSearchSearchInde
     @Override
     public SearchIndexSecurityGranularity getSearchIndexSecurityGranularity() {
         return SearchIndexSecurityGranularity.PROPERTY;
+    }
+
+    @Override
+    public Map<Object, Long> getVertexPropertyCountByValue(String propertyName, Authorizations authorizations) {
+        PropertyDefinition propertyDefinition = getAllPropertyDefinitions().get(propertyName);
+        if (propertyDefinition != null && propertyDefinition.getTextIndexHints().contains(TextIndexHint.EXACT_MATCH)) {
+            propertyName = propertyDefinition.getPropertyName() + EXACT_MATCH_PROPERTY_NAME_SUFFIX;
+        }
+
+        String countAggName = "count";
+        TermsBuilder countAgg = new TermsBuilder(countAggName)
+                .field(propertyName)
+                .size(500000);
+        AuthorizationFilterBuilder authorizationFilterBuilder = new AuthorizationFilterBuilder(authorizations.getAuthorizations());
+        TermFilterBuilder elementTypeFilterBuilder = new TermFilterBuilder(ELEMENT_TYPE_FIELD_NAME, ELEMENT_TYPE_VERTEX);
+        AndFilterBuilder andFilterBuilder = new AndFilterBuilder(authorizationFilterBuilder, elementTypeFilterBuilder);
+        FilteredQueryBuilder elementQueryBuilder = QueryBuilders.filteredQuery(
+                QueryBuilders.matchAllQuery(),
+                andFilterBuilder
+        );
+        FilteredQueryBuilder query = QueryBuilders.filteredQuery(
+                new HasParentQueryBuilder(ELEMENT_TYPE, elementQueryBuilder),
+                new AuthorizationFilterBuilder(authorizations.getAuthorizations())
+        );
+        SearchRequestBuilder q = getClient().prepareSearch(getIndexNamesAsArray())
+                .setQuery(query)
+                .setSearchType(SearchType.COUNT)
+                .addAggregation(countAgg);
+        if (ElasticSearchGraphQueryBase.QUERY_LOGGER.isTraceEnabled()) {
+            ElasticSearchGraphQueryBase.QUERY_LOGGER.trace("query: " + q);
+        }
+        SearchResponse response = getClient().search(q.request()).actionGet();
+        Terms propertyCountResults = response.getAggregations().get(countAggName);
+
+        Map<Object, Long> results = new HashMap<>();
+        for (Terms.Bucket propertyCountResult : propertyCountResults.getBuckets()) {
+            results.put(propertyCountResult.getKey(), propertyCountResult.getDocCount());
+        }
+        return results;
     }
 }

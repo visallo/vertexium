@@ -1,7 +1,6 @@
 package org.vertexium.search;
 
 import org.vertexium.*;
-import org.vertexium.*;
 import org.vertexium.query.GraphQuery;
 import org.vertexium.query.MultiVertexQuery;
 import org.vertexium.query.SimilarToGraphQuery;
@@ -48,4 +47,6 @@ public interface SearchIndex {
     boolean isQuerySimilarToTextSupported();
 
     SimilarToGraphQuery querySimilarTo(Graph graph, String[] fields, String text, Authorizations authorizations);
+
+    boolean isFieldLevelSecuritySupported();
 }

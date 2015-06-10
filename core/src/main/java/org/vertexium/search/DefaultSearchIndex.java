@@ -94,4 +94,9 @@ public class DefaultSearchIndex implements SearchIndex {
     public SimilarToGraphQuery querySimilarTo(Graph graph, String[] fields, String text, Authorizations authorizations) {
         throw new VertexiumException("querySimilarTo not supported");
     }
+
+    @Override
+    public boolean isFieldLevelSecuritySupported() {
+        return true;
+    }
 }
