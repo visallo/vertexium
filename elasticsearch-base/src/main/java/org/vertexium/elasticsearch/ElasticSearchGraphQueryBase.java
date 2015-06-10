@@ -1,5 +1,8 @@
 package org.vertexium.elasticsearch;
 
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.transport.TransportClient;
@@ -22,6 +25,7 @@ import org.vertexium.type.GeoCircle;
 import org.vertexium.util.ConvertingIterable;
 import org.vertexium.util.IterableUtils;
 
+import java.io.IOException;
 import java.util.*;
 
 public abstract class ElasticSearchGraphQueryBase extends GraphQueryBase {
@@ -29,6 +33,7 @@ public abstract class ElasticSearchGraphQueryBase extends GraphQueryBase {
     public static final Logger QUERY_LOGGER = LoggerFactory.getLogger(ElasticSearchGraphQueryBase.class.getName() + ".QUERY");
     private final TransportClient client;
     private final boolean evaluateHasContainers;
+    private final StandardAnalyzer analyzer;
     private String[] indicesToQuery;
     private ScoringStrategy scoringStrategy;
 
@@ -46,6 +51,7 @@ public abstract class ElasticSearchGraphQueryBase extends GraphQueryBase {
         this.indicesToQuery = indicesToQuery;
         this.evaluateHasContainers = evaluateHasContainers;
         this.scoringStrategy = scoringStrategy;
+        this.analyzer = new StandardAnalyzer();
     }
 
     protected ElasticSearchGraphQueryBase(
@@ -62,6 +68,7 @@ public abstract class ElasticSearchGraphQueryBase extends GraphQueryBase {
         this.indicesToQuery = indicesToQuery;
         this.evaluateHasContainers = evaluateHasContainers;
         this.scoringStrategy = scoringStrategy;
+        this.analyzer = new StandardAnalyzer();
     }
 
     @Override
@@ -305,11 +312,22 @@ public abstract class ElasticSearchGraphQueryBase extends GraphQueryBase {
     }
 
     private String[] splitStringIntoTerms(String value) {
-        String[] values = value.split("[ -]");
-        for (int i = 0; i < values.length; i++) {
-            values[i] = values[i].trim();
+        try {
+            List<String> results = new ArrayList<>();
+            try (TokenStream tokens = analyzer.tokenStream("", value)) {
+                CharTermAttribute term = tokens.getAttribute(CharTermAttribute.class);
+                tokens.reset();
+                while (tokens.incrementToken()) {
+                    String t = term.toString().trim();
+                    if (t.length() > 0) {
+                        results.add(t);
+                    }
+                }
+            }
+            return results.toArray(new String[results.size()]);
+        } catch (IOException e) {
+            throw new VertexiumException("Could not tokenize string: " + value, e);
         }
-        return values;
     }
 
     protected QueryBuilder createQuery(QueryParameters queryParameters, String elementType, List<FilterBuilder> filters) {
