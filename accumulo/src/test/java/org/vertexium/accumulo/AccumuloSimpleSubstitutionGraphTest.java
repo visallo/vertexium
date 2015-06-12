@@ -17,6 +17,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.vertexium.*;
 import org.vertexium.id.SimpleNameSubstitutionStrategy;
+import org.vertexium.id.SimpleSubstitutionUtils;
 import org.vertexium.test.GraphTestBase;
 import org.vertexium.util.IterableUtils;
 

@@ -14,6 +14,7 @@ import org.vertexium.accumulo.serializer.ValueSerializer;
 import org.vertexium.id.IdentityNameSubstitutionStrategy;
 import org.vertexium.id.NameSubstitutionStrategy;
 import org.vertexium.id.SimpleNameSubstitutionStrategy;
+import org.vertexium.id.SimpleSubstitutionUtils;
 import org.vertexium.util.ConfigurationUtils;
 import org.vertexium.util.MapUtils;
 
