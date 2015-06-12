@@ -353,7 +353,7 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> implemen
         }
     }
 
-    protected void saveExistingElementMutation(ExistingElementMutationImpl<TElement> mutation, Authorizations authorizations) {
+    protected <T extends Element> void saveExistingElementMutation(ExistingElementMutationImpl<T> mutation, Authorizations authorizations) {
         Iterable<Property> properties = mutation.getProperties();
         Iterable<PropertyDeleteMutation> propertyDeleteMutations = mutation.getPropertyDeletes();
         Iterable<PropertySoftDeleteMutation> propertySoftDeleteMutations = mutation.getPropertySoftDeletes();
