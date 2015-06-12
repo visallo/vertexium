@@ -28,16 +28,16 @@ import org.vertexium.util.IterableUtils;
 import java.io.IOException;
 import java.util.*;
 
-public abstract class ElasticSearchGraphQueryBase extends GraphQueryBase {
-    private static final Logger LOGGER = LoggerFactory.getLogger(ElasticSearchGraphQueryBase.class);
-    public static final Logger QUERY_LOGGER = LoggerFactory.getLogger(ElasticSearchGraphQueryBase.class.getName() + ".QUERY");
+public abstract class ElasticSearchQueryBase extends QueryBase {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ElasticSearchQueryBase.class);
+    public static final Logger QUERY_LOGGER = LoggerFactory.getLogger(Query.class.getName() + ".QUERY");
     private final TransportClient client;
     private final boolean evaluateHasContainers;
     private final StandardAnalyzer analyzer;
     private String[] indicesToQuery;
     private ScoringStrategy scoringStrategy;
 
-    protected ElasticSearchGraphQueryBase(
+    protected ElasticSearchQueryBase(
             TransportClient client,
             String[] indicesToQuery,
             Graph graph,
@@ -54,7 +54,7 @@ public abstract class ElasticSearchGraphQueryBase extends GraphQueryBase {
         this.analyzer = new StandardAnalyzer();
     }
 
-    protected ElasticSearchGraphQueryBase(
+    protected ElasticSearchQueryBase(
             TransportClient client,
             String[] indicesToQuery,
             Graph graph,

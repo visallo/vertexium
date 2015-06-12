@@ -21,6 +21,7 @@ import org.vertexium.*;
 import org.vertexium.property.StreamingPropertyValue;
 import org.vertexium.query.GraphQuery;
 import org.vertexium.query.SimilarToGraphQuery;
+import org.vertexium.query.VertexQuery;
 import org.vertexium.type.GeoCircle;
 import org.vertexium.type.GeoPoint;
 import org.vertexium.util.StreamUtils;
@@ -250,7 +251,7 @@ public class ElasticSearchSearchIndex extends ElasticSearchSearchIndexBase {
 
     @Override
     public GraphQuery queryGraph(Graph graph, String queryString, Authorizations authorizations) {
-        return new ElasticSearchGraphQuery(
+        return new ElasticSearchSearchGraphQuery(
                 getClient(),
                 getConfig().getIndicesToQuery(),
                 graph,
@@ -261,8 +262,21 @@ public class ElasticSearchSearchIndex extends ElasticSearchSearchIndexBase {
     }
 
     @Override
+    public VertexQuery queryVertex(Graph graph, Vertex vertex, String queryString, Authorizations authorizations) {
+        return new ElasticSearchSearchVertexQuery(
+                getClient(),
+                getConfig().getIndicesToQuery(),
+                graph,
+                vertex,
+                queryString,
+                getAllPropertyDefinitions(),
+                getConfig().getScoringStrategy(),
+                authorizations);
+    }
+
+    @Override
     public SimilarToGraphQuery querySimilarTo(Graph graph, String[] similarToFields, String similarToText, Authorizations authorizations) {
-        return new ElasticSearchGraphQuery(
+        return new ElasticSearchSearchGraphQuery(
                 getClient(),
                 getConfig().getIndicesToQuery(),
                 graph,
@@ -304,8 +318,8 @@ public class ElasticSearchSearchIndex extends ElasticSearchSearchIndexBase {
                 .setQuery(queryBuilder)
                 .setSearchType(SearchType.COUNT)
                 .addAggregation(countAgg);
-        if (ElasticSearchGraphQueryBase.QUERY_LOGGER.isTraceEnabled()) {
-            ElasticSearchGraphQueryBase.QUERY_LOGGER.trace("query: " + q);
+        if (ElasticSearchQueryBase.QUERY_LOGGER.isTraceEnabled()) {
+            ElasticSearchQueryBase.QUERY_LOGGER.trace("query: " + q);
         }
         SearchResponse response = getClient().search(q.request()).actionGet();
         Terms propertyCountResults = response.getAggregations().get(countAggName);

@@ -1146,7 +1146,6 @@ public abstract class GraphTestBase {
      * This tests simulates two workspaces w1 (via A) and w1 (vis B).
      * Both w1 and w2 has e1 on it.
      * e1 is linked to e2.
-     *
      * What happens if w1 (vis A) marks e1 hidden, then deletes itself?
      */
     @Test
@@ -2062,14 +2061,21 @@ public abstract class GraphTestBase {
         Vertex v3 = graph.addVertex("v3", VISIBILITY_A, AUTHORIZATIONS_ALL);
         v3.setProperty("prop1", "value3", VISIBILITY_A, AUTHORIZATIONS_ALL);
 
-        Edge ev1v2 = graph.addEdge("e v1->v2", v1, v2, "edgeA", VISIBILITY_A, AUTHORIZATIONS_A);
-        Edge ev1v3 = graph.addEdge("e v1->v3", v1, v3, "edgeA", VISIBILITY_A, AUTHORIZATIONS_A);
+        Edge ev1v2 = graph.prepareEdge("e v1->v2", v1, v2, "edgeA", VISIBILITY_A)
+                .setProperty("prop1", "value1", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
+        Edge ev1v3 = graph.prepareEdge("e v1->v3", v1, v3, "edgeB", VISIBILITY_A)
+                .setProperty("prop1", "value2", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
 
         v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
         Iterable<Vertex> vertices = v1.query(AUTHORIZATIONS_A).vertices();
         Assert.assertEquals(2, count(vertices));
         org.vertexium.test.util.IterableUtils.assertContains(v2, vertices);
         org.vertexium.test.util.IterableUtils.assertContains(v3, vertices);
+        if (vertices instanceof IterableWithTotalHits) {
+            assertEquals(2, ((IterableWithTotalHits) vertices).getTotalHits());
+        }
 
         vertices = v1.query(AUTHORIZATIONS_A)
                 .has("prop1", "value2")
@@ -2078,11 +2084,6 @@ public abstract class GraphTestBase {
         org.vertexium.test.util.IterableUtils.assertContains(v2, vertices);
 
         Iterable<Edge> edges = v1.query(AUTHORIZATIONS_A).edges();
-        Assert.assertEquals(2, count(edges));
-        org.vertexium.test.util.IterableUtils.assertContains(ev1v2, edges);
-        org.vertexium.test.util.IterableUtils.assertContains(ev1v3, edges);
-
-        edges = v1.query(AUTHORIZATIONS_A).edges(Direction.OUT);
         Assert.assertEquals(2, count(edges));
         org.vertexium.test.util.IterableUtils.assertContains(ev1v2, edges);
         org.vertexium.test.util.IterableUtils.assertContains(ev1v3, edges);

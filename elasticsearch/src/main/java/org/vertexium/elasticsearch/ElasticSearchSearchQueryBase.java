@@ -14,7 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-public class ElasticSearchGraphQuery extends ElasticSearchGraphQueryBase implements
+public class ElasticSearchSearchQueryBase extends ElasticSearchQueryBase implements
         GraphQueryWithHistogramAggregation,
         GraphQueryWithTermsAggregation,
         GraphQueryWithGeohashAggregation {
@@ -22,11 +22,11 @@ public class ElasticSearchGraphQuery extends ElasticSearchGraphQueryBase impleme
     private final List<TermsQueryItem> termsQueryItems = new ArrayList<>();
     private final List<GeohashQueryItem> geohashQueryItems = new ArrayList<>();
 
-    public ElasticSearchGraphQuery(TransportClient client, String[] indicesToQuery, Graph graph, String queryString, Map<String, PropertyDefinition> propertyDefinitions, ScoringStrategy scoringStrategy, Authorizations authorizations) {
+    public ElasticSearchSearchQueryBase(TransportClient client, String[] indicesToQuery, Graph graph, String queryString, Map<String, PropertyDefinition> propertyDefinitions, ScoringStrategy scoringStrategy, Authorizations authorizations) {
         super(client, indicesToQuery, graph, queryString, propertyDefinitions, scoringStrategy, false, authorizations);
     }
 
-    public ElasticSearchGraphQuery(TransportClient client, String[] indicesToQuery, Graph graph, String[] similarToFields, String similarToText, Map<String, PropertyDefinition> propertyDefinitions, ScoringStrategy scoringStrategy, Authorizations authorizations) {
+    public ElasticSearchSearchQueryBase(TransportClient client, String[] indicesToQuery, Graph graph, String[] similarToFields, String similarToText, Map<String, PropertyDefinition> propertyDefinitions, ScoringStrategy scoringStrategy, Authorizations authorizations) {
         super(client, indicesToQuery, graph, similarToFields, similarToText, propertyDefinitions, scoringStrategy, false, authorizations);
     }
 
@@ -67,3 +67,4 @@ public class ElasticSearchGraphQuery extends ElasticSearchGraphQueryBase impleme
         return searchRequestBuilder;
     }
 }
+

@@ -357,17 +357,15 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex, Searc
     }
 
     @Override
+    public abstract VertexQuery queryVertex(Graph graph, Vertex vertex, String queryString, Authorizations authorizations);
+
+    @Override
     public boolean isQuerySimilarToTextSupported() {
         return true;
     }
 
     @Override
     public abstract SimilarToGraphQuery querySimilarTo(Graph graph, String[] similarToFields, String similarToText, Authorizations authorizations);
-
-    @Override
-    public VertexQuery queryVertex(Graph graph, Vertex vertex, String queryString, Authorizations authorizations) {
-        return new DefaultVertexQuery(graph, vertex, queryString, getAllPropertyDefinitions(), authorizations);
-    }
 
     public Map<String, PropertyDefinition> getAllPropertyDefinitions() {
         Map<String, PropertyDefinition> allPropertyDefinitions = new HashMap<>();
