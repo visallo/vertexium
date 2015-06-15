@@ -71,6 +71,17 @@ public class EdgeInfo implements org.vertexium.EdgeInfo {
         return vertexId;
     }
 
+    // fast access method to avoid creating a new instance of an EdgeInfo
+    public static String getVertexId(Value value) {
+        try {
+            ByteBuffer in = ByteBuffer.wrap(value.get());
+            readString(in); // skip label
+            return readString(in);
+        } catch (IOException ex) {
+            throw new VertexiumException("Could not decode EdgeInfo data", ex);
+        }
+    }
+
     private void decodeBytes() {
         if (!decoded) {
             try {
@@ -84,7 +95,7 @@ public class EdgeInfo implements org.vertexium.EdgeInfo {
         }
     }
 
-    private String readString(ByteBuffer in) throws IOException {
+    private static String readString(ByteBuffer in) throws IOException {
         int labelBytesLength = in.getInt();
         if (labelBytesLength == -1) {
             return null;

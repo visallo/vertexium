@@ -10,7 +10,7 @@ public class IterableUtils {
         if (iterable instanceof List) {
             return (List<T>) iterable;
         }
-        List<T> results = new ArrayList<T>();
+        List<T> results = new ArrayList<>();
         for (T o : iterable) {
             results.add(o);
         }
@@ -19,7 +19,7 @@ public class IterableUtils {
     }
 
     public static <T> List<T> toList(Iterator<T> iterator) {
-        List<T> results = new ArrayList<T>();
+        List<T> results = new ArrayList<>();
         while (iterator.hasNext()) {
             T o = iterator.next();
             results.add(o);
@@ -32,7 +32,7 @@ public class IterableUtils {
         if (iterable instanceof Set) {
             return (Set<T>) iterable;
         }
-        Set<T> results = new HashSet<T>();
+        Set<T> results = new HashSet<>();
         for (T o : iterable) {
             results.add(o);
         }
@@ -42,7 +42,7 @@ public class IterableUtils {
 
     @SuppressWarnings("unchecked")
     public static <T> Set<T> toSet(T[] iterable) {
-        Set<T> results = new HashSet<T>();
+        Set<T> results = new HashSet<>();
         Collections.addAll(results, iterable);
         return results;
     }
