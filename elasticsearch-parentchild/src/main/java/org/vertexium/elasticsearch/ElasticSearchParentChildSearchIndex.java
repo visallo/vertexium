@@ -37,7 +37,6 @@ import java.util.Map;
 
 public class ElasticSearchParentChildSearchIndex extends ElasticSearchSearchIndexBase {
     private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(ElasticSearchParentChildSearchIndex.class);
-    private static final VertexiumLogger ADD_ELEMENT_LOGGER = VertexiumLoggerFactory.getMutationLogger(ElasticSearchParentChildSearchIndex.class);
     public static final String PROPERTY_TYPE = "property";
     private String[] parentDocumentFields;
     private final ThreadLocal<Map<IndexInfo, BulkRequest>> bulkRequestsByIndexInfo = new ThreadLocal<Map<IndexInfo, BulkRequest>>() {
@@ -167,12 +166,12 @@ public class ElasticSearchParentChildSearchIndex extends ElasticSearchSearchInde
 
     @Override
     public void addElement(Graph graph, Element element, Authorizations authorizations) {
-        if (ADD_ELEMENT_LOGGER.isTraceEnabled()) {
-            ADD_ELEMENT_LOGGER.trace("addElement: %s", element.getId());
+        if (MUTATION_LOGGER.isTraceEnabled()) {
+            MUTATION_LOGGER.trace("addElement: %s", element.getId());
         }
         if (!getConfig().isIndexEdges() && element instanceof Edge) {
-            if (ADD_ELEMENT_LOGGER.isDebugEnabled()) {
-                ADD_ELEMENT_LOGGER.debug("skipping edge: %s", element.getId());
+            if (MUTATION_LOGGER.isDebugEnabled()) {
+                MUTATION_LOGGER.debug("skipping edge: %s", element.getId());
             }
             return;
         }
@@ -248,8 +247,8 @@ public class ElasticSearchParentChildSearchIndex extends ElasticSearchSearchInde
 
         String id = getChildDocId(element, property);
 
-        if (ADD_ELEMENT_LOGGER.isTraceEnabled()) {
-            ADD_ELEMENT_LOGGER.trace("addElement child (%s): %s", element.getId(), jsonBuilder.string());
+        if (MUTATION_LOGGER.isTraceEnabled()) {
+            MUTATION_LOGGER.trace("addElement child (%s): %s", element.getId(), jsonBuilder.string());
         }
 
         IndexRequestBuilder builder = getClient().prepareIndex(indexInfo.getIndexName(), PROPERTY_TYPE, id);
@@ -307,8 +306,8 @@ public class ElasticSearchParentChildSearchIndex extends ElasticSearchSearchInde
         if (!changed) {
             return null;
         }
-        if (ADD_ELEMENT_LOGGER.isTraceEnabled()) {
-            ADD_ELEMENT_LOGGER.trace("addElement parent: %s", jsonBuilder.string());
+        if (MUTATION_LOGGER.isTraceEnabled()) {
+            MUTATION_LOGGER.trace("addElement parent: %s", jsonBuilder.string());
         }
         return new IndexRequest(indexInfo.getIndexName(), ELEMENT_TYPE, id).source(jsonBuilder);
     }

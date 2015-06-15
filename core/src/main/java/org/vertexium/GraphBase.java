@@ -12,6 +12,8 @@ import java.util.*;
 
 public abstract class GraphBase implements Graph {
     private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(GraphBase.class);
+    protected static final VertexiumLogger QUERY_LOGGER = VertexiumLoggerFactory.getQueryLogger(Graph.class);
+    protected static final VertexiumLogger MUTATION_LOGGER = VertexiumLoggerFactory.getMutationLogger(Graph.class);
     private final PathFindingAlgorithm pathFindingAlgorithm = new RecursivePathFindingAlgorithm();
     private final List<GraphEventListener> graphEventListeners = new ArrayList<>();
 

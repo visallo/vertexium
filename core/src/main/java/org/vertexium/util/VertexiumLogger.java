@@ -79,6 +79,9 @@ public class VertexiumLogger {
 
     private String format(final String format, final Object[] args) {
         try {
+            if (args.length == 0) {
+                return format;
+            }
             return String.format(format, args);
         } catch (Exception ex) {
             error("Invalid format string: " + format, ex);
