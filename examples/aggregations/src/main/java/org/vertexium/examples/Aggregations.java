@@ -4,13 +4,13 @@ import com.v5analytics.webster.App;
 import com.v5analytics.webster.HandlerChain;
 import org.json.JSONArray;
 import org.json.JSONObject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.vertexium.Authorizations;
 import org.vertexium.Vertex;
 import org.vertexium.query.*;
 import org.vertexium.type.GeoPoint;
 import org.vertexium.type.GeoRect;
+import org.vertexium.util.VertexiumLogger;
+import org.vertexium.util.VertexiumLoggerFactory;
 
 import javax.imageio.ImageIO;
 import javax.servlet.Servlet;
@@ -25,11 +25,11 @@ import java.io.InputStream;
 import java.util.Date;
 
 public class Aggregations extends ExampleBase {
-    private static final Logger LOGGER = LoggerFactory.getLogger(Aggregations.class);
+    private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(Aggregations.class);
     private static Aggregations _this;
 
     public static void main(String[] args) throws Exception {
-        LOGGER.debug("begin " + Aggregations.class.getName());
+        LOGGER.debug("begin %s", Aggregations.class.getName());
         _this = new Aggregations();
         _this.run(args);
     }

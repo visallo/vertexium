@@ -5,8 +5,6 @@ import org.apache.accumulo.core.client.security.tokens.AuthenticationToken;
 import org.apache.accumulo.core.client.security.tokens.PasswordToken;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.vertexium.GraphConfiguration;
 import org.vertexium.VertexiumException;
 import org.vertexium.accumulo.serializer.JavaValueSerializer;
@@ -16,6 +14,8 @@ import org.vertexium.id.NameSubstitutionStrategy;
 import org.vertexium.id.SimpleNameSubstitutionStrategy;
 import org.vertexium.util.ConfigurationUtils;
 import org.vertexium.util.MapUtils;
+import org.vertexium.util.VertexiumLogger;
+import org.vertexium.util.VertexiumLoggerFactory;
 
 import java.io.IOException;
 import java.net.URI;
@@ -25,7 +25,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 public class AccumuloGraphConfiguration extends GraphConfiguration {
-    private static final Logger LOGGER = LoggerFactory.getLogger(AccumuloGraphConfiguration.class);
+    private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(AccumuloGraphConfiguration.class);
 
     public static final String HDFS_CONFIG_PREFIX = "hdfs";
     public static final String BATCHWRITER_CONFIG_PREFIX = "batchwriter";
@@ -87,7 +87,7 @@ public class AccumuloGraphConfiguration extends GraphConfiguration {
     }
 
     public Connector createConnector() throws AccumuloSecurityException, AccumuloException {
-        LOGGER.info("Connecting to accumulo instance [{}] zookeeper servers [{}]", this.getAccumuloInstanceName(), this.getZookeeperServers());
+        LOGGER.info("Connecting to accumulo instance [%s] zookeeper servers [%s]", this.getAccumuloInstanceName(), this.getZookeeperServers());
         ZooKeeperInstance instance = new ZooKeeperInstance(this.getAccumuloInstanceName(), this.getZookeeperServers());
         return instance.getConnector(this.getAccumuloUsername(), this.getAuthenticationToken());
     }

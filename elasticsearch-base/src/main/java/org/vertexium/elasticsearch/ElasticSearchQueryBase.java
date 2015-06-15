@@ -16,21 +16,21 @@ import org.elasticsearch.search.aggregations.bucket.geogrid.GeoHashGridBuilder;
 import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramBuilder;
 import org.elasticsearch.search.aggregations.bucket.histogram.HistogramBuilder;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.vertexium.*;
 import org.vertexium.elasticsearch.score.ScoringStrategy;
 import org.vertexium.query.*;
 import org.vertexium.type.GeoCircle;
 import org.vertexium.util.ConvertingIterable;
 import org.vertexium.util.IterableUtils;
+import org.vertexium.util.VertexiumLogger;
+import org.vertexium.util.VertexiumLoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
 
 public abstract class ElasticSearchQueryBase extends QueryBase {
-    private static final Logger LOGGER = LoggerFactory.getLogger(ElasticSearchQueryBase.class);
-    public static final Logger QUERY_LOGGER = LoggerFactory.getLogger(Query.class.getName() + ".QUERY");
+    private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(ElasticSearchQueryBase.class);
+    public static final VertexiumLogger QUERY_LOGGER = VertexiumLoggerFactory.getQueryLogger(Query.class);
     private final TransportClient client;
     private final boolean evaluateHasContainers;
     private final StandardAnalyzer analyzer;
@@ -85,7 +85,7 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
         long endTime = System.nanoTime();
         long searchTime = endTime - startTime;
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("elastic search results " + ids.size() + " of " + hits.getTotalHits() + " (time: " + (searchTime / 1000 / 1000) + "ms)");
+            LOGGER.debug("elastic search results %d of %d (time: %dms)", ids.size(), hits.getTotalHits(), searchTime / 1000 / 1000);
         }
 
         // since ES doesn't support security we will rely on the graph to provide vertex filtering
@@ -110,7 +110,7 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
         long endTime = System.nanoTime();
         long searchTime = endTime - startTime;
         if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("elastic search results " + ids.size() + " of " + hits.getTotalHits() + " (time: " + ((endTime - startTime) / 1000 / 1000) + "ms)");
+            LOGGER.debug("elastic search results %d of %d (time: %dms)", ids.size(), hits.getTotalHits(), (endTime - startTime) / 1000 / 1000);
         }
 
         // since ES doesn't support security we will rely on the graph to provide edge filtering
@@ -133,7 +133,7 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
         SearchRequestBuilder q = getSearchRequestBuilder(filters, query);
 
         if (QUERY_LOGGER.isTraceEnabled()) {
-            QUERY_LOGGER.trace("query: " + q);
+            QUERY_LOGGER.trace("query: %s", q);
         }
         return q.execute()
                 .actionGet();

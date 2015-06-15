@@ -5,11 +5,11 @@ import org.vertexium.VertexiumException;
 import org.vertexium.elasticsearch.score.EdgeCountScoringStrategy;
 import org.vertexium.elasticsearch.score.ScoringStrategy;
 import org.vertexium.util.ConfigurationUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.vertexium.util.VertexiumLogger;
+import org.vertexium.util.VertexiumLoggerFactory;
 
 public class ElasticSearchSearchIndexConfiguration {
-    private static final Logger LOGGER = LoggerFactory.getLogger(ElasticSearchSearchIndexConfiguration.class);
+    private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(ElasticSearchSearchIndexConfiguration.class);
     public static final String CONFIG_STORE_SOURCE_DATA = "storeSourceData";
     public static final boolean DEFAULT_STORE_SOURCE_DATA = false;
     public static final String CONFIG_ES_LOCATIONS = "locations";
@@ -86,19 +86,19 @@ public class ElasticSearchSearchIndexConfiguration {
 
     private static boolean getAutoFlush(GraphConfiguration config) {
         boolean autoFlush = config.getBoolean(GraphConfiguration.AUTO_FLUSH, DEFAULT_AUTO_FLUSH);
-        LOGGER.info("Auto flush: " + autoFlush);
+        LOGGER.info("Auto flush: %b", autoFlush);
         return autoFlush;
     }
 
     private static boolean getStoreSourceData(GraphConfiguration config) {
         boolean storeSourceData = config.getBoolean(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + CONFIG_STORE_SOURCE_DATA, DEFAULT_STORE_SOURCE_DATA);
-        LOGGER.info("Store source data: " + storeSourceData);
+        LOGGER.info("Store source data: %b", storeSourceData);
         return storeSourceData;
     }
 
     private boolean getIndexEdges(GraphConfiguration config) {
         boolean indexEdges = config.getBoolean(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + CONFIG_INDEX_EDGES, DEFAULT_INDEX_EDGES);
-        LOGGER.info("index edges: " + indexEdges);
+        LOGGER.info("index edges: %b", indexEdges);
         return indexEdges;
     }
 
@@ -121,7 +121,7 @@ public class ElasticSearchSearchIndexConfiguration {
                 }
                 sb.append(indicesToQuery[i]);
             }
-            LOGGER.info("Indices to query: " + sb.toString());
+            LOGGER.info("Indices to query: %s", sb.toString());
         }
         return indicesToQuery;
     }
@@ -131,25 +131,25 @@ public class ElasticSearchSearchIndexConfiguration {
         if (esLocationsString == null) {
             throw new VertexiumException(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + CONFIG_ES_LOCATIONS + " is a required configuration parameter");
         }
-        LOGGER.info("Using elastic search locations: " + esLocationsString);
+        LOGGER.info("Using elastic search locations: %s", esLocationsString);
         return esLocationsString.split(",");
     }
 
     private static String getDefaultIndexName(GraphConfiguration config) {
         String defaultIndexName = config.getString(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + CONFIG_INDEX_NAME, DEFAULT_INDEX_NAME);
-        LOGGER.info("Default index name: " + defaultIndexName);
+        LOGGER.info("Default index name: %s", defaultIndexName);
         return defaultIndexName;
     }
 
     private static String getClusterName(GraphConfiguration config) {
         String clusterName = config.getString(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + CONFIG_CLUSTER_NAME, DEFAULT_CLUSTER_NAME);
-        LOGGER.info("Cluster name: " + clusterName);
+        LOGGER.info("Cluster name: %s", clusterName);
         return clusterName;
     }
 
     private static int getPort(GraphConfiguration config) {
         int port = config.getInt(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + CONFIG_PORT, DEFAULT_PORT);
-        LOGGER.info("Port: " + port);
+        LOGGER.info("Port: %d", port);
         return port;
     }
 

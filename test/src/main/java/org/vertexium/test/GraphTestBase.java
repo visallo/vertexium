@@ -8,8 +8,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.vertexium.*;
 import org.vertexium.event.*;
 import org.vertexium.mutation.ElementMutation;
@@ -25,6 +23,8 @@ import org.vertexium.type.GeoCircle;
 import org.vertexium.type.GeoPoint;
 import org.vertexium.util.ConvertingIterable;
 import org.vertexium.util.IterableUtils;
+import org.vertexium.util.VertexiumLogger;
+import org.vertexium.util.VertexiumLoggerFactory;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -39,7 +39,7 @@ import static org.vertexium.util.IterableUtils.toList;
 
 @RunWith(JUnit4.class)
 public abstract class GraphTestBase {
-    private static final Logger LOGGER = LoggerFactory.getLogger(GraphTestBase.class);
+    private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(GraphTestBase.class);
     public static final String VISIBILITY_A_STRING = "a";
     public static final String VISIBILITY_B_STRING = "b";
     public static final String VISIBILITY_C_STRING = "c";
@@ -1844,7 +1844,7 @@ public abstract class GraphTestBase {
     @Test
     public void testDisableEdgeIndexing() throws NoSuchFieldException, IllegalAccessException {
         if (!disableEdgeIndexing(graph)) {
-            LOGGER.info("skipping " + SearchIndex.class.getSimpleName() + " doesn't support disabling index");
+            LOGGER.info("skipping %s doesn't support disabling index", SearchIndex.class.getSimpleName());
             return;
         }
 
@@ -2410,14 +2410,14 @@ public abstract class GraphTestBase {
         endTime = new Date();
         long findRelatedEdgesTime = endTime.getTime() - startTime.getTime();
 
-        LOGGER.info(String.format(
+        LOGGER.info(
                 "RESULTS\ntotalNumberOfVertices,totalNumberOfEdges,totalVerticesToCheck,insertVerticesTime,insertEdgesTime,findRelatedEdgesTime\n%d,%d,%d,%d,%d,%d",
                 totalNumberOfVertices,
                 totalNumberOfEdges,
                 totalVerticesToCheck,
                 insertVerticesTime,
                 insertEdgesTime,
-                findRelatedEdgesTime));
+                findRelatedEdgesTime);
     }
 
     @Test
@@ -3015,7 +3015,7 @@ public abstract class GraphTestBase {
     @Test
     public void testSimilarityByText() {
         if (!graph.isQuerySimilarToTextSupported()) {
-            LOGGER.warn("skipping test. Graph " + graph.getClass().getName() + " does not support query similar to text");
+            LOGGER.warn("skipping test. Graph %s does not support query similar to text", graph.getClass().getName());
             return;
         }
 
@@ -3212,7 +3212,7 @@ public abstract class GraphTestBase {
     private Map<Object, Long> queryGraphQueryWithTermsAggregation(String propertyName, Authorizations authorizations) {
         Query q = graph.query(authorizations).limit(0);
         if (!(q instanceof GraphQueryWithTermsAggregation)) {
-            LOGGER.warn(GraphQueryWithTermsAggregation.class.getName() + " unsupported");
+            LOGGER.warn("%s unsupported", GraphQueryWithTermsAggregation.class.getName());
             return null;
         }
         q = ((GraphQueryWithTermsAggregation) q).addTermsAggregation("terms-count", propertyName);

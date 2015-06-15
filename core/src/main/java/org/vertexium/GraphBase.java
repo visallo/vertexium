@@ -1,21 +1,17 @@
 package org.vertexium;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.vertexium.event.GraphEvent;
 import org.vertexium.event.GraphEventListener;
 import org.vertexium.path.PathFindingAlgorithm;
 import org.vertexium.path.RecursivePathFindingAlgorithm;
 import org.vertexium.query.GraphQuery;
 import org.vertexium.query.SimilarToGraphQuery;
-import org.vertexium.util.FilterIterable;
-import org.vertexium.util.IterableUtils;
-import org.vertexium.util.LookAheadIterable;
+import org.vertexium.util.*;
 
 import java.util.*;
 
 public abstract class GraphBase implements Graph {
-    private static final Logger LOGGER = LoggerFactory.getLogger(GraphBase.class);
+    private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(GraphBase.class);
     private final PathFindingAlgorithm pathFindingAlgorithm = new RecursivePathFindingAlgorithm();
     private final List<GraphEventListener> graphEventListeners = new ArrayList<>();
 
@@ -368,7 +364,7 @@ public abstract class GraphBase implements Graph {
         ProgressCallback progressCallback = new ProgressCallback() {
             @Override
             public void progress(double progressPercent, Step step, Integer edgeIndex, Integer vertexCount) {
-                LOGGER.debug(String.format("findPaths progress %d%%: %s", (int) (progressPercent * 100.0), step.formatMessage(edgeIndex, vertexCount)));
+                LOGGER.debug("findPaths progress %d%%: %s", (int) (progressPercent * 100.0), step.formatMessage(edgeIndex, vertexCount));
             }
         };
         return findPaths(sourceVertex, destVertex, maxHops, progressCallback, authorizations);

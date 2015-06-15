@@ -16,8 +16,6 @@ import org.elasticsearch.index.query.*;
 import org.elasticsearch.rest.RestStatus;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.vertexium.*;
 import org.vertexium.elasticsearch.utils.GetResponseUtil;
 import org.vertexium.property.StreamingPropertyValue;
@@ -27,6 +25,8 @@ import org.vertexium.query.VertexQuery;
 import org.vertexium.type.GeoCircle;
 import org.vertexium.type.GeoPoint;
 import org.vertexium.util.StreamUtils;
+import org.vertexium.util.VertexiumLogger;
+import org.vertexium.util.VertexiumLoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -36,8 +36,8 @@ import java.util.List;
 import java.util.Map;
 
 public class ElasticSearchParentChildSearchIndex extends ElasticSearchSearchIndexBase {
-    private static final Logger LOGGER = LoggerFactory.getLogger(ElasticSearchParentChildSearchIndex.class);
-    private static final Logger ADD_ELEMENT_LOGGER = LoggerFactory.getLogger(ElasticSearchParentChildSearchIndex.class.getName() + ".ADDELEMENT");
+    private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(ElasticSearchParentChildSearchIndex.class);
+    private static final VertexiumLogger ADD_ELEMENT_LOGGER = VertexiumLoggerFactory.getMutationLogger(ElasticSearchParentChildSearchIndex.class);
     public static final String PROPERTY_TYPE = "property";
     private String[] parentDocumentFields;
     private final ThreadLocal<Map<IndexInfo, BulkRequest>> bulkRequestsByIndexInfo = new ThreadLocal<Map<IndexInfo, BulkRequest>>() {
@@ -124,21 +124,21 @@ public class ElasticSearchParentChildSearchIndex extends ElasticSearchSearchInde
         }
         if (LOGGER.isDebugEnabled()) {
             for (IndexDeleteByQueryResponse r : response) {
-                LOGGER.debug("deleted child document " + r.toString());
+                LOGGER.debug("deleted child document %s", r.toString());
             }
         }
     }
 
     private void deleteParentDocument(String indexName, Element element) {
         String id = element.getId();
-        LOGGER.debug("deleting parent document " + id);
+        LOGGER.debug("deleting parent document %s", id);
         DeleteResponse deleteResponse = getClient().delete(
                 getClient()
                         .prepareDelete(indexName, ELEMENT_TYPE, id)
                         .request()
         ).actionGet();
         if (!deleteResponse.isFound()) {
-            LOGGER.warn("Could not delete element " + element.getId());
+            LOGGER.warn("Could not delete element %s", element.getId());
         }
     }
 
@@ -160,19 +160,19 @@ public class ElasticSearchParentChildSearchIndex extends ElasticSearchSearchInde
                         .request()
         ).actionGet();
         if (!deleteResponse.isFound()) {
-            LOGGER.warn("Could not delete property " + element.getId() + " " + propertyString);
+            LOGGER.warn("Could not delete property %s %s", element.getId(), propertyString);
         }
-        LOGGER.debug("deleted property " + element.getId() + " " + propertyString);
+        LOGGER.debug("deleted property %s %s", element.getId(), propertyString);
     }
 
     @Override
     public void addElement(Graph graph, Element element, Authorizations authorizations) {
         if (ADD_ELEMENT_LOGGER.isTraceEnabled()) {
-            ADD_ELEMENT_LOGGER.trace("addElement: " + element.getId());
+            ADD_ELEMENT_LOGGER.trace("addElement: %s", element.getId());
         }
         if (!getConfig().isIndexEdges() && element instanceof Edge) {
             if (ADD_ELEMENT_LOGGER.isDebugEnabled()) {
-                ADD_ELEMENT_LOGGER.debug("skipping edge: " + element.getId());
+                ADD_ELEMENT_LOGGER.debug("skipping edge: %s", element.getId());
             }
             return;
         }
@@ -249,7 +249,7 @@ public class ElasticSearchParentChildSearchIndex extends ElasticSearchSearchInde
         String id = getChildDocId(element, property);
 
         if (ADD_ELEMENT_LOGGER.isTraceEnabled()) {
-            ADD_ELEMENT_LOGGER.trace("addElement child (" + element.getId() + "): " + jsonBuilder.string());
+            ADD_ELEMENT_LOGGER.trace("addElement child (%s): %s", element.getId(), jsonBuilder.string());
         }
 
         IndexRequestBuilder builder = getClient().prepareIndex(indexInfo.getIndexName(), PROPERTY_TYPE, id);
@@ -308,7 +308,7 @@ public class ElasticSearchParentChildSearchIndex extends ElasticSearchSearchInde
             return null;
         }
         if (ADD_ELEMENT_LOGGER.isTraceEnabled()) {
-            ADD_ELEMENT_LOGGER.trace("addElement parent: " + jsonBuilder.string());
+            ADD_ELEMENT_LOGGER.trace("addElement parent: %s", jsonBuilder.string());
         }
         return new IndexRequest(indexInfo.getIndexName(), ELEMENT_TYPE, id).source(jsonBuilder);
     }
@@ -504,7 +504,7 @@ public class ElasticSearchParentChildSearchIndex extends ElasticSearchSearchInde
                 .setSearchType(SearchType.COUNT)
                 .addAggregation(countAgg);
         if (ElasticSearchQueryBase.QUERY_LOGGER.isTraceEnabled()) {
-            ElasticSearchQueryBase.QUERY_LOGGER.trace("query: " + q);
+            ElasticSearchQueryBase.QUERY_LOGGER.trace("query: %s", q);
         }
         SearchResponse response = getClient().search(q.request()).actionGet();
         Terms propertyCountResults = response.getAggregations().get(countAggName);
