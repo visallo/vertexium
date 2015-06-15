@@ -175,10 +175,7 @@ public class ElasticSearchSearchIndexConfiguration {
     private static NameSubstitutionStrategy getNameSubstitutionStrategy(GraphConfiguration config) {
         String className = config.getString(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + CONFIG_NAME_SUBSTITUTION_STRATEGY_CLASS_NAME, DEFAULT_NAME_SUBSTITUTION_STRATEGY.getName());
         NameSubstitutionStrategy strategy = ConfigurationUtils.createProvider(className, config);
-
-        if (strategy instanceof SimpleNameSubstitutionStrategy) {
-            ((SimpleNameSubstitutionStrategy) strategy).setSubstitutionList(SimpleSubstitutionUtils.getSubstitutionList(config.getConfig()));
-        }
+        strategy.setup(config.getConfig());
 
         return strategy;
     }

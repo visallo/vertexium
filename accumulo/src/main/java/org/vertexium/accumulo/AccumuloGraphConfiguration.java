@@ -159,11 +159,7 @@ public class AccumuloGraphConfiguration extends GraphConfiguration {
 
     public NameSubstitutionStrategy createSubstitutionStrategy() {
         NameSubstitutionStrategy strategy = ConfigurationUtils.createProvider(this, NAME_SUBSTITUTION_STRATEGY_PROP_PREFIX, DEFAULT_NAME_SUBSTITUTION_STRATEGY);
-
-        if (strategy instanceof SimpleNameSubstitutionStrategy) {
-            ((SimpleNameSubstitutionStrategy) strategy).setSubstitutionList(SimpleSubstitutionUtils.getSubstitutionList(getConfig()));
-        }
-
+        strategy.setup(getConfig());
         return strategy;
     }
 
