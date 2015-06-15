@@ -16,6 +16,7 @@ import org.elasticsearch.index.query.TermFilterBuilder;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsBuilder;
 import org.vertexium.*;
+import org.vertexium.id.NameSubstitutionStrategy;
 import org.vertexium.property.StreamingPropertyValue;
 import org.vertexium.query.GraphQuery;
 import org.vertexium.query.SimilarToGraphQuery;
@@ -35,9 +36,11 @@ import java.util.Set;
 
 public class ElasticSearchSearchIndex extends ElasticSearchSearchIndexBase {
     private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(ElasticSearchSearchIndex.class);
+    private NameSubstitutionStrategy nameSubstitutionStrategy;
 
     public ElasticSearchSearchIndex(GraphConfiguration config) {
         super(config);
+        this.nameSubstitutionStrategy = getConfig().getNameSubstitutionStrategy();
     }
 
     @Override
@@ -139,7 +142,7 @@ public class ElasticSearchSearchIndex extends ElasticSearchSearchIndexBase {
             visibilityStrings.add(property.getVisibility().getVisibilityString());
 
             Object propertyValue = property.getValue();
-            String propertyName = getConfig().getNameSubstitutionStrategy().deflate(property.getName());
+            String propertyName = this.nameSubstitutionStrategy.deflate(property.getName());
             if (propertyValue != null && shouldIgnoreType(propertyValue.getClass())) {
                 continue;
             } else if (propertyValue instanceof GeoPoint) {
@@ -260,7 +263,7 @@ public class ElasticSearchSearchIndex extends ElasticSearchSearchIndexBase {
                 queryString,
                 getAllPropertyDefinitions(),
                 getConfig().getScoringStrategy(),
-                getConfig().getNameSubstitutionStrategy(),
+                this.nameSubstitutionStrategy,
                 authorizations);
     }
 
@@ -274,7 +277,7 @@ public class ElasticSearchSearchIndex extends ElasticSearchSearchIndexBase {
                 queryString,
                 getAllPropertyDefinitions(),
                 getConfig().getScoringStrategy(),
-                getConfig().getNameSubstitutionStrategy(),
+                this.nameSubstitutionStrategy,
                 authorizations);
     }
 
@@ -287,7 +290,7 @@ public class ElasticSearchSearchIndex extends ElasticSearchSearchIndexBase {
                 similarToFields, similarToText,
                 getAllPropertyDefinitions(),
                 getConfig().getScoringStrategy(),
-                getConfig().getNameSubstitutionStrategy(),
+                this.nameSubstitutionStrategy,
                 authorizations);
     }
 

@@ -40,6 +40,7 @@ public class ElasticSearchParentChildSearchIndex extends ElasticSearchSearchInde
     private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(ElasticSearchParentChildSearchIndex.class);
     public static final String PROPERTY_TYPE = "property";
     private String[] parentDocumentFields;
+    private NameSubstitutionStrategy nameSubstitutionStrategy;
     private final ThreadLocal<Map<IndexInfo, BulkRequest>> bulkRequestsByIndexInfo = new ThreadLocal<Map<IndexInfo, BulkRequest>>() {
         @Override
         protected Map<IndexInfo, BulkRequest> initialValue() {
@@ -49,6 +50,7 @@ public class ElasticSearchParentChildSearchIndex extends ElasticSearchSearchInde
 
     public ElasticSearchParentChildSearchIndex(GraphConfiguration config) {
         super(config);
+        this.nameSubstitutionStrategy = getConfig().getNameSubstitutionStrategy();
     }
 
     @Override
@@ -151,9 +153,8 @@ public class ElasticSearchParentChildSearchIndex extends ElasticSearchSearchInde
             Visibility propertyVisibility,
             Authorizations authorizations
     ) {
-        NameSubstitutionStrategy substitutionStrategy = getConfig().getNameSubstitutionStrategy();
-        propertyKey = substitutionStrategy.deflate(propertyKey);
-        propertyName = substitutionStrategy.deflate(propertyName);
+        propertyKey = this.nameSubstitutionStrategy.deflate(propertyKey);
+        propertyName = this.nameSubstitutionStrategy.deflate(propertyName);
         String propertyString = propertyKey + ":" + propertyName + ":" + propertyVisibility.getVisibilityString();
         String indexName = getIndexName(element);
         String id = getChildDocId(element, propertyKey, propertyName, propertyVisibility);
@@ -266,8 +267,7 @@ public class ElasticSearchParentChildSearchIndex extends ElasticSearchSearchInde
     }
 
     private String getChildDocId(Element element, String key, String name, Visibility visibility) {
-        NameSubstitutionStrategy substitutionStrategy = getConfig().getNameSubstitutionStrategy();
-        return element.getId() + "_" + substitutionStrategy.deflate(name) + "_" + substitutionStrategy.deflate(key);
+        return element.getId() + "_" + this.nameSubstitutionStrategy.deflate(name) + "_" + this.nameSubstitutionStrategy.deflate(key);
     }
 
     @SuppressWarnings("unused")
@@ -350,7 +350,7 @@ public class ElasticSearchParentChildSearchIndex extends ElasticSearchSearchInde
                 .startObject();
 
         Object propertyValue = property.getValue();
-        String propertyName = getConfig().getNameSubstitutionStrategy().deflate(property.getName());
+        String propertyName = this.nameSubstitutionStrategy.deflate(property.getName());
         if (propertyValue != null && shouldIgnoreType(propertyValue.getClass())) {
             return null;
         } else if (propertyValue instanceof GeoPoint) {
@@ -405,7 +405,7 @@ public class ElasticSearchParentChildSearchIndex extends ElasticSearchSearchInde
                 queryString,
                 getAllPropertyDefinitions(),
                 getConfig().getScoringStrategy(),
-                getConfig().getNameSubstitutionStrategy(),
+                this.nameSubstitutionStrategy,
                 authorizations);
     }
 
@@ -419,7 +419,7 @@ public class ElasticSearchParentChildSearchIndex extends ElasticSearchSearchInde
                 queryString,
                 getAllPropertyDefinitions(),
                 getConfig().getScoringStrategy(),
-                getConfig().getNameSubstitutionStrategy(),
+                this.nameSubstitutionStrategy,
                 authorizations);
     }
 
@@ -432,7 +432,7 @@ public class ElasticSearchParentChildSearchIndex extends ElasticSearchSearchInde
                 similarToFields, similarToText,
                 getAllPropertyDefinitions(),
                 getConfig().getScoringStrategy(),
-                getConfig().getNameSubstitutionStrategy(),
+                this.nameSubstitutionStrategy,
                 authorizations);
     }
 
