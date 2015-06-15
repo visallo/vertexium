@@ -47,6 +47,7 @@ public class AccumuloGraphConfiguration extends GraphConfiguration {
     public static final String BATCHWRITER_MAX_LATENCY = BATCHWRITER_CONFIG_PREFIX + ".maxLatency";
     public static final String BATCHWRITER_TIMEOUT = BATCHWRITER_CONFIG_PREFIX + ".timeout";
     public static final String BATCHWRITER_MAX_WRITE_THREADS = BATCHWRITER_CONFIG_PREFIX + ".maxWriteThreads";
+    public static final String NUMBER_OF_QUERY_THREADS = "numberOfQueryThreads";
 
     public static final String DEFAULT_ACCUMULO_PASSWORD = "password";
     public static final String DEFAULT_VALUE_SERIALIZER = JavaValueSerializer.class.getName();
@@ -65,6 +66,7 @@ public class AccumuloGraphConfiguration extends GraphConfiguration {
     public static final Long DEFAULT_BATCHWRITER_TIMEOUT = Long.MAX_VALUE;
     public static final Integer DEFAULT_BATCHWRITER_MAX_WRITE_THREADS = 3;
     public static final Integer DEFAULT_ACCUMULO_MAX_VERSIONS = null;
+    public static final int DEFAULT_NUMBER_OF_QUERY_THREADS = 10;
 
     public AccumuloGraphConfiguration(Map config) {
         super(config);
@@ -180,5 +182,9 @@ public class AccumuloGraphConfiguration extends GraphConfiguration {
 
     public Integer getMaxVersions() {
         return getInteger(ACCUMULO_MAX_VERSIONS, DEFAULT_ACCUMULO_MAX_VERSIONS);
+    }
+
+    public int getNumberOfQueryThreads() {
+        return getInt(NUMBER_OF_QUERY_THREADS, DEFAULT_NUMBER_OF_QUERY_THREADS);
     }
 }
