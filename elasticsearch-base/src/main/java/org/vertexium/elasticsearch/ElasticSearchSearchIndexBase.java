@@ -84,10 +84,6 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex, Searc
         loadPropertyDefinitions();
     }
 
-    protected NameSubstitutionStrategy getNameSubstitutionStrategy () {
-        return nameSubstitutionStrategy;
-    }
-
     protected void loadIndexInfos() {
         Set<String> indicesToQuery = IterableUtils.toSet(getConfig().getIndicesToQuery());
         Map<String, IndexStats> indices = client.admin().indices().prepareStats().execute().actionGet().getIndices();

@@ -139,7 +139,7 @@ public class ElasticSearchSearchIndex extends ElasticSearchSearchIndexBase {
             visibilityStrings.add(property.getVisibility().getVisibilityString());
 
             Object propertyValue = property.getValue();
-            String propertyName = getNameSubstitutionStrategy().deflate(property.getName());
+            String propertyName = getConfig().getNameSubstitutionStrategy().deflate(property.getName());
             if (propertyValue != null && shouldIgnoreType(propertyValue.getClass())) {
                 continue;
             } else if (propertyValue instanceof GeoPoint) {

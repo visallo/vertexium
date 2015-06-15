@@ -151,7 +151,7 @@ public class ElasticSearchParentChildSearchIndex extends ElasticSearchSearchInde
             Visibility propertyVisibility,
             Authorizations authorizations
     ) {
-        NameSubstitutionStrategy substitutionStrategy = getNameSubstitutionStrategy();
+        NameSubstitutionStrategy substitutionStrategy = getConfig().getNameSubstitutionStrategy();
         propertyKey = substitutionStrategy.deflate(propertyKey);
         propertyName = substitutionStrategy.deflate(propertyName);
         String propertyString = propertyKey + ":" + propertyName + ":" + propertyVisibility.getVisibilityString();
@@ -266,7 +266,7 @@ public class ElasticSearchParentChildSearchIndex extends ElasticSearchSearchInde
     }
 
     private String getChildDocId(Element element, String key, String name, Visibility visibility) {
-        NameSubstitutionStrategy substitutionStrategy = getNameSubstitutionStrategy();
+        NameSubstitutionStrategy substitutionStrategy = getConfig().getNameSubstitutionStrategy();
         return element.getId() + "_" + substitutionStrategy.deflate(name) + "_" + substitutionStrategy.deflate(key);
     }
 
@@ -350,7 +350,7 @@ public class ElasticSearchParentChildSearchIndex extends ElasticSearchSearchInde
                 .startObject();
 
         Object propertyValue = property.getValue();
-        String propertyName = getNameSubstitutionStrategy().deflate(property.getName());
+        String propertyName = getConfig().getNameSubstitutionStrategy().deflate(property.getName());
         if (propertyValue != null && shouldIgnoreType(propertyValue.getClass())) {
             return null;
         } else if (propertyValue instanceof GeoPoint) {
