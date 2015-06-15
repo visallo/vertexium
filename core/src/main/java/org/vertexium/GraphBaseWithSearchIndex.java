@@ -5,9 +5,11 @@ import org.vertexium.query.GraphQuery;
 import org.vertexium.query.MultiVertexQuery;
 import org.vertexium.query.SimilarToGraphQuery;
 import org.vertexium.search.SearchIndex;
+import org.vertexium.search.SearchIndexWithVertexPropertyCountByValue;
 import org.vertexium.util.ToElementIterable;
 
 import java.io.IOException;
+import java.util.Map;
 
 public abstract class GraphBaseWithSearchIndex extends GraphBase implements Graph {
     public static final String METADATA_DEFINE_PROPERTY_PREFIX = "defineProperty.";
@@ -161,5 +163,13 @@ public abstract class GraphBaseWithSearchIndex extends GraphBase implements Grap
     @Override
     public SearchIndexSecurityGranularity getSearchIndexSecurityGranularity() {
         return getSearchIndex().getSearchIndexSecurityGranularity();
+    }
+
+    @Override
+    public Map<Object, Long> getVertexPropertyCountByValue(String propertyName, Authorizations authorizations) {
+        if (getSearchIndex() instanceof SearchIndexWithVertexPropertyCountByValue) {
+            return ((SearchIndexWithVertexPropertyCountByValue)getSearchIndex()).getVertexPropertyCountByValue(propertyName, authorizations);
+        }
+        return super.getVertexPropertyCountByValue(propertyName, authorizations);
     }
 }

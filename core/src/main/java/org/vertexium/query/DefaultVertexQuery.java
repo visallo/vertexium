@@ -1,7 +1,6 @@
 package org.vertexium.query;
 
 import org.vertexium.*;
-import org.vertexium.*;
 
 import java.util.EnumSet;
 import java.util.Map;

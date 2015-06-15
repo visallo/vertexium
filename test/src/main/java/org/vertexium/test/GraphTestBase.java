@@ -8,8 +8,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.vertexium.*;
 import org.vertexium.event.*;
 import org.vertexium.mutation.ElementMutation;
@@ -25,6 +23,8 @@ import org.vertexium.type.GeoCircle;
 import org.vertexium.type.GeoPoint;
 import org.vertexium.util.ConvertingIterable;
 import org.vertexium.util.IterableUtils;
+import org.vertexium.util.VertexiumLogger;
+import org.vertexium.util.VertexiumLoggerFactory;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -39,7 +39,7 @@ import static org.vertexium.util.IterableUtils.toList;
 
 @RunWith(JUnit4.class)
 public abstract class GraphTestBase {
-    private static final Logger LOGGER = LoggerFactory.getLogger(GraphTestBase.class);
+    private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(GraphTestBase.class);
     public static final String VISIBILITY_A_STRING = "a";
     public static final String VISIBILITY_B_STRING = "b";
     public static final String VISIBILITY_C_STRING = "c";
@@ -1146,7 +1146,6 @@ public abstract class GraphTestBase {
      * This tests simulates two workspaces w1 (via A) and w1 (vis B).
      * Both w1 and w2 has e1 on it.
      * e1 is linked to e2.
-
      * What happens if w1 (vis A) marks e1 hidden, then deletes itself?
      */
     @Test
@@ -1845,7 +1844,7 @@ public abstract class GraphTestBase {
     @Test
     public void testDisableEdgeIndexing() throws NoSuchFieldException, IllegalAccessException {
         if (!disableEdgeIndexing(graph)) {
-            LOGGER.info("skipping " + SearchIndex.class.getSimpleName() + " doesn't support disabling index");
+            LOGGER.info("skipping %s doesn't support disabling index", SearchIndex.class.getSimpleName());
             return;
         }
 
@@ -1867,7 +1866,7 @@ public abstract class GraphTestBase {
     public void testGraphQueryHasWithSpaces() {
         graph.prepareVertex("v1", VISIBILITY_A)
                 .setProperty("name", "Joe Ferner", VISIBILITY_A)
-                .setProperty("propWithHyphen", "hyphen-word", VISIBILITY_A)
+                .setProperty("propWithNonAlphaCharacters", "hyphen-word, etc.", VISIBILITY_A)
                 .save(AUTHORIZATIONS_A_AND_B);
         graph.prepareVertex("v2", VISIBILITY_A)
                 .setProperty("name", "Joe Smith", VISIBILITY_A)
@@ -1924,7 +1923,7 @@ public abstract class GraphTestBase {
         Assert.assertEquals(1, count(vertices));
 
         vertices = graph.query(AUTHORIZATIONS_A)
-                .has("propWithHyphen", TextPredicate.CONTAINS, "hyphen-word")
+                .has("propWithNonAlphaCharacters", TextPredicate.CONTAINS, "hyphen-word, etc.")
                 .vertices();
         Assert.assertEquals(1, count(vertices));
     }
@@ -2062,14 +2061,21 @@ public abstract class GraphTestBase {
         Vertex v3 = graph.addVertex("v3", VISIBILITY_A, AUTHORIZATIONS_ALL);
         v3.setProperty("prop1", "value3", VISIBILITY_A, AUTHORIZATIONS_ALL);
 
-        Edge ev1v2 = graph.addEdge("e v1->v2", v1, v2, "edgeA", VISIBILITY_A, AUTHORIZATIONS_A);
-        Edge ev1v3 = graph.addEdge("e v1->v3", v1, v3, "edgeA", VISIBILITY_A, AUTHORIZATIONS_A);
+        Edge ev1v2 = graph.prepareEdge("e v1->v2", v1, v2, "edgeA", VISIBILITY_A)
+                .setProperty("prop1", "value1", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
+        Edge ev1v3 = graph.prepareEdge("e v1->v3", v1, v3, "edgeB", VISIBILITY_A)
+                .setProperty("prop1", "value2", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
 
         v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
         Iterable<Vertex> vertices = v1.query(AUTHORIZATIONS_A).vertices();
         Assert.assertEquals(2, count(vertices));
         org.vertexium.test.util.IterableUtils.assertContains(v2, vertices);
         org.vertexium.test.util.IterableUtils.assertContains(v3, vertices);
+        if (vertices instanceof IterableWithTotalHits) {
+            assertEquals(2, ((IterableWithTotalHits) vertices).getTotalHits());
+        }
 
         vertices = v1.query(AUTHORIZATIONS_A)
                 .has("prop1", "value2")
@@ -2078,11 +2084,6 @@ public abstract class GraphTestBase {
         org.vertexium.test.util.IterableUtils.assertContains(v2, vertices);
 
         Iterable<Edge> edges = v1.query(AUTHORIZATIONS_A).edges();
-        Assert.assertEquals(2, count(edges));
-        org.vertexium.test.util.IterableUtils.assertContains(ev1v2, edges);
-        org.vertexium.test.util.IterableUtils.assertContains(ev1v3, edges);
-
-        edges = v1.query(AUTHORIZATIONS_A).edges(Direction.OUT);
         Assert.assertEquals(2, count(edges));
         org.vertexium.test.util.IterableUtils.assertContains(ev1v2, edges);
         org.vertexium.test.util.IterableUtils.assertContains(ev1v3, edges);
@@ -2409,14 +2410,14 @@ public abstract class GraphTestBase {
         endTime = new Date();
         long findRelatedEdgesTime = endTime.getTime() - startTime.getTime();
 
-        LOGGER.info(String.format(
+        LOGGER.info(
                 "RESULTS\ntotalNumberOfVertices,totalNumberOfEdges,totalVerticesToCheck,insertVerticesTime,insertEdgesTime,findRelatedEdgesTime\n%d,%d,%d,%d,%d,%d",
                 totalNumberOfVertices,
                 totalNumberOfEdges,
                 totalVerticesToCheck,
                 insertVerticesTime,
                 insertEdgesTime,
-                findRelatedEdgesTime));
+                findRelatedEdgesTime);
     }
 
     @Test
@@ -3014,7 +3015,7 @@ public abstract class GraphTestBase {
     @Test
     public void testSimilarityByText() {
         if (!graph.isQuerySimilarToTextSupported()) {
-            LOGGER.warn("skipping test. Graph " + graph.getClass().getName() + " does not support query similar to text");
+            LOGGER.warn("skipping test. Graph %s does not support query similar to text", graph.getClass().getName());
             return;
         }
 
@@ -3171,6 +3172,84 @@ public abstract class GraphTestBase {
         assertEquals("e1 should not exist", 0, count(graph.getEdges(FetchHint.ALL, time25.getTime(), AUTHORIZATIONS_A)));
     }
 
+    @Test
+    public void testGraphQueryWithTermsAggregation() {
+        boolean searchIndexFieldLevelSecurity = graph instanceof GraphBaseWithSearchIndex ? ((GraphBaseWithSearchIndex) graph).getSearchIndex().isFieldLevelSecuritySupported() : true;
+        graph.defineProperty("name").dataType(String.class).textIndexHint(TextIndexHint.EXACT_MATCH).define();
+
+        graph.prepareVertex("v1", VISIBILITY_EMPTY)
+                .addPropertyValue("k1", "name", "Joe", VISIBILITY_EMPTY)
+                .addPropertyValue("k2", "name", "Joseph", VISIBILITY_EMPTY)
+                .addPropertyValue("", "age", 25, VISIBILITY_EMPTY)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.prepareVertex("v2", VISIBILITY_EMPTY)
+                .addPropertyValue("k1", "name", "Joe", VISIBILITY_EMPTY)
+                .addPropertyValue("k2", "name", "Joseph", VISIBILITY_B)
+                .addPropertyValue("", "age", 20, VISIBILITY_EMPTY)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.prepareEdge("e1", "v1", "v2", VISIBILITY_EMPTY)
+                .addPropertyValue("k1", "name", "Joe", VISIBILITY_EMPTY)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        Map<Object, Long> vertexPropertyCountByValue = queryGraphQueryWithTermsAggregation("name", AUTHORIZATIONS_EMPTY);
+        if (vertexPropertyCountByValue == null) {
+            return;
+        }
+        assertEquals(2, vertexPropertyCountByValue.size());
+        assertEquals(searchIndexFieldLevelSecurity ? 2L : 1L, (long) vertexPropertyCountByValue.get("Joe"));
+        assertEquals(1L, (long) vertexPropertyCountByValue.get("Joseph"));
+
+        vertexPropertyCountByValue = queryGraphQueryWithTermsAggregation("name", AUTHORIZATIONS_A_AND_B);
+        if (vertexPropertyCountByValue == null) {
+            return;
+        }
+        assertEquals(2, vertexPropertyCountByValue.size());
+        assertEquals(2L, (long) vertexPropertyCountByValue.get("Joe"));
+        assertEquals(2L, (long) vertexPropertyCountByValue.get("Joseph"));
+    }
+
+    private Map<Object, Long> queryGraphQueryWithTermsAggregation(String propertyName, Authorizations authorizations) {
+        Query q = graph.query(authorizations).limit(0);
+        if (!(q instanceof GraphQueryWithTermsAggregation)) {
+            LOGGER.warn("%s unsupported", GraphQueryWithTermsAggregation.class.getName());
+            return null;
+        }
+        q = ((GraphQueryWithTermsAggregation) q).addTermsAggregation("terms-count", propertyName);
+        return termsBucketToMap(((IterableWithTermsResults) q.vertices()).getTermsResults("terms-count").getBuckets());
+    }
+
+    @Test
+    public void testGetVertexPropertyCountByValue() {
+        boolean searchIndexFieldLevelSecurity = graph instanceof GraphBaseWithSearchIndex ? ((GraphBaseWithSearchIndex) graph).getSearchIndex().isFieldLevelSecuritySupported() : true;
+        graph.defineProperty("name").dataType(String.class).textIndexHint(TextIndexHint.EXACT_MATCH).define();
+
+        graph.prepareVertex("v1", VISIBILITY_EMPTY)
+                .addPropertyValue("k1", "name", "Joe", VISIBILITY_EMPTY)
+                .addPropertyValue("k2", "name", "Joseph", VISIBILITY_EMPTY)
+                .addPropertyValue("", "age", 25, VISIBILITY_EMPTY)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.prepareVertex("v2", VISIBILITY_EMPTY)
+                .addPropertyValue("k1", "name", "Joe", VISIBILITY_EMPTY)
+                .addPropertyValue("k2", "name", "Joseph", VISIBILITY_B)
+                .addPropertyValue("", "age", 20, VISIBILITY_EMPTY)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.prepareEdge("e1", "v1", "v2", VISIBILITY_EMPTY)
+                .addPropertyValue("k1", "name", "Joe", VISIBILITY_EMPTY)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        Map<Object, Long> vertexPropertyCountByValue = graph.getVertexPropertyCountByValue("name", AUTHORIZATIONS_EMPTY);
+        assertEquals(2, vertexPropertyCountByValue.size());
+        assertEquals(searchIndexFieldLevelSecurity ? 2L : 1L, (long) vertexPropertyCountByValue.get("Joe"));
+        assertEquals(1L, (long) vertexPropertyCountByValue.get("Joseph"));
+
+        vertexPropertyCountByValue = graph.getVertexPropertyCountByValue("name", AUTHORIZATIONS_A_AND_B);
+        assertEquals(2, vertexPropertyCountByValue.size());
+        assertEquals(2L, (long) vertexPropertyCountByValue.get("Joe"));
+        assertEquals(2L, (long) vertexPropertyCountByValue.get("Joseph"));
+    }
+
     private List<Vertex> getVertices(long count) {
         List<Vertex> vertices = new ArrayList<>();
         for (int i = 0; i < count; i++) {
@@ -3301,6 +3380,14 @@ public abstract class GraphTestBase {
             }
             return null;
         }
+    }
+
+    private Map<Object, Long> termsBucketToMap(Iterable<TermsBucket> buckets) {
+        Map<Object, Long> results = new HashMap<>();
+        for (TermsBucket termsBucket : buckets) {
+            results.put(termsBucket.getKey(), termsBucket.getCount());
+        }
+        return results;
     }
 
     protected abstract boolean isEdgeBoostSupported();

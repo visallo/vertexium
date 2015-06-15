@@ -1,30 +1,40 @@
 package org.vertexium.elasticsearch;
 
-import org.elasticsearch.action.admin.indices.mapping.put.PutMappingResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.delete.DeleteResponse;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
+import org.elasticsearch.action.search.SearchRequestBuilder;
+import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.search.SearchType;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.elasticsearch.index.query.AndFilterBuilder;
+import org.elasticsearch.index.query.FilteredQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.index.query.TermFilterBuilder;
+import org.elasticsearch.search.aggregations.bucket.terms.Terms;
+import org.elasticsearch.search.aggregations.bucket.terms.TermsBuilder;
 import org.vertexium.*;
 import org.vertexium.property.StreamingPropertyValue;
 import org.vertexium.query.GraphQuery;
 import org.vertexium.query.SimilarToGraphQuery;
+import org.vertexium.query.VertexQuery;
 import org.vertexium.type.GeoCircle;
 import org.vertexium.type.GeoPoint;
 import org.vertexium.util.StreamUtils;
+import org.vertexium.util.VertexiumLogger;
+import org.vertexium.util.VertexiumLoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 public class ElasticSearchSearchIndex extends ElasticSearchSearchIndexBase {
-    private static final Logger LOGGER = LoggerFactory.getLogger(ElasticSearchSearchIndex.class);
-    private static final Logger ADD_ELEMENT_LOGGER = LoggerFactory.getLogger(ElasticSearchSearchIndex.class.getName() + ".ADDELEMENT");
+    private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(ElasticSearchSearchIndex.class);
 
     public ElasticSearchSearchIndex(GraphConfiguration config) {
         super(config);
@@ -32,8 +42,8 @@ public class ElasticSearchSearchIndex extends ElasticSearchSearchIndexBase {
 
     @Override
     public void addElement(Graph graph, Element element, Authorizations authorizations) {
-        if (ADD_ELEMENT_LOGGER.isTraceEnabled()) {
-            ADD_ELEMENT_LOGGER.trace("addElement: " + element.getId());
+        if (MUTATION_LOGGER.isTraceEnabled()) {
+            MUTATION_LOGGER.trace("addElement: %s", element.getId());
         }
         if (!getConfig().isIndexEdges() && element instanceof Edge) {
             return;
@@ -44,8 +54,8 @@ public class ElasticSearchSearchIndex extends ElasticSearchSearchIndexBase {
         try {
             XContentBuilder jsonBuilder = buildJsonContentFromElement(graph, indexInfo, element, authorizations);
             XContentBuilder source = jsonBuilder.endObject();
-            if (ADD_ELEMENT_LOGGER.isTraceEnabled()) {
-                ADD_ELEMENT_LOGGER.trace("addElement json: " + source.string());
+            if (MUTATION_LOGGER.isTraceEnabled()) {
+                MUTATION_LOGGER.trace("addElement json: %s", source.string());
             }
 
             IndexResponse response = getClient()
@@ -82,7 +92,9 @@ public class ElasticSearchSearchIndex extends ElasticSearchSearchIndexBase {
     public void deleteElement(Graph graph, Element element, Authorizations authorizations) {
         String indexName = getIndexName(element);
         String id = element.getId();
-        LOGGER.debug("deleting document " + id);
+        if (MUTATION_LOGGER.isTraceEnabled()) {
+            LOGGER.trace("deleting document %s", id);
+        }
         DeleteResponse deleteResponse = getClient().delete(
                 getClient()
                         .prepareDelete(indexName, ELEMENT_TYPE, id)
@@ -190,8 +202,8 @@ public class ElasticSearchSearchIndex extends ElasticSearchSearchIndexBase {
             return element;
         }
 
-        if (ADD_ELEMENT_LOGGER.isTraceEnabled()) {
-            ADD_ELEMENT_LOGGER.debug("Reindexing element " + element.getId());
+        if (MUTATION_LOGGER.isTraceEnabled()) {
+            MUTATION_LOGGER.trace("Reindexing element %s", element.getId());
         }
         existingElement.mergeProperties(element);
 
@@ -222,7 +234,7 @@ public class ElasticSearchSearchIndex extends ElasticSearchSearchIndexBase {
                 .endObject()
                 .endObject();
         if (LOGGER.isTraceEnabled()) {
-            LOGGER.trace("addPropertyToIndex: " + dataType.getName() + ": " + mapping.string());
+            LOGGER.trace("addPropertyToIndex: %s: %s", dataType.getName(), mapping.string());
         }
 
         getClient()
@@ -240,7 +252,7 @@ public class ElasticSearchSearchIndex extends ElasticSearchSearchIndexBase {
 
     @Override
     public GraphQuery queryGraph(Graph graph, String queryString, Authorizations authorizations) {
-        return new ElasticSearchGraphQuery(
+        return new ElasticSearchSearchGraphQuery(
                 getClient(),
                 getConfig().getIndicesToQuery(),
                 graph,
@@ -251,8 +263,21 @@ public class ElasticSearchSearchIndex extends ElasticSearchSearchIndexBase {
     }
 
     @Override
+    public VertexQuery queryVertex(Graph graph, Vertex vertex, String queryString, Authorizations authorizations) {
+        return new ElasticSearchSearchVertexQuery(
+                getClient(),
+                getConfig().getIndicesToQuery(),
+                graph,
+                vertex,
+                queryString,
+                getAllPropertyDefinitions(),
+                getConfig().getScoringStrategy(),
+                authorizations);
+    }
+
+    @Override
     public SimilarToGraphQuery querySimilarTo(Graph graph, String[] similarToFields, String similarToText, Authorizations authorizations) {
-        return new ElasticSearchGraphQuery(
+        return new ElasticSearchSearchGraphQuery(
                 getClient(),
                 getConfig().getIndicesToQuery(),
                 graph,
@@ -263,7 +288,47 @@ public class ElasticSearchSearchIndex extends ElasticSearchSearchIndexBase {
     }
 
     @Override
+    public boolean isFieldLevelSecuritySupported() {
+        return false;
+    }
+
+    @Override
     public SearchIndexSecurityGranularity getSearchIndexSecurityGranularity() {
         return SearchIndexSecurityGranularity.DOCUMENT;
+    }
+
+    @Override
+    public Map<Object, Long> getVertexPropertyCountByValue(String propertyName, Authorizations authorizations) {
+        PropertyDefinition propertyDefinition = getAllPropertyDefinitions().get(propertyName);
+        if (propertyDefinition != null && propertyDefinition.getTextIndexHints().contains(TextIndexHint.EXACT_MATCH)) {
+            propertyName = propertyDefinition.getPropertyName() + EXACT_MATCH_PROPERTY_NAME_SUFFIX;
+        }
+
+        String countAggName = "count";
+        TermsBuilder countAgg = new TermsBuilder(countAggName)
+                .field(propertyName)
+                .size(500000);
+        AuthorizationFilterBuilder authorizationFilterBuilder = new AuthorizationFilterBuilder(authorizations.getAuthorizations());
+        TermFilterBuilder elementTypeFilterBuilder = new TermFilterBuilder(ELEMENT_TYPE_FIELD_NAME, ELEMENT_TYPE_VERTEX);
+        AndFilterBuilder andFilterBuilder = new AndFilterBuilder(authorizationFilterBuilder, elementTypeFilterBuilder);
+        FilteredQueryBuilder queryBuilder = QueryBuilders.filteredQuery(
+                QueryBuilders.matchAllQuery(),
+                andFilterBuilder
+        );
+        SearchRequestBuilder q = getClient().prepareSearch(getIndexNamesAsArray())
+                .setQuery(queryBuilder)
+                .setSearchType(SearchType.COUNT)
+                .addAggregation(countAgg);
+        if (ElasticSearchQueryBase.QUERY_LOGGER.isTraceEnabled()) {
+            ElasticSearchQueryBase.QUERY_LOGGER.trace("query: %s", q);
+        }
+        SearchResponse response = getClient().search(q.request()).actionGet();
+        Terms propertyCountResults = response.getAggregations().get(countAggName);
+
+        Map<Object, Long> results = new HashMap<>();
+        for (Terms.Bucket propertyCountResult : propertyCountResults.getBuckets()) {
+            results.put(propertyCountResult.getKey(), propertyCountResult.getDocCount());
+        }
+        return results;
     }
 }

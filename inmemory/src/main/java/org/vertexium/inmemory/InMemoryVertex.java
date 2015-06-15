@@ -12,11 +12,11 @@ import org.vertexium.util.IterableUtils;
 
 import java.util.EnumSet;
 
-public class InMemoryVertex extends InMemoryElement implements Vertex {
+public class InMemoryVertex extends InMemoryElement<InMemoryVertex> implements Vertex {
     InMemoryVertex(
             InMemoryGraph graph,
             String id,
-            InMemoryTableElement inMemoryTableElement,
+            InMemoryTableVertex inMemoryTableElement,
             boolean includeHidden,
             Long endTime,
             Authorizations authorizations

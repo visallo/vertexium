@@ -4,8 +4,8 @@ import org.apache.accumulo.minicluster.MiniAccumuloCluster;
 import org.apache.accumulo.minicluster.MiniAccumuloConfig;
 import org.apache.commons.io.FileUtils;
 import org.vertexium.accumulo.AccumuloGraphConfiguration;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.vertexium.util.VertexiumLogger;
+import org.vertexium.util.VertexiumLoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -13,7 +13,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class TestAccumuloCluster {
-    private static final Logger LOGGER = LoggerFactory.getLogger(TestAccumuloCluster.class);
+    private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(TestAccumuloCluster.class);
     private static final String ACCUMULO_USERNAME = "root";
     private static final String ACCUMULO_PASSWORD = "test";
     private static File tempDir;
@@ -32,7 +32,7 @@ public class TestAccumuloCluster {
         tempDir = File.createTempFile("blueprints-accumulo-temp", Long.toString(System.nanoTime()));
         tempDir.delete();
         tempDir.mkdir();
-        LOGGER.info("writing to: " + tempDir);
+        LOGGER.info("writing to: %s", tempDir);
 
         MiniAccumuloConfig miniAccumuloConfig = new MiniAccumuloConfig(tempDir, ACCUMULO_PASSWORD);
         accumulo = new MiniAccumuloCluster(miniAccumuloConfig);

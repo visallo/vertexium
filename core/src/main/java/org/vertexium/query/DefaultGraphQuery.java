@@ -1,15 +1,14 @@
 package org.vertexium.query;
 
 import org.vertexium.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.vertexium.*;
+import org.vertexium.util.VertexiumLogger;
+import org.vertexium.util.VertexiumLoggerFactory;
 
 import java.util.EnumSet;
 import java.util.Map;
 
 public class DefaultGraphQuery extends GraphQueryBase {
-    private static final Logger LOGGER = LoggerFactory.getLogger(DefaultGraphQuery.class);
+    private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(DefaultGraphQuery.class);
 
     public DefaultGraphQuery(Graph graph, String queryString, Map<String, PropertyDefinition> propertyDefinitions, Authorizations authorizations) {
         super(graph, queryString, propertyDefinitions, authorizations);

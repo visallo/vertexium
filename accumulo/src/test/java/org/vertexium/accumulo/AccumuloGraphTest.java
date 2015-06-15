@@ -12,12 +12,12 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.vertexium.*;
 import org.vertexium.accumulo.keys.KeyBase;
 import org.vertexium.test.GraphTestBase;
 import org.vertexium.util.IterableUtils;
+import org.vertexium.util.VertexiumLogger;
+import org.vertexium.util.VertexiumLoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -32,7 +32,7 @@ import static org.junit.Assert.*;
 
 @RunWith(JUnit4.class)
 public class AccumuloGraphTest extends GraphTestBase {
-    private static final Logger LOGGER = LoggerFactory.getLogger(AccumuloGraphTest.class);
+    private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(AccumuloGraphTest.class);
     private final String ACCUMULO_USERNAME = "root";
     private final String ACCUMULO_PASSWORD = "test";
     private File tempDir;
@@ -209,7 +209,7 @@ public class AccumuloGraphTest extends GraphTestBase {
         tempDir = File.createTempFile("accumulo-temp", Long.toString(System.nanoTime()));
         tempDir.delete();
         tempDir.mkdir();
-        LOGGER.info("writing to: " + tempDir);
+        LOGGER.info("writing to: %s", tempDir);
 
         MiniAccumuloConfig miniAccumuloConfig = new MiniAccumuloConfig(tempDir, ACCUMULO_PASSWORD);
         accumulo = new MiniAccumuloCluster(miniAccumuloConfig);

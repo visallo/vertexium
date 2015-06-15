@@ -7,20 +7,26 @@ import org.elasticsearch.action.deletebyquery.IndexDeleteByQueryResponse;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexRequestBuilder;
+import org.elasticsearch.action.search.SearchRequestBuilder;
+import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.search.SearchType;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
-import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.index.query.*;
 import org.elasticsearch.rest.RestStatus;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.elasticsearch.search.aggregations.bucket.terms.Terms;
+import org.elasticsearch.search.aggregations.bucket.terms.TermsBuilder;
 import org.vertexium.*;
 import org.vertexium.elasticsearch.utils.GetResponseUtil;
 import org.vertexium.property.StreamingPropertyValue;
 import org.vertexium.query.GraphQuery;
 import org.vertexium.query.SimilarToGraphQuery;
+import org.vertexium.query.VertexQuery;
 import org.vertexium.type.GeoCircle;
 import org.vertexium.type.GeoPoint;
 import org.vertexium.util.StreamUtils;
+import org.vertexium.util.VertexiumLogger;
+import org.vertexium.util.VertexiumLoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -30,8 +36,7 @@ import java.util.List;
 import java.util.Map;
 
 public class ElasticSearchParentChildSearchIndex extends ElasticSearchSearchIndexBase {
-    private static final Logger LOGGER = LoggerFactory.getLogger(ElasticSearchParentChildSearchIndex.class);
-    private static final Logger ADD_ELEMENT_LOGGER = LoggerFactory.getLogger(ElasticSearchParentChildSearchIndex.class.getName() + ".ADDELEMENT");
+    private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(ElasticSearchParentChildSearchIndex.class);
     public static final String PROPERTY_TYPE = "property";
     private String[] parentDocumentFields;
     private final ThreadLocal<Map<IndexInfo, BulkRequest>> bulkRequestsByIndexInfo = new ThreadLocal<Map<IndexInfo, BulkRequest>>() {
@@ -118,21 +123,21 @@ public class ElasticSearchParentChildSearchIndex extends ElasticSearchSearchInde
         }
         if (LOGGER.isDebugEnabled()) {
             for (IndexDeleteByQueryResponse r : response) {
-                LOGGER.debug("deleted child document " + r.toString());
+                LOGGER.debug("deleted child document %s", r.toString());
             }
         }
     }
 
     private void deleteParentDocument(String indexName, Element element) {
         String id = element.getId();
-        LOGGER.debug("deleting parent document " + id);
+        LOGGER.debug("deleting parent document %s", id);
         DeleteResponse deleteResponse = getClient().delete(
                 getClient()
                         .prepareDelete(indexName, ELEMENT_TYPE, id)
                         .request()
         ).actionGet();
         if (!deleteResponse.isFound()) {
-            LOGGER.warn("Could not delete element " + element.getId());
+            LOGGER.warn("Could not delete element %s", element.getId());
         }
     }
 
@@ -154,19 +159,19 @@ public class ElasticSearchParentChildSearchIndex extends ElasticSearchSearchInde
                         .request()
         ).actionGet();
         if (!deleteResponse.isFound()) {
-            LOGGER.warn("Could not delete property " + element.getId() + " " + propertyString);
+            LOGGER.warn("Could not delete property %s %s", element.getId(), propertyString);
         }
-        LOGGER.debug("deleted property " + element.getId() + " " + propertyString);
+        LOGGER.debug("deleted property %s %s", element.getId(), propertyString);
     }
 
     @Override
     public void addElement(Graph graph, Element element, Authorizations authorizations) {
-        if (ADD_ELEMENT_LOGGER.isTraceEnabled()) {
-            ADD_ELEMENT_LOGGER.trace("addElement: " + element.getId());
+        if (MUTATION_LOGGER.isTraceEnabled()) {
+            MUTATION_LOGGER.trace("addElement: %s", element.getId());
         }
         if (!getConfig().isIndexEdges() && element instanceof Edge) {
-            if (ADD_ELEMENT_LOGGER.isDebugEnabled()) {
-                ADD_ELEMENT_LOGGER.debug("skipping edge: " + element.getId());
+            if (MUTATION_LOGGER.isDebugEnabled()) {
+                MUTATION_LOGGER.debug("skipping edge: %s", element.getId());
             }
             return;
         }
@@ -242,8 +247,8 @@ public class ElasticSearchParentChildSearchIndex extends ElasticSearchSearchInde
 
         String id = getChildDocId(element, property);
 
-        if (ADD_ELEMENT_LOGGER.isTraceEnabled()) {
-            ADD_ELEMENT_LOGGER.trace("addElement child (" + element.getId() + "): " + jsonBuilder.string());
+        if (MUTATION_LOGGER.isTraceEnabled()) {
+            MUTATION_LOGGER.trace("addElement child (%s): %s", element.getId(), jsonBuilder.string());
         }
 
         IndexRequestBuilder builder = getClient().prepareIndex(indexInfo.getIndexName(), PROPERTY_TYPE, id);
@@ -301,8 +306,8 @@ public class ElasticSearchParentChildSearchIndex extends ElasticSearchSearchInde
         if (!changed) {
             return null;
         }
-        if (ADD_ELEMENT_LOGGER.isTraceEnabled()) {
-            ADD_ELEMENT_LOGGER.trace("addElement parent: " + jsonBuilder.string());
+        if (MUTATION_LOGGER.isTraceEnabled()) {
+            MUTATION_LOGGER.trace("addElement parent: %s", jsonBuilder.string());
         }
         return new IndexRequest(indexInfo.getIndexName(), ELEMENT_TYPE, id).source(jsonBuilder);
     }
@@ -398,6 +403,19 @@ public class ElasticSearchParentChildSearchIndex extends ElasticSearchSearchInde
     }
 
     @Override
+    public VertexQuery queryVertex(Graph graph, Vertex vertex, String queryString, Authorizations authorizations) {
+        return new ElasticSearchParentChildVertexQuery(
+                getClient(),
+                getConfig().getIndicesToQuery(),
+                graph,
+                vertex,
+                queryString,
+                getAllPropertyDefinitions(),
+                getConfig().getScoringStrategy(),
+                authorizations);
+    }
+
+    @Override
     public SimilarToGraphQuery querySimilarTo(Graph graph, String[] similarToFields, String similarToText, Authorizations authorizations) {
         return new ElasticSearchParentChildGraphQuery(
                 getClient(),
@@ -407,6 +425,11 @@ public class ElasticSearchParentChildSearchIndex extends ElasticSearchSearchInde
                 getAllPropertyDefinitions(),
                 getConfig().getScoringStrategy(),
                 authorizations);
+    }
+
+    @Override
+    public boolean isFieldLevelSecuritySupported() {
+        return true;
     }
 
     @Override
@@ -451,5 +474,44 @@ public class ElasticSearchParentChildSearchIndex extends ElasticSearchSearchInde
     @Override
     public SearchIndexSecurityGranularity getSearchIndexSecurityGranularity() {
         return SearchIndexSecurityGranularity.PROPERTY;
+    }
+
+    @Override
+    public Map<Object, Long> getVertexPropertyCountByValue(String propertyName, Authorizations authorizations) {
+        PropertyDefinition propertyDefinition = getAllPropertyDefinitions().get(propertyName);
+        if (propertyDefinition != null && propertyDefinition.getTextIndexHints().contains(TextIndexHint.EXACT_MATCH)) {
+            propertyName = propertyDefinition.getPropertyName() + EXACT_MATCH_PROPERTY_NAME_SUFFIX;
+        }
+
+        String countAggName = "count";
+        TermsBuilder countAgg = new TermsBuilder(countAggName)
+                .field(propertyName)
+                .size(500000);
+        AuthorizationFilterBuilder authorizationFilterBuilder = new AuthorizationFilterBuilder(authorizations.getAuthorizations());
+        TermFilterBuilder elementTypeFilterBuilder = new TermFilterBuilder(ELEMENT_TYPE_FIELD_NAME, ELEMENT_TYPE_VERTEX);
+        AndFilterBuilder andFilterBuilder = new AndFilterBuilder(authorizationFilterBuilder, elementTypeFilterBuilder);
+        FilteredQueryBuilder elementQueryBuilder = QueryBuilders.filteredQuery(
+                QueryBuilders.matchAllQuery(),
+                andFilterBuilder
+        );
+        FilteredQueryBuilder query = QueryBuilders.filteredQuery(
+                new HasParentQueryBuilder(ELEMENT_TYPE, elementQueryBuilder),
+                new AuthorizationFilterBuilder(authorizations.getAuthorizations())
+        );
+        SearchRequestBuilder q = getClient().prepareSearch(getIndexNamesAsArray())
+                .setQuery(query)
+                .setSearchType(SearchType.COUNT)
+                .addAggregation(countAgg);
+        if (ElasticSearchQueryBase.QUERY_LOGGER.isTraceEnabled()) {
+            ElasticSearchQueryBase.QUERY_LOGGER.trace("query: %s", q);
+        }
+        SearchResponse response = getClient().search(q.request()).actionGet();
+        Terms propertyCountResults = response.getAggregations().get(countAggName);
+
+        Map<Object, Long> results = new HashMap<>();
+        for (Terms.Bucket propertyCountResult : propertyCountResults.getBuckets()) {
+            results.put(propertyCountResult.getKey(), propertyCountResult.getDocCount());
+        }
+        return results;
     }
 }

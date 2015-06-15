@@ -15,13 +15,13 @@ import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 import org.vertexium.accumulo.AccumuloGraphConfiguration;
 import org.vertexium.accumulo.serializer.ValueSerializer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.vertexium.util.VertexiumLogger;
+import org.vertexium.util.VertexiumLoggerFactory;
 
 import java.io.IOException;
 
 public abstract class MRMigrationBase extends Configured implements Tool {
-    private static final Logger LOGGER = LoggerFactory.getLogger(MRMigrationBase.class);
+    private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(MRMigrationBase.class);
 
     protected static void run(MRMigrationBase mr, String[] args) throws Exception {
         int res = ToolRunner.run(new Configuration(), mr, args);
@@ -95,7 +95,7 @@ public abstract class MRMigrationBase extends Configured implements Tool {
             try {
                 safeMap(key, value, context);
             } catch (Throwable ex) {
-                LOGGER.error("Failed to process row: " + key, ex);
+                LOGGER.error("Failed to process row: %s", key, ex);
             }
         }
 

@@ -16,22 +16,24 @@ import org.elasticsearch.common.settings.ImmutableSettings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.vertexium.*;
 import org.vertexium.property.StreamingPropertyValue;
 import org.vertexium.query.*;
 import org.vertexium.search.SearchIndex;
+import org.vertexium.search.SearchIndexWithVertexPropertyCountByValue;
 import org.vertexium.type.GeoCircle;
 import org.vertexium.type.GeoPoint;
 import org.vertexium.util.IterableUtils;
 import org.vertexium.util.Preconditions;
+import org.vertexium.util.VertexiumLogger;
+import org.vertexium.util.VertexiumLoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
 
-public abstract class ElasticSearchSearchIndexBase implements SearchIndex {
-    private static final Logger LOGGER = LoggerFactory.getLogger(ElasticSearchSearchIndexBase.class);
+public abstract class ElasticSearchSearchIndexBase implements SearchIndex, SearchIndexWithVertexPropertyCountByValue {
+    private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(ElasticSearchSearchIndexBase.class);
+    protected static final VertexiumLogger MUTATION_LOGGER = VertexiumLoggerFactory.getMutationLogger(SearchIndex.class);
     public static final String ELEMENT_TYPE = "element";
     public static final String ELEMENT_TYPE_FIELD_NAME = "__elementType";
     public static final String VISIBILITY_FIELD_NAME = "__visibility";
@@ -84,7 +86,7 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex {
         Map<String, IndexStats> indices = client.admin().indices().prepareStats().execute().actionGet().getIndices();
         for (String indexName : indices.keySet()) {
             if (!indicesToQuery.contains(indexName)) {
-                LOGGER.debug("skipping index " + indexName + ", not in indicesToQuery");
+                LOGGER.debug("skipping index %s, not in indicesToQuery", indexName);
                 continue;
             }
 
@@ -93,7 +95,7 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex {
                 continue;
             }
 
-            LOGGER.debug("loading index info for " + indexName);
+            LOGGER.debug("loading index info for %s", indexName);
             indexInfo = createIndexInfo(indexName);
             indexInfos.put(indexName, indexInfo);
         }
@@ -159,9 +161,9 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex {
         ClusterHealthResponse health = client.admin().cluster().prepareHealth(indexName)
                 .setWaitForGreenStatus()
                 .execute().actionGet();
-        LOGGER.debug("Index status: " + health.toString());
+        LOGGER.debug("Index status: %s", health.toString());
         if (health.isTimedOut()) {
-            LOGGER.warn("timed out waiting for green index status, for index: " + indexName);
+            LOGGER.warn("timed out waiting for green index status, for index: %s", indexName);
         }
     }
 
@@ -320,7 +322,7 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex {
             }
 
             if (bulkRequest.numberOfActions() >= MAX_BATCH_COUNT || bulkRequest.estimatedSizeInBytes() > MAX_BATCH_SIZE) {
-                LOGGER.debug("adding elements... " + bulkRequest.numberOfActions() + " (est size " + bulkRequest.estimatedSizeInBytes() + ")");
+                LOGGER.debug("adding elements... %d (est size %d)", bulkRequest.numberOfActions(), bulkRequest.estimatedSizeInBytes());
                 totalCount += bulkRequest.numberOfActions();
                 doBulkRequest(bulkRequest);
                 bulkRequest = new BulkRequest();
@@ -332,12 +334,12 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex {
         }
         for (BulkRequest bulkRequest : bulkRequests.values()) {
             if (bulkRequest.numberOfActions() > 0) {
-                LOGGER.debug("adding elements... " + bulkRequest.numberOfActions() + " (est size " + bulkRequest.estimatedSizeInBytes() + ")");
+                LOGGER.debug("adding elements... %d (est size %d)", bulkRequest.numberOfActions(), bulkRequest.estimatedSizeInBytes());
                 totalCount += bulkRequest.numberOfActions();
                 doBulkRequest(bulkRequest);
             }
         }
-        LOGGER.debug("added " + totalCount + " elements");
+        LOGGER.debug("added %d elements", totalCount);
 
         if (getConfig().isAutoFlush()) {
             flush();
@@ -356,17 +358,15 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex {
     }
 
     @Override
+    public abstract VertexQuery queryVertex(Graph graph, Vertex vertex, String queryString, Authorizations authorizations);
+
+    @Override
     public boolean isQuerySimilarToTextSupported() {
         return true;
     }
 
     @Override
     public abstract SimilarToGraphQuery querySimilarTo(Graph graph, String[] similarToFields, String similarToText, Authorizations authorizations);
-
-    @Override
-    public VertexQuery queryVertex(Graph graph, Vertex vertex, String queryString, Authorizations authorizations) {
-        return new DefaultVertexQuery(graph, vertex, queryString, getAllPropertyDefinitions(), authorizations);
-    }
 
     public Map<String, PropertyDefinition> getAllPropertyDefinitions() {
         Map<String, PropertyDefinition> allPropertyDefinitions = new HashMap<>();
@@ -400,7 +400,7 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex {
 
     @Override
     public void addPropertyDefinition(PropertyDefinition propertyDefinition) throws IOException {
-        LOGGER.debug("adding property definition: " + propertyDefinition);
+        LOGGER.debug("adding property definition: %s", propertyDefinition.toString());
         for (String indexName : getIndexNames(propertyDefinition)) {
             IndexInfo indexInfo = ensureIndexCreatedAndInitialized(indexName, getConfig().isStoreSourceData());
 
@@ -510,45 +510,45 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex {
 
     protected void addTypeToMapping(XContentBuilder mapping, String propertyName, Class dataType, boolean analyzed, Double boost) throws IOException {
         if (dataType == String.class) {
-            LOGGER.debug("Registering string type for {}", propertyName);
+            LOGGER.debug("Registering string type for %s", propertyName);
             mapping.field("type", "string");
             if (!analyzed) {
                 mapping.field("index", "not_analyzed");
             }
         } else if (dataType == Float.class) {
-            LOGGER.debug("Registering float type for {}", propertyName);
+            LOGGER.debug("Registering float type for %s", propertyName);
             mapping.field("type", "float");
         } else if (dataType == Double.class) {
-            LOGGER.debug("Registering double type for {}", propertyName);
+            LOGGER.debug("Registering double type for %s", propertyName);
             mapping.field("type", "double");
         } else if (dataType == Byte.class) {
-            LOGGER.debug("Registering byte type for {}", propertyName);
+            LOGGER.debug("Registering byte type for %s", propertyName);
             mapping.field("type", "byte");
         } else if (dataType == Short.class) {
-            LOGGER.debug("Registering short type for {}", propertyName);
+            LOGGER.debug("Registering short type for %s", propertyName);
             mapping.field("type", "short");
         } else if (dataType == Integer.class) {
-            LOGGER.debug("Registering integer type for {}", propertyName);
+            LOGGER.debug("Registering integer type for %s", propertyName);
             mapping.field("type", "integer");
         } else if (dataType == Date.class || dataType == DateOnly.class) {
-            LOGGER.debug("Registering date type for {}", propertyName);
+            LOGGER.debug("Registering date type for %s", propertyName);
             mapping.field("type", "date");
         } else if (dataType == Long.class) {
-            LOGGER.debug("Registering long type for {}", propertyName);
+            LOGGER.debug("Registering long type for %s", propertyName);
             mapping.field("type", "long");
         } else if (dataType == Boolean.class) {
-            LOGGER.debug("Registering boolean type for {}", propertyName);
+            LOGGER.debug("Registering boolean type for %s", propertyName);
             mapping.field("type", "boolean");
         } else if (dataType == GeoPoint.class) {
-            LOGGER.debug("Registering geo_point type for {}", propertyName);
+            LOGGER.debug("Registering geo_point type for %s", propertyName);
             mapping.field("type", "geo_point");
         } else if (dataType == GeoCircle.class) {
-            LOGGER.debug("Registering geo_shape type for {}", propertyName);
+            LOGGER.debug("Registering geo_shape type for %s", propertyName);
             mapping.field("type", "geo_shape");
             mapping.field("tree", "quadtree");
             mapping.field("precision", "100m");
         } else if (Number.class.isAssignableFrom(dataType)) {
-            LOGGER.debug("Registering double type for {}", propertyName);
+            LOGGER.debug("Registering double type for %s", propertyName);
             mapping.field("type", "double");
         } else {
             throw new VertexiumException("Unexpected value type for property \"" + propertyName + "\": " + dataType.getName());
@@ -564,7 +564,7 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex {
         if (response.hasFailures()) {
             for (BulkItemResponse bulkResponse : response) {
                 if (bulkResponse.isFailed()) {
-                    LOGGER.error("Failed to index " + bulkResponse.getId() + " (message: " + bulkResponse.getFailureMessage() + ")");
+                    LOGGER.error("Failed to index %s (message: %s)", bulkResponse.getId(), bulkResponse.getFailureMessage());
                 }
             }
             throw new VertexiumException("Could not add element.");

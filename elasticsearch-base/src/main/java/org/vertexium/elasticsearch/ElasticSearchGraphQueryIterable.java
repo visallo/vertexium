@@ -29,7 +29,7 @@ public class ElasticSearchGraphQueryIterable<T extends Element> extends DefaultG
     private final SearchResponse searchResponse;
     private final long totalHits;
     private final long searchTimeInNanoSeconds;
-    private final Map<String, Double> scores = new HashMap<String, Double>();
+    private final Map<String, Double> scores = new HashMap<>();
 
     public ElasticSearchGraphQueryIterable(SearchResponse searchResponse, QueryParameters parameters, Iterable<T> iterable, boolean evaluateQueryString, boolean evaluateHasContainers, long totalHits, long searchTimeInNanoSeconds, SearchHits hits) {
         super(parameters, iterable, evaluateQueryString, evaluateHasContainers);
@@ -58,7 +58,7 @@ public class ElasticSearchGraphQueryIterable<T extends Element> extends DefaultG
 
     @Override
     public HistogramResult getHistogramResults(String name) {
-        List<HistogramBucket> buckets = new ArrayList<HistogramBucket>();
+        List<HistogramBucket> buckets = new ArrayList<>();
         Aggregation agg = this.searchResponse.getAggregations().get(name);
         if (agg == null) {
             return null;
@@ -81,7 +81,7 @@ public class ElasticSearchGraphQueryIterable<T extends Element> extends DefaultG
 
     @Override
     public TermsResult getTermsResults(String name) {
-        List<TermsBucket> buckets = new ArrayList<TermsBucket>();
+        List<TermsBucket> buckets = new ArrayList<>();
         Aggregation agg = this.searchResponse.getAggregations().get(name);
         if (agg == null) {
             return null;
@@ -99,7 +99,7 @@ public class ElasticSearchGraphQueryIterable<T extends Element> extends DefaultG
 
     @Override
     public GeohashResult getGeohashResults(String name) {
-        List<GeohashBucket> buckets = new ArrayList<GeohashBucket>();
+        List<GeohashBucket> buckets = new ArrayList<>();
         Aggregation agg = this.searchResponse.getAggregations().get(name);
         if (agg == null) {
             return null;

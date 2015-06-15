@@ -9,8 +9,8 @@ import org.vertexium.query.GraphQuery;
 
 import java.util.Map;
 
-public class ElasticSearchParentChildGraphQuery extends ElasticSearchParentChildQueryBase implements GraphQuery {
-    public ElasticSearchParentChildGraphQuery(
+public class ElasticSearchSearchGraphQuery extends ElasticSearchSearchQueryBase implements GraphQuery {
+    public ElasticSearchSearchGraphQuery(
             TransportClient client,
             String[] indicesToQuery,
             Graph graph,
@@ -22,7 +22,7 @@ public class ElasticSearchParentChildGraphQuery extends ElasticSearchParentChild
         super(client, indicesToQuery, graph, queryString, propertyDefinitions, scoringStrategy, authorizations);
     }
 
-    public ElasticSearchParentChildGraphQuery(
+    public ElasticSearchSearchGraphQuery(
             TransportClient client,
             String[] indicesToQuery,
             Graph graph,

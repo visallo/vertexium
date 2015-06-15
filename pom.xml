@@ -75,6 +75,9 @@
         <maven.plugin.release.version>2.5</maven.plugin.release.version>
         <maven.plugin.scm.version>1.8.1</maven.plugin.scm.version>
         <maven.plugin.surefire.version>2.16</maven.plugin.surefire.version>
+        <maven.plugin.jar.version>2.4</maven.plugin.jar.version>
+        <maven.plugin.surefire.version>2.4.2</maven.plugin.surefire.version>
+        <maven.plugin.buildnumber.version>1.2</maven.plugin.buildnumber.version>
 
         <!-- used by: elasticsearch -->
         <elasticsearch.version>1.4.0</elasticsearch.version>
@@ -91,7 +94,6 @@
         <!-- used by: examples-base -->
         <webster.version>1.0.0</webster.version>
         <jetty.version>9.2.5.v20141112</jetty.version>
-        <maven-surefire-plugin.version>2.4.2</maven-surefire-plugin.version>
     </properties>
 
     <dependencyManagement>
@@ -224,9 +226,53 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>${maven-surefire-plugin.version}</version>
+                <version>${maven.plugin.surefire.version}</version>
                 <configuration>
                     <skipTests>true</skipTests>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>buildnumber-maven-plugin</artifactId>
+                <version>${maven.plugin.buildnumber.version}</version>
+                <executions>
+                    <execution>
+                        <id>create-build-number</id>
+                        <phase>initialize</phase>
+                        <goals>
+                            <goal>create</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>create-formatted-timestamp</id>
+                        <phase>initialize</phase>
+                        <goals>
+                            <goal>create-timestamp</goal>
+                        </goals>
+                        <configuration>
+                            <timestampFormat>EEEE, MMMM dd, yyyy HH:mm:ss.sss zzz</timestampFormat>
+                            <timestampPropertyName>build.timestamp.formatted</timestampPropertyName>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>${maven.plugin.jar.version}</version>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+                        </manifest>
+                        <manifestEntries>
+                            <Built-On>${build.timestamp.formatted}</Built-On>
+                            <Built-On-Unix>${timestamp}</Built-On-Unix>
+                            <SCM-URL>${project.scm.url}</SCM-URL>
+                            <Git-Revision>${buildNumber}</Git-Revision>
+                            <Project-Version>${project.version}</Project-Version>
+                        </manifestEntries>
+                    </archive>
                 </configuration>
             </plugin>
         </plugins>
@@ -296,7 +342,7 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-surefire-plugin</artifactId>
-                        <version>${maven-surefire-plugin.version}</version>
+                        <version>${maven.plugin.surefire.version}</version>
                         <configuration>
                             <skipTests>false</skipTests>
                             <includes>

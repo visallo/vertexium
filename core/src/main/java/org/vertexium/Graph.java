@@ -858,4 +858,13 @@ public interface Graph {
      * @return A new authorizations object
      */
     Authorizations createAuthorizations(Authorizations auths, Collection<String> additionalAuthorizations);
+
+    /**
+     * Gets the number of times a property with the given propertyName occurs on vertices
+     *
+     * @param propertyName   The name of the property to find
+     * @param authorizations The authorizations to use to find the property
+     * @return The results
+     */
+    Map<Object, Long> getVertexPropertyCountByValue(String propertyName, Authorizations authorizations);
 }

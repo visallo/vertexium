@@ -11,8 +11,8 @@ import org.vertexium.elasticsearch.ElasticSearchSearchIndex;
 import org.vertexium.elasticsearch.ElasticSearchSearchIndexConfiguration;
 import org.vertexium.inmemory.InMemoryGraph;
 import org.vertexium.inmemory.InMemoryGraphConfiguration;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.vertexium.util.VertexiumLogger;
+import org.vertexium.util.VertexiumLoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -21,7 +21,7 @@ import java.util.Map;
 import java.util.UUID;
 
 public class ElasticSearchSearchIndexTestHelpers {
-    private static final Logger LOGGER = LoggerFactory.getLogger(ElasticSearchSearchIndexTestHelpers.class);
+    private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(ElasticSearchSearchIndexTestHelpers.class);
     public static final String ES_INDEX_NAME = "vertexium-test";
     private static File tempDir;
     private static Node elasticSearchNode;
@@ -49,7 +49,7 @@ public class ElasticSearchSearchIndexTestHelpers {
         tempDir = File.createTempFile("elasticsearch-temp", Long.toString(System.nanoTime()));
         tempDir.delete();
         tempDir.mkdir();
-        LOGGER.info("writing to: " + tempDir);
+        LOGGER.info("writing to: %s", tempDir);
 
         clusterName = UUID.randomUUID().toString();
         elasticSearchNode = NodeBuilder
@@ -70,7 +70,7 @@ public class ElasticSearchSearchIndexTestHelpers {
 
     public static void before() {
         if (elasticSearchNode.client().admin().indices().prepareExists(ES_INDEX_NAME).execute().actionGet().isExists()) {
-            LOGGER.info("deleting test index: " + ES_INDEX_NAME);
+            LOGGER.info("deleting test index: %s", ES_INDEX_NAME);
             elasticSearchNode.client().admin().indices().prepareDelete(ES_INDEX_NAME).execute().actionGet();
         }
 

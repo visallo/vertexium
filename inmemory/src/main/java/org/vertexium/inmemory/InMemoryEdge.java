@@ -8,7 +8,7 @@ import org.vertexium.search.IndexHint;
 
 import java.util.EnumSet;
 
-public class InMemoryEdge extends InMemoryElement implements Edge {
+public class InMemoryEdge extends InMemoryElement<InMemoryEdge> implements Edge {
     private final EdgeSetupMutation edgeSetupMutation;
 
     InMemoryEdge(
@@ -25,7 +25,7 @@ public class InMemoryEdge extends InMemoryElement implements Edge {
 
     @Override
     public String getLabel() {
-        return ((AlterEdgeLabelMutation) inMemoryTableElement.findLastMutation(AlterEdgeLabelMutation.class)).getNewEdgeLabel();
+        return inMemoryTableElement.findLastMutation(AlterEdgeLabelMutation.class).getNewEdgeLabel();
     }
 
     @Override

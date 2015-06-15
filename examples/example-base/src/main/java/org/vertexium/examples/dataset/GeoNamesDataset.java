@@ -4,17 +4,17 @@ import org.vertexium.Authorizations;
 import org.vertexium.Graph;
 import org.vertexium.Visibility;
 import org.vertexium.type.GeoPoint;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.vertexium.util.VertexiumLogger;
+import org.vertexium.util.VertexiumLoggerFactory;
 
 import java.io.*;
 import java.util.zip.GZIPInputStream;
 
 public class GeoNamesDataset extends Dataset {
-    private static final Logger LOGGER = LoggerFactory.getLogger(GeoNamesDataset.class);
+    private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(GeoNamesDataset.class);
 
     public void load(Graph graph, int numberOfVerticesToCreate, String[] visibilities, Authorizations authorizations) throws IOException {
-        LOGGER.debug("populating data count: " + numberOfVerticesToCreate);
+        LOGGER.debug("populating data count: %d", numberOfVerticesToCreate);
 
         File file = new File("../geonames-cities15000.txt.gz");
         BufferedReader br = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(file))));
@@ -23,7 +23,7 @@ public class GeoNamesDataset extends Dataset {
             String line;
             while (i < numberOfVerticesToCreate && (line = br.readLine()) != null) {
                 if (i % 1000 == 0) {
-                    LOGGER.debug("populating data " + i + "/" + numberOfVerticesToCreate);
+                    LOGGER.debug("populating data %d/%d", i, numberOfVerticesToCreate);
                 }
                 String[] lineParts = line.split("\t");
                 if (lineParts.length < 15) {

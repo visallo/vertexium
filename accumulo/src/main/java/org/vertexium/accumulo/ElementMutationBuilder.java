@@ -5,8 +5,6 @@ import org.apache.accumulo.core.data.Value;
 import org.apache.accumulo.core.security.ColumnVisibility;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.io.Text;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.vertexium.*;
 import org.vertexium.accumulo.keys.DataTableRowKey;
 import org.vertexium.accumulo.keys.PropertyColumnQualifier;
@@ -17,14 +15,12 @@ import org.vertexium.mutation.PropertyDeleteMutation;
 import org.vertexium.mutation.PropertyPropertyDeleteMutation;
 import org.vertexium.mutation.PropertySoftDeleteMutation;
 import org.vertexium.property.StreamingPropertyValue;
-import org.vertexium.util.LimitOutputStream;
-import org.vertexium.util.Preconditions;
-import org.vertexium.util.StreamUtils;
+import org.vertexium.util.*;
 
 import java.io.IOException;
 
 public abstract class ElementMutationBuilder {
-    private static final Logger LOGGER = LoggerFactory.getLogger(ElementMutationBuilder.class);
+    private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(ElementMutationBuilder.class);
     private static final Text EMPTY_TEXT = new Text("");
     public static final Value EMPTY_VALUE = new Value(new byte[0]);
 
@@ -242,7 +238,7 @@ public abstract class ElementMutationBuilder {
             }
 
             if (out.hasExceededSizeLimit()) {
-                LOGGER.debug(String.format("saved large file to \"%s\" (length: %d)", largeDataStore.getFullHdfsPath(), out.getLength()));
+                LOGGER.debug("saved large file to \"%s\" (length: %d)", largeDataStore.getFullHdfsPath(), out.getLength());
                 return new StreamingPropertyValueHdfsRef(largeDataStore.getRelativeFileName(), propertyValue);
             } else {
                 return saveStreamingPropertyValueSmall(rowKey, property, out.getSmall(), propertyValue);

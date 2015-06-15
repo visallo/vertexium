@@ -6,15 +6,15 @@ import com.google.common.collect.Maps;
 import org.apache.commons.lang3.tuple.MutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.vertexium.util.IterableUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.vertexium.util.VertexiumLogger;
+import org.vertexium.util.VertexiumLoggerFactory;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 public class SimpleSubstitutionUtils {
-    private static final Logger LOGGER = LoggerFactory.getLogger(SimpleSubstitutionUtils.class);
+    private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(SimpleSubstitutionUtils.class);
     public static final String SUBSTITUTION_MAP_PREFIX = "substitution";
     public static final String KEY_IDENTIFIER = "key";
     public static final String VALUE_IDENTIFIER = "value";
@@ -52,7 +52,7 @@ public class SimpleSubstitutionUtils {
         for (String key : keys) {
             Pair<String, String> pair = substitutionMap.get(key);
             finalMap.add(pair);
-            LOGGER.info(String.format("Using substitution %s -> %s", pair.getKey(), pair.getValue()));
+            LOGGER.info("Using substitution %s -> %s", pair.getKey(), pair.getValue());
         }
 
         return finalMap;

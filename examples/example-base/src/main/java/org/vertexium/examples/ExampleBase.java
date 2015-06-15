@@ -9,7 +9,6 @@ import org.eclipse.jetty.webapp.WebAppContext;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.vertexium.*;
-import org.vertexium.*;
 import org.vertexium.accumulo.AccumuloAuthorizations;
 import org.vertexium.accumulo.AccumuloGraph;
 import org.vertexium.examples.dataset.BabyNamesDataset;
@@ -18,8 +17,8 @@ import org.vertexium.examples.dataset.GeoNamesDataset;
 import org.vertexium.examples.dataset.ImdbDataset;
 import org.vertexium.util.IterableUtils;
 import org.vertexium.util.MapUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.vertexium.util.VertexiumLogger;
+import org.vertexium.util.VertexiumLoggerFactory;
 
 import javax.servlet.Servlet;
 import java.io.FileInputStream;
@@ -29,7 +28,7 @@ import java.util.Map;
 import java.util.Properties;
 
 public abstract class ExampleBase {
-    protected static final Logger LOGGER = LoggerFactory.getLogger(ExampleBase.class);
+    protected static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(ExampleBase.class);
     private static final String VISIBILITIES[] = new String[]{"a", "b", "c", "d"};
     private Dataset dataset;
 
@@ -74,7 +73,7 @@ public abstract class ExampleBase {
         if (!clear) {
             int count = IterableUtils.count(graph.getVertices(createAuthorizations(VISIBILITIES)));
             if (count >= verticesToCreate) {
-                LOGGER.debug("skipping clear graph. data already exists. count: " + count);
+                LOGGER.debug("skipping clear graph. data already exists. count: %d", count);
                 return;
             }
         }
@@ -115,7 +114,7 @@ public abstract class ExampleBase {
     }
 
     protected void addAuthorizationToUser(String visibilityString) {
-        LOGGER.debug("adding auth " + visibilityString);
+        LOGGER.debug("adding auth %s", visibilityString);
         if (getGraph() instanceof AccumuloGraph) {
             try {
                 org.apache.accumulo.core.client.Connector connector = ((AccumuloGraph) getGraph()).getConnector();
@@ -172,7 +171,7 @@ public abstract class ExampleBase {
 
         server.start();
 
-        LOGGER.info("Listening http://localhost:" + httpPort);
+        LOGGER.info("Listening http://localhost:%d", httpPort);
 
         return server;
     }

@@ -14,8 +14,6 @@ import org.apache.accumulo.core.iterators.user.WholeRowIterator;
 import org.apache.accumulo.core.security.ColumnVisibility;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.io.Text;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.vertexium.*;
 import org.vertexium.accumulo.iterator.ElementVisibilityRowFilter;
 import org.vertexium.accumulo.keys.PropertyColumnQualifier;
@@ -42,8 +40,7 @@ import java.util.*;
 import static org.vertexium.util.Preconditions.checkNotNull;
 
 public class AccumuloGraph extends GraphBaseWithSearchIndex {
-    private static final Logger LOGGER = LoggerFactory.getLogger(AccumuloGraph.class);
-    private static final Logger QUERY_LOGGER = LoggerFactory.getLogger(AccumuloGraph.class.getName() + ".QUERY");
+    private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(AccumuloGraph.class);
     private static final String ROW_DELETING_ITERATOR_NAME = RowDeletingIterator.class.getSimpleName();
     private static final int ROW_DELETING_ITERATOR_PRIORITY = 7;
     public static final Text DELETE_ROW_COLUMN_FAMILY = new Text("");
@@ -169,7 +166,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
         if (graphMetadataEntry.getKey().equals(METADATA_ACCUMULO_GRAPH_VERSION_KEY)) {
             if (graphMetadataEntry.getValue() instanceof Integer) {
                 accumuloGraphVersion = (Integer) graphMetadataEntry.getValue();
-                LOGGER.info(METADATA_ACCUMULO_GRAPH_VERSION_KEY + "=" + accumuloGraphVersion);
+                LOGGER.info("%s=%s", METADATA_ACCUMULO_GRAPH_VERSION_KEY, accumuloGraphVersion);
             } else {
                 throw new VertexiumException("Invalid accumulo version in metadata. " + graphMetadataEntry);
             }
@@ -218,7 +215,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
                     } catch (Exception ex) {
                         // If many processes are starting up at the same time (see YARN). It's possible that there will be a collision.
                         final int SLEEP_TIME = 5000;
-                        LOGGER.warn("Failed to attach RowDeletingIterator. Retrying in " + SLEEP_TIME + "ms.");
+                        LOGGER.warn("Failed to attach RowDeletingIterator. Retrying in %dms.", SLEEP_TIME);
                         Thread.sleep(SLEEP_TIME);
                         if (!connector.tableOperations().listIterators(tableName).containsKey(ROW_DELETING_ITERATOR_NAME)) {
                             connector.tableOperations().attachIterator(tableName, is);
@@ -1365,7 +1362,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
                 scanner.close();
                 if (QUERY_LOGGER.isTraceEnabled()) {
                     long timerEndTime = System.currentTimeMillis();
-                    QUERY_LOGGER.trace("accumulo iterator closed (time " + (timerEndTime - timerStartTime) + "ms)");
+                    QUERY_LOGGER.trace("accumulo iterator closed (time %dms)", timerEndTime - timerStartTime);
                 }
             }
         } catch (Exception ex) {
@@ -1558,6 +1555,9 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
     @Override
     public Iterable<String> findRelatedEdges(Iterable<String> vertexIds, Long endTime, Authorizations authorizations) {
         Set<String> vertexIdsSet = IterableUtils.toSet(vertexIds);
+        if (QUERY_LOGGER.isTraceEnabled()) {
+            QUERY_LOGGER.trace("findRelatedEdges:\n  %s", IterableUtils.join(vertexIdsSet, "\n  "));
+        }
 
         if (vertexIdsSet.size() == 0) {
             return new HashSet<>();
@@ -1571,10 +1571,11 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
         }
 
         int numQueryThreads = Math.min(Math.max(1, ranges.size() / 10), 10);
-        // only fetch one size of the edge since we are scanning all vertices the edge will appear on the out on one of the vertices
         Long startTime = null;
+        // only fetch one side of the edge since we are scanning all vertices the edge will appear on the out on one of the vertices
+        EnumSet<FetchHint> fetchHints = EnumSet.of(FetchHint.OUT_EDGE_REFS);
         BatchScanner batchScanner = createElementBatchScanner(
-                EnumSet.of(FetchHint.OUT_EDGE_REFS),
+                fetchHints,
                 ElementType.VERTEX,
                 1,
                 numQueryThreads,
@@ -1606,7 +1607,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
             batchScanner.close();
             if (QUERY_LOGGER.isTraceEnabled()) {
                 long timerEndTime = System.currentTimeMillis();
-                QUERY_LOGGER.trace("accumulo iterator closed (time " + (timerEndTime - timerStartTime) + "ms)");
+                QUERY_LOGGER.trace("accumulo iterator closed (time %dms)", timerEndTime - timerStartTime);
             }
         }
     }
@@ -1654,17 +1655,30 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
                 this.batchScanner.close();
                 if (QUERY_LOGGER.isTraceEnabled()) {
                     long timerEndTime = System.currentTimeMillis();
-                    QUERY_LOGGER.trace("accumulo iterator closed (time " + (timerEndTime - timerStartTime) + "ms)");
+                    QUERY_LOGGER.trace("accumulo iterator closed (time %dms)", timerEndTime - timerStartTime);
                 }
             }
         };
     }
 
     private void logStartIterator(Range range) {
-        QUERY_LOGGER.trace("begin accumulo iterator:\n  " + range.getStartKey() + " - " + range.getEndKey());
+        if (range == null || (range.getStartKey() == null && range.getEndKey() == null)) {
+            QUERY_LOGGER.trace("begin accumulo iterator: all items");
+        } else {
+            QUERY_LOGGER.trace("begin accumulo iterator: %s - %s", range.getStartKey(), range.getEndKey());
+        }
     }
 
     private void logStartIterator(Collection<Range> ranges) {
+        if (ranges.size() == 0) {
+            logStartIterator((Range) null);
+            return;
+        }
+        if (ranges.size() == 1) {
+            logStartIterator(ranges.iterator().next());
+            return;
+        }
+
         StringBuilder sb = new StringBuilder();
         boolean first = true;
         for (Range r : ranges) {
@@ -1674,7 +1688,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
             sb.append("  ").append(r.getStartKey()).append(" - ").append(r.getEndKey());
             first = false;
         }
-        QUERY_LOGGER.trace("begin accumulo iterator:\n" + sb.toString());
+        QUERY_LOGGER.trace("begin accumulo iterator:\n%s", sb.toString());
     }
 
     @Override
@@ -1748,7 +1762,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
                 scanner.close();
                 if (QUERY_LOGGER.isTraceEnabled()) {
                     long timerEndTime = System.currentTimeMillis();
-                    QUERY_LOGGER.trace("accumulo iterator closed (time " + (timerEndTime - timerStartTime) + "ms)");
+                    QUERY_LOGGER.trace("accumulo iterator closed (time %dms)", timerEndTime - timerStartTime);
                 }
             }
         };
@@ -1806,7 +1820,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
                 batchScanner.close();
                 if (QUERY_LOGGER.isTraceEnabled()) {
                     long timerEndTime = System.currentTimeMillis();
-                    QUERY_LOGGER.trace("accumulo iterator closed (time " + (timerEndTime - timerStartTime) + "ms)");
+                    QUERY_LOGGER.trace("accumulo iterator closed (time %dms)", timerEndTime - timerStartTime);
                 }
             }
         };
@@ -1864,7 +1878,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
                 batchScanner.close();
                 if (QUERY_LOGGER.isTraceEnabled()) {
                     long timerEndTime = System.currentTimeMillis();
-                    QUERY_LOGGER.trace("accumulo iterator closed (time " + (timerEndTime - timerStartTime) + "ms)");
+                    QUERY_LOGGER.trace("accumulo iterator closed (time %dms)", timerEndTime - timerStartTime);
                 }
             }
         };
@@ -1921,7 +1935,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
                 scanner.close();
                 if (QUERY_LOGGER.isTraceEnabled()) {
                     long timerEndTime = System.currentTimeMillis();
-                    QUERY_LOGGER.trace("accumulo iterator closed (time " + (timerEndTime - timerStartTime) + "ms)");
+                    QUERY_LOGGER.trace("accumulo iterator closed (time %dms)", timerEndTime - timerStartTime);
                 }
             }
         };

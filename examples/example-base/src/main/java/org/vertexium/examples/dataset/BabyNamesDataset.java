@@ -3,8 +3,8 @@ package org.vertexium.examples.dataset;
 import org.vertexium.Authorizations;
 import org.vertexium.Graph;
 import org.vertexium.Visibility;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.vertexium.util.VertexiumLogger;
+import org.vertexium.util.VertexiumLoggerFactory;
 
 import java.io.*;
 import java.util.Calendar;
@@ -12,10 +12,10 @@ import java.util.GregorianCalendar;
 import java.util.zip.GZIPInputStream;
 
 public class BabyNamesDataset extends Dataset {
-    private static final Logger LOGGER = LoggerFactory.getLogger(BabyNamesDataset.class);
+    private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(BabyNamesDataset.class);
 
     public void load(Graph graph, int numberOfVerticesToCreate, String[] visibilities, Authorizations authorizations) throws IOException {
-        LOGGER.debug("populating data count: " + numberOfVerticesToCreate);
+        LOGGER.debug("populating data count: %d", numberOfVerticesToCreate);
 
         File file = new File("../baby-names.txt.gz");
         BufferedReader br = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(file))));
@@ -24,7 +24,7 @@ public class BabyNamesDataset extends Dataset {
             String line;
             while (i < numberOfVerticesToCreate && (line = br.readLine()) != null) {
                 if (i % 1000 == 0) {
-                    LOGGER.debug("populating data " + i + "/" + numberOfVerticesToCreate);
+                    LOGGER.debug("populating data %d/%d", i, numberOfVerticesToCreate);
                 }
                 String[] lineParts = line.split(",");
                 if (lineParts.length != 4) {

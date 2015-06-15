@@ -1,7 +1,5 @@
 package org.vertexium.util;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.vertexium.GraphConfiguration;
 import org.vertexium.VertexiumException;
 
@@ -11,7 +9,7 @@ import java.util.Map;
 import static org.vertexium.util.Preconditions.checkNotNull;
 
 public class ConfigurationUtils {
-    private static final Logger LOGGER = LoggerFactory.getLogger(ConfigurationUtils.class);
+    private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(ConfigurationUtils.class);
 
     public static <T> T createProvider(GraphConfiguration config, String propPrefix, String defaultProvider) throws VertexiumException {
         String implClass = config.getString(propPrefix, defaultProvider);
@@ -22,7 +20,7 @@ public class ConfigurationUtils {
     @SuppressWarnings("unchecked")
     public static <T> T createProvider(String className, GraphConfiguration config) throws VertexiumException {
         checkNotNull(className, "className is required");
-        LOGGER.debug("creating provider " + className);
+        LOGGER.debug("creating provider %s", className);
         Class<GraphConfiguration> constructorParameterClass = GraphConfiguration.class;
         try {
             Class<?> clazz = Class.forName(className);
