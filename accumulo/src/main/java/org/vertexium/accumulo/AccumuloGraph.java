@@ -1555,8 +1555,8 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
     @Override
     public Iterable<String> findRelatedEdges(Iterable<String> vertexIds, Long endTime, Authorizations authorizations) {
         Set<String> vertexIdsSet = IterableUtils.toSet(vertexIds);
-        if (QUERY_LOGGER.isTraceEnabled()) {
-            QUERY_LOGGER.trace("findRelatedEdges:\n  %s", IterableUtils.join(vertexIdsSet, "\n  "));
+        if (LOGGER.isTraceEnabled()) {
+            LOGGER.trace("findRelatedEdges:\n  %s", IterableUtils.join(vertexIdsSet, "\n  "));
         }
 
         if (vertexIdsSet.size() == 0) {
@@ -1572,12 +1572,13 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
 
         int numQueryThreads = Math.min(Math.max(1, ranges.size() / 10), 10);
         Long startTime = null;
+        int maxVersions = 1;
         // only fetch one side of the edge since we are scanning all vertices the edge will appear on the out on one of the vertices
         EnumSet<FetchHint> fetchHints = EnumSet.of(FetchHint.OUT_EDGE_REFS);
         BatchScanner batchScanner = createElementBatchScanner(
                 fetchHints,
                 ElementType.VERTEX,
-                1,
+                maxVersions,
                 numQueryThreads,
                 startTime,
                 endTime,
@@ -1596,8 +1597,8 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
                 if (!c.getKey().getColumnFamily().equals(AccumuloVertex.CF_OUT_EDGE)) {
                     continue;
                 }
-                EdgeInfo edgeInfo = EdgeInfo.parse(c.getValue(), c.getKey().getTimestamp());
-                if (vertexIdsSet.contains(edgeInfo.getVertexId())) {
+                String edgeInfoVertexId = EdgeInfo.getVertexId(c.getValue());
+                if (vertexIdsSet.contains(edgeInfoVertexId)) {
                     String edgeId = c.getKey().getColumnQualifier().toString();
                     edgeIds.add(edgeId);
                 }
