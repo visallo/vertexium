@@ -18,6 +18,7 @@ import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsBuilder;
 import org.vertexium.*;
 import org.vertexium.elasticsearch.utils.GetResponseUtil;
+import org.vertexium.id.NameSubstitutionStrategy;
 import org.vertexium.property.StreamingPropertyValue;
 import org.vertexium.query.GraphQuery;
 import org.vertexium.query.SimilarToGraphQuery;
@@ -150,6 +151,9 @@ public class ElasticSearchParentChildSearchIndex extends ElasticSearchSearchInde
             Visibility propertyVisibility,
             Authorizations authorizations
     ) {
+        NameSubstitutionStrategy substitutionStrategy = getNameSubstitutionStrategy();
+        propertyKey = substitutionStrategy.deflate(propertyKey);
+        propertyName = substitutionStrategy.deflate(propertyName);
         String propertyString = propertyKey + ":" + propertyName + ":" + propertyVisibility.getVisibilityString();
         String indexName = getIndexName(element);
         String id = getChildDocId(element, propertyKey, propertyName, propertyVisibility);
@@ -262,7 +266,8 @@ public class ElasticSearchParentChildSearchIndex extends ElasticSearchSearchInde
     }
 
     private String getChildDocId(Element element, String key, String name, Visibility visibility) {
-        return element.getId() + "_" + name + "_" + key;
+        NameSubstitutionStrategy substitutionStrategy = getNameSubstitutionStrategy();
+        return element.getId() + "_" + substitutionStrategy.deflate(name) + "_" + substitutionStrategy.deflate(key);
     }
 
     @SuppressWarnings("unused")
@@ -345,6 +350,7 @@ public class ElasticSearchParentChildSearchIndex extends ElasticSearchSearchInde
                 .startObject();
 
         Object propertyValue = property.getValue();
+        String propertyName = getNameSubstitutionStrategy().deflate(property.getName());
         if (propertyValue != null && shouldIgnoreType(propertyValue.getClass())) {
             return null;
         } else if (propertyValue instanceof GeoPoint) {
@@ -357,7 +363,7 @@ public class ElasticSearchParentChildSearchIndex extends ElasticSearchSearchInde
                 return null;
             }
 
-            PropertyDefinition propertyDefinition = indexInfo.getPropertyDefinitions().get(property.getName());
+            PropertyDefinition propertyDefinition = indexInfo.getPropertyDefinitions().get(propertyName);
             if (propertyDefinition != null && !propertyDefinition.getTextIndexHints().contains(TextIndexHint.FULL_TEXT)) {
                 return null;
             }
@@ -371,19 +377,19 @@ public class ElasticSearchParentChildSearchIndex extends ElasticSearchSearchInde
                 throw new VertexiumException("Unhandled StreamingPropertyValue type: " + valueType.getName());
             }
         } else if (propertyValue instanceof String) {
-            PropertyDefinition propertyDefinition = indexInfo.getPropertyDefinitions().get(property.getName());
+            PropertyDefinition propertyDefinition = indexInfo.getPropertyDefinitions().get(propertyName);
             if (propertyDefinition == null || propertyDefinition.getTextIndexHints().contains(TextIndexHint.EXACT_MATCH)) {
-                jsonBuilder.field(property.getName() + EXACT_MATCH_PROPERTY_NAME_SUFFIX, propertyValue);
+                jsonBuilder.field(propertyName + EXACT_MATCH_PROPERTY_NAME_SUFFIX, propertyValue);
             }
             if (propertyDefinition == null || propertyDefinition.getTextIndexHints().contains(TextIndexHint.FULL_TEXT)) {
-                jsonBuilder.field(property.getName(), propertyValue);
+                jsonBuilder.field(propertyName, propertyValue);
             }
         } else {
             if (propertyValue instanceof DateOnly) {
                 propertyValue = ((DateOnly) propertyValue).getDate();
             }
 
-            jsonBuilder.field(property.getName(), propertyValue);
+            jsonBuilder.field(propertyName, propertyValue);
         }
         jsonBuilder.field(VISIBILITY_FIELD_NAME, property.getVisibility().getVisibilityString());
 
@@ -399,6 +405,7 @@ public class ElasticSearchParentChildSearchIndex extends ElasticSearchSearchInde
                 queryString,
                 getAllPropertyDefinitions(),
                 getConfig().getScoringStrategy(),
+                getConfig().getNameSubstitutionStrategy(),
                 authorizations);
     }
 
@@ -412,6 +419,7 @@ public class ElasticSearchParentChildSearchIndex extends ElasticSearchSearchInde
                 queryString,
                 getAllPropertyDefinitions(),
                 getConfig().getScoringStrategy(),
+                getConfig().getNameSubstitutionStrategy(),
                 authorizations);
     }
 
@@ -424,6 +432,7 @@ public class ElasticSearchParentChildSearchIndex extends ElasticSearchSearchInde
                 similarToFields, similarToText,
                 getAllPropertyDefinitions(),
                 getConfig().getScoringStrategy(),
+                getConfig().getNameSubstitutionStrategy(),
                 authorizations);
     }
 

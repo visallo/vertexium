@@ -17,6 +17,7 @@ import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.vertexium.*;
+import org.vertexium.id.NameSubstitutionStrategy;
 import org.vertexium.property.StreamingPropertyValue;
 import org.vertexium.query.*;
 import org.vertexium.search.SearchIndex;
@@ -48,9 +49,11 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex, Searc
     private final Map<String, IndexInfo> indexInfos = new HashMap<>();
     private int indexInfosLastSize = 0; // Used to prevent creating a index name array each time
     private String[] indexNamesAsArray;
+    private NameSubstitutionStrategy nameSubstitutionStrategy;
 
     protected ElasticSearchSearchIndexBase(GraphConfiguration config) {
         this.config = new ElasticSearchSearchIndexConfiguration(config);
+        nameSubstitutionStrategy = this.config.getNameSubstitutionStrategy();
 
         ImmutableSettings.Builder settingsBuilder = ImmutableSettings.settingsBuilder();
         if (getConfig().getClusterName() != null) {
@@ -79,6 +82,10 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex, Searc
 
         loadIndexInfos();
         loadPropertyDefinitions();
+    }
+
+    protected NameSubstitutionStrategy getNameSubstitutionStrategy () {
+        return nameSubstitutionStrategy;
     }
 
     protected void loadIndexInfos() {
@@ -186,12 +193,12 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex, Searc
         Map<String, String> propertyTypes = getPropertyTypesFromServer(indexName);
         for (Map.Entry<String, String> property : propertyTypes.entrySet()) {
             PropertyDefinition propertyDefinition = createPropertyDefinition(property, propertyTypes);
-            indexInfo.addPropertyDefinition(propertyDefinition.getPropertyName(), propertyDefinition);
+            indexInfo.addPropertyDefinition(nameSubstitutionStrategy.deflate(propertyDefinition.getPropertyName()), propertyDefinition);
         }
     }
 
     private PropertyDefinition createPropertyDefinition(Map.Entry<String, String> property, Map<String, String> propertyTypes) {
-        String propertyName = property.getKey();
+        String propertyName = nameSubstitutionStrategy.deflate(property.getKey());
         Class dataType = elasticSearchTypeToClass(property.getValue());
         Set<TextIndexHint> indexHints = new HashSet<>();
 
@@ -262,7 +269,7 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex, Searc
                     Map properties = (Map) sourceAsMap.get("properties");
                     for (Object propertyObj : properties.entrySet()) {
                         Map.Entry property = (Map.Entry) propertyObj;
-                        String propertyName = (String) property.getKey();
+                        String propertyName = nameSubstitutionStrategy.inflate((String) property.getKey());
                         try {
                             Map propertyAttributes = (Map) property.getValue();
                             String propertyType = (String) propertyAttributes.get("type");
@@ -401,25 +408,27 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex, Searc
     @Override
     public void addPropertyDefinition(PropertyDefinition propertyDefinition) throws IOException {
         LOGGER.debug("adding property definition: %s", propertyDefinition.toString());
+        String propertyName = nameSubstitutionStrategy.deflate(propertyDefinition.getPropertyName());
+
         for (String indexName : getIndexNames(propertyDefinition)) {
             IndexInfo indexInfo = ensureIndexCreatedAndInitialized(indexName, getConfig().isStoreSourceData());
 
             if (propertyDefinition.getDataType() == String.class) {
                 if (propertyDefinition.getTextIndexHints().contains(TextIndexHint.EXACT_MATCH)) {
-                    addPropertyToIndex(indexInfo, propertyDefinition.getPropertyName() + EXACT_MATCH_PROPERTY_NAME_SUFFIX, String.class, false, propertyDefinition.getBoost());
+                    addPropertyToIndex(indexInfo, propertyName + EXACT_MATCH_PROPERTY_NAME_SUFFIX, String.class, false, propertyDefinition.getBoost());
                 }
                 if (propertyDefinition.getTextIndexHints().contains(TextIndexHint.FULL_TEXT)) {
-                    addPropertyToIndex(indexInfo, propertyDefinition.getPropertyName(), String.class, true, propertyDefinition.getBoost());
+                    addPropertyToIndex(indexInfo, propertyName, String.class, true, propertyDefinition.getBoost());
                 }
             } else if (propertyDefinition.getDataType() == GeoPoint.class
                     || propertyDefinition.getDataType() == GeoCircle.class) {
-                addPropertyToIndex(indexInfo, propertyDefinition.getPropertyName() + GEO_PROPERTY_NAME_SUFFIX, propertyDefinition.getDataType(), true, propertyDefinition.getBoost());
-                addPropertyToIndex(indexInfo, propertyDefinition.getPropertyName(), String.class, true, propertyDefinition.getBoost());
+                addPropertyToIndex(indexInfo, propertyName + GEO_PROPERTY_NAME_SUFFIX, propertyDefinition.getDataType(), true, propertyDefinition.getBoost());
+                addPropertyToIndex(indexInfo, propertyName, String.class, true, propertyDefinition.getBoost());
             } else {
                 addPropertyToIndex(indexInfo, propertyDefinition);
             }
 
-            indexInfo.addPropertyDefinition(propertyDefinition.getPropertyName(), propertyDefinition);
+            indexInfo.addPropertyDefinition(propertyName, propertyDefinition);
         }
     }
 
@@ -458,11 +467,11 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex, Searc
     }
 
     private void addPropertyToIndex(IndexInfo indexInfo, PropertyDefinition propertyDefinition) throws IOException {
-        addPropertyToIndex(indexInfo, propertyDefinition.getPropertyName(), propertyDefinition.getDataType(), true, propertyDefinition.getBoost());
+        addPropertyToIndex(indexInfo, nameSubstitutionStrategy.deflate(propertyDefinition.getPropertyName()), propertyDefinition.getDataType(), true, propertyDefinition.getBoost());
     }
 
     public void addPropertyToIndex(IndexInfo indexInfo, Property property) throws IOException {
-        String propertyName = property.getName();
+        String propertyName = nameSubstitutionStrategy.deflate(property.getName());
 
         if (indexInfo.isPropertyDefined(propertyName)) {
             return;
