@@ -1555,6 +1555,9 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
     @Override
     public Iterable<String> findRelatedEdges(Iterable<String> vertexIds, Long endTime, Authorizations authorizations) {
         Set<String> vertexIdsSet = IterableUtils.toSet(vertexIds);
+        if (QUERY_LOGGER.isTraceEnabled()) {
+            QUERY_LOGGER.trace("findRelatedEdges:\n  %s", IterableUtils.join(vertexIdsSet, "\n  "));
+        }
 
         if (vertexIdsSet.size() == 0) {
             return new HashSet<>();
@@ -1659,10 +1662,23 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
     }
 
     private void logStartIterator(Range range) {
-        QUERY_LOGGER.trace("begin accumulo iterator:\n  %s - %s", range.getStartKey(), range.getEndKey());
+        if (range == null || (range.getStartKey() == null && range.getEndKey() == null)) {
+            QUERY_LOGGER.trace("begin accumulo iterator: all items");
+        } else {
+            QUERY_LOGGER.trace("begin accumulo iterator: %s - %s", range.getStartKey(), range.getEndKey());
+        }
     }
 
     private void logStartIterator(Collection<Range> ranges) {
+        if (ranges.size() == 0) {
+            logStartIterator((Range) null);
+            return;
+        }
+        if (ranges.size() == 1) {
+            logStartIterator(ranges.iterator().next());
+            return;
+        }
+
         StringBuilder sb = new StringBuilder();
         boolean first = true;
         for (Range r : ranges) {

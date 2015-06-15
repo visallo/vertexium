@@ -128,4 +128,17 @@ public class IterableUtils {
         close(it);
         return result;
     }
+
+    public static String join(Iterable items, String sep) {
+        boolean first = true;
+        StringBuilder sb = new StringBuilder();
+        for (Object o : items) {
+            if (!first) {
+                sb.append(sep);
+            }
+            sb.append(o);
+            first = false;
+        }
+        return sb.toString();
+    }
 }
