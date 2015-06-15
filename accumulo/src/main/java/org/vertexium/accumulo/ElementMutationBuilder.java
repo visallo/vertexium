@@ -44,7 +44,7 @@ public abstract class ElementMutationBuilder {
     protected abstract void saveVertexMutation(Mutation m);
 
     private Mutation createMutationForVertex(AccumuloVertex vertex) {
-        String vertexRowKey = AccumuloConstants.VERTEX_ROW_KEY_PREFIX + vertex.getId();
+        String vertexRowKey = AccumuloConstants.VERTEX_ROW_KEY_PREFIX.concat(vertex.getId());
         Mutation m = new Mutation(vertexRowKey);
         m.put(AccumuloVertex.CF_SIGNAL, EMPTY_TEXT, visibilityToAccumuloVisibility(vertex.getVisibility()), vertex.getTimestamp(), EMPTY_VALUE);
         for (PropertyDeleteMutation propertyDeleteMutation : vertex.getPropertyDeleteMutations()) {
@@ -70,13 +70,13 @@ public abstract class ElementMutationBuilder {
 
     private void saveEdgeInfoOnVertex(AccumuloEdge edge, String edgeLabel, ColumnVisibility edgeColumnVisibility) {
         // Update out vertex.
-        Mutation addEdgeToOutMutation = new Mutation(AccumuloConstants.VERTEX_ROW_KEY_PREFIX + edge.getVertexId(Direction.OUT));
+        Mutation addEdgeToOutMutation = new Mutation(AccumuloConstants.VERTEX_ROW_KEY_PREFIX.concat(edge.getVertexId(Direction.OUT)));
         EdgeInfo edgeInfo = new EdgeInfo(edgeLabel, edge.getVertexId(Direction.IN));
         addEdgeToOutMutation.put(AccumuloVertex.CF_OUT_EDGE, new Text(edge.getId()), edgeColumnVisibility, edgeInfo.toValue());
         saveVertexMutation(addEdgeToOutMutation);
 
         // Update in vertex.
-        Mutation addEdgeToInMutation = new Mutation(AccumuloConstants.VERTEX_ROW_KEY_PREFIX + edge.getVertexId(Direction.IN));
+        Mutation addEdgeToInMutation = new Mutation(AccumuloConstants.VERTEX_ROW_KEY_PREFIX.concat(edge.getVertexId(Direction.IN)));
         edgeInfo = new EdgeInfo(edgeLabel, edge.getVertexId(Direction.OUT));
         addEdgeToInMutation.put(AccumuloVertex.CF_IN_EDGE, new Text(edge.getId()), edgeColumnVisibility, edgeInfo.toValue());
         saveVertexMutation(addEdgeToInMutation);
@@ -97,7 +97,7 @@ public abstract class ElementMutationBuilder {
     protected abstract void saveEdgeMutation(Mutation m);
 
     private Mutation createMutationForEdge(AccumuloEdge edge, ColumnVisibility edgeColumnVisibility) {
-        String edgeRowKey = AccumuloConstants.EDGE_ROW_KEY_PREFIX + edge.getId();
+        String edgeRowKey = AccumuloConstants.EDGE_ROW_KEY_PREFIX.concat(edge.getId());
         Mutation m = new Mutation(edgeRowKey);
         String edgeLabel = edge.getLabel();
         if (edge.getNewEdgeLabel() != null) {
@@ -120,7 +120,7 @@ public abstract class ElementMutationBuilder {
     }
 
     private Mutation createAlterEdgeLabelMutation(AccumuloEdge edge, String newEdgeLabel, ColumnVisibility edgeColumnVisibility) {
-        String edgeRowKey = AccumuloConstants.EDGE_ROW_KEY_PREFIX + edge.getId();
+        String edgeRowKey = AccumuloConstants.EDGE_ROW_KEY_PREFIX.concat(edge.getId());
         Mutation m = new Mutation(edgeRowKey);
         m.putDelete(AccumuloEdge.CF_SIGNAL, new Text(edge.getLabel()), edgeColumnVisibility);
         m.put(AccumuloEdge.CF_SIGNAL, new Text(newEdgeLabel), edgeColumnVisibility, ElementMutationBuilder.EMPTY_VALUE);

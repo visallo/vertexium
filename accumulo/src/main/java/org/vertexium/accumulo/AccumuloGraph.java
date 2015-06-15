@@ -490,7 +490,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
             deleteEdge(edge, authorizations);
         }
 
-        addMutations(getVerticesWriter(), getDeleteRowMutation(AccumuloConstants.VERTEX_ROW_KEY_PREFIX + vertex.getId()));
+        addMutations(getVerticesWriter(), getDeleteRowMutation(AccumuloConstants.VERTEX_ROW_KEY_PREFIX.concat(vertex.getId())));
 
         if (hasEventListeners()) {
             queueEvent(new DeleteVertexEvent(this, vertex));
@@ -511,7 +511,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
             softDeleteEdge(edge, timestamp, authorizations);
         }
 
-        addMutations(getVerticesWriter(), getSoftDeleteRowMutation(AccumuloConstants.VERTEX_ROW_KEY_PREFIX + vertex.getId(), timestamp));
+        addMutations(getVerticesWriter(), getSoftDeleteRowMutation(AccumuloConstants.VERTEX_ROW_KEY_PREFIX.concat(vertex.getId()), timestamp));
 
         if (hasEventListeners()) {
             queueEvent(new SoftDeleteVertexEvent(this, vertex));
@@ -529,7 +529,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
             markEdgeHidden(edge, visibility, authorizations);
         }
 
-        addMutations(getVerticesWriter(), getMarkHiddenRowMutation(AccumuloConstants.VERTEX_ROW_KEY_PREFIX + vertex.getId(), columnVisibility));
+        addMutations(getVerticesWriter(), getMarkHiddenRowMutation(AccumuloConstants.VERTEX_ROW_KEY_PREFIX.concat(vertex.getId()), columnVisibility));
 
         if (hasEventListeners()) {
             queueEvent(new MarkHiddenVertexEvent(this, vertex));
@@ -547,7 +547,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
             markEdgeVisible(edge, visibility, authorizations);
         }
 
-        addMutations(getVerticesWriter(), getMarkVisibleRowMutation(AccumuloConstants.VERTEX_ROW_KEY_PREFIX + vertex.getId(), columnVisibility));
+        addMutations(getVerticesWriter(), getMarkVisibleRowMutation(AccumuloConstants.VERTEX_ROW_KEY_PREFIX.concat(vertex.getId()), columnVisibility));
 
         if (hasEventListeners()) {
             queueEvent(new MarkVisibleVertexEvent(this, vertex));
@@ -713,10 +713,10 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
 
     private String getRowKey(Element element) {
         if (element instanceof Vertex) {
-            return AccumuloConstants.VERTEX_ROW_KEY_PREFIX + element.getId();
+            return AccumuloConstants.VERTEX_ROW_KEY_PREFIX.concat(element.getId());
         }
         if (element instanceof Edge) {
-            return AccumuloConstants.EDGE_ROW_KEY_PREFIX + element.getId();
+            return AccumuloConstants.EDGE_ROW_KEY_PREFIX.concat(element.getId());
         }
         throw new VertexiumException("Unhandled element type: " + element);
     }
@@ -738,16 +738,16 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
 
         ColumnVisibility visibility = visibilityToAccumuloVisibility(edge.getVisibility());
 
-        Mutation outMutation = new Mutation(AccumuloConstants.VERTEX_ROW_KEY_PREFIX + edge.getVertexId(Direction.OUT));
+        Mutation outMutation = new Mutation(AccumuloConstants.VERTEX_ROW_KEY_PREFIX.concat(edge.getVertexId(Direction.OUT)));
         outMutation.putDelete(AccumuloVertex.CF_OUT_EDGE, new Text(edge.getId()), visibility);
 
-        Mutation inMutation = new Mutation(AccumuloConstants.VERTEX_ROW_KEY_PREFIX + edge.getVertexId(Direction.IN));
+        Mutation inMutation = new Mutation(AccumuloConstants.VERTEX_ROW_KEY_PREFIX.concat(edge.getVertexId(Direction.IN)));
         inMutation.putDelete(AccumuloVertex.CF_IN_EDGE, new Text(edge.getId()), visibility);
 
         addMutations(getVerticesWriter(), outMutation, inMutation);
 
         // Deletes everything else related to edge.
-        addMutations(getEdgesWriter(), getDeleteRowMutation(AccumuloConstants.EDGE_ROW_KEY_PREFIX + edge.getId()));
+        addMutations(getEdgesWriter(), getDeleteRowMutation(AccumuloConstants.EDGE_ROW_KEY_PREFIX.concat(edge.getId())));
 
         if (hasEventListeners()) {
             queueEvent(new DeleteEdgeEvent(this, edge));
@@ -765,16 +765,16 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
 
         ColumnVisibility visibility = visibilityToAccumuloVisibility(edge.getVisibility());
 
-        Mutation outMutation = new Mutation(AccumuloConstants.VERTEX_ROW_KEY_PREFIX + edge.getVertexId(Direction.OUT));
+        Mutation outMutation = new Mutation(AccumuloConstants.VERTEX_ROW_KEY_PREFIX.concat(edge.getVertexId(Direction.OUT)));
         outMutation.put(AccumuloVertex.CF_OUT_EDGE_SOFT_DELETE, new Text(edge.getId()), visibility, timestamp, AccumuloElement.SOFT_DELETE_VALUE);
 
-        Mutation inMutation = new Mutation(AccumuloConstants.VERTEX_ROW_KEY_PREFIX + edge.getVertexId(Direction.IN));
+        Mutation inMutation = new Mutation(AccumuloConstants.VERTEX_ROW_KEY_PREFIX.concat(edge.getVertexId(Direction.IN)));
         inMutation.put(AccumuloVertex.CF_IN_EDGE_SOFT_DELETE, new Text(edge.getId()), visibility, timestamp, AccumuloElement.SOFT_DELETE_VALUE);
 
         addMutations(getVerticesWriter(), outMutation, inMutation);
 
         // Soft deletes everything else related to edge.
-        addMutations(getEdgesWriter(), getSoftDeleteRowMutation(AccumuloConstants.EDGE_ROW_KEY_PREFIX + edge.getId(), timestamp));
+        addMutations(getEdgesWriter(), getSoftDeleteRowMutation(AccumuloConstants.EDGE_ROW_KEY_PREFIX.concat(edge.getId()), timestamp));
 
         if (hasEventListeners()) {
             queueEvent(new SoftDeleteEdgeEvent(this, edge));
@@ -796,16 +796,16 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
 
         ColumnVisibility columnVisibility = visibilityToAccumuloVisibility(visibility);
 
-        Mutation outMutation = new Mutation(AccumuloConstants.VERTEX_ROW_KEY_PREFIX + out.getId());
+        Mutation outMutation = new Mutation(AccumuloConstants.VERTEX_ROW_KEY_PREFIX.concat(out.getId()));
         outMutation.put(AccumuloVertex.CF_OUT_EDGE_HIDDEN, new Text(edge.getId()), columnVisibility, AccumuloElement.HIDDEN_VALUE);
 
-        Mutation inMutation = new Mutation(AccumuloConstants.VERTEX_ROW_KEY_PREFIX + in.getId());
+        Mutation inMutation = new Mutation(AccumuloConstants.VERTEX_ROW_KEY_PREFIX.concat(in.getId()));
         inMutation.put(AccumuloVertex.CF_IN_EDGE_HIDDEN, new Text(edge.getId()), columnVisibility, AccumuloElement.HIDDEN_VALUE);
 
         addMutations(getVerticesWriter(), outMutation, inMutation);
 
         // Delete everything else related to edge.
-        addMutations(getEdgesWriter(), getMarkHiddenRowMutation(AccumuloConstants.EDGE_ROW_KEY_PREFIX + edge.getId(), columnVisibility));
+        addMutations(getEdgesWriter(), getMarkHiddenRowMutation(AccumuloConstants.EDGE_ROW_KEY_PREFIX.concat(edge.getId()), columnVisibility));
 
         if (out instanceof AccumuloVertex) {
             ((AccumuloVertex) out).removeOutEdge(edge);
@@ -834,16 +834,16 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
 
         ColumnVisibility columnVisibility = visibilityToAccumuloVisibility(visibility);
 
-        Mutation outMutation = new Mutation(AccumuloConstants.VERTEX_ROW_KEY_PREFIX + out.getId());
+        Mutation outMutation = new Mutation(AccumuloConstants.VERTEX_ROW_KEY_PREFIX.concat(out.getId()));
         outMutation.putDelete(AccumuloVertex.CF_OUT_EDGE_HIDDEN, new Text(edge.getId()), columnVisibility);
 
-        Mutation inMutation = new Mutation(AccumuloConstants.VERTEX_ROW_KEY_PREFIX + in.getId());
+        Mutation inMutation = new Mutation(AccumuloConstants.VERTEX_ROW_KEY_PREFIX.concat(in.getId()));
         inMutation.putDelete(AccumuloVertex.CF_IN_EDGE_HIDDEN, new Text(edge.getId()), columnVisibility);
 
         addMutations(getVerticesWriter(), outMutation, inMutation);
 
         // Delete everything else related to edge.
-        addMutations(getEdgesWriter(), getMarkVisibleRowMutation(AccumuloConstants.EDGE_ROW_KEY_PREFIX + edge.getId(), columnVisibility));
+        addMutations(getEdgesWriter(), getMarkVisibleRowMutation(AccumuloConstants.EDGE_ROW_KEY_PREFIX.concat(edge.getId()), columnVisibility));
 
         if (out instanceof AccumuloVertex) {
             ((AccumuloVertex) out).addOutEdge(edge);
@@ -872,9 +872,9 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
         ColumnVisibility columnVisibility = visibilityToAccumuloVisibility(visibility);
 
         if (element instanceof Vertex) {
-            addMutations(getVerticesWriter(), getMarkHiddenPropertyMutation(AccumuloConstants.VERTEX_ROW_KEY_PREFIX + element.getId(), property, timestamp, columnVisibility));
+            addMutations(getVerticesWriter(), getMarkHiddenPropertyMutation(AccumuloConstants.VERTEX_ROW_KEY_PREFIX.concat(element.getId()), property, timestamp, columnVisibility));
         } else if (element instanceof Edge) {
-            addMutations(getVerticesWriter(), getMarkHiddenPropertyMutation(AccumuloConstants.EDGE_ROW_KEY_PREFIX + element.getId(), property, timestamp, columnVisibility));
+            addMutations(getVerticesWriter(), getMarkHiddenPropertyMutation(AccumuloConstants.EDGE_ROW_KEY_PREFIX.concat(element.getId()), property, timestamp, columnVisibility));
         }
 
         if (hasEventListeners()) {
@@ -899,9 +899,9 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
         ColumnVisibility columnVisibility = visibilityToAccumuloVisibility(visibility);
 
         if (element instanceof Vertex) {
-            addMutations(getVerticesWriter(), getMarkVisiblePropertyMutation(AccumuloConstants.VERTEX_ROW_KEY_PREFIX + element.getId(), property, timestamp, columnVisibility));
+            addMutations(getVerticesWriter(), getMarkVisiblePropertyMutation(AccumuloConstants.VERTEX_ROW_KEY_PREFIX.concat(element.getId()), property, timestamp, columnVisibility));
         } else if (element instanceof Edge) {
-            addMutations(getVerticesWriter(), getMarkVisiblePropertyMutation(AccumuloConstants.EDGE_ROW_KEY_PREFIX + element.getId(), property, timestamp, columnVisibility));
+            addMutations(getVerticesWriter(), getMarkVisiblePropertyMutation(AccumuloConstants.EDGE_ROW_KEY_PREFIX.concat(element.getId()), property, timestamp, columnVisibility));
         }
 
         if (hasEventListeners()) {
@@ -998,7 +998,10 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
 
     @Override
     public Vertex getVertex(String vertexId, EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations) throws VertexiumException {
-        Iterator<Vertex> vertices = getVerticesInRange(new Range(AccumuloConstants.VERTEX_ROW_KEY_PREFIX + vertexId), fetchHints, endTime, authorizations).iterator();
+        if (vertexId == null) {
+            return null;
+        }
+        Iterator<Vertex> vertices = getVerticesInRange(new Range(AccumuloConstants.VERTEX_ROW_KEY_PREFIX.concat(vertexId)), fetchHints, endTime, authorizations).iterator();
         if (vertices.hasNext()) {
             return vertices.next();
         }
@@ -1007,7 +1010,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
 
     @Override
     public Iterable<Vertex> getVerticesWithPrefix(String vertexIdPrefix, EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations) {
-        Range range = Range.prefix(AccumuloConstants.VERTEX_ROW_KEY_PREFIX + vertexIdPrefix);
+        Range range = Range.prefix(AccumuloConstants.VERTEX_ROW_KEY_PREFIX.concat(vertexIdPrefix));
         return getVerticesInRange(range, fetchHints, endTime, authorizations);
     }
 
@@ -1016,14 +1019,14 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
         if (startId == null) {
             startKey = new Key(AccumuloConstants.VERTEX_ROW_KEY_PREFIX);
         } else {
-            startKey = new Key(AccumuloConstants.VERTEX_ROW_KEY_PREFIX + startId);
+            startKey = new Key(AccumuloConstants.VERTEX_ROW_KEY_PREFIX.concat(startId));
         }
 
         final Key endKey;
         if (endId == null) {
             endKey = new Key(VERTEX_AFTER_ROW_KEY_PREFIX);
         } else {
-            endKey = new Key(AccumuloConstants.VERTEX_ROW_KEY_PREFIX + endId + "~");
+            endKey = new Key(AccumuloConstants.VERTEX_ROW_KEY_PREFIX.concat(endId).concat("~"));
         }
 
         Range range = new Range(startKey, endKey);
@@ -1471,13 +1474,13 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
             BatchWriter vertexWriter = getVerticesWriter();
             Edge edge = (Edge) element;
 
-            String vertexOutRowKey = AccumuloConstants.VERTEX_ROW_KEY_PREFIX + edge.getVertexId(Direction.OUT);
+            String vertexOutRowKey = AccumuloConstants.VERTEX_ROW_KEY_PREFIX.concat(edge.getVertexId(Direction.OUT));
             Mutation vertexOutMutation = new Mutation(vertexOutRowKey);
             if (elementMutationBuilder.alterEdgeVertexOutVertex(vertexOutMutation, edge, newVisibility)) {
                 addMutations(vertexWriter, vertexOutMutation);
             }
 
-            String vertexInRowKey = AccumuloConstants.VERTEX_ROW_KEY_PREFIX + edge.getVertexId(Direction.IN);
+            String vertexInRowKey = AccumuloConstants.VERTEX_ROW_KEY_PREFIX.concat(edge.getVertexId(Direction.IN));
             Mutation vertexInMutation = new Mutation(vertexInRowKey);
             if (elementMutationBuilder.alterEdgeVertexInVertex(vertexInMutation, edge, newVisibility)) {
                 addMutations(vertexWriter, vertexInMutation);
@@ -1583,7 +1586,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
 
         List<Range> ranges = new ArrayList<>();
         for (String vertexId : vertexIdsSet) {
-            Text rowKey = new Text(AccumuloConstants.VERTEX_ROW_KEY_PREFIX + vertexId);
+            Text rowKey = new Text(AccumuloConstants.VERTEX_ROW_KEY_PREFIX.concat(vertexId));
             Range range = new Range(rowKey);
             ranges.add(range);
         }
@@ -1785,7 +1788,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
 
         final List<Range> ranges = new ArrayList<>();
         for (String id : ids) {
-            Text rowKey = new Text(AccumuloConstants.VERTEX_ROW_KEY_PREFIX + id);
+            Text rowKey = new Text(AccumuloConstants.VERTEX_ROW_KEY_PREFIX.concat(id));
             ranges.add(new Range(rowKey));
         }
         if (ranges.size() == 0) {
@@ -1838,7 +1841,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
 
         final List<Range> ranges = new ArrayList<>();
         for (String id : ids) {
-            Text rowKey = new Text(AccumuloConstants.EDGE_ROW_KEY_PREFIX + id);
+            Text rowKey = new Text(AccumuloConstants.EDGE_ROW_KEY_PREFIX.concat(id));
             ranges.add(new Range(rowKey));
         }
         if (ranges.size() == 0) {
@@ -1893,14 +1896,14 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
         if (startId == null) {
             startKey = new Key(AccumuloConstants.EDGE_ROW_KEY_PREFIX);
         } else {
-            startKey = new Key(AccumuloConstants.EDGE_ROW_KEY_PREFIX + startId);
+            startKey = new Key(AccumuloConstants.EDGE_ROW_KEY_PREFIX.concat(startId));
         }
 
         final Key endKey;
         if (endId == null) {
             endKey = new Key(EDGE_AFTER_ROW_KEY_PREFIX);
         } else {
-            endKey = new Key(AccumuloConstants.EDGE_ROW_KEY_PREFIX + endId + "~");
+            endKey = new Key(AccumuloConstants.EDGE_ROW_KEY_PREFIX.concat(endId).concat("~"));
         }
 
         final long timerStartTime = System.currentTimeMillis();
