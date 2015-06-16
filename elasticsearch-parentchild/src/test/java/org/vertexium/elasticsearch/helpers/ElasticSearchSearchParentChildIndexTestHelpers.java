@@ -46,6 +46,23 @@ public class ElasticSearchSearchParentChildIndexTestHelpers {
         return InMemoryGraph.create(configuration, configuration.createIdGenerator(), configuration.createSearchIndex());
     }
 
+    public static Graph createGraphWithSubstitution(Map<String, String> substitutionMap) {
+        Map config = new HashMap();
+        config.put(GraphConfiguration.AUTO_FLUSH, true);
+        config.put(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX, ElasticSearchParentChildSearchIndex.class.getName());
+        config.put(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + ElasticSearchSearchIndexConfiguration.CONFIG_INDEX_NAME, ES_INDEX_NAME);
+        if (TESTING) {
+            addr = "localhost";
+            config.put(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + ElasticSearchSearchIndexConfiguration.CONFIG_STORE_SOURCE_DATA, "true");
+        } else {
+            config.put(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + ElasticSearchSearchIndexConfiguration.CONFIG_CLUSTER_NAME, clusterName);
+        }
+        config.put(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + ElasticSearchSearchIndexConfiguration.CONFIG_ES_LOCATIONS, addr);
+        config.putAll(substitutionMap);
+        InMemoryGraphConfiguration configuration = new InMemoryGraphConfiguration(config);
+        return InMemoryGraph.create(configuration, configuration.createIdGenerator(), configuration.createSearchIndex());
+    }
+
     public static void beforeClass() throws IOException {
         tempDir = File.createTempFile("elasticsearch-temp", Long.toString(System.nanoTime()));
         tempDir.delete();

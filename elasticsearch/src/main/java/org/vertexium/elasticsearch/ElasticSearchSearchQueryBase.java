@@ -8,6 +8,7 @@ import org.vertexium.Authorizations;
 import org.vertexium.Graph;
 import org.vertexium.PropertyDefinition;
 import org.vertexium.elasticsearch.score.ScoringStrategy;
+import org.vertexium.id.NameSubstitutionStrategy;
 import org.vertexium.query.*;
 
 import java.util.ArrayList;
@@ -22,12 +23,12 @@ public class ElasticSearchSearchQueryBase extends ElasticSearchQueryBase impleme
     private final List<TermsQueryItem> termsQueryItems = new ArrayList<>();
     private final List<GeohashQueryItem> geohashQueryItems = new ArrayList<>();
 
-    public ElasticSearchSearchQueryBase(TransportClient client, String[] indicesToQuery, Graph graph, String queryString, Map<String, PropertyDefinition> propertyDefinitions, ScoringStrategy scoringStrategy, Authorizations authorizations) {
-        super(client, indicesToQuery, graph, queryString, propertyDefinitions, scoringStrategy, false, authorizations);
+    public ElasticSearchSearchQueryBase(TransportClient client, String[] indicesToQuery, Graph graph, String queryString, Map<String, PropertyDefinition> propertyDefinitions, ScoringStrategy scoringStrategy, NameSubstitutionStrategy nameSubstitutionStrategy, Authorizations authorizations) {
+        super(client, indicesToQuery, graph, queryString, propertyDefinitions, scoringStrategy, nameSubstitutionStrategy, false, authorizations);
     }
 
-    public ElasticSearchSearchQueryBase(TransportClient client, String[] indicesToQuery, Graph graph, String[] similarToFields, String similarToText, Map<String, PropertyDefinition> propertyDefinitions, ScoringStrategy scoringStrategy, Authorizations authorizations) {
-        super(client, indicesToQuery, graph, similarToFields, similarToText, propertyDefinitions, scoringStrategy, false, authorizations);
+    public ElasticSearchSearchQueryBase(TransportClient client, String[] indicesToQuery, Graph graph, String[] similarToFields, String similarToText, Map<String, PropertyDefinition> propertyDefinitions, ScoringStrategy scoringStrategy, NameSubstitutionStrategy nameSubstitutionStrategy, Authorizations authorizations) {
+        super(client, indicesToQuery, graph, similarToFields, similarToText, propertyDefinitions, scoringStrategy, nameSubstitutionStrategy, false, authorizations);
     }
 
     @Override

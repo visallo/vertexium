@@ -1,5 +1,6 @@
 package org.vertexium.elasticsearch.helpers;
 
+import com.google.common.base.Joiner;
 import org.apache.commons.io.FileUtils;
 import org.elasticsearch.action.admin.cluster.state.ClusterStateResponse;
 import org.elasticsearch.common.settings.ImmutableSettings;
@@ -9,6 +10,8 @@ import org.vertexium.Graph;
 import org.vertexium.GraphConfiguration;
 import org.vertexium.elasticsearch.ElasticSearchSearchIndex;
 import org.vertexium.elasticsearch.ElasticSearchSearchIndexConfiguration;
+import org.vertexium.id.SimpleNameSubstitutionStrategy;
+import org.vertexium.id.SimpleSubstitutionUtils;
 import org.vertexium.inmemory.InMemoryGraph;
 import org.vertexium.inmemory.InMemoryGraphConfiguration;
 import org.vertexium.util.VertexiumLogger;
@@ -41,6 +44,24 @@ public class ElasticSearchSearchIndexTestHelpers {
             config.put(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + ElasticSearchSearchIndexConfiguration.CONFIG_CLUSTER_NAME, clusterName);
         }
         config.put(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + ElasticSearchSearchIndexConfiguration.CONFIG_ES_LOCATIONS, addr);
+        InMemoryGraphConfiguration configuration = new InMemoryGraphConfiguration(config);
+        return InMemoryGraph.create(configuration, configuration.createIdGenerator(), configuration.createSearchIndex());
+    }
+
+    public static Graph createGraphWithSubstitution(Map<String, String> substitutionMap) {
+        Map config = new HashMap();
+        config.put(GraphConfiguration.AUTO_FLUSH, true);
+        config.put(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX, ElasticSearchSearchIndex.class.getName());
+        config.put(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + ElasticSearchSearchIndexConfiguration.CONFIG_INDEX_NAME, ES_INDEX_NAME);
+        if (TESTING) {
+            addr = "localhost";
+            config.put(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + ElasticSearchSearchIndexConfiguration.CONFIG_STORE_SOURCE_DATA, "true");
+        } else {
+            config.put(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + ElasticSearchSearchIndexConfiguration.CONFIG_CLUSTER_NAME, clusterName);
+        }
+        config.put(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + ElasticSearchSearchIndexConfiguration.CONFIG_ES_LOCATIONS, addr);
+        config.put(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + ElasticSearchSearchIndexConfiguration.CONFIG_NAME_SUBSTITUTION_STRATEGY_CLASS_NAME, SimpleNameSubstitutionStrategy.class.getName());
+        config.putAll(substitutionMap);
         InMemoryGraphConfiguration configuration = new InMemoryGraphConfiguration(config);
         return InMemoryGraph.create(configuration, configuration.createIdGenerator(), configuration.createSearchIndex());
     }

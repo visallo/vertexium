@@ -15,6 +15,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.vertexium.*;
 import org.vertexium.id.SimpleNameSubstitutionStrategy;
+import org.vertexium.id.SimpleSubstitutionUtils;
 import org.vertexium.test.GraphTestBase;
 import org.vertexium.util.IterableUtils;
 import org.vertexium.util.VertexiumLogger;

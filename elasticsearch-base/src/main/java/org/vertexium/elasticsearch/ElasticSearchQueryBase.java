@@ -18,6 +18,7 @@ import org.elasticsearch.search.aggregations.bucket.histogram.HistogramBuilder;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsBuilder;
 import org.vertexium.*;
 import org.vertexium.elasticsearch.score.ScoringStrategy;
+import org.vertexium.id.NameSubstitutionStrategy;
 import org.vertexium.query.*;
 import org.vertexium.type.GeoCircle;
 import org.vertexium.util.ConvertingIterable;
@@ -36,6 +37,7 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
     private final StandardAnalyzer analyzer;
     private String[] indicesToQuery;
     private ScoringStrategy scoringStrategy;
+    private NameSubstitutionStrategy nameSubstitutionStrategy;
 
     protected ElasticSearchQueryBase(
             TransportClient client,
@@ -44,6 +46,7 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
             String queryString,
             Map<String, PropertyDefinition> propertyDefinitions,
             ScoringStrategy scoringStrategy,
+            NameSubstitutionStrategy nameSubstitutionStrategy,
             boolean evaluateHasContainers,
             Authorizations authorizations) {
         super(graph, queryString, propertyDefinitions, authorizations);
@@ -52,6 +55,7 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
         this.evaluateHasContainers = evaluateHasContainers;
         this.scoringStrategy = scoringStrategy;
         this.analyzer = new StandardAnalyzer();
+        this.nameSubstitutionStrategy = nameSubstitutionStrategy;
     }
 
     protected ElasticSearchQueryBase(
@@ -61,6 +65,7 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
             String[] similarToFields, String similarToText,
             Map<String, PropertyDefinition> propertyDefinitions,
             ScoringStrategy scoringStrategy,
+            NameSubstitutionStrategy nameSubstitutionStrategy,
             boolean evaluateHasContainers,
             Authorizations authorizations) {
         super(graph, similarToFields, similarToText, propertyDefinitions, authorizations);
@@ -69,6 +74,7 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
         this.evaluateHasContainers = evaluateHasContainers;
         this.scoringStrategy = scoringStrategy;
         this.analyzer = new StandardAnalyzer();
+        this.nameSubstitutionStrategy = nameSubstitutionStrategy;
     }
 
     @Override
@@ -157,11 +163,11 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
     }
 
     protected void getFiltersForHasNotPropertyContainer(List<FilterBuilder> filters, HasNotPropertyContainer hasNotProperty) {
-        filters.add(FilterBuilders.notFilter(FilterBuilders.existsFilter(hasNotProperty.getKey())));
+        filters.add(FilterBuilders.notFilter(FilterBuilders.existsFilter(nameSubstitutionStrategy.deflate(hasNotProperty.getKey()))));
     }
 
     protected void getFiltersForHasPropertyContainer(List<FilterBuilder> filters, HasPropertyContainer hasProperty) {
-        filters.add(FilterBuilders.existsFilter(hasProperty.getKey()));
+        filters.add(FilterBuilders.existsFilter(nameSubstitutionStrategy.deflate(hasProperty.getKey())));
     }
 
     protected void getFiltersForHasValueContainer(List<FilterBuilder> filters, HasValueContainer has) {
@@ -179,7 +185,7 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
     }
 
     protected void getFiltersForGeoComparePredicate(List<FilterBuilder> filters, GeoCompare compare, HasValueContainer has) {
-        String propertyName = has.key + ElasticSearchSearchIndexBase.GEO_PROPERTY_NAME_SUFFIX;
+        String propertyName = nameSubstitutionStrategy.deflate(has.key) + ElasticSearchSearchIndexBase.GEO_PROPERTY_NAME_SUFFIX;
         switch (compare) {
             case WITHIN:
                 if (has.value instanceof GeoCircle) {
@@ -213,15 +219,16 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
 
     protected void getFiltersForTextPredicate(List<FilterBuilder> filters, TextPredicate compare, HasValueContainer has) {
         Object value = has.value;
+        String key = nameSubstitutionStrategy.deflate(has.key);
         if (value instanceof String) {
             value = ((String) value).toLowerCase(); // using the standard analyzer all strings are lower-cased.
         }
         switch (compare) {
             case CONTAINS:
                 if (value instanceof String) {
-                    filters.add(FilterBuilders.termsFilter(has.key, splitStringIntoTerms((String) value)).execution("and"));
+                    filters.add(FilterBuilders.termsFilter(key, splitStringIntoTerms((String) value)).execution("and"));
                 } else {
-                    filters.add(FilterBuilders.termFilter(has.key, value));
+                    filters.add(FilterBuilders.termFilter(key, value));
                 }
                 break;
             default:
@@ -231,7 +238,7 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
 
     protected void getFiltersForContainsPredicate(List<FilterBuilder> filters, Contains contains, HasValueContainer has) {
         Object value = has.value;
-        String key = has.key;
+        String key = nameSubstitutionStrategy.deflate(has.key);
         if (value instanceof String || value instanceof String[]) {
             key = key + ElasticSearchSearchIndexBase.EXACT_MATCH_PROPERTY_NAME_SUFFIX;
         }
@@ -252,7 +259,7 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
 
     protected void getFiltersForComparePredicate(List<FilterBuilder> filters, Compare compare, HasValueContainer has) {
         Object value = has.value;
-        String key = has.key;
+        String key = nameSubstitutionStrategy.deflate(has.key);
         if (value instanceof String || value instanceof String[]) {
             key = key + ElasticSearchSearchIndexBase.EXACT_MATCH_PROPERTY_NAME_SUFFIX;
         }
