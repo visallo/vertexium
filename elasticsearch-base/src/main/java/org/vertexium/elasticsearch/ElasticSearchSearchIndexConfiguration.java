@@ -1,9 +1,15 @@
 package org.vertexium.elasticsearch;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.vertexium.GraphConfiguration;
 import org.vertexium.VertexiumException;
 import org.vertexium.elasticsearch.score.EdgeCountScoringStrategy;
 import org.vertexium.elasticsearch.score.ScoringStrategy;
+import org.vertexium.id.IdentityNameSubstitutionStrategy;
+import org.vertexium.id.NameSubstitutionStrategy;
+import org.vertexium.id.SimpleNameSubstitutionStrategy;
+import org.vertexium.id.SimpleSubstitutionUtils;
 import org.vertexium.util.ConfigurationUtils;
 import org.vertexium.util.VertexiumLogger;
 import org.vertexium.util.VertexiumLoggerFactory;
@@ -24,7 +30,9 @@ public class ElasticSearchSearchIndexConfiguration {
     public static final String CONFIG_PORT = "port";
     public static final int DEFAULT_PORT = 9300;
     public static final String CONFIG_SCORING_STRATEGY_CLASS_NAME = "scoringStrategy";
+    public static final String CONFIG_NAME_SUBSTITUTION_STRATEGY_CLASS_NAME = "nameSubstitutionStrategy";
     public static final Class<? extends ScoringStrategy> DEFAULT_SCORING_STRATEGY = EdgeCountScoringStrategy.class;
+    public static final Class<? extends NameSubstitutionStrategy> DEFAULT_NAME_SUBSTITUTION_STRATEGY = IdentityNameSubstitutionStrategy.class;
 
     private final boolean autoFlush;
     private final boolean storeSourceData;
@@ -35,6 +43,7 @@ public class ElasticSearchSearchIndexConfiguration {
     private final String clusterName;
     private final int port;
     private ScoringStrategy scoringStrategy;
+    private NameSubstitutionStrategy nameSubstitutionStrategy;
 
     public ElasticSearchSearchIndexConfiguration(GraphConfiguration config) {
         esLocations = getElasticSearchLocations(config);
@@ -46,6 +55,7 @@ public class ElasticSearchSearchIndexConfiguration {
         clusterName = getClusterName(config);
         port = getPort(config);
         scoringStrategy = getScoringStrategy(config);
+        nameSubstitutionStrategy = getNameSubstitutionStrategy(config);
     }
 
     public boolean isAutoFlush() {
@@ -82,6 +92,10 @@ public class ElasticSearchSearchIndexConfiguration {
 
     public ScoringStrategy getScoringStrategy() {
         return scoringStrategy;
+    }
+
+    public NameSubstitutionStrategy getNameSubstitutionStrategy() {
+        return nameSubstitutionStrategy;
     }
 
     private static boolean getAutoFlush(GraphConfiguration config) {
@@ -156,5 +170,13 @@ public class ElasticSearchSearchIndexConfiguration {
     private static ScoringStrategy getScoringStrategy(GraphConfiguration config) {
         String className = config.getString(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + CONFIG_SCORING_STRATEGY_CLASS_NAME, DEFAULT_SCORING_STRATEGY.getName());
         return ConfigurationUtils.createProvider(className, config);
+    }
+
+    private static NameSubstitutionStrategy getNameSubstitutionStrategy(GraphConfiguration config) {
+        String className = config.getString(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + CONFIG_NAME_SUBSTITUTION_STRATEGY_CLASS_NAME, DEFAULT_NAME_SUBSTITUTION_STRATEGY.getName());
+        NameSubstitutionStrategy strategy = ConfigurationUtils.createProvider(className, config);
+        strategy.setup(config.getConfig());
+
+        return strategy;
     }
 }

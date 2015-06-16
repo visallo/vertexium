@@ -5,6 +5,7 @@ import org.vertexium.Authorizations;
 import org.vertexium.Graph;
 import org.vertexium.PropertyDefinition;
 import org.vertexium.elasticsearch.score.ScoringStrategy;
+import org.vertexium.id.NameSubstitutionStrategy;
 import org.vertexium.query.GraphQuery;
 
 import java.util.Map;
@@ -17,9 +18,10 @@ public class ElasticSearchSearchGraphQuery extends ElasticSearchSearchQueryBase 
             String queryString,
             Map<String, PropertyDefinition> propertyDefinitions,
             ScoringStrategy scoringStrategy,
+            NameSubstitutionStrategy nameSubstitutionStrategy,
             Authorizations authorizations
     ) {
-        super(client, indicesToQuery, graph, queryString, propertyDefinitions, scoringStrategy, authorizations);
+        super(client, indicesToQuery, graph, queryString, propertyDefinitions, scoringStrategy, nameSubstitutionStrategy, authorizations);
     }
 
     public ElasticSearchSearchGraphQuery(
@@ -30,8 +32,9 @@ public class ElasticSearchSearchGraphQuery extends ElasticSearchSearchQueryBase 
             String similarToText,
             Map<String, PropertyDefinition> propertyDefinitions,
             ScoringStrategy scoringStrategy,
+            NameSubstitutionStrategy nameSubstitutionStrategy,
             Authorizations authorizations
     ) {
-        super(client, indicesToQuery, graph, similarToFields, similarToText, propertyDefinitions, scoringStrategy, authorizations);
+        super(client, indicesToQuery, graph, similarToFields, similarToText, propertyDefinitions, scoringStrategy, nameSubstitutionStrategy,authorizations);
     }
 }

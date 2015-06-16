@@ -4,11 +4,18 @@ import org.apache.hadoop.io.Text;
 import org.vertexium.id.IdentityNameSubstitutionStrategy;
 import org.vertexium.id.NameSubstitutionStrategy;
 
+import java.util.Map;
+
 public class AccumuloNameSubstitutionStrategy implements NameSubstitutionStrategy {
     private final NameSubstitutionStrategy nameSubstitutionStrategy;
 
     protected AccumuloNameSubstitutionStrategy(NameSubstitutionStrategy nameSubstitutionStrategy) {
         this.nameSubstitutionStrategy = nameSubstitutionStrategy;
+    }
+
+    @Override
+    public void setup(Map config) {
+        return;
     }
 
     @Override

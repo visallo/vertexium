@@ -6,12 +6,18 @@ import com.google.common.collect.Lists;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.List;
+import java.util.Map;
 
 public class SimpleNameSubstitutionStrategy implements NameSubstitutionStrategy {
     private List<Pair<String, String>> substitutionList = Lists.newArrayList();
     private final Cache<String, String> deflateCache = CacheBuilder.newBuilder().maximumSize(1000L).build();
     private final Cache<String, String> inflateCache = CacheBuilder.newBuilder().maximumSize(1000L).build();
     public static final String SUBS_DELIM = "\u0002";
+
+    @Override
+    public void setup(Map config) {
+        this.setSubstitutionList(SimpleSubstitutionUtils.getSubstitutionList(config));
+    }
 
     @Override
     public String deflate(String value) {

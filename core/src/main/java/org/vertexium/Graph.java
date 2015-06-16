@@ -2,6 +2,7 @@ package org.vertexium;
 
 import org.vertexium.event.GraphEventListener;
 import org.vertexium.id.IdGenerator;
+import org.vertexium.id.NameSubstitutionStrategy;
 import org.vertexium.query.GraphQuery;
 import org.vertexium.query.MultiVertexQuery;
 import org.vertexium.query.SimilarToGraphQuery;

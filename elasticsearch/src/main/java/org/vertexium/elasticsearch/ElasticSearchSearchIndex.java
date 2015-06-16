@@ -16,6 +16,7 @@ import org.elasticsearch.index.query.TermFilterBuilder;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsBuilder;
 import org.vertexium.*;
+import org.vertexium.id.NameSubstitutionStrategy;
 import org.vertexium.property.StreamingPropertyValue;
 import org.vertexium.query.GraphQuery;
 import org.vertexium.query.SimilarToGraphQuery;
@@ -35,9 +36,11 @@ import java.util.Set;
 
 public class ElasticSearchSearchIndex extends ElasticSearchSearchIndexBase {
     private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(ElasticSearchSearchIndex.class);
+    private NameSubstitutionStrategy nameSubstitutionStrategy;
 
     public ElasticSearchSearchIndex(GraphConfiguration config) {
         super(config);
+        this.nameSubstitutionStrategy = getConfig().getNameSubstitutionStrategy();
     }
 
     @Override
@@ -139,6 +142,7 @@ public class ElasticSearchSearchIndex extends ElasticSearchSearchIndexBase {
             visibilityStrings.add(property.getVisibility().getVisibilityString());
 
             Object propertyValue = property.getValue();
+            String propertyName = this.nameSubstitutionStrategy.deflate(property.getName());
             if (propertyValue != null && shouldIgnoreType(propertyValue.getClass())) {
                 continue;
             } else if (propertyValue instanceof GeoPoint) {
@@ -153,7 +157,7 @@ public class ElasticSearchSearchIndex extends ElasticSearchSearchIndexBase {
                     continue;
                 }
 
-                PropertyDefinition propertyDefinition = indexInfo.getPropertyDefinitions().get(property.getName());
+                PropertyDefinition propertyDefinition = indexInfo.getPropertyDefinitions().get(propertyName);
                 if (propertyDefinition != null && !propertyDefinition.getTextIndexHints().contains(TextIndexHint.FULL_TEXT)) {
                     continue;
                 }
@@ -166,12 +170,12 @@ public class ElasticSearchSearchIndex extends ElasticSearchSearchIndexBase {
                     throw new VertexiumException("Unhandled StreamingPropertyValue type: " + valueType.getName());
                 }
             } else if (propertyValue instanceof String) {
-                PropertyDefinition propertyDefinition = indexInfo.getPropertyDefinitions().get(property.getName());
+                PropertyDefinition propertyDefinition = indexInfo.getPropertyDefinitions().get(propertyName);
                 if (propertyDefinition == null || propertyDefinition.getTextIndexHints().contains(TextIndexHint.EXACT_MATCH)) {
-                    jsonBuilder.field(property.getName() + EXACT_MATCH_PROPERTY_NAME_SUFFIX, propertyValue);
+                    jsonBuilder.field(propertyName + EXACT_MATCH_PROPERTY_NAME_SUFFIX, propertyValue);
                 }
                 if (propertyDefinition == null || propertyDefinition.getTextIndexHints().contains(TextIndexHint.FULL_TEXT)) {
-                    jsonBuilder.field(property.getName(), propertyValue);
+                    jsonBuilder.field(propertyName, propertyValue);
                 }
                 continue;
             }
@@ -180,7 +184,7 @@ public class ElasticSearchSearchIndex extends ElasticSearchSearchIndexBase {
                 propertyValue = ((DateOnly) propertyValue).getDate();
             }
 
-            jsonBuilder.field(property.getName(), propertyValue);
+            jsonBuilder.field(propertyName, propertyValue);
         }
 
         String visibilityString = Visibility.and(visibilityStrings).getVisibilityString();
@@ -259,6 +263,7 @@ public class ElasticSearchSearchIndex extends ElasticSearchSearchIndexBase {
                 queryString,
                 getAllPropertyDefinitions(),
                 getConfig().getScoringStrategy(),
+                this.nameSubstitutionStrategy,
                 authorizations);
     }
 
@@ -272,6 +277,7 @@ public class ElasticSearchSearchIndex extends ElasticSearchSearchIndexBase {
                 queryString,
                 getAllPropertyDefinitions(),
                 getConfig().getScoringStrategy(),
+                this.nameSubstitutionStrategy,
                 authorizations);
     }
 
@@ -284,6 +290,7 @@ public class ElasticSearchSearchIndex extends ElasticSearchSearchIndexBase {
                 similarToFields, similarToText,
                 getAllPropertyDefinitions(),
                 getConfig().getScoringStrategy(),
+                this.nameSubstitutionStrategy,
                 authorizations);
     }
 
