@@ -17,15 +17,10 @@ public class JavaSerializableUtils {
 
     public static Object bytesToObject(byte[] bytes) {
         try {
-            ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(bytes));
-            try {
+            try (ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(bytes))) {
                 return ois.readObject();
-            } finally {
-                ois.close();
             }
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        } catch (ClassNotFoundException e) {
+        } catch (IOException | ClassNotFoundException e) {
             throw new RuntimeException(e);
         }
     }

@@ -3007,6 +3007,7 @@ public abstract class GraphTestBase {
 
         assertEquals("value1", graph.getMetadata("test1"));
         assertEquals("value2", graph.getMetadata("test2"));
+        assertEquals(null, graph.getMetadata("missingProp"));
 
         List<GraphMetadataEntry> newMetadata = toList(graph.getMetadata());
         assertEquals(existingMetadata.size() + 2, newMetadata.size());

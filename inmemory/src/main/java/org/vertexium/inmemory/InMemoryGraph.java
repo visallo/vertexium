@@ -367,7 +367,11 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
 
     @Override
     public Object getMetadata(String key) {
-        return JavaSerializableUtils.bytesToObject(this.metadata.get(key));
+        byte[] bytes = this.metadata.get(key);
+        if (bytes == null) {
+            return null;
+        }
+        return JavaSerializableUtils.bytesToObject(bytes);
     }
 
     @Override
