@@ -9,6 +9,7 @@ import org.vertexium.property.StreamingPropertyValue;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -115,25 +116,96 @@ public class VertexiumScript extends Script {
         }
         if (expanded) {
             if (value instanceof StreamingPropertyValue) {
-                StreamingPropertyValue spv = (StreamingPropertyValue) value;
-                if (spv.getValueType() == String.class) {
-                    try {
-                        try (InputStream in = spv.getInputStream()) {
-                            return IOUtils.toString(in);
-                        }
-                    } catch (IOException e) {
-                        throw new SecurityException("Could not get StreamingPropertyValue input stream", e);
-                    }
-                }
+                value = convertStreamingPropertyValue(value);
             }
-            value = value.toString();
+            if (value.getClass() == byte[].class) {
+                value = valueBytesToStringExpanded((byte[]) value);
+            } else {
+                value = value.toString();
+            }
             if (((String) value).indexOf('\n') >= 0) {
                 value = "\n" + value;
             } else {
                 value = " " + value;
             }
+        } else if (value.getClass() == byte[].class) {
+            value = valueBytesToString((byte[]) value, 20);
         }
         return value.toString();
+    }
+
+    private static String valueBytesToStringExpanded(byte[] value) {
+        StringBuilder sb = new StringBuilder();
+        int octetsPerLine = 16;
+        for (int i = 0; i < value.length; i += octetsPerLine) {
+            for (int col = 0; col < octetsPerLine; col++) {
+                if (i + col < value.length) {
+                    sb.append(toHexOctet(value[i + col])).append(" ");
+                } else {
+                    sb.append("   ");
+                }
+            }
+            sb.append("  ");
+            for (int col = 0; col < octetsPerLine; col++) {
+                if (i + col < value.length) {
+                    char c = (char) value[i + col];
+                    if (c >= ' ' && c <= '~') {
+                        sb.append(c);
+                    } else {
+                        sb.append('.');
+                    }
+                } else {
+                    sb.append(' ');
+                }
+            }
+            sb.append("\n");
+        }
+        return sb.toString();
+    }
+
+    private static String valueBytesToString(byte[] valueAsBytes, int length) {
+        StringBuilder sb = new StringBuilder();
+        sb.append('[');
+        int i;
+        for (i = 0; i < Math.min(valueAsBytes.length, length); i++) {
+            if (i > 0) {
+                sb.append(" ");
+            }
+            sb.append(toHexOctet(valueAsBytes[i]));
+        }
+        if (i < valueAsBytes.length) {
+            sb.append("...");
+        }
+        sb.append(']');
+        return sb.toString();
+    }
+
+    private static String toHexOctet(byte valueAsByte) {
+        String s = "00" + Integer.toHexString(valueAsByte);
+        return s.substring(s.length() - 2);
+    }
+
+    private static Object convertStreamingPropertyValue(Object value) {
+        StreamingPropertyValue spv = (StreamingPropertyValue) value;
+        try {
+            if (spv.getValueType() == String.class) {
+                try (InputStream in = spv.getInputStream()) {
+                    value = IOUtils.toString(in);
+                }
+            } else if (spv.getValueType() == byte[].class) {
+                try (InputStream in = spv.getInputStream()) {
+                    byte[] buffer = new byte[100000];
+                    int read;
+                    read = in.read(buffer, 0, buffer.length);
+                    value = Arrays.copyOfRange(buffer, 0, read);
+                }
+            } else {
+                return "Could not convert StreamingPropertyValue of type " + spv.getValueType().getName();
+            }
+        } catch (IOException e) {
+            throw new SecurityException("Could not get StreamingPropertyValue input stream", e);
+        }
+        return value;
     }
 
     public static String resultToString(Object obj) {
