@@ -21,6 +21,7 @@ import org.fusesource.jansi.Ansi;
 import org.fusesource.jansi.AnsiConsole;
 import org.vertexium.Graph;
 import org.vertexium.GraphFactory;
+import org.vertexium.Visibility;
 import org.vertexium.cli.commands.*;
 
 import java.io.File;
@@ -212,6 +213,7 @@ public class VertexiumShell {
         System.out.println("  v     - vertex map (usage: v['v1'])");
         System.out.println("  e     - edge map (usage: e['e1'])");
         try {
+            shell.execute("import " + Visibility.class.getPackage().getName() + ".*;");
             code = shell.run(evalString, filenames);
         } finally {
             System.setSecurityManager(psm);
