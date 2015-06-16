@@ -56,8 +56,11 @@ public class SetAuthsCommand extends CommandSupport {
                 if (end == -1) {
                     end = arg.length();
                 }
-                auths.add(arg.substring(start, end));
-                i = end + 1;
+                String auth = arg.substring(start, end).trim();
+                if (auth.length() > 0) {
+                    auths.add(auth);
+                }
+                i = end;
             }
         }
         return auths;
