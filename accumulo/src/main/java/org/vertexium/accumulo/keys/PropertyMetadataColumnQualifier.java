@@ -33,11 +33,11 @@ public class PropertyMetadataColumnQualifier extends KeyBase {
         parts[PART_INDEX_METADATA_KEY] = nameSubstitutionStrategy.inflate(parts[PART_INDEX_METADATA_KEY]);
     }
 
-    public PropertyMetadataColumnQualifier(Property property, String metadataKey) {
+    public PropertyMetadataColumnQualifier(String propertyName, String propertyKey, String visibilityString, String metadataKey) {
         parts = new String[]{
-                property.getName(),
-                property.getKey(),
-                property.getVisibility().getVisibilityString(),
+                propertyName,
+                propertyKey,
+                visibilityString,
                 metadataKey
         };
     }
