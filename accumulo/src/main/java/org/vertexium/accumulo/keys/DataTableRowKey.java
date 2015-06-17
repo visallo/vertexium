@@ -1,7 +1,6 @@
 package org.vertexium.accumulo.keys;
 
 import org.vertexium.Property;
-import org.vertexium.accumulo.AccumuloConstants;
 
 public class DataTableRowKey extends KeyBase {
     private static final int PARTS_INDEX_ELEMENT_ROW_KEY = 0;
@@ -23,8 +22,7 @@ public class DataTableRowKey extends KeyBase {
         assertNoValueSeparator(getElementRowKey());
         assertNoValueSeparator(getPropertyName());
         assertNoValueSeparator(getPropertyKey());
-        return AccumuloConstants.DATA_ROW_KEY_PREFIX
-                + getElementRowKey()
+        return getElementRowKey()
                 + VALUE_SEPARATOR + getPropertyName()
                 + VALUE_SEPARATOR + getPropertyKey()
                 + VALUE_SEPARATOR + getPropertyTimestamp();

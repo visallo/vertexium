@@ -5,7 +5,6 @@ import org.apache.accumulo.core.data.Value;
 import org.apache.hadoop.io.Text;
 import org.vertexium.Authorizations;
 import org.vertexium.Vertex;
-import org.vertexium.VertexiumException;
 import org.vertexium.mutation.PropertyDeleteMutation;
 import org.vertexium.mutation.PropertySoftDeleteMutation;
 
@@ -72,14 +71,6 @@ public class VertexMaker extends ElementMaker<Vertex> {
             inEdges.put(edgeId, edgeInfo);
             return;
         }
-    }
-
-    @Override
-    protected String getIdFromRowKey(String rowKey) throws VertexiumException {
-        if (rowKey.startsWith(AccumuloConstants.VERTEX_ROW_KEY_PREFIX)) {
-            return rowKey.substring(AccumuloConstants.VERTEX_ROW_KEY_PREFIX.length());
-        }
-        throw new VertexiumException("Invalid row key for vertex: " + rowKey);
     }
 
     @Override

@@ -5,7 +5,6 @@ import org.apache.accumulo.core.data.Value;
 import org.apache.hadoop.io.Text;
 import org.vertexium.Authorizations;
 import org.vertexium.Edge;
-import org.vertexium.VertexiumException;
 import org.vertexium.mutation.PropertyDeleteMutation;
 import org.vertexium.mutation.PropertySoftDeleteMutation;
 
@@ -53,14 +52,6 @@ public class EdgeMaker extends ElementMaker<Edge> {
         if (AccumuloEdge.CF_OUT_VERTEX.compareTo(columnFamily) == 0) {
             this.outVertexId = columnQualifier.toString();
         }
-    }
-
-    @Override
-    protected String getIdFromRowKey(String rowKey) {
-        if (rowKey.startsWith(AccumuloConstants.EDGE_ROW_KEY_PREFIX)) {
-            return rowKey.substring(AccumuloConstants.EDGE_ROW_KEY_PREFIX.length());
-        }
-        throw new VertexiumException("Invalid row key for edge: " + rowKey);
     }
 
     @Override

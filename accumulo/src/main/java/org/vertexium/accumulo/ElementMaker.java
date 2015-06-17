@@ -41,7 +41,7 @@ public abstract class ElementMaker<T> {
             Map.Entry<Key, Value> col = row.next();
 
             if (this.id == null) {
-                this.id = getIdFromRowKey(col.getKey().getRow().toString());
+                this.id = col.getKey().getRow().toString();
             }
 
             Text columnFamily = getColumnFamily(col.getKey());
@@ -124,8 +124,6 @@ public abstract class ElementMaker<T> {
     }
 
     protected abstract void processColumn(Key key, Value value);
-
-    protected abstract String getIdFromRowKey(String rowKey);
 
     protected abstract String getVisibilitySignal();
 
