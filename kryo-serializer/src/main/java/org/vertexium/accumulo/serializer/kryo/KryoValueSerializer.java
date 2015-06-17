@@ -39,6 +39,7 @@ public class KryoValueSerializer implements ValueSerializer {
         kryo.register(StreamingPropertyValueHdfsRef.class, 1005);
         kryo.register(GeoRect.class, 1006);
         kryo.register(GeoCircle.class, 1007);
+        kryo.register(Date.class, 1008);
     }
 
     @Override
