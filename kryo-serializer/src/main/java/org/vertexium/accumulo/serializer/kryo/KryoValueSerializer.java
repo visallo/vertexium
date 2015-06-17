@@ -9,7 +9,9 @@ import org.vertexium.accumulo.StreamingPropertyValueHdfsRef;
 import org.vertexium.accumulo.StreamingPropertyValueRef;
 import org.vertexium.accumulo.StreamingPropertyValueTableRef;
 import org.vertexium.accumulo.serializer.ValueSerializer;
+import org.vertexium.type.GeoCircle;
 import org.vertexium.type.GeoPoint;
+import org.vertexium.type.GeoRect;
 
 import java.util.HashMap;
 
@@ -24,6 +26,8 @@ public class KryoValueSerializer implements ValueSerializer {
         kryo.register(StreamingPropertyValueRef.class, 1003);
         kryo.register(StreamingPropertyValueTableRef.class, 1004);
         kryo.register(StreamingPropertyValueHdfsRef.class, 1005);
+        kryo.register(GeoRect.class, 1006);
+        kryo.register(GeoCircle.class, 1007);
     }
 
     @Override
