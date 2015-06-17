@@ -195,7 +195,7 @@ public abstract class ElementMutationBuilder {
         if (propertyValue instanceof DateOnly) {
             propertyValue = ((DateOnly) propertyValue).getDate();
         }
-        Value value = new Value(valueSerializer.objectToValue(propertyValue));
+        Value value = valueSerializer.objectToValue(propertyValue);
         m.put(AccumuloElement.CF_PROPERTY, columnQualifier, columnVisibility, property.getTimestamp(), value);
         addPropertyMetadataToMutation(m, property);
     }
@@ -217,7 +217,7 @@ public abstract class ElementMutationBuilder {
             if (metadataItem.getValue() == null) {
                 m.putDelete(AccumuloElement.CF_PROPERTY_METADATA, columnQualifier, metadataVisibility);
             } else {
-                Value metadataValue = new Value(valueSerializer.objectToValue(metadataItem.getValue()));
+                Value metadataValue = valueSerializer.objectToValue(metadataItem.getValue());
                 m.put(AccumuloElement.CF_PROPERTY_METADATA, columnQualifier, metadataVisibility, property.getTimestamp(), metadataValue);
             }
         }
