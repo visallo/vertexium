@@ -1,15 +1,11 @@
 package org.vertexium.elasticsearch;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.vertexium.GraphConfiguration;
 import org.vertexium.VertexiumException;
 import org.vertexium.elasticsearch.score.EdgeCountScoringStrategy;
 import org.vertexium.elasticsearch.score.ScoringStrategy;
 import org.vertexium.id.IdentityNameSubstitutionStrategy;
 import org.vertexium.id.NameSubstitutionStrategy;
-import org.vertexium.id.SimpleNameSubstitutionStrategy;
-import org.vertexium.id.SimpleSubstitutionUtils;
 import org.vertexium.util.ConfigurationUtils;
 import org.vertexium.util.VertexiumLogger;
 import org.vertexium.util.VertexiumLoggerFactory;
@@ -29,6 +25,8 @@ public class ElasticSearchSearchIndexConfiguration {
     public static final String DEFAULT_CLUSTER_NAME = null;
     public static final String CONFIG_PORT = "port";
     public static final int DEFAULT_PORT = 9300;
+    public static final String CONFIG_SHARDS = "shards";
+    public static final int DEFAULT_NUMBER_OF_SHARDS = 5;
     public static final String CONFIG_SCORING_STRATEGY_CLASS_NAME = "scoringStrategy";
     public static final String CONFIG_NAME_SUBSTITUTION_STRATEGY_CLASS_NAME = "nameSubstitutionStrategy";
     public static final Class<? extends ScoringStrategy> DEFAULT_SCORING_STRATEGY = EdgeCountScoringStrategy.class;
@@ -44,6 +42,7 @@ public class ElasticSearchSearchIndexConfiguration {
     private final int port;
     private ScoringStrategy scoringStrategy;
     private NameSubstitutionStrategy nameSubstitutionStrategy;
+    private final int numberOfShards;
 
     public ElasticSearchSearchIndexConfiguration(GraphConfiguration config) {
         esLocations = getElasticSearchLocations(config);
@@ -56,6 +55,7 @@ public class ElasticSearchSearchIndexConfiguration {
         port = getPort(config);
         scoringStrategy = getScoringStrategy(config);
         nameSubstitutionStrategy = getNameSubstitutionStrategy(config);
+        numberOfShards = getNumberOfShardsForIndex(config);
     }
 
     public boolean isAutoFlush() {
@@ -96,6 +96,10 @@ public class ElasticSearchSearchIndexConfiguration {
 
     public NameSubstitutionStrategy getNameSubstitutionStrategy() {
         return nameSubstitutionStrategy;
+    }
+
+    public int getNumberOfShards() {
+        return numberOfShards;
     }
 
     private static boolean getAutoFlush(GraphConfiguration config) {
@@ -178,5 +182,11 @@ public class ElasticSearchSearchIndexConfiguration {
         strategy.setup(config.getConfig());
 
         return strategy;
+    }
+
+    private static int getNumberOfShardsForIndex(GraphConfiguration config) {
+        int shards = config.getInt(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + CONFIG_SHARDS, DEFAULT_NUMBER_OF_SHARDS);
+        LOGGER.info("Number of shards: %d", shards);
+        return shards;
     }
 }
