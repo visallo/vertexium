@@ -30,6 +30,7 @@ public class PropertyMetadataColumnQualifier extends KeyBase {
         }
         parts[PART_INDEX_PROPERTY_NAME] = nameSubstitutionStrategy.inflate(parts[PART_INDEX_PROPERTY_NAME]);
         parts[PART_INDEX_PROPERTY_KEY] = nameSubstitutionStrategy.inflate(parts[PART_INDEX_PROPERTY_KEY]);
+        parts[PART_INDEX_METADATA_KEY] = nameSubstitutionStrategy.inflate(parts[PART_INDEX_METADATA_KEY]);
     }
 
     public PropertyMetadataColumnQualifier(Property property, String metadataKey) {
@@ -65,7 +66,7 @@ public class PropertyMetadataColumnQualifier extends KeyBase {
         String name = nameSubstitutionStrategy.deflate(getPropertyName());
         String key = nameSubstitutionStrategy.deflate(getPropertyKey());
         String visibilityString = getPropertyVisibilityString();
-        String metadataKey = getMetadataKey();
+        String metadataKey = nameSubstitutionStrategy.deflate(getMetadataKey());
         assertNoValueSeparator(name);
         assertNoValueSeparator(key);
         assertNoValueSeparator(visibilityString);
