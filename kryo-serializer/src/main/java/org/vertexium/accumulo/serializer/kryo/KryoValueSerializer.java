@@ -3,6 +3,8 @@ package org.vertexium.accumulo.serializer.kryo;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import com.esotericsoftware.kryo.io.UnsafeInput;
+import com.esotericsoftware.kryo.io.UnsafeOutput;
 import com.esotericsoftware.kryo.util.DefaultClassResolver;
 import com.esotericsoftware.kryo.util.MapReferenceResolver;
 import org.apache.accumulo.core.data.Value;
@@ -44,7 +46,7 @@ public class KryoValueSerializer implements ValueSerializer {
 
     @Override
     public Value objectToValue(Object value) {
-        Output output = new Output(2000);
+        Output output = new UnsafeOutput(2000, -1);
         kryo.writeClassAndObject(output, value);
         return new Value(output.toBytes());
     }
@@ -56,7 +58,7 @@ public class KryoValueSerializer implements ValueSerializer {
 
     @Override
     public <T> T valueToObject(byte[] data) {
-        Input input = new Input(data);
+        Input input = new UnsafeInput(data);
         return (T) kryo.readClassAndObject(input);
     }
 }
