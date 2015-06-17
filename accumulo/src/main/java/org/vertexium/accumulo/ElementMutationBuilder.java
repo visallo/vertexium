@@ -30,18 +30,17 @@ public abstract class ElementMutationBuilder {
     private final ValueSerializer valueSerializer;
     private final long maxStreamingPropertyValueTableDataSize;
     private final String dataDir;
-    private final Cache<String, Text> propertyMetadataColumnQualifierTextCache;
+    private static final Cache<String, Text> propertyMetadataColumnQualifierTextCache = CacheBuilder
+            .newCache(String.class, Text.class)
+            .name(ElementMutationBuilder.class, "propertyMetadataColumnQualifierTextCache")
+            .maxSize(10000)
+            .build();
 
     protected ElementMutationBuilder(FileSystem fileSystem, ValueSerializer valueSerializer, long maxStreamingPropertyValueTableDataSize, String dataDir) {
         this.fileSystem = fileSystem;
         this.valueSerializer = valueSerializer;
         this.maxStreamingPropertyValueTableDataSize = maxStreamingPropertyValueTableDataSize;
         this.dataDir = dataDir;
-        this.propertyMetadataColumnQualifierTextCache = CacheBuilder
-                .newCache(String.class, Text.class)
-                .name(ElementMutationBuilder.class, "propertyMetadataColumnQualifierTextCache")
-                .maxSize(10000)
-                .build();
     }
 
     public void saveVertex(AccumuloVertex vertex) {

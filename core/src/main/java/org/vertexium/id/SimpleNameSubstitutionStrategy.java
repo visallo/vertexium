@@ -18,7 +18,7 @@ public class SimpleNameSubstitutionStrategy implements NameSubstitutionStrategy 
     public SimpleNameSubstitutionStrategy() {
         deflateCache = CacheBuilder
                 .newCache(String.class, String.class)
-                .name(SimpleNameSubstitutionStrategy.class, "deflateCache")
+                .name(SimpleNameSubstitutionStrategy.class, "deflateCache-" + System.identityHashCode(this))
                 .maxSize(1000)
                 .source(new CacheSource<String, String>() {
                     @Override
@@ -35,7 +35,7 @@ public class SimpleNameSubstitutionStrategy implements NameSubstitutionStrategy 
 
         inflateCache = CacheBuilder
                 .newCache(String.class, String.class)
-                .name(SimpleNameSubstitutionStrategy.class, "inflateCache")
+                .name(SimpleNameSubstitutionStrategy.class, "inflateCache-" + System.identityHashCode(this))
                 .maxSize(1000)
                 .source(new CacheSource<String, String>() {
                     @Override
