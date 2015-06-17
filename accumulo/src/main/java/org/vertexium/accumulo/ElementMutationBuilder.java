@@ -212,15 +212,27 @@ public abstract class ElementMutationBuilder {
     public void addPropertyMetadataToMutation(Mutation m, Property property) {
         Metadata metadata = property.getMetadata();
         for (Metadata.Entry metadataItem : metadata.entrySet()) {
-            Text columnQualifier = getPropertyMetadataColumnQualifierText(property, metadataItem);
-            ColumnVisibility metadataVisibility = visibilityToAccumuloVisibility(metadataItem.getVisibility());
-            if (metadataItem.getValue() == null) {
-                m.putDelete(AccumuloElement.CF_PROPERTY_METADATA, columnQualifier, metadataVisibility);
-            } else {
-                Value metadataValue = valueSerializer.objectToValue(metadataItem.getValue());
-                m.put(AccumuloElement.CF_PROPERTY_METADATA, columnQualifier, metadataVisibility, property.getTimestamp(), metadataValue);
-            }
+            addPropertyMetadataItemToMutation(m, property, metadataItem);
         }
+    }
+
+    private void addPropertyMetadataItemToMutation(Mutation m, Property property, Metadata.Entry metadataItem) {
+        Text columnQualifier = getPropertyMetadataColumnQualifierText(property, metadataItem);
+        ColumnVisibility metadataVisibility = visibilityToAccumuloVisibility(metadataItem.getVisibility());
+        if (metadataItem.getValue() == null) {
+            addPropertyMetadataItemDeleteToMutation(m, columnQualifier, metadataVisibility);
+        } else {
+            addPropertyMetadataItemAddToMutation(m, columnQualifier, metadataVisibility, property.getTimestamp(), metadataItem.getValue());
+        }
+    }
+
+    private void addPropertyMetadataItemAddToMutation(Mutation m, Text columnQualifier, ColumnVisibility metadataVisibility, long propertyTimestamp, Object value) {
+        Value metadataValue = valueSerializer.objectToValue(value);
+        m.put(AccumuloElement.CF_PROPERTY_METADATA, columnQualifier, metadataVisibility, propertyTimestamp, metadataValue);
+    }
+
+    private void addPropertyMetadataItemDeleteToMutation(Mutation m, Text columnQualifier, ColumnVisibility metadataVisibility) {
+        m.putDelete(AccumuloElement.CF_PROPERTY_METADATA, columnQualifier, metadataVisibility);
     }
 
     private Text getPropertyMetadataColumnQualifierText(Property property, Metadata.Entry metadataItem) {
@@ -250,7 +262,7 @@ public abstract class ElementMutationBuilder {
             for (Metadata.Entry metadataItem : metadata.entrySet()) {
                 Text columnQualifier = getPropertyMetadataColumnQualifierText(property, metadataItem);
                 ColumnVisibility metadataVisibility = visibilityToAccumuloVisibility(metadataItem.getVisibility());
-                m.putDelete(AccumuloElement.CF_PROPERTY_METADATA, columnQualifier, metadataVisibility);
+                addPropertyMetadataItemDeleteToMutation(m, columnQualifier, metadataVisibility);
             }
         }
     }
@@ -285,7 +297,7 @@ public abstract class ElementMutationBuilder {
         for (Metadata.Entry metadataEntry : property.getMetadata().entrySet()) {
             Text metadataEntryColumnQualifier = getPropertyMetadataColumnQualifierText(property, metadataEntry);
             ColumnVisibility metadataEntryVisibility = visibilityToAccumuloVisibility(metadataEntry.getVisibility());
-            m.putDelete(AccumuloElement.CF_PROPERTY_METADATA, metadataEntryColumnQualifier, metadataEntryVisibility);
+            addPropertyMetadataItemDeleteToMutation(m, metadataEntryColumnQualifier, metadataEntryVisibility);
         }
     }
 
