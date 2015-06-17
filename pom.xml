@@ -64,6 +64,7 @@
         <json.version>20140107</json.version>
         <commons-codec.version>1.8</commons-codec.version>
         <jcommander.version>1.35</jcommander.version>
+        <cache2k.version>0.21.1</cache2k.version>
         <google-guava.version>17.0</google-guava.version>
         <commons-lang3.version>3.1</commons-lang3.version>
 
@@ -102,6 +103,16 @@
                 <groupId>com.google.guava</groupId>
                 <artifactId>guava</artifactId>
                 <version>${google-guava.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.cache2k</groupId>
+                <artifactId>cache2k-api</artifactId>
+                <version>${cache2k.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.cache2k</groupId>
+                <artifactId>cache2k-core</artifactId>
+                <version>${cache2k.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.commons</groupId>

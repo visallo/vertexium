@@ -1,12 +1,12 @@
 package org.vertexium.accumulo;
 
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
 import org.apache.accumulo.core.data.Mutation;
 import org.apache.accumulo.core.data.Value;
 import org.apache.accumulo.core.security.ColumnVisibility;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.io.Text;
+import org.cache2k.Cache;
+import org.cache2k.CacheBuilder;
 import org.vertexium.*;
 import org.vertexium.accumulo.keys.DataTableRowKey;
 import org.vertexium.accumulo.keys.PropertyColumnQualifier;
@@ -20,8 +20,6 @@ import org.vertexium.property.StreamingPropertyValue;
 import org.vertexium.util.*;
 
 import java.io.IOException;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
 
 public abstract class ElementMutationBuilder {
     private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(ElementMutationBuilder.class);
@@ -39,7 +37,11 @@ public abstract class ElementMutationBuilder {
         this.valueSerializer = valueSerializer;
         this.maxStreamingPropertyValueTableDataSize = maxStreamingPropertyValueTableDataSize;
         this.dataDir = dataDir;
-        propertyMetadataColumnQualifierTextCache = CacheBuilder.newBuilder().maximumSize(10000L).build();
+        this.propertyMetadataColumnQualifierTextCache = CacheBuilder
+                .newCache(String.class, Text.class)
+                .name(ElementMutationBuilder.class, "propertyMetadataColumnQualifierTextCache")
+                .maxSize(10000)
+                .build();
     }
 
     public void saveVertex(AccumuloVertex vertex) {
@@ -232,17 +234,13 @@ public abstract class ElementMutationBuilder {
         keyBuilder.append(visibilityString);
         keyBuilder.append(metadataKey);
         String key = keyBuilder.toString();
-        try {
-            return propertyMetadataColumnQualifierTextCache.get(key, new Callable<Text>() {
-                @Override
-                public Text call() throws Exception {
-                    return new PropertyMetadataColumnQualifier(propertyName, propertyKey, visibilityString, metadataKey)
-                            .getColumnQualifier(getNameSubstitutionStrategy());
-                }
-            });
-        } catch (ExecutionException e) {
-            throw new VertexiumException("Could not getPropertyMetadataColumnQualifierText", e);
+        Text r = propertyMetadataColumnQualifierTextCache.peek(key);
+        if (r == null) {
+            r = new PropertyMetadataColumnQualifier(propertyName, propertyKey, visibilityString, metadataKey)
+                    .getColumnQualifier(getNameSubstitutionStrategy());
+            propertyMetadataColumnQualifierTextCache.put(key, r);
         }
+        return r;
     }
 
     public void addPropertyDeleteMetadataToMutation(Mutation m, PropertyDeleteMutation propertyDeleteMutation) {
