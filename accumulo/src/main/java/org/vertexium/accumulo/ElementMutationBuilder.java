@@ -71,13 +71,13 @@ public abstract class ElementMutationBuilder {
     private void saveEdgeInfoOnVertex(AccumuloEdge edge, String edgeLabel, ColumnVisibility edgeColumnVisibility) {
         // Update out vertex.
         Mutation addEdgeToOutMutation = new Mutation(AccumuloConstants.VERTEX_ROW_KEY_PREFIX.concat(edge.getVertexId(Direction.OUT)));
-        EdgeInfo edgeInfo = new EdgeInfo(edgeLabel, edge.getVertexId(Direction.IN));
+        EdgeInfo edgeInfo = new EdgeInfo(edgeLabel, edge.getVertexId(Direction.IN), getNameSubstitutionStrategy());
         addEdgeToOutMutation.put(AccumuloVertex.CF_OUT_EDGE, new Text(edge.getId()), edgeColumnVisibility, edgeInfo.toValue());
         saveVertexMutation(addEdgeToOutMutation);
 
         // Update in vertex.
         Mutation addEdgeToInMutation = new Mutation(AccumuloConstants.VERTEX_ROW_KEY_PREFIX.concat(edge.getVertexId(Direction.IN)));
-        edgeInfo = new EdgeInfo(edgeLabel, edge.getVertexId(Direction.OUT));
+        edgeInfo = new EdgeInfo(edgeLabel, edge.getVertexId(Direction.OUT), getNameSubstitutionStrategy());
         addEdgeToInMutation.put(AccumuloVertex.CF_IN_EDGE, new Text(edge.getId()), edgeColumnVisibility, edgeInfo.toValue());
         saveVertexMutation(addEdgeToInMutation);
     }
@@ -159,7 +159,7 @@ public abstract class ElementMutationBuilder {
         if (currentColumnVisibility.equals(newColumnVisibility)) {
             return false;
         }
-        EdgeInfo edgeInfo = new EdgeInfo(edge.getLabel(), edge.getVertexId(Direction.IN));
+        EdgeInfo edgeInfo = new EdgeInfo(edge.getLabel(), edge.getVertexId(Direction.IN), getNameSubstitutionStrategy());
         vertexOutMutation.putDelete(AccumuloVertex.CF_OUT_EDGE, new Text(edge.getId()), currentColumnVisibility);
         vertexOutMutation.put(AccumuloVertex.CF_OUT_EDGE, new Text(edge.getId()), newColumnVisibility, edgeInfo.toValue());
         return true;
@@ -171,7 +171,7 @@ public abstract class ElementMutationBuilder {
         if (currentColumnVisibility.equals(newColumnVisibility)) {
             return false;
         }
-        EdgeInfo edgeInfo = new EdgeInfo(edge.getLabel(), edge.getVertexId(Direction.OUT));
+        EdgeInfo edgeInfo = new EdgeInfo(edge.getLabel(), edge.getVertexId(Direction.OUT), getNameSubstitutionStrategy());
         vertexInMutation.putDelete(AccumuloVertex.CF_IN_EDGE, new Text(edge.getId()), currentColumnVisibility);
         vertexInMutation.put(AccumuloVertex.CF_IN_EDGE, new Text(edge.getId()), newColumnVisibility, edgeInfo.toValue());
         return true;

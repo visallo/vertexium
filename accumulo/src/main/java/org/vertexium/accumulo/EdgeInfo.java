@@ -2,6 +2,7 @@ package org.vertexium.accumulo;
 
 import org.apache.accumulo.core.data.Value;
 import org.vertexium.VertexiumException;
+import org.vertexium.id.NameSubstitutionStrategy;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -10,13 +11,15 @@ import java.nio.ByteBuffer;
 public class EdgeInfo implements org.vertexium.EdgeInfo {
     public static final String CHARSET_NAME = "UTF-8";
     private final byte[] bytes;
+    private final NameSubstitutionStrategy nameSubstitutionStrategy;
     private transient long timestamp;
     private transient boolean decoded;
     private transient String label;
     private transient String vertexId;
 
-    public EdgeInfo(String label, String vertexId) {
+    public EdgeInfo(String label, String vertexId, NameSubstitutionStrategy nameSubstitutionStrategy) {
         this.timestamp = System.currentTimeMillis();
+        this.nameSubstitutionStrategy = nameSubstitutionStrategy;
 
         try {
             byte[] labelBytes;
@@ -25,7 +28,7 @@ public class EdgeInfo implements org.vertexium.EdgeInfo {
                 labelBytes = null;
                 labelBytesLength = -1;
             } else {
-                labelBytes = label.getBytes(CHARSET_NAME);
+                labelBytes = nameSubstitutionStrategy.deflate(label).getBytes(CHARSET_NAME);
                 labelBytesLength = labelBytes.length;
             }
 
@@ -56,9 +59,10 @@ public class EdgeInfo implements org.vertexium.EdgeInfo {
         }
     }
 
-    public EdgeInfo(byte[] bytes, long timestamp) {
+    public EdgeInfo(byte[] bytes, long timestamp, NameSubstitutionStrategy nameSubstitutionStrategy) {
         this.timestamp = timestamp;
         this.bytes = bytes;
+        this.nameSubstitutionStrategy = nameSubstitutionStrategy;
     }
 
     public String getLabel() {
@@ -86,7 +90,7 @@ public class EdgeInfo implements org.vertexium.EdgeInfo {
         if (!decoded) {
             try {
                 ByteBuffer in = ByteBuffer.wrap(this.bytes);
-                this.label = readString(in);
+                this.label = nameSubstitutionStrategy.inflate(readString(in));
                 this.vertexId = readString(in);
                 this.decoded = true;
             } catch (IOException ex) {
@@ -106,8 +110,8 @@ public class EdgeInfo implements org.vertexium.EdgeInfo {
         }
     }
 
-    public static EdgeInfo parse(Value value, long timestamp) {
-        return new EdgeInfo(value.get(), timestamp);
+    public static EdgeInfo parse(Value value, long timestamp, NameSubstitutionStrategy nameSubstitutionStrategy) {
+        return new EdgeInfo(value.get(), timestamp, nameSubstitutionStrategy);
     }
 
     public Value toValue() {

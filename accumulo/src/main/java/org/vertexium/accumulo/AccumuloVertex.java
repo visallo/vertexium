@@ -318,7 +318,7 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
     }
 
     void addOutEdge(Edge edge) {
-        this.outEdges.put(edge.getId(), new EdgeInfo(edge.getLabel(), edge.getVertexId(Direction.IN)));
+        this.outEdges.put(edge.getId(), new EdgeInfo(edge.getLabel(), edge.getVertexId(Direction.IN), getGraph().getNameSubstitutionStrategy()));
     }
 
     void removeOutEdge(Edge edge) {
@@ -326,7 +326,7 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
     }
 
     void addInEdge(Edge edge) {
-        this.inEdges.put(edge.getId(), new EdgeInfo(edge.getLabel(), edge.getVertexId(Direction.OUT)));
+        this.inEdges.put(edge.getId(), new EdgeInfo(edge.getLabel(), edge.getVertexId(Direction.OUT), getGraph().getNameSubstitutionStrategy()));
     }
 
     void removeInEdge(Edge edge) {

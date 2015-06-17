@@ -230,6 +230,8 @@ public class AccumuloSimpleSubstitutionGraphTest extends GraphTestBase {
         configMap.put(Joiner.on('.').join(new String[]{SimpleSubstitutionUtils.SUBSTITUTION_MAP_PREFIX, "0", SimpleSubstitutionUtils.VALUE_IDENTIFIER}), "k");
         configMap.put(Joiner.on('.').join(new String[]{SimpleSubstitutionUtils.SUBSTITUTION_MAP_PREFIX, "1", SimpleSubstitutionUtils.KEY_IDENTIFIER}), "author");
         configMap.put(Joiner.on('.').join(new String[]{SimpleSubstitutionUtils.SUBSTITUTION_MAP_PREFIX, "1", SimpleSubstitutionUtils.VALUE_IDENTIFIER}), "a");
+        configMap.put(Joiner.on('.').join(new String[]{SimpleSubstitutionUtils.SUBSTITUTION_MAP_PREFIX, "2", SimpleSubstitutionUtils.KEY_IDENTIFIER}), "label");
+        configMap.put(Joiner.on('.').join(new String[]{SimpleSubstitutionUtils.SUBSTITUTION_MAP_PREFIX, "2", SimpleSubstitutionUtils.VALUE_IDENTIFIER}), "l");
         configMap.put(AccumuloGraphConfiguration.DATA_DIR, "/tmp/");
         return configMap;
     }

@@ -61,14 +61,14 @@ public class VertexMaker extends ElementMaker<Vertex> {
 
         if (AccumuloVertex.CF_OUT_EDGE.compareTo(columnFamily) == 0) {
             String edgeId = columnQualifier.toString();
-            EdgeInfo edgeInfo = EdgeInfo.parse(value, key.getTimestamp());
+            EdgeInfo edgeInfo = EdgeInfo.parse(value, key.getTimestamp(), getGraph().getNameSubstitutionStrategy());
             outEdges.put(edgeId, edgeInfo);
             return;
         }
 
         if (AccumuloVertex.CF_IN_EDGE.compareTo(columnFamily) == 0) {
             String edgeId = columnQualifier.toString();
-            EdgeInfo edgeInfo = EdgeInfo.parse(value, key.getTimestamp());
+            EdgeInfo edgeInfo = EdgeInfo.parse(value, key.getTimestamp(), getGraph().getNameSubstitutionStrategy());
             inEdges.put(edgeId, edgeInfo);
             return;
         }
