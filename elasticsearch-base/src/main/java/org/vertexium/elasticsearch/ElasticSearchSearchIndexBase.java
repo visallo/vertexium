@@ -159,7 +159,10 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex, Searc
 
     @SuppressWarnings("unused")
     protected void createIndex(String indexName, boolean storeSourceData) throws IOException {
-        CreateIndexResponse createResponse = client.admin().indices().prepareCreate(indexName).execute().actionGet();
+        int shards = getConfig().getNumberOfShards();
+        CreateIndexResponse createResponse = client.admin().indices().prepareCreate(indexName)
+                .setSettings(ImmutableSettings.settingsBuilder().put("number_of_shards", shards))
+                .execute().actionGet();
 
         ClusterHealthResponse health = client.admin().cluster().prepareHealth(indexName)
                 .setWaitForGreenStatus()
