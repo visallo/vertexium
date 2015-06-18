@@ -36,7 +36,7 @@ public class EdgeMaker extends ElementMaker<Edge> {
     @Override
     protected void processColumn(Key key, Value value) {
         Text columnFamily = getColumnFamily(key);
-        Text columnQualifier = getColumnQualifier(key);
+        Text columnQualifier = getColumnQualifier(key.getColumnQualifier());
 
         if (AccumuloEdge.CF_SIGNAL.compareTo(columnFamily) == 0) {
             this.label = columnQualifier.toString();

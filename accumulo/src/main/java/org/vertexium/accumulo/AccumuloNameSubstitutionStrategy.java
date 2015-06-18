@@ -1,6 +1,9 @@
 package org.vertexium.accumulo;
 
 import org.apache.hadoop.io.Text;
+import org.cache2k.Cache;
+import org.cache2k.CacheBuilder;
+import org.cache2k.CacheSource;
 import org.vertexium.id.IdentityNameSubstitutionStrategy;
 import org.vertexium.id.NameSubstitutionStrategy;
 
@@ -8,9 +11,21 @@ import java.util.Map;
 
 public class AccumuloNameSubstitutionStrategy implements NameSubstitutionStrategy {
     private final NameSubstitutionStrategy nameSubstitutionStrategy;
+    private final Cache<Text, Text> inflateTextCache;
 
     protected AccumuloNameSubstitutionStrategy(NameSubstitutionStrategy nameSubstitutionStrategy) {
         this.nameSubstitutionStrategy = nameSubstitutionStrategy;
+        inflateTextCache = CacheBuilder
+                .newCache(Text.class, Text.class)
+                .name(AccumuloNameSubstitutionStrategy.class, "inflateTextCache-" + System.identityHashCode(this))
+                .maxSize(10000)
+                .source(new CacheSource<Text, Text>() {
+                    @Override
+                    public Text get(Text text) throws Throwable {
+                        return new Text(inflate(text.toString()));
+                    }
+                })
+                .build();
     }
 
     @Override
@@ -32,7 +47,7 @@ public class AccumuloNameSubstitutionStrategy implements NameSubstitutionStrateg
         if (this.nameSubstitutionStrategy instanceof IdentityNameSubstitutionStrategy) {
             return text;
         }
-        return new Text(inflate(text.toString()));
+        return inflateTextCache.get(text);
     }
 
     public static AccumuloNameSubstitutionStrategy create(NameSubstitutionStrategy nameSubstitutionStrategy) {

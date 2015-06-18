@@ -34,7 +34,7 @@ public class VertexMaker extends ElementMaker<Vertex> {
     @Override
     protected void processColumn(Key key, Value value) {
         Text columnFamily = getColumnFamily(key);
-        Text columnQualifier = getColumnQualifier(key);
+        Text columnQualifier = getColumnQualifier(key.getColumnQualifier());
 
         if (AccumuloVertex.CF_SIGNAL.compareTo(columnFamily) == 0) {
             this.timestamp = key.getTimestamp();

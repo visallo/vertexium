@@ -45,7 +45,7 @@ public abstract class ElementMaker<T> {
             }
 
             Text columnFamily = getColumnFamily(col.getKey());
-            Text columnQualifier = getColumnQualifier(col.getKey());
+            Text columnQualifier = getColumnQualifier(col.getKey().getColumnQualifier());
             long timestamp = col.getKey().getTimestamp();
 
             ColumnVisibility columnVisibility = AccumuloGraph.visibilityToAccumuloVisibility(col.getKey().getColumnVisibility().toString());
@@ -115,8 +115,8 @@ public abstract class ElementMaker<T> {
         return inflate(key.getColumnFamily());
     }
 
-    protected Text getColumnQualifier(Key key) {
-        return inflate(key.getColumnQualifier());
+    protected Text getColumnQualifier(Text columnQualifier) {
+        return inflate(columnQualifier);
     }
 
     private Text inflate(Text text) {
@@ -254,7 +254,7 @@ public abstract class ElementMaker<T> {
     }
 
     private void extractPropertyData(Map.Entry<Key, Value> column, ColumnVisibility columnVisibility) {
-        Text columnQualifier = getColumnQualifier(column.getKey());
+        Text columnQualifier = getColumnQualifier(column.getKey().getColumnQualifier());
         Value value = column.getValue();
         Visibility visibility = AccumuloGraph.accumuloVisibilityToVisibility(columnVisibility);
         PropertyColumnQualifier propertyColumnQualifier = new PropertyColumnQualifier(columnQualifier, getGraph().getNameSubstitutionStrategy());
