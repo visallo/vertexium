@@ -10,7 +10,7 @@ public class PropertyHiddenColumnQualifier extends KeyBase {
     private static final int PART_INDEX_PROPERTY_VISIBILITY = 2;
     private final String[] parts;
 
-    public PropertyHiddenColumnQualifier(Text columnQualifier, AccumuloNameSubstitutionStrategy nameSubstitutionStrategy) {
+    public PropertyHiddenColumnQualifier(String columnQualifier, AccumuloNameSubstitutionStrategy nameSubstitutionStrategy) {
         parts = splitOnValueSeparator(columnQualifier, 3);
         parts[PART_INDEX_PROPERTY_NAME] = nameSubstitutionStrategy.inflate(parts[PART_INDEX_PROPERTY_NAME]);
         parts[PART_INDEX_PROPERTY_KEY] = nameSubstitutionStrategy.inflate(parts[PART_INDEX_PROPERTY_KEY]);

@@ -11,18 +11,18 @@ import java.util.Map;
 
 public class AccumuloNameSubstitutionStrategy implements NameSubstitutionStrategy {
     private final NameSubstitutionStrategy nameSubstitutionStrategy;
-    private final Cache<Text, Text> inflateTextCache;
+    private final Cache<Text, String> inflateTextCache;
 
     protected AccumuloNameSubstitutionStrategy(NameSubstitutionStrategy nameSubstitutionStrategy) {
         this.nameSubstitutionStrategy = nameSubstitutionStrategy;
         inflateTextCache = CacheBuilder
-                .newCache(Text.class, Text.class)
+                .newCache(Text.class, String.class)
                 .name(AccumuloNameSubstitutionStrategy.class, "inflateTextCache-" + System.identityHashCode(this))
                 .maxSize(10000)
-                .source(new CacheSource<Text, Text>() {
+                .source(new CacheSource<Text, String>() {
                     @Override
-                    public Text get(Text text) throws Throwable {
-                        return new Text(inflate(text.toString()));
+                    public String get(Text text) throws Throwable {
+                        return inflate(text.toString());
                     }
                 })
                 .build();
@@ -43,9 +43,9 @@ public class AccumuloNameSubstitutionStrategy implements NameSubstitutionStrateg
         return this.nameSubstitutionStrategy.inflate(value);
     }
 
-    public Text inflate(Text text) {
+    public String inflate(Text text) {
         if (this.nameSubstitutionStrategy instanceof IdentityNameSubstitutionStrategy) {
-            return text;
+            return text.toString();
         }
         return inflateTextCache.get(text);
     }

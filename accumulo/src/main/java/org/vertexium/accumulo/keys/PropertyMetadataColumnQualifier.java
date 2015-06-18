@@ -24,7 +24,7 @@ public class PropertyMetadataColumnQualifier extends KeyBase {
     private static final int PART_INDEX_METADATA_KEY = 3;
     private final String[] parts;
 
-    public PropertyMetadataColumnQualifier(Text columnQualifier, AccumuloNameSubstitutionStrategy nameSubstitutionStrategy) {
+    public PropertyMetadataColumnQualifier(String columnQualifier, AccumuloNameSubstitutionStrategy nameSubstitutionStrategy) {
         this.parts = splitOnValueSeparator(columnQualifier, 4);
         parts[PART_INDEX_PROPERTY_NAME] = nameSubstitutionStrategy.inflate(parts[PART_INDEX_PROPERTY_NAME]);
         parts[PART_INDEX_PROPERTY_KEY] = nameSubstitutionStrategy.inflate(parts[PART_INDEX_PROPERTY_KEY]);

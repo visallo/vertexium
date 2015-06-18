@@ -9,9 +9,12 @@ import org.vertexium.mutation.PropertySoftDeleteMutation;
 import java.util.EnumSet;
 
 public class AccumuloEdge extends AccumuloElement implements Edge {
-    public static final Text CF_SIGNAL = new Text("E");
-    public static final Text CF_OUT_VERTEX = new Text("EOUT");
-    public static final Text CF_IN_VERTEX = new Text("EIN");
+    public static final String CF_SIGNAL_STRING = "E";
+    public static final Text CF_SIGNAL = new Text(CF_SIGNAL_STRING);
+    public static final String CF_OUT_VERTEX_STRING = "EOUT";
+    public static final Text CF_OUT_VERTEX = new Text(CF_OUT_VERTEX_STRING);
+    public static final String CF_IN_VERTEX_STRING = "EIN";
+    public static final Text CF_IN_VERTEX = new Text(CF_IN_VERTEX_STRING);
     private final String outVertexId;
     private final String inVertexId;
     private final String label;

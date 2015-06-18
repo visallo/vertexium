@@ -1,13 +1,11 @@
 package org.vertexium.accumulo.keys;
 
-import org.apache.hadoop.io.Text;
 import org.vertexium.VertexiumException;
 
 public abstract class KeyBase {
     public static final char VALUE_SEPARATOR = '\u001f';
 
-    protected String[] splitOnValueSeparator(Text v, int partCount) {
-        String s = v.toString();
+    protected String[] splitOnValueSeparator(String s, int partCount) {
         String[] results = new String[partCount];
         int last = 0;
         int i = s.indexOf(VALUE_SEPARATOR);

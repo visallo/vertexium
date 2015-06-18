@@ -43,10 +43,14 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
     private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(AccumuloGraph.class);
     private static final String ROW_DELETING_ITERATOR_NAME = RowDeletingIterator.class.getSimpleName();
     private static final int ROW_DELETING_ITERATOR_PRIORITY = 7;
-    public static final Text DELETE_ROW_COLUMN_FAMILY = new Text("");
-    public static final Text DELETE_ROW_COLUMN_QUALIFIER = new Text("");
-    public static final Text METADATA_COLUMN_FAMILY = new Text("");
-    public static final Text METADATA_COLUMN_QUALIFIER = new Text("");
+    public static final String DELETE_ROW_COLUMN_FAMILY_STRING = "";
+    public static final Text DELETE_ROW_COLUMN_FAMILY = new Text(DELETE_ROW_COLUMN_FAMILY_STRING);
+    public static final String DELETE_ROW_COLUMN_QUALIFIER_STRING = "";
+    public static final Text DELETE_ROW_COLUMN_QUALIFIER = new Text(DELETE_ROW_COLUMN_QUALIFIER_STRING);
+    public static final String METADATA_COLUMN_FAMILY_STRING = "";
+    public static final Text METADATA_COLUMN_FAMILY = new Text(METADATA_COLUMN_FAMILY_STRING);
+    public static final String METADATA_COLUMN_QUALIFIER_STRING = "";
+    public static final Text METADATA_COLUMN_QUALIFIER = new Text(METADATA_COLUMN_QUALIFIER_STRING);
     private static final Object addIteratorLock = new Object();
     private static final Integer METADATA_ACCUMULO_GRAPH_VERSION = 2;
     private static final String METADATA_ACCUMULO_GRAPH_VERSION_KEY = "accumulo.graph.version";
@@ -652,7 +656,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
         try {
             Map<String, HistoricalPropertyValue> results = new HashMap<>();
             for (Map.Entry<Key, Value> column : scanner) {
-                Text cq = column.getKey().getColumnQualifier();
+                String cq = column.getKey().getColumnQualifier().toString();
                 String columnVisibility = column.getKey().getColumnVisibility().toString();
                 if (column.getKey().getColumnFamily().equals(AccumuloElement.CF_PROPERTY)) {
                     if (!columnVisibility.equals(visibility.getVisibilityString())) {

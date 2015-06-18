@@ -2,7 +2,6 @@ package org.vertexium.accumulo;
 
 import org.apache.accumulo.core.data.Key;
 import org.apache.accumulo.core.data.Value;
-import org.apache.hadoop.io.Text;
 import org.vertexium.Authorizations;
 import org.vertexium.Vertex;
 import org.vertexium.mutation.PropertyDeleteMutation;
@@ -11,15 +10,12 @@ import org.vertexium.mutation.PropertySoftDeleteMutation;
 import java.util.*;
 
 public class VertexMaker extends ElementMaker<Vertex> {
-    private static final String VISIBILITY_SIGNAL = AccumuloVertex.CF_SIGNAL.toString();
-
     private final AccumuloGraph graph;
     private final Map<String, EdgeInfo> outEdges = new HashMap<>();
     private final Map<String, EdgeInfo> inEdges = new HashMap<>();
     private final Set<String> hiddenEdges = new HashSet<>();
     private final List<SoftDeleteEdgeInfo> outSoftDeletes = new ArrayList<>();
     private final List<SoftDeleteEdgeInfo> inSoftDeletes = new ArrayList<>();
-    private long timestamp;
 
     public VertexMaker(AccumuloGraph graph, Iterator<Map.Entry<Key, Value>> row, Authorizations authorizations) {
         super(graph, row, authorizations);
@@ -27,55 +23,46 @@ public class VertexMaker extends ElementMaker<Vertex> {
     }
 
     @Override
-    protected long getElementTimestamp() {
-        return this.timestamp;
-    }
-
-    @Override
-    protected void processColumn(Key key, Value value) {
-        Text columnFamily = getColumnFamily(key);
-        Text columnQualifier = getColumnQualifier(key.getColumnQualifier());
-
-        if (AccumuloVertex.CF_SIGNAL.compareTo(columnFamily) == 0) {
-            this.timestamp = key.getTimestamp();
-            return;
-        }
-
-        if (AccumuloVertex.CF_OUT_EDGE_HIDDEN.compareTo(columnFamily) == 0
-                || AccumuloVertex.CF_IN_EDGE_HIDDEN.compareTo(columnFamily) == 0) {
-            String edgeId = columnQualifier.toString();
-            hiddenEdges.add(edgeId);
-            return;
-        }
-
-        if (AccumuloVertex.CF_IN_EDGE_SOFT_DELETE.compareTo(columnFamily) == 0) {
-            String edgeId = columnQualifier.toString();
-            inSoftDeletes.add(new SoftDeleteEdgeInfo(edgeId, key.getTimestamp()));
-        }
-
-        if (AccumuloVertex.CF_OUT_EDGE_SOFT_DELETE.compareTo(columnFamily) == 0) {
-            String edgeId = columnQualifier.toString();
-            outSoftDeletes.add(new SoftDeleteEdgeInfo(edgeId, key.getTimestamp()));
-        }
-
-        if (AccumuloVertex.CF_OUT_EDGE.compareTo(columnFamily) == 0) {
-            String edgeId = columnQualifier.toString();
+    protected boolean processColumn(Key key, Value value, String columnFamily, String columnQualifierInflated) {
+        if (AccumuloVertex.CF_OUT_EDGE_STRING.equals(columnFamily)) {
+            String edgeId = columnQualifierInflated;
             EdgeInfo edgeInfo = EdgeInfo.parse(value, key.getTimestamp(), getGraph().getNameSubstitutionStrategy());
             outEdges.put(edgeId, edgeInfo);
-            return;
+            return true;
         }
 
-        if (AccumuloVertex.CF_IN_EDGE.compareTo(columnFamily) == 0) {
-            String edgeId = columnQualifier.toString();
+        if (AccumuloVertex.CF_IN_EDGE_STRING.equals(columnFamily)) {
+            String edgeId = columnQualifierInflated;
             EdgeInfo edgeInfo = EdgeInfo.parse(value, key.getTimestamp(), getGraph().getNameSubstitutionStrategy());
             inEdges.put(edgeId, edgeInfo);
-            return;
+            return true;
         }
+
+        if (AccumuloVertex.CF_OUT_EDGE_HIDDEN_STRING.equals(columnFamily)
+                || AccumuloVertex.CF_IN_EDGE_HIDDEN_STRING.equals(columnFamily)) {
+            String edgeId = columnQualifierInflated;
+            hiddenEdges.add(edgeId);
+            return true;
+        }
+
+        if (AccumuloVertex.CF_IN_EDGE_SOFT_DELETE_STRING.equals(columnFamily)) {
+            String edgeId = columnQualifierInflated;
+            inSoftDeletes.add(new SoftDeleteEdgeInfo(edgeId, key.getTimestamp()));
+            return true;
+        }
+
+        if (AccumuloVertex.CF_OUT_EDGE_SOFT_DELETE_STRING.equals(columnFamily)) {
+            String edgeId = columnQualifierInflated;
+            outSoftDeletes.add(new SoftDeleteEdgeInfo(edgeId, key.getTimestamp()));
+            return true;
+        }
+
+        return false;
     }
 
     @Override
     protected String getVisibilitySignal() {
-        return VISIBILITY_SIGNAL;
+        return AccumuloVertex.CF_SIGNAL_STRING;
     }
 
     @Override
@@ -113,7 +100,7 @@ public class VertexMaker extends ElementMaker<Vertex> {
                 this.getHiddenVisibilities(),
                 this.inEdges,
                 this.outEdges,
-                timestamp,
+                getElementTimestamp(),
                 this.getAuthorizations()
         );
     }

@@ -20,13 +20,20 @@ import static org.vertexium.util.IterableUtils.count;
 import static org.vertexium.util.IterableUtils.toSet;
 
 public class AccumuloVertex extends AccumuloElement implements Vertex {
-    public static final Text CF_SIGNAL = new Text("V");
-    public static final Text CF_OUT_EDGE = new Text("EOUT");
-    public static final Text CF_OUT_EDGE_HIDDEN = new Text("EOUTH");
-    public static final Text CF_OUT_EDGE_SOFT_DELETE = new Text("EOUTD");
-    public static final Text CF_IN_EDGE = new Text("EIN");
-    public static final Text CF_IN_EDGE_HIDDEN = new Text("EINH");
-    public static final Text CF_IN_EDGE_SOFT_DELETE = new Text("EIND");
+    public static final String CF_SIGNAL_STRING = "V";
+    public static final Text CF_SIGNAL = new Text(CF_SIGNAL_STRING);
+    public static final String CF_OUT_EDGE_STRING = "EOUT";
+    public static final Text CF_OUT_EDGE = new Text(CF_OUT_EDGE_STRING);
+    public static final String CF_OUT_EDGE_HIDDEN_STRING = "EOUTH";
+    public static final Text CF_OUT_EDGE_HIDDEN = new Text(CF_OUT_EDGE_HIDDEN_STRING);
+    public static final String CF_OUT_EDGE_SOFT_DELETE_STRING = "EOUTD";
+    public static final Text CF_OUT_EDGE_SOFT_DELETE = new Text(CF_OUT_EDGE_SOFT_DELETE_STRING);
+    public static final String CF_IN_EDGE_STRING = "EIN";
+    public static final Text CF_IN_EDGE = new Text(CF_IN_EDGE_STRING);
+    public static final String CF_IN_EDGE_HIDDEN_STRING = "EINH";
+    public static final Text CF_IN_EDGE_HIDDEN = new Text(CF_IN_EDGE_HIDDEN_STRING);
+    public static final String CF_IN_EDGE_SOFT_DELETE_STRING = "EIND";
+    public static final Text CF_IN_EDGE_SOFT_DELETE = new Text(CF_IN_EDGE_SOFT_DELETE_STRING);
     private final Map<String, EdgeInfo> inEdges;
     private final Map<String, EdgeInfo> outEdges;
 

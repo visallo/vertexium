@@ -12,17 +12,23 @@ import java.io.Serializable;
 
 public abstract class AccumuloElement extends ElementBase implements Serializable, HasTimestamp {
     private static final long serialVersionUID = 1L;
-    public static final Text CF_HIDDEN = new Text("H");
+    public static final String CF_HIDDEN_STRING = "H";
+    public static final Text CF_HIDDEN = new Text(CF_HIDDEN_STRING);
     public static final Text CQ_HIDDEN = new Text("H");
-    public static final Text CF_SOFT_DELETE = new Text("D");
+    public static final String CF_SOFT_DELETE_STRING = "D";
+    public static final Text CF_SOFT_DELETE = new Text(CF_SOFT_DELETE_STRING);
     public static final Text CQ_SOFT_DELETE = new Text("D");
     public static final Value HIDDEN_VALUE = new Value("".getBytes());
     public static final Value HIDDEN_VALUE_DELETED = new Value("X".getBytes());
     public static final Value SOFT_DELETE_VALUE = new Value("".getBytes());
-    public static final Text CF_PROPERTY = new Text("PROP");
-    public static final Text CF_PROPERTY_HIDDEN = new Text("PROPH");
-    public static final Text CF_PROPERTY_SOFT_DELETE = new Text("PROPD");
-    public static final Text CF_PROPERTY_METADATA = new Text("PROPMETA");
+    public static final String CF_PROPERTY_STRING = "PROP";
+    public static final Text CF_PROPERTY = new Text(CF_PROPERTY_STRING);
+    public static final String CF_PROPERTY_HIDDEN_STRING = "PROPH";
+    public static final Text CF_PROPERTY_HIDDEN = new Text(CF_PROPERTY_HIDDEN_STRING);
+    public static final String CF_PROPERTY_SOFT_DELETE_STRING = "PROPD";
+    public static final Text CF_PROPERTY_SOFT_DELETE = new Text(CF_PROPERTY_SOFT_DELETE_STRING);
+    public static final String CF_PROPERTY_METADATA_STRING = "PROPMETA";
+    public static final Text CF_PROPERTY_METADATA = new Text(CF_PROPERTY_METADATA_STRING);
 
     protected AccumuloElement(
             Graph graph,

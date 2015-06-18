@@ -15,7 +15,7 @@ public class PropertyColumnQualifier extends KeyBase {
     private static final int PART_INDEX_PROPERTY_KEY = 1;
     private final String[] parts;
 
-    public PropertyColumnQualifier(Text columnQualifier, AccumuloNameSubstitutionStrategy nameSubstitutionStrategy) {
+    public PropertyColumnQualifier(String columnQualifier, AccumuloNameSubstitutionStrategy nameSubstitutionStrategy) {
         this.parts = splitOnValueSeparator(columnQualifier, 2);
         parts[PART_INDEX_PROPERTY_NAME] = nameSubstitutionStrategy.inflate(parts[PART_INDEX_PROPERTY_NAME]);
         parts[PART_INDEX_PROPERTY_KEY] = nameSubstitutionStrategy.inflate(parts[PART_INDEX_PROPERTY_KEY]);

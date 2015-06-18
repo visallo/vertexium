@@ -31,8 +31,9 @@ public abstract class ElementMaker<T> {
     private String id;
     private Visibility visibility;
     private long elementSoftDeleteTimestamp;
-    private static final Cache<Text, PropertyMetadataColumnQualifier> textToPropertyMetadataColumnQualifierCache = CacheBuilder
-            .newCache(Text.class, PropertyMetadataColumnQualifier.class)
+    private long timestamp;
+    private static final Cache<String, PropertyMetadataColumnQualifier> stringToPropertyMetadataColumnQualifierCache = CacheBuilder
+            .newCache(String.class, PropertyMetadataColumnQualifier.class)
             .name(ElementMaker.class, "propertyMetadataColumnQualifierCache")
             .maxSize(10000)
             .build();
@@ -51,57 +52,66 @@ public abstract class ElementMaker<T> {
                 this.id = col.getKey().getRow().toString();
             }
 
-            Text columnFamily = getColumnFamily(col.getKey());
-            Text columnQualifier = getColumnQualifier(col.getKey().getColumnQualifier());
-            long timestamp = col.getKey().getTimestamp();
+            String columnFamily = getColumnFamily(col.getKey());
 
-            ColumnVisibility columnVisibility = AccumuloGraph.visibilityToAccumuloVisibility(col.getKey().getColumnVisibility().toString());
-            Value value = col.getValue();
-
-            if (columnFamily.equals(AccumuloGraph.DELETE_ROW_COLUMN_FAMILY)
-                    && columnQualifier.equals(AccumuloGraph.DELETE_ROW_COLUMN_QUALIFIER)
-                    && value.equals(RowDeletingIterator.DELETE_ROW_VALUE)) {
-                return null;
-            }
-
-            if (columnFamily.equals(AccumuloElement.CF_SOFT_DELETE)
-                    && columnQualifier.equals(AccumuloElement.CQ_SOFT_DELETE)
-                    && value.equals(AccumuloElement.SOFT_DELETE_VALUE)) {
-                elementSoftDeleteTimestamp = timestamp;
+            if (AccumuloElement.CF_PROPERTY_METADATA_STRING.equals(columnFamily)) {
+                ColumnVisibility columnVisibility = AccumuloGraph.visibilityToAccumuloVisibility(col.getKey().getColumnVisibility().toString());
+                extractPropertyMetadata(inflateColumnQualifier(col.getKey().getColumnQualifier()), columnVisibility, col.getKey().getTimestamp(), col.getValue());
                 continue;
             }
 
-            if (columnFamily.equals(AccumuloElement.CF_HIDDEN)) {
+            if (AccumuloElement.CF_PROPERTY_STRING.equals(columnFamily)) {
+                ColumnVisibility columnVisibility = AccumuloGraph.visibilityToAccumuloVisibility(col.getKey().getColumnVisibility().toString());
+                extractPropertyData(col, columnVisibility);
+                continue;
+            }
+
+            if (getVisibilitySignal().equals(columnFamily)) {
+                ColumnVisibility columnVisibility = AccumuloGraph.visibilityToAccumuloVisibility(col.getKey().getColumnVisibility().toString());
+                this.visibility = AccumuloGraph.accumuloVisibilityToVisibility(columnVisibility);
+                this.timestamp = col.getKey().getTimestamp();
+                processSignalColumn(col.getKey().getColumnQualifier());
+                continue;
+            }
+
+            if (processColumn(col.getKey(), col.getValue(), columnFamily, inflateColumnQualifier(col.getKey().getColumnQualifier()))) {
+                continue;
+            }
+
+            if (AccumuloGraph.DELETE_ROW_COLUMN_FAMILY_STRING.equals(columnFamily)
+                    && AccumuloGraph.DELETE_ROW_COLUMN_QUALIFIER.equals(col.getKey().getColumnQualifier())
+                    && RowDeletingIterator.DELETE_ROW_VALUE.equals(col.getValue())) {
+                return null;
+            }
+
+            if (AccumuloElement.CF_SOFT_DELETE_STRING.equals(columnFamily)
+                    && AccumuloElement.CQ_SOFT_DELETE.equals(col.getKey().getColumnQualifier())
+                    && AccumuloElement.SOFT_DELETE_VALUE.equals(col.getValue())) {
+                elementSoftDeleteTimestamp = col.getKey().getTimestamp();
+                continue;
+            }
+
+            if (AccumuloElement.CF_PROPERTY_SOFT_DELETE_STRING.equals(columnFamily)) {
+                ColumnVisibility columnVisibility = AccumuloGraph.visibilityToAccumuloVisibility(col.getKey().getColumnVisibility().toString());
+                extractPropertySoftDelete(inflateColumnQualifier(col.getKey().getColumnQualifier()), col.getKey().getTimestamp(), columnVisibility);
+                continue;
+            }
+
+            if (AccumuloElement.CF_HIDDEN_STRING.equals(columnFamily)) {
                 if (includeHidden) {
+                    ColumnVisibility columnVisibility = AccumuloGraph.visibilityToAccumuloVisibility(col.getKey().getColumnVisibility().toString());
                     this.hiddenVisibilities.add(AccumuloGraph.accumuloVisibilityToVisibility(columnVisibility));
+                    continue;
                 } else {
                     return null;
                 }
             }
 
-            if (columnFamily.equals(AccumuloElement.CF_PROPERTY_HIDDEN)) {
-                extractPropertyHidden(columnQualifier, columnVisibility, value);
-            }
-
-            if (columnFamily.equals(AccumuloElement.CF_PROPERTY_SOFT_DELETE)) {
-                extractPropertySoftDelete(columnQualifier, timestamp, columnVisibility);
-            }
-
-            if (AccumuloElement.CF_PROPERTY.compareTo(columnFamily) == 0) {
-                extractPropertyData(col, columnVisibility);
+            if (AccumuloElement.CF_PROPERTY_HIDDEN_STRING.equals(columnFamily)) {
+                ColumnVisibility columnVisibility = AccumuloGraph.visibilityToAccumuloVisibility(col.getKey().getColumnVisibility().toString());
+                extractPropertyHidden(inflateColumnQualifier(col.getKey().getColumnQualifier()), columnVisibility, col.getValue());
                 continue;
             }
-
-            if (AccumuloElement.CF_PROPERTY_METADATA.compareTo(columnFamily) == 0) {
-                extractPropertyMetadata(columnQualifier, columnVisibility, timestamp, value);
-                continue;
-            }
-
-            if (getVisibilitySignal().equals(columnFamily.toString())) {
-                this.visibility = AccumuloGraph.accumuloVisibilityToVisibility(columnVisibility);
-            }
-
-            processColumn(col.getKey(), col.getValue());
         }
 
         // If the ElementVisibilityRowFilter isn't installed this will catch stray rows
@@ -116,21 +126,27 @@ public abstract class ElementMaker<T> {
         return makeElement(includeHidden);
     }
 
-    protected abstract long getElementTimestamp();
+    protected void processSignalColumn(Text columnQualifier) {
 
-    protected Text getColumnFamily(Key key) {
+    }
+
+    protected long getElementTimestamp() {
+        return this.timestamp;
+    }
+
+    protected String getColumnFamily(Key key) {
         return inflate(key.getColumnFamily());
     }
 
-    protected Text getColumnQualifier(Text columnQualifier) {
+    protected String inflateColumnQualifier(Text columnQualifier) {
         return inflate(columnQualifier);
     }
 
-    private Text inflate(Text text) {
+    private String inflate(Text text) {
         return getGraph().getNameSubstitutionStrategy().inflate(text);
     }
 
-    protected abstract void processColumn(Key key, Value value);
+    protected abstract boolean processColumn(Key key, Value value, String columnFamily, String columnQualifierInflated);
 
     protected abstract String getVisibilitySignal();
 
@@ -217,7 +233,7 @@ public abstract class ElementMaker<T> {
         return false;
     }
 
-    private void extractPropertyHidden(Text columnQualifier, ColumnVisibility columnVisibility, Value value) {
+    private void extractPropertyHidden(String columnQualifier, ColumnVisibility columnVisibility, Value value) {
         if (value.equals(AccumuloElement.HIDDEN_VALUE_DELETED)) {
             return;
         }
@@ -231,7 +247,7 @@ public abstract class ElementMaker<T> {
         this.hiddenProperties.add(hiddenProperty);
     }
 
-    private void extractPropertySoftDelete(Text columnQualifier, long timestamp, ColumnVisibility columnVisibility) {
+    private void extractPropertySoftDelete(String columnQualifier, long timestamp, ColumnVisibility columnVisibility) {
         PropertyColumnQualifier propertyColumnQualifier = new PropertyColumnQualifier(columnQualifier, getGraph().getNameSubstitutionStrategy());
         SoftDeletedProperty softDeletedProperty = new SoftDeletedProperty(
                 propertyColumnQualifier.getPropertyKey(),
@@ -242,12 +258,12 @@ public abstract class ElementMaker<T> {
         this.softDeletedProperties.add(softDeletedProperty);
     }
 
-    private void extractPropertyMetadata(Text columnQualifier, ColumnVisibility columnVisibility, long timestamp, Value value) {
+    private void extractPropertyMetadata(String columnQualifier, ColumnVisibility columnVisibility, long timestamp, Value value) {
         Visibility metadataVisibility = AccumuloGraph.accumuloVisibilityToVisibility(columnVisibility);
-        PropertyMetadataColumnQualifier propertyMetadataColumnQualifier = textToPropertyMetadataColumnQualifierCache.peek(columnQualifier);
+        PropertyMetadataColumnQualifier propertyMetadataColumnQualifier = stringToPropertyMetadataColumnQualifierCache.peek(columnQualifier);
         if (propertyMetadataColumnQualifier == null) {
             propertyMetadataColumnQualifier = new PropertyMetadataColumnQualifier(columnQualifier, getGraph().getNameSubstitutionStrategy());
-            textToPropertyMetadataColumnQualifierCache.put(columnQualifier, propertyMetadataColumnQualifier);
+            stringToPropertyMetadataColumnQualifierCache.put(columnQualifier, propertyMetadataColumnQualifier);
         }
         String discriminator = propertyMetadataColumnQualifier.getPropertyDiscriminator(timestamp);
         LazyPropertyMetadata lazyPropertyMetadata = getOrCreatePropertyMetadata(discriminator);
@@ -264,7 +280,7 @@ public abstract class ElementMaker<T> {
     }
 
     private void extractPropertyData(Map.Entry<Key, Value> column, ColumnVisibility columnVisibility) {
-        Text columnQualifier = getColumnQualifier(column.getKey().getColumnQualifier());
+        String columnQualifier = inflateColumnQualifier(column.getKey().getColumnQualifier());
         Value value = column.getValue();
         Visibility visibility = AccumuloGraph.accumuloVisibilityToVisibility(columnVisibility);
         PropertyColumnQualifier propertyColumnQualifier = new PropertyColumnQualifier(columnQualifier, getGraph().getNameSubstitutionStrategy());
