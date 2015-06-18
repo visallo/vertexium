@@ -11,6 +11,7 @@ import org.junit.runners.JUnit4;
 import java.util.List;
 
 import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
 @RunWith(JUnit4.class)
@@ -49,6 +50,20 @@ public class SimpleNameSubstitutionStrategyTest {
     }
 
     @Test
+    public void testDeflateCache() {
+        assertEquals(0, testSubject.getDeflateCacheMisses());
+        assertEquals(0, testSubject.getDeflateCalls());
+
+        testSubject.deflate(KEY1);
+        assertEquals(1, testSubject.getDeflateCacheMisses());
+        assertEquals(1, testSubject.getDeflateCalls());
+
+        testSubject.deflate(KEY1);
+        assertEquals(1, testSubject.getDeflateCacheMisses());
+        assertEquals(2, testSubject.getDeflateCalls());
+    }
+
+    @Test
     public void testInflate() {
         String test = testSubject.inflate(SimpleNameSubstitutionStrategy.wrap(VALUE1));
         assertThat(test, is(KEY1));
@@ -58,6 +73,20 @@ public class SimpleNameSubstitutionStrategyTest {
     public void testInflateMultiple() {
         String test = testSubject.inflate(SimpleNameSubstitutionStrategy.wrap(VALUE1) + SimpleNameSubstitutionStrategy.wrap(VALUE1));
         assertThat(test, is(KEY1 + KEY1));
+    }
+
+    @Test
+    public void testInflateCache() {
+        assertEquals(0, testSubject.getInflateCacheMisses());
+        assertEquals(0, testSubject.getInflateCalls());
+
+        testSubject.inflate(SimpleNameSubstitutionStrategy.wrap(VALUE1));
+        assertEquals(1, testSubject.getInflateCacheMisses());
+        assertEquals(1, testSubject.getInflateCalls());
+
+        testSubject.inflate(SimpleNameSubstitutionStrategy.wrap(VALUE1));
+        assertEquals(1, testSubject.getInflateCacheMisses());
+        assertEquals(2, testSubject.getInflateCalls());
     }
 
     @Test

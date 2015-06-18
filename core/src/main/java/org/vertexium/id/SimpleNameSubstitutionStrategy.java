@@ -11,10 +11,14 @@ import java.util.List;
 import java.util.Map;
 
 public class SimpleNameSubstitutionStrategy implements NameSubstitutionStrategy {
-    private List<InflateItem> inflateSubstitutionList = new ArrayList<>();
     private List<DeflateItem> deflateSubstitutionList = new ArrayList<>();
     private final Cache<String, String> deflateCache;
+    private long deflateCalls;
+    private long deflateCacheMisses;
+    private List<InflateItem> inflateSubstitutionList = new ArrayList<>();
     private final Cache<String, String> inflateCache;
+    private long inflateCalls;
+    private long inflateCacheMisses;
     public static final String SUBS_DELIM = "\u0002";
 
     public SimpleNameSubstitutionStrategy() {
@@ -40,11 +44,13 @@ public class SimpleNameSubstitutionStrategy implements NameSubstitutionStrategy 
 
     @Override
     public String deflate(String value) {
+        deflateCalls++;
         return deflateCache.get(value);
     }
 
     @Override
     public String inflate(String value) {
+        inflateCalls++;
         return inflateCache.get(value);
     }
 
@@ -59,6 +65,22 @@ public class SimpleNameSubstitutionStrategy implements NameSubstitutionStrategy 
             this.inflateSubstitutionList.add(new InflateItem(wrap(pair.getValue()), pair.getKey()));
             this.deflateSubstitutionList.add(new DeflateItem(pair.getKey(), wrap(pair.getValue())));
         }
+    }
+
+    public long getDeflateCalls() {
+        return deflateCalls;
+    }
+
+    public long getDeflateCacheMisses() {
+        return deflateCacheMisses;
+    }
+
+    public long getInflateCalls() {
+        return inflateCalls;
+    }
+
+    public long getInflateCacheMisses() {
+        return inflateCacheMisses;
     }
 
     private static class InflateItem {
@@ -78,6 +100,7 @@ public class SimpleNameSubstitutionStrategy implements NameSubstitutionStrategy 
     private class InflateCacheSource implements CacheSource<String, String> {
         @Override
         public String get(String value) throws Throwable {
+            inflateCacheMisses++;
             String inflatedValue = value;
             for (InflateItem inflateItem : inflateSubstitutionList) {
                 inflatedValue = inflateItem.inflate(inflatedValue);
@@ -104,6 +127,7 @@ public class SimpleNameSubstitutionStrategy implements NameSubstitutionStrategy 
     private class DeflateCacheSource implements CacheSource<String, String> {
         @Override
         public String get(String value) throws Throwable {
+            deflateCacheMisses++;
             String deflatedVal = value;
             for (DeflateItem deflateItem : deflateSubstitutionList) {
                 deflatedVal = deflateItem.deflate(deflatedVal);
