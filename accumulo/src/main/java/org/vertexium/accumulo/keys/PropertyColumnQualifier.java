@@ -78,7 +78,7 @@ public class PropertyColumnQualifier extends KeyBase {
                 .append(VALUE_SEPARATOR)
                 .append(visibilityString)
                 .append(VALUE_SEPARATOR)
-                .append(timestamp)
+                .append(timestampString)
                 .toString();
     }
 
