@@ -22,34 +22,14 @@ public class SimpleNameSubstitutionStrategy implements NameSubstitutionStrategy 
                 .newCache(String.class, String.class)
                 .name(SimpleNameSubstitutionStrategy.class, "deflateCache-" + System.identityHashCode(this))
                 .maxSize(1000)
-                .source(new CacheSource<String, String>() {
-                    @Override
-                    public String get(String value) throws Throwable {
-                        String deflatedVal = value;
-                        for (DeflateItem deflateItem : deflateSubstitutionList) {
-                            deflatedVal = deflateItem.deflate(deflatedVal);
-                        }
-                        inflateCache.put(deflatedVal, value);
-                        return deflatedVal;
-                    }
-                })
+                .source(new DeflateCacheSource())
                 .build();
 
         inflateCache = CacheBuilder
                 .newCache(String.class, String.class)
                 .name(SimpleNameSubstitutionStrategy.class, "inflateCache-" + System.identityHashCode(this))
                 .maxSize(1000)
-                .source(new CacheSource<String, String>() {
-                    @Override
-                    public String get(String value) throws Throwable {
-                        String inflatedValue = value;
-                        for (InflateItem inflateItem : inflateSubstitutionList) {
-                            inflatedValue = inflateItem.inflate(inflatedValue);
-                        }
-                        deflateCache.put(inflatedValue, value);
-                        return inflatedValue;
-                    }
-                })
+                .source(new InflateCacheSource())
                 .build();
     }
 
@@ -95,6 +75,18 @@ public class SimpleNameSubstitutionStrategy implements NameSubstitutionStrategy 
         }
     }
 
+    private class InflateCacheSource implements CacheSource<String, String> {
+        @Override
+        public String get(String value) throws Throwable {
+            String inflatedValue = value;
+            for (InflateItem inflateItem : inflateSubstitutionList) {
+                inflatedValue = inflateItem.inflate(inflatedValue);
+            }
+            deflateCache.put(inflatedValue, value);
+            return inflatedValue;
+        }
+    }
+
     private static class DeflateItem {
         private final String pattern;
         private final String replacement;
@@ -106,6 +98,18 @@ public class SimpleNameSubstitutionStrategy implements NameSubstitutionStrategy 
 
         public String deflate(String value) {
             return StringUtils.replace(value, pattern, replacement);
+        }
+    }
+
+    private class DeflateCacheSource implements CacheSource<String, String> {
+        @Override
+        public String get(String value) throws Throwable {
+            String deflatedVal = value;
+            for (DeflateItem deflateItem : deflateSubstitutionList) {
+                deflatedVal = deflateItem.deflate(deflatedVal);
+            }
+            inflateCache.put(deflatedVal, value);
+            return deflatedVal;
         }
     }
 }
