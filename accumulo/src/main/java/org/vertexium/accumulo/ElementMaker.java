@@ -5,6 +5,8 @@ import org.apache.accumulo.core.data.Value;
 import org.apache.accumulo.core.iterators.user.RowDeletingIterator;
 import org.apache.accumulo.core.security.ColumnVisibility;
 import org.apache.hadoop.io.Text;
+import org.cache2k.Cache;
+import org.cache2k.CacheBuilder;
 import org.vertexium.Authorizations;
 import org.vertexium.Property;
 import org.vertexium.Visibility;
@@ -29,6 +31,11 @@ public abstract class ElementMaker<T> {
     private String id;
     private Visibility visibility;
     private long elementSoftDeleteTimestamp;
+    private static final Cache<Text, PropertyMetadataColumnQualifier> textToPropertyMetadataColumnQualifierCache = CacheBuilder
+            .newCache(Text.class, PropertyMetadataColumnQualifier.class)
+            .name(ElementMaker.class, "propertyMetadataColumnQualifierCache")
+            .maxSize(10000)
+            .build();
 
     public ElementMaker(AccumuloGraph graph, Iterator<Map.Entry<Key, Value>> row, Authorizations authorizations) {
         this.graph = graph;
@@ -237,8 +244,11 @@ public abstract class ElementMaker<T> {
 
     private void extractPropertyMetadata(Text columnQualifier, ColumnVisibility columnVisibility, long timestamp, Value value) {
         Visibility metadataVisibility = AccumuloGraph.accumuloVisibilityToVisibility(columnVisibility);
-        PropertyMetadataColumnQualifier propertyMetadataColumnQualifier = new PropertyMetadataColumnQualifier(columnQualifier, getGraph().getNameSubstitutionStrategy());
-
+        PropertyMetadataColumnQualifier propertyMetadataColumnQualifier = textToPropertyMetadataColumnQualifierCache.peek(columnQualifier);
+        if (propertyMetadataColumnQualifier == null) {
+            propertyMetadataColumnQualifier = new PropertyMetadataColumnQualifier(columnQualifier, getGraph().getNameSubstitutionStrategy());
+            textToPropertyMetadataColumnQualifierCache.put(columnQualifier, propertyMetadataColumnQualifier);
+        }
         String discriminator = propertyMetadataColumnQualifier.getPropertyDiscriminator(timestamp);
         LazyPropertyMetadata lazyPropertyMetadata = getOrCreatePropertyMetadata(discriminator);
         lazyPropertyMetadata.add(propertyMetadataColumnQualifier.getMetadataKey(), metadataVisibility, value.get());
