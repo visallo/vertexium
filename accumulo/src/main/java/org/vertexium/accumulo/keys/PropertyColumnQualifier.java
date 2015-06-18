@@ -3,7 +3,6 @@ package org.vertexium.accumulo.keys;
 import org.apache.accumulo.core.security.ColumnVisibility;
 import org.apache.hadoop.io.Text;
 import org.vertexium.Property;
-import org.vertexium.VertexiumException;
 import org.vertexium.Visibility;
 import org.vertexium.accumulo.AccumuloGraph;
 import org.vertexium.accumulo.AccumuloNameSubstitutionStrategy;
@@ -17,10 +16,7 @@ public class PropertyColumnQualifier extends KeyBase {
     private final String[] parts;
 
     public PropertyColumnQualifier(Text columnQualifier, AccumuloNameSubstitutionStrategy nameSubstitutionStrategy) {
-        this.parts = splitOnValueSeparator(columnQualifier);
-        if (this.parts.length != 2) {
-            throw new VertexiumException("Invalid property column qualifier: " + columnQualifier + ". Expected 2 parts, found " + this.parts.length);
-        }
+        this.parts = splitOnValueSeparator(columnQualifier, 2);
         parts[PART_INDEX_PROPERTY_NAME] = nameSubstitutionStrategy.inflate(parts[PART_INDEX_PROPERTY_NAME]);
         parts[PART_INDEX_PROPERTY_KEY] = nameSubstitutionStrategy.inflate(parts[PART_INDEX_PROPERTY_KEY]);
     }

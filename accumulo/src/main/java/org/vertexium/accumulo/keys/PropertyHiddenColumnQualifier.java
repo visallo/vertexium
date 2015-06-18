@@ -2,7 +2,6 @@ package org.vertexium.accumulo.keys;
 
 import org.apache.hadoop.io.Text;
 import org.vertexium.Property;
-import org.vertexium.VertexiumException;
 import org.vertexium.accumulo.AccumuloNameSubstitutionStrategy;
 
 public class PropertyHiddenColumnQualifier extends KeyBase {
@@ -12,10 +11,7 @@ public class PropertyHiddenColumnQualifier extends KeyBase {
     private final String[] parts;
 
     public PropertyHiddenColumnQualifier(Text columnQualifier, AccumuloNameSubstitutionStrategy nameSubstitutionStrategy) {
-        parts = splitOnValueSeparator(columnQualifier);
-        if (this.parts.length != 3) {
-            throw new VertexiumException("Invalid property hidden column qualifier: " + columnQualifier + ". Expected 3 parts, found " + this.parts.length);
-        }
+        parts = splitOnValueSeparator(columnQualifier, 3);
         parts[PART_INDEX_PROPERTY_NAME] = nameSubstitutionStrategy.inflate(parts[PART_INDEX_PROPERTY_NAME]);
         parts[PART_INDEX_PROPERTY_KEY] = nameSubstitutionStrategy.inflate(parts[PART_INDEX_PROPERTY_KEY]);
     }

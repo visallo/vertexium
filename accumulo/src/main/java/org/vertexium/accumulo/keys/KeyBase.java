@@ -3,27 +3,32 @@ package org.vertexium.accumulo.keys;
 import org.apache.hadoop.io.Text;
 import org.vertexium.VertexiumException;
 
-import java.util.ArrayList;
-
 public abstract class KeyBase {
     public static final char VALUE_SEPARATOR = '\u001f';
 
-    protected String[] splitOnValueSeparator(Text v) {
+    protected String[] splitOnValueSeparator(Text v, int partCount) {
         String s = v.toString();
-        ArrayList<String> results = new ArrayList<>(10);
+        String[] results = new String[partCount];
         int last = 0;
         int i = s.indexOf(VALUE_SEPARATOR);
+        int partIndex = 0;
         while (true) {
             if (i > 0) {
-                results.add(s.substring(last, i));
+                results[partIndex++] = s.substring(last, i);
+                if (partIndex >= partCount) {
+                    throw new VertexiumException("Invalid number of parts for '" + s + "'. Expected " + partCount + " found " + partIndex);
+                }
                 last = i + 1;
                 i = s.indexOf(VALUE_SEPARATOR, last);
             } else {
-                results.add(s.substring(last));
+                results[partIndex++] = s.substring(last);
                 break;
             }
         }
-        return results.toArray(new String[results.size()]);
+        if (partIndex != partCount) {
+            throw new VertexiumException("Invalid number of parts for '" + s + "'. Expected " + partCount + " found " + partIndex);
+        }
+        return results;
     }
 
     protected void assertNoValueSeparator(String str) {

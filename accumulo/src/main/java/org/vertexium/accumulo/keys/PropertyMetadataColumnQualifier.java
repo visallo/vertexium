@@ -1,14 +1,15 @@
 package org.vertexium.accumulo.keys;
 
 import org.apache.hadoop.io.Text;
-import org.vertexium.Property;
-import org.vertexium.VertexiumException;
 import org.vertexium.accumulo.AccumuloNameSubstitutionStrategy;
 import org.vertexium.id.NameSubstitutionStrategy;
 
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
-import java.nio.charset.*;
+import java.nio.charset.CharacterCodingException;
+import java.nio.charset.Charset;
+import java.nio.charset.CharsetEncoder;
+import java.nio.charset.CodingErrorAction;
 
 public class PropertyMetadataColumnQualifier extends KeyBase {
     private static ThreadLocal<CharsetEncoder> ENCODER_FACTORY = new ThreadLocal() {
@@ -24,10 +25,7 @@ public class PropertyMetadataColumnQualifier extends KeyBase {
     private final String[] parts;
 
     public PropertyMetadataColumnQualifier(Text columnQualifier, AccumuloNameSubstitutionStrategy nameSubstitutionStrategy) {
-        this.parts = splitOnValueSeparator(columnQualifier);
-        if (this.parts.length != 4) {
-            throw new VertexiumException("Invalid property metadata column qualifier: " + columnQualifier + ". Expected 4 parts, found " + this.parts.length);
-        }
+        this.parts = splitOnValueSeparator(columnQualifier, 4);
         parts[PART_INDEX_PROPERTY_NAME] = nameSubstitutionStrategy.inflate(parts[PART_INDEX_PROPERTY_NAME]);
         parts[PART_INDEX_PROPERTY_KEY] = nameSubstitutionStrategy.inflate(parts[PART_INDEX_PROPERTY_KEY]);
         parts[PART_INDEX_METADATA_KEY] = nameSubstitutionStrategy.inflate(parts[PART_INDEX_METADATA_KEY]);
@@ -73,7 +71,7 @@ public class PropertyMetadataColumnQualifier extends KeyBase {
         assertNoValueSeparator(metadataKey);
 
         int charCount = name.length() + key.length() + visibilityString.length() + metadataKey.length() + 3;
-        CharBuffer qualifierChars = (CharBuffer)CharBuffer.allocate(charCount)
+        CharBuffer qualifierChars = (CharBuffer) CharBuffer.allocate(charCount)
                 .put(name).put(VALUE_SEPARATOR)
                 .put(key).put(VALUE_SEPARATOR)
                 .put(visibilityString).put(VALUE_SEPARATOR)
