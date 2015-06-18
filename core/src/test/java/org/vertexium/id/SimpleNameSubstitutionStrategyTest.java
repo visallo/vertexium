@@ -37,9 +37,27 @@ public class SimpleNameSubstitutionStrategyTest {
     }
 
     @Test
-    public void testSubstitutionIsSwappedOut() {
+    public void testDeflate() {
         String test = testSubject.deflate(KEY1);
         assertThat(test, is(SimpleNameSubstitutionStrategy.wrap(VALUE1)));
+    }
+
+    @Test
+    public void testDeflateMultiple() {
+        String test = testSubject.deflate(KEY1 + KEY1);
+        assertThat(test, is(SimpleNameSubstitutionStrategy.wrap(VALUE1) + SimpleNameSubstitutionStrategy.wrap(VALUE1)));
+    }
+
+    @Test
+    public void testInflate() {
+        String test = testSubject.inflate(SimpleNameSubstitutionStrategy.wrap(VALUE1));
+        assertThat(test, is(KEY1));
+    }
+
+    @Test
+    public void testInflateMultiple() {
+        String test = testSubject.inflate(SimpleNameSubstitutionStrategy.wrap(VALUE1) + SimpleNameSubstitutionStrategy.wrap(VALUE1));
+        assertThat(test, is(KEY1 + KEY1));
     }
 
     @Test
