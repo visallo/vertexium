@@ -64,6 +64,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
     private static final int ACCUMULO_DEFAULT_VERSIONING_ITERATOR_PRIORITY = 20;
     private static final String ACCUMULO_DEFAULT_VERSIONING_ITERATOR_NAME = "vers";
     private static final ColumnVisibility EMPTY_COLUMN_VISIBILITY = new ColumnVisibility();
+    private static final String CLASSPATH_CONTEXT_NAME = "vertexium";
     private final Connector connector;
     private final ValueSerializer valueSerializer;
     private final FileSystem fileSystem;
@@ -144,10 +145,10 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
         SearchIndex searchIndex = config.createSearchIndex();
         IdGenerator idGenerator = config.createIdGenerator();
         NameSubstitutionStrategy nameSubstitutionStrategy = config.createSubstitutionStrategy();
-        ensureTableExists(connector, getVerticesTableName(config.getTableNamePrefix()), config.getMaxVersions());
-        ensureTableExists(connector, getEdgesTableName(config.getTableNamePrefix()), config.getMaxVersions());
-        ensureTableExists(connector, getDataTableName(config.getTableNamePrefix()), 1);
-        ensureTableExists(connector, getMetadataTableName(config.getTableNamePrefix()), 1);
+        ensureTableExists(connector, getVerticesTableName(config.getTableNamePrefix()), config.getMaxVersions(), config.getHdfsContextClasspath());
+        ensureTableExists(connector, getEdgesTableName(config.getTableNamePrefix()), config.getMaxVersions(), config.getHdfsContextClasspath());
+        ensureTableExists(connector, getDataTableName(config.getTableNamePrefix()), 1, config.getHdfsContextClasspath());
+        ensureTableExists(connector, getMetadataTableName(config.getTableNamePrefix()), 1, config.getHdfsContextClasspath());
         ensureRowDeletingIteratorIsAttached(connector, getVerticesTableName(config.getTableNamePrefix()));
         ensureRowDeletingIteratorIsAttached(connector, getEdgesTableName(config.getTableNamePrefix()));
         ensureRowDeletingIteratorIsAttached(connector, getDataTableName(config.getTableNamePrefix()));
@@ -198,7 +199,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
         }
     }
 
-    protected static void ensureTableExists(Connector connector, String tableName, Integer maxVersions) {
+    protected static void ensureTableExists(Connector connector, String tableName, Integer maxVersions, String hdfsContextClasspath) {
         try {
             if (!connector.tableOperations().exists(tableName)) {
                 connector.tableOperations().create(tableName, false);
@@ -214,6 +215,11 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
                     EnumSet<IteratorUtil.IteratorScope> scope = EnumSet.allOf(IteratorUtil.IteratorScope.class);
                     connector.tableOperations().attachIterator(tableName, versioningSettings, scope);
                 }
+            }
+
+            if (hdfsContextClasspath != null) {
+                connector.instanceOperations().setProperty("general.vfs.context.classpath." + CLASSPATH_CONTEXT_NAME, hdfsContextClasspath);
+                connector.tableOperations().setProperty(tableName, "table.classpath.context", CLASSPATH_CONTEXT_NAME);
             }
         } catch (Exception e) {
             throw new RuntimeException("Unable to create table " + tableName, e);
