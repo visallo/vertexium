@@ -1941,6 +1941,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
 
     private long getRowCountFromTable(String tableName, Text signalColumn, Authorizations authorizations) {
         try {
+            LOGGER.debug("BEGIN getRowCountFromTable(%s)", tableName);
             Scanner scanner = connector.createScanner(tableName, toAccumuloAuthorizations(authorizations));
             try {
                 scanner.fetchColumnFamily(signalColumn);
@@ -1959,8 +1960,11 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
 
                 long count = 0;
                 for (Map.Entry<Key, Value> entry : scanner) {
-                    count += LongCombiner.FIXED_LEN_ENCODER.decode(entry.getValue().get());
+                    Long countForKey = LongCombiner.FIXED_LEN_ENCODER.decode(entry.getValue().get());
+                    LOGGER.debug("getRowCountFromTable(%s): %s: %d", tableName, entry.getKey().getRow(), countForKey);
+                    count += countForKey;
                 }
+                LOGGER.debug("getRowCountFromTable(%s): TOTAL: %d", tableName, count);
                 return count;
             } finally {
                 scanner.close();

@@ -122,7 +122,7 @@ public class KryoValueSerializerTest {
         private long field2;
 
         public TestClass() {
-            
+
         }
 
         public TestClass(String field1, int field2) {

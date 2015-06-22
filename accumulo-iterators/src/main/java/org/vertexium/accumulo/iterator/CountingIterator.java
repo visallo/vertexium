@@ -7,14 +7,12 @@ import org.apache.accumulo.core.data.Value;
 import org.apache.accumulo.core.iterators.IteratorEnvironment;
 import org.apache.accumulo.core.iterators.LongCombiner;
 import org.apache.accumulo.core.iterators.SortedKeyValueIterator;
-import org.apache.hadoop.io.Text;
 
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
 
 public class CountingIterator implements SortedKeyValueIterator<Key, Value> {
-    private static final Key RESULT_KEY = new Key(new Text("rowCount"));
     private SortedKeyValueIterator<Key, Value> source;
 
     @Override
@@ -39,7 +37,7 @@ public class CountingIterator implements SortedKeyValueIterator<Key, Value> {
 
     @Override
     public Key getTopKey() {
-        return RESULT_KEY;
+        return source.getTopKey();
     }
 
     @Override
