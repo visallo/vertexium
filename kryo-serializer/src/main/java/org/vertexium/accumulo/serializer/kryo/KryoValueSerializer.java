@@ -21,33 +21,37 @@ import java.util.Date;
 import java.util.HashMap;
 
 public class KryoValueSerializer implements ValueSerializer {
-    private final Kryo kryo;
-
-    public KryoValueSerializer() {
-        kryo = new Kryo(new DefaultClassResolver(), new MapReferenceResolver() {
-            @Override
-            public boolean useReferences(Class type) {
-                if (type == String.class || type == Date.class) {
-                    return false;
+    private final ThreadLocal<Kryo> kryo = new ThreadLocal<Kryo>() {
+        @Override
+        protected Kryo initialValue() {
+            Kryo kryo = new Kryo(new DefaultClassResolver(), new MapReferenceResolver() {
+                @Override
+                public boolean useReferences(Class type) {
+                    // avoid calling System.identityHashCode
+                    if (type == String.class || type == Date.class) {
+                        return false;
+                    }
+                    return super.useReferences(type);
                 }
-                return super.useReferences(type);
-            }
-        });
-        kryo.register(EdgeInfo.class, 1000);
-        kryo.register(GeoPoint.class, 1001);
-        kryo.register(HashMap.class, 1002);
-        kryo.register(StreamingPropertyValueRef.class, 1003);
-        kryo.register(StreamingPropertyValueTableRef.class, 1004);
-        kryo.register(StreamingPropertyValueHdfsRef.class, 1005);
-        kryo.register(GeoRect.class, 1006);
-        kryo.register(GeoCircle.class, 1007);
-        kryo.register(Date.class, 1008);
-    }
+            });
+            kryo.register(EdgeInfo.class, 1000);
+            kryo.register(GeoPoint.class, 1001);
+            kryo.register(HashMap.class, 1002);
+            kryo.register(StreamingPropertyValueRef.class, 1003);
+            kryo.register(StreamingPropertyValueTableRef.class, 1004);
+            kryo.register(StreamingPropertyValueHdfsRef.class, 1005);
+            kryo.register(GeoRect.class, 1006);
+            kryo.register(GeoCircle.class, 1007);
+            kryo.register(Date.class, 1008);
+            kryo.setAutoReset(true);
+            return kryo;
+        }
+    };
 
     @Override
     public Value objectToValue(Object value) {
         Output output = new UnsafeOutput(2000, -1);
-        kryo.writeClassAndObject(output, value);
+        kryo.get().writeClassAndObject(output, value);
         return new Value(output.toBytes());
     }
 
@@ -59,6 +63,6 @@ public class KryoValueSerializer implements ValueSerializer {
     @Override
     public <T> T valueToObject(byte[] data) {
         Input input = new UnsafeInput(data);
-        return (T) kryo.readClassAndObject(input);
+        return (T) kryo.get().readClassAndObject(input);
     }
 }
