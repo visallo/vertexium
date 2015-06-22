@@ -2,18 +2,21 @@ package org.vertexium;
 
 import org.vertexium.event.GraphEvent;
 import org.vertexium.event.GraphEventListener;
+import org.vertexium.id.IdGenerator;
 import org.vertexium.path.PathFindingAlgorithm;
 import org.vertexium.path.RecursivePathFindingAlgorithm;
 import org.vertexium.query.GraphQuery;
+import org.vertexium.query.MultiVertexQuery;
 import org.vertexium.query.SimilarToGraphQuery;
 import org.vertexium.util.*;
 
 import java.util.*;
 
+import static org.vertexium.util.IterableUtils.count;
+
 public abstract class GraphBase implements Graph {
     private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(GraphBase.class);
     protected static final VertexiumLogger QUERY_LOGGER = VertexiumLoggerFactory.getQueryLogger(Graph.class);
-    protected static final VertexiumLogger MUTATION_LOGGER = VertexiumLoggerFactory.getMutationLogger(Graph.class);
     private final PathFindingAlgorithm pathFindingAlgorithm = new RecursivePathFindingAlgorithm();
     private final List<GraphEventListener> graphEventListeners = new ArrayList<>();
 
@@ -534,4 +537,50 @@ public abstract class GraphBase implements Graph {
         }
         return countsByValue;
     }
+
+    @Override
+    public long getVertexCount(Authorizations authorizations) {
+        return count(getVertices(authorizations));
+    }
+
+    @Override
+    public long getEdgeCount(Authorizations authorizations) {
+        return count(getEdges(authorizations));
+    }
+
+    @Override
+    public abstract void deleteVertex(Vertex vertex, Authorizations authorizations);
+
+    @Override
+    public abstract void deleteEdge(Edge edge, Authorizations authorizations);
+
+    @Override
+    public abstract MultiVertexQuery query(String[] vertexIds, String queryString, Authorizations authorizations);
+
+    @Override
+    public abstract MultiVertexQuery query(String[] vertexIds, Authorizations authorizations);
+
+    @Override
+    public abstract IdGenerator getIdGenerator();
+
+    @Override
+    public abstract boolean isVisibilityValid(Visibility visibility, Authorizations authorizations);
+
+    @Override
+    public abstract void clearData();
+
+    @Override
+    public abstract void markVertexHidden(Vertex vertex, Visibility visibility, Authorizations authorizations);
+
+    @Override
+    public abstract void markVertexVisible(Vertex vertex, Visibility visibility, Authorizations authorizations);
+
+    @Override
+    public abstract void markEdgeHidden(Edge edge, Visibility visibility, Authorizations authorizations);
+
+    @Override
+    public abstract void markEdgeVisible(Edge edge, Visibility visibility, Authorizations authorizations);
+
+    @Override
+    public abstract Authorizations createAuthorizations(String... auths);
 }

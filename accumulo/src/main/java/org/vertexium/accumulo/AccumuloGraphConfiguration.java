@@ -11,8 +11,6 @@ import org.vertexium.accumulo.serializer.JavaValueSerializer;
 import org.vertexium.accumulo.serializer.ValueSerializer;
 import org.vertexium.id.IdentityNameSubstitutionStrategy;
 import org.vertexium.id.NameSubstitutionStrategy;
-import org.vertexium.id.SimpleNameSubstitutionStrategy;
-import org.vertexium.id.SimpleSubstitutionUtils;
 import org.vertexium.util.ConfigurationUtils;
 import org.vertexium.util.MapUtils;
 import org.vertexium.util.VertexiumLogger;
@@ -43,7 +41,7 @@ public class AccumuloGraphConfiguration extends GraphConfiguration {
     public static final String HDFS_USER = HDFS_CONFIG_PREFIX + ".user";
     public static final String HDFS_ROOT_DIR = HDFS_CONFIG_PREFIX + ".rootDir";
     public static final String DATA_DIR = HDFS_CONFIG_PREFIX + ".dataDir";
-    public static final String USE_SERVER_SIDE_ELEMENT_VISIBILITY_ROW_FILTER = "useServerSideElementVisibilityRowFilter";
+    public static final String USE_SERVER_SIDE_ITERATORS = "useServerSideIterators";
     public static final String BATCHWRITER_MAX_MEMORY = BATCHWRITER_CONFIG_PREFIX + ".maxMemory";
     public static final String BATCHWRITER_MAX_LATENCY = BATCHWRITER_CONFIG_PREFIX + ".maxLatency";
     public static final String BATCHWRITER_TIMEOUT = BATCHWRITER_CONFIG_PREFIX + ".timeout";
@@ -60,7 +58,7 @@ public class AccumuloGraphConfiguration extends GraphConfiguration {
     public static final String DEFAULT_HDFS_USER = "hadoop";
     public static final String DEFAULT_HDFS_ROOT_DIR = "";
     public static final String DEFAULT_DATA_DIR = "/accumuloGraph";
-    public static final boolean DEFAULT_USE_SERVER_SIDE_ELEMENT_VISIBILITY_ROW_FILTER = true;
+    public static final boolean DEFAULT_USE_SERVER_SIDE_ITERATORS = false;
     private static final String DEFAULT_NAME_SUBSTITUTION_STRATEGY = IdentityNameSubstitutionStrategy.class.getName();
     public static final Long DEFAULT_BATCHWRITER_MAX_MEMORY = 50 * 1024 * 1024l;
     public static final Long DEFAULT_BATCHWRITER_MAX_LATENCY = 2 * 60 * 1000l;
@@ -153,8 +151,8 @@ public class AccumuloGraphConfiguration extends GraphConfiguration {
         return getString(DATA_DIR, DEFAULT_DATA_DIR);
     }
 
-    public boolean isUseServerSideElementVisibilityRowFilter() {
-        return getBoolean(USE_SERVER_SIDE_ELEMENT_VISIBILITY_ROW_FILTER, DEFAULT_USE_SERVER_SIDE_ELEMENT_VISIBILITY_ROW_FILTER);
+    public boolean isUseServerSideIterators() {
+        return getBoolean(USE_SERVER_SIDE_ITERATORS, DEFAULT_USE_SERVER_SIDE_ITERATORS);
     }
 
     public NameSubstitutionStrategy createSubstitutionStrategy() {

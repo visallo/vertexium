@@ -23,8 +23,8 @@ import java.io.IOException;
 
 public abstract class ElementMutationBuilder {
     private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(ElementMutationBuilder.class);
-    private static final Text EMPTY_TEXT = new Text("");
-    public static final Value EMPTY_VALUE = new Value(new byte[0]);
+    public static final Text EMPTY_TEXT = new Text("");
+    public static final Value EMPTY_VALUE = new Value("".getBytes());
 
     private final FileSystem fileSystem;
     private final ValueSerializer valueSerializer;

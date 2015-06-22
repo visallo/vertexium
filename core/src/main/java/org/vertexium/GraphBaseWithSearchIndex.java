@@ -9,6 +9,7 @@ import org.vertexium.search.SearchIndexWithVertexPropertyCountByValue;
 import org.vertexium.util.ToElementIterable;
 
 import java.io.IOException;
+import java.util.EnumSet;
 import java.util.Map;
 
 public abstract class GraphBaseWithSearchIndex extends GraphBase implements Graph {
@@ -168,8 +169,62 @@ public abstract class GraphBaseWithSearchIndex extends GraphBase implements Grap
     @Override
     public Map<Object, Long> getVertexPropertyCountByValue(String propertyName, Authorizations authorizations) {
         if (getSearchIndex() instanceof SearchIndexWithVertexPropertyCountByValue) {
-            return ((SearchIndexWithVertexPropertyCountByValue)getSearchIndex()).getVertexPropertyCountByValue(propertyName, authorizations);
+            return ((SearchIndexWithVertexPropertyCountByValue) getSearchIndex()).getVertexPropertyCountByValue(propertyName, authorizations);
         }
         return super.getVertexPropertyCountByValue(propertyName, authorizations);
     }
+
+    @Override
+    public abstract VertexBuilder prepareVertex(String vertexId, Long timestamp, Visibility visibility);
+
+    @Override
+    public abstract Iterable<Vertex> getVertices(EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations);
+
+    @Override
+    public abstract EdgeBuilder prepareEdge(String edgeId, Vertex outVertex, Vertex inVertex, String label, Long timestamp, Visibility visibility);
+
+    @Override
+    public abstract EdgeBuilderByVertexId prepareEdge(String edgeId, String outVertexId, String inVertexId, String label, Long timestamp, Visibility visibility);
+
+    @Override
+    public abstract void softDeleteVertex(Vertex vertex, Long timestamp, Authorizations authorizations);
+
+    @Override
+    public abstract void softDeleteEdge(Edge edge, Long timestamp, Authorizations authorizations);
+
+    @Override
+    public abstract Iterable<Edge> getEdges(EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations);
+
+    @Override
+    public abstract Iterable<GraphMetadataEntry> getMetadata();
+
+    @Override
+    public abstract void setMetadata(String key, Object value);
+
+    @Override
+    public abstract void deleteVertex(Vertex vertex, Authorizations authorizations);
+
+    @Override
+    public abstract void deleteEdge(Edge edge, Authorizations authorizations);
+
+    @Override
+    public abstract boolean isVisibilityValid(Visibility visibility, Authorizations authorizations);
+
+    @Override
+    public abstract void clearData();
+
+    @Override
+    public abstract void markVertexHidden(Vertex vertex, Visibility visibility, Authorizations authorizations);
+
+    @Override
+    public abstract void markVertexVisible(Vertex vertex, Visibility visibility, Authorizations authorizations);
+
+    @Override
+    public abstract void markEdgeHidden(Edge edge, Visibility visibility, Authorizations authorizations);
+
+    @Override
+    public abstract void markEdgeVisible(Edge edge, Visibility visibility, Authorizations authorizations);
+
+    @Override
+    public abstract Authorizations createAuthorizations(String... auths);
 }

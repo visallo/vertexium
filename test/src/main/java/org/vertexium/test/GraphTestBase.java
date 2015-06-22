@@ -3251,6 +3251,17 @@ public abstract class GraphTestBase {
         assertEquals(2L, (long) vertexPropertyCountByValue.get("Joseph"));
     }
 
+    @Test
+    public void testGetCounts() {
+        Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
+        Vertex v2 = graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.addEdge("e1", v1, v2, "edge1", VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.flush();
+
+        assertEquals(2, graph.getVertexCount(AUTHORIZATIONS_A));
+        assertEquals(1, graph.getEdgeCount(AUTHORIZATIONS_A));
+    }
+
     private List<Vertex> getVertices(long count) {
         List<Vertex> vertices = new ArrayList<>();
         for (int i = 0; i < count; i++) {

@@ -2,7 +2,6 @@ package org.vertexium;
 
 import org.vertexium.event.GraphEventListener;
 import org.vertexium.id.IdGenerator;
-import org.vertexium.id.NameSubstitutionStrategy;
 import org.vertexium.query.GraphQuery;
 import org.vertexium.query.MultiVertexQuery;
 import org.vertexium.query.SimilarToGraphQuery;
@@ -868,4 +867,14 @@ public interface Graph {
      * @return The results
      */
     Map<Object, Long> getVertexPropertyCountByValue(String propertyName, Authorizations authorizations);
+
+    /**
+     * Gets a count of the number of vertices in the system.
+     */
+    long getVertexCount(Authorizations authorizations);
+
+    /**
+     * Gets a count of the number of edges in the system.
+     */
+    long getEdgeCount(Authorizations authorizations);
 }

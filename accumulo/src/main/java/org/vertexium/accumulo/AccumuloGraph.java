@@ -7,6 +7,7 @@ import org.apache.accumulo.core.data.Mutation;
 import org.apache.accumulo.core.data.Range;
 import org.apache.accumulo.core.data.Value;
 import org.apache.accumulo.core.iterators.IteratorUtil;
+import org.apache.accumulo.core.iterators.LongCombiner;
 import org.apache.accumulo.core.iterators.user.RowDeletingIterator;
 import org.apache.accumulo.core.iterators.user.TimestampFilter;
 import org.apache.accumulo.core.iterators.user.VersioningIterator;
@@ -15,6 +16,7 @@ import org.apache.accumulo.core.security.ColumnVisibility;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.io.Text;
 import org.vertexium.*;
+import org.vertexium.accumulo.iterator.CountingIterator;
 import org.vertexium.accumulo.iterator.ElementVisibilityRowFilter;
 import org.vertexium.accumulo.keys.PropertyColumnQualifier;
 import org.vertexium.accumulo.keys.PropertyHiddenColumnQualifier;
@@ -37,6 +39,7 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.*;
 
+import static org.vertexium.util.IterableUtils.count;
 import static org.vertexium.util.Preconditions.checkNotNull;
 
 public class AccumuloGraph extends GraphBaseWithSearchIndex {
@@ -1029,7 +1032,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
             String tableName = getTableNameFromElementType(elementType);
             Scanner scanner = connector.createScanner(tableName, toAccumuloAuthorizations(authorizations));
 
-            if (getConfiguration().isUseServerSideElementVisibilityRowFilter()) {
+            if (getConfiguration().isUseServerSideIterators()) {
                 IteratorSetting elementVisibilityIteratorSettings = new IteratorSetting(
                         70,
                         ElementVisibilityRowFilter.class.getSimpleName(),
@@ -1151,7 +1154,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
     ) {
         ScannerBase scanner = createElementScanner(fetchHints, elementType, maxVersions, startTime, endTime, ranges, authorizations);
         IteratorSetting iteratorSetting;
-        if (getConfiguration().isUseServerSideElementVisibilityRowFilter()) {
+        if (getConfiguration().isUseServerSideIterators()) {
             iteratorSetting = new IteratorSetting(
                     100,
                     ElementVisibilityRowFilter.class.getSimpleName(),
@@ -1916,5 +1919,48 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
                 }
             }
         };
+    }
+
+    @Override
+    public long getVertexCount(Authorizations authorizations) {
+        String tableName = getTableNameFromElementType(ElementType.VERTEX);
+        return getRowCountFromTable(tableName, AccumuloVertex.CF_SIGNAL, authorizations);
+    }
+
+    @Override
+    public long getEdgeCount(Authorizations authorizations) {
+        String tableName = getTableNameFromElementType(ElementType.EDGE);
+        return getRowCountFromTable(tableName, AccumuloEdge.CF_SIGNAL, authorizations);
+    }
+
+    private long getRowCountFromTable(String tableName, Text signalColumn, Authorizations authorizations) {
+        try {
+            Scanner scanner = connector.createScanner(tableName, toAccumuloAuthorizations(authorizations));
+            try {
+                scanner.fetchColumnFamily(signalColumn);
+
+                if (!getConfiguration().isUseServerSideIterators()) {
+                    LOGGER.warn("Not using server side iterators. This requires bringing back every element marker.");
+                    return count(scanner);
+                }
+
+                IteratorSetting countingIterator = new IteratorSetting(
+                        100,
+                        CountingIterator.class.getSimpleName(),
+                        CountingIterator.class
+                );
+                scanner.addScanIterator(countingIterator);
+
+                long count = 0;
+                for (Map.Entry<Key, Value> entry : scanner) {
+                    count += LongCombiner.FIXED_LEN_ENCODER.decode(entry.getValue().get());
+                }
+                return count;
+            } finally {
+                scanner.close();
+            }
+        } catch (TableNotFoundException ex) {
+            throw new VertexiumException("Could not get count from table: " + tableName, ex);
+        }
     }
 }
