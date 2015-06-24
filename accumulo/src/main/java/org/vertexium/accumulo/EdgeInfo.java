@@ -121,4 +121,12 @@ public class EdgeInfo implements org.vertexium.EdgeInfo {
     public long getTimestamp() {
         return timestamp;
     }
+
+    @Override
+    public String toString() {
+        return "EdgeInfo{" +
+                "vertexId='" + vertexId + '\'' +
+                ", label='" + label + '\'' +
+                '}';
+    }
 }

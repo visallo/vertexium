@@ -291,24 +291,30 @@
 
     <modules>
         <module>core</module>
+        <module>tools</module>
+        <module>examples</module>
+        <module>cli</module>
         <module>test</module>
-        <module>blueprints</module>
+        <module>benchmark</module>
+        <module>dist</module>
+
         <module>accumulo</module>
         <module>accumulo-blueprints</module>
+        <module>accumulo-iterators</module>
+        <module>accumulo-migrations</module>
+        <module>accumulo-titan-hadoop</module>
+
+        <module>blueprints</module>
         <module>blueprints-test</module>
+
         <module>elasticsearch-base</module>
         <module>elasticsearch</module>
-        <module>inmemory</module>
-        <module>tools</module>
-        <module>accumulo-iterators</module>
-        <module>kryo-serializer</module>
         <module>elasticsearch-parentchild</module>
         <module>elasticsearch-plugin</module>
-        <module>examples</module>
-        <module>accumulo-migrations</module>
-        <module>cli</module>
-        <module>dist</module>
-        <module>benchmark</module>
+
+        <module>inmemory</module>
+
+        <module>kryo-serializer</module>
     </modules>
 
     <profiles>
