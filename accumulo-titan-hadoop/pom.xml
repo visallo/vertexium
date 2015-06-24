@@ -28,6 +28,12 @@
             <version>${accumulo.version}</version>
         </dependency>
         <dependency>
+            <groupId>org.vertexium</groupId>
+            <artifactId>vertexium-kryo-serializer</artifactId>
+            <version>${project.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
             <groupId>com.thinkaurelius.titan</groupId>
             <artifactId>titan-hadoop-core</artifactId>
             <version>${titan-hadoop.version}</version>

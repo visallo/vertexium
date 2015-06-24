@@ -1,8 +1,6 @@
 package org.vertexium.titan.hadoop.accumulo;
 
-import com.thinkaurelius.titan.graphdb.schema.VertexLabelDefinition;
 import com.thinkaurelius.titan.hadoop.FaunusVertex;
-import com.thinkaurelius.titan.hadoop.FaunusVertexLabel;
 import com.thinkaurelius.titan.hadoop.formats.VertexQueryFilter;
 import org.apache.accumulo.core.client.ClientConfiguration;
 import org.apache.accumulo.core.client.mapreduce.AccumuloRowInputFormat;
@@ -21,6 +19,7 @@ import org.vertexium.accumulo.AccumuloGraph;
 import org.vertexium.accumulo.AccumuloGraphConfiguration;
 import org.vertexium.accumulo.VertexMaker;
 import org.vertexium.accumulo.mapreduce.VertexiumMRUtils;
+import org.vertexium.property.StreamingPropertyValue;
 import org.vertexium.util.MapUtils;
 
 import java.io.IOException;
@@ -137,7 +136,11 @@ public class AccumuloVertexiumInputFormat extends InputFormat<NullWritable, Faun
         FaunusVertex faunusVertex = new FaunusVertex();
         faunusVertex.setId(vertexId);
         faunusVertex.setVertexLabel(v.getId());
+        faunusVertex.addProperty("vertexiumId", v.getId());
         for (Property property : v.getProperties()) {
+            if (property.getValue() instanceof StreamingPropertyValue) {
+                continue;
+            }
             faunusVertex.addProperty(property.getName(), property.getValue());
         }
         for (EdgeInfo edgeInfo : v.getEdgeInfos(Direction.OUT, authorizations)) {
@@ -150,6 +153,10 @@ public class AccumuloVertexiumInputFormat extends InputFormat<NullWritable, Faun
     }
 
     private long toFaunusVertexId(String id) {
-        return Math.abs(id.hashCode());
+        long h = 0;
+        for (char ch : id.toCharArray()) {
+            h = 31 * h + ch;
+        }
+        return Math.abs(h);
     }
 }

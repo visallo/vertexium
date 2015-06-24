@@ -3050,11 +3050,7 @@ public abstract class GraphTestBase {
                         .boost(2.0f)
                         .vertices()
         );
-        assertEquals(4, vertices.size());
-        assertEquals("v1", vertices.get(0).getId());
-        assertEquals("v2", vertices.get(1).getId());
-        assertEquals("v4", vertices.get(2).getId());
-        assertEquals("v3", vertices.get(3).getId());
+        assertVertexIds(sortById(vertices), new String[]{"v1", "v2", "v3", "v4"});
 
         vertices = toList(
                 graph.querySimilarTo(new String[]{"text"}, "Mary had a little lamb, His fleece was white as snow", AUTHORIZATIONS_A)
@@ -3066,10 +3062,7 @@ public abstract class GraphTestBase {
                         .boost(2.0f)
                         .vertices()
         );
-        assertEquals(3, vertices.size());
-        assertEquals("v1", vertices.get(0).getId());
-        assertEquals("v4", vertices.get(1).getId());
-        assertEquals("v3", vertices.get(2).getId());
+        assertVertexIds(sortById(vertices), new String[]{"v1", "v3", "v4"});
     }
 
     @Test

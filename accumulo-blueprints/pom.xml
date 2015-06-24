@@ -10,7 +10,17 @@
     <artifactId>vertexium-accumulo-blueprints</artifactId>
     <name>Vertexium: Accumulo: Blueprints</name>
 
+    <properties>
+        <titan-hadoop.version>0.5.4</titan-hadoop.version>
+    </properties>
+
     <dependencies>
+        <dependency>
+            <groupId>org.vertexium</groupId>
+            <artifactId>vertexium-kryo-serializer</artifactId>
+            <version>${project.version}</version>
+            <scope>runtime</scope>
+        </dependency>
         <dependency>
             <groupId>org.vertexium</groupId>
             <artifactId>vertexium-accumulo</artifactId>
@@ -33,6 +43,37 @@
             <artifactId>accumulo-minicluster</artifactId>
             <version>${accumulo.version}</version>
             <scope>test</scope>
+        </dependency>
+
+        <!-- used by Gremlin -->
+        <dependency>
+            <groupId>org.vertexium</groupId>
+            <artifactId>vertexium-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>jline</groupId>
+            <artifactId>jline</artifactId>
+            <version>1.0</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.vertexium</groupId>
+            <artifactId>vertexium-elasticsearch-parentchild</artifactId>
+            <version>${project.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.vertexium</groupId>
+            <artifactId>vertexium-elasticsearch</artifactId>
+            <version>${project.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.thinkaurelius.titan</groupId>
+            <artifactId>titan-hadoop-core</artifactId>
+            <version>${titan-hadoop.version}</version>
+            <scope>runtime</scope>
         </dependency>
     </dependencies>
 

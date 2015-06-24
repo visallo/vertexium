@@ -1,0 +1,2 @@
+import org.vertexium.*;
+g = org.vertexium.blueprints.VertexiumBlueprintsFactory.open('conf/accumulo-blueprints.conf')
