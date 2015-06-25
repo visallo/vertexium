@@ -35,7 +35,7 @@ Setting up Gremlin command line interface
 1. Copy from vertexium `dist/target/vertexium-dist-*/lib/*` to `${GREMLIN_HOME}/lib`
 1. Delete the older lucene jar in gremlin lib directory `lucene-core-3.6.2.jar`
 1. Run `${GREMLIN_HOME}/bin/gremlin.sh gremlin-vertexium.script`
-1. Test is out:
+1. Test it out:
         
         v = g.addVertex()
         g.V
