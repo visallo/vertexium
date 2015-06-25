@@ -2,14 +2,13 @@ package org.vertexium.elasticsearch;
 
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.delete.DeleteResponse;
-import org.elasticsearch.action.index.IndexRequest;
-import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchType;
+import org.elasticsearch.action.update.UpdateRequest;
+import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
-import org.elasticsearch.index.query.AndFilterBuilder;
 import org.elasticsearch.index.query.FilteredQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.TermFilterBuilder;
@@ -30,9 +29,8 @@ import org.vertexium.util.VertexiumLoggerFactory;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 public class ElasticSearchSearchIndex extends ElasticSearchSearchIndexBase {
     private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(ElasticSearchSearchIndex.class);
@@ -41,6 +39,14 @@ public class ElasticSearchSearchIndex extends ElasticSearchSearchIndexBase {
     public ElasticSearchSearchIndex(GraphConfiguration config) {
         super(config);
         this.nameSubstitutionStrategy = getConfig().getNameSubstitutionStrategy();
+    }
+
+    @Override
+    protected boolean isStoreSourceData() {
+        if (!super.isStoreSourceData()) {
+            LOGGER.warn("Storing source date is required for single document indexing, to prevent needing to re-query the vertex.");
+        }
+        return true;
     }
 
     @Override
@@ -55,15 +61,16 @@ public class ElasticSearchSearchIndex extends ElasticSearchSearchIndexBase {
         IndexInfo indexInfo = addPropertiesToIndex(element, element.getProperties());
 
         try {
-            XContentBuilder jsonBuilder = buildJsonContentFromElement(graph, indexInfo, element, authorizations);
+            XContentBuilder jsonBuilder = buildJsonContentFromElement(indexInfo, element, authorizations);
             XContentBuilder source = jsonBuilder.endObject();
             if (MUTATION_LOGGER.isTraceEnabled()) {
-                MUTATION_LOGGER.trace("addElement json: %s", source.string());
+                MUTATION_LOGGER.trace("addElement json: %s: %s", element.getId(), source.string());
             }
 
-            IndexResponse response = getClient()
-                    .prepareIndex(indexInfo.getIndexName(), ELEMENT_TYPE, element.getId())
-                    .setSource(source)
+            UpdateResponse response = getClient()
+                    .prepareUpdate(indexInfo.getIndexName(), ELEMENT_TYPE, element.getId())
+                    .setDocAsUpsert(true)
+                    .setDoc(source)
                     .execute()
                     .actionGet();
             if (response.getId() == null) {
@@ -83,8 +90,9 @@ public class ElasticSearchSearchIndex extends ElasticSearchSearchIndexBase {
     @Override
     public void addElementToBulkRequest(Graph graph, BulkRequest bulkRequest, IndexInfo indexInfo, Element element, Authorizations authorizations) {
         try {
-            XContentBuilder json = buildJsonContentFromElement(graph, indexInfo, element, authorizations);
-            IndexRequest indexRequest = new IndexRequest(indexInfo.getIndexName(), ELEMENT_TYPE, element.getId()).source(json);
+            XContentBuilder json = buildJsonContentFromElement(indexInfo, element, authorizations);
+            UpdateRequest indexRequest = new UpdateRequest(indexInfo.getIndexName(), ELEMENT_TYPE, element.getId()).doc(json);
+            indexRequest.docAsUpsert(true);
             bulkRequest.add(indexRequest);
         } catch (IOException ex) {
             throw new VertexiumException("Could not add element to bulk request", ex);
@@ -108,22 +116,20 @@ public class ElasticSearchSearchIndex extends ElasticSearchSearchIndexBase {
         }
     }
 
-    public String createJsonForElement(Graph graph, Element element, Authorizations authorizations) {
+    String createJsonForElement(Element element, Authorizations authorizations) {
         try {
             String indexName = getIndexName(element);
-            IndexInfo indexInfo = ensureIndexCreatedAndInitialized(indexName, getConfig().isStoreSourceData());
-            return buildJsonContentFromElement(graph, indexInfo, element, authorizations).string();
+            IndexInfo indexInfo = ensureIndexCreatedAndInitialized(indexName, isStoreSourceData());
+            return buildJsonContentFromElement(indexInfo, element, authorizations).string();
         } catch (Exception e) {
             throw new VertexiumException("Could not create JSON for element", e);
         }
     }
 
-    private XContentBuilder buildJsonContentFromElement(Graph graph, IndexInfo indexInfo, Element element, Authorizations authorizations) throws IOException {
+    private XContentBuilder buildJsonContentFromElement(IndexInfo indexInfo, Element element, Authorizations authorizations) throws IOException {
         XContentBuilder jsonBuilder;
         jsonBuilder = XContentFactory.jsonBuilder()
                 .startObject();
-
-        element = requeryWithAuthsAndMergedElement(graph, element, authorizations);
 
         if (element instanceof Vertex) {
             jsonBuilder.field(ELEMENT_TYPE_FIELD_NAME, ELEMENT_TYPE_VERTEX);
@@ -135,21 +141,31 @@ public class ElasticSearchSearchIndex extends ElasticSearchSearchIndexBase {
             throw new VertexiumException("Unexpected element type " + element.getClass().getName());
         }
 
-        Set<String> visibilityStrings = new HashSet<>();
-        visibilityStrings.add(element.getVisibility().getVisibilityString());
+        Map<String, Object> properties = getProperties(element, indexInfo);
+        for (Map.Entry<String, Object> property : properties.entrySet()) {
+            if (property.getValue() instanceof List) {
+                List list = (List) property.getValue();
+                jsonBuilder.field(property.getKey(), list.toArray(new Object[list.size()]));
+            } else {
+                jsonBuilder.field(property.getKey(), property.getValue());
+            }
+        }
 
+        return jsonBuilder;
+    }
+
+    private Map<String, Object> getProperties(Element element, IndexInfo indexInfo) throws IOException {
+        Map<String, Object> propertiesMap = new HashMap<>();
         for (Property property : element.getProperties()) {
-            visibilityStrings.add(property.getVisibility().getVisibilityString());
-
             Object propertyValue = property.getValue();
             String propertyName = this.nameSubstitutionStrategy.deflate(property.getName());
             if (propertyValue != null && shouldIgnoreType(propertyValue.getClass())) {
                 continue;
             } else if (propertyValue instanceof GeoPoint) {
-                convertGeoPoint(jsonBuilder, property, (GeoPoint) propertyValue);
+                convertGeoPoint(propertiesMap, property, (GeoPoint) propertyValue);
                 continue;
             } else if (propertyValue instanceof GeoCircle) {
-                convertGeoCircle(jsonBuilder, property, (GeoCircle) propertyValue);
+                convertGeoCircle(propertiesMap, property, (GeoCircle) propertyValue);
                 continue;
             } else if (propertyValue instanceof StreamingPropertyValue) {
                 StreamingPropertyValue streamingPropertyValue = (StreamingPropertyValue) propertyValue;
@@ -172,10 +188,10 @@ public class ElasticSearchSearchIndex extends ElasticSearchSearchIndexBase {
             } else if (propertyValue instanceof String) {
                 PropertyDefinition propertyDefinition = indexInfo.getPropertyDefinitions().get(propertyName);
                 if (propertyDefinition == null || propertyDefinition.getTextIndexHints().contains(TextIndexHint.EXACT_MATCH)) {
-                    jsonBuilder.field(propertyName + EXACT_MATCH_PROPERTY_NAME_SUFFIX, propertyValue);
+                    addPropertyValueToPropertiesMap(propertiesMap, propertyName + EXACT_MATCH_PROPERTY_NAME_SUFFIX, propertyValue);
                 }
                 if (propertyDefinition == null || propertyDefinition.getTextIndexHints().contains(TextIndexHint.FULL_TEXT)) {
-                    jsonBuilder.field(propertyName, propertyValue);
+                    addPropertyValueToPropertiesMap(propertiesMap, propertyName, propertyValue);
                 }
                 continue;
             }
@@ -184,34 +200,9 @@ public class ElasticSearchSearchIndex extends ElasticSearchSearchIndexBase {
                 propertyValue = ((DateOnly) propertyValue).getDate();
             }
 
-            jsonBuilder.field(propertyName, propertyValue);
+            addPropertyValueToPropertiesMap(propertiesMap, propertyName, propertyValue);
         }
-
-        String visibilityString = Visibility.and(visibilityStrings).getVisibilityString();
-        jsonBuilder.field(VISIBILITY_FIELD_NAME, visibilityString);
-
-        return jsonBuilder;
-    }
-
-    private Element requeryWithAuthsAndMergedElement(Graph graph, Element element, Authorizations authorizations) {
-        Element existingElement;
-        if (element instanceof Vertex) {
-            existingElement = graph.getVertex(element.getId(), authorizations);
-        } else if (element instanceof Edge) {
-            existingElement = graph.getEdge(element.getId(), authorizations);
-        } else {
-            throw new VertexiumException("Unexpected element type " + element.getClass().getName());
-        }
-        if (existingElement == null) {
-            return element;
-        }
-
-        if (MUTATION_LOGGER.isTraceEnabled()) {
-            MUTATION_LOGGER.trace("Reindexing element %s", element.getId());
-        }
-        existingElement.mergeProperties(element);
-
-        return existingElement;
+        return propertiesMap;
     }
 
     @Override
@@ -315,12 +306,10 @@ public class ElasticSearchSearchIndex extends ElasticSearchSearchIndexBase {
         TermsBuilder countAgg = new TermsBuilder(countAggName)
                 .field(propertyName)
                 .size(500000);
-        AuthorizationFilterBuilder authorizationFilterBuilder = new AuthorizationFilterBuilder(authorizations.getAuthorizations());
         TermFilterBuilder elementTypeFilterBuilder = new TermFilterBuilder(ELEMENT_TYPE_FIELD_NAME, ELEMENT_TYPE_VERTEX);
-        AndFilterBuilder andFilterBuilder = new AndFilterBuilder(authorizationFilterBuilder, elementTypeFilterBuilder);
         FilteredQueryBuilder queryBuilder = QueryBuilders.filteredQuery(
                 QueryBuilders.matchAllQuery(),
-                andFilterBuilder
+                elementTypeFilterBuilder
         );
         SearchRequestBuilder q = getClient().prepareSearch(getIndexNamesAsArray())
                 .setQuery(queryBuilder)

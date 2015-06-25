@@ -63,7 +63,7 @@ public class ElasticSearchParentChildSearchIndex extends ElasticSearchSearchInde
                 XContentBuilder mappingBuilder = XContentFactory.jsonBuilder()
                         .startObject()
                         .startObject("_parent").field("type", ELEMENT_TYPE).endObject()
-                        .startObject("_source").field("enabled", getConfig().isStoreSourceData()).endObject()
+                        .startObject("_source").field("enabled", isStoreSourceData()).endObject()
                         .startObject("properties")
                         .startObject(VISIBILITY_FIELD_NAME)
                         .field("type", "string")
@@ -240,7 +240,7 @@ public class ElasticSearchParentChildSearchIndex extends ElasticSearchSearchInde
     @SuppressWarnings("unused")
     public IndexRequest getPropertyDocumentIndexRequest(Element element, Property property) throws IOException {
         String indexName = getIndexName(element);
-        IndexInfo indexInfo = ensureIndexCreatedAndInitialized(indexName, getConfig().isStoreSourceData());
+        IndexInfo indexInfo = ensureIndexCreatedAndInitialized(indexName, isStoreSourceData());
         return getPropertyDocumentIndexRequest(indexInfo, element, property);
     }
 
@@ -273,7 +273,7 @@ public class ElasticSearchParentChildSearchIndex extends ElasticSearchSearchInde
     @SuppressWarnings("unused")
     public IndexRequest getParentDocumentIndexRequest(Element element, Authorizations authorizations) throws IOException {
         String indexName = getIndexName(element);
-        IndexInfo indexInfo = ensureIndexCreatedAndInitialized(indexName, getConfig().isStoreSourceData());
+        IndexInfo indexInfo = ensureIndexCreatedAndInitialized(indexName, isStoreSourceData());
         return getParentDocumentIndexRequest(indexInfo, element, authorizations);
     }
 
@@ -457,7 +457,7 @@ public class ElasticSearchParentChildSearchIndex extends ElasticSearchSearchInde
                 .startObject("_parent").field("type", ELEMENT_TYPE).endObject()
                 .startObject("properties")
                 .startObject(propertyName)
-                .field("store", getConfig().isStoreSourceData());
+                .field("store", isStoreSourceData());
 
         addTypeToMapping(mapping, propertyName, dataType, analyzed, boost);
 

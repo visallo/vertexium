@@ -860,7 +860,7 @@ public interface Graph {
     Authorizations createAuthorizations(Authorizations auths, Collection<String> additionalAuthorizations);
 
     /**
-     * Gets the number of times a property with the given propertyName occurs on vertices
+     * Gets the number of times a property with a given value occurs on vertices
      *
      * @param propertyName   The name of the property to find
      * @param authorizations The authorizations to use to find the property

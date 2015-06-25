@@ -97,7 +97,7 @@ public class ElasticSearchSearchIndexSimpleSubstitutionTest extends GraphTestBas
                 .setProperty(PROP1_PROPERTY_NAME, "value1", prop1Metadata, VISIBILITY_A)
                 .save(AUTHORIZATIONS_A_AND_B);
 
-        String jsonString = getSearchIndex().createJsonForElement(graph, v1, AUTHORIZATIONS_A_AND_B);
+        String jsonString = getSearchIndex().createJsonForElement(v1, AUTHORIZATIONS_A_AND_B);
         JSONObject json = new JSONObject(jsonString);
         assertNotNull(json);
         assertFalse(jsonString.contains(PROP_LARGE_PROPERTY_NAME));

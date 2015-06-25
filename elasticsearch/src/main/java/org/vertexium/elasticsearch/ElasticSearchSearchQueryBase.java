@@ -24,21 +24,11 @@ public class ElasticSearchSearchQueryBase extends ElasticSearchQueryBase impleme
     private final List<GeohashQueryItem> geohashQueryItems = new ArrayList<>();
 
     public ElasticSearchSearchQueryBase(TransportClient client, String[] indicesToQuery, Graph graph, String queryString, Map<String, PropertyDefinition> propertyDefinitions, ScoringStrategy scoringStrategy, NameSubstitutionStrategy nameSubstitutionStrategy, Authorizations authorizations) {
-        super(client, indicesToQuery, graph, queryString, propertyDefinitions, scoringStrategy, nameSubstitutionStrategy, false, authorizations);
+        super(client, indicesToQuery, graph, queryString, propertyDefinitions, scoringStrategy, nameSubstitutionStrategy, true, authorizations);
     }
 
     public ElasticSearchSearchQueryBase(TransportClient client, String[] indicesToQuery, Graph graph, String[] similarToFields, String similarToText, Map<String, PropertyDefinition> propertyDefinitions, ScoringStrategy scoringStrategy, NameSubstitutionStrategy nameSubstitutionStrategy, Authorizations authorizations) {
-        super(client, indicesToQuery, graph, similarToFields, similarToText, propertyDefinitions, scoringStrategy, nameSubstitutionStrategy, false, authorizations);
-    }
-
-    @Override
-    protected List<FilterBuilder> getFilters(String elementType) {
-        List<FilterBuilder> filters = super.getFilters(elementType);
-
-        AuthorizationFilterBuilder authorizationFilterBuilder = new AuthorizationFilterBuilder(getParameters().getAuthorizations().getAuthorizations());
-        filters.add(authorizationFilterBuilder);
-
-        return filters;
+        super(client, indicesToQuery, graph, similarToFields, similarToText, propertyDefinitions, scoringStrategy, nameSubstitutionStrategy, true, authorizations);
     }
 
     @Override

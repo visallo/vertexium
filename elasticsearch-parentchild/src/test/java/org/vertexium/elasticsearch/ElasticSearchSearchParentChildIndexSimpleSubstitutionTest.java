@@ -102,7 +102,7 @@ public class ElasticSearchSearchParentChildIndexSimpleSubstitutionTest extends G
         ElasticSearchParentChildSearchIndex searchIndex = getSearchIndex();
 
         String indexName = searchIndex.getIndexName(v1);
-        IndexInfo indexInfo = searchIndex.ensureIndexCreatedAndInitialized(indexName, searchIndex.getConfig().isStoreSourceData());
+        IndexInfo indexInfo = searchIndex.ensureIndexCreatedAndInitialized(indexName, searchIndex.isStoreSourceData());
         assertTrue(indexInfo.isPropertyDefined("prop1"));
         Assert.assertNotNull(indexInfo);
     }

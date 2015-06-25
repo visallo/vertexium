@@ -77,11 +77,15 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex, Searc
         }
 
         for (String indexName : getConfig().getIndicesToQuery()) {
-            ensureIndexCreatedAndInitialized(indexName, getConfig().isStoreSourceData());
+            ensureIndexCreatedAndInitialized(indexName, isStoreSourceData());
         }
 
         loadIndexInfos();
         loadPropertyDefinitions();
+    }
+
+    protected boolean isStoreSourceData() {
+        return getConfig().isStoreSourceData();
     }
 
     protected void loadIndexInfos() {
@@ -139,7 +143,7 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex, Searc
             try {
                 XContentBuilder mappingBuilder = XContentFactory.jsonBuilder()
                         .startObject()
-                        .startObject("_source").field("enabled", getConfig().isStoreSourceData()).endObject()
+                        .startObject("_source").field("enabled", isStoreSourceData()).endObject()
                         .startObject("properties");
                 createIndexAddFieldsToElementType(mappingBuilder);
                 XContentBuilder mapping = mappingBuilder.endObject()
@@ -320,7 +324,7 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex, Searc
         Map<IndexInfo, BulkRequest> bulkRequests = new HashMap<>();
         for (Element element : elements) {
             String indexName = getIndexName(element);
-            IndexInfo indexInfo = ensureIndexCreatedAndInitialized(indexName, getConfig().isStoreSourceData());
+            IndexInfo indexInfo = ensureIndexCreatedAndInitialized(indexName, isStoreSourceData());
             BulkRequest bulkRequest = bulkRequests.get(indexInfo);
             if (bulkRequest == null) {
                 bulkRequest = new BulkRequest();
@@ -410,7 +414,7 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex, Searc
         String propertyName = nameSubstitutionStrategy.deflate(propertyDefinition.getPropertyName());
 
         for (String indexName : getIndexNames(propertyDefinition)) {
-            IndexInfo indexInfo = ensureIndexCreatedAndInitialized(indexName, getConfig().isStoreSourceData());
+            IndexInfo indexInfo = ensureIndexCreatedAndInitialized(indexName, isStoreSourceData());
 
             if (propertyDefinition.getDataType() == String.class) {
                 if (propertyDefinition.getTextIndexHints().contains(TextIndexHint.EXACT_MATCH)) {
@@ -451,7 +455,7 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex, Searc
     public IndexInfo addPropertiesToIndex(Element element, Iterable<Property> properties) {
         try {
             String indexName = getIndexName(element);
-            IndexInfo indexInfo = ensureIndexCreatedAndInitialized(indexName, getConfig().isStoreSourceData());
+            IndexInfo indexInfo = ensureIndexCreatedAndInitialized(indexName, isStoreSourceData());
             for (Property property : properties) {
                 addPropertyToIndex(indexInfo, property);
             }
@@ -590,12 +594,31 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex, Searc
             } catch (Exception ex) {
                 throw new VertexiumException("Could not delete index " + indexName, ex);
             }
-            ensureIndexCreatedAndInitialized(indexName, getConfig().isStoreSourceData());
+            ensureIndexCreatedAndInitialized(indexName, isStoreSourceData());
         }
         loadPropertyDefinitions();
     }
 
     public abstract void addElementToBulkRequest(Graph graph, BulkRequest bulkRequest, IndexInfo indexInfo, Element element, Authorizations authorizations);
+
+    @SuppressWarnings("unchecked")
+    protected void addPropertyValueToPropertiesMap(Map<String, Object> propertiesMap, String propertyName, Object propertyValue) {
+        Object existingValue = propertiesMap.get(propertyName);
+        if (existingValue == null) {
+            propertiesMap.put(propertyName, propertyValue);
+            return;
+        }
+
+        if (existingValue instanceof List) {
+            ((List) existingValue).add(propertyValue);
+            return;
+        }
+
+        List list = new ArrayList();
+        list.add(existingValue);
+        list.add(propertyValue);
+        propertiesMap.put(propertyName, list);
+    }
 
     protected void convertGeoPoint(XContentBuilder jsonBuilder, Property property, GeoPoint geoPoint) throws IOException {
         Map<String, Object> propertyValueMap = new HashMap<>();
@@ -604,6 +627,16 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex, Searc
         jsonBuilder.field(property.getName() + GEO_PROPERTY_NAME_SUFFIX, propertyValueMap);
         if (geoPoint.getDescription() != null) {
             jsonBuilder.field(property.getName(), geoPoint.getDescription());
+        }
+    }
+
+    protected void convertGeoPoint(Map<String, Object> propertiesMap, Property property, GeoPoint geoPoint) throws IOException {
+        Map<String, Object> propertyValueMap = new HashMap<>();
+        propertyValueMap.put("lat", geoPoint.getLatitude());
+        propertyValueMap.put("lon", geoPoint.getLongitude());
+        addPropertyValueToPropertiesMap(propertiesMap, property.getName() + GEO_PROPERTY_NAME_SUFFIX, propertyValueMap);
+        if (geoPoint.getDescription() != null) {
+            addPropertyValueToPropertiesMap(propertiesMap, property.getName(), geoPoint.getDescription());
         }
     }
 
@@ -618,6 +651,20 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex, Searc
         jsonBuilder.field(property.getName() + GEO_PROPERTY_NAME_SUFFIX, propertyValueMap);
         if (geoCircle.getDescription() != null) {
             jsonBuilder.field(property.getName(), geoCircle.getDescription());
+        }
+    }
+
+    protected void convertGeoCircle(Map<String, Object> propertiesMap, Property property, GeoCircle geoCircle) throws IOException {
+        Map<String, Object> propertyValueMap = new HashMap<>();
+        propertyValueMap.put("type", "circle");
+        List<Double> coordinates = new ArrayList<>();
+        coordinates.add(geoCircle.getLongitude());
+        coordinates.add(geoCircle.getLatitude());
+        propertyValueMap.put("coordinates", coordinates);
+        propertyValueMap.put("radius", geoCircle.getRadius() + "km");
+        addPropertyValueToPropertiesMap(propertiesMap, property.getName() + GEO_PROPERTY_NAME_SUFFIX, propertyValueMap);
+        if (geoCircle.getDescription() != null) {
+            addPropertyValueToPropertiesMap(propertiesMap, property.getName(), geoCircle.getDescription());
         }
     }
 }
