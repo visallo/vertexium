@@ -22,8 +22,12 @@
 1. Run the Gremlin shell:
 
         cd titan-*-hadoop2
-        bin/gremlin.sh conf/startup.script
+        HADOOP_HOME=${HADOOP_COMMON_HOME} bin/gremlin.sh conf/startup.script
 
 1. Test:
+
+        conf = g.getConf()
+        conf['mapreduce.map.memory.mb'] = 3072
+        g.setConf(conf)
 
         g.V.has('conceptType', 'merchant').has('zipCode', '67226').vertexiumId
