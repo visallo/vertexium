@@ -28,6 +28,14 @@ public class GeoPointTest {
     }
 
     @Test
+    public void testParseWithDescription() throws Exception {
+        GeoPoint pt = GeoPoint.parse("Dulles International Airport, VA [38.9283, -77.1753]");
+        assertEquals("Dulles International Airport, VA", pt.getDescription());
+        assertEquals(38.9283, pt.getLatitude(), 0.001);
+        assertEquals(-77.1753, pt.getLongitude(), 0.001);
+    }
+
+    @Test
     public void testLongitudinalDistanceTo() {
         GeoPoint topLeft = new GeoPoint(10.0, 0.0);
         GeoPoint bottomRight = new GeoPoint(0.0, 10.0);

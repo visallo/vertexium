@@ -11,6 +11,7 @@ public class GeoPoint implements Serializable, GeoShape, Comparable<GeoPoint> {
     private static final double COMPARE_TOLERANCE = 0.00001;
     private static double EARTH_RADIUS = 6371; // km
     private static final Pattern HOUR_MIN_SECOND_PATTERN = Pattern.compile("\\s*(-)?([0-9\\.]+)°(\\s*([0-9\\.]+)'(\\s*([0-9\\.]+)\")?)?");
+    private static final Pattern WITH_DESCRIPTION_PATTERN = Pattern.compile("(.*)\\[(.*)\\]");
     private double latitude;
     private double longitude;
     private Double altitude;
@@ -152,6 +153,15 @@ public class GeoPoint implements Serializable, GeoShape, Comparable<GeoPoint> {
     }
 
     public static GeoPoint parse(String str) {
+        String description;
+        Matcher m = WITH_DESCRIPTION_PATTERN.matcher(str);
+        if (m.matches()) {
+            description = m.group(1).trim();
+            str = m.group(2).trim();
+        } else {
+            description = null;
+        }
+
         String[] parts = str.split(",");
         if (parts.length < 2) {
             throw new VertexiumException("Too few parts to GeoPoint string. Expected at least 2 found " + parts.length + " for string: " + str);
@@ -165,7 +175,7 @@ public class GeoPoint implements Serializable, GeoShape, Comparable<GeoPoint> {
         if (parts.length >= 3) {
             altitude = Double.parseDouble(parts[2]);
         }
-        return new GeoPoint(latitude, longitude, altitude);
+        return new GeoPoint(latitude, longitude, altitude, description);
     }
 
     private static double parsePart(String part) {
