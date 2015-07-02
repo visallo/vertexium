@@ -79,6 +79,7 @@
         <maven.plugin.jar.version>2.4</maven.plugin.jar.version>
         <maven.plugin.surefire.version>2.4.2</maven.plugin.surefire.version>
         <maven.plugin.buildnumber.version>1.2</maven.plugin.buildnumber.version>
+        <maven.plugin.jarjar.version>1.9</maven.plugin.jarjar.version>
 
         <!-- used by: elasticsearch -->
         <elasticsearch.version>1.4.0</elasticsearch.version>
@@ -287,6 +288,16 @@
                 </configuration>
             </plugin>
         </plugins>
+
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.sonatype.plugins</groupId>
+                    <artifactId>jarjar-maven-plugin</artifactId>
+                    <version>${maven.plugin.jarjar.version}</version>
+                </plugin>
+            </plugins>
+        </pluginManagement>
     </build>
 
     <modules>
