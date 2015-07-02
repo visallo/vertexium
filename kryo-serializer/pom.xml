@@ -46,11 +46,17 @@
                         <configuration>
                             <includes>
                                 <include>com.esotericsoftware:kryo-shaded</include>
+                                <include>com.esotericsoftware:minlog</include>
+                                <include>org.objenesis:objenesis</include>
                             </includes>
                             <rules>
                                 <rule>
                                     <pattern>com.esotericsoftware.**</pattern>
                                     <result>org.vertexium.kryo.@1</result>
+                                </rule>
+                                <rule>
+                                    <pattern>org.objenesis.**</pattern>
+                                    <result>org.vertexium.objenesis.@1</result>
                                 </rule>
                             </rules>
                         </configuration>
