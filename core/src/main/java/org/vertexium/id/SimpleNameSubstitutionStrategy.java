@@ -28,7 +28,6 @@ public class SimpleNameSubstitutionStrategy implements NameSubstitutionStrategy 
         }
 
         deflateCache.put(value, deflatedVal);
-        inflateCache.put(deflatedVal, value);
         return deflatedVal;
     }
 
@@ -47,7 +46,6 @@ public class SimpleNameSubstitutionStrategy implements NameSubstitutionStrategy 
         }
 
         inflateCache.put(value, inflatedValue);
-        deflateCache.put(inflatedValue, value);
         return inflatedValue;
     }
 
@@ -57,10 +55,5 @@ public class SimpleNameSubstitutionStrategy implements NameSubstitutionStrategy 
 
     public void setSubstitutionList(List<Pair<String, String>> substitutionList) {
         this.substitutionList = substitutionList;
-
-        for (Pair<String, String> pair : this.substitutionList) {
-            deflateCache.put(pair.getKey(), wrap(pair.getValue()));
-            inflateCache.put(wrap(pair.getValue()), pair.getKey());
-        }
     }
 }
