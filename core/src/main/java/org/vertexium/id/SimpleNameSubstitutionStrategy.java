@@ -105,7 +105,6 @@ public class SimpleNameSubstitutionStrategy implements NameSubstitutionStrategy 
             for (InflateItem inflateItem : inflateSubstitutionList) {
                 inflatedValue = inflateItem.inflate(inflatedValue);
             }
-            deflateCache.put(inflatedValue, value);
             return inflatedValue;
         }
     }
@@ -132,7 +131,6 @@ public class SimpleNameSubstitutionStrategy implements NameSubstitutionStrategy 
             for (DeflateItem deflateItem : deflateSubstitutionList) {
                 deflatedVal = deflateItem.deflate(deflatedVal);
             }
-            inflateCache.put(deflatedVal, value);
             return deflatedVal;
         }
     }
