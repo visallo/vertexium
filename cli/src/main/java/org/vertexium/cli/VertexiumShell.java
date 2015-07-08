@@ -47,7 +47,7 @@ public class VertexiumShell {
     private String evalString = null;
 
     @Parameter(names = {"-c"}, description = "Configuration file name", required = true)
-    private String configFileName = null;
+    private List<String> configFileNames = new ArrayList<>();
 
     @Parameter(names = {"-cp"}, description = "Configuration property prefix")
     private String configPropertyPrefix = null;
@@ -115,14 +115,16 @@ public class VertexiumShell {
     }
 
     private Map loadConfig() throws IOException {
-        File configFile = new File(configFileName);
-        if (!configFile.exists()) {
-            throw new RuntimeException("Could not load config file: " + configFile.getAbsolutePath());
-        }
-
         Properties props = new Properties();
-        try (InputStream in = new FileInputStream(configFile)) {
-            props.load(in);
+        for(String configFileName: configFileNames) {
+            File configFile = new File(configFileName);
+            if (!configFile.exists()) {
+                throw new RuntimeException("Could not load config file: " + configFile.getAbsolutePath());
+            }
+
+            try (InputStream in = new FileInputStream(configFile)) {
+                props.load(in);
+            }
         }
 
         Map result = new HashMap();
