@@ -5,6 +5,7 @@ import org.vertexium.VertexiumException;
 import org.vertexium.accumulo.serializer.ValueSerializer;
 import org.vertexium.accumulo.serializer.kryo.quickSerializers.*;
 
+import java.math.BigDecimal;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -16,6 +17,7 @@ public class QuickKryoValueSerializer implements ValueSerializer {
         put(Long.class, new LongQuickTypeSerializer());
         put(Date.class, new DateQuickTypeSerializer());
         put(Double.class, new DoubleQuickTypeSerializer());
+        put(BigDecimal.class, new BigDecimalQuickTypeSerializer());
     }};
     private Map<Byte, QuickTypeSerializer> quickTypeSerializersByMarker = new HashMap<Byte, QuickTypeSerializer>() {{
         put(QuickTypeSerializer.MARKER_KRYO, new KryoQuickTypeSerializer());
@@ -23,6 +25,7 @@ public class QuickKryoValueSerializer implements ValueSerializer {
         put(QuickTypeSerializer.MARKER_LONG, new LongQuickTypeSerializer());
         put(QuickTypeSerializer.MARKER_DATE, new DateQuickTypeSerializer());
         put(QuickTypeSerializer.MARKER_DOUBLE, new DoubleQuickTypeSerializer());
+        put(QuickTypeSerializer.MARKER_BIG_DECIMAL, new BigDecimalQuickTypeSerializer());
     }};
 
     @Override

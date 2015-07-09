@@ -4,6 +4,7 @@ import org.apache.accumulo.core.data.Value;
 import org.junit.Test;
 import org.vertexium.accumulo.serializer.ValueSerializer;
 
+import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.util.Date;
 
@@ -33,6 +34,28 @@ public class KryoValueSerializerTest {
         for (int i = 0; i < 1000000; i++) {
             Value v = serializer.objectToValue("yo mamma");
             assertEquals("yo mamma", serializer.valueToObject(v.get()));
+            bytes += v.get().length;
+        }
+        long endTime = System.currentTimeMillis();
+        System.out.println(serializer.getClass().getName() + " time: " + (endTime - startTime) + "ms (size: " + new DecimalFormat("#,##0").format(bytes) + ")");
+        return endTime - startTime;
+    }
+
+    @Test
+    public void testBigDecimal() {
+        System.out.println("testBigDecimal");
+        timeItBigDecimal(new KryoValueSerializer());
+        long quickKryoTime = timeItBigDecimal(new QuickKryoValueSerializer());
+        long kryoTime = timeItBigDecimal(new KryoValueSerializer());
+        assertTrue("quick was slower than Kryo", quickKryoTime < kryoTime);
+    }
+
+    private long timeItBigDecimal(ValueSerializer serializer) {
+        long startTime = System.currentTimeMillis();
+        long bytes = 0;
+        for (int i = 0; i < 1000000; i++) {
+            Value v = serializer.objectToValue(new BigDecimal("42.987654321"));
+            assertEquals(new BigDecimal("42.987654321"), serializer.valueToObject(v.get()));
             bytes += v.get().length;
         }
         long endTime = System.currentTimeMillis();
