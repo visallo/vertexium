@@ -1,6 +1,7 @@
 package org.vertexium.query;
 
 import org.vertexium.Edge;
+import org.vertexium.Element;
 import org.vertexium.FetchHint;
 import org.vertexium.Vertex;
 
@@ -18,6 +19,10 @@ public interface Query {
     Iterable<Edge> edges(String label);
 
     Iterable<Edge> edges(String label, EnumSet<FetchHint> fetchHints);
+
+    Iterable<Element> elements();
+
+    Iterable<Element> elements(EnumSet<FetchHint> fetchHints);
 
     /**
      * Queries for properties in the given range.

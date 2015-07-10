@@ -68,7 +68,9 @@ public abstract class ElasticSearchParentChildQueryBase extends ElasticSearchQue
 
     protected List<FilterBuilder> getElementFilters(String elementType) {
         List<FilterBuilder> results = new ArrayList<>();
-        results.add(createElementTypeFilter(elementType));
+        if (elementType != null) {
+            results.add(createElementTypeFilter(elementType));
+        }
         results.add(new AuthorizationFilterBuilder(getParameters().getAuthorizations().getAuthorizations()));
         return results;
     }
@@ -138,6 +140,7 @@ public abstract class ElasticSearchParentChildQueryBase extends ElasticSearchQue
                 .prepareSearch(getIndicesToQuery())
                 .setTypes(ElasticSearchSearchIndexBase.ELEMENT_TYPE)
                 .setQuery(queryBuilder)
+                .addField(ElasticSearchSearchIndexBase.ELEMENT_TYPE_FIELD_NAME)
                 .setFrom((int) getParameters().getSkip())
                 .setSize((int) getParameters().getLimit());
     }

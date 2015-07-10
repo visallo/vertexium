@@ -2,6 +2,8 @@ package org.vertexium.query;
 
 import org.vertexium.*;
 import org.vertexium.util.FilterIterable;
+import org.vertexium.util.JoinIterable;
+import org.vertexium.util.ToElementIterable;
 
 import java.util.EnumSet;
 import java.util.Map;
@@ -11,7 +13,7 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
     private final Map<String, PropertyDefinition> propertyDefinitions;
     private final QueryParameters parameters;
 
-    protected QueryBase(Graph graph, String queryString, Map<String, PropertyDefinition> propertyDefinitions,  Authorizations authorizations) {
+    protected QueryBase(Graph graph, String queryString, Map<String, PropertyDefinition> propertyDefinitions, Authorizations authorizations) {
         this.graph = graph;
         this.propertyDefinitions = propertyDefinitions;
         this.parameters = new QueryStringQueryParameters(queryString, authorizations);
@@ -52,6 +54,18 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
     @Override
     public Iterable<Edge> edges(final String label) {
         return edges(label, FetchHint.ALL);
+    }
+
+    @Override
+    public Iterable<Element> elements() {
+        return elements(FetchHint.ALL);
+    }
+
+    @Override
+    public Iterable<Element> elements(EnumSet<FetchHint> fetchHints) {
+        Iterable<Element> vertices = new ToElementIterable<>(vertices(fetchHints));
+        Iterable<Element> edges = new ToElementIterable<>(edges(fetchHints));
+        return new JoinIterable<>(vertices, edges);
     }
 
     @Override

@@ -1,6 +1,7 @@
 package org.vertexium.query;
 
 import org.vertexium.Edge;
+import org.vertexium.Element;
 import org.vertexium.FetchHint;
 import org.vertexium.Vertex;
 import org.vertexium.util.SelectManyIterable;
@@ -89,6 +90,31 @@ public class CompositeGraphQuery implements Query {
                 }
                 seenIds.add(edge.getId());
                 return super.isIncluded(edge);
+            }
+        };
+    }
+
+    @Override
+    public Iterable<Element> elements() {
+        return elements(FetchHint.ALL);
+    }
+
+    @Override
+    public Iterable<Element> elements(final EnumSet<FetchHint> fetchHints) {
+        final Set<String> seenIds = new HashSet<>();
+        return new SelectManyIterable<Query, Element>(this.queries) {
+            @Override
+            public Iterable<Element> getIterable(Query query) {
+                return query.elements(fetchHints);
+            }
+
+            @Override
+            protected boolean isIncluded(Element element) {
+                if (seenIds.contains(element.getId())) {
+                    return false;
+                }
+                seenIds.add(element.getId());
+                return super.isIncluded(element);
             }
         };
     }

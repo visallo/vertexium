@@ -10,6 +10,7 @@ import org.elasticsearch.common.geo.builders.ShapeBuilder;
 import org.elasticsearch.common.unit.DistanceUnit;
 import org.elasticsearch.index.query.*;
 import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.SearchHitField;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.bucket.geogrid.GeoHashGridBuilder;
@@ -21,10 +22,7 @@ import org.vertexium.elasticsearch.score.ScoringStrategy;
 import org.vertexium.id.NameSubstitutionStrategy;
 import org.vertexium.query.*;
 import org.vertexium.type.GeoCircle;
-import org.vertexium.util.ConvertingIterable;
-import org.vertexium.util.IterableUtils;
-import org.vertexium.util.VertexiumLogger;
-import org.vertexium.util.VertexiumLoggerFactory;
+import org.vertexium.util.*;
 
 import java.io.IOException;
 import java.util.*;
@@ -128,6 +126,54 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
         return createIterable(response, filterParameters, edges, evaluateHasContainers, searchTime, hits);
     }
 
+    @Override
+    public Iterable<Element> elements(EnumSet<FetchHint> fetchHints) {
+        long startTime = System.nanoTime();
+        SearchResponse response = getSearchResponse(null);
+        final SearchHits hits = response.getHits();
+        List<String> vertexIds = new ArrayList<>();
+        List<String> edgeIds = new ArrayList<>();
+        for (SearchHit hit : hits) {
+            SearchHitField elementType = hit.getFields().get(ElasticSearchSearchIndexBase.ELEMENT_TYPE_FIELD_NAME);
+            if (elementType == null) {
+                continue;
+            }
+            String elementTypeString = elementType.getValue().toString();
+            switch (elementTypeString) {
+                case ElasticSearchSearchIndexBase.ELEMENT_TYPE_VERTEX:
+                    vertexIds.add(hit.getId());
+                    break;
+                case ElasticSearchSearchIndexBase.ELEMENT_TYPE_EDGE:
+                    edgeIds.add(hit.getId());
+                    break;
+                default:
+                    LOGGER.warn("Unhandled element type returned: %s", elementTypeString);
+                    break;
+            }
+        }
+        long endTime = System.nanoTime();
+        long searchTime = endTime - startTime;
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug(
+                    "elastic search results (vertices: %d, edges: %d = %d) of %d (time: %dms)",
+                    vertexIds.size(),
+                    edgeIds.size(),
+                    vertexIds.size() + edgeIds.size(),
+                    hits.getTotalHits(),
+                    (endTime - startTime) / 1000 / 1000);
+        }
+
+        // since ES doesn't support security we will rely on the graph to provide edge filtering
+        // and rely on the DefaultGraphQueryIterable to provide property filtering
+        QueryParameters filterParameters = getParameters().clone();
+        filterParameters.setSkip(0); // ES already did a skip
+        Iterable<Vertex> vertices = getGraph().getVertices(vertexIds, fetchHints, filterParameters.getAuthorizations());
+        Iterable<Edge> edges = getGraph().getEdges(edgeIds, fetchHints, filterParameters.getAuthorizations());
+        Iterable<Element> elements = new JoinIterable<>(new ToElementIterable<>(vertices), new ToElementIterable<>(edges));
+        // TODO instead of passing false here to not evaluate the query string it would be better to support the Lucene query
+        return createIterable(response, filterParameters, elements, evaluateHasContainers, searchTime, hits);
+    }
+
     protected <T extends Element> ElasticSearchGraphQueryIterable<T> createIterable(SearchResponse response, QueryParameters filterParameters, Iterable<T> elements, boolean evaluateHasContainers, long searchTime, SearchHits hits) {
         return new ElasticSearchGraphQueryIterable<>(response, filterParameters, elements, false, evaluateHasContainers, hits.getTotalHits(), searchTime, hits);
     }
@@ -147,7 +193,9 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
 
     protected List<FilterBuilder> getFilters(String elementType) {
         List<FilterBuilder> filters = new ArrayList<>();
-        addElementTypeFilter(filters, elementType);
+        if (elementType != null) {
+            addElementTypeFilter(filters, elementType);
+        }
         for (HasContainer has : getParameters().getHasContainers()) {
             if (has instanceof HasValueContainer) {
                 getFiltersForHasValueContainer(filters, (HasValueContainer) has);
@@ -293,7 +341,9 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
     }
 
     protected void addElementTypeFilter(List<FilterBuilder> filters, String elementType) {
-        filters.add(createElementTypeFilter(elementType));
+        if (elementType != null) {
+            filters.add(createElementTypeFilter(elementType));
+        }
     }
 
     protected TermsFilterBuilder createElementTypeFilter(String elementType) {
@@ -310,6 +360,7 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
                 .prepareSearch(getIndicesToQuery())
                 .setTypes(ElasticSearchSearchIndexBase.ELEMENT_TYPE)
                 .setQuery(QueryBuilders.filteredQuery(queryBuilder, filterBuilder))
+                .addField(ElasticSearchSearchIndexBase.ELEMENT_TYPE_FIELD_NAME)
                 .setFrom((int) getParameters().getSkip())
                 .setSize((int) getParameters().getLimit());
     }

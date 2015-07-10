@@ -1448,6 +1448,9 @@ public abstract class GraphTestBase {
 
         Iterable<Edge> edges = graph.query(AUTHORIZATIONS_A).edges();
         Assert.assertEquals(1, count(edges));
+
+        Iterable<Element> elements = graph.query(AUTHORIZATIONS_A).elements();
+        Assert.assertEquals(3, count(elements));
     }
 
     @Test
@@ -1456,6 +1459,8 @@ public abstract class GraphTestBase {
         v1.setProperty("description", "This is vertex 1 - dog.", VISIBILITY_A, AUTHORIZATIONS_ALL);
         Vertex v2 = graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_ALL);
         v2.setProperty("description", "This is vertex 2 - cat.", VISIBILITY_A, AUTHORIZATIONS_ALL);
+        Edge e1 = graph.addEdge("e1", v1, v2, "edgeA", VISIBILITY_A, AUTHORIZATIONS_A);
+        e1.setProperty("description", "This is edge 1 - dog to cat.", VISIBILITY_A, AUTHORIZATIONS_ALL);
         getGraph().flush();
 
         Iterable<Vertex> vertices = graph.query("vertex", AUTHORIZATIONS_A).vertices();
@@ -1466,6 +1471,9 @@ public abstract class GraphTestBase {
 
         vertices = graph.query("dog", AUTHORIZATIONS_B).vertices();
         Assert.assertEquals(0, count(vertices));
+
+        Iterable<Element> elements = graph.query("dog", AUTHORIZATIONS_A_AND_B).elements();
+        Assert.assertEquals(2, count(elements));
     }
 
     @Test
