@@ -19,6 +19,7 @@
             <groupId>org.vertexium</groupId>
             <artifactId>vertexium-accumulo</artifactId>
             <version>${project.version}</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>com.esotericsoftware</groupId>
@@ -35,30 +36,38 @@
     <build>
         <plugins>
             <plugin>
-                <groupId>org.sonatype.plugins</groupId>
-                <artifactId>jarjar-maven-plugin</artifactId>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>2.4</version>
                 <executions>
                     <execution>
                         <phase>package</phase>
                         <goals>
-                            <goal>jarjar</goal>
+                            <goal>shade</goal>
                         </goals>
                         <configuration>
-                            <includes>
-                                <include>com.esotericsoftware:kryo-shaded</include>
-                                <include>com.esotericsoftware:minlog</include>
-                                <include>org.objenesis:objenesis</include>
-                            </includes>
-                            <rules>
-                                <rule>
-                                    <pattern>com.esotericsoftware.**</pattern>
-                                    <result>org.vertexium.kryo.@1</result>
-                                </rule>
-                                <rule>
-                                    <pattern>org.objenesis.**</pattern>
-                                    <result>org.vertexium.objenesis.@1</result>
-                                </rule>
-                            </rules>
+                            <shadedArtifactAttached>false</shadedArtifactAttached>
+                            <createDependencyReducedPom>true</createDependencyReducedPom>
+                            <dependencyReducedPomLocation>${project.build.directory}/dependency-reduced-pom.xml</dependencyReducedPomLocation>
+                            <artifactSet>
+                                <excludes>
+                                    <exclude>org.apache.log4j:*</exclude>
+                                    <exclude>log4j:log4j</exclude>
+                                    <exclude>org.slf4j:*</exclude>
+                                    <exclude>org.vertexium:vertexium-accumulo</exclude>
+                                    <exclude>junit:junit</exclude>
+                                </excludes>
+                            </artifactSet>
+                            <relocations>
+                                <relocation>
+                                    <pattern>com.esotericsoftware</pattern>
+                                    <shadedPattern>org.vertexium.kryo</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>org.objenesis</pattern>
+                                    <shadedPattern>org.vertexium.objenesis</shadedPattern>
+                                </relocation>
+                            </relocations>
                         </configuration>
                     </execution>
                 </executions>
