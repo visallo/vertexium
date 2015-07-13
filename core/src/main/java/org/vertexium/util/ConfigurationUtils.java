@@ -20,7 +20,8 @@ public class ConfigurationUtils {
     @SuppressWarnings("unchecked")
     public static <T> T createProvider(String className, GraphConfiguration config) throws VertexiumException {
         checkNotNull(className, "className is required");
-        LOGGER.debug("creating provider %s", className);
+        className = className.trim();
+        LOGGER.debug("creating provider '%s'", className);
         Class<GraphConfiguration> constructorParameterClass = GraphConfiguration.class;
         try {
             Class<?> clazz = Class.forName(className);

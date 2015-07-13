@@ -124,8 +124,8 @@ public class GraphConfiguration {
             return defaultValue;
         }
         if (str instanceof String) {
-            return (String) str;
+            return ((String) str).trim();
         }
-        return str.toString();
+        return str.toString().trim();
     }
 }
