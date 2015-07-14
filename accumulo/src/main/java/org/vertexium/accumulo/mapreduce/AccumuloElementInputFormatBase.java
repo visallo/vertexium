@@ -27,7 +27,7 @@ public abstract class AccumuloElementInputFormatBase<TValue extends Element> ext
         accumuloInputFormat = new AccumuloRowInputFormat();
     }
 
-    protected static void setInputInfo(Job job, String instanceName, String zooKeepers, String principal, AuthenticationToken token, String[] authorizations, String tableName) throws AccumuloSecurityException {
+    public static void setInputInfo(Job job, String instanceName, String zooKeepers, String principal, AuthenticationToken token, String[] authorizations, String tableName) throws AccumuloSecurityException {
         AccumuloRowInputFormat.setInputTableName(job, tableName);
         AccumuloRowInputFormat.setConnectorInfo(job, principal, token);
         ClientConfiguration clientConfig = new ClientConfiguration()
