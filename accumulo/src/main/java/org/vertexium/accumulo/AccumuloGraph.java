@@ -1240,39 +1240,50 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
             return;
         }
 
-        scanner.fetchColumnFamily(AccumuloElement.CF_HIDDEN);
-        scanner.fetchColumnFamily(AccumuloElement.CF_SOFT_DELETE);
+        Iterable<Text> columnFamiliesToFetch = getColumnFamiliesToFetch(elementType, fetchHints);
+        for (Text columnFamilyToFetch : columnFamiliesToFetch) {
+            scanner.fetchColumnFamily(columnFamilyToFetch);
+        }
+    }
+
+    public static Iterable<Text> getColumnFamiliesToFetch(ElementType elementType, EnumSet<FetchHint> fetchHints) {
+        List<Text> columnFamiliesToFetch = new ArrayList<>();
+
+        columnFamiliesToFetch.add(AccumuloElement.CF_HIDDEN);
+        columnFamiliesToFetch.add(AccumuloElement.CF_SOFT_DELETE);
 
         if (elementType == ElementType.VERTEX) {
-            scanner.fetchColumnFamily(AccumuloVertex.CF_SIGNAL);
+            columnFamiliesToFetch.add(AccumuloVertex.CF_SIGNAL);
         } else if (elementType == ElementType.EDGE) {
-            scanner.fetchColumnFamily(AccumuloEdge.CF_SIGNAL);
-            scanner.fetchColumnFamily(AccumuloEdge.CF_IN_VERTEX);
-            scanner.fetchColumnFamily(AccumuloEdge.CF_OUT_VERTEX);
+            columnFamiliesToFetch.add(AccumuloEdge.CF_SIGNAL);
+            columnFamiliesToFetch.add(AccumuloEdge.CF_IN_VERTEX);
+            columnFamiliesToFetch.add(AccumuloEdge.CF_OUT_VERTEX);
         } else {
             throw new VertexiumException("Unhandled element type: " + elementType);
         }
 
         if (fetchHints.contains(FetchHint.IN_EDGE_REFS)) {
-            scanner.fetchColumnFamily(AccumuloVertex.CF_IN_EDGE);
-            scanner.fetchColumnFamily(AccumuloVertex.CF_IN_EDGE_HIDDEN);
-            scanner.fetchColumnFamily(AccumuloVertex.CF_IN_EDGE_SOFT_DELETE);
+            columnFamiliesToFetch.add(AccumuloVertex.CF_IN_EDGE);
+            columnFamiliesToFetch.add(AccumuloVertex.CF_IN_EDGE_HIDDEN);
+            columnFamiliesToFetch.add(AccumuloVertex.CF_IN_EDGE_SOFT_DELETE);
         }
         if (fetchHints.contains(FetchHint.OUT_EDGE_REFS)) {
-            scanner.fetchColumnFamily(AccumuloVertex.CF_OUT_EDGE);
-            scanner.fetchColumnFamily(AccumuloVertex.CF_OUT_EDGE_HIDDEN);
-            scanner.fetchColumnFamily(AccumuloVertex.CF_OUT_EDGE_SOFT_DELETE);
+            columnFamiliesToFetch.add(AccumuloVertex.CF_OUT_EDGE);
+            columnFamiliesToFetch.add(AccumuloVertex.CF_OUT_EDGE_HIDDEN);
+            columnFamiliesToFetch.add(AccumuloVertex.CF_OUT_EDGE_SOFT_DELETE);
         }
         if (fetchHints.contains(FetchHint.PROPERTIES)) {
-            scanner.fetchColumnFamily(AccumuloElement.CF_PROPERTY);
-            scanner.fetchColumnFamily(AccumuloElement.CF_PROPERTY_HIDDEN);
-            scanner.fetchColumnFamily(AccumuloElement.CF_PROPERTY_SOFT_DELETE);
+            columnFamiliesToFetch.add(AccumuloElement.CF_PROPERTY);
+            columnFamiliesToFetch.add(AccumuloElement.CF_PROPERTY_HIDDEN);
+            columnFamiliesToFetch.add(AccumuloElement.CF_PROPERTY_SOFT_DELETE);
         }
         if (fetchHints.contains(FetchHint.PROPERTY_METADATA)) {
-            scanner.fetchColumnFamily(AccumuloElement.CF_PROPERTY_METADATA);
-            scanner.fetchColumnFamily(AccumuloElement.CF_PROPERTY_HIDDEN);
-            scanner.fetchColumnFamily(AccumuloElement.CF_PROPERTY_SOFT_DELETE);
+            columnFamiliesToFetch.add(AccumuloElement.CF_PROPERTY_METADATA);
+            columnFamiliesToFetch.add(AccumuloElement.CF_PROPERTY_HIDDEN);
+            columnFamiliesToFetch.add(AccumuloElement.CF_PROPERTY_SOFT_DELETE);
         }
+
+        return columnFamiliesToFetch;
     }
 
     public String getTableNameFromElementType(ElementType elementType) {

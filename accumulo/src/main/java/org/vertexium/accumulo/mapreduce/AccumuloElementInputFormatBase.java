@@ -2,23 +2,22 @@ package org.vertexium.accumulo.mapreduce;
 
 import org.apache.accumulo.core.client.AccumuloSecurityException;
 import org.apache.accumulo.core.client.ClientConfiguration;
+import org.apache.accumulo.core.client.mapreduce.AccumuloInputFormat;
 import org.apache.accumulo.core.client.mapreduce.AccumuloRowInputFormat;
 import org.apache.accumulo.core.client.security.tokens.AuthenticationToken;
 import org.apache.accumulo.core.data.Key;
 import org.apache.accumulo.core.data.Value;
+import org.apache.accumulo.core.util.Pair;
 import org.apache.accumulo.core.util.PeekingIterator;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.*;
-import org.vertexium.Authorizations;
-import org.vertexium.Element;
-import org.vertexium.GraphFactory;
+import org.vertexium.*;
 import org.vertexium.accumulo.AccumuloAuthorizations;
 import org.vertexium.accumulo.AccumuloGraph;
 import org.vertexium.util.MapUtils;
 
 import java.io.IOException;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public abstract class AccumuloElementInputFormatBase<TValue extends Element> extends InputFormat<Text, TValue> {
     private final AccumuloRowInputFormat accumuloInputFormat;
@@ -36,6 +35,15 @@ public abstract class AccumuloElementInputFormatBase<TValue extends Element> ext
         AccumuloRowInputFormat.setZooKeeperInstance(job, clientConfig);
         AccumuloRowInputFormat.setScanAuthorizations(job, new org.apache.accumulo.core.security.Authorizations(authorizations));
         job.getConfiguration().setStrings(VertexiumMRUtils.CONFIG_AUTHORIZATIONS, authorizations);
+    }
+
+    public static void setFetchHints(Job job, ElementType elementType, EnumSet<FetchHint> fetchHints) {
+        Iterable<Text> columnFamiliesToFetch = AccumuloGraph.getColumnFamiliesToFetch(elementType, fetchHints);
+        Collection<Pair<Text, Text>> columnFamilyColumnQualifierPairs = new ArrayList<>();
+        for (Text columnFamilyToFetch : columnFamiliesToFetch) {
+            columnFamilyColumnQualifierPairs.add(new Pair<Text, Text>(columnFamilyToFetch, null));
+        }
+        AccumuloInputFormat.fetchColumns(job, columnFamilyColumnQualifierPairs);
     }
 
     @Override

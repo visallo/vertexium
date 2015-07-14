@@ -1,6 +1,8 @@
 package org.vertexium;
 
+import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.List;
 
 public enum FetchHint {
     PROPERTIES,
