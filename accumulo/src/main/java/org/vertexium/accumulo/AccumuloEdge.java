@@ -85,7 +85,7 @@ public class AccumuloEdge extends AccumuloElement implements Edge {
         } else if (outVertexId.equals(myVertexId)) {
             return inVertexId;
         }
-        throw new VertexiumException("myVertexId does not appear on either the in (" + inVertexId + ") or the out (" + outVertexId + ").");
+        throw new VertexiumException("myVertexId(" + myVertexId + ") does not appear on edge (" + getId() + ") in either the in (" + inVertexId + ") or the out (" + outVertexId + ").");
     }
 
     @Override
