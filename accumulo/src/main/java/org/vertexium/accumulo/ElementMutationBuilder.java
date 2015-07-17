@@ -1,5 +1,6 @@
 package org.vertexium.accumulo;
 
+import org.apache.accumulo.core.data.Key;
 import org.apache.accumulo.core.data.Mutation;
 import org.apache.accumulo.core.data.Value;
 import org.apache.accumulo.core.security.ColumnVisibility;
@@ -240,10 +241,10 @@ public abstract class ElementMutationBuilder {
         final String visibilityString = property.getVisibility().getVisibilityString();
         final String metadataKey = metadataItem.getKey();
         StringBuilder keyBuilder = new StringBuilder(propertyName.length() + propertyKey.length() + visibilityString.length() + metadataKey.length());
-        keyBuilder.append(propertyName);
-        keyBuilder.append(propertyKey);
+        keyBuilder.append(getNameSubstitutionStrategy().deflate(propertyName));
+        keyBuilder.append(getNameSubstitutionStrategy().deflate(propertyKey));
         keyBuilder.append(visibilityString);
-        keyBuilder.append(metadataKey);
+        keyBuilder.append(getNameSubstitutionStrategy().deflate(metadataKey));
         String key = keyBuilder.toString();
         Text r = propertyMetadataColumnQualifierTextCache.peek(key);
         if (r == null) {
