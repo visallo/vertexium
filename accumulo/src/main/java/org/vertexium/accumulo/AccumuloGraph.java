@@ -254,7 +254,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
     }
 
     @Override
-    public VertexBuilder prepareVertex(String vertexId, Long timestamp, Visibility visibility) {
+    public AccumuloVertexBuilder prepareVertex(String vertexId, Long timestamp, Visibility visibility) {
         if (vertexId == null) {
             vertexId = getIdGenerator().nextId();
         }
@@ -555,7 +555,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
     }
 
     @Override
-    public EdgeBuilderByVertexId prepareEdge(String edgeId, String outVertexId, String inVertexId, String label, final Long timestamp, Visibility visibility) {
+    public AccumuloEdgeBuilderByVertexId prepareEdge(String edgeId, String outVertexId, String inVertexId, String label, final Long timestamp, Visibility visibility) {
         if (edgeId == null) {
             edgeId = getIdGenerator().nextId();
         }
