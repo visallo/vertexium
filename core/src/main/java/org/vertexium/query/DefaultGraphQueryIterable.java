@@ -24,6 +24,10 @@ public class DefaultGraphQueryIterable<T extends Element> implements
 
     @Override
     public Iterator<T> iterator() {
+        return iterator(false);
+    }
+
+    private Iterator<T> iterator(final boolean iterateAll) {
         final Iterator<T> it = iterable.iterator();
 
         return new Iterator<T>() {
@@ -55,7 +59,7 @@ public class DefaultGraphQueryIterable<T extends Element> implements
                     return;
                 }
 
-                if (this.count >= parameters.getSkip() + parameters.getLimit()) {
+                if (!iterateAll && (this.count >= parameters.getSkip() + parameters.getLimit())) {
                     return;
                 }
 
@@ -83,7 +87,7 @@ public class DefaultGraphQueryIterable<T extends Element> implements
                     }
 
                     this.count++;
-                    if (this.count <= parameters.getSkip()) {
+                    if (!iterateAll && (this.count <= parameters.getSkip())) {
                         continue;
                     }
 
@@ -116,6 +120,6 @@ public class DefaultGraphQueryIterable<T extends Element> implements
 
     @Override
     public long getTotalHits() {
-        return count(this);
+        return count(this.iterator(true));
     }
 }

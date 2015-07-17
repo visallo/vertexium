@@ -1992,11 +1992,15 @@ public abstract class GraphTestBase {
         v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
         Iterable<Vertex> vertices = v1.query(AUTHORIZATIONS_A).vertices();
         Assert.assertEquals(2, count(vertices));
-        if (vertices instanceof IterableWithTotalHits) {
-            Assert.assertEquals(2, ((IterableWithTotalHits) vertices).getTotalHits());
-        }
         org.vertexium.test.util.IterableUtils.assertContains(v2, vertices);
         org.vertexium.test.util.IterableUtils.assertContains(v3, vertices);
+        if (vertices instanceof IterableWithTotalHits) {
+            Assert.assertEquals(2, ((IterableWithTotalHits) vertices).getTotalHits());
+
+            vertices = v1.query(AUTHORIZATIONS_A).limit(1).vertices();
+            Assert.assertEquals(1, count(vertices));
+            Assert.assertEquals(2, ((IterableWithTotalHits) vertices).getTotalHits());
+        }
 
         vertices = v1.query(AUTHORIZATIONS_A)
                 .has("prop1", "value2")
