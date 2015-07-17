@@ -71,13 +71,24 @@ public class LazyVertex extends ModelBase {
         for (Edge edge : v.getEdges(Direction.OUT, FetchHint.ALL_INCLUDING_HIDDEN, getTime(), getAuthorizations())) {
             String edgeIndexString = "e" + edgeIndex;
             boolean isHidden = edge.isHidden(getAuthorizations());
-            writer.println(
-                    "    @|bold " + edgeIndexString + ":|@ "
-                            + edge.getId() + ": "
-                            + edge.getLabel()
-                            + " -> " + edge.getOtherVertexId(v.getId())
-                            + (isHidden ? " @|red (hidden)|@" : "")
-            );
+            try {
+                String otherVertexId = edge.getOtherVertexId(v.getId());
+                writer.println(
+                        "    @|bold " + edgeIndexString + ":|@ "
+                                + edge.getId() + ": "
+                                + edge.getLabel()
+                                + " -> " + otherVertexId
+                                + (isHidden ? " @|red (hidden)|@" : "")
+                );
+            } catch (Exception ex) {
+                writer.println(
+                        "    @|bold " + edgeIndexString + ":|@ "
+                                + edge.getId() + ": "
+                                + edge.getLabel()
+                                + " -> @|red " + ex.getMessage() + "|@"
+                                + (isHidden ? " @|red (hidden)|@" : "")
+                );
+            }
             LazyEdge lazyEdge = new LazyEdge(edge.getId());
             VertexiumScript.getContextEdges().put(edgeIndexString, lazyEdge);
             edgeIndex++;
@@ -87,13 +98,24 @@ public class LazyVertex extends ModelBase {
         for (Edge edge : v.getEdges(Direction.IN, FetchHint.ALL_INCLUDING_HIDDEN, getTime(), getAuthorizations())) {
             String edgeIndexString = "e" + edgeIndex;
             boolean isHidden = edge.isHidden(getAuthorizations());
-            writer.println(
-                    "    @|bold " + edgeIndexString + ":|@ "
-                            + edge.getId() + ": "
-                            + edge.getLabel()
-                            + " -> " + edge.getOtherVertexId(v.getId())
-                            + (isHidden ? " @|red (hidden)|@" : "")
-            );
+            try {
+                String otherVertexId = edge.getOtherVertexId(v.getId());
+                writer.println(
+                        "    @|bold " + edgeIndexString + ":|@ "
+                                + edge.getId() + ": "
+                                + edge.getLabel()
+                                + " -> " + otherVertexId
+                                + (isHidden ? " @|red (hidden)|@" : "")
+                );
+            } catch (Exception ex) {
+                writer.println(
+                        "    @|bold " + edgeIndexString + ":|@ "
+                                + edge.getId() + ": "
+                                + edge.getLabel()
+                                + " -> @|red " + ex.getMessage() + "|@"
+                                + (isHidden ? " @|red (hidden)|@" : "")
+                );
+            }
             LazyEdge lazyEdge = new LazyEdge(edge.getId());
             VertexiumScript.getContextEdges().put(edgeIndexString, lazyEdge);
             edgeIndex++;
