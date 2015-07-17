@@ -5,7 +5,11 @@ import org.vertexium.Property;
 
 import java.util.Iterator;
 
-public class DefaultGraphQueryIterable<T extends Element> implements Iterable<T> {
+import static org.vertexium.util.IterableUtils.count;
+
+public class DefaultGraphQueryIterable<T extends Element> implements
+        Iterable<T>,
+        IterableWithTotalHits<T> {
     private final QueryParameters parameters;
     private final Iterable<T> iterable;
     private final boolean evaluateQueryString;
@@ -108,5 +112,10 @@ public class DefaultGraphQueryIterable<T extends Element> implements Iterable<T>
         }
         String valueString = value.toString().toLowerCase();
         return valueString.contains(queryString.toLowerCase());
+    }
+
+    @Override
+    public long getTotalHits() {
+        return count(this);
     }
 }
