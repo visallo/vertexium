@@ -44,4 +44,8 @@ public abstract class EdgeBuilderBase extends ElementBuilder<Edge> implements Ed
      */
     @Override
     public abstract Edge save(Authorizations authorizations);
+
+    public abstract String getOutVertexId();
+
+    public abstract String getInVertexId();
 }

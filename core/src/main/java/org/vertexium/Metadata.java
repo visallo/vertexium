@@ -11,8 +11,9 @@ public class Metadata implements Serializable {
     private Map<String, Entry> entries = new HashMap<>();
     public static final String KEY_SEPARATOR = "\u001f";
 
-    public void add(String key, Object value, Visibility visibility) {
+    public Metadata add(String key, Object value, Visibility visibility) {
         entries.put(toMapKey(key, visibility), new Entry(key, value, visibility));
+        return this;
     }
 
     public void remove(String key, Visibility visibility) {

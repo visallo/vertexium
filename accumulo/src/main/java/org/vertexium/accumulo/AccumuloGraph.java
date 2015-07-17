@@ -263,23 +263,12 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
         }
         final long timestampLong = timestamp;
 
-        return new VertexBuilder(vertexId, visibility) {
+        return new AccumuloVertexBuilder(vertexId, visibility, elementMutationBuilder) {
             @Override
             public Vertex save(Authorizations authorizations) {
-                Iterable<Visibility> hiddenVisibilities = null;
-                AccumuloVertex vertex = new AccumuloVertex(
-                        AccumuloGraph.this,
-                        getVertexId(),
-                        getVisibility(),
-                        getProperties(),
-                        getPropertyDeletes(),
-                        getPropertySoftDeletes(),
-                        hiddenVisibilities,
-                        timestampLong,
-                        authorizations
-                );
+                AccumuloVertex vertex = createVertex(authorizations);
 
-                elementMutationBuilder.saveVertex(vertex);
+                getElementMutationBuilder().saveVertex(vertex);
 
                 if (getIndexHint() != IndexHint.DO_NOT_INDEX) {
                     getSearchIndex().addElement(AccumuloGraph.this, vertex, authorizations);
@@ -296,6 +285,22 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
                 }
 
                 return vertex;
+            }
+
+            @Override
+            protected AccumuloVertex createVertex(Authorizations authorizations) {
+                Iterable<Visibility> hiddenVisibilities = null;
+                return new AccumuloVertex(
+                        AccumuloGraph.this,
+                        getVertexId(),
+                        getVisibility(),
+                        getProperties(),
+                        getPropertyDeletes(),
+                        getPropertySoftDeletes(),
+                        hiddenVisibilities,
+                        timestampLong,
+                        authorizations
+                );
             }
         };
     }
@@ -555,10 +560,16 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
             edgeId = getIdGenerator().nextId();
         }
 
-        return new EdgeBuilderByVertexId(edgeId, outVertexId, inVertexId, label, visibility) {
+        return new AccumuloEdgeBuilderByVertexId(edgeId, outVertexId, inVertexId, label, visibility, elementMutationBuilder) {
             @Override
             public Edge save(Authorizations authorizations) {
-                return savePreparedEdge(this, getOutVertexId(), getInVertexId(), null, timestamp, authorizations);
+                AccumuloEdge edge = AccumuloGraph.this.createEdge(AccumuloGraph.this, this, timestamp, authorizations);
+                return savePreparedEdge(this, edge, null, authorizations);
+            }
+
+            @Override
+            protected AccumuloEdge createEdge(Authorizations authorizations) {
+                return AccumuloGraph.this.createEdge(AccumuloGraph.this, this, timestamp, authorizations);
             }
         };
     }
@@ -589,16 +600,15 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
                         }
                     }
                 };
-                return savePreparedEdge(this, getOutVertex().getId(), getInVertex().getId(), addEdgeToVertex, timestamp, authorizations);
+                AccumuloEdge edge = createEdge(AccumuloGraph.this, this, timestamp, authorizations);
+                return savePreparedEdge(this, edge, addEdgeToVertex, authorizations);
             }
         };
     }
 
-    private Edge savePreparedEdge(
+    private AccumuloEdge createEdge(
+            AccumuloGraph accumuloGraph,
             EdgeBuilderBase edgeBuilder,
-            String outVertexId,
-            String inVertexId,
-            AddEdgeToVertexRunnable addEdgeToVertex,
             Long timestamp,
             Authorizations authorizations
     ) {
@@ -608,10 +618,10 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
 
         Iterable<Visibility> hiddenVisibilities = null;
         AccumuloEdge edge = new AccumuloEdge(
-                AccumuloGraph.this,
+                accumuloGraph,
                 edgeBuilder.getEdgeId(),
-                outVertexId,
-                inVertexId,
+                edgeBuilder.getOutVertexId(),
+                edgeBuilder.getInVertexId(),
                 edgeBuilder.getLabel(),
                 edgeBuilder.getNewEdgeLabel(),
                 edgeBuilder.getVisibility(),
@@ -622,6 +632,15 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
                 timestamp,
                 authorizations
         );
+        return edge;
+    }
+
+    private Edge savePreparedEdge(
+            EdgeBuilderBase edgeBuilder,
+            AccumuloEdge edge,
+            AddEdgeToVertexRunnable addEdgeToVertex,
+            Authorizations authorizations
+    ) {
         elementMutationBuilder.saveEdge(edge);
 
         if (addEdgeToVertex != null) {

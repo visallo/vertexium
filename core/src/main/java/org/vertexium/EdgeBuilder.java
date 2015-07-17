@@ -17,4 +17,17 @@ public abstract class EdgeBuilder extends EdgeBuilderBase {
     protected Vertex getInVertex() {
         return inVertex;
     }
+
+    @Override
+    public String getOutVertexId() {
+        return getOutVertex().getId();
+    }
+
+    @Override
+    public String getInVertexId() {
+        return getInVertex().getId();
+    }
+
+    @Override
+    public abstract Edge save(Authorizations authorizations);
 }
