@@ -63,6 +63,16 @@ public class IterableUtils {
         return count;
     }
 
+    public static <T> int count(Iterator<T> iterator) {
+        int count = 0;
+        while (iterator.hasNext()) {
+            count++;
+            iterator.next();
+        }
+        close(iterator);
+        return count;
+    }
+
     public static <T> Iterable<T> toIterable(final T[] arr) {
         return new Iterable<T>() {
             @Override
@@ -107,6 +117,12 @@ public class IterableUtils {
     }
 
     private static <T> void close(Iterable<? extends T> it) {
+        if (it instanceof Closeable) {
+            CloseableUtils.closeQuietly((Closeable) it);
+        }
+    }
+
+    private static <T> void close(Iterator<? extends T> it) {
         if (it instanceof Closeable) {
             CloseableUtils.closeQuietly((Closeable) it);
         }
