@@ -2,14 +2,17 @@ package org.vertexium.query;
 
 import org.vertexium.Element;
 import org.vertexium.Property;
+import org.vertexium.util.CloseableIterable;
 
+import java.io.IOException;
 import java.util.Iterator;
 
 import static org.vertexium.util.IterableUtils.count;
 
 public class DefaultGraphQueryIterable<T extends Element> implements
         Iterable<T>,
-        IterableWithTotalHits<T> {
+        IterableWithTotalHits<T>,
+        CloseableIterable<T> {
     private final QueryParameters parameters;
     private final Iterable<T> iterable;
     private final boolean evaluateQueryString;
@@ -121,5 +124,12 @@ public class DefaultGraphQueryIterable<T extends Element> implements
     @Override
     public long getTotalHits() {
         return count(this.iterator(true));
+    }
+
+    @Override
+    public void close() throws IOException {
+        if (this.iterable instanceof CloseableIterable) {
+            ((CloseableIterable) this.iterable).close();
+        }
     }
 }
