@@ -82,7 +82,7 @@
         <maven.plugin.jarjar.version>1.9</maven.plugin.jarjar.version>
 
         <!-- used by: elasticsearch -->
-        <elasticsearch.version>1.4.0</elasticsearch.version>
+        <elasticsearch.version>1.4.4</elasticsearch.version>
         <!-- used by: elasticsearch boost formulas -->
         <groovy.version>2.3.7</groovy.version>
         <!-- used by: elasticsearch geo_shape type -->
