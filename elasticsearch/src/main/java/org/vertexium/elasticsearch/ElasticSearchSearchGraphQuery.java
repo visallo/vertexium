@@ -13,28 +13,28 @@ import java.util.Map;
 public class ElasticSearchSearchGraphQuery extends ElasticSearchSearchQueryBase implements GraphQuery {
     public ElasticSearchSearchGraphQuery(
             TransportClient client,
-            String[] indicesToQuery,
             Graph graph,
             String queryString,
             Map<String, PropertyDefinition> propertyDefinitions,
             ScoringStrategy scoringStrategy,
             NameSubstitutionStrategy nameSubstitutionStrategy,
+            IndexSelectionStrategy indexSelectionStrategy,
             Authorizations authorizations
     ) {
-        super(client, indicesToQuery, graph, queryString, propertyDefinitions, scoringStrategy, nameSubstitutionStrategy, authorizations);
+        super(client, graph, queryString, propertyDefinitions, scoringStrategy, nameSubstitutionStrategy, indexSelectionStrategy, authorizations);
     }
 
     public ElasticSearchSearchGraphQuery(
             TransportClient client,
-            String[] indicesToQuery,
             Graph graph,
             String[] similarToFields,
             String similarToText,
             Map<String, PropertyDefinition> propertyDefinitions,
             ScoringStrategy scoringStrategy,
             NameSubstitutionStrategy nameSubstitutionStrategy,
+            IndexSelectionStrategy indexSelectionStrategy,
             Authorizations authorizations
     ) {
-        super(client, indicesToQuery, graph, similarToFields, similarToText, propertyDefinitions, scoringStrategy, nameSubstitutionStrategy,authorizations);
+        super(client, graph, similarToFields, similarToText, propertyDefinitions, scoringStrategy, nameSubstitutionStrategy, indexSelectionStrategy, authorizations);
     }
 }

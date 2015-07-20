@@ -1,5 +1,6 @@
 package org.vertexium.elasticsearch;
 
+import com.google.common.base.Joiner;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.index.query.*;
@@ -18,33 +19,33 @@ import java.util.Map;
 public abstract class ElasticSearchParentChildQueryBase extends ElasticSearchQueryBase {
     protected ElasticSearchParentChildQueryBase(
             TransportClient client,
-            String[] indicesToQuery,
             Graph graph,
             String queryString,
             Map<String, PropertyDefinition> propertyDefinitions,
             ScoringStrategy scoringStrategy,
             NameSubstitutionStrategy nameSubstitutionStrategy,
+            IndexSelectionStrategy indexSelectionStrategy,
             Authorizations authorizations
     ) {
-        super(client, indicesToQuery, graph, queryString, propertyDefinitions, scoringStrategy, nameSubstitutionStrategy, false, authorizations);
+        super(client, graph, queryString, propertyDefinitions, scoringStrategy, nameSubstitutionStrategy, indexSelectionStrategy, false, authorizations);
     }
 
     protected ElasticSearchParentChildQueryBase(
             TransportClient client,
-            String[] indicesToQuery,
             Graph graph,
             String[] similarToFields,
             String similarToText,
             Map<String, PropertyDefinition> propertyDefinitions,
             ScoringStrategy scoringStrategy,
             NameSubstitutionStrategy nameSubstitutionStrategy,
+            IndexSelectionStrategy indexSelectionStrategy,
             Authorizations authorizations
     ) {
-        super(client, indicesToQuery, graph, similarToFields, similarToText, propertyDefinitions, scoringStrategy, nameSubstitutionStrategy, false, authorizations);
+        super(client, graph, similarToFields, similarToText, propertyDefinitions, scoringStrategy, nameSubstitutionStrategy, indexSelectionStrategy, false, authorizations);
     }
 
     @Override
-    protected QueryBuilder createQuery(QueryParameters queryParameters, String elementType, List<FilterBuilder> filters) {
+    protected QueryBuilder createQuery(QueryParameters queryParameters, ElasticSearchElementType elementType, List<FilterBuilder> filters) {
         FilterBuilder andFilterBuilder = getElementFilter(elementType);
 
         AuthorizationFilterBuilder authorizationFilterBuilder = new AuthorizationFilterBuilder(getParameters().getAuthorizations().getAuthorizations());
@@ -61,12 +62,12 @@ public abstract class ElasticSearchParentChildQueryBase extends ElasticSearchQue
         return QueryBuilders.filteredQuery(childQuery, andFilterBuilder);
     }
 
-    protected FilterBuilder getElementFilter(String elementType) {
+    protected FilterBuilder getElementFilter(ElasticSearchElementType elementType) {
         List<FilterBuilder> filters = getElementFilters(elementType);
         return FilterBuilders.andFilter(filters.toArray(new FilterBuilder[filters.size()]));
     }
 
-    protected List<FilterBuilder> getElementFilters(String elementType) {
+    protected List<FilterBuilder> getElementFilters(ElasticSearchElementType elementType) {
         List<FilterBuilder> results = new ArrayList<>();
         if (elementType != null) {
             results.add(createElementTypeFilter(elementType));
@@ -75,7 +76,7 @@ public abstract class ElasticSearchParentChildQueryBase extends ElasticSearchQue
         return results;
     }
 
-    private QueryBuilder createSimilarToTextQuery(SimilarToTextQueryParameters queryParameters, String elementType, List<FilterBuilder> filters, AuthorizationFilterBuilder authorizationFilterBuilder) {
+    private QueryBuilder createSimilarToTextQuery(SimilarToTextQueryParameters queryParameters, ElasticSearchElementType elementType, List<FilterBuilder> filters, AuthorizationFilterBuilder authorizationFilterBuilder) {
         BoolQueryBuilder boolChildQuery = QueryBuilders.boolQuery();
 
         boolChildQuery.must(
@@ -92,7 +93,7 @@ public abstract class ElasticSearchParentChildQueryBase extends ElasticSearchQue
         return boolChildQuery;
     }
 
-    private QueryBuilder createQueryStringQuery(QueryStringQueryParameters queryParameters, String elementType, List<FilterBuilder> filters, AuthorizationFilterBuilder authorizationFilterBuilder) {
+    private QueryBuilder createQueryStringQuery(QueryStringQueryParameters queryParameters, ElasticSearchElementType elementType, List<FilterBuilder> filters, AuthorizationFilterBuilder authorizationFilterBuilder) {
         String queryString = queryParameters.getQueryString();
         if (((queryString == null || queryString.length() <= 0)) && (filters.size() <= 0)) {
             return QueryBuilders.matchAllQuery();
@@ -130,14 +131,18 @@ public abstract class ElasticSearchParentChildQueryBase extends ElasticSearchQue
     }
 
     @Override
-    protected void addElementTypeFilter(List<FilterBuilder> filters, String elementType) {
+    protected void addElementTypeFilter(List<FilterBuilder> filters, ElasticSearchElementType elementType) {
         // don't add the element type filter here because the child docs don't have element type only the parent type does
     }
 
     @Override
-    protected SearchRequestBuilder getSearchRequestBuilder(List<FilterBuilder> filters, QueryBuilder queryBuilder) {
+    protected SearchRequestBuilder getSearchRequestBuilder(List<FilterBuilder> filters, QueryBuilder queryBuilder, ElasticSearchElementType elementType) {
+        String[] indicesToQuery = getIndexSelectionStrategy().getIndicesToQuery(this, elementType);
+        if (QUERY_LOGGER.isTraceEnabled()) {
+            QUERY_LOGGER.trace("indicesToQuery: %s", Joiner.on(", ").join(indicesToQuery));
+        }
         return getClient()
-                .prepareSearch(getIndicesToQuery())
+                .prepareSearch(indicesToQuery)
                 .setTypes(ElasticSearchSearchIndexBase.ELEMENT_TYPE)
                 .setQuery(queryBuilder)
                 .addField(ElasticSearchSearchIndexBase.ELEMENT_TYPE_FIELD_NAME)

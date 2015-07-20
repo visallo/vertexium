@@ -18,23 +18,23 @@ public class ElasticSearchParentChildVertexQuery extends ElasticSearchParentChil
 
     public ElasticSearchParentChildVertexQuery(
             TransportClient client,
-            String[] indicesToQuery,
             Graph graph,
             Vertex vertex,
             String queryString,
             Map<String, PropertyDefinition> propertyDefinitions,
             ScoringStrategy scoringStrategy,
             NameSubstitutionStrategy nameSubstitutionStrategy,
+            IndexSelectionStrategy indexSelectionStrategy,
             Authorizations authorizations
     ) {
-        super(client, indicesToQuery, graph, queryString, propertyDefinitions, scoringStrategy, nameSubstitutionStrategy, authorizations);
+        super(client, graph, queryString, propertyDefinitions, scoringStrategy, nameSubstitutionStrategy, indexSelectionStrategy, authorizations);
         this.sourceVertex = vertex;
     }
 
     @Override
-    protected List<FilterBuilder> getElementFilters(String elementType) {
+    protected List<FilterBuilder> getElementFilters(ElasticSearchElementType elementType) {
         List<FilterBuilder> results = super.getElementFilters(elementType);
-        if (elementType.equals(ElasticSearchSearchIndexBase.ELEMENT_TYPE_VERTEX)) {
+        if (elementType.equals(ElasticSearchElementType.VERTEX)) {
             String[] ids = toArray(sourceVertex.getVertexIds(Direction.BOTH, getParameters().getAuthorizations()), String.class);
             results.add(FilterBuilders.idsFilter().ids(ids));
         }

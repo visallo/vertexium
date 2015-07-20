@@ -1,5 +1,6 @@
 package org.vertexium.elasticsearch;
 
+import com.google.common.base.Joiner;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -9,6 +10,7 @@ import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.geo.builders.ShapeBuilder;
 import org.elasticsearch.common.unit.DistanceUnit;
 import org.elasticsearch.index.query.*;
+import org.elasticsearch.indices.IndexMissingException;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHitField;
 import org.elasticsearch.search.SearchHits;
@@ -33,52 +35,58 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
     private final TransportClient client;
     private final boolean evaluateHasContainers;
     private final StandardAnalyzer analyzer;
-    private String[] indicesToQuery;
-    private ScoringStrategy scoringStrategy;
-    private NameSubstitutionStrategy nameSubstitutionStrategy;
+    private final ScoringStrategy scoringStrategy;
+    private final NameSubstitutionStrategy nameSubstitutionStrategy;
+    private final IndexSelectionStrategy indexSelectionStrategy;
 
     protected ElasticSearchQueryBase(
             TransportClient client,
-            String[] indicesToQuery,
             Graph graph,
             String queryString,
             Map<String, PropertyDefinition> propertyDefinitions,
             ScoringStrategy scoringStrategy,
             NameSubstitutionStrategy nameSubstitutionStrategy,
+            IndexSelectionStrategy indexSelectionStrategy,
             boolean evaluateHasContainers,
             Authorizations authorizations) {
         super(graph, queryString, propertyDefinitions, authorizations);
         this.client = client;
-        this.indicesToQuery = indicesToQuery;
         this.evaluateHasContainers = evaluateHasContainers;
         this.scoringStrategy = scoringStrategy;
         this.analyzer = new StandardAnalyzer();
         this.nameSubstitutionStrategy = nameSubstitutionStrategy;
+        this.indexSelectionStrategy = indexSelectionStrategy;
     }
 
     protected ElasticSearchQueryBase(
             TransportClient client,
-            String[] indicesToQuery,
             Graph graph,
             String[] similarToFields, String similarToText,
             Map<String, PropertyDefinition> propertyDefinitions,
             ScoringStrategy scoringStrategy,
             NameSubstitutionStrategy nameSubstitutionStrategy,
+            IndexSelectionStrategy indexSelectionStrategy,
             boolean evaluateHasContainers,
             Authorizations authorizations) {
         super(graph, similarToFields, similarToText, propertyDefinitions, authorizations);
         this.client = client;
-        this.indicesToQuery = indicesToQuery;
         this.evaluateHasContainers = evaluateHasContainers;
         this.scoringStrategy = scoringStrategy;
         this.analyzer = new StandardAnalyzer();
         this.nameSubstitutionStrategy = nameSubstitutionStrategy;
+        this.indexSelectionStrategy = indexSelectionStrategy;
     }
 
     @Override
     public Iterable<Vertex> vertices(EnumSet<FetchHint> fetchHints) {
         long startTime = System.nanoTime();
-        SearchResponse response = getSearchResponse(ElasticSearchSearchIndexBase.ELEMENT_TYPE_VERTEX);
+        SearchResponse response;
+        try {
+            response = getSearchResponse(ElasticSearchElementType.VERTEX);
+        } catch (IndexMissingException ex) {
+            LOGGER.debug("Index missing: %s", ex.getMessage());
+            return new ArrayList<>();
+        }
         final SearchHits hits = response.getHits();
         List<String> ids = IterableUtils.toList(new ConvertingIterable<SearchHit, String>(hits) {
             @Override
@@ -103,7 +111,13 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
     @Override
     public Iterable<Edge> edges(EnumSet<FetchHint> fetchHints) {
         long startTime = System.nanoTime();
-        SearchResponse response = getSearchResponse(ElasticSearchSearchIndexBase.ELEMENT_TYPE_EDGE);
+        SearchResponse response;
+        try {
+            response = getSearchResponse(ElasticSearchElementType.EDGE);
+        } catch (IndexMissingException ex) {
+            LOGGER.debug("Index missing: %s", ex.getMessage());
+            return new ArrayList<>();
+        }
         final SearchHits hits = response.getHits();
         List<String> ids = IterableUtils.toList(new ConvertingIterable<SearchHit, String>(hits) {
             @Override
@@ -129,7 +143,13 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
     @Override
     public Iterable<Element> elements(EnumSet<FetchHint> fetchHints) {
         long startTime = System.nanoTime();
-        SearchResponse response = getSearchResponse(null);
+        SearchResponse response;
+        try {
+            response = getSearchResponse(null);
+        } catch (IndexMissingException ex) {
+            LOGGER.debug("Index missing: %s", ex.getMessage());
+            return new ArrayList<>();
+        }
         final SearchHits hits = response.getHits();
         List<String> vertexIds = new ArrayList<>();
         List<String> edgeIds = new ArrayList<>();
@@ -138,16 +158,16 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
             if (elementType == null) {
                 continue;
             }
-            String elementTypeString = elementType.getValue().toString();
-            switch (elementTypeString) {
-                case ElasticSearchSearchIndexBase.ELEMENT_TYPE_VERTEX:
+            ElasticSearchElementType et = ElasticSearchElementType.parse(elementType.getValue().toString());
+            switch (et) {
+                case VERTEX:
                     vertexIds.add(hit.getId());
                     break;
-                case ElasticSearchSearchIndexBase.ELEMENT_TYPE_EDGE:
+                case EDGE:
                     edgeIds.add(hit.getId());
                     break;
                 default:
-                    LOGGER.warn("Unhandled element type returned: %s", elementTypeString);
+                    LOGGER.warn("Unhandled element type returned: %s", elementType);
                     break;
             }
         }
@@ -178,11 +198,11 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
         return new ElasticSearchGraphQueryIterable<>(response, filterParameters, elements, false, evaluateHasContainers, hits.getTotalHits(), searchTime, hits);
     }
 
-    private SearchResponse getSearchResponse(String elementType) {
+    private SearchResponse getSearchResponse(ElasticSearchElementType elementType) {
         List<FilterBuilder> filters = getFilters(elementType);
         QueryBuilder query = createQuery(getParameters(), elementType, filters);
         query = scoringStrategy.updateQuery(query);
-        SearchRequestBuilder q = getSearchRequestBuilder(filters, query);
+        SearchRequestBuilder q = getSearchRequestBuilder(filters, query, elementType);
 
         if (QUERY_LOGGER.isTraceEnabled()) {
             QUERY_LOGGER.trace("query: %s", q);
@@ -191,7 +211,7 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
                 .actionGet();
     }
 
-    protected List<FilterBuilder> getFilters(String elementType) {
+    protected List<FilterBuilder> getFilters(ElasticSearchElementType elementType) {
         List<FilterBuilder> filters = new ArrayList<>();
         if (elementType != null) {
             addElementTypeFilter(filters, elementType);
@@ -340,24 +360,28 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
         }
     }
 
-    protected void addElementTypeFilter(List<FilterBuilder> filters, String elementType) {
+    protected void addElementTypeFilter(List<FilterBuilder> filters, ElasticSearchElementType elementType) {
         if (elementType != null) {
             filters.add(createElementTypeFilter(elementType));
         }
     }
 
-    protected TermsFilterBuilder createElementTypeFilter(String elementType) {
-        return FilterBuilders.inFilter(ElasticSearchSearchIndexBase.ELEMENT_TYPE_FIELD_NAME, elementType);
+    protected TermsFilterBuilder createElementTypeFilter(ElasticSearchElementType elementType) {
+        return FilterBuilders.inFilter(ElasticSearchSearchIndexBase.ELEMENT_TYPE_FIELD_NAME, elementType.getKey());
     }
 
     protected void addNotFilter(List<FilterBuilder> filters, String key, Object value) {
         filters.add(FilterBuilders.notFilter(FilterBuilders.inFilter(key, value)));
     }
 
-    protected SearchRequestBuilder getSearchRequestBuilder(List<FilterBuilder> filters, QueryBuilder queryBuilder) {
+    protected SearchRequestBuilder getSearchRequestBuilder(List<FilterBuilder> filters, QueryBuilder queryBuilder, ElasticSearchElementType elementType) {
         AndFilterBuilder filterBuilder = getFilterBuilder(filters);
+        String[] indicesToQuery = getIndexSelectionStrategy().getIndicesToQuery(this, elementType);
+        if (QUERY_LOGGER.isTraceEnabled()) {
+            QUERY_LOGGER.trace("indicesToQuery: %s", Joiner.on(", ").join(indicesToQuery));
+        }
         return getClient()
-                .prepareSearch(getIndicesToQuery())
+                .prepareSearch(indicesToQuery)
                 .setTypes(ElasticSearchSearchIndexBase.ELEMENT_TYPE)
                 .setQuery(QueryBuilders.filteredQuery(queryBuilder, filterBuilder))
                 .addField(ElasticSearchSearchIndexBase.ELEMENT_TYPE_FIELD_NAME)
@@ -388,7 +412,7 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
         }
     }
 
-    protected QueryBuilder createQuery(QueryParameters queryParameters, String elementType, List<FilterBuilder> filters) {
+    protected QueryBuilder createQuery(QueryParameters queryParameters, ElasticSearchElementType elementType, List<FilterBuilder> filters) {
         if (queryParameters instanceof QueryStringQueryParameters) {
             String queryString = ((QueryStringQueryParameters) queryParameters).getQueryString();
             if (queryString == null || queryString.equals("*")) {
@@ -425,10 +449,6 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
 
     public TransportClient getClient() {
         return client;
-    }
-
-    public String[] getIndicesToQuery() {
-        return indicesToQuery;
     }
 
     protected static void addGeohashQueryToSearchRequestBuilder(SearchRequestBuilder searchRequestBuilder, List<GeohashQueryItem> geohashQueryItems) {
@@ -473,5 +493,9 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
                 searchRequestBuilder.addAggregation(agg);
             }
         }
+    }
+
+    protected IndexSelectionStrategy getIndexSelectionStrategy() {
+        return indexSelectionStrategy;
     }
 }

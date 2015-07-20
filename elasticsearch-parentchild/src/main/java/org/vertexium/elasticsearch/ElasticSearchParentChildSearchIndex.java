@@ -289,12 +289,12 @@ public class ElasticSearchParentChildSearchIndex extends ElasticSearchSearchInde
             changed = true;
         }
         if (element instanceof Vertex) {
-            jsonBuilder.field(ELEMENT_TYPE_FIELD_NAME, ELEMENT_TYPE_VERTEX);
+            jsonBuilder.field(ELEMENT_TYPE_FIELD_NAME, ElasticSearchElementType.VERTEX.getKey());
             if (getConfig().getScoringStrategy().addFieldsToVertexDocument(this, jsonBuilder, (Vertex) element, existingParentDocument, authorizations)) {
                 changed = true;
             }
         } else if (element instanceof Edge) {
-            jsonBuilder.field(ELEMENT_TYPE_FIELD_NAME, ELEMENT_TYPE_EDGE);
+            jsonBuilder.field(ELEMENT_TYPE_FIELD_NAME, ElasticSearchElementType.EDGE.getKey());
             if (getConfig().getScoringStrategy().addFieldsToEdgeDocument(this, jsonBuilder, (Edge) element, existingParentDocument, authorizations)) {
                 changed = true;
             }
@@ -400,12 +400,12 @@ public class ElasticSearchParentChildSearchIndex extends ElasticSearchSearchInde
     public GraphQuery queryGraph(Graph graph, String queryString, Authorizations authorizations) {
         return new ElasticSearchParentChildGraphQuery(
                 getClient(),
-                getIndicesToQuery(),
                 graph,
                 queryString,
                 getAllPropertyDefinitions(),
                 getConfig().getScoringStrategy(),
                 this.nameSubstitutionStrategy,
+                getIndexSelectionStrategy(),
                 authorizations);
     }
 
@@ -413,13 +413,13 @@ public class ElasticSearchParentChildSearchIndex extends ElasticSearchSearchInde
     public VertexQuery queryVertex(Graph graph, Vertex vertex, String queryString, Authorizations authorizations) {
         return new ElasticSearchParentChildVertexQuery(
                 getClient(),
-                getIndicesToQuery(),
                 graph,
                 vertex,
                 queryString,
                 getAllPropertyDefinitions(),
                 getConfig().getScoringStrategy(),
                 this.nameSubstitutionStrategy,
+                getIndexSelectionStrategy(),
                 authorizations);
     }
 
@@ -427,12 +427,12 @@ public class ElasticSearchParentChildSearchIndex extends ElasticSearchSearchInde
     public SimilarToGraphQuery querySimilarTo(Graph graph, String[] similarToFields, String similarToText, Authorizations authorizations) {
         return new ElasticSearchParentChildGraphQuery(
                 getClient(),
-                getIndicesToQuery(),
                 graph,
                 similarToFields, similarToText,
                 getAllPropertyDefinitions(),
                 getConfig().getScoringStrategy(),
                 this.nameSubstitutionStrategy,
+                getIndexSelectionStrategy(),
                 authorizations);
     }
 
@@ -497,7 +497,7 @@ public class ElasticSearchParentChildSearchIndex extends ElasticSearchSearchInde
                 .field(propertyName)
                 .size(500000);
         AuthorizationFilterBuilder authorizationFilterBuilder = new AuthorizationFilterBuilder(authorizations.getAuthorizations());
-        TermFilterBuilder elementTypeFilterBuilder = new TermFilterBuilder(ELEMENT_TYPE_FIELD_NAME, ELEMENT_TYPE_VERTEX);
+        TermFilterBuilder elementTypeFilterBuilder = new TermFilterBuilder(ELEMENT_TYPE_FIELD_NAME, ElasticSearchElementType.VERTEX.getKey());
         AndFilterBuilder andFilterBuilder = new AndFilterBuilder(authorizationFilterBuilder, elementTypeFilterBuilder);
         FilteredQueryBuilder elementQueryBuilder = QueryBuilders.filteredQuery(
                 QueryBuilders.matchAllQuery(),

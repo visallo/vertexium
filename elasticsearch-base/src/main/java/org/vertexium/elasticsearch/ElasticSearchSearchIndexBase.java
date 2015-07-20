@@ -24,7 +24,6 @@ import org.vertexium.search.SearchIndex;
 import org.vertexium.search.SearchIndexWithVertexPropertyCountByValue;
 import org.vertexium.type.GeoCircle;
 import org.vertexium.type.GeoPoint;
-import org.vertexium.util.IterableUtils;
 import org.vertexium.util.Preconditions;
 import org.vertexium.util.VertexiumLogger;
 import org.vertexium.util.VertexiumLoggerFactory;
@@ -38,8 +37,6 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex, Searc
     public static final String ELEMENT_TYPE = "element";
     public static final String ELEMENT_TYPE_FIELD_NAME = "__elementType";
     public static final String VISIBILITY_FIELD_NAME = "__visibility";
-    public static final String ELEMENT_TYPE_VERTEX = "vertex";
-    public static final String ELEMENT_TYPE_EDGE = "edge";
     public static final String EXACT_MATCH_PROPERTY_NAME_SUFFIX = "_e";
     public static final String GEO_PROPERTY_NAME_SUFFIX = "_g";
     public static final int MAX_BATCH_COUNT = 25000;
@@ -78,10 +75,6 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex, Searc
             client.addTransportAddress(new InetSocketTransportAddress(hostname, port));
         }
 
-        for (String indexName : getIndicesToQuery()) {
-            ensureIndexCreatedAndInitialized(indexName, isStoreSourceData());
-        }
-
         loadIndexInfos();
         loadPropertyDefinitions();
     }
@@ -91,10 +84,9 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex, Searc
     }
 
     protected void loadIndexInfos() {
-        Set<String> indicesToQuery = IterableUtils.toSet(getIndicesToQuery());
-        Map<String, IndexStats> indices = client.admin().indices().prepareStats().execute().actionGet().getIndices();
+        Map<String, IndexStats> indices = getExistingIndexNames();
         for (String indexName : indices.keySet()) {
-            if (!indicesToQuery.contains(indexName)) {
+            if (!indexSelectionStrategy.isIncluded(this, indexName)) {
                 LOGGER.debug("skipping index %s, not in indicesToQuery", indexName);
                 continue;
             }
@@ -108,6 +100,10 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex, Searc
             indexInfo = createIndexInfo(indexName);
             indexInfos.put(indexName, indexInfo);
         }
+    }
+
+    private Map<String, IndexStats> getExistingIndexNames() {
+        return client.admin().indices().prepareStats().execute().actionGet().getIndices();
     }
 
     protected IndexInfo ensureIndexCreatedAndInitialized(String indexName, boolean storeSourceData) {
@@ -439,16 +435,16 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex, Searc
 
     @SuppressWarnings("unused")
     protected String[] getIndexNames(PropertyDefinition propertyDefinition) {
-        return indexSelectionStrategy.getIndexNames(propertyDefinition);
+        return indexSelectionStrategy.getIndexNames(this, propertyDefinition);
     }
 
     @SuppressWarnings("unused")
     protected String getIndexName(Element element) {
-        return indexSelectionStrategy.getIndexName(element);
+        return indexSelectionStrategy.getIndexName(this, element);
     }
 
     protected String[] getIndicesToQuery() {
-        return indexSelectionStrategy.getIndicesToQuery();
+        return indexSelectionStrategy.getIndicesToQuery(this);
     }
 
     @Override
@@ -670,5 +666,9 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex, Searc
         if (geoCircle.getDescription() != null) {
             addPropertyValueToPropertiesMap(propertiesMap, property.getName(), geoCircle.getDescription());
         }
+    }
+
+    public IndexSelectionStrategy getIndexSelectionStrategy() {
+        return indexSelectionStrategy;
     }
 }

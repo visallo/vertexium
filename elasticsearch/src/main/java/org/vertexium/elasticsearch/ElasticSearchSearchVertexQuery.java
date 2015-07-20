@@ -18,23 +18,23 @@ public class ElasticSearchSearchVertexQuery extends ElasticSearchSearchQueryBase
 
     public ElasticSearchSearchVertexQuery(
             TransportClient client,
-            String[] indicesToQuery,
             Graph graph,
             Vertex sourceVertex,
             String queryString,
             Map<String, PropertyDefinition> propertyDefinitions,
             ScoringStrategy scoringStrategy,
             NameSubstitutionStrategy nameSubstitutionStrategy,
+            IndexSelectionStrategy indexSelectionStrategy,
             Authorizations authorizations
     ) {
-        super(client, indicesToQuery, graph, queryString, propertyDefinitions, scoringStrategy, nameSubstitutionStrategy, authorizations);
+        super(client, graph, queryString, propertyDefinitions, scoringStrategy, nameSubstitutionStrategy, indexSelectionStrategy, authorizations);
         this.sourceVertex = sourceVertex;
     }
 
     @Override
-    protected List<FilterBuilder> getFilters(String elementType) {
+    protected List<FilterBuilder> getFilters(ElasticSearchElementType elementType) {
         List<FilterBuilder> results = super.getFilters(elementType);
-        if (elementType.equals(ElasticSearchSearchIndexBase.ELEMENT_TYPE_VERTEX)) {
+        if (elementType.equals(ElasticSearchElementType.VERTEX)) {
             String[] ids = toArray(sourceVertex.getVertexIds(Direction.BOTH, getParameters().getAuthorizations()), String.class);
             results.add(FilterBuilders.idsFilter().ids(ids));
         }

@@ -23,12 +23,31 @@ public class ElasticSearchSearchQueryBase extends ElasticSearchQueryBase impleme
     private final List<TermsQueryItem> termsQueryItems = new ArrayList<>();
     private final List<GeohashQueryItem> geohashQueryItems = new ArrayList<>();
 
-    public ElasticSearchSearchQueryBase(TransportClient client, String[] indicesToQuery, Graph graph, String queryString, Map<String, PropertyDefinition> propertyDefinitions, ScoringStrategy scoringStrategy, NameSubstitutionStrategy nameSubstitutionStrategy, Authorizations authorizations) {
-        super(client, indicesToQuery, graph, queryString, propertyDefinitions, scoringStrategy, nameSubstitutionStrategy, true, authorizations);
+    public ElasticSearchSearchQueryBase(
+            TransportClient client,
+            Graph graph,
+            String queryString,
+            Map<String, PropertyDefinition> propertyDefinitions,
+            ScoringStrategy scoringStrategy,
+            NameSubstitutionStrategy nameSubstitutionStrategy,
+            IndexSelectionStrategy indexSelectionStrategy,
+            Authorizations authorizations
+    ) {
+        super(client, graph, queryString, propertyDefinitions, scoringStrategy, nameSubstitutionStrategy, indexSelectionStrategy, true, authorizations);
     }
 
-    public ElasticSearchSearchQueryBase(TransportClient client, String[] indicesToQuery, Graph graph, String[] similarToFields, String similarToText, Map<String, PropertyDefinition> propertyDefinitions, ScoringStrategy scoringStrategy, NameSubstitutionStrategy nameSubstitutionStrategy, Authorizations authorizations) {
-        super(client, indicesToQuery, graph, similarToFields, similarToText, propertyDefinitions, scoringStrategy, nameSubstitutionStrategy, true, authorizations);
+    public ElasticSearchSearchQueryBase(
+            TransportClient client,
+            Graph graph,
+            String[] similarToFields,
+            String similarToText,
+            Map<String, PropertyDefinition> propertyDefinitions,
+            ScoringStrategy scoringStrategy,
+            NameSubstitutionStrategy nameSubstitutionStrategy,
+            IndexSelectionStrategy indexSelectionStrategy,
+            Authorizations authorizations
+    ) {
+        super(client, graph, similarToFields, similarToText, propertyDefinitions, scoringStrategy, nameSubstitutionStrategy, indexSelectionStrategy, true, authorizations);
     }
 
     @Override
@@ -50,8 +69,8 @@ public class ElasticSearchSearchQueryBase extends ElasticSearchQueryBase impleme
     }
 
     @Override
-    protected SearchRequestBuilder getSearchRequestBuilder(List<FilterBuilder> filters, QueryBuilder queryBuilder) {
-        SearchRequestBuilder searchRequestBuilder = super.getSearchRequestBuilder(filters, queryBuilder);
+    protected SearchRequestBuilder getSearchRequestBuilder(List<FilterBuilder> filters, QueryBuilder queryBuilder, ElasticSearchElementType elementType) {
+        SearchRequestBuilder searchRequestBuilder = super.getSearchRequestBuilder(filters, queryBuilder, elementType);
         addHistogramQueryToSearchRequestBuilder(searchRequestBuilder, histogramQueryItems, getPropertyDefinitions());
         addTermsQueryToSearchRequestBuilder(searchRequestBuilder, termsQueryItems, getPropertyDefinitions());
         addGeohashQueryToSearchRequestBuilder(searchRequestBuilder, geohashQueryItems);

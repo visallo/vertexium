@@ -132,10 +132,10 @@ public class ElasticSearchSearchIndex extends ElasticSearchSearchIndexBase {
                 .startObject();
 
         if (element instanceof Vertex) {
-            jsonBuilder.field(ELEMENT_TYPE_FIELD_NAME, ELEMENT_TYPE_VERTEX);
+            jsonBuilder.field(ELEMENT_TYPE_FIELD_NAME, ElasticSearchElementType.VERTEX.getKey());
             getConfig().getScoringStrategy().addFieldsToVertexDocument(this, jsonBuilder, (Vertex) element, null, authorizations);
         } else if (element instanceof Edge) {
-            jsonBuilder.field(ELEMENT_TYPE_FIELD_NAME, ELEMENT_TYPE_EDGE);
+            jsonBuilder.field(ELEMENT_TYPE_FIELD_NAME, ElasticSearchElementType.EDGE.getKey());
             getConfig().getScoringStrategy().addFieldsToEdgeDocument(this, jsonBuilder, (Edge) element, null, authorizations);
         } else {
             throw new VertexiumException("Unexpected element type " + element.getClass().getName());
@@ -249,12 +249,12 @@ public class ElasticSearchSearchIndex extends ElasticSearchSearchIndexBase {
     public GraphQuery queryGraph(Graph graph, String queryString, Authorizations authorizations) {
         return new ElasticSearchSearchGraphQuery(
                 getClient(),
-                getIndicesToQuery(),
                 graph,
                 queryString,
                 getAllPropertyDefinitions(),
                 getConfig().getScoringStrategy(),
                 this.nameSubstitutionStrategy,
+                getIndexSelectionStrategy(),
                 authorizations);
     }
 
@@ -262,13 +262,13 @@ public class ElasticSearchSearchIndex extends ElasticSearchSearchIndexBase {
     public VertexQuery queryVertex(Graph graph, Vertex vertex, String queryString, Authorizations authorizations) {
         return new ElasticSearchSearchVertexQuery(
                 getClient(),
-                getIndicesToQuery(),
                 graph,
                 vertex,
                 queryString,
                 getAllPropertyDefinitions(),
                 getConfig().getScoringStrategy(),
                 this.nameSubstitutionStrategy,
+                getIndexSelectionStrategy(),
                 authorizations);
     }
 
@@ -276,12 +276,12 @@ public class ElasticSearchSearchIndex extends ElasticSearchSearchIndexBase {
     public SimilarToGraphQuery querySimilarTo(Graph graph, String[] similarToFields, String similarToText, Authorizations authorizations) {
         return new ElasticSearchSearchGraphQuery(
                 getClient(),
-                getIndicesToQuery(),
                 graph,
                 similarToFields, similarToText,
                 getAllPropertyDefinitions(),
                 getConfig().getScoringStrategy(),
                 this.nameSubstitutionStrategy,
+                getIndexSelectionStrategy(),
                 authorizations);
     }
 
@@ -306,7 +306,7 @@ public class ElasticSearchSearchIndex extends ElasticSearchSearchIndexBase {
         TermsBuilder countAgg = new TermsBuilder(countAggName)
                 .field(propertyName)
                 .size(500000);
-        TermFilterBuilder elementTypeFilterBuilder = new TermFilterBuilder(ELEMENT_TYPE_FIELD_NAME, ELEMENT_TYPE_VERTEX);
+        TermFilterBuilder elementTypeFilterBuilder = new TermFilterBuilder(ELEMENT_TYPE_FIELD_NAME, ElasticSearchElementType.VERTEX.getKey());
         FilteredQueryBuilder queryBuilder = QueryBuilders.filteredQuery(
                 QueryBuilders.matchAllQuery(),
                 elementTypeFilterBuilder
