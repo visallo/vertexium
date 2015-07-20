@@ -7,6 +7,7 @@ import org.elasticsearch.node.Node;
 import org.elasticsearch.node.NodeBuilder;
 import org.vertexium.Graph;
 import org.vertexium.GraphConfiguration;
+import org.vertexium.elasticsearch.DefaultIndexSelectionStrategy;
 import org.vertexium.elasticsearch.ElasticSearchParentChildSearchIndex;
 import org.vertexium.elasticsearch.ElasticSearchSearchIndexConfiguration;
 import org.vertexium.inmemory.InMemoryGraph;
@@ -34,7 +35,7 @@ public class ElasticSearchSearchParentChildIndexTestHelpers {
         Map config = new HashMap();
         config.put(GraphConfiguration.AUTO_FLUSH, true);
         config.put(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX, ElasticSearchParentChildSearchIndex.class.getName());
-        config.put(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + ElasticSearchSearchIndexConfiguration.CONFIG_INDEX_NAME, ES_INDEX_NAME);
+        config.put(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + DefaultIndexSelectionStrategy.CONFIG_INDEX_NAME, ES_INDEX_NAME);
         if (TESTING) {
             addr = "localhost";
             config.put(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + ElasticSearchSearchIndexConfiguration.CONFIG_STORE_SOURCE_DATA, "true");
@@ -50,7 +51,7 @@ public class ElasticSearchSearchParentChildIndexTestHelpers {
         Map config = new HashMap();
         config.put(GraphConfiguration.AUTO_FLUSH, true);
         config.put(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX, ElasticSearchParentChildSearchIndex.class.getName());
-        config.put(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + ElasticSearchSearchIndexConfiguration.CONFIG_INDEX_NAME, ES_INDEX_NAME);
+        config.put(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + DefaultIndexSelectionStrategy.CONFIG_INDEX_NAME, ES_INDEX_NAME);
         if (TESTING) {
             addr = "localhost";
             config.put(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + ElasticSearchSearchIndexConfiguration.CONFIG_STORE_SOURCE_DATA, "true");
@@ -76,6 +77,7 @@ public class ElasticSearchSearchParentChildIndexTestHelpers {
                 .clusterName(clusterName)
                 .settings(
                         ImmutableSettings.settingsBuilder()
+                                .put("script.disable_dynamic", "false")
                                 .put("gateway.type", "local")
                                 .put("index.number_of_shards", "1")
                                 .put("index.number_of_replicas", "0")

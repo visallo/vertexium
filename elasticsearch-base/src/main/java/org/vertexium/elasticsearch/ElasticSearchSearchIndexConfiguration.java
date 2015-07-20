@@ -15,9 +15,6 @@ public class ElasticSearchSearchIndexConfiguration {
     public static final String CONFIG_STORE_SOURCE_DATA = "storeSourceData";
     public static final boolean DEFAULT_STORE_SOURCE_DATA = false;
     public static final String CONFIG_ES_LOCATIONS = "locations";
-    public static final String CONFIG_INDEX_NAME = "indexName";
-    public static final String DEFAULT_INDEX_NAME = "vertexium";
-    public static final String CONFIG_INDICES_TO_QUERY = "indicesToQuery";
     public static final String CONFIG_INDEX_EDGES = "indexEdges";
     public static final boolean DEFAULT_INDEX_EDGES = true;
     public static final boolean DEFAULT_AUTO_FLUSH = false;
@@ -31,31 +28,31 @@ public class ElasticSearchSearchIndexConfiguration {
     public static final String CONFIG_NAME_SUBSTITUTION_STRATEGY_CLASS_NAME = "nameSubstitutionStrategy";
     public static final Class<? extends ScoringStrategy> DEFAULT_SCORING_STRATEGY = EdgeCountScoringStrategy.class;
     public static final Class<? extends NameSubstitutionStrategy> DEFAULT_NAME_SUBSTITUTION_STRATEGY = IdentityNameSubstitutionStrategy.class;
+    public static final String CONFIG_INDEX_SELECTION_STRATEGY_CLASS_NAME = "indexSelectionStrategy";
+    public static final Class<? extends IndexSelectionStrategy> DEFAULT_INDEX_SELECTION_STRATEGY = DefaultIndexSelectionStrategy.class;
 
     private final boolean autoFlush;
     private final boolean storeSourceData;
     private final String[] esLocations;
-    private final String defaultIndexName;
-    private final String[] indicesToQuery;
     private final boolean indexEdges;
     private final String clusterName;
     private final int port;
+    private final IndexSelectionStrategy indexSelectionStrategy;
     private ScoringStrategy scoringStrategy;
     private NameSubstitutionStrategy nameSubstitutionStrategy;
     private final int numberOfShards;
 
-    public ElasticSearchSearchIndexConfiguration(GraphConfiguration config) {
-        esLocations = getElasticSearchLocations(config);
-        defaultIndexName = getDefaultIndexName(config);
-        indicesToQuery = getIndicesToQuery(config, defaultIndexName);
-        indexEdges = getIndexEdges(config);
-        storeSourceData = getStoreSourceData(config);
-        autoFlush = getAutoFlush(config);
-        clusterName = getClusterName(config);
-        port = getPort(config);
-        scoringStrategy = getScoringStrategy(config);
-        nameSubstitutionStrategy = getNameSubstitutionStrategy(config);
-        numberOfShards = getNumberOfShardsForIndex(config);
+    public ElasticSearchSearchIndexConfiguration(GraphConfiguration graphConfiguration) {
+        esLocations = getElasticSearchLocations(graphConfiguration);
+        indexEdges = getIndexEdges(graphConfiguration);
+        storeSourceData = getStoreSourceData(graphConfiguration);
+        autoFlush = getAutoFlush(graphConfiguration);
+        clusterName = getClusterName(graphConfiguration);
+        port = getPort(graphConfiguration);
+        scoringStrategy = getScoringStrategy(graphConfiguration);
+        nameSubstitutionStrategy = getNameSubstitutionStrategy(graphConfiguration);
+        indexSelectionStrategy = getIndexSelectionStrategy(graphConfiguration);
+        numberOfShards = getNumberOfShardsForIndex(graphConfiguration);
     }
 
     public boolean isAutoFlush() {
@@ -68,14 +65,6 @@ public class ElasticSearchSearchIndexConfiguration {
 
     public String[] getEsLocations() {
         return esLocations;
-    }
-
-    public String getDefaultIndexName() {
-        return defaultIndexName;
-    }
-
-    public String[] getIndicesToQuery() {
-        return indicesToQuery;
     }
 
     public boolean isIndexEdges() {
@@ -96,6 +85,10 @@ public class ElasticSearchSearchIndexConfiguration {
 
     public NameSubstitutionStrategy getNameSubstitutionStrategy() {
         return nameSubstitutionStrategy;
+    }
+
+    public IndexSelectionStrategy getIndexSelectionStrategy() {
+        return indexSelectionStrategy;
     }
 
     public int getNumberOfShards() {
@@ -120,30 +113,6 @@ public class ElasticSearchSearchIndexConfiguration {
         return indexEdges;
     }
 
-    private static String[] getIndicesToQuery(GraphConfiguration config, String defaultIndexName) {
-        String[] indicesToQuery;
-        String indicesToQueryString = config.getString(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + CONFIG_INDICES_TO_QUERY, null);
-        if (indicesToQueryString == null) {
-            indicesToQuery = new String[]{defaultIndexName};
-        } else {
-            indicesToQuery = indicesToQueryString.split(",");
-            for (int i = 0; i < indicesToQuery.length; i++) {
-                indicesToQuery[i] = indicesToQuery[i].trim();
-            }
-        }
-        if (LOGGER.isInfoEnabled()) {
-            StringBuilder sb = new StringBuilder();
-            for (int i = 0; i < indicesToQuery.length; i++) {
-                if (i > 0) {
-                    sb.append(',');
-                }
-                sb.append(indicesToQuery[i]);
-            }
-            LOGGER.info("Indices to query: %s", sb.toString());
-        }
-        return indicesToQuery;
-    }
-
     private static String[] getElasticSearchLocations(GraphConfiguration config) {
         String esLocationsString = config.getString(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + CONFIG_ES_LOCATIONS, null);
         if (esLocationsString == null) {
@@ -151,12 +120,6 @@ public class ElasticSearchSearchIndexConfiguration {
         }
         LOGGER.info("Using elastic search locations: %s", esLocationsString);
         return esLocationsString.split(",");
-    }
-
-    private static String getDefaultIndexName(GraphConfiguration config) {
-        String defaultIndexName = config.getString(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + CONFIG_INDEX_NAME, DEFAULT_INDEX_NAME);
-        LOGGER.info("Default index name: %s", defaultIndexName);
-        return defaultIndexName;
     }
 
     private static String getClusterName(GraphConfiguration config) {
@@ -180,7 +143,12 @@ public class ElasticSearchSearchIndexConfiguration {
         String className = config.getString(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + CONFIG_NAME_SUBSTITUTION_STRATEGY_CLASS_NAME, DEFAULT_NAME_SUBSTITUTION_STRATEGY.getName());
         NameSubstitutionStrategy strategy = ConfigurationUtils.createProvider(className, config);
         strategy.setup(config.getConfig());
+        return strategy;
+    }
 
+    public static IndexSelectionStrategy getIndexSelectionStrategy(GraphConfiguration config) {
+        String className = config.getString(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + CONFIG_INDEX_SELECTION_STRATEGY_CLASS_NAME, DEFAULT_INDEX_SELECTION_STRATEGY.getName());
+        IndexSelectionStrategy strategy = ConfigurationUtils.createProvider(className, config);
         return strategy;
     }
 

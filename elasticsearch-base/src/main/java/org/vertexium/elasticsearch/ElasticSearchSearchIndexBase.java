@@ -50,10 +50,12 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex, Searc
     private int indexInfosLastSize = 0; // Used to prevent creating a index name array each time
     private String[] indexNamesAsArray;
     private NameSubstitutionStrategy nameSubstitutionStrategy;
+    private IndexSelectionStrategy indexSelectionStrategy;
 
     protected ElasticSearchSearchIndexBase(GraphConfiguration config) {
         this.config = new ElasticSearchSearchIndexConfiguration(config);
         nameSubstitutionStrategy = this.config.getNameSubstitutionStrategy();
+        indexSelectionStrategy = this.config.getIndexSelectionStrategy();
 
         ImmutableSettings.Builder settingsBuilder = ImmutableSettings.settingsBuilder();
         if (getConfig().getClusterName() != null) {
@@ -76,7 +78,7 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex, Searc
             client.addTransportAddress(new InetSocketTransportAddress(hostname, port));
         }
 
-        for (String indexName : getConfig().getIndicesToQuery()) {
+        for (String indexName : getIndicesToQuery()) {
             ensureIndexCreatedAndInitialized(indexName, isStoreSourceData());
         }
 
@@ -89,7 +91,7 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex, Searc
     }
 
     protected void loadIndexInfos() {
-        Set<String> indicesToQuery = IterableUtils.toSet(getConfig().getIndicesToQuery());
+        Set<String> indicesToQuery = IterableUtils.toSet(getIndicesToQuery());
         Map<String, IndexStats> indices = client.admin().indices().prepareStats().execute().actionGet().getIndices();
         for (String indexName : indices.keySet()) {
             if (!indicesToQuery.contains(indexName)) {
@@ -436,15 +438,17 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex, Searc
     }
 
     @SuppressWarnings("unused")
-    protected Iterable<String> getIndexNames(PropertyDefinition propertyDefinition) {
-        List<String> indexNames = new ArrayList<>();
-        indexNames.add(getConfig().getDefaultIndexName());
-        return indexNames;
+    protected String[] getIndexNames(PropertyDefinition propertyDefinition) {
+        return indexSelectionStrategy.getIndexNames(propertyDefinition);
     }
 
     @SuppressWarnings("unused")
     protected String getIndexName(Element element) {
-        return getConfig().getDefaultIndexName();
+        return indexSelectionStrategy.getIndexName(element);
+    }
+
+    protected String[] getIndicesToQuery() {
+        return indexSelectionStrategy.getIndicesToQuery();
     }
 
     @Override

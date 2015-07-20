@@ -249,7 +249,7 @@ public class ElasticSearchSearchIndex extends ElasticSearchSearchIndexBase {
     public GraphQuery queryGraph(Graph graph, String queryString, Authorizations authorizations) {
         return new ElasticSearchSearchGraphQuery(
                 getClient(),
-                getConfig().getIndicesToQuery(),
+                getIndicesToQuery(),
                 graph,
                 queryString,
                 getAllPropertyDefinitions(),
@@ -262,7 +262,7 @@ public class ElasticSearchSearchIndex extends ElasticSearchSearchIndexBase {
     public VertexQuery queryVertex(Graph graph, Vertex vertex, String queryString, Authorizations authorizations) {
         return new ElasticSearchSearchVertexQuery(
                 getClient(),
-                getConfig().getIndicesToQuery(),
+                getIndicesToQuery(),
                 graph,
                 vertex,
                 queryString,
@@ -276,7 +276,7 @@ public class ElasticSearchSearchIndex extends ElasticSearchSearchIndexBase {
     public SimilarToGraphQuery querySimilarTo(Graph graph, String[] similarToFields, String similarToText, Authorizations authorizations) {
         return new ElasticSearchSearchGraphQuery(
                 getClient(),
-                getConfig().getIndicesToQuery(),
+                getIndicesToQuery(),
                 graph,
                 similarToFields, similarToText,
                 getAllPropertyDefinitions(),

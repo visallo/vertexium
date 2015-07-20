@@ -400,7 +400,7 @@ public class ElasticSearchParentChildSearchIndex extends ElasticSearchSearchInde
     public GraphQuery queryGraph(Graph graph, String queryString, Authorizations authorizations) {
         return new ElasticSearchParentChildGraphQuery(
                 getClient(),
-                getConfig().getIndicesToQuery(),
+                getIndicesToQuery(),
                 graph,
                 queryString,
                 getAllPropertyDefinitions(),
@@ -413,7 +413,7 @@ public class ElasticSearchParentChildSearchIndex extends ElasticSearchSearchInde
     public VertexQuery queryVertex(Graph graph, Vertex vertex, String queryString, Authorizations authorizations) {
         return new ElasticSearchParentChildVertexQuery(
                 getClient(),
-                getConfig().getIndicesToQuery(),
+                getIndicesToQuery(),
                 graph,
                 vertex,
                 queryString,
@@ -427,7 +427,7 @@ public class ElasticSearchParentChildSearchIndex extends ElasticSearchSearchInde
     public SimilarToGraphQuery querySimilarTo(Graph graph, String[] similarToFields, String similarToText, Authorizations authorizations) {
         return new ElasticSearchParentChildGraphQuery(
                 getClient(),
-                getConfig().getIndicesToQuery(),
+                getIndicesToQuery(),
                 graph,
                 similarToFields, similarToText,
                 getAllPropertyDefinitions(),
