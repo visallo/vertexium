@@ -23,6 +23,16 @@ public class AuthorizationsFilterParser implements FilterParser {
 
     @Override
     public Filter parse(QueryParseContext parseContext) throws IOException, QueryParsingException {
+        Authorizations authorizations = createAuthorizationsFromQuery(parseContext);
+        return createFilters(authorizations);
+    }
+
+    private Authorizations createAuthorizationsFromQuery(QueryParseContext parseContext) throws IOException {
+        List<String> authorizationStrings = getAuthorizationsFromQuery(parseContext);
+        return new Authorizations(authorizationStrings.toArray(new String[authorizationStrings.size()]));
+    }
+
+    private List<String> getAuthorizationsFromQuery(QueryParseContext parseContext) throws IOException {
         XContentParser parser = parseContext.parser();
 
         XContentParser.Token token = parser.currentToken();
@@ -30,7 +40,7 @@ public class AuthorizationsFilterParser implements FilterParser {
             throw new QueryParsingException(parseContext.index(), "authorizations must be an array.");
         }
 
-        List<String> authorizationStrings = new ArrayList<String>();
+        List<String> authorizationStrings = new ArrayList<>();
         while ((token = parser.nextToken()) != XContentParser.Token.END_ARRAY) {
             if (token != XContentParser.Token.VALUE_STRING) {
                 throw new QueryParsingException(parseContext.index(), "authorizations must be an array of strings.");
@@ -39,12 +49,21 @@ public class AuthorizationsFilterParser implements FilterParser {
             String authorization = parser.text();
             authorizationStrings.add(authorization);
         }
+        return authorizationStrings;
+    }
 
-        Authorizations authorizations = new Authorizations(authorizationStrings.toArray(new String[authorizationStrings.size()]));
+    private FieldValueFilter createVisibilityFieldMissingFilter() {
+        return new FieldValueFilter(AuthorizationsFilter.VISIBILITY_FIELD_NAME, true);
+    }
 
-        List<Filter> filters = new ArrayList<Filter>();
-        filters.add(new FieldValueFilter(AuthorizationsFilter.VISIBILITY_FIELD_NAME, true));
-        filters.add(new AuthorizationsFilter(authorizations));
+    private AuthorizationsFilter createAuthorizationsFilter(Authorizations authorizations) {
+        return new AuthorizationsFilter(authorizations);
+    }
+
+    private Filter createFilters(Authorizations authorizations) {
+        List<Filter> filters = new ArrayList<>();
+        filters.add(createVisibilityFieldMissingFilter());
+        filters.add(createAuthorizationsFilter(authorizations));
         return new OrFilter(filters);
     }
 }

@@ -20,8 +20,10 @@ public class AuthorizationsFilter extends Filter {
     public static String VISIBILITY_FIELD_NAME = "__visibility";
     private final VisibilityEvaluator visibilityEvaluator;
     private static final Map<BytesRef, ColumnVisibility> columnVisibilityCache = new ConcurrentHashMap<>();
+    private final Authorizations authorizations;
 
     public AuthorizationsFilter(Authorizations authorizations) {
+        this.authorizations = authorizations;
         this.visibilityEvaluator = new VisibilityEvaluator(authorizations);
     }
 
@@ -86,5 +88,32 @@ public class AuthorizationsFilter extends Filter {
         byte[] buf = new byte[bytesRef.length];
         System.arraycopy(bytesRef.bytes, bytesRef.offset, buf, 0, bytesRef.length);
         return buf;
+    }
+
+    public Authorizations getAuthorizations() {
+        return authorizations;
+    }
+
+    @Override
+    public int hashCode() {
+        return getAuthorizations().hashCode();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+
+        AuthorizationsFilter that = (AuthorizationsFilter) o;
+        return this.getAuthorizations().equals(that.getAuthorizations());
+    }
+
+    @Override
+    public String toString() {
+        return "AuthorizationsFilter [authorizations=" + getAuthorizations() + "]";
     }
 }
