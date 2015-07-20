@@ -7,6 +7,7 @@ import org.apache.lucene.search.Filter;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.OpenBitSet;
+import org.elasticsearch.index.cache.filter.support.CacheKeyFilter;
 import org.vertexium.inmemory.security.Authorizations;
 import org.vertexium.inmemory.security.ColumnVisibility;
 import org.vertexium.inmemory.security.VisibilityEvaluator;
@@ -16,7 +17,7 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class AuthorizationsFilter extends Filter {
+public class AuthorizationsFilter extends Filter implements CacheKeyFilter {
     public static String VISIBILITY_FIELD_NAME = "__visibility";
     private final VisibilityEvaluator visibilityEvaluator;
     private static final Map<BytesRef, ColumnVisibility> columnVisibilityCache = new ConcurrentHashMap<>();
@@ -115,5 +116,10 @@ public class AuthorizationsFilter extends Filter {
     @Override
     public String toString() {
         return "AuthorizationsFilter [authorizations=" + getAuthorizations() + "]";
+    }
+
+    @Override
+    public Object cacheKey() {
+        return AuthorizationsFilter.class.getSimpleName() + ":" + getAuthorizations().toString();
     }
 }
