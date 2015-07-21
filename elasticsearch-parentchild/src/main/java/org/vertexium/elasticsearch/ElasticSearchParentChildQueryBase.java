@@ -27,7 +27,7 @@ public abstract class ElasticSearchParentChildQueryBase extends ElasticSearchQue
             IndexSelectionStrategy indexSelectionStrategy,
             Authorizations authorizations
     ) {
-        super(client, graph, queryString, propertyDefinitions, scoringStrategy, nameSubstitutionStrategy, indexSelectionStrategy, false, authorizations);
+        super(client, graph, queryString, propertyDefinitions, scoringStrategy, nameSubstitutionStrategy, indexSelectionStrategy, !isAuthorizationFilterEnabled(graph), authorizations);
     }
 
     protected ElasticSearchParentChildQueryBase(
@@ -41,14 +41,17 @@ public abstract class ElasticSearchParentChildQueryBase extends ElasticSearchQue
             IndexSelectionStrategy indexSelectionStrategy,
             Authorizations authorizations
     ) {
-        super(client, graph, similarToFields, similarToText, propertyDefinitions, scoringStrategy, nameSubstitutionStrategy, indexSelectionStrategy, false, authorizations);
+        super(client, graph, similarToFields, similarToText, propertyDefinitions, scoringStrategy, nameSubstitutionStrategy, indexSelectionStrategy, !isAuthorizationFilterEnabled(graph), authorizations);
     }
 
     @Override
     protected QueryBuilder createQuery(QueryParameters queryParameters, ElasticSearchElementType elementType, List<FilterBuilder> filters) {
         FilterBuilder andFilterBuilder = getElementFilter(elementType);
 
-        AuthorizationFilterBuilder authorizationFilterBuilder = new AuthorizationFilterBuilder(getParameters().getAuthorizations().getAuthorizations());
+        AuthorizationFilterBuilder authorizationFilterBuilder = null;
+        if (isAuthorizationFilterEnabled()) {
+            authorizationFilterBuilder = new AuthorizationFilterBuilder(getParameters().getAuthorizations().getAuthorizations());
+        }
 
         QueryBuilder childQuery;
         if (queryParameters instanceof QueryStringQueryParameters) {
@@ -62,6 +65,14 @@ public abstract class ElasticSearchParentChildQueryBase extends ElasticSearchQue
         return QueryBuilders.filteredQuery(childQuery, andFilterBuilder);
     }
 
+    private static boolean isAuthorizationFilterEnabled(Graph graph) {
+        return ((ElasticSearchSearchIndexBase) (((GraphBaseWithSearchIndex) graph).getSearchIndex())).isAuthorizationFilterEnabled();
+    }
+
+    private boolean isAuthorizationFilterEnabled() {
+        return isAuthorizationFilterEnabled(getGraph());
+    }
+
     protected FilterBuilder getElementFilter(ElasticSearchElementType elementType) {
         List<FilterBuilder> filters = getElementFilters(elementType);
         return FilterBuilders.andFilter(filters.toArray(new FilterBuilder[filters.size()]));
@@ -72,7 +83,9 @@ public abstract class ElasticSearchParentChildQueryBase extends ElasticSearchQue
         if (elementType != null) {
             results.add(createElementTypeFilter(elementType));
         }
-        results.add(new AuthorizationFilterBuilder(getParameters().getAuthorizations().getAuthorizations()));
+        if (isAuthorizationFilterEnabled()) {
+            results.add(new AuthorizationFilterBuilder(getParameters().getAuthorizations().getAuthorizations()));
+        }
         return results;
     }
 
@@ -119,11 +132,17 @@ public abstract class ElasticSearchParentChildQueryBase extends ElasticSearchQue
 
     private void addFiltersToQuery(BoolQueryBuilder boolChildQuery, List<FilterBuilder> filters, AuthorizationFilterBuilder authorizationFilterBuilder) {
         for (FilterBuilder filterBuilder : filters) {
+            FilterBuilder f;
+            if (authorizationFilterBuilder != null) {
+                f = FilterBuilders.andFilter(authorizationFilterBuilder, filterBuilder);
+            } else {
+                f = filterBuilder;
+            }
             boolChildQuery.must(
                     new HasChildQueryBuilder(ElasticSearchParentChildSearchIndex.PROPERTY_TYPE,
                             QueryBuilders.filteredQuery(
                                     QueryBuilders.matchAllQuery(),
-                                    FilterBuilders.andFilter(authorizationFilterBuilder, filterBuilder)
+                                    f
                             )
                     ).scoreType("avg")
             );

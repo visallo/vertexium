@@ -24,6 +24,8 @@ public class ElasticSearchSearchIndexConfiguration {
     public static final int DEFAULT_PORT = 9300;
     public static final String CONFIG_SHARDS = "shards";
     public static final int DEFAULT_NUMBER_OF_SHARDS = 5;
+    public static final String CONFIG_AUTHORIZATION_FILTER_ENABLED = "authorizationFilterEnabled";
+    public static final boolean DEFAULT_AUTHORIZATION_FILTER_ENABLED = true;
     public static final String CONFIG_SCORING_STRATEGY_CLASS_NAME = "scoringStrategy";
     public static final String CONFIG_NAME_SUBSTITUTION_STRATEGY_CLASS_NAME = "nameSubstitutionStrategy";
     public static final Class<? extends ScoringStrategy> DEFAULT_SCORING_STRATEGY = EdgeCountScoringStrategy.class;
@@ -41,6 +43,7 @@ public class ElasticSearchSearchIndexConfiguration {
     private ScoringStrategy scoringStrategy;
     private NameSubstitutionStrategy nameSubstitutionStrategy;
     private final int numberOfShards;
+    private boolean authorizationFilterEnabled;
 
     public ElasticSearchSearchIndexConfiguration(GraphConfiguration graphConfiguration) {
         esLocations = getElasticSearchLocations(graphConfiguration);
@@ -53,6 +56,7 @@ public class ElasticSearchSearchIndexConfiguration {
         nameSubstitutionStrategy = getNameSubstitutionStrategy(graphConfiguration);
         indexSelectionStrategy = getIndexSelectionStrategy(graphConfiguration);
         numberOfShards = getNumberOfShardsForIndex(graphConfiguration);
+        authorizationFilterEnabled = getAuthorizationFilterEnabled(graphConfiguration);
     }
 
     public boolean isAutoFlush() {
@@ -89,6 +93,10 @@ public class ElasticSearchSearchIndexConfiguration {
 
     public IndexSelectionStrategy getIndexSelectionStrategy() {
         return indexSelectionStrategy;
+    }
+
+    public boolean isAuthorizationFilterEnabled() {
+        return authorizationFilterEnabled;
     }
 
     public int getNumberOfShards() {
@@ -156,5 +164,11 @@ public class ElasticSearchSearchIndexConfiguration {
         int shards = config.getInt(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + CONFIG_SHARDS, DEFAULT_NUMBER_OF_SHARDS);
         LOGGER.info("Number of shards: %d", shards);
         return shards;
+    }
+
+    private static boolean getAuthorizationFilterEnabled(GraphConfiguration config) {
+        boolean authorizationFilterEnabled = config.getBoolean(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + CONFIG_AUTHORIZATION_FILTER_ENABLED, DEFAULT_AUTHORIZATION_FILTER_ENABLED);
+        LOGGER.info("Authorization filter enabled: %b", authorizationFilterEnabled);
+        return authorizationFilterEnabled;
     }
 }

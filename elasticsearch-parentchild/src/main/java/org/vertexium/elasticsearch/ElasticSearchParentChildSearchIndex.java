@@ -496,16 +496,27 @@ public class ElasticSearchParentChildSearchIndex extends ElasticSearchSearchInde
         TermsBuilder countAgg = new TermsBuilder(countAggName)
                 .field(propertyName)
                 .size(500000);
-        AuthorizationFilterBuilder authorizationFilterBuilder = new AuthorizationFilterBuilder(authorizations.getAuthorizations());
         TermFilterBuilder elementTypeFilterBuilder = new TermFilterBuilder(ELEMENT_TYPE_FIELD_NAME, ElasticSearchElementType.VERTEX.getKey());
-        AndFilterBuilder andFilterBuilder = new AndFilterBuilder(authorizationFilterBuilder, elementTypeFilterBuilder);
+
+        FilterBuilder elementQueryFilter;
+        if (isAuthorizationFilterEnabled()) {
+            AuthorizationFilterBuilder authorizationFilterBuilder = new AuthorizationFilterBuilder(authorizations.getAuthorizations());
+            elementQueryFilter = new AndFilterBuilder(authorizationFilterBuilder, elementTypeFilterBuilder);
+        } else {
+            elementQueryFilter = elementTypeFilterBuilder;
+        }
+
         FilteredQueryBuilder elementQueryBuilder = QueryBuilders.filteredQuery(
                 QueryBuilders.matchAllQuery(),
-                andFilterBuilder
+                elementQueryFilter
         );
+        AuthorizationFilterBuilder elementTypeAuthorizationFilter = null;
+        if (isAuthorizationFilterEnabled()) {
+            elementTypeAuthorizationFilter = new AuthorizationFilterBuilder(authorizations.getAuthorizations());
+        }
         FilteredQueryBuilder query = QueryBuilders.filteredQuery(
                 new HasParentQueryBuilder(ELEMENT_TYPE, elementQueryBuilder),
-                new AuthorizationFilterBuilder(authorizations.getAuthorizations())
+                elementTypeAuthorizationFilter
         );
         SearchRequestBuilder q = getClient().prepareSearch(getIndexNamesAsArray())
                 .setQuery(query)

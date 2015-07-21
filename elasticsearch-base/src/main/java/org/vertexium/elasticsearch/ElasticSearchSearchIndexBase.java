@@ -671,4 +671,8 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex, Searc
     public IndexSelectionStrategy getIndexSelectionStrategy() {
         return indexSelectionStrategy;
     }
+
+    public boolean isAuthorizationFilterEnabled() {
+        return getConfig().isAuthorizationFilterEnabled();
+    }
 }
