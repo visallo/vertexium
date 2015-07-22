@@ -10,6 +10,7 @@ import org.vertexium.util.ToElementIterable;
 
 import java.io.IOException;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.Map;
 
 public abstract class GraphBaseWithSearchIndex extends GraphBase implements Graph {
@@ -19,6 +20,7 @@ public abstract class GraphBaseWithSearchIndex extends GraphBase implements Grap
     private final IdGenerator idGenerator;
     private SearchIndex searchIndex;
     private boolean foundIdGeneratorClassnameInMetadata;
+    private Map<String, PropertyDefinition> propertyDefinitionCache = new HashMap<>();
 
     protected GraphBaseWithSearchIndex(GraphConfiguration configuration, IdGenerator idGenerator, SearchIndex searchIndex) {
         this.configuration = configuration;
@@ -157,6 +159,7 @@ public abstract class GraphBaseWithSearchIndex extends GraphBase implements Grap
     }
 
     public void savePropertyDefinition(String propertyName, PropertyDefinition propertyDefinition) {
+        propertyDefinitionCache.put(propertyName, propertyDefinition);
         setMetadata(getPropertyDefinitionKey(propertyName), propertyDefinition);
     }
 
@@ -165,6 +168,10 @@ public abstract class GraphBaseWithSearchIndex extends GraphBase implements Grap
     }
 
     public PropertyDefinition getPropertyDefinition(String propertyName) {
+        PropertyDefinition propertyDefinition = propertyDefinitionCache.get(propertyName);
+        if (propertyDefinition != null) {
+            return propertyDefinition;
+        }
         return (PropertyDefinition) getMetadata(getPropertyDefinitionKey(propertyName));
     }
 
