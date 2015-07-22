@@ -766,6 +766,11 @@ public interface Graph {
     Iterable<GraphMetadataEntry> getMetadata();
 
     /**
+     * Gets all metadata with the given prefix.
+     */
+    Iterable<GraphMetadataEntry> getMetadataWithPrefix(String prefix);
+
+    /**
      * Determine if field boost is support. That is can you change the boost at a field level to give higher priority.
      */
     boolean isFieldBoostSupported();

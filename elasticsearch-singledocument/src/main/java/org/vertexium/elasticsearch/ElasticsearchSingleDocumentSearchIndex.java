@@ -42,7 +42,7 @@ public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchI
     public static final Pattern PROPERTY_NAME_PATTERN = Pattern.compile("(.*?)_([0-9a-f]+)(_([a-z]+))?");
     public static final Pattern AGGREGATION_NAME_PATTERN = Pattern.compile("(.*?)_([0-9a-f]+)");
     public static final String CONFIG_PROPERTY_NAME_VISIBILITIES_STORE = "propertyNameVisibilitiesStore";
-    public static final Class<? extends PropertyNameVisibilitiesStore> DEFAULT_PROPERTY_NAME_VISIBILITIES_STORE = InMemoryPropertyNameVisibilitiesStore.class;
+    public static final Class<? extends PropertyNameVisibilitiesStore> DEFAULT_PROPERTY_NAME_VISIBILITIES_STORE = MetadataTablePropertyNameVisibilitiesStore.class;
     private final NameSubstitutionStrategy nameSubstitutionStrategy;
     private final PropertyNameVisibilitiesStore propertyNameVisibilitiesStore;
 
@@ -188,8 +188,8 @@ public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchI
 
     @Override
     protected String deflatePropertyName(Graph graph, Property property) {
-        String visibilitySuffix = getVisibilityHash(graph, property.getName(), property.getVisibility());
-        return this.nameSubstitutionStrategy.deflate(property.getName()) + visibilitySuffix;
+        String visibilityHash = getVisibilityHash(graph, property.getName(), property.getVisibility());
+        return this.nameSubstitutionStrategy.deflate(property.getName()) + "_" + visibilityHash;
     }
 
     @Override
@@ -238,7 +238,7 @@ public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchI
         String deflatedPropertyName = this.nameSubstitutionStrategy.deflate(propertyName);
         int i = 0;
         for (String hash : hashes) {
-            results[i++] = deflatedPropertyName + hash;
+            results[i++] = deflatedPropertyName + "_" + hash;
         }
         return results;
     }

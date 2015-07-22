@@ -451,6 +451,16 @@ public abstract class GraphBase implements Graph {
     }
 
     @Override
+    public Iterable<GraphMetadataEntry> getMetadataWithPrefix(final String prefix) {
+        return new FilterIterable<GraphMetadataEntry>(getMetadata()) {
+            @Override
+            protected boolean isIncluded(GraphMetadataEntry o) {
+                return o.getKey().startsWith(prefix);
+            }
+        };
+    }
+
+    @Override
     public abstract void setMetadata(String key, Object value);
 
     @Override

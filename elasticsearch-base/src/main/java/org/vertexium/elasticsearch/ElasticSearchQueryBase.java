@@ -320,7 +320,7 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
         } else if (filters.size() == 1) {
             return filters.get(0);
         } else {
-            throw new VertexiumException("Unexpected filter count");
+            throw new VertexiumException("Unexpected filter count, expected at least 1 filter");
         }
     }
 

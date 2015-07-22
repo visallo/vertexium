@@ -1746,6 +1746,12 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
         return entry.getValue();
     }
 
+    @Override
+    public Iterable<GraphMetadataEntry> getMetadataWithPrefix(String prefix) {
+        Range range = new Range(prefix, prefix + "~");
+        return getMetadataInRange(range);
+    }
+
     protected CloseableIterable<Vertex> getVerticesInRange(final Range range, final EnumSet<FetchHint> fetchHints, final Long endTime, final Authorizations authorizations) {
         final boolean includeHidden = fetchHints.contains(FetchHint.INCLUDE_HIDDEN);
 
