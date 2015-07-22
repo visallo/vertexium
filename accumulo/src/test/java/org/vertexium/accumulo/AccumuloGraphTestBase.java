@@ -9,7 +9,6 @@ import org.apache.accumulo.minicluster.MiniAccumuloCluster;
 import org.apache.accumulo.minicluster.MiniAccumuloConfig;
 import org.apache.hadoop.io.Text;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.vertexium.*;
@@ -24,11 +23,8 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.*;
 
-import static junit.framework.Assert.assertEquals;
-import static junit.framework.Assert.assertTrue;
 import static junit.framework.TestCase.fail;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 import static org.vertexium.util.IterableUtils.toList;
 
 
@@ -159,7 +155,7 @@ public abstract class AccumuloGraphTestBase extends GraphTestBase {
 
         v1 = graph.getVertex("v1", FetchHint.NONE, AUTHORIZATIONS_A);
         assertNotNull(v1);
-        Assert.assertEquals(0, IterableUtils.count(v1.getProperties()));
+        assertEquals(0, IterableUtils.count(v1.getProperties()));
         assertEquals(0, IterableUtils.count(v1.getEdges(Direction.IN, AUTHORIZATIONS_A)));
         assertEquals(0, IterableUtils.count(v1.getEdges(Direction.OUT, AUTHORIZATIONS_A)));
 

@@ -21,7 +21,6 @@ import org.elasticsearch.search.aggregations.bucket.histogram.HistogramBuilder;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsBuilder;
 import org.vertexium.*;
 import org.vertexium.elasticsearch.score.ScoringStrategy;
-import org.vertexium.id.NameSubstitutionStrategy;
 import org.vertexium.query.*;
 import org.vertexium.type.GeoCircle;
 import org.vertexium.util.*;
@@ -36,7 +35,6 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
     private final boolean evaluateHasContainers;
     private final StandardAnalyzer analyzer;
     private final ScoringStrategy scoringStrategy;
-    private final NameSubstitutionStrategy nameSubstitutionStrategy;
     private final IndexSelectionStrategy indexSelectionStrategy;
 
     protected ElasticSearchQueryBase(
@@ -45,7 +43,6 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
             String queryString,
             Map<String, PropertyDefinition> propertyDefinitions,
             ScoringStrategy scoringStrategy,
-            NameSubstitutionStrategy nameSubstitutionStrategy,
             IndexSelectionStrategy indexSelectionStrategy,
             boolean evaluateHasContainers,
             Authorizations authorizations) {
@@ -54,17 +51,16 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
         this.evaluateHasContainers = evaluateHasContainers;
         this.scoringStrategy = scoringStrategy;
         this.analyzer = new StandardAnalyzer();
-        this.nameSubstitutionStrategy = nameSubstitutionStrategy;
         this.indexSelectionStrategy = indexSelectionStrategy;
     }
 
     protected ElasticSearchQueryBase(
             TransportClient client,
             Graph graph,
-            String[] similarToFields, String similarToText,
+            String[] similarToFields,
+            String similarToText,
             Map<String, PropertyDefinition> propertyDefinitions,
             ScoringStrategy scoringStrategy,
-            NameSubstitutionStrategy nameSubstitutionStrategy,
             IndexSelectionStrategy indexSelectionStrategy,
             boolean evaluateHasContainers,
             Authorizations authorizations) {
@@ -73,7 +69,6 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
         this.evaluateHasContainers = evaluateHasContainers;
         this.scoringStrategy = scoringStrategy;
         this.analyzer = new StandardAnalyzer();
-        this.nameSubstitutionStrategy = nameSubstitutionStrategy;
         this.indexSelectionStrategy = indexSelectionStrategy;
     }
 
@@ -85,6 +80,9 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
             response = getSearchResponse(ElasticSearchElementType.VERTEX);
         } catch (IndexMissingException ex) {
             LOGGER.debug("Index missing: %s", ex.getMessage());
+            return new ArrayList<>();
+        } catch (VertexiumNoMatchingPropertiesException ex) {
+            LOGGER.debug("Could not find property", ex);
             return new ArrayList<>();
         }
         final SearchHits hits = response.getHits();
@@ -117,6 +115,9 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
         } catch (IndexMissingException ex) {
             LOGGER.debug("Index missing: %s", ex.getMessage());
             return new ArrayList<>();
+        } catch (VertexiumNoMatchingPropertiesException ex) {
+            LOGGER.debug("Could not find property", ex);
+            return new ArrayList<>();
         }
         final SearchHits hits = response.getHits();
         List<String> ids = IterableUtils.toList(new ConvertingIterable<SearchHit, String>(hits) {
@@ -148,6 +149,9 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
             response = getSearchResponse(null);
         } catch (IndexMissingException ex) {
             LOGGER.debug("Index missing: %s", ex.getMessage());
+            return new ArrayList<>();
+        } catch (VertexiumNoMatchingPropertiesException ex) {
+            LOGGER.debug("Could not find property", ex);
             return new ArrayList<>();
         }
         final SearchHits hits = response.getHits();
@@ -195,7 +199,17 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
     }
 
     protected <T extends Element> ElasticSearchGraphQueryIterable<T> createIterable(SearchResponse response, QueryParameters filterParameters, Iterable<T> elements, boolean evaluateHasContainers, long searchTime, SearchHits hits) {
-        return new ElasticSearchGraphQueryIterable<>(response, filterParameters, elements, false, evaluateHasContainers, hits.getTotalHits(), searchTime, hits);
+        return new ElasticSearchGraphQueryIterable<>(
+                this,
+                response,
+                filterParameters,
+                elements,
+                false,
+                evaluateHasContainers,
+                hits.getTotalHits(),
+                searchTime,
+                hits
+        );
     }
 
     private SearchResponse getSearchResponse(ElasticSearchElementType elementType) {
@@ -218,11 +232,11 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
         }
         for (HasContainer has : getParameters().getHasContainers()) {
             if (has instanceof HasValueContainer) {
-                getFiltersForHasValueContainer(filters, (HasValueContainer) has);
+                filters.add(getFiltersForHasValueContainer((HasValueContainer) has));
             } else if (has instanceof HasPropertyContainer) {
-                getFiltersForHasPropertyContainer(filters, (HasPropertyContainer) has);
+                filters.add(getFilterForHasPropertyContainer((HasPropertyContainer) has));
             } else if (has instanceof HasNotPropertyContainer) {
-                getFiltersForHasNotPropertyContainer(filters, (HasNotPropertyContainer) has);
+                filters.add(getFilterForHasNotPropertyContainer((HasNotPropertyContainer) has));
             } else {
                 throw new VertexiumException("Unexpected type " + has.getClass().getName());
             }
@@ -230,134 +244,179 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
         return filters;
     }
 
-    protected void getFiltersForHasNotPropertyContainer(List<FilterBuilder> filters, HasNotPropertyContainer hasNotProperty) {
-        filters.add(FilterBuilders.notFilter(FilterBuilders.existsFilter(nameSubstitutionStrategy.deflate(hasNotProperty.getKey()))));
+    protected FilterBuilder getFilterForHasNotPropertyContainer(HasNotPropertyContainer hasNotProperty) {
+        String[] propertyNames = getPropertyNames(hasNotProperty.getKey());
+        List<FilterBuilder> filters = new ArrayList<>();
+        for (String propertyName : propertyNames) {
+            filters.add(FilterBuilders.notFilter(FilterBuilders.existsFilter(propertyName)));
+        }
+        return getSingleFilterOrOrTheFilters(filters);
     }
 
-    protected void getFiltersForHasPropertyContainer(List<FilterBuilder> filters, HasPropertyContainer hasProperty) {
-        filters.add(FilterBuilders.existsFilter(nameSubstitutionStrategy.deflate(hasProperty.getKey())));
+    protected FilterBuilder getFilterForHasPropertyContainer(HasPropertyContainer hasProperty) {
+        String[] propertyNames = getPropertyNames(hasProperty.getKey());
+        List<FilterBuilder> filters = new ArrayList<>();
+        for (String propertyName : propertyNames) {
+            filters.add(FilterBuilders.existsFilter(propertyName));
+        }
+        return getSingleFilterOrOrTheFilters(filters);
     }
 
-    protected void getFiltersForHasValueContainer(List<FilterBuilder> filters, HasValueContainer has) {
+    protected FilterBuilder getFiltersForHasValueContainer(HasValueContainer has) {
         if (has.predicate instanceof Compare) {
-            getFiltersForComparePredicate(filters, (Compare) has.predicate, has);
+            return getFilterForComparePredicate((Compare) has.predicate, has);
         } else if (has.predicate instanceof Contains) {
-            getFiltersForContainsPredicate(filters, (Contains) has.predicate, has);
+            return getFilterForContainsPredicate((Contains) has.predicate, has);
         } else if (has.predicate instanceof TextPredicate) {
-            getFiltersForTextPredicate(filters, (TextPredicate) has.predicate, has);
+            return getFilterForTextPredicate((TextPredicate) has.predicate, has);
         } else if (has.predicate instanceof GeoCompare) {
-            getFiltersForGeoComparePredicate(filters, (GeoCompare) has.predicate, has);
+            return getFilterForGeoComparePredicate((GeoCompare) has.predicate, has);
         } else {
             throw new VertexiumException("Unexpected predicate type " + has.predicate.getClass().getName());
         }
     }
 
-    protected void getFiltersForGeoComparePredicate(List<FilterBuilder> filters, GeoCompare compare, HasValueContainer has) {
-        String propertyName = nameSubstitutionStrategy.deflate(has.key) + ElasticSearchSearchIndexBase.GEO_PROPERTY_NAME_SUFFIX;
-        switch (compare) {
-            case WITHIN:
-                if (has.value instanceof GeoCircle) {
-                    GeoCircle geoCircle = (GeoCircle) has.value;
-                    double lat = geoCircle.getLatitude();
-                    double lon = geoCircle.getLongitude();
-                    double distance = geoCircle.getRadius();
+    protected FilterBuilder getFilterForGeoComparePredicate(GeoCompare compare, HasValueContainer has) {
+        String[] keys = getPropertyNames(has.key);
+        List<FilterBuilder> filters = new ArrayList<>();
+        for (String key : keys) {
+            String propertyName = key + ElasticSearchSearchIndexBase.GEO_PROPERTY_NAME_SUFFIX;
+            switch (compare) {
+                case WITHIN:
+                    if (has.value instanceof GeoCircle) {
+                        GeoCircle geoCircle = (GeoCircle) has.value;
+                        double lat = geoCircle.getLatitude();
+                        double lon = geoCircle.getLongitude();
+                        double distance = geoCircle.getRadius();
 
-                    PropertyDefinition propertyDefinition = this.getPropertyDefinitions().get(propertyName);
-                    if (propertyDefinition != null && propertyDefinition.getDataType() == GeoCircle.class) {
-                        ShapeBuilder shapeBuilder = ShapeBuilder.newCircleBuilder()
-                                .center(lon, lat)
-                                .radius(distance, DistanceUnit.KILOMETERS);
-                        filters
-                                .add(new GeoShapeFilterBuilder(propertyName, shapeBuilder));
+                        PropertyDefinition propertyDefinition = this.getPropertyDefinitions().get(propertyName);
+                        if (propertyDefinition != null && propertyDefinition.getDataType() == GeoCircle.class) {
+                            ShapeBuilder shapeBuilder = ShapeBuilder.newCircleBuilder()
+                                    .center(lon, lat)
+                                    .radius(distance, DistanceUnit.KILOMETERS);
+                            filters
+                                    .add(new GeoShapeFilterBuilder(propertyName, shapeBuilder));
+                        } else {
+                            filters
+                                    .add(FilterBuilders
+                                            .geoDistanceFilter(propertyName)
+                                            .point(lat, lon)
+                                            .distance(distance, DistanceUnit.KILOMETERS));
+                        }
                     } else {
-                        filters
-                                .add(FilterBuilders
-                                        .geoDistanceFilter(propertyName)
-                                        .point(lat, lon)
-                                        .distance(distance, DistanceUnit.KILOMETERS));
+                        throw new VertexiumException("Unexpected has value type " + has.value.getClass().getName());
                     }
-                } else {
-                    throw new VertexiumException("Unexpected has value type " + has.value.getClass().getName());
-                }
-                break;
-            default:
-                throw new VertexiumException("Unexpected GeoCompare predicate " + has.predicate);
+                    break;
+                default:
+                    throw new VertexiumException("Unexpected GeoCompare predicate " + has.predicate);
+            }
+        }
+        return getSingleFilterOrOrTheFilters(filters);
+    }
+
+    private FilterBuilder getSingleFilterOrOrTheFilters(List<FilterBuilder> filters) {
+        if (filters.size() > 1) {
+            return FilterBuilders.orFilter(filters.toArray(new FilterBuilder[filters.size()]));
+        } else if (filters.size() == 1) {
+            return filters.get(0);
+        } else {
+            throw new VertexiumException("Unexpected filter count");
         }
     }
 
-    protected void getFiltersForTextPredicate(List<FilterBuilder> filters, TextPredicate compare, HasValueContainer has) {
+    protected FilterBuilder getFilterForTextPredicate(TextPredicate compare, HasValueContainer has) {
         Object value = has.value;
-        String key = nameSubstitutionStrategy.deflate(has.key);
-        if (value instanceof String) {
-            value = ((String) value).toLowerCase(); // using the standard analyzer all strings are lower-cased.
+        String[] keys = getPropertyNames(has.key);
+        List<FilterBuilder> filters = new ArrayList<>();
+        for (String key : keys) {
+            if (value instanceof String) {
+                value = ((String) value).toLowerCase(); // using the standard analyzer all strings are lower-cased.
+            }
+            switch (compare) {
+                case CONTAINS:
+                    if (value instanceof String) {
+                        filters.add(FilterBuilders.termsFilter(key, splitStringIntoTerms((String) value)).execution("and"));
+                    } else {
+                        filters.add(FilterBuilders.termFilter(key, value));
+                    }
+                    break;
+                default:
+                    throw new VertexiumException("Unexpected text predicate " + has.predicate);
+            }
         }
-        switch (compare) {
-            case CONTAINS:
-                if (value instanceof String) {
-                    filters.add(FilterBuilders.termsFilter(key, splitStringIntoTerms((String) value)).execution("and"));
-                } else {
-                    filters.add(FilterBuilders.termFilter(key, value));
-                }
-                break;
-            default:
-                throw new VertexiumException("Unexpected text predicate " + has.predicate);
-        }
+        return getSingleFilterOrOrTheFilters(filters);
     }
 
-    protected void getFiltersForContainsPredicate(List<FilterBuilder> filters, Contains contains, HasValueContainer has) {
+    protected FilterBuilder getFilterForContainsPredicate(Contains contains, HasValueContainer has) {
         Object value = has.value;
-        String key = nameSubstitutionStrategy.deflate(has.key);
-        if (value instanceof String || value instanceof String[]) {
-            key = key + ElasticSearchSearchIndexBase.EXACT_MATCH_PROPERTY_NAME_SUFFIX;
+        String[] keys = getPropertyNames(has.key);
+        List<FilterBuilder> filters = new ArrayList<>();
+        for (String key : keys) {
+            if (value instanceof String || value instanceof String[]) {
+                key = key + ElasticSearchSearchIndexBase.EXACT_MATCH_PROPERTY_NAME_SUFFIX;
+            }
+            if (has.value instanceof Iterable) {
+                has.value = IterableUtils.toArray((Iterable<?>) has.value, Object.class);
+            }
+            switch (contains) {
+                case IN:
+                    filters.add(FilterBuilders.inFilter(key, (Object[]) has.value));
+                    break;
+                case NOT_IN:
+                    filters.add(FilterBuilders.notFilter(FilterBuilders.inFilter(key, (Object[]) has.value)));
+                    break;
+                default:
+                    throw new VertexiumException("Unexpected Contains predicate " + has.predicate);
+            }
         }
-        if (has.value instanceof Iterable) {
-            has.value = IterableUtils.toArray((Iterable<?>) has.value, Object.class);
-        }
-        switch (contains) {
-            case IN:
-                filters.add(FilterBuilders.inFilter(key, (Object[]) has.value));
-                break;
-            case NOT_IN:
-                filters.add(FilterBuilders.notFilter(FilterBuilders.inFilter(key, (Object[]) has.value)));
-                break;
-            default:
-                throw new VertexiumException("Unexpected Contains predicate " + has.predicate);
-        }
+        return getSingleFilterOrOrTheFilters(filters);
     }
 
-    protected void getFiltersForComparePredicate(List<FilterBuilder> filters, Compare compare, HasValueContainer has) {
+    protected FilterBuilder getFilterForComparePredicate(Compare compare, HasValueContainer has) {
         Object value = has.value;
-        String key = nameSubstitutionStrategy.deflate(has.key);
-        if (value instanceof String || value instanceof String[]) {
-            key = key + ElasticSearchSearchIndexBase.EXACT_MATCH_PROPERTY_NAME_SUFFIX;
+        String[] keys = getPropertyNames(has.key);
+        List<FilterBuilder> filters = new ArrayList<>();
+        for (String key : keys) {
+            if (value instanceof String || value instanceof String[]) {
+                key = key + ElasticSearchSearchIndexBase.EXACT_MATCH_PROPERTY_NAME_SUFFIX;
+            }
+            switch (compare) {
+                case EQUAL:
+                    if (value instanceof DateOnly) {
+                        DateOnly dateOnlyValue = ((DateOnly) value);
+                        filters.add(FilterBuilders.rangeFilter(key).from(dateOnlyValue.toString()).to(dateOnlyValue.toString()));
+                    } else {
+                        filters.add(FilterBuilders.termFilter(key, value));
+                    }
+                    break;
+                case GREATER_THAN_EQUAL:
+                    filters.add(FilterBuilders.rangeFilter(key).gte(value));
+                    break;
+                case GREATER_THAN:
+                    filters.add(FilterBuilders.rangeFilter(key).gt(value));
+                    break;
+                case LESS_THAN_EQUAL:
+                    filters.add(FilterBuilders.rangeFilter(key).lte(value));
+                    break;
+                case LESS_THAN:
+                    filters.add(FilterBuilders.rangeFilter(key).lt(value));
+                    break;
+                case NOT_EQUAL:
+                    addNotFilter(filters, key, value);
+                    break;
+                default:
+                    throw new VertexiumException("Unexpected Compare predicate " + has.predicate);
+            }
         }
-        switch (compare) {
-            case EQUAL:
-                if (value instanceof DateOnly) {
-                    DateOnly dateOnlyValue = ((DateOnly) value);
-                    filters.add(FilterBuilders.rangeFilter(key).from(dateOnlyValue.toString()).to(dateOnlyValue.toString()));
-                } else {
-                    filters.add(FilterBuilders.termFilter(key, value));
-                }
-                break;
-            case GREATER_THAN_EQUAL:
-                filters.add(FilterBuilders.rangeFilter(key).gte(value));
-                break;
-            case GREATER_THAN:
-                filters.add(FilterBuilders.rangeFilter(key).gt(value));
-                break;
-            case LESS_THAN_EQUAL:
-                filters.add(FilterBuilders.rangeFilter(key).lte(value));
-                break;
-            case LESS_THAN:
-                filters.add(FilterBuilders.rangeFilter(key).lt(value));
-                break;
-            case NOT_EQUAL:
-                addNotFilter(filters, key, value);
-                break;
-            default:
-                throw new VertexiumException("Unexpected Compare predicate " + has.predicate);
-        }
+        return getSingleFilterOrOrTheFilters(filters);
+    }
+
+    private String[] getPropertyNames(String propertyName) {
+        return getSearchIndex().getAllMatchingPropertyNames(propertyName, getParameters().getAuthorizations());
+    }
+
+    private ElasticSearchSearchIndexBase getSearchIndex() {
+        return (ElasticSearchSearchIndexBase) ((GraphBaseWithSearchIndex) getGraph()).getSearchIndex();
     }
 
     protected void addElementTypeFilter(List<FilterBuilder> filters, ElasticSearchElementType elementType) {
@@ -421,7 +480,12 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
             return QueryBuilders.queryString(queryString);
         } else if (queryParameters instanceof SimilarToTextQueryParameters) {
             SimilarToTextQueryParameters similarTo = (SimilarToTextQueryParameters) queryParameters;
-            MoreLikeThisQueryBuilder q = QueryBuilders.moreLikeThisQuery(similarTo.getFields())
+            List<String> allFields = new ArrayList<>();
+            String[] fields = similarTo.getFields();
+            for (String field : fields) {
+                Collections.addAll(allFields, getPropertyNames(field));
+            }
+            MoreLikeThisQueryBuilder q = QueryBuilders.moreLikeThisQuery(allFields.toArray(new String[allFields.size()]))
                     .likeText(similarTo.getText());
             if (similarTo.getPercentTermsToMatch() != null) {
                 q.percentTermsToMatch(similarTo.getPercentTermsToMatch());
@@ -451,51 +515,77 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
         return client;
     }
 
-    protected static void addGeohashQueryToSearchRequestBuilder(SearchRequestBuilder searchRequestBuilder, List<GeohashQueryItem> geohashQueryItems) {
+    protected void addGeohashQueryToSearchRequestBuilder(SearchRequestBuilder searchRequestBuilder, List<GeohashQueryItem> geohashQueryItems) {
         for (GeohashQueryItem geohashQueryItem : geohashQueryItems) {
-            GeoHashGridBuilder agg = AggregationBuilders.geohashGrid(geohashQueryItem.getAggregationName());
-            agg.field(geohashQueryItem.getFieldName());
-            agg.precision(geohashQueryItem.getPrecision());
-            searchRequestBuilder.addAggregation(agg);
+            for (String propertyName : getPropertyNames(geohashQueryItem.getFieldName())) {
+                String visibilityHash = getSearchIndex().getPropertyVisibilityHashFromDeflatedPropertyName(propertyName);
+                String aggName = createAggregationName(geohashQueryItem.getAggregationName(), visibilityHash);
+                GeoHashGridBuilder agg = AggregationBuilders.geohashGrid(aggName);
+                agg.field(propertyName + ElasticSearchSearchIndexBase.GEO_PROPERTY_NAME_SUFFIX);
+                agg.precision(geohashQueryItem.getPrecision());
+                searchRequestBuilder.addAggregation(agg);
+            }
         }
     }
 
-    protected static void addTermsQueryToSearchRequestBuilder(SearchRequestBuilder searchRequestBuilder, List<TermsQueryItem> termsQueryItems, Map<String, PropertyDefinition> propertyDefinitions) {
+    private String createAggregationName(String aggName, String visibilityHash) {
+        if (visibilityHash != null && visibilityHash.length() > 0) {
+            return aggName + "_" + visibilityHash;
+        }
+        return aggName;
+    }
+
+    protected void addTermsQueryToSearchRequestBuilder(SearchRequestBuilder searchRequestBuilder, List<TermsQueryItem> termsQueryItems) {
         for (TermsQueryItem termsQueryItem : termsQueryItems) {
             String fieldName = termsQueryItem.getFieldName();
-            PropertyDefinition propertyDefinition = propertyDefinitions.get(fieldName);
-            if (propertyDefinition != null && propertyDefinition.getTextIndexHints().contains(TextIndexHint.EXACT_MATCH)) {
-                fieldName = propertyDefinition.getPropertyName() + ElasticSearchSearchIndexBase.EXACT_MATCH_PROPERTY_NAME_SUFFIX;
-            }
+            PropertyDefinition propertyDefinition = getPropertyDefinition(fieldName);
+            for (String propertyName : getPropertyNames(fieldName)) {
+                if (propertyDefinition != null && propertyDefinition.getTextIndexHints().contains(TextIndexHint.EXACT_MATCH)) {
+                    propertyName = propertyName + ElasticSearchSearchIndexBase.EXACT_MATCH_PROPERTY_NAME_SUFFIX;
+                }
 
-            TermsBuilder agg = AggregationBuilders.terms(termsQueryItem.getAggregationName());
-            agg.field(fieldName);
-            searchRequestBuilder.addAggregation(agg);
+                String visibilityHash = getSearchIndex().getPropertyVisibilityHashFromDeflatedPropertyName(propertyName);
+                TermsBuilder agg = AggregationBuilders.terms(createAggregationName(termsQueryItem.getAggregationName(), visibilityHash));
+                agg.field(propertyName);
+                searchRequestBuilder.addAggregation(agg);
+            }
         }
     }
 
-    protected static void addHistogramQueryToSearchRequestBuilder(SearchRequestBuilder searchRequestBuilder, List<HistogramQueryItem> histogramQueryItems, Map<String, PropertyDefinition> propertyDefinitions) {
+    protected void addHistogramQueryToSearchRequestBuilder(SearchRequestBuilder searchRequestBuilder, List<HistogramQueryItem> histogramQueryItems) {
         for (HistogramQueryItem histogramQueryItem : histogramQueryItems) {
-            PropertyDefinition propertyDefinition = propertyDefinitions.get(histogramQueryItem.getFieldName());
+            PropertyDefinition propertyDefinition = getPropertyDefinition(histogramQueryItem.getFieldName());
             if (propertyDefinition == null) {
                 throw new VertexiumException("Could not find mapping for property: " + histogramQueryItem.getFieldName());
             }
             Class propertyDataType = propertyDefinition.getDataType();
-            if (propertyDataType == Date.class) {
-                DateHistogramBuilder agg = AggregationBuilders.dateHistogram(histogramQueryItem.getAggregationName());
-                agg.field(histogramQueryItem.getFieldName());
-                agg.interval(Long.parseLong(histogramQueryItem.getInterval()));
-                searchRequestBuilder.addAggregation(agg);
-            } else {
-                HistogramBuilder agg = AggregationBuilders.histogram(histogramQueryItem.getAggregationName());
-                agg.field(histogramQueryItem.getFieldName());
-                agg.interval(Long.parseLong(histogramQueryItem.getInterval()));
-                searchRequestBuilder.addAggregation(agg);
+            for (String propertyName : getPropertyNames(histogramQueryItem.getFieldName())) {
+                String visibilityHash = getSearchIndex().getPropertyVisibilityHashFromDeflatedPropertyName(propertyName);
+                String aggName = createAggregationName(histogramQueryItem.getAggregationName(), visibilityHash);
+                if (propertyDataType == Date.class) {
+                    DateHistogramBuilder agg = AggregationBuilders.dateHistogram(aggName);
+                    agg.field(propertyName);
+                    agg.interval(Long.parseLong(histogramQueryItem.getInterval()));
+                    searchRequestBuilder.addAggregation(agg);
+                } else {
+                    HistogramBuilder agg = AggregationBuilders.histogram(aggName);
+                    agg.field(propertyName);
+                    agg.interval(Long.parseLong(histogramQueryItem.getInterval()));
+                    searchRequestBuilder.addAggregation(agg);
+                }
             }
         }
     }
 
+    private PropertyDefinition getPropertyDefinition(String propertyName) {
+        return getSearchIndex().getPropertyDefinition(getGraph(), propertyName);
+    }
+
     protected IndexSelectionStrategy getIndexSelectionStrategy() {
         return indexSelectionStrategy;
+    }
+
+    public String getAggregationName(String name) {
+        return getSearchIndex().getAggregationName(name);
     }
 }

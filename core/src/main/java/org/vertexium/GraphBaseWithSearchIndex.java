@@ -61,7 +61,7 @@ public abstract class GraphBaseWithSearchIndex extends GraphBase implements Grap
 
     protected void setupPropertyDefinition(PropertyDefinition propertyDefinition) {
         try {
-            getSearchIndex().addPropertyDefinition(propertyDefinition);
+            getSearchIndex().addPropertyDefinition(this, propertyDefinition);
         } catch (IOException e) {
             throw new VertexiumException("Could not add property definition to search index", e);
         }
@@ -146,14 +146,26 @@ public abstract class GraphBaseWithSearchIndex extends GraphBase implements Grap
             public PropertyDefinition define() {
                 PropertyDefinition propertyDefinition = super.define();
                 try {
-                    getSearchIndex().addPropertyDefinition(propertyDefinition);
+                    getSearchIndex().addPropertyDefinition(GraphBaseWithSearchIndex.this, propertyDefinition);
                 } catch (IOException e) {
                     throw new VertexiumException("Could not add property definition to search index", e);
                 }
-                setMetadata(METADATA_DEFINE_PROPERTY_PREFIX + propertyName, propertyDefinition);
+                savePropertyDefinition(propertyName, propertyDefinition);
                 return propertyDefinition;
             }
         };
+    }
+
+    public void savePropertyDefinition(String propertyName, PropertyDefinition propertyDefinition) {
+        setMetadata(getPropertyDefinitionKey(propertyName), propertyDefinition);
+    }
+
+    private String getPropertyDefinitionKey(String propertyName) {
+        return METADATA_DEFINE_PROPERTY_PREFIX + propertyName;
+    }
+
+    public PropertyDefinition getPropertyDefinition(String propertyName) {
+        return (PropertyDefinition) getMetadata(getPropertyDefinitionKey(propertyName));
     }
 
     @Override
@@ -169,7 +181,7 @@ public abstract class GraphBaseWithSearchIndex extends GraphBase implements Grap
     @Override
     public Map<Object, Long> getVertexPropertyCountByValue(String propertyName, Authorizations authorizations) {
         if (getSearchIndex() instanceof SearchIndexWithVertexPropertyCountByValue) {
-            return ((SearchIndexWithVertexPropertyCountByValue) getSearchIndex()).getVertexPropertyCountByValue(propertyName, authorizations);
+            return ((SearchIndexWithVertexPropertyCountByValue) getSearchIndex()).getVertexPropertyCountByValue(this, propertyName, authorizations);
         }
         return super.getVertexPropertyCountByValue(propertyName, authorizations);
     }

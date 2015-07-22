@@ -95,8 +95,10 @@ public abstract class GraphTestBase {
 
     @After
     public void after() throws Exception {
-        graph.shutdown();
-        graph = null;
+        if (graph != null) {
+            graph.shutdown();
+            graph = null;
+        }
     }
 
     @Test
@@ -1728,6 +1730,11 @@ public abstract class GraphTestBase {
                 .has("age", Compare.EQUAL, 25)
                 .vertices();
         Assert.assertEquals(0, count(vertices));
+
+        vertices = graph.query(AUTHORIZATIONS_A_AND_B)
+                .has("age", Compare.EQUAL, 25)
+                .vertices();
+        Assert.assertEquals(1, count(vertices));
     }
 
     @Test
@@ -1934,6 +1941,10 @@ public abstract class GraphTestBase {
 
     @Test
     public void testGraphQueryHasWithSpacesAndFieldedQueryString() {
+        if (!isFieldNamesInQuerySupported()) {
+            return;
+        }
+
         graph.prepareVertex("v1", VISIBILITY_A)
                 .setProperty("name", "Joe Ferner", VISIBILITY_A)
                 .setProperty("propWithHyphen", "hyphen-word", VISIBILITY_A)
@@ -1947,6 +1958,10 @@ public abstract class GraphTestBase {
                     .vertices();
             Assert.assertEquals(1, count(vertices));
         }
+    }
+
+    protected boolean isFieldNamesInQuerySupported() {
+        return true;
     }
 
     protected boolean isUsingDefaultQuery(Graph graph) {
@@ -3222,6 +3237,98 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    public void testGraphQueryWithHistogramAggregation() {
+        boolean searchIndexFieldLevelSecurity = graph instanceof GraphBaseWithSearchIndex ? ((GraphBaseWithSearchIndex) graph).getSearchIndex().isFieldLevelSecuritySupported() : true;
+
+        graph.prepareVertex("v1", VISIBILITY_EMPTY)
+                .addPropertyValue("", "age", 25, VISIBILITY_EMPTY)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.prepareVertex("v2", VISIBILITY_EMPTY)
+                .addPropertyValue("", "age", 20, VISIBILITY_EMPTY)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.prepareVertex("v3", VISIBILITY_EMPTY)
+                .addPropertyValue("", "age", 20, VISIBILITY_EMPTY)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.prepareVertex("v4", VISIBILITY_EMPTY)
+                .addPropertyValue("", "age", 20, VISIBILITY_A)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        Map<Object, Long> histogram = queryGraphQueryWithHistogramAggregation("age", "1", AUTHORIZATIONS_EMPTY);
+        if (histogram == null) {
+            return;
+        }
+        assertEquals(2, histogram.size());
+        assertEquals(1L, (long) histogram.get("25"));
+        assertEquals(searchIndexFieldLevelSecurity ? 2L : 3L, (long) histogram.get("20"));
+
+        histogram = queryGraphQueryWithHistogramAggregation("age", "1", AUTHORIZATIONS_A_AND_B);
+        if (histogram == null) {
+            return;
+        }
+        assertEquals(2, histogram.size());
+        assertEquals(1L, (long) histogram.get("25"));
+        assertEquals(3L, (long) histogram.get("20"));
+    }
+
+    private Map<Object, Long> queryGraphQueryWithHistogramAggregation(String propertyName, String interval, Authorizations authorizations) {
+        Query q = graph.query(authorizations).limit(0);
+        if (!(q instanceof GraphQueryWithHistogramAggregation)) {
+            LOGGER.warn("%s unsupported", GraphQueryWithHistogramAggregation.class.getName());
+            return null;
+        }
+        q = ((GraphQueryWithHistogramAggregation) q).addHistogramAggregation("hist-count", propertyName, interval);
+        return histogramBucketToMap(((IterableWithHistogramResults) q.vertices()).getHistogramResults("hist-count").getBuckets());
+    }
+
+    @Test
+    public void testGraphQueryWithGeohashAggregation() {
+        boolean searchIndexFieldLevelSecurity = graph instanceof GraphBaseWithSearchIndex ? ((GraphBaseWithSearchIndex) graph).getSearchIndex().isFieldLevelSecuritySupported() : true;
+
+        graph.defineProperty("location").dataType(GeoPoint.class).define();
+
+        graph.prepareVertex("v1", VISIBILITY_EMPTY)
+                .addPropertyValue("", "location", new GeoPoint(50, -10), VISIBILITY_EMPTY)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.prepareVertex("v2", VISIBILITY_EMPTY)
+                .addPropertyValue("", "location", new GeoPoint(39, -77), VISIBILITY_EMPTY)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.prepareVertex("v3", VISIBILITY_EMPTY)
+                .addPropertyValue("", "location", new GeoPoint(39.1, -77.1), VISIBILITY_EMPTY)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.prepareVertex("v4", VISIBILITY_EMPTY)
+                .addPropertyValue("", "location", new GeoPoint(39.2, -77.2), VISIBILITY_A)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        Map<String, Long> histogram = queryGraphQueryWithGeohashAggregation("location", 2, AUTHORIZATIONS_EMPTY);
+        if (histogram == null) {
+            return;
+        }
+        assertEquals(2, histogram.size());
+        assertEquals(1L, (long) histogram.get("gb"));
+        assertEquals(searchIndexFieldLevelSecurity ? 2L : 3L, (long) histogram.get("dq"));
+
+        histogram = queryGraphQueryWithGeohashAggregation("location", 2, AUTHORIZATIONS_A_AND_B);
+        if (histogram == null) {
+            return;
+        }
+        assertEquals(2, histogram.size());
+        assertEquals(1L, (long) histogram.get("gb"));
+        assertEquals(3L, (long) histogram.get("dq"));
+    }
+
+    private Map<String, Long> queryGraphQueryWithGeohashAggregation(String propertyName, int precision, Authorizations authorizations) {
+        Query q = graph.query(authorizations).limit(0);
+        if (!(q instanceof GraphQueryWithGeohashAggregation)) {
+            LOGGER.warn("%s unsupported", GraphQueryWithGeohashAggregation.class.getName());
+            return null;
+        }
+        q = ((GraphQueryWithGeohashAggregation) q).addGeohashAggregation("geo-count", propertyName, precision);
+        return geoHashBucketToMap(((IterableWithGeohashResults) q.vertices()).getGeohashResults("geo-count").getBuckets());
+    }
+
+    @Test
     public void testGetVertexPropertyCountByValue() {
         boolean searchIndexFieldLevelSecurity = graph instanceof GraphBaseWithSearchIndex ? ((GraphBaseWithSearchIndex) graph).getSearchIndex().isFieldLevelSecuritySupported() : true;
         graph.defineProperty("name").dataType(String.class).textIndexHint(TextIndexHint.EXACT_MATCH).define();
@@ -3397,8 +3504,24 @@ public abstract class GraphTestBase {
 
     private Map<Object, Long> termsBucketToMap(Iterable<TermsBucket> buckets) {
         Map<Object, Long> results = new HashMap<>();
-        for (TermsBucket termsBucket : buckets) {
-            results.put(termsBucket.getKey(), termsBucket.getCount());
+        for (TermsBucket b : buckets) {
+            results.put(b.getKey(), b.getCount());
+        }
+        return results;
+    }
+
+    private Map<Object, Long> histogramBucketToMap(Iterable<HistogramBucket> buckets) {
+        Map<Object, Long> results = new HashMap<>();
+        for (HistogramBucket b : buckets) {
+            results.put(b.getKey(), b.getCount());
+        }
+        return results;
+    }
+
+    private Map<String, Long> geoHashBucketToMap(Iterable<GeohashBucket> buckets) {
+        Map<String, Long> results = new HashMap<>();
+        for (GeohashBucket b : buckets) {
+            results.put(b.getKey(), b.getCount());
         }
         return results;
     }

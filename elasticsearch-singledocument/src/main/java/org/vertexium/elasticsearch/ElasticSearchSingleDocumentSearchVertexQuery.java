@@ -12,10 +12,10 @@ import java.util.Map;
 
 import static org.vertexium.util.IterableUtils.toArray;
 
-public class ElasticSearchSearchVertexQuery extends ElasticSearchSearchQueryBase implements VertexQuery {
+public class ElasticSearchSingleDocumentSearchVertexQuery extends ElasticSearchSingleDocumentSearchQueryBase implements VertexQuery {
     private final Vertex sourceVertex;
 
-    public ElasticSearchSearchVertexQuery(
+    public ElasticSearchSingleDocumentSearchVertexQuery(
             TransportClient client,
             Graph graph,
             Vertex sourceVertex,
@@ -39,4 +39,3 @@ public class ElasticSearchSearchVertexQuery extends ElasticSearchSearchQueryBase
         return results;
     }
 }
-

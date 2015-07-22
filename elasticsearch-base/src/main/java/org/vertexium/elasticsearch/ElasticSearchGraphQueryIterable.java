@@ -10,13 +10,11 @@ import org.elasticsearch.search.aggregations.bucket.histogram.Histogram;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.vertexium.Element;
 import org.vertexium.VertexiumException;
+import org.vertexium.query.*;
 import org.vertexium.type.GeoPoint;
 import org.vertexium.type.GeoRect;
-import org.vertexium.query.*;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 public class ElasticSearchGraphQueryIterable<T extends Element> extends DefaultGraphQueryIterable<T> implements
@@ -26,13 +24,25 @@ public class ElasticSearchGraphQueryIterable<T extends Element> extends DefaultG
         IterableWithHistogramResults<T>,
         IterableWithTermsResults<T>,
         IterableWithGeohashResults<T> {
+    private final ElasticSearchQueryBase query;
     private final SearchResponse searchResponse;
     private final long totalHits;
     private final long searchTimeInNanoSeconds;
     private final Map<String, Double> scores = new HashMap<>();
 
-    public ElasticSearchGraphQueryIterable(SearchResponse searchResponse, QueryParameters parameters, Iterable<T> iterable, boolean evaluateQueryString, boolean evaluateHasContainers, long totalHits, long searchTimeInNanoSeconds, SearchHits hits) {
+    public ElasticSearchGraphQueryIterable(
+            ElasticSearchQueryBase query,
+            SearchResponse searchResponse,
+            QueryParameters parameters,
+            Iterable<T> iterable,
+            boolean evaluateQueryString,
+            boolean evaluateHasContainers,
+            long totalHits,
+            long searchTimeInNanoSeconds,
+            SearchHits hits
+    ) {
         super(parameters, iterable, evaluateQueryString, evaluateHasContainers);
+        this.query = query;
         this.searchResponse = searchResponse;
         this.totalHits = totalHits;
         this.searchTimeInNanoSeconds = searchTimeInNanoSeconds;
@@ -58,70 +68,97 @@ public class ElasticSearchGraphQueryIterable<T extends Element> extends DefaultG
 
     @Override
     public HistogramResult getHistogramResults(String name) {
-        List<HistogramBucket> buckets = new ArrayList<>();
-        Aggregation agg = this.searchResponse.getAggregations().get(name);
-        if (agg == null) {
-            return null;
-        }
-        if (agg instanceof DateHistogram) {
-            DateHistogram h = (DateHistogram) agg;
-            for (DateHistogram.Bucket b : h.getBuckets()) {
-                buckets.add(new HistogramBucket(b.getKeyAsDate().toDate(), b.getDocCount()));
+        Map<Object, HistogramBucket> buckets = new HashMap<>();
+        for (Aggregation agg : this.searchResponse.getAggregations()) {
+            String aggName = query.getAggregationName(agg.getName());
+            if (!aggName.equals(name)) {
+                continue;
             }
-        } else if (agg instanceof Histogram) {
-            Histogram h = (Histogram) agg;
-            for (Histogram.Bucket b : h.getBuckets()) {
-                buckets.add(new HistogramBucket(b.getKey(), b.getDocCount()));
+
+            if (agg instanceof DateHistogram) {
+                DateHistogram h = (DateHistogram) agg;
+                for (DateHistogram.Bucket b : h.getBuckets()) {
+                    HistogramBucket existingBucket = buckets.get(b.getKey());
+                    long existingCount = 0;
+                    if (existingBucket != null) {
+                        existingCount = existingBucket.getCount();
+                    }
+                    buckets.put(b.getKeyAsDate().toDate(), new HistogramBucket(b.getKeyAsDate().toDate(), existingCount + b.getDocCount()));
+                }
+            } else if (agg instanceof Histogram) {
+                Histogram h = (Histogram) agg;
+                for (Histogram.Bucket b : h.getBuckets()) {
+                    HistogramBucket existingBucket = buckets.get(b.getKey());
+                    long existingCount = 0;
+                    if (existingBucket != null) {
+                        existingCount = existingBucket.getCount();
+                    }
+                    buckets.put(b.getKey(), new HistogramBucket(b.getKey(), existingCount + b.getDocCount()));
+                }
+            } else {
+                throw new VertexiumException("Aggregation is not a histogram: " + agg.getClass().getName());
             }
-        } else {
-            throw new VertexiumException("Aggregation is not a histogram: " + agg.getClass().getName());
         }
-        return new HistogramResult(buckets);
+        return new HistogramResult(buckets.values());
     }
 
     @Override
     public TermsResult getTermsResults(String name) {
-        List<TermsBucket> buckets = new ArrayList<>();
-        Aggregation agg = this.searchResponse.getAggregations().get(name);
-        if (agg == null) {
-            return null;
-        }
-        if (agg instanceof Terms) {
-            Terms h = (Terms) agg;
-            for (Terms.Bucket b : h.getBuckets()) {
-                buckets.add(new TermsBucket(b.getKey(), b.getDocCount()));
+        Map<String, TermsBucket> buckets = new HashMap<>();
+        for (Aggregation agg : this.searchResponse.getAggregations()) {
+            String aggName = query.getAggregationName(agg.getName());
+            if (!aggName.equals(name)) {
+                continue;
             }
-        } else {
-            throw new VertexiumException("Aggregation is not a terms: " + agg.getClass().getName());
+            if (agg instanceof Terms) {
+                Terms h = (Terms) agg;
+                for (Terms.Bucket b : h.getBuckets()) {
+                    TermsBucket existingBucket = buckets.get(b.getKey());
+                    long existingCount = 0;
+                    if (existingBucket != null) {
+                        existingCount = existingBucket.getCount();
+                    }
+                    buckets.put(b.getKey(), new TermsBucket(b.getKey(), existingCount + b.getDocCount()));
+                }
+            } else {
+                throw new VertexiumException("Aggregation is not a terms: " + agg.getClass().getName());
+            }
         }
-        return new TermsResult(buckets);
+        return new TermsResult(buckets.values());
     }
 
     @Override
     public GeohashResult getGeohashResults(String name) {
-        List<GeohashBucket> buckets = new ArrayList<>();
-        Aggregation agg = this.searchResponse.getAggregations().get(name);
-        if (agg == null) {
-            return null;
-        }
-        if (agg instanceof GeoHashGrid) {
-            GeoHashGrid h = (GeoHashGrid) agg;
-            for (GeoHashGrid.Bucket b : h.getBuckets()) {
-                org.elasticsearch.common.geo.GeoPoint g = b.getKeyAsGeoPoint();
-                GeohashBucket geohashBucket = new GeohashBucket(b.getKey(), b.getDocCount(), new GeoPoint(g.getLat(), g.getLon())) {
-                    @Override
-                    public GeoRect getGeoCell() {
-                        org.elasticsearch.common.geo.GeoPoint northWest = new org.elasticsearch.common.geo.GeoPoint();
-                        org.elasticsearch.common.geo.GeoPoint southEast = new org.elasticsearch.common.geo.GeoPoint();
-                        GeohashUtils.decodeCell(getKey(), northWest, southEast);
-                        return new GeoRect(new GeoPoint(northWest.getLat(), northWest.getLon()), new GeoPoint(southEast.getLat(), southEast.getLon()));
-                    }
-                };
-                buckets.add(geohashBucket);
+        Map<String, GeohashBucket> buckets = new HashMap<>();
+        for (Aggregation agg : this.searchResponse.getAggregations()) {
+            String aggName = query.getAggregationName(agg.getName());
+            if (!aggName.equals(name)) {
+                continue;
             }
-        } else {
-            throw new VertexiumException("Aggregation is not a geohash: " + agg.getClass().getName());
+            if (agg instanceof GeoHashGrid) {
+                GeoHashGrid h = (GeoHashGrid) agg;
+                for (GeoHashGrid.Bucket b : h.getBuckets()) {
+                    org.elasticsearch.common.geo.GeoPoint g = b.getKeyAsGeoPoint();
+                    GeohashBucket existingBucket = buckets.get(b.getKey());
+                    long existingCount = 0;
+                    if (existingBucket != null) {
+                        existingCount = existingBucket.getCount();
+                    }
+                    GeohashBucket geohashBucket = new GeohashBucket(b.getKey(), existingCount + b.getDocCount(), new GeoPoint(g.getLat(), g.getLon())) {
+                        @Override
+                        public GeoRect getGeoCell() {
+                            org.elasticsearch.common.geo.GeoPoint northWest = new org.elasticsearch.common.geo.GeoPoint();
+                            org.elasticsearch.common.geo.GeoPoint southEast = new org.elasticsearch.common.geo.GeoPoint();
+                            GeohashUtils.decodeCell(getKey(), northWest, southEast);
+                            return new GeoRect(new GeoPoint(northWest.getLat(), northWest.getLon()), new GeoPoint(southEast.getLat(), southEast.getLon()));
+                        }
+                    };
+                    buckets.put(b.getKey(), geohashBucket);
+                }
+            } else {
+                throw new VertexiumException("Aggregation is not a geohash: " + agg.getClass().getName());
+            }
         }
-        return new GeohashResult(buckets);
+        return new GeohashResult(buckets.values());
     }
 }

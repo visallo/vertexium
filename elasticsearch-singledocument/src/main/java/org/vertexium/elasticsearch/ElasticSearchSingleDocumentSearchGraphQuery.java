@@ -9,8 +9,8 @@ import org.vertexium.query.GraphQuery;
 
 import java.util.Map;
 
-public class ElasticSearchSearchGraphQuery extends ElasticSearchSearchQueryBase implements GraphQuery {
-    public ElasticSearchSearchGraphQuery(
+public class ElasticSearchSingleDocumentSearchGraphQuery extends ElasticSearchSingleDocumentSearchQueryBase implements GraphQuery {
+    public ElasticSearchSingleDocumentSearchGraphQuery(
             TransportClient client,
             Graph graph,
             String queryString,
@@ -22,7 +22,7 @@ public class ElasticSearchSearchGraphQuery extends ElasticSearchSearchQueryBase 
         super(client, graph, queryString, propertyDefinitions, scoringStrategy, indexSelectionStrategy, authorizations);
     }
 
-    public ElasticSearchSearchGraphQuery(
+    public ElasticSearchSingleDocumentSearchGraphQuery(
             TransportClient client,
             Graph graph,
             String[] similarToFields,

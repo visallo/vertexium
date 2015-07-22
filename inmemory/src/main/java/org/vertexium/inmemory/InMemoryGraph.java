@@ -367,6 +367,9 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
 
     @Override
     public Object getMetadata(String key) {
+        if (QUERY_LOGGER.isTraceEnabled()) {
+            QUERY_LOGGER.trace("getMetadata: %s", key);
+        }
         byte[] bytes = this.metadata.get(key);
         if (bytes == null) {
             return null;

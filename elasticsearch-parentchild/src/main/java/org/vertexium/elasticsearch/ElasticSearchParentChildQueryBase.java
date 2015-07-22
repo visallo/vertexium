@@ -6,7 +6,6 @@ import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.index.query.*;
 import org.vertexium.*;
 import org.vertexium.elasticsearch.score.ScoringStrategy;
-import org.vertexium.id.NameSubstitutionStrategy;
 import org.vertexium.query.Contains;
 import org.vertexium.query.QueryParameters;
 import org.vertexium.query.QueryStringQueryParameters;
@@ -23,11 +22,10 @@ public abstract class ElasticSearchParentChildQueryBase extends ElasticSearchQue
             String queryString,
             Map<String, PropertyDefinition> propertyDefinitions,
             ScoringStrategy scoringStrategy,
-            NameSubstitutionStrategy nameSubstitutionStrategy,
             IndexSelectionStrategy indexSelectionStrategy,
             Authorizations authorizations
     ) {
-        super(client, graph, queryString, propertyDefinitions, scoringStrategy, nameSubstitutionStrategy, indexSelectionStrategy, !isAuthorizationFilterEnabled(graph), authorizations);
+        super(client, graph, queryString, propertyDefinitions, scoringStrategy, indexSelectionStrategy, !isAuthorizationFilterEnabled(graph), authorizations);
     }
 
     protected ElasticSearchParentChildQueryBase(
@@ -37,11 +35,10 @@ public abstract class ElasticSearchParentChildQueryBase extends ElasticSearchQue
             String similarToText,
             Map<String, PropertyDefinition> propertyDefinitions,
             ScoringStrategy scoringStrategy,
-            NameSubstitutionStrategy nameSubstitutionStrategy,
             IndexSelectionStrategy indexSelectionStrategy,
             Authorizations authorizations
     ) {
-        super(client, graph, similarToFields, similarToText, propertyDefinitions, scoringStrategy, nameSubstitutionStrategy, indexSelectionStrategy, !isAuthorizationFilterEnabled(graph), authorizations);
+        super(client, graph, similarToFields, similarToText, propertyDefinitions, scoringStrategy, indexSelectionStrategy, !isAuthorizationFilterEnabled(graph), authorizations);
     }
 
     @Override
@@ -180,18 +177,17 @@ public abstract class ElasticSearchParentChildQueryBase extends ElasticSearchQue
     }
 
     @Override
-    protected void getFiltersForHasNotPropertyContainer(List<FilterBuilder> filters, HasNotPropertyContainer hasNotProperty) {
+    protected FilterBuilder getFilterForHasNotPropertyContainer(HasNotPropertyContainer hasNotProperty) {
         throw new VertexiumNotSupportedException("hasNot cannot be performed in ES with parent/child indexing.");
     }
 
     @Override
-    protected void getFiltersForContainsPredicate(List<FilterBuilder> filters, Contains contains, HasValueContainer has) {
+    protected FilterBuilder getFilterForContainsPredicate(Contains contains, HasValueContainer has) {
         switch (contains) {
             case NOT_IN:
                 throw new VertexiumNotSupportedException("NOT_IN cannot be performed in ES with parent/child indexing.");
             default:
-                super.getFiltersForContainsPredicate(filters, contains, has);
-                break;
+                return super.getFilterForContainsPredicate(contains, has);
         }
     }
 }

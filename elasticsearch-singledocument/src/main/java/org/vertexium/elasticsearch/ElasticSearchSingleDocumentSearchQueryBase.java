@@ -14,7 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-public class ElasticSearchSearchQueryBase extends ElasticSearchQueryBase implements
+public class ElasticSearchSingleDocumentSearchQueryBase extends ElasticSearchQueryBase implements
         GraphQueryWithHistogramAggregation,
         GraphQueryWithTermsAggregation,
         GraphQueryWithGeohashAggregation {
@@ -22,7 +22,7 @@ public class ElasticSearchSearchQueryBase extends ElasticSearchQueryBase impleme
     private final List<TermsQueryItem> termsQueryItems = new ArrayList<>();
     private final List<GeohashQueryItem> geohashQueryItems = new ArrayList<>();
 
-    public ElasticSearchSearchQueryBase(
+    public ElasticSearchSingleDocumentSearchQueryBase(
             TransportClient client,
             Graph graph,
             String queryString,
@@ -34,7 +34,7 @@ public class ElasticSearchSearchQueryBase extends ElasticSearchQueryBase impleme
         super(client, graph, queryString, propertyDefinitions, scoringStrategy, indexSelectionStrategy, true, authorizations);
     }
 
-    public ElasticSearchSearchQueryBase(
+    public ElasticSearchSingleDocumentSearchQueryBase(
             TransportClient client,
             Graph graph,
             String[] similarToFields,

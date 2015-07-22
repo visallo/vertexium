@@ -36,7 +36,7 @@ public interface SearchIndex {
 
     void shutdown();
 
-    void addPropertyDefinition(PropertyDefinition propertyDefinition) throws IOException;
+    void addPropertyDefinition(Graph graph, PropertyDefinition propertyDefinition) throws IOException;
 
     boolean isFieldBoostSupported();
 

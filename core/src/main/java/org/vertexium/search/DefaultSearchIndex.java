@@ -1,7 +1,6 @@
 package org.vertexium.search;
 
 import org.vertexium.*;
-import org.vertexium.*;
 import org.vertexium.query.*;
 
 import java.util.HashMap;
@@ -68,7 +67,7 @@ public class DefaultSearchIndex implements SearchIndex {
     }
 
     @Override
-    public void addPropertyDefinition(PropertyDefinition propertyDefinition) {
+    public void addPropertyDefinition(Graph graph, PropertyDefinition propertyDefinition) {
         this.propertyDefinitions.put(propertyDefinition.getPropertyName(), propertyDefinition);
     }
 

@@ -25,16 +25,17 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
-public abstract class ElasticSearchSearchParentChildIndexTestBase extends GraphTestBase {
-    private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(ElasticSearchSearchParentChildIndexTestBase.class);
+public abstract class ElasticsearchSingleDocumentSearchIndexTestBase extends GraphTestBase {
+    private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(ElasticsearchSingleDocumentSearchIndexTestBase.class);
     public static final String ES_INDEX_NAME = "vertexium-test";
     private static File tempDir;
     private static Node elasticSearchNode;
     private static String addr;
     private static String clusterName;
-    private static boolean TESTING = false;
+    private static boolean USE_REAL_ES = false;
 
     @Override
     protected Authorizations createAuthorizations(String... auths) {
@@ -103,11 +104,11 @@ public abstract class ElasticSearchSearchParentChildIndexTestBase extends GraphT
     protected Graph createGraph(Map additionalConfiguration) throws Exception {
         Map config = new HashMap();
         config.put(GraphConfiguration.AUTO_FLUSH, true);
-        config.put(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX, ElasticSearchParentChildSearchIndex.class.getName());
+        config.put(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX, ElasticsearchSingleDocumentSearchIndex.class.getName());
         config.put(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + DefaultIndexSelectionStrategy.CONFIG_INDEX_NAME, ES_INDEX_NAME);
-        if (TESTING) {
+        config.put(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + ElasticSearchSearchIndexConfiguration.CONFIG_STORE_SOURCE_DATA, "true");
+        if (USE_REAL_ES) {
             addr = "localhost";
-            config.put(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + ElasticSearchSearchIndexConfiguration.CONFIG_STORE_SOURCE_DATA, "true");
         } else {
             config.put(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + ElasticSearchSearchIndexConfiguration.CONFIG_CLUSTER_NAME, clusterName);
         }
@@ -119,7 +120,7 @@ public abstract class ElasticSearchSearchParentChildIndexTestBase extends GraphT
 
     @Test
     public void testGeoPointLoadDefinition() {
-        ElasticSearchParentChildSearchIndex searchIndex = (ElasticSearchParentChildSearchIndex) ((GraphBaseWithSearchIndex) graph).getSearchIndex();
+        ElasticsearchSingleDocumentSearchIndex searchIndex = (ElasticsearchSingleDocumentSearchIndex) ((GraphBaseWithSearchIndex) graph).getSearchIndex();
 
         graph.prepareVertex("v1", VISIBILITY_A)
                 .setProperty("location", new GeoPoint(38.9186, -77.2297, "Reston, VA"), VISIBILITY_A)
@@ -130,29 +131,12 @@ public abstract class ElasticSearchSearchParentChildIndexTestBase extends GraphT
 
         Map<String, PropertyDefinition> propertyDefinitions = searchIndex.getAllPropertyDefinitions();
         PropertyDefinition locationPropertyDef = propertyDefinitions.get("location");
-        assertNotNull(locationPropertyDef);
+        assertNotNull("could not find location property definition", locationPropertyDef);
         assertEquals(GeoPoint.class, locationPropertyDef.getDataType());
     }
 
-    @Test
-    public void testGetIndexRequests() throws IOException {
-        Metadata prop1Metadata = new Metadata();
-        prop1Metadata.add("metadata1", "metadata1Value", VISIBILITY_A);
-        Vertex v1 = graph.prepareVertex("v1", VISIBILITY_A)
-                .setProperty("prop1", "value1", prop1Metadata, VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
-        graph.flush();
-
-        ElasticSearchParentChildSearchIndex searchIndex = getSearchIndex();
-
-        String indexName = searchIndex.getIndexName(v1);
-        IndexInfo indexInfo = searchIndex.ensureIndexCreatedAndInitialized(indexName, searchIndex.isStoreSourceData());
-        assertTrue(indexInfo.isPropertyDefined("prop1"));
-        assertNotNull(indexInfo);
-    }
-
-    private ElasticSearchParentChildSearchIndex getSearchIndex() {
-        return (ElasticSearchParentChildSearchIndex) ((GraphBaseWithSearchIndex) graph).getSearchIndex();
+    private ElasticsearchSingleDocumentSearchIndex getSearchIndex() {
+        return (ElasticsearchSingleDocumentSearchIndex) ((GraphBaseWithSearchIndex) graph).getSearchIndex();
     }
 
     @Override
@@ -162,7 +146,7 @@ public abstract class ElasticSearchSearchParentChildIndexTestBase extends GraphT
 
     @Override
     protected boolean disableUpdateEdgeCountInSearchIndex(Graph graph) {
-        ElasticSearchParentChildSearchIndex searchIndex = (ElasticSearchParentChildSearchIndex) ((GraphBaseWithSearchIndex) graph).getSearchIndex();
+        ElasticsearchSingleDocumentSearchIndex searchIndex = (ElasticsearchSingleDocumentSearchIndex) ((GraphBaseWithSearchIndex) graph).getSearchIndex();
         ElasticSearchSearchIndexConfiguration config = searchIndex.getConfig();
         ScoringStrategy scoringStrategy = config.getScoringStrategy();
         if (!(scoringStrategy instanceof EdgeCountScoringStrategy)) {
@@ -181,4 +165,9 @@ public abstract class ElasticSearchSearchParentChildIndexTestBase extends GraphT
 
         return true;
     }
+
+    protected boolean isFieldNamesInQuerySupported() {
+        return false;
+    }
 }
+

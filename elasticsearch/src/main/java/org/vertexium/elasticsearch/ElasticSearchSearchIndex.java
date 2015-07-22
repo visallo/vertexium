@@ -58,7 +58,7 @@ public class ElasticSearchSearchIndex extends ElasticSearchSearchIndexBase {
             return;
         }
 
-        IndexInfo indexInfo = addPropertiesToIndex(element, element.getProperties());
+        IndexInfo indexInfo = addPropertiesToIndex(graph, element, element.getProperties());
 
         try {
             XContentBuilder jsonBuilder = buildJsonContentFromElement(indexInfo, element, authorizations);
@@ -206,7 +206,7 @@ public class ElasticSearchSearchIndex extends ElasticSearchSearchIndexBase {
     }
 
     @Override
-    protected void addPropertyToIndex(IndexInfo indexInfo, String propertyName, Class dataType, boolean analyzed, Double boost) throws IOException {
+    protected void addPropertyToIndex(Graph graph, IndexInfo indexInfo, String propertyName, Class dataType, boolean analyzed, Double boost) throws IOException {
         if (indexInfo.isPropertyDefined(propertyName)) {
             return;
         }
@@ -253,7 +253,6 @@ public class ElasticSearchSearchIndex extends ElasticSearchSearchIndexBase {
                 queryString,
                 getAllPropertyDefinitions(),
                 getConfig().getScoringStrategy(),
-                this.nameSubstitutionStrategy,
                 getIndexSelectionStrategy(),
                 authorizations);
     }
@@ -267,7 +266,6 @@ public class ElasticSearchSearchIndex extends ElasticSearchSearchIndexBase {
                 queryString,
                 getAllPropertyDefinitions(),
                 getConfig().getScoringStrategy(),
-                this.nameSubstitutionStrategy,
                 getIndexSelectionStrategy(),
                 authorizations);
     }
@@ -280,7 +278,6 @@ public class ElasticSearchSearchIndex extends ElasticSearchSearchIndexBase {
                 similarToFields, similarToText,
                 getAllPropertyDefinitions(),
                 getConfig().getScoringStrategy(),
-                this.nameSubstitutionStrategy,
                 getIndexSelectionStrategy(),
                 authorizations);
     }
@@ -296,7 +293,7 @@ public class ElasticSearchSearchIndex extends ElasticSearchSearchIndexBase {
     }
 
     @Override
-    public Map<Object, Long> getVertexPropertyCountByValue(String propertyName, Authorizations authorizations) {
+    public Map<Object, Long> getVertexPropertyCountByValue(Graph graph, String propertyName, Authorizations authorizations) {
         PropertyDefinition propertyDefinition = getAllPropertyDefinitions().get(propertyName);
         if (propertyDefinition != null && propertyDefinition.getTextIndexHints().contains(TextIndexHint.EXACT_MATCH)) {
             propertyName = propertyDefinition.getPropertyName() + EXACT_MATCH_PROPERTY_NAME_SUFFIX;
