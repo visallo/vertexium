@@ -412,7 +412,7 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
     }
 
     private String[] getPropertyNames(String propertyName) {
-        return getSearchIndex().getAllMatchingPropertyNames(propertyName, getParameters().getAuthorizations());
+        return getSearchIndex().getAllMatchingPropertyNames(getGraph(), propertyName, getParameters().getAuthorizations());
     }
 
     private ElasticSearchSearchIndexBase getSearchIndex() {

@@ -157,7 +157,7 @@ public class ElasticSearchParentChildSearchIndex extends ElasticSearchSearchInde
         propertyName = this.nameSubstitutionStrategy.deflate(propertyName);
         String propertyString = propertyKey + ":" + propertyName + ":" + propertyVisibility.getVisibilityString();
         String indexName = getIndexName(element);
-        String id = getChildDocId(element, propertyKey, propertyName, propertyVisibility);
+        String id = getChildDocId(element, propertyKey, propertyName);
         DeleteResponse deleteResponse = getClient().delete(
                 getClient()
                         .prepareDelete(indexName, PROPERTY_TYPE, id)
@@ -227,7 +227,7 @@ public class ElasticSearchParentChildSearchIndex extends ElasticSearchSearchInde
                 bulkRequest.add(parentDocumentIndexRequest);
             }
             for (Property property : element.getProperties()) {
-                IndexRequest propertyIndexRequest = getPropertyDocumentIndexRequest(indexInfo, element, property);
+                IndexRequest propertyIndexRequest = getPropertyDocumentIndexRequest(graph, indexInfo, element, property);
                 if (propertyIndexRequest != null) {
                     bulkRequest.add(propertyIndexRequest);
                 }
@@ -238,14 +238,14 @@ public class ElasticSearchParentChildSearchIndex extends ElasticSearchSearchInde
     }
 
     @SuppressWarnings("unused")
-    public IndexRequest getPropertyDocumentIndexRequest(Element element, Property property) throws IOException {
+    public IndexRequest getPropertyDocumentIndexRequest(Graph graph, Element element, Property property) throws IOException {
         String indexName = getIndexName(element);
         IndexInfo indexInfo = ensureIndexCreatedAndInitialized(indexName, isStoreSourceData());
-        return getPropertyDocumentIndexRequest(indexInfo, element, property);
+        return getPropertyDocumentIndexRequest(graph, indexInfo, element, property);
     }
 
-    private IndexRequest getPropertyDocumentIndexRequest(IndexInfo indexInfo, Element element, Property property) throws IOException {
-        XContentBuilder jsonBuilder = buildJsonContentFromProperty(indexInfo, property);
+    private IndexRequest getPropertyDocumentIndexRequest(Graph graph, IndexInfo indexInfo, Element element, Property property) throws IOException {
+        XContentBuilder jsonBuilder = buildJsonContentFromProperty(graph, indexInfo, property);
         if (jsonBuilder == null) {
             return null;
         }
@@ -263,10 +263,10 @@ public class ElasticSearchParentChildSearchIndex extends ElasticSearchSearchInde
     }
 
     private String getChildDocId(Element element, Property property) {
-        return getChildDocId(element, property.getKey(), property.getName(), property.getVisibility());
+        return getChildDocId(element, property.getKey(), property.getName());
     }
 
-    private String getChildDocId(Element element, String key, String name, Visibility visibility) {
+    private String getChildDocId(Element element, String key, String name) {
         return element.getId() + "_" + this.nameSubstitutionStrategy.deflate(name) + "_" + this.nameSubstitutionStrategy.deflate(key);
     }
 
@@ -344,7 +344,7 @@ public class ElasticSearchParentChildSearchIndex extends ElasticSearchSearchInde
         return this.parentDocumentFields;
     }
 
-    private XContentBuilder buildJsonContentFromProperty(IndexInfo indexInfo, Property property) throws IOException {
+    private XContentBuilder buildJsonContentFromProperty(Graph graph, IndexInfo indexInfo, Property property) throws IOException {
         XContentBuilder jsonBuilder;
         jsonBuilder = XContentFactory.jsonBuilder()
                 .startObject();
@@ -354,9 +354,9 @@ public class ElasticSearchParentChildSearchIndex extends ElasticSearchSearchInde
         if (propertyValue != null && shouldIgnoreType(propertyValue.getClass())) {
             return null;
         } else if (propertyValue instanceof GeoPoint) {
-            convertGeoPoint(jsonBuilder, property, (GeoPoint) propertyValue);
+            convertGeoPoint(graph, jsonBuilder, property, (GeoPoint) propertyValue);
         } else if (propertyValue instanceof GeoCircle) {
-            convertGeoCircle(jsonBuilder, property, (GeoCircle) propertyValue);
+            convertGeoCircle(graph, jsonBuilder, property, (GeoCircle) propertyValue);
         } else if (propertyValue instanceof StreamingPropertyValue) {
             StreamingPropertyValue streamingPropertyValue = (StreamingPropertyValue) propertyValue;
             if (!streamingPropertyValue.isSearchIndex()) {

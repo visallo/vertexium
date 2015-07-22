@@ -308,7 +308,7 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex, Searc
 
     @Override
     public void deleteProperty(Graph graph, Element element, Property property, Authorizations authorizations) {
-        deleteProperty(graph, element, property.getKey(), deflatePropertyName(property), property.getVisibility(), authorizations);
+        deleteProperty(graph, element, property.getKey(), deflatePropertyName(graph, property), property.getVisibility(), authorizations);
     }
 
     @Override
@@ -476,7 +476,7 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex, Searc
     }
 
     public void addPropertyToIndex(Graph graph, IndexInfo indexInfo, Property property) throws IOException {
-        String deflatedPropertyName = deflatePropertyName(property);
+        String deflatedPropertyName = deflatePropertyName(graph, property);
 
         if (indexInfo.isPropertyDefined(deflatedPropertyName)) {
             return;
@@ -512,7 +512,7 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex, Searc
         return nameSubstitutionStrategy.inflate(string);
     }
 
-    protected String deflatePropertyName(Property property) {
+    protected String deflatePropertyName(Graph graph, Property property) {
         return deflatePropertyName(property.getName());
     }
 
@@ -524,7 +524,7 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex, Searc
         return nameSubstitutionStrategy.deflate(propertyName);
     }
 
-    public String[] getAllMatchingPropertyNames(String propertyName, Authorizations authorizations) {
+    public String[] getAllMatchingPropertyNames(Graph graph, String propertyName, Authorizations authorizations) {
         return new String[]{nameSubstitutionStrategy.deflate(propertyName)};
     }
 
@@ -642,27 +642,27 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex, Searc
         propertiesMap.put(propertyName, list);
     }
 
-    protected void convertGeoPoint(XContentBuilder jsonBuilder, Property property, GeoPoint geoPoint) throws IOException {
+    protected void convertGeoPoint(Graph graph, XContentBuilder jsonBuilder, Property property, GeoPoint geoPoint) throws IOException {
         Map<String, Object> propertyValueMap = new HashMap<>();
         propertyValueMap.put("lat", geoPoint.getLatitude());
         propertyValueMap.put("lon", geoPoint.getLongitude());
-        jsonBuilder.field(deflatePropertyName(property) + GEO_PROPERTY_NAME_SUFFIX, propertyValueMap);
+        jsonBuilder.field(deflatePropertyName(graph, property) + GEO_PROPERTY_NAME_SUFFIX, propertyValueMap);
         if (geoPoint.getDescription() != null) {
-            jsonBuilder.field(deflatePropertyName(property), geoPoint.getDescription());
+            jsonBuilder.field(deflatePropertyName(graph, property), geoPoint.getDescription());
         }
     }
 
-    protected void convertGeoPoint(Map<String, Object> propertiesMap, Property property, GeoPoint geoPoint) throws IOException {
+    protected void convertGeoPoint(Graph graph, Map<String, Object> propertiesMap, Property property, GeoPoint geoPoint) throws IOException {
         Map<String, Object> propertyValueMap = new HashMap<>();
         propertyValueMap.put("lat", geoPoint.getLatitude());
         propertyValueMap.put("lon", geoPoint.getLongitude());
-        addPropertyValueToPropertiesMap(propertiesMap, deflatePropertyName(property) + GEO_PROPERTY_NAME_SUFFIX, propertyValueMap);
+        addPropertyValueToPropertiesMap(propertiesMap, deflatePropertyName(graph, property) + GEO_PROPERTY_NAME_SUFFIX, propertyValueMap);
         if (geoPoint.getDescription() != null) {
-            addPropertyValueToPropertiesMap(propertiesMap, deflatePropertyName(property), geoPoint.getDescription());
+            addPropertyValueToPropertiesMap(propertiesMap, deflatePropertyName(graph, property), geoPoint.getDescription());
         }
     }
 
-    protected void convertGeoCircle(XContentBuilder jsonBuilder, Property property, GeoCircle geoCircle) throws IOException {
+    protected void convertGeoCircle(Graph graph, XContentBuilder jsonBuilder, Property property, GeoCircle geoCircle) throws IOException {
         Map<String, Object> propertyValueMap = new HashMap<>();
         propertyValueMap.put("type", "circle");
         List<Double> coordinates = new ArrayList<>();
@@ -670,13 +670,13 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex, Searc
         coordinates.add(geoCircle.getLatitude());
         propertyValueMap.put("coordinates", coordinates);
         propertyValueMap.put("radius", geoCircle.getRadius() + "km");
-        jsonBuilder.field(deflatePropertyName(property) + GEO_PROPERTY_NAME_SUFFIX, propertyValueMap);
+        jsonBuilder.field(deflatePropertyName(graph, property) + GEO_PROPERTY_NAME_SUFFIX, propertyValueMap);
         if (geoCircle.getDescription() != null) {
-            jsonBuilder.field(deflatePropertyName(property), geoCircle.getDescription());
+            jsonBuilder.field(deflatePropertyName(graph, property), geoCircle.getDescription());
         }
     }
 
-    protected void convertGeoCircle(Map<String, Object> propertiesMap, Property property, GeoCircle geoCircle) throws IOException {
+    protected void convertGeoCircle(Graph graph, Map<String, Object> propertiesMap, Property property, GeoCircle geoCircle) throws IOException {
         Map<String, Object> propertyValueMap = new HashMap<>();
         propertyValueMap.put("type", "circle");
         List<Double> coordinates = new ArrayList<>();
@@ -684,9 +684,9 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex, Searc
         coordinates.add(geoCircle.getLatitude());
         propertyValueMap.put("coordinates", coordinates);
         propertyValueMap.put("radius", geoCircle.getRadius() + "km");
-        addPropertyValueToPropertiesMap(propertiesMap, deflatePropertyName(property) + GEO_PROPERTY_NAME_SUFFIX, propertyValueMap);
+        addPropertyValueToPropertiesMap(propertiesMap, deflatePropertyName(graph, property) + GEO_PROPERTY_NAME_SUFFIX, propertyValueMap);
         if (geoCircle.getDescription() != null) {
-            addPropertyValueToPropertiesMap(propertiesMap, deflatePropertyName(property), geoCircle.getDescription());
+            addPropertyValueToPropertiesMap(propertiesMap, deflatePropertyName(graph, property), geoCircle.getDescription());
         }
     }
 

@@ -1,6 +1,5 @@
 package org.vertexium.elasticsearch;
 
-import com.google.common.hash.Hashing;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.delete.DeleteResponse;
 import org.elasticsearch.action.search.SearchRequestBuilder;
@@ -24,28 +23,38 @@ import org.vertexium.query.SimilarToGraphQuery;
 import org.vertexium.query.VertexQuery;
 import org.vertexium.type.GeoCircle;
 import org.vertexium.type.GeoPoint;
+import org.vertexium.util.ConfigurationUtils;
 import org.vertexium.util.StreamUtils;
 import org.vertexium.util.VertexiumLogger;
 import org.vertexium.util.VertexiumLoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.charset.Charset;
-import java.util.*;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchIndexBase {
     private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(ElasticsearchSingleDocumentSearchIndex.class);
-    private static final Charset UTF8 = Charset.forName("utf8");
     public static final Pattern PROPERTY_NAME_PATTERN = Pattern.compile("(.*?)_([0-9a-f]+)(_([a-z]+))?");
     public static final Pattern AGGREGATION_NAME_PATTERN = Pattern.compile("(.*?)_([0-9a-f]+)");
+    public static final String CONFIG_PROPERTY_NAME_VISIBILITIES_STORE = "propertyNameVisibilitiesStore";
+    public static final Class<? extends PropertyNameVisibilitiesStore> DEFAULT_PROPERTY_NAME_VISIBILITIES_STORE = InMemoryPropertyNameVisibilitiesStore.class;
     private final NameSubstitutionStrategy nameSubstitutionStrategy;
-    private Map<String, PropertyNameVisibilities> propertyNameVisibilitiesMap = new HashMap<>();
+    private final PropertyNameVisibilitiesStore propertyNameVisibilitiesStore;
 
     public ElasticsearchSingleDocumentSearchIndex(GraphConfiguration config) {
         super(config);
         this.nameSubstitutionStrategy = getConfig().getNameSubstitutionStrategy();
+        this.propertyNameVisibilitiesStore = createPropertyNameVisibilitiesStore(config);
+    }
+
+    private PropertyNameVisibilitiesStore createPropertyNameVisibilitiesStore(GraphConfiguration config) {
+        String className = config.getString(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + CONFIG_PROPERTY_NAME_VISIBILITIES_STORE, DEFAULT_PROPERTY_NAME_VISIBILITIES_STORE.getName());
+        return ConfigurationUtils.createProvider(className, config);
     }
 
     @Override
@@ -68,7 +77,7 @@ public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchI
         IndexInfo indexInfo = addPropertiesToIndex(graph, element, element.getProperties());
 
         try {
-            XContentBuilder jsonBuilder = buildJsonContentFromElement(indexInfo, element, authorizations);
+            XContentBuilder jsonBuilder = buildJsonContentFromElement(graph, indexInfo, element, authorizations);
             XContentBuilder source = jsonBuilder.endObject();
             if (MUTATION_LOGGER.isTraceEnabled()) {
                 MUTATION_LOGGER.trace("addElement json: %s: %s", element.getId(), source.string());
@@ -94,7 +103,7 @@ public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchI
         getConfig().getScoringStrategy().addElement(this, graph, element, authorizations);
     }
 
-    private XContentBuilder buildJsonContentFromElement(IndexInfo indexInfo, Element element, Authorizations authorizations) throws IOException {
+    private XContentBuilder buildJsonContentFromElement(Graph graph, IndexInfo indexInfo, Element element, Authorizations authorizations) throws IOException {
         XContentBuilder jsonBuilder;
         jsonBuilder = XContentFactory.jsonBuilder()
                 .startObject();
@@ -109,7 +118,7 @@ public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchI
             throw new VertexiumException("Unexpected element type " + element.getClass().getName());
         }
 
-        Map<String, Object> properties = getProperties(element, indexInfo);
+        Map<String, Object> properties = getProperties(graph, element, indexInfo);
         for (Map.Entry<String, Object> property : properties.entrySet()) {
             if (property.getValue() instanceof List) {
                 List list = (List) property.getValue();
@@ -122,24 +131,24 @@ public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchI
         return jsonBuilder;
     }
 
-    private Map<String, Object> getProperties(Element element, IndexInfo indexInfo) throws IOException {
+    private Map<String, Object> getProperties(Graph graph, Element element, IndexInfo indexInfo) throws IOException {
         Map<String, Object> propertiesMap = new HashMap<>();
         for (Property property : element.getProperties()) {
-            addPropertyToMap(property, propertiesMap, indexInfo);
+            addPropertyToMap(graph, property, propertiesMap, indexInfo);
         }
         return propertiesMap;
     }
 
-    private void addPropertyToMap(Property property, Map<String, Object> propertiesMap, IndexInfo indexInfo) throws IOException {
+    private void addPropertyToMap(Graph graph, Property property, Map<String, Object> propertiesMap, IndexInfo indexInfo) throws IOException {
         Object propertyValue = property.getValue();
-        String propertyName = deflatePropertyName(property);
+        String propertyName = deflatePropertyName(graph, property);
         if (propertyValue != null && shouldIgnoreType(propertyValue.getClass())) {
             return;
         } else if (propertyValue instanceof GeoPoint) {
-            convertGeoPoint(propertiesMap, property, (GeoPoint) propertyValue);
+            convertGeoPoint(graph, propertiesMap, property, (GeoPoint) propertyValue);
             return;
         } else if (propertyValue instanceof GeoCircle) {
-            convertGeoCircle(propertiesMap, property, (GeoCircle) propertyValue);
+            convertGeoCircle(graph, propertiesMap, property, (GeoCircle) propertyValue);
             return;
         } else if (propertyValue instanceof StreamingPropertyValue) {
             StreamingPropertyValue streamingPropertyValue = (StreamingPropertyValue) propertyValue;
@@ -178,8 +187,8 @@ public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchI
     }
 
     @Override
-    protected String deflatePropertyName(Property property) {
-        String visibilitySuffix = getVisibilityHash(property.getName(), property.getVisibility());
+    protected String deflatePropertyName(Graph graph, Property property) {
+        String visibilitySuffix = getVisibilityHash(graph, property.getName(), property.getVisibility());
         return this.nameSubstitutionStrategy.deflate(property.getName()) + visibilitySuffix;
     }
 
@@ -223,31 +232,19 @@ public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchI
     }
 
     @Override
-    public String[] getAllMatchingPropertyNames(String propertyName, Authorizations authorizations) {
-        PropertyNameVisibilities propertyNameVisibilities = this.propertyNameVisibilitiesMap.get(propertyName);
-        if (propertyNameVisibilities == null) {
-            throw new VertexiumNoMatchingPropertiesException(propertyName);
-        }
-        Collection<String> suffixes = propertyNameVisibilities.getSuffixes(authorizations);
-        if (suffixes.size() == 0) {
-            throw new VertexiumNoMatchingPropertiesException(propertyName);
-        }
-        String[] results = new String[suffixes.size()];
+    public String[] getAllMatchingPropertyNames(Graph graph, String propertyName, Authorizations authorizations) {
+        Collection<String> hashes = this.propertyNameVisibilitiesStore.getHashes(graph, propertyName, authorizations);
+        String[] results = new String[hashes.size()];
         String deflatedPropertyName = this.nameSubstitutionStrategy.deflate(propertyName);
         int i = 0;
-        for (String suffix : suffixes) {
-            results[i++] = deflatedPropertyName + suffix;
+        for (String hash : hashes) {
+            results[i++] = deflatedPropertyName + hash;
         }
         return results;
     }
 
-    private String getVisibilityHash(String propertyName, Visibility visibility) {
-        PropertyNameVisibilities propertyNameVisibilities = this.propertyNameVisibilitiesMap.get(propertyName);
-        if (propertyNameVisibilities == null) {
-            propertyNameVisibilities = new PropertyNameVisibilities();
-            this.propertyNameVisibilitiesMap.put(propertyName, propertyNameVisibilities);
-        }
-        return propertyNameVisibilities.getSuffix(visibility);
+    private String getVisibilityHash(Graph graph, String propertyName, Visibility visibility) {
+        return this.propertyNameVisibilitiesStore.getHash(graph, propertyName, visibility);
     }
 
     @Override
@@ -335,7 +332,7 @@ public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchI
     public void addPropertyToIndex(Graph graph, IndexInfo indexInfo, Property property) throws IOException {
         PropertyDefinition propertyDefinition = getPropertyDefinition(graph, property.getName());
         if (propertyDefinition != null) {
-            String deflatedPropertyName = deflatePropertyName(property);
+            String deflatedPropertyName = deflatePropertyName(graph, property);
             super.addPropertyDefinitionToIndex(graph, indexInfo, deflatedPropertyName, propertyDefinition);
         } else {
             super.addPropertyToIndex(graph, indexInfo, property);
@@ -343,13 +340,13 @@ public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchI
 
         propertyDefinition = getPropertyDefinition(graph, property.getName() + EXACT_MATCH_PROPERTY_NAME_SUFFIX);
         if (propertyDefinition != null) {
-            String deflatedPropertyName = deflatePropertyName(property);
+            String deflatedPropertyName = deflatePropertyName(graph, property);
             super.addPropertyDefinitionToIndex(graph, indexInfo, deflatedPropertyName, propertyDefinition);
         }
 
         propertyDefinition = getPropertyDefinition(graph, property.getName() + GEO_PROPERTY_NAME_SUFFIX);
         if (propertyDefinition != null) {
-            String deflatedPropertyName = deflatePropertyName(property);
+            String deflatedPropertyName = deflatePropertyName(graph, property);
             super.addPropertyDefinitionToIndex(graph, indexInfo, deflatedPropertyName, propertyDefinition);
         }
     }
@@ -399,7 +396,7 @@ public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchI
     @Override
     public void addElementToBulkRequest(Graph graph, BulkRequest bulkRequest, IndexInfo indexInfo, Element element, Authorizations authorizations) {
         try {
-            XContentBuilder json = buildJsonContentFromElement(indexInfo, element, authorizations);
+            XContentBuilder json = buildJsonContentFromElement(graph, indexInfo, element, authorizations);
             UpdateRequest indexRequest = new UpdateRequest(indexInfo.getIndexName(), ELEMENT_TYPE, element.getId()).doc(json);
             indexRequest.docAsUpsert(true);
             bulkRequest.add(indexRequest);
@@ -419,7 +416,7 @@ public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchI
                 .setQuery(queryBuilder)
                 .setSearchType(SearchType.COUNT);
 
-        for (String p : getAllMatchingPropertyNames(propertyName, authorizations)) {
+        for (String p : getAllMatchingPropertyNames(graph, propertyName, authorizations)) {
             String countAggName = "count-" + p;
             PropertyDefinition propertyDefinition = getPropertyDefinition(graph, p);
             if (propertyDefinition != null && propertyDefinition.getTextIndexHints().contains(TextIndexHint.EXACT_MATCH)) {
@@ -448,28 +445,5 @@ public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchI
             }
         }
         return results;
-    }
-
-    private static class PropertyNameVisibilities {
-        private Map<Visibility, String> visibilityToSuffixMap = new HashMap<>();
-
-        public String getSuffix(Visibility visibility) {
-            String suffix = visibilityToSuffixMap.get(visibility);
-            if (suffix == null) {
-                suffix = "_" + Hashing.murmur3_128().hashString(visibility.getVisibilityString(), UTF8).toString();
-                visibilityToSuffixMap.put(visibility, suffix);
-            }
-            return suffix;
-        }
-
-        public Collection<String> getSuffixes(Authorizations authorizations) {
-            List<String> suffixes = new ArrayList<>();
-            for (Map.Entry<Visibility, String> e : visibilityToSuffixMap.entrySet()) {
-                if (authorizations.canRead(e.getKey())) {
-                    suffixes.add(e.getValue());
-                }
-            }
-            return suffixes;
-        }
     }
 }

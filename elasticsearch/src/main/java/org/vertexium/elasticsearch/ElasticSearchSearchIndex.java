@@ -61,7 +61,7 @@ public class ElasticSearchSearchIndex extends ElasticSearchSearchIndexBase {
         IndexInfo indexInfo = addPropertiesToIndex(graph, element, element.getProperties());
 
         try {
-            XContentBuilder jsonBuilder = buildJsonContentFromElement(indexInfo, element, authorizations);
+            XContentBuilder jsonBuilder = buildJsonContentFromElement(graph, indexInfo, element, authorizations);
             XContentBuilder source = jsonBuilder.endObject();
             if (MUTATION_LOGGER.isTraceEnabled()) {
                 MUTATION_LOGGER.trace("addElement json: %s: %s", element.getId(), source.string());
@@ -90,7 +90,7 @@ public class ElasticSearchSearchIndex extends ElasticSearchSearchIndexBase {
     @Override
     public void addElementToBulkRequest(Graph graph, BulkRequest bulkRequest, IndexInfo indexInfo, Element element, Authorizations authorizations) {
         try {
-            XContentBuilder json = buildJsonContentFromElement(indexInfo, element, authorizations);
+            XContentBuilder json = buildJsonContentFromElement(graph, indexInfo, element, authorizations);
             UpdateRequest indexRequest = new UpdateRequest(indexInfo.getIndexName(), ELEMENT_TYPE, element.getId()).doc(json);
             indexRequest.docAsUpsert(true);
             bulkRequest.add(indexRequest);
@@ -116,17 +116,17 @@ public class ElasticSearchSearchIndex extends ElasticSearchSearchIndexBase {
         }
     }
 
-    String createJsonForElement(Element element, Authorizations authorizations) {
+    String createJsonForElement(Graph graph, Element element, Authorizations authorizations) {
         try {
             String indexName = getIndexName(element);
             IndexInfo indexInfo = ensureIndexCreatedAndInitialized(indexName, isStoreSourceData());
-            return buildJsonContentFromElement(indexInfo, element, authorizations).string();
+            return buildJsonContentFromElement(graph, indexInfo, element, authorizations).string();
         } catch (Exception e) {
             throw new VertexiumException("Could not create JSON for element", e);
         }
     }
 
-    private XContentBuilder buildJsonContentFromElement(IndexInfo indexInfo, Element element, Authorizations authorizations) throws IOException {
+    private XContentBuilder buildJsonContentFromElement(Graph graph, IndexInfo indexInfo, Element element, Authorizations authorizations) throws IOException {
         XContentBuilder jsonBuilder;
         jsonBuilder = XContentFactory.jsonBuilder()
                 .startObject();
@@ -141,7 +141,7 @@ public class ElasticSearchSearchIndex extends ElasticSearchSearchIndexBase {
             throw new VertexiumException("Unexpected element type " + element.getClass().getName());
         }
 
-        Map<String, Object> properties = getProperties(element, indexInfo);
+        Map<String, Object> properties = getProperties(graph, element, indexInfo);
         for (Map.Entry<String, Object> property : properties.entrySet()) {
             if (property.getValue() instanceof List) {
                 List list = (List) property.getValue();
@@ -154,7 +154,7 @@ public class ElasticSearchSearchIndex extends ElasticSearchSearchIndexBase {
         return jsonBuilder;
     }
 
-    private Map<String, Object> getProperties(Element element, IndexInfo indexInfo) throws IOException {
+    private Map<String, Object> getProperties(Graph graph, Element element, IndexInfo indexInfo) throws IOException {
         Map<String, Object> propertiesMap = new HashMap<>();
         for (Property property : element.getProperties()) {
             Object propertyValue = property.getValue();
@@ -162,10 +162,10 @@ public class ElasticSearchSearchIndex extends ElasticSearchSearchIndexBase {
             if (propertyValue != null && shouldIgnoreType(propertyValue.getClass())) {
                 continue;
             } else if (propertyValue instanceof GeoPoint) {
-                convertGeoPoint(propertiesMap, property, (GeoPoint) propertyValue);
+                convertGeoPoint(graph, propertiesMap, property, (GeoPoint) propertyValue);
                 continue;
             } else if (propertyValue instanceof GeoCircle) {
-                convertGeoCircle(propertiesMap, property, (GeoCircle) propertyValue);
+                convertGeoCircle(graph, propertiesMap, property, (GeoCircle) propertyValue);
                 continue;
             } else if (propertyValue instanceof StreamingPropertyValue) {
                 StreamingPropertyValue streamingPropertyValue = (StreamingPropertyValue) propertyValue;
