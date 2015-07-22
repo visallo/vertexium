@@ -107,4 +107,9 @@ public class ElasticSearchSearchIndexTest extends GraphTestBase {
     protected boolean isEdgeBoostSupported() {
         return true;
     }
+
+    @Override
+    protected boolean isLuceneQueriesSupported() {
+        return false;
+    }
 }

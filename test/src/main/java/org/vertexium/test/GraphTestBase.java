@@ -1460,13 +1460,16 @@ public abstract class GraphTestBase {
         Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_ALL);
         v1.setProperty("description", "This is vertex 1 - dog.", VISIBILITY_A, AUTHORIZATIONS_ALL);
         Vertex v2 = graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_ALL);
-        v2.setProperty("description", "This is vertex 2 - cat.", VISIBILITY_A, AUTHORIZATIONS_ALL);
+        v2.setProperty("description", "This is vertex 2 - cat.", VISIBILITY_B, AUTHORIZATIONS_ALL);
         Edge e1 = graph.addEdge("e1", v1, v2, "edgeA", VISIBILITY_A, AUTHORIZATIONS_A);
         e1.setProperty("description", "This is edge 1 - dog to cat.", VISIBILITY_A, AUTHORIZATIONS_ALL);
         getGraph().flush();
 
-        Iterable<Vertex> vertices = graph.query("vertex", AUTHORIZATIONS_A).vertices();
+        Iterable<Vertex> vertices = graph.query("vertex", AUTHORIZATIONS_A_AND_B).vertices();
         Assert.assertEquals(2, count(vertices));
+
+        vertices = graph.query("vertex", AUTHORIZATIONS_A).vertices();
+        Assert.assertEquals(1, count(vertices));
 
         vertices = graph.query("dog", AUTHORIZATIONS_A).vertices();
         Assert.assertEquals(1, count(vertices));
@@ -1891,13 +1894,13 @@ public abstract class GraphTestBase {
                 .vertices();
         Assert.assertEquals(2, count(vertices));
 
-        if (!isUsingDefaultQuery(graph)) {
+        if (isLuceneQueriesSupported()) {
             vertices = graph.query("joe AND ferner", AUTHORIZATIONS_A)
                     .vertices();
             Assert.assertEquals(1, count(vertices));
         }
 
-        if (!isUsingDefaultQuery(graph)) {
+        if (isLuceneQueriesSupported()) {
             vertices = graph.query("joe smith", AUTHORIZATIONS_A)
                     .vertices();
             List<Vertex> verticesList = toList(vertices);
@@ -1953,7 +1956,7 @@ public abstract class GraphTestBase {
                 .setProperty("name", "Joe Smith", VISIBILITY_A)
                 .save(AUTHORIZATIONS_A_AND_B);
 
-        if (!isUsingDefaultQuery(graph)) {
+        if (isLuceneQueriesSupported()) {
             Iterable<Vertex> vertices = graph.query("name:\"joe ferner\"", AUTHORIZATIONS_A)
                     .vertices();
             Assert.assertEquals(1, count(vertices));
@@ -1964,8 +1967,8 @@ public abstract class GraphTestBase {
         return true;
     }
 
-    protected boolean isUsingDefaultQuery(Graph graph) {
-        return graph.query(AUTHORIZATIONS_A) instanceof DefaultGraphQuery;
+    protected boolean isLuceneQueriesSupported() {
+        return !(graph.query(AUTHORIZATIONS_A) instanceof DefaultGraphQuery);
     }
 
     @Test

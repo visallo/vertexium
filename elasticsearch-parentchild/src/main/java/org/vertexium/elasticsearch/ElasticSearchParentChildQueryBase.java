@@ -25,7 +25,17 @@ public abstract class ElasticSearchParentChildQueryBase extends ElasticSearchQue
             IndexSelectionStrategy indexSelectionStrategy,
             Authorizations authorizations
     ) {
-        super(client, graph, queryString, propertyDefinitions, scoringStrategy, indexSelectionStrategy, !isAuthorizationFilterEnabled(graph), authorizations);
+        super(
+                client,
+                graph,
+                queryString,
+                propertyDefinitions,
+                scoringStrategy,
+                indexSelectionStrategy,
+                !isAuthorizationFilterEnabled(graph),
+                !isAuthorizationFilterEnabled(graph),
+                authorizations
+        );
     }
 
     protected ElasticSearchParentChildQueryBase(
@@ -38,7 +48,18 @@ public abstract class ElasticSearchParentChildQueryBase extends ElasticSearchQue
             IndexSelectionStrategy indexSelectionStrategy,
             Authorizations authorizations
     ) {
-        super(client, graph, similarToFields, similarToText, propertyDefinitions, scoringStrategy, indexSelectionStrategy, !isAuthorizationFilterEnabled(graph), authorizations);
+        super(
+                client,
+                graph,
+                similarToFields,
+                similarToText,
+                propertyDefinitions,
+                scoringStrategy,
+                indexSelectionStrategy,
+                !isAuthorizationFilterEnabled(graph),
+                !isAuthorizationFilterEnabled(graph),
+                authorizations
+        );
     }
 
     @Override

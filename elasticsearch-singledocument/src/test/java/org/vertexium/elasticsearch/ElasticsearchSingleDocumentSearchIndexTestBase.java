@@ -169,5 +169,10 @@ public abstract class ElasticsearchSingleDocumentSearchIndexTestBase extends Gra
     protected boolean isFieldNamesInQuerySupported() {
         return false;
     }
+
+    @Override
+    protected boolean isLuceneQueriesSupported() {
+        return false;
+    }
 }
 

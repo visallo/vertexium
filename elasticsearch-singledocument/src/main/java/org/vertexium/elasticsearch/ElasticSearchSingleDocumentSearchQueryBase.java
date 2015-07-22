@@ -31,7 +31,7 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends ElasticSearchQue
             IndexSelectionStrategy indexSelectionStrategy,
             Authorizations authorizations
     ) {
-        super(client, graph, queryString, propertyDefinitions, scoringStrategy, indexSelectionStrategy, true, authorizations);
+        super(client, graph, queryString, propertyDefinitions, scoringStrategy, indexSelectionStrategy, true, true, authorizations);
     }
 
     public ElasticSearchSingleDocumentSearchQueryBase(
@@ -44,7 +44,7 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends ElasticSearchQue
             IndexSelectionStrategy indexSelectionStrategy,
             Authorizations authorizations
     ) {
-        super(client, graph, similarToFields, similarToText, propertyDefinitions, scoringStrategy, indexSelectionStrategy, true, authorizations);
+        super(client, graph, similarToFields, similarToText, propertyDefinitions, scoringStrategy, indexSelectionStrategy, true, true, authorizations);
     }
 
     @Override

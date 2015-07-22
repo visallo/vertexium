@@ -33,6 +33,7 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
     public static final VertexiumLogger QUERY_LOGGER = VertexiumLoggerFactory.getQueryLogger(Query.class);
     private final TransportClient client;
     private final boolean evaluateHasContainers;
+    private final boolean evaluateQueryString;
     private final StandardAnalyzer analyzer;
     private final ScoringStrategy scoringStrategy;
     private final IndexSelectionStrategy indexSelectionStrategy;
@@ -44,10 +45,12 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
             Map<String, PropertyDefinition> propertyDefinitions,
             ScoringStrategy scoringStrategy,
             IndexSelectionStrategy indexSelectionStrategy,
+            boolean evaluateQueryString,
             boolean evaluateHasContainers,
             Authorizations authorizations) {
         super(graph, queryString, propertyDefinitions, authorizations);
         this.client = client;
+        this.evaluateQueryString = evaluateQueryString;
         this.evaluateHasContainers = evaluateHasContainers;
         this.scoringStrategy = scoringStrategy;
         this.analyzer = new StandardAnalyzer();
@@ -62,10 +65,12 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
             Map<String, PropertyDefinition> propertyDefinitions,
             ScoringStrategy scoringStrategy,
             IndexSelectionStrategy indexSelectionStrategy,
+            boolean evaluateQueryString,
             boolean evaluateHasContainers,
             Authorizations authorizations) {
         super(graph, similarToFields, similarToText, propertyDefinitions, authorizations);
         this.client = client;
+        this.evaluateQueryString = evaluateQueryString;
         this.evaluateHasContainers = evaluateHasContainers;
         this.scoringStrategy = scoringStrategy;
         this.analyzer = new StandardAnalyzer();
@@ -103,7 +108,7 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
         QueryParameters filterParameters = getParameters().clone();
         filterParameters.setSkip(0); // ES already did a skip
         Iterable<Vertex> vertices = getGraph().getVertices(ids, fetchHints, filterParameters.getAuthorizations());
-        return createIterable(response, filterParameters, vertices, evaluateHasContainers, searchTime, hits);
+        return createIterable(response, filterParameters, vertices, evaluateQueryString, evaluateHasContainers, searchTime, hits);
     }
 
     @Override
@@ -138,7 +143,7 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
         filterParameters.setSkip(0); // ES already did a skip
         Iterable<Edge> edges = getGraph().getEdges(ids, fetchHints, filterParameters.getAuthorizations());
         // TODO instead of passing false here to not evaluate the query string it would be better to support the Lucene query
-        return createIterable(response, filterParameters, edges, evaluateHasContainers, searchTime, hits);
+        return createIterable(response, filterParameters, edges, evaluateQueryString, evaluateHasContainers, searchTime, hits);
     }
 
     @Override
@@ -195,16 +200,24 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
         Iterable<Edge> edges = getGraph().getEdges(edgeIds, fetchHints, filterParameters.getAuthorizations());
         Iterable<Element> elements = new JoinIterable<>(new ToElementIterable<>(vertices), new ToElementIterable<>(edges));
         // TODO instead of passing false here to not evaluate the query string it would be better to support the Lucene query
-        return createIterable(response, filterParameters, elements, evaluateHasContainers, searchTime, hits);
+        return createIterable(response, filterParameters, elements, evaluateQueryString, evaluateHasContainers, searchTime, hits);
     }
 
-    protected <T extends Element> ElasticSearchGraphQueryIterable<T> createIterable(SearchResponse response, QueryParameters filterParameters, Iterable<T> elements, boolean evaluateHasContainers, long searchTime, SearchHits hits) {
+    protected <T extends Element> ElasticSearchGraphQueryIterable<T> createIterable(
+            SearchResponse response,
+            QueryParameters filterParameters,
+            Iterable<T> elements,
+            boolean evaluateQueryString,
+            boolean evaluateHasContainers,
+            long searchTime,
+            SearchHits hits
+    ) {
         return new ElasticSearchGraphQueryIterable<>(
                 this,
                 response,
                 filterParameters,
                 elements,
-                false,
+                evaluateQueryString,
                 evaluateHasContainers,
                 hits.getTotalHits(),
                 searchTime,

@@ -107,4 +107,9 @@ public class ElasticSearchSearchIndexSimpleSubstitutionTest extends GraphTestBas
 
         getSearchIndex().loadPropertyDefinitions();
     }
+
+    @Override
+    protected boolean isLuceneQueriesSupported() {
+        return false;
+    }
 }
