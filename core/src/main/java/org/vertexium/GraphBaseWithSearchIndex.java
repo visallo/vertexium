@@ -63,6 +63,7 @@ public abstract class GraphBaseWithSearchIndex extends GraphBase implements Grap
 
     protected void setupPropertyDefinition(PropertyDefinition propertyDefinition) {
         try {
+            propertyDefinitionCache.put(propertyDefinition.getPropertyName(), propertyDefinition);
             getSearchIndex().addPropertyDefinition(this, propertyDefinition);
         } catch (IOException e) {
             throw new VertexiumException("Could not add property definition to search index", e);

@@ -326,8 +326,7 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex, Searc
         int totalCount = 0;
         Map<IndexInfo, BulkRequest> bulkRequests = new HashMap<>();
         for (Element element : elements) {
-            String indexName = getIndexName(element);
-            IndexInfo indexInfo = ensureIndexCreatedAndInitialized(indexName, isStoreSourceData());
+            IndexInfo indexInfo = addPropertiesToIndex(graph, element, element.getProperties());
             BulkRequest bulkRequest = bulkRequests.get(indexInfo);
             if (bulkRequest == null) {
                 bulkRequest = new BulkRequest();
