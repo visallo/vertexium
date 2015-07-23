@@ -30,10 +30,7 @@ import org.vertexium.util.VertexiumLoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -63,6 +60,10 @@ public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchI
             LOGGER.warn("Storing source date is required for single document indexing, to prevent needing to re-query the vertex.");
         }
         return true;
+    }
+
+    protected boolean isAllFieldEnabled() {
+        return false;
     }
 
     @Override
@@ -156,7 +157,7 @@ public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchI
                 return;
             }
 
-            PropertyDefinition propertyDefinition = indexInfo.getPropertyDefinitions().get(propertyName);
+            PropertyDefinition propertyDefinition = getPropertyDefinition(graph, propertyName);
             if (propertyDefinition != null && !propertyDefinition.getTextIndexHints().contains(TextIndexHint.FULL_TEXT)) {
                 return;
             }
@@ -169,7 +170,7 @@ public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchI
                 throw new VertexiumException("Unhandled StreamingPropertyValue type: " + valueType.getName());
             }
         } else if (propertyValue instanceof String) {
-            PropertyDefinition propertyDefinition = indexInfo.getPropertyDefinitions().get(propertyName);
+            PropertyDefinition propertyDefinition = getPropertyDefinition(graph, propertyName);
             if (propertyDefinition == null || propertyDefinition.getTextIndexHints().contains(TextIndexHint.EXACT_MATCH)) {
                 addPropertyValueToPropertiesMap(propertiesMap, propertyName + EXACT_MATCH_PROPERTY_NAME_SUFFIX, propertyValue);
             }
@@ -241,6 +242,43 @@ public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchI
             results[i++] = deflatedPropertyName + "_" + hash;
         }
         return results;
+    }
+
+    public Collection<String> getQueryablePropertyNames(Graph graph, Authorizations authorizations) {
+        Set<String> propertyNames = new HashSet<>();
+        for (PropertyDefinition propertyDefinition : getAllPropertyDefinitions().values()) {
+            List<String> queryableTypeSuffixes = getQueryableTypeSuffixes(propertyDefinition);
+            if (queryableTypeSuffixes.size() == 0) {
+                continue;
+            }
+            String inflatedPropertyName = inflatePropertyName(propertyDefinition.getPropertyName()); // could be stored deflated
+            String deflatedPropertyName = this.nameSubstitutionStrategy.deflate(inflatedPropertyName);
+            if (isReservedFieldName(inflatedPropertyName)) {
+                continue;
+            }
+            for (String hash : this.propertyNameVisibilitiesStore.getHashes(graph, inflatedPropertyName, authorizations)) {
+                for (String typeSuffix : queryableTypeSuffixes) {
+                    propertyNames.add(deflatedPropertyName + "_" + hash + typeSuffix);
+                }
+            }
+        }
+        return propertyNames;
+    }
+
+    private List<String> getQueryableTypeSuffixes(PropertyDefinition propertyDefinition) {
+        List<String> typeSuffixes = new ArrayList<>();
+        if (propertyDefinition.getDataType() == String.class) {
+            if (propertyDefinition.getTextIndexHints().contains(TextIndexHint.EXACT_MATCH)) {
+                typeSuffixes.add(EXACT_MATCH_PROPERTY_NAME_SUFFIX);
+            }
+            if (propertyDefinition.getTextIndexHints().contains(TextIndexHint.FULL_TEXT)) {
+                typeSuffixes.add("");
+            }
+        } else if (propertyDefinition.getDataType() == GeoPoint.class
+                || propertyDefinition.getDataType() == GeoCircle.class) {
+            typeSuffixes.add("");
+        }
+        return typeSuffixes;
     }
 
     private String getVisibilityHash(Graph graph, String propertyName, Visibility visibility) {
@@ -388,7 +426,10 @@ public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchI
                 .execute()
                 .actionGet();
 
-        PropertyDefinition propertyDefinition = new PropertyDefinition(propertyName, dataType, TextIndexHint.ALL);
+        PropertyDefinition propertyDefinition = getPropertyDefinition(graph, inflatePropertyName(propertyName));
+        if (propertyDefinition == null) {
+            propertyDefinition = new PropertyDefinition(propertyName, dataType, TextIndexHint.ALL);
+        }
         indexInfo.addPropertyDefinition(propertyName, propertyDefinition);
         savePropertyDefinition(graph, propertyName, propertyDefinition);
     }

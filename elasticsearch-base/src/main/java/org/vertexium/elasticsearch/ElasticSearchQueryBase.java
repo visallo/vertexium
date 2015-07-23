@@ -486,42 +486,50 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
 
     protected QueryBuilder createQuery(QueryParameters queryParameters, ElasticSearchElementType elementType, List<FilterBuilder> filters) {
         if (queryParameters instanceof QueryStringQueryParameters) {
-            String queryString = ((QueryStringQueryParameters) queryParameters).getQueryString();
-            if (queryString == null || queryString.equals("*")) {
-                return QueryBuilders.matchAllQuery();
-            }
-            return QueryBuilders.queryString(queryString);
+            return createQueryStringQuery((QueryStringQueryParameters) queryParameters);
         } else if (queryParameters instanceof SimilarToTextQueryParameters) {
-            SimilarToTextQueryParameters similarTo = (SimilarToTextQueryParameters) queryParameters;
-            List<String> allFields = new ArrayList<>();
-            String[] fields = similarTo.getFields();
-            for (String field : fields) {
-                Collections.addAll(allFields, getPropertyNames(field));
-            }
-            MoreLikeThisQueryBuilder q = QueryBuilders.moreLikeThisQuery(allFields.toArray(new String[allFields.size()]))
-                    .likeText(similarTo.getText());
-            if (similarTo.getPercentTermsToMatch() != null) {
-                q.percentTermsToMatch(similarTo.getPercentTermsToMatch());
-            }
-            if (similarTo.getMinTermFrequency() != null) {
-                q.minTermFreq(similarTo.getMinTermFrequency());
-            }
-            if (similarTo.getMaxQueryTerms() != null) {
-                q.maxQueryTerms(similarTo.getMaxQueryTerms());
-            }
-            if (similarTo.getMinDocFrequency() != null) {
-                q.minDocFreq(similarTo.getMinDocFrequency());
-            }
-            if (similarTo.getMaxDocFrequency() != null) {
-                q.maxDocFreq(similarTo.getMaxDocFrequency());
-            }
-            if (similarTo.getBoost() != null) {
-                q.boost(similarTo.getBoost());
-            }
-            return q;
+            return createSimilarToTextQuery((SimilarToTextQueryParameters) queryParameters);
         } else {
             throw new VertexiumException("Query parameters not supported of type: " + queryParameters.getClass().getName());
         }
+    }
+
+    protected QueryBuilder createSimilarToTextQuery(SimilarToTextQueryParameters queryParameters) {
+        SimilarToTextQueryParameters similarTo = queryParameters;
+        List<String> allFields = new ArrayList<>();
+        String[] fields = similarTo.getFields();
+        for (String field : fields) {
+            Collections.addAll(allFields, getPropertyNames(field));
+        }
+        MoreLikeThisQueryBuilder q = QueryBuilders.moreLikeThisQuery(allFields.toArray(new String[allFields.size()]))
+                .likeText(similarTo.getText());
+        if (similarTo.getPercentTermsToMatch() != null) {
+            q.percentTermsToMatch(similarTo.getPercentTermsToMatch());
+        }
+        if (similarTo.getMinTermFrequency() != null) {
+            q.minTermFreq(similarTo.getMinTermFrequency());
+        }
+        if (similarTo.getMaxQueryTerms() != null) {
+            q.maxQueryTerms(similarTo.getMaxQueryTerms());
+        }
+        if (similarTo.getMinDocFrequency() != null) {
+            q.minDocFreq(similarTo.getMinDocFrequency());
+        }
+        if (similarTo.getMaxDocFrequency() != null) {
+            q.maxDocFreq(similarTo.getMaxDocFrequency());
+        }
+        if (similarTo.getBoost() != null) {
+            q.boost(similarTo.getBoost());
+        }
+        return q;
+    }
+
+    protected QueryBuilder createQueryStringQuery(QueryStringQueryParameters queryParameters) {
+        String queryString = queryParameters.getQueryString();
+        if (queryString == null || queryString.equals("*")) {
+            return QueryBuilders.matchAllQuery();
+        }
+        return QueryBuilders.queryString(queryString);
     }
 
     public TransportClient getClient() {

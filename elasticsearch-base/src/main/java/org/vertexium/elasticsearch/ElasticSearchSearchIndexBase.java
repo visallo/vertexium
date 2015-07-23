@@ -83,6 +83,10 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex, Searc
         return getConfig().isStoreSourceData();
     }
 
+    protected boolean isAllFieldEnabled() {
+        return true;
+    }
+
     protected void loadIndexInfos() {
         Map<String, IndexStats> indices = getExistingIndexNames();
         for (String indexName : indices.keySet()) {
@@ -142,6 +146,7 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex, Searc
                 XContentBuilder mappingBuilder = XContentFactory.jsonBuilder()
                         .startObject()
                         .startObject("_source").field("enabled", isStoreSourceData()).endObject()
+                        .startObject("_all").field("enabled", isAllFieldEnabled()).endObject()
                         .startObject("properties");
                 createIndexAddFieldsToElementType(mappingBuilder);
                 XContentBuilder mapping = mappingBuilder.endObject()
@@ -708,5 +713,9 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex, Searc
 
     public PropertyDefinition getPropertyDefinition(Graph graph, String propertyName) {
         return getAllPropertyDefinitions().get(propertyName);
+    }
+
+    protected boolean isReservedFieldName(String fieldName) {
+        return fieldName.equals(ELEMENT_TYPE_FIELD_NAME) || fieldName.equals(VISIBILITY_FIELD_NAME);
     }
 }

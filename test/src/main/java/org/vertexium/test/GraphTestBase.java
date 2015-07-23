@@ -1943,6 +1943,27 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    public void testGraphQueryWithANDOperatorAndWithExactMatchFields() {
+        graph.defineProperty("firstName").dataType(String.class).textIndexHint(TextIndexHint.EXACT_MATCH).define();
+
+        graph.prepareVertex("v1", VISIBILITY_A)
+                .setProperty("firstName", "Joe", VISIBILITY_A)
+                .setProperty("lastName", "Ferner", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.prepareVertex("v2", VISIBILITY_A)
+                .setProperty("firstName", "Joe", VISIBILITY_A)
+                .setProperty("lastName", "Smith", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        if (isLuceneQueriesSupported()) {
+            Iterable<Vertex> vertices = graph.query("Joe AND ferner", AUTHORIZATIONS_A)
+                    .vertices();
+            Assert.assertEquals(1, count(vertices));
+        }
+    }
+
+    @Test
     public void testGraphQueryHasWithSpacesAndFieldedQueryString() {
         if (!isFieldNamesInQuerySupported()) {
             return;

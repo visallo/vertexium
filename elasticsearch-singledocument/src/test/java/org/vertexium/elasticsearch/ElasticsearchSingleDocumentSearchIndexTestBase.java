@@ -172,7 +172,7 @@ public abstract class ElasticsearchSingleDocumentSearchIndexTestBase extends Gra
 
     @Override
     protected boolean isLuceneQueriesSupported() {
-        return false;
+        return true;
     }
 }
 
