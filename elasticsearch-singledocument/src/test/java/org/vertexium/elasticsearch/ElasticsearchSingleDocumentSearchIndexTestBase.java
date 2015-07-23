@@ -1,6 +1,7 @@
 package org.vertexium.elasticsearch;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.curator.framework.CuratorFramework;
 import org.elasticsearch.action.admin.cluster.state.ClusterStateResponse;
 import org.elasticsearch.common.settings.ImmutableSettings;
 import org.elasticsearch.node.Node;
@@ -35,7 +36,9 @@ public abstract class ElasticsearchSingleDocumentSearchIndexTestBase extends Gra
     private static Node elasticSearchNode;
     private static String addr;
     private static String clusterName;
-    private static boolean USE_REAL_ES = false;
+    private static final boolean USE_REAL_ES = false;
+    @ClassRule
+    public static ZookeeperResource zookeeperResource = new ZookeeperResource();
 
     @Override
     protected Authorizations createAuthorizations(String... auths) {
@@ -43,7 +46,7 @@ public abstract class ElasticsearchSingleDocumentSearchIndexTestBase extends Gra
     }
 
     @BeforeClass
-    public static void beforeClass() throws IOException {
+    public static void beforeClass() throws Exception {
         tempDir = File.createTempFile("elasticsearch-temp", Long.toString(System.nanoTime()));
         tempDir.delete();
         tempDir.mkdir();
@@ -79,6 +82,13 @@ public abstract class ElasticsearchSingleDocumentSearchIndexTestBase extends Gra
         addr = response.getState().getNodes().getNodes().values().iterator().next().value.getAddress().toString();
         addr = addr.substring("inet[/".length());
         addr = addr.substring(0, addr.length() - 1);
+
+        final String path = DistributedMetadataTablePropertyNameVisibilitiesStore.NODE_PATH;
+        CuratorFramework curator = zookeeperResource.getApacheCuratorFramework();
+        if (curator.checkExists().forPath(path) != null) {
+            curator.delete().deletingChildrenIfNeeded().forPath(path);
+        }
+
         super.before();
     }
 
@@ -113,6 +123,7 @@ public abstract class ElasticsearchSingleDocumentSearchIndexTestBase extends Gra
             config.put(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + ElasticSearchSearchIndexConfiguration.CONFIG_CLUSTER_NAME, clusterName);
         }
         config.put(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + ElasticSearchSearchIndexConfiguration.CONFIG_ES_LOCATIONS, addr);
+        config.put(ElasticSearchSearchIndexConfiguration.ZOOKEEPER_SERVERS, zookeeperResource.getZookeeperTestingServer().getConnectString());
         config.putAll(additionalConfiguration);
         InMemoryGraphConfiguration configuration = new InMemoryGraphConfiguration(config);
         return InMemoryGraph.create(configuration);

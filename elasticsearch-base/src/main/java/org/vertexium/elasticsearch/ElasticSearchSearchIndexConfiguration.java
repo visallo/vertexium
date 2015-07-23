@@ -33,6 +33,8 @@ public class ElasticSearchSearchIndexConfiguration {
     public static final Class<? extends NameSubstitutionStrategy> DEFAULT_NAME_SUBSTITUTION_STRATEGY = IdentityNameSubstitutionStrategy.class;
     public static final String CONFIG_INDEX_SELECTION_STRATEGY_CLASS_NAME = "indexSelectionStrategy";
     public static final Class<? extends IndexSelectionStrategy> DEFAULT_INDEX_SELECTION_STRATEGY = DefaultIndexSelectionStrategy.class;
+    public static final String ZOOKEEPER_SERVERS = "zookeeperServers";
+    public static final String DEFAULT_ZOOKEEPER_SERVERS = "localhost";
 
     private final boolean autoFlush;
     private final boolean storeSourceData;
@@ -45,6 +47,7 @@ public class ElasticSearchSearchIndexConfiguration {
     private NameSubstitutionStrategy nameSubstitutionStrategy;
     private final int numberOfShards;
     private boolean authorizationFilterEnabled;
+    private String zookeeperServers;
 
     public ElasticSearchSearchIndexConfiguration(Graph graph, GraphConfiguration graphConfiguration) {
         esLocations = getElasticSearchLocations(graphConfiguration);
@@ -58,6 +61,7 @@ public class ElasticSearchSearchIndexConfiguration {
         indexSelectionStrategy = getIndexSelectionStrategy(graph, graphConfiguration);
         numberOfShards = getNumberOfShardsForIndex(graphConfiguration);
         authorizationFilterEnabled = getAuthorizationFilterEnabled(graphConfiguration);
+        zookeeperServers = getZookeeperServers(graphConfiguration);
     }
 
     public boolean isAutoFlush() {
@@ -102,6 +106,10 @@ public class ElasticSearchSearchIndexConfiguration {
 
     public int getNumberOfShards() {
         return numberOfShards;
+    }
+
+    public String getZookeeperServers() {
+        return zookeeperServers;
     }
 
     private static boolean getAutoFlush(GraphConfiguration config) {
@@ -171,5 +179,11 @@ public class ElasticSearchSearchIndexConfiguration {
         boolean authorizationFilterEnabled = config.getBoolean(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + CONFIG_AUTHORIZATION_FILTER_ENABLED, DEFAULT_AUTHORIZATION_FILTER_ENABLED);
         LOGGER.info("Authorization filter enabled: %b", authorizationFilterEnabled);
         return authorizationFilterEnabled;
+    }
+
+    private static String getZookeeperServers(GraphConfiguration config) {
+        String zookeeperServers = config.getString(ZOOKEEPER_SERVERS, DEFAULT_ZOOKEEPER_SERVERS);
+        LOGGER.info("Zookeeper servers: %s", zookeeperServers);
+        return zookeeperServers;
     }
 }
