@@ -56,9 +56,6 @@ public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchI
 
     @Override
     protected boolean isStoreSourceData() {
-        if (!super.isStoreSourceData()) {
-            LOGGER.warn("Storing source date is required for single document indexing, to prevent needing to re-query the vertex.");
-        }
         return true;
     }
 
