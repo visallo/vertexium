@@ -44,6 +44,7 @@ import static org.vertexium.util.Preconditions.checkNotNull;
 
 public class AccumuloGraph extends GraphBaseWithSearchIndex {
     private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(AccumuloGraph.class);
+    private static final AccumuloGraphLogger GRAPH_LOGGER = new AccumuloGraphLogger(QUERY_LOGGER);
     private static final String ROW_DELETING_ITERATOR_NAME = RowDeletingIterator.class.getSimpleName();
     private static final int ROW_DELETING_ITERATOR_PRIORITY = 7;
     public static final String DELETE_ROW_COLUMN_FAMILY_STRING = "";
@@ -676,10 +677,8 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
         Text rowKey = new Text(element.getId());
 
         EnumSet<FetchHint> fetchHints = EnumSet.of(FetchHint.PROPERTIES, FetchHint.PROPERTY_METADATA);
-        final Scanner scanner = createElementVisibilityScanner(fetchHints, elementType, ALL_VERSIONS, startTime, endTime, authorizations);
-
         Range range = new Range(rowKey);
-        scanner.setRange(range);
+        final Scanner scanner = createElementVisibilityScanner(fetchHints, elementType, ALL_VERSIONS, startTime, endTime, range, authorizations);
 
         try {
             Map<String, HistoricalPropertyValue> results = new HashMap<>();
@@ -1037,12 +1036,26 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
         return getVerticesInRange(range, fetchHints, timestamp, authorizations);
     }
 
-    protected Scanner createVertexScanner(EnumSet<FetchHint> fetchHints, Integer maxVersions, Long startTime, Long endTime, Authorizations authorizations) throws VertexiumException {
-        return createElementVisibilityScanner(fetchHints, ElementType.VERTEX, maxVersions, startTime, endTime, authorizations);
+    protected Scanner createVertexScanner(
+            EnumSet<FetchHint> fetchHints,
+            Integer maxVersions,
+            Long startTime,
+            Long endTime,
+            Range range,
+            Authorizations authorizations
+    ) throws VertexiumException {
+        return createElementVisibilityScanner(fetchHints, ElementType.VERTEX, maxVersions, startTime, endTime, range, authorizations);
     }
 
-    protected Scanner createEdgeScanner(EnumSet<FetchHint> fetchHints, Integer maxVersions, Long startTime, Long endTime, Authorizations authorizations) throws VertexiumException {
-        return createElementVisibilityScanner(fetchHints, ElementType.EDGE, maxVersions, startTime, endTime, authorizations);
+    protected Scanner createEdgeScanner(
+            EnumSet<FetchHint> fetchHints,
+            Integer maxVersions,
+            Long startTime,
+            Long endTime,
+            Range range,
+            Authorizations authorizations
+    ) throws VertexiumException {
+        return createElementVisibilityScanner(fetchHints, ElementType.EDGE, maxVersions, startTime, endTime, range, authorizations);
     }
 
     private Scanner createElementVisibilityScanner(
@@ -1051,11 +1064,12 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
             Integer maxVersions,
             Long startTime,
             Long endTime,
+            Range range,
             Authorizations authorizations
     ) throws VertexiumException {
         try {
             String tableName = getTableNameFromElementType(elementType);
-            Scanner scanner = connector.createScanner(tableName, toAccumuloAuthorizations(authorizations));
+            Scanner scanner = createScanner(tableName, range, authorizations);
 
             if (getConfiguration().isUseServerSideIterators()) {
                 IteratorSetting elementVisibilityIteratorSettings = new IteratorSetting(
@@ -1094,6 +1108,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
             }
 
             applyFetchHints(scanner, fetchHints, elementType);
+            GRAPH_LOGGER.logStartIterator(scanner);
             return scanner;
         } catch (TableNotFoundException e) {
             throw new VertexiumException(e);
@@ -1206,19 +1221,9 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
             ScannerBase scanner;
             if (ranges == null || ranges.size() == 1) {
                 Range range = ranges == null ? null : ranges.iterator().next();
-                scanner = connector.createScanner(tableName, toAccumuloAuthorizations(authorizations));
-                if (range != null) {
-                    ((Scanner) scanner).setRange(range);
-                }
-                if (QUERY_LOGGER.isTraceEnabled()) {
-                    logStartIterator(range);
-                }
+                scanner = createScanner(tableName, range, authorizations);
             } else {
-                scanner = connector.createBatchScanner(tableName, toAccumuloAuthorizations(authorizations), numberOfQueryThreads);
-                ((BatchScanner) scanner).setRanges(ranges);
-                if (QUERY_LOGGER.isTraceEnabled()) {
-                    logStartIterator(ranges);
-                }
+                scanner = createBatchScanner(tableName, ranges, authorizations);
             }
 
             if (startTime != null || endTime != null) {
@@ -1247,10 +1252,36 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
             }
 
             applyFetchHints(scanner, fetchHints, elementType);
+            GRAPH_LOGGER.logStartIterator(scanner);
             return scanner;
         } catch (TableNotFoundException e) {
             throw new VertexiumException(e);
         }
+    }
+
+    private ScannerBase createBatchScanner(String tableName, Collection<Range> ranges, Authorizations authorizations) throws TableNotFoundException {
+        org.apache.accumulo.core.security.Authorizations accumuloAuthorizations = toAccumuloAuthorizations(authorizations);
+        return createBatchScanner(tableName, ranges, accumuloAuthorizations);
+    }
+
+    private ScannerBase createBatchScanner(String tableName, Collection<Range> ranges, org.apache.accumulo.core.security.Authorizations accumuloAuthorizations) throws TableNotFoundException {
+        ScannerBase scanner;
+        scanner = connector.createBatchScanner(tableName, accumuloAuthorizations, numberOfQueryThreads);
+        ((BatchScanner) scanner).setRanges(ranges);
+        return scanner;
+    }
+
+    private Scanner createScanner(String tableName, Range range, Authorizations authorizations) throws TableNotFoundException {
+        org.apache.accumulo.core.security.Authorizations accumuloAuthorizations = toAccumuloAuthorizations(authorizations);
+        return createScanner(tableName, range, accumuloAuthorizations);
+    }
+
+    private Scanner createScanner(String tableName, Range range, org.apache.accumulo.core.security.Authorizations accumuloAuthorizations) throws TableNotFoundException {
+        Scanner scanner = connector.createScanner(tableName, accumuloAuthorizations);
+        if (range != null) {
+            scanner.setRange(range);
+        }
+        return scanner;
     }
 
     private void applyFetchHints(ScannerBase scanner, EnumSet<FetchHint> fetchHints, ElementType elementType) {
@@ -1343,52 +1374,13 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
         return null;
     }
 
-
-    @SuppressWarnings("unused")
-    private void printTable(Authorizations authorizations) {
-        String[] tables = new String[]{getEdgesTableName(), getVerticesTableName(), getDataTableName()};
-        System.out.println("---------------------------------------------- BEGIN printTable ----------------------------------------------");
-        try {
-            for (String tableName : tables) {
-                System.out.println("TABLE: " + tableName);
-                System.out.println("");
-                Scanner scanner = connector.createScanner(tableName, toAccumuloAuthorizations(authorizations));
-                RowIterator it = new RowIterator(scanner.iterator());
-                while (it.hasNext()) {
-                    boolean first = true;
-                    Text lastColumnFamily = null;
-                    Iterator<Map.Entry<Key, Value>> row = it.next();
-                    while (row.hasNext()) {
-                        Map.Entry<Key, Value> col = row.next();
-                        if (first) {
-                            System.out.println("\"" + col.getKey().getRow() + "\"");
-                            first = false;
-                        }
-                        if (!col.getKey().getColumnFamily().equals(lastColumnFamily)) {
-                            System.out.println("  \"" + col.getKey().getColumnFamily() + "\"");
-                            lastColumnFamily = col.getKey().getColumnFamily();
-                        }
-                        System.out.println("    \"" + col.getKey().getColumnQualifier() + "\"(" + col.getKey().getColumnVisibility() + ")=\"" + col.getValue() + "\"");
-                    }
-                }
-            }
-            System.out.flush();
-        } catch (TableNotFoundException e) {
-            throw new VertexiumException(e);
-        }
-        System.out.println("---------------------------------------------- END printTable ------------------------------------------------");
-    }
-
     public byte[] streamingPropertyValueTableData(String dataRowKey) {
         try {
             final long timerStartTime = System.currentTimeMillis();
-            Scanner scanner = connector.createScanner(getDataTableName(), new org.apache.accumulo.core.security.Authorizations());
+            Range range = new Range(dataRowKey);
+            Scanner scanner = createScanner(getDataTableName(), range, new org.apache.accumulo.core.security.Authorizations());
+            GRAPH_LOGGER.logStartIterator(scanner);
             try {
-                Range range = new Range(dataRowKey);
-                scanner.setRange(range);
-                if (QUERY_LOGGER.isTraceEnabled()) {
-                    logStartIterator(range);
-                }
                 Iterator<Map.Entry<Key, Value>> it = scanner.iterator();
                 if (it.hasNext()) {
                     Map.Entry<Key, Value> col = it.next();
@@ -1396,10 +1388,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
                 }
             } finally {
                 scanner.close();
-                if (QUERY_LOGGER.isTraceEnabled()) {
-                    long timerEndTime = System.currentTimeMillis();
-                    QUERY_LOGGER.trace("accumulo iterator closed (time %dms)", timerEndTime - timerStartTime);
-                }
+                GRAPH_LOGGER.logEndIterator(System.currentTimeMillis() - timerStartTime);
             }
         } catch (Exception ex) {
             throw new VertexiumException(ex);
@@ -1635,10 +1624,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
             return edgeIds;
         } finally {
             scanner.close();
-            if (QUERY_LOGGER.isTraceEnabled()) {
-                long timerEndTime = System.currentTimeMillis();
-                QUERY_LOGGER.trace("accumulo iterator closed (time %dms)", timerEndTime - timerStartTime);
-            }
+            GRAPH_LOGGER.logEndIterator(System.currentTimeMillis() - timerStartTime);
         }
     }
 
@@ -1662,13 +1648,8 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
             @Override
             protected Iterator<Map.Entry<Key, Value>> createIterator() {
                 try {
-                    scanner = connector.createScanner(getMetadataTableName(), toAccumuloAuthorizations(METADATA_AUTHORIZATIONS));
-                    if (range != null) {
-                        scanner.setRange(range);
-                    }
-                    if (QUERY_LOGGER.isTraceEnabled()) {
-                        logStartIterator(range);
-                    }
+                    scanner = createScanner(getMetadataTableName(), range, METADATA_AUTHORIZATIONS);
+                    GRAPH_LOGGER.logStartIterator(scanner);
                     return scanner.iterator();
                 } catch (TableNotFoundException ex) {
                     throw new VertexiumException("Could not create metadata scanner", ex);
@@ -1679,42 +1660,9 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
             public void close() {
                 super.close();
                 this.scanner.close();
-                if (QUERY_LOGGER.isTraceEnabled()) {
-                    long timerEndTime = System.currentTimeMillis();
-                    QUERY_LOGGER.trace("accumulo iterator closed (time %dms)", timerEndTime - timerStartTime);
-                }
+                GRAPH_LOGGER.logEndIterator(System.currentTimeMillis() - timerStartTime);
             }
         };
-    }
-
-    private void logStartIterator(Range range) {
-        if (range == null || (range.getStartKey() == null && range.getEndKey() == null)) {
-            QUERY_LOGGER.trace("begin accumulo iterator: all items");
-        } else {
-            QUERY_LOGGER.trace("begin accumulo iterator: %s - %s", range.getStartKey(), range.getEndKey());
-        }
-    }
-
-    private void logStartIterator(Collection<Range> ranges) {
-        if (ranges.size() == 0) {
-            logStartIterator((Range) null);
-            return;
-        }
-        if (ranges.size() == 1) {
-            logStartIterator(ranges.iterator().next());
-            return;
-        }
-
-        StringBuilder sb = new StringBuilder();
-        boolean first = true;
-        for (Range r : ranges) {
-            if (!first) {
-                sb.append("\n");
-            }
-            sb.append("  ").append(r.getStartKey()).append(" - ").append(r.getEndKey());
-            first = false;
-        }
-        QUERY_LOGGER.trace("begin accumulo iterator:\n%s", sb.toString());
     }
 
     @Override
@@ -1774,11 +1722,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
             @Override
             protected Iterator<Iterator<Map.Entry<Key, Value>>> createIterator() {
                 try {
-                    scanner = createVertexScanner(fetchHints, SINGLE_VERSION, null, endTime, authorizations);
-                    scanner.setRange(range);
-                    if (QUERY_LOGGER.isTraceEnabled()) {
-                        logStartIterator(range);
-                    }
+                    scanner = createVertexScanner(fetchHints, SINGLE_VERSION, null, endTime, range, authorizations);
                     return new RowIterator(scanner.iterator());
                 } catch (RuntimeException ex) {
                     if (ex.getCause() instanceof AccumuloSecurityException) {
@@ -1792,10 +1736,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
             public void close() {
                 super.close();
                 scanner.close();
-                if (QUERY_LOGGER.isTraceEnabled()) {
-                    long timerEndTime = System.currentTimeMillis();
-                    QUERY_LOGGER.trace("accumulo iterator closed (time %dms)", timerEndTime - timerStartTime);
-                }
+                GRAPH_LOGGER.logEndIterator(System.currentTimeMillis() - timerStartTime);
             }
         };
     }
@@ -1845,10 +1786,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
             public void close() {
                 super.close();
                 scanner.close();
-                if (QUERY_LOGGER.isTraceEnabled()) {
-                    long timerEndTime = System.currentTimeMillis();
-                    QUERY_LOGGER.trace("accumulo iterator closed (time %dms)", timerEndTime - timerStartTime);
-                }
+                GRAPH_LOGGER.logEndIterator(System.currentTimeMillis() - timerStartTime);
             }
         };
     }
@@ -1898,10 +1836,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
             public void close() {
                 super.close();
                 scanner.close();
-                if (QUERY_LOGGER.isTraceEnabled()) {
-                    long timerEndTime = System.currentTimeMillis();
-                    QUERY_LOGGER.trace("accumulo iterator closed (time %dms)", timerEndTime - timerStartTime);
-                }
+                GRAPH_LOGGER.logEndIterator(System.currentTimeMillis() - timerStartTime);
             }
         };
     }
@@ -1942,12 +1877,8 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
 
             @Override
             protected Iterator<Iterator<Map.Entry<Key, Value>>> createIterator() {
-                scanner = createEdgeScanner(fetchHints, SINGLE_VERSION, null, endTime, authorizations);
                 Range range = new Range(startKey, endKey);
-                scanner.setRange(range);
-                if (QUERY_LOGGER.isTraceEnabled()) {
-                    logStartIterator(range);
-                }
+                scanner = createEdgeScanner(fetchHints, SINGLE_VERSION, null, endTime, range, authorizations);
                 return new RowIterator(scanner.iterator());
             }
 
@@ -1955,10 +1886,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
             public void close() {
                 super.close();
                 scanner.close();
-                if (QUERY_LOGGER.isTraceEnabled()) {
-                    long timerEndTime = System.currentTimeMillis();
-                    QUERY_LOGGER.trace("accumulo iterator closed (time %dms)", timerEndTime - timerStartTime);
-                }
+                GRAPH_LOGGER.logEndIterator(System.currentTimeMillis() - timerStartTime);
             }
         };
     }
@@ -1978,7 +1906,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
     private long getRowCountFromTable(String tableName, Text signalColumn, Authorizations authorizations) {
         try {
             LOGGER.debug("BEGIN getRowCountFromTable(%s)", tableName);
-            Scanner scanner = connector.createScanner(tableName, toAccumuloAuthorizations(authorizations));
+            Scanner scanner = createScanner(tableName, null, authorizations);
             try {
                 scanner.fetchColumnFamily(signalColumn);
 
@@ -1993,6 +1921,8 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
                         CountingIterator.class
                 );
                 scanner.addScanIterator(countingIterator);
+
+                GRAPH_LOGGER.logStartIterator(scanner);
 
                 long count = 0;
                 for (Map.Entry<Key, Value> entry : scanner) {
