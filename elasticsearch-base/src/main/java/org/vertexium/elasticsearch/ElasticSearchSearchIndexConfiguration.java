@@ -1,5 +1,6 @@
 package org.vertexium.elasticsearch;
 
+import org.vertexium.Graph;
 import org.vertexium.GraphConfiguration;
 import org.vertexium.VertexiumException;
 import org.vertexium.elasticsearch.score.EdgeCountScoringStrategy;
@@ -45,16 +46,16 @@ public class ElasticSearchSearchIndexConfiguration {
     private final int numberOfShards;
     private boolean authorizationFilterEnabled;
 
-    public ElasticSearchSearchIndexConfiguration(GraphConfiguration graphConfiguration) {
+    public ElasticSearchSearchIndexConfiguration(Graph graph, GraphConfiguration graphConfiguration) {
         esLocations = getElasticSearchLocations(graphConfiguration);
         indexEdges = getIndexEdges(graphConfiguration);
         storeSourceData = getStoreSourceData(graphConfiguration);
         autoFlush = getAutoFlush(graphConfiguration);
         clusterName = getClusterName(graphConfiguration);
         port = getPort(graphConfiguration);
-        scoringStrategy = getScoringStrategy(graphConfiguration);
-        nameSubstitutionStrategy = getNameSubstitutionStrategy(graphConfiguration);
-        indexSelectionStrategy = getIndexSelectionStrategy(graphConfiguration);
+        scoringStrategy = getScoringStrategy(graph, graphConfiguration);
+        nameSubstitutionStrategy = getNameSubstitutionStrategy(graph, graphConfiguration);
+        indexSelectionStrategy = getIndexSelectionStrategy(graph, graphConfiguration);
         numberOfShards = getNumberOfShardsForIndex(graphConfiguration);
         authorizationFilterEnabled = getAuthorizationFilterEnabled(graphConfiguration);
     }
@@ -142,21 +143,21 @@ public class ElasticSearchSearchIndexConfiguration {
         return port;
     }
 
-    private static ScoringStrategy getScoringStrategy(GraphConfiguration config) {
+    private static ScoringStrategy getScoringStrategy(Graph graph, GraphConfiguration config) {
         String className = config.getString(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + CONFIG_SCORING_STRATEGY_CLASS_NAME, DEFAULT_SCORING_STRATEGY.getName());
-        return ConfigurationUtils.createProvider(className, config);
+        return ConfigurationUtils.createProvider(className, graph, config);
     }
 
-    private static NameSubstitutionStrategy getNameSubstitutionStrategy(GraphConfiguration config) {
+    private static NameSubstitutionStrategy getNameSubstitutionStrategy(Graph graph, GraphConfiguration config) {
         String className = config.getString(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + CONFIG_NAME_SUBSTITUTION_STRATEGY_CLASS_NAME, DEFAULT_NAME_SUBSTITUTION_STRATEGY.getName());
-        NameSubstitutionStrategy strategy = ConfigurationUtils.createProvider(className, config);
+        NameSubstitutionStrategy strategy = ConfigurationUtils.createProvider(className, graph, config);
         strategy.setup(config.getConfig());
         return strategy;
     }
 
-    public static IndexSelectionStrategy getIndexSelectionStrategy(GraphConfiguration config) {
+    public static IndexSelectionStrategy getIndexSelectionStrategy(Graph graph, GraphConfiguration config) {
         String className = config.getString(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + CONFIG_INDEX_SELECTION_STRATEGY_CLASS_NAME, DEFAULT_INDEX_SELECTION_STRATEGY.getName());
-        IndexSelectionStrategy strategy = ConfigurationUtils.createProvider(className, config);
+        IndexSelectionStrategy strategy = ConfigurationUtils.createProvider(className, graph, config);
         return strategy;
     }
 

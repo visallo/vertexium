@@ -2,7 +2,6 @@ package org.vertexium.inmemory;
 
 import org.vertexium.*;
 import org.vertexium.event.*;
-import org.vertexium.id.IdGenerator;
 import org.vertexium.inmemory.mutations.AlterEdgeLabelMutation;
 import org.vertexium.inmemory.mutations.AlterVisibilityMutation;
 import org.vertexium.inmemory.mutations.EdgeSetupMutation;
@@ -11,7 +10,6 @@ import org.vertexium.inmemory.util.ThreadUtils;
 import org.vertexium.mutation.AlterPropertyVisibility;
 import org.vertexium.mutation.SetPropertyMetadata;
 import org.vertexium.search.IndexHint;
-import org.vertexium.search.SearchIndex;
 import org.vertexium.util.ConvertingIterable;
 import org.vertexium.util.IterableUtils;
 import org.vertexium.util.JavaSerializableUtils;
@@ -28,11 +26,9 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
     private final Map<String, byte[]> metadata = new HashMap<>();
     private final Set<String> validAuthorizations = new HashSet<>();
 
-    protected InMemoryGraph(InMemoryGraphConfiguration configuration, IdGenerator idGenerator, SearchIndex searchIndex) {
+    protected InMemoryGraph(InMemoryGraphConfiguration configuration) {
         this(
                 configuration,
-                idGenerator,
-                searchIndex,
                 new InMemoryVertexTable(),
                 new InMemoryEdgeTable()
         );
@@ -40,12 +36,10 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
 
     protected InMemoryGraph(
             InMemoryGraphConfiguration configuration,
-            IdGenerator idGenerator,
-            SearchIndex searchIndex,
             InMemoryVertexTable vertices,
             InMemoryEdgeTable edges
     ) {
-        super(configuration, idGenerator, searchIndex);
+        super(configuration);
         this.vertices = vertices;
         this.edges = edges;
     }
@@ -62,13 +56,7 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
     }
 
     public static InMemoryGraph create(InMemoryGraphConfiguration config) {
-        IdGenerator idGenerator = config.createIdGenerator();
-        SearchIndex searchIndex = config.createSearchIndex();
-        return create(config, idGenerator, searchIndex);
-    }
-
-    public static InMemoryGraph create(InMemoryGraphConfiguration config, IdGenerator idGenerator, SearchIndex searchIndex) {
-        InMemoryGraph graph = new InMemoryGraph(config, idGenerator, searchIndex);
+        InMemoryGraph graph = new InMemoryGraph(config);
         graph.setup();
         return graph;
     }

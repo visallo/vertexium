@@ -29,7 +29,7 @@ public abstract class MRMigrationBase extends Configured implements Tool {
     }
 
     public static ValueSerializer getValueSerializer(Configuration conf) {
-        return getAccumuloGraphConfiguration(conf).createValueSerializer();
+        return getAccumuloGraphConfiguration(conf).createValueSerializer(null);
     }
 
     public static String getOutputTableName(Configuration conf) {

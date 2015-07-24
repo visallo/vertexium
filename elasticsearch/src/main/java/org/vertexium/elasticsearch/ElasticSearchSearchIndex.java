@@ -36,8 +36,8 @@ public class ElasticSearchSearchIndex extends ElasticSearchSearchIndexBase {
     private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(ElasticSearchSearchIndex.class);
     private NameSubstitutionStrategy nameSubstitutionStrategy;
 
-    public ElasticSearchSearchIndex(GraphConfiguration config) {
-        super(config);
+    public ElasticSearchSearchIndex(Graph graph, GraphConfiguration config) {
+        super(graph, config);
         this.nameSubstitutionStrategy = getConfig().getNameSubstitutionStrategy();
     }
 

@@ -49,8 +49,8 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex, Searc
     private NameSubstitutionStrategy nameSubstitutionStrategy;
     private IndexSelectionStrategy indexSelectionStrategy;
 
-    protected ElasticSearchSearchIndexBase(GraphConfiguration config) {
-        this.config = new ElasticSearchSearchIndexConfiguration(config);
+    protected ElasticSearchSearchIndexBase(Graph graph, GraphConfiguration config) {
+        this.config = new ElasticSearchSearchIndexConfiguration(graph, config);
         nameSubstitutionStrategy = this.config.getNameSubstitutionStrategy();
         indexSelectionStrategy = this.config.getIndexSelectionStrategy();
 

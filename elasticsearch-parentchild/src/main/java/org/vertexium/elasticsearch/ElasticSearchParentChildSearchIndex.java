@@ -48,8 +48,8 @@ public class ElasticSearchParentChildSearchIndex extends ElasticSearchSearchInde
         }
     };
 
-    public ElasticSearchParentChildSearchIndex(GraphConfiguration config) {
-        super(config);
+    public ElasticSearchParentChildSearchIndex(Graph graph, GraphConfiguration config) {
+        super(graph, config);
         this.nameSubstitutionStrategy = getConfig().getNameSubstitutionStrategy();
     }
 

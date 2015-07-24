@@ -114,7 +114,7 @@ public abstract class ElasticSearchSearchParentChildIndexTestBase extends GraphT
         config.put(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + ElasticSearchSearchIndexConfiguration.CONFIG_ES_LOCATIONS, addr);
         config.putAll(additionalConfiguration);
         InMemoryGraphConfiguration configuration = new InMemoryGraphConfiguration(config);
-        return InMemoryGraph.create(configuration, configuration.createIdGenerator(), configuration.createSearchIndex());
+        return InMemoryGraph.create(configuration);
     }
 
     @Test

@@ -13,8 +13,8 @@ public class AccumuloVertexiumBlueprintsGraphFactory extends VertexiumBlueprints
     @Override
     public VertexiumBlueprintsGraph createGraph(Map config) {
         AccumuloGraph graph = createAccumuloGraph(config);
-        VisibilityProvider visibilityProvider = createVisibilityProvider(graph.getConfiguration());
-        AuthorizationsProvider authorizationProvider = createAuthorizationsProvider(graph.getConfiguration());
+        VisibilityProvider visibilityProvider = createVisibilityProvider(graph, graph.getConfiguration());
+        AuthorizationsProvider authorizationProvider = createAuthorizationsProvider(graph, graph.getConfiguration());
         return new AccumuloVertexiumBlueprintsGraph(graph, visibilityProvider, authorizationProvider);
     }
 
@@ -27,17 +27,17 @@ public class AccumuloVertexiumBlueprintsGraphFactory extends VertexiumBlueprints
         }
     }
 
-    private VisibilityProvider createVisibilityProvider(GraphConfiguration config) {
+    private VisibilityProvider createVisibilityProvider(AccumuloGraph graph, GraphConfiguration config) {
         try {
-            return ConfigurationUtils.createProvider(config, "visibilityProvider", DefaultVisibilityProvider.class.getName());
+            return ConfigurationUtils.createProvider(graph, config, "visibilityProvider", DefaultVisibilityProvider.class.getName());
         } catch (Exception ex) {
             throw new VertexiumException("Could not create visibility provider", ex);
         }
     }
 
-    private AuthorizationsProvider createAuthorizationsProvider(GraphConfiguration config) {
+    private AuthorizationsProvider createAuthorizationsProvider(AccumuloGraph graph, GraphConfiguration config) {
         try {
-            return ConfigurationUtils.createProvider(config, "authorizationsProvider", null);
+            return ConfigurationUtils.createProvider(graph, config, "authorizationsProvider", null);
         } catch (Exception ex) {
             throw new VertexiumException("Could not create authorization provider", ex);
         }

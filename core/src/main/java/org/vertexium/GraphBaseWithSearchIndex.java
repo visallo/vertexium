@@ -22,10 +22,10 @@ public abstract class GraphBaseWithSearchIndex extends GraphBase implements Grap
     private boolean foundIdGeneratorClassnameInMetadata;
     private Map<String, PropertyDefinition> propertyDefinitionCache = new HashMap<>();
 
-    protected GraphBaseWithSearchIndex(GraphConfiguration configuration, IdGenerator idGenerator, SearchIndex searchIndex) {
+    protected GraphBaseWithSearchIndex(GraphConfiguration configuration) {
         this.configuration = configuration;
-        this.idGenerator = idGenerator;
-        this.searchIndex = searchIndex;
+        this.searchIndex = configuration.createSearchIndex(this);
+        this.idGenerator = configuration.createIdGenerator(this);
     }
 
     protected void setup() {

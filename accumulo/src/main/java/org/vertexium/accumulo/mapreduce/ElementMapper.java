@@ -28,9 +28,7 @@ public abstract class ElementMapper<KEYIN, VALUEIN, KEYOUT, VALUEOUT> extends Ma
         final Text edgesTableName = new Text(AccumuloGraph.getEdgesTableName(tableNamePrefix));
         final Text dataTableName = new Text(AccumuloGraph.getDataTableName(tableNamePrefix));
         final Text verticesTableName = new Text(AccumuloGraph.getVerticesTableName(tableNamePrefix));
-        ValueSerializer valueSerializer = accumuloGraphConfiguration.createValueSerializer();
         long maxStreamingPropertyValueTableDataSize = accumuloGraphConfiguration.getMaxStreamingPropertyValueTableDataSize();
-        nameSubstitutionStrategy = accumuloGraphConfiguration.createSubstitutionStrategy();
         String dataDir = accumuloGraphConfiguration.getDataDir();
         FileSystem fileSystem;
         try {
@@ -38,6 +36,10 @@ public abstract class ElementMapper<KEYIN, VALUEIN, KEYOUT, VALUEOUT> extends Ma
         } catch (URISyntaxException e) {
             throw new IOException("Could not initialize", e);
         }
+
+        this.graph = new ElementMapperGraph(this);
+        ValueSerializer valueSerializer = accumuloGraphConfiguration.createValueSerializer(this.graph);
+        nameSubstitutionStrategy = accumuloGraphConfiguration.createSubstitutionStrategy(this.graph);
 
         this.elementMutationBuilder = new ElementMutationBuilder(fileSystem, valueSerializer, maxStreamingPropertyValueTableDataSize, dataDir) {
             @Override
@@ -72,8 +74,6 @@ public abstract class ElementMapper<KEYIN, VALUEIN, KEYOUT, VALUEOUT> extends Ma
                 }
             }
         };
-
-        this.graph = new ElementMapperGraph(this);
     }
 
     protected abstract void saveDataMutation(Context context, Text dataTableName, Mutation m) throws IOException, InterruptedException;

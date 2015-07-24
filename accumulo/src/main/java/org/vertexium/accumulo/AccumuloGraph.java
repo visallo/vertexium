@@ -23,8 +23,6 @@ import org.vertexium.accumulo.keys.PropertyHiddenColumnQualifier;
 import org.vertexium.accumulo.keys.PropertyMetadataColumnQualifier;
 import org.vertexium.accumulo.serializer.ValueSerializer;
 import org.vertexium.event.*;
-import org.vertexium.id.IdGenerator;
-import org.vertexium.id.NameSubstitutionStrategy;
 import org.vertexium.mutation.AlterPropertyVisibility;
 import org.vertexium.mutation.PropertyDeleteMutation;
 import org.vertexium.mutation.PropertySoftDeleteMutation;
@@ -32,7 +30,6 @@ import org.vertexium.mutation.SetPropertyMetadata;
 import org.vertexium.property.MutableProperty;
 import org.vertexium.property.StreamingPropertyValue;
 import org.vertexium.search.IndexHint;
-import org.vertexium.search.SearchIndex;
 import org.vertexium.util.*;
 
 import java.io.IOException;
@@ -87,19 +84,15 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
 
     protected AccumuloGraph(
             AccumuloGraphConfiguration config,
-            IdGenerator idGenerator,
-            SearchIndex searchIndex,
             Connector connector,
-            FileSystem fileSystem,
-            ValueSerializer valueSerializer,
-            NameSubstitutionStrategy nameSubstitutionStrategy
+            FileSystem fileSystem
     ) {
-        super(config, idGenerator, searchIndex);
+        super(config);
         this.connector = connector;
-        this.valueSerializer = valueSerializer;
+        this.valueSerializer = config.createValueSerializer(this);
         this.fileSystem = fileSystem;
         this.dataDir = config.getDataDir();
-        this.nameSubstitutionStrategy = AccumuloNameSubstitutionStrategy.create(nameSubstitutionStrategy);
+        this.nameSubstitutionStrategy = AccumuloNameSubstitutionStrategy.create(config.createSubstitutionStrategy(this));
         long maxStreamingPropertyValueTableDataSize = config.getMaxStreamingPropertyValueTableDataSize();
         this.elementMutationBuilder = new ElementMutationBuilder(fileSystem, valueSerializer, maxStreamingPropertyValueTableDataSize, dataDir) {
             @Override
@@ -142,10 +135,6 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
         }
         Connector connector = config.createConnector();
         FileSystem fs = config.createFileSystem();
-        ValueSerializer valueSerializer = config.createValueSerializer();
-        SearchIndex searchIndex = config.createSearchIndex();
-        IdGenerator idGenerator = config.createIdGenerator();
-        NameSubstitutionStrategy nameSubstitutionStrategy = config.createSubstitutionStrategy();
         ensureTableExists(connector, getVerticesTableName(config.getTableNamePrefix()), config.getMaxVersions(), config.getHdfsContextClasspath());
         ensureTableExists(connector, getEdgesTableName(config.getTableNamePrefix()), config.getMaxVersions(), config.getHdfsContextClasspath());
         ensureTableExists(connector, getDataTableName(config.getTableNamePrefix()), 1, config.getHdfsContextClasspath());
@@ -153,7 +142,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex {
         ensureRowDeletingIteratorIsAttached(connector, getVerticesTableName(config.getTableNamePrefix()));
         ensureRowDeletingIteratorIsAttached(connector, getEdgesTableName(config.getTableNamePrefix()));
         ensureRowDeletingIteratorIsAttached(connector, getDataTableName(config.getTableNamePrefix()));
-        AccumuloGraph graph = new AccumuloGraph(config, idGenerator, searchIndex, connector, fs, valueSerializer, nameSubstitutionStrategy);
+        AccumuloGraph graph = new AccumuloGraph(config, connector, fs);
         graph.setup();
         return graph;
     }

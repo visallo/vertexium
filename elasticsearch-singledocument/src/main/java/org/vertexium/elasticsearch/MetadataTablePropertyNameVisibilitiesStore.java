@@ -26,7 +26,7 @@ public class MetadataTablePropertyNameVisibilitiesStore extends PropertyNameVisi
     private final Cache<String, Hashes> hashesCache;
     private Map<String, Visibility> visibilityCache = new HashMap<>();
 
-    public MetadataTablePropertyNameVisibilitiesStore() {
+    public MetadataTablePropertyNameVisibilitiesStore(final Graph graph) {
         this.hashesCache = CacheBuilder
                 .newCache(String.class, Hashes.class)
                 .name(MetadataTablePropertyNameVisibilitiesStore.class, "hashesCache-" + System.identityHashCode(this))
@@ -34,8 +34,16 @@ public class MetadataTablePropertyNameVisibilitiesStore extends PropertyNameVisi
                 .expiryDuration(60, TimeUnit.SECONDS)
                 .source(new CacheSource<String, Hashes>() {
                     @Override
-                    public Hashes get(String o) throws Throwable {
-                        return null;
+                    public Hashes get(String propertyName) throws Throwable {
+                        LOGGER.debug("cache miss for property: %s", propertyName);
+                        Hashes hashes = new Hashes();
+                        String prefix = getMetadataPrefixWithPropertyName(propertyName);
+                        for (GraphMetadataEntry metadata : graph.getMetadataWithPrefix(prefix)) {
+                            String visibilityString = metadata.getKey().substring(prefix.length());
+                            Visibility visibility = getVisibility(visibilityString);
+                            hashes.add(visibility, (String) metadata.getValue());
+                        }
+                        return hashes;
                     }
                 })
                 .build();
@@ -51,19 +59,7 @@ public class MetadataTablePropertyNameVisibilitiesStore extends PropertyNameVisi
     }
 
     private Hashes getHashes(Graph graph, String propertyName) {
-        Hashes hashes = this.hashesCache.get(propertyName);
-        if (hashes == null) {
-            LOGGER.debug("cache miss for property: %s", propertyName);
-            hashes = new Hashes();
-            String prefix = getMetadataPrefixWithPropertyName(propertyName);
-            for (GraphMetadataEntry metadata : graph.getMetadataWithPrefix(prefix)) {
-                String visibilityString = metadata.getKey().substring(prefix.length());
-                Visibility visibility = getVisibility(visibilityString);
-                hashes.add(visibility, (String) metadata.getValue());
-            }
-            this.hashesCache.put(propertyName, hashes);
-        }
-        return hashes;
+        return this.hashesCache.get(propertyName);
     }
 
     private Visibility getVisibility(String visibilityString) {

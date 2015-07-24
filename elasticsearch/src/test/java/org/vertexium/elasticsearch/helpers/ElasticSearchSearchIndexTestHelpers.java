@@ -1,6 +1,5 @@
 package org.vertexium.elasticsearch.helpers;
 
-import com.google.common.base.Joiner;
 import org.apache.commons.io.FileUtils;
 import org.elasticsearch.action.admin.cluster.state.ClusterStateResponse;
 import org.elasticsearch.common.settings.ImmutableSettings;
@@ -12,7 +11,6 @@ import org.vertexium.elasticsearch.DefaultIndexSelectionStrategy;
 import org.vertexium.elasticsearch.ElasticSearchSearchIndex;
 import org.vertexium.elasticsearch.ElasticSearchSearchIndexConfiguration;
 import org.vertexium.id.SimpleNameSubstitutionStrategy;
-import org.vertexium.id.SimpleSubstitutionUtils;
 import org.vertexium.inmemory.InMemoryGraph;
 import org.vertexium.inmemory.InMemoryGraphConfiguration;
 import org.vertexium.util.VertexiumLogger;
@@ -46,7 +44,7 @@ public class ElasticSearchSearchIndexTestHelpers {
         }
         config.put(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + ElasticSearchSearchIndexConfiguration.CONFIG_ES_LOCATIONS, addr);
         InMemoryGraphConfiguration configuration = new InMemoryGraphConfiguration(config);
-        return InMemoryGraph.create(configuration, configuration.createIdGenerator(), configuration.createSearchIndex());
+        return InMemoryGraph.create(configuration);
     }
 
     public static Graph createGraphWithSubstitution(Map<String, String> substitutionMap) {
@@ -64,7 +62,7 @@ public class ElasticSearchSearchIndexTestHelpers {
         config.put(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + ElasticSearchSearchIndexConfiguration.CONFIG_NAME_SUBSTITUTION_STRATEGY_CLASS_NAME, SimpleNameSubstitutionStrategy.class.getName());
         config.putAll(substitutionMap);
         InMemoryGraphConfiguration configuration = new InMemoryGraphConfiguration(config);
-        return InMemoryGraph.create(configuration, configuration.createIdGenerator(), configuration.createSearchIndex());
+        return InMemoryGraph.create(configuration);
     }
 
     public static void beforeClass() throws IOException {

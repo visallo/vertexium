@@ -43,15 +43,15 @@ public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchI
     private final NameSubstitutionStrategy nameSubstitutionStrategy;
     private final PropertyNameVisibilitiesStore propertyNameVisibilitiesStore;
 
-    public ElasticsearchSingleDocumentSearchIndex(GraphConfiguration config) {
-        super(config);
+    public ElasticsearchSingleDocumentSearchIndex(Graph graph, GraphConfiguration config) {
+        super(graph, config);
         this.nameSubstitutionStrategy = getConfig().getNameSubstitutionStrategy();
-        this.propertyNameVisibilitiesStore = createPropertyNameVisibilitiesStore(config);
+        this.propertyNameVisibilitiesStore = createPropertyNameVisibilitiesStore(graph, config);
     }
 
-    private PropertyNameVisibilitiesStore createPropertyNameVisibilitiesStore(GraphConfiguration config) {
+    private PropertyNameVisibilitiesStore createPropertyNameVisibilitiesStore(Graph graph, GraphConfiguration config) {
         String className = config.getString(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + CONFIG_PROPERTY_NAME_VISIBILITIES_STORE, DEFAULT_PROPERTY_NAME_VISIBILITIES_STORE.getName());
-        return ConfigurationUtils.createProvider(className, config);
+        return ConfigurationUtils.createProvider(className, graph, config);
     }
 
     @Override

@@ -40,12 +40,12 @@ public class GraphConfiguration {
         return o;
     }
 
-    public IdGenerator createIdGenerator() throws VertexiumException {
-        return ConfigurationUtils.createProvider(this, IDGENERATOR_PROP_PREFIX, DEFAULT_IDGENERATOR);
+    public IdGenerator createIdGenerator(Graph graph) throws VertexiumException {
+        return ConfigurationUtils.createProvider(graph, this, IDGENERATOR_PROP_PREFIX, DEFAULT_IDGENERATOR);
     }
 
-    public SearchIndex createSearchIndex() throws VertexiumException {
-        return ConfigurationUtils.createProvider(this, SEARCH_INDEX_PROP_PREFIX, DEFAULT_SEARCH_INDEX);
+    public SearchIndex createSearchIndex(Graph graph) throws VertexiumException {
+        return ConfigurationUtils.createProvider(graph, this, SEARCH_INDEX_PROP_PREFIX, DEFAULT_SEARCH_INDEX);
     }
 
     public boolean getBoolean(String configKey, boolean defaultValue) {

@@ -5,6 +5,7 @@ import org.apache.accumulo.core.client.security.tokens.AuthenticationToken;
 import org.apache.accumulo.core.client.security.tokens.PasswordToken;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
+import org.vertexium.Graph;
 import org.vertexium.GraphConfiguration;
 import org.vertexium.VertexiumException;
 import org.vertexium.accumulo.serializer.JavaValueSerializer;
@@ -133,8 +134,8 @@ public class AccumuloGraphConfiguration extends GraphConfiguration {
         return getString(ZOOKEEPER_SERVERS, DEFAULT_ZOOKEEPER_SERVERS);
     }
 
-    public ValueSerializer createValueSerializer() throws VertexiumException {
-        return ConfigurationUtils.createProvider(this, VALUE_SERIALIZER_PROP_PREFIX, DEFAULT_VALUE_SERIALIZER);
+    public ValueSerializer createValueSerializer(Graph graph) throws VertexiumException {
+        return ConfigurationUtils.createProvider(graph, this, VALUE_SERIALIZER_PROP_PREFIX, DEFAULT_VALUE_SERIALIZER);
     }
 
     public boolean isAutoFlush() {
@@ -157,8 +158,8 @@ public class AccumuloGraphConfiguration extends GraphConfiguration {
         return getBoolean(USE_SERVER_SIDE_ITERATORS, DEFAULT_USE_SERVER_SIDE_ITERATORS);
     }
 
-    public NameSubstitutionStrategy createSubstitutionStrategy() {
-        NameSubstitutionStrategy strategy = ConfigurationUtils.createProvider(this, NAME_SUBSTITUTION_STRATEGY_PROP_PREFIX, DEFAULT_NAME_SUBSTITUTION_STRATEGY);
+    public NameSubstitutionStrategy createSubstitutionStrategy(Graph graph) {
+        NameSubstitutionStrategy strategy = ConfigurationUtils.createProvider(graph, this, NAME_SUBSTITUTION_STRATEGY_PROP_PREFIX, DEFAULT_NAME_SUBSTITUTION_STRATEGY);
         strategy.setup(getConfig());
         return strategy;
     }
