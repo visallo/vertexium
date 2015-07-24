@@ -41,8 +41,10 @@ public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchI
     public static final Pattern AGGREGATION_NAME_PATTERN = Pattern.compile("(.*?)_([0-9a-f]+)");
     public static final String CONFIG_PROPERTY_NAME_VISIBILITIES_STORE = "propertyNameVisibilitiesStore";
     public static final Class<? extends PropertyNameVisibilitiesStore> DEFAULT_PROPERTY_NAME_VISIBILITIES_STORE = MetadataTablePropertyNameVisibilitiesStore.class;
+    private static final long PROPERTY_DEFINITION_LAST_CHECK_WAS_NULL_INTERVAL_MS = 10 * 60 * 1000;
     private final NameSubstitutionStrategy nameSubstitutionStrategy;
     private final PropertyNameVisibilitiesStore propertyNameVisibilitiesStore;
+    private Map<String, Long> propertyDefinitionNullLastCheck = new HashMap<>();
 
     public ElasticsearchSingleDocumentSearchIndex(Graph graph, GraphConfiguration config) {
         super(graph, config);
@@ -356,11 +358,26 @@ public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchI
     @Override
     public PropertyDefinition getPropertyDefinition(Graph graph, String propertyName) {
         propertyName = inflatePropertyNameWithTypeSuffix(propertyName);
-        return ((GraphBaseWithSearchIndex) graph).getPropertyDefinition(propertyName);
+        Long lastCheck = propertyDefinitionNullLastCheck.get(propertyName);
+        if (lastCheck != null) {
+            long lastCheckFromNow = System.currentTimeMillis() - lastCheck;
+            if ((lastCheckFromNow <= PROPERTY_DEFINITION_LAST_CHECK_WAS_NULL_INTERVAL_MS)) {
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("Skipping getPropertyDefinition '%s' from graph. Last check performed %dms ago. Expires at %dms", propertyName, lastCheckFromNow, PROPERTY_DEFINITION_LAST_CHECK_WAS_NULL_INTERVAL_MS);
+                }
+                return null;
+            }
+        }
+        PropertyDefinition propertyDefinition = ((GraphBaseWithSearchIndex) graph).getPropertyDefinition(propertyName);
+        if (propertyDefinition == null) {
+            propertyDefinitionNullLastCheck.put(propertyName, System.currentTimeMillis());
+        }
+        return propertyDefinition;
     }
 
     private void savePropertyDefinition(Graph graph, String propertyName, PropertyDefinition propertyDefinition) {
         propertyName = inflatePropertyNameWithTypeSuffix(propertyName);
+        propertyDefinitionNullLastCheck.remove(propertyName);
         ((GraphBaseWithSearchIndex) graph).savePropertyDefinition(propertyName, propertyDefinition);
     }
 
