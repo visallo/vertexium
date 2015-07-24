@@ -23,6 +23,7 @@ import org.vertexium.query.SimilarToGraphQuery;
 import org.vertexium.query.VertexQuery;
 import org.vertexium.type.GeoCircle;
 import org.vertexium.type.GeoPoint;
+import org.vertexium.type.GeoShape;
 import org.vertexium.util.ConfigurationUtils;
 import org.vertexium.util.StreamUtils;
 import org.vertexium.util.VertexiumLogger;
@@ -36,7 +37,7 @@ import java.util.regex.Pattern;
 
 public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchIndexBase {
     private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(ElasticsearchSingleDocumentSearchIndex.class);
-    public static final Pattern PROPERTY_NAME_PATTERN = Pattern.compile("(.*?)_([0-9a-f]+)(_([a-z]+))?");
+    public static final Pattern PROPERTY_NAME_PATTERN = Pattern.compile("^(.*?)(_([0-9a-f]{32}))?(_([a-z]))?$");
     public static final Pattern AGGREGATION_NAME_PATTERN = Pattern.compile("(.*?)_([0-9a-f]+)");
     public static final String CONFIG_PROPERTY_NAME_VISIBILITIES_STORE = "propertyNameVisibilitiesStore";
     public static final Class<? extends PropertyNameVisibilitiesStore> DEFAULT_PROPERTY_NAME_VISIBILITIES_STORE = MetadataTablePropertyNameVisibilitiesStore.class;
@@ -202,8 +203,8 @@ public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchI
     private String inflatePropertyNameWithTypeSuffix(String string) {
         Matcher m = PROPERTY_NAME_PATTERN.matcher(string);
         if (m.matches()) {
-            if (m.groupCount() >= 4 && m.group(4) != null) {
-                string = m.group(1) + "_" + m.group(4);
+            if (m.groupCount() >= 5 && m.group(5) != null) {
+                string = m.group(1) + "_" + m.group(5);
             } else {
                 string = m.group(1);
             }
@@ -215,7 +216,7 @@ public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchI
     public String getPropertyVisibilityHashFromDeflatedPropertyName(String deflatedPropertyName) {
         Matcher m = PROPERTY_NAME_PATTERN.matcher(deflatedPropertyName);
         if (m.matches()) {
-            return m.group(2);
+            return m.group(3);
         }
         throw new VertexiumException("Could not match property name: " + deflatedPropertyName);
     }
@@ -365,6 +366,10 @@ public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchI
 
     @Override
     public void addPropertyToIndex(Graph graph, IndexInfo indexInfo, Property property) throws IOException {
+        // unlike the super class we need to lookup property definitions based on the property name without
+        // the hash and define the property that way.
+        Object propertyValue = property.getValue();
+
         PropertyDefinition propertyDefinition = getPropertyDefinition(graph, property.getName());
         if (propertyDefinition != null) {
             String deflatedPropertyName = deflatePropertyName(graph, property);
@@ -379,10 +384,12 @@ public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchI
             super.addPropertyDefinitionToIndex(graph, indexInfo, deflatedPropertyName, propertyDefinition);
         }
 
-        propertyDefinition = getPropertyDefinition(graph, property.getName() + GEO_PROPERTY_NAME_SUFFIX);
-        if (propertyDefinition != null) {
-            String deflatedPropertyName = deflatePropertyName(graph, property);
-            super.addPropertyDefinitionToIndex(graph, indexInfo, deflatedPropertyName, propertyDefinition);
+        if (propertyValue instanceof GeoShape) {
+            propertyDefinition = getPropertyDefinition(graph, property.getName() + GEO_PROPERTY_NAME_SUFFIX);
+            if (propertyDefinition != null) {
+                String deflatedPropertyName = deflatePropertyName(graph, property);
+                super.addPropertyDefinitionToIndex(graph, indexInfo, deflatedPropertyName, propertyDefinition);
+            }
         }
     }
 
