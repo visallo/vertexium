@@ -2,6 +2,7 @@ package org.vertexium.inmemory;
 
 import org.vertexium.*;
 import org.vertexium.event.*;
+import org.vertexium.id.IdGenerator;
 import org.vertexium.inmemory.mutations.AlterEdgeLabelMutation;
 import org.vertexium.inmemory.mutations.AlterVisibilityMutation;
 import org.vertexium.inmemory.mutations.EdgeSetupMutation;
@@ -10,6 +11,7 @@ import org.vertexium.inmemory.util.ThreadUtils;
 import org.vertexium.mutation.AlterPropertyVisibility;
 import org.vertexium.mutation.SetPropertyMetadata;
 import org.vertexium.search.IndexHint;
+import org.vertexium.search.SearchIndex;
 import org.vertexium.util.ConvertingIterable;
 import org.vertexium.util.IterableUtils;
 import org.vertexium.util.JavaSerializableUtils;
@@ -34,12 +36,34 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
         );
     }
 
+    protected InMemoryGraph(InMemoryGraphConfiguration configuration, IdGenerator idGenerator, SearchIndex searchIndex) {
+        this(
+                configuration,
+                idGenerator,
+                searchIndex,
+                new InMemoryVertexTable(),
+                new InMemoryEdgeTable()
+        );
+    }
+
     protected InMemoryGraph(
             InMemoryGraphConfiguration configuration,
             InMemoryVertexTable vertices,
             InMemoryEdgeTable edges
     ) {
         super(configuration);
+        this.vertices = vertices;
+        this.edges = edges;
+    }
+
+    protected InMemoryGraph(
+            InMemoryGraphConfiguration configuration,
+            IdGenerator idGenerator,
+            SearchIndex searchIndex,
+            InMemoryVertexTable vertices,
+            InMemoryEdgeTable edges
+    ) {
+        super(configuration, idGenerator, searchIndex);
         this.vertices = vertices;
         this.edges = edges;
     }
@@ -64,6 +88,12 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
     @SuppressWarnings("unused")
     public static InMemoryGraph create(Map config) {
         return create(new InMemoryGraphConfiguration(config));
+    }
+
+    public static InMemoryGraph create(InMemoryGraphConfiguration config, IdGenerator idGenerator, SearchIndex searchIndex) {
+        InMemoryGraph graph = new InMemoryGraph(config, idGenerator, searchIndex);
+        graph.setup();
+        return graph;
     }
 
     @Override

@@ -28,6 +28,12 @@ public abstract class GraphBaseWithSearchIndex extends GraphBase implements Grap
         this.idGenerator = configuration.createIdGenerator(this);
     }
 
+    protected GraphBaseWithSearchIndex(GraphConfiguration configuration, IdGenerator idGenerator, SearchIndex searchIndex) {
+        this.configuration = configuration;
+        this.searchIndex = searchIndex;
+        this.idGenerator = idGenerator;
+    }
+
     protected void setup() {
         setupGraphMetadata();
     }
