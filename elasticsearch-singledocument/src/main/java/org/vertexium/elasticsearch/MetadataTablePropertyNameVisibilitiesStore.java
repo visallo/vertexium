@@ -35,7 +35,7 @@ public class MetadataTablePropertyNameVisibilitiesStore extends PropertyNameVisi
                 .source(new CacheSource<String, Hashes>() {
                     @Override
                     public Hashes get(String propertyName) throws Throwable {
-                        LOGGER.debug("cache miss for property: %s", propertyName);
+                        LOGGER.trace("cache miss for property: %s", propertyName);
                         Hashes hashes = new Hashes();
                         String prefix = getMetadataPrefixWithPropertyName(propertyName);
                         for (GraphMetadataEntry metadata : graph.getMetadataWithPrefix(prefix)) {

@@ -44,7 +44,7 @@ public class DistributedMetadataTablePropertyNameVisibilitiesStore extends Metad
                 @Override
                 public void nodeChanged() throws Exception {
                     synchronized (DistributedMetadataTablePropertyNameVisibilitiesStore.this) {
-                        LOGGER.debug(NODE_PATH + " changed - clearing hashes cache");
+                        LOGGER.trace(NODE_PATH + " changed - clearing hashes cache");
                         clearHashesCache();
                     }
                 }
