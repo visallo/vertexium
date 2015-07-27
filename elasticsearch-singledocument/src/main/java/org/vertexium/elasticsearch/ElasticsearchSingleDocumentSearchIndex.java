@@ -269,6 +269,9 @@ public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchI
     @Override
     public String[] getAllMatchingPropertyNames(Graph graph, String propertyName, Authorizations authorizations) {
         Collection<String> hashes = this.propertyNameVisibilitiesStore.getHashes(graph, propertyName, authorizations);
+        if (hashes.size() == 0) {
+            throw new VertexiumNoMatchingPropertiesException(propertyName);
+        }
         String[] results = new String[hashes.size()];
         String deflatedPropertyName = this.nameSubstitutionStrategy.deflate(propertyName);
         int i = 0;

@@ -51,11 +51,7 @@ public class MetadataTablePropertyNameVisibilitiesStore extends PropertyNameVisi
 
     public Collection<String> getHashes(Graph graph, String propertyName, Authorizations authorizations) {
         Hashes hashes = getHashes(graph, propertyName);
-        Collection<String> results = hashes.get(authorizations);
-        if (results.size() == 0) {
-            throw new VertexiumNoMatchingPropertiesException(propertyName);
-        }
-        return results;
+        return hashes.get(authorizations);
     }
 
     private Hashes getHashes(Graph graph, String propertyName) {
