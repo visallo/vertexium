@@ -34,8 +34,8 @@ import org.vertexium.util.StreamUtils;
 import org.vertexium.util.VertexiumLogger;
 import org.vertexium.util.VertexiumLoggerFactory;
 
-import java.io.Closeable;
 import javax.xml.ws.Holder;
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
@@ -86,6 +86,7 @@ public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchI
         return false;
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public void addElement(Graph graph, final Element element, Authorizations authorizations) {
         if (MUTATION_LOGGER.isTraceEnabled()) {
