@@ -87,7 +87,7 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
             LOGGER.debug("Index missing: %s", ex.getMessage());
             return new ArrayList<>();
         } catch (VertexiumNoMatchingPropertiesException ex) {
-            LOGGER.debug("Could not find property", ex);
+            LOGGER.debug("Could not find property %s", ex.getPropertyName());
             return new ArrayList<>();
         }
         final SearchHits hits = response.getHits();
