@@ -19,6 +19,16 @@
             <version>${project.version}</version>
         </dependency>
         <dependency>
+            <groupId>org.apache.curator</groupId>
+            <artifactId>curator-framework</artifactId>
+            <version>${apache.curator.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.curator</groupId>
+            <artifactId>curator-recipes</artifactId>
+            <version>${apache.curator.version}</version>
+        </dependency>
+        <dependency>
             <groupId>net.jodah</groupId>
             <artifactId>recurrent</artifactId>
             <version>${recurrent.version}</version>
@@ -61,6 +71,12 @@
         <dependency>
             <groupId>org.codehaus.groovy</groupId>
             <artifactId>groovy</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.curator</groupId>
+            <artifactId>curator-test</artifactId>
+            <version>${apache.curator.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

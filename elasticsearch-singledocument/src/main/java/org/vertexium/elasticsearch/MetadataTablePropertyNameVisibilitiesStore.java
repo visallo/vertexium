@@ -17,25 +17,25 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 public class MetadataTablePropertyNameVisibilitiesStore extends PropertyNameVisibilitiesStore {
     private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(MetadataTablePropertyNameVisibilitiesStore.class);
     public static final String METADATA_PREFIX = "propertyNameVisibility.";
     private static final Charset UTF8 = Charset.forName("utf8");
+
     private final Cache<String, Hashes> hashesCache;
-    private Map<String, Visibility> visibilityCache = new HashMap<>();
+    private final Map<String, Visibility> visibilityCache = new HashMap<>();
 
     public MetadataTablePropertyNameVisibilitiesStore(final Graph graph) {
         this.hashesCache = CacheBuilder
                 .newCache(String.class, Hashes.class)
                 .name(MetadataTablePropertyNameVisibilitiesStore.class, "hashesCache-" + System.identityHashCode(this))
-                .maxSize(10000)
-                .expiryDuration(60, TimeUnit.SECONDS)
+                .maxSize(100000)
+                .eternal(true)
                 .source(new CacheSource<String, Hashes>() {
                     @Override
                     public Hashes get(String propertyName) throws Throwable {
-                        LOGGER.debug("cache miss for property: %s", propertyName);
+                        LOGGER.trace("cache miss for property: %s", propertyName);
                         Hashes hashes = new Hashes();
                         String prefix = getMetadataPrefixWithPropertyName(propertyName);
                         for (GraphMetadataEntry metadata : graph.getMetadataWithPrefix(prefix)) {
@@ -54,6 +54,30 @@ public class MetadataTablePropertyNameVisibilitiesStore extends PropertyNameVisi
         return hashes.get(authorizations);
     }
 
+    public String getHash(Graph graph, String propertyName, Visibility visibility) {
+        Hashes hashes = getHashes(graph, propertyName);
+        String hash = hashes.get(visibility);
+        if (hash != null) {
+            return hash;
+        }
+        String visibilityString = visibility.getVisibilityString();
+        String metadataKey = getMetadataKey(propertyName, visibilityString);
+        hash = Hashing.murmur3_128().hashString(visibilityString, UTF8).toString();
+        graph.setMetadata(metadataKey, hash);
+        hashes.add(visibility, hash);
+        onPropertyChanged(propertyName, hashes);
+        return hash;
+    }
+
+    @SuppressWarnings("unused")
+    protected void onPropertyChanged(String propertyName, Hashes hashes) {
+        // subclass can override to respond to a change
+    }
+
+    protected final void clearHashesCache() {
+        hashesCache.clear();
+    }
+
     private Hashes getHashes(Graph graph, String propertyName) {
         return this.hashesCache.get(propertyName);
     }
@@ -67,20 +91,6 @@ public class MetadataTablePropertyNameVisibilitiesStore extends PropertyNameVisi
         return visibility;
     }
 
-    public String getHash(Graph graph, String propertyName, Visibility visibility) {
-        Hashes hashes = getHashes(graph, propertyName);
-        String hash = hashes.get(visibility);
-        if (hash != null) {
-            return hash;
-        }
-        String visibilityString = visibility.getVisibilityString();
-        String metadataKey = getMetadataKey(propertyName, visibilityString);
-        hash = Hashing.murmur3_128().hashString(visibilityString, UTF8).toString();
-        graph.setMetadata(metadataKey, hash);
-        hashes.add(visibility, hash);
-        return hash;
-    }
-
     private String getMetadataPrefixWithPropertyName(String propertyName) {
         return METADATA_PREFIX + propertyName + ".";
     }
@@ -89,8 +99,8 @@ public class MetadataTablePropertyNameVisibilitiesStore extends PropertyNameVisi
         return getMetadataPrefixWithPropertyName(propertyName) + visibilityString;
     }
 
-    private static class Hashes implements Serializable {
-        private Map<Visibility, String> hashes = new HashMap<>();
+    protected static class Hashes implements Serializable {
+        private final Map<Visibility, String> hashes = new HashMap<>();
 
         public void add(Visibility visibility, String hash) {
             hashes.put(visibility, hash);

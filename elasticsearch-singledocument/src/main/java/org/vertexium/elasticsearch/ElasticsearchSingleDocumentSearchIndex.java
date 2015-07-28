@@ -2,6 +2,7 @@ package org.vertexium.elasticsearch;
 
 import net.jodah.recurrent.Recurrent;
 import net.jodah.recurrent.RetryPolicy;
+import com.google.common.base.Throwables;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.delete.DeleteResponse;
 import org.elasticsearch.action.search.SearchRequestBuilder;
@@ -34,6 +35,7 @@ import org.vertexium.util.VertexiumLogger;
 import org.vertexium.util.VertexiumLoggerFactory;
 
 import javax.xml.ws.Holder;
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
@@ -46,7 +48,7 @@ public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchI
     public static final Pattern PROPERTY_NAME_PATTERN = Pattern.compile("^(.*?)(_([0-9a-f]{32}))?(_([a-z]))?$");
     public static final Pattern AGGREGATION_NAME_PATTERN = Pattern.compile("(.*?)_([0-9a-f]+)");
     public static final String CONFIG_PROPERTY_NAME_VISIBILITIES_STORE = "propertyNameVisibilitiesStore";
-    public static final Class<? extends PropertyNameVisibilitiesStore> DEFAULT_PROPERTY_NAME_VISIBILITIES_STORE = MetadataTablePropertyNameVisibilitiesStore.class;
+    public static final Class<? extends PropertyNameVisibilitiesStore> DEFAULT_PROPERTY_NAME_VISIBILITIES_STORE = DistributedMetadataTablePropertyNameVisibilitiesStore.class;
     private static final long PROPERTY_DEFINITION_LAST_CHECK_WAS_NULL_INTERVAL_MS = 10 * 60 * 1000;
     private final NameSubstitutionStrategy nameSubstitutionStrategy;
     private final PropertyNameVisibilitiesStore propertyNameVisibilitiesStore;
@@ -64,6 +66,18 @@ public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchI
     }
 
     @Override
+    public void shutdown() {
+        super.shutdown();
+        if (propertyNameVisibilitiesStore instanceof Closeable) {
+            try {
+                ((Closeable) propertyNameVisibilitiesStore).close();
+            } catch (IOException e) {
+                Throwables.propagate(e);
+            }
+        }
+    }
+
+    @Override
     protected boolean isStoreSourceData() {
         return true;
     }
@@ -72,6 +86,7 @@ public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchI
         return false;
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public void addElement(Graph graph, final Element element, Authorizations authorizations) {
         if (MUTATION_LOGGER.isTraceEnabled()) {
