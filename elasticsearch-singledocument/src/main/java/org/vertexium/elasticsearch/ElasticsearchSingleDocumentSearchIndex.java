@@ -53,6 +53,7 @@ public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchI
     private final NameSubstitutionStrategy nameSubstitutionStrategy;
     private final PropertyNameVisibilitiesStore propertyNameVisibilitiesStore;
     private Map<String, Long> propertyDefinitionNullLastCheck = new HashMap<>();
+    private final Random random = new Random();
 
     public ElasticsearchSingleDocumentSearchIndex(Graph graph, GraphConfiguration config) {
         super(graph, config);
@@ -138,7 +139,7 @@ public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchI
             //noinspection unchecked
             RetryPolicy retryPolicy = new RetryPolicy()
                     .retryOn(VersionConflictEngineException.class)
-                    .withDelay(100, TimeUnit.MILLISECONDS)
+                    .withDelay(100 + random.nextInt(50), TimeUnit.MILLISECONDS)
                     .withMaxRetries(3);
 
             Recurrent.run(update, retryPolicy);
