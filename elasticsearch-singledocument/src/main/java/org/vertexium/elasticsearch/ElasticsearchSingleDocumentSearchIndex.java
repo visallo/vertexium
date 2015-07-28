@@ -1,5 +1,7 @@
 package org.vertexium.elasticsearch;
 
+import net.jodah.recurrent.Recurrent;
+import net.jodah.recurrent.RetryPolicy;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.delete.DeleteResponse;
 import org.elasticsearch.action.search.SearchRequestBuilder;
@@ -7,8 +9,10 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchType;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.action.update.UpdateResponse;
+import org.elasticsearch.client.Requests;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
+import org.elasticsearch.index.engine.VersionConflictEngineException;
 import org.elasticsearch.index.query.FilteredQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.TermFilterBuilder;
@@ -29,9 +33,11 @@ import org.vertexium.util.StreamUtils;
 import org.vertexium.util.VertexiumLogger;
 import org.vertexium.util.VertexiumLoggerFactory;
 
+import javax.xml.ws.Holder;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -67,7 +73,7 @@ public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchI
     }
 
     @Override
-    public void addElement(Graph graph, Element element, Authorizations authorizations) {
+    public void addElement(Graph graph, final Element element, Authorizations authorizations) {
         if (MUTATION_LOGGER.isTraceEnabled()) {
             MUTATION_LOGGER.trace("addElement: %s", element.getId());
         }
@@ -75,24 +81,52 @@ public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchI
             return;
         }
 
-        IndexInfo indexInfo = addPropertiesToIndex(graph, element, element.getProperties());
+        final IndexInfo indexInfo = addPropertiesToIndex(graph, element, element.getProperties());
 
         try {
-            XContentBuilder jsonBuilder = buildJsonContentFromElement(graph, indexInfo, element, authorizations);
-            XContentBuilder source = jsonBuilder.endObject();
+            final XContentBuilder jsonBuilder = buildJsonContentFromElement(graph, indexInfo, element, authorizations);
+            final XContentBuilder source = jsonBuilder.endObject();
             if (MUTATION_LOGGER.isTraceEnabled()) {
                 MUTATION_LOGGER.trace("addElement json: %s: %s", element.getId(), source.string());
             }
 
-            UpdateResponse response = getClient()
-                    .prepareUpdate(indexInfo.getIndexName(), ELEMENT_TYPE, element.getId())
-                    .setDocAsUpsert(true)
-                    .setDoc(source)
-                    .execute()
-                    .actionGet();
-            if (response.getId() == null) {
-                throw new VertexiumException("Could not index document " + element.getId());
-            }
+            final Holder<Boolean> retrying = new Holder<>(false);
+
+            Runnable update = new Runnable() {
+                public void run() {
+                    if (retrying.value) {
+                        getClient().get(Requests.getRequest(indexInfo.getIndexName())
+                                .id(element.getId())
+                                .type(ELEMENT_TYPE)
+                                .refresh(true))
+                                .actionGet();
+                    }
+
+                    try {
+                        UpdateResponse response = getClient()
+                                .prepareUpdate(indexInfo.getIndexName(), ELEMENT_TYPE, element.getId())
+                                .setDocAsUpsert(true)
+                                .setDoc(source)
+                                .execute()
+                                .actionGet();
+                        if (response.getId() == null) {
+                            throw new VertexiumException("Could not index document " + element.getId());
+                        }
+                    } catch (VersionConflictEngineException e) {
+                        LOGGER.warn("ES version conflict detected for id %s. Retrying.", element.getId());
+                        retrying.value = true;
+                        throw e;
+                    }
+                }
+            };
+
+            //noinspection unchecked
+            RetryPolicy retryPolicy = new RetryPolicy()
+                    .retryOn(VersionConflictEngineException.class)
+                    .withDelay(100, TimeUnit.MILLISECONDS)
+                    .withMaxRetries(3);
+
+            Recurrent.run(update, retryPolicy);
 
             if (getConfig().isAutoFlush()) {
                 flush();

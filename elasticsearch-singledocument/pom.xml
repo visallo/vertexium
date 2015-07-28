@@ -19,6 +19,11 @@
             <version>${project.version}</version>
         </dependency>
         <dependency>
+            <groupId>net.jodah</groupId>
+            <artifactId>recurrent</artifactId>
+            <version>${recurrent.version}</version>
+        </dependency>
+        <dependency>
             <groupId>org.vertexium</groupId>
             <artifactId>vertexium-elasticsearch-plugin</artifactId>
             <version>${project.version}</version>
