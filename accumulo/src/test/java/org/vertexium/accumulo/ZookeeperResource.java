@@ -1,4 +1,4 @@
-package org.vertexium.elasticsearch;
+package org.vertexium.accumulo;
 
 import com.google.common.base.Throwables;
 import org.apache.curator.RetryPolicy;

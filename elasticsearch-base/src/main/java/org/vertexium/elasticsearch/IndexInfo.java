@@ -3,11 +3,13 @@ package org.vertexium.elasticsearch;
 import org.vertexium.PropertyDefinition;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 public class IndexInfo {
     private final String indexName;
-    private Map<String, PropertyDefinition> propertyDefinitions = new HashMap<String, PropertyDefinition>();
+    private Map<String, PropertyDefinition> propertyDefinitions = new HashMap<>();
     private boolean elementTypeDefined;
 
     public IndexInfo(String indexName) {

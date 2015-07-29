@@ -1,8 +1,8 @@
 package org.vertexium.elasticsearch;
 
+import com.google.common.base.Throwables;
 import net.jodah.recurrent.Recurrent;
 import net.jodah.recurrent.RetryPolicy;
-import com.google.common.base.Throwables;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.delete.DeleteResponse;
 import org.elasticsearch.action.search.SearchRequestBuilder;
@@ -48,11 +48,9 @@ public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchI
     public static final Pattern PROPERTY_NAME_PATTERN = Pattern.compile("^(.*?)(_([0-9a-f]{32}))?(_([a-z]))?$");
     public static final Pattern AGGREGATION_NAME_PATTERN = Pattern.compile("(.*?)_([0-9a-f]+)");
     public static final String CONFIG_PROPERTY_NAME_VISIBILITIES_STORE = "propertyNameVisibilitiesStore";
-    public static final Class<? extends PropertyNameVisibilitiesStore> DEFAULT_PROPERTY_NAME_VISIBILITIES_STORE = DistributedMetadataTablePropertyNameVisibilitiesStore.class;
-    private static final long PROPERTY_DEFINITION_LAST_CHECK_WAS_NULL_INTERVAL_MS = 10 * 60 * 1000;
+    public static final Class<? extends PropertyNameVisibilitiesStore> DEFAULT_PROPERTY_NAME_VISIBILITIES_STORE = MetadataTablePropertyNameVisibilitiesStore.class;
     private final NameSubstitutionStrategy nameSubstitutionStrategy;
     private final PropertyNameVisibilitiesStore propertyNameVisibilitiesStore;
-    private Map<String, Long> propertyDefinitionNullLastCheck = new HashMap<>();
     private final Random random = new Random();
 
     public ElasticsearchSingleDocumentSearchIndex(Graph graph, GraphConfiguration config) {
@@ -83,7 +81,8 @@ public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchI
         return true;
     }
 
-    protected boolean isAllFieldEnabled() {
+    @Override
+    protected boolean getDefaultAllFieldEnabled() {
         return false;
     }
 
@@ -100,7 +99,7 @@ public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchI
         final IndexInfo indexInfo = addPropertiesToIndex(graph, element, element.getProperties());
 
         try {
-            final XContentBuilder jsonBuilder = buildJsonContentFromElement(graph, indexInfo, element, authorizations);
+            final XContentBuilder jsonBuilder = buildJsonContentFromElement(graph, element, authorizations);
             final XContentBuilder source = jsonBuilder.endObject();
             if (MUTATION_LOGGER.isTraceEnabled()) {
                 MUTATION_LOGGER.trace("addElement json: %s: %s", element.getId(), source.string());
@@ -154,7 +153,7 @@ public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchI
         getConfig().getScoringStrategy().addElement(this, graph, element, authorizations);
     }
 
-    private XContentBuilder buildJsonContentFromElement(Graph graph, IndexInfo indexInfo, Element element, Authorizations authorizations) throws IOException {
+    private XContentBuilder buildJsonContentFromElement(Graph graph, Element element, Authorizations authorizations) throws IOException {
         XContentBuilder jsonBuilder;
         jsonBuilder = XContentFactory.jsonBuilder()
                 .startObject();
@@ -169,7 +168,7 @@ public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchI
             throw new VertexiumException("Unexpected element type " + element.getClass().getName());
         }
 
-        Map<String, Object> properties = getProperties(graph, element, indexInfo);
+        Map<String, Object> properties = getProperties(graph, element);
         for (Map.Entry<String, Object> property : properties.entrySet()) {
             if (property.getValue() instanceof List) {
                 List list = (List) property.getValue();
@@ -182,15 +181,15 @@ public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchI
         return jsonBuilder;
     }
 
-    private Map<String, Object> getProperties(Graph graph, Element element, IndexInfo indexInfo) throws IOException {
+    private Map<String, Object> getProperties(Graph graph, Element element) throws IOException {
         Map<String, Object> propertiesMap = new HashMap<>();
         for (Property property : element.getProperties()) {
-            addPropertyToMap(graph, property, propertiesMap, indexInfo);
+            addPropertyToMap(graph, property, propertiesMap);
         }
         return propertiesMap;
     }
 
-    private void addPropertyToMap(Graph graph, Property property, Map<String, Object> propertiesMap, IndexInfo indexInfo) throws IOException {
+    private void addPropertyToMap(Graph graph, Property property, Map<String, Object> propertiesMap) throws IOException {
         Object propertyValue = property.getValue();
         String propertyName = deflatePropertyName(graph, property);
         if (propertyValue != null && shouldIgnoreType(propertyValue.getClass())) {
@@ -411,26 +410,11 @@ public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchI
     @Override
     public PropertyDefinition getPropertyDefinition(Graph graph, String propertyName) {
         propertyName = inflatePropertyNameWithTypeSuffix(propertyName);
-        Long lastCheck = propertyDefinitionNullLastCheck.get(propertyName);
-        if (lastCheck != null) {
-            long lastCheckFromNow = System.currentTimeMillis() - lastCheck;
-            if ((lastCheckFromNow <= PROPERTY_DEFINITION_LAST_CHECK_WAS_NULL_INTERVAL_MS)) {
-                if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("Skipping getPropertyDefinition '%s' from graph. Last check performed %dms ago. Expires at %dms", propertyName, lastCheckFromNow, PROPERTY_DEFINITION_LAST_CHECK_WAS_NULL_INTERVAL_MS);
-                }
-                return null;
-            }
-        }
-        PropertyDefinition propertyDefinition = ((GraphBaseWithSearchIndex) graph).getPropertyDefinition(propertyName);
-        if (propertyDefinition == null) {
-            propertyDefinitionNullLastCheck.put(propertyName, System.currentTimeMillis());
-        }
-        return propertyDefinition;
+        return ((GraphBaseWithSearchIndex) graph).getPropertyDefinition(propertyName);
     }
 
     private void savePropertyDefinition(Graph graph, String propertyName, PropertyDefinition propertyDefinition) {
         propertyName = inflatePropertyNameWithTypeSuffix(propertyName);
-        propertyDefinitionNullLastCheck.remove(propertyName);
         ((GraphBaseWithSearchIndex) graph).savePropertyDefinition(propertyName, propertyDefinition);
     }
 
@@ -511,7 +495,7 @@ public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchI
     @Override
     public void addElementToBulkRequest(Graph graph, BulkRequest bulkRequest, IndexInfo indexInfo, Element element, Authorizations authorizations) {
         try {
-            XContentBuilder json = buildJsonContentFromElement(graph, indexInfo, element, authorizations);
+            XContentBuilder json = buildJsonContentFromElement(graph, element, authorizations);
             UpdateRequest indexRequest = new UpdateRequest(indexInfo.getIndexName(), ELEMENT_TYPE, element.getId()).doc(json);
             indexRequest.docAsUpsert(true);
             bulkRequest.add(indexRequest);
@@ -552,11 +536,12 @@ public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchI
         for (Aggregation agg : response.getAggregations().asList()) {
             Terms propertyCountResults = (Terms) agg;
             for (Terms.Bucket propertyCountResult : propertyCountResults.getBuckets()) {
-                Long previousValue = results.get(propertyCountResult.getKey());
+                String mapKey = propertyCountResult.getKey().toLowerCase();
+                Long previousValue = results.get(mapKey);
                 if (previousValue == null) {
                     previousValue = 0L;
                 }
-                results.put(propertyCountResult.getKey(), previousValue + propertyCountResult.getDocCount());
+                results.put(mapKey, previousValue + propertyCountResult.getDocCount());
             }
         }
         return results;

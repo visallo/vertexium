@@ -222,10 +222,7 @@ public abstract class GraphBaseWithSearchIndex extends GraphBase implements Grap
     public abstract Iterable<Edge> getEdges(EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations);
 
     @Override
-    public abstract Iterable<GraphMetadataEntry> getMetadata();
-
-    @Override
-    public abstract void setMetadata(String key, Object value);
+    protected abstract GraphMetadataStore getGraphMetadataStore();
 
     @Override
     public abstract void deleteVertex(Vertex vertex, Authorizations authorizations);

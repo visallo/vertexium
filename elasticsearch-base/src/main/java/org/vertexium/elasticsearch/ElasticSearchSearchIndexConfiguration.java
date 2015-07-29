@@ -33,8 +33,7 @@ public class ElasticSearchSearchIndexConfiguration {
     public static final Class<? extends NameSubstitutionStrategy> DEFAULT_NAME_SUBSTITUTION_STRATEGY = IdentityNameSubstitutionStrategy.class;
     public static final String CONFIG_INDEX_SELECTION_STRATEGY_CLASS_NAME = "indexSelectionStrategy";
     public static final Class<? extends IndexSelectionStrategy> DEFAULT_INDEX_SELECTION_STRATEGY = DefaultIndexSelectionStrategy.class;
-    public static final String ZOOKEEPER_SERVERS = "zookeeperServers";
-    public static final String DEFAULT_ZOOKEEPER_SERVERS = "localhost";
+    public static final String CONFIG_ALL_FIELD_ENABLED = "allFieldEnabled";
 
     private final boolean autoFlush;
     private final boolean storeSourceData;
@@ -43,13 +42,14 @@ public class ElasticSearchSearchIndexConfiguration {
     private final String clusterName;
     private final int port;
     private final IndexSelectionStrategy indexSelectionStrategy;
+    private final GraphConfiguration graphConfiguration;
     private ScoringStrategy scoringStrategy;
     private NameSubstitutionStrategy nameSubstitutionStrategy;
     private final int numberOfShards;
     private boolean authorizationFilterEnabled;
-    private String zookeeperServers;
 
     public ElasticSearchSearchIndexConfiguration(Graph graph, GraphConfiguration graphConfiguration) {
+        this.graphConfiguration = graphConfiguration;
         esLocations = getElasticSearchLocations(graphConfiguration);
         indexEdges = getIndexEdges(graphConfiguration);
         storeSourceData = getStoreSourceData(graphConfiguration);
@@ -61,7 +61,6 @@ public class ElasticSearchSearchIndexConfiguration {
         indexSelectionStrategy = getIndexSelectionStrategy(graph, graphConfiguration);
         numberOfShards = getNumberOfShardsForIndex(graphConfiguration);
         authorizationFilterEnabled = getAuthorizationFilterEnabled(graphConfiguration);
-        zookeeperServers = getZookeeperServers(graphConfiguration);
     }
 
     public boolean isAutoFlush() {
@@ -106,10 +105,6 @@ public class ElasticSearchSearchIndexConfiguration {
 
     public int getNumberOfShards() {
         return numberOfShards;
-    }
-
-    public String getZookeeperServers() {
-        return zookeeperServers;
     }
 
     private static boolean getAutoFlush(GraphConfiguration config) {
@@ -181,9 +176,7 @@ public class ElasticSearchSearchIndexConfiguration {
         return authorizationFilterEnabled;
     }
 
-    private static String getZookeeperServers(GraphConfiguration config) {
-        String zookeeperServers = config.getString(ZOOKEEPER_SERVERS, DEFAULT_ZOOKEEPER_SERVERS);
-        LOGGER.info("Zookeeper servers: %s", zookeeperServers);
-        return zookeeperServers;
+    public boolean isAllFieldEnabled(boolean defaultAllFieldEnabled) {
+        return graphConfiguration.getBoolean(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + CONFIG_ALL_FIELD_ENABLED, defaultAllFieldEnabled);
     }
 }

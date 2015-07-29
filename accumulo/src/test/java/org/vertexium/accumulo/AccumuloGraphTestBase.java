@@ -7,9 +7,11 @@ import org.apache.accumulo.core.data.Range;
 import org.apache.accumulo.core.data.Value;
 import org.apache.accumulo.minicluster.MiniAccumuloCluster;
 import org.apache.accumulo.minicluster.MiniAccumuloConfig;
+import org.apache.curator.framework.CuratorFramework;
 import org.apache.hadoop.io.Text;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Test;
 import org.vertexium.*;
 import org.vertexium.accumulo.keys.KeyBase;
@@ -35,6 +37,9 @@ public abstract class AccumuloGraphTestBase extends GraphTestBase {
     private File tempDir;
     private static MiniAccumuloCluster accumulo;
 
+    @ClassRule
+    public static ZookeeperResource zookeeperResource = new ZookeeperResource();
+
     @Before
     @Override
     public void before() throws Exception {
@@ -54,6 +59,13 @@ public abstract class AccumuloGraphTestBase extends GraphTestBase {
                         VISIBILITY_MIXED_CASE_STRING
                 )
         );
+
+        final String path = AccumuloGraphConfiguration.DEFAULT_ZOOKEEPER_METADATA_SYNC_PATH;
+        CuratorFramework curator = zookeeperResource.getApacheCuratorFramework();
+        if (curator.checkExists().forPath(path) != null) {
+            curator.delete().deletingChildrenIfNeeded().forPath(path);
+        }
+
         super.before();
     }
 

@@ -317,7 +317,8 @@ public class ElasticSearchSearchIndex extends ElasticSearchSearchIndexBase {
 
         Map<Object, Long> results = new HashMap<>();
         for (Terms.Bucket propertyCountResult : propertyCountResults.getBuckets()) {
-            results.put(propertyCountResult.getKey(), propertyCountResult.getDocCount());
+            String key = propertyCountResult.getKey().toLowerCase();
+            results.put(key, propertyCountResult.getDocCount());
         }
         return results;
     }

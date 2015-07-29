@@ -437,31 +437,27 @@ public abstract class GraphBase implements Graph {
         return results;
     }
 
-    @Override
-    public abstract Iterable<GraphMetadataEntry> getMetadata();
+    protected abstract GraphMetadataStore getGraphMetadataStore();
 
     @Override
-    public Object getMetadata(String key) {
-        for (GraphMetadataEntry e : getMetadata()) {
-            if (e.getKey().equals(key)) {
-                return e.getValue();
-            }
-        }
-        return null;
+    public final Iterable<GraphMetadataEntry> getMetadata() {
+        return getGraphMetadataStore().getMetadata();
     }
 
     @Override
-    public Iterable<GraphMetadataEntry> getMetadataWithPrefix(final String prefix) {
-        return new FilterIterable<GraphMetadataEntry>(getMetadata()) {
-            @Override
-            protected boolean isIncluded(GraphMetadataEntry o) {
-                return o.getKey().startsWith(prefix);
-            }
-        };
+    public final void setMetadata(String key, Object value) {
+        getGraphMetadataStore().setMetadata(key, value);
     }
 
     @Override
-    public abstract void setMetadata(String key, Object value);
+    public final Object getMetadata(String key) {
+        return getGraphMetadataStore().getMetadata(key);
+    }
+
+    @Override
+    public final Iterable<GraphMetadataEntry> getMetadataWithPrefix(String prefix) {
+        return getGraphMetadataStore().getMetadataWithPrefix(prefix);
+    }
 
     @Override
     public abstract GraphQuery query(Authorizations authorizations);
@@ -536,11 +532,15 @@ public abstract class GraphBase implements Graph {
         for (Vertex v : getVertices(authorizations)) {
             for (Property p : v.getProperties()) {
                 if (propertyName.equals(p.getName())) {
-                    Long currentValue = countsByValue.get(p.getValue());
+                    Object mapKey = p.getValue();
+                    if (mapKey instanceof String) {
+                        mapKey = ((String) mapKey).toLowerCase();
+                    }
+                    Long currentValue = countsByValue.get(mapKey);
                     if (currentValue == null) {
-                        countsByValue.put(p.getValue(), 1L);
+                        countsByValue.put(mapKey, 1L);
                     } else {
-                        countsByValue.put(p.getValue(), currentValue + 1);
+                        countsByValue.put(mapKey, currentValue + 1);
                     }
                 }
             }

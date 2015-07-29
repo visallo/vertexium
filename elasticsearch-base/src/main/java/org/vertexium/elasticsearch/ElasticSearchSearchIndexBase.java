@@ -48,11 +48,13 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex, Searc
     private String[] indexNamesAsArray;
     private NameSubstitutionStrategy nameSubstitutionStrategy;
     private IndexSelectionStrategy indexSelectionStrategy;
+    private boolean allFieldEnabled;
 
     protected ElasticSearchSearchIndexBase(Graph graph, GraphConfiguration config) {
         this.config = new ElasticSearchSearchIndexConfiguration(graph, config);
         nameSubstitutionStrategy = this.config.getNameSubstitutionStrategy();
         indexSelectionStrategy = this.config.getIndexSelectionStrategy();
+        allFieldEnabled = this.config.isAllFieldEnabled(getDefaultAllFieldEnabled());
 
         ImmutableSettings.Builder settingsBuilder = ImmutableSettings.settingsBuilder();
         if (getConfig().getClusterName() != null) {
@@ -79,12 +81,16 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex, Searc
         loadPropertyDefinitions();
     }
 
+    protected boolean getDefaultAllFieldEnabled() {
+        return true;
+    }
+
     protected boolean isStoreSourceData() {
         return getConfig().isStoreSourceData();
     }
 
-    protected boolean isAllFieldEnabled() {
-        return true;
+    protected final boolean isAllFieldEnabled() {
+        return allFieldEnabled;
     }
 
     protected void loadIndexInfos() {

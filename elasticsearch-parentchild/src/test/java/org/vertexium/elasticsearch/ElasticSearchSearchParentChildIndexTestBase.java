@@ -41,6 +41,10 @@ public abstract class ElasticSearchSearchParentChildIndexTestBase extends GraphT
         return new InMemoryAuthorizations(auths);
     }
 
+    protected boolean isLuceneAndQueriesSupported() {
+        return false;
+    }
+
     @BeforeClass
     public static void beforeClass() throws IOException {
         tempDir = File.createTempFile("elasticsearch-temp", Long.toString(System.nanoTime()));

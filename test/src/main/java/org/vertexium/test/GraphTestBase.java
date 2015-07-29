@@ -1956,7 +1956,7 @@ public abstract class GraphTestBase {
                 .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
-        if (isLuceneQueriesSupported()) {
+        if (isLuceneQueriesSupported() && isLuceneAndQueriesSupported()) {
             Iterable<Vertex> vertices = graph.query("Joe AND ferner", AUTHORIZATIONS_A)
                     .vertices();
             Assert.assertEquals(1, count(vertices));
@@ -1989,6 +1989,10 @@ public abstract class GraphTestBase {
     }
 
     protected boolean isLuceneQueriesSupported() {
+        return !(graph.query(AUTHORIZATIONS_A) instanceof DefaultGraphQuery);
+    }
+
+    protected boolean isLuceneAndQueriesSupported() {
         return !(graph.query(AUTHORIZATIONS_A) instanceof DefaultGraphQuery);
     }
 
@@ -3049,6 +3053,7 @@ public abstract class GraphTestBase {
     public void testGraphMetadata() {
         List<GraphMetadataEntry> existingMetadata = toList(graph.getMetadata());
 
+        graph.setMetadata("test1", "value1old");
         graph.setMetadata("test1", "value1");
         graph.setMetadata("test2", "value2");
 
@@ -3238,16 +3243,16 @@ public abstract class GraphTestBase {
             return;
         }
         assertEquals(2, vertexPropertyCountByValue.size());
-        assertEquals(2L, (long) vertexPropertyCountByValue.get("Joe"));
-        assertEquals(searchIndexFieldLevelSecurity ? 1L : 2L, (long) vertexPropertyCountByValue.get("Joseph"));
+        assertEquals(2L, (long) vertexPropertyCountByValue.get("joe"));
+        assertEquals(searchIndexFieldLevelSecurity ? 1L : 2L, (long) vertexPropertyCountByValue.get("joseph"));
 
         vertexPropertyCountByValue = queryGraphQueryWithTermsAggregation("name", AUTHORIZATIONS_A_AND_B);
         if (vertexPropertyCountByValue == null) {
             return;
         }
         assertEquals(2, vertexPropertyCountByValue.size());
-        assertEquals(2L, (long) vertexPropertyCountByValue.get("Joe"));
-        assertEquals(2L, (long) vertexPropertyCountByValue.get("Joseph"));
+        assertEquals(2L, (long) vertexPropertyCountByValue.get("joe"));
+        assertEquals(2L, (long) vertexPropertyCountByValue.get("joseph"));
     }
 
     private Map<Object, Long> queryGraphQueryWithTermsAggregation(String propertyName, Authorizations authorizations) {
@@ -3374,13 +3379,13 @@ public abstract class GraphTestBase {
 
         Map<Object, Long> vertexPropertyCountByValue = graph.getVertexPropertyCountByValue("name", AUTHORIZATIONS_EMPTY);
         assertEquals(2, vertexPropertyCountByValue.size());
-        assertEquals(2L, (long) vertexPropertyCountByValue.get("Joe"));
-        assertEquals(searchIndexFieldLevelSecurity ? 1L : 2L, (long) vertexPropertyCountByValue.get("Joseph"));
+        assertEquals(2L, (long) vertexPropertyCountByValue.get("joe"));
+        assertEquals(searchIndexFieldLevelSecurity ? 1L : 2L, (long) vertexPropertyCountByValue.get("joseph"));
 
         vertexPropertyCountByValue = graph.getVertexPropertyCountByValue("name", AUTHORIZATIONS_A_AND_B);
         assertEquals(2, vertexPropertyCountByValue.size());
-        assertEquals(2L, (long) vertexPropertyCountByValue.get("Joe"));
-        assertEquals(2L, (long) vertexPropertyCountByValue.get("Joseph"));
+        assertEquals(2L, (long) vertexPropertyCountByValue.get("joe"));
+        assertEquals(2L, (long) vertexPropertyCountByValue.get("joseph"));
     }
 
     @Test

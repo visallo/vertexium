@@ -31,39 +31,53 @@ public class AccumuloGraphLogger {
             fetchedColumns = ((ScannerOptions) scanner).getFetchedColumns();
         }
 
+        String table = null;
+        try {
+            Field tableField = scanner.getClass().getDeclaredField("table");
+            tableField.setAccessible(true);
+            Object tableObj = tableField.get(scanner);
+            if (tableObj instanceof String) {
+                table = (String) tableObj;
+            } else {
+                table = tableObj.toString();
+            }
+        } catch (Exception e) {
+            queryLogger.trace("Could not get table name from scanner", e);
+        }
+
         if (scanner instanceof BatchScanner) {
             try {
                 Field rangesField = scanner.getClass().getDeclaredField("ranges");
                 rangesField.setAccessible(true);
                 ArrayList<Range> ranges = (ArrayList<Range>) rangesField.get(scanner);
                 if (ranges.size() == 0) {
-                    logStartIterator((Range) null, fetchedColumns);
+                    logStartIterator(table, (Range) null, fetchedColumns);
                 } else if (ranges.size() == 1) {
-                    logStartIterator(ranges.iterator().next(), fetchedColumns);
+                    logStartIterator(table, ranges.iterator().next(), fetchedColumns);
                 } else {
-                    logStartIterator(ranges, fetchedColumns);
+                    logStartIterator(table, ranges, fetchedColumns);
                 }
             } catch (Exception e) {
                 queryLogger.trace("Could not get ranges from BatchScanner", e);
             }
         } else if (scanner instanceof Scanner) {
             Range range = ((Scanner) scanner).getRange();
-            logStartIterator(range, fetchedColumns);
+            logStartIterator(table, range, fetchedColumns);
         } else {
             queryLogger.trace("begin accumulo iterator: %s", scanner.getClass().getName());
         }
     }
 
-    private void logStartIterator(Range range, SortedSet<Column> fetchedColumns) {
+    private void logStartIterator(String table, Range range, SortedSet<Column> fetchedColumns) {
         String fetchedColumnsString = fetchedColumnsToString(fetchedColumns);
         if (range == null || (range.getStartKey() == null && range.getEndKey() == null)) {
-            queryLogger.trace("begin accumulo iterator (%s): all items", fetchedColumnsString);
+            queryLogger.trace("begin accumulo iterator %s: (%s): all items", table, fetchedColumnsString);
         } else {
-            queryLogger.trace("begin accumulo iterator (%s): %s - %s", fetchedColumnsString, keyToString(range.getStartKey()), keyToString(range.getEndKey()));
+            queryLogger.trace("begin accumulo iterator %s: (%s): %s - %s", table, fetchedColumnsString, keyToString(range.getStartKey()), keyToString(range.getEndKey()));
         }
     }
 
-    private void logStartIterator(ArrayList<Range> ranges, SortedSet<Column> fetchedColumns) {
+    private void logStartIterator(String table, ArrayList<Range> ranges, SortedSet<Column> fetchedColumns) {
         String fetchedColumnsString = fetchedColumnsToString(fetchedColumns);
         StringBuilder sb = new StringBuilder();
         boolean first = true;
@@ -74,7 +88,7 @@ public class AccumuloGraphLogger {
             sb.append("  ").append(keyToString(r.getStartKey())).append(" - ").append(keyToString(r.getEndKey()));
             first = false;
         }
-        queryLogger.trace("begin accumulo iterator (%s):\n%s", fetchedColumnsString, sb.toString());
+        queryLogger.trace("begin accumulo iterator %s: (%s):\n%s", table, fetchedColumnsString, sb.toString());
     }
 
     private String keyToString(Key key) {
@@ -144,8 +158,6 @@ public class AccumuloGraphLogger {
     }
 
     public void logEndIterator(long time) {
-        if (queryLogger.isTraceEnabled()) {
-            queryLogger.trace("accumulo iterator closed (time %dms)", time);
-        }
+        queryLogger.debug("accumulo iterator closed (time %dms)", time);
     }
 }

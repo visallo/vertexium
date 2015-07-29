@@ -71,12 +71,7 @@ public class ElementMapperGraph extends GraphBase {
     }
 
     @Override
-    public Iterable<GraphMetadataEntry> getMetadata() {
-        throw new VertexiumException("Not supported");
-    }
-
-    @Override
-    public void setMetadata(String key, Object value) {
+    protected GraphMetadataStore getGraphMetadataStore() {
         throw new VertexiumException("Not supported");
     }
 

@@ -14,7 +14,6 @@ import org.vertexium.search.IndexHint;
 import org.vertexium.search.SearchIndex;
 import org.vertexium.util.ConvertingIterable;
 import org.vertexium.util.IterableUtils;
-import org.vertexium.util.JavaSerializableUtils;
 import org.vertexium.util.LookAheadIterable;
 
 import java.util.*;
@@ -25,8 +24,8 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
     private static final InMemoryGraphConfiguration DEFAULT_CONFIGURATION = new InMemoryGraphConfiguration(new HashMap());
     private final InMemoryVertexTable vertices;
     private final InMemoryEdgeTable edges;
-    private final Map<String, byte[]> metadata = new HashMap<>();
     private final Set<String> validAuthorizations = new HashSet<>();
+    private GraphMetadataStore graphMetadataStore = new InMemoryGraphMetadataStore();
 
     protected InMemoryGraph(InMemoryGraphConfiguration configuration) {
         this(
@@ -340,6 +339,11 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
     }
 
     @Override
+    protected GraphMetadataStore getGraphMetadataStore() {
+        return graphMetadataStore;
+    }
+
+    @Override
     public void deleteEdge(Edge edge, Authorizations authorizations) {
         checkNotNull(edge, "Edge cannot be null");
         if (!((InMemoryEdge) edge).canRead(authorizations)) {
@@ -371,33 +375,6 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
         if (hasEventListeners()) {
             fireGraphEvent(new SoftDeleteEdgeEvent(this, edge));
         }
-    }
-
-    @Override
-    public Iterable<GraphMetadataEntry> getMetadata() {
-        return new ConvertingIterable<Map.Entry<String, byte[]>, GraphMetadataEntry>(this.metadata.entrySet()) {
-            @Override
-            protected GraphMetadataEntry convert(Map.Entry<String, byte[]> o) {
-                return new GraphMetadataEntry(o.getKey(), o.getValue());
-            }
-        };
-    }
-
-    @Override
-    public Object getMetadata(String key) {
-        if (QUERY_LOGGER.isTraceEnabled()) {
-            QUERY_LOGGER.trace("getMetadata: %s", key);
-        }
-        byte[] bytes = this.metadata.get(key);
-        if (bytes == null) {
-            return null;
-        }
-        return JavaSerializableUtils.bytesToObject(bytes);
-    }
-
-    @Override
-    public void setMetadata(String key, Object value) {
-        this.metadata.put(key, JavaSerializableUtils.objectToBytes(value));
     }
 
     @Override

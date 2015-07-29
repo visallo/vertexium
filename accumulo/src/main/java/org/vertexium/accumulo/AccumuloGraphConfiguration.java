@@ -34,6 +34,7 @@ public class AccumuloGraphConfiguration extends GraphConfiguration {
     public static final String ACCUMULO_USERNAME = "username";
     public static final String ACCUMULO_PASSWORD = "password";
     public static final String ZOOKEEPER_SERVERS = "zookeeperServers";
+    public static final String ZOOKEEPER_METADATA_SYNC_PATH = "zookeeperMetadataSyncPath";
     public static final String ACCUMULO_MAX_VERSIONS = "maxVersions";
     public static final String VALUE_SERIALIZER_PROP_PREFIX = "serializer";
     public static final String NAME_SUBSTITUTION_STRATEGY_PROP_PREFIX = "nameSubstitutionStrategy";
@@ -55,6 +56,7 @@ public class AccumuloGraphConfiguration extends GraphConfiguration {
     public static final String DEFAULT_ACCUMULO_USERNAME = "root";
     public static final String DEFAULT_ACCUMULO_INSTANCE_NAME = "vertexium";
     public static final String DEFAULT_ZOOKEEPER_SERVERS = "localhost";
+    public static final String DEFAULT_ZOOKEEPER_METADATA_SYNC_PATH = "/vertexium/metadata";
     public static final String DEFAULT_TABLE_NAME_PREFIX = "vertexium";
     public static final int DEFAULT_MAX_STREAMING_PROPERTY_VALUE_TABLE_DATA_SIZE = 10 * 1024 * 1024;
     public static final String DEFAULT_HDFS_USER = "hadoop";
@@ -188,5 +190,9 @@ public class AccumuloGraphConfiguration extends GraphConfiguration {
 
     public String getHdfsContextClasspath() {
         return getString(HDFS_CONTEXT_CLASSPATH, DEFAULT_HDFS_CONTEXT_CLASSPATH);
+    }
+
+    public String getZookeeperMetadataSyncPath() {
+        return getString(ZOOKEEPER_METADATA_SYNC_PATH, DEFAULT_ZOOKEEPER_METADATA_SYNC_PATH);
     }
 }

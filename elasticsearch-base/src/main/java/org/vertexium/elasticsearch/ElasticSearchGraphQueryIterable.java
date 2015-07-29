@@ -113,12 +113,13 @@ public class ElasticSearchGraphQueryIterable<T extends Element> extends DefaultG
             if (agg instanceof Terms) {
                 Terms h = (Terms) agg;
                 for (Terms.Bucket b : h.getBuckets()) {
-                    TermsBucket existingBucket = buckets.get(b.getKey());
+                    String mapKey = b.getKey().toLowerCase();
+                    TermsBucket existingBucket = buckets.get(mapKey);
                     long existingCount = 0;
                     if (existingBucket != null) {
                         existingCount = existingBucket.getCount();
                     }
-                    buckets.put(b.getKey(), new TermsBucket(b.getKey(), existingCount + b.getDocCount()));
+                    buckets.put(mapKey, new TermsBucket(mapKey, existingCount + b.getDocCount()));
                 }
             } else {
                 throw new VertexiumException("Aggregation is not a terms: " + agg.getClass().getName());
