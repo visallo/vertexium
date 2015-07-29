@@ -50,8 +50,7 @@ import java.net.URISyntaxException;
 import java.util.*;
 import java.util.regex.Pattern;
 
-import static org.vertexium.util.IterableUtils.count;
-import static org.vertexium.util.IterableUtils.toList;
+import static org.vertexium.util.IterableUtils.*;
 import static org.vertexium.util.Preconditions.checkNotNull;
 
 public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable {
@@ -496,7 +495,8 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
 
     @Override
     public Iterable<Vertex> getVertices(EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations) throws VertexiumException {
-        return getVerticesInRange(null, null, fetchHints, endTime, authorizations);
+        Span trace = Trace.start("getVertices");
+        return getVerticesInRange(trace, null, null, fetchHints, endTime, authorizations);
     }
 
     @Override
@@ -727,54 +727,71 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
     }
 
     public Iterable<HistoricalPropertyValue> getHistoricalPropertyValues(Element element, String key, String name, Visibility visibility, Long startTime, Long endTime, Authorizations authorizations) {
-        ElementType elementType = ElementType.getTypeFromElement(element);
-        Text rowKey = new Text(element.getId());
-
-        EnumSet<FetchHint> fetchHints = EnumSet.of(FetchHint.PROPERTIES, FetchHint.PROPERTY_METADATA);
-        Range range = new Range(rowKey);
-        final Scanner scanner = createElementVisibilityScanner(fetchHints, elementType, ALL_VERSIONS, startTime, endTime, range, authorizations);
-
-        try {
-            Map<String, HistoricalPropertyValue> results = new HashMap<>();
-            for (Map.Entry<Key, Value> column : scanner) {
-                String cq = column.getKey().getColumnQualifier().toString();
-                String columnVisibility = column.getKey().getColumnVisibility().toString();
-                if (column.getKey().getColumnFamily().equals(AccumuloElement.CF_PROPERTY)) {
-                    if (!columnVisibility.equals(visibility.getVisibilityString())) {
-                        continue;
-                    }
-                    PropertyColumnQualifier propertyColumnQualifier = new PropertyColumnQualifier(cq, getNameSubstitutionStrategy());
-                    if (!propertyColumnQualifier.getPropertyName().equals(name)) {
-                        continue;
-                    }
-                    if (!propertyColumnQualifier.getPropertyKey().equals(key)) {
-                        continue;
-                    }
-                    String resultsKey = propertyColumnQualifier.getDiscriminator(columnVisibility, column.getKey().getTimestamp());
-                    long timestamp = column.getKey().getTimestamp();
-                    Object value = valueSerializer.valueToObject(column.getValue());
-                    Metadata metadata = new Metadata();
-                    Set<Visibility> hiddenVisibilities = null; // TODO should we preserve these over time
-                    if (value instanceof StreamingPropertyValueTableRef) {
-                        value = ((StreamingPropertyValueTableRef) value).toStreamingPropertyValue(this);
-                    }
-                    HistoricalPropertyValue hpv = new HistoricalPropertyValue(timestamp, value, metadata, hiddenVisibilities);
-                    results.put(resultsKey, hpv);
-                } else if (column.getKey().getColumnFamily().equals(AccumuloElement.CF_PROPERTY_METADATA)) {
-                    PropertyMetadataColumnQualifier propertyMetadataColumnQualifier = new PropertyMetadataColumnQualifier(cq, getNameSubstitutionStrategy());
-                    String resultsKey = propertyMetadataColumnQualifier.getPropertyDiscriminator(column.getKey().getTimestamp());
-                    HistoricalPropertyValue hpv = results.get(resultsKey);
-                    if (hpv == null) {
-                        continue;
-                    }
-                    Object value = valueSerializer.valueToObject(column.getValue());
-                    Visibility metadataVisibility = accumuloVisibilityToVisibility(columnVisibility);
-                    hpv.getMetadata().add(propertyMetadataColumnQualifier.getMetadataKey(), value, metadataVisibility);
-                }
+        Span trace = Trace.start("getHistoricalPropertyValues");
+        if (Trace.isTracing()) {
+            trace.data("key", key);
+            trace.data("name", name);
+            trace.data("visibility", visibility.getVisibilityString());
+            if (startTime != null) {
+                trace.data("startTime", Long.toString(startTime));
             }
-            return new TreeSet<>(results.values());
+            if (endTime != null) {
+                trace.data("endTime", Long.toString(endTime));
+            }
+        }
+        try {
+            ElementType elementType = ElementType.getTypeFromElement(element);
+            Text rowKey = new Text(element.getId());
+
+            EnumSet<FetchHint> fetchHints = EnumSet.of(FetchHint.PROPERTIES, FetchHint.PROPERTY_METADATA);
+            traceDataFetchHints(trace, fetchHints);
+            Range range = new Range(rowKey);
+            final Scanner scanner = createElementVisibilityScanner(fetchHints, elementType, ALL_VERSIONS, startTime, endTime, range, authorizations);
+
+            try {
+                Map<String, HistoricalPropertyValue> results = new HashMap<>();
+                for (Map.Entry<Key, Value> column : scanner) {
+                    String cq = column.getKey().getColumnQualifier().toString();
+                    String columnVisibility = column.getKey().getColumnVisibility().toString();
+                    if (column.getKey().getColumnFamily().equals(AccumuloElement.CF_PROPERTY)) {
+                        if (!columnVisibility.equals(visibility.getVisibilityString())) {
+                            continue;
+                        }
+                        PropertyColumnQualifier propertyColumnQualifier = new PropertyColumnQualifier(cq, getNameSubstitutionStrategy());
+                        if (!propertyColumnQualifier.getPropertyName().equals(name)) {
+                            continue;
+                        }
+                        if (!propertyColumnQualifier.getPropertyKey().equals(key)) {
+                            continue;
+                        }
+                        String resultsKey = propertyColumnQualifier.getDiscriminator(columnVisibility, column.getKey().getTimestamp());
+                        long timestamp = column.getKey().getTimestamp();
+                        Object value = valueSerializer.valueToObject(column.getValue());
+                        Metadata metadata = new Metadata();
+                        Set<Visibility> hiddenVisibilities = null; // TODO should we preserve these over time
+                        if (value instanceof StreamingPropertyValueTableRef) {
+                            value = ((StreamingPropertyValueTableRef) value).toStreamingPropertyValue(this);
+                        }
+                        HistoricalPropertyValue hpv = new HistoricalPropertyValue(timestamp, value, metadata, hiddenVisibilities);
+                        results.put(resultsKey, hpv);
+                    } else if (column.getKey().getColumnFamily().equals(AccumuloElement.CF_PROPERTY_METADATA)) {
+                        PropertyMetadataColumnQualifier propertyMetadataColumnQualifier = new PropertyMetadataColumnQualifier(cq, getNameSubstitutionStrategy());
+                        String resultsKey = propertyMetadataColumnQualifier.getPropertyDiscriminator(column.getKey().getTimestamp());
+                        HistoricalPropertyValue hpv = results.get(resultsKey);
+                        if (hpv == null) {
+                            continue;
+                        }
+                        Object value = valueSerializer.valueToObject(column.getValue());
+                        Visibility metadataVisibility = accumuloVisibilityToVisibility(columnVisibility);
+                        hpv.getMetadata().add(propertyMetadataColumnQualifier.getMetadataKey(), value, metadataVisibility);
+                    }
+                }
+                return new TreeSet<>(results.values());
+            } finally {
+                scanner.close();
+            }
         } finally {
-            scanner.close();
+            trace.stop();
         }
     }
 
@@ -784,7 +801,8 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
 
     @Override
     public CloseableIterable<Edge> getEdges(EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations) {
-        return getEdgesInRange(null, null, fetchHints, endTime, authorizations);
+        Span trace = Trace.start("getEdges");
+        return getEdgesInRange(trace, null, null, fetchHints, endTime, authorizations);
     }
 
     @Override
@@ -940,7 +958,13 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         return new AccumuloAuthorizations(auths);
     }
 
-    public void markPropertyHidden(AccumuloElement element, Property property, Long timestamp, Visibility visibility, Authorizations authorizations) {
+    public void markPropertyHidden(
+            AccumuloElement element,
+            Property property,
+            Long timestamp,
+            Visibility visibility,
+            @SuppressWarnings("UnusedParameters") Authorizations authorizations
+    ) {
         checkNotNull(element);
         Span trace = Trace.start("markPropertyHidden");
         trace.data("elementId", element.getId());
@@ -1093,30 +1117,33 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
 
     @Override
     public Vertex getVertex(String vertexId, EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations) throws VertexiumException {
+        if (vertexId == null) {
+            return null;
+        }
+
         Span trace = Trace.start("getVertex");
         trace.data("vertexId", vertexId);
-        try {
-            if (vertexId == null) {
-                return null;
-            }
-
-            Iterator<Vertex> vertices = getVerticesInRange(new Range(vertexId), fetchHints, endTime, authorizations).iterator();
-            if (vertices.hasNext()) {
-                return vertices.next();
-            }
-            return null;
-        } finally {
-            trace.stop();
-        }
+        traceDataFetchHints(trace, fetchHints);
+        return singleOrDefault(getVerticesInRange(trace, new Range(vertexId), fetchHints, endTime, authorizations), null);
     }
 
     @Override
     public Iterable<Vertex> getVerticesWithPrefix(String vertexIdPrefix, EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations) {
+        Span trace = Trace.start("getVerticesWithPrefix");
+        trace.data("vertexIdPrefix", vertexIdPrefix);
+        traceDataFetchHints(trace, fetchHints);
         Range range = Range.prefix(vertexIdPrefix);
-        return getVerticesInRange(range, fetchHints, endTime, authorizations);
+        return getVerticesInRange(trace, range, fetchHints, endTime, authorizations);
     }
 
-    private CloseableIterable<Vertex> getVerticesInRange(String startId, String endId, EnumSet<FetchHint> fetchHints, Long timestamp, final Authorizations authorizations) throws VertexiumException {
+    private CloseableIterable<Vertex> getVerticesInRange(Span trace, String startId, String endId, EnumSet<FetchHint> fetchHints, Long timestamp, final Authorizations authorizations) throws VertexiumException {
+        trace.data("startId", startId);
+        trace.data("endId", endId);
+        if (Trace.isTracing() && timestamp != null) {
+            trace.data("timestamp", Long.toString(timestamp));
+        }
+        traceDataFetchHints(trace, fetchHints);
+
         final Key startKey;
         if (startId == null) {
             startKey = null;
@@ -1132,7 +1159,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         }
 
         Range range = new Range(startKey, endKey);
-        return getVerticesInRange(range, fetchHints, timestamp, authorizations);
+        return getVerticesInRange(trace, range, fetchHints, timestamp, authorizations);
     }
 
     protected Scanner createVertexScanner(
@@ -1468,15 +1495,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
     public Edge getEdge(String edgeId, EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations) {
         Span trace = Trace.start("getEdge");
         trace.data("edgeId", edgeId);
-        try {
-            Iterator<Edge> edges = getEdgesInRange(edgeId, edgeId, fetchHints, endTime, authorizations).iterator();
-            if (edges.hasNext()) {
-                return edges.next();
-            }
-            return null;
-        } finally {
-            trace.stop();
-        }
+        return singleOrDefault(getEdgesInRange(trace, edgeId, edgeId, fetchHints, endTime, authorizations), null);
     }
 
     public byte[] streamingPropertyValueTableData(String dataRowKey) {
@@ -1797,7 +1816,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         return graphMetadataStore;
     }
 
-    protected CloseableIterable<Vertex> getVerticesInRange(final Range range, final EnumSet<FetchHint> fetchHints, final Long endTime, final Authorizations authorizations) {
+    protected CloseableIterable<Vertex> getVerticesInRange(final Span trace, final Range range, final EnumSet<FetchHint> fetchHints, final Long endTime, final Authorizations authorizations) {
         final boolean includeHidden = fetchHints.contains(FetchHint.INCLUDE_HIDDEN);
 
         final long timerStartTime = System.currentTimeMillis();
@@ -1833,6 +1852,9 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             public void close() {
                 super.close();
                 scanner.close();
+                if (trace != null) {
+                    trace.stop();
+                }
                 GRAPH_LOGGER.logEndIterator(System.currentTimeMillis() - timerStartTime);
             }
         };
@@ -1854,6 +1876,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
 
         final Span trace = Trace.start("getVertices");
         trace.data("idCount", Integer.toString(idCount));
+        traceDataFetchHints(trace, fetchHints);
         final long timerStartTime = System.currentTimeMillis();
 
         return new LookAheadIterable<Map.Entry<Key, Value>, Vertex>() {
@@ -1909,6 +1932,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
 
         final Span trace = Trace.start("getEdges");
         trace.data("idCount", Integer.toString(idCount));
+        traceDataFetchHints(trace, fetchHints);
         final long timerStartTime = System.currentTimeMillis();
 
         return new LookAheadIterable<Map.Entry<Key, Value>, Edge>() {
@@ -1947,7 +1971,9 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         };
     }
 
-    protected CloseableIterable<Edge> getEdgesInRange(String startId, String endId, final EnumSet<FetchHint> fetchHints, final Long endTime, final Authorizations authorizations) throws VertexiumException {
+    protected CloseableIterable<Edge> getEdgesInRange(final Span trace, String startId, String endId, final EnumSet<FetchHint> fetchHints, final Long endTime, final Authorizations authorizations) throws VertexiumException {
+        traceDataFetchHints(trace, fetchHints);
+
         final AccumuloGraph graph = this;
         final boolean includeHidden = fetchHints.contains(FetchHint.INCLUDE_HIDDEN);
 
@@ -1992,6 +2018,9 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             public void close() {
                 super.close();
                 scanner.close();
+                if (trace != null) {
+                    trace.stop();
+                }
                 GRAPH_LOGGER.logEndIterator(System.currentTimeMillis() - timerStartTime);
             }
         };
@@ -2076,6 +2105,12 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             throw new VertexiumException("No trace currently running");
         }
         Trace.off();
+    }
+
+    private void traceDataFetchHints(Span trace, EnumSet<FetchHint> fetchHints) {
+        if (Trace.isTracing()) {
+            trace.data("fetchHints", FetchHint.toString(fetchHints));
+        }
     }
 
     private class AccumuloGraphMetadataStore extends GraphMetadataStore {

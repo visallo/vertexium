@@ -131,6 +131,7 @@ public class IterableUtils {
     public static <T> T singleOrDefault(final Iterable<? extends T> it, T defaultValue) {
         Iterator<? extends T> i = it.iterator();
         if (!i.hasNext()) {
+            close(it);
             return defaultValue;
         }
 
