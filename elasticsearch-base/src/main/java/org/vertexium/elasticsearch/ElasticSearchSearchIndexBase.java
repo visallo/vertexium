@@ -164,7 +164,7 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex, Searc
                         .execute()
                         .actionGet();
                 indexInfo.setElementTypeDefined(true);
-            } catch (IOException e) {
+            } catch (Throwable e) {
                 throw new VertexiumException("Could not add mappings to index: " + indexInfo.getIndexName(), e);
             }
         }
