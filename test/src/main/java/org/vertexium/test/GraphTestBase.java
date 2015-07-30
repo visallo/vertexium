@@ -3399,6 +3399,22 @@ public abstract class GraphTestBase {
         assertEquals(1, graph.getEdgeCount(AUTHORIZATIONS_A));
     }
 
+    @Test
+    public void testFetchHintsEdgeLabels() {
+        Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_ALL);
+        Vertex v2 = graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_ALL);
+        Vertex v3 = graph.addVertex("v3", VISIBILITY_A, AUTHORIZATIONS_ALL);
+
+        graph.addEdge("e v1->v2", v1, v2, "labelA", VISIBILITY_A, AUTHORIZATIONS_ALL);
+        graph.addEdge("e v1->v3", v1, v3, "labelB", VISIBILITY_A, AUTHORIZATIONS_ALL);
+
+        v1 = graph.getVertex("v1", FetchHint.EDGE_LABELS, AUTHORIZATIONS_ALL);
+        List<String> edgeLabels = toList(v1.getEdgeLabels(Direction.BOTH, AUTHORIZATIONS_ALL));
+        assertEquals(2, edgeLabels.size());
+        assertTrue("labelA missing", edgeLabels.contains("labelA"));
+        assertTrue("labelB missing", edgeLabels.contains("labelB"));
+    }
+
     private List<Vertex> getVertices(long count) {
         List<Vertex> vertices = new ArrayList<>();
         for (int i = 0; i < count; i++) {

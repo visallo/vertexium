@@ -8,7 +8,7 @@ import com.esotericsoftware.kryo.io.UnsafeOutput;
 import com.esotericsoftware.kryo.util.DefaultClassResolver;
 import com.esotericsoftware.kryo.util.MapReferenceResolver;
 import org.apache.accumulo.core.data.Value;
-import org.vertexium.accumulo.EdgeInfo;
+import org.vertexium.accumulo.iterator.model.EdgeInfo;
 import org.vertexium.accumulo.StreamingPropertyValueHdfsRef;
 import org.vertexium.accumulo.StreamingPropertyValueRef;
 import org.vertexium.accumulo.StreamingPropertyValueTableRef;

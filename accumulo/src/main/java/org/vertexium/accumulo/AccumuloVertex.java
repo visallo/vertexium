@@ -1,7 +1,17 @@
 package org.vertexium.accumulo;
 
+import com.google.common.base.Function;
+import com.google.common.collect.Iterables;
+import org.apache.accumulo.core.data.Key;
+import org.apache.accumulo.core.data.Value;
 import org.apache.hadoop.io.Text;
 import org.vertexium.*;
+import org.vertexium.accumulo.iterator.VertexIterator;
+import org.vertexium.accumulo.iterator.model.Edges;
+import org.vertexium.accumulo.iterator.model.EdgesWithCount;
+import org.vertexium.accumulo.iterator.model.EdgesWithEdgeInfo;
+import org.vertexium.accumulo.iterator.model.ElementData;
+import org.vertexium.accumulo.util.DataInputStreamUtils;
 import org.vertexium.mutation.ExistingElementMutation;
 import org.vertexium.mutation.ExistingElementMutationImpl;
 import org.vertexium.mutation.PropertyDeleteMutation;
@@ -11,31 +21,25 @@ import org.vertexium.util.ConvertingIterable;
 import org.vertexium.util.JoinIterable;
 import org.vertexium.util.LookAheadIterable;
 
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
+import javax.annotation.Nullable;
+import java.io.ByteArrayInputStream;
+import java.io.DataInputStream;
+import java.io.IOException;
+import java.util.*;
 
 import static org.vertexium.util.IterableUtils.count;
-import static org.vertexium.util.IterableUtils.toSet;
+import static org.vertexium.util.IterableUtils.toList;
 
 public class AccumuloVertex extends AccumuloElement implements Vertex {
-    public static final String CF_SIGNAL_STRING = "V";
-    public static final Text CF_SIGNAL = new Text(CF_SIGNAL_STRING);
-    public static final String CF_OUT_EDGE_STRING = "EOUT";
-    public static final Text CF_OUT_EDGE = new Text(CF_OUT_EDGE_STRING);
-    public static final String CF_OUT_EDGE_HIDDEN_STRING = "EOUTH";
-    public static final Text CF_OUT_EDGE_HIDDEN = new Text(CF_OUT_EDGE_HIDDEN_STRING);
-    public static final String CF_OUT_EDGE_SOFT_DELETE_STRING = "EOUTD";
-    public static final Text CF_OUT_EDGE_SOFT_DELETE = new Text(CF_OUT_EDGE_SOFT_DELETE_STRING);
-    public static final String CF_IN_EDGE_STRING = "EIN";
-    public static final Text CF_IN_EDGE = new Text(CF_IN_EDGE_STRING);
-    public static final String CF_IN_EDGE_HIDDEN_STRING = "EINH";
-    public static final Text CF_IN_EDGE_HIDDEN = new Text(CF_IN_EDGE_HIDDEN_STRING);
-    public static final String CF_IN_EDGE_SOFT_DELETE_STRING = "EIND";
-    public static final Text CF_IN_EDGE_SOFT_DELETE = new Text(CF_IN_EDGE_SOFT_DELETE_STRING);
-    private final Map<String, EdgeInfo> inEdges;
-    private final Map<String, EdgeInfo> outEdges;
+    public static final Text CF_SIGNAL = VertexIterator.CF_SIGNAL;
+    public static final Text CF_OUT_EDGE = VertexIterator.CF_OUT_EDGE;
+    public static final Text CF_IN_EDGE = VertexIterator.CF_IN_EDGE;
+    public static final Text CF_OUT_EDGE_SOFT_DELETE = VertexIterator.CF_OUT_EDGE_SOFT_DELETE;
+    public static final Text CF_IN_EDGE_SOFT_DELETE = VertexIterator.CF_IN_EDGE_SOFT_DELETE;
+    public static final Text CF_OUT_EDGE_HIDDEN = VertexIterator.CF_OUT_EDGE_HIDDEN;
+    public static final Text CF_IN_EDGE_HIDDEN = VertexIterator.CF_IN_EDGE_HIDDEN;
+    private final Edges inEdges;
+    private final Edges outEdges;
 
     public AccumuloVertex(
             AccumuloGraph graph,
@@ -56,14 +60,14 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
                 propertyDeleteMutations,
                 propertySoftDeleteMutations,
                 hiddenVisibilities,
-                new HashMap<String, EdgeInfo>(),
-                new HashMap<String, EdgeInfo>(),
+                new EdgesWithEdgeInfo(),
+                new EdgesWithEdgeInfo(),
                 timestamp,
                 authorizations
         );
     }
 
-    AccumuloVertex(
+    public AccumuloVertex(
             AccumuloGraph graph,
             String vertexId,
             Visibility vertexVisibility,
@@ -71,8 +75,8 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
             Iterable<PropertyDeleteMutation> propertyDeleteMutations,
             Iterable<PropertySoftDeleteMutation> propertySoftDeleteMutations,
             Iterable<Visibility> hiddenVisibilities,
-            Map<String, EdgeInfo> inEdges,
-            Map<String, EdgeInfo> outEdges,
+            Edges inEdges,
+            Edges outEdges,
             long timestamp,
             Authorizations authorizations
     ) {
@@ -89,6 +93,53 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
         );
         this.inEdges = inEdges;
         this.outEdges = outEdges;
+    }
+
+    public static Vertex createFromIteratorValue(AccumuloGraph graph, Key key, Value value, Authorizations authorizations) {
+        try {
+            String vertexId;
+            Visibility vertexVisibility;
+            Iterable<Property> properties;
+            Iterable<PropertyDeleteMutation> propertyDeleteMutations = new ArrayList<>();
+            Iterable<PropertySoftDeleteMutation> propertySoftDeleteMutations = new ArrayList<>();
+            Iterable<Visibility> hiddenVisibilities;
+            Edges inEdges;
+            Edges outEdges;
+            long timestamp;
+
+            ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(value.get());
+            final DataInputStream in = new DataInputStream(byteArrayInputStream);
+            DataInputStreamUtils.decodeHeader(in, ElementData.TYPE_ID_VERTEX);
+            vertexId = DataInputStreamUtils.decodeText(in).toString();
+            timestamp = in.readLong();
+            vertexVisibility = new Visibility(DataInputStreamUtils.decodeText(in).toString());
+            hiddenVisibilities = Iterables.transform(DataInputStreamUtils.decodeTextList(in), new Function<Text, Visibility>() {
+                @Nullable
+                @Override
+                public Visibility apply(Text input) {
+                    return new Visibility(input.toString());
+                }
+            });
+            properties = DataInputStreamUtils.decodeProperties(graph, in);
+            outEdges = DataInputStreamUtils.decodeEdges(in, graph.getNameSubstitutionStrategy());
+            inEdges = DataInputStreamUtils.decodeEdges(in, graph.getNameSubstitutionStrategy());
+
+            return new AccumuloVertex(
+                    graph,
+                    vertexId,
+                    vertexVisibility,
+                    properties,
+                    propertyDeleteMutations,
+                    propertySoftDeleteMutations,
+                    hiddenVisibilities,
+                    inEdges,
+                    outEdges,
+                    timestamp,
+                    authorizations
+            );
+        } catch (IOException ex) {
+            throw new VertexiumException("Could not read vertex", ex);
+        }
     }
 
     @Override
@@ -193,12 +244,35 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
 
     @Override
     public Iterable<String> getEdgeLabels(Direction direction, Authorizations authorizations) {
-        return toSet(new ConvertingIterable<Map.Entry<String, EdgeInfo>, String>(getEdgeInfos(direction)) {
-            @Override
-            protected String convert(Map.Entry<String, EdgeInfo> o) {
-                return o.getValue().getLabel();
+        Set<String> edgeLabels = new HashSet<>();
+
+        if (direction == Direction.IN || direction == Direction.BOTH) {
+            if (inEdges instanceof EdgesWithCount) {
+                edgeLabels.addAll(((EdgesWithCount) inEdges).getLabels());
+            } else {
+                edgeLabels.addAll(toList(new ConvertingIterable<Map.Entry<String, org.vertexium.accumulo.iterator.model.EdgeInfo>, String>(getEdgeInfos(Direction.IN)) {
+                    @Override
+                    protected String convert(Map.Entry<String, org.vertexium.accumulo.iterator.model.EdgeInfo> o) {
+                        return o.getValue().getLabel();
+                    }
+                }));
             }
-        });
+        }
+
+        if (direction == Direction.OUT || direction == Direction.BOTH) {
+            if (outEdges instanceof EdgesWithCount) {
+                edgeLabels.addAll(((EdgesWithCount) outEdges).getLabels());
+            } else {
+                edgeLabels.addAll(toList(new ConvertingIterable<Map.Entry<String, org.vertexium.accumulo.iterator.model.EdgeInfo>, String>(getEdgeInfos(Direction.OUT)) {
+                    @Override
+                    protected String convert(Map.Entry<String, org.vertexium.accumulo.iterator.model.EdgeInfo> o) {
+                        return o.getValue().getLabel();
+                    }
+                }));
+            }
+        }
+
+        return edgeLabels;
     }
 
     @Override
@@ -208,9 +282,9 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
 
     @SuppressWarnings("unused")
     public Iterable<String> getEdgeIdsWithOtherVertexId(final String otherVertexId, final Direction direction, final String[] labels, final Authorizations authorizations) {
-        return new LookAheadIterable<Map.Entry<String, EdgeInfo>, String>() {
+        return new LookAheadIterable<Map.Entry<String, org.vertexium.accumulo.iterator.model.EdgeInfo>, String>() {
             @Override
-            protected boolean isIncluded(Map.Entry<String, EdgeInfo> edgeInfo, String edgeId) {
+            protected boolean isIncluded(Map.Entry<String, org.vertexium.accumulo.iterator.model.EdgeInfo> edgeInfo, String edgeId) {
                 if (otherVertexId != null) {
                     if (!otherVertexId.equals(edgeInfo.getValue().getVertexId())) {
                         return false;
@@ -229,25 +303,31 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
             }
 
             @Override
-            protected String convert(Map.Entry<String, EdgeInfo> edgeInfo) {
+            protected String convert(Map.Entry<String, org.vertexium.accumulo.iterator.model.EdgeInfo> edgeInfo) {
                 return edgeInfo.getKey();
             }
 
             @Override
-            protected Iterator<Map.Entry<String, EdgeInfo>> createIterator() {
+            protected Iterator<Map.Entry<String, org.vertexium.accumulo.iterator.model.EdgeInfo>> createIterator() {
                 return getEdgeInfos(direction).iterator();
             }
         };
     }
 
-    private Iterable<Map.Entry<String, EdgeInfo>> getEdgeInfos(Direction direction) {
+    private Iterable<Map.Entry<String, org.vertexium.accumulo.iterator.model.EdgeInfo>> getEdgeInfos(Direction direction) {
         switch (direction) {
             case IN:
-                return this.inEdges.entrySet();
+                if (this.inEdges instanceof EdgesWithEdgeInfo) {
+                    return ((EdgesWithEdgeInfo) this.inEdges).getEdges().entrySet();
+                }
+                throw new VertexiumException("Cannot get edge info");
             case OUT:
-                return this.outEdges.entrySet();
+                if (this.outEdges instanceof EdgesWithEdgeInfo) {
+                    return ((EdgesWithEdgeInfo) this.outEdges).getEdges().entrySet();
+                }
+                throw new VertexiumException("Cannot get edge info");
             case BOTH:
-                return new JoinIterable<>(this.inEdges.entrySet(), this.outEdges.entrySet());
+                return new JoinIterable<>(getEdgeInfos(Direction.IN), getEdgeInfos(Direction.OUT));
             default:
                 throw new VertexiumException("Unexpected direction: " + direction);
         }
@@ -255,10 +335,21 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
 
     @Override
     public Iterable<org.vertexium.EdgeInfo> getEdgeInfos(Direction direction, Authorizations authorizations) {
-        return new ConvertingIterable<Map.Entry<String, EdgeInfo>, org.vertexium.EdgeInfo>(getEdgeInfos(direction)) {
+        return new ConvertingIterable<Map.Entry<String, org.vertexium.accumulo.iterator.model.EdgeInfo>, org.vertexium.EdgeInfo>(getEdgeInfos(direction)) {
             @Override
-            protected org.vertexium.EdgeInfo convert(Map.Entry<String, EdgeInfo> o) {
-                return o.getValue();
+            protected org.vertexium.EdgeInfo convert(Map.Entry<String, org.vertexium.accumulo.iterator.model.EdgeInfo> o) {
+                final org.vertexium.accumulo.iterator.model.EdgeInfo edgeInfo = o.getValue();
+                return new EdgeInfo() {
+                    @Override
+                    public String getLabel() {
+                        return edgeInfo.getLabel();
+                    }
+
+                    @Override
+                    public String getVertexId() {
+                        return edgeInfo.getVertexId();
+                    }
+                };
             }
         };
     }
@@ -306,9 +397,15 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
                 Iterable<String> outVertexIds = getVertexIds(Direction.OUT, labels, authorizations);
                 return new JoinIterable<>(inVertexIds, outVertexIds);
             case IN:
-                return new GetVertexIdsIterable(this.inEdges.values(), labels);
+                if (this.inEdges instanceof EdgesWithEdgeInfo) {
+                    return new GetVertexIdsIterable(((EdgesWithEdgeInfo) this.inEdges).getEdges().values(), labels);
+                }
+                throw new VertexiumException("Cannot get vertex ids");
             case OUT:
-                return new GetVertexIdsIterable(this.outEdges.values(), labels);
+                if (this.outEdges instanceof EdgesWithEdgeInfo) {
+                    return new GetVertexIdsIterable(((EdgesWithEdgeInfo) this.outEdges).getEdges().values(), labels);
+                }
+                throw new VertexiumException("Cannot get vertex ids");
             default:
                 throw new VertexiumException("Unexpected direction: " + direction);
         }
@@ -325,19 +422,35 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
     }
 
     void addOutEdge(Edge edge) {
-        this.outEdges.put(edge.getId(), new EdgeInfo(edge.getLabel(), edge.getVertexId(Direction.IN), getGraph().getNameSubstitutionStrategy()));
+        if (this.outEdges instanceof EdgesWithEdgeInfo) {
+            ((EdgesWithEdgeInfo) this.outEdges).add(edge.getId(), new org.vertexium.accumulo.iterator.model.EdgeInfo(edge.getLabel(), edge.getVertexId(Direction.IN)));
+        } else {
+            throw new VertexiumException("Cannot add edge");
+        }
     }
 
     void removeOutEdge(Edge edge) {
-        this.outEdges.remove(edge.getId());
+        if (this.outEdges instanceof EdgesWithEdgeInfo) {
+            ((EdgesWithEdgeInfo) this.outEdges).remove(edge.getId());
+        } else {
+            throw new VertexiumException("Cannot remove out edge");
+        }
     }
 
     void addInEdge(Edge edge) {
-        this.inEdges.put(edge.getId(), new EdgeInfo(edge.getLabel(), edge.getVertexId(Direction.OUT), getGraph().getNameSubstitutionStrategy()));
+        if (this.inEdges instanceof EdgesWithEdgeInfo) {
+            ((EdgesWithEdgeInfo) this.inEdges).add(edge.getId(), new org.vertexium.accumulo.iterator.model.EdgeInfo(edge.getLabel(), edge.getVertexId(Direction.OUT)));
+        } else {
+            throw new VertexiumException("Cannot add edge");
+        }
     }
 
     void removeInEdge(Edge edge) {
-        this.inEdges.remove(edge.getId());
+        if (this.inEdges instanceof EdgesWithEdgeInfo) {
+            ((EdgesWithEdgeInfo) this.inEdges).remove(edge.getId());
+        } else {
+            throw new VertexiumException("Cannot remove in edge");
+        }
     }
 
     @Override

@@ -1,11 +1,9 @@
-package org.vertexium.accumulo.keys;
-
-import org.vertexium.VertexiumException;
+package org.vertexium.accumulo.iterator.model;
 
 public abstract class KeyBase {
     public static final char VALUE_SEPARATOR = '\u001f';
 
-    protected String[] splitOnValueSeparator(String s, int partCount) {
+    public static String[] splitOnValueSeparator(String s, int partCount) {
         String[] results = new String[partCount];
         int last = 0;
         int i = s.indexOf(VALUE_SEPARATOR);
@@ -14,7 +12,7 @@ public abstract class KeyBase {
             if (i > 0) {
                 results[partIndex++] = s.substring(last, i);
                 if (partIndex >= partCount) {
-                    throw new VertexiumException("Invalid number of parts for '" + s + "'. Expected " + partCount + " found " + partIndex);
+                    throw new VertexiumAccumuloIteratorException("Invalid number of parts for '" + s + "'. Expected " + partCount + " found " + partIndex);
                 }
                 last = i + 1;
                 i = s.indexOf(VALUE_SEPARATOR, last);
@@ -24,14 +22,14 @@ public abstract class KeyBase {
             }
         }
         if (partIndex != partCount) {
-            throw new VertexiumException("Invalid number of parts for '" + s + "'. Expected " + partCount + " found " + partIndex);
+            throw new VertexiumAccumuloIteratorException("Invalid number of parts for '" + s + "'. Expected " + partCount + " found " + partIndex);
         }
         return results;
     }
 
-    protected void assertNoValueSeparator(String str) {
+    public static void assertNoValueSeparator(String str) {
         if (str.indexOf(VALUE_SEPARATOR) >= 0) {
-            throw new VertexiumException("String cannot contain '" + VALUE_SEPARATOR + "' (0x1f): " + str);
+            throw new VertexiumInvalidKeyException("String cannot contain '" + VALUE_SEPARATOR + "' (0x1f): " + str);
         }
     }
 }

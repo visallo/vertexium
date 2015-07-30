@@ -1,6 +1,7 @@
 package org.vertexium.accumulo.keys;
 
 import org.vertexium.Property;
+import org.vertexium.accumulo.iterator.model.KeyBase;
 
 public class DataTableRowKey extends KeyBase {
     private static final int PARTS_INDEX_ELEMENT_ROW_KEY = 0;

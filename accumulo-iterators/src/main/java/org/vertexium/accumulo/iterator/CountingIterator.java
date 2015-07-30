@@ -7,6 +7,7 @@ import org.apache.accumulo.core.data.Value;
 import org.apache.accumulo.core.iterators.IteratorEnvironment;
 import org.apache.accumulo.core.iterators.LongCombiner;
 import org.apache.accumulo.core.iterators.SortedKeyValueIterator;
+import org.vertexium.accumulo.iterator.model.VertexiumAccumuloIteratorException;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -50,7 +51,7 @@ public class CountingIterator implements SortedKeyValueIterator<Key, Value> {
             }
             return new Value(LongCombiner.FIXED_LEN_ENCODER.encode(count));
         } catch (IOException e) {
-            throw new RuntimeException("could not iterate", e);
+            throw new VertexiumAccumuloIteratorException("could not iterate", e);
         }
     }
 

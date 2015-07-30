@@ -9,9 +9,9 @@ import org.apache.hadoop.io.Text;
 import org.cache2k.Cache;
 import org.cache2k.CacheBuilder;
 import org.vertexium.*;
+import org.vertexium.accumulo.iterator.model.EdgeInfo;
 import org.vertexium.accumulo.keys.DataTableRowKey;
-import org.vertexium.accumulo.keys.PropertyColumnQualifier;
-import org.vertexium.accumulo.keys.PropertyMetadataColumnQualifier;
+import org.vertexium.accumulo.keys.KeyHelper;
 import org.vertexium.accumulo.serializer.ValueSerializer;
 import org.vertexium.id.NameSubstitutionStrategy;
 import org.vertexium.mutation.PropertyDeleteMutation;
@@ -118,19 +118,19 @@ public abstract class ElementMutationBuilder {
 
         // out vertex.
         Text vertexOutIdRowKey = new Text(edge.getVertexId(Direction.OUT));
-        EdgeInfo edgeInfo = new EdgeInfo(edgeLabel, edge.getVertexId(Direction.IN), getNameSubstitutionStrategy());
+        org.vertexium.accumulo.iterator.model.EdgeInfo edgeInfo = new EdgeInfo(getNameSubstitutionStrategy().deflate(edgeLabel), edge.getVertexId(Direction.IN));
         results.add(new KeyValuePair(new Key(vertexOutIdRowKey, AccumuloVertex.CF_OUT_EDGE, edgeIdText, edgeColumnVisibility, timestamp), edgeInfo.toValue()));
 
         // in vertex.
         Text vertexInIdRowKey = new Text(edge.getVertexId(Direction.IN));
-        edgeInfo = new EdgeInfo(edgeLabel, edge.getVertexId(Direction.OUT), getNameSubstitutionStrategy());
+        edgeInfo = new EdgeInfo(getNameSubstitutionStrategy().deflate(edgeLabel), edge.getVertexId(Direction.OUT));
         results.add(new KeyValuePair(new Key(vertexInIdRowKey, AccumuloVertex.CF_IN_EDGE, edgeIdText, edgeColumnVisibility, timestamp), edgeInfo.toValue()));
 
         return results;
     }
 
     private void addPropertyToKeyValuePairs(List<KeyValuePair> results, Text elementRowKey, Property property) {
-        Text columnQualifier = new PropertyColumnQualifier(property).getColumnQualifier(getNameSubstitutionStrategy());
+        Text columnQualifier = KeyHelper.getColumnQualifierFromPropertyColumnQualifier(property, getNameSubstitutionStrategy());
         ColumnVisibility columnVisibility = visibilityToAccumuloVisibility(property.getVisibility());
         Object propertyValue = property.getValue();
         if (propertyValue instanceof StreamingPropertyValue) {
@@ -167,7 +167,7 @@ public abstract class ElementMutationBuilder {
     }
 
     private void addPropertySoftDeleteToKeyValuePairs(List<KeyValuePair> results, Text elementRowKey, PropertySoftDeleteMutation propertySoftDeleteMutation) {
-        Text columnQualifier = new PropertyColumnQualifier(propertySoftDeleteMutation).getColumnQualifier(getNameSubstitutionStrategy());
+        Text columnQualifier = KeyHelper.getColumnQualifierFromPropertyColumnQualifier(propertySoftDeleteMutation.getKey(), propertySoftDeleteMutation.getName(), getNameSubstitutionStrategy());
         ColumnVisibility columnVisibility = visibilityToAccumuloVisibility(propertySoftDeleteMutation.getVisibility());
         results.add(new KeyValuePair(new Key(elementRowKey, AccumuloElement.CF_PROPERTY_SOFT_DELETE, columnQualifier, columnVisibility, System.currentTimeMillis()), AccumuloElement.SOFT_DELETE_VALUE));
     }
@@ -186,13 +186,13 @@ public abstract class ElementMutationBuilder {
 
         // Update out vertex.
         Mutation addEdgeToOutMutation = new Mutation(edge.getVertexId(Direction.OUT));
-        EdgeInfo edgeInfo = new EdgeInfo(edgeLabel, edge.getVertexId(Direction.IN), getNameSubstitutionStrategy());
+        EdgeInfo edgeInfo = new EdgeInfo(getNameSubstitutionStrategy().deflate(edgeLabel), edge.getVertexId(Direction.IN));
         addEdgeToOutMutation.put(AccumuloVertex.CF_OUT_EDGE, edgeIdText, edgeColumnVisibility, edgeInfo.toValue());
         saveVertexMutation(addEdgeToOutMutation);
 
         // Update in vertex.
         Mutation addEdgeToInMutation = new Mutation(edge.getVertexId(Direction.IN));
-        edgeInfo = new EdgeInfo(edgeLabel, edge.getVertexId(Direction.OUT), getNameSubstitutionStrategy());
+        edgeInfo = new EdgeInfo(getNameSubstitutionStrategy().deflate(edgeLabel), edge.getVertexId(Direction.OUT));
         addEdgeToInMutation.put(AccumuloVertex.CF_IN_EDGE, edgeIdText, edgeColumnVisibility, edgeInfo.toValue());
         saveVertexMutation(addEdgeToInMutation);
     }
@@ -274,7 +274,7 @@ public abstract class ElementMutationBuilder {
         if (currentColumnVisibility.equals(newColumnVisibility)) {
             return false;
         }
-        EdgeInfo edgeInfo = new EdgeInfo(edge.getLabel(), edge.getVertexId(Direction.IN), getNameSubstitutionStrategy());
+        EdgeInfo edgeInfo = new EdgeInfo(getNameSubstitutionStrategy().deflate(edge.getLabel()), edge.getVertexId(Direction.IN));
         vertexOutMutation.putDelete(AccumuloVertex.CF_OUT_EDGE, new Text(edge.getId()), currentColumnVisibility);
         vertexOutMutation.put(AccumuloVertex.CF_OUT_EDGE, new Text(edge.getId()), newColumnVisibility, edgeInfo.toValue());
         return true;
@@ -286,14 +286,14 @@ public abstract class ElementMutationBuilder {
         if (currentColumnVisibility.equals(newColumnVisibility)) {
             return false;
         }
-        EdgeInfo edgeInfo = new EdgeInfo(edge.getLabel(), edge.getVertexId(Direction.OUT), getNameSubstitutionStrategy());
+        EdgeInfo edgeInfo = new EdgeInfo(getNameSubstitutionStrategy().deflate(edge.getLabel()), edge.getVertexId(Direction.OUT));
         vertexInMutation.putDelete(AccumuloVertex.CF_IN_EDGE, new Text(edge.getId()), currentColumnVisibility);
         vertexInMutation.put(AccumuloVertex.CF_IN_EDGE, new Text(edge.getId()), newColumnVisibility, edgeInfo.toValue());
         return true;
     }
 
     public void addPropertyToMutation(Mutation m, String rowKey, Property property) {
-        Text columnQualifier = new PropertyColumnQualifier(property).getColumnQualifier(getNameSubstitutionStrategy());
+        Text columnQualifier = KeyHelper.getColumnQualifierFromPropertyColumnQualifier(property, getNameSubstitutionStrategy());
         ColumnVisibility columnVisibility = visibilityToAccumuloVisibility(property.getVisibility());
         Object propertyValue = property.getValue();
         if (propertyValue instanceof StreamingPropertyValue) {
@@ -310,7 +310,7 @@ public abstract class ElementMutationBuilder {
     protected abstract NameSubstitutionStrategy getNameSubstitutionStrategy();
 
     public void addPropertyDeleteToMutation(Mutation m, PropertyDeleteMutation propertyDelete) {
-        Text columnQualifier = new PropertyColumnQualifier(propertyDelete).getColumnQualifier(getNameSubstitutionStrategy());
+        Text columnQualifier = KeyHelper.getColumnQualifierFromPropertyColumnQualifier(propertyDelete.getKey(), propertyDelete.getName(), getNameSubstitutionStrategy());
         ColumnVisibility columnVisibility = visibilityToAccumuloVisibility(propertyDelete.getVisibility());
         m.putDelete(AccumuloElement.CF_PROPERTY, columnQualifier, columnVisibility);
         addPropertyDeleteMetadataToMutation(m, propertyDelete);
@@ -356,8 +356,7 @@ public abstract class ElementMutationBuilder {
         String key = keyBuilder.toString();
         Text r = propertyMetadataColumnQualifierTextCache.peek(key);
         if (r == null) {
-            r = new PropertyMetadataColumnQualifier(propertyName, propertyKey, visibilityString, metadataKey)
-                    .getColumnQualifier(getNameSubstitutionStrategy());
+            r = KeyHelper.getColumnQualifierFromPropertyMetadataColumnQualifier(propertyName, propertyKey, visibilityString, metadataKey, getNameSubstitutionStrategy());
             propertyMetadataColumnQualifierTextCache.put(key, r);
         }
         return r;
@@ -399,7 +398,7 @@ public abstract class ElementMutationBuilder {
     public void addPropertyDeleteToMutation(Mutation m, Property property) {
         Preconditions.checkNotNull(m, "mutation cannot be null");
         Preconditions.checkNotNull(property, "property cannot be null");
-        Text columnQualifier = new PropertyColumnQualifier(property).getColumnQualifier(getNameSubstitutionStrategy());
+        Text columnQualifier = KeyHelper.getColumnQualifierFromPropertyColumnQualifier(property, getNameSubstitutionStrategy());
         ColumnVisibility columnVisibility = visibilityToAccumuloVisibility(property.getVisibility());
         m.putDelete(AccumuloElement.CF_PROPERTY, columnQualifier, columnVisibility);
         for (Metadata.Entry metadataEntry : property.getMetadata().entrySet()) {
@@ -412,13 +411,13 @@ public abstract class ElementMutationBuilder {
     public void addPropertySoftDeleteToMutation(Mutation m, Property property) {
         Preconditions.checkNotNull(m, "mutation cannot be null");
         Preconditions.checkNotNull(property, "property cannot be null");
-        Text columnQualifier = new PropertyColumnQualifier(property).getColumnQualifier(getNameSubstitutionStrategy());
+        Text columnQualifier = KeyHelper.getColumnQualifierFromPropertyColumnQualifier(property, getNameSubstitutionStrategy());
         ColumnVisibility columnVisibility = visibilityToAccumuloVisibility(property.getVisibility());
         m.put(AccumuloElement.CF_PROPERTY_SOFT_DELETE, columnQualifier, columnVisibility, AccumuloElement.SOFT_DELETE_VALUE);
     }
 
     public void addPropertySoftDeleteToMutation(Mutation m, PropertySoftDeleteMutation propertySoftDelete) {
-        Text columnQualifier = new PropertyColumnQualifier(propertySoftDelete).getColumnQualifier(getNameSubstitutionStrategy());
+        Text columnQualifier = KeyHelper.getColumnQualifierFromPropertyColumnQualifier(propertySoftDelete.getKey(), propertySoftDelete.getName(), getNameSubstitutionStrategy());
         ColumnVisibility columnVisibility = visibilityToAccumuloVisibility(propertySoftDelete.getVisibility());
         m.put(AccumuloElement.CF_PROPERTY_SOFT_DELETE, columnQualifier, columnVisibility, AccumuloElement.SOFT_DELETE_VALUE);
     }

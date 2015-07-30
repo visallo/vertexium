@@ -1,20 +1,30 @@
 package org.vertexium.accumulo;
 
+import com.google.common.base.Function;
+import com.google.common.collect.Iterables;
+import org.apache.accumulo.core.data.Key;
+import org.apache.accumulo.core.data.Value;
 import org.apache.hadoop.io.Text;
 import org.vertexium.*;
+import org.vertexium.accumulo.iterator.EdgeIterator;
+import org.vertexium.accumulo.iterator.model.ElementData;
+import org.vertexium.accumulo.util.DataInputStreamUtils;
 import org.vertexium.mutation.ExistingEdgeMutation;
 import org.vertexium.mutation.PropertyDeleteMutation;
 import org.vertexium.mutation.PropertySoftDeleteMutation;
 
+import javax.annotation.Nullable;
+import java.io.ByteArrayInputStream;
+import java.io.DataInputStream;
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.Map;
 
 public class AccumuloEdge extends AccumuloElement implements Edge {
-    public static final String CF_SIGNAL_STRING = "E";
-    public static final Text CF_SIGNAL = new Text(CF_SIGNAL_STRING);
-    public static final String CF_OUT_VERTEX_STRING = "EOUT";
-    public static final Text CF_OUT_VERTEX = new Text(CF_OUT_VERTEX_STRING);
-    public static final String CF_IN_VERTEX_STRING = "EIN";
-    public static final Text CF_IN_VERTEX = new Text(CF_IN_VERTEX_STRING);
+    public static final Text CF_SIGNAL = EdgeIterator.CF_SIGNAL;
+    public static final Text CF_OUT_VERTEX = EdgeIterator.CF_OUT_VERTEX;
+    public static final Text CF_IN_VERTEX = EdgeIterator.CF_IN_VERTEX;
     private final String outVertexId;
     private final String inVertexId;
     private final String label;
@@ -50,6 +60,56 @@ public class AccumuloEdge extends AccumuloElement implements Edge {
         this.inVertexId = inVertexId;
         this.label = label;
         this.newEdgeLabel = newEdgeLabel;
+    }
+
+    public static Edge createFromIteratorValue(AccumuloGraph graph, Key key, Value value, Authorizations authorizations) {
+        try {
+            String edgeId;
+            Visibility vertexVisibility;
+            Iterable<Property> properties;
+            Iterable<PropertyDeleteMutation> propertyDeleteMutations = new ArrayList<>();
+            Iterable<PropertySoftDeleteMutation> propertySoftDeleteMutations = new ArrayList<>();
+            Iterable<Visibility> hiddenVisibilities;
+            Map<String, org.vertexium.accumulo.iterator.model.EdgeInfo> inEdges;
+            Map<String, org.vertexium.accumulo.iterator.model.EdgeInfo> outEdges;
+            long timestamp;
+
+            ByteArrayInputStream bain = new ByteArrayInputStream(value.get());
+            final DataInputStream in = new DataInputStream(bain);
+            DataInputStreamUtils.decodeHeader(in, ElementData.TYPE_ID_EDGE);
+            edgeId = DataInputStreamUtils.decodeText(in).toString();
+            timestamp = in.readLong();
+            vertexVisibility = new Visibility(DataInputStreamUtils.decodeText(in).toString());
+            hiddenVisibilities = Iterables.transform(DataInputStreamUtils.decodeTextList(in), new Function<Text, Visibility>() {
+                @Nullable
+                @Override
+                public Visibility apply(Text input) {
+                    return new Visibility(input.toString());
+                }
+            });
+            properties = DataInputStreamUtils.decodeProperties(graph, in);
+            String inVertexId = DataInputStreamUtils.decodeText(in).toString();
+            String outVertexId = DataInputStreamUtils.decodeText(in).toString();
+            String label = graph.getNameSubstitutionStrategy().inflate(DataInputStreamUtils.decodeText(in));
+
+            return new AccumuloEdge(
+                    graph,
+                    edgeId,
+                    outVertexId,
+                    inVertexId,
+                    label,
+                    null,
+                    vertexVisibility,
+                    properties,
+                    propertyDeleteMutations,
+                    propertySoftDeleteMutations,
+                    hiddenVisibilities,
+                    timestamp,
+                    authorizations
+            );
+        } catch (IOException ex) {
+            throw new VertexiumException("Could not read vertex", ex);
+        }
     }
 
     String getNewEdgeLabel() {

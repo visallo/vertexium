@@ -17,7 +17,7 @@ import org.vertexium.*;
 import org.vertexium.accumulo.AccumuloAuthorizations;
 import org.vertexium.accumulo.AccumuloGraph;
 import org.vertexium.accumulo.AccumuloGraphConfiguration;
-import org.vertexium.accumulo.VertexMaker;
+import org.vertexium.accumulo.mapreduce.AccumuloVertexInputFormat;
 import org.vertexium.accumulo.mapreduce.VertexiumMRUtils;
 import org.vertexium.property.StreamingPropertyValue;
 import org.vertexium.util.MapUtils;
@@ -130,8 +130,7 @@ public class AccumuloVertexiumInputFormat extends InputFormat<NullWritable, Faun
     }
 
     private FaunusVertex createFaunusVertexFromRow(AccumuloGraph graph, PeekingIterator<Map.Entry<Key, Value>> row, Authorizations authorizations) {
-        VertexMaker maker = new VertexMaker(graph, row, authorizations);
-        final Vertex v = maker.make(false);
+        final Vertex v = AccumuloVertexInputFormat.createVertex(graph, row, authorizations);
         final long vertexId = toFaunusVertexId(v.getId());
         FaunusVertex faunusVertex = new FaunusVertex();
         faunusVertex.setId(vertexId);

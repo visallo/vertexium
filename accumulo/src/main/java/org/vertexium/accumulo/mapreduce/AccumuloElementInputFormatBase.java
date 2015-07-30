@@ -1,5 +1,8 @@
 package org.vertexium.accumulo.mapreduce;
 
+import com.google.common.base.Function;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Sets;
 import org.apache.accumulo.core.client.AccumuloSecurityException;
 import org.apache.accumulo.core.client.ClientConfiguration;
 import org.apache.accumulo.core.client.mapreduce.AccumuloInputFormat;
@@ -14,8 +17,12 @@ import org.apache.hadoop.mapreduce.*;
 import org.vertexium.*;
 import org.vertexium.accumulo.AccumuloAuthorizations;
 import org.vertexium.accumulo.AccumuloGraph;
+import org.vertexium.accumulo.LazyMutableProperty;
+import org.vertexium.accumulo.LazyPropertyMetadata;
+import org.vertexium.accumulo.iterator.model.ElementData;
 import org.vertexium.util.MapUtils;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.*;
 
@@ -96,4 +103,40 @@ public abstract class AccumuloElementInputFormatBase<TValue extends Element> ext
     }
 
     protected abstract TValue createElementFromRow(AccumuloGraph graph, PeekingIterator<Map.Entry<Key, Value>> row, Authorizations authorizations);
+
+    protected static Iterable<Property> makePropertiesFromElementData(final AccumuloGraph graph, ElementData elementData, EnumSet<org.vertexium.accumulo.iterator.model.FetchHint> fetchHints) {
+        return Iterables.transform(elementData.getProperties(fetchHints), new Function<org.vertexium.accumulo.iterator.model.Property, Property>() {
+            @Nullable
+            @Override
+            public Property apply(@Nullable org.vertexium.accumulo.iterator.model.Property property) {
+                return makePropertyFromIteratorProperty(graph, property);
+            }
+        });
+    }
+
+    private static Property makePropertyFromIteratorProperty(AccumuloGraph graph, org.vertexium.accumulo.iterator.model.Property property) {
+        LazyPropertyMetadata metadata = new LazyPropertyMetadata();
+        Set<Visibility> hiddenVisibilities = null;
+        if (property.hiddenVisibilities != null) {
+            hiddenVisibilities = Sets.newHashSet(Iterables.transform(property.hiddenVisibilities, new Function<Text, Visibility>() {
+                @Nullable
+                @Override
+                public Visibility apply(Text visibilityText) {
+                    return AccumuloGraph.accumuloVisibilityToVisibility(AccumuloGraph.visibilityToAccumuloVisibility(visibilityText.toString()));
+                }
+            }));
+        }
+        Visibility visibility = AccumuloGraph.accumuloVisibilityToVisibility(AccumuloGraph.visibilityToAccumuloVisibility(property.visibility));
+        return new LazyMutableProperty(
+                graph,
+                graph.getValueSerializer(),
+                property.key,
+                property.name,
+                property.value,
+                metadata,
+                hiddenVisibilities,
+                visibility,
+                property.timestamp
+        );
+    }
 }

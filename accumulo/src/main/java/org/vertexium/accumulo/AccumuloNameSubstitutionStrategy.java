@@ -44,6 +44,9 @@ public class AccumuloNameSubstitutionStrategy implements NameSubstitutionStrateg
     }
 
     public String inflate(Text text) {
+        if (text == null) {
+            return null;
+        }
         if (this.nameSubstitutionStrategy instanceof IdentityNameSubstitutionStrategy) {
             return text.toString();
         }

@@ -1,5 +1,6 @@
 package org.vertexium.accumulo;
 
+import org.vertexium.accumulo.iterator.model.EdgeInfo;
 import org.vertexium.util.LookAheadIterable;
 
 import java.util.Collection;

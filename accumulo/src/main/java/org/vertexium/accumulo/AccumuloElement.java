@@ -3,32 +3,32 @@ package org.vertexium.accumulo;
 import org.apache.accumulo.core.data.Value;
 import org.apache.hadoop.io.Text;
 import org.vertexium.*;
+import org.vertexium.accumulo.iterator.ElementIterator;
 import org.vertexium.mutation.EdgeMutation;
 import org.vertexium.mutation.ExistingElementMutationImpl;
 import org.vertexium.mutation.PropertyDeleteMutation;
 import org.vertexium.mutation.PropertySoftDeleteMutation;
 
+import java.io.DataInputStream;
 import java.io.Serializable;
 
 public abstract class AccumuloElement extends ElementBase implements Serializable, HasTimestamp {
     private static final long serialVersionUID = 1L;
-    public static final String CF_HIDDEN_STRING = "H";
-    public static final Text CF_HIDDEN = new Text(CF_HIDDEN_STRING);
-    public static final Text CQ_HIDDEN = new Text("H");
-    public static final String CF_SOFT_DELETE_STRING = "D";
-    public static final Text CF_SOFT_DELETE = new Text(CF_SOFT_DELETE_STRING);
-    public static final Text CQ_SOFT_DELETE = new Text("D");
-    public static final Value HIDDEN_VALUE = new Value("".getBytes());
-    public static final Value HIDDEN_VALUE_DELETED = new Value("X".getBytes());
-    public static final Value SOFT_DELETE_VALUE = new Value("".getBytes());
-    public static final String CF_PROPERTY_STRING = "PROP";
-    public static final Text CF_PROPERTY = new Text(CF_PROPERTY_STRING);
-    public static final String CF_PROPERTY_HIDDEN_STRING = "PROPH";
-    public static final Text CF_PROPERTY_HIDDEN = new Text(CF_PROPERTY_HIDDEN_STRING);
-    public static final String CF_PROPERTY_SOFT_DELETE_STRING = "PROPD";
-    public static final Text CF_PROPERTY_SOFT_DELETE = new Text(CF_PROPERTY_SOFT_DELETE_STRING);
-    public static final String CF_PROPERTY_METADATA_STRING = "PROPMETA";
-    public static final Text CF_PROPERTY_METADATA = new Text(CF_PROPERTY_METADATA_STRING);
+    public static final Text CF_PROPERTY = ElementIterator.CF_PROPERTY;
+    public static final Text CF_PROPERTY_METADATA = ElementIterator.CF_PROPERTY_METADATA;
+    public static final Text CF_PROPERTY_SOFT_DELETE = ElementIterator.CF_PROPERTY_SOFT_DELETE;
+    public static final Value SOFT_DELETE_VALUE = ElementIterator.SOFT_DELETE_VALUE;
+    public static final Value HIDDEN_VALUE = ElementIterator.HIDDEN_VALUE;
+    public static final Text CF_PROPERTY_HIDDEN = ElementIterator.CF_PROPERTY_HIDDEN;
+    public static final Value HIDDEN_VALUE_DELETED = ElementIterator.HIDDEN_VALUE_DELETED;
+    public static final Text DELETE_ROW_COLUMN_FAMILY = ElementIterator.DELETE_ROW_COLUMN_FAMILY;
+    public static final Text DELETE_ROW_COLUMN_QUALIFIER = ElementIterator.DELETE_ROW_COLUMN_QUALIFIER;
+    public static final Text CF_SOFT_DELETE = ElementIterator.CF_SOFT_DELETE;
+    public static final Text CQ_SOFT_DELETE = ElementIterator.CQ_SOFT_DELETE;
+    public static final Text CF_HIDDEN = ElementIterator.CF_HIDDEN;
+    public static final Text CQ_HIDDEN = ElementIterator.CQ_HIDDEN;
+    public static final Text METADATA_COLUMN_FAMILY = ElementIterator.METADATA_COLUMN_FAMILY;
+    public static final Text METADATA_COLUMN_QUALIFIER = ElementIterator.METADATA_COLUMN_QUALIFIER;
 
     protected AccumuloElement(
             Graph graph,

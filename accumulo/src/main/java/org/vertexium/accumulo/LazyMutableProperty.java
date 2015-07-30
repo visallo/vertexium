@@ -128,7 +128,7 @@ public class LazyMutableProperty extends MutableProperty {
             if (metadata == null) {
                 cachedMetadata = new Metadata();
             } else {
-                cachedMetadata = metadata.toMetadata(this.valueSerializer);
+                cachedMetadata = metadata.toMetadata(this.valueSerializer, graph.getNameSubstitutionStrategy());
             }
         }
         return cachedMetadata;
