@@ -6,9 +6,11 @@ import org.apache.hadoop.io.Text;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.util.*;
 
 public abstract class ElementData {
+    public static final Charset CHARSET = Charset.forName("utf8");
     public static final byte[] HEADER = new byte[]{'V', 'E', 'R', 'T', '1'};
     public static final byte TYPE_ID_VERTEX = 1;
     public static final byte TYPE_ID_EDGE = 2;
@@ -85,12 +87,21 @@ public abstract class ElementData {
         out.write(text.getBytes(), 0, text.getLength());
     }
 
+    protected void encodeByteArray(DataOutputStream out, byte[] bytes) throws IOException {
+        if (bytes == null) {
+            out.writeInt(-1);
+            return;
+        }
+        out.writeInt(bytes.length);
+        out.write(bytes);
+    }
+
     protected void encodeString(DataOutputStream out, String text) throws IOException {
         if (text == null) {
             out.writeInt(-1);
             return;
         }
-        byte[] bytes = text.getBytes();
+        byte[] bytes = text.getBytes(CHARSET);
         out.writeInt(bytes.length);
         out.write(bytes, 0, bytes.length);
     }

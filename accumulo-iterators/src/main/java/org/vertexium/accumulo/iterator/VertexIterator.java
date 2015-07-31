@@ -52,7 +52,7 @@ public class VertexIterator extends ElementIterator<VertexElementData> {
 
     private void removeHiddenAndSoftDeletes() {
         if (!getFetchHints().contains(FetchHint.INCLUDE_HIDDEN)) {
-            for (String edgeId : this.getElementData().hiddenEdges) {
+            for (Text edgeId : this.getElementData().hiddenEdges) {
                 this.getElementData().inEdges.remove(edgeId);
                 this.getElementData().outEdges.remove(edgeId);
             }
@@ -78,32 +78,32 @@ public class VertexIterator extends ElementIterator<VertexElementData> {
         if (CF_OUT_EDGE.equals(columnFamily)) {
             Text edgeId = key.getColumnQualifier();
             EdgeInfo edgeInfo = EdgeInfo.parse(value, key.getTimestamp());
-            getElementData().outEdges.add(edgeId.toString(), edgeInfo);
+            getElementData().outEdges.add(edgeId, edgeInfo);
             return true;
         }
 
         if (CF_IN_EDGE.equals(columnFamily)) {
             Text edgeId = key.getColumnQualifier();
             EdgeInfo edgeInfo = EdgeInfo.parse(value, key.getTimestamp());
-            getElementData().inEdges.add(edgeId.toString(), edgeInfo);
+            getElementData().inEdges.add(edgeId, edgeInfo);
             return true;
         }
 
         if (CF_OUT_EDGE_HIDDEN.equals(columnFamily)
                 || CF_IN_EDGE_HIDDEN.equals(columnFamily)) {
-            String edgeId = key.getColumnQualifier().toString();
+            Text edgeId = key.getColumnQualifier();
             getElementData().hiddenEdges.add(edgeId);
             return true;
         }
 
         if (CF_IN_EDGE_SOFT_DELETE.equals(columnFamily)) {
-            String edgeId = key.getColumnQualifier().toString();
+            Text edgeId = key.getColumnQualifier();
             getElementData().inSoftDeletes.add(new SoftDeleteEdgeInfo(edgeId, key.getTimestamp()));
             return true;
         }
 
         if (CF_OUT_EDGE_SOFT_DELETE.equals(columnFamily)) {
-            String edgeId = key.getColumnQualifier().toString();
+            Text edgeId = key.getColumnQualifier();
             getElementData().outSoftDeletes.add(new SoftDeleteEdgeInfo(edgeId, key.getTimestamp()));
             return true;
         }

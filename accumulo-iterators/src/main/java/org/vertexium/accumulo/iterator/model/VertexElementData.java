@@ -1,5 +1,8 @@
 package org.vertexium.accumulo.iterator.model;
 
+import org.apache.hadoop.io.Text;
+import org.vertexium.accumulo.iterator.util.ByteArrayWrapper;
+
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.*;
@@ -9,7 +12,7 @@ public class VertexElementData extends ElementData {
     public static final byte EDGE_LABEL_WITH_REFS_MARKER = 2;
     public final EdgesWithEdgeInfo outEdges = new EdgesWithEdgeInfo();
     public final EdgesWithEdgeInfo inEdges = new EdgesWithEdgeInfo();
-    public final Set<String> hiddenEdges = new HashSet<>();
+    public final Set<Text> hiddenEdges = new HashSet<>();
     public final List<SoftDeleteEdgeInfo> outSoftDeletes = new ArrayList<>();
     public final List<SoftDeleteEdgeInfo> inSoftDeletes = new ArrayList<>();
 
@@ -38,14 +41,14 @@ public class VertexElementData extends ElementData {
     private void encodeEdges(DataOutputStream out, EdgesWithEdgeInfo edges, boolean edgeLabelsOnly) throws IOException {
         out.write(edgeLabelsOnly ? EDGE_LABEL_ONLY_MARKER : EDGE_LABEL_WITH_REFS_MARKER);
 
-        Map<String, List<Map.Entry<String, EdgeInfo>>> edgesByLabels = getEdgesByLabel(edges);
+        Map<ByteArrayWrapper, List<Map.Entry<Text, EdgeInfo>>> edgesByLabels = getEdgesByLabel(edges);
         out.writeInt(edgesByLabels.size());
-        for (Map.Entry<String, List<Map.Entry<String, EdgeInfo>>> entry : edgesByLabels.entrySet()) {
-            encodeString(out, entry.getKey());
+        for (Map.Entry<ByteArrayWrapper, List<Map.Entry<Text, EdgeInfo>>> entry : edgesByLabels.entrySet()) {
+            encodeByteArray(out, entry.getKey().getData());
             out.writeInt(entry.getValue().size());
             if (!edgeLabelsOnly) {
-                for (Map.Entry<String, EdgeInfo> edgeEntry : entry.getValue()) {
-                    encodeString(out, edgeEntry.getKey());
+                for (Map.Entry<Text, EdgeInfo> edgeEntry : entry.getValue()) {
+                    encodeText(out, edgeEntry.getKey());
                     out.writeLong(edgeEntry.getValue().getTimestamp());
                     encodeString(out, edgeEntry.getValue().getVertexId());
                 }
@@ -53,11 +56,11 @@ public class VertexElementData extends ElementData {
         }
     }
 
-    private Map<String, List<Map.Entry<String, EdgeInfo>>> getEdgesByLabel(EdgesWithEdgeInfo edges) throws IOException {
-        Map<String, List<Map.Entry<String, EdgeInfo>>> edgesByLabels = new HashMap<>();
-        for (Map.Entry<String, EdgeInfo> edgeEntry : edges.getEdges().entrySet()) {
-            String label = edgeEntry.getValue().getLabel();
-            List<Map.Entry<String, EdgeInfo>> edgesByLabel = edgesByLabels.get(label);
+    private Map<ByteArrayWrapper, List<Map.Entry<Text, EdgeInfo>>> getEdgesByLabel(EdgesWithEdgeInfo edges) throws IOException {
+        Map<ByteArrayWrapper, List<Map.Entry<Text, EdgeInfo>>> edgesByLabels = new HashMap<>();
+        for (Map.Entry<Text, EdgeInfo> edgeEntry : edges.getEdges().entrySet()) {
+            ByteArrayWrapper label = new ByteArrayWrapper(edgeEntry.getValue().getLabelBytes());
+            List<Map.Entry<Text, EdgeInfo>> edgesByLabel = edgesByLabels.get(label);
             if (edgesByLabel == null) {
                 edgesByLabel = new ArrayList<>();
                 edgesByLabels.put(label, edgesByLabel);

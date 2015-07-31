@@ -91,6 +91,17 @@ public class EdgeInfo {
         }
     }
 
+    public byte[] getLabelBytes() {
+        ByteBuffer in = ByteBuffer.wrap(this.bytes);
+        int labelBytesLength = in.getInt();
+        if (labelBytesLength == -1) {
+            return null;
+        }
+        byte[] d = new byte[labelBytesLength];
+        in.get(d);
+        return d;
+    }
+
     private static String readString(ByteBuffer in) {
         int labelBytesLength = in.getInt();
         if (labelBytesLength == -1) {

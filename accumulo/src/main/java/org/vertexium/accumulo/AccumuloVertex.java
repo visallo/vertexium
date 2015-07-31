@@ -318,12 +318,12 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
         switch (direction) {
             case IN:
                 if (this.inEdges instanceof EdgesWithEdgeInfo) {
-                    return ((EdgesWithEdgeInfo) this.inEdges).getEdges().entrySet();
+                    return ((EdgesWithEdgeInfo) this.inEdges).getEdgeInfos();
                 }
                 throw new VertexiumException("Cannot get edge info");
             case OUT:
                 if (this.outEdges instanceof EdgesWithEdgeInfo) {
-                    return ((EdgesWithEdgeInfo) this.outEdges).getEdges().entrySet();
+                    return ((EdgesWithEdgeInfo) this.outEdges).getEdgeInfos();
                 }
                 throw new VertexiumException("Cannot get edge info");
             case BOTH:

@@ -17,6 +17,7 @@ import javax.annotation.Nullable;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 
@@ -50,7 +51,7 @@ public class DataInputStreamUtils {
         if (read != length) {
             throw new IOException("Unexpected data length expected " + length + " found " + read);
         }
-        return new String(data);
+        return new String(data, ElementData.CHARSET);
     }
 
     public static List<Text> decodeTextList(DataInputStream in) throws IOException {
@@ -134,10 +135,10 @@ public class DataInputStreamUtils {
             EdgesWithEdgeInfo edges = new EdgesWithEdgeInfo();
             int count = in.readInt();
             for (int i = 0; i < count; i++) {
-                String label = decodeString(in);
+                String label = new String(decodeByteArray(in), ElementData.CHARSET);
                 int edgeByLabelCount = in.readInt();
                 for (int edgeByLabelIndex = 0; edgeByLabelIndex < edgeByLabelCount; edgeByLabelIndex++) {
-                    String edgeId = decodeString(in);
+                    Text edgeId = decodeText(in);
                     long timestamp = in.readLong();
                     String vertexId = decodeString(in);
                     EdgeInfo edgeInfo = new EdgeInfo(nameSubstitutionStrategy.inflate(label), vertexId, timestamp);
@@ -159,11 +160,27 @@ public class DataInputStreamUtils {
         }
     }
 
+    private static byte[] decodeByteArray(DataInputStream in) throws IOException {
+        int len = in.readInt();
+        if (len == -1) {
+            return null;
+        }
+        byte[] data = new byte[len];
+        int read = in.read(data);
+        if (read != len) {
+            throw new IOException("Unexpected read length. Expected " + len + " found " + read);
+        }
+        return data;
+    }
+
     public static void decodeHeader(DataInputStream in, byte expectedTypeId) throws IOException {
         byte[] header = new byte[ElementData.HEADER.length];
         int read = in.read(header);
         if (read != header.length) {
             throw new IOException("Unexpected header length. Expected " + ElementData.HEADER.length + " found " + read);
+        }
+        if (!Arrays.equals(header, ElementData.HEADER)) {
+            throw new IOException("Unexpected header");
         }
         int typeId = in.read();
         if (typeId != expectedTypeId) {

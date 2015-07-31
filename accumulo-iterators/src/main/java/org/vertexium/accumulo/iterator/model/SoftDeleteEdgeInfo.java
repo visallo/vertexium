@@ -1,15 +1,17 @@
 package org.vertexium.accumulo.iterator.model;
 
+import org.apache.hadoop.io.Text;
+
 public class SoftDeleteEdgeInfo {
-    private final String edgeId;
+    private final Text edgeId;
     private final long timestamp;
 
-    public SoftDeleteEdgeInfo(String edgeId, long timestamp) {
+    public SoftDeleteEdgeInfo(Text edgeId, long timestamp) {
         this.edgeId = edgeId;
         this.timestamp = timestamp;
     }
 
-    public String getEdgeId() {
+    public Text getEdgeId() {
         return edgeId;
     }
 
