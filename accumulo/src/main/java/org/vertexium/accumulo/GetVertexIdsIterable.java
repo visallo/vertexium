@@ -3,14 +3,13 @@ package org.vertexium.accumulo;
 import org.vertexium.accumulo.iterator.model.EdgeInfo;
 import org.vertexium.util.LookAheadIterable;
 
-import java.util.Collection;
 import java.util.Iterator;
 
 class GetVertexIdsIterable extends LookAheadIterable<EdgeInfo, String> {
-    private final Collection<EdgeInfo> edgeInfos;
+    private final Iterable<EdgeInfo> edgeInfos;
     private final String[] labels;
 
-    public GetVertexIdsIterable(Collection<EdgeInfo> edgeInfos, String[] labels) {
+    public GetVertexIdsIterable(Iterable<EdgeInfo> edgeInfos, String[] labels) {
         this.edgeInfos = edgeInfos;
         this.labels = labels;
     }

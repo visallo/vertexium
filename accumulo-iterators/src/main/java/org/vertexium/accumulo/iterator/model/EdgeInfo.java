@@ -5,6 +5,7 @@ import org.apache.accumulo.core.data.Value;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 // We are doing custom serialization to make this as fast as possible since this can get called many times
 public class EdgeInfo {
@@ -92,14 +93,12 @@ public class EdgeInfo {
     }
 
     public byte[] getLabelBytes() {
-        ByteBuffer in = ByteBuffer.wrap(this.bytes);
-        int labelBytesLength = in.getInt();
+        // Used to use ByteBuffer here but it was to slow
+        int labelBytesLength = (((int) this.bytes[0]) << 24) + (((int) this.bytes[1]) << 16) + (((int) this.bytes[2]) << 8) + ((int) this.bytes[3]);
         if (labelBytesLength == -1) {
             return null;
         }
-        byte[] d = new byte[labelBytesLength];
-        in.get(d);
-        return d;
+        return Arrays.copyOfRange(this.bytes, 4, 4 + labelBytesLength);
     }
 
     private static String readString(ByteBuffer in) {

@@ -63,10 +63,12 @@ public abstract class ElementIterator<T extends ElementData> extends RowEncoding
     protected boolean populateElementData(List<Key> keys, List<Value> values) {
         this.elementData.clear();
 
+        Text columnFamily = new Text();
         for (int i = 0; i < keys.size(); i++) {
             Key key = keys.get(i);
             Value value = values.get(i);
-            if (!processKeyValue(key, value)) {
+            key.getColumnFamily(columnFamily); // avoid Text allocation by reusing columnFamily
+            if (!processKeyValue(key, columnFamily, value)) {
                 return false;
             }
         }
@@ -87,12 +89,10 @@ public abstract class ElementIterator<T extends ElementData> extends RowEncoding
         return elementData.encode(fetchHints);
     }
 
-    private boolean processKeyValue(Key key, Value value) {
+    private boolean processKeyValue(Key key, Text columnFamily, Value value) {
         if (this.elementData.id == null) {
             this.elementData.id = key.getRow();
         }
-
-        Text columnFamily = key.getColumnFamily();
 
         if (CF_PROPERTY_METADATA.equals(columnFamily)) {
             extractPropertyMetadata(key.getColumnQualifier(), key.getColumnVisibility(), key.getTimestamp(), value);

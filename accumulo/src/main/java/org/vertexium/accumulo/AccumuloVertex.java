@@ -318,12 +318,12 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
         switch (direction) {
             case IN:
                 if (this.inEdges instanceof EdgesWithEdgeInfo) {
-                    return ((EdgesWithEdgeInfo) this.inEdges).getEdgeInfos();
+                    return ((EdgesWithEdgeInfo) this.inEdges).getEntriesWithStringKeys();
                 }
                 throw new VertexiumException("Cannot get edge info");
             case OUT:
                 if (this.outEdges instanceof EdgesWithEdgeInfo) {
-                    return ((EdgesWithEdgeInfo) this.outEdges).getEdgeInfos();
+                    return ((EdgesWithEdgeInfo) this.outEdges).getEntriesWithStringKeys();
                 }
                 throw new VertexiumException("Cannot get edge info");
             case BOTH:
@@ -398,12 +398,12 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
                 return new JoinIterable<>(inVertexIds, outVertexIds);
             case IN:
                 if (this.inEdges instanceof EdgesWithEdgeInfo) {
-                    return new GetVertexIdsIterable(((EdgesWithEdgeInfo) this.inEdges).getEdges().values(), labels);
+                    return new GetVertexIdsIterable(((EdgesWithEdgeInfo) this.inEdges).getEdgeInfos(), labels);
                 }
                 throw new VertexiumException("Cannot get vertex ids");
             case OUT:
                 if (this.outEdges instanceof EdgesWithEdgeInfo) {
-                    return new GetVertexIdsIterable(((EdgesWithEdgeInfo) this.outEdges).getEdges().values(), labels);
+                    return new GetVertexIdsIterable(((EdgesWithEdgeInfo) this.outEdges).getEdgeInfos(), labels);
                 }
                 throw new VertexiumException("Cannot get vertex ids");
             default:

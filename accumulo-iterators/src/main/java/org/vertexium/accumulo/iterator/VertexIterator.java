@@ -89,8 +89,7 @@ public class VertexIterator extends ElementIterator<VertexElementData> {
             return true;
         }
 
-        if (CF_OUT_EDGE_HIDDEN.equals(columnFamily)
-                || CF_IN_EDGE_HIDDEN.equals(columnFamily)) {
+        if (CF_OUT_EDGE_HIDDEN.equals(columnFamily) || CF_IN_EDGE_HIDDEN.equals(columnFamily)) {
             Text edgeId = key.getColumnQualifier();
             getElementData().hiddenEdges.add(edgeId);
             return true;

@@ -58,7 +58,7 @@ public class VertexElementData extends ElementData {
 
     private Map<ByteArrayWrapper, List<Map.Entry<Text, EdgeInfo>>> getEdgesByLabel(EdgesWithEdgeInfo edges) throws IOException {
         Map<ByteArrayWrapper, List<Map.Entry<Text, EdgeInfo>>> edgesByLabels = new HashMap<>();
-        for (Map.Entry<Text, EdgeInfo> edgeEntry : edges.getEdges().entrySet()) {
+        for (Map.Entry<Text, EdgeInfo> edgeEntry : edges.getEntries()) {
             ByteArrayWrapper label = new ByteArrayWrapper(edgeEntry.getValue().getLabelBytes());
             List<Map.Entry<Text, EdgeInfo>> edgesByLabel = edgesByLabels.get(label);
             if (edgesByLabel == null) {
