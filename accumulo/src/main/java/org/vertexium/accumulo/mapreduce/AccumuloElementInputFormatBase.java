@@ -130,8 +130,8 @@ public abstract class AccumuloElementInputFormatBase<TValue extends Element> ext
         return new LazyMutableProperty(
                 graph,
                 graph.getValueSerializer(),
-                property.key,
-                property.name,
+                graph.getNameSubstitutionStrategy().inflate(property.key),
+                graph.getNameSubstitutionStrategy().inflate(property.name),
                 property.value,
                 metadata,
                 hiddenVisibilities,
