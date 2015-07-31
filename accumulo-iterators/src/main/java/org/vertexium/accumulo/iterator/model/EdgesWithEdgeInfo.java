@@ -73,6 +73,11 @@ public class EdgesWithEdgeInfo extends Edges {
                             }
                         };
                     }
+
+                    @Override
+                    public void remove() {
+                        throw new VertexiumAccumuloIteratorException("Not supported");
+                    }
                 };
             }
         };
