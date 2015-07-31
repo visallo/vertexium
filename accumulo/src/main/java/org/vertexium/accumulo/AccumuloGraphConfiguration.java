@@ -110,7 +110,7 @@ public class AccumuloGraphConfiguration extends GraphConfiguration {
 
     private org.apache.hadoop.conf.Configuration getHadoopConfiguration() {
         org.apache.hadoop.conf.Configuration configuration = new org.apache.hadoop.conf.Configuration();
-        for (Object entrySetObject : MapUtils.getAllWithPrefix(getConfig(), HDFS_CONFIG_PREFIX).entrySet()) {
+        for (Object entrySetObject : getConfig().entrySet()) {
             Map.Entry entrySet = (Map.Entry) entrySetObject;
             configuration.set("" + entrySet.getKey(), "" + entrySet.getValue());
         }
