@@ -132,32 +132,40 @@ public class DataInputStreamUtils {
     public static Edges decodeEdges(DataInputStream in, NameSubstitutionStrategy nameSubstitutionStrategy) throws IOException {
         int edgeLabelMarker = in.readByte();
         if (edgeLabelMarker == VertexElementData.EDGE_LABEL_WITH_REFS_MARKER) {
-            EdgesWithEdgeInfo edges = new EdgesWithEdgeInfo();
-            int count = in.readInt();
-            for (int i = 0; i < count; i++) {
-                String label = new String(decodeByteArray(in), ElementData.CHARSET);
-                int edgeByLabelCount = in.readInt();
-                for (int edgeByLabelIndex = 0; edgeByLabelIndex < edgeByLabelCount; edgeByLabelIndex++) {
-                    Text edgeId = decodeText(in);
-                    long timestamp = in.readLong();
-                    String vertexId = decodeString(in);
-                    EdgeInfo edgeInfo = new EdgeInfo(nameSubstitutionStrategy.inflate(label), vertexId, timestamp);
-                    edges.add(edgeId, edgeInfo);
-                }
-            }
-            return edges;
+            return decodeEdgesWithRefs(in, nameSubstitutionStrategy);
         } else if (edgeLabelMarker == VertexElementData.EDGE_LABEL_ONLY_MARKER) {
-            EdgesWithCount edges = new EdgesWithCount();
-            int count = in.readInt();
-            for (int i = 0; i < count; i++) {
-                String label = nameSubstitutionStrategy.inflate(decodeString(in));
-                int edgeByLabelCount = in.readInt();
-                edges.add(label, edgeByLabelCount);
-            }
-            return edges;
+            return decodeEdgesLabelsOnly(in, nameSubstitutionStrategy);
         } else {
             throw new IOException("Unexpected edge label marker: " + edgeLabelMarker);
         }
+    }
+
+    private static Edges decodeEdgesLabelsOnly(DataInputStream in, NameSubstitutionStrategy nameSubstitutionStrategy) throws IOException {
+        EdgesWithCount edges = new EdgesWithCount();
+        int count = in.readInt();
+        for (int i = 0; i < count; i++) {
+            String label = nameSubstitutionStrategy.inflate(decodeString(in));
+            int edgeByLabelCount = in.readInt();
+            edges.add(label, edgeByLabelCount);
+        }
+        return edges;
+    }
+
+    private static Edges decodeEdgesWithRefs(DataInputStream in, NameSubstitutionStrategy nameSubstitutionStrategy) throws IOException {
+        EdgesWithEdgeInfo edges = new EdgesWithEdgeInfo();
+        int count = in.readInt();
+        for (int i = 0; i < count; i++) {
+            String label = new String(decodeByteArray(in), ElementData.CHARSET);
+            int edgeByLabelCount = in.readInt();
+            for (int edgeByLabelIndex = 0; edgeByLabelIndex < edgeByLabelCount; edgeByLabelIndex++) {
+                Text edgeId = decodeText(in);
+                long timestamp = in.readLong();
+                String vertexId = decodeString(in);
+                EdgeInfo edgeInfo = new EdgeInfo(nameSubstitutionStrategy.inflate(label), vertexId, timestamp);
+                edges.add(edgeId, edgeInfo);
+            }
+        }
+        return edges;
     }
 
     private static byte[] decodeByteArray(DataInputStream in) throws IOException {

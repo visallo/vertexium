@@ -10,55 +10,21 @@ import java.util.Arrays;
 // We are doing custom serialization to make this as fast as possible since this can get called many times
 public class EdgeInfo {
     public static final String CHARSET_NAME = "UTF-8";
-    private final byte[] bytes;
+    private byte[] bytes;
     private transient long timestamp;
-    private transient boolean decoded;
     private transient String label;
     private transient String vertexId;
+    private transient boolean decoded;
 
     public EdgeInfo(String label, String vertexId) {
         this(label, vertexId, System.currentTimeMillis());
     }
 
     public EdgeInfo(String label, String vertexId, long timestamp) {
-        try {
-            this.timestamp = timestamp;
-
-            byte[] labelBytes;
-            int labelBytesLength;
-            if (label == null) {
-                labelBytes = null;
-                labelBytesLength = -1;
-            } else {
-                labelBytes = label.getBytes(CHARSET_NAME);
-                labelBytesLength = labelBytes.length;
-            }
-
-            byte[] vertexIdBytes;
-            int vertexIdBytesLength;
-            if (vertexId == null) {
-                vertexIdBytes = null;
-                vertexIdBytesLength = -1;
-            } else {
-                vertexIdBytes = vertexId.getBytes(CHARSET_NAME);
-                vertexIdBytesLength = vertexIdBytes.length;
-            }
-            int len = 4 + labelBytesLength + 4 + vertexIdBytesLength;
-
-            ByteBuffer buffer = ByteBuffer.allocate(len);
-            buffer.putInt(labelBytesLength);
-            if (labelBytes != null) {
-                buffer.put(labelBytes);
-            }
-            buffer.putInt(vertexIdBytesLength);
-            if (vertexIdBytes != null) {
-                buffer.put(vertexIdBytes);
-            }
-
-            this.bytes = buffer.array();
-        } catch (UnsupportedEncodingException ex) {
-            throw new VertexiumAccumuloIteratorException("Could not encode edge info", ex);
-        }
+        this.label = label;
+        this.vertexId = vertexId;
+        this.timestamp = timestamp;
+        this.decoded = true;
     }
 
     public EdgeInfo(byte[] bytes, long timestamp) {
@@ -120,8 +86,50 @@ public class EdgeInfo {
         return new EdgeInfo(value.get(), timestamp);
     }
 
+    public byte[] getBytes() {
+        if (bytes == null) {
+            try {
+                byte[] labelBytes;
+                int labelBytesLength;
+                if (label == null) {
+                    labelBytes = null;
+                    labelBytesLength = -1;
+                } else {
+                    labelBytes = label.getBytes(CHARSET_NAME);
+                    labelBytesLength = labelBytes.length;
+                }
+
+                byte[] vertexIdBytes;
+                int vertexIdBytesLength;
+                if (vertexId == null) {
+                    vertexIdBytes = null;
+                    vertexIdBytesLength = -1;
+                } else {
+                    vertexIdBytes = vertexId.getBytes(CHARSET_NAME);
+                    vertexIdBytesLength = vertexIdBytes.length;
+                }
+                int len = 4 + labelBytesLength + 4 + vertexIdBytesLength;
+
+                ByteBuffer buffer = ByteBuffer.allocate(len);
+                buffer.putInt(labelBytesLength);
+                if (labelBytes != null) {
+                    buffer.put(labelBytes);
+                }
+                buffer.putInt(vertexIdBytesLength);
+                if (vertexIdBytes != null) {
+                    buffer.put(vertexIdBytes);
+                }
+
+                this.bytes = buffer.array();
+            } catch (UnsupportedEncodingException ex) {
+                throw new VertexiumAccumuloIteratorException("Could not encode edge info", ex);
+            }
+        }
+        return bytes;
+    }
+
     public Value toValue() {
-        return new Value(this.bytes);
+        return new Value(getBytes());
     }
 
     public long getTimestamp() {
