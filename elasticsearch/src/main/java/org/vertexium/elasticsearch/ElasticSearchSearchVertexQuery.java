@@ -5,7 +5,6 @@ import org.elasticsearch.index.query.FilterBuilder;
 import org.elasticsearch.index.query.FilterBuilders;
 import org.vertexium.*;
 import org.vertexium.elasticsearch.score.ScoringStrategy;
-import org.vertexium.query.QueryParameters;
 import org.vertexium.query.VertexQuery;
 
 import java.util.List;
@@ -31,8 +30,8 @@ public class ElasticSearchSearchVertexQuery extends ElasticSearchSearchQueryBase
     }
 
     @Override
-    protected List<FilterBuilder> getFilters(QueryParameters queryParameters, ElasticSearchElementType elementType) {
-        List<FilterBuilder> results = super.getFilters(queryParameters, elementType);
+    protected List<FilterBuilder> getFilters(ElasticSearchElementType elementType) {
+        List<FilterBuilder> results = super.getFilters(elementType);
         if (elementType.equals(ElasticSearchElementType.VERTEX)) {
             String[] ids = toArray(sourceVertex.getVertexIds(Direction.BOTH, getParameters().getAuthorizations()), String.class);
             results.add(FilterBuilders.idsFilter().ids(ids));
