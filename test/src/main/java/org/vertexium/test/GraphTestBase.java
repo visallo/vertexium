@@ -3333,16 +3333,16 @@ public abstract class GraphTestBase {
         graph.defineProperty("location").dataType(GeoPoint.class).define();
 
         graph.prepareVertex("v1", VISIBILITY_EMPTY)
-                .addPropertyValue("", "location", new GeoPoint(50, -10), VISIBILITY_EMPTY)
+                .addPropertyValue("", "location", new GeoPoint(50, -10, "pt1"), VISIBILITY_EMPTY)
                 .save(AUTHORIZATIONS_A_AND_B);
         graph.prepareVertex("v2", VISIBILITY_EMPTY)
-                .addPropertyValue("", "location", new GeoPoint(39, -77), VISIBILITY_EMPTY)
+                .addPropertyValue("", "location", new GeoPoint(39, -77, "pt2"), VISIBILITY_EMPTY)
                 .save(AUTHORIZATIONS_A_AND_B);
         graph.prepareVertex("v3", VISIBILITY_EMPTY)
-                .addPropertyValue("", "location", new GeoPoint(39.1, -77.1), VISIBILITY_EMPTY)
+                .addPropertyValue("", "location", new GeoPoint(39.1, -77.1, "pt3"), VISIBILITY_EMPTY)
                 .save(AUTHORIZATIONS_A_AND_B);
         graph.prepareVertex("v4", VISIBILITY_EMPTY)
-                .addPropertyValue("", "location", new GeoPoint(39.2, -77.2), VISIBILITY_A)
+                .addPropertyValue("", "location", new GeoPoint(39.2, -77.2, "pt4"), VISIBILITY_A)
                 .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
