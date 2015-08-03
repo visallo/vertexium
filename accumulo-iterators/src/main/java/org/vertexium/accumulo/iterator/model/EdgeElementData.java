@@ -1,6 +1,7 @@
 package org.vertexium.accumulo.iterator.model;
 
 import org.apache.hadoop.io.Text;
+import org.vertexium.accumulo.iterator.util.DataOutputStreamUtils;
 
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -22,9 +23,9 @@ public class EdgeElementData extends ElementData {
     @Override
     protected void encode(DataOutputStream out, EnumSet<FetchHint> fetchHints) throws IOException {
         super.encode(out, fetchHints);
-        encodeText(out, inVertexId);
-        encodeText(out, outVertexId);
-        encodeText(out, label);
+        DataOutputStreamUtils.encodeText(out, inVertexId);
+        DataOutputStreamUtils.encodeText(out, outVertexId);
+        DataOutputStreamUtils.encodeText(out, label);
     }
 
     @Override

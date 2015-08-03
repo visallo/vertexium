@@ -2,15 +2,14 @@ package org.vertexium.accumulo.iterator.model;
 
 import org.apache.accumulo.core.data.Value;
 import org.apache.hadoop.io.Text;
+import org.vertexium.accumulo.iterator.util.DataOutputStreamUtils;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.nio.charset.Charset;
 import java.util.*;
 
 public abstract class ElementData {
-    public static final Charset CHARSET = Charset.forName("utf8");
     public static final byte[] HEADER = new byte[]{'V', 'E', 'R', 'T', '1'};
     public static final byte TYPE_ID_VERTEX = 1;
     public static final byte TYPE_ID_EDGE = 2;
@@ -53,10 +52,10 @@ public abstract class ElementData {
 
     protected void encode(DataOutputStream out, EnumSet<FetchHint> fetchHints) throws IOException {
         encodeHeader(out);
-        encodeText(out, id);
+        DataOutputStreamUtils.encodeText(out, id);
         out.writeLong(timestamp);
-        encodeText(out, visibility);
-        encodeTextList(out, hiddenVisibilities);
+        DataOutputStreamUtils.encodeText(out, visibility);
+        DataOutputStreamUtils.encodeTextList(out, hiddenVisibilities);
         encodeProperties(out, fetchHints);
     }
 
@@ -66,45 +65,6 @@ public abstract class ElementData {
     }
 
     protected abstract byte getTypeId();
-
-    protected void encodeTextList(DataOutputStream out, Collection<Text> texts) throws IOException {
-        if (texts == null) {
-            out.writeInt(-1);
-            return;
-        }
-        out.writeInt(texts.size());
-        for (Text text : texts) {
-            encodeText(out, text);
-        }
-    }
-
-    protected void encodeText(DataOutputStream out, Text text) throws IOException {
-        if (text == null) {
-            out.writeInt(-1);
-            return;
-        }
-        out.writeInt(text.getLength());
-        out.write(text.getBytes(), 0, text.getLength());
-    }
-
-    protected void encodeByteArray(DataOutputStream out, byte[] bytes) throws IOException {
-        if (bytes == null) {
-            out.writeInt(-1);
-            return;
-        }
-        out.writeInt(bytes.length);
-        out.write(bytes);
-    }
-
-    protected void encodeString(DataOutputStream out, String text) throws IOException {
-        if (text == null) {
-            out.writeInt(-1);
-            return;
-        }
-        byte[] bytes = text.getBytes(CHARSET);
-        out.writeInt(bytes.length);
-        out.write(bytes, 0, bytes.length);
-    }
 
     private void encodeProperties(final DataOutputStream out, EnumSet<FetchHint> fetchHints) throws IOException {
         iterateProperties(new PropertyDataHandler() {
@@ -119,14 +79,14 @@ public abstract class ElementData {
                     PropertyMetadata metadata
             ) throws IOException {
                 out.write(PROP_START);
-                encodeString(out, propertyKey);
-                encodeString(out, propertyName);
-                encodeText(out, propertyVisibility);
+                DataOutputStreamUtils.encodeString(out, propertyKey);
+                DataOutputStreamUtils.encodeString(out, propertyName);
+                DataOutputStreamUtils.encodeText(out, propertyVisibility);
                 out.writeLong(propertyTimestamp);
                 out.writeInt(propertyValue.length);
                 out.write(propertyValue);
-                encodeTextList(out, propertyHiddenVisibilities);
-                encodePropertyMetadata(out, metadata);
+                DataOutputStreamUtils.encodeTextList(out, propertyHiddenVisibilities);
+                DataOutputStreamUtils.encodePropertyMetadata(out, metadata);
             }
         }, fetchHints);
         out.write(PROP_END);
@@ -188,24 +148,6 @@ public abstract class ElementData {
 
     private interface PropertyDataHandler {
         void handle(String propertyKey, String propertyName, byte[] propertyValue, Text propertyVisibility, long propertyTimestamp, Set<Text> propertyHiddenVisibilities, PropertyMetadata metadata) throws IOException;
-    }
-
-    private void encodePropertyMetadata(DataOutputStream out, PropertyMetadata metadata) throws IOException {
-        if (metadata == null) {
-            out.writeInt(0);
-            return;
-        }
-        out.writeInt(metadata.entries.size());
-        for (Map.Entry<String, PropertyMetadata.Entry> propertyMetadata : metadata.entries.entrySet()) {
-            encodePropertyMetadataEntry(out, propertyMetadata.getValue());
-        }
-    }
-
-    private void encodePropertyMetadataEntry(DataOutputStream out, PropertyMetadata.Entry metadataEntry) throws IOException {
-        encodeString(out, metadataEntry.metadataKey);
-        encodeString(out, metadataEntry.metadataVisibility);
-        out.writeInt(metadataEntry.value.length);
-        out.write(metadataEntry.value);
     }
 
     private Set<Text> getPropertyHiddenVisibilities(String propertyKey, String propertyName, String propertyVisibility) {

@@ -31,9 +31,11 @@ import org.apache.zookeeper.CreateMode;
 import org.vertexium.*;
 import org.vertexium.accumulo.iterator.CountingIterator;
 import org.vertexium.accumulo.iterator.EdgeIterator;
+import org.vertexium.accumulo.iterator.VertexEdgeIdIterator;
 import org.vertexium.accumulo.iterator.VertexIterator;
 import org.vertexium.accumulo.iterator.model.PropertyColumnQualifier;
 import org.vertexium.accumulo.iterator.model.PropertyMetadataColumnQualifier;
+import org.vertexium.accumulo.iterator.util.ByteArrayWrapper;
 import org.vertexium.accumulo.keys.KeyHelper;
 import org.vertexium.accumulo.serializer.ValueSerializer;
 import org.vertexium.event.*;
@@ -1654,10 +1656,8 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
 
             Long startTime = null;
             int maxVersions = 1;
-            // only fetch one side of the edge since we are scanning all vertices the edge will appear on the out on one of the vertices
-            EnumSet<FetchHint> fetchHints = EnumSet.of(FetchHint.OUT_EDGE_REFS);
             ScannerBase scanner = createElementScanner(
-                    fetchHints,
+                    FetchHint.EDGE_REFS,
                     ElementType.VERTEX,
                     maxVersions,
                     startTime,
@@ -1667,19 +1667,24 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                     authorizations
             );
 
+            IteratorSetting vertexEdgeIdIteratorSettings = new IteratorSetting(
+                    1000,
+                    VertexEdgeIdIterator.class.getSimpleName(),
+                    VertexEdgeIdIterator.class
+            );
+            scanner.addScanIterator(vertexEdgeIdIteratorSettings);
+
             final long timerStartTime = System.currentTimeMillis();
             try {
                 Iterator<Map.Entry<Key, Value>> it = scanner.iterator();
-                Set<String> edgeIds = new HashSet<>();
+                Set<ByteArrayWrapper> seenEdgeIds = new HashSet<>();
+                List<String> edgeIds = new ArrayList<>();
                 while (it.hasNext()) {
                     Map.Entry<Key, Value> c = it.next();
-                    if (!c.getKey().getColumnFamily().equals(AccumuloVertex.CF_OUT_EDGE)) {
-                        continue;
-                    }
-                    String edgeInfoVertexId = org.vertexium.accumulo.iterator.model.EdgeInfo.getVertexId(c.getValue());
-                    if (vertexIdsSet.contains(edgeInfoVertexId)) {
-                        String edgeId = c.getKey().getColumnQualifier().toString();
-                        edgeIds.add(edgeId);
+                    for (ByteArrayWrapper edgeId : VertexEdgeIdIterator.decodeValue(c.getValue())) {
+                        if (!seenEdgeIds.add(edgeId)) {
+                            edgeIds.add(new Text(edgeId.getData()).toString());
+                        }
                     }
                 }
                 return edgeIds;

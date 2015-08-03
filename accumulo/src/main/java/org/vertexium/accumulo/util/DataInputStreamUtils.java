@@ -11,6 +11,7 @@ import org.vertexium.accumulo.AccumuloNameSubstitutionStrategy;
 import org.vertexium.accumulo.LazyMutableProperty;
 import org.vertexium.accumulo.LazyPropertyMetadata;
 import org.vertexium.accumulo.iterator.model.*;
+import org.vertexium.accumulo.iterator.util.DataOutputStreamUtils;
 import org.vertexium.id.NameSubstitutionStrategy;
 
 import javax.annotation.Nullable;
@@ -23,19 +24,7 @@ import java.util.Set;
 
 public class DataInputStreamUtils {
     public static Text decodeText(DataInputStream in) throws IOException {
-        int length = in.readInt();
-        if (length == -1) {
-            return null;
-        }
-        if (length == 0) {
-            return new Text();
-        }
-        byte[] data = new byte[length];
-        int read = in.read(data, 0, length);
-        if (read != length) {
-            throw new IOException("Unexpected data length expected " + length + " found " + read);
-        }
-        return new Text(data);
+        return org.vertexium.accumulo.iterator.util.DataInputStreamUtils.decodeText(in);
     }
 
     public static String decodeString(DataInputStream in) throws IOException {
@@ -51,7 +40,7 @@ public class DataInputStreamUtils {
         if (read != length) {
             throw new IOException("Unexpected data length expected " + length + " found " + read);
         }
-        return new String(data, ElementData.CHARSET);
+        return new String(data, DataOutputStreamUtils.CHARSET);
     }
 
     public static List<Text> decodeTextList(DataInputStream in) throws IOException {
@@ -131,9 +120,9 @@ public class DataInputStreamUtils {
 
     public static Edges decodeEdges(DataInputStream in, NameSubstitutionStrategy nameSubstitutionStrategy) throws IOException {
         int edgeLabelMarker = in.readByte();
-        if (edgeLabelMarker == VertexElementData.EDGE_LABEL_WITH_REFS_MARKER) {
+        if (edgeLabelMarker == DataOutputStreamUtils.EDGE_LABEL_WITH_REFS_MARKER) {
             return decodeEdgesWithRefs(in, nameSubstitutionStrategy);
-        } else if (edgeLabelMarker == VertexElementData.EDGE_LABEL_ONLY_MARKER) {
+        } else if (edgeLabelMarker == DataOutputStreamUtils.EDGE_LABEL_ONLY_MARKER) {
             return decodeEdgesLabelsOnly(in, nameSubstitutionStrategy);
         } else {
             throw new IOException("Unexpected edge label marker: " + edgeLabelMarker);
@@ -155,7 +144,7 @@ public class DataInputStreamUtils {
         EdgesWithEdgeInfo edges = new EdgesWithEdgeInfo();
         int count = in.readInt();
         for (int i = 0; i < count; i++) {
-            String label = new String(decodeByteArray(in), ElementData.CHARSET);
+            String label = new String(decodeByteArray(in), DataOutputStreamUtils.CHARSET);
             int edgeByLabelCount = in.readInt();
             for (int edgeByLabelIndex = 0; edgeByLabelIndex < edgeByLabelCount; edgeByLabelIndex++) {
                 Text edgeId = decodeText(in);
@@ -168,17 +157,8 @@ public class DataInputStreamUtils {
         return edges;
     }
 
-    private static byte[] decodeByteArray(DataInputStream in) throws IOException {
-        int len = in.readInt();
-        if (len == -1) {
-            return null;
-        }
-        byte[] data = new byte[len];
-        int read = in.read(data);
-        if (read != len) {
-            throw new IOException("Unexpected read length. Expected " + len + " found " + read);
-        }
-        return data;
+    public static byte[] decodeByteArray(DataInputStream in) throws IOException {
+        return org.vertexium.accumulo.iterator.util.DataInputStreamUtils.decodeByteArray(in);
     }
 
     public static void decodeHeader(DataInputStream in, byte expectedTypeId) throws IOException {
