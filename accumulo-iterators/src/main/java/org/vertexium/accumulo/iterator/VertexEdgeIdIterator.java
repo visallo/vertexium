@@ -66,6 +66,11 @@ public class VertexEdgeIdIterator extends RowEncodingIterator {
                             throw new VertexiumAccumuloIteratorException("Could not read text", e);
                         }
                     }
+
+                    @Override
+                    public void remove() {
+                        throw new VertexiumAccumuloIteratorException("not implemented");
+                    }
                 };
             }
         };
