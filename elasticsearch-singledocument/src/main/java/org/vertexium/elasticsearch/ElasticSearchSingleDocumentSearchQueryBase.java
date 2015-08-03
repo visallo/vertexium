@@ -2,10 +2,7 @@ package org.vertexium.elasticsearch;
 
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.client.transport.TransportClient;
-import org.elasticsearch.index.query.FilterBuilder;
-import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.index.query.QueryStringQueryBuilder;
+import org.elasticsearch.index.query.*;
 import org.vertexium.Authorizations;
 import org.vertexium.Graph;
 import org.vertexium.GraphBaseWithSearchIndex;
@@ -91,6 +88,24 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends ElasticSearchQue
             qs = qs.field(field);
         }
         return qs;
+    }
+
+    @Override
+    protected List<FilterBuilder> getFilters(ElasticSearchElementType elementType) {
+        List<FilterBuilder> results = super.getFilters(elementType);
+        if (getParameters() instanceof QueryStringQueryParameters) {
+            String queryString = ((QueryStringQueryParameters) getParameters()).getQueryString();
+            if (queryString == null || queryString.equals("*")) {
+                ElasticsearchSingleDocumentSearchIndex es = (ElasticsearchSingleDocumentSearchIndex) ((GraphBaseWithSearchIndex) getGraph()).getSearchIndex();
+                Collection<String> fields = es.getQueryablePropertyNames(getGraph(), getParameters().getAuthorizations());
+                OrFilterBuilder atLeastOneFieldExistsFilter = new OrFilterBuilder();
+                for (String field : fields) {
+                    atLeastOneFieldExistsFilter.add(new ExistsFilterBuilder(field));
+                }
+                results.add(atLeastOneFieldExistsFilter);
+            }
+        }
+        return results;
     }
 }
 

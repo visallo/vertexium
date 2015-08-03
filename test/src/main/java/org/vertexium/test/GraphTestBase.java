@@ -1482,6 +1482,22 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    public void testGraphQueryWithQueryStringWithAuthorizations() {
+        Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_ALL);
+        v1.setProperty("description", "This is vertex 1 - dog.", VISIBILITY_A, AUTHORIZATIONS_ALL);
+        Vertex v2 = graph.addVertex("v2", VISIBILITY_B, AUTHORIZATIONS_ALL);
+        v2.setProperty("description", "This is vertex 2 - cat.", VISIBILITY_B, AUTHORIZATIONS_ALL);
+        getGraph().flush();
+
+        Iterable<Vertex> vertices = graph.query(AUTHORIZATIONS_A).vertices();
+        assertEquals(1, count(vertices));
+        if (vertices instanceof IterableWithTotalHits) {
+            IterableWithTotalHits hits = (IterableWithTotalHits) vertices;
+            assertEquals(1, hits.getTotalHits());
+        }
+    }
+
+    @Test
     public void testGraphQueryHas() {
         graph.prepareVertex("v1", VISIBILITY_A)
                 .setProperty("text", "hello", VISIBILITY_A)
