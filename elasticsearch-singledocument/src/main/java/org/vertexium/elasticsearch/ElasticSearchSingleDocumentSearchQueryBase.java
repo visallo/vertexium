@@ -82,7 +82,7 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends ElasticSearchQue
             return QueryBuilders.matchAllQuery();
         }
         ElasticsearchSingleDocumentSearchIndex es = (ElasticsearchSingleDocumentSearchIndex) ((GraphBaseWithSearchIndex) getGraph()).getSearchIndex();
-        Collection<String> fields = es.getQueryablePropertyNames(getGraph(), getParameters().getAuthorizations());
+        Collection<String> fields = es.getQueryablePropertyNames(getGraph(), false, getParameters().getAuthorizations());
         QueryStringQueryBuilder qs = QueryBuilders.queryString(queryString);
         for (String field : fields) {
             qs = qs.field(field);
@@ -97,7 +97,7 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends ElasticSearchQue
             String queryString = ((QueryStringQueryParameters) getParameters()).getQueryString();
             if (queryString == null || queryString.equals("*")) {
                 ElasticsearchSingleDocumentSearchIndex es = (ElasticsearchSingleDocumentSearchIndex) ((GraphBaseWithSearchIndex) getGraph()).getSearchIndex();
-                Collection<String> fields = es.getQueryablePropertyNames(getGraph(), getParameters().getAuthorizations());
+                Collection<String> fields = es.getQueryablePropertyNames(getGraph(), true, getParameters().getAuthorizations());
                 OrFilterBuilder atLeastOneFieldExistsFilter = new OrFilterBuilder();
                 for (String field : fields) {
                     atLeastOneFieldExistsFilter.add(new ExistsFilterBuilder(field));

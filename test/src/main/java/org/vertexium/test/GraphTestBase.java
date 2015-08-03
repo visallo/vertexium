@@ -1487,6 +1487,8 @@ public abstract class GraphTestBase {
         v1.setProperty("description", "This is vertex 1 - dog.", VISIBILITY_A, AUTHORIZATIONS_ALL);
         Vertex v2 = graph.addVertex("v2", VISIBILITY_B, AUTHORIZATIONS_ALL);
         v2.setProperty("description", "This is vertex 2 - cat.", VISIBILITY_B, AUTHORIZATIONS_ALL);
+        Edge e1 = graph.addEdge("e1", v1, v2, "edgeA", VISIBILITY_A, AUTHORIZATIONS_A);
+        e1.setProperty("edgeDescription", "This is edge 1 - dog to cat.", VISIBILITY_A, AUTHORIZATIONS_ALL);
         getGraph().flush();
 
         Iterable<Vertex> vertices = graph.query(AUTHORIZATIONS_A).vertices();
@@ -1495,6 +1497,9 @@ public abstract class GraphTestBase {
             IterableWithTotalHits hits = (IterableWithTotalHits) vertices;
             assertEquals(1, hits.getTotalHits());
         }
+
+        Iterable<Edge> edges = graph.query(AUTHORIZATIONS_A).edges();
+        assertEquals(1, count(edges));
     }
 
     @Test
@@ -1661,9 +1666,11 @@ public abstract class GraphTestBase {
     @Test
     public void testGraphQueryVertexHasWithSecurityGranularity() {
         graph.prepareVertex("v1", VISIBILITY_A)
+                .setProperty("description", "v1", VISIBILITY_A)
                 .setProperty("age", 25, VISIBILITY_A)
                 .save(AUTHORIZATIONS_A_AND_B);
         graph.prepareVertex("v2", VISIBILITY_A)
+                .setProperty("description", "v2", VISIBILITY_A)
                 .setProperty("age", 25, VISIBILITY_B)
                 .save(AUTHORIZATIONS_A_AND_B);
 
@@ -1684,13 +1691,13 @@ public abstract class GraphTestBase {
                 }
             }
         }
-        Assert.assertEquals(2, count(vertices));
+        assertEquals(2, count(vertices));
         assertTrue("has a", hasAgeVisA);
         assertFalse("has b", hasAgeVisB);
 
         vertices = graph.query(AUTHORIZATIONS_A_AND_B)
                 .vertices();
-        Assert.assertEquals(2, count(vertices));
+        assertEquals(2, count(vertices));
     }
 
     @Test

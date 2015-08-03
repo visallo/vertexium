@@ -296,10 +296,10 @@ public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchI
         return results;
     }
 
-    public Collection<String> getQueryablePropertyNames(Graph graph, Authorizations authorizations) {
+    public Collection<String> getQueryablePropertyNames(Graph graph, boolean includeNonStringFields, Authorizations authorizations) {
         Set<String> propertyNames = new HashSet<>();
         for (PropertyDefinition propertyDefinition : getAllPropertyDefinitions().values()) {
-            List<String> queryableTypeSuffixes = getQueryableTypeSuffixes(propertyDefinition);
+            List<String> queryableTypeSuffixes = getQueryableTypeSuffixes(propertyDefinition, includeNonStringFields);
             if (queryableTypeSuffixes.size() == 0) {
                 continue;
             }
@@ -317,7 +317,7 @@ public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchI
         return propertyNames;
     }
 
-    private List<String> getQueryableTypeSuffixes(PropertyDefinition propertyDefinition) {
+    private List<String> getQueryableTypeSuffixes(PropertyDefinition propertyDefinition, boolean includeNonStringFields) {
         List<String> typeSuffixes = new ArrayList<>();
         if (propertyDefinition.getDataType() == String.class) {
             if (propertyDefinition.getTextIndexHints().contains(TextIndexHint.EXACT_MATCH)) {
@@ -328,6 +328,8 @@ public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchI
             }
         } else if (propertyDefinition.getDataType() == GeoPoint.class
                 || propertyDefinition.getDataType() == GeoCircle.class) {
+            typeSuffixes.add("");
+        } else if (includeNonStringFields && !shouldIgnoreType(propertyDefinition.getDataType())) {
             typeSuffixes.add("");
         }
         return typeSuffixes;
