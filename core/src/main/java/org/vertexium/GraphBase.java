@@ -409,29 +409,52 @@ public abstract class GraphBase implements Graph {
     }
 
     @Override
+    @Deprecated
     public Iterable<String> findRelatedEdges(Iterable<String> vertexIds, Authorizations authorizations) {
-        return findRelatedEdges(vertexIds, null, authorizations);
+        return findRelatedEdgeIds(vertexIds, authorizations);
     }
 
     @Override
+    @Deprecated
     public Iterable<String> findRelatedEdges(Iterable<String> vertexIds, Long endTime, Authorizations authorizations) {
-        Set<String> results = new HashSet<>();
+        return findRelatedEdgeIds(vertexIds, endTime, authorizations);
+    }
+
+    @Override
+    public Iterable<String> findRelatedEdgeIds(Iterable<String> vertexIds, Authorizations authorizations) {
+        return findRelatedEdgeIds(vertexIds, null, authorizations);
+    }
+
+    @Override
+    public Iterable<String> findRelatedEdgeIds(Iterable<String> vertexIds, Long endTime, Authorizations authorizations) {
+        RelatedEdgeSummary relatedEdgeSummary = findRelatedEdgeSummary(vertexIds, endTime, authorizations);
+        List<String> relatedEdgeIds = new ArrayList<>();
+        for (Collection<RelatedEdge> relatedEdges : relatedEdgeSummary.getRelatedEdgesByLabel().values()) {
+            for (RelatedEdge relatedEdge : relatedEdges) {
+                relatedEdgeIds.add(relatedEdge.getEdgeId());
+            }
+        }
+        return relatedEdgeIds;
+    }
+
+    @Override
+    public RelatedEdgeSummary findRelatedEdgeSummary(Iterable<String> vertexIds, Authorizations authorizations) {
+        return findRelatedEdgeSummary(vertexIds, null, authorizations);
+    }
+
+    @Override
+    public RelatedEdgeSummary findRelatedEdgeSummary(Iterable<String> vertexIds, Long endTime, Authorizations authorizations) {
+        RelatedEdgeSummaryImpl results = new RelatedEdgeSummaryImpl();
         List<Vertex> vertices = IterableUtils.toList(getVertices(vertexIds, authorizations));
 
-        // since we are checking bi-directional edges we should only have to check v1->v2 and not v2->v1
-        Map<String, String> checkedCombinations = new HashMap<>();
-
-        for (Vertex sourceVertex : vertices) {
-            for (Vertex destVertex : vertices) {
-                if (checkedCombinations.containsKey(sourceVertex.getId() + destVertex.getId())) {
-                    continue;
+        for (Vertex outVertex : vertices) {
+            for (Vertex inVertex : vertices) {
+                Iterable<EdgeInfo> edgeInfos = outVertex.getEdgeInfos(Direction.OUT, authorizations);
+                for (EdgeInfo edgeInfo : edgeInfos) {
+                    if (edgeInfo.getVertexId().equals(inVertex.getId())) {
+                        results.add(edgeInfo.getEdgeId(), outVertex.getId(), inVertex.getId(), edgeInfo.getLabel());
+                    }
                 }
-                Iterable<String> edgeIds = sourceVertex.getEdgeIds(destVertex, Direction.BOTH, authorizations);
-                for (String edgeId : edgeIds) {
-                    results.add(edgeId);
-                }
-                checkedCombinations.put(sourceVertex.getId() + destVertex.getId(), "");
-                checkedCombinations.put(destVertex.getId() + sourceVertex.getId(), "");
             }
         }
         return results;

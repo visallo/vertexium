@@ -2434,12 +2434,41 @@ public abstract class GraphTestBase {
         vertexIds.add("v1");
         vertexIds.add("v2");
         vertexIds.add("v3");
-        Iterable<String> edgeIds = toList(graph.findRelatedEdges(vertexIds, AUTHORIZATIONS_A));
+        Iterable<String> edgeIds = toList(graph.findRelatedEdgeIds(vertexIds, AUTHORIZATIONS_A));
         Assert.assertEquals(4, count(edgeIds));
         org.vertexium.test.util.IterableUtils.assertContains(ev1v2.getId(), edgeIds);
         org.vertexium.test.util.IterableUtils.assertContains(ev1v3.getId(), edgeIds);
         org.vertexium.test.util.IterableUtils.assertContains(ev2v3.getId(), edgeIds);
         org.vertexium.test.util.IterableUtils.assertContains(ev3v1.getId(), edgeIds);
+    }
+
+    @Test
+    public void testFindRelatedEdgeSummary() {
+        Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
+        Vertex v2 = graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_A);
+        Vertex v3 = graph.addVertex("v3", VISIBILITY_A, AUTHORIZATIONS_A);
+        Vertex v4 = graph.addVertex("v4", VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.addEdge("e v1->v2", v1, v2, "label1", VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.addEdge("e v1->v3", v1, v3, "label1", VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.addEdge("e v2->v3", v2, v3, "label2", VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.addEdge("e v3->v1", v3, v1, "label2", VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.addEdge("e v3->v4", v3, v4, "", VISIBILITY_A, AUTHORIZATIONS_A);
+
+        List<String> vertexIds = new ArrayList<>();
+        vertexIds.add("v1");
+        vertexIds.add("v2");
+        vertexIds.add("v3");
+        RelatedEdgeSummary relatedEdgeSummary = graph.findRelatedEdgeSummary(vertexIds, AUTHORIZATIONS_A);
+        Map<String, Collection<RelatedEdge>> relatedEdgesByLabel = relatedEdgeSummary.getRelatedEdgesByLabel();
+        assertEquals(2, relatedEdgesByLabel.size());
+        assertTrue(relatedEdgesByLabel.containsKey("label1"));
+        Collection<RelatedEdge> relatedEdges = relatedEdgesByLabel.get("label1");
+        org.vertexium.test.util.IterableUtils.assertContains(new RelatedEdgeSummaryImpl.RelatedEdgeImpl("e v1->v2", v1.getId(), v2.getId()), relatedEdges);
+        org.vertexium.test.util.IterableUtils.assertContains(new RelatedEdgeSummaryImpl.RelatedEdgeImpl("e v1->v3", v1.getId(), v3.getId()), relatedEdges);
+        assertTrue(relatedEdgesByLabel.containsKey("label2"));
+        relatedEdges = relatedEdgesByLabel.get("label2");
+        org.vertexium.test.util.IterableUtils.assertContains(new RelatedEdgeSummaryImpl.RelatedEdgeImpl("e v2->v3", v2.getId(), v3.getId()), relatedEdges);
+        org.vertexium.test.util.IterableUtils.assertContains(new RelatedEdgeSummaryImpl.RelatedEdgeImpl("e v3->v1", v3.getId(), v1.getId()), relatedEdges);
     }
 
     // Test for performance
@@ -2479,7 +2508,7 @@ public abstract class GraphTestBase {
         }
 
         startTime = new Date();
-        Iterable<String> edgeIds = toList(graph.findRelatedEdges(vertexIds, AUTHORIZATIONS_A));
+        Iterable<String> edgeIds = toList(graph.findRelatedEdgeIds(vertexIds, AUTHORIZATIONS_A));
         count(edgeIds);
         endTime = new Date();
         long findRelatedEdgesTime = endTime.getTime() - startTime.getTime();

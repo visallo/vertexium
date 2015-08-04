@@ -43,6 +43,11 @@ public class InMemoryVertex extends InMemoryElement<InMemoryVertex> implements V
             protected EdgeInfo convert(final Edge o) {
                 return new EdgeInfo() {
                     @Override
+                    public String getEdgeId() {
+                        return o.getId();
+                    }
+
+                    @Override
                     public String getLabel() {
                         return o.getLabel();
                     }

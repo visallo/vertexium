@@ -29,10 +29,8 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.io.Text;
 import org.apache.zookeeper.CreateMode;
 import org.vertexium.*;
-import org.vertexium.accumulo.iterator.CountingIterator;
-import org.vertexium.accumulo.iterator.EdgeIterator;
-import org.vertexium.accumulo.iterator.VertexEdgeIdIterator;
-import org.vertexium.accumulo.iterator.VertexIterator;
+import org.vertexium.accumulo.iterator.*;
+import org.vertexium.accumulo.iterator.model.EdgeInfo;
 import org.vertexium.accumulo.iterator.model.PropertyColumnQualifier;
 import org.vertexium.accumulo.iterator.model.PropertyMetadataColumnQualifier;
 import org.vertexium.accumulo.iterator.util.ByteArrayWrapper;
@@ -1635,7 +1633,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
     }
 
     @Override
-    public Iterable<String> findRelatedEdges(Iterable<String> vertexIds, Long endTime, Authorizations authorizations) {
+    public Iterable<String> findRelatedEdgeIds(Iterable<String> vertexIds, Long endTime, Authorizations authorizations) {
         Set<String> vertexIdsSet = IterableUtils.toSet(vertexIds);
         Span trace = Trace.start("findRelatedEdges");
         try {
@@ -1657,7 +1655,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             Long startTime = null;
             int maxVersions = 1;
             ScannerBase scanner = createElementScanner(
-                    FetchHint.EDGE_REFS,
+                    EnumSet.of(FetchHint.OUT_EDGE_REFS),
                     ElementType.VERTEX,
                     maxVersions,
                     startTime,
@@ -1667,8 +1665,16 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                     authorizations
             );
 
-            IteratorSetting vertexEdgeIdIteratorSettings = new IteratorSetting(
+            IteratorSetting edgeRefFilterSettings = new IteratorSetting(
                     1000,
+                    EdgeRefFilter.class.getSimpleName(),
+                    EdgeRefFilter.class
+            );
+            EdgeRefFilter.setVertexIds(edgeRefFilterSettings, vertexIdsSet);
+            scanner.addScanIterator(edgeRefFilterSettings);
+
+            IteratorSetting vertexEdgeIdIteratorSettings = new IteratorSetting(
+                    1001,
                     VertexEdgeIdIterator.class.getSimpleName(),
                     VertexEdgeIdIterator.class
             );
@@ -1677,17 +1683,80 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             final long timerStartTime = System.currentTimeMillis();
             try {
                 Iterator<Map.Entry<Key, Value>> it = scanner.iterator();
-                Set<ByteArrayWrapper> seenEdgeIds = new HashSet<>();
                 List<String> edgeIds = new ArrayList<>();
                 while (it.hasNext()) {
                     Map.Entry<Key, Value> c = it.next();
                     for (ByteArrayWrapper edgeId : VertexEdgeIdIterator.decodeValue(c.getValue())) {
-                        if (!seenEdgeIds.add(edgeId)) {
-                            edgeIds.add(new Text(edgeId.getData()).toString());
-                        }
+                        edgeIds.add(new Text(edgeId.getData()).toString());
                     }
                 }
                 return edgeIds;
+            } finally {
+                scanner.close();
+                GRAPH_LOGGER.logEndIterator(System.currentTimeMillis() - timerStartTime);
+            }
+        } finally {
+            trace.stop();
+        }
+    }
+
+    @Override
+    public RelatedEdgeSummary findRelatedEdgeSummary(Iterable<String> vertexIds, Long endTime, Authorizations authorizations) {
+        Set<String> vertexIdsSet = IterableUtils.toSet(vertexIds);
+        Span trace = Trace.start("findRelatedEdgeSummary");
+        try {
+            if (LOGGER.isTraceEnabled()) {
+                LOGGER.trace("findRelatedEdgeSummary:\n  %s", IterableUtils.join(vertexIdsSet, "\n  "));
+            }
+
+            if (vertexIdsSet.size() == 0) {
+                return new RelatedEdgeSummaryImpl();
+            }
+
+            List<Range> ranges = new ArrayList<>();
+            for (String vertexId : vertexIdsSet) {
+                Text rowKey = new Text(vertexId);
+                Range range = new Range(rowKey);
+                ranges.add(range);
+            }
+
+            Long startTime = null;
+            int maxVersions = 1;
+            ScannerBase scanner = createElementScanner(
+                    EnumSet.of(FetchHint.OUT_EDGE_REFS),
+                    ElementType.VERTEX,
+                    maxVersions,
+                    startTime,
+                    endTime,
+                    ranges,
+                    false,
+                    authorizations
+            );
+
+            IteratorSetting edgeRefFilterSettings = new IteratorSetting(
+                    1000,
+                    EdgeRefFilter.class.getSimpleName(),
+                    EdgeRefFilter.class
+            );
+            EdgeRefFilter.setVertexIds(edgeRefFilterSettings, vertexIdsSet);
+            scanner.addScanIterator(edgeRefFilterSettings);
+
+            final long timerStartTime = System.currentTimeMillis();
+            try {
+                RelatedEdgeSummaryImpl results = new RelatedEdgeSummaryImpl();
+                for (Map.Entry<Key, Value> row : scanner) {
+                    if (!row.getKey().getColumnFamily().equals(AccumuloVertex.CF_OUT_EDGE)) {
+                        continue;
+                    }
+                    org.vertexium.accumulo.iterator.model.EdgeInfo edgeInfo
+                            = new EdgeInfo(row.getValue().get(), row.getKey().getTimestamp());
+                    String edgeId = row.getKey().getColumnQualifier().toString();
+                    String outVertexId = row.getKey().getRow().toString();
+                    String inVertexId = edgeInfo.getVertexId();
+                    String label = edgeInfo.getLabel();
+                    results.add(edgeId, outVertexId, inVertexId, label);
+                }
+                return results;
             } finally {
                 scanner.close();
                 GRAPH_LOGGER.logEndIterator(System.currentTimeMillis() - timerStartTime);

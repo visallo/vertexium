@@ -538,13 +538,25 @@ public interface Graph {
     Iterable<Edge> getEdges(Iterable<String> ids, EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations);
 
     /**
+     * Use {@link #findRelatedEdgeIds(Iterable, Authorizations)}
+     */
+    @Deprecated
+    Iterable<String> findRelatedEdges(Iterable<String> vertexIds, Authorizations authorizations);
+
+    /**
+     * Use {@link #findRelatedEdgeIds(Iterable, Long, Authorizations)}
+     */
+    @Deprecated
+    Iterable<String> findRelatedEdges(Iterable<String> vertexIds, Long endTime, Authorizations authorizations);
+
+    /**
      * Given a list of vertex ids, find all the edge ids that connect them.
      *
      * @param vertexIds      The list of vertex ids.
      * @param authorizations The authorizations required to load the edges.
      * @return An iterable of all the edge ids between any two vertices.
      */
-    Iterable<String> findRelatedEdges(Iterable<String> vertexIds, Authorizations authorizations);
+    Iterable<String> findRelatedEdgeIds(Iterable<String> vertexIds, Authorizations authorizations);
 
     /**
      * Given a list of vertex ids, find all the edge ids that connect them.
@@ -554,7 +566,26 @@ public interface Graph {
      * @param authorizations The authorizations required to load the edges.
      * @return An iterable of all the edge ids between any two vertices.
      */
-    Iterable<String> findRelatedEdges(Iterable<String> vertexIds, Long endTime, Authorizations authorizations);
+    Iterable<String> findRelatedEdgeIds(Iterable<String> vertexIds, Long endTime, Authorizations authorizations);
+
+    /**
+     * Given a list of vertex ids, find all the edges that connect them.
+     *
+     * @param vertexIds      The list of vertex ids.
+     * @param authorizations The authorizations required to load the edges.
+     * @return Summary information about the related edges.
+     */
+    RelatedEdgeSummary findRelatedEdgeSummary(Iterable<String> vertexIds, Authorizations authorizations);
+
+    /**
+     * Given a list of vertex ids, find all the edges that connect them.
+     *
+     * @param vertexIds      The list of vertex ids.
+     * @param endTime        Include all changes made up until the point in time.
+     * @param authorizations The authorizations required to load the edges.
+     * @return Summary information about the related edges.
+     */
+    RelatedEdgeSummary findRelatedEdgeSummary(Iterable<String> vertexIds, Long endTime, Authorizations authorizations);
 
     /**
      * Permanently deletes an edge from the graph.

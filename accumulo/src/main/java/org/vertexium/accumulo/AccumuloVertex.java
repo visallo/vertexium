@@ -338,8 +338,14 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
         return new ConvertingIterable<Map.Entry<String, org.vertexium.accumulo.iterator.model.EdgeInfo>, org.vertexium.EdgeInfo>(getEdgeInfos(direction)) {
             @Override
             protected org.vertexium.EdgeInfo convert(Map.Entry<String, org.vertexium.accumulo.iterator.model.EdgeInfo> o) {
+                final String edgeId = o.getKey();
                 final org.vertexium.accumulo.iterator.model.EdgeInfo edgeInfo = o.getValue();
                 return new EdgeInfo() {
+                    @Override
+                    public String getEdgeId() {
+                        return edgeId;
+                    }
+
                     @Override
                     public String getLabel() {
                         return edgeInfo.getLabel();
