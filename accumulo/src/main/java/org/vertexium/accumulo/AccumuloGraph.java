@@ -1753,7 +1753,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                     String edgeId = row.getKey().getColumnQualifier().toString();
                     String outVertexId = row.getKey().getRow().toString();
                     String inVertexId = edgeInfo.getVertexId();
-                    String label = edgeInfo.getLabel();
+                    String label = getNameSubstitutionStrategy().inflate(edgeInfo.getLabel());
                     results.add(new RelatedEdgeImpl(edgeId, label, outVertexId, inVertexId));
                 }
                 return results;
