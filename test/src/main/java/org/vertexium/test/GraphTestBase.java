@@ -34,6 +34,7 @@ import java.math.BigInteger;
 import java.util.*;
 
 import static org.junit.Assert.*;
+import static org.vertexium.test.GraphTestBase.VISIBILITY_A;
 import static org.vertexium.util.IterableUtils.count;
 import static org.vertexium.util.IterableUtils.toList;
 
@@ -2526,8 +2527,8 @@ public abstract class GraphTestBase {
         metadataPropB.add("meta1", "meta1", VISIBILITY_A);
         graph.prepareEdge("e1", v1, v2, "label", VISIBILITY_A)
                 .setProperty("propA", "propA", VISIBILITY_A)
-                .setProperty("propB", "propB", VISIBILITY_B)
-                .setProperty("propBmeta", "propBmeta", metadataPropB, VISIBILITY_B)
+                .setProperty("propB", "propB", VISIBILITY_A_AND_B)
+                .setProperty("propBmeta", "propBmeta", metadataPropB, VISIBILITY_A)
                 .save(AUTHORIZATIONS_ALL);
         graph.flush();
 

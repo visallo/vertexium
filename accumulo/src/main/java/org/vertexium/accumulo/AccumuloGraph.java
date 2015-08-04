@@ -1766,6 +1766,65 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         }
     }
 
+    @Override
+    public Iterable<String> filterEdgeIdsByAuthorization(Iterable<String> edgeIds, String authorizationToMatch, EnumSet<EdgeFilter> filters, Authorizations authorizations) {
+        Set<String> edgeIdsSet = IterableUtils.toSet(edgeIds);
+        Span trace = Trace.start("filterEdgeIdsByAuthorization");
+        try {
+            if (LOGGER.isTraceEnabled()) {
+                LOGGER.trace("filterEdgeIdsByAuthorization:\n  %s", IterableUtils.join(edgeIdsSet, "\n  "));
+            }
+
+            if (edgeIdsSet.size() == 0) {
+                return new ArrayList<>();
+            }
+
+            List<Range> ranges = new ArrayList<>();
+            for (String edgeId : edgeIdsSet) {
+                Text rowKey = new Text(edgeId);
+                Range range = new Range(rowKey);
+                ranges.add(range);
+            }
+
+            Long startTime = null;
+            Long endTime = null;
+            int maxVersions = 1;
+            ScannerBase scanner = createElementScanner(
+                    FetchHint.ALL_INCLUDING_HIDDEN,
+                    ElementType.EDGE,
+                    maxVersions,
+                    startTime,
+                    endTime,
+                    ranges,
+                    false,
+                    authorizations
+            );
+
+            IteratorSetting hasAuthorizationFilterSettings = new IteratorSetting(
+                    1000,
+                    HasAuthorizationFilter.class.getSimpleName(),
+                    HasAuthorizationFilter.class
+            );
+            HasAuthorizationFilter.setAuthorizationToMatch(hasAuthorizationFilterSettings, authorizationToMatch);
+            HasAuthorizationFilter.setFilters(hasAuthorizationFilterSettings, filters);
+            scanner.addScanIterator(hasAuthorizationFilterSettings);
+
+            final long timerStartTime = System.currentTimeMillis();
+            try {
+                Set<String> results = new HashSet<>();
+                for (Map.Entry<Key, Value> row : scanner) {
+                    results.add(row.getKey().getRow().toString());
+                }
+                return results;
+            } finally {
+                scanner.close();
+                GRAPH_LOGGER.logEndIterator(System.currentTimeMillis() - timerStartTime);
+            }
+        } finally {
+            trace.stop();
+        }
+    }
+
     public Iterable<GraphMetadataEntry> getMetadataInRange(final Range range) {
         final long timerStartTime = System.currentTimeMillis();
 
