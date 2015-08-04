@@ -321,6 +321,43 @@ public abstract class GraphBase implements Graph {
     public abstract void softDeleteEdge(Edge edge, Long timestamp, Authorizations authorizations);
 
     @Override
+    public Iterable<String> filterEdgeIdsByAuthorization(Iterable<String> edgeIds, final String authorizationToMatch, final EnumSet<EdgeFilter> filters, Authorizations authorizations) {
+        FilterIterable<Edge> edges = new FilterIterable<Edge>(getEdges(edgeIds, authorizations)) {
+            @Override
+            protected boolean isIncluded(Edge edge) {
+                if (filters.contains(EdgeFilter.EDGE)) {
+                    if (edge.getVisibility().hasAuthorization(authorizationToMatch)) {
+                        return true;
+                    }
+                }
+                if (filters.contains(EdgeFilter.PROPERTY) || filters.contains(EdgeFilter.PROPERTY_METADATA)) {
+                    for (Property property : edge.getProperties()) {
+                        if (filters.contains(EdgeFilter.PROPERTY)) {
+                            if (property.getVisibility().hasAuthorization(authorizationToMatch)) {
+                                return true;
+                            }
+                        }
+                        if (filters.contains(EdgeFilter.PROPERTY_METADATA)) {
+                            for (Metadata.Entry entry : property.getMetadata().entrySet()) {
+                                if (entry.getVisibility().hasAuthorization(authorizationToMatch)) {
+                                    return true;
+                                }
+                            }
+                        }
+                    }
+                }
+                return false;
+            }
+        };
+        return new ConvertingIterable<Edge, String>(edges) {
+            @Override
+            protected String convert(Edge edge) {
+                return edge.getId();
+            }
+        };
+    }
+
+    @Override
     public Iterable<Edge> getEdges(final Iterable<String> ids, final EnumSet<FetchHint> fetchHints, final Authorizations authorizations) {
         return getEdges(ids, fetchHints, null, authorizations);
     }

@@ -489,6 +489,18 @@ public interface Graph {
     Iterable<Edge> getEdges(EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations);
 
     /**
+     * Filters a collection of edge ids by the authorizations of that edge, properties, etc. If
+     * any of the filtered items match that edge id will be included.
+     *
+     * @param edgeIds              The edge ids to filter on.
+     * @param authorizationToMatch The authorization to look for
+     * @param filters              The parts of the edge to filter on
+     * @param authorizations       The authorization to find the edges with
+     * @return The filtered down list of edge ids
+     */
+    Iterable<String> filterEdgeIdsByAuthorization(Iterable<String> edgeIds, String authorizationToMatch, EnumSet<EdgeFilter> filters, Authorizations authorizations);
+
+    /**
      * Tests the existence of edges with the given authorizations.
      *
      * @param ids            The edge ids to check existence of.

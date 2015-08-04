@@ -20,7 +20,7 @@ public class ArrayUtils {
         return true;
     }
 
-    private static <T> boolean contains(T[] a1, T v) {
+    public static <T> boolean contains(T[] a1, T v) {
         for (T anA1 : a1) {
             if (anA1.equals(v)) {
                 return true;

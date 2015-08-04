@@ -1,10 +1,14 @@
 package org.vertexium;
 
+import org.vertexium.util.ArrayUtils;
+
 import java.io.Serializable;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 public class Visibility implements Serializable, Comparable<Visibility> {
     static final long serialVersionUID = 42L;
+    private static final Pattern SPLIT_PATTERN = Pattern.compile("[^A-Za-z0-9_\\-\\.]");
     public static final Visibility EMPTY = new Visibility("");
     private final String visibilityString;
 
@@ -56,5 +60,12 @@ public class Visibility implements Serializable, Comparable<Visibility> {
             first = false;
         }
         return new Visibility(result.toString());
+    }
+
+    /**
+     * has authorization somewhere in the visibility string
+     */
+    public boolean hasAuthorization(String authorizationToMatch) {
+        return ArrayUtils.contains(SPLIT_PATTERN.split(getVisibilityString()), authorizationToMatch);
     }
 }
