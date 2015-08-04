@@ -1701,7 +1701,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
     }
 
     @Override
-    public RelatedEdgeSummary findRelatedEdgeSummary(Iterable<String> vertexIds, Long endTime, Authorizations authorizations) {
+    public Iterable<RelatedEdge> findRelatedEdgeSummary(Iterable<String> vertexIds, Long endTime, Authorizations authorizations) {
         Set<String> vertexIdsSet = IterableUtils.toSet(vertexIds);
         Span trace = Trace.start("findRelatedEdgeSummary");
         try {
@@ -1710,7 +1710,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             }
 
             if (vertexIdsSet.size() == 0) {
-                return new RelatedEdgeSummaryImpl();
+                return new ArrayList<>();
             }
 
             List<Range> ranges = new ArrayList<>();
@@ -1743,7 +1743,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
 
             final long timerStartTime = System.currentTimeMillis();
             try {
-                RelatedEdgeSummaryImpl results = new RelatedEdgeSummaryImpl();
+                List<RelatedEdge> results = new ArrayList<>();
                 for (Map.Entry<Key, Value> row : scanner) {
                     if (!row.getKey().getColumnFamily().equals(AccumuloVertex.CF_OUT_EDGE)) {
                         continue;
@@ -1754,7 +1754,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                     String outVertexId = row.getKey().getRow().toString();
                     String inVertexId = edgeInfo.getVertexId();
                     String label = edgeInfo.getLabel();
-                    results.add(edgeId, outVertexId, inVertexId, label);
+                    results.add(new RelatedEdgeImpl(edgeId, label, outVertexId, inVertexId));
                 }
                 return results;
             } finally {

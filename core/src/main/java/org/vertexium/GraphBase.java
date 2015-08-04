@@ -427,24 +427,23 @@ public abstract class GraphBase implements Graph {
 
     @Override
     public Iterable<String> findRelatedEdgeIds(Iterable<String> vertexIds, Long endTime, Authorizations authorizations) {
-        RelatedEdgeSummary relatedEdgeSummary = findRelatedEdgeSummary(vertexIds, endTime, authorizations);
-        List<String> relatedEdgeIds = new ArrayList<>();
-        for (Collection<RelatedEdge> relatedEdges : relatedEdgeSummary.getRelatedEdgesByLabel().values()) {
-            for (RelatedEdge relatedEdge : relatedEdges) {
-                relatedEdgeIds.add(relatedEdge.getEdgeId());
+        Iterable<RelatedEdge> relatedEdges = findRelatedEdgeSummary(vertexIds, endTime, authorizations);
+        return new ConvertingIterable<RelatedEdge, String>(relatedEdges) {
+            @Override
+            protected String convert(RelatedEdge o) {
+                return o.getEdgeId();
             }
-        }
-        return relatedEdgeIds;
+        };
     }
 
     @Override
-    public RelatedEdgeSummary findRelatedEdgeSummary(Iterable<String> vertexIds, Authorizations authorizations) {
+    public Iterable<RelatedEdge> findRelatedEdgeSummary(Iterable<String> vertexIds, Authorizations authorizations) {
         return findRelatedEdgeSummary(vertexIds, null, authorizations);
     }
 
     @Override
-    public RelatedEdgeSummary findRelatedEdgeSummary(Iterable<String> vertexIds, Long endTime, Authorizations authorizations) {
-        RelatedEdgeSummaryImpl results = new RelatedEdgeSummaryImpl();
+    public Iterable<RelatedEdge> findRelatedEdgeSummary(Iterable<String> vertexIds, Long endTime, Authorizations authorizations) {
+        List<RelatedEdge> results = new ArrayList<>();
         List<Vertex> vertices = IterableUtils.toList(getVertices(vertexIds, authorizations));
 
         for (Vertex outVertex : vertices) {
@@ -452,7 +451,7 @@ public abstract class GraphBase implements Graph {
                 Iterable<EdgeInfo> edgeInfos = outVertex.getEdgeInfos(Direction.OUT, authorizations);
                 for (EdgeInfo edgeInfo : edgeInfos) {
                     if (edgeInfo.getVertexId().equals(inVertex.getId())) {
-                        results.add(edgeInfo.getEdgeId(), outVertex.getId(), inVertex.getId(), edgeInfo.getLabel());
+                        results.add(new RelatedEdgeImpl(edgeInfo.getEdgeId(), edgeInfo.getLabel(), outVertex.getId(), inVertex.getId()));
                     }
                 }
             }

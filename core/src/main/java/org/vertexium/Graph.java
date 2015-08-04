@@ -575,7 +575,7 @@ public interface Graph {
      * @param authorizations The authorizations required to load the edges.
      * @return Summary information about the related edges.
      */
-    RelatedEdgeSummary findRelatedEdgeSummary(Iterable<String> vertexIds, Authorizations authorizations);
+    Iterable<RelatedEdge> findRelatedEdgeSummary(Iterable<String> vertexIds, Authorizations authorizations);
 
     /**
      * Given a list of vertex ids, find all the edges that connect them.
@@ -585,7 +585,7 @@ public interface Graph {
      * @param authorizations The authorizations required to load the edges.
      * @return Summary information about the related edges.
      */
-    RelatedEdgeSummary findRelatedEdgeSummary(Iterable<String> vertexIds, Long endTime, Authorizations authorizations);
+    Iterable<RelatedEdge> findRelatedEdgeSummary(Iterable<String> vertexIds, Long endTime, Authorizations authorizations);
 
     /**
      * Permanently deletes an edge from the graph.

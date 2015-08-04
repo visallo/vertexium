@@ -6,4 +6,6 @@ public interface RelatedEdge {
     String getInVertexId();
 
     String getOutVertexId();
+
+    String getLabel();
 }

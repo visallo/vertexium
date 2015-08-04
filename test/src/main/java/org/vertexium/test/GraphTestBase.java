@@ -2458,17 +2458,12 @@ public abstract class GraphTestBase {
         vertexIds.add("v1");
         vertexIds.add("v2");
         vertexIds.add("v3");
-        RelatedEdgeSummary relatedEdgeSummary = graph.findRelatedEdgeSummary(vertexIds, AUTHORIZATIONS_A);
-        Map<String, Collection<RelatedEdge>> relatedEdgesByLabel = relatedEdgeSummary.getRelatedEdgesByLabel();
-        assertEquals(2, relatedEdgesByLabel.size());
-        assertTrue(relatedEdgesByLabel.containsKey("label1"));
-        Collection<RelatedEdge> relatedEdges = relatedEdgesByLabel.get("label1");
-        org.vertexium.test.util.IterableUtils.assertContains(new RelatedEdgeSummaryImpl.RelatedEdgeImpl("e v1->v2", v1.getId(), v2.getId()), relatedEdges);
-        org.vertexium.test.util.IterableUtils.assertContains(new RelatedEdgeSummaryImpl.RelatedEdgeImpl("e v1->v3", v1.getId(), v3.getId()), relatedEdges);
-        assertTrue(relatedEdgesByLabel.containsKey("label2"));
-        relatedEdges = relatedEdgesByLabel.get("label2");
-        org.vertexium.test.util.IterableUtils.assertContains(new RelatedEdgeSummaryImpl.RelatedEdgeImpl("e v2->v3", v2.getId(), v3.getId()), relatedEdges);
-        org.vertexium.test.util.IterableUtils.assertContains(new RelatedEdgeSummaryImpl.RelatedEdgeImpl("e v3->v1", v3.getId(), v1.getId()), relatedEdges);
+        List<RelatedEdge> relatedEdges = toList(graph.findRelatedEdgeSummary(vertexIds, AUTHORIZATIONS_A));
+        assertEquals(4, relatedEdges.size());
+        org.vertexium.test.util.IterableUtils.assertContains(new RelatedEdgeImpl("e v1->v2", "label1", v1.getId(), v2.getId()), relatedEdges);
+        org.vertexium.test.util.IterableUtils.assertContains(new RelatedEdgeImpl("e v1->v3", "label1", v1.getId(), v3.getId()), relatedEdges);
+        org.vertexium.test.util.IterableUtils.assertContains(new RelatedEdgeImpl("e v2->v3", "label2", v2.getId(), v3.getId()), relatedEdges);
+        org.vertexium.test.util.IterableUtils.assertContains(new RelatedEdgeImpl("e v3->v1", "label2", v3.getId(), v1.getId()), relatedEdges);
     }
 
     // Test for performance
