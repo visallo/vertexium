@@ -6,9 +6,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 public abstract class QueryParameters {
+    public static final int DEFAULT_LIMIT = 100;
+    public static final int DEFAULT_SKIP = 0;
+
     private final Authorizations authorizations;
-    private long limit = 100;
-    private long skip = 0;
+    private long limit = DEFAULT_LIMIT;
+    private long skip = DEFAULT_SKIP;
     private final List<QueryBase.HasContainer> hasContainers = new ArrayList<>();
 
     public QueryParameters(Authorizations authorizations) {
