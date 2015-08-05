@@ -1767,21 +1767,42 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
     }
 
     @Override
-    public Iterable<String> filterEdgeIdsByAuthorization(Iterable<String> edgeIds, String authorizationToMatch, EnumSet<EdgeFilter> filters, Authorizations authorizations) {
-        Set<String> edgeIdsSet = IterableUtils.toSet(edgeIds);
-        Span trace = Trace.start("filterEdgeIdsByAuthorization");
+    public Iterable<String> filterEdgeIdsByAuthorization(Iterable<String> edgeIds, String authorizationToMatch, EnumSet<ElementFilter> filters, Authorizations authorizations) {
+        return filterElementIdsByAuthorization(
+                ElementType.EDGE,
+                edgeIds,
+                authorizationToMatch,
+                filters,
+                authorizations
+        );
+    }
+
+    @Override
+    public Iterable<String> filterVertexIdsByAuthorization(Iterable<String> vertexIds, String authorizationToMatch, EnumSet<ElementFilter> filters, Authorizations authorizations) {
+        return filterElementIdsByAuthorization(
+                ElementType.VERTEX,
+                vertexIds,
+                authorizationToMatch,
+                filters,
+                authorizations
+        );
+    }
+
+    private Iterable<String> filterElementIdsByAuthorization(ElementType elementType, Iterable<String> elementIds, String authorizationToMatch, EnumSet<ElementFilter> filters, Authorizations authorizations) {
+        Set<String> elementIdsSet = IterableUtils.toSet(elementIds);
+        Span trace = Trace.start("filterElementIdsByAuthorization");
         try {
             if (LOGGER.isTraceEnabled()) {
-                LOGGER.trace("filterEdgeIdsByAuthorization:\n  %s", IterableUtils.join(edgeIdsSet, "\n  "));
+                LOGGER.trace("filterElementIdsByAuthorization:\n  %s", IterableUtils.join(elementIdsSet, "\n  "));
             }
 
-            if (edgeIdsSet.size() == 0) {
+            if (elementIdsSet.size() == 0) {
                 return new ArrayList<>();
             }
 
             List<Range> ranges = new ArrayList<>();
-            for (String edgeId : edgeIdsSet) {
-                Text rowKey = new Text(edgeId);
+            for (String elementId : elementIdsSet) {
+                Text rowKey = new Text(elementId);
                 Range range = new Range(rowKey);
                 ranges.add(range);
             }
@@ -1791,7 +1812,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             int maxVersions = 1;
             ScannerBase scanner = createElementScanner(
                     FetchHint.ALL_INCLUDING_HIDDEN,
-                    ElementType.EDGE,
+                    elementType,
                     maxVersions,
                     startTime,
                     endTime,

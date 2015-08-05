@@ -34,7 +34,6 @@ import java.math.BigInteger;
 import java.util.*;
 
 import static org.junit.Assert.*;
-import static org.vertexium.test.GraphTestBase.VISIBILITY_A;
 import static org.vertexium.util.IterableUtils.count;
 import static org.vertexium.util.IterableUtils.toList;
 
@@ -2534,32 +2533,73 @@ public abstract class GraphTestBase {
 
         List<String> edgeIds = new ArrayList<>();
         edgeIds.add("e1");
-        List<String> foundEdgeIds = toList(graph.filterEdgeIdsByAuthorization(edgeIds, VISIBILITY_A_STRING, EdgeFilter.ALL, AUTHORIZATIONS_ALL));
+        List<String> foundEdgeIds = toList(graph.filterEdgeIdsByAuthorization(edgeIds, VISIBILITY_A_STRING, ElementFilter.ALL, AUTHORIZATIONS_ALL));
         org.vertexium.test.util.IterableUtils.assertContains("e1", foundEdgeIds);
 
-        foundEdgeIds = toList(graph.filterEdgeIdsByAuthorization(edgeIds, VISIBILITY_B_STRING, EdgeFilter.ALL, AUTHORIZATIONS_ALL));
+        foundEdgeIds = toList(graph.filterEdgeIdsByAuthorization(edgeIds, VISIBILITY_B_STRING, ElementFilter.ALL, AUTHORIZATIONS_ALL));
         org.vertexium.test.util.IterableUtils.assertContains("e1", foundEdgeIds);
 
-        foundEdgeIds = toList(graph.filterEdgeIdsByAuthorization(edgeIds, VISIBILITY_C_STRING, EdgeFilter.ALL, AUTHORIZATIONS_ALL));
+        foundEdgeIds = toList(graph.filterEdgeIdsByAuthorization(edgeIds, VISIBILITY_C_STRING, ElementFilter.ALL, AUTHORIZATIONS_ALL));
         assertEquals(0, foundEdgeIds.size());
 
-        foundEdgeIds = toList(graph.filterEdgeIdsByAuthorization(edgeIds, VISIBILITY_A_STRING, EnumSet.of(EdgeFilter.EDGE), AUTHORIZATIONS_ALL));
+        foundEdgeIds = toList(graph.filterEdgeIdsByAuthorization(edgeIds, VISIBILITY_A_STRING, EnumSet.of(ElementFilter.ELEMENT), AUTHORIZATIONS_ALL));
         org.vertexium.test.util.IterableUtils.assertContains("e1", foundEdgeIds);
 
-        foundEdgeIds = toList(graph.filterEdgeIdsByAuthorization(edgeIds, VISIBILITY_B_STRING, EnumSet.of(EdgeFilter.EDGE), AUTHORIZATIONS_ALL));
+        foundEdgeIds = toList(graph.filterEdgeIdsByAuthorization(edgeIds, VISIBILITY_B_STRING, EnumSet.of(ElementFilter.ELEMENT), AUTHORIZATIONS_ALL));
         assertEquals(0, foundEdgeIds.size());
 
-        foundEdgeIds = toList(graph.filterEdgeIdsByAuthorization(edgeIds, VISIBILITY_A_STRING, EnumSet.of(EdgeFilter.PROPERTY), AUTHORIZATIONS_ALL));
+        foundEdgeIds = toList(graph.filterEdgeIdsByAuthorization(edgeIds, VISIBILITY_A_STRING, EnumSet.of(ElementFilter.PROPERTY), AUTHORIZATIONS_ALL));
         org.vertexium.test.util.IterableUtils.assertContains("e1", foundEdgeIds);
 
-        foundEdgeIds = toList(graph.filterEdgeIdsByAuthorization(edgeIds, VISIBILITY_C_STRING, EnumSet.of(EdgeFilter.PROPERTY), AUTHORIZATIONS_ALL));
+        foundEdgeIds = toList(graph.filterEdgeIdsByAuthorization(edgeIds, VISIBILITY_C_STRING, EnumSet.of(ElementFilter.PROPERTY), AUTHORIZATIONS_ALL));
         assertEquals(0, foundEdgeIds.size());
 
-        foundEdgeIds = toList(graph.filterEdgeIdsByAuthorization(edgeIds, VISIBILITY_A_STRING, EnumSet.of(EdgeFilter.PROPERTY_METADATA), AUTHORIZATIONS_ALL));
+        foundEdgeIds = toList(graph.filterEdgeIdsByAuthorization(edgeIds, VISIBILITY_A_STRING, EnumSet.of(ElementFilter.PROPERTY_METADATA), AUTHORIZATIONS_ALL));
         org.vertexium.test.util.IterableUtils.assertContains("e1", foundEdgeIds);
 
-        foundEdgeIds = toList(graph.filterEdgeIdsByAuthorization(edgeIds, VISIBILITY_C_STRING, EnumSet.of(EdgeFilter.PROPERTY_METADATA), AUTHORIZATIONS_ALL));
+        foundEdgeIds = toList(graph.filterEdgeIdsByAuthorization(edgeIds, VISIBILITY_C_STRING, EnumSet.of(ElementFilter.PROPERTY_METADATA), AUTHORIZATIONS_ALL));
         assertEquals(0, foundEdgeIds.size());
+    }
+
+    @Test
+    public void testFilterVertexIdsByAuthorization() {
+        Metadata metadataPropB = new Metadata();
+        metadataPropB.add("meta1", "meta1", VISIBILITY_A);
+        Vertex v1 = graph.prepareVertex("v1", VISIBILITY_A)
+                .setProperty("propA", "propA", VISIBILITY_A)
+                .setProperty("propB", "propB", VISIBILITY_A_AND_B)
+                .setProperty("propBmeta", "propBmeta", metadataPropB, VISIBILITY_A)
+                .save(AUTHORIZATIONS_ALL);
+        graph.flush();
+
+        List<String> vertexIds = new ArrayList<>();
+        vertexIds.add("v1");
+        List<String> foundVertexIds = toList(graph.filterVertexIdsByAuthorization(vertexIds, VISIBILITY_A_STRING, ElementFilter.ALL, AUTHORIZATIONS_ALL));
+        org.vertexium.test.util.IterableUtils.assertContains("v1", foundVertexIds);
+
+        foundVertexIds = toList(graph.filterVertexIdsByAuthorization(vertexIds, VISIBILITY_B_STRING, ElementFilter.ALL, AUTHORIZATIONS_ALL));
+        org.vertexium.test.util.IterableUtils.assertContains("v1", foundVertexIds);
+
+        foundVertexIds = toList(graph.filterVertexIdsByAuthorization(vertexIds, VISIBILITY_C_STRING, ElementFilter.ALL, AUTHORIZATIONS_ALL));
+        assertEquals(0, foundVertexIds.size());
+
+        foundVertexIds = toList(graph.filterVertexIdsByAuthorization(vertexIds, VISIBILITY_A_STRING, EnumSet.of(ElementFilter.ELEMENT), AUTHORIZATIONS_ALL));
+        org.vertexium.test.util.IterableUtils.assertContains("v1", foundVertexIds);
+
+        foundVertexIds = toList(graph.filterVertexIdsByAuthorization(vertexIds, VISIBILITY_B_STRING, EnumSet.of(ElementFilter.ELEMENT), AUTHORIZATIONS_ALL));
+        assertEquals(0, foundVertexIds.size());
+
+        foundVertexIds = toList(graph.filterVertexIdsByAuthorization(vertexIds, VISIBILITY_A_STRING, EnumSet.of(ElementFilter.PROPERTY), AUTHORIZATIONS_ALL));
+        org.vertexium.test.util.IterableUtils.assertContains("v1", foundVertexIds);
+
+        foundVertexIds = toList(graph.filterVertexIdsByAuthorization(vertexIds, VISIBILITY_C_STRING, EnumSet.of(ElementFilter.PROPERTY), AUTHORIZATIONS_ALL));
+        assertEquals(0, foundVertexIds.size());
+
+        foundVertexIds = toList(graph.filterVertexIdsByAuthorization(vertexIds, VISIBILITY_A_STRING, EnumSet.of(ElementFilter.PROPERTY_METADATA), AUTHORIZATIONS_ALL));
+        org.vertexium.test.util.IterableUtils.assertContains("v1", foundVertexIds);
+
+        foundVertexIds = toList(graph.filterVertexIdsByAuthorization(vertexIds, VISIBILITY_C_STRING, EnumSet.of(ElementFilter.PROPERTY_METADATA), AUTHORIZATIONS_ALL));
+        assertEquals(0, foundVertexIds.size());
     }
 
     @Test

@@ -7,7 +7,7 @@ import org.apache.accumulo.core.iterators.Filter;
 import org.apache.accumulo.core.iterators.IteratorEnvironment;
 import org.apache.accumulo.core.iterators.SortedKeyValueIterator;
 import org.apache.accumulo.core.security.ColumnVisibility;
-import org.vertexium.EdgeFilter;
+import org.vertexium.ElementFilter;
 import org.vertexium.accumulo.iterator.util.SetOfStringsEncoder;
 
 import java.io.IOException;
@@ -19,15 +19,15 @@ public class HasAuthorizationFilter extends Filter {
     private static final String SETTING_FILTERS = "filters";
     private static final Pattern SPLIT_PATTERN = Pattern.compile("[^A-Za-z0-9_\\-\\.]");
     private String authorizationToMatch;
-    private EnumSet<EdgeFilter> filters;
+    private EnumSet<ElementFilter> filters;
 
     public static void setAuthorizationToMatch(IteratorSetting settings, String authorizationToMatch) {
         settings.addOption(SETTING_AUTHORIZATION_TO_MATCH, authorizationToMatch);
     }
 
-    public static void setFilters(IteratorSetting settings, EnumSet<EdgeFilter> filters) {
+    public static void setFilters(IteratorSetting settings, EnumSet<ElementFilter> filters) {
         Set<String> filterStrings = new HashSet<>();
-        for (EdgeFilter filter : filters) {
+        for (ElementFilter filter : filters) {
             filterStrings.add(filter.name());
         }
         settings.addOption(SETTING_FILTERS, SetOfStringsEncoder.encodeToString(filterStrings));
@@ -38,9 +38,9 @@ public class HasAuthorizationFilter extends Filter {
         super.init(source, options, env);
         authorizationToMatch = options.get(SETTING_AUTHORIZATION_TO_MATCH);
         Set<String> filterStrings = SetOfStringsEncoder.decodeFromString(options.get(SETTING_FILTERS));
-        List<EdgeFilter> filtersCollection = new ArrayList<>();
+        List<ElementFilter> filtersCollection = new ArrayList<>();
         for (String filterString : filterStrings) {
-            filtersCollection.add(EdgeFilter.valueOf(filterString));
+            filtersCollection.add(ElementFilter.valueOf(filterString));
         }
         filters = EnumSet.copyOf(filtersCollection);
     }
@@ -55,15 +55,17 @@ public class HasAuthorizationFilter extends Filter {
 
     @Override
     public boolean accept(Key k, Value v) {
-        if (filters.contains(EdgeFilter.EDGE) && k.getColumnFamily().equals(EdgeIterator.CF_SIGNAL) && isMatch(k.getColumnVisibilityParsed())) {
+        if (filters.contains(ElementFilter.ELEMENT)
+                && (k.getColumnFamily().equals(EdgeIterator.CF_SIGNAL) || k.getColumnFamily().equals(VertexIterator.CF_SIGNAL))
+                && isMatch(k.getColumnVisibilityParsed())) {
             return true;
         }
 
-        if (filters.contains(EdgeFilter.PROPERTY) && k.getColumnFamily().equals(EdgeIterator.CF_PROPERTY) && isMatch(k.getColumnVisibilityParsed())) {
+        if (filters.contains(ElementFilter.PROPERTY) && k.getColumnFamily().equals(EdgeIterator.CF_PROPERTY) && isMatch(k.getColumnVisibilityParsed())) {
             return true;
         }
 
-        if (filters.contains(EdgeFilter.PROPERTY_METADATA) && k.getColumnFamily().equals(EdgeIterator.CF_PROPERTY_METADATA) && isMatch(k.getColumnVisibilityParsed())) {
+        if (filters.contains(ElementFilter.PROPERTY_METADATA) && k.getColumnFamily().equals(EdgeIterator.CF_PROPERTY_METADATA) && isMatch(k.getColumnVisibilityParsed())) {
             return true;
         }
 

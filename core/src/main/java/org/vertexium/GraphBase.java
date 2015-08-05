@@ -321,23 +321,28 @@ public abstract class GraphBase implements Graph {
     public abstract void softDeleteEdge(Edge edge, Long timestamp, Authorizations authorizations);
 
     @Override
-    public Iterable<String> filterEdgeIdsByAuthorization(Iterable<String> edgeIds, final String authorizationToMatch, final EnumSet<EdgeFilter> filters, Authorizations authorizations) {
-        FilterIterable<Edge> edges = new FilterIterable<Edge>(getEdges(edgeIds, authorizations)) {
+    public Iterable<String> filterEdgeIdsByAuthorization(
+            Iterable<String> edgeIds,
+            final String authorizationToMatch,
+            final EnumSet<ElementFilter> filters,
+            Authorizations authorizations
+    ) {
+        FilterIterable<Edge> edges = new FilterIterable<Edge>(getEdges(edgeIds, FetchHint.ALL_INCLUDING_HIDDEN, authorizations)) {
             @Override
             protected boolean isIncluded(Edge edge) {
-                if (filters.contains(EdgeFilter.EDGE)) {
+                if (filters.contains(ElementFilter.ELEMENT)) {
                     if (edge.getVisibility().hasAuthorization(authorizationToMatch)) {
                         return true;
                     }
                 }
-                if (filters.contains(EdgeFilter.PROPERTY) || filters.contains(EdgeFilter.PROPERTY_METADATA)) {
+                if (filters.contains(ElementFilter.PROPERTY) || filters.contains(ElementFilter.PROPERTY_METADATA)) {
                     for (Property property : edge.getProperties()) {
-                        if (filters.contains(EdgeFilter.PROPERTY)) {
+                        if (filters.contains(ElementFilter.PROPERTY)) {
                             if (property.getVisibility().hasAuthorization(authorizationToMatch)) {
                                 return true;
                             }
                         }
-                        if (filters.contains(EdgeFilter.PROPERTY_METADATA)) {
+                        if (filters.contains(ElementFilter.PROPERTY_METADATA)) {
                             for (Metadata.Entry entry : property.getMetadata().entrySet()) {
                                 if (entry.getVisibility().hasAuthorization(authorizationToMatch)) {
                                     return true;
@@ -353,6 +358,48 @@ public abstract class GraphBase implements Graph {
             @Override
             protected String convert(Edge edge) {
                 return edge.getId();
+            }
+        };
+    }
+
+    @Override
+    public Iterable<String> filterVertexIdsByAuthorization(
+            Iterable<String> vertexIds,
+            final String authorizationToMatch,
+            final EnumSet<ElementFilter> filters,
+            Authorizations authorizations
+    ) {
+        FilterIterable<Vertex> vertices = new FilterIterable<Vertex>(getVertices(vertexIds, FetchHint.ALL_INCLUDING_HIDDEN, authorizations)) {
+            @Override
+            protected boolean isIncluded(Vertex vertex) {
+                if (filters.contains(ElementFilter.ELEMENT)) {
+                    if (vertex.getVisibility().hasAuthorization(authorizationToMatch)) {
+                        return true;
+                    }
+                }
+                if (filters.contains(ElementFilter.PROPERTY) || filters.contains(ElementFilter.PROPERTY_METADATA)) {
+                    for (Property property : vertex.getProperties()) {
+                        if (filters.contains(ElementFilter.PROPERTY)) {
+                            if (property.getVisibility().hasAuthorization(authorizationToMatch)) {
+                                return true;
+                            }
+                        }
+                        if (filters.contains(ElementFilter.PROPERTY_METADATA)) {
+                            for (Metadata.Entry entry : property.getMetadata().entrySet()) {
+                                if (entry.getVisibility().hasAuthorization(authorizationToMatch)) {
+                                    return true;
+                                }
+                            }
+                        }
+                    }
+                }
+                return false;
+            }
+        };
+        return new ConvertingIterable<Vertex, String>(vertices) {
+            @Override
+            protected String convert(Vertex vertex) {
+                return vertex.getId();
             }
         };
     }

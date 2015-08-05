@@ -498,7 +498,19 @@ public interface Graph {
      * @param authorizations       The authorization to find the edges with
      * @return The filtered down list of edge ids
      */
-    Iterable<String> filterEdgeIdsByAuthorization(Iterable<String> edgeIds, String authorizationToMatch, EnumSet<EdgeFilter> filters, Authorizations authorizations);
+    Iterable<String> filterEdgeIdsByAuthorization(Iterable<String> edgeIds, String authorizationToMatch, EnumSet<ElementFilter> filters, Authorizations authorizations);
+
+    /**
+     * Filters a collection of vertex ids by the authorizations of that vertex, properties, etc. If
+     * any of the filtered items match that vertex id will be included.
+     *
+     * @param vertexIds            The vertex ids to filter on.
+     * @param authorizationToMatch The authorization to look for
+     * @param filters              The parts of the edge to filter on
+     * @param authorizations       The authorization to find the edges with
+     * @return The filtered down list of vertex ids
+     */
+    Iterable<String> filterVertexIdsByAuthorization(Iterable<String> vertexIds, String authorizationToMatch, EnumSet<ElementFilter> filters, Authorizations authorizations);
 
     /**
      * Tests the existence of edges with the given authorizations.
