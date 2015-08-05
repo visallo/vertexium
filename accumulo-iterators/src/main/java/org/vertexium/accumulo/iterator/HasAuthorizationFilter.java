@@ -6,7 +6,7 @@ import org.apache.accumulo.core.data.Value;
 import org.apache.accumulo.core.iterators.Filter;
 import org.apache.accumulo.core.iterators.IteratorEnvironment;
 import org.apache.accumulo.core.iterators.SortedKeyValueIterator;
-import org.apache.accumulo.core.security.ColumnVisibility;
+import org.apache.hadoop.io.Text;
 import org.vertexium.ElementFilter;
 import org.vertexium.accumulo.iterator.util.SetOfStringsEncoder;
 
@@ -20,6 +20,7 @@ public class HasAuthorizationFilter extends Filter {
     private static final Pattern SPLIT_PATTERN = Pattern.compile("[^A-Za-z0-9_\\-\\.]");
     private String authorizationToMatch;
     private EnumSet<ElementFilter> filters;
+    private Map<Text, Boolean> matchCache;
 
     public static void setAuthorizationToMatch(IteratorSetting settings, String authorizationToMatch) {
         settings.addOption(SETTING_AUTHORIZATION_TO_MATCH, authorizationToMatch);
@@ -43,6 +44,7 @@ public class HasAuthorizationFilter extends Filter {
             filtersCollection.add(ElementFilter.valueOf(filterString));
         }
         filters = EnumSet.copyOf(filtersCollection);
+        matchCache = new HashMap<>();
     }
 
     @Override
@@ -50,6 +52,7 @@ public class HasAuthorizationFilter extends Filter {
         HasAuthorizationFilter filter = (HasAuthorizationFilter) super.deepCopy(env);
         filter.authorizationToMatch = this.authorizationToMatch;
         filter.filters = this.filters;
+        filter.matchCache = new HashMap<>();
         return filter;
     }
 
@@ -57,28 +60,39 @@ public class HasAuthorizationFilter extends Filter {
     public boolean accept(Key k, Value v) {
         if (filters.contains(ElementFilter.ELEMENT)
                 && (k.getColumnFamily().equals(EdgeIterator.CF_SIGNAL) || k.getColumnFamily().equals(VertexIterator.CF_SIGNAL))
-                && isMatch(k.getColumnVisibilityParsed())) {
+                && isMatch(k)) {
             return true;
         }
 
-        if (filters.contains(ElementFilter.PROPERTY) && k.getColumnFamily().equals(EdgeIterator.CF_PROPERTY) && isMatch(k.getColumnVisibilityParsed())) {
+        if (filters.contains(ElementFilter.PROPERTY) && k.getColumnFamily().equals(EdgeIterator.CF_PROPERTY) && isMatch(k)) {
             return true;
         }
 
-        if (filters.contains(ElementFilter.PROPERTY_METADATA) && k.getColumnFamily().equals(EdgeIterator.CF_PROPERTY_METADATA) && isMatch(k.getColumnVisibilityParsed())) {
+        if (filters.contains(ElementFilter.PROPERTY_METADATA) && k.getColumnFamily().equals(EdgeIterator.CF_PROPERTY_METADATA) && isMatch(k)) {
             return true;
         }
 
         return false;
     }
 
-    private boolean isMatch(ColumnVisibility columnVisibility) {
-        String[] parts = SPLIT_PATTERN.split(columnVisibility.toString());
+    private boolean isMatch(Key k) {
+        Text columnVisibilityText = k.getColumnVisibility();
+        if (columnVisibilityText.getLength() == 0) {
+            return false;
+        }
+        Boolean match = matchCache.get(columnVisibilityText);
+        if (match != null) {
+            return match;
+        }
+
+        String[] parts = SPLIT_PATTERN.split(k.getColumnVisibilityParsed().toString());
         for (String part : parts) {
             if (part.equals(authorizationToMatch)) {
+                matchCache.put(columnVisibilityText, true);
                 return true;
             }
         }
+        matchCache.put(columnVisibilityText, false);
         return false;
     }
 }
