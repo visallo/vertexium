@@ -80,47 +80,6 @@ public class EdgesWithEdgeInfo extends Edges {
         return pairs;
     }
 
-    public Iterable<Map.Entry<String, EdgeInfo>> getEntriesWithStringKeys() {
-        return new Iterable<Map.Entry<String, EdgeInfo>>() {
-            @Override
-            public Iterator<Map.Entry<String, EdgeInfo>> iterator() {
-                final Iterator<Map.Entry<Text, EdgeInfo>> it = pairs.iterator();
-                return new Iterator<Map.Entry<String, EdgeInfo>>() {
-                    @Override
-                    public boolean hasNext() {
-                        return it.hasNext();
-                    }
-
-                    @Override
-                    public Map.Entry<String, EdgeInfo> next() {
-                        final Map.Entry<Text, EdgeInfo> pair = it.next();
-                        return new Map.Entry<String, EdgeInfo>() {
-                            @Override
-                            public String getKey() {
-                                return pair.getKey().toString();
-                            }
-
-                            @Override
-                            public EdgeInfo getValue() {
-                                return pair.getValue();
-                            }
-
-                            @Override
-                            public EdgeInfo setValue(EdgeInfo value) {
-                                throw new RuntimeException("not supported");
-                            }
-                        };
-                    }
-
-                    @Override
-                    public void remove() {
-                        throw new RuntimeException("not supported");
-                    }
-                };
-            }
-        };
-    }
-
     private static class Pair implements Map.Entry<Text, EdgeInfo> {
         private final Text edgeId;
         private final EdgeInfo edgeInfo;

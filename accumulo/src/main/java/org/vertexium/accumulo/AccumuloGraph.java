@@ -36,6 +36,7 @@ import org.vertexium.accumulo.iterator.model.PropertyMetadataColumnQualifier;
 import org.vertexium.accumulo.iterator.util.ByteArrayWrapper;
 import org.vertexium.accumulo.keys.KeyHelper;
 import org.vertexium.accumulo.serializer.ValueSerializer;
+import org.vertexium.accumulo.util.RangeUtils;
 import org.vertexium.event.*;
 import org.vertexium.mutation.AlterPropertyVisibility;
 import org.vertexium.mutation.PropertyDeleteMutation;
@@ -735,11 +736,10 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         }
         try {
             ElementType elementType = ElementType.getTypeFromElement(element);
-            Text rowKey = new Text(element.getId());
 
             EnumSet<FetchHint> fetchHints = EnumSet.of(FetchHint.PROPERTIES, FetchHint.PROPERTY_METADATA);
             traceDataFetchHints(trace, fetchHints);
-            Range range = new Range(rowKey);
+            Range range = RangeUtils.createRangeFromString(element.getId());
             final ScannerBase scanner = createElementScanner(fetchHints, elementType, ALL_VERSIONS, startTime, endTime, Lists.newArrayList(range), false, authorizations);
 
             try {
@@ -1647,9 +1647,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
 
             List<Range> ranges = new ArrayList<>();
             for (String vertexId : vertexIdsSet) {
-                Text rowKey = new Text(vertexId);
-                Range range = new Range(rowKey);
-                ranges.add(range);
+                ranges.add(RangeUtils.createRangeFromString(vertexId));
             }
 
             Long startTime = null;
@@ -1715,9 +1713,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
 
             List<Range> ranges = new ArrayList<>();
             for (String vertexId : vertexIdsSet) {
-                Text rowKey = new Text(vertexId);
-                Range range = new Range(rowKey);
-                ranges.add(range);
+                ranges.add(RangeUtils.createRangeFromString(vertexId));
             }
 
             Long startTime = null;
@@ -1802,9 +1798,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
 
             List<Range> ranges = new ArrayList<>();
             for (String elementId : elementIdsSet) {
-                Text rowKey = new Text(elementId);
-                Range range = new Range(rowKey);
-                ranges.add(range);
+                ranges.add(RangeUtils.createRangeFromString(elementId));
             }
 
             Long startTime = null;
@@ -1951,8 +1945,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         final List<Range> ranges = new ArrayList<>();
         int idCount = 0;
         for (String id : ids) {
-            Text rowKey = new Text(id);
-            ranges.add(new Range(rowKey));
+            ranges.add(RangeUtils.createRangeFromString(id));
             idCount++;
         }
         if (ranges.size() == 0) {
@@ -1999,8 +1992,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         final List<Range> ranges = new ArrayList<>();
         int idCount = 0;
         for (String id : ids) {
-            Text rowKey = new Text(id);
-            ranges.add(new Range(rowKey));
+            ranges.add(RangeUtils.createRangeFromString(id));
             idCount++;
         }
         if (ranges.size() == 0) {

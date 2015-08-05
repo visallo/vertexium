@@ -250,9 +250,9 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
             if (inEdges instanceof EdgesWithCount) {
                 edgeLabels.addAll(((EdgesWithCount) inEdges).getLabels());
             } else {
-                edgeLabels.addAll(toList(new ConvertingIterable<Map.Entry<String, org.vertexium.accumulo.iterator.model.EdgeInfo>, String>(getEdgeInfos(Direction.IN)) {
+                edgeLabels.addAll(toList(new ConvertingIterable<Map.Entry<Text, org.vertexium.accumulo.iterator.model.EdgeInfo>, String>(getEdgeInfos(Direction.IN)) {
                     @Override
-                    protected String convert(Map.Entry<String, org.vertexium.accumulo.iterator.model.EdgeInfo> o) {
+                    protected String convert(Map.Entry<Text, org.vertexium.accumulo.iterator.model.EdgeInfo> o) {
                         return o.getValue().getLabel();
                     }
                 }));
@@ -263,9 +263,9 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
             if (outEdges instanceof EdgesWithCount) {
                 edgeLabels.addAll(((EdgesWithCount) outEdges).getLabels());
             } else {
-                edgeLabels.addAll(toList(new ConvertingIterable<Map.Entry<String, org.vertexium.accumulo.iterator.model.EdgeInfo>, String>(getEdgeInfos(Direction.OUT)) {
+                edgeLabels.addAll(toList(new ConvertingIterable<Map.Entry<Text, org.vertexium.accumulo.iterator.model.EdgeInfo>, String>(getEdgeInfos(Direction.OUT)) {
                     @Override
-                    protected String convert(Map.Entry<String, org.vertexium.accumulo.iterator.model.EdgeInfo> o) {
+                    protected String convert(Map.Entry<Text, org.vertexium.accumulo.iterator.model.EdgeInfo> o) {
                         return o.getValue().getLabel();
                     }
                 }));
@@ -282,9 +282,9 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
 
     @SuppressWarnings("unused")
     public Iterable<String> getEdgeIdsWithOtherVertexId(final String otherVertexId, final Direction direction, final String[] labels, final Authorizations authorizations) {
-        return new LookAheadIterable<Map.Entry<String, org.vertexium.accumulo.iterator.model.EdgeInfo>, String>() {
+        return new LookAheadIterable<Map.Entry<Text, org.vertexium.accumulo.iterator.model.EdgeInfo>, String>() {
             @Override
-            protected boolean isIncluded(Map.Entry<String, org.vertexium.accumulo.iterator.model.EdgeInfo> edgeInfo, String edgeId) {
+            protected boolean isIncluded(Map.Entry<Text, org.vertexium.accumulo.iterator.model.EdgeInfo> edgeInfo, String edgeId) {
                 if (otherVertexId != null) {
                     if (!otherVertexId.equals(edgeInfo.getValue().getVertexId())) {
                         return false;
@@ -303,27 +303,27 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
             }
 
             @Override
-            protected String convert(Map.Entry<String, org.vertexium.accumulo.iterator.model.EdgeInfo> edgeInfo) {
-                return edgeInfo.getKey();
+            protected String convert(Map.Entry<Text, org.vertexium.accumulo.iterator.model.EdgeInfo> edgeInfo) {
+                return edgeInfo.getKey().toString();
             }
 
             @Override
-            protected Iterator<Map.Entry<String, org.vertexium.accumulo.iterator.model.EdgeInfo>> createIterator() {
+            protected Iterator<Map.Entry<Text, org.vertexium.accumulo.iterator.model.EdgeInfo>> createIterator() {
                 return getEdgeInfos(direction).iterator();
             }
         };
     }
 
-    private Iterable<Map.Entry<String, org.vertexium.accumulo.iterator.model.EdgeInfo>> getEdgeInfos(Direction direction) {
+    private Iterable<Map.Entry<Text, org.vertexium.accumulo.iterator.model.EdgeInfo>> getEdgeInfos(Direction direction) {
         switch (direction) {
             case IN:
                 if (this.inEdges instanceof EdgesWithEdgeInfo) {
-                    return ((EdgesWithEdgeInfo) this.inEdges).getEntriesWithStringKeys();
+                    return ((EdgesWithEdgeInfo) this.inEdges).getEntries();
                 }
                 throw new VertexiumException("Cannot get edge info");
             case OUT:
                 if (this.outEdges instanceof EdgesWithEdgeInfo) {
-                    return ((EdgesWithEdgeInfo) this.outEdges).getEntriesWithStringKeys();
+                    return ((EdgesWithEdgeInfo) this.outEdges).getEntries();
                 }
                 throw new VertexiumException("Cannot get edge info");
             case BOTH:
@@ -335,10 +335,10 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
 
     @Override
     public Iterable<org.vertexium.EdgeInfo> getEdgeInfos(Direction direction, Authorizations authorizations) {
-        return new ConvertingIterable<Map.Entry<String, org.vertexium.accumulo.iterator.model.EdgeInfo>, org.vertexium.EdgeInfo>(getEdgeInfos(direction)) {
+        return new ConvertingIterable<Map.Entry<Text, org.vertexium.accumulo.iterator.model.EdgeInfo>, org.vertexium.EdgeInfo>(getEdgeInfos(direction)) {
             @Override
-            protected org.vertexium.EdgeInfo convert(Map.Entry<String, org.vertexium.accumulo.iterator.model.EdgeInfo> o) {
-                final String edgeId = o.getKey();
+            protected org.vertexium.EdgeInfo convert(Map.Entry<Text, org.vertexium.accumulo.iterator.model.EdgeInfo> o) {
+                final String edgeId = o.getKey().toString();
                 final org.vertexium.accumulo.iterator.model.EdgeInfo edgeInfo = o.getValue();
                 return new EdgeInfo() {
                     @Override
