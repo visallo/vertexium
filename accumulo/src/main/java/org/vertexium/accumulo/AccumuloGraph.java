@@ -1763,6 +1763,165 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
     }
 
     @Override
+    public Iterable<Path> findPaths(String sourceVertexId, String destVertexId, int maxHops, ProgressCallback progressCallback, Authorizations authorizations) {
+        progressCallback.progress(0, ProgressCallback.Step.FINDING_PATH);
+
+        List<Path> foundPaths = new ArrayList<>();
+        if (maxHops < 1) {
+            throw new IllegalArgumentException("maxHops cannot be less than 1");
+        } else if (maxHops == 1) {
+            Set<String> sourceConnectedVertexIds = getConnectedVertexIds(sourceVertexId, authorizations);
+            if (sourceConnectedVertexIds.contains(destVertexId)) {
+                foundPaths.add(new Path(sourceVertexId, destVertexId));
+            }
+        } else if (maxHops == 2) {
+            findPathsSetIntersection(foundPaths, sourceVertexId, destVertexId, progressCallback, authorizations);
+        } else {
+            findPathsBreadthFirst(foundPaths, sourceVertexId, destVertexId, maxHops, progressCallback, authorizations);
+        }
+
+        progressCallback.progress(1, ProgressCallback.Step.COMPLETE);
+        return foundPaths;
+    }
+
+    protected void findPathsSetIntersection(List<Path> foundPaths, String sourceVertexId, String destVertexId, ProgressCallback progressCallback, Authorizations authorizations) {
+        Set<String> vertexIds = new HashSet<>();
+        vertexIds.add(sourceVertexId);
+        vertexIds.add(destVertexId);
+        Map<String, Set<String>> connectedVertexIds = getConnectedVertexIds(vertexIds, authorizations);
+
+        progressCallback.progress(0.1, ProgressCallback.Step.SEARCHING_SOURCE_VERTEX_EDGES);
+        Set<String> sourceVertexConnectedVertexIds = connectedVertexIds.get(sourceVertexId);
+        if (sourceVertexConnectedVertexIds == null) {
+            return;
+        }
+
+        progressCallback.progress(0.3, ProgressCallback.Step.SEARCHING_DESTINATION_VERTEX_EDGES);
+        Set<String> destVertexConnectedVertexIds = connectedVertexIds.get(destVertexId);
+        if (destVertexConnectedVertexIds == null) {
+            return;
+        }
+
+        progressCallback.progress(0.6, ProgressCallback.Step.MERGING_EDGES);
+        sourceVertexConnectedVertexIds.retainAll(destVertexConnectedVertexIds);
+
+        progressCallback.progress(0.9, ProgressCallback.Step.ADDING_PATHS);
+        for (String connectedVertexId : sourceVertexConnectedVertexIds) {
+            foundPaths.add(new Path(sourceVertexId, connectedVertexId, destVertexId));
+        }
+    }
+
+    private void findPathsBreadthFirst(List<Path> foundPaths, String sourceVertexId, String destVertexId, int hops, ProgressCallback progressCallback, Authorizations authorizations) {
+        Map<String, Set<String>> connectedVertexIds = getConnectedVertexIds(sourceVertexId, destVertexId, authorizations);
+        // start at 2 since we already got the source and dest vertex connected vertex ids
+        for (int i = 2; i < hops; i++) {
+            progressCallback.progress((double) i / (double) hops, ProgressCallback.Step.FINDING_PATH);
+            Set<String> vertexIdsToSearch = new HashSet<>();
+            for (Map.Entry<String, Set<String>> entry : connectedVertexIds.entrySet()) {
+                vertexIdsToSearch.addAll(entry.getValue());
+            }
+            vertexIdsToSearch.removeAll(connectedVertexIds.keySet());
+            Map<String, Set<String>> r = getConnectedVertexIds(vertexIdsToSearch, authorizations);
+            connectedVertexIds.putAll(r);
+        }
+        progressCallback.progress(0.9, ProgressCallback.Step.ADDING_PATHS);
+        Set<String> seenVertices = new HashSet<>();
+        Path currentPath = new Path(sourceVertexId);
+        findPathsRecursive(connectedVertexIds, foundPaths, sourceVertexId, destVertexId, hops, seenVertices, currentPath, progressCallback);
+    }
+
+    protected void findPathsRecursive(Map<String, Set<String>> connectedVertexIds, List<Path> foundPaths, final String sourceVertexId, String destVertexId, int hops, Set<String> seenVertices, Path currentPath, ProgressCallback progressCallback) {
+        seenVertices.add(sourceVertexId);
+        if (sourceVertexId.equals(destVertexId)) {
+            foundPaths.add(currentPath);
+        } else if (hops > 0) {
+            Set<String> vertexIds = connectedVertexIds.get(sourceVertexId);
+            for (String childId : vertexIds) {
+                if (!seenVertices.contains(childId)) {
+                    findPathsRecursive(connectedVertexIds, foundPaths, childId, destVertexId, hops - 1, seenVertices, new Path(currentPath, childId), progressCallback);
+                }
+            }
+        }
+        seenVertices.remove(sourceVertexId);
+    }
+
+    private Set<String> getConnectedVertexIds(String vertexId, Authorizations authorizations) {
+        Set<String> vertexIds = new HashSet<>();
+        vertexIds.add(vertexId);
+        Map<String, Set<String>> results = getConnectedVertexIds(vertexIds, authorizations);
+        Set<String> vertexIdResults = results.get(vertexId);
+        if (vertexIdResults == null) {
+            return new HashSet<>();
+        }
+        return vertexIdResults;
+    }
+
+    private Map<String, Set<String>> getConnectedVertexIds(String vertexId1, String vertexId2, Authorizations authorizations) {
+        Set<String> vertexIds = new HashSet<>();
+        vertexIds.add(vertexId1);
+        vertexIds.add(vertexId2);
+        return getConnectedVertexIds(vertexIds, authorizations);
+    }
+
+    private Map<String, Set<String>> getConnectedVertexIds(Set<String> vertexIds, Authorizations authorizations) {
+        Span trace = Trace.start("getConnectedVertexIds");
+        try {
+            if (LOGGER.isTraceEnabled()) {
+                LOGGER.trace("getConnectedVertexIds:\n  %s", IterableUtils.join(vertexIds, "\n  "));
+            }
+
+            if (vertexIds.size() == 0) {
+                return new HashMap<>();
+            }
+
+            List<Range> ranges = new ArrayList<>();
+            for (String vertexId : vertexIds) {
+                ranges.add(RangeUtils.createRangeFromString(vertexId));
+            }
+
+            int maxVersions = 1;
+            Long startTime = null;
+            Long endTime = null;
+            ScannerBase scanner = createElementScanner(
+                    FetchHint.EDGE_REFS,
+                    ElementType.VERTEX,
+                    maxVersions,
+                    startTime,
+                    endTime,
+                    ranges,
+                    false,
+                    authorizations
+            );
+
+            IteratorSetting connectedVertexIdsIteratorSettings = new IteratorSetting(
+                    1000,
+                    ConnectedVertexIdsIterator.class.getSimpleName(),
+                    ConnectedVertexIdsIterator.class
+            );
+            scanner.addScanIterator(connectedVertexIdsIteratorSettings);
+
+            final long timerStartTime = System.currentTimeMillis();
+            try {
+                Map<String, Set<String>> results = new HashMap<>();
+                for (Map.Entry<Key, Value> row : scanner) {
+                    try {
+                        Set<String> rowVertexIds = ConnectedVertexIdsIterator.decodeValue(row.getValue());
+                        results.put(row.getKey().getRow().toString(), rowVertexIds);
+                    } catch (IOException e) {
+                        throw new VertexiumException("Could not decode vertex ids for row: " + row.getKey().toString(), e);
+                    }
+                }
+                return results;
+            } finally {
+                scanner.close();
+                GRAPH_LOGGER.logEndIterator(System.currentTimeMillis() - timerStartTime);
+            }
+        } finally {
+            trace.stop();
+        }
+    }
+
+    @Override
     public Iterable<String> filterEdgeIdsByAuthorization(Iterable<String> edgeIds, String authorizationToMatch, EnumSet<ElementFilter> filters, Authorizations authorizations) {
         return filterElementIdsByAuthorization(
                 ElementType.EDGE,

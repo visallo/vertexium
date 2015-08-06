@@ -2176,7 +2176,7 @@ public abstract class GraphTestBase {
 
         v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
         v4 = graph.getVertex("v4", AUTHORIZATIONS_A);
-        List<Path> paths = toList(graph.findPaths(v1, v4, 2, AUTHORIZATIONS_A));
+        List<Path> paths = toList(graph.findPaths("v1", "v4", 2, AUTHORIZATIONS_A));
         // v1 -> v2 -> v4
         // v1 -> v3 -> v4
         assertEquals(2, paths.size());
@@ -2207,7 +2207,7 @@ public abstract class GraphTestBase {
 
         v4 = graph.getVertex("v4", AUTHORIZATIONS_A);
         v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
-        paths = toList(graph.findPaths(v4, v1, 2, AUTHORIZATIONS_A));
+        paths = toList(graph.findPaths("v4", "v1", 2, AUTHORIZATIONS_A));
         // v4 -> v2 -> v1
         // v4 -> v3 -> v1
         assertEquals(2, paths.size());
@@ -2256,7 +2256,7 @@ public abstract class GraphTestBase {
         v2 = graph.getVertex("v2", AUTHORIZATIONS_A);
         v5 = graph.getVertex("v5", AUTHORIZATIONS_A);
 
-        List<Path> paths = toList(graph.findPaths(v1, v2, 2, AUTHORIZATIONS_A));
+        List<Path> paths = toList(graph.findPaths("v1", "v2", 2, AUTHORIZATIONS_A));
         // v1 -> v4 -> v2
         // v1 -> v3 -> v2
         assertEquals(2, paths.size());
@@ -2285,7 +2285,7 @@ public abstract class GraphTestBase {
         assertTrue("v3 not found in path", found3);
         assertTrue("v4 not found in path", found4);
 
-        paths = toList(graph.findPaths(v1, v2, 3, AUTHORIZATIONS_A));
+        paths = toList(graph.findPaths("v1", "v2", 3, AUTHORIZATIONS_A));
         // v1 -> v4 -> v2
         // v1 -> v3 -> v2
         // v1 -> v3 -> v4 -> v2
@@ -2321,10 +2321,10 @@ public abstract class GraphTestBase {
         assertTrue("v3 not found in path", found3);
         assertTrue("v4 not found in path", found4);
 
-        paths = toList(graph.findPaths(v1, v5, 2, AUTHORIZATIONS_A));
+        paths = toList(graph.findPaths("v1", "v5", 2, AUTHORIZATIONS_A));
         assertEquals(0, paths.size());
 
-        paths = toList(graph.findPaths(v1, v5, 3, AUTHORIZATIONS_A));
+        paths = toList(graph.findPaths("v1", "v5", 3, AUTHORIZATIONS_A));
         // v1 -> v4 -> v2 -> v5
         // v1 -> v3 -> v2 -> v5
         assertEquals(2, paths.size());

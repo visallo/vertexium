@@ -103,4 +103,11 @@ public class DataOutputStreamUtils {
         }
         return edgesByLabels;
     }
+
+    public static void encodeSetOfStrings(DataOutputStream out, Set<String> strings) throws IOException {
+        out.writeInt(strings.size());
+        for (String string : strings) {
+            encodeString(out, string);
+        }
+    }
 }

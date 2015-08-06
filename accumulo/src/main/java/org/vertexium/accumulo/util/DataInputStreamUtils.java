@@ -28,19 +28,7 @@ public class DataInputStreamUtils {
     }
 
     public static String decodeString(DataInputStream in) throws IOException {
-        int length = in.readInt();
-        if (length == -1) {
-            return null;
-        }
-        if (length == 0) {
-            return "";
-        }
-        byte[] data = new byte[length];
-        int read = in.read(data, 0, length);
-        if (read != length) {
-            throw new IOException("Unexpected data length expected " + length + " found " + read);
-        }
-        return new String(data, DataOutputStreamUtils.CHARSET);
+        return org.vertexium.accumulo.iterator.util.DataInputStreamUtils.decodeString(in);
     }
 
     public static List<Text> decodeTextList(DataInputStream in) throws IOException {

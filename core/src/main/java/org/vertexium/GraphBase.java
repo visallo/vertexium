@@ -3,8 +3,6 @@ package org.vertexium;
 import org.vertexium.event.GraphEvent;
 import org.vertexium.event.GraphEventListener;
 import org.vertexium.id.IdGenerator;
-import org.vertexium.path.PathFindingAlgorithm;
-import org.vertexium.path.RecursivePathFindingAlgorithm;
 import org.vertexium.query.GraphQuery;
 import org.vertexium.query.MultiVertexQuery;
 import org.vertexium.query.SimilarToGraphQuery;
@@ -13,11 +11,11 @@ import org.vertexium.util.*;
 import java.util.*;
 
 import static org.vertexium.util.IterableUtils.count;
+import static org.vertexium.util.IterableUtils.toSet;
 
 public abstract class GraphBase implements Graph {
     private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(GraphBase.class);
     protected static final VertexiumLogger QUERY_LOGGER = VertexiumLoggerFactory.getQueryLogger(Graph.class);
-    private final PathFindingAlgorithm pathFindingAlgorithm = new RecursivePathFindingAlgorithm();
     private final List<GraphEventListener> graphEventListeners = new ArrayList<>();
 
     protected GraphBase() {
@@ -449,19 +447,14 @@ public abstract class GraphBase implements Graph {
     public abstract Iterable<Edge> getEdges(EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations);
 
     @Override
-    public Iterable<Path> findPaths(Vertex sourceVertex, Vertex destVertex, int maxHops, Authorizations authorizations) {
+    public Iterable<Path> findPaths(String sourceVertexId, String destVertexId, int maxHops, Authorizations authorizations) {
         ProgressCallback progressCallback = new ProgressCallback() {
             @Override
             public void progress(double progressPercent, Step step, Integer edgeIndex, Integer vertexCount) {
                 LOGGER.debug("findPaths progress %d%%: %s", (int) (progressPercent * 100.0), step.formatMessage(edgeIndex, vertexCount));
             }
         };
-        return findPaths(sourceVertex, destVertex, maxHops, progressCallback, authorizations);
-    }
-
-    @Override
-    public Iterable<Path> findPaths(Vertex sourceVertex, Vertex destVertex, int maxHops, ProgressCallback progressCallback, Authorizations authorizations) {
-        return pathFindingAlgorithm.findPaths(this, sourceVertex, destVertex, maxHops, progressCallback, authorizations);
+        return findPaths(sourceVertexId, destVertexId, maxHops, progressCallback, authorizations);
     }
 
     @Override
@@ -475,21 +468,72 @@ public abstract class GraphBase implements Graph {
         if (destVertex == null) {
             throw new IllegalArgumentException("Could not find vertex with id: " + destVertexId);
         }
-        return findPaths(sourceVertex, destVertex, maxHops, progressCallback, authorizations);
+
+        progressCallback.progress(0, ProgressCallback.Step.FINDING_PATH);
+
+        Set<String> seenVertices = new HashSet<>();
+        seenVertices.add(sourceVertex.getId());
+
+        Path startPath = new Path(sourceVertex.getId());
+
+        List<Path> foundPaths = new ArrayList<>();
+        if (maxHops == 2) {
+            findPathsSetIntersection(foundPaths, sourceVertex, destVertex, progressCallback, authorizations);
+        } else {
+            findPathsRecursive(foundPaths, sourceVertex, destVertex, maxHops, maxHops, seenVertices, startPath, progressCallback, authorizations);
+        }
+
+        progressCallback.progress(1, ProgressCallback.Step.COMPLETE);
+        return foundPaths;
     }
 
-    @Override
-    public Iterable<Path> findPaths(String sourceVertexId, String destVertexId, int maxHops, Authorizations authorizations) {
-        EnumSet<FetchHint> fetchHints = FetchHint.EDGE_REFS;
-        Vertex sourceVertex = getVertex(sourceVertexId, fetchHints, authorizations);
-        if (sourceVertex == null) {
-            throw new IllegalArgumentException("Could not find vertex with id: " + sourceVertexId);
+    protected void findPathsSetIntersection(List<Path> foundPaths, Vertex sourceVertex, Vertex destVertex, ProgressCallback progressCallback, Authorizations authorizations) {
+        String sourceVertexId = sourceVertex.getId();
+        String destVertexId = destVertex.getId();
+
+        progressCallback.progress(0.1, ProgressCallback.Step.SEARCHING_SOURCE_VERTEX_EDGES);
+        Set<String> sourceVertexConnectedVertexIds = toSet(sourceVertex.getVertexIds(Direction.BOTH, authorizations));
+
+        progressCallback.progress(0.3, ProgressCallback.Step.SEARCHING_DESTINATION_VERTEX_EDGES);
+        Set<String> destVertexConnectedVertexIds = toSet(destVertex.getVertexIds(Direction.BOTH, authorizations));
+
+        progressCallback.progress(0.6, ProgressCallback.Step.MERGING_EDGES);
+        sourceVertexConnectedVertexIds.retainAll(destVertexConnectedVertexIds);
+
+        progressCallback.progress(0.9, ProgressCallback.Step.ADDING_PATHS);
+        for (String connectedVertexId : sourceVertexConnectedVertexIds) {
+            foundPaths.add(new Path(sourceVertexId, connectedVertexId, destVertexId));
         }
-        Vertex destVertex = getVertex(destVertexId, fetchHints, authorizations);
-        if (destVertex == null) {
-            throw new IllegalArgumentException("Could not find vertex with id: " + destVertexId);
+    }
+
+    protected void findPathsRecursive(List<Path> foundPaths, final Vertex sourceVertex, Vertex destVertex, int hops, int totalHops, Set<String> seenVertices, Path currentPath, ProgressCallback progressCallback, final Authorizations authorizations) {
+        // if this is our first source vertex report progress back to the progress callback
+        boolean firstLevelRecursion = hops == totalHops;
+
+        seenVertices.add(sourceVertex.getId());
+        if (sourceVertex.getId().equals(destVertex.getId())) {
+            foundPaths.add(currentPath);
+        } else if (hops > 0) {
+            Iterable<Vertex> vertices = sourceVertex.getVertices(Direction.BOTH, authorizations);
+            int vertexCount = 0;
+            if (firstLevelRecursion) {
+                vertices = IterableUtils.toList(vertices);
+                vertexCount = ((List<Vertex>) vertices).size();
+            }
+            int i = 0;
+            for (Vertex child : vertices) {
+                if (firstLevelRecursion) {
+                    // this will never get to 100% since i starts at 0. which is good. 100% signifies done and we still have work to do.
+                    double progressPercent = (double) i / (double) vertexCount;
+                    progressCallback.progress(progressPercent, ProgressCallback.Step.SEARCHING_EDGES, i + 1, vertexCount);
+                }
+                if (!seenVertices.contains(child.getId())) {
+                    findPathsRecursive(foundPaths, child, destVertex, hops - 1, totalHops, seenVertices, new Path(currentPath, child.getId()), progressCallback, authorizations);
+                }
+                i++;
+            }
         }
-        return findPaths(sourceVertex, destVertex, maxHops, authorizations);
+        seenVertices.remove(sourceVertex.getId());
     }
 
     @Override
