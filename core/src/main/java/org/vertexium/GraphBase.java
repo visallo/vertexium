@@ -555,13 +555,7 @@ public abstract class GraphBase implements Graph {
 
     @Override
     public Iterable<String> findRelatedEdgeIds(Iterable<String> vertexIds, Long endTime, Authorizations authorizations) {
-        Iterable<RelatedEdge> relatedEdges = findRelatedEdgeSummary(vertexIds, endTime, authorizations);
-        return new ConvertingIterable<RelatedEdge, String>(relatedEdges) {
-            @Override
-            protected String convert(RelatedEdge o) {
-                return o.getEdgeId();
-            }
-        };
+        return findRelatedEdgeIdsForVertices(getVertices(vertexIds, EnumSet.of(FetchHint.OUT_EDGE_REFS), endTime, authorizations), authorizations);
     }
 
     @Override
@@ -571,15 +565,36 @@ public abstract class GraphBase implements Graph {
 
     @Override
     public Iterable<RelatedEdge> findRelatedEdgeSummary(Iterable<String> vertexIds, Long endTime, Authorizations authorizations) {
-        List<RelatedEdge> results = new ArrayList<>();
-        List<Vertex> vertices = IterableUtils.toList(getVertices(vertexIds, authorizations));
+        return findRelatedEdgeSummaryForVertices(getVertices(vertexIds, EnumSet.of(FetchHint.OUT_EDGE_REFS), endTime, authorizations), authorizations);
+    }
 
+    @Override
+    public Iterable<RelatedEdge> findRelatedEdgeSummaryForVertices(Iterable<Vertex> verticesIterable, Authorizations authorizations) {
+        List<RelatedEdge> results = new ArrayList<>();
+        List<Vertex> vertices = IterableUtils.toList(verticesIterable);
         for (Vertex outVertex : vertices) {
-            for (Vertex inVertex : vertices) {
-                Iterable<EdgeInfo> edgeInfos = outVertex.getEdgeInfos(Direction.OUT, authorizations);
-                for (EdgeInfo edgeInfo : edgeInfos) {
+            Iterable<EdgeInfo> edgeInfos = outVertex.getEdgeInfos(Direction.OUT, authorizations);
+            for (EdgeInfo edgeInfo : edgeInfos) {
+                for (Vertex inVertex : vertices) {
                     if (edgeInfo.getVertexId().equals(inVertex.getId())) {
                         results.add(new RelatedEdgeImpl(edgeInfo.getEdgeId(), edgeInfo.getLabel(), outVertex.getId(), inVertex.getId()));
+                    }
+                }
+            }
+        }
+        return results;
+    }
+
+    @Override
+    public Iterable<String> findRelatedEdgeIdsForVertices(Iterable<Vertex> verticesIterable, Authorizations authorizations) {
+        List<String> results = new ArrayList<>();
+        List<Vertex> vertices = IterableUtils.toList(verticesIterable);
+        for (Vertex outVertex : vertices) {
+            Iterable<EdgeInfo> edgeInfos = outVertex.getEdgeInfos(Direction.OUT, authorizations);
+            for (EdgeInfo edgeInfo : edgeInfos) {
+                for (Vertex inVertex : vertices) {
+                    if (edgeInfo.getVertexId().equals(inVertex.getId())) {
+                        results.add(edgeInfo.getEdgeId());
                     }
                 }
             }

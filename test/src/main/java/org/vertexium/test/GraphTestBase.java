@@ -2443,6 +2443,30 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    public void testFindRelatedEdgeIdsForVertices() {
+        Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
+        Vertex v2 = graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_A);
+        Vertex v3 = graph.addVertex("v3", VISIBILITY_A, AUTHORIZATIONS_A);
+        Vertex v4 = graph.addVertex("v4", VISIBILITY_A, AUTHORIZATIONS_A);
+        Edge ev1v2 = graph.addEdge("e v1->v2", v1, v2, "", VISIBILITY_A, AUTHORIZATIONS_A);
+        Edge ev1v3 = graph.addEdge("e v1->v3", v1, v3, "", VISIBILITY_A, AUTHORIZATIONS_A);
+        Edge ev2v3 = graph.addEdge("e v2->v3", v2, v3, "", VISIBILITY_A, AUTHORIZATIONS_A);
+        Edge ev3v1 = graph.addEdge("e v3->v1", v3, v1, "", VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.addEdge("e v3->v4", v3, v4, "", VISIBILITY_A, AUTHORIZATIONS_A);
+
+        List<Vertex> vertices = new ArrayList<>();
+        vertices.add(v1);
+        vertices.add(v2);
+        vertices.add(v3);
+        Iterable<String> edgeIds = toList(graph.findRelatedEdgeIdsForVertices(vertices, AUTHORIZATIONS_A));
+        Assert.assertEquals(4, count(edgeIds));
+        org.vertexium.test.util.IterableUtils.assertContains(ev1v2.getId(), edgeIds);
+        org.vertexium.test.util.IterableUtils.assertContains(ev1v3.getId(), edgeIds);
+        org.vertexium.test.util.IterableUtils.assertContains(ev2v3.getId(), edgeIds);
+        org.vertexium.test.util.IterableUtils.assertContains(ev3v1.getId(), edgeIds);
+    }
+
+    @Test
     public void testFindRelatedEdgeSummary() {
         Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
         Vertex v2 = graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_A);

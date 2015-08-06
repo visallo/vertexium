@@ -574,6 +574,15 @@ public interface Graph {
     Iterable<String> findRelatedEdges(Iterable<String> vertexIds, Long endTime, Authorizations authorizations);
 
     /**
+     * Given a list of vertices, find all the edge ids that connect them.
+     *
+     * @param vertices       The list of vertices.
+     * @param authorizations The authorizations required to load the edges.
+     * @return An iterable of all the edge ids between any two vertices.
+     */
+    Iterable<String> findRelatedEdgeIdsForVertices(Iterable<Vertex> vertices, Authorizations authorizations);
+
+    /**
      * Given a list of vertex ids, find all the edge ids that connect them.
      *
      * @param vertexIds      The list of vertex ids.
@@ -591,6 +600,15 @@ public interface Graph {
      * @return An iterable of all the edge ids between any two vertices.
      */
     Iterable<String> findRelatedEdgeIds(Iterable<String> vertexIds, Long endTime, Authorizations authorizations);
+
+    /**
+     * Given a list of vertices, find all the edges that connect them.
+     *
+     * @param vertices       The list of vertices.
+     * @param authorizations The authorizations required to load the edges.
+     * @return Summary information about the related edges.
+     */
+    Iterable<RelatedEdge> findRelatedEdgeSummaryForVertices(Iterable<Vertex> vertices, Authorizations authorizations);
 
     /**
      * Given a list of vertex ids, find all the edges that connect them.
