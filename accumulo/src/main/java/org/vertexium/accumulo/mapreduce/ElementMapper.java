@@ -223,7 +223,9 @@ public abstract class ElementMapper<KEYIN, VALUEIN, KEYOUT, VALUEOUT> extends Ma
         };
     }
 
-    public abstract IdGenerator getIdGenerator();
+    public IdGenerator getIdGenerator() {
+        throw new VertexiumException("not implemented");
+    }
 
     public Graph getGraph() {
         return graph;
