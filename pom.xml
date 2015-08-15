@@ -99,6 +99,13 @@
         <!-- used by: examples-base -->
         <webster.version>1.0.0</webster.version>
         <jetty.version>9.2.5.v20141112</jetty.version>
+
+        <!-- used by: sql -->
+        <dbcp2.version>2.1.1</dbcp2.version>
+        <jdbi.version>2.63.1</jdbi.version>
+        <h2.version>1.4.188</h2.version>
+        <mysql.version>5.1.36</mysql.version>
+        <xstream.version>1.4.8</xstream.version>
     </properties>
 
     <dependencyManagement>
@@ -358,6 +365,8 @@
         <module>elasticsearch-singledocument</module>
 
         <module>inmemory</module>
+
+        <module>sql</module>
 
         <module>kryo-serializer</module>
         <module>xstream-serializer</module>

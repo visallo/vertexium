@@ -11,7 +11,7 @@ import java.util.EnumSet;
 public class InMemoryEdge extends InMemoryElement<InMemoryEdge> implements Edge {
     private final EdgeSetupMutation edgeSetupMutation;
 
-    InMemoryEdge(
+    public InMemoryEdge(
             InMemoryGraph graph,
             String id,
             InMemoryTableEdge inMemoryTableElement,

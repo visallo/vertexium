@@ -23,6 +23,11 @@
         </dependency>
         <dependency>
             <groupId>org.vertexium</groupId>
+            <artifactId>vertexium-sql</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.vertexium</groupId>
             <artifactId>vertexium-accumulo-blueprints</artifactId>
             <version>${project.version}</version>
         </dependency>

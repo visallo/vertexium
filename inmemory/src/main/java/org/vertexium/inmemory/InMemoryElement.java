@@ -1,12 +1,12 @@
 package org.vertexium.inmemory;
 
 import org.vertexium.*;
-import org.vertexium.util.IncreasingTime;
 import org.vertexium.mutation.*;
 import org.vertexium.property.MutableProperty;
 import org.vertexium.property.StreamingPropertyValue;
 import org.vertexium.util.ConvertingIterable;
 import org.vertexium.util.FilterIterable;
+import org.vertexium.util.IncreasingTime;
 
 import java.util.Iterator;
 import java.util.List;
@@ -71,7 +71,7 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> implemen
     public void softDeleteProperty(String key, String name, Authorizations authorizations) {
         Property property = getProperty(key, name);
         if (property != null) {
-            getGraph().softDeleteProperty(this, property, null, authorizations);
+            getGraph().softDeleteProperty(inMemoryTableElement, property, null, authorizations);
         }
     }
 
@@ -80,10 +80,10 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> implemen
         softDeleteProperty(key, name, null, visibility, authorizations);
     }
 
-    public void softDeleteProperty(String key, String name, Long timestamp, Visibility visibility, Authorizations authorizations) {
+    protected void softDeleteProperty(String key, String name, Long timestamp, Visibility visibility, Authorizations authorizations) {
         Property property = getProperty(key, name, visibility);
         if (property != null) {
-            getGraph().softDeleteProperty(this, property, timestamp, authorizations);
+            getGraph().softDeleteProperty(inMemoryTableElement, property, timestamp, authorizations);
         }
     }
 
@@ -91,7 +91,7 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> implemen
     public void softDeleteProperties(String name, Authorizations authorizations) {
         Iterable<Property> properties = getProperties(name);
         for (Property property : properties) {
-            getGraph().softDeleteProperty(this, property, null, authorizations);
+            getGraph().softDeleteProperty(inMemoryTableElement, property, null, authorizations);
         }
     }
 

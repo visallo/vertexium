@@ -29,7 +29,7 @@
         </dependency>
         <dependency>
             <groupId>org.vertexium</groupId>
-            <artifactId>vertexium-elasticsearch-singledocument</artifactId>
+            <artifactId>vertexium-sql</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
@@ -37,6 +37,11 @@
             <artifactId>vertexium-inmemory</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.vertexium</groupId>
+            <artifactId>vertexium-elasticsearch-singledocument</artifactId>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>org.vertexium</groupId>

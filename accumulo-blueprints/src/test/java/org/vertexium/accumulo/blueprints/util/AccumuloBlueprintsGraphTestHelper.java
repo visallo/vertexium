@@ -5,6 +5,7 @@ import com.tinkerpop.blueprints.TestSuite;
 import com.tinkerpop.blueprints.impls.GraphTest;
 import org.apache.accumulo.core.client.Connector;
 import org.junit.Ignore;
+import org.vertexium.GraphConfiguration;
 import org.vertexium.accumulo.AccumuloGraph;
 import org.vertexium.accumulo.AccumuloGraphConfiguration;
 import org.vertexium.accumulo.blueprints.AccumuloAuthorizationsProvider;
@@ -24,7 +25,7 @@ public class AccumuloBlueprintsGraphTestHelper extends GraphTest {
     public AccumuloBlueprintsGraphTestHelper() {
         try {
             this.ensureAccumuloIsStarted();
-            AccumuloGraphConfiguration config = this.getGraphConfig(AccumuloGraphConfiguration.DEFAULT_TABLE_NAME_PREFIX);
+            AccumuloGraphConfiguration config = this.getGraphConfig(GraphConfiguration.DEFAULT_TABLE_NAME_PREFIX);
             this.defaultGraph = new AccumuloVertexiumBlueprintsGraph(AccumuloGraph.create(config), visibilityProvider, authorizationsProvider);
         } catch (Exception ex) {
             throw new RuntimeException(ex);
@@ -52,7 +53,7 @@ public class AccumuloBlueprintsGraphTestHelper extends GraphTest {
     }
 
     public void setUp() {
-        dropGraph(AccumuloGraphConfiguration.DEFAULT_TABLE_NAME_PREFIX);
+        dropGraph(GraphConfiguration.DEFAULT_TABLE_NAME_PREFIX);
     }
 
     @Override
@@ -94,7 +95,7 @@ public class AccumuloBlueprintsGraphTestHelper extends GraphTest {
 
     private AccumuloGraphConfiguration getGraphConfig(String tableName) {
         AccumuloGraphConfiguration config = TestAccumuloCluster.getConfig();
-        config.set(AccumuloGraphConfiguration.DEFAULT_TABLE_NAME_PREFIX, tableName);
+        config.set(GraphConfiguration.DEFAULT_TABLE_NAME_PREFIX, tableName);
         return config;
     }
 }

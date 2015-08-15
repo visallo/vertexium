@@ -1,8 +1,9 @@
 package org.vertexium.util;
 
-import java.io.Closeable;
 import java.lang.reflect.Array;
 import java.util.*;
+
+import static org.vertexium.util.CloseableUtils.closeQuietly;
 
 public class IterableUtils {
     @SuppressWarnings("unchecked")
@@ -14,7 +15,7 @@ public class IterableUtils {
         for (T o : iterable) {
             results.add(o);
         }
-        close(iterable);
+        closeQuietly(iterable);
         return results;
     }
 
@@ -36,7 +37,7 @@ public class IterableUtils {
         for (T o : iterable) {
             results.add(o);
         }
-        close(iterable);
+        closeQuietly(iterable);
         return results;
     }
 
@@ -59,7 +60,7 @@ public class IterableUtils {
         for (T ignore : iterable) {
             count++;
         }
-        close(iterable);
+        closeQuietly(iterable);
         return count;
     }
 
@@ -69,7 +70,7 @@ public class IterableUtils {
             count++;
             iterator.next();
         }
-        close(iterator);
+        closeQuietly(iterator);
         return count;
     }
 
@@ -102,36 +103,25 @@ public class IterableUtils {
     public static <T> T single(final Iterable<? extends T> it) {
         Iterator<? extends T> i = it.iterator();
         if (!i.hasNext()) {
+            closeQuietly(i, it);
             throw new IllegalStateException("No items found.");
         }
 
         T result = i.next();
 
         if (i.hasNext()) {
-            close(it);
+            closeQuietly(i, it);
             throw new IllegalStateException("More than 1 item found.");
         }
 
-        close(it);
+        closeQuietly(i, it);
         return result;
-    }
-
-    private static <T> void close(Iterable<? extends T> it) {
-        if (it instanceof Closeable) {
-            CloseableUtils.closeQuietly((Closeable) it);
-        }
-    }
-
-    private static <T> void close(Iterator<? extends T> it) {
-        if (it instanceof Closeable) {
-            CloseableUtils.closeQuietly((Closeable) it);
-        }
     }
 
     public static <T> T singleOrDefault(final Iterable<? extends T> it, T defaultValue) {
         Iterator<? extends T> i = it.iterator();
         if (!i.hasNext()) {
-            close(it);
+            closeQuietly(i, it);
             return defaultValue;
         }
 
@@ -139,11 +129,11 @@ public class IterableUtils {
 
         if (i.hasNext()) {
             T nextValue = i.next();
-            close(it);
+            closeQuietly(i, it);
             throw new IllegalStateException("More than 1 item found. [" + result + ", " + nextValue + "...]");
         }
 
-        close(it);
+        closeQuietly(i, it);
         return result;
     }
 

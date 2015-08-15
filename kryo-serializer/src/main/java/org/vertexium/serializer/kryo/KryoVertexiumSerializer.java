@@ -8,6 +8,7 @@ import com.esotericsoftware.kryo.io.UnsafeOutput;
 import org.vertexium.VertexiumSerializer;
 
 public class KryoVertexiumSerializer implements VertexiumSerializer {
+    private static final byte[] EMPTY = new byte[0];
     private final ThreadLocal<Kryo> kryo = new ThreadLocal<Kryo>() {
         @Override
         protected Kryo initialValue() {
@@ -17,6 +18,9 @@ public class KryoVertexiumSerializer implements VertexiumSerializer {
 
     @Override
     public byte[] objectToBytes(Object object) {
+        if (object == null) {
+            return EMPTY;
+        }
         Output output = new UnsafeOutput(2000, -1);
         kryo.get().writeClassAndObject(output, object);
         return output.toBytes();
@@ -24,6 +28,9 @@ public class KryoVertexiumSerializer implements VertexiumSerializer {
 
     @Override
     public <T> T bytesToObject(byte[] bytes) {
+        if (bytes == null || bytes.length == 0) {
+            return null;
+        }
         Input input = new UnsafeInput(bytes);
         return (T) kryo.get().readClassAndObject(input);
     }

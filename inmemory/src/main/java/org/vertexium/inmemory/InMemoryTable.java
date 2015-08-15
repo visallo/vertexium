@@ -7,10 +7,19 @@ import org.vertexium.util.LookAheadIterable;
 
 import java.util.EnumSet;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.concurrent.ConcurrentSkipListMap;
 
-abstract class InMemoryTable<TElement extends InMemoryElement> {
-    private ConcurrentSkipListMap<String, InMemoryTableElement<TElement>> rows = new ConcurrentSkipListMap<>();
+public abstract class InMemoryTable<TElement extends InMemoryElement> {
+    private Map<String, InMemoryTableElement<TElement>> rows;
+
+    protected InMemoryTable(Map<String, InMemoryTableElement<TElement>> rows) {
+        this.rows = rows;
+    }
+
+    protected InMemoryTable() {
+        this(new ConcurrentSkipListMap<String, InMemoryTableElement<TElement>>());
+    }
 
     public TElement get(InMemoryGraph graph, String id, Authorizations authorizations) {
         InMemoryTableElement<TElement> inMemoryTableElement = getTableElement(id);
@@ -43,12 +52,13 @@ abstract class InMemoryTable<TElement extends InMemoryElement> {
         rows.clear();
     }
 
-    public Iterable<TElement> getAll(final InMemoryGraph graph, EnumSet<FetchHint> fetchHints, final Long endTime, final Authorizations authorizations) {
+    public Iterable<TElement> getAll(final InMemoryGraph graph, final EnumSet<FetchHint> fetchHints, final Long endTime,
+                                     final Authorizations authorizations) {
         final boolean includeHidden = fetchHints.contains(FetchHint.INCLUDE_HIDDEN);
         return new LookAheadIterable<InMemoryTableElement<TElement>, TElement>() {
             @Override
             protected boolean isIncluded(InMemoryTableElement<TElement> src, TElement element) {
-                return isIncludedInTimeSpan(src, includeHidden, endTime, authorizations);
+                return graph.isIncludedInTimeSpan(src, fetchHints, endTime, authorizations);
             }
 
             @Override
@@ -61,25 +71,6 @@ abstract class InMemoryTable<TElement extends InMemoryElement> {
                 return rows.values().iterator();
             }
         };
-    }
-
-    private boolean isIncludedInTimeSpan(InMemoryTableElement src, boolean includeHidden, Long endTime, Authorizations authorizations) {
-        if (!src.canRead(authorizations)) {
-            return false;
-        }
-        if (!includeHidden && src.isHidden(authorizations)) {
-            return false;
-        }
-
-        if (src.isDeleted(endTime, authorizations)) {
-            return false;
-        }
-
-        if (endTime != null && src.getFirstTimestamp() > endTime) {
-            return false;
-        }
-
-        return true;
     }
 
     public Iterable<InMemoryTableElement<TElement>> getRowValues() {

@@ -29,7 +29,7 @@ public abstract class MRMigrationBase extends Configured implements Tool {
     }
 
     public static VertexiumSerializer getVertexiumSerializer(Configuration conf) {
-        return getAccumuloGraphConfiguration(conf).createSerializer(null);
+        return getAccumuloGraphConfiguration(conf).createSerializer();
     }
 
     public static String getOutputTableName(Configuration conf) {

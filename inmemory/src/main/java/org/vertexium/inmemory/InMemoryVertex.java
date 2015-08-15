@@ -13,7 +13,7 @@ import org.vertexium.util.IterableUtils;
 import java.util.EnumSet;
 
 public class InMemoryVertex extends InMemoryElement<InMemoryVertex> implements Vertex {
-    InMemoryVertex(
+    public InMemoryVertex(
             InMemoryGraph graph,
             String id,
             InMemoryTableVertex inMemoryTableElement,

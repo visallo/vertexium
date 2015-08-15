@@ -20,6 +20,7 @@
 * `alterPropertyVisibility` bug fixes
 * `AccumuloGraph.findRelatedEdgeSummary` bug fix to filter out soft deleted and hidden edges
 * `InMemoryGraph` bug fixes
+* Introduced an experimental `SqlGraph` for using a relational database as an alternative to Accumulo.
 
 # v2.0.3
 

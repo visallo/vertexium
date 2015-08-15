@@ -46,11 +46,11 @@ public abstract class AccumuloGraphTestBase extends GraphTestBase {
     public void before() throws Exception {
         ensureAccumuloIsStarted();
         Connector connector = createConnector();
-        AccumuloGraphTestUtils.ensureTableExists(connector, AccumuloGraphConfiguration.DEFAULT_TABLE_NAME_PREFIX);
-        AccumuloGraphTestUtils.dropGraph(connector, AccumuloGraph.getDataTableName(AccumuloGraphConfiguration.DEFAULT_TABLE_NAME_PREFIX));
-        AccumuloGraphTestUtils.dropGraph(connector, AccumuloGraph.getVerticesTableName(AccumuloGraphConfiguration.DEFAULT_TABLE_NAME_PREFIX));
-        AccumuloGraphTestUtils.dropGraph(connector, AccumuloGraph.getEdgesTableName(AccumuloGraphConfiguration.DEFAULT_TABLE_NAME_PREFIX));
-        AccumuloGraphTestUtils.dropGraph(connector, AccumuloGraph.getMetadataTableName(AccumuloGraphConfiguration.DEFAULT_TABLE_NAME_PREFIX));
+        AccumuloGraphTestUtils.ensureTableExists(connector, GraphConfiguration.DEFAULT_TABLE_NAME_PREFIX);
+        AccumuloGraphTestUtils.dropGraph(connector, AccumuloGraph.getDataTableName(GraphConfiguration.DEFAULT_TABLE_NAME_PREFIX));
+        AccumuloGraphTestUtils.dropGraph(connector, AccumuloGraph.getVerticesTableName(GraphConfiguration.DEFAULT_TABLE_NAME_PREFIX));
+        AccumuloGraphTestUtils.dropGraph(connector, AccumuloGraph.getEdgesTableName(GraphConfiguration.DEFAULT_TABLE_NAME_PREFIX));
+        AccumuloGraphTestUtils.dropGraph(connector, AccumuloGraph.getMetadataTableName(GraphConfiguration.DEFAULT_TABLE_NAME_PREFIX));
         connector.securityOperations().changeUserAuthorizations(
                 AccumuloGraphConfiguration.DEFAULT_ACCUMULO_USERNAME,
                 new org.apache.accumulo.core.security.Authorizations(
