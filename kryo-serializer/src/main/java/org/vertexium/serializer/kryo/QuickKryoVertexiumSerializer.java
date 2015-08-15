@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class QuickKryoVertexiumSerializer implements VertexiumSerializer {
+    private static final byte[] EMPTY = new byte[0];
     private QuickTypeSerializer defaultQuickTypeSerializer = new KryoQuickTypeSerializer();
     private Map<Class, QuickTypeSerializer> quickTypeSerializersByClass = new HashMap<Class, QuickTypeSerializer>() {{
         put(String.class, new StringQuickTypeSerializer());
@@ -29,6 +30,9 @@ public class QuickKryoVertexiumSerializer implements VertexiumSerializer {
 
     @Override
     public byte[] objectToBytes(Object object) {
+        if (object == null) {
+            return EMPTY;
+        }
         QuickTypeSerializer quickTypeSerializer = quickTypeSerializersByClass.get(object.getClass());
         if (quickTypeSerializer != null) {
             return quickTypeSerializer.objectToBytes(object);
@@ -39,6 +43,9 @@ public class QuickKryoVertexiumSerializer implements VertexiumSerializer {
 
     @Override
     public <T> T bytesToObject(byte[] bytes) {
+        if (bytes == null || bytes.length == 0) {
+            return null;
+        }
         QuickTypeSerializer quickTypeSerializer = quickTypeSerializersByMarker.get(bytes[0]);
         if (quickTypeSerializer != null) {
             return quickTypeSerializer.valueToObject(bytes);

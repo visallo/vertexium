@@ -21,6 +21,7 @@
 * `AccumuloGraph.findRelatedEdgeSummary` bug fix to filter out soft deleted and hidden edges
 * `InMemoryGraph` bug fixes
 * `sort` no longer throws exceptions on field not found (issue #47)
+* Introduced an experimental `SqlGraph` for using a relational database as an alternative to Accumulo.
 
 # v2.0.3
 

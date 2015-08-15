@@ -16,10 +16,14 @@ public class GraphConfiguration {
     public static final String DEFAULT_IDGENERATOR = UUIDIdGenerator.class.getName();
     public static final String DEFAULT_SEARCH_INDEX = DefaultSearchIndex.class.getName();
     public static final boolean DEFAULT_AUTO_FLUSH = false;
+    public static final String TABLE_NAME_PREFIX = "tableNamePrefix";
+    public static final String DEFAULT_TABLE_NAME_PREFIX = "vertexium";
+    public static final String SERIALIZER = "serializer";
+    public static final String DEFAULT_SERIALIZER = JavaVertexiumSerializer.class.getName();
 
-    private final Map config;
+    private final Map<String, Object> config;
 
-    public GraphConfiguration(Map config) {
+    public GraphConfiguration(Map<String, Object> config) {
         this.config = config;
     }
 
@@ -31,7 +35,7 @@ public class GraphConfiguration {
         return config;
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings("unused")
     public Object getConfig(String key, Object defaultValue) {
         Object o = getConfig().get(key);
         if (o == null) {
@@ -46,6 +50,14 @@ public class GraphConfiguration {
 
     public SearchIndex createSearchIndex(Graph graph) throws VertexiumException {
         return ConfigurationUtils.createProvider(graph, this, SEARCH_INDEX_PROP_PREFIX, DEFAULT_SEARCH_INDEX);
+    }
+
+    public VertexiumSerializer createSerializer(Graph graph) throws VertexiumException {
+        return ConfigurationUtils.createProvider(graph, this, SERIALIZER, DEFAULT_SERIALIZER);
+    }
+
+    public VertexiumSerializer createSerializer() throws VertexiumException {
+        return ConfigurationUtils.createProvider(null, this, SERIALIZER, DEFAULT_SERIALIZER);
     }
 
     public boolean getBoolean(String configKey, boolean defaultValue) {
@@ -127,5 +139,9 @@ public class GraphConfiguration {
             return ((String) str).trim();
         }
         return str.toString().trim();
+    }
+
+    public String getTableNamePrefix() {
+        return getString(TABLE_NAME_PREFIX, DEFAULT_TABLE_NAME_PREFIX);
     }
 }

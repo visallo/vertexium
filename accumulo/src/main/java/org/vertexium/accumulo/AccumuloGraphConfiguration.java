@@ -31,9 +31,7 @@ public class AccumuloGraphConfiguration extends GraphConfiguration {
     public static final String ZOOKEEPER_SERVERS = "zookeeperServers";
     public static final String ZOOKEEPER_METADATA_SYNC_PATH = "zookeeperMetadataSyncPath";
     public static final String ACCUMULO_MAX_VERSIONS = "maxVersions";
-    public static final String SERIALIZER_PROP_PREFIX = "serializer";
     public static final String NAME_SUBSTITUTION_STRATEGY_PROP_PREFIX = "nameSubstitutionStrategy";
-    public static final String TABLE_NAME_PREFIX = "tableNamePrefix";
     public static final String MAX_STREAMING_PROPERTY_VALUE_TABLE_DATA_SIZE = "maxStreamingPropertyValueTableDataSize";
     public static final String HDFS_USER = HDFS_CONFIG_PREFIX + ".user";
     public static final String HDFS_ROOT_DIR = HDFS_CONFIG_PREFIX + ".rootDir";
@@ -46,12 +44,10 @@ public class AccumuloGraphConfiguration extends GraphConfiguration {
     public static final String HDFS_CONTEXT_CLASSPATH = "hdfsContextClasspath";
 
     public static final String DEFAULT_ACCUMULO_PASSWORD = "password";
-    public static final String DEFAULT_SERIALIZER = JavaVertexiumSerializer.class.getName();
     public static final String DEFAULT_ACCUMULO_USERNAME = "root";
     public static final String DEFAULT_ACCUMULO_INSTANCE_NAME = "vertexium";
     public static final String DEFAULT_ZOOKEEPER_SERVERS = "localhost";
     public static final String DEFAULT_ZOOKEEPER_METADATA_SYNC_PATH = "/vertexium/metadata";
-    public static final String DEFAULT_TABLE_NAME_PREFIX = "vertexium";
     public static final int DEFAULT_MAX_STREAMING_PROPERTY_VALUE_TABLE_DATA_SIZE = 10 * 1024 * 1024;
     public static final String DEFAULT_HDFS_USER = "hadoop";
     public static final String DEFAULT_HDFS_ROOT_DIR = "";
@@ -65,7 +61,7 @@ public class AccumuloGraphConfiguration extends GraphConfiguration {
     public static final int DEFAULT_NUMBER_OF_QUERY_THREADS = 10;
     public static final String DEFAULT_HDFS_CONTEXT_CLASSPATH = null;
 
-    public AccumuloGraphConfiguration(Map config) {
+    public AccumuloGraphConfiguration(Map<String, Object> config) {
         super(config);
     }
 
@@ -73,8 +69,8 @@ public class AccumuloGraphConfiguration extends GraphConfiguration {
         super(toMap(configuration, prefix));
     }
 
-    private static Map toMap(Configuration configuration, String prefix) {
-        Map map = new HashMap();
+    private static Map<String, Object> toMap(Configuration configuration, String prefix) {
+        Map<String, Object> map = new HashMap<>();
         for (Map.Entry<String, String> entry : configuration) {
             String key = entry.getKey();
             if (key.startsWith(prefix)) {
@@ -129,16 +125,8 @@ public class AccumuloGraphConfiguration extends GraphConfiguration {
         return getString(ZOOKEEPER_SERVERS, DEFAULT_ZOOKEEPER_SERVERS);
     }
 
-    public VertexiumSerializer createSerializer(Graph graph) throws VertexiumException {
-        return ConfigurationUtils.createProvider(graph, this, SERIALIZER_PROP_PREFIX, DEFAULT_SERIALIZER);
-    }
-
     public boolean isAutoFlush() {
         return getBoolean(AUTO_FLUSH, DEFAULT_AUTO_FLUSH);
-    }
-
-    public String getTableNamePrefix() {
-        return getString(TABLE_NAME_PREFIX, DEFAULT_TABLE_NAME_PREFIX);
     }
 
     public long getMaxStreamingPropertyValueTableDataSize() {

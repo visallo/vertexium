@@ -855,12 +855,10 @@ public abstract class GraphTestBase {
         Assert.assertEquals(0, count(cVertices));
 
         Iterable<Vertex> aVertices = graph.getVertices(AUTHORIZATIONS_A);
-        Assert.assertEquals(1, count(aVertices));
-        assertEquals("v1", aVertices.iterator().next().getId());
+        assertEquals("v1", IterableUtils.single(aVertices).getId());
 
         Iterable<Vertex> bVertices = graph.getVertices(AUTHORIZATIONS_B);
-        Assert.assertEquals(1, count(bVertices));
-        assertEquals("v2", bVertices.iterator().next().getId());
+        assertEquals("v2", IterableUtils.single(bVertices).getId());
 
         Iterable<Vertex> allVertices = graph.getVertices(AUTHORIZATIONS_A_AND_B);
         Assert.assertEquals(2, count(allVertices));
@@ -1460,15 +1458,11 @@ public abstract class GraphTestBase {
 
         Iterable<Edge> aEdges = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B).getEdges(Direction.BOTH, AUTHORIZATIONS_A);
         Assert.assertEquals(1, count(aEdges));
-        Edge e1 = aEdges.iterator().next();
-        assertNotNull(e1);
-        assertEquals("edgeA", e1.getLabel());
+        assertEquals("edgeA", IterableUtils.single(aEdges).getLabel());
 
         Iterable<Edge> bEdges = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B).getEdges(Direction.BOTH, AUTHORIZATIONS_B);
         Assert.assertEquals(1, count(bEdges));
-        Edge e2 = bEdges.iterator().next();
-        assertNotNull(e2);
-        assertEquals("edgeB", e2.getLabel());
+        assertEquals("edgeB", IterableUtils.single(bEdges).getLabel());
 
         Iterable<Edge> allEdges = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B).getEdges(Direction.BOTH, AUTHORIZATIONS_A_AND_B);
         Assert.assertEquals(2, count(allEdges));

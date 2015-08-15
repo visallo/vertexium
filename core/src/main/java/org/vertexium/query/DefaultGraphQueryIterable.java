@@ -4,8 +4,9 @@ import org.vertexium.Edge;
 import org.vertexium.Element;
 import org.vertexium.Property;
 import org.vertexium.util.CloseableIterable;
+import org.vertexium.util.CloseableIterator;
+import org.vertexium.util.CloseableUtils;
 
-import java.io.IOException;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -53,7 +54,7 @@ public class DefaultGraphQueryIterable<T extends Element> implements
     private Iterator<T> iterator(final boolean iterateAll) {
         final Iterator<T> it = iterable.iterator();
 
-        return new Iterator<T>() {
+        return new CloseableIterator<T>() {
             public T next;
             public T current;
             public long count;
@@ -61,6 +62,9 @@ public class DefaultGraphQueryIterable<T extends Element> implements
             @Override
             public boolean hasNext() {
                 loadNext();
+                if (next == null) {
+                    close();
+                }
                 return next != null;
             }
 
@@ -75,6 +79,12 @@ public class DefaultGraphQueryIterable<T extends Element> implements
             @Override
             public void remove() {
                 throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public void close() {
+                CloseableUtils.closeQuietly(it);
+                DefaultGraphQueryIterable.this.close();
             }
 
             private void loadNext() {
@@ -154,9 +164,7 @@ public class DefaultGraphQueryIterable<T extends Element> implements
     }
 
     @Override
-    public void close() throws IOException {
-        if (this.iterable instanceof CloseableIterable) {
-            ((CloseableIterable) this.iterable).close();
-        }
+    public void close() {
+        CloseableUtils.closeQuietly(iterable);
     }
 }

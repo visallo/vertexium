@@ -2,17 +2,16 @@ package org.vertexium.inmemory;
 
 import org.vertexium.*;
 import org.vertexium.inmemory.mutations.*;
-import org.vertexium.util.IncreasingTime;
 import org.vertexium.property.MutablePropertyImpl;
 import org.vertexium.util.ConvertingIterable;
 import org.vertexium.util.FilterIterable;
+import org.vertexium.util.IncreasingTime;
 import org.vertexium.util.LookAheadIterable;
 
+import java.io.Serializable;
 import java.util.*;
 
-import static org.vertexium.util.IterableUtils.toList;
-
-public abstract class InMemoryTableElement<TElement extends InMemoryElement> {
+public abstract class InMemoryTableElement<TElement extends InMemoryElement> implements Serializable {
     private final String id;
     private TreeSet<Mutation> mutations = new TreeSet<>();
 
@@ -43,7 +42,7 @@ public abstract class InMemoryTableElement<TElement extends InMemoryElement> {
         return last;
     }
 
-    private <T extends Mutation> T findFirstMutation(Class<T> clazz) {
+    protected <T extends Mutation> T findFirstMutation(Class<T> clazz) {
         for (Mutation m : this.mutations) {
             if (clazz.isAssignableFrom(m.getClass())) {
                 //noinspection unchecked
@@ -100,15 +99,7 @@ public abstract class InMemoryTableElement<TElement extends InMemoryElement> {
         return p;
     }
 
-    public Iterable<Property> deleteProperties(String name, Authorizations authorizations) {
-        List<Property> results = toList(getProperties(name, true, null, authorizations));
-        for (Property p : results) {
-            deleteProperty(p);
-        }
-        return results;
-    }
-
-    private void deleteProperty(Property p) {
+    protected void deleteProperty(Property p) {
         List<PropertyMutation> propertyMutations = findPropertyMutations(p);
         this.mutations.removeAll(propertyMutations);
     }
@@ -204,15 +195,6 @@ public abstract class InMemoryTableElement<TElement extends InMemoryElement> {
             @Override
             protected Iterator<List<PropertyMutation>> createIterator() {
                 return propertiesMutations.values().iterator();
-            }
-        };
-    }
-
-    private Iterable<? extends Property> getProperties(String name, final boolean includeHidden, Long endTime, final Authorizations authorizations) {
-        return new FilterIterable<Property>(getProperties(includeHidden, endTime, authorizations)) {
-            @Override
-            protected boolean isIncluded(Property o) {
-                return false;
             }
         };
     }

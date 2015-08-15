@@ -16,4 +16,12 @@ public class CloseableUtils {
             LOGGER.warn("Failed to close", ex);
         }
     }
+
+    public static void closeQuietly(Object... objects) {
+        for (Object object : objects) {
+            if (object instanceof Closeable) {
+                closeQuietly((Closeable) object);
+            }
+        }
+    }
 }

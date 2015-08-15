@@ -4,14 +4,15 @@ import java.lang.reflect.Method;
 import java.util.Map;
 
 public class GraphFactory {
-    public Graph createGraph(Map config) {
-        String graphClassName = (String) config.get("");
+    public Graph createGraph(Map<String, String> config) {
+        String graphClassName = config.get("");
         if (graphClassName == null || graphClassName.length() == 0) {
             throw new VertexiumException("missing graph configuration class");
         }
         try {
             Class graphClass = Class.forName(graphClassName);
             try {
+                @SuppressWarnings("unchecked")
                 Method createMethod = graphClass.getDeclaredMethod("create", Map.class);
                 try {
                     return (Graph) createMethod.invoke(null, config);

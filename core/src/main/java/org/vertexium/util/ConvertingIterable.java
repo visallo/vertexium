@@ -3,19 +3,28 @@ package org.vertexium.util;
 import java.util.Iterator;
 
 public abstract class ConvertingIterable<TSource, TDest> implements Iterable<TDest> {
-    private final Iterable<? extends TSource> iterable;
+    private Iterable<? extends TSource> iterable;
+    private Iterator<? extends TSource> iterator;
 
     public ConvertingIterable(Iterable<? extends TSource> iterable) {
         this.iterable = iterable;
     }
 
+    public ConvertingIterable(Iterator<? extends TSource> iterator) {
+        this.iterator = iterator;
+    }
+
     @Override
     public Iterator<TDest> iterator() {
-        final Iterator<? extends TSource> it = iterable.iterator();
-        return new Iterator<TDest>() {
+        final Iterator<? extends TSource> it = iterator == null ? iterable.iterator() : iterator;
+        return new CloseableIterator<TDest>() {
             @Override
             public boolean hasNext() {
-                return it.hasNext();
+                boolean hasNext = it.hasNext();
+                if (!hasNext) {
+                    close();
+                }
+                return hasNext;
             }
 
             @Override
@@ -26,6 +35,11 @@ public abstract class ConvertingIterable<TSource, TDest> implements Iterable<TDe
             @Override
             public void remove() {
                 it.remove();
+            }
+
+            @Override
+            public void close() {
+                CloseableUtils.closeQuietly(it);
             }
         };
     }

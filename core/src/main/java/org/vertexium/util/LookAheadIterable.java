@@ -9,7 +9,7 @@ public abstract class LookAheadIterable<TSource, TDest> implements CloseableIter
     public Iterator<TDest> iterator() {
         final Iterator<TSource> it = createIterator();
 
-        return new Iterator<TDest>() {
+        return new CloseableIterator<TDest>() {
             private TDest next;
             private TDest current;
 
@@ -17,7 +17,7 @@ public abstract class LookAheadIterable<TSource, TDest> implements CloseableIter
             public boolean hasNext() {
                 loadNext();
                 if (next == null) {
-                    callClose();
+                    close();
                 }
                 return next != null;
             }
@@ -33,6 +33,12 @@ public abstract class LookAheadIterable<TSource, TDest> implements CloseableIter
             @Override
             public void remove() {
                 throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public void close() {
+                CloseableUtils.closeQuietly(it);
+                callClose();
             }
 
             private void loadNext() {

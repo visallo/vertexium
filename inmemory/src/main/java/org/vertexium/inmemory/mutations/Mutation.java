@@ -2,7 +2,9 @@ package org.vertexium.inmemory.mutations;
 
 import org.vertexium.Visibility;
 
-public abstract class Mutation implements Comparable<Mutation> {
+import java.io.Serializable;
+
+public abstract class Mutation implements Comparable<Mutation>, Serializable {
     private final long timestamp;
     private final Visibility visibility;
 
