@@ -203,7 +203,7 @@ public class ElasticSearchSearchIndex extends ElasticSearchSearchIndexBase {
     }
 
     @Override
-    protected void addPropertyToIndex(Graph graph, IndexInfo indexInfo, String propertyName, Class dataType, boolean analyzed, Double boost) throws IOException {
+    protected void addPropertyToIndex(Graph graph, IndexInfo indexInfo, String propertyName, Class dataType, boolean analyzed, Double boost, boolean sortable) throws IOException {
         if (indexInfo.isPropertyDefined(propertyName)) {
             return;
         }

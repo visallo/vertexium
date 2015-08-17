@@ -8,8 +8,9 @@ import java.util.Set;
 public class DefinePropertyBuilder {
     private final String propertyName;
     protected Class dataType = String.class;
-    protected Set<TextIndexHint> textIndexHints = new HashSet<TextIndexHint>();
+    protected Set<TextIndexHint> textIndexHints = new HashSet<>();
     private Double boost;
+    private boolean sortable;
 
     DefinePropertyBuilder(String propertyName) {
         this.propertyName = propertyName;
@@ -35,12 +36,18 @@ public class DefinePropertyBuilder {
                 propertyName,
                 dataType,
                 textIndexHints,
-                boost
+                boost,
+                sortable
         );
     }
 
     public DefinePropertyBuilder boost(double boost) {
         this.boost = boost;
+        return this;
+    }
+
+    public DefinePropertyBuilder sortable(boolean sortable) {
+        this.sortable = sortable;
         return this;
     }
 }

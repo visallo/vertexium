@@ -12,6 +12,7 @@ import org.vertexium.inmemory.InMemoryAuthorizations;
 import org.vertexium.inmemory.InMemoryGraph;
 import org.vertexium.property.PropertyValue;
 import org.vertexium.property.StreamingPropertyValue;
+import org.vertexium.query.IterableWithTotalHits;
 import org.vertexium.test.GraphTestBase;
 import org.vertexium.test.util.LargeStringInputStream;
 
@@ -110,6 +111,11 @@ public class ElasticSearchSearchIndexTest extends GraphTestBase {
 
     @Override
     protected boolean isLuceneQueriesSupported() {
+        return false;
+    }
+
+    @Override
+    protected boolean isIterableWithTotalHitsSupported(Iterable<Vertex> vertices) {
         return false;
     }
 }

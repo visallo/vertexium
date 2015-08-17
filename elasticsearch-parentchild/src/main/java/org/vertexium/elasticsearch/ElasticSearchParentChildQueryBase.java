@@ -34,6 +34,7 @@ public abstract class ElasticSearchParentChildQueryBase extends ElasticSearchQue
                 indexSelectionStrategy,
                 !isAuthorizationFilterEnabled(graph),
                 !isAuthorizationFilterEnabled(graph),
+                true,
                 authorizations
         );
     }
@@ -58,6 +59,7 @@ public abstract class ElasticSearchParentChildQueryBase extends ElasticSearchQue
                 indexSelectionStrategy,
                 !isAuthorizationFilterEnabled(graph),
                 !isAuthorizationFilterEnabled(graph),
+                true,
                 authorizations
         );
     }
@@ -146,6 +148,11 @@ public abstract class ElasticSearchParentChildQueryBase extends ElasticSearchQue
         addFiltersToQuery(boolChildQuery, filters, authorizationFilterBuilder);
 
         return boolChildQuery;
+    }
+
+    @Override
+    protected void applySort(SearchRequestBuilder q) {
+        // can't sort on children
     }
 
     private void addFiltersToQuery(BoolQueryBuilder boolChildQuery, List<FilterBuilder> filters, AuthorizationFilterBuilder authorizationFilterBuilder) {

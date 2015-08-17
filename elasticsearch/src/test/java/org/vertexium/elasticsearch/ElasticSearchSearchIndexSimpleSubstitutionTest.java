@@ -112,4 +112,9 @@ public class ElasticSearchSearchIndexSimpleSubstitutionTest extends GraphTestBas
     protected boolean isLuceneQueriesSupported() {
         return false;
     }
+
+    @Override
+    protected boolean isIterableWithTotalHitsSupported(Iterable<Vertex> vertices) {
+        return false;
+    }
 }

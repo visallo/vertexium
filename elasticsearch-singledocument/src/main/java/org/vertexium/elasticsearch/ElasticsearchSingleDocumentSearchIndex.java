@@ -192,6 +192,7 @@ public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchI
     private void addPropertyToMap(Graph graph, Property property, Map<String, Object> propertiesMap) throws IOException {
         Object propertyValue = property.getValue();
         String propertyName = deflatePropertyName(graph, property);
+        PropertyDefinition propertyDefinition = getPropertyDefinition(graph, propertyName);
         if (propertyValue != null && shouldIgnoreType(propertyValue.getClass())) {
             return;
         } else if (propertyValue instanceof GeoPoint) {
@@ -206,7 +207,6 @@ public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchI
                 return;
             }
 
-            PropertyDefinition propertyDefinition = getPropertyDefinition(graph, propertyName);
             if (propertyDefinition != null && !propertyDefinition.getTextIndexHints().contains(TextIndexHint.FULL_TEXT)) {
                 return;
             }
@@ -219,12 +219,15 @@ public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchI
                 throw new VertexiumException("Unhandled StreamingPropertyValue type: " + valueType.getName());
             }
         } else if (propertyValue instanceof String) {
-            PropertyDefinition propertyDefinition = getPropertyDefinition(graph, propertyName);
             if (propertyDefinition == null || propertyDefinition.getTextIndexHints().contains(TextIndexHint.EXACT_MATCH)) {
                 addPropertyValueToPropertiesMap(propertiesMap, propertyName + EXACT_MATCH_PROPERTY_NAME_SUFFIX, propertyValue);
             }
             if (propertyDefinition == null || propertyDefinition.getTextIndexHints().contains(TextIndexHint.FULL_TEXT)) {
                 addPropertyValueToPropertiesMap(propertiesMap, propertyName, propertyValue);
+            }
+            if (propertyDefinition != null && propertyDefinition.isSortable()) {
+                String s = ((String) propertyValue).substring(0, Math.min(100, ((String) propertyValue).length()));
+                addPropertyValueToPropertiesMap(propertiesMap, propertyDefinition.getPropertyName(), s);
             }
             return;
         }
@@ -234,6 +237,9 @@ public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchI
         }
 
         addPropertyValueToPropertiesMap(propertiesMap, propertyName, propertyValue);
+        if (propertyDefinition != null && propertyDefinition.isSortable()) {
+            addPropertyValueToPropertiesMap(propertiesMap, propertyDefinition.getPropertyName(), propertyValue);
+        }
     }
 
     @Override
@@ -450,7 +456,7 @@ public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchI
     }
 
     @Override
-    protected void addPropertyToIndex(Graph graph, IndexInfo indexInfo, String propertyName, Class dataType, boolean analyzed, Double boost) throws IOException {
+    protected void addPropertyToIndex(Graph graph, IndexInfo indexInfo, String propertyName, Class dataType, boolean analyzed, Double boost, boolean sortable) throws IOException {
         if (indexInfo.isPropertyDefined(propertyName)) {
             return;
         }

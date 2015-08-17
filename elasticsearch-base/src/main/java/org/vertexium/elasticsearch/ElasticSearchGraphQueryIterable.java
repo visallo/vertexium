@@ -37,11 +37,12 @@ public class ElasticSearchGraphQueryIterable<T extends Element> extends DefaultG
             Iterable<T> iterable,
             boolean evaluateQueryString,
             boolean evaluateHasContainers,
+            boolean evaluateSortContainers,
             long totalHits,
             long searchTimeInNanoSeconds,
             SearchHits hits
     ) {
-        super(parameters, iterable, evaluateQueryString, evaluateHasContainers);
+        super(parameters, iterable, evaluateQueryString, evaluateHasContainers, evaluateSortContainers);
         this.query = query;
         this.searchResponse = searchResponse;
         this.totalHits = totalHits;

@@ -92,7 +92,22 @@ public interface Query {
      */
     <T> Query has(String propertyName, Predicate predicate, T value);
 
+    /**
+     * Skips the given number of items.
+     */
     Query skip(int count);
 
+    /**
+     * Limits the number of items returned.
+     */
     Query limit(int count);
+
+    /**
+     * Sort the results by the given property name.
+     *
+     * @param propertyName The property to sort by.
+     * @param direction    The direction to sort.
+     * @return The query object, allowing you to chain methods.
+     */
+    Query sort(String propertyName, SortDirection direction);
 }

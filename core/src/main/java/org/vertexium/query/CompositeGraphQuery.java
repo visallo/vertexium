@@ -190,4 +190,12 @@ public class CompositeGraphQuery implements Query {
         }
         return this;
     }
+
+    @Override
+    public Query sort(String propertyName, SortDirection direction) {
+        for (Query query : queries) {
+            query.sort(propertyName, direction);
+        }
+        return this;
+    }
 }

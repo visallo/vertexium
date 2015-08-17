@@ -1493,13 +1493,17 @@ public abstract class GraphTestBase {
 
         Iterable<Vertex> vertices = graph.query(AUTHORIZATIONS_A).vertices();
         assertEquals(1, count(vertices));
-        if (vertices instanceof IterableWithTotalHits) {
+        if (isIterableWithTotalHitsSupported(vertices)) {
             IterableWithTotalHits hits = (IterableWithTotalHits) vertices;
             assertEquals(1, hits.getTotalHits());
         }
 
         Iterable<Edge> edges = graph.query(AUTHORIZATIONS_A).edges();
         assertEquals(1, count(edges));
+    }
+
+    protected boolean isIterableWithTotalHitsSupported(Iterable<Vertex> vertices) {
+        return vertices instanceof IterableWithTotalHits;
     }
 
     @Test
@@ -1636,6 +1640,57 @@ public abstract class GraphTestBase {
                 graph.query(AUTHORIZATIONS_A).has("age", 30)
         ).vertices();
         Assert.assertEquals(2, count(vertices));
+    }
+
+    @Test
+    public void testGraphQuerySort() {
+        graph.defineProperty("age").dataType(Integer.class).sortable(true).define();
+        graph.defineProperty("name").dataType(String.class).sortable(true).textIndexHint(TextIndexHint.EXACT_MATCH).define();
+
+        graph.prepareVertex("v1", VISIBILITY_A)
+                .setProperty("name", "joe", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.prepareVertex("v2", VISIBILITY_A)
+                .setProperty("name", "bob", VISIBILITY_B)
+                .setProperty("age", 25, VISIBILITY_A)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.prepareVertex("v3", VISIBILITY_A)
+                .setProperty("name", "tom", VISIBILITY_A)
+                .setProperty("age", 30, VISIBILITY_B)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        List<Vertex> vertices = toList(graph.query(AUTHORIZATIONS_A_AND_B)
+                .sort("age", SortDirection.ASCENDING)
+                .vertices());
+        Assert.assertEquals(3, count(vertices));
+        assertEquals("v2", vertices.get(0).getId());
+        assertEquals("v3", vertices.get(1).getId());
+        assertEquals("v1", vertices.get(2).getId());
+
+        vertices = toList(graph.query(AUTHORIZATIONS_A_AND_B)
+                .sort("age", SortDirection.DESCENDING)
+                .vertices());
+        Assert.assertEquals(3, count(vertices));
+        assertEquals("v3", vertices.get(0).getId());
+        assertEquals("v2", vertices.get(1).getId());
+        assertEquals("v1", vertices.get(2).getId());
+
+        vertices = toList(graph.query(AUTHORIZATIONS_A_AND_B)
+                .sort("name", SortDirection.ASCENDING)
+                .vertices());
+        Assert.assertEquals(3, count(vertices));
+        assertEquals("v2", vertices.get(0).getId());
+        assertEquals("v1", vertices.get(1).getId());
+        assertEquals("v3", vertices.get(2).getId());
+
+        vertices = toList(graph.query(AUTHORIZATIONS_A_AND_B)
+                .sort("name", SortDirection.DESCENDING)
+                .vertices());
+        Assert.assertEquals(3, count(vertices));
+        assertEquals("v3", vertices.get(0).getId());
+        assertEquals("v1", vertices.get(1).getId());
+        assertEquals("v2", vertices.get(2).getId());
     }
 
     @Test
@@ -2143,7 +2198,7 @@ public abstract class GraphTestBase {
         Assert.assertEquals(2, count(vertices));
         org.vertexium.test.util.IterableUtils.assertContains(v2, vertices);
         org.vertexium.test.util.IterableUtils.assertContains(v3, vertices);
-        if (vertices instanceof IterableWithTotalHits) {
+        if (isIterableWithTotalHitsSupported(vertices)) {
             Assert.assertEquals(2, ((IterableWithTotalHits) vertices).getTotalHits());
 
             vertices = v1.query(AUTHORIZATIONS_A).limit(1).vertices();
@@ -3114,7 +3169,7 @@ public abstract class GraphTestBase {
         QueryParameters parameters = new QueryStringQueryParameters("*", AUTHORIZATIONS_EMPTY);
         parameters.setSkip(0);
         parameters.setLimit(5);
-        DefaultGraphQueryIterable<Vertex> iterable = new DefaultGraphQueryIterable<>(parameters, getVertices(3), false, false);
+        DefaultGraphQueryIterable<Vertex> iterable = new DefaultGraphQueryIterable<>(parameters, getVertices(3), false, false, false);
         int count = 0;
         Iterator<Vertex> iterator = iterable.iterator();
         Vertex v = null;
@@ -3133,7 +3188,7 @@ public abstract class GraphTestBase {
         QueryParameters parameters = new QueryStringQueryParameters("*", AUTHORIZATIONS_EMPTY);
         parameters.setSkip(0);
         parameters.setLimit(5);
-        DefaultGraphQueryIterable<Vertex> iterable = new DefaultGraphQueryIterable<>(parameters, getVertices(5), false, false);
+        DefaultGraphQueryIterable<Vertex> iterable = new DefaultGraphQueryIterable<>(parameters, getVertices(5), false, false, false);
         int count = 0;
         Iterator<Vertex> iterator = iterable.iterator();
         Vertex v = null;
@@ -3152,7 +3207,7 @@ public abstract class GraphTestBase {
         QueryParameters parameters = new QueryStringQueryParameters("*", AUTHORIZATIONS_EMPTY);
         parameters.setSkip(0);
         parameters.setLimit(5);
-        DefaultGraphQueryIterable<Vertex> iterable = new DefaultGraphQueryIterable<>(parameters, getVertices(7), false, false);
+        DefaultGraphQueryIterable<Vertex> iterable = new DefaultGraphQueryIterable<>(parameters, getVertices(7), false, false, false);
         int count = 0;
         Iterator<Vertex> iterator = iterable.iterator();
         Vertex v = null;
@@ -3171,7 +3226,7 @@ public abstract class GraphTestBase {
         QueryParameters parameters = new QueryStringQueryParameters("*", AUTHORIZATIONS_EMPTY);
         parameters.setSkip(5);
         parameters.setLimit(5);
-        DefaultGraphQueryIterable<Vertex> iterable = new DefaultGraphQueryIterable<>(parameters, getVertices(12), false, false);
+        DefaultGraphQueryIterable<Vertex> iterable = new DefaultGraphQueryIterable<>(parameters, getVertices(12), false, false, false);
         int count = 0;
         Iterator<Vertex> iterator = iterable.iterator();
         Vertex v = null;
@@ -3190,7 +3245,7 @@ public abstract class GraphTestBase {
         QueryParameters parameters = new QueryStringQueryParameters("*", AUTHORIZATIONS_EMPTY);
         parameters.setSkip(10);
         parameters.setLimit(5);
-        DefaultGraphQueryIterable<Vertex> iterable = new DefaultGraphQueryIterable<>(parameters, getVertices(12), false, false);
+        DefaultGraphQueryIterable<Vertex> iterable = new DefaultGraphQueryIterable<>(parameters, getVertices(12), false, false, false);
         int count = 0;
         Iterator<Vertex> iterator = iterable.iterator();
         Vertex v = null;

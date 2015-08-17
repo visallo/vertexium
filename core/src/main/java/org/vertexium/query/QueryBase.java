@@ -75,8 +75,18 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
 
     @Override
     public <T> Query range(String propertyName, T startValue, boolean inclusiveStartValue, T endValue, boolean inclusiveEndValue) {
-        this.parameters.addHasContainer(new HasValueContainer(propertyName, inclusiveStartValue ? Compare.GREATER_THAN_EQUAL : Compare.GREATER_THAN, startValue, this.propertyDefinitions));
-        this.parameters.addHasContainer(new HasValueContainer(propertyName, inclusiveEndValue ? Compare.LESS_THAN_EQUAL : Compare.LESS_THAN, endValue, this.propertyDefinitions));
+        if (startValue != null) {
+            this.parameters.addHasContainer(new HasValueContainer(propertyName, inclusiveStartValue ? Compare.GREATER_THAN_EQUAL : Compare.GREATER_THAN, startValue, this.propertyDefinitions));
+        }
+        if (endValue != null) {
+            this.parameters.addHasContainer(new HasValueContainer(propertyName, inclusiveEndValue ? Compare.LESS_THAN_EQUAL : Compare.LESS_THAN, endValue, this.propertyDefinitions));
+        }
+        return this;
+    }
+
+    @Override
+    public Query sort(String propertyName, SortDirection direction) {
+        this.parameters.addSortContainer(new SortContainer(propertyName, direction));
         return this;
     }
 
@@ -136,6 +146,16 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
 
     public static abstract class HasContainer {
         public abstract boolean isMatch(Element elem);
+    }
+
+    public static class SortContainer {
+        public final String propertyName;
+        public final SortDirection direction;
+
+        public SortContainer(String propertyName, SortDirection direction) {
+            this.propertyName = propertyName;
+            this.direction = direction;
+        }
     }
 
     public static class HasValueContainer extends HasContainer {

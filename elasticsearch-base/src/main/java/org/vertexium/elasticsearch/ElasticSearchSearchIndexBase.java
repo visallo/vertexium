@@ -431,15 +431,15 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex, Searc
     protected void addPropertyDefinitionToIndex(Graph graph, IndexInfo indexInfo, String propertyName, PropertyDefinition propertyDefinition) throws IOException {
         if (propertyDefinition.getDataType() == String.class) {
             if (propertyDefinition.getTextIndexHints().contains(TextIndexHint.EXACT_MATCH)) {
-                addPropertyToIndex(graph, indexInfo, propertyName + EXACT_MATCH_PROPERTY_NAME_SUFFIX, String.class, false, propertyDefinition.getBoost());
+                addPropertyToIndex(graph, indexInfo, propertyName + EXACT_MATCH_PROPERTY_NAME_SUFFIX, String.class, false, propertyDefinition.getBoost(), propertyDefinition.isSortable());
             }
             if (propertyDefinition.getTextIndexHints().contains(TextIndexHint.FULL_TEXT)) {
-                addPropertyToIndex(graph, indexInfo, propertyName, String.class, true, propertyDefinition.getBoost());
+                addPropertyToIndex(graph, indexInfo, propertyName, String.class, true, propertyDefinition.getBoost(), propertyDefinition.isSortable());
             }
         } else if (propertyDefinition.getDataType() == GeoPoint.class
                 || propertyDefinition.getDataType() == GeoCircle.class) {
-            addPropertyToIndex(graph, indexInfo, propertyName + GEO_PROPERTY_NAME_SUFFIX, propertyDefinition.getDataType(), true, propertyDefinition.getBoost());
-            addPropertyToIndex(graph, indexInfo, propertyName, String.class, true, propertyDefinition.getBoost());
+            addPropertyToIndex(graph, indexInfo, propertyName + GEO_PROPERTY_NAME_SUFFIX, propertyDefinition.getDataType(), true, propertyDefinition.getBoost(), propertyDefinition.isSortable());
+            addPropertyToIndex(graph, indexInfo, propertyName, String.class, true, propertyDefinition.getBoost(), propertyDefinition.isSortable());
         } else {
             addPropertyToIndex(graph, indexInfo, propertyDefinition);
         }
@@ -477,12 +477,12 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex, Searc
         }
     }
 
-    private void addPropertyToIndex(Graph graph, IndexInfo indexInfo, String propertyName, Class dataType, boolean analyzed) throws IOException {
-        addPropertyToIndex(graph, indexInfo, propertyName, dataType, analyzed, null);
+    private void addPropertyToIndex(Graph graph, IndexInfo indexInfo, String propertyName, Class dataType, boolean analyzed, boolean sortable) throws IOException {
+        addPropertyToIndex(graph, indexInfo, propertyName, dataType, analyzed, null, sortable);
     }
 
     private void addPropertyToIndex(Graph graph, IndexInfo indexInfo, PropertyDefinition propertyDefinition) throws IOException {
-        addPropertyToIndex(graph, indexInfo, deflatePropertyName(propertyDefinition), propertyDefinition.getDataType(), true, propertyDefinition.getBoost());
+        addPropertyToIndex(graph, indexInfo, deflatePropertyName(propertyDefinition), propertyDefinition.getDataType(), true, propertyDefinition.getBoost(), propertyDefinition.isSortable());
     }
 
     public void addPropertyToIndex(Graph graph, IndexInfo indexInfo, Property property) throws IOException {
@@ -500,21 +500,21 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex, Searc
                 return;
             }
             dataType = streamingPropertyValue.getValueType();
-            addPropertyToIndex(graph, indexInfo, deflatedPropertyName, dataType, true);
+            addPropertyToIndex(graph, indexInfo, deflatedPropertyName, dataType, true, false);
         } else if (propertyValue instanceof String) {
             dataType = String.class;
-            addPropertyToIndex(graph, indexInfo, deflatedPropertyName + EXACT_MATCH_PROPERTY_NAME_SUFFIX, dataType, false);
-            addPropertyToIndex(graph, indexInfo, deflatedPropertyName, dataType, true);
+            addPropertyToIndex(graph, indexInfo, deflatedPropertyName + EXACT_MATCH_PROPERTY_NAME_SUFFIX, dataType, false, false);
+            addPropertyToIndex(graph, indexInfo, deflatedPropertyName, dataType, true, false);
         } else if (propertyValue instanceof GeoPoint) {
-            addPropertyToIndex(graph, indexInfo, deflatedPropertyName + GEO_PROPERTY_NAME_SUFFIX, GeoPoint.class, true);
-            addPropertyToIndex(graph, indexInfo, deflatedPropertyName, String.class, true);
+            addPropertyToIndex(graph, indexInfo, deflatedPropertyName + GEO_PROPERTY_NAME_SUFFIX, GeoPoint.class, true, false);
+            addPropertyToIndex(graph, indexInfo, deflatedPropertyName, String.class, true, false);
         } else if (propertyValue instanceof GeoCircle) {
-            addPropertyToIndex(graph, indexInfo, deflatedPropertyName + GEO_PROPERTY_NAME_SUFFIX, GeoCircle.class, true);
-            addPropertyToIndex(graph, indexInfo, deflatedPropertyName, String.class, true);
+            addPropertyToIndex(graph, indexInfo, deflatedPropertyName + GEO_PROPERTY_NAME_SUFFIX, GeoCircle.class, true, false);
+            addPropertyToIndex(graph, indexInfo, deflatedPropertyName, String.class, true, false);
         } else {
             Preconditions.checkNotNull(propertyValue, "property value cannot be null for property: " + deflatedPropertyName);
             dataType = propertyValue.getClass();
-            addPropertyToIndex(graph, indexInfo, deflatedPropertyName, dataType, true);
+            addPropertyToIndex(graph, indexInfo, deflatedPropertyName, dataType, true, true);
         }
     }
 
@@ -538,7 +538,7 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex, Searc
         return new String[]{nameSubstitutionStrategy.deflate(propertyName)};
     }
 
-    protected abstract void addPropertyToIndex(Graph graph, IndexInfo indexInfo, String propertyName, Class dataType, boolean analyzed, Double boost) throws IOException;
+    protected abstract void addPropertyToIndex(Graph graph, IndexInfo indexInfo, String propertyName, Class dataType, boolean analyzed, Double boost, boolean sortable) throws IOException;
 
     protected boolean shouldIgnoreType(Class dataType) {
         return dataType == byte[].class;

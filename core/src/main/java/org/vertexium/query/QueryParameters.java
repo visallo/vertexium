@@ -13,6 +13,7 @@ public abstract class QueryParameters {
     private long limit = DEFAULT_LIMIT;
     private long skip = DEFAULT_SKIP;
     private final List<QueryBase.HasContainer> hasContainers = new ArrayList<>();
+    private final List<QueryBase.SortContainer> sortContainers = new ArrayList<>();
 
     public QueryParameters(Authorizations authorizations) {
         this.authorizations = authorizations;
@@ -46,12 +47,21 @@ public abstract class QueryParameters {
         return hasContainers;
     }
 
+    public List<QueryBase.SortContainer> getSortContainers() {
+        return sortContainers;
+    }
+
+    public void addSortContainer(QueryBase.SortContainer sortContainer) {
+        sortContainers.add(sortContainer);
+    }
+
     public abstract QueryParameters clone();
 
     protected QueryParameters cloneTo(QueryParameters result) {
         result.setSkip(this.getSkip());
         result.setLimit(this.getLimit());
         result.hasContainers.addAll(this.getHasContainers());
+        result.sortContainers.addAll(this.getSortContainers());
         return result;
     }
 }

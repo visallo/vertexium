@@ -5,9 +5,12 @@ import org.vertexium.Property;
 import org.vertexium.util.CloseableIterable;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
 
 import static org.vertexium.util.IterableUtils.count;
+import static org.vertexium.util.IterableUtils.toList;
 
 public class DefaultGraphQueryIterable<T extends Element> implements
         Iterable<T>,
@@ -18,11 +21,27 @@ public class DefaultGraphQueryIterable<T extends Element> implements
     private final boolean evaluateQueryString;
     private final boolean evaluateHasContainers;
 
-    public DefaultGraphQueryIterable(QueryParameters parameters, Iterable<T> iterable, boolean evaluateQueryString, boolean evaluateHasContainers) {
+    public DefaultGraphQueryIterable(
+            QueryParameters parameters,
+            Iterable<T> iterable,
+            boolean evaluateQueryString,
+            boolean evaluateHasContainers,
+            boolean evaluateSortContainers
+    ) {
         this.parameters = parameters;
-        this.iterable = iterable;
         this.evaluateQueryString = evaluateQueryString;
         this.evaluateHasContainers = evaluateHasContainers;
+        if (evaluateSortContainers && this.parameters.getSortContainers().size() > 0) {
+            this.iterable = sort(iterable, parameters.getSortContainers());
+        } else {
+            this.iterable = iterable;
+        }
+    }
+
+    private Iterable<T> sort(Iterable<T> iterable, List<QueryBase.SortContainer> sortContainers) {
+        List<T> list = toList(iterable);
+        Collections.sort(list, new SortContainersComparator<T>(sortContainers));
+        return list;
     }
 
     @Override

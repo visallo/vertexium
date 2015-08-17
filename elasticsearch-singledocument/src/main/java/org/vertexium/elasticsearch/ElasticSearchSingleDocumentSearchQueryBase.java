@@ -3,10 +3,8 @@ package org.vertexium.elasticsearch;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.index.query.*;
-import org.vertexium.Authorizations;
-import org.vertexium.Graph;
-import org.vertexium.GraphBaseWithSearchIndex;
-import org.vertexium.PropertyDefinition;
+import org.elasticsearch.search.sort.SortOrder;
+import org.vertexium.*;
 import org.vertexium.elasticsearch.score.ScoringStrategy;
 import org.vertexium.query.*;
 
@@ -32,7 +30,7 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends ElasticSearchQue
             IndexSelectionStrategy indexSelectionStrategy,
             Authorizations authorizations
     ) {
-        super(client, graph, queryString, propertyDefinitions, scoringStrategy, indexSelectionStrategy, false, true, authorizations);
+        super(client, graph, queryString, propertyDefinitions, scoringStrategy, indexSelectionStrategy, false, true, false, authorizations);
     }
 
     public ElasticSearchSingleDocumentSearchQueryBase(
@@ -45,7 +43,7 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends ElasticSearchQue
             IndexSelectionStrategy indexSelectionStrategy,
             Authorizations authorizations
     ) {
-        super(client, graph, similarToFields, similarToText, propertyDefinitions, scoringStrategy, indexSelectionStrategy, false, true, authorizations);
+        super(client, graph, similarToFields, similarToText, propertyDefinitions, scoringStrategy, indexSelectionStrategy, false, true, false, authorizations);
     }
 
     @Override
@@ -106,6 +104,21 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends ElasticSearchQue
             }
         }
         return results;
+    }
+
+    @Override
+    protected void applySort(SearchRequestBuilder q) {
+        for (SortContainer sortContainer : getParameters().getSortContainers()) {
+            SortOrder esOrder = sortContainer.direction == SortDirection.ASCENDING ? SortOrder.ASC : SortOrder.DESC;
+            PropertyDefinition propertyDefinition = getSearchIndex().getPropertyDefinition(getGraph(), sortContainer.propertyName);
+            if (propertyDefinition == null) {
+                throw new VertexiumException("Could not find property definition for field: " + sortContainer.propertyName);
+            }
+            if (!propertyDefinition.isSortable()) {
+                throw new VertexiumException("Cannot sort on non-sortable fields");
+            }
+            q.addSort(propertyDefinition.getPropertyName(), esOrder);
+        }
     }
 }
 
