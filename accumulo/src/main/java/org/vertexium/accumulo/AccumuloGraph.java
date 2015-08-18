@@ -1120,6 +1120,8 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             trace.data("vertexId", vertexId);
             traceDataFetchHints(trace, fetchHints);
             return singleOrDefault(getVerticesInRange(trace, new Range(vertexId), fetchHints, endTime, authorizations), null);
+        } catch (IllegalStateException ex) {
+            throw new VertexiumException("Failed to find vertex with id: " + vertexId, ex);
         } catch (RuntimeException ex) {
             if (ex.getCause() instanceof AccumuloSecurityException) {
                 throw new SecurityVertexiumException("Could not get vertex " + vertexId + " with authorizations: " + authorizations, authorizations, ex.getCause());
@@ -1421,7 +1423,16 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
     public Edge getEdge(String edgeId, EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations) {
         Span trace = Trace.start("getEdge");
         trace.data("edgeId", edgeId);
-        return singleOrDefault(getEdgesInRange(trace, edgeId, edgeId, fetchHints, endTime, authorizations), null);
+        try {
+            return singleOrDefault(getEdgesInRange(trace, edgeId, edgeId, fetchHints, endTime, authorizations), null);
+        } catch (IllegalStateException ex) {
+            throw new VertexiumException("Failed to find edge with id: " + edgeId, ex);
+        } catch (RuntimeException ex) {
+            if (ex.getCause() instanceof AccumuloSecurityException) {
+                throw new SecurityVertexiumException("Could not get edge " + edgeId + " with authorizations: " + authorizations, authorizations, ex.getCause());
+            }
+            throw ex;
+        }
     }
 
     public byte[] streamingPropertyValueTableData(String dataRowKey) {
