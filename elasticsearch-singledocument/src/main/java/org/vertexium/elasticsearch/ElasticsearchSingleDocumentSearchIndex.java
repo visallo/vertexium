@@ -4,7 +4,6 @@ import com.google.common.base.Throwables;
 import net.jodah.recurrent.Recurrent;
 import net.jodah.recurrent.RetryPolicy;
 import org.elasticsearch.action.bulk.BulkRequest;
-import org.elasticsearch.action.delete.DeleteResponse;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchType;
@@ -352,14 +351,11 @@ public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchI
         if (MUTATION_LOGGER.isTraceEnabled()) {
             LOGGER.trace("deleting document %s", id);
         }
-        DeleteResponse deleteResponse = getClient().delete(
+        getClient().delete(
                 getClient()
                         .prepareDelete(indexName, ELEMENT_TYPE, id)
                         .request()
         ).actionGet();
-        if (!deleteResponse.isFound()) {
-            throw new VertexiumException("Could not delete element " + element.getId());
-        }
     }
 
     @Override
