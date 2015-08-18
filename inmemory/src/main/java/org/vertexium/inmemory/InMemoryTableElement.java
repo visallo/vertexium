@@ -2,6 +2,7 @@ package org.vertexium.inmemory;
 
 import org.vertexium.*;
 import org.vertexium.inmemory.mutations.*;
+import org.vertexium.inmemory.util.IncreasingTime;
 import org.vertexium.property.MutablePropertyImpl;
 import org.vertexium.util.ConvertingIterable;
 import org.vertexium.util.FilterIterable;
@@ -271,25 +272,25 @@ public abstract class InMemoryTableElement<TElement extends InMemoryElement> {
 
     public void appendSoftDeleteMutation(Long timestamp) {
         if (timestamp == null) {
-            timestamp = System.currentTimeMillis();
+            timestamp = IncreasingTime.currentTimeMillis();
         }
         this.mutations.add(new SoftDeleteMutation(timestamp));
     }
 
     public void appendMarkHiddenMutation(Visibility visibility) {
-        long timestamp = System.currentTimeMillis();
+        long timestamp = IncreasingTime.currentTimeMillis();
         this.mutations.add(new MarkHiddenMutation(timestamp, visibility));
     }
 
     public void appendMarkVisibleMutation(Visibility visibility) {
-        long timestamp = System.currentTimeMillis();
+        long timestamp = IncreasingTime.currentTimeMillis();
         this.mutations.add(new MarkVisibleMutation(timestamp, visibility));
     }
 
     public Property appendMarkPropertyHiddenMutation(String key, String name, Visibility propertyVisibility, Long timestamp, Visibility visibility, Authorizations authorizations) {
         Property prop = getProperty(key, name, propertyVisibility, authorizations);
         if (timestamp == null) {
-            timestamp = System.currentTimeMillis();
+            timestamp = IncreasingTime.currentTimeMillis();
         }
         this.mutations.add(new MarkPropertyHiddenMutation(key, name, propertyVisibility, timestamp, visibility));
         return prop;
@@ -298,7 +299,7 @@ public abstract class InMemoryTableElement<TElement extends InMemoryElement> {
     public Property appendMarkPropertyVisibleMutation(String key, String name, Visibility propertyVisibility, Long timestamp, Visibility visibility, Authorizations authorizations) {
         Property prop = getProperty(key, name, propertyVisibility, authorizations);
         if (timestamp == null) {
-            timestamp = System.currentTimeMillis();
+            timestamp = IncreasingTime.currentTimeMillis();
         }
         this.mutations.add(new MarkPropertyVisibleMutation(key, name, propertyVisibility, timestamp, visibility));
         return prop;
@@ -306,26 +307,26 @@ public abstract class InMemoryTableElement<TElement extends InMemoryElement> {
 
     public void appendSoftDeletePropertyMutation(String key, String name, Visibility propertyVisibility, Long timestamp) {
         if (timestamp == null) {
-            timestamp = System.currentTimeMillis();
+            timestamp = IncreasingTime.currentTimeMillis();
         }
         this.mutations.add(new SoftDeletePropertyMutation(timestamp, key, name, propertyVisibility));
     }
 
     public void appendAlterVisibilityMutation(Visibility newVisibility) {
-        long timestamp = System.currentTimeMillis();
+        long timestamp = IncreasingTime.currentTimeMillis();
         this.mutations.add(new AlterVisibilityMutation(timestamp, newVisibility));
     }
 
     public void appendAddPropertyMutation(String key, String name, Object value, Metadata metadata, Visibility visibility, Long timestamp) {
         if (timestamp == null) {
-            timestamp = System.currentTimeMillis();
+            timestamp = IncreasingTime.currentTimeMillis();
         }
         value = InMemoryStreamingPropertyValue.saveStreamingPropertyValue(value);
         this.mutations.add(new AddPropertyValueMutation(timestamp, key, name, value, metadata, visibility));
     }
 
     public void appendAlterEdgeLabelMutation(String newEdgeLabel) {
-        long timestamp = System.currentTimeMillis();
+        long timestamp = IncreasingTime.currentTimeMillis();
         this.mutations.add(new AlterEdgeLabelMutation(timestamp, newEdgeLabel));
     }
 
