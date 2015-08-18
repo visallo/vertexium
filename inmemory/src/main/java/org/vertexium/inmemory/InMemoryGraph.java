@@ -7,6 +7,7 @@ import org.vertexium.inmemory.mutations.AlterEdgeLabelMutation;
 import org.vertexium.inmemory.mutations.AlterVisibilityMutation;
 import org.vertexium.inmemory.mutations.EdgeSetupMutation;
 import org.vertexium.inmemory.mutations.ElementTimestampMutation;
+import org.vertexium.inmemory.util.IncreasingTime;
 import org.vertexium.inmemory.util.ThreadUtils;
 import org.vertexium.mutation.AlterPropertyVisibility;
 import org.vertexium.mutation.SetPropertyMetadata;
@@ -101,7 +102,7 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
             vertexId = getIdGenerator().nextId();
         }
         if (timestamp == null) {
-            timestamp = System.currentTimeMillis();
+            timestamp = IncreasingTime.currentTimeMillis();
         }
         final long timestampLong = timestamp;
 
@@ -295,7 +296,7 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
 
     private Edge savePreparedEdge(final EdgeBuilderBase edgeBuilder, final String outVertexId, final String inVertexId, Long timestamp, Authorizations authorizations) {
         if (timestamp == null) {
-            timestamp = System.currentTimeMillis();
+            timestamp = IncreasingTime.currentTimeMillis();
         }
         InMemoryTableElement edgeTableElement = this.edges.getTableElement(edgeBuilder.getEdgeId());
         boolean isNew = false;

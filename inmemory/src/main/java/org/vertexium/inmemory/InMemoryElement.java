@@ -1,6 +1,7 @@
 package org.vertexium.inmemory;
 
 import org.vertexium.*;
+import org.vertexium.inmemory.util.IncreasingTime;
 import org.vertexium.mutation.*;
 import org.vertexium.property.MutableProperty;
 import org.vertexium.property.StreamingPropertyValue;
@@ -337,7 +338,7 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> implemen
             Iterable<PropertyDeleteMutation> propertyDeleteMutations,
             Iterable<PropertySoftDeleteMutation> propertySoftDeleteMutations
     ) {
-        long timestamp = System.currentTimeMillis();
+        long timestamp = IncreasingTime.currentTimeMillis();
         for (Property property : properties) {
             Object propertyValue = property.getValue();
             if (propertyValue instanceof StreamingPropertyValue) {
@@ -363,7 +364,7 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> implemen
                 propertySoftDeleteMutations
         );
 
-        long timestamp = System.currentTimeMillis();
+        long timestamp = IncreasingTime.currentTimeMillis();
         if (mutation.getElement() instanceof Edge) {
             if (mutation.getNewElementVisibility() != null) {
                 getGraph().alterEdgeVisibility(mutation.getElement().getId(), mutation.getNewElementVisibility());
