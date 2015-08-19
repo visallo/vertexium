@@ -616,7 +616,14 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex, Searc
     }
 
     @Override
-    public synchronized void clearData() {
+    public synchronized void truncate() {
+        LOGGER.warn("Truncate of Elasticsearch is not possible, dropping the indices and recreating instead.");
+        drop();
+        loadPropertyDefinitions();
+    }
+
+    @Override
+    public void drop() {
         Set<String> indexInfosSet = indexInfos.keySet();
         for (String indexName : indexInfosSet) {
             try {
@@ -628,7 +635,6 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex, Searc
             }
             ensureIndexCreatedAndInitialized(indexName, isStoreSourceData());
         }
-        loadPropertyDefinitions();
     }
 
     public abstract void addElementToBulkRequest(Graph graph, BulkRequest bulkRequest, IndexInfo indexInfo, Element element, Authorizations authorizations);

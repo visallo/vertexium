@@ -78,7 +78,7 @@ public abstract class ExampleBase {
             }
         }
         LOGGER.debug("clearing vertices");
-        graph.clearData();
+        graph.truncate();
     }
 
     protected void populateData() throws IOException {

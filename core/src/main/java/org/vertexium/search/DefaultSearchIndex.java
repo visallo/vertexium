@@ -77,7 +77,12 @@ public class DefaultSearchIndex implements SearchIndex {
     }
 
     @Override
-    public void clearData() {
+    public void truncate() {
+    }
+
+    @Override
+    public void drop() {
+
     }
 
     public SearchIndexSecurityGranularity getSearchIndexSecurityGranularity() {

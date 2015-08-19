@@ -40,7 +40,9 @@ public interface SearchIndex {
 
     boolean isFieldBoostSupported();
 
-    void clearData();
+    void truncate();
+
+    void drop();
 
     SearchIndexSecurityGranularity getSearchIndexSecurityGranularity();
 

@@ -828,7 +828,12 @@ public interface Graph {
     /**
      * Clears all data from the graph.
      */
-    void clearData();
+    void truncate();
+
+    /**
+     * Drops all tables
+     */
+    void drop();
 
     /**
      * Gets the granularity of the search index {@link SearchIndexSecurityGranularity}

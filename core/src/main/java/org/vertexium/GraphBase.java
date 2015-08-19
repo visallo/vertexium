@@ -742,7 +742,7 @@ public abstract class GraphBase implements Graph {
     public abstract boolean isVisibilityValid(Visibility visibility, Authorizations authorizations);
 
     @Override
-    public abstract void clearData();
+    public abstract void truncate();
 
     @Override
     public abstract void markVertexHidden(Vertex vertex, Visibility visibility, Authorizations authorizations);

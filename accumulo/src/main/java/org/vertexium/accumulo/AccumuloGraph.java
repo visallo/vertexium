@@ -1631,15 +1631,34 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
     }
 
     @Override
-    public void clearData() {
+    public void truncate() {
         try {
             this.connector.tableOperations().deleteRows(getDataTableName(), null, null);
             this.connector.tableOperations().deleteRows(getEdgesTableName(), null, null);
             this.connector.tableOperations().deleteRows(getVerticesTableName(), null, null);
             this.connector.tableOperations().deleteRows(getMetadataTableName(), null, null);
-            getSearchIndex().clearData();
+            getSearchIndex().truncate();
         } catch (Exception ex) {
             throw new VertexiumException("Could not delete rows", ex);
+        }
+    }
+
+    @Override
+    public void drop() {
+        try {
+            dropTableIfExists(getDataTableName());
+            dropTableIfExists(getEdgesTableName());
+            dropTableIfExists(getVerticesTableName());
+            dropTableIfExists(getMetadataTableName());
+            getSearchIndex().drop();
+        } catch (Exception ex) {
+            throw new VertexiumException("Could not drop tables", ex);
+        }
+    }
+
+    private void dropTableIfExists(String tableName) throws AccumuloException, AccumuloSecurityException, TableNotFoundException {
+        if (this.connector.tableOperations().exists(tableName)) {
+            this.connector.tableOperations().delete(tableName);
         }
     }
 

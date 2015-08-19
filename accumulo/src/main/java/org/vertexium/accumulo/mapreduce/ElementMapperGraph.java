@@ -131,7 +131,12 @@ public class ElementMapperGraph extends GraphBase {
     }
 
     @Override
-    public void clearData() {
+    public void truncate() {
+        throw new VertexiumException("Not supported");
+    }
+
+    @Override
+    public void drop() {
         throw new VertexiumException("Not supported");
     }
 

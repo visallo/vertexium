@@ -63,7 +63,7 @@ public class VertexiumBenchmark {
     }
 
     private int runBenchmark(Graph graph, int vertexCount, int batchSize, Authorizations authorizations) {
-        graph.clearData();
+        graph.truncate();
         Visibility visibility = new Visibility("");
         long startTime = System.currentTimeMillis();
         for (int i = 0; i < vertexCount; i++) {

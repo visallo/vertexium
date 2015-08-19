@@ -555,10 +555,17 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
     }
 
     @Override
-    public void clearData() {
+    public void truncate() {
         this.vertices.clear();
         this.edges.clear();
-        getSearchIndex().clearData();
+        getSearchIndex().truncate();
+    }
+
+    @Override
+    public void drop() {
+        this.vertices.clear();
+        this.edges.clear();
+        getSearchIndex().drop();
     }
 
     public void alterEdgeLabel(String edgeId, String newEdgeLabel) {
