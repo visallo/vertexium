@@ -9,6 +9,8 @@ import jline.TerminalFactory;
 import jline.UnixTerminal;
 import jline.UnsupportedTerminal;
 import jline.WindowsTerminal;
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.text.StrSubstitutor;
 import org.codehaus.groovy.control.CompilerConfiguration;
 import org.codehaus.groovy.tools.shell.AnsiDetector;
 import org.codehaus.groovy.tools.shell.Groovysh;
@@ -114,9 +116,10 @@ public class VertexiumShell {
         return 0;
     }
 
+    @SuppressWarnings("unchecked")
     private Map loadConfig() throws IOException {
         Properties props = new Properties();
-        for(String configFileName: configFileNames) {
+        for (String configFileName : configFileNames) {
             File configFile = new File(configFileName);
             if (!configFile.exists()) {
                 throw new RuntimeException("Could not load config file: " + configFile.getAbsolutePath());
@@ -126,6 +129,8 @@ public class VertexiumShell {
                 props.load(in);
             }
         }
+
+        resolvePropertyReferences(props);
 
         Map result = new HashMap();
         if (configPropertyPrefix == null) {
@@ -143,6 +148,16 @@ public class VertexiumShell {
         }
 
         return result;
+    }
+
+    @SuppressWarnings("unchecked")
+    private void resolvePropertyReferences(Map config) {
+        for (Object entry : config.entrySet()) {
+            String entryValue = (String) ((Map.Entry) entry).getValue();
+            if (!StringUtils.isBlank(entryValue)) {
+                ((Map.Entry) entry).setValue(StrSubstitutor.replace(entryValue, config));
+            }
+        }
     }
 
     private void setGroovyShell(Groovysh groovysh, GroovyShell groovyShell) throws NoSuchFieldException, IllegalAccessException {
