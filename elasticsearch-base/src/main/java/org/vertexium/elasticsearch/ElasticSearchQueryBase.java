@@ -1,6 +1,9 @@
 package org.vertexium.elasticsearch;
 
+import com.google.common.base.Function;
 import com.google.common.base.Joiner;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -116,6 +119,7 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
         QueryParameters filterParameters = getParameters().clone();
         filterParameters.setSkip(0); // ES already did a skip
         Iterable<Vertex> vertices = getGraph().getVertices(ids, fetchHints, filterParameters.getAuthorizations());
+        vertices = sortByResultOrder(vertices, ids);
         return createIterable(response, filterParameters, vertices, evaluateQueryString, evaluateHasContainers, evaluateSortContainers, searchTime, hits);
     }
 
@@ -150,6 +154,7 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
         QueryParameters filterParameters = getParameters().clone();
         filterParameters.setSkip(0); // ES already did a skip
         Iterable<Edge> edges = getGraph().getEdges(ids, fetchHints, filterParameters.getAuthorizations());
+        edges = sortByResultOrder(edges, ids);
         // TODO instead of passing false here to not evaluate the query string it would be better to support the Lucene query
         return createIterable(response, filterParameters, edges, evaluateQueryString, evaluateHasContainers, evaluateSortContainers, searchTime, hits);
     }
@@ -170,12 +175,14 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
         final SearchHits hits = response.getHits();
         List<String> vertexIds = new ArrayList<>();
         List<String> edgeIds = new ArrayList<>();
+        List<String> ids = new ArrayList<>();
         for (SearchHit hit : hits) {
             SearchHitField elementType = hit.getFields().get(ElasticSearchSearchIndexBase.ELEMENT_TYPE_FIELD_NAME);
             if (elementType == null) {
                 continue;
             }
             ElasticSearchElementType et = ElasticSearchElementType.parse(elementType.getValue().toString());
+            ids.add(hit.getId());
             switch (et) {
                 case VERTEX:
                     vertexIds.add(hit.getId());
@@ -207,8 +214,27 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
         Iterable<Vertex> vertices = getGraph().getVertices(vertexIds, fetchHints, filterParameters.getAuthorizations());
         Iterable<Edge> edges = getGraph().getEdges(edgeIds, fetchHints, filterParameters.getAuthorizations());
         Iterable<Element> elements = new JoinIterable<>(new ToElementIterable<>(vertices), new ToElementIterable<>(edges));
+        elements = sortByResultOrder(elements, ids);
         // TODO instead of passing false here to not evaluate the query string it would be better to support the Lucene query
         return createIterable(response, filterParameters, elements, evaluateQueryString, evaluateHasContainers, evaluateSortContainers, searchTime, hits);
+    }
+
+    private <T extends Element> Iterable<T> sortByResultOrder(Iterable<T> elements, List<String> ids) {
+        ImmutableMap<String, T> elementsMap = Maps.uniqueIndex(elements, new Function<T, String>() {
+            @Override
+            public String apply(T e) {
+                return e.getId();
+            }
+        });
+        
+        List<T> results = new ArrayList<>();
+        for (String id : ids) {
+            T element = elementsMap.get(id);
+            if (element != null) {
+                results.add(element);
+            }
+        }
+        return results;
     }
 
     protected <T extends Element> ElasticSearchGraphQueryIterable<T> createIterable(
