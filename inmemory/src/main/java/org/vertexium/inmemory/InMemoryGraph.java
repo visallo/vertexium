@@ -185,7 +185,7 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
             return;
         }
         if (timestamp == null) {
-            timestamp = System.currentTimeMillis();
+            timestamp = IncreasingTime.currentTimeMillis();
         }
 
         List<Edge> edgesToSoftDelete = IterableUtils.toList(vertex.getEdges(Direction.BOTH, authorizations));
@@ -366,7 +366,7 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
             return;
         }
         if (timestamp == null) {
-            timestamp = System.currentTimeMillis();
+            timestamp = IncreasingTime.currentTimeMillis();
         }
 
         this.edges.getTableElement(edge.getId()).appendSoftDeleteMutation(timestamp);
