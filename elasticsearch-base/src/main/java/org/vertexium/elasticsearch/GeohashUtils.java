@@ -11,6 +11,7 @@ class GeohashUtils {
     static {
         try {
             decodeCell = GeoHashUtils.class.getDeclaredMethod("decodeCell", String.class);
+            decodeCell.setAccessible(true);
         } catch (NoSuchMethodException e) {
             throw new VertexiumException("Could not find decodeCell method", e);
         }
