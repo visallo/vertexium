@@ -1866,9 +1866,11 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             foundPaths.add(currentPath);
         } else if (hops > 0) {
             Set<String> vertexIds = connectedVertexIds.get(sourceVertexId);
-            for (String childId : vertexIds) {
-                if (!seenVertices.contains(childId)) {
-                    findPathsRecursive(connectedVertexIds, foundPaths, childId, destVertexId, hops - 1, seenVertices, new Path(currentPath, childId), progressCallback);
+            if (vertexIds != null) {
+                for (String childId : vertexIds) {
+                    if (!seenVertices.contains(childId)) {
+                        findPathsRecursive(connectedVertexIds, foundPaths, childId, destVertexId, hops - 1, seenVertices, new Path(currentPath, childId), progressCallback);
+                    }
                 }
             }
         }

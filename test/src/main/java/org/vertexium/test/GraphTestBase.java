@@ -2224,10 +2224,14 @@ public abstract class GraphTestBase {
         Vertex v2 = graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_A);
         Vertex v3 = graph.addVertex("v3", VISIBILITY_A, AUTHORIZATIONS_A);
         Vertex v4 = graph.addVertex("v4", VISIBILITY_A, AUTHORIZATIONS_A);
+        Vertex v5 = graph.addVertex("v5", VISIBILITY_A, AUTHORIZATIONS_A);
+        Vertex v6 = graph.addVertex("v6", VISIBILITY_A, AUTHORIZATIONS_A);
         graph.addEdge(v1, v2, "knows", VISIBILITY_A, AUTHORIZATIONS_A); // v1 -> v2
         graph.addEdge(v2, v4, "knows", VISIBILITY_A, AUTHORIZATIONS_A); // v2 -> v4
         graph.addEdge(v1, v3, "knows", VISIBILITY_A, AUTHORIZATIONS_A); // v1 -> v3
         graph.addEdge(v3, v4, "knows", VISIBILITY_A, AUTHORIZATIONS_A); // v3 -> v4
+        graph.addEdge(v3, v5, "knows", VISIBILITY_A, AUTHORIZATIONS_A); // v3 -> v5
+        graph.addEdge(v4, v6, "knows", VISIBILITY_A, AUTHORIZATIONS_A); // v4 -> v6
 
         v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
         v4 = graph.getVertex("v4", AUTHORIZATIONS_A);
@@ -2284,6 +2288,39 @@ public abstract class GraphTestBase {
                     }
                 } else if (i == 2) {
                     assertEquals(id, v1.getId());
+                }
+                i++;
+            }
+        }
+        assertTrue("v2 not found in path", found2);
+        assertTrue("v3 not found in path", found3);
+
+        v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
+        v6 = graph.getVertex("v6", AUTHORIZATIONS_A);
+        paths = toList(graph.findPaths("v1", "v6", 3, AUTHORIZATIONS_A));
+        // v1 -> v2 -> v4 -> v6
+        // v1 -> v3 -> v4 -> v6
+        assertEquals(2, paths.size());
+        found2 = false;
+        found3 = false;
+        for (Path path : paths) {
+            assertEquals(4, path.length());
+            int i = 0;
+            for (String id : path) {
+                if (i == 0) {
+                    assertEquals(id, v1.getId());
+                } else if (i == 1) {
+                    if (v2.getId().equals(id)) {
+                        found2 = true;
+                    } else if (v3.getId().equals(id)) {
+                        found3 = true;
+                    } else {
+                        fail("center of path is neither v2 or v3 but found " + id);
+                    }
+                } else if (i == 2) {
+                    assertEquals(id, v4.getId());
+                } else if (i == 3) {
+                    assertEquals(id, v6.getId());
                 }
                 i++;
             }
