@@ -12,8 +12,6 @@ import org.vertexium.util.Preconditions;
 import java.io.Serializable;
 import java.util.Arrays;
 
-import static org.vertexium.util.Preconditions.checkNotNull;
-
 public class InMemoryAuthorizations implements org.vertexium.Authorizations, Serializable {
     private static final long serialVersionUID = 1L;
     private final String[] authorizations;
@@ -53,5 +51,24 @@ public class InMemoryAuthorizations implements org.vertexium.Authorizations, Ser
         } catch (VisibilityParseException e) {
             throw new VertexiumException("could not evaluate visibility " + visibility.getVisibilityString(), e);
         }
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+
+        InMemoryAuthorizations that = (InMemoryAuthorizations) o;
+
+        return ArrayUtils.intersectsAll(getAuthorizations(), that.getAuthorizations());
+    }
+
+    @Override
+    public int hashCode() {
+        return Arrays.hashCode(authorizations);
     }
 }
