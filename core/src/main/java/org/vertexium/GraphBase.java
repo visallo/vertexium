@@ -590,6 +590,9 @@ public abstract class GraphBase implements Graph {
         List<String> results = new ArrayList<>();
         List<Vertex> vertices = IterableUtils.toList(verticesIterable);
         for (Vertex outVertex : vertices) {
+            if (outVertex == null) {
+                throw new VertexiumException("verticesIterable cannot have null values");
+            }
             Iterable<EdgeInfo> edgeInfos = outVertex.getEdgeInfos(Direction.OUT, authorizations);
             for (EdgeInfo edgeInfo : edgeInfos) {
                 for (Vertex inVertex : vertices) {
