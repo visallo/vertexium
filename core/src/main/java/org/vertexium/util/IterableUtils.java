@@ -138,8 +138,9 @@ public class IterableUtils {
         T result = i.next();
 
         if (i.hasNext()) {
+            T nextValue = i.next();
             close(it);
-            throw new IllegalStateException("More than 1 item found.");
+            throw new IllegalStateException("More than 1 item found. [" + result + ", " + nextValue + "...]");
         }
 
         close(it);
