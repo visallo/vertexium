@@ -141,6 +141,19 @@ public abstract class GraphTestBase {
         );
     }
 
+    @Test
+    public void testGetSingleVertexWithSameRowPrefix() {
+        graph.addVertex("prefix", VISIBILITY_EMPTY, AUTHORIZATIONS_EMPTY);
+        graph.addVertex("prefixA", VISIBILITY_EMPTY, AUTHORIZATIONS_EMPTY);
+        graph.flush();
+
+        Vertex v = graph.getVertex("prefix", AUTHORIZATIONS_EMPTY);
+        assertEquals("prefix", v.getId());
+
+        v = graph.getVertex("prefixA", AUTHORIZATIONS_EMPTY);
+        assertEquals("prefixA", v.getId());
+    }
+
     @SuppressWarnings("AssertEqualsBetweenInconvertibleTypes")
     @Test
     public void testAddStreamingPropertyValue() throws IOException, InterruptedException {
