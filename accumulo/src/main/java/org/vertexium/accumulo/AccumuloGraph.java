@@ -4,10 +4,7 @@ import com.google.common.collect.Lists;
 import com.google.common.primitives.Longs;
 import org.apache.accumulo.core.client.*;
 import org.apache.accumulo.core.client.Scanner;
-import org.apache.accumulo.core.data.Key;
-import org.apache.accumulo.core.data.Mutation;
-import org.apache.accumulo.core.data.Range;
-import org.apache.accumulo.core.data.Value;
+import org.apache.accumulo.core.data.*;
 import org.apache.accumulo.core.iterators.IteratorUtil;
 import org.apache.accumulo.core.iterators.LongCombiner;
 import org.apache.accumulo.core.iterators.user.RowDeletingIterator;
@@ -1158,7 +1155,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         if (endId == null) {
             endKey = null;
         } else {
-            endKey = new Key(endId.concat("~"));
+            endKey = new Key(endId).followingKey(PartialKey.ROW);
         }
 
         Range range = new Range(startKey, endKey);
@@ -1860,7 +1857,16 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         findPathsRecursive(connectedVertexIds, foundPaths, sourceVertexId, destVertexId, hops, seenVertices, currentPath, progressCallback);
     }
 
-    protected void findPathsRecursive(Map<String, Set<String>> connectedVertexIds, List<Path> foundPaths, final String sourceVertexId, String destVertexId, int hops, Set<String> seenVertices, Path currentPath, ProgressCallback progressCallback) {
+    protected void findPathsRecursive(
+            Map<String, Set<String>> connectedVertexIds,
+            List<Path> foundPaths,
+            final String sourceVertexId,
+            String destVertexId,
+            int hops,
+            Set<String> seenVertices,
+            Path currentPath,
+            @SuppressWarnings("UnusedParameters") ProgressCallback progressCallback
+    ) {
         seenVertices.add(sourceVertexId);
         if (sourceVertexId.equals(destVertexId)) {
             foundPaths.add(currentPath);
@@ -2239,7 +2245,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         if (endId == null) {
             endKey = null;
         } else {
-            endKey = new Key(endId.concat("~"));
+            endKey = new Key(endId).followingKey(PartialKey.ROW);
         }
 
         final long timerStartTime = System.currentTimeMillis();
