@@ -226,7 +226,7 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
                 return e.getId();
             }
         });
-        
+
         List<T> results = new ArrayList<>();
         for (String id : ids) {
             T element = elementsMap.get(id);
@@ -407,15 +407,17 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
     }
 
     protected FilterBuilder getFilterForContainsPredicate(Contains contains, HasValueContainer has) {
-        Object value = has.value;
         String[] keys = getPropertyNames(has.key);
         List<FilterBuilder> filters = new ArrayList<>();
         for (String key : keys) {
-            if (value instanceof String || value instanceof String[]) {
-                key = key + ElasticSearchSearchIndexBase.EXACT_MATCH_PROPERTY_NAME_SUFFIX;
-            }
             if (has.value instanceof Iterable) {
                 has.value = IterableUtils.toArray((Iterable<?>) has.value, Object.class);
+            }
+            if (has.value instanceof String
+                    || has.value instanceof String[]
+                    || (has.value instanceof Object[] && ((Object[]) has.value).length > 0 && ((Object[]) has.value)[0] instanceof String)
+                    ) {
+                key = key + ElasticSearchSearchIndexBase.EXACT_MATCH_PROPERTY_NAME_SUFFIX;
             }
             switch (contains) {
                 case IN:

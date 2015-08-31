@@ -1656,6 +1656,33 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    public void testGraphQueryIn() {
+        graph.defineProperty("age").dataType(Integer.class).sortable(true).define();
+        graph.defineProperty("name").dataType(String.class).sortable(true).textIndexHint(TextIndexHint.ALL).define();
+
+        graph.prepareVertex("v1", VISIBILITY_A)
+                .setProperty("name", "joe ferner", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.prepareVertex("v2", VISIBILITY_A)
+                .setProperty("name", "bob smith", VISIBILITY_B)
+                .setProperty("age", 25, VISIBILITY_A)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.prepareVertex("v3", VISIBILITY_A)
+                .setProperty("name", "tom thumb", VISIBILITY_A)
+                .setProperty("age", 30, VISIBILITY_B)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        List<String> strings = new ArrayList<>();
+        strings.add("joe ferner");
+        List<Vertex> vertices = toList(graph.query(AUTHORIZATIONS_A_AND_B)
+                .has("name", Contains.IN, strings)
+                .vertices());
+        assertEquals(1, vertices.size());
+        assertEquals("v1", vertices.get(0).getId());
+    }
+
+    @Test
     public void testGraphQuerySort() {
         graph.defineProperty("age").dataType(Integer.class).sortable(true).define();
         graph.defineProperty("name").dataType(String.class).sortable(true).textIndexHint(TextIndexHint.EXACT_MATCH).define();
