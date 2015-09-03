@@ -2544,7 +2544,7 @@ public abstract class GraphTestBase {
         Assert.assertEquals(1, count(v.getProperties()));
         assertEquals("value1", v.getPropertyValue("prop1"));
 
-        m.save(AUTHORIZATIONS_A_AND_B);
+        v = m.save(AUTHORIZATIONS_A_AND_B);
         Assert.assertEquals(2, count(v.getProperties()));
         assertEquals("value2", v.getPropertyValue("prop1"));
         assertEquals("value2", v.getPropertyValue("prop2"));
