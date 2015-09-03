@@ -47,9 +47,14 @@ public class ElasticSearchSearchQueryBase extends ElasticSearchQueryBase impleme
     }
 
     @Override
-    public GraphQueryWithHistogramAggregation addHistogramAggregation(String aggregationName, String fieldName, String interval) {
-        histogramQueryItems.add(new HistogramQueryItem(aggregationName, fieldName, interval));
+    public GraphQueryWithHistogramAggregation addHistogramAggregation(String aggregationName, String fieldName, String interval, Long minDocumentCount) {
+        histogramQueryItems.add(new HistogramQueryItem(aggregationName, fieldName, interval, minDocumentCount));
         return this;
+    }
+
+    @Override
+    public GraphQueryWithHistogramAggregation addHistogramAggregation(String aggregationName, String fieldName, String interval) {
+        return addHistogramAggregation(aggregationName, fieldName, interval, null);
     }
 
     @Override

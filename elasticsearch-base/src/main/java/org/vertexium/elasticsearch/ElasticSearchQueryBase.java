@@ -635,11 +635,17 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
                     DateHistogramBuilder agg = AggregationBuilders.dateHistogram(aggName);
                     agg.field(propertyName);
                     agg.interval(Long.parseLong(histogramQueryItem.getInterval()));
+                    if (histogramQueryItem.getMinDocumentCount() != null) {
+                        agg.minDocCount(histogramQueryItem.getMinDocumentCount());
+                    }
                     searchRequestBuilder.addAggregation(agg);
                 } else {
                     HistogramBuilder agg = AggregationBuilders.histogram(aggName);
                     agg.field(propertyName);
                     agg.interval(Long.parseLong(histogramQueryItem.getInterval()));
+                    if (histogramQueryItem.getMinDocumentCount() != null) {
+                        agg.minDocCount(histogramQueryItem.getMinDocumentCount());
+                    }
                     searchRequestBuilder.addAggregation(agg);
                 }
             }
