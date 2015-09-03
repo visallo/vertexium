@@ -1790,32 +1790,32 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
     }
 
     @Override
-    public Iterable<Path> findPaths(String sourceVertexId, String destVertexId, int maxHops, ProgressCallback progressCallback, Authorizations authorizations) {
+    public Iterable<Path> findPaths(String sourceVertexId, String destVertexId, String[] labels, int maxHops, ProgressCallback progressCallback, Authorizations authorizations) {
         progressCallback.progress(0, ProgressCallback.Step.FINDING_PATH);
 
         List<Path> foundPaths = new ArrayList<>();
         if (maxHops < 1) {
             throw new IllegalArgumentException("maxHops cannot be less than 1");
         } else if (maxHops == 1) {
-            Set<String> sourceConnectedVertexIds = getConnectedVertexIds(sourceVertexId, authorizations);
+            Set<String> sourceConnectedVertexIds = getConnectedVertexIds(sourceVertexId, labels, authorizations);
             if (sourceConnectedVertexIds.contains(destVertexId)) {
                 foundPaths.add(new Path(sourceVertexId, destVertexId));
             }
         } else if (maxHops == 2) {
-            findPathsSetIntersection(foundPaths, sourceVertexId, destVertexId, progressCallback, authorizations);
+            findPathsSetIntersection(foundPaths, sourceVertexId, destVertexId, labels, progressCallback, authorizations);
         } else {
-            findPathsBreadthFirst(foundPaths, sourceVertexId, destVertexId, maxHops, progressCallback, authorizations);
+            findPathsBreadthFirst(foundPaths, sourceVertexId, destVertexId, labels, maxHops, progressCallback, authorizations);
         }
 
         progressCallback.progress(1, ProgressCallback.Step.COMPLETE);
         return foundPaths;
     }
 
-    protected void findPathsSetIntersection(List<Path> foundPaths, String sourceVertexId, String destVertexId, ProgressCallback progressCallback, Authorizations authorizations) {
+    protected void findPathsSetIntersection(List<Path> foundPaths, String sourceVertexId, String destVertexId, String[] labels, ProgressCallback progressCallback, Authorizations authorizations) {
         Set<String> vertexIds = new HashSet<>();
         vertexIds.add(sourceVertexId);
         vertexIds.add(destVertexId);
-        Map<String, Set<String>> connectedVertexIds = getConnectedVertexIds(vertexIds, authorizations);
+        Map<String, Set<String>> connectedVertexIds = getConnectedVertexIds(vertexIds, labels, authorizations);
 
         progressCallback.progress(0.1, ProgressCallback.Step.SEARCHING_SOURCE_VERTEX_EDGES);
         Set<String> sourceVertexConnectedVertexIds = connectedVertexIds.get(sourceVertexId);
@@ -1838,8 +1838,8 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         }
     }
 
-    private void findPathsBreadthFirst(List<Path> foundPaths, String sourceVertexId, String destVertexId, int hops, ProgressCallback progressCallback, Authorizations authorizations) {
-        Map<String, Set<String>> connectedVertexIds = getConnectedVertexIds(sourceVertexId, destVertexId, authorizations);
+    private void findPathsBreadthFirst(List<Path> foundPaths, String sourceVertexId, String destVertexId, String[] labels, int hops, ProgressCallback progressCallback, Authorizations authorizations) {
+        Map<String, Set<String>> connectedVertexIds = getConnectedVertexIds(sourceVertexId, destVertexId, labels, authorizations);
         // start at 2 since we already got the source and dest vertex connected vertex ids
         for (int i = 2; i < hops; i++) {
             progressCallback.progress((double) i / (double) hops, ProgressCallback.Step.FINDING_PATH);
@@ -1848,13 +1848,13 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                 vertexIdsToSearch.addAll(entry.getValue());
             }
             vertexIdsToSearch.removeAll(connectedVertexIds.keySet());
-            Map<String, Set<String>> r = getConnectedVertexIds(vertexIdsToSearch, authorizations);
+            Map<String, Set<String>> r = getConnectedVertexIds(vertexIdsToSearch, labels, authorizations);
             connectedVertexIds.putAll(r);
         }
         progressCallback.progress(0.9, ProgressCallback.Step.ADDING_PATHS);
         Set<String> seenVertices = new HashSet<>();
         Path currentPath = new Path(sourceVertexId);
-        findPathsRecursive(connectedVertexIds, foundPaths, sourceVertexId, destVertexId, hops, seenVertices, currentPath, progressCallback);
+        findPathsRecursive(connectedVertexIds, foundPaths, sourceVertexId, destVertexId, labels, hops, seenVertices, currentPath, progressCallback);
     }
 
     protected void findPathsRecursive(
@@ -1862,6 +1862,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             List<Path> foundPaths,
             final String sourceVertexId,
             String destVertexId,
+            String[] labels,
             int hops,
             Set<String> seenVertices,
             Path currentPath,
@@ -1875,7 +1876,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             if (vertexIds != null) {
                 for (String childId : vertexIds) {
                     if (!seenVertices.contains(childId)) {
-                        findPathsRecursive(connectedVertexIds, foundPaths, childId, destVertexId, hops - 1, seenVertices, new Path(currentPath, childId), progressCallback);
+                        findPathsRecursive(connectedVertexIds, foundPaths, childId, destVertexId, labels, hops - 1, seenVertices, new Path(currentPath, childId), progressCallback);
                     }
                 }
             }
@@ -1883,10 +1884,10 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         seenVertices.remove(sourceVertexId);
     }
 
-    private Set<String> getConnectedVertexIds(String vertexId, Authorizations authorizations) {
+    private Set<String> getConnectedVertexIds(String vertexId, String[] labels, Authorizations authorizations) {
         Set<String> vertexIds = new HashSet<>();
         vertexIds.add(vertexId);
-        Map<String, Set<String>> results = getConnectedVertexIds(vertexIds, authorizations);
+        Map<String, Set<String>> results = getConnectedVertexIds(vertexIds, labels, authorizations);
         Set<String> vertexIdResults = results.get(vertexId);
         if (vertexIdResults == null) {
             return new HashSet<>();
@@ -1894,14 +1895,14 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         return vertexIdResults;
     }
 
-    private Map<String, Set<String>> getConnectedVertexIds(String vertexId1, String vertexId2, Authorizations authorizations) {
+    private Map<String, Set<String>> getConnectedVertexIds(String vertexId1, String vertexId2, String[] labels, Authorizations authorizations) {
         Set<String> vertexIds = new HashSet<>();
         vertexIds.add(vertexId1);
         vertexIds.add(vertexId2);
-        return getConnectedVertexIds(vertexIds, authorizations);
+        return getConnectedVertexIds(vertexIds, labels, authorizations);
     }
 
-    private Map<String, Set<String>> getConnectedVertexIds(Set<String> vertexIds, Authorizations authorizations) {
+    private Map<String, Set<String>> getConnectedVertexIds(Set<String> vertexIds, String[] labels, Authorizations authorizations) {
         Span trace = Trace.start("getConnectedVertexIds");
         try {
             if (LOGGER.isTraceEnabled()) {
@@ -1936,6 +1937,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                     ConnectedVertexIdsIterator.class.getSimpleName(),
                     ConnectedVertexIdsIterator.class
             );
+            ConnectedVertexIdsIterator.setLabels(connectedVertexIdsIteratorSettings, labels);
             scanner.addScanIterator(connectedVertexIdsIteratorSettings);
 
             final long timerStartTime = System.currentTimeMillis();

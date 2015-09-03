@@ -1,5 +1,6 @@
 package org.vertexium.accumulo.iterator;
 
+import org.apache.accumulo.core.client.IteratorSetting;
 import org.apache.accumulo.core.data.Key;
 import org.apache.accumulo.core.data.Value;
 import org.apache.accumulo.core.iterators.IteratorEnvironment;
@@ -15,6 +16,31 @@ import java.io.*;
 import java.util.*;
 
 public class ConnectedVertexIdsIterator extends RowEncodingIterator {
+    public static final String SETTING_LABEL_PREFIX = "label:";
+    private Set<String> labels;
+
+    public static void setLabels(IteratorSetting settings, String[] labels) {
+        if (labels == null) {
+            return;
+        }
+        for (int i = 0; i < labels.length; i++) {
+            settings.addOption(SETTING_LABEL_PREFIX + i, labels[i]);
+        }
+    }
+
+    @Override
+    public void init(SortedKeyValueIterator<Key, Value> source, Map<String, String> options, IteratorEnvironment env) throws IOException {
+        super.init(source, options, env);
+
+        Set<String> labels = new HashSet<>();
+        for (Map.Entry<String, String> option : options.entrySet()) {
+            if (option.getKey().startsWith(SETTING_LABEL_PREFIX)) {
+                labels.add(option.getValue());
+            }
+        }
+        this.labels = labels.size() == 0 ? null : labels;
+    }
+
     public static Set<String> decodeValue(Value value) throws IOException {
         ByteArrayInputStream bais = new ByteArrayInputStream(value.get());
         DataInputStream in = new DataInputStream(bais);
@@ -35,12 +61,16 @@ public class ConnectedVertexIdsIterator extends RowEncodingIterator {
             Value value = values.get(i);
             if (key.getColumnFamily().equals(VertexIterator.CF_OUT_EDGE)) {
                 EdgeInfo edgeInfo = new EdgeInfo(value.get(), key.getTimestamp());
-                outVertexIds.put(key.getColumnQualifier(), edgeInfo.getVertexId());
+                if (isMatch(edgeInfo)) {
+                    outVertexIds.put(key.getColumnQualifier(), edgeInfo.getVertexId());
+                }
             } else if (key.getColumnFamily().equals(VertexIterator.CF_OUT_EDGE_HIDDEN)) {
                 outVertexIds.remove(key.getColumnQualifier());
             } else if (key.getColumnFamily().equals(VertexIterator.CF_IN_EDGE)) {
                 EdgeInfo edgeInfo = new EdgeInfo(value.get(), key.getTimestamp());
-                inVertexIds.put(key.getColumnQualifier(), edgeInfo.getVertexId());
+                if (isMatch(edgeInfo)) {
+                    inVertexIds.put(key.getColumnQualifier(), edgeInfo.getVertexId());
+                }
             } else if (key.getColumnFamily().equals(VertexIterator.CF_IN_EDGE_HIDDEN)) {
                 inVertexIds.remove(key.getColumnQualifier());
             }
@@ -53,6 +83,10 @@ public class ConnectedVertexIdsIterator extends RowEncodingIterator {
         vertexIds.addAll(outVertexIds.values());
         DataOutputStreamUtils.encodeSetOfStrings(out, vertexIds);
         return new Value(baos.toByteArray());
+    }
+
+    private boolean isMatch(EdgeInfo edgeInfo) {
+        return labels == null || labels.contains(edgeInfo.getLabel());
     }
 
     @Override

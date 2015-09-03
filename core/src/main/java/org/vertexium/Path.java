@@ -27,11 +27,38 @@ public class Path implements Iterable<String> {
 
     @Override
     public Iterator<String> iterator() {
-        return new ArrayIterable<String>(this.vertexIds).iterator();
+        return new ArrayIterable<>(this.vertexIds).iterator();
     }
 
     @Override
     public String toString() {
         return Arrays.toString(vertexIds);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+
+        Path pathOther = (Path) o;
+        if (pathOther.vertexIds.length != vertexIds.length) {
+            return false;
+        }
+        for (int i = 0; i < vertexIds.length; i++) {
+            if (!pathOther.vertexIds[i].equals(vertexIds[i])) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        return Arrays.hashCode(vertexIds);
     }
 }

@@ -2276,6 +2276,11 @@ public abstract class GraphTestBase {
         v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
         v4 = graph.getVertex("v4", AUTHORIZATIONS_A);
         List<Path> paths = toList(graph.findPaths("v1", "v4", 2, AUTHORIZATIONS_A));
+        List<Path> pathsByLabels = toList(graph.findPaths("v1", "v4", new String[]{"knows"}, 2, AUTHORIZATIONS_A));
+        assertEquals(pathsByLabels, paths);
+        List<Path> pathsByBadLabel = toList(graph.findPaths("v1", "v4", new String[]{"bad"}, 2, AUTHORIZATIONS_A));
+        assertEquals(0, pathsByBadLabel.size());
+
         // v1 -> v2 -> v4
         // v1 -> v3 -> v4
         assertEquals(2, paths.size());
@@ -2307,6 +2312,10 @@ public abstract class GraphTestBase {
         v4 = graph.getVertex("v4", AUTHORIZATIONS_A);
         v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
         paths = toList(graph.findPaths("v4", "v1", 2, AUTHORIZATIONS_A));
+        pathsByLabels = toList(graph.findPaths("v4", "v1", new String[]{"knows"}, 2, AUTHORIZATIONS_A));
+        assertEquals(pathsByLabels, paths);
+        pathsByBadLabel = toList(graph.findPaths("v4", "v1", new String[]{"bad"}, 2, AUTHORIZATIONS_A));
+        assertEquals(0, pathsByBadLabel.size());
         // v4 -> v2 -> v1
         // v4 -> v3 -> v1
         assertEquals(2, paths.size());
@@ -2338,6 +2347,10 @@ public abstract class GraphTestBase {
         v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
         v6 = graph.getVertex("v6", AUTHORIZATIONS_A);
         paths = toList(graph.findPaths("v1", "v6", 3, AUTHORIZATIONS_A));
+        pathsByLabels = toList(graph.findPaths("v1", "v6", new String[]{"knows"}, 3, AUTHORIZATIONS_A));
+        assertEquals(pathsByLabels, paths);
+        pathsByBadLabel = toList(graph.findPaths("v1", "v6", new String[]{"bad"}, 3, AUTHORIZATIONS_A));
+        assertEquals(0, pathsByBadLabel.size());
         // v1 -> v2 -> v4 -> v6
         // v1 -> v3 -> v4 -> v6
         assertEquals(2, paths.size());

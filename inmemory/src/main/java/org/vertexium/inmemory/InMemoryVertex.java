@@ -113,6 +113,9 @@ public class InMemoryVertex extends InMemoryElement<InMemoryVertex> implements V
         return new FilterIterable<Edge>(getEdges(direction, authorizations)) {
             @Override
             protected boolean isIncluded(Edge edge) {
+                if (labels == null) {
+                    return true;
+                }
                 for (String label : labels) {
                     if (label.equals(edge.getLabel())) {
                         return true;
