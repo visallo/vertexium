@@ -9,6 +9,7 @@ import org.vertexium.accumulo.*;
 import org.vertexium.accumulo.serializer.ValueSerializer;
 import org.vertexium.id.IdGenerator;
 import org.vertexium.id.NameSubstitutionStrategy;
+import org.vertexium.util.IncreasingTime;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -95,7 +96,7 @@ public abstract class ElementMapper<KEYIN, VALUEIN, KEYOUT, VALUEOUT> extends Ma
             vertexId = getIdGenerator().nextId();
         }
         if (timestamp == null) {
-            timestamp = System.currentTimeMillis();
+            timestamp = IncreasingTime.currentTimeMillis();
         }
         final long timestampLong = timestamp;
 
@@ -158,7 +159,7 @@ public abstract class ElementMapper<KEYIN, VALUEIN, KEYOUT, VALUEOUT> extends Ma
             edgeId = getIdGenerator().nextId();
         }
         if (timestamp == null) {
-            timestamp = System.currentTimeMillis();
+            timestamp = IncreasingTime.currentTimeMillis();
         }
         final long timestampLong = timestamp;
 
@@ -195,7 +196,7 @@ public abstract class ElementMapper<KEYIN, VALUEIN, KEYOUT, VALUEOUT> extends Ma
             edgeId = getIdGenerator().nextId();
         }
         if (timestamp == null) {
-            timestamp = System.currentTimeMillis();
+            timestamp = IncreasingTime.currentTimeMillis();
         }
         final long timestampLong = timestamp;
 

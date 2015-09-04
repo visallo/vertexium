@@ -7,7 +7,7 @@ import org.vertexium.inmemory.mutations.AlterEdgeLabelMutation;
 import org.vertexium.inmemory.mutations.AlterVisibilityMutation;
 import org.vertexium.inmemory.mutations.EdgeSetupMutation;
 import org.vertexium.inmemory.mutations.ElementTimestampMutation;
-import org.vertexium.inmemory.util.IncreasingTime;
+import org.vertexium.util.IncreasingTime;
 import org.vertexium.inmemory.util.ThreadUtils;
 import org.vertexium.mutation.AlterPropertyVisibility;
 import org.vertexium.mutation.SetPropertyMetadata;

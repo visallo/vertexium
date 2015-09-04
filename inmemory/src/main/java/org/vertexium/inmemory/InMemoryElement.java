@@ -1,7 +1,7 @@
 package org.vertexium.inmemory;
 
 import org.vertexium.*;
-import org.vertexium.inmemory.util.IncreasingTime;
+import org.vertexium.util.IncreasingTime;
 import org.vertexium.mutation.*;
 import org.vertexium.property.MutableProperty;
 import org.vertexium.property.StreamingPropertyValue;

@@ -1,4 +1,4 @@
-package org.vertexium.inmemory.util;
+package org.vertexium.util;
 
 public class IncreasingTime {
     private static long last = System.currentTimeMillis();

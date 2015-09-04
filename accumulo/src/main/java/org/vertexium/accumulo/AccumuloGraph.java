@@ -263,7 +263,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             vertexId = getIdGenerator().nextId();
         }
         if (timestamp == null) {
-            timestamp = System.currentTimeMillis();
+            timestamp = IncreasingTime.currentTimeMillis();
         }
         final long timestampLong = timestamp;
 
@@ -521,7 +521,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         trace.data("vertexId", vertex.getId());
         try {
             if (timestamp == null) {
-                timestamp = System.currentTimeMillis();
+                timestamp = IncreasingTime.currentTimeMillis();
             }
 
             getSearchIndex().deleteElement(this, vertex, authorizations);
@@ -660,7 +660,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             Authorizations authorizations
     ) {
         if (timestamp == null) {
-            timestamp = System.currentTimeMillis();
+            timestamp = IncreasingTime.currentTimeMillis();
         }
 
         Iterable<Visibility> hiddenVisibilities = null;
@@ -832,7 +832,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         trace.data("edgeId", edge.getId());
         try {
             if (timestamp == null) {
-                timestamp = System.currentTimeMillis();
+                timestamp = IncreasingTime.currentTimeMillis();
             }
 
             getSearchIndex().deleteElement(this, edge, authorizations);
@@ -963,7 +963,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         trace.data("propertyKey", property.getKey());
         try {
             if (timestamp == null) {
-                timestamp = System.currentTimeMillis();
+                timestamp = IncreasingTime.currentTimeMillis();
             }
 
             ColumnVisibility columnVisibility = visibilityToAccumuloVisibility(visibility);
@@ -998,7 +998,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         trace.data("propertyKey", property.getKey());
         try {
             if (timestamp == null) {
-                timestamp = System.currentTimeMillis();
+                timestamp = IncreasingTime.currentTimeMillis();
             }
 
             ColumnVisibility columnVisibility = visibilityToAccumuloVisibility(visibility);
@@ -2455,7 +2455,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         private void signalMetadataChange(String key) throws Exception {
             String path = zkPath + "/" + ZK_PATH_REPLACEMENT_PATTERN.matcher(key).replaceAll("_");
             LOGGER.debug("signaling change to metadata via path: %s", path);
-            byte[] data = Longs.toByteArray(System.currentTimeMillis());
+            byte[] data = Longs.toByteArray(IncreasingTime.currentTimeMillis());
             this.curatorFramework.create()
                     .creatingParentsIfNeeded()
                     .withMode(CreateMode.EPHEMERAL_SEQUENTIAL)

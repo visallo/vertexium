@@ -2550,19 +2550,19 @@ public abstract class GraphTestBase {
     @Test
     public void testElementMutationDoesntChangeObjectUntilSave() throws InterruptedException {
         Vertex v = graph.addVertex("v1", VISIBILITY_EMPTY, AUTHORIZATIONS_ALL);
-        v.setProperty("prop1", "value1", VISIBILITY_A, AUTHORIZATIONS_ALL);
+        v.setProperty("prop1", "value1-1", VISIBILITY_A, AUTHORIZATIONS_ALL);
         graph.flush();
 
         ElementMutation<Vertex> m = v.prepareMutation()
-                .setProperty("prop1", "value2", VISIBILITY_A)
-                .setProperty("prop2", "value2", VISIBILITY_A);
+                .setProperty("prop1", "value1-2", VISIBILITY_A)
+                .setProperty("prop2", "value2-2", VISIBILITY_A);
         Assert.assertEquals(1, count(v.getProperties()));
-        assertEquals("value1", v.getPropertyValue("prop1"));
+        assertEquals("value1-1", v.getPropertyValue("prop1"));
 
         v = m.save(AUTHORIZATIONS_A_AND_B);
         Assert.assertEquals(2, count(v.getProperties()));
-        assertEquals("value2", v.getPropertyValue("prop1"));
-        assertEquals("value2", v.getPropertyValue("prop2"));
+        assertEquals("value1-2", v.getPropertyValue("prop1"));
+        assertEquals("value2-2", v.getPropertyValue("prop2"));
     }
 
     @Test

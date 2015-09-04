@@ -2,7 +2,7 @@ package org.vertexium.inmemory;
 
 import org.vertexium.*;
 import org.vertexium.inmemory.mutations.*;
-import org.vertexium.inmemory.util.IncreasingTime;
+import org.vertexium.util.IncreasingTime;
 import org.vertexium.property.MutablePropertyImpl;
 import org.vertexium.util.ConvertingIterable;
 import org.vertexium.util.FilterIterable;

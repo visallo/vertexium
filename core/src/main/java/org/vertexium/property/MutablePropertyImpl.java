@@ -4,6 +4,7 @@ import org.vertexium.Authorizations;
 import org.vertexium.Metadata;
 import org.vertexium.Property;
 import org.vertexium.Visibility;
+import org.vertexium.util.IncreasingTime;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -28,7 +29,7 @@ public class MutablePropertyImpl extends MutableProperty {
         this.name = name;
         this.value = value;
         this.metadata = metadata;
-        this.timestamp = timestamp == null ? System.currentTimeMillis() : timestamp;
+        this.timestamp = timestamp == null ? IncreasingTime.currentTimeMillis() : timestamp;
         this.visibility = visibility;
         this.hiddenVisibilities = hiddenVisibilities;
     }
