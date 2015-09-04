@@ -19,6 +19,7 @@ import org.elasticsearch.search.SearchHitField;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.bucket.geogrid.GeoHashGridBuilder;
+import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogram;
 import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramBuilder;
 import org.elasticsearch.search.aggregations.bucket.histogram.HistogramBuilder;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsBuilder;
@@ -634,7 +635,7 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
                 if (propertyDataType == Date.class) {
                     DateHistogramBuilder agg = AggregationBuilders.dateHistogram(aggName);
                     agg.field(propertyName);
-                    agg.interval(Long.parseLong(histogramQueryItem.getInterval()));
+                    agg.interval(new DateHistogram.Interval(histogramQueryItem.getInterval()));
                     if (histogramQueryItem.getMinDocumentCount() != null) {
                         agg.minDocCount(histogramQueryItem.getMinDocumentCount());
                     }

@@ -31,6 +31,8 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 import static org.junit.Assert.*;
@@ -3566,20 +3568,25 @@ public abstract class GraphTestBase {
     }
 
     @Test
-    public void testGraphQueryWithHistogramAggregation() {
+    public void testGraphQueryWithHistogramAggregation() throws ParseException {
         boolean searchIndexFieldLevelSecurity = graph instanceof GraphBaseWithSearchIndex ? ((GraphBaseWithSearchIndex) graph).getSearchIndex().isFieldLevelSecuritySupported() : true;
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
 
         graph.prepareVertex("v1", VISIBILITY_EMPTY)
                 .addPropertyValue("", "age", 25, VISIBILITY_EMPTY)
+                .addPropertyValue("", "birthDate", simpleDateFormat.parse("1990-09-04"), VISIBILITY_EMPTY)
                 .save(AUTHORIZATIONS_A_AND_B);
         graph.prepareVertex("v2", VISIBILITY_EMPTY)
                 .addPropertyValue("", "age", 20, VISIBILITY_EMPTY)
+                .addPropertyValue("", "birthDate", simpleDateFormat.parse("1995-09-04"), VISIBILITY_EMPTY)
                 .save(AUTHORIZATIONS_A_AND_B);
         graph.prepareVertex("v3", VISIBILITY_EMPTY)
                 .addPropertyValue("", "age", 20, VISIBILITY_EMPTY)
+                .addPropertyValue("", "birthDate", simpleDateFormat.parse("1995-08-15"), VISIBILITY_EMPTY)
                 .save(AUTHORIZATIONS_A_AND_B);
         graph.prepareVertex("v4", VISIBILITY_EMPTY)
                 .addPropertyValue("", "age", 20, VISIBILITY_A)
+                .addPropertyValue("", "birthDate", simpleDateFormat.parse("1995-03-02"), VISIBILITY_EMPTY)
                 .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
@@ -3598,6 +3605,20 @@ public abstract class GraphTestBase {
         assertEquals(2, histogram.size());
         assertEquals(1L, (long) histogram.get("25"));
         assertEquals(3L, (long) histogram.get("20"));
+
+        // date by 'year'
+        histogram = queryGraphQueryWithHistogramAggregation("birthDate", "year", AUTHORIZATIONS_EMPTY);
+        if (histogram == null) {
+            return;
+        }
+        assertEquals(2, histogram.size());
+
+        // date by milliseconds
+        histogram = queryGraphQueryWithHistogramAggregation("birthDate", (365L * 24L * 60L * 60L * 1000L) + "", AUTHORIZATIONS_EMPTY);
+        if (histogram == null) {
+            return;
+        }
+        assertEquals(2, histogram.size());
     }
 
     private Map<Object, Long> queryGraphQueryWithHistogramAggregation(String propertyName, String interval, Authorizations authorizations) {
