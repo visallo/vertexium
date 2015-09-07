@@ -98,9 +98,14 @@ public interface Query {
     Query skip(int count);
 
     /**
-     * Limits the number of items returned.
+     * Limits the number of items returned. null will return all elements.
      */
-    Query limit(int count);
+    Query limit(Integer count);
+
+    /**
+     * Limits the number of items returned. null will return all elements.
+     */
+    Query limit(Long count);
 
     /**
      * Sort the results by the given property name.

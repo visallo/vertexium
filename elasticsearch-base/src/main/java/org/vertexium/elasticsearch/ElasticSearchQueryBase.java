@@ -26,6 +26,7 @@ import org.elasticsearch.search.aggregations.bucket.terms.TermsBuilder;
 import org.elasticsearch.search.sort.SortOrder;
 import org.vertexium.*;
 import org.vertexium.elasticsearch.score.ScoringStrategy;
+import org.vertexium.elasticsearch.utils.PagingIterable;
 import org.vertexium.query.*;
 import org.vertexium.type.GeoCircle;
 import org.vertexium.util.*;
@@ -90,134 +91,149 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
     }
 
     @Override
-    public Iterable<Vertex> vertices(EnumSet<FetchHint> fetchHints) {
-        long startTime = System.nanoTime();
-        SearchResponse response;
-        try {
-            response = getSearchResponse(ElasticSearchElementType.VERTEX);
-        } catch (IndexMissingException ex) {
-            LOGGER.debug("Index missing: %s", ex.getMessage());
-            return new ArrayList<>();
-        } catch (VertexiumNoMatchingPropertiesException ex) {
-            LOGGER.debug("Could not find property %s", ex.getPropertyName());
-            return new ArrayList<>();
-        }
-        final SearchHits hits = response.getHits();
-        List<String> ids = IterableUtils.toList(new ConvertingIterable<SearchHit, String>(hits) {
+    public Iterable<Vertex> vertices(final EnumSet<FetchHint> fetchHints) {
+        return new PagingIterable<Vertex>(getParameters().getSkip(), getParameters().getLimit()) {
             @Override
-            protected String convert(SearchHit searchHit) {
-                return searchHit.getId();
-            }
-        });
-        long endTime = System.nanoTime();
-        long searchTime = endTime - startTime;
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("elastic search results %d of %d (time: %dms)", ids.size(), hits.getTotalHits(), searchTime / 1000 / 1000);
-        }
+            protected ElasticSearchGraphQueryIterable<Vertex> getPageIterable(int skip, int limit) {
+                long startTime = System.nanoTime();
+                SearchResponse response;
+                try {
+                    response = getSearchResponse(ElasticSearchElementType.VERTEX, skip, limit);
+                } catch (IndexMissingException ex) {
+                    LOGGER.debug("Index missing: %s", ex.getMessage());
+                    return createEmptyIterable();
+                } catch (VertexiumNoMatchingPropertiesException ex) {
+                    LOGGER.debug("Could not find property %s", ex.getPropertyName());
+                    return createEmptyIterable();
+                }
+                final SearchHits hits = response.getHits();
+                List<String> ids = IterableUtils.toList(new ConvertingIterable<SearchHit, String>(hits) {
+                    @Override
+                    protected String convert(SearchHit searchHit) {
+                        return searchHit.getId();
+                    }
+                });
+                long endTime = System.nanoTime();
+                long searchTime = endTime - startTime;
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("elastic search results %d of %d (time: %dms)", ids.size(), hits.getTotalHits(), searchTime / 1000 / 1000);
+                }
 
-        // since ES doesn't support security we will rely on the graph to provide vertex filtering
-        // and rely on the DefaultGraphQueryIterable to provide property filtering
-        QueryParameters filterParameters = getParameters().clone();
-        filterParameters.setSkip(0); // ES already did a skip
-        Iterable<Vertex> vertices = getGraph().getVertices(ids, fetchHints, filterParameters.getAuthorizations());
-        vertices = sortByResultOrder(vertices, ids);
-        return createIterable(response, filterParameters, vertices, evaluateQueryString, evaluateHasContainers, evaluateSortContainers, searchTime, hits);
+                // since ES doesn't support security we will rely on the graph to provide vertex filtering
+                // and rely on the DefaultGraphQueryIterable to provide property filtering
+                QueryParameters filterParameters = getParameters().clone();
+                filterParameters.setSkip(0); // ES already did a skip
+                Iterable<Vertex> vertices = getGraph().getVertices(ids, fetchHints, filterParameters.getAuthorizations());
+                vertices = sortByResultOrder(vertices, ids);
+                return createIterable(response, filterParameters, vertices, evaluateQueryString, evaluateHasContainers, evaluateSortContainers, searchTime, hits);
+            }
+        };
     }
 
     @Override
-    public Iterable<Edge> edges(EnumSet<FetchHint> fetchHints) {
-        long startTime = System.nanoTime();
-        SearchResponse response;
-        try {
-            response = getSearchResponse(ElasticSearchElementType.EDGE);
-        } catch (IndexMissingException ex) {
-            LOGGER.debug("Index missing: %s", ex.getMessage());
-            return new ArrayList<>();
-        } catch (VertexiumNoMatchingPropertiesException ex) {
-            LOGGER.debug("Could not find property", ex);
-            return new ArrayList<>();
-        }
-        final SearchHits hits = response.getHits();
-        List<String> ids = IterableUtils.toList(new ConvertingIterable<SearchHit, String>(hits) {
+    public Iterable<Edge> edges(final EnumSet<FetchHint> fetchHints) {
+        return new PagingIterable<Edge>(getParameters().getSkip(), getParameters().getLimit()) {
             @Override
-            protected String convert(SearchHit searchHit) {
-                return searchHit.getId();
-            }
-        });
-        long endTime = System.nanoTime();
-        long searchTime = endTime - startTime;
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("elastic search results %d of %d (time: %dms)", ids.size(), hits.getTotalHits(), (endTime - startTime) / 1000 / 1000);
-        }
+            protected ElasticSearchGraphQueryIterable<Edge> getPageIterable(int skip, int limit) {
+                long startTime = System.nanoTime();
+                SearchResponse response;
+                try {
+                    response = getSearchResponse(ElasticSearchElementType.EDGE, skip, limit);
+                } catch (IndexMissingException ex) {
+                    LOGGER.debug("Index missing: %s", ex.getMessage());
+                    return createEmptyIterable();
+                } catch (VertexiumNoMatchingPropertiesException ex) {
+                    LOGGER.debug("Could not find property", ex);
+                    return createEmptyIterable();
+                }
+                final SearchHits hits = response.getHits();
+                List<String> ids = IterableUtils.toList(new ConvertingIterable<SearchHit, String>(hits) {
+                    @Override
+                    protected String convert(SearchHit searchHit) {
+                        return searchHit.getId();
+                    }
+                });
+                long endTime = System.nanoTime();
+                long searchTime = endTime - startTime;
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("elastic search results %d of %d (time: %dms)", ids.size(), hits.getTotalHits(), (endTime - startTime) / 1000 / 1000);
+                }
 
-        // since ES doesn't support security we will rely on the graph to provide edge filtering
-        // and rely on the DefaultGraphQueryIterable to provide property filtering
-        QueryParameters filterParameters = getParameters().clone();
-        filterParameters.setSkip(0); // ES already did a skip
-        Iterable<Edge> edges = getGraph().getEdges(ids, fetchHints, filterParameters.getAuthorizations());
-        edges = sortByResultOrder(edges, ids);
-        // TODO instead of passing false here to not evaluate the query string it would be better to support the Lucene query
-        return createIterable(response, filterParameters, edges, evaluateQueryString, evaluateHasContainers, evaluateSortContainers, searchTime, hits);
+                // since ES doesn't support security we will rely on the graph to provide edge filtering
+                // and rely on the DefaultGraphQueryIterable to provide property filtering
+                QueryParameters filterParameters = getParameters().clone();
+                filterParameters.setSkip(0); // ES already did a skip
+                Iterable<Edge> edges = getGraph().getEdges(ids, fetchHints, filterParameters.getAuthorizations());
+                edges = sortByResultOrder(edges, ids);
+                // TODO instead of passing false here to not evaluate the query string it would be better to support the Lucene query
+                return createIterable(response, filterParameters, edges, evaluateQueryString, evaluateHasContainers, evaluateSortContainers, searchTime, hits);
+            }
+        };
     }
 
     @Override
-    public Iterable<Element> elements(EnumSet<FetchHint> fetchHints) {
-        long startTime = System.nanoTime();
-        SearchResponse response;
-        try {
-            response = getSearchResponse(null);
-        } catch (IndexMissingException ex) {
-            LOGGER.debug("Index missing: %s", ex.getMessage());
-            return new ArrayList<>();
-        } catch (VertexiumNoMatchingPropertiesException ex) {
-            LOGGER.debug("Could not find property", ex);
-            return new ArrayList<>();
-        }
-        final SearchHits hits = response.getHits();
-        List<String> vertexIds = new ArrayList<>();
-        List<String> edgeIds = new ArrayList<>();
-        List<String> ids = new ArrayList<>();
-        for (SearchHit hit : hits) {
-            SearchHitField elementType = hit.getFields().get(ElasticSearchSearchIndexBase.ELEMENT_TYPE_FIELD_NAME);
-            if (elementType == null) {
-                continue;
-            }
-            ElasticSearchElementType et = ElasticSearchElementType.parse(elementType.getValue().toString());
-            ids.add(hit.getId());
-            switch (et) {
-                case VERTEX:
-                    vertexIds.add(hit.getId());
-                    break;
-                case EDGE:
-                    edgeIds.add(hit.getId());
-                    break;
-                default:
-                    LOGGER.warn("Unhandled element type returned: %s", elementType);
-                    break;
-            }
-        }
-        long endTime = System.nanoTime();
-        long searchTime = endTime - startTime;
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug(
-                    "elastic search results (vertices: %d, edges: %d = %d) of %d (time: %dms)",
-                    vertexIds.size(),
-                    edgeIds.size(),
-                    vertexIds.size() + edgeIds.size(),
-                    hits.getTotalHits(),
-                    (endTime - startTime) / 1000 / 1000);
-        }
+    public Iterable<Element> elements(final EnumSet<FetchHint> fetchHints) {
+        return new PagingIterable<Element>(getParameters().getSkip(), getParameters().getLimit()) {
+            @Override
+            protected ElasticSearchGraphQueryIterable<Element> getPageIterable(int skip, int limit) {
+                long startTime = System.nanoTime();
+                SearchResponse response;
+                try {
+                    response = getSearchResponse(null, skip, limit);
+                } catch (IndexMissingException ex) {
+                    LOGGER.debug("Index missing: %s", ex.getMessage());
+                    return createEmptyIterable();
+                } catch (VertexiumNoMatchingPropertiesException ex) {
+                    LOGGER.debug("Could not find property", ex);
+                    return createEmptyIterable();
+                }
+                final SearchHits hits = response.getHits();
+                List<String> vertexIds = new ArrayList<>();
+                List<String> edgeIds = new ArrayList<>();
+                List<String> ids = new ArrayList<>();
+                for (SearchHit hit : hits) {
+                    SearchHitField elementType = hit.getFields().get(ElasticSearchSearchIndexBase.ELEMENT_TYPE_FIELD_NAME);
+                    if (elementType == null) {
+                        continue;
+                    }
+                    ElasticSearchElementType et = ElasticSearchElementType.parse(elementType.getValue().toString());
+                    ids.add(hit.getId());
+                    switch (et) {
+                        case VERTEX:
+                            vertexIds.add(hit.getId());
+                            break;
+                        case EDGE:
+                            edgeIds.add(hit.getId());
+                            break;
+                        default:
+                            LOGGER.warn("Unhandled element type returned: %s", elementType);
+                            break;
+                    }
+                }
+                long endTime = System.nanoTime();
+                long searchTime = endTime - startTime;
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug(
+                            "elastic search results (vertices: %d, edges: %d = %d) of %d (time: %dms)",
+                            vertexIds.size(),
+                            edgeIds.size(),
+                            vertexIds.size() + edgeIds.size(),
+                            hits.getTotalHits(),
+                            (endTime - startTime) / 1000 / 1000);
+                }
 
-        // since ES doesn't support security we will rely on the graph to provide edge filtering
-        // and rely on the DefaultGraphQueryIterable to provide property filtering
-        QueryParameters filterParameters = getParameters().clone();
-        filterParameters.setSkip(0); // ES already did a skip
-        Iterable<Vertex> vertices = getGraph().getVertices(vertexIds, fetchHints, filterParameters.getAuthorizations());
-        Iterable<Edge> edges = getGraph().getEdges(edgeIds, fetchHints, filterParameters.getAuthorizations());
-        Iterable<Element> elements = new JoinIterable<>(new ToElementIterable<>(vertices), new ToElementIterable<>(edges));
-        elements = sortByResultOrder(elements, ids);
-        // TODO instead of passing false here to not evaluate the query string it would be better to support the Lucene query
-        return createIterable(response, filterParameters, elements, evaluateQueryString, evaluateHasContainers, evaluateSortContainers, searchTime, hits);
+                // since ES doesn't support security we will rely on the graph to provide edge filtering
+                // and rely on the DefaultGraphQueryIterable to provide property filtering
+                QueryParameters filterParameters = getParameters().clone();
+                filterParameters.setSkip(0); // ES already did a skip
+                Iterable<Vertex> vertices = getGraph().getVertices(vertexIds, fetchHints, filterParameters.getAuthorizations());
+                Iterable<Edge> edges = getGraph().getEdges(edgeIds, fetchHints, filterParameters.getAuthorizations());
+                Iterable<Element> elements = new JoinIterable<>(new ToElementIterable<>(vertices), new ToElementIterable<>(edges));
+                elements = sortByResultOrder(elements, ids);
+                // TODO instead of passing false here to not evaluate the query string it would be better to support the Lucene query
+                return createIterable(response, filterParameters, elements, evaluateQueryString, evaluateHasContainers, evaluateSortContainers, searchTime, hits);
+            }
+        };
     }
 
     private <T extends Element> Iterable<T> sortByResultOrder(Iterable<T> elements, List<String> ids) {
@@ -236,6 +252,10 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
             }
         }
         return results;
+    }
+
+    private <T extends Element> EmptyElasticSearchGraphQueryIterable<T> createEmptyIterable() {
+        return new EmptyElasticSearchGraphQueryIterable<>(ElasticSearchQueryBase.this, getParameters());
     }
 
     protected <T extends Element> ElasticSearchGraphQueryIterable<T> createIterable(
@@ -262,11 +282,11 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
         );
     }
 
-    private SearchResponse getSearchResponse(ElasticSearchElementType elementType) {
+    private SearchResponse getSearchResponse(ElasticSearchElementType elementType, int skip, int limit) {
         List<FilterBuilder> filters = getFilters(elementType);
         QueryBuilder query = createQuery(getParameters(), elementType, filters);
         query = scoringStrategy.updateQuery(query);
-        SearchRequestBuilder q = getSearchRequestBuilder(filters, query, elementType);
+        SearchRequestBuilder q = getSearchRequestBuilder(filters, query, elementType, skip, limit);
         applySort(q);
 
         if (QUERY_LOGGER.isTraceEnabled()) {
@@ -495,7 +515,7 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
         filters.add(FilterBuilders.notFilter(FilterBuilders.inFilter(key, value)));
     }
 
-    protected SearchRequestBuilder getSearchRequestBuilder(List<FilterBuilder> filters, QueryBuilder queryBuilder, ElasticSearchElementType elementType) {
+    protected SearchRequestBuilder getSearchRequestBuilder(List<FilterBuilder> filters, QueryBuilder queryBuilder, ElasticSearchElementType elementType, int skip, int limit) {
         AndFilterBuilder filterBuilder = getFilterBuilder(filters);
         String[] indicesToQuery = getIndexSelectionStrategy().getIndicesToQuery(this, elementType);
         if (QUERY_LOGGER.isTraceEnabled()) {
@@ -506,8 +526,8 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
                 .setTypes(ElasticSearchSearchIndexBase.ELEMENT_TYPE)
                 .setQuery(QueryBuilders.filteredQuery(queryBuilder, filterBuilder))
                 .addField(ElasticSearchSearchIndexBase.ELEMENT_TYPE_FIELD_NAME)
-                .setFrom((int) getParameters().getSkip())
-                .setSize((int) getParameters().getLimit());
+                .setFrom(skip)
+                .setSize(limit);
     }
 
     protected AndFilterBuilder getFilterBuilder(List<FilterBuilder> filters) {

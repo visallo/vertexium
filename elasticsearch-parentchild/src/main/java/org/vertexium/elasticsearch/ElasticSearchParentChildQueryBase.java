@@ -180,7 +180,7 @@ public abstract class ElasticSearchParentChildQueryBase extends ElasticSearchQue
     }
 
     @Override
-    protected SearchRequestBuilder getSearchRequestBuilder(List<FilterBuilder> filters, QueryBuilder queryBuilder, ElasticSearchElementType elementType) {
+    protected SearchRequestBuilder getSearchRequestBuilder(List<FilterBuilder> filters, QueryBuilder queryBuilder, ElasticSearchElementType elementType, int skip, int limit) {
         String[] indicesToQuery = getIndexSelectionStrategy().getIndicesToQuery(this, elementType);
         if (QUERY_LOGGER.isTraceEnabled()) {
             QUERY_LOGGER.trace("indicesToQuery: %s", Joiner.on(", ").join(indicesToQuery));
@@ -190,8 +190,8 @@ public abstract class ElasticSearchParentChildQueryBase extends ElasticSearchQue
                 .setTypes(ElasticSearchSearchIndexBase.ELEMENT_TYPE)
                 .setQuery(queryBuilder)
                 .addField(ElasticSearchSearchIndexBase.ELEMENT_TYPE_FIELD_NAME)
-                .setFrom((int) getParameters().getSkip())
-                .setSize((int) getParameters().getLimit());
+                .setFrom(skip)
+                .setSize(limit);
     }
 
     @Override

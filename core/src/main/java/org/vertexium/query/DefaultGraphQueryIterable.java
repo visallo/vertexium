@@ -81,7 +81,7 @@ public class DefaultGraphQueryIterable<T extends Element> implements
                     return;
                 }
 
-                if (!iterateAll && (this.count >= parameters.getSkip() + parameters.getLimit())) {
+                if (!iterateAll && parameters.getLimit() != null && (this.count >= parameters.getSkip() + parameters.getLimit())) {
                     return;
                 }
 
@@ -142,6 +142,7 @@ public class DefaultGraphQueryIterable<T extends Element> implements
 
     @Override
     public long getTotalHits() {
+        // a limit could be set on a query which could prevent all items being returned
         return count(this.iterator(true));
     }
 
