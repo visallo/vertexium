@@ -47,8 +47,10 @@ public class ElasticSearchGraphQueryIterable<T extends Element> extends DefaultG
         this.searchResponse = searchResponse;
         this.totalHits = totalHits;
         this.searchTimeInNanoSeconds = searchTimeInNanoSeconds;
-        for (SearchHit hit : hits.getHits()) {
-            scores.put(hit.getId(), (double) hit.getScore());
+        if (hits != null) {
+            for (SearchHit hit : hits.getHits()) {
+                scores.put(hit.getId(), (double) hit.getScore());
+            }
         }
     }
 

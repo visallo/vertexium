@@ -6,11 +6,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 public abstract class QueryParameters {
-    public static final int DEFAULT_LIMIT = 100;
     public static final int DEFAULT_SKIP = 0;
 
     private final Authorizations authorizations;
-    private long limit = DEFAULT_LIMIT;
+    private Long limit = null;
     private long skip = DEFAULT_SKIP;
     private final List<QueryBase.HasContainer> hasContainers = new ArrayList<>();
     private final List<QueryBase.SortContainer> sortContainers = new ArrayList<>();
@@ -23,11 +22,19 @@ public abstract class QueryParameters {
         this.hasContainers.add(hasContainer);
     }
 
-    public long getLimit() {
+    public Long getLimit() {
         return limit;
     }
 
-    public void setLimit(long limit) {
+    public void setLimit(Integer limit) {
+        if (limit == null) {
+            this.limit = null;
+        } else {
+            this.limit = (long) limit;
+        }
+    }
+
+    public void setLimit(Long limit) {
         this.limit = limit;
     }
 

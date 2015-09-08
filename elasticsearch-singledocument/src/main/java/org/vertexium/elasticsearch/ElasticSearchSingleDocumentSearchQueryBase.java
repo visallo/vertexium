@@ -70,8 +70,8 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends ElasticSearchQue
     }
 
     @Override
-    protected SearchRequestBuilder getSearchRequestBuilder(List<FilterBuilder> filters, QueryBuilder queryBuilder, ElasticSearchElementType elementType) {
-        SearchRequestBuilder searchRequestBuilder = super.getSearchRequestBuilder(filters, queryBuilder, elementType);
+    protected SearchRequestBuilder getSearchRequestBuilder(List<FilterBuilder> filters, QueryBuilder queryBuilder, ElasticSearchElementType elementType, int skip, int limit) {
+        SearchRequestBuilder searchRequestBuilder = super.getSearchRequestBuilder(filters, queryBuilder, elementType, skip, limit);
         addHistogramQueryToSearchRequestBuilder(searchRequestBuilder, histogramQueryItems);
         addTermsQueryToSearchRequestBuilder(searchRequestBuilder, termsQueryItems);
         addGeohashQueryToSearchRequestBuilder(searchRequestBuilder, geohashQueryItems);

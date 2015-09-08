@@ -127,7 +127,13 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
     }
 
     @Override
-    public Query limit(int count) {
+    public Query limit(Integer count) {
+        this.parameters.setLimit(count);
+        return this;
+    }
+
+    @Override
+    public Query limit(Long count) {
         this.parameters.setLimit(count);
         return this;
     }
