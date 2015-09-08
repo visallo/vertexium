@@ -355,10 +355,7 @@
         <module>blueprints-test</module>
 
         <module>elasticsearch-base</module>
-        <module>elasticsearch</module>
-        <module>elasticsearch-parentchild</module>
         <module>elasticsearch-singledocument</module>
-        <module>elasticsearch-plugin</module>
 
         <module>inmemory</module>
 
