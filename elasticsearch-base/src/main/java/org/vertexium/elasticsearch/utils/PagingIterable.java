@@ -1,6 +1,7 @@
 package org.vertexium.elasticsearch.utils;
 
 import org.vertexium.Element;
+import org.vertexium.VertexiumException;
 import org.vertexium.elasticsearch.ElasticSearchGraphQueryIterable;
 import org.vertexium.query.*;
 
@@ -122,6 +123,11 @@ public abstract class PagingIterable<T extends Element> implements
             firstIterable = null;
             nextSkip += limit;
             return it;
+        }
+
+        @Override
+        public void remove() {
+            throw new VertexiumException("remove not implemented");
         }
     }
 }
