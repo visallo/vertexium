@@ -9,8 +9,6 @@ import jline.TerminalFactory;
 import jline.UnixTerminal;
 import jline.UnsupportedTerminal;
 import jline.WindowsTerminal;
-import org.apache.commons.lang.StringUtils;
-import org.apache.commons.lang.text.StrSubstitutor;
 import org.codehaus.groovy.control.CompilerConfiguration;
 import org.codehaus.groovy.tools.shell.AnsiDetector;
 import org.codehaus.groovy.tools.shell.Groovysh;
@@ -25,13 +23,13 @@ import org.vertexium.Graph;
 import org.vertexium.GraphFactory;
 import org.vertexium.Visibility;
 import org.vertexium.cli.commands.*;
+import org.vertexium.util.ConfigurationUtils;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.lang.reflect.Field;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 public class VertexiumShell {
     private Groovysh groovysh;
@@ -72,7 +70,7 @@ public class VertexiumShell {
 
         setTerminalType(terminalType, suppressColor);
 
-        Map config = loadConfig();
+        Map<String, String> config = ConfigurationUtils.loadConfig(configFileNames, configPropertyPrefix);
         Graph graph = new GraphFactory().createGraph(config);
 
         System.setProperty("groovysh.prompt", "vertexium");
@@ -114,50 +112,6 @@ public class VertexiumShell {
 
         startGroovysh(evalString, fileNames);
         return 0;
-    }
-
-    @SuppressWarnings("unchecked")
-    private Map loadConfig() throws IOException {
-        Properties props = new Properties();
-        for (String configFileName : configFileNames) {
-            File configFile = new File(configFileName);
-            if (!configFile.exists()) {
-                throw new RuntimeException("Could not load config file: " + configFile.getAbsolutePath());
-            }
-
-            try (InputStream in = new FileInputStream(configFile)) {
-                props.load(in);
-            }
-        }
-
-        resolvePropertyReferences(props);
-
-        Map result = new HashMap();
-        if (configPropertyPrefix == null) {
-            result.putAll(props);
-        } else {
-            for (Map.Entry<Object, Object> p : props.entrySet()) {
-                String key = (String) p.getKey();
-                String val = (String) p.getValue();
-                if (key.startsWith(configPropertyPrefix + ".")) {
-                    result.put(key.substring((configPropertyPrefix + ".").length()), val);
-                } else if (key.startsWith(configPropertyPrefix)) {
-                    result.put(key.substring(configPropertyPrefix.length()), val);
-                }
-            }
-        }
-
-        return result;
-    }
-
-    @SuppressWarnings("unchecked")
-    private void resolvePropertyReferences(Map config) {
-        for (Object entry : config.entrySet()) {
-            String entryValue = (String) ((Map.Entry) entry).getValue();
-            if (!StringUtils.isBlank(entryValue)) {
-                ((Map.Entry) entry).setValue(StrSubstitutor.replace(entryValue, config));
-            }
-        }
     }
 
     private void setGroovyShell(Groovysh groovysh, GroovyShell groovyShell) throws NoSuchFieldException, IllegalAccessException {
@@ -289,22 +243,5 @@ public class VertexiumShell {
 
         // Register jline ansi detector
         Ansi.setDetector(new AnsiDetector());
-    }
-
-
-    static void setSystemProperty(final String nameValue) {
-        String name;
-        String value;
-
-        if (nameValue.indexOf('=') > 0) {
-            String[] tmp = nameValue.split("=", 2);
-            name = tmp[0];
-            value = tmp[1];
-        } else {
-            name = nameValue;
-            value = Boolean.TRUE.toString();
-        }
-
-        System.setProperty(name, value);
     }
 }

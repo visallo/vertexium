@@ -1,11 +1,20 @@
 package org.vertexium.util;
 
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.text.StrSubstitutor;
 import org.vertexium.Graph;
 import org.vertexium.GraphConfiguration;
 import org.vertexium.VertexiumException;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Constructor;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 
 import static org.vertexium.util.Preconditions.checkNotNull;
 
@@ -65,6 +74,61 @@ public class ConfigurationUtils {
             throw new VertexiumException("No provider found with class name " + className, e);
         } catch (Exception e) {
             throw new VertexiumException(e);
+        }
+    }
+
+    public static Map<String, String> loadConfig(List<String> configFileNames, String configPropertyPrefix) throws IOException {
+        Map<String, String> props = loadFiles(configFileNames);
+        resolvePropertyReferences(props);
+        return stripPrefix(props, configPropertyPrefix);
+    }
+
+    private static Map<String, String> loadFiles(List<String> configFileNames) throws IOException {
+        Properties props = new Properties();
+        for (String configFileName : configFileNames) {
+            File configFile = new File(configFileName);
+            if (!configFile.exists()) {
+                throw new RuntimeException("Could not load config file: " + configFile.getAbsolutePath());
+            }
+
+            try (InputStream in = new FileInputStream(configFile)) {
+                props.load(in);
+            }
+        }
+        return propertiesToMap(props);
+    }
+
+    private static Map<String, String> stripPrefix(Map<String, String> propsMap, String configPropertyPrefix) {
+        Map<String, String> result = new HashMap<>();
+        if (configPropertyPrefix == null) {
+            result.putAll(propsMap);
+        } else {
+            for (Map.Entry<String, String> p : propsMap.entrySet()) {
+                if (p.getKey().startsWith(configPropertyPrefix + ".")) {
+                    result.put(p.getKey().substring((configPropertyPrefix + ".").length()), p.getValue());
+                } else if (p.getKey().startsWith(configPropertyPrefix)) {
+                    result.put(p.getKey().substring(configPropertyPrefix.length()), p.getValue());
+                }
+            }
+        }
+
+        return result;
+    }
+
+    private static Map<String, String> propertiesToMap(Properties props) {
+        Map<String, String> results = new HashMap<>();
+        for (Map.Entry<Object, Object> entry : props.entrySet()) {
+            results.put("" + entry.getKey(), "" + entry.getValue());
+        }
+        return results;
+    }
+
+    private static void resolvePropertyReferences(Map<String, String> config) {
+        for (Map.Entry<String, String> entry : config.entrySet()) {
+            String entryValue = (String) ((Map.Entry) entry).getValue();
+            if (!StringUtils.isBlank(entryValue)) {
+                entry.setValue(StrSubstitutor.replace(entryValue, config));
+            }
         }
     }
 }

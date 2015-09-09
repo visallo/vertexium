@@ -23,7 +23,7 @@
         </dependency>
         <dependency>
             <groupId>org.vertexium</groupId>
-            <artifactId>vertexium-elasticsearch</artifactId>
+            <artifactId>vertexium-elasticsearch-singledocument</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>

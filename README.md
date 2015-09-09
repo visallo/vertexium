@@ -33,7 +33,7 @@ Maven
     </dependency>
     <dependency>
         <groupId>org.vertexium</groupId>
-        <artifactId>vertexium-elasticsearch</artifactId>
+        <artifactId>vertexium-elasticsearch-singledocument</artifactId>
         <version>${vertexium.version}</version>
     </dependency>
     <dependency>

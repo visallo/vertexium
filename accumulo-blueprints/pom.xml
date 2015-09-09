@@ -59,19 +59,7 @@
         </dependency>
         <dependency>
             <groupId>org.vertexium</groupId>
-            <artifactId>vertexium-elasticsearch-parentchild</artifactId>
-            <version>${project.version}</version>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.vertexium</groupId>
             <artifactId>vertexium-elasticsearch-singledocument</artifactId>
-            <version>${project.version}</version>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.vertexium</groupId>
-            <artifactId>vertexium-elasticsearch</artifactId>
             <version>${project.version}</version>
             <scope>runtime</scope>
         </dependency>
