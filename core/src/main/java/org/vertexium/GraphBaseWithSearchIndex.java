@@ -165,6 +165,14 @@ public abstract class GraphBaseWithSearchIndex extends GraphBase implements Grap
         };
     }
 
+    @Override
+    public boolean isPropertyDefined(String propertyName) {
+        return getSearchIndex().isPropertyDefined(propertyName);
+    }
+
+    @Override
+    public abstract void drop();
+
     public void savePropertyDefinition(String propertyName, PropertyDefinition propertyDefinition) {
         propertyDefinitionCache.put(propertyName, propertyDefinition);
         setMetadata(getPropertyDefinitionKey(propertyName), propertyDefinition);

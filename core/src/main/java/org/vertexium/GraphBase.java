@@ -669,6 +669,12 @@ public abstract class GraphBase implements Graph {
     public abstract DefinePropertyBuilder defineProperty(String propertyName);
 
     @Override
+    public abstract boolean isPropertyDefined(String propertyName);
+
+    @Override
+    public abstract void drop();
+
+    @Override
     public abstract boolean isFieldBoostSupported();
 
     @Override

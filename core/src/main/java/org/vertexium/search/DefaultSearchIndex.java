@@ -72,6 +72,11 @@ public class DefaultSearchIndex implements SearchIndex {
     }
 
     @Override
+    public boolean isPropertyDefined(String propertyName) {
+        return this.propertyDefinitions.containsKey(propertyName);
+    }
+
+    @Override
     public boolean isFieldBoostSupported() {
         return false;
     }

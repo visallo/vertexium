@@ -755,7 +755,7 @@ public interface Graph {
      *
      * @param sourceVertexId The source vertex id to start the search from.
      * @param destVertexId   The destination vertex id to get to.
-     * @param labels           Edge labels
+     * @param labels         Edge labels
      * @param maxHops        The maximum number of hops to make before giving up.
      * @param authorizations The authorizations required to load all edges and vertices.
      * @return An Iterable of lists of paths.
@@ -816,6 +816,11 @@ public interface Graph {
      * @param propertyName The name of the property to define.
      */
     DefinePropertyBuilder defineProperty(String propertyName);
+
+    /**
+     * Determine if a property is already defined
+     */
+    boolean isPropertyDefined(String propertyName);
 
     /**
      * Sets metadata on the graph.
