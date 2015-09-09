@@ -13,6 +13,11 @@
     <dependencies>
         <dependency>
             <groupId>org.vertexium</groupId>
+            <artifactId>vertexium-cli</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.vertexium</groupId>
             <artifactId>vertexium-accumulo</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -39,11 +44,6 @@
         <dependency>
             <groupId>org.vertexium</groupId>
             <artifactId>vertexium-blueprints</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.vertexium</groupId>
-            <artifactId>vertexium-cli</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
