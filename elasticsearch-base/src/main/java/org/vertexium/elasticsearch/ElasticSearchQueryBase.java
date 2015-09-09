@@ -330,7 +330,7 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
         for (String propertyName : propertyNames) {
             filters.add(FilterBuilders.notFilter(FilterBuilders.existsFilter(propertyName)));
         }
-        return getSingleFilterOrOrTheFilters(filters);
+        return getSingleFilterOrAndTheFilters(filters);
     }
 
     protected FilterBuilder getFilterForHasPropertyContainer(HasPropertyContainer hasProperty) {
@@ -397,6 +397,16 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
     private FilterBuilder getSingleFilterOrOrTheFilters(List<FilterBuilder> filters) {
         if (filters.size() > 1) {
             return FilterBuilders.orFilter(filters.toArray(new FilterBuilder[filters.size()]));
+        } else if (filters.size() == 1) {
+            return filters.get(0);
+        } else {
+            throw new VertexiumException("Unexpected filter count, expected at least 1 filter");
+        }
+    }
+
+    private FilterBuilder getSingleFilterOrAndTheFilters(List<FilterBuilder> filters) {
+        if (filters.size() > 1) {
+            return FilterBuilders.andFilter(filters.toArray(new FilterBuilder[filters.size()]));
         } else if (filters.size() == 1) {
             return filters.get(0);
         } else {

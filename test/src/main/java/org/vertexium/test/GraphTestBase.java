@@ -1663,6 +1663,32 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    public void testGraphQueryHasTwoVisibilities() {
+        graph.prepareVertex("v1", VISIBILITY_A)
+                .setProperty("name", "v1", VISIBILITY_A)
+                .setProperty("age", 25, VISIBILITY_A)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.prepareVertex("v2", VISIBILITY_A)
+                .setProperty("name", "v2", VISIBILITY_A)
+                .addPropertyValue("k1", "age", 30, VISIBILITY_A)
+                .addPropertyValue("k2", "age", 35, VISIBILITY_B)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.prepareVertex("v3", VISIBILITY_A)
+                .setProperty("name", "v3", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A_AND_B);
+
+        Iterable<Vertex> vertices = graph.query(AUTHORIZATIONS_A_AND_B)
+                .has("age")
+                .vertices();
+        Assert.assertEquals(2, count(vertices));
+
+        vertices = graph.query(AUTHORIZATIONS_A_AND_B)
+                .hasNot("age")
+                .vertices();
+        Assert.assertEquals(1, count(vertices));
+    }
+
+    @Test
     public void testGraphQueryIn() {
         graph.defineProperty("age").dataType(Integer.class).sortable(true).define();
         graph.defineProperty("name").dataType(String.class).sortable(true).textIndexHint(TextIndexHint.ALL).define();
