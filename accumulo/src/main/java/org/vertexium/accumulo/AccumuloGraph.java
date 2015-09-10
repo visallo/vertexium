@@ -4,6 +4,7 @@ import com.google.common.collect.Lists;
 import com.google.common.primitives.Longs;
 import org.apache.accumulo.core.client.*;
 import org.apache.accumulo.core.client.Scanner;
+import org.apache.accumulo.core.client.admin.TimeType;
 import org.apache.accumulo.core.data.*;
 import org.apache.accumulo.core.iterators.IteratorUtil;
 import org.apache.accumulo.core.iterators.LongCombiner;
@@ -206,7 +207,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
     protected static void ensureTableExists(Connector connector, String tableName, Integer maxVersions, String hdfsContextClasspath) {
         try {
             if (!connector.tableOperations().exists(tableName)) {
-                connector.tableOperations().create(tableName, false);
+                connector.tableOperations().create(tableName, false, TimeType.LOGICAL);
 
                 if (maxVersions != null) {
                     // The following parameters match the Accumulo defaults for the VersioningIterator
