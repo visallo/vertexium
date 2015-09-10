@@ -809,17 +809,22 @@ public abstract class GraphTestBase {
         long t = System.currentTimeMillis();
 
         v1 = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B);
-        v1.markPropertyHidden("key1", "firstName", VISIBILITY_A, t++, VISIBILITY_B, AUTHORIZATIONS_A_AND_B);
+        v1.markPropertyHidden("key1", "firstName", VISIBILITY_A, t, VISIBILITY_B, AUTHORIZATIONS_A_AND_B);
+        t += 10;
         List<Property> properties = IterableUtils.toList(graph.getVertex("v1", FetchHint.ALL_INCLUDING_HIDDEN, AUTHORIZATIONS_A_AND_B).getProperties());
         assertEquals(1, count(properties));
 
-        long beforeMarkPropertyVisibleTimestamp = t++;
+        long beforeMarkPropertyVisibleTimestamp = t;
+        t += 10;
 
-        v1.markPropertyVisible("key1", "firstName", VISIBILITY_A, t++, VISIBILITY_B, AUTHORIZATIONS_A_AND_B);
+        v1.markPropertyVisible("key1", "firstName", VISIBILITY_A, t, VISIBILITY_B, AUTHORIZATIONS_A_AND_B);
+        t += 10;
         properties = IterableUtils.toList(graph.getVertex("v1", AUTHORIZATIONS_A_AND_B).getProperties());
         assertEquals(1, count(properties));
 
-        properties = IterableUtils.toList(graph.getVertex("v1", FetchHint.ALL, beforeMarkPropertyVisibleTimestamp, AUTHORIZATIONS_A_AND_B).getProperties());
+        v1 = graph.getVertex("v1", FetchHint.ALL, beforeMarkPropertyVisibleTimestamp, AUTHORIZATIONS_A_AND_B);
+        assertNotNull("could not find v1 before timestamp " + beforeMarkPropertyVisibleTimestamp + " current time " + t, v1);
+        properties = IterableUtils.toList(v1.getProperties());
         assertEquals(0, count(properties));
     }
 
@@ -1655,6 +1660,32 @@ public abstract class GraphTestBase {
                 graph.query(AUTHORIZATIONS_A).has("age", 30)
         ).vertices();
         Assert.assertEquals(2, count(vertices));
+    }
+
+    @Test
+    public void testGraphQueryHasTwoVisibilities() {
+        graph.prepareVertex("v1", VISIBILITY_A)
+                .setProperty("name", "v1", VISIBILITY_A)
+                .setProperty("age", 25, VISIBILITY_A)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.prepareVertex("v2", VISIBILITY_A)
+                .setProperty("name", "v2", VISIBILITY_A)
+                .addPropertyValue("k1", "age", 30, VISIBILITY_A)
+                .addPropertyValue("k2", "age", 35, VISIBILITY_B)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.prepareVertex("v3", VISIBILITY_A)
+                .setProperty("name", "v3", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A_AND_B);
+
+        Iterable<Vertex> vertices = graph.query(AUTHORIZATIONS_A_AND_B)
+                .has("age")
+                .vertices();
+        Assert.assertEquals(2, count(vertices));
+
+        vertices = graph.query(AUTHORIZATIONS_A_AND_B)
+                .hasNot("age")
+                .vertices();
+        Assert.assertEquals(1, count(vertices));
     }
 
     @Test

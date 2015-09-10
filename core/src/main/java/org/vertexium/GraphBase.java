@@ -12,6 +12,7 @@ import java.util.*;
 
 import static org.vertexium.util.IterableUtils.count;
 import static org.vertexium.util.IterableUtils.toSet;
+import static org.vertexium.util.Preconditions.checkNotNull;
 
 public abstract class GraphBase implements Graph {
     private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(GraphBase.class);
@@ -274,22 +275,30 @@ public abstract class GraphBase implements Graph {
 
     @Override
     public void deleteVertex(String vertexId, Authorizations authorizations) {
-        deleteVertex(getVertex(vertexId, authorizations), authorizations);
+        Vertex vertex = getVertex(vertexId, authorizations);
+        checkNotNull(vertex, "Could not find vertex to delete with id: " + vertexId);
+        deleteVertex(vertex, authorizations);
     }
 
     @Override
     public void deleteEdge(String edgeId, Authorizations authorizations) {
-        deleteEdge(getEdge(edgeId, authorizations), authorizations);
+        Edge edge = getEdge(edgeId, authorizations);
+        checkNotNull(edge, "Could not find edge to delete with id: " + edgeId);
+        deleteEdge(edge, authorizations);
     }
 
     @Override
     public void softDeleteVertex(String vertexId, Authorizations authorizations) {
-        softDeleteVertex(getVertex(vertexId, authorizations), null, authorizations);
+        Vertex vertex = getVertex(vertexId, authorizations);
+        checkNotNull(vertex, "Could not find vertex to soft delete with id: " + vertexId);
+        softDeleteVertex(vertex, null, authorizations);
     }
 
     @Override
     public void softDeleteVertex(String vertexId, Long timestamp, Authorizations authorizations) {
-        softDeleteVertex(getVertex(vertexId, authorizations), timestamp, authorizations);
+        Vertex vertex = getVertex(vertexId, authorizations);
+        checkNotNull(vertex, "Could not find vertex to soft delete with id: " + vertexId);
+        softDeleteVertex(vertex, timestamp, authorizations);
     }
 
     @Override
@@ -302,12 +311,16 @@ public abstract class GraphBase implements Graph {
 
     @Override
     public void softDeleteEdge(String edgeId, Authorizations authorizations) {
-        softDeleteEdge(getEdge(edgeId, authorizations), null, authorizations);
+        Edge edge = getEdge(edgeId, authorizations);
+        checkNotNull(edge, "Could not find edge to soft delete with id: " + edgeId);
+        softDeleteEdge(edge, null, authorizations);
     }
 
     @Override
     public void softDeleteEdge(String edgeId, Long timestamp, Authorizations authorizations) {
-        softDeleteEdge(getEdge(edgeId, authorizations), timestamp, authorizations);
+        Edge edge = getEdge(edgeId, authorizations);
+        checkNotNull(edge, "Could not find edge to soft delete with id: " + edgeId);
+        softDeleteEdge(edge, timestamp, authorizations);
     }
 
     @Override
@@ -654,6 +667,12 @@ public abstract class GraphBase implements Graph {
 
     @Override
     public abstract DefinePropertyBuilder defineProperty(String propertyName);
+
+    @Override
+    public abstract boolean isPropertyDefined(String propertyName);
+
+    @Override
+    public abstract void drop();
 
     @Override
     public abstract boolean isFieldBoostSupported();

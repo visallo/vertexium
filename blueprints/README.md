@@ -14,7 +14,7 @@ Setting up Gremlin command line interface
         storage.graph.password=password
         storage.graph.autoFlush=true
 
-        storage.graph.search=org.vertexium.elasticsearch.ElasticSearchParentChildSearchIndex
+        storage.graph.search=org.vertexium.elasticsearch.ElasticsearchSingleDocumentSearchIndex
         storage.graph.search.locations=localhost
         storage.graph.search.indexName=vertexium
 

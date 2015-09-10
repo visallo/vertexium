@@ -428,6 +428,17 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex, Searc
         }
     }
 
+    @Override
+    public boolean isPropertyDefined(String propertyName) {
+        for (String indexName : getIndexNamesAsArray()) {
+            IndexInfo indexInfo = ensureIndexCreatedAndInitialized(indexName, isStoreSourceData());
+            if (indexInfo.isPropertyDefined(propertyName)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     protected void addPropertyDefinitionToIndex(Graph graph, IndexInfo indexInfo, String propertyName, PropertyDefinition propertyDefinition) throws IOException {
         if (propertyDefinition.getDataType() == String.class) {
             if (propertyDefinition.getTextIndexHints().contains(TextIndexHint.EXACT_MATCH)) {

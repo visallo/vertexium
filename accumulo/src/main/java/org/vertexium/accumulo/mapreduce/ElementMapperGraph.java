@@ -126,6 +126,11 @@ public class ElementMapperGraph extends GraphBase {
     }
 
     @Override
+    public boolean isPropertyDefined(String propertyName) {
+        throw new VertexiumException("Not supported");
+    }
+
+    @Override
     public boolean isFieldBoostSupported() {
         throw new VertexiumException("Not supported");
     }

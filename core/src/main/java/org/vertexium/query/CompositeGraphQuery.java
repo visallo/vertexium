@@ -184,7 +184,15 @@ public class CompositeGraphQuery implements Query {
     }
 
     @Override
-    public Query limit(int count) {
+    public Query limit(Integer count) {
+        for (Query query : queries) {
+            query.limit(count);
+        }
+        return this;
+    }
+
+    @Override
+    public Query limit(Long count) {
         for (Query query : queries) {
             query.limit(count);
         }
