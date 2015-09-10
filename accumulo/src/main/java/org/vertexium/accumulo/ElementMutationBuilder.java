@@ -24,6 +24,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.vertexium.util.IncreasingTime.currentTimeMillis;
+
 public abstract class ElementMutationBuilder {
     private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(ElementMutationBuilder.class);
     public static final Text EMPTY_TEXT = new Text("");
@@ -169,7 +171,7 @@ public abstract class ElementMutationBuilder {
     private void addPropertySoftDeleteToKeyValuePairs(List<KeyValuePair> results, Text elementRowKey, PropertySoftDeleteMutation propertySoftDeleteMutation) {
         Text columnQualifier = KeyHelper.getColumnQualifierFromPropertyColumnQualifier(propertySoftDeleteMutation.getKey(), propertySoftDeleteMutation.getName(), getNameSubstitutionStrategy());
         ColumnVisibility columnVisibility = visibilityToAccumuloVisibility(propertySoftDeleteMutation.getVisibility());
-        results.add(new KeyValuePair(new Key(elementRowKey, AccumuloElement.CF_PROPERTY_SOFT_DELETE, columnQualifier, columnVisibility, IncreasingTime.currentTimeMillis()), AccumuloElement.SOFT_DELETE_VALUE));
+        results.add(new KeyValuePair(new Key(elementRowKey, AccumuloElement.CF_PROPERTY_SOFT_DELETE, columnQualifier, columnVisibility, currentTimeMillis()), AccumuloElement.SOFT_DELETE_VALUE));
     }
 
     public void saveEdge(AccumuloEdge edge) {
@@ -217,7 +219,7 @@ public abstract class ElementMutationBuilder {
         String edgeLabel = edge.getLabel();
         if (edge.getNewEdgeLabel() != null) {
             edgeLabel = edge.getNewEdgeLabel();
-            m.putDelete(AccumuloEdge.CF_SIGNAL, new Text(edge.getLabel()), edgeColumnVisibility);
+            m.putDelete(AccumuloEdge.CF_SIGNAL, new Text(edge.getLabel()), edgeColumnVisibility, currentTimeMillis());
         }
         m.put(AccumuloEdge.CF_SIGNAL, new Text(edgeLabel), edgeColumnVisibility, edge.getTimestamp(), ElementMutationBuilder.EMPTY_VALUE);
         m.put(AccumuloEdge.CF_OUT_VERTEX, new Text(edge.getVertexId(Direction.OUT)), edgeColumnVisibility, edge.getTimestamp(), ElementMutationBuilder.EMPTY_VALUE);
@@ -237,8 +239,8 @@ public abstract class ElementMutationBuilder {
     private Mutation createAlterEdgeLabelMutation(AccumuloEdge edge, String newEdgeLabel, ColumnVisibility edgeColumnVisibility) {
         String edgeRowKey = edge.getId();
         Mutation m = new Mutation(edgeRowKey);
-        m.putDelete(AccumuloEdge.CF_SIGNAL, new Text(edge.getLabel()), edgeColumnVisibility);
-        m.put(AccumuloEdge.CF_SIGNAL, new Text(newEdgeLabel), edgeColumnVisibility, ElementMutationBuilder.EMPTY_VALUE);
+        m.putDelete(AccumuloEdge.CF_SIGNAL, new Text(edge.getLabel()), edgeColumnVisibility, currentTimeMillis());
+        m.put(AccumuloEdge.CF_SIGNAL, new Text(newEdgeLabel), edgeColumnVisibility, currentTimeMillis(), ElementMutationBuilder.EMPTY_VALUE);
         return m;
     }
 
@@ -251,17 +253,17 @@ public abstract class ElementMutationBuilder {
 
         if (element instanceof AccumuloEdge) {
             AccumuloEdge edge = (AccumuloEdge) element;
-            m.putDelete(AccumuloEdge.CF_SIGNAL, new Text(edge.getLabel()), currentColumnVisibility);
-            m.put(AccumuloEdge.CF_SIGNAL, new Text(edge.getLabel()), newColumnVisibility, ElementMutationBuilder.EMPTY_VALUE);
+            m.putDelete(AccumuloEdge.CF_SIGNAL, new Text(edge.getLabel()), currentColumnVisibility, currentTimeMillis());
+            m.put(AccumuloEdge.CF_SIGNAL, new Text(edge.getLabel()), newColumnVisibility, currentTimeMillis(), ElementMutationBuilder.EMPTY_VALUE);
 
-            m.putDelete(AccumuloEdge.CF_OUT_VERTEX, new Text(edge.getVertexId(Direction.OUT)), currentColumnVisibility);
-            m.put(AccumuloEdge.CF_OUT_VERTEX, new Text(edge.getVertexId(Direction.OUT)), newColumnVisibility, ElementMutationBuilder.EMPTY_VALUE);
+            m.putDelete(AccumuloEdge.CF_OUT_VERTEX, new Text(edge.getVertexId(Direction.OUT)), currentColumnVisibility, currentTimeMillis());
+            m.put(AccumuloEdge.CF_OUT_VERTEX, new Text(edge.getVertexId(Direction.OUT)), newColumnVisibility, currentTimeMillis(), ElementMutationBuilder.EMPTY_VALUE);
 
-            m.putDelete(AccumuloEdge.CF_IN_VERTEX, new Text(edge.getVertexId(Direction.IN)), currentColumnVisibility);
-            m.put(AccumuloEdge.CF_IN_VERTEX, new Text(edge.getVertexId(Direction.IN)), newColumnVisibility, ElementMutationBuilder.EMPTY_VALUE);
+            m.putDelete(AccumuloEdge.CF_IN_VERTEX, new Text(edge.getVertexId(Direction.IN)), currentColumnVisibility, currentTimeMillis());
+            m.put(AccumuloEdge.CF_IN_VERTEX, new Text(edge.getVertexId(Direction.IN)), newColumnVisibility, currentTimeMillis(), ElementMutationBuilder.EMPTY_VALUE);
         } else if (element instanceof AccumuloVertex) {
-            m.putDelete(AccumuloVertex.CF_SIGNAL, EMPTY_TEXT, currentColumnVisibility);
-            m.put(AccumuloVertex.CF_SIGNAL, EMPTY_TEXT, newColumnVisibility, ElementMutationBuilder.EMPTY_VALUE);
+            m.putDelete(AccumuloVertex.CF_SIGNAL, EMPTY_TEXT, currentColumnVisibility, currentTimeMillis());
+            m.put(AccumuloVertex.CF_SIGNAL, EMPTY_TEXT, newColumnVisibility, currentTimeMillis(), ElementMutationBuilder.EMPTY_VALUE);
         } else {
             throw new IllegalArgumentException("Invalid element type: " + element);
         }
@@ -312,7 +314,7 @@ public abstract class ElementMutationBuilder {
     public void addPropertyDeleteToMutation(Mutation m, PropertyDeleteMutation propertyDelete) {
         Text columnQualifier = KeyHelper.getColumnQualifierFromPropertyColumnQualifier(propertyDelete.getKey(), propertyDelete.getName(), getNameSubstitutionStrategy());
         ColumnVisibility columnVisibility = visibilityToAccumuloVisibility(propertyDelete.getVisibility());
-        m.putDelete(AccumuloElement.CF_PROPERTY, columnQualifier, columnVisibility);
+        m.putDelete(AccumuloElement.CF_PROPERTY, columnQualifier, columnVisibility, currentTimeMillis());
         addPropertyDeleteMetadataToMutation(m, propertyDelete);
     }
 
@@ -339,7 +341,7 @@ public abstract class ElementMutationBuilder {
     }
 
     private void addPropertyMetadataItemDeleteToMutation(Mutation m, Text columnQualifier, ColumnVisibility metadataVisibility) {
-        m.putDelete(AccumuloElement.CF_PROPERTY_METADATA, columnQualifier, metadataVisibility);
+        m.putDelete(AccumuloElement.CF_PROPERTY_METADATA, columnQualifier, metadataVisibility, currentTimeMillis());
     }
 
     private Text getPropertyMetadataColumnQualifierText(Property property, Metadata.Entry metadataItem) {
@@ -400,7 +402,7 @@ public abstract class ElementMutationBuilder {
         Preconditions.checkNotNull(property, "property cannot be null");
         Text columnQualifier = KeyHelper.getColumnQualifierFromPropertyColumnQualifier(property, getNameSubstitutionStrategy());
         ColumnVisibility columnVisibility = visibilityToAccumuloVisibility(property.getVisibility());
-        m.putDelete(AccumuloElement.CF_PROPERTY, columnQualifier, columnVisibility);
+        m.putDelete(AccumuloElement.CF_PROPERTY, columnQualifier, columnVisibility, currentTimeMillis());
         for (Metadata.Entry metadataEntry : property.getMetadata().entrySet()) {
             Text metadataEntryColumnQualifier = getPropertyMetadataColumnQualifierText(property, metadataEntry);
             ColumnVisibility metadataEntryVisibility = visibilityToAccumuloVisibility(metadataEntry.getVisibility());
@@ -413,13 +415,13 @@ public abstract class ElementMutationBuilder {
         Preconditions.checkNotNull(property, "property cannot be null");
         Text columnQualifier = KeyHelper.getColumnQualifierFromPropertyColumnQualifier(property, getNameSubstitutionStrategy());
         ColumnVisibility columnVisibility = visibilityToAccumuloVisibility(property.getVisibility());
-        m.put(AccumuloElement.CF_PROPERTY_SOFT_DELETE, columnQualifier, columnVisibility, AccumuloElement.SOFT_DELETE_VALUE);
+        m.put(AccumuloElement.CF_PROPERTY_SOFT_DELETE, columnQualifier, columnVisibility, currentTimeMillis(), AccumuloElement.SOFT_DELETE_VALUE);
     }
 
     public void addPropertySoftDeleteToMutation(Mutation m, PropertySoftDeleteMutation propertySoftDelete) {
         Text columnQualifier = KeyHelper.getColumnQualifierFromPropertyColumnQualifier(propertySoftDelete.getKey(), propertySoftDelete.getName(), getNameSubstitutionStrategy());
         ColumnVisibility columnVisibility = visibilityToAccumuloVisibility(propertySoftDelete.getVisibility());
-        m.put(AccumuloElement.CF_PROPERTY_SOFT_DELETE, columnQualifier, columnVisibility, AccumuloElement.SOFT_DELETE_VALUE);
+        m.put(AccumuloElement.CF_PROPERTY_SOFT_DELETE, columnQualifier, columnVisibility, currentTimeMillis(), AccumuloElement.SOFT_DELETE_VALUE);
     }
 
     private StreamingPropertyValueRef saveStreamingPropertyValueSmall(String rowKey, Property property, byte[] data, StreamingPropertyValue propertyValue) {
