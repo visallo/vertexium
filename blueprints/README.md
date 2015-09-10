@@ -6,7 +6,6 @@ Setting up Gremlin command line interface
 1. Create a file called `gremlin-vertexium-accumulo.config` with the following contents  (change where applicable):
 
         storage=org.vertexium.accumulo.blueprints.AccumuloVertexiumBlueprintsGraphFactory
-        storage.graph.useServerSideIterators=false
         storage.graph.tableNamePrefix=vertexium
         storage.graph.accumuloInstanceName=vertexium
         storage.graph.zookeeperServers=localhost
@@ -57,7 +56,6 @@ Setting up Rexster
             <graph-name>vertexium</graph-name>
             <graph-type>org.vertexium.accumulo.blueprints.AccumuloVertexiumRexsterGraphConfiguration</graph-type>
             <storage>org.vertexium.accumulo.blueprints.AccumuloVertexiumBlueprintsGraphFactory</storage>
-            <graph-useServerSideIterators>false</graph-useServerSideIterators>
             <graph-accumuloInstanceName>accumulo</graph-accumuloInstanceName>
             <graph-username>root</graph-username>
             <graph-password>password</graph-password>
