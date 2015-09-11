@@ -707,6 +707,7 @@ public abstract class GraphBase implements Graph {
 
     @Override
     public Authorizations createAuthorizations(Collection<String> auths) {
+        checkNotNull(auths, "auths cannot be null");
         return createAuthorizations(auths.toArray(new String[auths.size()]));
     }
 
