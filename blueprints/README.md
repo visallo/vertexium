@@ -33,6 +33,8 @@ Setting up Gremlin command line interface
 1. From the root of vertexium `mvn package -DskipTests`.
 1. Copy from vertexium `dist/target/vertexium-dist-*/lib/*` to `${GREMLIN_HOME}/lib`
 1. Delete the older lucene jar in gremlin lib directory `lucene-core-3.6.2.jar`
+1. Delete logback jar to use log4j logging `logback-classic-0.9.30.jar`
+1. Delete the older zookeeper jar `zookeeper-3.3.2.jar`
 1. Run `${GREMLIN_HOME}/bin/gremlin.sh gremlin-vertexium.script`
 1. Test it out:
         
@@ -50,6 +52,8 @@ Setting up Rexster
 1. From the root of vertexium `mvn package -DskipTests`.
 1. Copy from vertexium `dist/target/vertexium-dist-*/lib/*` to `${REXSTER_HOME}/lib`
 1. Delete the older lucene jar in gremlin lib directory `lucene-core-3.6.2.jar`
+1. Delete logback jar to use log4j logging `logback-classic-0.9.30.jar`
+1. Delete the older zookeeper jar `zookeeper-3.3.2.jar`
 1. Edit `${REXSTER_HOME}/config/rexster.xml` and add the following to the graphs element (change where applicable):
 
         <graph>
