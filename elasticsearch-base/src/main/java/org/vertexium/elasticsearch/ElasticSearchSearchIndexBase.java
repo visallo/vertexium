@@ -41,6 +41,7 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex, Searc
     public static final String GEO_PROPERTY_NAME_SUFFIX = "_g";
     public static final int MAX_BATCH_COUNT = 25000;
     public static final long MAX_BATCH_SIZE = 15 * 1024 * 1024;
+    public static final int EXACT_MATCH_IGNORE_ABOVE_LIMIT = 10000;
     private final TransportClient client;
     private final ElasticSearchSearchIndexConfiguration config;
     private final Map<String, IndexInfo> indexInfos = new HashMap<>();
@@ -569,6 +570,7 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex, Searc
             mapping.field("type", "string");
             if (!analyzed) {
                 mapping.field("index", "not_analyzed");
+                mapping.field("ignore_above", EXACT_MATCH_IGNORE_ABOVE_LIMIT);
             }
         } else if (dataType == Float.class) {
             LOGGER.debug("Registering float type for %s", propertyName);

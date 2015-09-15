@@ -3699,6 +3699,21 @@ public abstract class GraphTestBase {
         assertEquals(3L, (long) histogram.get("dq"));
     }
 
+    @Test
+    public void testLargeFieldValuesThatAreMarkedWithExactMatch() {
+        graph.defineProperty("field1").dataType(String.class).textIndexHint(TextIndexHint.EXACT_MATCH).define();
+
+        StringBuilder largeText = new StringBuilder();
+        for (int i = 0; i < 10000; i++) {
+            largeText.append("test ");
+        }
+
+        graph.prepareVertex("v1", VISIBILITY_EMPTY)
+                .addPropertyValue("", "field1", largeText.toString(), VISIBILITY_EMPTY)
+                .save(AUTHORIZATIONS_EMPTY);
+        graph.flush();
+    }
+
     private Map<String, Long> queryGraphQueryWithGeohashAggregation(String propertyName, int precision, Authorizations authorizations) {
         Query q = graph.query(authorizations).limit(0);
         if (!(q instanceof GraphQueryWithGeohashAggregation)) {
