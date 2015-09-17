@@ -123,7 +123,7 @@ public abstract class AccumuloGraphTestBase extends GraphTestBase {
         configMap.put(AccumuloGraphConfiguration.ACCUMULO_INSTANCE_NAME, accumulo.getInstanceName());
         configMap.put(AccumuloGraphConfiguration.ACCUMULO_USERNAME, ACCUMULO_USERNAME);
         configMap.put(AccumuloGraphConfiguration.ACCUMULO_PASSWORD, ACCUMULO_PASSWORD);
-        configMap.put(AccumuloGraphConfiguration.AUTO_FLUSH, true);
+        configMap.put(AccumuloGraphConfiguration.AUTO_FLUSH, false);
         configMap.put(AccumuloGraphConfiguration.MAX_STREAMING_PROPERTY_VALUE_TABLE_DATA_SIZE, GraphTestBase.LARGE_PROPERTY_VALUE_SIZE - 1);
         configMap.put(AccumuloGraphConfiguration.DATA_DIR, "/tmp/");
         return configMap;
@@ -231,6 +231,7 @@ public abstract class AccumuloGraphTestBase extends GraphTestBase {
         metadata = new Metadata();
         metadata.add("meta1", "metavalue1", VISIBILITY_EMPTY);
         v2.addPropertyValue("prop1", "prop1", "val1", metadata, VISIBILITY_EMPTY, AUTHORIZATIONS_A_AND_B);
+        graph.flush();
 
         v1 = graph.getVertex("v1", AUTHORIZATIONS_EMPTY);
         assertEquals(0, v1.getProperty("prop1", "prop1").getMetadata().entrySet().size());
