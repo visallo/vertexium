@@ -32,7 +32,8 @@ public class InMemoryStreamingPropertyValue extends StreamingPropertyValue imple
             if (propertyValue instanceof StreamingPropertyValue) {
                 StreamingPropertyValue value = (StreamingPropertyValue) propertyValue;
                 byte[] valueData = StreamUtils.toBytes(value.getInputStream());
-                return new InMemoryStreamingPropertyValue(valueData, value.getValueType());
+                return new InMemoryStreamingPropertyValue(
+                        valueData, value.getValueType()).store(value.isStore()).searchIndex(value.isSearchIndex());
             }
             return propertyValue;
         } catch (IOException ex) {
