@@ -14,6 +14,7 @@ import org.vertexium.query.*;
 import org.vertexium.type.GeoPoint;
 import org.vertexium.type.GeoRect;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -72,6 +73,9 @@ public class ElasticSearchGraphQueryIterable<T extends Element> extends DefaultG
     @Override
     public HistogramResult getHistogramResults(String name) {
         Map<Object, HistogramBucket> buckets = new HashMap<>();
+        if (this.searchResponse == null || this.searchResponse.getAggregations() == null) {
+            return new HistogramResult(new ArrayList<HistogramBucket>());
+        }
         for (Aggregation agg : this.searchResponse.getAggregations()) {
             String aggName = query.getAggregationName(agg.getName());
             if (!aggName.equals(name)) {
@@ -108,6 +112,9 @@ public class ElasticSearchGraphQueryIterable<T extends Element> extends DefaultG
     @Override
     public TermsResult getTermsResults(String name) {
         Map<String, TermsBucket> buckets = new HashMap<>();
+        if (this.searchResponse == null || this.searchResponse.getAggregations() == null) {
+            return new TermsResult(new ArrayList<TermsBucket>());
+        }
         for (Aggregation agg : this.searchResponse.getAggregations()) {
             String aggName = query.getAggregationName(agg.getName());
             if (!aggName.equals(name)) {
@@ -134,6 +141,9 @@ public class ElasticSearchGraphQueryIterable<T extends Element> extends DefaultG
     @Override
     public GeohashResult getGeohashResults(String name) {
         Map<String, GeohashBucket> buckets = new HashMap<>();
+        if (this.searchResponse == null || this.searchResponse.getAggregations() == null) {
+            return new GeohashResult(new ArrayList<GeohashBucket>());
+        }
         for (Aggregation agg : this.searchResponse.getAggregations()) {
             String aggName = query.getAggregationName(agg.getName());
             if (!aggName.equals(name)) {

@@ -3609,6 +3609,8 @@ public abstract class GraphTestBase {
         boolean searchIndexFieldLevelSecurity = graph instanceof GraphBaseWithSearchIndex ? ((GraphBaseWithSearchIndex) graph).getSearchIndex().isFieldLevelSecuritySupported() : true;
         graph.defineProperty("name").dataType(String.class).textIndexHint(TextIndexHint.EXACT_MATCH).define();
 
+        graph.defineProperty("emptyField").dataType(Integer.class).define();
+
         graph.prepareVertex("v1", VISIBILITY_EMPTY)
                 .addPropertyValue("k1", "name", "Joe", VISIBILITY_EMPTY)
                 .addPropertyValue("k2", "name", "Joseph", VISIBILITY_EMPTY)
@@ -3631,6 +3633,12 @@ public abstract class GraphTestBase {
         assertEquals(2, vertexPropertyCountByValue.size());
         assertEquals(2L, (long) vertexPropertyCountByValue.get("joe"));
         assertEquals(searchIndexFieldLevelSecurity ? 1L : 2L, (long) vertexPropertyCountByValue.get("joseph"));
+
+        vertexPropertyCountByValue = queryGraphQueryWithTermsAggregation("emptyField", AUTHORIZATIONS_EMPTY);
+        if (vertexPropertyCountByValue == null) {
+            return;
+        }
+        assertEquals(0, vertexPropertyCountByValue.size());
 
         vertexPropertyCountByValue = queryGraphQueryWithTermsAggregation("name", AUTHORIZATIONS_A_AND_B);
         if (vertexPropertyCountByValue == null) {
@@ -3655,6 +3663,8 @@ public abstract class GraphTestBase {
     public void testGraphQueryWithHistogramAggregation() throws ParseException {
         boolean searchIndexFieldLevelSecurity = graph instanceof GraphBaseWithSearchIndex ? ((GraphBaseWithSearchIndex) graph).getSearchIndex().isFieldLevelSecuritySupported() : true;
         SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
+
+        graph.defineProperty("emptyField").dataType(Integer.class).define();
 
         graph.prepareVertex("v1", VISIBILITY_EMPTY)
                 .addPropertyValue("", "age", 25, VISIBILITY_EMPTY)
@@ -3690,6 +3700,13 @@ public abstract class GraphTestBase {
         assertEquals(1L, (long) histogram.get("25"));
         assertEquals(3L, (long) histogram.get("20"));
 
+        // field that doesn't have any values
+        histogram = queryGraphQueryWithHistogramAggregation("emptyField", "1", AUTHORIZATIONS_A_AND_B);
+        if (histogram == null) {
+            return;
+        }
+        assertEquals(0, histogram.size());
+
         // date by 'year'
         histogram = queryGraphQueryWithHistogramAggregation("birthDate", "year", AUTHORIZATIONS_EMPTY);
         if (histogram == null) {
@@ -3719,6 +3736,7 @@ public abstract class GraphTestBase {
     public void testGraphQueryWithGeohashAggregation() {
         boolean searchIndexFieldLevelSecurity = graph instanceof GraphBaseWithSearchIndex ? ((GraphBaseWithSearchIndex) graph).getSearchIndex().isFieldLevelSecuritySupported() : true;
 
+        graph.defineProperty("emptyField").dataType(GeoPoint.class).define();
         graph.defineProperty("location").dataType(GeoPoint.class).define();
 
         graph.prepareVertex("v1", VISIBILITY_EMPTY)
@@ -3742,6 +3760,12 @@ public abstract class GraphTestBase {
         assertEquals(2, histogram.size());
         assertEquals(1L, (long) histogram.get("gb"));
         assertEquals(searchIndexFieldLevelSecurity ? 2L : 3L, (long) histogram.get("dq"));
+
+        histogram = queryGraphQueryWithGeohashAggregation("emptyField", 2, AUTHORIZATIONS_EMPTY);
+        if (histogram == null) {
+            return;
+        }
+        assertEquals(0, histogram.size());
 
         histogram = queryGraphQueryWithGeohashAggregation("location", 2, AUTHORIZATIONS_A_AND_B);
         if (histogram == null) {
