@@ -16,10 +16,12 @@ import java.util.Map;
 public class ElasticSearchSingleDocumentSearchQueryBase extends ElasticSearchQueryBase implements
         GraphQueryWithHistogramAggregation,
         GraphQueryWithTermsAggregation,
-        GraphQueryWithGeohashAggregation {
+        GraphQueryWithGeohashAggregation,
+        GraphQueryWithStatisticsAggregation {
     private final List<HistogramQueryItem> histogramQueryItems = new ArrayList<>();
     private final List<TermsQueryItem> termsQueryItems = new ArrayList<>();
     private final List<GeohashQueryItem> geohashQueryItems = new ArrayList<>();
+    private final List<StatisticsQueryItem> statisticsQueryItems = new ArrayList<>();
 
     public ElasticSearchSingleDocumentSearchQueryBase(
             TransportClient client,
@@ -70,11 +72,18 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends ElasticSearchQue
     }
 
     @Override
+    public GraphQueryWithStatisticsAggregation addStatisticsAggregation(String aggregationName, String field) {
+        statisticsQueryItems.add(new StatisticsQueryItem(aggregationName, field));
+        return this;
+    }
+
+    @Override
     protected SearchRequestBuilder getSearchRequestBuilder(List<FilterBuilder> filters, QueryBuilder queryBuilder, ElasticSearchElementType elementType, int skip, int limit) {
         SearchRequestBuilder searchRequestBuilder = super.getSearchRequestBuilder(filters, queryBuilder, elementType, skip, limit);
         addHistogramQueryToSearchRequestBuilder(searchRequestBuilder, histogramQueryItems);
         addTermsQueryToSearchRequestBuilder(searchRequestBuilder, termsQueryItems);
         addGeohashQueryToSearchRequestBuilder(searchRequestBuilder, geohashQueryItems);
+        addStatisticsQueryToSearchRequestBuilder(searchRequestBuilder, statisticsQueryItems);
         return searchRequestBuilder;
     }
 

@@ -15,7 +15,8 @@ public abstract class PagingIterable<T extends Element> implements
         IterableWithScores<T>,
         IterableWithHistogramResults<T>,
         IterableWithTermsResults<T>,
-        IterableWithGeohashResults<T> {
+        IterableWithGeohashResults<T>,
+        IterableWithStatisticsResults<T> {
     private static final int PAGE_SIZE = 1000;
     private final long skip;
     private final Long limit;
@@ -41,6 +42,11 @@ public abstract class PagingIterable<T extends Element> implements
     @Override
     public HistogramResult getHistogramResults(String name) {
         return this.firstIterable.getHistogramResults(name);
+    }
+
+    @Override
+    public StatisticsResult getStatisticsResults(String name) {
+        return this.firstIterable.getStatisticsResults(name);
     }
 
     @Override

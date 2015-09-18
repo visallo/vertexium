@@ -8,6 +8,7 @@ import org.elasticsearch.search.aggregations.bucket.geogrid.GeoHashGrid;
 import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogram;
 import org.elasticsearch.search.aggregations.bucket.histogram.Histogram;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
+import org.elasticsearch.search.aggregations.metrics.stats.extended.ExtendedStats;
 import org.vertexium.Element;
 import org.vertexium.VertexiumException;
 import org.vertexium.query.*;
@@ -16,6 +17,7 @@ import org.vertexium.type.GeoRect;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class ElasticSearchGraphQueryIterable<T extends Element> extends DefaultGraphQueryIterable<T> implements
@@ -24,7 +26,8 @@ public class ElasticSearchGraphQueryIterable<T extends Element> extends DefaultG
         IterableWithScores<T>,
         IterableWithHistogramResults<T>,
         IterableWithTermsResults<T>,
-        IterableWithGeohashResults<T> {
+        IterableWithGeohashResults<T>,
+        IterableWithStatisticsResults<T> {
     private final ElasticSearchQueryBase query;
     private final SearchResponse searchResponse;
     private final long totalHits;
@@ -174,5 +177,31 @@ public class ElasticSearchGraphQueryIterable<T extends Element> extends DefaultG
             }
         }
         return new GeohashResult(buckets.values());
+    }
+
+    @Override
+    public StatisticsResult getStatisticsResults(String name) {
+        if (this.searchResponse == null || this.searchResponse.getAggregations() == null) {
+            return new StatisticsResult(0, 0.0, 0.0, 0.0, 0.0);
+        }
+        List<StatisticsResult> results = new ArrayList<>();
+        for (Aggregation agg : this.searchResponse.getAggregations()) {
+            String aggName = query.getAggregationName(agg.getName());
+            if (!aggName.equals(name)) {
+                continue;
+            }
+            if (agg instanceof ExtendedStats) {
+                ExtendedStats extendedStats = (ExtendedStats) agg;
+                long count = extendedStats.getCount();
+                double sum = extendedStats.getSum();
+                double min = extendedStats.getMin();
+                double max = extendedStats.getMax();
+                double standardDeviation = extendedStats.getStdDeviation();
+                results.add(new StatisticsResult(count, sum, min, max, standardDeviation));
+            } else {
+                throw new VertexiumException("Aggregation is not a statistics: " + agg.getClass().getName());
+            }
+        }
+        return StatisticsResult.combine(results);
     }
 }

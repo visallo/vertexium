@@ -23,6 +23,7 @@ import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogram;
 import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramBuilder;
 import org.elasticsearch.search.aggregations.bucket.histogram.HistogramBuilder;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsBuilder;
+import org.elasticsearch.search.aggregations.metrics.stats.extended.ExtendedStatsBuilder;
 import org.elasticsearch.search.sort.SortOrder;
 import org.vertexium.*;
 import org.vertexium.elasticsearch.score.ScoringStrategy;
@@ -623,6 +624,18 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
                 GeoHashGridBuilder agg = AggregationBuilders.geohashGrid(aggName);
                 agg.field(propertyName + ElasticSearchSearchIndexBase.GEO_PROPERTY_NAME_SUFFIX);
                 agg.precision(geohashQueryItem.getPrecision());
+                searchRequestBuilder.addAggregation(agg);
+            }
+        }
+    }
+
+    protected void addStatisticsQueryToSearchRequestBuilder(SearchRequestBuilder searchRequestBuilder, List<StatisticsQueryItem> statisticsQueryItems) {
+        for (StatisticsQueryItem statisticsQueryItem : statisticsQueryItems) {
+            for (String propertyName : getPropertyNames(statisticsQueryItem.getFieldName())) {
+                String visibilityHash = getSearchIndex().getPropertyVisibilityHashFromDeflatedPropertyName(propertyName);
+                String aggName = createAggregationName(statisticsQueryItem.getAggregationName(), visibilityHash);
+                ExtendedStatsBuilder agg = AggregationBuilders.extendedStats(aggName);
+                agg.field(propertyName);
                 searchRequestBuilder.addAggregation(agg);
             }
         }

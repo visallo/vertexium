@@ -3733,6 +3733,68 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    public void testGraphQueryWithStatisticsAggregation() throws ParseException {
+        graph.defineProperty("emptyField").dataType(Integer.class).define();
+
+        graph.prepareVertex("v1", VISIBILITY_EMPTY)
+                .addPropertyValue("", "age", 25, VISIBILITY_EMPTY)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.prepareVertex("v2", VISIBILITY_EMPTY)
+                .addPropertyValue("", "age", 20, VISIBILITY_EMPTY)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.prepareVertex("v3", VISIBILITY_EMPTY)
+                .addPropertyValue("", "age", 20, VISIBILITY_EMPTY)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.prepareVertex("v4", VISIBILITY_EMPTY)
+                .addPropertyValue("", "age", 30, VISIBILITY_A)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        StatisticsResult stats = queryGraphQueryWithStatisticsAggregation("age", AUTHORIZATIONS_EMPTY);
+        if (stats == null) {
+            return;
+        }
+        assertEquals(3, stats.getCount());
+        assertEquals(65.0, stats.getSum(), 0.1);
+        assertEquals(20.0, stats.getMin(), 0.1);
+        assertEquals(25.0, stats.getMax(), 0.1);
+        assertEquals(2.35702, stats.getStandardDeviation(), 0.1);
+        assertEquals(21.666666, stats.getAverage(), 0.1);
+
+        stats = queryGraphQueryWithStatisticsAggregation("emptyField", AUTHORIZATIONS_EMPTY);
+        if (stats == null) {
+            return;
+        }
+        assertEquals(0, stats.getCount());
+        assertEquals(0.0, stats.getSum(), 0.1);
+        assertEquals(0.0, stats.getMin(), 0.1);
+        assertEquals(0.0, stats.getMax(), 0.1);
+        assertEquals(0.0, stats.getAverage(), 0.1);
+        assertEquals(0.0, stats.getStandardDeviation(), 0.1);
+
+        stats = queryGraphQueryWithStatisticsAggregation("age", AUTHORIZATIONS_A_AND_B);
+        if (stats == null) {
+            return;
+        }
+        assertEquals(4, stats.getCount());
+        assertEquals(95.0, stats.getSum(), 0.1);
+        assertEquals(20.0, stats.getMin(), 0.1);
+        assertEquals(30.0, stats.getMax(), 0.1);
+        assertEquals(23.75, stats.getAverage(), 0.1);
+        assertEquals(4.14578, stats.getStandardDeviation(), 0.1);
+    }
+
+    private StatisticsResult queryGraphQueryWithStatisticsAggregation(String propertyName, Authorizations authorizations) {
+        Query q = graph.query(authorizations).limit(0);
+        if (!(q instanceof GraphQueryWithStatisticsAggregation)) {
+            LOGGER.warn("%s unsupported", GraphQueryWithStatisticsAggregation.class.getName());
+            return null;
+        }
+        q = ((GraphQueryWithStatisticsAggregation) q).addStatisticsAggregation("stats", propertyName);
+        return ((IterableWithStatisticsResults) q.vertices()).getStatisticsResults("stats");
+    }
+
+    @Test
     public void testGraphQueryWithGeohashAggregation() {
         boolean searchIndexFieldLevelSecurity = graph instanceof GraphBaseWithSearchIndex ? ((GraphBaseWithSearchIndex) graph).getSearchIndex().isFieldLevelSecuritySupported() : true;
 
