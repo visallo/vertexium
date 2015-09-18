@@ -35,7 +35,7 @@ public abstract class ElasticsearchSingleDocumentSearchIndexTestBase extends Gra
     private static Node elasticSearchNode;
     private static String addr;
     private static String clusterName;
-    private static final boolean USE_REAL_ES = true;
+    private static final boolean USE_REAL_ES = false;
 
     @Override
     protected Authorizations createAuthorizations(String... auths) {
