@@ -53,6 +53,17 @@ public class Metadata implements Serializable {
         return entry;
     }
 
+    public Collection<Entry> getEntries(String key) {
+        Collection<Entry> results = new ArrayList<>();
+        for (Map.Entry<String, Entry> e : entries.entrySet()) {
+            if (e.getValue().getKey().equals(key)) {
+                Entry entry = e.getValue();
+                results.add(entry);
+            }
+        }
+        return results;
+    }
+
     public Object getValue(String key, Visibility visibility) {
         Entry entry = getEntry(key, visibility);
         if (entry == null) {
@@ -67,6 +78,15 @@ public class Metadata implements Serializable {
             return null;
         }
         return entry.getValue();
+    }
+
+    public Collection<Object> getValues(String key) {
+        Collection<Object> results = new ArrayList<>();
+        Collection<Entry> entries = getEntries(key);
+        for (Entry entry : entries) {
+            results.add(entry.getValue());
+        }
+        return results;
     }
 
     public boolean containsKey(String key) {

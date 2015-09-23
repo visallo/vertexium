@@ -3279,6 +3279,45 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    public void testPartialUpdateOfVertexPropertyKey() {
+        graph.prepareVertex("v1", VISIBILITY_A)
+                .addPropertyValue("key1", "prop", "value1", VISIBILITY_A)
+                .addPropertyValue("key2", "prop", "value2", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        Iterable<Vertex> vertices = graph.query(AUTHORIZATIONS_A_AND_B)
+                .has("prop", "value1")
+                .vertices();
+        assertVertexIds(vertices, new String[]{"v1"});
+
+        vertices = graph.query(AUTHORIZATIONS_A_AND_B)
+                .has("prop", "value2")
+                .vertices();
+        assertVertexIds(vertices, new String[]{"v1"});
+
+        graph.prepareVertex("v1", VISIBILITY_A)
+                .addPropertyValue("key1", "prop", "value1New", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        vertices = graph.query(AUTHORIZATIONS_A_AND_B)
+                .has("prop", "value1New")
+                .vertices();
+        assertVertexIds(vertices, new String[]{"v1"});
+
+        vertices = graph.query(AUTHORIZATIONS_A_AND_B)
+                .has("prop", "value2")
+                .vertices();
+        assertVertexIds(vertices, new String[]{"v1"});
+
+        vertices = graph.query(AUTHORIZATIONS_A_AND_B)
+                .has("prop", "value1")
+                .vertices();
+        assertVertexIds(vertices, new String[]{});
+    }
+
+    @Test
     public void testAddVertexWithoutIndexing() {
         if (isDefaultSearchIndex()) {
             return;
