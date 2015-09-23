@@ -298,22 +298,22 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
         if (timestamp == null) {
             timestamp = IncreasingTime.currentTimeMillis();
         }
+        long incrementingTimestamp = timestamp;
         InMemoryTableElement edgeTableElement = this.edges.getTableElement(edgeBuilder.getEdgeId());
         boolean isNew = false;
         if (edgeTableElement == null) {
             isNew = true;
-            final long timestampLong = timestamp;
             edges.append(edgeBuilder.getEdgeId(),
-                    new AlterVisibilityMutation(timestampLong, edgeBuilder.getVisibility()),
-                    new ElementTimestampMutation(timestampLong),
-                    new AlterEdgeLabelMutation(timestampLong, edgeBuilder.getLabel()),
-                    new EdgeSetupMutation(timestampLong, outVertexId, inVertexId)
+                    new AlterVisibilityMutation(incrementingTimestamp++, edgeBuilder.getVisibility()),
+                    new ElementTimestampMutation(incrementingTimestamp++),
+                    new AlterEdgeLabelMutation(incrementingTimestamp++, edgeBuilder.getLabel()),
+                    new EdgeSetupMutation(incrementingTimestamp++, outVertexId, inVertexId)
             );
         } else {
-            edges.append(edgeBuilder.getEdgeId(), new ElementTimestampMutation(timestamp));
+            edges.append(edgeBuilder.getEdgeId(), new ElementTimestampMutation(incrementingTimestamp++));
         }
         if (edgeBuilder.getNewEdgeLabel() != null) {
-            edges.append(edgeBuilder.getEdgeId(), new AlterEdgeLabelMutation(timestamp, edgeBuilder.getNewEdgeLabel()));
+            edges.append(edgeBuilder.getEdgeId(), new AlterEdgeLabelMutation(incrementingTimestamp, edgeBuilder.getNewEdgeLabel()));
         }
 
         InMemoryEdge edge = this.edges.get(InMemoryGraph.this, edgeBuilder.getEdgeId(), authorizations);
