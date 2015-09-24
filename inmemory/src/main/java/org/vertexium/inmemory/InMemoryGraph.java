@@ -497,6 +497,10 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
         }
     }
 
+    void alterElementVisibility(InMemoryTableElement inMemoryTableElement, Visibility newEdgeVisibility) {
+        inMemoryTableElement.appendAlterVisibilityMutation(newEdgeVisibility);
+    }
+
     void alterEdgeVisibility(String edgeId, Visibility newEdgeVisibility) {
         this.edges.getTableElement(edgeId).appendAlterVisibilityMutation(newEdgeVisibility);
     }
@@ -538,7 +542,7 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
         alterElementPropertyMetadata(this.vertices.getTableElement(vertexId), setPropertyMetadatas, authorizations);
     }
 
-    private void alterElementPropertyMetadata(InMemoryTableElement element, List<SetPropertyMetadata> setPropertyMetadatas, Authorizations authorizations) {
+    void alterElementPropertyMetadata(InMemoryTableElement element, List<SetPropertyMetadata> setPropertyMetadatas, Authorizations authorizations) {
         for (SetPropertyMetadata apm : setPropertyMetadatas) {
             Property property = element.getProperty(apm.getPropertyKey(), apm.getPropertyName(), apm.getPropertyVisibility(), authorizations);
             if (property == null) {
@@ -574,6 +578,10 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
             throw new VertexiumException("Could not find edge " + edgeId);
         }
         edge.appendAlterEdgeLabelMutation(newEdgeLabel);
+    }
+
+    void alterEdgeLabel(InMemoryTableEdge inMemoryTableEdge, String newEdgeLabel) {
+        inMemoryTableEdge.appendAlterEdgeLabelMutation(newEdgeLabel);
     }
 
     public void deleteProperty(
