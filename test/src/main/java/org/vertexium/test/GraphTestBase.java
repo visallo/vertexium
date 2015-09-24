@@ -3207,6 +3207,28 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    public void testMutationChangePropertyVisibilityFollowedByMetadataUsingPropertyObject() {
+        Metadata prop1Metadata = new Metadata();
+        prop1Metadata.add("prop1_key1", "valueOld", VISIBILITY_A);
+
+        graph.prepareVertex("v1", VISIBILITY_A)
+                .setProperty("prop1", "value1", prop1Metadata, VISIBILITY_A)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B);
+        Property p1 = v1.getProperty("prop1", VISIBILITY_A);
+        v1.prepareMutation()
+                .alterPropertyVisibility(p1, VISIBILITY_B)
+                .setPropertyMetadata(p1, "prop1_key1", "valueNew", VISIBILITY_B)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        v1 = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B);
+        assertEquals("valueNew", v1.getProperty("prop1", VISIBILITY_B).getMetadata().getEntry("prop1_key1", VISIBILITY_B).getValue());
+    }
+
+    @Test
     public void testMetadata() {
         Vertex v1 = graph.prepareVertex("v1", VISIBILITY_A)
                 .setProperty("prop1", "value1", VISIBILITY_A)

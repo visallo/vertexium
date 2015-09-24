@@ -355,6 +355,10 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> implemen
     }
 
     protected <T extends Element> void saveExistingElementMutation(ExistingElementMutationImpl<T> mutation, Authorizations authorizations) {
+        if (mutation.getElement() != this) {
+            throw new VertexiumException("cannot save mutation from another element");
+        }
+
         Iterable<Property> properties = mutation.getProperties();
         Iterable<PropertyDeleteMutation> propertyDeleteMutations = mutation.getPropertyDeletes();
         Iterable<PropertySoftDeleteMutation> propertySoftDeleteMutations = mutation.getPropertySoftDeletes();
@@ -365,26 +369,20 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> implemen
         );
 
         long timestamp = IncreasingTime.currentTimeMillis();
-        if (mutation.getElement() instanceof Edge) {
-            if (mutation.getNewElementVisibility() != null) {
-                getGraph().alterEdgeVisibility(mutation.getElement().getId(), mutation.getNewElementVisibility());
+        InMemoryGraph graph = getGraph();
+
+        if (mutation.getNewElementVisibility() != null) {
+            graph.alterElementVisibility(inMemoryTableElement, mutation.getNewElementVisibility());
+        }
+
+        graph.alterElementPropertyMetadata(inMemoryTableElement, mutation.getSetPropertyMetadatas(), authorizations);
+        graph.alterElementPropertyVisibilities(inMemoryTableElement, mutation.getAlterPropertyVisibilities(), timestamp, authorizations);
+
+        if (mutation instanceof EdgeMutation) {
+            EdgeMutation edgeMutation = (EdgeMutation) (ElementMutation) mutation;
+            if (edgeMutation.getNewEdgeLabel() != null) {
+                graph.alterEdgeLabel((InMemoryTableEdge) inMemoryTableElement, edgeMutation.getNewEdgeLabel());
             }
-            getGraph().alterEdgePropertyVisibilities(mutation.getElement().getId(), mutation.getAlterPropertyVisibilities(), timestamp, authorizations);
-            getGraph().alterEdgePropertyMetadata(mutation.getElement().getId(), mutation.getSetPropertyMetadatas(), authorizations);
-            if ((ElementMutation) mutation instanceof EdgeMutation) {
-                EdgeMutation edgeMutation = (EdgeMutation) (ElementMutation) mutation;
-                if (edgeMutation.getNewEdgeLabel() != null) {
-                    getGraph().alterEdgeLabel(mutation.getElement().getId(), edgeMutation.getNewEdgeLabel());
-                }
-            }
-        } else if (mutation.getElement() instanceof Vertex) {
-            if (mutation.getNewElementVisibility() != null) {
-                getGraph().alterVertexVisibility(mutation.getElement().getId(), mutation.getNewElementVisibility());
-            }
-            getGraph().alterVertexPropertyVisibilities(mutation.getElement().getId(), mutation.getAlterPropertyVisibilities(), timestamp, authorizations);
-            getGraph().alterVertexPropertyMetadata(mutation.getElement().getId(), mutation.getSetPropertyMetadatas(), authorizations);
-        } else {
-            throw new IllegalStateException("Unexpected element type: " + mutation.getElement());
         }
     }
 
