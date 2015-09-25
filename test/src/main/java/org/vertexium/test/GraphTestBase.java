@@ -584,7 +584,9 @@ public abstract class GraphTestBase {
     public void testSoftDeleteEdge() {
         Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A_AND_B);
         Vertex v2 = graph.addVertex("v2", VISIBILITY_B, AUTHORIZATIONS_A_AND_B);
+        Vertex v3 = graph.addVertex("v3", VISIBILITY_B, AUTHORIZATIONS_A_AND_B);
         graph.addEdge("e1", v1, v2, "label1", VISIBILITY_B, AUTHORIZATIONS_A_AND_B);
+        graph.addEdge("e2", v1, v3, "label1", VISIBILITY_B, AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         Edge e1 = graph.getEdge("e1", AUTHORIZATIONS_A_AND_B);
@@ -592,14 +594,14 @@ public abstract class GraphTestBase {
         graph.flush();
 
         v1 = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B);
-        assertEquals(0, count(v1.getEdgeIds(Direction.BOTH, AUTHORIZATIONS_A_AND_B)));
-        assertEquals(0, count(v1.getEdges(Direction.BOTH, AUTHORIZATIONS_A_AND_B)));
-        assertEquals(0, count(v1.getVertexIds(Direction.BOTH, AUTHORIZATIONS_A_AND_B)));
+        assertEquals(1, count(v1.getEdgeIds(Direction.BOTH, AUTHORIZATIONS_A_AND_B)));
+        assertEquals(1, count(v1.getEdges(Direction.BOTH, AUTHORIZATIONS_A_AND_B)));
+        assertEquals(1, count(v1.getVertexIds(Direction.BOTH, AUTHORIZATIONS_A_AND_B)));
 
         v1 = graph.getVertex("v1", FetchHint.ALL_INCLUDING_HIDDEN, AUTHORIZATIONS_A_AND_B);
-        assertEquals(0, count(v1.getEdgeIds(Direction.BOTH, AUTHORIZATIONS_A_AND_B)));
-        assertEquals(0, count(v1.getEdges(Direction.BOTH, AUTHORIZATIONS_A_AND_B)));
-        assertEquals(0, count(v1.getVertexIds(Direction.BOTH, AUTHORIZATIONS_A_AND_B)));
+        assertEquals(1, count(v1.getEdgeIds(Direction.BOTH, AUTHORIZATIONS_A_AND_B)));
+        assertEquals(1, count(v1.getEdges(Direction.BOTH, AUTHORIZATIONS_A_AND_B)));
+        assertEquals(1, count(v1.getVertexIds(Direction.BOTH, AUTHORIZATIONS_A_AND_B)));
 
         v2 = graph.getVertex("v2", AUTHORIZATIONS_A_AND_B);
         assertEquals(0, count(v2.getEdgeIds(Direction.BOTH, AUTHORIZATIONS_A_AND_B)));
@@ -610,6 +612,16 @@ public abstract class GraphTestBase {
         assertEquals(0, count(v2.getEdgeIds(Direction.BOTH, AUTHORIZATIONS_A_AND_B)));
         assertEquals(0, count(v2.getEdges(Direction.BOTH, AUTHORIZATIONS_A_AND_B)));
         assertEquals(0, count(v2.getVertexIds(Direction.BOTH, AUTHORIZATIONS_A_AND_B)));
+
+        v3 = graph.getVertex("v3", AUTHORIZATIONS_A_AND_B);
+        assertEquals(1, count(v3.getEdgeIds(Direction.BOTH, AUTHORIZATIONS_A_AND_B)));
+        assertEquals(1, count(v3.getEdges(Direction.BOTH, AUTHORIZATIONS_A_AND_B)));
+        assertEquals(1, count(v3.getVertexIds(Direction.BOTH, AUTHORIZATIONS_A_AND_B)));
+
+        v3 = graph.getVertex("v3", FetchHint.ALL_INCLUDING_HIDDEN, AUTHORIZATIONS_A_AND_B);
+        assertEquals(1, count(v3.getEdgeIds(Direction.BOTH, AUTHORIZATIONS_A_AND_B)));
+        assertEquals(1, count(v3.getEdges(Direction.BOTH, AUTHORIZATIONS_A_AND_B)));
+        assertEquals(1, count(v3.getVertexIds(Direction.BOTH, AUTHORIZATIONS_A_AND_B)));
     }
 
     @Test
