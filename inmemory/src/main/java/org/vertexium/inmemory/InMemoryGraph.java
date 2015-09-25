@@ -428,6 +428,9 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
         return new LookAheadIterable<InMemoryTableEdge, Edge>() {
             @Override
             protected boolean isIncluded(InMemoryTableEdge inMemoryTableElement, Edge edge) {
+                if (edge == null) {
+                    return false; // edge deleted or outside of time range
+                }
                 EdgeSetupMutation edgeSetupMutation = inMemoryTableElement.findLastMutation(EdgeSetupMutation.class);
                 String inVertexId = edgeSetupMutation.getInVertexId();
                 checkNotNull(inVertexId, "inVertexId was null");
