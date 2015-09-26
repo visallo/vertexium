@@ -21,10 +21,7 @@ import org.vertexium.search.SearchIndex;
 import org.vertexium.test.util.LargeStringInputStream;
 import org.vertexium.type.GeoCircle;
 import org.vertexium.type.GeoPoint;
-import org.vertexium.util.ConvertingIterable;
-import org.vertexium.util.IterableUtils;
-import org.vertexium.util.VertexiumLogger;
-import org.vertexium.util.VertexiumLoggerFactory;
+import org.vertexium.util.*;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -825,7 +822,7 @@ public abstract class GraphTestBase {
         assertEquals(1, count(v1.getProperties()));
         org.vertexium.test.util.IterableUtils.assertContains("Joe", v1.getPropertyValues("firstName"));
 
-        long t = System.currentTimeMillis();
+        long t = IncreasingTime.currentTimeMillis();
 
         v1 = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B);
         v1.markPropertyHidden("key1", "firstName", VISIBILITY_A, t, VISIBILITY_B, AUTHORIZATIONS_A_AND_B);
