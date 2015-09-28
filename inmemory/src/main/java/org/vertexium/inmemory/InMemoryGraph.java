@@ -7,13 +7,12 @@ import org.vertexium.inmemory.mutations.AlterEdgeLabelMutation;
 import org.vertexium.inmemory.mutations.AlterVisibilityMutation;
 import org.vertexium.inmemory.mutations.EdgeSetupMutation;
 import org.vertexium.inmemory.mutations.ElementTimestampMutation;
-import org.vertexium.util.IncreasingTime;
-import org.vertexium.inmemory.util.ThreadUtils;
 import org.vertexium.mutation.AlterPropertyVisibility;
 import org.vertexium.mutation.SetPropertyMetadata;
 import org.vertexium.search.IndexHint;
 import org.vertexium.search.SearchIndex;
 import org.vertexium.util.ConvertingIterable;
+import org.vertexium.util.IncreasingTime;
 import org.vertexium.util.IterableUtils;
 import org.vertexium.util.LookAheadIterable;
 
@@ -66,12 +65,6 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
         super(configuration, idGenerator, searchIndex);
         this.vertices = vertices;
         this.edges = edges;
-    }
-
-    @Override
-    public void flush() {
-        ThreadUtils.sleep(2); // required so that future timestamps don't overlap
-        super.flush();
     }
 
     @SuppressWarnings("unused")
@@ -298,22 +291,22 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
         if (timestamp == null) {
             timestamp = IncreasingTime.currentTimeMillis();
         }
+        long incrementingTimestamp = timestamp;
         InMemoryTableElement edgeTableElement = this.edges.getTableElement(edgeBuilder.getEdgeId());
         boolean isNew = false;
         if (edgeTableElement == null) {
             isNew = true;
-            final long timestampLong = timestamp;
             edges.append(edgeBuilder.getEdgeId(),
-                    new AlterVisibilityMutation(timestampLong, edgeBuilder.getVisibility()),
-                    new ElementTimestampMutation(timestampLong),
-                    new AlterEdgeLabelMutation(timestampLong, edgeBuilder.getLabel()),
-                    new EdgeSetupMutation(timestampLong, outVertexId, inVertexId)
+                    new AlterVisibilityMutation(incrementingTimestamp++, edgeBuilder.getVisibility()),
+                    new ElementTimestampMutation(incrementingTimestamp++),
+                    new AlterEdgeLabelMutation(incrementingTimestamp++, edgeBuilder.getLabel()),
+                    new EdgeSetupMutation(incrementingTimestamp++, outVertexId, inVertexId)
             );
         } else {
-            edges.append(edgeBuilder.getEdgeId(), new ElementTimestampMutation(timestamp));
+            edges.append(edgeBuilder.getEdgeId(), new ElementTimestampMutation(incrementingTimestamp++));
         }
         if (edgeBuilder.getNewEdgeLabel() != null) {
-            edges.append(edgeBuilder.getEdgeId(), new AlterEdgeLabelMutation(timestamp, edgeBuilder.getNewEdgeLabel()));
+            edges.append(edgeBuilder.getEdgeId(), new AlterEdgeLabelMutation(incrementingTimestamp, edgeBuilder.getNewEdgeLabel()));
         }
 
         InMemoryEdge edge = this.edges.get(InMemoryGraph.this, edgeBuilder.getEdgeId(), authorizations);
@@ -428,6 +421,9 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
         return new LookAheadIterable<InMemoryTableEdge, Edge>() {
             @Override
             protected boolean isIncluded(InMemoryTableEdge inMemoryTableElement, Edge edge) {
+                if (edge == null) {
+                    return false; // edge deleted or outside of time range
+                }
                 EdgeSetupMutation edgeSetupMutation = inMemoryTableElement.findLastMutation(EdgeSetupMutation.class);
                 String inVertexId = edgeSetupMutation.getInVertexId();
                 checkNotNull(inVertexId, "inVertexId was null");

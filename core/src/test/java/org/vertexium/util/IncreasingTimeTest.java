@@ -1,4 +1,4 @@
-package org.vertexium.inmemory.util;
+package org.vertexium.util;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
