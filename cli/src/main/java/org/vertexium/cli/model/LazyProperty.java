@@ -105,4 +105,9 @@ public abstract class LazyProperty extends ModelBase {
     public Visibility getVisibility() {
         return propertyVisibility;
     }
+
+    public void delete() {
+        getE().deleteProperty(getKey(), getName(), getVisibility(), getAuthorizations());
+        getGraph().flush();
+    }
 }

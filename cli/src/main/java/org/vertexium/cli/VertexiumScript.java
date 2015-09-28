@@ -57,6 +57,10 @@ public class VertexiumScript extends Script {
             return getGraph();
         }
 
+        if ("q".equals(property)) {
+            return getGraph().query(getAuthorizations());
+        }
+
         if ("auths".equals(property)) {
             return getAuthorizations();
         }

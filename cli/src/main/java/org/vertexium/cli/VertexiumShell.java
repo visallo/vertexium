@@ -176,8 +176,18 @@ public class VertexiumShell {
         shell.register(new SetTimeCommand(shell));
         shell.register(new NowCommand(shell));
 
+        System.out.println("Usage:");
+        System.out.println("  vertex1=v['vertex1'] - gets the vertex with id 'v1' and assigns it to variable 'v'");
+        System.out.println("  vertex1.methods      - gets the methods available on the Vertexium object");
+        System.out.println("  vertex1.properties   - gets the properties available on the Vertexium object");
+        System.out.println("  vertex1.delete()     - deletes the vertex v1");
+        System.out.println("  p1.delete()          - deletes the property currently referenced by p1");
+        System.out.println("  q.has('name', 'joe').vertices().each() { println it.id } - execute a query for all vertices with property 'name' equal to 'joe'");
+        System.out.println("  g.query('apple', auths).vertices()[0]                    - execute a query for 'apple' and get the first match");
+        System.out.println("");
         System.out.println("Global Properties:");
         System.out.println("  g     - the Graph object");
+        System.out.println("  q     - a query object");
         System.out.println("  auths - the currently set query authorizations");
         System.out.println("  time  - the currently set query time");
         System.out.println("  now   - the current time");

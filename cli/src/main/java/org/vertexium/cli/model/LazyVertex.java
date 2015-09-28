@@ -131,4 +131,9 @@ public class LazyVertex extends ModelBase {
     public String getId() {
         return vertexId;
     }
+
+    public void delete() {
+        getGraph().deleteVertex(getV(), getAuthorizations());
+        getGraph().flush();
+    }
 }

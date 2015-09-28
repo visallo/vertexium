@@ -92,4 +92,9 @@ public class LazyEdge extends ModelBase {
     public String getId() {
         return edgeId;
     }
+
+    public void delete() {
+        getGraph().deleteEdge(getE(), getAuthorizations());
+        getGraph().flush();
+    }
 }
