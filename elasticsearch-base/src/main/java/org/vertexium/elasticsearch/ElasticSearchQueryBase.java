@@ -9,7 +9,7 @@ import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.client.Client;
 import org.elasticsearch.common.geo.builders.ShapeBuilder;
 import org.elasticsearch.common.unit.DistanceUnit;
 import org.elasticsearch.index.query.*;
@@ -38,7 +38,7 @@ import java.util.*;
 public abstract class ElasticSearchQueryBase extends QueryBase {
     private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(ElasticSearchQueryBase.class);
     public static final VertexiumLogger QUERY_LOGGER = VertexiumLoggerFactory.getQueryLogger(Query.class);
-    private final TransportClient client;
+    private final Client client;
     private final boolean evaluateHasContainers;
     private final boolean evaluateQueryString;
     private final boolean evaluateSortContainers;
@@ -47,7 +47,7 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
     private final IndexSelectionStrategy indexSelectionStrategy;
 
     protected ElasticSearchQueryBase(
-            TransportClient client,
+            Client client,
             Graph graph,
             String queryString,
             Map<String, PropertyDefinition> propertyDefinitions,
@@ -69,7 +69,7 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
     }
 
     protected ElasticSearchQueryBase(
-            TransportClient client,
+            Client client,
             Graph graph,
             String[] similarToFields,
             String similarToText,
@@ -612,7 +612,7 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
         return QueryBuilders.queryString(queryString);
     }
 
-    public TransportClient getClient() {
+    public Client getClient() {
         return client;
     }
 

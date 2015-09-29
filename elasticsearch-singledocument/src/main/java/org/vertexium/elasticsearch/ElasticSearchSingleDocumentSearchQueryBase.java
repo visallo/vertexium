@@ -1,7 +1,7 @@
 package org.vertexium.elasticsearch;
 
 import org.elasticsearch.action.search.SearchRequestBuilder;
-import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.client.Client;
 import org.elasticsearch.index.query.*;
 import org.elasticsearch.search.sort.SortOrder;
 import org.vertexium.*;
@@ -24,7 +24,7 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends ElasticSearchQue
     private final List<StatisticsQueryItem> statisticsQueryItems = new ArrayList<>();
 
     public ElasticSearchSingleDocumentSearchQueryBase(
-            TransportClient client,
+            Client client,
             Graph graph,
             String queryString,
             Map<String, PropertyDefinition> propertyDefinitions,
@@ -36,7 +36,7 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends ElasticSearchQue
     }
 
     public ElasticSearchSingleDocumentSearchQueryBase(
-            TransportClient client,
+            Client client,
             Graph graph,
             String[] similarToFields,
             String similarToText,

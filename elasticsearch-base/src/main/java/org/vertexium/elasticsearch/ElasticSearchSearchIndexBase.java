@@ -1,12 +1,14 @@
 package org.vertexium.elasticsearch;
 
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
+import org.elasticsearch.action.admin.cluster.health.ClusterHealthStatus;
 import org.elasticsearch.action.admin.indices.create.CreateIndexResponse;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.admin.indices.stats.IndexStats;
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
+import org.elasticsearch.client.Client;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.cluster.metadata.MappingMetaData;
 import org.elasticsearch.common.collect.ImmutableOpenMap;
@@ -16,6 +18,8 @@ import org.elasticsearch.common.settings.ImmutableSettings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
+import org.elasticsearch.node.Node;
+import org.elasticsearch.node.NodeBuilder;
 import org.vertexium.*;
 import org.vertexium.id.NameSubstitutionStrategy;
 import org.vertexium.property.StreamingPropertyValue;
@@ -24,12 +28,13 @@ import org.vertexium.search.SearchIndex;
 import org.vertexium.search.SearchIndexWithVertexPropertyCountByValue;
 import org.vertexium.type.GeoCircle;
 import org.vertexium.type.GeoPoint;
-import org.vertexium.util.Preconditions;
 import org.vertexium.util.VertexiumLogger;
 import org.vertexium.util.VertexiumLoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
+
+import static org.vertexium.util.Preconditions.checkNotNull;
 
 public abstract class ElasticSearchSearchIndexBase implements SearchIndex, SearchIndexWithVertexPropertyCountByValue {
     private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(ElasticSearchSearchIndexBase.class);
@@ -42,7 +47,7 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex, Searc
     public static final int MAX_BATCH_COUNT = 25000;
     public static final long MAX_BATCH_SIZE = 15 * 1024 * 1024;
     public static final int EXACT_MATCH_IGNORE_ABOVE_LIMIT = 10000;
-    private final TransportClient client;
+    private final Client client;
     private final ElasticSearchSearchIndexConfiguration config;
     private final Map<String, IndexInfo> indexInfos = new HashMap<>();
     private int indexInfosLastSize = 0; // Used to prevent creating a index name array each time
@@ -50,19 +55,76 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex, Searc
     private NameSubstitutionStrategy nameSubstitutionStrategy;
     private IndexSelectionStrategy indexSelectionStrategy;
     private boolean allFieldEnabled;
+    private Node inProcessNode;
 
     protected ElasticSearchSearchIndexBase(Graph graph, GraphConfiguration config) {
         this.config = new ElasticSearchSearchIndexConfiguration(graph, config);
-        nameSubstitutionStrategy = this.config.getNameSubstitutionStrategy();
-        indexSelectionStrategy = this.config.getIndexSelectionStrategy();
-        allFieldEnabled = this.config.isAllFieldEnabled(getDefaultAllFieldEnabled());
+        this.nameSubstitutionStrategy = this.config.getNameSubstitutionStrategy();
+        this.indexSelectionStrategy = this.config.getIndexSelectionStrategy();
+        this.allFieldEnabled = this.config.isAllFieldEnabled(getDefaultAllFieldEnabled());
+        this.client = createClient(this.config);
+        loadIndexInfos();
+        loadPropertyDefinitions();
+    }
 
-        ImmutableSettings.Builder settingsBuilder = ImmutableSettings.settingsBuilder();
-        if (getConfig().getClusterName() != null) {
-            settingsBuilder.put("cluster.name", getConfig().getClusterName());
+    protected Client createClient(ElasticSearchSearchIndexConfiguration config) {
+        if (config.isInProcessNode()) {
+            return createInProcessNode(config);
+        } else {
+            return createTransportClient(config);
         }
-        client = new TransportClient(settingsBuilder.build());
-        for (String esLocation : getConfig().getEsLocations()) {
+    }
+
+    private Client createInProcessNode(ElasticSearchSearchIndexConfiguration config) {
+        String dataPath = config.getInProcessNodeDataPath();
+        checkNotNull(dataPath, ElasticSearchSearchIndexConfiguration.IN_PROCESS_NODE_DATA_PATH + " is required for in process Elasticsearch node");
+        String logsPath = config.getInProcessNodeLogsPath();
+        checkNotNull(logsPath, ElasticSearchSearchIndexConfiguration.IN_PROCESS_NODE_LOGS_PATH + " is required for in process Elasticsearch node");
+        String workPath = config.getInProcessNodeWorkPath();
+        checkNotNull(workPath, ElasticSearchSearchIndexConfiguration.IN_PROCESS_NODE_WORK_PATH + " is required for in process Elasticsearch node");
+        int numberOfShards = config.getNumberOfShards();
+
+        NodeBuilder nodeBuilder = NodeBuilder
+                .nodeBuilder();
+        if (config.getClusterName() != null) {
+            nodeBuilder = nodeBuilder.clusterName(config.getClusterName());
+        }
+        this.inProcessNode = nodeBuilder
+                .local(false)
+                .settings(
+                        ImmutableSettings.settingsBuilder()
+                                .put("script.disable_dynamic", "false")
+                                .put("gateway.type", "local")
+                                .put("index.number_of_shards", numberOfShards)
+                                .put("index.number_of_replicas", "0")
+                                .put("path.data", dataPath)
+                                .put("path.logs", logsPath)
+                                .put("path.work", workPath)
+                ).node();
+        inProcessNode.start();
+        Client client = inProcessNode.client();
+        while (true) {
+            ClusterHealthResponse health = client.admin().cluster().prepareHealth().get();
+            if (health.getStatus() != ClusterHealthStatus.RED) {
+                break;
+            }
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                throw new VertexiumException("Could not sleep", e);
+            }
+            LOGGER.info("Status is %s, waiting...", health.getStatus());
+        }
+        return client;
+    }
+
+    private static TransportClient createTransportClient(ElasticSearchSearchIndexConfiguration config) {
+        ImmutableSettings.Builder settingsBuilder = ImmutableSettings.settingsBuilder();
+        if (config.getClusterName() != null) {
+            settingsBuilder.put("cluster.name", config.getClusterName());
+        }
+        TransportClient transportClient = new TransportClient(settingsBuilder.build());
+        for (String esLocation : config.getEsLocations()) {
             String[] locationSocket = esLocation.split(":");
             String hostname;
             int port;
@@ -71,15 +133,13 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex, Searc
                 port = Integer.parseInt(locationSocket[1]);
             } else if (locationSocket.length == 1) {
                 hostname = locationSocket[0];
-                port = getConfig().getPort();
+                port = config.getPort();
             } else {
                 throw new VertexiumException("Invalid elastic search location: " + esLocation);
             }
-            client.addTransportAddress(new InetSocketTransportAddress(hostname, port));
+            transportClient.addTransportAddress(new InetSocketTransportAddress(hostname, port));
         }
-
-        loadIndexInfos();
-        loadPropertyDefinitions();
+        return transportClient;
     }
 
     protected boolean getDefaultAllFieldEnabled() {
@@ -415,6 +475,11 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex, Searc
     @Override
     public void shutdown() {
         client.close();
+
+        if (inProcessNode != null) {
+            inProcessNode.stop();
+            inProcessNode = null;
+        }
     }
 
     @Override
@@ -524,7 +589,7 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex, Searc
             addPropertyToIndex(graph, indexInfo, deflatedPropertyName + GEO_PROPERTY_NAME_SUFFIX, GeoCircle.class, true, false);
             addPropertyToIndex(graph, indexInfo, deflatedPropertyName, String.class, true, false);
         } else {
-            Preconditions.checkNotNull(propertyValue, "property value cannot be null for property: " + deflatedPropertyName);
+            checkNotNull(propertyValue, "property value cannot be null for property: " + deflatedPropertyName);
             dataType = propertyValue.getClass();
             addPropertyToIndex(graph, indexInfo, deflatedPropertyName, dataType, true, true);
         }
@@ -556,7 +621,7 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex, Searc
         return dataType == byte[].class;
     }
 
-    public TransportClient getClient() {
+    public Client getClient() {
         return client;
     }
 

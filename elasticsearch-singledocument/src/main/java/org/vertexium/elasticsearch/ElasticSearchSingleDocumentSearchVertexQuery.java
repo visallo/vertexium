@@ -1,16 +1,12 @@
 package org.vertexium.elasticsearch;
 
-import org.elasticsearch.client.transport.TransportClient;
-import org.elasticsearch.index.query.ExistsFilterBuilder;
+import org.elasticsearch.client.Client;
 import org.elasticsearch.index.query.FilterBuilder;
 import org.elasticsearch.index.query.FilterBuilders;
-import org.elasticsearch.index.query.OrFilterBuilder;
 import org.vertexium.*;
 import org.vertexium.elasticsearch.score.ScoringStrategy;
-import org.vertexium.query.QueryStringQueryParameters;
 import org.vertexium.query.VertexQuery;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -20,7 +16,7 @@ public class ElasticSearchSingleDocumentSearchVertexQuery extends ElasticSearchS
     private final Vertex sourceVertex;
 
     public ElasticSearchSingleDocumentSearchVertexQuery(
-            TransportClient client,
+            Client client,
             Graph graph,
             Vertex sourceVertex,
             String queryString,
