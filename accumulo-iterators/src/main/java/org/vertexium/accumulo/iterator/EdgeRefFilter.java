@@ -1,6 +1,5 @@
 package org.vertexium.accumulo.iterator;
 
-import com.google.common.collect.Lists;
 import org.apache.accumulo.core.client.IteratorSetting;
 import org.apache.accumulo.core.data.Key;
 import org.apache.accumulo.core.data.Value;
@@ -12,19 +11,16 @@ import org.vertexium.accumulo.iterator.model.EdgeInfo;
 import org.vertexium.accumulo.iterator.util.SetOfStringsEncoder;
 
 import java.io.IOException;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public class EdgeRefFilter extends Filter {
+    private static final String SETTING_VERTEX_IDS = "vertexId";
     private Set<String> vertexIdsSet;
-    private List<Text> nonVisibleEdges = Lists.newArrayList(
+    private List<Text> nonVisibleEdges = Arrays.asList(
             VertexIterator.CF_IN_EDGE_HIDDEN,
             VertexIterator.CF_IN_EDGE_SOFT_DELETE,
             VertexIterator.CF_OUT_EDGE_HIDDEN,
             VertexIterator.CF_OUT_EDGE_SOFT_DELETE);
-    private static final String SETTING_VERTEX_IDS = "vertexId";
 
     public static void setVertexIds(IteratorSetting settings, Set<String> vertexIdsSet) {
         settings.addOption(SETTING_VERTEX_IDS, SetOfStringsEncoder.encodeToString(vertexIdsSet));
