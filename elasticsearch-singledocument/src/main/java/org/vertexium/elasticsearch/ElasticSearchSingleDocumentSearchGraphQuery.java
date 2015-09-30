@@ -1,6 +1,6 @@
 package org.vertexium.elasticsearch;
 
-import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.client.Client;
 import org.vertexium.Authorizations;
 import org.vertexium.Graph;
 import org.vertexium.PropertyDefinition;
@@ -11,7 +11,7 @@ import java.util.Map;
 
 public class ElasticSearchSingleDocumentSearchGraphQuery extends ElasticSearchSingleDocumentSearchQueryBase implements GraphQuery {
     public ElasticSearchSingleDocumentSearchGraphQuery(
-            TransportClient client,
+            Client client,
             Graph graph,
             String queryString,
             Map<String, PropertyDefinition> propertyDefinitions,
@@ -23,7 +23,7 @@ public class ElasticSearchSingleDocumentSearchGraphQuery extends ElasticSearchSi
     }
 
     public ElasticSearchSingleDocumentSearchGraphQuery(
-            TransportClient client,
+            Client client,
             Graph graph,
             String[] similarToFields,
             String similarToText,
