@@ -2717,6 +2717,48 @@ public abstract class GraphTestBase {
         org.vertexium.test.util.IterableUtils.assertContains(new RelatedEdgeImpl("e v3->v1", "label2", v3.getId(), v1.getId()), relatedEdges);
     }
 
+    @Test
+    public void testFindRelatedEdgeSummaryAfterSoftDelete() {
+        Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
+        Vertex v2 = graph.addVertex ("v2", VISIBILITY_A, AUTHORIZATIONS_A);
+        Edge e1 = graph.addEdge("e v1->v2", v1, v2, "label1", VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.flush();
+
+        List<String> vertexIds = new ArrayList<>();
+        vertexIds.add("v1");
+        vertexIds.add("v2");
+        List<RelatedEdge> relatedEdges = toList(graph.findRelatedEdgeSummary(vertexIds, AUTHORIZATIONS_A));
+        assertEquals(1, relatedEdges.size());
+        org.vertexium.test.util.IterableUtils.assertContains(new RelatedEdgeImpl("e v1->v2", "label1", v1.getId(), v2.getId()), relatedEdges);
+
+        graph.softDeleteEdge(e1, AUTHORIZATIONS_A);
+        graph.flush();
+
+        relatedEdges = toList(graph.findRelatedEdgeSummary(vertexIds, AUTHORIZATIONS_A));
+        assertEquals(0, relatedEdges.size());
+    }
+
+    @Test
+    public void testFindRelatedEdgeSummaryAfterMarkedHidden() {
+        Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
+        Vertex v2 = graph.addVertex ("v2", VISIBILITY_A, AUTHORIZATIONS_A);
+        Edge e1 = graph.addEdge("e v1->v2", v1, v2, "label1", VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.flush();
+
+        List<String> vertexIds = new ArrayList<>();
+        vertexIds.add("v1");
+        vertexIds.add("v2");
+        List<RelatedEdge> relatedEdges = toList(graph.findRelatedEdgeSummary(vertexIds, AUTHORIZATIONS_A));
+        assertEquals(1, relatedEdges.size());
+        org.vertexium.test.util.IterableUtils.assertContains(new RelatedEdgeImpl("e v1->v2", "label1", v1.getId(), v2.getId()), relatedEdges);
+
+        graph.markEdgeHidden(e1, VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.flush();
+
+        relatedEdges = toList(graph.findRelatedEdgeSummary(vertexIds, AUTHORIZATIONS_A));
+        assertEquals(0, relatedEdges.size());
+    }
+
     // Test for performance
     //@Test
     @SuppressWarnings("unused")
