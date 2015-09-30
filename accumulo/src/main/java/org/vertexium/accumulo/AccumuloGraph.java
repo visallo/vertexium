@@ -1767,8 +1767,18 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             final long timerStartTime = System.currentTimeMillis();
             try {
                 List<RelatedEdge> results = new ArrayList<>();
+                List<String> softDeletedEdgeIds = new ArrayList<>();
                 for (Map.Entry<Key, Value> row : scanner) {
-                    if (!row.getKey().getColumnFamily().equals(AccumuloVertex.CF_OUT_EDGE)) {
+                    Text columnFamily = row.getKey().getColumnFamily();
+                    if (!columnFamily.equals(AccumuloVertex.CF_OUT_EDGE)) {
+                        if (columnFamily.equals(AccumuloVertex.CF_OUT_EDGE_SOFT_DELETE) || columnFamily.equals(AccumuloVertex.CF_OUT_EDGE_HIDDEN)) {
+                            softDeletedEdgeIds.add(row.getKey().getColumnQualifier().toString());
+                            for (Iterator<RelatedEdge> i = results.iterator(); i.hasNext();) {
+                                if (softDeletedEdgeIds.contains(i.next().getEdgeId())) {
+                                    i.remove();
+                                }
+                            }
+                        }
                         continue;
                     }
                     org.vertexium.accumulo.iterator.model.EdgeInfo edgeInfo
@@ -1777,7 +1787,9 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                     String outVertexId = row.getKey().getRow().toString();
                     String inVertexId = edgeInfo.getVertexId();
                     String label = getNameSubstitutionStrategy().inflate(edgeInfo.getLabel());
-                    results.add(new RelatedEdgeImpl(edgeId, label, outVertexId, inVertexId));
+                    if (!softDeletedEdgeIds.contains(edgeId)) {
+                        results.add(new RelatedEdgeImpl(edgeId, label, outVertexId, inVertexId));
+                    }
                 }
                 return results;
             } finally {
