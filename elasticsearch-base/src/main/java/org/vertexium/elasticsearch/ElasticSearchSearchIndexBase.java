@@ -47,6 +47,7 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex, Searc
     public static final int MAX_BATCH_COUNT = 25000;
     public static final long MAX_BATCH_SIZE = 15 * 1024 * 1024;
     public static final int EXACT_MATCH_IGNORE_ABOVE_LIMIT = 10000;
+    private static final long IN_PROCESS_NODE_WAIT_TIME_MS = 10 * 60 * 1000;
     private final Client client;
     private final ElasticSearchSearchIndexConfiguration config;
     private final Map<String, IndexInfo> indexInfos = new HashMap<>();
@@ -103,7 +104,12 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex, Searc
                 ).node();
         inProcessNode.start();
         Client client = inProcessNode.client();
+
+        long startTime = System.currentTimeMillis();
         while (true) {
+            if (System.currentTimeMillis() > startTime + IN_PROCESS_NODE_WAIT_TIME_MS) {
+                throw new VertexiumException("Status failed to exit red status after waiting " + IN_PROCESS_NODE_WAIT_TIME_MS + "ms. Giving up.");
+            }
             ClusterHealthResponse health = client.admin().cluster().prepareHealth().get();
             if (health.getStatus() != ClusterHealthStatus.RED) {
                 break;
