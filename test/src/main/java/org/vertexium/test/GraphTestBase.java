@@ -2307,6 +2307,9 @@ public abstract class GraphTestBase {
         Edge ev1v3 = graph.prepareEdge("e v1->v3", v1, v3, "edgeB", VISIBILITY_A)
                 .setProperty("prop1", "value2", VISIBILITY_A)
                 .save(AUTHORIZATIONS_A);
+        Edge ev2v3 = graph.prepareEdge("e v2->v3", v2, v3, "edgeB", VISIBILITY_A)
+                .setProperty("prop1", "value2", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
         graph.flush();
 
         v1 = graph.getVertex("v1", AUTHORIZATIONS_A);

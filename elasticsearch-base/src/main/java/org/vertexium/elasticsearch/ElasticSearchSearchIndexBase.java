@@ -42,6 +42,8 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex, Searc
     public static final String ELEMENT_TYPE = "element";
     public static final String ELEMENT_TYPE_FIELD_NAME = "__elementType";
     public static final String VISIBILITY_FIELD_NAME = "__visibility";
+    public static final String OUT_VERTEX_ID_FIELD_NAME = "__outVertexId";
+    public static final String IN_VERTEX_ID_FIELD_NAME = "__inVertexId";
     public static final String EXACT_MATCH_PROPERTY_NAME_SUFFIX = "_e";
     public static final String GEO_PROPERTY_NAME_SUFFIX = "_g";
     public static final int MAX_BATCH_COUNT = 25000;
@@ -257,6 +259,8 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex, Searc
         builder
                 .startObject(ELEMENT_TYPE_FIELD_NAME).field("type", "string").field("store", "true").endObject()
                 .startObject(VISIBILITY_FIELD_NAME).field("type", "string").field("analyzer", "keyword").field("index", "not_analyzed").field("store", "true").endObject()
+                .startObject(IN_VERTEX_ID_FIELD_NAME).field("type", "string").field("analyzer", "keyword").field("index", "not_analyzed").field("store", "true").endObject()
+                .startObject(OUT_VERTEX_ID_FIELD_NAME).field("type", "string").field("analyzer", "keyword").field("index", "not_analyzed").field("store", "true").endObject()
         ;
         getConfig().getScoringStrategy().addFieldsToElementType(builder);
     }
