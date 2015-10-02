@@ -8,8 +8,9 @@ import org.vertexium.mutation.EdgeMutation;
 import org.vertexium.mutation.ExistingElementMutationImpl;
 import org.vertexium.mutation.PropertyDeleteMutation;
 import org.vertexium.mutation.PropertySoftDeleteMutation;
+import org.vertexium.property.MutableProperty;
+import org.vertexium.util.IncreasingTime;
 
-import java.io.DataInputStream;
 import java.io.Serializable;
 
 public abstract class AccumuloElement extends ElementBase implements Serializable, HasTimestamp {
@@ -129,6 +130,9 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
         Iterable<PropertyDeleteMutation> propertyDeletes = mutation.getPropertyDeletes();
         Iterable<PropertySoftDeleteMutation> propertySoftDeletes = mutation.getPropertySoftDeletes();
         Iterable<Property> properties = mutation.getProperties();
+
+        overridePropertyTimestamps(properties);
+
         updatePropertiesInternal(properties, propertyDeletes, propertySoftDeletes);
         getGraph().saveProperties(
                 (AccumuloElement) mutation.getElement(),
@@ -156,5 +160,13 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
     @Override
     public Iterable<HistoricalPropertyValue> getHistoricalPropertyValues(String key, String name, Visibility visibility, Long startTime, Long endTime, Authorizations authorizations) {
         return getGraph().getHistoricalPropertyValues(this, key, name, visibility, startTime, endTime, authorizations);
+    }
+
+    private void overridePropertyTimestamps(Iterable<Property> properties) {
+        for (Property property : properties) {
+            if (property instanceof MutableProperty) {
+                ((MutableProperty) property).setTimestamp(IncreasingTime.currentTimeMillis());
+            }
+        }
     }
 }
