@@ -13,6 +13,7 @@ public abstract class QueryParameters {
     private long skip = DEFAULT_SKIP;
     private final List<QueryBase.HasContainer> hasContainers = new ArrayList<>();
     private final List<QueryBase.SortContainer> sortContainers = new ArrayList<>();
+    private final List<String> edgeLabels = new ArrayList<>();
 
     public QueryParameters(Authorizations authorizations) {
         this.authorizations = authorizations;
@@ -60,6 +61,14 @@ public abstract class QueryParameters {
 
     public void addSortContainer(QueryBase.SortContainer sortContainer) {
         sortContainers.add(sortContainer);
+    }
+
+    public List<String> getEdgeLabels() {
+        return edgeLabels;
+    }
+
+    public void addEdgeLabel(String edgeLabel) {
+        this.edgeLabels.add(edgeLabel);
     }
 
     public abstract QueryParameters clone();

@@ -322,6 +322,10 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
                 throw new VertexiumException("Unexpected type " + has.getClass().getName());
             }
         }
+        if (getParameters().getEdgeLabels().size() > 0) {
+            String[] edgeLabelsArray = getParameters().getEdgeLabels().toArray(new String[getParameters().getEdgeLabels().size()]);
+            filters.add(FilterBuilders.inFilter(ElasticSearchSearchIndexBase.EDGE_LABEL_FIELD_NAME, edgeLabelsArray));
+        }
         return filters;
     }
 

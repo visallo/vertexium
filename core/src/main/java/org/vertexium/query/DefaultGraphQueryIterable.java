@@ -1,5 +1,6 @@
 package org.vertexium.query;
 
+import org.vertexium.Edge;
 import org.vertexium.Element;
 import org.vertexium.Property;
 import org.vertexium.util.CloseableIterable;
@@ -94,6 +95,12 @@ public class DefaultGraphQueryIterable<T extends Element> implements
                             if (!has.isMatch(elem)) {
                                 match = false;
                                 break;
+                            }
+                        }
+                        if (elem instanceof Edge && parameters.getEdgeLabels().size() > 0) {
+                            Edge edge = (Edge) elem;
+                            if (!parameters.getEdgeLabels().contains(edge.getLabel())) {
+                                match = false;
                             }
                         }
                     }

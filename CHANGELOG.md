@@ -9,9 +9,11 @@
   * additional help
   * Upgrade groovy to 2.4.5
   * Upgrade jline to 2.13
+* Query
+  * Search for multiple edge labels
 * Elasticsearch
   * optionally run Elasticsearch in process (i.e. no ES server needed)
-  * indexes in and out vertex ids
+  * indexes label, in vertex id and out vertex id
   * vertex query not filtering edges (issue #41)
 * `AccumuloGraph.findRelatedEdgeSummary` bug fix to filter out soft deleted and hidden edges
 * `InMemoryGraph` bug fixes
