@@ -12,7 +12,6 @@ import org.vertexium.*;
 import org.vertexium.accumulo.iterator.model.EdgeInfo;
 import org.vertexium.accumulo.keys.DataTableRowKey;
 import org.vertexium.accumulo.keys.KeyHelper;
-import org.vertexium.accumulo.serializer.ValueSerializer;
 import org.vertexium.id.NameSubstitutionStrategy;
 import org.vertexium.mutation.PropertyDeleteMutation;
 import org.vertexium.mutation.PropertyPropertyDeleteMutation;
@@ -32,7 +31,7 @@ public abstract class ElementMutationBuilder {
     public static final Value EMPTY_VALUE = new Value("".getBytes());
 
     private final FileSystem fileSystem;
-    private final ValueSerializer valueSerializer;
+    private final VertexiumSerializer vertexiumSerializer;
     private final long maxStreamingPropertyValueTableDataSize;
     private final String dataDir;
     private static final Cache<String, Text> propertyMetadataColumnQualifierTextCache = CacheBuilder
@@ -41,9 +40,9 @@ public abstract class ElementMutationBuilder {
             .maxSize(10000)
             .build();
 
-    protected ElementMutationBuilder(FileSystem fileSystem, ValueSerializer valueSerializer, long maxStreamingPropertyValueTableDataSize, String dataDir) {
+    protected ElementMutationBuilder(FileSystem fileSystem, VertexiumSerializer vertexiumSerializer, long maxStreamingPropertyValueTableDataSize, String dataDir) {
         this.fileSystem = fileSystem;
-        this.valueSerializer = valueSerializer;
+        this.vertexiumSerializer = vertexiumSerializer;
         this.maxStreamingPropertyValueTableDataSize = maxStreamingPropertyValueTableDataSize;
         this.dataDir = dataDir;
     }
@@ -141,7 +140,7 @@ public abstract class ElementMutationBuilder {
         if (propertyValue instanceof DateOnly) {
             propertyValue = ((DateOnly) propertyValue).getDate();
         }
-        Value value = valueSerializer.objectToValue(propertyValue);
+        Value value = new Value(vertexiumSerializer.objectToBytes(propertyValue));
         results.add(new KeyValuePair(new Key(elementRowKey, AccumuloElement.CF_PROPERTY, columnQualifier, columnVisibility, property.getTimestamp()), value));
         addPropertyMetadataToKeyValuePairs(results, elementRowKey, property);
     }
@@ -164,7 +163,7 @@ public abstract class ElementMutationBuilder {
     }
 
     private void addPropertyMetadataItemAddToKeyValuePairs(List<KeyValuePair> results, Text vertexRowKey, Text columnQualifier, ColumnVisibility metadataVisibility, long propertyTimestamp, Object value) {
-        Value metadataValue = valueSerializer.objectToValue(value);
+        Value metadataValue = new Value(vertexiumSerializer.objectToBytes(value));
         results.add(new KeyValuePair(new Key(vertexRowKey, AccumuloElement.CF_PROPERTY_METADATA, columnQualifier, metadataVisibility, propertyTimestamp), metadataValue));
     }
 
@@ -304,7 +303,7 @@ public abstract class ElementMutationBuilder {
         if (propertyValue instanceof DateOnly) {
             propertyValue = ((DateOnly) propertyValue).getDate();
         }
-        Value value = valueSerializer.objectToValue(propertyValue);
+        Value value = new Value(vertexiumSerializer.objectToBytes(propertyValue));
         m.put(AccumuloElement.CF_PROPERTY, columnQualifier, columnVisibility, property.getTimestamp(), value);
         addPropertyMetadataToMutation(m, property);
     }
@@ -336,7 +335,7 @@ public abstract class ElementMutationBuilder {
     }
 
     private void addPropertyMetadataItemAddToMutation(Mutation m, Text columnQualifier, ColumnVisibility metadataVisibility, long propertyTimestamp, Object value) {
-        Value metadataValue = valueSerializer.objectToValue(value);
+        Value metadataValue = new Value(vertexiumSerializer.objectToBytes(value));
         m.put(AccumuloElement.CF_PROPERTY_METADATA, columnQualifier, metadataVisibility, propertyTimestamp, metadataValue);
     }
 

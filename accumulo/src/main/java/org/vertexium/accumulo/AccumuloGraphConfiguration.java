@@ -5,15 +5,10 @@ import org.apache.accumulo.core.client.security.tokens.AuthenticationToken;
 import org.apache.accumulo.core.client.security.tokens.PasswordToken;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
-import org.vertexium.Graph;
-import org.vertexium.GraphConfiguration;
-import org.vertexium.VertexiumException;
-import org.vertexium.accumulo.serializer.JavaValueSerializer;
-import org.vertexium.accumulo.serializer.ValueSerializer;
+import org.vertexium.*;
 import org.vertexium.id.IdentityNameSubstitutionStrategy;
 import org.vertexium.id.NameSubstitutionStrategy;
 import org.vertexium.util.ConfigurationUtils;
-import org.vertexium.util.MapUtils;
 import org.vertexium.util.VertexiumLogger;
 import org.vertexium.util.VertexiumLoggerFactory;
 
@@ -36,7 +31,7 @@ public class AccumuloGraphConfiguration extends GraphConfiguration {
     public static final String ZOOKEEPER_SERVERS = "zookeeperServers";
     public static final String ZOOKEEPER_METADATA_SYNC_PATH = "zookeeperMetadataSyncPath";
     public static final String ACCUMULO_MAX_VERSIONS = "maxVersions";
-    public static final String VALUE_SERIALIZER_PROP_PREFIX = "serializer";
+    public static final String SERIALIZER_PROP_PREFIX = "serializer";
     public static final String NAME_SUBSTITUTION_STRATEGY_PROP_PREFIX = "nameSubstitutionStrategy";
     public static final String TABLE_NAME_PREFIX = "tableNamePrefix";
     public static final String MAX_STREAMING_PROPERTY_VALUE_TABLE_DATA_SIZE = "maxStreamingPropertyValueTableDataSize";
@@ -51,7 +46,7 @@ public class AccumuloGraphConfiguration extends GraphConfiguration {
     public static final String HDFS_CONTEXT_CLASSPATH = "hdfsContextClasspath";
 
     public static final String DEFAULT_ACCUMULO_PASSWORD = "password";
-    public static final String DEFAULT_VALUE_SERIALIZER = JavaValueSerializer.class.getName();
+    public static final String DEFAULT_SERIALIZER = JavaVertexiumSerializer.class.getName();
     public static final String DEFAULT_ACCUMULO_USERNAME = "root";
     public static final String DEFAULT_ACCUMULO_INSTANCE_NAME = "vertexium";
     public static final String DEFAULT_ZOOKEEPER_SERVERS = "localhost";
@@ -134,8 +129,8 @@ public class AccumuloGraphConfiguration extends GraphConfiguration {
         return getString(ZOOKEEPER_SERVERS, DEFAULT_ZOOKEEPER_SERVERS);
     }
 
-    public ValueSerializer createValueSerializer(Graph graph) throws VertexiumException {
-        return ConfigurationUtils.createProvider(graph, this, VALUE_SERIALIZER_PROP_PREFIX, DEFAULT_VALUE_SERIALIZER);
+    public VertexiumSerializer createSerializer(Graph graph) throws VertexiumException {
+        return ConfigurationUtils.createProvider(graph, this, SERIALIZER_PROP_PREFIX, DEFAULT_SERIALIZER);
     }
 
     public boolean isAutoFlush() {

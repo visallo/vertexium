@@ -1,15 +1,13 @@
-package org.vertexium.accumulo.serializer.kryo.quickSerializers;
-
-import org.apache.accumulo.core.data.Value;
+package org.vertexium.serializer.kryo.quickSerializers;
 
 public class LongQuickTypeSerializer implements QuickTypeSerializer {
     @Override
-    public Value objectToValue(Object value) {
+    public byte[] objectToBytes(Object value) {
         long time = (long) value;
-        return objectToValue(time, MARKER_LONG);
+        return objectToBytes(time, MARKER_LONG);
     }
 
-    public Value objectToValue(long time, byte marker) {
+    public byte[] objectToBytes(long time, byte marker) {
         byte[] results = new byte[1 + 8];
         results[0] = marker;
         results[1] = (byte) (time >>> 56);
@@ -20,7 +18,7 @@ public class LongQuickTypeSerializer implements QuickTypeSerializer {
         results[6] = (byte) (time >>> 16);
         results[7] = (byte) (time >>> 8);
         results[8] = (byte) (time >>> 0);
-        return new Value(results);
+        return results;
     }
 
     @Override

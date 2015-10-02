@@ -73,6 +73,11 @@
         </dependency>
         <dependency>
             <groupId>org.vertexium</groupId>
+            <artifactId>vertexium-xstream-serializer</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.vertexium</groupId>
             <artifactId>vertexium-tools</artifactId>
             <version>${project.version}</version>
         </dependency>

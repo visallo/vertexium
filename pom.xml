@@ -360,6 +360,7 @@
         <module>inmemory</module>
 
         <module>kryo-serializer</module>
+        <module>xstream-serializer</module>
     </modules>
 
     <profiles>

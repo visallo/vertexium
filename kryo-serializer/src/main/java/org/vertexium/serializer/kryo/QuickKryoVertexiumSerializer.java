@@ -1,16 +1,15 @@
-package org.vertexium.accumulo.serializer.kryo;
+package org.vertexium.serializer.kryo;
 
-import org.apache.accumulo.core.data.Value;
 import org.vertexium.VertexiumException;
-import org.vertexium.accumulo.serializer.ValueSerializer;
-import org.vertexium.accumulo.serializer.kryo.quickSerializers.*;
+import org.vertexium.VertexiumSerializer;
+import org.vertexium.serializer.kryo.quickSerializers.*;
 
 import java.math.BigDecimal;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
-public class QuickKryoValueSerializer implements ValueSerializer {
+public class QuickKryoVertexiumSerializer implements VertexiumSerializer {
     private QuickTypeSerializer defaultQuickTypeSerializer = new KryoQuickTypeSerializer();
     private Map<Class, QuickTypeSerializer> quickTypeSerializersByClass = new HashMap<Class, QuickTypeSerializer>() {{
         put(String.class, new StringQuickTypeSerializer());
@@ -29,26 +28,21 @@ public class QuickKryoValueSerializer implements ValueSerializer {
     }};
 
     @Override
-    public Value objectToValue(Object value) {
-        QuickTypeSerializer quickTypeSerializer = quickTypeSerializersByClass.get(value.getClass());
+    public byte[] objectToBytes(Object object) {
+        QuickTypeSerializer quickTypeSerializer = quickTypeSerializersByClass.get(object.getClass());
         if (quickTypeSerializer != null) {
-            return quickTypeSerializer.objectToValue(value);
+            return quickTypeSerializer.objectToBytes(object);
         } else {
-            return defaultQuickTypeSerializer.objectToValue(value);
+            return defaultQuickTypeSerializer.objectToBytes(object);
         }
     }
 
     @Override
-    public <T> T valueToObject(Value value) {
-        return valueToObject(value.get());
-    }
-
-    @Override
-    public <T> T valueToObject(byte[] data) {
-        QuickTypeSerializer quickTypeSerializer = quickTypeSerializersByMarker.get(data[0]);
+    public <T> T bytesToObject(byte[] bytes) {
+        QuickTypeSerializer quickTypeSerializer = quickTypeSerializersByMarker.get(bytes[0]);
         if (quickTypeSerializer != null) {
-            return quickTypeSerializer.valueToObject(data);
+            return quickTypeSerializer.valueToObject(bytes);
         }
-        throw new VertexiumException("Invalid marker: " + Integer.toHexString(data[0]));
+        throw new VertexiumException("Invalid marker: " + Integer.toHexString(bytes[0]));
     }
 }

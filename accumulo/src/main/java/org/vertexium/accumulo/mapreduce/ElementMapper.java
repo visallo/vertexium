@@ -6,7 +6,6 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.vertexium.*;
 import org.vertexium.accumulo.*;
-import org.vertexium.accumulo.serializer.ValueSerializer;
 import org.vertexium.id.IdGenerator;
 import org.vertexium.id.NameSubstitutionStrategy;
 import org.vertexium.util.IncreasingTime;
@@ -39,10 +38,10 @@ public abstract class ElementMapper<KEYIN, VALUEIN, KEYOUT, VALUEOUT> extends Ma
         }
 
         this.graph = new ElementMapperGraph(this);
-        ValueSerializer valueSerializer = accumuloGraphConfiguration.createValueSerializer(this.graph);
+        VertexiumSerializer vertexiumSerializer = accumuloGraphConfiguration.createSerializer(this.graph);
         nameSubstitutionStrategy = accumuloGraphConfiguration.createSubstitutionStrategy(this.graph);
 
-        this.elementMutationBuilder = new ElementMutationBuilder(fileSystem, valueSerializer, maxStreamingPropertyValueTableDataSize, dataDir) {
+        this.elementMutationBuilder = new ElementMutationBuilder(fileSystem, vertexiumSerializer, maxStreamingPropertyValueTableDataSize, dataDir) {
             @Override
             protected void saveVertexMutation(Mutation m) {
                 try {

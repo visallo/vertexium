@@ -13,8 +13,8 @@ import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
+import org.vertexium.VertexiumSerializer;
 import org.vertexium.accumulo.AccumuloGraphConfiguration;
-import org.vertexium.accumulo.serializer.ValueSerializer;
 import org.vertexium.util.VertexiumLogger;
 import org.vertexium.util.VertexiumLoggerFactory;
 
@@ -28,8 +28,8 @@ public abstract class MRMigrationBase extends Configured implements Tool {
         System.exit(res);
     }
 
-    public static ValueSerializer getValueSerializer(Configuration conf) {
-        return getAccumuloGraphConfiguration(conf).createValueSerializer(null);
+    public static VertexiumSerializer getVertexiumSerializer(Configuration conf) {
+        return getAccumuloGraphConfiguration(conf).createSerializer(null);
     }
 
     public static String getOutputTableName(Configuration conf) {
@@ -80,13 +80,13 @@ public abstract class MRMigrationBase extends Configured implements Tool {
     }
 
     protected abstract static class MRMigrationMapperBase<TKey, TValue> extends Mapper<TKey, TValue, Text, Mutation> {
-        private ValueSerializer valueSerializer;
+        private VertexiumSerializer vertexiumSerializer;
         private Text outputTableNameText;
 
         @Override
         protected void setup(Context context) throws IOException, InterruptedException {
             super.setup(context);
-            valueSerializer = MRMigrationBase.getValueSerializer(context.getConfiguration());
+            vertexiumSerializer = MRMigrationBase.getVertexiumSerializer(context.getConfiguration());
             outputTableNameText = new Text(MRMigrationBase.getOutputTableName(context.getConfiguration()));
         }
 
@@ -101,8 +101,8 @@ public abstract class MRMigrationBase extends Configured implements Tool {
 
         protected abstract void safeMap(TKey key, TValue value, Context context) throws Exception;
 
-        public ValueSerializer getValueSerializer() {
-            return valueSerializer;
+        public VertexiumSerializer getVertexiumSerializer() {
+            return vertexiumSerializer;
         }
 
         protected Text getOutputTableNameText() {
