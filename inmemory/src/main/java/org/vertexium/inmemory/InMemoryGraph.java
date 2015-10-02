@@ -497,23 +497,7 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
         inMemoryTableElement.appendAlterVisibilityMutation(newEdgeVisibility);
     }
 
-    void alterEdgeVisibility(String edgeId, Visibility newEdgeVisibility) {
-        this.edges.getTableElement(edgeId).appendAlterVisibilityMutation(newEdgeVisibility);
-    }
-
-    void alterVertexVisibility(String vertexId, Visibility newVertexVisibility) {
-        this.vertices.getTableElement(vertexId).appendAlterVisibilityMutation(newVertexVisibility);
-    }
-
-    void alterEdgePropertyVisibilities(String edgeId, List<AlterPropertyVisibility> alterPropertyVisibilities, Long timestamp, Authorizations authorizations) {
-        alterElementPropertyVisibilities(this.edges.getTableElement(edgeId), alterPropertyVisibilities, timestamp, authorizations);
-    }
-
-    void alterVertexPropertyVisibilities(String vertexId, List<AlterPropertyVisibility> alterPropertyVisibilities, Long timestamp, Authorizations authorizations) {
-        alterElementPropertyVisibilities(this.vertices.getTableElement(vertexId), alterPropertyVisibilities, timestamp, authorizations);
-    }
-
-    void alterElementPropertyVisibilities(InMemoryTableElement inMemoryTableElement, List<AlterPropertyVisibility> alterPropertyVisibilities, Long timestamp, Authorizations authorizations) {
+    void alterElementPropertyVisibilities(InMemoryTableElement inMemoryTableElement, List<AlterPropertyVisibility> alterPropertyVisibilities, Authorizations authorizations) {
         for (AlterPropertyVisibility apv : alterPropertyVisibilities) {
             Property property = inMemoryTableElement.getProperty(apv.getKey(), apv.getName(), apv.getExistingVisibility(), authorizations);
             if (property == null) {
@@ -525,17 +509,9 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
             Object value = property.getValue();
             Metadata metadata = property.getMetadata();
 
-            inMemoryTableElement.deleteProperty(apv.getKey(), apv.getName(), apv.getExistingVisibility(), authorizations);
-            inMemoryTableElement.appendAddPropertyMutation(apv.getKey(), apv.getName(), value, metadata, apv.getVisibility(), timestamp);
+            inMemoryTableElement.appendSoftDeletePropertyMutation(apv.getKey(), apv.getName(), apv.getExistingVisibility(), IncreasingTime.currentTimeMillis());
+            inMemoryTableElement.appendAddPropertyMutation(apv.getKey(), apv.getName(), value, metadata, apv.getVisibility(), IncreasingTime.currentTimeMillis());
         }
-    }
-
-    public void alterEdgePropertyMetadata(String edgeId, List<SetPropertyMetadata> setPropertyMetadatas, Authorizations authorizations) {
-        alterElementPropertyMetadata(this.edges.getTableElement(edgeId), setPropertyMetadatas, authorizations);
-    }
-
-    public void alterVertexPropertyMetadata(String vertexId, List<SetPropertyMetadata> setPropertyMetadatas, Authorizations authorizations) {
-        alterElementPropertyMetadata(this.vertices.getTableElement(vertexId), setPropertyMetadatas, authorizations);
     }
 
     void alterElementPropertyMetadata(InMemoryTableElement element, List<SetPropertyMetadata> setPropertyMetadatas, Authorizations authorizations) {

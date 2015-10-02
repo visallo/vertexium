@@ -1586,8 +1586,9 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             if (apv.getExistingVisibility() == null) {
                 apv.setExistingVisibility(property.getVisibility());
             }
-            elementMutationBuilder.addPropertyDeleteToMutation(m, property);
+            elementMutationBuilder.addPropertySoftDeleteToMutation(m, property);
             property.setVisibility(apv.getVisibility());
+            property.setTimestamp(IncreasingTime.currentTimeMillis());
             elementMutationBuilder.addPropertyToMutation(m, elementRowKey, property);
             propertyChanged = true;
         }

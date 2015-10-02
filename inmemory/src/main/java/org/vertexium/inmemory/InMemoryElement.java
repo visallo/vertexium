@@ -359,24 +359,26 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> implemen
             throw new VertexiumException("cannot save mutation from another element");
         }
 
+        graph.alterElementPropertyMetadata(inMemoryTableElement, mutation.getSetPropertyMetadatas(), authorizations);
+        graph.alterElementPropertyVisibilities(inMemoryTableElement, mutation.getAlterPropertyVisibilities(), authorizations);
+
         Iterable<Property> properties = mutation.getProperties();
         Iterable<PropertyDeleteMutation> propertyDeleteMutations = mutation.getPropertyDeletes();
         Iterable<PropertySoftDeleteMutation> propertySoftDeleteMutations = mutation.getPropertySoftDeletes();
+
+        overridePropertyTimestamps(properties);
+
         updatePropertiesInternal(
                 properties,
                 propertyDeleteMutations,
                 propertySoftDeleteMutations
         );
 
-        long timestamp = IncreasingTime.currentTimeMillis();
         InMemoryGraph graph = getGraph();
 
         if (mutation.getNewElementVisibility() != null) {
             graph.alterElementVisibility(inMemoryTableElement, mutation.getNewElementVisibility());
         }
-
-        graph.alterElementPropertyMetadata(inMemoryTableElement, mutation.getSetPropertyMetadatas(), authorizations);
-        graph.alterElementPropertyVisibilities(inMemoryTableElement, mutation.getAlterPropertyVisibilities(), timestamp, authorizations);
 
         if (mutation instanceof EdgeMutation) {
             EdgeMutation edgeMutation = (EdgeMutation) (ElementMutation) mutation;
@@ -423,5 +425,13 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> implemen
     @Override
     public Iterable<Visibility> getHiddenVisibilities() {
         return inMemoryTableElement.getHiddenVisibilities();
+    }
+
+    private void overridePropertyTimestamps(Iterable<Property> properties) {
+        for (Property property : properties) {
+            if (property instanceof MutableProperty) {
+                ((MutableProperty) property).setTimestamp(IncreasingTime.currentTimeMillis());
+            }
+        }
     }
 }

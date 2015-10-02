@@ -3152,6 +3152,36 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    public void testAlterPropertyVisibilityOverwritingProperty() {
+        graph.prepareVertex("v1", VISIBILITY_EMPTY)
+                .addPropertyValue("", "prop1", "value1", VISIBILITY_EMPTY)
+                .addPropertyValue("", "prop1", "value2", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        long beforeAlterTimestamp = IncreasingTime.currentTimeMillis();
+
+        Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
+        v1.prepareMutation()
+                .alterPropertyVisibility(v1.getProperty("", "prop1", VISIBILITY_A), VISIBILITY_EMPTY)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
+        assertEquals(1, count(v1.getProperties()));
+        assertNotNull(v1.getProperty("", "prop1", VISIBILITY_EMPTY));
+        assertEquals("value2", v1.getProperty("", "prop1", VISIBILITY_EMPTY).getValue());
+        assertNull(v1.getProperty("", "prop1", VISIBILITY_A));
+
+        v1 = graph.getVertex("v1",FetchHint.ALL, beforeAlterTimestamp ,AUTHORIZATIONS_A);
+        assertEquals(2, count(v1.getProperties()));
+        assertNotNull(v1.getProperty("", "prop1", VISIBILITY_EMPTY));
+        assertEquals("value1", v1.getProperty("", "prop1", VISIBILITY_EMPTY).getValue());
+        assertNotNull(v1.getProperty("", "prop1", VISIBILITY_A));
+        assertEquals("value2", v1.getProperty("", "prop1", VISIBILITY_A).getValue());
+    }
+
+    @Test
     public void testChangeVisibilityEdge() {
         Vertex v1 = graph.prepareVertex("v1", VISIBILITY_EMPTY)
                 .save(AUTHORIZATIONS_A_AND_B);
