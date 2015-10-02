@@ -5,6 +5,7 @@ import org.vertexium.Element;
 import org.vertexium.FetchHint;
 import org.vertexium.Vertex;
 
+import java.util.Collection;
 import java.util.EnumSet;
 
 public interface Query {
@@ -16,8 +17,10 @@ public interface Query {
 
     Iterable<Edge> edges(EnumSet<FetchHint> fetchHints);
 
+    @Deprecated
     Iterable<Edge> edges(String label);
 
+    @Deprecated
     Iterable<Edge> edges(String label, EnumSet<FetchHint> fetchHints);
 
     Iterable<Element> elements();
@@ -45,6 +48,22 @@ public interface Query {
      * @return this
      */
     <T> Query range(String propertyName, T startValue, boolean inclusiveStartValue, T endValue, boolean inclusiveEndValue);
+
+    /**
+     * Adds a edge label filter to the query.
+     *
+     * @param edgeLabels The edge labels to filter on.
+     * @return The query object, allowing you to chain methods.
+     */
+    <T> Query hasEdgeLabel(String... edgeLabels);
+
+    /**
+     * Adds a edge label filter to the query.
+     *
+     * @param edgeLabels The edge labels to filter on.
+     * @return The query object, allowing you to chain methods.
+     */
+    <T> Query hasEdgeLabel(Collection<String> edgeLabels);
 
     /**
      * Adds an {@link Compare#EQUAL} filter to the query.

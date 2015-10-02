@@ -70,28 +70,17 @@ public class CompositeGraphQuery implements Query {
     }
 
     @Override
+    @Deprecated
     public Iterable<Edge> edges(final String label) {
-        return edges(label, FetchHint.ALL);
+        hasEdgeLabel(label);
+        return edges(FetchHint.ALL);
     }
 
     @Override
+    @Deprecated
     public Iterable<Edge> edges(final String label, final EnumSet<FetchHint> fetchHints) {
-        final Set<String> seenIds = new HashSet<>();
-        return new SelectManyIterable<Query, Edge>(this.queries) {
-            @Override
-            public Iterable<Edge> getIterable(Query query) {
-                return query.edges(label, fetchHints);
-            }
-
-            @Override
-            protected boolean isIncluded(Edge edge) {
-                if (seenIds.contains(edge.getId())) {
-                    return false;
-                }
-                seenIds.add(edge.getId());
-                return super.isIncluded(edge);
-            }
-        };
+        hasEdgeLabel(label);
+        return edges(fetchHints);
     }
 
     @Override
@@ -131,6 +120,22 @@ public class CompositeGraphQuery implements Query {
     public <T> Query range(String propertyName, T startValue, boolean inclusiveStartValue, T endValue, boolean inclusiveEndValue) {
         for (Query query : queries) {
             query.range(propertyName, startValue, inclusiveStartValue, endValue, inclusiveEndValue);
+        }
+        return this;
+    }
+
+    @Override
+    public <T> Query hasEdgeLabel(String... edgeLabels) {
+        for (Query query : queries) {
+            query.hasEdgeLabel(edgeLabels);
+        }
+        return this;
+    }
+
+    @Override
+    public <T> Query hasEdgeLabel(Collection<String> edgeLabels) {
+        for (Query query : queries) {
+            query.hasEdgeLabel(edgeLabels);
         }
         return this;
     }

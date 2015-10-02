@@ -1,10 +1,10 @@
 package org.vertexium.query;
 
 import org.vertexium.*;
-import org.vertexium.util.FilterIterable;
 import org.vertexium.util.JoinIterable;
 import org.vertexium.util.ToElementIterable;
 
+import java.util.Collection;
 import java.util.EnumSet;
 import java.util.Map;
 
@@ -42,18 +42,33 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
     public abstract Iterable<Edge> edges(EnumSet<FetchHint> fetchHints);
 
     @Override
-    public Iterable<Edge> edges(final String label, EnumSet<FetchHint> fetchHints) {
-        return new FilterIterable<Edge>(edges()) {
-            @Override
-            protected boolean isIncluded(Edge o) {
-                return label.equals(o.getLabel());
-            }
-        };
+    public <T> Query hasEdgeLabel(String... edgeLabels) {
+        for (String edgeLabel : edgeLabels) {
+            getParameters().addEdgeLabel(edgeLabel);
+        }
+        return this;
     }
 
     @Override
+    public <T> Query hasEdgeLabel(Collection<String> edgeLabels) {
+        for (String edgeLabel : edgeLabels) {
+            getParameters().addEdgeLabel(edgeLabel);
+        }
+        return this;
+    }
+
+    @Override
+    @Deprecated
+    public Iterable<Edge> edges(final String label, EnumSet<FetchHint> fetchHints) {
+        hasEdgeLabel(label);
+        return edges(fetchHints);
+    }
+
+    @Override
+    @Deprecated
     public Iterable<Edge> edges(final String label) {
-        return edges(label, FetchHint.ALL);
+        hasEdgeLabel(label);
+        return edges();
     }
 
     @Override

@@ -1479,6 +1479,7 @@ public abstract class GraphTestBase {
         Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
         Vertex v2 = graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_A);
         graph.addEdge("e1", v1, v2, "edgeA", VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.addEdge("e2", v1, v2, "edgeB", VISIBILITY_A, AUTHORIZATIONS_A);
         graph.flush();
 
         Iterable<Vertex> vertices = graph.query(AUTHORIZATIONS_A).vertices();
@@ -1500,10 +1501,16 @@ public abstract class GraphTestBase {
         Assert.assertEquals(1, count(vertices));
 
         Iterable<Edge> edges = graph.query(AUTHORIZATIONS_A).edges();
+        Assert.assertEquals(2, count(edges));
+
+        edges = graph.query(AUTHORIZATIONS_A).hasEdgeLabel("edgeA").edges();
         Assert.assertEquals(1, count(edges));
 
+        edges = graph.query(AUTHORIZATIONS_A).hasEdgeLabel("edgeA", "edgeB").edges();
+        Assert.assertEquals(2, count(edges));
+
         Iterable<Element> elements = graph.query(AUTHORIZATIONS_A).elements();
-        Assert.assertEquals(3, count(elements));
+        Assert.assertEquals(4, count(elements));
     }
 
     @Test
@@ -2335,6 +2342,15 @@ public abstract class GraphTestBase {
         Assert.assertEquals(2, count(edges));
         org.vertexium.test.util.IterableUtils.assertContains(ev1v2, edges);
         org.vertexium.test.util.IterableUtils.assertContains(ev1v3, edges);
+
+        edges = v1.query(AUTHORIZATIONS_A).hasEdgeLabel("edgeA", "edgeB").edges();
+        Assert.assertEquals(2, count(edges));
+        org.vertexium.test.util.IterableUtils.assertContains(ev1v2, edges);
+        org.vertexium.test.util.IterableUtils.assertContains(ev1v3, edges);
+
+        edges = v1.query(AUTHORIZATIONS_A).hasEdgeLabel("edgeA").edges();
+        Assert.assertEquals(1, count(edges));
+        org.vertexium.test.util.IterableUtils.assertContains(ev1v2, edges);
     }
 
     @Test
@@ -2723,7 +2739,7 @@ public abstract class GraphTestBase {
     @Test
     public void testFindRelatedEdgeSummaryAfterSoftDelete() {
         Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
-        Vertex v2 = graph.addVertex ("v2", VISIBILITY_A, AUTHORIZATIONS_A);
+        Vertex v2 = graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_A);
         Edge e1 = graph.addEdge("e v1->v2", v1, v2, "label1", VISIBILITY_A, AUTHORIZATIONS_A);
         graph.flush();
 
@@ -2744,7 +2760,7 @@ public abstract class GraphTestBase {
     @Test
     public void testFindRelatedEdgeSummaryAfterMarkedHidden() {
         Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
-        Vertex v2 = graph.addVertex ("v2", VISIBILITY_A, AUTHORIZATIONS_A);
+        Vertex v2 = graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_A);
         Edge e1 = graph.addEdge("e v1->v2", v1, v2, "label1", VISIBILITY_A, AUTHORIZATIONS_A);
         graph.flush();
 

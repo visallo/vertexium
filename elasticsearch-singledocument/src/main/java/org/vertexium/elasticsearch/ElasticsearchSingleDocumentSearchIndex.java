@@ -166,6 +166,7 @@ public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchI
             getConfig().getScoringStrategy().addFieldsToEdgeDocument(this, jsonBuilder, edge, null, authorizations);
             jsonBuilder.field(IN_VERTEX_ID_FIELD_NAME, edge.getVertexId(Direction.IN));
             jsonBuilder.field(OUT_VERTEX_ID_FIELD_NAME, edge.getVertexId(Direction.OUT));
+            jsonBuilder.field(EDGE_LABEL_FIELD_NAME, edge.getLabel());
         } else {
             throw new VertexiumException("Unexpected element type " + element.getClass().getName());
         }
