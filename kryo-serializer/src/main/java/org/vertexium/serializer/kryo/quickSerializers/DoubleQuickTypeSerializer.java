@@ -1,17 +1,15 @@
-package org.vertexium.accumulo.serializer.kryo.quickSerializers;
-
-import org.apache.accumulo.core.data.Value;
+package org.vertexium.serializer.kryo.quickSerializers;
 
 import java.nio.ByteBuffer;
 
 public class DoubleQuickTypeSerializer implements QuickTypeSerializer {
     @Override
-    public Value objectToValue(Object value) {
+    public byte[] objectToBytes(Object value) {
         byte[] bytes = new byte[1 + 8];
         ByteBuffer.wrap(bytes)
                 .put(MARKER_DOUBLE)
                 .putDouble((double) value);
-        return new Value(bytes);
+        return bytes;
     }
 
     @Override

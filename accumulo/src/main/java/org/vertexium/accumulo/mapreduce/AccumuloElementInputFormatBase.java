@@ -129,7 +129,7 @@ public abstract class AccumuloElementInputFormatBase<TValue extends Element> ext
         Visibility visibility = AccumuloGraph.accumuloVisibilityToVisibility(AccumuloGraph.visibilityToAccumuloVisibility(property.visibility));
         return new LazyMutableProperty(
                 graph,
-                graph.getValueSerializer(),
+                graph.getVertexiumSerializer(),
                 graph.getNameSubstitutionStrategy().inflate(property.key),
                 graph.getNameSubstitutionStrategy().inflate(property.name),
                 property.value,

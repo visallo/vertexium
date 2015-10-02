@@ -1,6 +1,4 @@
-package org.vertexium.accumulo.serializer.kryo.quickSerializers;
-
-import org.apache.accumulo.core.data.Value;
+package org.vertexium.serializer.kryo.quickSerializers;
 
 public interface QuickTypeSerializer {
     byte MARKER_KRYO = 0;
@@ -10,7 +8,7 @@ public interface QuickTypeSerializer {
     byte MARKER_DOUBLE = 4;
     byte MARKER_BIG_DECIMAL = 5;
 
-    Value objectToValue(Object value);
+    byte[] objectToBytes(Object value);
 
     <T> T valueToObject(byte[] data);
 }

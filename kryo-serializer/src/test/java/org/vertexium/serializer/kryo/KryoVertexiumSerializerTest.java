@@ -1,8 +1,7 @@
-package org.vertexium.accumulo.serializer.kryo;
+package org.vertexium.serializer.kryo;
 
-import org.apache.accumulo.core.data.Value;
 import org.junit.Test;
-import org.vertexium.accumulo.serializer.ValueSerializer;
+import org.vertexium.VertexiumSerializer;
 
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
@@ -11,30 +10,29 @@ import java.util.Date;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class KryoValueSerializerTest {
+public class KryoVertexiumSerializerTest {
     @Test
     public void testObjectToValue() {
-        Value val = new KryoValueSerializer().objectToValue(new Date());
-        byte[] valBytes = val.get();
+        byte[] valBytes = new KryoVertexiumSerializer().objectToBytes(new Date());
         assertEquals(10, valBytes.length);
     }
 
     @Test
     public void testString() {
         System.out.println("testString");
-        timeItString(new KryoValueSerializer());
-        long quickKryoTime = timeItString(new QuickKryoValueSerializer());
-        long kryoTime = timeItString(new KryoValueSerializer());
+        timeItString(new KryoVertexiumSerializer());
+        long quickKryoTime = timeItString(new QuickKryoVertexiumSerializer());
+        long kryoTime = timeItString(new KryoVertexiumSerializer());
         assertTrue("quick was slower than Kryo", quickKryoTime < kryoTime);
     }
 
-    private long timeItString(ValueSerializer serializer) {
+    private long timeItString(VertexiumSerializer serializer) {
         long startTime = System.currentTimeMillis();
         long bytes = 0;
         for (int i = 0; i < 1000000; i++) {
-            Value v = serializer.objectToValue("yo mamma");
-            assertEquals("yo mamma", serializer.valueToObject(v.get()));
-            bytes += v.get().length;
+            byte[] v = serializer.objectToBytes("yo mamma");
+            assertEquals("yo mamma", serializer.bytesToObject(v));
+            bytes += v.length;
         }
         long endTime = System.currentTimeMillis();
         System.out.println(serializer.getClass().getName() + " time: " + (endTime - startTime) + "ms (size: " + new DecimalFormat("#,##0").format(bytes) + ")");
@@ -44,19 +42,19 @@ public class KryoValueSerializerTest {
     @Test
     public void testBigDecimal() {
         System.out.println("testBigDecimal");
-        timeItBigDecimal(new KryoValueSerializer());
-        long quickKryoTime = timeItBigDecimal(new QuickKryoValueSerializer());
-        long kryoTime = timeItBigDecimal(new KryoValueSerializer());
+        timeItBigDecimal(new KryoVertexiumSerializer());
+        long quickKryoTime = timeItBigDecimal(new QuickKryoVertexiumSerializer());
+        long kryoTime = timeItBigDecimal(new KryoVertexiumSerializer());
         assertTrue("quick was slower than Kryo", quickKryoTime < kryoTime);
     }
 
-    private long timeItBigDecimal(ValueSerializer serializer) {
+    private long timeItBigDecimal(VertexiumSerializer serializer) {
         long startTime = System.currentTimeMillis();
         long bytes = 0;
         for (int i = 0; i < 1000000; i++) {
-            Value v = serializer.objectToValue(new BigDecimal("42.987654321"));
-            assertEquals(new BigDecimal("42.987654321"), serializer.valueToObject(v.get()));
-            bytes += v.get().length;
+            byte[] v = serializer.objectToBytes(new BigDecimal("42.987654321"));
+            assertEquals(new BigDecimal("42.987654321"), serializer.bytesToObject(v));
+            bytes += v.length;
         }
         long endTime = System.currentTimeMillis();
         System.out.println(serializer.getClass().getName() + " time: " + (endTime - startTime) + "ms (size: " + new DecimalFormat("#,##0").format(bytes) + ")");
@@ -66,20 +64,20 @@ public class KryoValueSerializerTest {
     @Test
     public void testDate() {
         System.out.println("testDate");
-        timeItDate(new KryoValueSerializer());
-        long quickKryoTime = timeItDate(new QuickKryoValueSerializer());
-        long kryoTime = timeItDate(new KryoValueSerializer());
+        timeItDate(new KryoVertexiumSerializer());
+        long quickKryoTime = timeItDate(new QuickKryoVertexiumSerializer());
+        long kryoTime = timeItDate(new KryoVertexiumSerializer());
         assertTrue("quick was slower than Kryo", quickKryoTime < kryoTime);
     }
 
-    private long timeItDate(ValueSerializer serializer) {
+    private long timeItDate(VertexiumSerializer serializer) {
         long startTime = System.currentTimeMillis();
         long bytes = 0;
         for (int i = 0; i < 1000000; i++) {
             Date date = new Date();
-            Value v = serializer.objectToValue(date);
-            assertEquals(date, serializer.valueToObject(v.get()));
-            bytes += v.get().length;
+            byte[] v = serializer.objectToBytes(date);
+            assertEquals(date, serializer.bytesToObject(v));
+            bytes += v.length;
         }
         long endTime = System.currentTimeMillis();
         System.out.println(serializer.getClass().getName() + " time: " + (endTime - startTime) + "ms (size: " + new DecimalFormat("#,##0").format(bytes) + ")");
@@ -89,20 +87,20 @@ public class KryoValueSerializerTest {
     @Test
     public void testLong() {
         System.out.println("testLong");
-        timeItLong(new KryoValueSerializer());
-        long quickKryoTime = timeItLong(new QuickKryoValueSerializer());
-        long kryoTime = timeItLong(new KryoValueSerializer());
+        timeItLong(new KryoVertexiumSerializer());
+        long quickKryoTime = timeItLong(new QuickKryoVertexiumSerializer());
+        long kryoTime = timeItLong(new KryoVertexiumSerializer());
         assertTrue("quick was slower than Kryo", quickKryoTime < kryoTime);
     }
 
-    private long timeItLong(ValueSerializer serializer) {
+    private long timeItLong(VertexiumSerializer serializer) {
         long startTime = System.currentTimeMillis();
         long bytes = 0;
         for (int i = 0; i < 1000000; i++) {
             Long l = 123456L;
-            Value v = serializer.objectToValue(l);
-            assertEquals(l, serializer.valueToObject(v.get()));
-            bytes += v.get().length;
+            byte[] v = serializer.objectToBytes(l);
+            assertEquals(l, serializer.bytesToObject(v));
+            bytes += v.length;
         }
         long endTime = System.currentTimeMillis();
         System.out.println(serializer.getClass().getName() + " time: " + (endTime - startTime) + "ms (size: " + new DecimalFormat("#,##0").format(bytes) + ")");
@@ -112,20 +110,20 @@ public class KryoValueSerializerTest {
     @Test
     public void testDouble() {
         System.out.println("testDouble");
-        timeItDouble(new KryoValueSerializer());
-        long quickKryoTime = timeItDouble(new QuickKryoValueSerializer());
-        long kryoTime = timeItDouble(new KryoValueSerializer());
+        timeItDouble(new KryoVertexiumSerializer());
+        long quickKryoTime = timeItDouble(new QuickKryoVertexiumSerializer());
+        long kryoTime = timeItDouble(new KryoVertexiumSerializer());
         assertTrue("quick was slower than Kryo", quickKryoTime < kryoTime);
     }
 
-    private long timeItDouble(ValueSerializer serializer) {
+    private long timeItDouble(VertexiumSerializer serializer) {
         long startTime = System.currentTimeMillis();
         long bytes = 0;
         for (int i = 0; i < 1000000; i++) {
             double d = 3.1415;
-            Value v = serializer.objectToValue(d);
-            assertEquals(d, serializer.valueToObject(v.get()));
-            bytes += v.get().length;
+            byte[] v = serializer.objectToBytes(d);
+            assertEquals(d, serializer.bytesToObject(v));
+            bytes += v.length;
         }
         long endTime = System.currentTimeMillis();
         System.out.println(serializer.getClass().getName() + " time: " + (endTime - startTime) + "ms (size: " + new DecimalFormat("#,##0").format(bytes) + ")");
@@ -135,9 +133,9 @@ public class KryoValueSerializerTest {
     @Test
     public void testTestClass() {
         TestClass testClass = new TestClass("value1", 42);
-        QuickKryoValueSerializer serializer = new QuickKryoValueSerializer();
-        Value v = serializer.objectToValue(testClass);
-        assertEquals(testClass, serializer.valueToObject(v.get()));
+        QuickKryoVertexiumSerializer serializer = new QuickKryoVertexiumSerializer();
+        byte[] v = serializer.objectToBytes(testClass);
+        assertEquals(testClass, serializer.bytesToObject(v));
     }
 
     public static class TestClass {

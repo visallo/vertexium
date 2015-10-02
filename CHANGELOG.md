@@ -1,5 +1,8 @@
 # v2.0.4
 
+* Changed `ValueSerializer` to `VertexiumSerializer`. This requires a change to your configuration:
+  `accumulo.graph.valueSerializer` is now `accumulo.graph.serializer` and the class name specified should
+  change as well.
 * get multiple metadata entry values helper methods `Metadata.getEntries` and `Metadata.getValues`
 * CLI improvements
   * delete and query shortcuts

@@ -76,7 +76,7 @@ public class DataInputStreamUtils {
             LazyPropertyMetadata metadata = decodePropertyMetadata(in, graph.getNameSubstitutionStrategy());
             results.add(new LazyMutableProperty(
                     graph,
-                    graph.getValueSerializer(),
+                    graph.getVertexiumSerializer(),
                     propertyKey,
                     propertyName,
                     propertyValue,

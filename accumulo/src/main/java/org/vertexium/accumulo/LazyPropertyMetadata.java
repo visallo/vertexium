@@ -2,8 +2,8 @@ package org.vertexium.accumulo;
 
 import org.vertexium.Metadata;
 import org.vertexium.VertexiumException;
+import org.vertexium.VertexiumSerializer;
 import org.vertexium.Visibility;
-import org.vertexium.accumulo.serializer.ValueSerializer;
 import org.vertexium.id.NameSubstitutionStrategy;
 
 import java.util.HashMap;
@@ -12,12 +12,12 @@ import java.util.Map;
 public class LazyPropertyMetadata {
     private Map<String, Entry> entries = new HashMap<>();
 
-    public Metadata toMetadata(ValueSerializer valueSerializer, NameSubstitutionStrategy nameSubstitutionStrategy) {
+    public Metadata toMetadata(VertexiumSerializer vertexiumSerializer, NameSubstitutionStrategy nameSubstitutionStrategy) {
         Metadata metadata = new Metadata();
         for (Map.Entry<String, Entry> metadataItem : this.entries.entrySet()) {
             String metadataKey = nameSubstitutionStrategy.inflate(metadataItem.getValue().getMetadataKey());
             Visibility metadataVisibility = metadataItem.getValue().getMetadataVisibility();
-            Object metadataValue = valueSerializer.valueToObject(metadataItem.getValue().getValue());
+            Object metadataValue = vertexiumSerializer.bytesToObject(metadataItem.getValue().getValue());
             if (metadataValue == null) {
                 throw new VertexiumException("Invalid metadata found.");
             }

@@ -1,10 +1,6 @@
 package org.vertexium.accumulo;
 
-import org.vertexium.Authorizations;
-import org.vertexium.Metadata;
-import org.vertexium.Property;
-import org.vertexium.Visibility;
-import org.vertexium.accumulo.serializer.ValueSerializer;
+import org.vertexium.*;
 import org.vertexium.property.MutableProperty;
 
 import java.util.ArrayList;
@@ -14,7 +10,7 @@ import java.util.Set;
 
 public class LazyMutableProperty extends MutableProperty {
     private final AccumuloGraph graph;
-    private final ValueSerializer valueSerializer;
+    private final VertexiumSerializer vertexiumSerializer;
     private final String propertyKey;
     private final String propertyName;
     private long timestamp;
@@ -27,7 +23,7 @@ public class LazyMutableProperty extends MutableProperty {
 
     public LazyMutableProperty(
             AccumuloGraph graph,
-            ValueSerializer valueSerializer,
+            VertexiumSerializer vertexiumSerializer,
             String propertyKey,
             String propertyName,
             byte[] propertyValue,
@@ -37,7 +33,7 @@ public class LazyMutableProperty extends MutableProperty {
             long timestamp
     ) {
         this.graph = graph;
-        this.valueSerializer = valueSerializer;
+        this.vertexiumSerializer = vertexiumSerializer;
         this.propertyKey = propertyKey;
         this.propertyName = propertyName;
         this.propertyValue = propertyValue;
@@ -109,7 +105,7 @@ public class LazyMutableProperty extends MutableProperty {
             if (propertyValue == null || propertyValue.length == 0) {
                 return null;
             }
-            cachedPropertyValue = this.valueSerializer.valueToObject(propertyValue);
+            cachedPropertyValue = this.vertexiumSerializer.bytesToObject(propertyValue);
             if (cachedPropertyValue instanceof StreamingPropertyValueRef) {
                 cachedPropertyValue = ((StreamingPropertyValueRef) cachedPropertyValue).toStreamingPropertyValue(this.graph);
             }
@@ -128,7 +124,7 @@ public class LazyMutableProperty extends MutableProperty {
             if (metadata == null) {
                 cachedMetadata = new Metadata();
             } else {
-                cachedMetadata = metadata.toMetadata(this.valueSerializer, graph.getNameSubstitutionStrategy());
+                cachedMetadata = metadata.toMetadata(this.vertexiumSerializer, graph.getNameSubstitutionStrategy());
             }
         }
         return cachedMetadata;

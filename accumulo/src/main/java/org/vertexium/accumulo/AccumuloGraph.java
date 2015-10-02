@@ -32,7 +32,6 @@ import org.vertexium.accumulo.iterator.model.PropertyColumnQualifier;
 import org.vertexium.accumulo.iterator.model.PropertyMetadataColumnQualifier;
 import org.vertexium.accumulo.iterator.util.ByteArrayWrapper;
 import org.vertexium.accumulo.keys.KeyHelper;
-import org.vertexium.accumulo.serializer.ValueSerializer;
 import org.vertexium.accumulo.util.RangeUtils;
 import org.vertexium.event.*;
 import org.vertexium.mutation.AlterPropertyVisibility;
@@ -61,7 +60,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
     private static final Object addIteratorLock = new Object();
     private static final Integer METADATA_ACCUMULO_GRAPH_VERSION = 2;
     private static final String METADATA_ACCUMULO_GRAPH_VERSION_KEY = "accumulo.graph.version";
-    private static final String METADATA_VALUE_SERIALIZER = "accumulo.graph.valueSerializer";
+    private static final String METADATA_SERIALIZER = "accumulo.graph.serializer";
     private static final Authorizations METADATA_AUTHORIZATIONS = new AccumuloAuthorizations();
     public static final int SINGLE_VERSION = 1;
     public static final Integer ALL_VERSIONS = null;
@@ -70,7 +69,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
     private static final ColumnVisibility EMPTY_COLUMN_VISIBILITY = new ColumnVisibility();
     private static final String CLASSPATH_CONTEXT_NAME = "vertexium";
     private final Connector connector;
-    private final ValueSerializer valueSerializer;
+    private final VertexiumSerializer vertexiumSerializer;
     private final FileSystem fileSystem;
     private final String dataDir;
     private final CuratorFramework curatorFramework;
@@ -81,7 +80,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
     protected ElementMutationBuilder elementMutationBuilder;
     private final Queue<GraphEvent> graphEventQueue = new LinkedList<>();
     private Integer accumuloGraphVersion;
-    private boolean foundValueSerializerMetadata;
+    private boolean foundVertexiumSerializerMetadata;
     private final AccumuloNameSubstitutionStrategy nameSubstitutionStrategy;
     private final String verticesTableName;
     private final String edgesTableName;
@@ -98,12 +97,12 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
     ) {
         super(config);
         this.connector = connector;
-        this.valueSerializer = config.createValueSerializer(this);
+        this.vertexiumSerializer = config.createSerializer(this);
         this.fileSystem = fileSystem;
         this.dataDir = config.getDataDir();
         this.nameSubstitutionStrategy = AccumuloNameSubstitutionStrategy.create(config.createSubstitutionStrategy(this));
         long maxStreamingPropertyValueTableDataSize = config.getMaxStreamingPropertyValueTableDataSize();
-        this.elementMutationBuilder = new ElementMutationBuilder(fileSystem, valueSerializer, maxStreamingPropertyValueTableDataSize, dataDir) {
+        this.elementMutationBuilder = new ElementMutationBuilder(fileSystem, vertexiumSerializer, maxStreamingPropertyValueTableDataSize, dataDir) {
             @Override
             protected void saveVertexMutation(Mutation m) {
                 addMutations(getVerticesWriter(), m);
@@ -173,10 +172,10 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
 
     @Override
     protected void setupGraphMetadata() {
-        foundValueSerializerMetadata = false;
+        foundVertexiumSerializerMetadata = false;
         super.setupGraphMetadata();
-        if (!foundValueSerializerMetadata) {
-            setMetadata(METADATA_VALUE_SERIALIZER, valueSerializer.getClass().getName());
+        if (!foundVertexiumSerializerMetadata) {
+            setMetadata(METADATA_SERIALIZER, vertexiumSerializer.getClass().getName());
         }
     }
 
@@ -190,15 +189,15 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             } else {
                 throw new VertexiumException("Invalid accumulo version in metadata. " + graphMetadataEntry);
             }
-        } else if (graphMetadataEntry.getKey().equals(METADATA_VALUE_SERIALIZER)) {
+        } else if (graphMetadataEntry.getKey().equals(METADATA_SERIALIZER)) {
             if (graphMetadataEntry.getValue() instanceof String) {
-                String valueSerializerClassName = (String) graphMetadataEntry.getValue();
-                if (!valueSerializerClassName.equals(valueSerializer.getClass().getName())) {
-                    throw new VertexiumException("Invalid " + METADATA_VALUE_SERIALIZER + " expected " + valueSerializerClassName + " found " + valueSerializer.getClass().getName());
+                String vertexiumSerializerClassName = (String) graphMetadataEntry.getValue();
+                if (!vertexiumSerializerClassName.equals(vertexiumSerializer.getClass().getName())) {
+                    throw new VertexiumException("Invalid " + METADATA_SERIALIZER + " expected " + vertexiumSerializerClassName + " found " + vertexiumSerializer.getClass().getName());
                 }
-                foundValueSerializerMetadata = true;
+                foundVertexiumSerializerMetadata = true;
             } else {
-                throw new VertexiumException("Invalid " + METADATA_VALUE_SERIALIZER + " expected string found " + graphMetadataEntry.getValue().getClass().getName());
+                throw new VertexiumException("Invalid " + METADATA_SERIALIZER + " expected string found " + graphMetadataEntry.getValue().getClass().getName());
             }
         }
     }
@@ -757,7 +756,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                         }
                         String resultsKey = propertyColumnQualifier.getDiscriminator(columnVisibility, column.getKey().getTimestamp());
                         long timestamp = column.getKey().getTimestamp();
-                        Object value = valueSerializer.valueToObject(column.getValue());
+                        Object value = vertexiumSerializer.bytesToObject(column.getValue().get());
                         Metadata metadata = new Metadata();
                         Set<Visibility> hiddenVisibilities = null; // TODO should we preserve these over time
                         if (value instanceof StreamingPropertyValueTableRef) {
@@ -772,7 +771,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                         if (hpv == null) {
                             continue;
                         }
-                        Object value = valueSerializer.valueToObject(column.getValue());
+                        Object value = vertexiumSerializer.bytesToObject(column.getValue().get());
                         Visibility metadataVisibility = accumuloVisibilityToVisibility(columnVisibility);
                         hpv.getMetadata().add(propertyMetadataColumnQualifier.getMetadataKey(), value, metadataVisibility);
                     }
@@ -1097,8 +1096,8 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         return m;
     }
 
-    public ValueSerializer getValueSerializer() {
-        return valueSerializer;
+    public VertexiumSerializer getVertexiumSerializer() {
+        return vertexiumSerializer;
     }
 
     @Override
@@ -1773,7 +1772,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                     if (!columnFamily.equals(AccumuloVertex.CF_OUT_EDGE)) {
                         if (columnFamily.equals(AccumuloVertex.CF_OUT_EDGE_SOFT_DELETE) || columnFamily.equals(AccumuloVertex.CF_OUT_EDGE_HIDDEN)) {
                             softDeletedEdgeIds.add(row.getKey().getColumnQualifier().toString());
-                            for (Iterator<RelatedEdge> i = results.iterator(); i.hasNext();) {
+                            for (Iterator<RelatedEdge> i = results.iterator(); i.hasNext(); ) {
                                 if (softDeletedEdgeIds.contains(i.next().getEdgeId())) {
                                     i.remove();
                                 }

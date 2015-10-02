@@ -17,7 +17,7 @@ Setting up Gremlin command line interface
         storage.graph.search.locations=localhost
         storage.graph.search.indexName=vertexium
 
-        storage.graph.serializer=org.vertexium.accumulo.serializer.JavaValueSerializer
+        storage.graph.serializer=org.vertexium.JavaVertexiumSerializer
 
         storage.graph.idgenerator=org.vertexium.id.UUIDIdGenerator
 
@@ -65,7 +65,7 @@ Setting up Rexster
             <graph-password>password</graph-password>
             <graph-tableNamePrefix>vertexium</graph-tableNamePrefix>
             <graph-zookeeperServers>192.168.33.10,192.168.33.10</graph-zookeeperServers>
-            <graph-serializer>org.vertexium.accumulo.serializer.JavaValueSerializer</graph-serializer>
+            <graph-serializer>org.vertexium.JavaVertexiumSerializer</graph-serializer>
             <graph-idgenerator>org.vertexium.id.UUIDIdGenerator</graph-idgenerator>
             <graph-search>org.vertexium.elasticsearch.ElasticSearchSearchIndex</graph-search>
             <graph-search-locations>192.168.33.10</graph-search-locations>
