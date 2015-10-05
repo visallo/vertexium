@@ -1513,6 +1513,18 @@ public abstract class GraphTestBase {
 
         Iterable<Element> elements = graph.query(AUTHORIZATIONS_A).elements();
         Assert.assertEquals(4, count(elements));
+
+        vertices = graph.query(AUTHORIZATIONS_A).has("name").vertices();
+        Assert.assertEquals(1, count(vertices));
+
+        vertices = graph.query(AUTHORIZATIONS_A).hasNot("name").vertices();
+        Assert.assertEquals(1, count(vertices));
+
+        vertices = graph.query(AUTHORIZATIONS_A).has("notSetProp").vertices();
+        Assert.assertEquals(0, count(vertices));
+
+        vertices = graph.query(AUTHORIZATIONS_A).hasNot("notSetProp").vertices();
+        Assert.assertEquals(2, count(vertices));
     }
 
     @Test

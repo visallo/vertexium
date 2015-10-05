@@ -330,7 +330,14 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
     }
 
     protected FilterBuilder getFilterForHasNotPropertyContainer(HasNotPropertyContainer hasNotProperty) {
-        String[] propertyNames = getPropertyNames(hasNotProperty.getKey());
+        String[] propertyNames;
+        try {
+            propertyNames = getPropertyNames(hasNotProperty.getKey());
+        } catch (VertexiumNoMatchingPropertiesException ex) {
+            // If we can't find a property this means it doesn't exist on any elements so the hasNot query should
+            // match all records.
+            return FilterBuilders.matchAllFilter();
+        }
         List<FilterBuilder> filters = new ArrayList<>();
         for (String propertyName : propertyNames) {
             filters.add(FilterBuilders.notFilter(FilterBuilders.existsFilter(propertyName)));
