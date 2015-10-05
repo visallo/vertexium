@@ -1476,7 +1476,9 @@ public abstract class GraphTestBase {
 
     @Test
     public void testGraphQuery() {
-        Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
+        Vertex v1 = graph.prepareVertex("v1", VISIBILITY_A)
+                .addPropertyValue("k1", "name", "joe", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
         Vertex v2 = graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_A);
         graph.addEdge("e1", v1, v2, "edgeA", VISIBILITY_A, AUTHORIZATIONS_A);
         graph.addEdge("e2", v1, v2, "edgeB", VISIBILITY_A, AUTHORIZATIONS_A);
@@ -1820,16 +1822,25 @@ public abstract class GraphTestBase {
                 .has("age", Compare.EQUAL, 25)
                 .vertices();
         Assert.assertEquals(1, count(vertices));
+        if (vertices instanceof IterableWithTotalHits) {
+            Assert.assertEquals(1, ((IterableWithTotalHits) vertices).getTotalHits());
+        }
 
         vertices = graph.query(AUTHORIZATIONS_B)
                 .has("age", Compare.EQUAL, 25)
                 .vertices();
         Assert.assertEquals(0, count(vertices)); // need auth A to see the v2 node itself
+        if (vertices instanceof IterableWithTotalHits) {
+            Assert.assertEquals(0, ((IterableWithTotalHits) vertices).getTotalHits());
+        }
 
         vertices = graph.query(AUTHORIZATIONS_A_AND_B)
                 .has("age", Compare.EQUAL, 25)
                 .vertices();
         Assert.assertEquals(2, count(vertices));
+        if (vertices instanceof IterableWithTotalHits) {
+            Assert.assertEquals(2, ((IterableWithTotalHits) vertices).getTotalHits());
+        }
     }
 
     @Test
@@ -3173,7 +3184,7 @@ public abstract class GraphTestBase {
         assertEquals("value2", v1.getProperty("", "prop1", VISIBILITY_EMPTY).getValue());
         assertNull(v1.getProperty("", "prop1", VISIBILITY_A));
 
-        v1 = graph.getVertex("v1",FetchHint.ALL, beforeAlterTimestamp ,AUTHORIZATIONS_A);
+        v1 = graph.getVertex("v1", FetchHint.ALL, beforeAlterTimestamp, AUTHORIZATIONS_A);
         assertEquals(2, count(v1.getProperties()));
         assertNotNull(v1.getProperty("", "prop1", VISIBILITY_EMPTY));
         assertEquals("value1", v1.getProperty("", "prop1", VISIBILITY_EMPTY).getValue());

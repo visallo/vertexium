@@ -157,12 +157,16 @@ public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchI
         jsonBuilder = XContentFactory.jsonBuilder()
                 .startObject();
 
+        String elementTypeVisibilityPropertyName = addElementTypeVisibilityPropertyToIndex(graph, element);
+
         if (element instanceof Vertex) {
             jsonBuilder.field(ELEMENT_TYPE_FIELD_NAME, ElasticSearchElementType.VERTEX.getKey());
+            jsonBuilder.field(elementTypeVisibilityPropertyName, ElasticSearchElementType.VERTEX.getKey());
             getConfig().getScoringStrategy().addFieldsToVertexDocument(this, jsonBuilder, (Vertex) element, null, authorizations);
         } else if (element instanceof Edge) {
             Edge edge = (Edge) element;
             jsonBuilder.field(ELEMENT_TYPE_FIELD_NAME, ElasticSearchElementType.EDGE.getKey());
+            jsonBuilder.field(elementTypeVisibilityPropertyName, ElasticSearchElementType.VERTEX.getKey());
             getConfig().getScoringStrategy().addFieldsToEdgeDocument(this, jsonBuilder, edge, null, authorizations);
             jsonBuilder.field(IN_VERTEX_ID_FIELD_NAME, edge.getVertexId(Direction.IN));
             jsonBuilder.field(OUT_VERTEX_ID_FIELD_NAME, edge.getVertexId(Direction.OUT));
@@ -182,6 +186,14 @@ public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchI
         }
 
         return jsonBuilder;
+    }
+
+    private String addElementTypeVisibilityPropertyToIndex(Graph graph, Element element) throws IOException {
+        String elementTypeVisibilityPropertyName = deflatePropertyName(graph, ELEMENT_TYPE_FIELD_NAME, element.getVisibility());
+        String indexName = getIndexName(element);
+        IndexInfo indexInfo = ensureIndexCreatedAndInitialized(indexName, isStoreSourceData());
+        addPropertyToIndex(graph, indexInfo, elementTypeVisibilityPropertyName, String.class, false, false);
+        return elementTypeVisibilityPropertyName;
     }
 
     private Map<String, Object> getProperties(Graph graph, Element element) throws IOException {
@@ -247,8 +259,14 @@ public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchI
 
     @Override
     protected String deflatePropertyName(Graph graph, Property property) {
-        String visibilityHash = getVisibilityHash(graph, property.getName(), property.getVisibility());
-        return this.nameSubstitutionStrategy.deflate(property.getName()) + "_" + visibilityHash;
+        String propertyName = property.getName();
+        Visibility propertyVisibility = property.getVisibility();
+        return deflatePropertyName(graph, propertyName, propertyVisibility);
+    }
+
+    private String deflatePropertyName(Graph graph, String propertyName, Visibility propertyVisibility) {
+        String visibilityHash = getVisibilityHash(graph, propertyName, propertyVisibility);
+        return this.nameSubstitutionStrategy.deflate(propertyName) + "_" + visibilityHash;
     }
 
     @Override
@@ -322,6 +340,24 @@ public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchI
                     propertyNames.add(deflatedPropertyName + "_" + hash + typeSuffix);
                 }
             }
+        }
+        return propertyNames;
+    }
+
+    public Collection<String> getQueryableElementTypeVisibilityPropertyNames(Graph graph, Authorizations authorizations) {
+        Set<String> propertyNames = new HashSet<>();
+        for (PropertyDefinition propertyDefinition : getAllPropertyDefinitions().values()) {
+            String inflatedPropertyName = inflatePropertyName(propertyDefinition.getPropertyName()); // could be stored deflated
+            String deflatedPropertyName = this.nameSubstitutionStrategy.deflate(inflatedPropertyName);
+            if (!inflatedPropertyName.equals(ELEMENT_TYPE_FIELD_NAME)) {
+                continue;
+            }
+            for (String hash : this.propertyNameVisibilitiesStore.getHashes(graph, inflatedPropertyName, authorizations)) {
+                propertyNames.add(deflatedPropertyName + "_" + hash);
+            }
+        }
+        if (propertyNames.size() == 0) {
+            throw new VertexiumNoMatchingPropertiesException("No queryable " + ELEMENT_TYPE_FIELD_NAME + " for authorizations " + authorizations);
         }
         return propertyNames;
     }

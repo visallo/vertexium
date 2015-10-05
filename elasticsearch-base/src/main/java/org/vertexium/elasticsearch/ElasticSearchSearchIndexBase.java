@@ -566,7 +566,7 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex, Searc
         }
     }
 
-    private void addPropertyToIndex(Graph graph, IndexInfo indexInfo, String propertyName, Class dataType, boolean analyzed, boolean sortable) throws IOException {
+    protected void addPropertyToIndex(Graph graph, IndexInfo indexInfo, String propertyName, Class dataType, boolean analyzed, boolean sortable) throws IOException {
         addPropertyToIndex(graph, indexInfo, propertyName, dataType, analyzed, null, sortable);
     }
 
