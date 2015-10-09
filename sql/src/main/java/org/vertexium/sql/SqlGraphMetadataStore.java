@@ -11,7 +11,7 @@ public class SqlGraphMetadataStore extends GraphMetadataStore {
     private final SqlMap<Object> metadata;
 
     public SqlGraphMetadataStore(SqlGraphConfiguration config) {
-        this.metadata = config.metadataMap();
+        this.metadata = config.newMetadataMap();
     }
 
     @Override

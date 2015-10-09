@@ -17,13 +17,14 @@ public class SqlGraph extends InMemoryGraph {
     private final SqlMap<InMemoryTableElement<InMemoryEdge>> edgeMap;
 
     public SqlGraph(SqlGraphConfiguration configuration) {
-        this(configuration, new SqlVertexTable(configuration.vertexMap()), new SqlEdgeTable(configuration.edgeMap()));
+        this(configuration,
+                new SqlVertexTable(configuration.newVertexMap()), new SqlEdgeTable(configuration.newEdgeMap()));
     }
 
     public SqlGraph(SqlGraphConfiguration configuration, SqlVertexTable vertices, SqlEdgeTable edges) {
         super(configuration, vertices, edges);
-        vertexMap = configuration.vertexMap();
-        edgeMap = configuration.edgeMap();
+        vertexMap = configuration.newVertexMap();
+        edgeMap = configuration.newEdgeMap();
         metadataStore = new SqlGraphMetadataStore(configuration);
     }
 
