@@ -20,6 +20,7 @@
 * `alterPropertyVisibility` bug fixes
 * `AccumuloGraph.findRelatedEdgeSummary` bug fix to filter out soft deleted and hidden edges
 * `InMemoryGraph` bug fixes
+* `sort` no longer throws exceptions on field not found (issue #47)
 
 # v2.0.3
 
