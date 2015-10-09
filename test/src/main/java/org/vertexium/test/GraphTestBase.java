@@ -1785,39 +1785,72 @@ public abstract class GraphTestBase {
                 .setProperty("name", "tom", VISIBILITY_A)
                 .setProperty("age", 30, VISIBILITY_B)
                 .save(AUTHORIZATIONS_A_AND_B);
+        graph.prepareVertex("v4", VISIBILITY_A)
+                .setProperty("name", "tom", VISIBILITY_A)
+                .setProperty("age", 35, VISIBILITY_B)
+                .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         List<Vertex> vertices = toList(graph.query(AUTHORIZATIONS_A_AND_B)
                 .sort("age", SortDirection.ASCENDING)
                 .vertices());
-        Assert.assertEquals(3, count(vertices));
+        Assert.assertEquals(4, count(vertices));
         assertEquals("v2", vertices.get(0).getId());
         assertEquals("v3", vertices.get(1).getId());
-        assertEquals("v1", vertices.get(2).getId());
+        assertEquals("v4", vertices.get(2).getId());
+        assertEquals("v1", vertices.get(3).getId());
 
         vertices = toList(graph.query(AUTHORIZATIONS_A_AND_B)
                 .sort("age", SortDirection.DESCENDING)
                 .vertices());
-        Assert.assertEquals(3, count(vertices));
-        assertEquals("v3", vertices.get(0).getId());
-        assertEquals("v2", vertices.get(1).getId());
-        assertEquals("v1", vertices.get(2).getId());
+        Assert.assertEquals(4, count(vertices));
+        assertEquals("v4", vertices.get(0).getId());
+        assertEquals("v3", vertices.get(1).getId());
+        assertEquals("v2", vertices.get(2).getId());
+        assertEquals("v1", vertices.get(3).getId());
 
         vertices = toList(graph.query(AUTHORIZATIONS_A_AND_B)
                 .sort("name", SortDirection.ASCENDING)
                 .vertices());
-        Assert.assertEquals(3, count(vertices));
+        Assert.assertEquals(4, count(vertices));
         assertEquals("v2", vertices.get(0).getId());
         assertEquals("v1", vertices.get(1).getId());
-        assertEquals("v3", vertices.get(2).getId());
+        assertTrue(vertices.get(2).getId().equals("v3") || vertices.get(2).getId().equals("v4"));
+        assertTrue(vertices.get(3).getId().equals("v3") || vertices.get(3).getId().equals("v4"));
 
         vertices = toList(graph.query(AUTHORIZATIONS_A_AND_B)
                 .sort("name", SortDirection.DESCENDING)
                 .vertices());
-        Assert.assertEquals(3, count(vertices));
-        assertEquals("v3", vertices.get(0).getId());
+        Assert.assertEquals(4, count(vertices));
+        assertTrue(vertices.get(0).getId().equals("v3") || vertices.get(0).getId().equals("v4"));
+        assertTrue(vertices.get(1).getId().equals("v3") || vertices.get(1).getId().equals("v4"));
+        assertEquals("v1", vertices.get(2).getId());
+        assertEquals("v2", vertices.get(3).getId());
+
+        vertices = toList(graph.query(AUTHORIZATIONS_A_AND_B)
+                .sort("name", SortDirection.ASCENDING)
+                .sort("age", SortDirection.ASCENDING)
+                .vertices());
+        Assert.assertEquals(4, count(vertices));
+        assertEquals("v2", vertices.get(0).getId());
         assertEquals("v1", vertices.get(1).getId());
-        assertEquals("v2", vertices.get(2).getId());
+        assertEquals("v3", vertices.get(2).getId());
+        assertEquals("v4", vertices.get(3).getId());
+
+        vertices = toList(graph.query(AUTHORIZATIONS_A_AND_B)
+                .sort("name", SortDirection.ASCENDING)
+                .sort("age", SortDirection.DESCENDING)
+                .vertices());
+        Assert.assertEquals(4, count(vertices));
+        assertEquals("v2", vertices.get(0).getId());
+        assertEquals("v1", vertices.get(1).getId());
+        assertEquals("v4", vertices.get(2).getId());
+        assertEquals("v3", vertices.get(3).getId());
+
+        vertices = toList(graph.query(AUTHORIZATIONS_A_AND_B)
+                .sort("otherfield", SortDirection.ASCENDING)
+                .vertices());
+        Assert.assertEquals(4, count(vertices));
     }
 
     @Test
