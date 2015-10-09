@@ -1,4 +1,4 @@
-# v2.0.4
+# v2.1.0
 
 * Changed `ValueSerializer` to `VertexiumSerializer`. This requires a change to your configuration:
   `accumulo.graph.valueSerializer` is now `accumulo.graph.serializer` and the class name specified should
