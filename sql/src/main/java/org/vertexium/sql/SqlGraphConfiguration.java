@@ -27,9 +27,6 @@ public class SqlGraphConfiguration extends InMemoryGraphConfiguration {
     protected static final String OUT_VERTEX_ID_COLUMN = "out_vertex_id";
 
     private final BasicDataSource dataSource;
-    private final SqlMap<InMemoryTableElement<InMemoryVertex>> vertexMap;
-    private final SqlMap<InMemoryTableElement<InMemoryEdge>> edgeMap;
-    private final SqlMap<Object> metadataMap;
     private final VertexiumSerializer serializer;
 
     public SqlGraphConfiguration(Map<String, Object> config) {
@@ -44,32 +41,17 @@ public class SqlGraphConfiguration extends InMemoryGraphConfiguration {
         dataSource.setUsername(username);
         dataSource.setPassword(password);
         serializer = createSerializer();
-        vertexMap = newVertexMap();
-        edgeMap = newEdgeMap();
-        metadataMap = newMetadataMap();
     }
 
     protected DataSource getDataSource() {
         return dataSource;
     }
 
-    protected SqlMap<InMemoryTableElement<InMemoryVertex>> vertexMap() {
-        return vertexMap;
-    }
-
-    protected SqlMap<InMemoryTableElement<InMemoryEdge>> edgeMap() {
-        return edgeMap;
-    }
-
-    protected SqlMap<Object> metadataMap() {
-        return metadataMap;
-    }
-
     protected String tableNameWithPrefix(String tableName) {
         return getTableNamePrefix() + "_" + tableName;
     }
 
-    private SqlMap<InMemoryTableElement<InMemoryEdge>> newEdgeMap() {
+    protected SqlMap<InMemoryTableElement<InMemoryEdge>> newEdgeMap() {
         return new SqlMap<InMemoryTableElement<InMemoryEdge>>(
                 tableNameWithPrefix(EDGE_TABLE_NAME), KEY_COLUMN_NAME, VALUE_COLUMN_NAME, dataSource, serializer) {
 
@@ -84,12 +66,12 @@ public class SqlGraphConfiguration extends InMemoryGraphConfiguration {
         };
     }
 
-    private SqlMap<InMemoryTableElement<InMemoryVertex>> newVertexMap() {
+    protected SqlMap<InMemoryTableElement<InMemoryVertex>> newVertexMap() {
         return new SqlMap<>(
                 tableNameWithPrefix(VERTEX_TABLE_NAME), KEY_COLUMN_NAME, VALUE_COLUMN_NAME, dataSource, serializer);
     }
 
-    private SqlMap<Object> newMetadataMap() {
+    protected SqlMap<Object> newMetadataMap() {
         return new SqlMap<>(
                 tableNameWithPrefix(METADATA_TABLE_NAME), KEY_COLUMN_NAME, VALUE_COLUMN_NAME, dataSource, serializer);
     }
