@@ -126,7 +126,7 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends ElasticSearchQue
             SortOrder esOrder = sortContainer.direction == SortDirection.ASCENDING ? SortOrder.ASC : SortOrder.DESC;
             PropertyDefinition propertyDefinition = getSearchIndex().getPropertyDefinition(getGraph(), sortContainer.propertyName);
             if (propertyDefinition == null) {
-                throw new VertexiumException("Could not find property definition for field: " + sortContainer.propertyName);
+                continue;
             }
             if (!propertyDefinition.isSortable()) {
                 throw new VertexiumException("Cannot sort on non-sortable fields");

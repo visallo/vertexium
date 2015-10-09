@@ -6,9 +6,13 @@ blueprints, every Vertexium method requires authorizations and visibilities.
 Vertexium also supports multivalued properties as well as property metadata.
 
 The Vertexium API was designed to be generic, allowing for multiple implementations.
-The only implementation provided currently is built on top of
-[Apache Accumulo](https://accumulo.apache.org/) for data storage and
-[Elastic Search](http://www.elasticsearch.org/) for indexing.
+
+* Data storage
+  * [Accumulo](accumulo/README.md)
+  * Experimental: [SQL](sql/README.md)
+
+* Search
+  * [Elasticsearch](elasticsearch-singledocument/README.md)
 
 Maven
 =====
