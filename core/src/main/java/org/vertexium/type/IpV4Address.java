@@ -7,12 +7,12 @@ import java.util.Arrays;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class IPAddress implements Serializable, Comparable<IPAddress> {
+public class IpV4Address implements Serializable, Comparable<IpV4Address> {
     private static final long serialVersionUID = 42L;
     private static final Pattern IP_REGEX = Pattern.compile("^([0-9]{1,3})\\.([0-9]{1,3})\\.([0-9]{1,3})\\.([0-9]{1,3})$");
     private final int[] octets;
 
-    public IPAddress(String ipAddress) {
+    public IpV4Address(String ipAddress) {
         Matcher m = IP_REGEX.matcher(ipAddress);
         if (!m.matches()) {
             throw new VertexiumException("Could not parse IP address: " + ipAddress);
@@ -23,14 +23,18 @@ public class IPAddress implements Serializable, Comparable<IPAddress> {
         }
     }
 
-    public IPAddress(int[] octets) {
+    public IpV4Address(int a, int b, int c, int d) {
+        this(new int[]{a, b, c, d});
+    }
+
+    public IpV4Address(int[] octets) {
         if (octets.length != 4) {
             throw new VertexiumException("Invalid IP address. Expected 4 octets, found " + octets.length);
         }
         this.octets = Arrays.copyOf(octets, 4);
     }
 
-    public IPAddress(byte[] octets) {
+    public IpV4Address(byte[] octets) {
         if (octets.length != 4) {
             throw new VertexiumException("Invalid IP address. Expected 4 octets, found " + octets.length);
         }
@@ -54,7 +58,7 @@ public class IPAddress implements Serializable, Comparable<IPAddress> {
             return false;
         }
 
-        IPAddress ipAddress = (IPAddress) o;
+        IpV4Address ipAddress = (IpV4Address) o;
 
         if (!Arrays.equals(octets, ipAddress.octets)) {
             return false;
@@ -69,7 +73,7 @@ public class IPAddress implements Serializable, Comparable<IPAddress> {
     }
 
     @Override
-    public int compareTo(IPAddress o) {
+    public int compareTo(IpV4Address o) {
         for (int i = 0; i < 4; i++) {
             int eq = Integer.compare(this.octets[i], o.octets[i]);
             if (eq != 0) {
