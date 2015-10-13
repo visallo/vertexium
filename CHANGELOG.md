@@ -1,3 +1,7 @@
+# v2.1.1
+
+* Add IP Address type
+
 # v2.1.0
 
 * Changed `ValueSerializer` to `VertexiumSerializer`. This requires a change to your configuration:

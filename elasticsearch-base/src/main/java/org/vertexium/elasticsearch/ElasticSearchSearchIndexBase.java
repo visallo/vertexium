@@ -28,6 +28,7 @@ import org.vertexium.search.SearchIndex;
 import org.vertexium.search.SearchIndexWithVertexPropertyCountByValue;
 import org.vertexium.type.GeoCircle;
 import org.vertexium.type.GeoPoint;
+import org.vertexium.type.IPAddress;
 import org.vertexium.util.VertexiumLogger;
 import org.vertexium.util.VertexiumLoggerFactory;
 
@@ -649,6 +650,9 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex, Searc
                 mapping.field("index", "not_analyzed");
                 mapping.field("ignore_above", EXACT_MATCH_IGNORE_ABOVE_LIMIT);
             }
+        } else if (dataType == IPAddress.class) {
+            LOGGER.debug("Registering IP type for %s", propertyName);
+            mapping.field("type", "ip");
         } else if (dataType == Float.class) {
             LOGGER.debug("Registering float type for %s", propertyName);
             mapping.field("type", "float");

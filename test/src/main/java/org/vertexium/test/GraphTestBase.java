@@ -21,6 +21,7 @@ import org.vertexium.search.SearchIndex;
 import org.vertexium.test.util.LargeStringInputStream;
 import org.vertexium.type.GeoCircle;
 import org.vertexium.type.GeoPoint;
+import org.vertexium.type.IPAddress;
 import org.vertexium.util.*;
 
 import java.io.ByteArrayInputStream;
@@ -4132,6 +4133,40 @@ public abstract class GraphTestBase {
         assertEquals(2, edgeLabels.size());
         assertTrue("labelA missing", edgeLabels.contains("labelA"));
         assertTrue("labelB missing", edgeLabels.contains("labelB"));
+    }
+
+    @Test
+    public void testIPAddress() {
+        graph.defineProperty("ipAddress2").dataType(IPAddress.class).define();
+
+        graph.prepareVertex("v1", VISIBILITY_A)
+                .addPropertyValue("k1", "ipAddress1", new IPAddress("192.168.0.1"), VISIBILITY_A)
+                .addPropertyValue("k1", "ipAddress2", new IPAddress("192.168.0.2"), VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
+        graph.prepareVertex("v2", VISIBILITY_A)
+                .addPropertyValue("k1", "ipAddress1", new IPAddress("192.168.0.5"), VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
+        graph.prepareVertex("v3", VISIBILITY_A)
+                .addPropertyValue("k1", "ipAddress1", new IPAddress("192.168.1.1"), VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
+        graph.flush();
+
+        Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
+        assertEquals(new IPAddress("192.168.0.1"), v1.getPropertyValue("ipAddress1"));
+        assertEquals(new IPAddress("192.168.0.2"), v1.getPropertyValue("ipAddress2"));
+
+        List<Vertex> vertices = toList(graph.query(AUTHORIZATIONS_A).has("ipAddress1", Compare.EQUAL, new IPAddress("192.168.0.1")).vertices());
+        assertEquals(1, vertices.size());
+        assertEquals("v1", vertices.get(0).getId());
+
+        vertices = sortById(toList(
+                graph.query(AUTHORIZATIONS_A)
+                        .range("ipAddress1", new IPAddress("192.168.0.0"), new IPAddress("192.168.0.255"))
+                        .vertices()
+        ));
+        assertEquals(2, vertices.size());
+        assertEquals("v1", vertices.get(0).getId());
+        assertEquals("v2", vertices.get(1).getId());
     }
 
     private List<Vertex> getVertices(long count) {
