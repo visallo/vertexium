@@ -7,18 +7,22 @@ import org.vertexium.Visibility;
 import org.vertexium.inmemory.InMemoryElement;
 import org.vertexium.inmemory.InMemoryTableElement;
 import org.vertexium.inmemory.mutations.Mutation;
+import org.vertexium.property.StreamingPropertyValue;
+import org.vertexium.property.StreamingPropertyValueRef;
 import org.vertexium.sql.collections.Storable;
 
 import java.util.Map;
 
 public abstract class SqlTableElement<TElement extends InMemoryElement>
-        extends InMemoryTableElement<TElement> implements Storable<SqlTableElement<TElement>> {
+        extends InMemoryTableElement<TElement> implements Storable<SqlTableElement<TElement>, SqlGraph> {
 
     private transient Map<String, SqlTableElement<TElement>> container;
+    private transient SqlGraph graph;
 
     @Override
-    public void setContainer(Map<String, SqlTableElement<TElement>> container) {
+    public void setContainer(Map<String, SqlTableElement<TElement>> container, SqlGraph graph) {
         this.container = container;
+        this.graph = graph;
     }
 
     @Override
@@ -96,5 +100,11 @@ public abstract class SqlTableElement<TElement extends InMemoryElement>
     public void appendAlterEdgeLabelMutation(String newEdgeLabel) {
         super.appendAlterEdgeLabelMutation(newEdgeLabel);
         store();
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    protected StreamingPropertyValue loadStreamingPropertyValue(StreamingPropertyValueRef<?> streamingPropertyValueRef) {
+        return ((StreamingPropertyValueRef<SqlGraph>) streamingPropertyValueRef).toStreamingPropertyValue(graph);
     }
 }

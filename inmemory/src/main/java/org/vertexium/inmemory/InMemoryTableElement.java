@@ -3,6 +3,8 @@ package org.vertexium.inmemory;
 import org.vertexium.*;
 import org.vertexium.inmemory.mutations.*;
 import org.vertexium.property.MutablePropertyImpl;
+import org.vertexium.property.StreamingPropertyValue;
+import org.vertexium.property.StreamingPropertyValueRef;
 import org.vertexium.util.ConvertingIterable;
 import org.vertexium.util.FilterIterable;
 import org.vertexium.util.IncreasingTime;
@@ -151,9 +153,11 @@ public abstract class InMemoryTableElement<TElement extends InMemoryElement> imp
                 hiddenVisibilities.remove(m.getVisibility());
             } else if (m instanceof AddPropertyValueMutation) {
                 AddPropertyValueMutation addPropertyValueMutation = (AddPropertyValueMutation) m;
+                Object value = addPropertyValueMutation.getValue();
+                value = loadIfStreamingPropertyValue(value);
                 HistoricalPropertyValue historicalPropertyValue = new HistoricalPropertyValue(
                         m.getTimestamp(),
-                        addPropertyValueMutation.getValue(),
+                        value,
                         addPropertyValueMutation.getMetadata(),
                         hiddenVisibilities
                 );
@@ -245,7 +249,20 @@ public abstract class InMemoryTableElement<TElement extends InMemoryElement> imp
         if (propertyKey == null) {
             return null;
         }
+        value = loadIfStreamingPropertyValue(value);
         return new MutablePropertyImpl(propertyKey, propertyName, value, metadata, timestamp, hiddenVisibilities, visibility);
+    }
+
+    private Object loadIfStreamingPropertyValue(Object value) {
+        if (value instanceof StreamingPropertyValueRef) {
+            value = loadStreamingPropertyValue((StreamingPropertyValueRef) value);
+        }
+        return value;
+    }
+
+    protected StreamingPropertyValue loadStreamingPropertyValue(StreamingPropertyValueRef<?> streamingPropertyValueRef) {
+        // There's no need to have a Graph object for the pure in-memory implementation. Subclasses should override.
+        return streamingPropertyValueRef.toStreamingPropertyValue(null);
     }
 
     private String toMapKey(PropertyMutation m) {
@@ -303,7 +320,6 @@ public abstract class InMemoryTableElement<TElement extends InMemoryElement> imp
         if (timestamp == null) {
             timestamp = IncreasingTime.currentTimeMillis();
         }
-        value = InMemoryStreamingPropertyValue.saveStreamingPropertyValue(value);
         this.mutations.add(new AddPropertyValueMutation(timestamp, key, name, value, metadata, visibility));
     }
 

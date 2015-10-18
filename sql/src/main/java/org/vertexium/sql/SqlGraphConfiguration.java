@@ -23,6 +23,7 @@ public class SqlGraphConfiguration extends InMemoryGraphConfiguration {
     protected static final String VERTEX_TABLE_NAME = "vertex";
     protected static final String EDGE_TABLE_NAME = "edge";
     protected static final String METADATA_TABLE_NAME = "metadata";
+    protected static final String STREAMING_PROPERTIES_TABLE_NAME = "streaming_properties";
     protected static final String IN_VERTEX_ID_COLUMN = "in_vertex_id";
     protected static final String OUT_VERTEX_ID_COLUMN = "out_vertex_id";
 
@@ -74,6 +75,10 @@ public class SqlGraphConfiguration extends InMemoryGraphConfiguration {
     protected SqlMap<Object> newMetadataMap() {
         return new SqlMap<>(
                 tableNameWithPrefix(METADATA_TABLE_NAME), KEY_COLUMN_NAME, VALUE_COLUMN_NAME, dataSource, serializer);
+    }
+
+    protected SqlStreamingPropertyTable newStreamingPropertyTable() {
+        return new SqlStreamingPropertyTable(tableNameWithPrefix(STREAMING_PROPERTIES_TABLE_NAME), dataSource);
     }
 
     private static String getConfigString(Map<String, Object> config, String key) {

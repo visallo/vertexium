@@ -4,7 +4,6 @@ import org.vertexium.*;
 import org.vertexium.mutation.*;
 import org.vertexium.property.MutableProperty;
 import org.vertexium.property.MutablePropertyImpl;
-import org.vertexium.property.StreamingPropertyValue;
 import org.vertexium.util.ConvertingIterable;
 import org.vertexium.util.FilterIterable;
 import org.vertexium.util.IncreasingTime;
@@ -363,10 +362,6 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> implemen
     ) {
         long timestamp = IncreasingTime.currentTimeMillis();
         for (Property property : properties) {
-            Object propertyValue = property.getValue();
-            if (propertyValue instanceof StreamingPropertyValue) {
-                ((MutableProperty) property).setValue(InMemoryStreamingPropertyValue.saveStreamingPropertyValue(propertyValue));
-            }
             addPropertyValue(property.getKey(), property.getName(), property.getValue(), property.getMetadata(), property.getVisibility(), property.getTimestamp(), false, authorizations);
         }
         for (PropertyDeleteMutation propertyDeleteMutation : propertyDeleteMutations) {

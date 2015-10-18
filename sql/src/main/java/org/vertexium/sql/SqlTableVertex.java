@@ -27,7 +27,8 @@ public class SqlTableVertex extends SqlTableElement<InMemoryVertex> {
         return new InMemoryAdapter(this);
     }
 
-    private static class InMemoryAdapter extends InMemoryTableVertex implements Storable<SqlTableElement<InMemoryVertex>> {
+    private static class InMemoryAdapter extends InMemoryTableVertex
+            implements Storable<SqlTableElement<InMemoryVertex>, SqlGraph> {
         private SqlTableVertex sqlTableVertex;
 
         InMemoryAdapter(SqlTableVertex sqlTableVertex) {
@@ -36,8 +37,8 @@ public class SqlTableVertex extends SqlTableElement<InMemoryVertex> {
         }
 
         @Override
-        public void setContainer(Map<String, SqlTableElement<InMemoryVertex>> map) {
-            sqlTableVertex.setContainer(map);
+        public void setContainer(Map<String, SqlTableElement<InMemoryVertex>> map, SqlGraph graph) {
+            sqlTableVertex.setContainer(map, graph);
         }
 
         @Override

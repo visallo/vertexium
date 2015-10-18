@@ -4,3 +4,4 @@
 drop table vertexium_vertex;
 drop table vertexium_edge;
 drop table vertexium_metadata;
+drop table vertexium_streaming_properties;
