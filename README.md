@@ -1,4 +1,4 @@
-Vertexium [![Build Status](https://travis-ci.org/v5analytics/vertexium.svg?branch=master)](https://travis-ci.org/v5analytics/vertexium-orm)
+Vertexium [![Build Status](https://travis-ci.org/v5analytics/vertexium.svg?branch=master)](https://travis-ci.org/v5analytics/vertexium)
 =========
 
 Vertexium is an API to manipulate graphs, similar to blueprints. Unlike
