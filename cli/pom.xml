@@ -86,6 +86,8 @@
                     <archive>
                         <manifest>
                             <mainClass>org.vertexium.cli.VertexiumShell</mainClass>
+                            <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+                            <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
                         </manifest>
                     </archive>
                 </configuration>

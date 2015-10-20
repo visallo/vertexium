@@ -176,6 +176,12 @@ public class VertexiumShell {
         shell.register(new SetTimeCommand(shell));
         shell.register(new NowCommand(shell));
 
+        System.out.println("  _    __          __            _");
+        System.out.println(" | |  / /__  _____/ /____  _  __(_)_  ______ ___");
+        System.out.println(" | | / / _ \\/ ___/ __/ _ \\| |/_/ / / / / __ `__ \\");
+        System.out.println(" | |/ /  __/ /  / /_/  __/>  </ / /_/ / / / / / /   v" + getClass().getPackage().getImplementationVersion());
+        System.out.println(" |___/\\___/_/   \\__/\\___/_/|_/_/\\__,_/_/ /_/ /_/");
+        System.out.println("");
         System.out.println("Usage:");
         System.out.println("  vertex1=v['vertex1'] - gets the vertex with id 'v1' and assigns it to variable 'v'");
         System.out.println("  vertex1.methods      - gets the methods available on the Vertexium object");
