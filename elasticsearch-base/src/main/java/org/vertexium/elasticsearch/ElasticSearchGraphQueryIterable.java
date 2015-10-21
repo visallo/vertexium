@@ -4,11 +4,16 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.aggregations.Aggregation;
+import org.elasticsearch.search.aggregations.bucket.MultiBucketsAggregation;
 import org.elasticsearch.search.aggregations.bucket.geogrid.GeoHashGrid;
+import org.elasticsearch.search.aggregations.bucket.geogrid.InternalGeoHashGrid;
 import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogram;
 import org.elasticsearch.search.aggregations.bucket.histogram.Histogram;
+import org.elasticsearch.search.aggregations.bucket.histogram.InternalHistogram;
+import org.elasticsearch.search.aggregations.bucket.terms.InternalTerms;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.metrics.stats.extended.ExtendedStats;
+import org.elasticsearch.search.aggregations.metrics.stats.extended.InternalExtendedStats;
 import org.vertexium.Element;
 import org.vertexium.VertexiumException;
 import org.vertexium.query.*;
@@ -20,6 +25,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@SuppressWarnings("deprecation")
 public class ElasticSearchGraphQueryIterable<T extends Element> extends DefaultGraphQueryIterable<T> implements
         IterableWithTotalHits<T>,
         IterableWithSearchTime<T>,
@@ -28,11 +34,10 @@ public class ElasticSearchGraphQueryIterable<T extends Element> extends DefaultG
         IterableWithTermsResults<T>,
         IterableWithGeohashResults<T>,
         IterableWithStatisticsResults<T> {
-    private final ElasticSearchQueryBase query;
-    private final SearchResponse searchResponse;
     private final long totalHits;
     private final long searchTimeInNanoSeconds;
     private final Map<String, Double> scores = new HashMap<>();
+    private final Map<String, AggregationResult> aggregationResults;
 
     public ElasticSearchGraphQueryIterable(
             ElasticSearchQueryBase query,
@@ -47,8 +52,8 @@ public class ElasticSearchGraphQueryIterable<T extends Element> extends DefaultG
             SearchHits hits
     ) {
         super(parameters, iterable, evaluateQueryString, evaluateHasContainers, evaluateSortContainers);
-        this.query = query;
-        this.searchResponse = searchResponse;
+        ElasticSearchQueryBase query1 = query;
+        SearchResponse searchResponse1 = searchResponse;
         this.totalHits = totalHits;
         this.searchTimeInNanoSeconds = searchTimeInNanoSeconds;
         if (hits != null) {
@@ -56,6 +61,7 @@ public class ElasticSearchGraphQueryIterable<T extends Element> extends DefaultG
                 scores.put(hit.getId(), (double) hit.getScore());
             }
         }
+        this.aggregationResults = getAggregationResults(query1, searchResponse1);
     }
 
     @Override
@@ -74,122 +80,217 @@ public class ElasticSearchGraphQueryIterable<T extends Element> extends DefaultG
     }
 
     @Override
-    public HistogramResult getHistogramResults(String name) {
-        Map<Object, HistogramBucket> buckets = new HashMap<>();
-        if (this.searchResponse == null || this.searchResponse.getAggregations() == null) {
-            return new HistogramResult(new ArrayList<HistogramBucket>());
+    public <TResult extends AggregationResult> TResult getAggregationResult(String name, Class<? extends TResult> resultType) {
+        AggregationResult result = this.aggregationResults.get(name);
+        if (result == null) {
+            return AggregationResult.createEmptyResult(resultType);
         }
-        for (Aggregation agg : this.searchResponse.getAggregations()) {
-            String aggName = query.getAggregationName(agg.getName());
-            if (!aggName.equals(name)) {
-                continue;
-            }
+        if (!resultType.isInstance(result)) {
+            throw new VertexiumException("Could not cast aggregation result of type " + result.getClass().getName() + " to type " + resultType.getName());
+        }
+        return resultType.cast(result);
+    }
 
+    private static Map<String, AggregationResult> getAggregationResults(ElasticSearchQueryBase query, SearchResponse searchResponse) {
+        if (searchResponse == null) {
+            return new HashMap<>();
+        }
+        Map<String, List<Aggregation>> aggsByName = getAggregationResultsByName(query, searchResponse.getAggregations());
+        return reduceAggregationResults(query, aggsByName);
+    }
+
+    private static Map<String, List<Aggregation>> getAggregationResultsByName(ElasticSearchQueryBase query, Iterable<Aggregation> aggs) {
+        Map<String, List<Aggregation>> aggsByName = new HashMap<>();
+        if (aggs == null) {
+            return aggsByName;
+        }
+        for (Aggregation agg : aggs) {
+            String aggName = query.getAggregationName(agg.getName());
+            List<Aggregation> l = aggsByName.get(aggName);
+            if (l == null) {
+                l = new ArrayList<>();
+                aggsByName.put(aggName, l);
+            }
+            l.add(agg);
+        }
+        return aggsByName;
+    }
+
+    private static Map<String, AggregationResult> reduceAggregationResults(ElasticSearchQueryBase query, Map<String, List<Aggregation>> aggsByName) {
+        Map<String, AggregationResult> results = new HashMap<>();
+        for (Map.Entry<String, List<Aggregation>> entry : aggsByName.entrySet()) {
+            results.put(entry.getKey(), reduceAggregationResults(query, entry.getValue()));
+        }
+        return results;
+    }
+
+    private static AggregationResult reduceAggregationResults(ElasticSearchQueryBase query, List<Aggregation> aggs) {
+        if (aggs.size() == 0) {
+            throw new VertexiumException("Cannot reduce zero sized aggregation list");
+        }
+        Aggregation first = aggs.get(0);
+        if (first instanceof HistogramAggregation || first instanceof InternalHistogram) {
+            return reduceHistogramResults(query, aggs);
+        }
+        if (first instanceof TermsAggregation || first instanceof InternalTerms) {
+            return reduceTermsResults(query, aggs);
+        }
+        if (first instanceof GeohashAggregation || first instanceof InternalGeoHashGrid) {
+            return reduceGeohashResults(query, aggs);
+        }
+        if (first instanceof StatisticsAggregation || first instanceof InternalExtendedStats) {
+            return reduceStatisticsResults(aggs);
+        }
+        throw new VertexiumException("Unhandled aggregation type: " + first.getClass().getName());
+    }
+
+    private static HistogramResult reduceHistogramResults(ElasticSearchQueryBase query, List<Aggregation> aggs) {
+        Map<Object, List<MultiBucketsAggregation.Bucket>> bucketsByKey = new HashMap<>();
+        for (Aggregation agg : aggs) {
             if (agg instanceof DateHistogram) {
                 DateHistogram h = (DateHistogram) agg;
                 for (DateHistogram.Bucket b : h.getBuckets()) {
-                    HistogramBucket existingBucket = buckets.get(b.getKey());
-                    long existingCount = 0;
-                    if (existingBucket != null) {
-                        existingCount = existingBucket.getCount();
+                    List<MultiBucketsAggregation.Bucket> l = bucketsByKey.get(b.getKeyAsDate().toDate());
+                    if (l == null) {
+                        l = new ArrayList<>();
+                        bucketsByKey.put(b.getKey(), l);
                     }
-                    buckets.put(b.getKeyAsDate().toDate(), new HistogramBucket(b.getKeyAsDate().toDate(), existingCount + b.getDocCount()));
+                    l.add(b);
                 }
             } else if (agg instanceof Histogram) {
                 Histogram h = (Histogram) agg;
                 for (Histogram.Bucket b : h.getBuckets()) {
-                    HistogramBucket existingBucket = buckets.get(b.getKey());
-                    long existingCount = 0;
-                    if (existingBucket != null) {
-                        existingCount = existingBucket.getCount();
+                    List<MultiBucketsAggregation.Bucket> l = bucketsByKey.get(b.getKey());
+                    if (l == null) {
+                        l = new ArrayList<>();
+                        bucketsByKey.put(b.getKey(), l);
                     }
-                    buckets.put(b.getKey(), new HistogramBucket(b.getKey(), existingCount + b.getDocCount()));
+                    l.add(b);
                 }
             } else {
                 throw new VertexiumException("Aggregation is not a histogram: " + agg.getClass().getName());
             }
         }
-        return new HistogramResult(buckets.values());
+        return new MultiBucketsAggregationReducer<HistogramResult, HistogramBucket>() {
+            @Override
+            protected HistogramBucket createBucket(Object key, long count, Map<String, AggregationResult> nestedResults, List<MultiBucketsAggregation.Bucket> buckets) {
+                return new HistogramBucket(key, count, nestedResults);
+            }
+
+            @Override
+            protected HistogramResult bucketsToResults(List<HistogramBucket> buckets) {
+                return new HistogramResult(buckets);
+            }
+        }.reduce(query, bucketsByKey);
     }
 
-    @Override
-    public TermsResult getTermsResults(String name) {
-        Map<String, TermsBucket> buckets = new HashMap<>();
-        if (this.searchResponse == null || this.searchResponse.getAggregations() == null) {
-            return new TermsResult(new ArrayList<TermsBucket>());
-        }
-        for (Aggregation agg : this.searchResponse.getAggregations()) {
-            String aggName = query.getAggregationName(agg.getName());
-            if (!aggName.equals(name)) {
-                continue;
-            }
+    private static TermsResult reduceTermsResults(ElasticSearchQueryBase query, List<Aggregation> aggs) {
+        Map<Object, List<MultiBucketsAggregation.Bucket>> bucketsByKey = new HashMap<>();
+        for (Aggregation agg : aggs) {
             if (agg instanceof Terms) {
                 Terms h = (Terms) agg;
                 for (Terms.Bucket b : h.getBuckets()) {
                     String mapKey = b.getKey().toLowerCase();
-                    TermsBucket existingBucket = buckets.get(mapKey);
-                    long existingCount = 0;
-                    if (existingBucket != null) {
-                        existingCount = existingBucket.getCount();
+                    List<MultiBucketsAggregation.Bucket> existingBucketByName = bucketsByKey.get(mapKey);
+                    if (existingBucketByName == null) {
+                        existingBucketByName = new ArrayList<>();
+                        bucketsByKey.put(mapKey, existingBucketByName);
                     }
-                    buckets.put(mapKey, new TermsBucket(mapKey, existingCount + b.getDocCount()));
+                    existingBucketByName.add(b);
                 }
             } else {
                 throw new VertexiumException("Aggregation is not a terms: " + agg.getClass().getName());
             }
         }
-        return new TermsResult(buckets.values());
+        return new MultiBucketsAggregationReducer<TermsResult, TermsBucket>() {
+            @Override
+            protected TermsBucket createBucket(Object key, long count, Map<String, AggregationResult> nestedResults, List<MultiBucketsAggregation.Bucket> buckets) {
+                return new TermsBucket(key, count, nestedResults);
+            }
+
+            @Override
+            protected TermsResult bucketsToResults(List<TermsBucket> buckets) {
+                return new TermsResult(buckets);
+            }
+        }.reduce(query, bucketsByKey);
     }
 
-    @Override
-    public GeohashResult getGeohashResults(String name) {
-        Map<String, GeohashBucket> buckets = new HashMap<>();
-        if (this.searchResponse == null || this.searchResponse.getAggregations() == null) {
-            return new GeohashResult(new ArrayList<GeohashBucket>());
-        }
-        for (Aggregation agg : this.searchResponse.getAggregations()) {
-            String aggName = query.getAggregationName(agg.getName());
-            if (!aggName.equals(name)) {
-                continue;
+    private abstract static class MultiBucketsAggregationReducer<TResult, TBucket> {
+        public TResult reduce(ElasticSearchQueryBase query, Map<Object, List<MultiBucketsAggregation.Bucket>> bucketsByKey) {
+            List<TBucket> buckets = new ArrayList<>();
+            for (Map.Entry<Object, List<MultiBucketsAggregation.Bucket>> bucketsByKeyEntry : bucketsByKey.entrySet()) {
+                Object key = bucketsByKeyEntry.getKey();
+                long count = 0;
+                List<Aggregation> subAggs = new ArrayList<>();
+                for (MultiBucketsAggregation.Bucket b : bucketsByKeyEntry.getValue()) {
+                    count += b.getDocCount();
+                    for (Aggregation subAgg : b.getAggregations()) {
+                        subAggs.add(subAgg);
+                    }
+                }
+                Map<String, AggregationResult> nestedResults = reduceAggregationResults(query, getAggregationResultsByName(query, subAggs));
+                buckets.add(createBucket(key, count, nestedResults, bucketsByKeyEntry.getValue()));
             }
+            return bucketsToResults(buckets);
+        }
+
+        protected abstract TBucket createBucket(Object key, long count, Map<String, AggregationResult> nestedResults, List<MultiBucketsAggregation.Bucket> buckets);
+
+        protected abstract TResult bucketsToResults(List<TBucket> buckets);
+    }
+
+    private static GeohashResult reduceGeohashResults(ElasticSearchQueryBase query, List<Aggregation> aggs) {
+        Map<Object, List<MultiBucketsAggregation.Bucket>> bucketsByKey = new HashMap<>();
+        for (Aggregation agg : aggs) {
             if (agg instanceof GeoHashGrid) {
                 GeoHashGrid h = (GeoHashGrid) agg;
                 for (GeoHashGrid.Bucket b : h.getBuckets()) {
-                    org.elasticsearch.common.geo.GeoPoint g = b.getKeyAsGeoPoint();
-                    GeohashBucket existingBucket = buckets.get(b.getKey());
-                    long existingCount = 0;
-                    if (existingBucket != null) {
-                        existingCount = existingBucket.getCount();
+                    List<MultiBucketsAggregation.Bucket> existingBucket = bucketsByKey.get(b.getKey());
+                    if (existingBucket == null) {
+                        existingBucket = new ArrayList<>();
+                        bucketsByKey.put(b.getKey(), existingBucket);
                     }
-                    GeohashBucket geohashBucket = new GeohashBucket(b.getKey(), existingCount + b.getDocCount(), new GeoPoint(g.getLat(), g.getLon())) {
-                        @Override
-                        public GeoRect getGeoCell() {
-                            org.elasticsearch.common.geo.GeoPoint northWest = new org.elasticsearch.common.geo.GeoPoint();
-                            org.elasticsearch.common.geo.GeoPoint southEast = new org.elasticsearch.common.geo.GeoPoint();
-                            GeohashUtils.decodeCell(getKey(), northWest, southEast);
-                            return new GeoRect(new GeoPoint(northWest.getLat(), northWest.getLon()), new GeoPoint(southEast.getLat(), southEast.getLon()));
-                        }
-                    };
-                    buckets.put(b.getKey(), geohashBucket);
+                    existingBucket.add(b);
                 }
             } else {
                 throw new VertexiumException("Aggregation is not a geohash: " + agg.getClass().getName());
             }
         }
-        return new GeohashResult(buckets.values());
+        return new MultiBucketsAggregationReducer<GeohashResult, GeohashBucket>() {
+            @Override
+            protected GeohashBucket createBucket(final Object key, long count, Map<String, AggregationResult> nestedResults, List<MultiBucketsAggregation.Bucket> buckets) {
+                GeoPoint geoPoint = getAverageGeoPointFromBuckets(buckets);
+                return new GeohashBucket(key.toString(), count, geoPoint, nestedResults) {
+                    @Override
+                    public GeoRect getGeoCell() {
+                        org.elasticsearch.common.geo.GeoPoint northWest = new org.elasticsearch.common.geo.GeoPoint();
+                        org.elasticsearch.common.geo.GeoPoint southEast = new org.elasticsearch.common.geo.GeoPoint();
+                        GeohashUtils.decodeCell(key.toString(), northWest, southEast);
+                        return new GeoRect(new GeoPoint(northWest.getLat(), northWest.getLon()), new GeoPoint(southEast.getLat(), southEast.getLon()));
+                    }
+                };
+            }
+
+            @Override
+            protected GeohashResult bucketsToResults(List<GeohashBucket> buckets) {
+                return new GeohashResult(buckets);
+            }
+        }.reduce(query, bucketsByKey);
     }
 
-    @Override
-    public StatisticsResult getStatisticsResults(String name) {
-        if (this.searchResponse == null || this.searchResponse.getAggregations() == null) {
-            return new StatisticsResult(0, 0.0, 0.0, 0.0, 0.0);
+    private static GeoPoint getAverageGeoPointFromBuckets(List<MultiBucketsAggregation.Bucket> buckets) {
+        List<GeoPoint> geoPoints = new ArrayList<>();
+        for (MultiBucketsAggregation.Bucket b : buckets) {
+            GeoHashGrid.Bucket gb = (GeoHashGrid.Bucket) b;
+            org.elasticsearch.common.geo.GeoPoint gp = gb.getKeyAsGeoPoint();
+            geoPoints.add(new GeoPoint(gp.getLat(), gp.getLon()));
         }
+        return GeoPoint.calculateCenter(geoPoints);
+    }
+
+    private static StatisticsResult reduceStatisticsResults(List<Aggregation> aggs) {
         List<StatisticsResult> results = new ArrayList<>();
-        for (Aggregation agg : this.searchResponse.getAggregations()) {
-            String aggName = query.getAggregationName(agg.getName());
-            if (!aggName.equals(name)) {
-                continue;
-            }
+        for (Aggregation agg : aggs) {
             if (agg instanceof ExtendedStats) {
                 ExtendedStats extendedStats = (ExtendedStats) agg;
                 long count = extendedStats.getCount();
@@ -203,5 +304,29 @@ public class ElasticSearchGraphQueryIterable<T extends Element> extends DefaultG
             }
         }
         return StatisticsResult.combine(results);
+    }
+
+    @SuppressWarnings("deprecation")
+    @Override
+    public GeohashResult getGeohashResults(String name) {
+        return this.getAggregationResult(name, GeohashResult.class);
+    }
+
+    @SuppressWarnings("deprecation")
+    @Override
+    public HistogramResult getHistogramResults(String name) {
+        return this.getAggregationResult(name, HistogramResult.class);
+    }
+
+    @SuppressWarnings("deprecation")
+    @Override
+    public StatisticsResult getStatisticsResults(String name) {
+        return this.getAggregationResult(name, StatisticsResult.class);
+    }
+
+    @SuppressWarnings("deprecation")
+    @Override
+    public TermsResult getTermsResults(String name) {
+        return this.getAggregationResult(name, TermsResult.class);
     }
 }

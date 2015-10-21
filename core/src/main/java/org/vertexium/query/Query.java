@@ -9,23 +9,23 @@ import java.util.Collection;
 import java.util.EnumSet;
 
 public interface Query {
-    Iterable<Vertex> vertices();
+    QueryResultsIterable<Vertex> vertices();
 
-    Iterable<Vertex> vertices(EnumSet<FetchHint> fetchHints);
+    QueryResultsIterable<Vertex> vertices(EnumSet<FetchHint> fetchHints);
 
-    Iterable<Edge> edges();
+    QueryResultsIterable<Edge> edges();
 
-    Iterable<Edge> edges(EnumSet<FetchHint> fetchHints);
-
-    @Deprecated
-    Iterable<Edge> edges(String label);
+    QueryResultsIterable<Edge> edges(EnumSet<FetchHint> fetchHints);
 
     @Deprecated
-    Iterable<Edge> edges(String label, EnumSet<FetchHint> fetchHints);
+    QueryResultsIterable<Edge> edges(String label);
 
-    Iterable<Element> elements();
+    @Deprecated
+    QueryResultsIterable<Edge> edges(String label, EnumSet<FetchHint> fetchHints);
 
-    Iterable<Element> elements(EnumSet<FetchHint> fetchHints);
+    QueryResultsIterable<Element> elements();
+
+    QueryResultsIterable<Element> elements(EnumSet<FetchHint> fetchHints);
 
     /**
      * Queries for properties in the given range.
@@ -134,4 +134,25 @@ public interface Query {
      * @return The query object, allowing you to chain methods.
      */
     Query sort(String propertyName, SortDirection direction);
+
+    /**
+     * Test to see if aggregation is supported.
+     *
+     * @param aggregation the aggregation to test.
+     * @return true, if the aggregation is supported
+     */
+    boolean isAggregationSupported(Aggregation aggregation);
+
+    /**
+     * Add an aggregation to the query
+     *
+     * @param aggregation the aggregation to add.
+     * @return The query object, allowing you to chain methods.
+     */
+    Query addAggregation(Aggregation aggregation);
+
+    /**
+     * Gets the added aggregations
+     */
+    Iterable<Aggregation> getAggregations();
 }

@@ -3,15 +3,19 @@ package org.vertexium.query;
 import org.vertexium.type.GeoPoint;
 import org.vertexium.type.GeoRect;
 
-public abstract class GeohashBucket {
-    public final String key;
-    public final long count;
-    private final GeoPoint geoPoint;
+import java.util.Map;
 
-    public GeohashBucket(String key, long count, GeoPoint geoPoint) {
+public abstract class GeohashBucket {
+    private final String key;
+    private final long count;
+    private final GeoPoint geoPoint;
+    private final Map<String, AggregationResult> nestedResults;
+
+    public GeohashBucket(String key, long count, GeoPoint geoPoint, Map<String, AggregationResult> nestedResults) {
         this.key = key;
         this.count = count;
         this.geoPoint = geoPoint;
+        this.nestedResults = nestedResults;
     }
 
     public String getKey() {
@@ -27,4 +31,8 @@ public abstract class GeohashBucket {
     }
 
     public abstract GeoRect getGeoCell();
+
+    public Map<String, AggregationResult> getNestedResults() {
+        return nestedResults;
+    }
 }

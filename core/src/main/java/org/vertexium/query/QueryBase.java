@@ -4,14 +4,13 @@ import org.vertexium.*;
 import org.vertexium.util.JoinIterable;
 import org.vertexium.util.ToElementIterable;
 
-import java.util.Collection;
-import java.util.EnumSet;
-import java.util.Map;
+import java.util.*;
 
 public abstract class QueryBase implements Query, SimilarToGraphQuery {
     private final Graph graph;
     private final Map<String, PropertyDefinition> propertyDefinitions;
     private final QueryParameters parameters;
+    private List<Aggregation> aggregations = new ArrayList<>();
 
     protected QueryBase(Graph graph, String queryString, Map<String, PropertyDefinition> propertyDefinitions, Authorizations authorizations) {
         this.graph = graph;
@@ -26,20 +25,20 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
     }
 
     @Override
-    public Iterable<Vertex> vertices() {
+    public QueryResultsIterable<Vertex> vertices() {
         return vertices(FetchHint.ALL);
     }
 
     @Override
-    public abstract Iterable<Vertex> vertices(EnumSet<FetchHint> fetchHints);
+    public abstract QueryResultsIterable<Vertex> vertices(EnumSet<FetchHint> fetchHints);
 
     @Override
-    public Iterable<Edge> edges() {
+    public QueryResultsIterable<Edge> edges() {
         return edges(FetchHint.ALL);
     }
 
     @Override
-    public abstract Iterable<Edge> edges(EnumSet<FetchHint> fetchHints);
+    public abstract QueryResultsIterable<Edge> edges(EnumSet<FetchHint> fetchHints);
 
     @Override
     public <T> Query hasEdgeLabel(String... edgeLabels) {
@@ -59,28 +58,28 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
 
     @Override
     @Deprecated
-    public Iterable<Edge> edges(final String label, EnumSet<FetchHint> fetchHints) {
+    public QueryResultsIterable<Edge> edges(final String label, EnumSet<FetchHint> fetchHints) {
         hasEdgeLabel(label);
         return edges(fetchHints);
     }
 
     @Override
     @Deprecated
-    public Iterable<Edge> edges(final String label) {
+    public QueryResultsIterable<Edge> edges(final String label) {
         hasEdgeLabel(label);
         return edges();
     }
 
     @Override
-    public Iterable<Element> elements() {
+    public QueryResultsIterable<Element> elements() {
         return elements(FetchHint.ALL);
     }
 
     @Override
-    public Iterable<Element> elements(EnumSet<FetchHint> fetchHints) {
+    public QueryResultsIterable<Element> elements(EnumSet<FetchHint> fetchHints) {
         Iterable<Element> vertices = new ToElementIterable<>(vertices(fetchHints));
         Iterable<Element> edges = new ToElementIterable<>(edges(fetchHints));
-        return new JoinIterable<>(vertices, edges);
+        return new QueryResultsJoinIterable<>(vertices, edges);
     }
 
     @Override
@@ -293,5 +292,23 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
         }
         ((SimilarToQueryParameters) this.parameters).setBoost(boost);
         return this;
+    }
+
+    @Override
+    public boolean isAggregationSupported(Aggregation aggregation) {
+        return false;
+    }
+
+    @Override
+    public Query addAggregation(Aggregation aggregation) {
+        if (!isAggregationSupported(aggregation)) {
+            throw new VertexiumException("Aggregation " + aggregation.getClass().getName() + " is not supported");
+        }
+        this.aggregations.add(aggregation);
+        return this;
+    }
+
+    public Collection<Aggregation> getAggregations() {
+        return aggregations;
     }
 }

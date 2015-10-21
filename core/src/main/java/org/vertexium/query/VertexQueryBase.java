@@ -14,10 +14,10 @@ public abstract class VertexQueryBase extends QueryBase implements VertexQuery {
     }
 
     @Override
-    public abstract Iterable<Vertex> vertices(EnumSet<FetchHint> fetchHints);
+    public abstract QueryResultsIterable<Vertex> vertices(EnumSet<FetchHint> fetchHints);
 
     @Override
-    public abstract Iterable<Edge> edges(EnumSet<FetchHint> fetchHints);
+    public abstract QueryResultsIterable<Edge> edges(EnumSet<FetchHint> fetchHints);
 
     public Vertex getSourceVertex() {
         return sourceVertex;

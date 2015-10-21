@@ -3,6 +3,7 @@ package org.vertexium.elasticsearch;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.index.query.*;
+import org.elasticsearch.search.aggregations.AbstractAggregationBuilder;
 import org.elasticsearch.search.sort.SortOrder;
 import org.vertexium.*;
 import org.vertexium.elasticsearch.score.ScoringStrategy;
@@ -18,11 +19,6 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends ElasticSearchQue
         GraphQueryWithTermsAggregation,
         GraphQueryWithGeohashAggregation,
         GraphQueryWithStatisticsAggregation {
-    private final List<HistogramQueryItem> histogramQueryItems = new ArrayList<>();
-    private final List<TermsQueryItem> termsQueryItems = new ArrayList<>();
-    private final List<GeohashQueryItem> geohashQueryItems = new ArrayList<>();
-    private final List<StatisticsQueryItem> statisticsQueryItems = new ArrayList<>();
-
     public ElasticSearchSingleDocumentSearchQueryBase(
             Client client,
             Graph graph,
@@ -49,41 +45,63 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends ElasticSearchQue
     }
 
     @Override
+    @Deprecated
     public GraphQueryWithHistogramAggregation addHistogramAggregation(String aggregationName, String fieldName, String interval, Long minDocumentCount) {
-        histogramQueryItems.add(new HistogramQueryItem(aggregationName, fieldName, interval, minDocumentCount));
+        addAggregation(new HistogramAggregation(aggregationName, fieldName, interval, minDocumentCount));
         return this;
     }
 
     @Override
+    @Deprecated
     public GraphQueryWithHistogramAggregation addHistogramAggregation(String aggregationName, String fieldName, String interval) {
         return addHistogramAggregation(aggregationName, fieldName, interval, null);
     }
 
     @Override
+    @Deprecated
     public GraphQueryWithTermsAggregation addTermsAggregation(String aggregationName, String fieldName) {
-        termsQueryItems.add(new TermsQueryItem(aggregationName, fieldName));
+        addAggregation(new TermsAggregation(aggregationName, fieldName));
         return this;
     }
 
     @Override
+    @Deprecated
     public GraphQueryWithGeohashAggregation addGeohashAggregation(String aggregationName, String fieldName, int precision) {
-        geohashQueryItems.add(new GeohashQueryItem(aggregationName, fieldName, precision));
+        addAggregation(new GeohashAggregation(aggregationName, fieldName, precision));
         return this;
     }
 
     @Override
+    @Deprecated
     public GraphQueryWithStatisticsAggregation addStatisticsAggregation(String aggregationName, String field) {
-        statisticsQueryItems.add(new StatisticsQueryItem(aggregationName, field));
+        addAggregation(new StatisticsAggregation(aggregationName, field));
         return this;
+    }
+
+    @Override
+    public boolean isAggregationSupported(Aggregation agg) {
+        if (agg instanceof HistogramAggregation) {
+            return true;
+        }
+        if (agg instanceof TermsAggregation) {
+            return true;
+        }
+        if (agg instanceof GeohashAggregation) {
+            return true;
+        }
+        if (agg instanceof StatisticsAggregation) {
+            return true;
+        }
+        return false;
     }
 
     @Override
     protected SearchRequestBuilder getSearchRequestBuilder(List<FilterBuilder> filters, QueryBuilder queryBuilder, ElasticSearchElementType elementType, int skip, int limit) {
         SearchRequestBuilder searchRequestBuilder = super.getSearchRequestBuilder(filters, queryBuilder, elementType, skip, limit);
-        addHistogramQueryToSearchRequestBuilder(searchRequestBuilder, histogramQueryItems);
-        addTermsQueryToSearchRequestBuilder(searchRequestBuilder, termsQueryItems);
-        addGeohashQueryToSearchRequestBuilder(searchRequestBuilder, geohashQueryItems);
-        addStatisticsQueryToSearchRequestBuilder(searchRequestBuilder, statisticsQueryItems);
+        List<AbstractAggregationBuilder> aggs = getElasticsearchAggregations(getAggregations());
+        for (AbstractAggregationBuilder aggregationBuilder : aggs) {
+            searchRequestBuilder.addAggregation(aggregationBuilder);
+        }
         return searchRequestBuilder;
     }
 

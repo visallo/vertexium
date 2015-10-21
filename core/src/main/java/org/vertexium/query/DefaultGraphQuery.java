@@ -15,13 +15,13 @@ public class DefaultGraphQuery extends GraphQueryBase {
     }
 
     @Override
-    public Iterable<Vertex> vertices(EnumSet<FetchHint> fetchHints) {
+    public QueryResultsIterable<Vertex> vertices(EnumSet<FetchHint> fetchHints) {
         LOGGER.warn("scanning all vertices! create your own GraphQuery.");
         return new DefaultGraphQueryIterable<>(getParameters(), this.<Vertex>getIterableFromElementType(ElementType.VERTEX, fetchHints), true, true, true);
     }
 
     @Override
-    public Iterable<Edge> edges(EnumSet<FetchHint> fetchHints) {
+    public QueryResultsIterable<Edge> edges(EnumSet<FetchHint> fetchHints) {
         LOGGER.warn("scanning all edges! create your own GraphQuery.");
         return new DefaultGraphQueryIterable<>(getParameters(), this.<Edge>getIterableFromElementType(ElementType.EDGE, fetchHints), true, true, true);
     }

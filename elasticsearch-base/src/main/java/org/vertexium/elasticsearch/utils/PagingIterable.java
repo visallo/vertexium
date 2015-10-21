@@ -5,6 +5,7 @@ import org.vertexium.VertexiumException;
 import org.vertexium.elasticsearch.ElasticSearchGraphQueryIterable;
 import org.vertexium.query.*;
 
+import java.io.IOException;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -16,7 +17,8 @@ public abstract class PagingIterable<T extends Element> implements
         IterableWithHistogramResults<T>,
         IterableWithTermsResults<T>,
         IterableWithGeohashResults<T>,
-        IterableWithStatisticsResults<T> {
+        IterableWithStatisticsResults<T>,
+        QueryResultsIterable<T> {
     private static final int PAGE_SIZE = 1000;
     private final long skip;
     private final Long limit;
@@ -57,6 +59,16 @@ public abstract class PagingIterable<T extends Element> implements
     @Override
     public TermsResult getTermsResults(String name) {
         return this.firstIterable.getTermsResults(name);
+    }
+
+    @Override
+    public void close() throws IOException {
+
+    }
+
+    @Override
+    public <TResult extends AggregationResult> TResult getAggregationResult(String name, Class<? extends TResult> resultType) {
+        return this.firstIterable.getAggregationResult(name, resultType);
     }
 
     @Override

@@ -1,6 +1,6 @@
 package org.vertexium.query;
 
-public class GeohashResult {
+public class GeohashResult extends AggregationResult {
     private final Iterable<GeohashBucket> buckets;
 
     public GeohashResult(Iterable<GeohashBucket> buckets) {

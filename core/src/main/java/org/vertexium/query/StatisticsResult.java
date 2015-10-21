@@ -2,7 +2,7 @@ package org.vertexium.query;
 
 import java.util.Collection;
 
-public class StatisticsResult {
+public class StatisticsResult extends AggregationResult {
     private final long count;
     private final double sum;
     private final double min;

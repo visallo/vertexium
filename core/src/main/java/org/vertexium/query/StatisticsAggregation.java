@@ -1,10 +1,10 @@
 package org.vertexium.query;
 
-public class StatisticsQueryItem {
+public class StatisticsAggregation extends Aggregation {
     private final String aggregationName;
     private final String fieldName;
 
-    public StatisticsQueryItem(String aggregationName, String fieldName) {
+    public StatisticsAggregation(String aggregationName, String fieldName) {
         this.aggregationName = aggregationName;
         this.fieldName = fieldName;
     }

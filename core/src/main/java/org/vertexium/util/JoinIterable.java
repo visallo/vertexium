@@ -88,4 +88,8 @@ public class JoinIterable<T> implements Iterable<T> {
     private class IteratorWrapper {
         public Iterator<T> iterator;
     }
+
+    protected Iterable<T>[] getIterables() {
+        return iterables;
+    }
 }

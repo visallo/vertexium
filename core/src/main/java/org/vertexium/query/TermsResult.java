@@ -1,6 +1,6 @@
 package org.vertexium.query;
 
-public class TermsResult {
+public class TermsResult extends AggregationResult {
     private final Iterable<TermsBucket> buckets;
 
     public TermsResult(Iterable<TermsBucket> buckets) {

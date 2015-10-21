@@ -17,6 +17,8 @@ import org.elasticsearch.indices.IndexMissingException;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHitField;
 import org.elasticsearch.search.SearchHits;
+import org.elasticsearch.search.aggregations.AbstractAggregationBuilder;
+import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.bucket.geogrid.GeoHashGridBuilder;
 import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogram;
@@ -92,7 +94,7 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
     }
 
     @Override
-    public Iterable<Vertex> vertices(final EnumSet<FetchHint> fetchHints) {
+    public QueryResultsIterable<Vertex> vertices(final EnumSet<FetchHint> fetchHints) {
         return new PagingIterable<Vertex>(getParameters().getSkip(), getParameters().getLimit()) {
             @Override
             protected ElasticSearchGraphQueryIterable<Vertex> getPageIterable(int skip, int limit) {
@@ -132,7 +134,7 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
     }
 
     @Override
-    public Iterable<Edge> edges(final EnumSet<FetchHint> fetchHints) {
+    public QueryResultsIterable<Edge> edges(final EnumSet<FetchHint> fetchHints) {
         return new PagingIterable<Edge>(getParameters().getSkip(), getParameters().getLimit()) {
             @Override
             protected ElasticSearchGraphQueryIterable<Edge> getPageIterable(int skip, int limit) {
@@ -173,7 +175,7 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
     }
 
     @Override
-    public Iterable<Element> elements(final EnumSet<FetchHint> fetchHints) {
+    public QueryResultsIterable<Element> elements(final EnumSet<FetchHint> fetchHints) {
         return new PagingIterable<Element>(getParameters().getSkip(), getParameters().getLimit()) {
             @Override
             protected ElasticSearchGraphQueryIterable<Element> getPageIterable(int skip, int limit) {
@@ -333,6 +335,9 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
         String[] propertyNames;
         try {
             propertyNames = getPropertyNames(hasNotProperty.getKey());
+            if (propertyNames.length == 0) {
+                throw new VertexiumNoMatchingPropertiesException(hasNotProperty.getKey());
+            }
         } catch (VertexiumNoMatchingPropertiesException ex) {
             // If we can't find a property this means it doesn't exist on any elements so the hasNot query should
             // match all records.
@@ -347,6 +352,9 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
 
     protected FilterBuilder getFilterForHasPropertyContainer(HasPropertyContainer hasProperty) {
         String[] propertyNames = getPropertyNames(hasProperty.getKey());
+        if (propertyNames.length == 0) {
+            throw new VertexiumNoMatchingPropertiesException(hasProperty.getKey());
+        }
         List<FilterBuilder> filters = new ArrayList<>();
         for (String propertyName : propertyNames) {
             filters.add(FilterBuilders.existsFilter(propertyName));
@@ -479,6 +487,9 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
     protected FilterBuilder getFilterForComparePredicate(Compare compare, HasValueContainer has) {
         Object value = has.value;
         String[] keys = getPropertyNames(has.key);
+        if (keys.length == 0) {
+            throw new VertexiumNoMatchingPropertiesException(has.key);
+        }
         List<FilterBuilder> filters = new ArrayList<>();
         for (String key : keys) {
             if (value instanceof String || value instanceof String[]) {
@@ -627,29 +638,47 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
         return client;
     }
 
-    protected void addGeohashQueryToSearchRequestBuilder(SearchRequestBuilder searchRequestBuilder, List<GeohashQueryItem> geohashQueryItems) {
-        for (GeohashQueryItem geohashQueryItem : geohashQueryItems) {
-            for (String propertyName : getPropertyNames(geohashQueryItem.getFieldName())) {
-                String visibilityHash = getSearchIndex().getPropertyVisibilityHashFromDeflatedPropertyName(propertyName);
-                String aggName = createAggregationName(geohashQueryItem.getAggregationName(), visibilityHash);
-                GeoHashGridBuilder agg = AggregationBuilders.geohashGrid(aggName);
-                agg.field(propertyName + ElasticSearchSearchIndexBase.GEO_PROPERTY_NAME_SUFFIX);
-                agg.precision(geohashQueryItem.getPrecision());
-                searchRequestBuilder.addAggregation(agg);
+    protected List<AbstractAggregationBuilder> getElasticsearchAggregations(Iterable<Aggregation> aggregations) {
+        List<AbstractAggregationBuilder> aggs = new ArrayList<>();
+        for (Aggregation agg : aggregations) {
+            if (agg instanceof HistogramAggregation) {
+                aggs.addAll(getElasticsearchHistogramAggregations((HistogramAggregation) agg));
+            } else if (agg instanceof TermsAggregation) {
+                aggs.addAll(getElasticsearchTermsAggregations((TermsAggregation) agg));
+            } else if (agg instanceof GeohashAggregation) {
+                aggs.addAll(getElasticsearchGeohashAggregations((GeohashAggregation) agg));
+            } else if (agg instanceof StatisticsAggregation) {
+                aggs.addAll(getElasticsearchStatisticsAggregations((StatisticsAggregation) agg));
+            } else {
+                throw new VertexiumException("Could not add aggregation of type: " + agg.getClass().getName());
             }
         }
+        return aggs;
     }
 
-    protected void addStatisticsQueryToSearchRequestBuilder(SearchRequestBuilder searchRequestBuilder, List<StatisticsQueryItem> statisticsQueryItems) {
-        for (StatisticsQueryItem statisticsQueryItem : statisticsQueryItems) {
-            for (String propertyName : getPropertyNames(statisticsQueryItem.getFieldName())) {
-                String visibilityHash = getSearchIndex().getPropertyVisibilityHashFromDeflatedPropertyName(propertyName);
-                String aggName = createAggregationName(statisticsQueryItem.getAggregationName(), visibilityHash);
-                ExtendedStatsBuilder agg = AggregationBuilders.extendedStats(aggName);
-                agg.field(propertyName);
-                searchRequestBuilder.addAggregation(agg);
-            }
+    protected List<AggregationBuilder> getElasticsearchGeohashAggregations(GeohashAggregation agg) {
+        List<AggregationBuilder> aggs = new ArrayList<>();
+        for (String propertyName : getPropertyNames(agg.getFieldName())) {
+            String visibilityHash = getSearchIndex().getPropertyVisibilityHashFromDeflatedPropertyName(propertyName);
+            String aggName = createAggregationName(agg.getAggregationName(), visibilityHash);
+            GeoHashGridBuilder geoHashAgg = AggregationBuilders.geohashGrid(aggName);
+            geoHashAgg.field(propertyName + ElasticSearchSearchIndexBase.GEO_PROPERTY_NAME_SUFFIX);
+            geoHashAgg.precision(agg.getPrecision());
+            aggs.add(geoHashAgg);
         }
+        return aggs;
+    }
+
+    protected List<AbstractAggregationBuilder> getElasticsearchStatisticsAggregations(StatisticsAggregation agg) {
+        List<AbstractAggregationBuilder> aggs = new ArrayList<>();
+        for (String propertyName : getPropertyNames(agg.getFieldName())) {
+            String visibilityHash = getSearchIndex().getPropertyVisibilityHashFromDeflatedPropertyName(propertyName);
+            String aggName = createAggregationName(agg.getAggregationName(), visibilityHash);
+            ExtendedStatsBuilder statsAgg = AggregationBuilders.extendedStats(aggName);
+            statsAgg.field(propertyName);
+            aggs.add(statsAgg);
+        }
+        return aggs;
     }
 
     private String createAggregationName(String aggName, String visibilityHash) {
@@ -659,52 +688,57 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
         return aggName;
     }
 
-    protected void addTermsQueryToSearchRequestBuilder(SearchRequestBuilder searchRequestBuilder, List<TermsQueryItem> termsQueryItems) {
-        for (TermsQueryItem termsQueryItem : termsQueryItems) {
-            String fieldName = termsQueryItem.getFieldName();
-            PropertyDefinition propertyDefinition = getPropertyDefinition(fieldName);
-            for (String propertyName : getPropertyNames(fieldName)) {
-                if (propertyDefinition != null && propertyDefinition.getTextIndexHints().contains(TextIndexHint.EXACT_MATCH)) {
-                    propertyName = propertyName + ElasticSearchSearchIndexBase.EXACT_MATCH_PROPERTY_NAME_SUFFIX;
-                }
-
-                String visibilityHash = getSearchIndex().getPropertyVisibilityHashFromDeflatedPropertyName(propertyName);
-                TermsBuilder agg = AggregationBuilders.terms(createAggregationName(termsQueryItem.getAggregationName(), visibilityHash));
-                agg.field(propertyName);
-                searchRequestBuilder.addAggregation(agg);
+    protected List<AggregationBuilder> getElasticsearchTermsAggregations(TermsAggregation agg) {
+        List<AggregationBuilder> termsAggs = new ArrayList<>();
+        String fieldName = agg.getPropertyName();
+        PropertyDefinition propertyDefinition = getPropertyDefinition(fieldName);
+        for (String propertyName : getPropertyNames(fieldName)) {
+            if (propertyDefinition != null && propertyDefinition.getTextIndexHints().contains(TextIndexHint.EXACT_MATCH)) {
+                propertyName = propertyName + ElasticSearchSearchIndexBase.EXACT_MATCH_PROPERTY_NAME_SUFFIX;
             }
+
+            String visibilityHash = getSearchIndex().getPropertyVisibilityHashFromDeflatedPropertyName(propertyName);
+            TermsBuilder termsAgg = AggregationBuilders.terms(createAggregationName(agg.getAggregationName(), visibilityHash));
+            termsAgg.field(propertyName);
+
+            for (AbstractAggregationBuilder subAgg : getElasticsearchAggregations(agg.getNestedAggregations())) {
+                termsAgg.subAggregation(subAgg);
+            }
+
+            termsAggs.add(termsAgg);
         }
+        return termsAggs;
     }
 
-    protected void addHistogramQueryToSearchRequestBuilder(SearchRequestBuilder searchRequestBuilder, List<HistogramQueryItem> histogramQueryItems) {
-        for (HistogramQueryItem histogramQueryItem : histogramQueryItems) {
-            PropertyDefinition propertyDefinition = getPropertyDefinition(histogramQueryItem.getFieldName());
-            if (propertyDefinition == null) {
-                throw new VertexiumException("Could not find mapping for property: " + histogramQueryItem.getFieldName());
-            }
-            Class propertyDataType = propertyDefinition.getDataType();
-            for (String propertyName : getPropertyNames(histogramQueryItem.getFieldName())) {
-                String visibilityHash = getSearchIndex().getPropertyVisibilityHashFromDeflatedPropertyName(propertyName);
-                String aggName = createAggregationName(histogramQueryItem.getAggregationName(), visibilityHash);
-                if (propertyDataType == Date.class) {
-                    DateHistogramBuilder agg = AggregationBuilders.dateHistogram(aggName);
-                    agg.field(propertyName);
-                    agg.interval(new DateHistogram.Interval(histogramQueryItem.getInterval()));
-                    if (histogramQueryItem.getMinDocumentCount() != null) {
-                        agg.minDocCount(histogramQueryItem.getMinDocumentCount());
-                    }
-                    searchRequestBuilder.addAggregation(agg);
-                } else {
-                    HistogramBuilder agg = AggregationBuilders.histogram(aggName);
-                    agg.field(propertyName);
-                    agg.interval(Long.parseLong(histogramQueryItem.getInterval()));
-                    if (histogramQueryItem.getMinDocumentCount() != null) {
-                        agg.minDocCount(histogramQueryItem.getMinDocumentCount());
-                    }
-                    searchRequestBuilder.addAggregation(agg);
+    protected List<AggregationBuilder> getElasticsearchHistogramAggregations(HistogramAggregation agg) {
+        List<AggregationBuilder> aggs = new ArrayList<>();
+        PropertyDefinition propertyDefinition = getPropertyDefinition(agg.getFieldName());
+        if (propertyDefinition == null) {
+            throw new VertexiumException("Could not find mapping for property: " + agg.getFieldName());
+        }
+        Class propertyDataType = propertyDefinition.getDataType();
+        for (String propertyName : getPropertyNames(agg.getFieldName())) {
+            String visibilityHash = getSearchIndex().getPropertyVisibilityHashFromDeflatedPropertyName(propertyName);
+            String aggName = createAggregationName(agg.getAggregationName(), visibilityHash);
+            if (propertyDataType == Date.class) {
+                DateHistogramBuilder dateAgg = AggregationBuilders.dateHistogram(aggName);
+                dateAgg.field(propertyName);
+                dateAgg.interval(new DateHistogram.Interval(agg.getInterval()));
+                if (agg.getMinDocumentCount() != null) {
+                    dateAgg.minDocCount(agg.getMinDocumentCount());
                 }
+                aggs.add(dateAgg);
+            } else {
+                HistogramBuilder histogramAgg = AggregationBuilders.histogram(aggName);
+                histogramAgg.field(propertyName);
+                histogramAgg.interval(Long.parseLong(agg.getInterval()));
+                if (agg.getMinDocumentCount() != null) {
+                    histogramAgg.minDocCount(agg.getMinDocumentCount());
+                }
+                aggs.add(histogramAgg);
             }
         }
+        return aggs;
     }
 
     private PropertyDefinition getPropertyDefinition(String propertyName) {
@@ -717,5 +751,14 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
 
     public String getAggregationName(String name) {
         return getSearchIndex().getAggregationName(name);
+    }
+
+    Aggregation getAggregation(String name) {
+        for (Aggregation agg : super.getAggregations()) {
+            if (agg.getAggregationName().equals(name)) {
+                return agg;
+            }
+        }
+        return null;
     }
 }

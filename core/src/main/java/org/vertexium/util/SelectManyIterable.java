@@ -69,4 +69,8 @@ public abstract class SelectManyIterable<TSource, TDest> implements Iterable<TDe
     }
 
     protected abstract Iterable<? extends TDest> getIterable(TSource source);
+
+    protected Iterable<? extends TSource> getSource() {
+        return source;
+    }
 }

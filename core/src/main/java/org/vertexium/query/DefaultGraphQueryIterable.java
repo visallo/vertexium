@@ -3,6 +3,7 @@ package org.vertexium.query;
 import org.vertexium.Edge;
 import org.vertexium.Element;
 import org.vertexium.Property;
+import org.vertexium.VertexiumException;
 import org.vertexium.util.CloseableIterable;
 import org.vertexium.util.CloseableIterator;
 import org.vertexium.util.CloseableUtils;
@@ -16,8 +17,7 @@ import static org.vertexium.util.IterableUtils.toList;
 
 public class DefaultGraphQueryIterable<T extends Element> implements
         Iterable<T>,
-        IterableWithTotalHits<T>,
-        CloseableIterable<T> {
+        QueryResultsIterable<T> {
     private final QueryParameters parameters;
     private final Iterable<T> iterable;
     private final boolean evaluateQueryString;
@@ -166,5 +166,10 @@ public class DefaultGraphQueryIterable<T extends Element> implements
     @Override
     public void close() {
         CloseableUtils.closeQuietly(iterable);
+    }
+
+    @Override
+    public <TResult extends AggregationResult> TResult getAggregationResult(String name, Class<? extends TResult> resultType) {
+        throw new VertexiumException("Could not find aggregation with name: " + name);
     }
 }

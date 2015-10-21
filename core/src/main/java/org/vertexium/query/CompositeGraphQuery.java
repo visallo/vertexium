@@ -1,9 +1,6 @@
 package org.vertexium.query;
 
-import org.vertexium.Edge;
-import org.vertexium.Element;
-import org.vertexium.FetchHint;
-import org.vertexium.Vertex;
+import org.vertexium.*;
 import org.vertexium.util.SelectManyIterable;
 
 import java.util.*;
@@ -20,14 +17,14 @@ public class CompositeGraphQuery implements Query {
     }
 
     @Override
-    public Iterable<Vertex> vertices() {
+    public QueryResultsIterable<Vertex> vertices() {
         return vertices(FetchHint.ALL);
     }
 
     @Override
-    public Iterable<Vertex> vertices(final EnumSet<FetchHint> fetchHints) {
+    public QueryResultsIterable<Vertex> vertices(final EnumSet<FetchHint> fetchHints) {
         final Set<String> seenIds = new HashSet<>();
-        return new SelectManyIterable<Query, Vertex>(this.queries) {
+        return new QueryResultsSelectManyIterable<Vertex>(this.queries) {
             @Override
             public Iterable<Vertex> getIterable(Query query) {
                 return query.vertices(fetchHints);
@@ -45,14 +42,14 @@ public class CompositeGraphQuery implements Query {
     }
 
     @Override
-    public Iterable<Edge> edges() {
+    public QueryResultsIterable<Edge> edges() {
         return edges(FetchHint.ALL);
     }
 
     @Override
-    public Iterable<Edge> edges(final EnumSet<FetchHint> fetchHints) {
+    public QueryResultsIterable<Edge> edges(final EnumSet<FetchHint> fetchHints) {
         final Set<String> seenIds = new HashSet<>();
-        return new SelectManyIterable<Query, Edge>(this.queries) {
+        return new QueryResultsSelectManyIterable<Edge>(this.queries) {
             @Override
             public Iterable<Edge> getIterable(Query query) {
                 return query.edges(fetchHints);
@@ -71,27 +68,27 @@ public class CompositeGraphQuery implements Query {
 
     @Override
     @Deprecated
-    public Iterable<Edge> edges(final String label) {
+    public QueryResultsIterable<Edge> edges(final String label) {
         hasEdgeLabel(label);
         return edges(FetchHint.ALL);
     }
 
     @Override
     @Deprecated
-    public Iterable<Edge> edges(final String label, final EnumSet<FetchHint> fetchHints) {
+    public QueryResultsIterable<Edge> edges(final String label, final EnumSet<FetchHint> fetchHints) {
         hasEdgeLabel(label);
         return edges(fetchHints);
     }
 
     @Override
-    public Iterable<Element> elements() {
+    public QueryResultsIterable<Element> elements() {
         return elements(FetchHint.ALL);
     }
 
     @Override
-    public Iterable<Element> elements(final EnumSet<FetchHint> fetchHints) {
+    public QueryResultsIterable<Element> elements(final EnumSet<FetchHint> fetchHints) {
         final Set<String> seenIds = new HashSet<>();
-        return new SelectManyIterable<Query, Element>(this.queries) {
+        return new QueryResultsSelectManyIterable<Element>(this.queries) {
             @Override
             public Iterable<Element> getIterable(Query query) {
                 return query.elements(fetchHints);
@@ -210,5 +207,38 @@ public class CompositeGraphQuery implements Query {
             query.sort(propertyName, direction);
         }
         return this;
+    }
+
+    @Override
+    public boolean isAggregationSupported(Aggregation aggregation) {
+        for (Query query : queries) {
+            if (!query.isAggregationSupported(aggregation)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    @Override
+    public Query addAggregation(Aggregation aggregation) {
+        for (Query query : queries) {
+            if (!query.isAggregationSupported(aggregation)) {
+                throw new VertexiumException(query.getClass().getName() + " does not support aggregation of type " + aggregation.getClass().getName());
+            }
+        }
+        for (Query query : queries) {
+            query.addAggregation(aggregation);
+        }
+        return this;
+    }
+
+    @Override
+    public Iterable<Aggregation> getAggregations() {
+        return new SelectManyIterable<Query, Aggregation>(queries) {
+            @Override
+            protected Iterable<? extends Aggregation> getIterable(Query query) {
+                return query.getAggregations();
+            }
+        };
     }
 }

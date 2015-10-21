@@ -3,6 +3,7 @@ package org.vertexium.type;
 import org.vertexium.VertexiumException;
 
 import java.io.Serializable;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -234,5 +235,25 @@ public class GeoPoint implements Serializable, GeoShape, Comparable<GeoPoint> {
 
     public boolean isNorthOf(GeoPoint pt) {
         return getLatitude() > pt.getLatitude();
+    }
+
+    public static GeoPoint calculateCenter(List<GeoPoint> geoPoints) {
+        double totalLat = 0.0;
+        double totalLon = 0.0;
+        double totalAlt = 0.0;
+        int altitudeCount = 0;
+        for (GeoPoint geoPoint : geoPoints) {
+            totalLat += geoPoint.getLatitude();
+            totalLon += geoPoint.getLongitude();
+            if (geoPoint.getAltitude() != null) {
+                totalAlt += geoPoint.getAltitude();
+                altitudeCount++;
+            }
+        }
+        return new GeoPoint(
+                totalLat / (double) geoPoints.size(),
+                totalLon / (double) geoPoints.size(),
+                totalAlt / (double) altitudeCount
+        );
     }
 }

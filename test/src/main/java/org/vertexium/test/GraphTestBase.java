@@ -3863,12 +3863,62 @@ public abstract class GraphTestBase {
 
     private Map<Object, Long> queryGraphQueryWithTermsAggregation(String propertyName, Authorizations authorizations) {
         Query q = graph.query(authorizations).limit(0);
-        if (!(q instanceof GraphQueryWithTermsAggregation)) {
-            LOGGER.warn("%s unsupported", GraphQueryWithTermsAggregation.class.getName());
+        TermsAggregation agg = new TermsAggregation("terms-count", propertyName);
+        if (!q.isAggregationSupported(agg)) {
+            LOGGER.warn("%s unsupported", agg.getClass().getName());
             return null;
         }
-        q = ((GraphQueryWithTermsAggregation) q).addTermsAggregation("terms-count", propertyName);
-        return termsBucketToMap(((IterableWithTermsResults) q.vertices()).getTermsResults("terms-count").getBuckets());
+        q.addAggregation(agg);
+        TermsResult aggregationResult = ((QueryResultsIterable<Vertex>) q.vertices()).getAggregationResult("terms-count", TermsResult.class);
+        return termsBucketToMap(aggregationResult.getBuckets());
+    }
+
+    @Test
+    public void testGraphQueryWithNestedTermsAggregation() {
+        graph.defineProperty("name").dataType(String.class).textIndexHint(TextIndexHint.EXACT_MATCH).define();
+        graph.defineProperty("gender").dataType(String.class).textIndexHint(TextIndexHint.EXACT_MATCH).define();
+
+        graph.prepareVertex("v1", VISIBILITY_EMPTY)
+                .addPropertyValue("k1", "name", "Joe", VISIBILITY_EMPTY)
+                .addPropertyValue("k1", "gender", "male", VISIBILITY_EMPTY)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.prepareVertex("v2", VISIBILITY_EMPTY)
+                .addPropertyValue("k1", "name", "Sam", VISIBILITY_EMPTY)
+                .addPropertyValue("k1", "gender", "male", VISIBILITY_EMPTY)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.prepareVertex("v3", VISIBILITY_EMPTY)
+                .addPropertyValue("k1", "name", "Sam", VISIBILITY_EMPTY)
+                .addPropertyValue("k1", "gender", "female", VISIBILITY_EMPTY)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.prepareVertex("v4", VISIBILITY_EMPTY)
+                .addPropertyValue("k1", "name", "Sam", VISIBILITY_EMPTY)
+                .addPropertyValue("k1", "gender", "female", VISIBILITY_EMPTY)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        Map<Object, Map<Object, Long>> vertexPropertyCountByValue = queryGraphQueryWithNestedTermsAggregation("name", "gender", AUTHORIZATIONS_A_AND_B);
+        if (vertexPropertyCountByValue == null) {
+            return;
+        }
+        assertEquals(2, vertexPropertyCountByValue.size());
+        assertEquals(1, vertexPropertyCountByValue.get("joe").size());
+        assertEquals(1L, (long) vertexPropertyCountByValue.get("joe").get("male"));
+        assertEquals(2, vertexPropertyCountByValue.get("sam").size());
+        assertEquals(1L, (long) vertexPropertyCountByValue.get("sam").get("male"));
+        assertEquals(2L, (long) vertexPropertyCountByValue.get("sam").get("female"));
+    }
+
+    private Map<Object, Map<Object, Long>> queryGraphQueryWithNestedTermsAggregation(String propertyNameFirst, String propertyNameSecond, Authorizations authorizations) {
+        Query q = graph.query(authorizations).limit(0);
+        TermsAggregation agg = new TermsAggregation("terms-count", propertyNameFirst);
+        agg.addNestedAggregation(new TermsAggregation("nested", propertyNameSecond));
+        if (!q.isAggregationSupported(agg)) {
+            LOGGER.warn("%s unsupported", agg.getClass().getName());
+            return null;
+        }
+        q.addAggregation(agg);
+        TermsResult aggregationResult = ((QueryResultsIterable<Vertex>) q.vertices()).getAggregationResult("terms-count", TermsResult.class);
+        return nestedTermsBucketToMap(aggregationResult.getBuckets(), "nested");
     }
 
     @Test
@@ -4305,6 +4355,18 @@ public abstract class GraphTestBase {
         Map<Object, Long> results = new HashMap<>();
         for (TermsBucket b : buckets) {
             results.put(b.getKey(), b.getCount());
+        }
+        return results;
+    }
+
+    private Map<Object, Map<Object, Long>> nestedTermsBucketToMap(Iterable<TermsBucket> buckets, String nestedAggName) {
+        Map<Object, Map<Object, Long>> results = new HashMap<>();
+        for (TermsBucket entry : buckets) {
+            TermsResult nestedResults = (TermsResult) entry.getNestedResults().get(nestedAggName);
+            if (nestedResults == null) {
+                throw new VertexiumException("Could not find nested: " + nestedAggName);
+            }
+            results.put(entry.getKey(), termsBucketToMap(nestedResults.getBuckets()));
         }
         return results;
     }

@@ -1,6 +1,6 @@
 package org.vertexium.query;
 
-public class HistogramResult {
+public class HistogramResult extends AggregationResult {
     private final Iterable<HistogramBucket> buckets;
 
     public HistogramResult(Iterable<HistogramBucket> buckets) {

@@ -1,6 +1,7 @@
-# v2.1.1
+# v2.2.0
 
 * Add IP Address type
+* Support multi-level aggregations
 
 # v2.1.0
 
