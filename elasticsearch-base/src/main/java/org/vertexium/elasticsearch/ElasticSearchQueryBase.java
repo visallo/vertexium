@@ -103,10 +103,10 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
                 try {
                     response = getSearchResponse(ElasticSearchElementType.VERTEX, skip, limit);
                 } catch (IndexMissingException ex) {
-                    LOGGER.debug("Index missing: %s", ex.getMessage());
+                    LOGGER.debug("Index missing: %s (returning empty iterable)", ex.getMessage());
                     return createEmptyIterable();
                 } catch (VertexiumNoMatchingPropertiesException ex) {
-                    LOGGER.debug("Could not find property %s", ex.getPropertyName());
+                    LOGGER.debug("Could not find property: %s (returning empty iterable)", ex.getPropertyName());
                     return createEmptyIterable();
                 }
                 final SearchHits hits = response.getHits();
@@ -143,10 +143,10 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
                 try {
                     response = getSearchResponse(ElasticSearchElementType.EDGE, skip, limit);
                 } catch (IndexMissingException ex) {
-                    LOGGER.debug("Index missing: %s", ex.getMessage());
+                    LOGGER.debug("Index missing: %s (returning empty iterable)", ex.getMessage());
                     return createEmptyIterable();
                 } catch (VertexiumNoMatchingPropertiesException ex) {
-                    LOGGER.debug("Could not find property", ex);
+                    LOGGER.debug("Could not find property: %s (returning empty iterable)", ex.getPropertyName());
                     return createEmptyIterable();
                 }
                 final SearchHits hits = response.getHits();
@@ -184,10 +184,10 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
                 try {
                     response = getSearchResponse(null, skip, limit);
                 } catch (IndexMissingException ex) {
-                    LOGGER.debug("Index missing: %s", ex.getMessage());
+                    LOGGER.debug("Index missing: %s (returning empty iterable)", ex.getMessage());
                     return createEmptyIterable();
                 } catch (VertexiumNoMatchingPropertiesException ex) {
-                    LOGGER.debug("Could not find property", ex);
+                    LOGGER.debug("Could not find property: %s (returning empty iterable)", ex.getPropertyName());
                     return createEmptyIterable();
                 }
                 final SearchHits hits = response.getHits();
