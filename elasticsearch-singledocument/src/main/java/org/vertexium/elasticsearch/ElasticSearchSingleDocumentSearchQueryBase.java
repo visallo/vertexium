@@ -9,7 +9,6 @@ import org.vertexium.*;
 import org.vertexium.elasticsearch.score.ScoringStrategy;
 import org.vertexium.query.*;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -96,11 +95,13 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends ElasticSearchQue
     }
 
     @Override
-    protected SearchRequestBuilder getSearchRequestBuilder(List<FilterBuilder> filters, QueryBuilder queryBuilder, ElasticSearchElementType elementType, int skip, int limit) {
-        SearchRequestBuilder searchRequestBuilder = super.getSearchRequestBuilder(filters, queryBuilder, elementType, skip, limit);
-        List<AbstractAggregationBuilder> aggs = getElasticsearchAggregations(getAggregations());
-        for (AbstractAggregationBuilder aggregationBuilder : aggs) {
-            searchRequestBuilder.addAggregation(aggregationBuilder);
+    protected SearchRequestBuilder getSearchRequestBuilder(List<FilterBuilder> filters, QueryBuilder queryBuilder, ElasticSearchElementType elementType, int skip, int limit, boolean includeAggregations) {
+        SearchRequestBuilder searchRequestBuilder = super.getSearchRequestBuilder(filters, queryBuilder, elementType, skip, limit, includeAggregations);
+        if (includeAggregations) {
+            List<AbstractAggregationBuilder> aggs = getElasticsearchAggregations(getAggregations());
+            for (AbstractAggregationBuilder aggregationBuilder : aggs) {
+                searchRequestBuilder.addAggregation(aggregationBuilder);
+            }
         }
         return searchRequestBuilder;
     }

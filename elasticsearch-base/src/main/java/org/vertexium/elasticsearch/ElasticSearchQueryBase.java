@@ -98,11 +98,11 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
     public QueryResultsIterable<Vertex> vertices(final EnumSet<FetchHint> fetchHints) {
         return new PagingIterable<Vertex>(getParameters().getSkip(), getParameters().getLimit()) {
             @Override
-            protected ElasticSearchGraphQueryIterable<Vertex> getPageIterable(int skip, int limit) {
+            protected ElasticSearchGraphQueryIterable<Vertex> getPageIterable(int skip, int limit, boolean includeAggregations) {
                 long startTime = System.nanoTime();
                 SearchResponse response;
                 try {
-                    response = getSearchResponse(ElasticSearchElementType.VERTEX, skip, limit);
+                    response = getSearchResponse(ElasticSearchElementType.VERTEX, skip, limit, includeAggregations);
                 } catch (IndexMissingException ex) {
                     LOGGER.debug("Index missing: %s (returning empty iterable)", ex.getMessage());
                     return createEmptyIterable();
@@ -138,11 +138,11 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
     public QueryResultsIterable<Edge> edges(final EnumSet<FetchHint> fetchHints) {
         return new PagingIterable<Edge>(getParameters().getSkip(), getParameters().getLimit()) {
             @Override
-            protected ElasticSearchGraphQueryIterable<Edge> getPageIterable(int skip, int limit) {
+            protected ElasticSearchGraphQueryIterable<Edge> getPageIterable(int skip, int limit, boolean includeAggregations) {
                 long startTime = System.nanoTime();
                 SearchResponse response;
                 try {
-                    response = getSearchResponse(ElasticSearchElementType.EDGE, skip, limit);
+                    response = getSearchResponse(ElasticSearchElementType.EDGE, skip, limit, includeAggregations);
                 } catch (IndexMissingException ex) {
                     LOGGER.debug("Index missing: %s (returning empty iterable)", ex.getMessage());
                     return createEmptyIterable();
@@ -179,11 +179,11 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
     public QueryResultsIterable<Element> elements(final EnumSet<FetchHint> fetchHints) {
         return new PagingIterable<Element>(getParameters().getSkip(), getParameters().getLimit()) {
             @Override
-            protected ElasticSearchGraphQueryIterable<Element> getPageIterable(int skip, int limit) {
+            protected ElasticSearchGraphQueryIterable<Element> getPageIterable(int skip, int limit, boolean includeAggregations) {
                 long startTime = System.nanoTime();
                 SearchResponse response;
                 try {
-                    response = getSearchResponse(null, skip, limit);
+                    response = getSearchResponse(null, skip, limit, includeAggregations);
                 } catch (IndexMissingException ex) {
                     LOGGER.debug("Index missing: %s (returning empty iterable)", ex.getMessage());
                     return createEmptyIterable();
@@ -286,11 +286,11 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
         );
     }
 
-    private SearchResponse getSearchResponse(ElasticSearchElementType elementType, int skip, int limit) {
+    private SearchResponse getSearchResponse(ElasticSearchElementType elementType, int skip, int limit, boolean includeAggregations) {
         List<FilterBuilder> filters = getFilters(elementType);
         QueryBuilder query = createQuery(getParameters(), elementType, filters);
         query = scoringStrategy.updateQuery(query);
-        SearchRequestBuilder q = getSearchRequestBuilder(filters, query, elementType, skip, limit);
+        SearchRequestBuilder q = getSearchRequestBuilder(filters, query, elementType, skip, limit, includeAggregations);
         applySort(q);
 
         if (QUERY_LOGGER.isTraceEnabled()) {
@@ -564,7 +564,7 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
         filters.add(FilterBuilders.notFilter(FilterBuilders.inFilter(key, value)));
     }
 
-    protected SearchRequestBuilder getSearchRequestBuilder(List<FilterBuilder> filters, QueryBuilder queryBuilder, ElasticSearchElementType elementType, int skip, int limit) {
+    protected SearchRequestBuilder getSearchRequestBuilder(List<FilterBuilder> filters, QueryBuilder queryBuilder, ElasticSearchElementType elementType, int skip, int limit, boolean includeAggregations) {
         AndFilterBuilder filterBuilder = getFilterBuilder(filters);
         String[] indicesToQuery = getIndexSelectionStrategy().getIndicesToQuery(this, elementType);
         if (QUERY_LOGGER.isTraceEnabled()) {

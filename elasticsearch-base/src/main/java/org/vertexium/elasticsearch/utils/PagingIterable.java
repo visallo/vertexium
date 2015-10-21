@@ -32,7 +32,7 @@ public abstract class PagingIterable<T extends Element> implements
         // This is a bit of a hack. Because the underlying iterable is the iterable with geohash results, histogram results, etc.
         //   we need to grab the first iterable to get the results out.
         int firstIterableLimit = Math.min(PAGE_SIZE, limit == null ? Integer.MAX_VALUE : limit.intValue());
-        this.firstIterable = getPageIterable((int) this.skip, firstIterableLimit);
+        this.firstIterable = getPageIterable((int) this.skip, firstIterableLimit, true);
         this.isFirstCallToIterator = true;
     }
 
@@ -76,7 +76,7 @@ public abstract class PagingIterable<T extends Element> implements
         return this.firstIterable.getTotalHits();
     }
 
-    protected abstract ElasticSearchGraphQueryIterable<T> getPageIterable(int skip, int limit);
+    protected abstract ElasticSearchGraphQueryIterable<T> getPageIterable(int skip, int limit, boolean includeAggregations);
 
     @Override
     public Iterator<T> iterator() {
@@ -135,7 +135,7 @@ public abstract class PagingIterable<T extends Element> implements
             int limit = Math.min(PAGE_SIZE, this.limit);
             currentIteratorCount = 0;
             if (firstIterable == null) {
-                firstIterable = getPageIterable(nextSkip, limit);
+                firstIterable = getPageIterable(nextSkip, limit, false);
             }
             Iterator<T> it = firstIterable.iterator();
             firstIterable = null;
