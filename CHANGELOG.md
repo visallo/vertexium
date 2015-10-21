@@ -1,7 +1,8 @@
 # v2.2.0
 
-* Add IP Address type
-* Support multi-level aggregations
+* add IP Address type
+* support multi-level aggregations
+* query bug fixes
 
 # v2.1.0
 

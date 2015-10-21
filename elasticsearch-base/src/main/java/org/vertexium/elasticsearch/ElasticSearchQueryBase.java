@@ -488,6 +488,9 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
         Object value = has.value;
         String[] keys = getPropertyNames(has.key);
         if (keys.length == 0) {
+            if (compare.equals(Compare.NOT_EQUAL)) {
+                return FilterBuilders.matchAllFilter();
+            }
             throw new VertexiumNoMatchingPropertiesException(has.key);
         }
         List<FilterBuilder> filters = new ArrayList<>();

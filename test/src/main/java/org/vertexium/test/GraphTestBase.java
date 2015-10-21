@@ -1520,6 +1520,15 @@ public abstract class GraphTestBase {
 
         vertices = graph.query(AUTHORIZATIONS_A).hasNot("notSetProp").vertices();
         Assert.assertEquals(2, count(vertices));
+
+        vertices = graph.query(AUTHORIZATIONS_A).has("notSetProp", Compare.NOT_EQUAL, 5).vertices();
+        Assert.assertEquals(2, count(vertices));
+
+        vertices = graph.query(AUTHORIZATIONS_A).has("notSetProp", Compare.EQUAL, 5).vertices();
+        Assert.assertEquals(0, count(vertices));
+
+        vertices = graph.query(AUTHORIZATIONS_A).has("notSetProp", Compare.LESS_THAN_EQUAL, 5).vertices();
+        Assert.assertEquals(0, count(vertices));
     }
 
     @Test

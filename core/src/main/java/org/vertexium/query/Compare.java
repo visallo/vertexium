@@ -14,12 +14,19 @@ public enum Compare implements Predicate {
 
     @Override
     public boolean evaluate(final Iterable<Property> properties, final Object second, Map<String, PropertyDefinition> propertyDefinitions) {
+        boolean foundProperties = false;
         for (Property property : properties) {
+            foundProperties = true;
             PropertyDefinition propertyDefinition = propertyDefinitions.get(property.getName());
             if (evaluate(property, second, propertyDefinition)) {
                 return true;
             }
         }
+
+        if (!foundProperties && this.equals(NOT_EQUAL)) {
+            return true;
+        }
+
         return false;
     }
 
