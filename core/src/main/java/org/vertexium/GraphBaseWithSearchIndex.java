@@ -6,7 +6,6 @@ import org.vertexium.query.MultiVertexQuery;
 import org.vertexium.query.SimilarToGraphQuery;
 import org.vertexium.search.SearchIndex;
 import org.vertexium.search.SearchIndexWithVertexPropertyCountByValue;
-import org.vertexium.util.ToElementIterable;
 
 import java.io.IOException;
 import java.util.EnumSet;
@@ -125,11 +124,11 @@ public abstract class GraphBaseWithSearchIndex extends GraphBase implements Grap
     }
 
     protected void reindexVertices(Authorizations authorizations) {
-        this.searchIndex.addElements(this, new ToElementIterable<>(getVertices(authorizations)), authorizations);
+        this.searchIndex.addElements(this, getVertices(authorizations), authorizations);
     }
 
     private void reindexEdges(Authorizations authorizations) {
-        this.searchIndex.addElements(this, new ToElementIterable<>(getEdges(authorizations)), authorizations);
+        this.searchIndex.addElements(this, getEdges(authorizations), authorizations);
     }
 
     @Override

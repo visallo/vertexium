@@ -2,8 +2,6 @@ package org.vertexium.query;
 
 import org.vertexium.*;
 import org.vertexium.util.IterableUtils;
-import org.vertexium.util.JoinIterable;
-import org.vertexium.util.ToElementIterable;
 import org.vertexium.util.VerticesToEdgeIdsIterable;
 
 import java.util.EnumSet;

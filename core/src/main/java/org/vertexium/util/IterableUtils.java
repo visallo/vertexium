@@ -1,5 +1,7 @@
 package org.vertexium.util;
 
+import org.vertexium.Element;
+
 import java.lang.reflect.Array;
 import java.util.*;
 
@@ -148,5 +150,9 @@ public class IterableUtils {
             first = false;
         }
         return sb.toString();
+    }
+
+    public static Iterable<Element> toElementIterable(Iterable<? extends Element> elements) {
+        return (Iterable<Element>)elements;
     }
 }

@@ -1720,6 +1720,74 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    public void testGraphQueryHasGeoPointAndExact() {
+        graph.defineProperty("location").dataType(GeoPoint.class).define();
+        graph.defineProperty("exact").dataType(String.class).textIndexHint(TextIndexHint.EXACT_MATCH).define();
+
+        graph.prepareVertex("v1", VISIBILITY_A)
+                .setProperty("prop1", "val1", VISIBILITY_A)
+                .setProperty("exact", "val1", VISIBILITY_A)
+                .setProperty("location", new GeoPoint(38.9186, -77.2297), VISIBILITY_A)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.prepareVertex("v2", VISIBILITY_A)
+                .setProperty("prop2", "val2", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        Iterable<Element> results = graph.query("*", AUTHORIZATIONS_A_AND_B).has("prop1").elements();
+        assertEquals(1, count(results));
+        assertEquals(1, ((IterableWithTotalHits)results).getTotalHits());
+        assertEquals("v1", results.iterator().next().getId());
+
+        results = graph.query("*", AUTHORIZATIONS_A_AND_B).has("exact").elements();
+        assertEquals(1, count(results));
+        assertEquals(1, ((IterableWithTotalHits)results).getTotalHits());
+        assertEquals("v1", results.iterator().next().getId());
+
+        results = graph.query("*", AUTHORIZATIONS_A_AND_B).has("location").elements();
+        assertEquals(1, count(results));
+        assertEquals(1, ((IterableWithTotalHits)results).getTotalHits());
+        assertEquals("v1", results.iterator().next().getId());
+    }
+
+    @Test
+    public void testGraphQueryHasNotGeoPointAndExact() {
+        graph.defineProperty("location").dataType(GeoPoint.class).define();
+        graph.defineProperty("exact").dataType(String.class).textIndexHint(TextIndexHint.EXACT_MATCH).define();
+
+        graph.prepareVertex("v1", VISIBILITY_A)
+                .setProperty("prop1", "val1", VISIBILITY_A)
+                .setProperty("exact", "val1", VISIBILITY_A)
+                .setProperty("location", new GeoPoint(38.9186, -77.2297), VISIBILITY_A)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.prepareVertex("v2", VISIBILITY_A)
+                .setProperty("prop2", "val2", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        Iterable<Element> results = graph.query("*", AUTHORIZATIONS_A_AND_B).hasNot("prop1").elements();
+        assertEquals(1, count(results));
+        assertEquals(1, ((IterableWithTotalHits)results).getTotalHits());
+        assertEquals("v2", results.iterator().next().getId());
+
+        results = graph.query("*", AUTHORIZATIONS_A_AND_B).hasNot("prop3").sort("id", SortDirection.ASCENDING).elements();
+        assertEquals(2, count(results));
+        Iterator<Element> iterator = results.iterator();
+        assertEquals("v1", iterator.next().getId());
+        assertEquals("v2", iterator.next().getId());
+
+        results = graph.query("*", AUTHORIZATIONS_A_AND_B).hasNot("exact").elements();
+        assertEquals(1, count(results));
+        assertEquals(1, ((IterableWithTotalHits)results).getTotalHits());
+        assertEquals("v2", results.iterator().next().getId());
+
+        results = graph.query("*", AUTHORIZATIONS_A_AND_B).hasNot("location").elements();
+        assertEquals(1, count(results));
+        assertEquals(1, ((IterableWithTotalHits)results).getTotalHits());
+        assertEquals("v2", results.iterator().next().getId());
+    }
+
+    @Test
     public void testGraphQueryHasTwoVisibilities() {
         graph.prepareVertex("v1", VISIBILITY_A)
                 .setProperty("name", "v1", VISIBILITY_A)

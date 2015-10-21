@@ -32,6 +32,7 @@ import org.vertexium.elasticsearch.score.ScoringStrategy;
 import org.vertexium.elasticsearch.utils.PagingIterable;
 import org.vertexium.query.*;
 import org.vertexium.type.GeoCircle;
+import org.vertexium.type.GeoPoint;
 import org.vertexium.util.*;
 
 import java.io.IOException;
@@ -229,9 +230,9 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
                 // and rely on the DefaultGraphQueryIterable to provide property filtering
                 QueryParameters filterParameters = getParameters().clone();
                 filterParameters.setSkip(0); // ES already did a skip
-                Iterable<Vertex> vertices = getGraph().getVertices(vertexIds, fetchHints, filterParameters.getAuthorizations());
-                Iterable<Edge> edges = getGraph().getEdges(edgeIds, fetchHints, filterParameters.getAuthorizations());
-                Iterable<Element> elements = new JoinIterable<>(new ToElementIterable<>(vertices), new ToElementIterable<>(edges));
+                Iterable<Element> vertices = IterableUtils.toElementIterable(getGraph().getVertices(vertexIds, fetchHints, filterParameters.getAuthorizations()));
+                Iterable<Element> edges = IterableUtils.toElementIterable(getGraph().getEdges(edgeIds, fetchHints, filterParameters.getAuthorizations()));
+                Iterable<Element> elements = new JoinIterable<>(vertices, edges);
                 elements = sortByResultOrder(elements, ids);
                 // TODO instead of passing false here to not evaluate the query string it would be better to support the Lucene query
                 return createIterable(response, filterParameters, elements, evaluateQueryString, evaluateHasContainers, evaluateSortContainers, searchTime, hits);
@@ -343,9 +344,15 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
             // match all records.
             return FilterBuilders.matchAllFilter();
         }
+        PropertyDefinition propDef = getPropertyDefinition(hasNotProperty.getKey());
         List<FilterBuilder> filters = new ArrayList<>();
         for (String propertyName : propertyNames) {
             filters.add(FilterBuilders.notFilter(FilterBuilders.existsFilter(propertyName)));
+            if (propDef.getDataType().equals(GeoPoint.class)) {
+                filters.add(FilterBuilders.notFilter(FilterBuilders.existsFilter(propertyName + ElasticSearchSearchIndexBase.GEO_PROPERTY_NAME_SUFFIX)));
+            } else if (propDef.getTextIndexHints().contains(TextIndexHint.EXACT_MATCH)) {
+                filters.add(FilterBuilders.notFilter(FilterBuilders.existsFilter(propertyName + ElasticSearchSearchIndexBase.EXACT_MATCH_PROPERTY_NAME_SUFFIX)));
+            }
         }
         return getSingleFilterOrAndTheFilters(filters);
     }
@@ -355,9 +362,15 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
         if (propertyNames.length == 0) {
             throw new VertexiumNoMatchingPropertiesException(hasProperty.getKey());
         }
+        PropertyDefinition propDef = getPropertyDefinition(hasProperty.getKey());
         List<FilterBuilder> filters = new ArrayList<>();
         for (String propertyName : propertyNames) {
             filters.add(FilterBuilders.existsFilter(propertyName));
+            if (propDef.getDataType().equals(GeoPoint.class)) {
+                filters.add(FilterBuilders.existsFilter(propertyName + ElasticSearchSearchIndexBase.GEO_PROPERTY_NAME_SUFFIX));
+            } else if (propDef.getTextIndexHints().contains(TextIndexHint.EXACT_MATCH)) {
+                filters.add(FilterBuilders.existsFilter(propertyName + ElasticSearchSearchIndexBase.EXACT_MATCH_PROPERTY_NAME_SUFFIX));
+            }
         }
         return getSingleFilterOrOrTheFilters(filters);
     }

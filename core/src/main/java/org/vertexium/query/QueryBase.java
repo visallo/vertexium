@@ -1,8 +1,7 @@
 package org.vertexium.query;
 
 import org.vertexium.*;
-import org.vertexium.util.JoinIterable;
-import org.vertexium.util.ToElementIterable;
+import org.vertexium.util.IterableUtils;
 
 import java.util.*;
 
@@ -77,8 +76,8 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
 
     @Override
     public QueryResultsIterable<Element> elements(EnumSet<FetchHint> fetchHints) {
-        Iterable<Element> vertices = new ToElementIterable<>(vertices(fetchHints));
-        Iterable<Element> edges = new ToElementIterable<>(edges(fetchHints));
+        Iterable<Element> vertices = IterableUtils.toElementIterable(vertices(fetchHints));
+        Iterable<Element> edges = IterableUtils.toElementIterable(edges(fetchHints));
         return new QueryResultsJoinIterable<>(vertices, edges);
     }
 
