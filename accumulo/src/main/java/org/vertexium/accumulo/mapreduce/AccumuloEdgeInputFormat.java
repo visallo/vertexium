@@ -35,6 +35,9 @@ public class AccumuloEdgeInputFormat extends AccumuloElementInputFormatBase<Edge
         try {
             EnumSet<FetchHint> fetchHints = AccumuloGraph.toIteratorFetchHints(org.vertexium.FetchHint.ALL);
             EdgeElementData edgeElementData = edgeIterator.createElementDataFromRows(row);
+            if (edgeElementData == null) {
+                return null;
+            }
             Visibility visibility = AccumuloGraph.accumuloVisibilityToVisibility(AccumuloGraph.visibilityToAccumuloVisibility(edgeElementData.visibility.toString()));
             Iterable<Property> properties = makePropertiesFromElementData(graph, edgeElementData, fetchHints);
             Iterable<PropertyDeleteMutation> propertyDeleteMutations = null;
