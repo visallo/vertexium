@@ -243,7 +243,10 @@ public abstract class ElementIterator<T extends ElementData> extends RowEncoding
             keys.add(row.getKey());
             values.add(row.getValue());
         }
-        populateElementData(keys, values);
-        return this.getElementData();
+        if (populateElementData(keys, values)) {
+            return this.getElementData();
+        } else {
+            return null;
+        }
     }
 }

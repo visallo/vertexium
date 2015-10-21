@@ -40,6 +40,9 @@ public class AccumuloVertexInputFormat extends AccumuloElementInputFormatBase<Ve
         try {
             EnumSet<FetchHint> fetchHints = AccumuloGraph.toIteratorFetchHints(org.vertexium.FetchHint.ALL);
             VertexElementData vertexElementData = vertexIterator.createElementDataFromRows(row);
+            if (vertexElementData == null) {
+                return null;
+            }
             Visibility visibility = AccumuloGraph.accumuloVisibilityToVisibility(AccumuloGraph.visibilityToAccumuloVisibility(vertexElementData.visibility.toString()));
             Iterable<Property> properties = makePropertiesFromElementData(graph, vertexElementData, fetchHints);
             Iterable<PropertyDeleteMutation> propertyDeleteMutations = null;
