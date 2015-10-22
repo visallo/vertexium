@@ -3,16 +3,19 @@ package org.vertexium.inmemory;
 import org.vertexium.*;
 import org.vertexium.mutation.*;
 import org.vertexium.property.MutableProperty;
+import org.vertexium.property.MutablePropertyImpl;
 import org.vertexium.property.StreamingPropertyValue;
 import org.vertexium.util.ConvertingIterable;
 import org.vertexium.util.FilterIterable;
 import org.vertexium.util.IncreasingTime;
 
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
 public abstract class InMemoryElement<TElement extends InMemoryElement> implements Element {
     private final String id;
+    private Property idProperty;
     private InMemoryGraph graph;
     protected final InMemoryTableElement<TElement> inMemoryTableElement;
     private final boolean includeHidden;
@@ -38,6 +41,13 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> implemen
     @Override
     public String getId() {
         return this.id;
+    }
+
+    protected Property getIdProperty() {
+        if (idProperty == null) {
+            idProperty = new MutablePropertyImpl(ElementMutation.DEFAULT_KEY, ID_PROPERTY_NAME, getId(), null, getTimestamp(), null, null);
+        }
+        return idProperty;
     }
 
     @Override
@@ -215,6 +225,9 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> implemen
 
     @Override
     public Property getProperty(String key, String name, Visibility visibility) {
+        if (ID_PROPERTY_NAME.equals(name)) {
+            return getIdProperty();
+        }
         for (Property p : getProperties()) {
             if (!p.getKey().equals(key)) {
                 continue;
@@ -249,6 +262,11 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> implemen
 
     @Override
     public Iterable<Property> getProperties(final String name) {
+        if (ID_PROPERTY_NAME.equals(name)) {
+            ArrayList<Property> result = new ArrayList<>();
+            result.add(getIdProperty());
+            return result;
+        }
         return new FilterIterable<Property>(getProperties()) {
             @Override
             protected boolean isIncluded(Property property) {
@@ -259,6 +277,11 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> implemen
 
     @Override
     public Iterable<Property> getProperties(final String key, final String name) {
+        if (ID_PROPERTY_NAME.equals(name)) {
+            ArrayList<Property> result = new ArrayList<>();
+            result.add(getIdProperty());
+            return result;
+        }
         return new FilterIterable<Property>(getProperties()) {
             @Override
             protected boolean isIncluded(Property property) {

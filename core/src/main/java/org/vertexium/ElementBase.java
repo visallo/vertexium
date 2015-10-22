@@ -5,6 +5,7 @@ import org.vertexium.mutation.ExistingElementMutation;
 import org.vertexium.mutation.PropertyDeleteMutation;
 import org.vertexium.mutation.PropertySoftDeleteMutation;
 import org.vertexium.property.MutableProperty;
+import org.vertexium.property.MutablePropertyImpl;
 import org.vertexium.property.PropertyValue;
 import org.vertexium.util.ConvertingIterable;
 import org.vertexium.util.FilterIterable;
@@ -15,6 +16,7 @@ import java.util.concurrent.ConcurrentSkipListSet;
 public abstract class ElementBase implements Element {
     private final Graph graph;
     private final String id;
+    private Property idProperty;
     private Visibility visibility;
     private final long timestamp;
     private Set<Visibility> hiddenVisibilities = new HashSet<>();
@@ -76,6 +78,9 @@ public abstract class ElementBase implements Element {
 
     @Override
     public Property getProperty(String key, String name, Visibility visibility) {
+        if (ID_PROPERTY_NAME.equals(name)) {
+            return getIdProperty();
+        }
         for (Property p : getProperties()) {
             if (!p.getKey().equals(key)) {
                 continue;
@@ -101,6 +106,9 @@ public abstract class ElementBase implements Element {
 
     @Override
     public Property getProperty(String name) {
+        if (ID_PROPERTY_NAME.equals(name)) {
+            return getIdProperty();
+        }
         Iterator<Property> propertiesWithName = getProperties(name).iterator();
         if (propertiesWithName.hasNext()) {
             return propertiesWithName.next();
@@ -115,6 +123,9 @@ public abstract class ElementBase implements Element {
 
     @Override
     public Object getPropertyValue(String name, int index) {
+        if (ID_PROPERTY_NAME.equals(name)) {
+            return getIdProperty();
+        }
         Iterator<Object> values = getPropertyValues(name).iterator();
         while (values.hasNext() && index >= 0) {
             Object v = values.next();
@@ -128,6 +139,9 @@ public abstract class ElementBase implements Element {
 
     @Override
     public Object getPropertyValue(String key, String name, int index) {
+        if (ID_PROPERTY_NAME.equals(name)) {
+            return getIdProperty();
+        }
         Iterator<Object> values = getPropertyValues(key, name).iterator();
         while (values.hasNext() && index >= 0) {
             Object v = values.next();
@@ -147,6 +161,13 @@ public abstract class ElementBase implements Element {
     @Override
     public String getId() {
         return this.id;
+    }
+
+    protected Property getIdProperty() {
+        if (idProperty == null) {
+            idProperty = new MutablePropertyImpl(ElementMutation.DEFAULT_KEY, ID_PROPERTY_NAME, getId(), null, getTimestamp(), null, null);
+        }
+        return idProperty;
     }
 
     @Override
@@ -178,6 +199,11 @@ public abstract class ElementBase implements Element {
 
     @Override
     public Iterable<Property> getProperties(final String name) {
+        if (ID_PROPERTY_NAME.equals(name)) {
+            ArrayList<Property> result = new ArrayList<>();
+            result.add(getIdProperty());
+            return result;
+        }
         return new FilterIterable<Property>(getProperties()) {
             @Override
             protected boolean isIncluded(Property property) {
@@ -188,6 +214,11 @@ public abstract class ElementBase implements Element {
 
     @Override
     public Iterable<Property> getProperties(final String key, final String name) {
+        if (ID_PROPERTY_NAME.equals(name)) {
+            ArrayList<Property> result = new ArrayList<>();
+            result.add(getIdProperty());
+            return result;
+        }
         return new FilterIterable<Property>(getProperties()) {
             @Override
             protected boolean isIncluded(Property property) {

@@ -1770,7 +1770,7 @@ public abstract class GraphTestBase {
         assertEquals(1, ((IterableWithTotalHits)results).getTotalHits());
         assertEquals("v2", results.iterator().next().getId());
 
-        results = graph.query("*", AUTHORIZATIONS_A_AND_B).hasNot("prop3").sort("id", SortDirection.ASCENDING).elements();
+        results = graph.query("*", AUTHORIZATIONS_A_AND_B).hasNot("prop3").sort(Element.ID_PROPERTY_NAME, SortDirection.ASCENDING).elements();
         assertEquals(2, count(results));
         Iterator<Element> iterator = results.iterator();
         assertEquals("v1", iterator.next().getId());
@@ -1918,6 +1918,24 @@ public abstract class GraphTestBase {
         assertEquals("v1", vertices.get(1).getId());
         assertEquals("v4", vertices.get(2).getId());
         assertEquals("v3", vertices.get(3).getId());
+
+        vertices = toList(graph.query(AUTHORIZATIONS_A_AND_B)
+                .sort(Element.ID_PROPERTY_NAME, SortDirection.ASCENDING)
+                .vertices());
+        Assert.assertEquals(4, count(vertices));
+        assertEquals("v1", vertices.get(0).getId());
+        assertEquals("v2", vertices.get(1).getId());
+        assertEquals("v3", vertices.get(2).getId());
+        assertEquals("v4", vertices.get(3).getId());
+
+        vertices = toList(graph.query(AUTHORIZATIONS_A_AND_B)
+                .sort(Element.ID_PROPERTY_NAME, SortDirection.DESCENDING)
+                .vertices());
+        Assert.assertEquals(4, count(vertices));
+        assertEquals("v4", vertices.get(0).getId());
+        assertEquals("v3", vertices.get(1).getId());
+        assertEquals("v2", vertices.get(2).getId());
+        assertEquals("v1", vertices.get(3).getId());
 
         vertices = toList(graph.query(AUTHORIZATIONS_A_AND_B)
                 .sort("otherfield", SortDirection.ASCENDING)

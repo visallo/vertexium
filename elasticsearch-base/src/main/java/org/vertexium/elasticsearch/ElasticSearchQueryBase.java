@@ -300,14 +300,7 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
                 .actionGet();
     }
 
-    protected void applySort(SearchRequestBuilder q) {
-        for (SortContainer sortContainer : getParameters().getSortContainers()) {
-            SortOrder esOrder = sortContainer.direction == SortDirection.ASCENDING ? SortOrder.ASC : SortOrder.DESC;
-            for (String propertyName : getPropertyNames(sortContainer.propertyName)) {
-                q.addSort(propertyName, esOrder);
-            }
-        }
-    }
+    protected abstract void applySort(SearchRequestBuilder q);
 
     protected List<FilterBuilder> getFilters(ElasticSearchElementType elementType) {
         List<FilterBuilder> filters = new ArrayList<>();

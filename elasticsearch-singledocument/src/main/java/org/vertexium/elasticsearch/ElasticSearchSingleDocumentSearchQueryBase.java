@@ -143,14 +143,18 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends ElasticSearchQue
     protected void applySort(SearchRequestBuilder q) {
         for (SortContainer sortContainer : getParameters().getSortContainers()) {
             SortOrder esOrder = sortContainer.direction == SortDirection.ASCENDING ? SortOrder.ASC : SortOrder.DESC;
-            PropertyDefinition propertyDefinition = getSearchIndex().getPropertyDefinition(getGraph(), sortContainer.propertyName);
-            if (propertyDefinition == null) {
-                continue;
+            if (Element.ID_PROPERTY_NAME.equals(sortContainer.propertyName)) {
+                q.addSort("_uid", esOrder);
+            } else {
+                PropertyDefinition propertyDefinition = getSearchIndex().getPropertyDefinition(getGraph(), sortContainer.propertyName);
+                if (propertyDefinition == null) {
+                    continue;
+                }
+                if (!propertyDefinition.isSortable()) {
+                    throw new VertexiumException("Cannot sort on non-sortable fields");
+                }
+                q.addSort(propertyDefinition.getPropertyName(), esOrder);
             }
-            if (!propertyDefinition.isSortable()) {
-                throw new VertexiumException("Cannot sort on non-sortable fields");
-            }
-            q.addSort(propertyDefinition.getPropertyName(), esOrder);
         }
     }
 }
