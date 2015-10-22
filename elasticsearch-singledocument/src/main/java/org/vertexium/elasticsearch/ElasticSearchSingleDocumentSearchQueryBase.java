@@ -25,9 +25,10 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends ElasticSearchQue
             Map<String, PropertyDefinition> propertyDefinitions,
             ScoringStrategy scoringStrategy,
             IndexSelectionStrategy indexSelectionStrategy,
+            int pageSize,
             Authorizations authorizations
     ) {
-        super(client, graph, queryString, propertyDefinitions, scoringStrategy, indexSelectionStrategy, false, true, false, authorizations);
+        super(client, graph, queryString, propertyDefinitions, scoringStrategy, indexSelectionStrategy, false, true, false, pageSize, authorizations);
     }
 
     public ElasticSearchSingleDocumentSearchQueryBase(
@@ -38,9 +39,10 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends ElasticSearchQue
             Map<String, PropertyDefinition> propertyDefinitions,
             ScoringStrategy scoringStrategy,
             IndexSelectionStrategy indexSelectionStrategy,
+            int pageSize,
             Authorizations authorizations
     ) {
-        super(client, graph, similarToFields, similarToText, propertyDefinitions, scoringStrategy, indexSelectionStrategy, false, true, false, authorizations);
+        super(client, graph, similarToFields, similarToText, propertyDefinitions, scoringStrategy, indexSelectionStrategy, false, true, false, pageSize, authorizations);
     }
 
     @Override

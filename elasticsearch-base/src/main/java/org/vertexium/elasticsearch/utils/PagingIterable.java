@@ -19,19 +19,20 @@ public abstract class PagingIterable<T extends Element> implements
         IterableWithGeohashResults<T>,
         IterableWithStatisticsResults<T>,
         QueryResultsIterable<T> {
-    private static final int PAGE_SIZE = 1000;
     private final long skip;
     private final Long limit;
     private boolean isFirstCallToIterator;
     private final ElasticSearchGraphQueryIterable<T> firstIterable;
+    private final int pageSize;
 
-    public PagingIterable(long skip, Long limit) {
+    public PagingIterable(long skip, Long limit, int pageSize) {
         this.skip = skip;
         this.limit = limit;
+        this.pageSize = pageSize;
 
         // This is a bit of a hack. Because the underlying iterable is the iterable with geohash results, histogram results, etc.
         //   we need to grab the first iterable to get the results out.
-        int firstIterableLimit = Math.min(PAGE_SIZE, limit == null ? Integer.MAX_VALUE : limit.intValue());
+        int firstIterableLimit = Math.min(pageSize, limit == null ? Integer.MAX_VALUE : limit.intValue());
         this.firstIterable = getPageIterable((int) this.skip, firstIterableLimit, true);
         this.isFirstCallToIterator = true;
     }
@@ -52,13 +53,13 @@ public abstract class PagingIterable<T extends Element> implements
     }
 
     @Override
-    public Map<String, Double> getScores() {
-        return this.firstIterable.getScores();
+    public TermsResult getTermsResults(String name) {
+        return this.firstIterable.getTermsResults(name);
     }
 
     @Override
-    public TermsResult getTermsResults(String name) {
-        return this.firstIterable.getTermsResults(name);
+    public Map<String, Double> getScores() {
+        return this.firstIterable.getScores();
     }
 
     @Override
@@ -80,22 +81,35 @@ public abstract class PagingIterable<T extends Element> implements
 
     @Override
     public Iterator<T> iterator() {
-        MyIterator it = new MyIterator(isFirstCallToIterator ? firstIterable : null);
+        MyIterator<T> it = new MyIterator<>(isFirstCallToIterator ? firstIterable : null, skip, limit, pageSize, new GetPageIterableFunction<T>() {
+            @Override
+            public ElasticSearchGraphQueryIterable<T> getPageIterable(int skip, int limit, boolean includeAggregations) {
+                return PagingIterable.this.getPageIterable(skip, limit, includeAggregations);
+            }
+        });
         isFirstCallToIterator = false;
         return it;
     }
 
-    private class MyIterator implements Iterator<T> {
+    private interface GetPageIterableFunction<T extends Element> {
+        ElasticSearchGraphQueryIterable<T> getPageIterable(int skip, int limit, boolean includeAggregations);
+    }
+
+    private static class MyIterator<T extends Element> implements Iterator<T> {
         private ElasticSearchGraphQueryIterable<T> firstIterable;
+        private final int pageSize;
+        private final GetPageIterableFunction<T> getPageIterableFunction;
         private int nextSkip;
         private int limit;
         private int currentIteratorCount;
         private Iterator<T> currentIterator;
 
-        public MyIterator(ElasticSearchGraphQueryIterable<T> firstIterable) {
+        public MyIterator(ElasticSearchGraphQueryIterable<T> firstIterable, long skip, Long limit, int pageSize, GetPageIterableFunction<T> getPageIterableFunction) {
             this.firstIterable = firstIterable;
+            this.pageSize = pageSize;
+            this.getPageIterableFunction = getPageIterableFunction;
             this.nextSkip = (int) skip;
-            this.limit = (int) (PagingIterable.this.limit == null ? Integer.MAX_VALUE : PagingIterable.this.limit);
+            this.limit = (int) (limit == null ? Integer.MAX_VALUE : limit);
             this.currentIterator = getNextIterator();
         }
 
@@ -132,10 +146,10 @@ public abstract class PagingIterable<T extends Element> implements
             if (limit <= 0) {
                 return null;
             }
-            int limit = Math.min(PAGE_SIZE, this.limit);
+            int limit = Math.min(pageSize, this.limit);
             currentIteratorCount = 0;
             if (firstIterable == null) {
-                firstIterable = getPageIterable(nextSkip, limit, false);
+                firstIterable = getPageIterableFunction.getPageIterable(nextSkip, limit, false);
             }
             Iterator<T> it = firstIterable.iterator();
             firstIterable = null;

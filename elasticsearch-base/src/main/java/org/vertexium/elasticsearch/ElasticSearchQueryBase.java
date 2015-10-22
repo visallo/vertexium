@@ -26,7 +26,6 @@ import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramBuild
 import org.elasticsearch.search.aggregations.bucket.histogram.HistogramBuilder;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsBuilder;
 import org.elasticsearch.search.aggregations.metrics.stats.extended.ExtendedStatsBuilder;
-import org.elasticsearch.search.sort.SortOrder;
 import org.vertexium.*;
 import org.vertexium.elasticsearch.score.ScoringStrategy;
 import org.vertexium.elasticsearch.utils.PagingIterable;
@@ -48,6 +47,7 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
     private final StandardAnalyzer analyzer;
     private final ScoringStrategy scoringStrategy;
     private final IndexSelectionStrategy indexSelectionStrategy;
+    private final int pageSize;
 
     protected ElasticSearchQueryBase(
             Client client,
@@ -59,6 +59,7 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
             boolean evaluateQueryString,
             boolean evaluateHasContainers,
             boolean evaluateSortContainers,
+            int pageSize,
             Authorizations authorizations
     ) {
         super(graph, queryString, propertyDefinitions, authorizations);
@@ -66,6 +67,7 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
         this.evaluateQueryString = evaluateQueryString;
         this.evaluateHasContainers = evaluateHasContainers;
         this.evaluateSortContainers = evaluateSortContainers;
+        this.pageSize = pageSize;
         this.scoringStrategy = scoringStrategy;
         this.analyzer = new StandardAnalyzer();
         this.indexSelectionStrategy = indexSelectionStrategy;
@@ -82,6 +84,7 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
             boolean evaluateQueryString,
             boolean evaluateHasContainers,
             boolean evaluateSortContainers,
+            int pageSize,
             Authorizations authorizations
     ) {
         super(graph, similarToFields, similarToText, propertyDefinitions, authorizations);
@@ -89,6 +92,7 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
         this.evaluateQueryString = evaluateQueryString;
         this.evaluateHasContainers = evaluateHasContainers;
         this.evaluateSortContainers = evaluateSortContainers;
+        this.pageSize = pageSize;
         this.scoringStrategy = scoringStrategy;
         this.analyzer = new StandardAnalyzer();
         this.indexSelectionStrategy = indexSelectionStrategy;
@@ -96,7 +100,7 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
 
     @Override
     public QueryResultsIterable<Vertex> vertices(final EnumSet<FetchHint> fetchHints) {
-        return new PagingIterable<Vertex>(getParameters().getSkip(), getParameters().getLimit()) {
+        return new PagingIterable<Vertex>(getParameters().getSkip(), getParameters().getLimit(), pageSize) {
             @Override
             protected ElasticSearchGraphQueryIterable<Vertex> getPageIterable(int skip, int limit, boolean includeAggregations) {
                 long startTime = System.nanoTime();
@@ -136,7 +140,7 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
 
     @Override
     public QueryResultsIterable<Edge> edges(final EnumSet<FetchHint> fetchHints) {
-        return new PagingIterable<Edge>(getParameters().getSkip(), getParameters().getLimit()) {
+        return new PagingIterable<Edge>(getParameters().getSkip(), getParameters().getLimit(), pageSize) {
             @Override
             protected ElasticSearchGraphQueryIterable<Edge> getPageIterable(int skip, int limit, boolean includeAggregations) {
                 long startTime = System.nanoTime();
@@ -177,7 +181,7 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
 
     @Override
     public QueryResultsIterable<Element> elements(final EnumSet<FetchHint> fetchHints) {
-        return new PagingIterable<Element>(getParameters().getSkip(), getParameters().getLimit()) {
+        return new PagingIterable<Element>(getParameters().getSkip(), getParameters().getLimit(), pageSize) {
             @Override
             protected ElasticSearchGraphQueryIterable<Element> getPageIterable(int skip, int limit, boolean includeAggregations) {
                 long startTime = System.nanoTime();
@@ -760,14 +764,5 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
 
     public String getAggregationName(String name) {
         return getSearchIndex().getAggregationName(name);
-    }
-
-    Aggregation getAggregation(String name) {
-        for (Aggregation agg : super.getAggregations()) {
-            if (agg.getAggregationName().equals(name)) {
-                return agg;
-            }
-        }
-        return null;
     }
 }

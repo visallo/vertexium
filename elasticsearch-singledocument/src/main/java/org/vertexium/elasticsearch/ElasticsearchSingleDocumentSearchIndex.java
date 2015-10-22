@@ -412,6 +412,7 @@ public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchI
                 getAllPropertyDefinitions(),
                 getConfig().getScoringStrategy(),
                 getIndexSelectionStrategy(),
+                getConfig().getQueryPageSize(),
                 authorizations);
     }
 
@@ -425,6 +426,7 @@ public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchI
                 getAllPropertyDefinitions(),
                 getConfig().getScoringStrategy(),
                 getIndexSelectionStrategy(),
+                getConfig().getQueryPageSize(),
                 authorizations);
     }
 
@@ -438,6 +440,7 @@ public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchI
                 getAllPropertyDefinitions(),
                 getConfig().getScoringStrategy(),
                 getIndexSelectionStrategy(),
+                getConfig().getQueryPageSize(),
                 authorizations);
     }
 

@@ -40,6 +40,8 @@ public class ElasticSearchSearchIndexConfiguration {
     public static final String IN_PROCESS_NODE_DATA_PATH = "inProcessNode.dataPath";
     public static final String IN_PROCESS_NODE_LOGS_PATH = "inProcessNode.logsPath";
     public static final String IN_PROCESS_NODE_WORK_PATH = "inProcessNode.workPath";
+    public static final String QUERY_PAGE_SIZE = "queryPageSize";
+    public static final int QUERY_PAGE_SIZE_DEFAULT = 500;
 
     private GraphConfiguration graphConfiguration;
     private IndexSelectionStrategy indexSelectionStrategy;
@@ -142,5 +144,9 @@ public class ElasticSearchSearchIndexConfiguration {
 
     public String getInProcessNodeWorkPath() {
         return graphConfiguration.getString(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + IN_PROCESS_NODE_WORK_PATH, null);
+    }
+
+    public int getQueryPageSize() {
+        return graphConfiguration.getInt(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + QUERY_PAGE_SIZE, QUERY_PAGE_SIZE_DEFAULT);
     }
 }

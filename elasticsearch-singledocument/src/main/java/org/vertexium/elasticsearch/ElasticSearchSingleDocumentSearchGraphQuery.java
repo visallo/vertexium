@@ -17,9 +17,10 @@ public class ElasticSearchSingleDocumentSearchGraphQuery extends ElasticSearchSi
             Map<String, PropertyDefinition> propertyDefinitions,
             ScoringStrategy scoringStrategy,
             IndexSelectionStrategy indexSelectionStrategy,
+            int pageSize,
             Authorizations authorizations
     ) {
-        super(client, graph, queryString, propertyDefinitions, scoringStrategy, indexSelectionStrategy, authorizations);
+        super(client, graph, queryString, propertyDefinitions, scoringStrategy, indexSelectionStrategy, pageSize, authorizations);
     }
 
     public ElasticSearchSingleDocumentSearchGraphQuery(
@@ -30,8 +31,9 @@ public class ElasticSearchSingleDocumentSearchGraphQuery extends ElasticSearchSi
             Map<String, PropertyDefinition> propertyDefinitions,
             ScoringStrategy scoringStrategy,
             IndexSelectionStrategy indexSelectionStrategy,
+            int pageSize,
             Authorizations authorizations
     ) {
-        super(client, graph, similarToFields, similarToText, propertyDefinitions, scoringStrategy, indexSelectionStrategy, authorizations);
+        super(client, graph, similarToFields, similarToText, propertyDefinitions, scoringStrategy, indexSelectionStrategy, pageSize, authorizations);
     }
 }
