@@ -190,7 +190,7 @@ public class ElasticSearchGraphQueryIterable<T extends Element> extends DefaultG
             if (agg instanceof Terms) {
                 Terms h = (Terms) agg;
                 for (Terms.Bucket b : h.getBuckets()) {
-                    String mapKey = b.getKey().toLowerCase();
+                    String mapKey = b.getKey();
                     List<MultiBucketsAggregation.Bucket> existingBucketByName = bucketsByKey.get(mapKey);
                     if (existingBucketByName == null) {
                         existingBucketByName = new ArrayList<>();

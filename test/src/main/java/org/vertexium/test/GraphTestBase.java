@@ -3938,8 +3938,8 @@ public abstract class GraphTestBase {
             return;
         }
         assertEquals(2, vertexPropertyCountByValue.size());
-        assertEquals(2L, (long) vertexPropertyCountByValue.get("joe"));
-        assertEquals(searchIndexFieldLevelSecurity ? 1L : 2L, (long) vertexPropertyCountByValue.get("joseph"));
+        assertEquals(2L, (long) vertexPropertyCountByValue.get("Joe"));
+        assertEquals(searchIndexFieldLevelSecurity ? 1L : 2L, (long) vertexPropertyCountByValue.get("Joseph"));
 
         vertexPropertyCountByValue = queryGraphQueryWithTermsAggregation("emptyField", AUTHORIZATIONS_EMPTY);
         if (vertexPropertyCountByValue == null) {
@@ -3952,8 +3952,8 @@ public abstract class GraphTestBase {
             return;
         }
         assertEquals(2, vertexPropertyCountByValue.size());
-        assertEquals(2L, (long) vertexPropertyCountByValue.get("joe"));
-        assertEquals(2L, (long) vertexPropertyCountByValue.get("joseph"));
+        assertEquals(2L, (long) vertexPropertyCountByValue.get("Joe"));
+        assertEquals(2L, (long) vertexPropertyCountByValue.get("Joseph"));
     }
 
     private Map<Object, Long> queryGraphQueryWithTermsAggregation(String propertyName, Authorizations authorizations) {
@@ -3996,11 +3996,11 @@ public abstract class GraphTestBase {
             return;
         }
         assertEquals(2, vertexPropertyCountByValue.size());
-        assertEquals(1, vertexPropertyCountByValue.get("joe").size());
-        assertEquals(1L, (long) vertexPropertyCountByValue.get("joe").get("male"));
-        assertEquals(2, vertexPropertyCountByValue.get("sam").size());
-        assertEquals(1L, (long) vertexPropertyCountByValue.get("sam").get("male"));
-        assertEquals(2L, (long) vertexPropertyCountByValue.get("sam").get("female"));
+        assertEquals(1, vertexPropertyCountByValue.get("Joe").size());
+        assertEquals(1L, (long) vertexPropertyCountByValue.get("Joe").get("male"));
+        assertEquals(2, vertexPropertyCountByValue.get("Sam").size());
+        assertEquals(1L, (long) vertexPropertyCountByValue.get("Sam").get("male"));
+        assertEquals(2L, (long) vertexPropertyCountByValue.get("Sam").get("female"));
     }
 
     private Map<Object, Map<Object, Long>> queryGraphQueryWithNestedTermsAggregation(String propertyNameFirst, String propertyNameSecond, Authorizations authorizations) {
