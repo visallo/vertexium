@@ -11,14 +11,16 @@ public class PropertyValue implements Serializable {
 
     }
 
-    public PropertyValue store(boolean store) {
+    @SuppressWarnings("unchecked")
+    public <T extends PropertyValue> T store(boolean store) {
         this.store = store;
-        return this;
+        return (T) this;
     }
 
-    public PropertyValue searchIndex(boolean searchIndex) {
+    @SuppressWarnings("unchecked")
+    public <T extends PropertyValue> T searchIndex(boolean searchIndex) {
         this.searchIndex = searchIndex;
-        return this;
+        return (T) this;
     }
 
     public boolean isStore() {

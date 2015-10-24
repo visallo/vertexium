@@ -26,6 +26,7 @@ public class SqlMap<T> extends AbstractMap<String, T> {
     private final DBI dbi;
     private final VertexiumSerializer serializer;
     private final ResultSetMapper<MapEntry<byte[]>> entrySetMapper;
+    private Object storableContext;
 
     public SqlMap(String tableName, String keyColumnName, String valueColumnName, DataSource dataSource,
                   VertexiumSerializer serializer) {
@@ -41,6 +42,10 @@ public class SqlMap<T> extends AbstractMap<String, T> {
                 return new MapEntry<>(key, value);
             }
         };
+    }
+
+    public void setStorableContext(Object storableContext) {
+        this.storableContext = storableContext;
     }
 
     @Override
@@ -249,15 +254,14 @@ public class SqlMap<T> extends AbstractMap<String, T> {
     @SuppressWarnings("unchecked")
     private T withContainer(T value) {
         if (value instanceof Storable) {
-            ((Storable<T>) value).setContainer(this);
+            ((Storable<T, Object>) value).setContainer(this, storableContext);
         }
         return value;
     }
 
-    @SuppressWarnings("unchecked")
     private T withoutContainer(T value) {
         if (value instanceof Storable) {
-            ((Storable<T>) value).setContainer(null);
+            ((Storable<?, ?>) value).setContainer(null, null);
         }
         return value;
     }

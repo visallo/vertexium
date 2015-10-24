@@ -2,14 +2,10 @@ package org.vertexium.accumulo;
 
 import org.apache.hadoop.fs.Path;
 import org.vertexium.property.StreamingPropertyValue;
+import org.vertexium.property.StreamingPropertyValueRef;
 
-public class StreamingPropertyValueHdfsRef extends StreamingPropertyValueRef {
+public class StreamingPropertyValueHdfsRef extends StreamingPropertyValueRef<AccumuloGraph> {
     private String path;
-
-    protected StreamingPropertyValueHdfsRef() {
-        super();
-        this.path = null;
-    }
 
     public StreamingPropertyValueHdfsRef(String path, StreamingPropertyValue propertyValue) {
         super(propertyValue);

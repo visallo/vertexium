@@ -4,6 +4,8 @@ import com.google.common.collect.Iterables;
 import org.vertexium.*;
 import org.vertexium.inmemory.*;
 import org.vertexium.mutation.SetPropertyMetadata;
+import org.vertexium.property.StreamingPropertyValue;
+import org.vertexium.property.StreamingPropertyValueRef;
 import org.vertexium.sql.collections.SqlMap;
 import org.vertexium.sql.collections.Storable;
 import org.vertexium.util.ConvertingIterable;
@@ -12,20 +14,41 @@ import org.vertexium.util.LookAheadIterable;
 import java.util.*;
 
 public class SqlGraph extends InMemoryGraph {
-    private final GraphMetadataStore metadataStore;
     private final SqlMap<InMemoryTableElement<InMemoryVertex>> vertexMap;
     private final SqlMap<InMemoryTableElement<InMemoryEdge>> edgeMap;
+    private final SqlStreamingPropertyTable streamingPropertyTable;
 
-    public SqlGraph(SqlGraphConfiguration configuration) {
-        this(configuration,
-                new SqlVertexTable(configuration.newVertexMap()), new SqlEdgeTable(configuration.newEdgeMap()));
+    private static class ConfigHolder {
+        final SqlGraphConfiguration configuration;
+        final SqlMap<InMemoryTableElement<InMemoryVertex>> vertexMap;
+        final SqlMap<InMemoryTableElement<InMemoryEdge>> edgeMap;
+        final SqlStreamingPropertyTable streamingPropertyTable;
+
+        ConfigHolder(SqlGraphConfiguration configuration) {
+            this.configuration = configuration;
+            this.vertexMap = configuration.newVertexMap();
+            this.edgeMap = configuration.newEdgeMap();
+            this.streamingPropertyTable = configuration.newStreamingPropertyTable();
+        }
     }
 
-    public SqlGraph(SqlGraphConfiguration configuration, SqlVertexTable vertices, SqlEdgeTable edges) {
-        super(configuration, vertices, edges);
-        vertexMap = configuration.newVertexMap();
-        edgeMap = configuration.newEdgeMap();
-        metadataStore = new SqlGraphMetadataStore(configuration);
+    public SqlGraph(SqlGraphConfiguration configuration) {
+        this(new ConfigHolder(configuration));
+    }
+
+    private SqlGraph(ConfigHolder configHolder) {
+        super(configHolder.configuration,
+                new SqlVertexTable(configHolder.vertexMap), new SqlEdgeTable(configHolder.edgeMap));
+        this.vertexMap = configHolder.vertexMap;
+        this.edgeMap = configHolder.edgeMap;
+        this.streamingPropertyTable = configHolder.streamingPropertyTable;
+        this.vertexMap.setStorableContext(this);
+        this.edgeMap.setStorableContext(this);
+    }
+
+    @Override
+    protected GraphMetadataStore newGraphMetadataStore(GraphConfiguration configuration) {
+        return new SqlGraphMetadataStore(((SqlGraphConfiguration) configuration).newMetadataMap());
     }
 
     public static SqlGraph create(SqlGraphConfiguration config) {
@@ -174,15 +197,21 @@ public class SqlGraph extends InMemoryGraph {
     }
 
     @Override
-    protected GraphMetadataStore getGraphMetadataStore() {
-        return metadataStore;
-    }
-
-    @Override
     protected void alterElementPropertyMetadata(InMemoryTableElement inMemoryTableElement,
                                              List<SetPropertyMetadata> setPropertyMetadatas,
                                              Authorizations authorizations) {
         super.alterElementPropertyMetadata(inMemoryTableElement, setPropertyMetadatas, authorizations);
         ((Storable) inMemoryTableElement).store();
+    }
+
+    protected SqlStreamingPropertyTable getStreamingPropertyTable() {
+        return streamingPropertyTable;
+    }
+
+    @Override
+    protected StreamingPropertyValueRef saveStreamingPropertyValue(String elementId, String key, String name,
+                                                                   Visibility visibility, long timestamp,
+                                                                   StreamingPropertyValue value) {
+        return streamingPropertyTable.put(elementId, key, name, visibility, timestamp, value);
     }
 }

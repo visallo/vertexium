@@ -2,6 +2,7 @@ package org.vertexium.accumulo;
 
 import org.vertexium.*;
 import org.vertexium.property.MutableProperty;
+import org.vertexium.property.StreamingPropertyValueRef;
 
 import java.util.ArrayList;
 import java.util.Collection;

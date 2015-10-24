@@ -40,6 +40,7 @@ import org.vertexium.mutation.PropertySoftDeleteMutation;
 import org.vertexium.mutation.SetPropertyMetadata;
 import org.vertexium.property.MutableProperty;
 import org.vertexium.property.StreamingPropertyValue;
+import org.vertexium.property.StreamingPropertyValueRef;
 import org.vertexium.search.IndexHint;
 import org.vertexium.util.*;
 

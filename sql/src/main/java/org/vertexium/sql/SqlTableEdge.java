@@ -36,7 +36,8 @@ public class SqlTableEdge extends SqlTableElement<InMemoryEdge> {
         return new InMemoryAdapter(this);
     }
 
-    private static class InMemoryAdapter extends InMemoryTableEdge implements Storable<SqlTableElement<InMemoryEdge>> {
+    private static class InMemoryAdapter extends InMemoryTableEdge
+            implements Storable<SqlTableElement<InMemoryEdge>, SqlGraph> {
         private SqlTableEdge sqlTableEdge;
 
         InMemoryAdapter(SqlTableEdge sqlTableEdge) {
@@ -45,8 +46,8 @@ public class SqlTableEdge extends SqlTableElement<InMemoryEdge> {
         }
 
         @Override
-        public void setContainer(Map<String, SqlTableElement<InMemoryEdge>> map) {
-            sqlTableEdge.setContainer(map);
+        public void setContainer(Map<String, SqlTableElement<InMemoryEdge>> map, SqlGraph graph) {
+            sqlTableEdge.setContainer(map, graph);
         }
 
         @Override

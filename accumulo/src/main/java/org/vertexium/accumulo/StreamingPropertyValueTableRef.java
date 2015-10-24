@@ -1,16 +1,11 @@
 package org.vertexium.accumulo;
 
 import org.vertexium.property.StreamingPropertyValue;
+import org.vertexium.property.StreamingPropertyValueRef;
 
-public class StreamingPropertyValueTableRef extends StreamingPropertyValueRef {
+public class StreamingPropertyValueTableRef extends StreamingPropertyValueRef<AccumuloGraph> {
     private final String dataRowKey;
     private transient byte[] data;
-
-    protected StreamingPropertyValueTableRef() {
-        super();
-        dataRowKey = null;
-        data = null;
-    }
 
     public StreamingPropertyValueTableRef(String dataRowKey, StreamingPropertyValue propertyValue, byte[] data) {
         super(propertyValue);

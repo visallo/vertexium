@@ -1,11 +1,11 @@
-package org.vertexium.accumulo;
+package org.vertexium.property;
 
+import org.vertexium.Graph;
 import org.vertexium.VertexiumException;
-import org.vertexium.property.StreamingPropertyValue;
 
 import java.io.Serializable;
 
-public abstract class StreamingPropertyValueRef implements Serializable {
+public abstract class StreamingPropertyValueRef<T extends Graph> implements Serializable {
     private static final long serialVersionUID = 1L;
     private String valueType;
     private boolean searchIndex;
@@ -39,5 +39,5 @@ public abstract class StreamingPropertyValueRef implements Serializable {
         return store;
     }
 
-    public abstract StreamingPropertyValue toStreamingPropertyValue(AccumuloGraph graph);
+    public abstract StreamingPropertyValue toStreamingPropertyValue(T graph);
 }

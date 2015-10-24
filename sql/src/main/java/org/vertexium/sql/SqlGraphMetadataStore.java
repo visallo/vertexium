@@ -10,8 +10,8 @@ import java.util.Map;
 public class SqlGraphMetadataStore extends GraphMetadataStore {
     private final SqlMap<Object> metadata;
 
-    public SqlGraphMetadataStore(SqlGraphConfiguration config) {
-        this.metadata = config.newMetadataMap();
+    public SqlGraphMetadataStore(SqlMap<Object> metadata) {
+        this.metadata = metadata;
     }
 
     @Override
