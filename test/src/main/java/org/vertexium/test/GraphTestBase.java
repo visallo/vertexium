@@ -57,7 +57,7 @@ public abstract class GraphTestBase {
     public final Authorizations AUTHORIZATIONS_EMPTY;
     public final Authorizations AUTHORIZATIONS_BAD;
     public final Authorizations AUTHORIZATIONS_ALL;
-    public static final int LARGE_PROPERTY_VALUE_SIZE = 1024 + 1;
+    public static final int LARGE_PROPERTY_VALUE_SIZE = 1024 * 1024 + 1;
 
     protected Graph graph;
     protected List<GraphEvent> graphEvents;
