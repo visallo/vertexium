@@ -1,5 +1,7 @@
 package org.vertexium.util;
 
+import com.google.common.annotations.VisibleForTesting;
+
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -49,5 +51,10 @@ public class AutoDeleteFileInputStream extends FileInputStream {
                 file.delete();
             }
         }
+    }
+
+    @VisibleForTesting
+    File getFile() {
+        return file;
     }
 }
