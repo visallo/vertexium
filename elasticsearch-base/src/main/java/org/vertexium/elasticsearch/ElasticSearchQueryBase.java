@@ -347,7 +347,7 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
             filters.add(FilterBuilders.notFilter(FilterBuilders.existsFilter(propertyName)));
             if (propDef.getDataType().equals(GeoPoint.class)) {
                 filters.add(FilterBuilders.notFilter(FilterBuilders.existsFilter(propertyName + ElasticSearchSearchIndexBase.GEO_PROPERTY_NAME_SUFFIX)));
-            } else if (propDef.getTextIndexHints().contains(TextIndexHint.EXACT_MATCH)) {
+            } else if (isExactMatchPropertyDefinition(propDef)) {
                 filters.add(FilterBuilders.notFilter(FilterBuilders.existsFilter(propertyName + ElasticSearchSearchIndexBase.EXACT_MATCH_PROPERTY_NAME_SUFFIX)));
             }
         }
@@ -365,7 +365,7 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
             filters.add(FilterBuilders.existsFilter(propertyName));
             if (propDef.getDataType().equals(GeoPoint.class)) {
                 filters.add(FilterBuilders.existsFilter(propertyName + ElasticSearchSearchIndexBase.GEO_PROPERTY_NAME_SUFFIX));
-            } else if (propDef.getTextIndexHints().contains(TextIndexHint.EXACT_MATCH)) {
+            } else if (isExactMatchPropertyDefinition(propDef)) {
                 filters.add(FilterBuilders.existsFilter(propertyName + ElasticSearchSearchIndexBase.EXACT_MATCH_PROPERTY_NAME_SUFFIX));
             }
         }
@@ -706,7 +706,7 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
         String fieldName = agg.getPropertyName();
         PropertyDefinition propertyDefinition = getPropertyDefinition(fieldName);
         for (String propertyName : getPropertyNames(fieldName)) {
-            if (propertyDefinition != null && propertyDefinition.getTextIndexHints().contains(TextIndexHint.EXACT_MATCH)) {
+            if (isExactMatchPropertyDefinition(propertyDefinition)) {
                 propertyName = propertyName + ElasticSearchSearchIndexBase.EXACT_MATCH_PROPERTY_NAME_SUFFIX;
             }
 
@@ -721,6 +721,12 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
             termsAggs.add(termsAgg);
         }
         return termsAggs;
+    }
+
+    private boolean isExactMatchPropertyDefinition(PropertyDefinition propertyDefinition) {
+        return propertyDefinition != null
+                && propertyDefinition.getDataType().equals(String.class)
+                && propertyDefinition.getTextIndexHints().contains(TextIndexHint.EXACT_MATCH);
     }
 
     protected List<AggregationBuilder> getElasticsearchHistogramAggregations(HistogramAggregation agg) {
