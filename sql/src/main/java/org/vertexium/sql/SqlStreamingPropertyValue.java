@@ -8,7 +8,10 @@ import org.skife.jdbi.v2.tweak.ResultSetMapper;
 import org.vertexium.Visibility;
 import org.vertexium.property.StreamingPropertyValue;
 import org.vertexium.util.AutoDeleteFileInputStream;
+import org.vertexium.util.StreamUtils;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.sql.ResultSet;
@@ -17,13 +20,17 @@ import java.sql.SQLException;
 import static org.vertexium.sql.SqlStreamingPropertyTable.*;
 
 public class SqlStreamingPropertyValue extends StreamingPropertyValue {
-    private DBI dbi;
-    private String tableName;
-    private String elementId;
-    private String key;
-    private String name;
-    private Visibility visibility;
-    private long timestamp;
+
+    private static final int IN_MEMORY_STREAM_MAX_BYTES = 1024 * 1024;
+    private static final int DEFAULT_IN_MEMORY_INIT_CAPACITY = 1024;
+
+    private final DBI dbi;
+    private final String tableName;
+    private final String elementId;
+    private final String key;
+    private final String name;
+    private final Visibility visibility;
+    private final long timestamp;
 
     public SqlStreamingPropertyValue(Class valueType, long length, DBI dbi, String tableName, String elementId,
                                      String key, String name, Visibility visibility, long timestamp) {
@@ -47,7 +54,21 @@ public class SqlStreamingPropertyValue extends StreamingPropertyValue {
                     .bind(0, makeId(elementId, key, name, visibility, timestamp))
                     .map(new RowResultSetMapper()).first();
 
-            return new AutoDeleteFileInputStream(row.inputStream);
+            return copyInputStream(row.inputStream);
+        }
+    }
+
+    private InputStream copyInputStream(InputStream inputStream) {
+        try {
+            long length = getLength();
+            if (length > IN_MEMORY_STREAM_MAX_BYTES) {
+                return new AutoDeleteFileInputStream(inputStream);
+            } else {
+                int initialCapacity = length < 0 ? DEFAULT_IN_MEMORY_INIT_CAPACITY : (int) length;
+                ByteArrayOutputStream outputStream = new ByteArrayOutputStream(initialCapacity);
+                StreamUtils.copy(inputStream, outputStream);
+                return new ByteArrayInputStream(outputStream.toByteArray());
+            }
         } catch (IOException ex) {
             throw Throwables.propagate(ex);
         }
