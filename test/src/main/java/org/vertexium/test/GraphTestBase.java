@@ -1737,17 +1737,17 @@ public abstract class GraphTestBase {
 
         Iterable<Element> results = graph.query("*", AUTHORIZATIONS_A_AND_B).has("prop1").elements();
         assertEquals(1, count(results));
-        assertEquals(1, ((IterableWithTotalHits)results).getTotalHits());
+        assertEquals(1, ((IterableWithTotalHits) results).getTotalHits());
         assertEquals("v1", results.iterator().next().getId());
 
         results = graph.query("*", AUTHORIZATIONS_A_AND_B).has("exact").elements();
         assertEquals(1, count(results));
-        assertEquals(1, ((IterableWithTotalHits)results).getTotalHits());
+        assertEquals(1, ((IterableWithTotalHits) results).getTotalHits());
         assertEquals("v1", results.iterator().next().getId());
 
         results = graph.query("*", AUTHORIZATIONS_A_AND_B).has("location").elements();
         assertEquals(1, count(results));
-        assertEquals(1, ((IterableWithTotalHits)results).getTotalHits());
+        assertEquals(1, ((IterableWithTotalHits) results).getTotalHits());
         assertEquals("v1", results.iterator().next().getId());
     }
 
@@ -1768,7 +1768,7 @@ public abstract class GraphTestBase {
 
         Iterable<Element> results = graph.query("*", AUTHORIZATIONS_A_AND_B).hasNot("prop1").elements();
         assertEquals(1, count(results));
-        assertEquals(1, ((IterableWithTotalHits)results).getTotalHits());
+        assertEquals(1, ((IterableWithTotalHits) results).getTotalHits());
         assertEquals("v2", results.iterator().next().getId());
 
         results = graph.query("*", AUTHORIZATIONS_A_AND_B).hasNot("prop3").sort(Element.ID_PROPERTY_NAME, SortDirection.ASCENDING).elements();
@@ -1779,12 +1779,12 @@ public abstract class GraphTestBase {
 
         results = graph.query("*", AUTHORIZATIONS_A_AND_B).hasNot("exact").elements();
         assertEquals(1, count(results));
-        assertEquals(1, ((IterableWithTotalHits)results).getTotalHits());
+        assertEquals(1, ((IterableWithTotalHits) results).getTotalHits());
         assertEquals("v2", results.iterator().next().getId());
 
         results = graph.query("*", AUTHORIZATIONS_A_AND_B).hasNot("location").elements();
         assertEquals(1, count(results));
-        assertEquals(1, ((IterableWithTotalHits)results).getTotalHits());
+        assertEquals(1, ((IterableWithTotalHits) results).getTotalHits());
         assertEquals("v2", results.iterator().next().getId());
     }
 

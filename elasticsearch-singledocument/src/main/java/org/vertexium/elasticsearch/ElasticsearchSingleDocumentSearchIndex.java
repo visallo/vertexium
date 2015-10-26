@@ -37,6 +37,8 @@ import javax.xml.ws.Holder;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
@@ -181,11 +183,24 @@ public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchI
                 List list = (List) property.getValue();
                 jsonBuilder.field(property.getKey(), list.toArray(new Object[list.size()]));
             } else {
-                jsonBuilder.field(property.getKey(), property.getValue());
+                jsonBuilder.field(property.getKey(), convertValueForIndexing(property.getValue()));
             }
         }
 
         return jsonBuilder;
+    }
+
+    protected Object convertValueForIndexing(Object obj) {
+        if (obj == null) {
+            return null;
+        }
+        if (obj instanceof BigDecimal) {
+            return ((BigDecimal) obj).doubleValue();
+        }
+        if (obj instanceof BigInteger) {
+            return ((BigInteger) obj).intValue();
+        }
+        return obj;
     }
 
     private String addElementTypeVisibilityPropertyToIndex(Graph graph, Element element) throws IOException {
