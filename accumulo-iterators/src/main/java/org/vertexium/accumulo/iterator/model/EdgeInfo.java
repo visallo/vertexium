@@ -16,6 +16,11 @@ public class EdgeInfo {
     private transient String vertexId;
     private transient boolean decoded;
 
+    // here for serialization
+    protected EdgeInfo() {
+
+    }
+
     public EdgeInfo(String label, String vertexId) {
         this(label, vertexId, System.currentTimeMillis());
     }

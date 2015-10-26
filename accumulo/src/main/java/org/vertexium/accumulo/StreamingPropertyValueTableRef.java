@@ -7,6 +7,11 @@ public class StreamingPropertyValueTableRef extends StreamingPropertyValueRef<Ac
     private final String dataRowKey;
     private transient byte[] data;
 
+    // here for serialization
+    protected StreamingPropertyValueTableRef() {
+        this.dataRowKey = null;
+    }
+
     public StreamingPropertyValueTableRef(String dataRowKey, StreamingPropertyValue propertyValue, byte[] data) {
         super(propertyValue);
         this.dataRowKey = dataRowKey;

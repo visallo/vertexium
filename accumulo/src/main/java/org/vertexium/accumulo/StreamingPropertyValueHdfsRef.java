@@ -7,6 +7,11 @@ import org.vertexium.property.StreamingPropertyValueRef;
 public class StreamingPropertyValueHdfsRef extends StreamingPropertyValueRef<AccumuloGraph> {
     private String path;
 
+    // here for serialization
+    protected StreamingPropertyValueHdfsRef() {
+
+    }
+
     public StreamingPropertyValueHdfsRef(String path, StreamingPropertyValue propertyValue) {
         super(propertyValue);
         this.path = path;
