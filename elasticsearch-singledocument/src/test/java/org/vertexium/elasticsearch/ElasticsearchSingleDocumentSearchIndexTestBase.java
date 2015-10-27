@@ -119,21 +119,6 @@ public abstract class ElasticsearchSingleDocumentSearchIndexTestBase extends Gra
         return InMemoryGraph.create(configuration);
     }
 
-    @Test
-    public void testGeoPointLoadDefinition() {
-        ElasticsearchSingleDocumentSearchIndex searchIndex = (ElasticsearchSingleDocumentSearchIndex) ((GraphBaseWithSearchIndex) graph).getSearchIndex();
-
-        graph.prepareVertex("v1", VISIBILITY_A)
-                .setProperty("location", new GeoPoint(38.9186, -77.2297, "Reston, VA"), VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
-        graph.flush();
-
-        Map<String, PropertyDefinition> propertyDefinitions = searchIndex.getAllPropertyDefinitions();
-        PropertyDefinition locationPropertyDef = propertyDefinitions.get("location");
-        assertNotNull("could not find location property definition", locationPropertyDef);
-        assertEquals(GeoPoint.class, locationPropertyDef.getDataType());
-    }
-
     private ElasticsearchSingleDocumentSearchIndex getSearchIndex() {
         return (ElasticsearchSingleDocumentSearchIndex) ((GraphBaseWithSearchIndex) graph).getSearchIndex();
     }
