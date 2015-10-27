@@ -128,8 +128,6 @@ public abstract class ElasticsearchSingleDocumentSearchIndexTestBase extends Gra
                 .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
-        searchIndex.loadPropertyDefinitions();
-
         Map<String, PropertyDefinition> propertyDefinitions = searchIndex.getAllPropertyDefinitions();
         PropertyDefinition locationPropertyDef = propertyDefinitions.get("location");
         assertNotNull("could not find location property definition", locationPropertyDef);

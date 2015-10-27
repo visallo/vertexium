@@ -10,10 +10,6 @@ import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.client.transport.TransportClient;
-import org.elasticsearch.cluster.metadata.MappingMetaData;
-import org.elasticsearch.common.collect.ImmutableOpenMap;
-import org.elasticsearch.common.hppc.ObjectContainer;
-import org.elasticsearch.common.hppc.cursors.ObjectCursor;
 import org.elasticsearch.common.settings.ImmutableSettings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.common.xcontent.XContentBuilder;
@@ -69,7 +65,6 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex, Searc
         this.allFieldEnabled = this.config.isAllFieldEnabled(getDefaultAllFieldEnabled());
         this.client = createClient(this.config);
         loadIndexInfos();
-        loadPropertyDefinitions();
     }
 
     protected Client createClient(ElasticSearchSearchIndexConfiguration config) {
@@ -179,6 +174,11 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex, Searc
 
             LOGGER.debug("loading index info for %s", indexName);
             indexInfo = createIndexInfo(indexName);
+            indexInfo.addPropertyDefinition(ELEMENT_TYPE_FIELD_NAME, new PropertyDefinition(ELEMENT_TYPE_FIELD_NAME, String.class, EnumSet.of(TextIndexHint.EXACT_MATCH)));
+            indexInfo.addPropertyDefinition(VISIBILITY_FIELD_NAME, new PropertyDefinition(VISIBILITY_FIELD_NAME, String.class, EnumSet.of(TextIndexHint.EXACT_MATCH)));
+            indexInfo.addPropertyDefinition(OUT_VERTEX_ID_FIELD_NAME, new PropertyDefinition(OUT_VERTEX_ID_FIELD_NAME, String.class, EnumSet.of(TextIndexHint.EXACT_MATCH)));
+            indexInfo.addPropertyDefinition(IN_VERTEX_ID_FIELD_NAME, new PropertyDefinition(IN_VERTEX_ID_FIELD_NAME, String.class, EnumSet.of(TextIndexHint.EXACT_MATCH)));
+            indexInfo.addPropertyDefinition(EDGE_LABEL_FIELD_NAME, new PropertyDefinition(EDGE_LABEL_FIELD_NAME, String.class, EnumSet.of(TextIndexHint.EXACT_MATCH)));
             indexInfos.put(indexName, indexInfo);
         }
     }
@@ -266,123 +266,6 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex, Searc
                 .startObject(EDGE_LABEL_FIELD_NAME).field("type", "string").field("analyzer", "keyword").field("index", "not_analyzed").field("store", "true").endObject()
         ;
         getConfig().getScoringStrategy().addFieldsToElementType(builder);
-    }
-
-    public synchronized void loadPropertyDefinitions() {
-        for (String indexName : indexInfos.keySet()) {
-            loadPropertyDefinitions(indexName);
-        }
-    }
-
-    private void loadPropertyDefinitions(String indexName) {
-        IndexInfo indexInfo = indexInfos.get(indexName);
-        Map<String, String> propertyTypes = getPropertyTypesFromServer(indexName);
-        for (Map.Entry<String, String> property : propertyTypes.entrySet()) {
-            PropertyDefinition propertyDefinition = createPropertyDefinition(property, propertyTypes);
-            indexInfo.addPropertyDefinition(deflatePropertyName(propertyDefinition), propertyDefinition);
-        }
-    }
-
-    private PropertyDefinition createPropertyDefinition(Map.Entry<String, String> property, Map<String, String> propertyTypes) {
-        String propertyName = deflatePropertyName(property.getKey());
-        Class dataType = elasticSearchTypeToClass(property.getValue());
-        Set<TextIndexHint> indexHints = new HashSet<>();
-
-        if (dataType == String.class) {
-            if (propertyTypes.containsKey(propertyName + GEO_PROPERTY_NAME_SUFFIX)) {
-                dataType = GeoPoint.class;
-                indexHints.add(TextIndexHint.FULL_TEXT);
-            } else if (propertyName.endsWith(EXACT_MATCH_PROPERTY_NAME_SUFFIX)) {
-                indexHints.add(TextIndexHint.EXACT_MATCH);
-                if (propertyTypes.containsKey(propertyName.substring(0, propertyName.length() - EXACT_MATCH_PROPERTY_NAME_SUFFIX.length()))) {
-                    indexHints.add(TextIndexHint.FULL_TEXT);
-                }
-            } else {
-                indexHints.add(TextIndexHint.FULL_TEXT);
-                if (propertyTypes.containsKey(propertyName + EXACT_MATCH_PROPERTY_NAME_SUFFIX)) {
-                    indexHints.add(TextIndexHint.EXACT_MATCH);
-                }
-            }
-        } else if (dataType == GeoPoint.class) {
-            indexHints.add(TextIndexHint.FULL_TEXT);
-        }
-
-        return new PropertyDefinition(propertyName, dataType, indexHints);
-    }
-
-    private Class elasticSearchTypeToClass(String typeName) {
-        if ("string".equals(typeName)) {
-            return String.class;
-        }
-        if ("float".equals(typeName)) {
-            return Float.class;
-        }
-        if ("double".equals(typeName)) {
-            return Double.class;
-        }
-        if ("byte".equals(typeName)) {
-            return Byte.class;
-        }
-        if ("short".equals(typeName)) {
-            return Short.class;
-        }
-        if ("integer".equals(typeName)) {
-            return Integer.class;
-        }
-        if ("date".equals(typeName)) {
-            return Date.class;
-        }
-        if ("long".equals(typeName)) {
-            return Long.class;
-        }
-        if ("boolean".equals(typeName)) {
-            return Boolean.class;
-        }
-        if ("geo_point".equals(typeName)) {
-            return GeoPoint.class;
-        }
-        throw new VertexiumException("Unhandled type: " + typeName);
-    }
-
-    private Map<String, String> getPropertyTypesFromServer(String indexName) {
-        Map<String, String> propertyTypes = new HashMap<>();
-        try {
-            ImmutableOpenMap<String, ImmutableOpenMap<String, MappingMetaData>> imd = client.admin().indices().prepareGetMappings(indexName).execute().actionGet().getMappings();
-            for (ObjectCursor<ImmutableOpenMap<String, MappingMetaData>> m : imd.values()) {
-                ObjectContainer<MappingMetaData> mappingMetaDatas = m.value.values();
-                for (ObjectCursor<MappingMetaData> mappingMetaData : mappingMetaDatas) {
-                    Map<String, Object> sourceAsMap = mappingMetaData.value.getSourceAsMap();
-                    Map properties = (Map) sourceAsMap.get("properties");
-                    for (Object propertyObj : properties.entrySet()) {
-                        Map.Entry property = (Map.Entry) propertyObj;
-                        String propertyName = inflatePropertyName((String) property.getKey());
-                        try {
-                            Map propertyAttributes = (Map) property.getValue();
-                            String propertyType = (String) propertyAttributes.get("type");
-                            if (propertyType != null) {
-                                propertyTypes.put(propertyName, propertyType);
-                                continue;
-                            }
-
-                            Map subProperties = (Map) propertyAttributes.get("properties");
-                            if (subProperties != null) {
-                                if (subProperties.containsKey("lat") && subProperties.containsKey("lon")) {
-                                    propertyTypes.put(propertyName, "geo_point");
-                                    continue;
-                                }
-                            }
-
-                            throw new VertexiumException("Failed to parse property type on property could not determine property type: " + propertyName);
-                        } catch (Exception ex) {
-                            throw new VertexiumException("Failed to parse property type on property: " + propertyName);
-                        }
-                    }
-                }
-            }
-        } catch (Exception ex) {
-            throw new VertexiumException("Could not get current properties from elastic search for index " + indexName, ex);
-        }
-        return propertyTypes;
     }
 
     @Override
@@ -719,7 +602,6 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex, Searc
     public synchronized void truncate() {
         LOGGER.warn("Truncate of Elasticsearch is not possible, dropping the indices and recreating instead.");
         drop();
-        loadPropertyDefinitions();
     }
 
     @Override
