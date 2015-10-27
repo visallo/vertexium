@@ -465,8 +465,9 @@ public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchI
     }
 
     @Override
-    protected void addPropertyDefinitionToIndex(Graph graph, IndexInfo indexInfo, String propertyName, PropertyDefinition propertyDefinition) throws IOException {
+    protected boolean addPropertyDefinitionToIndex(Graph graph, IndexInfo indexInfo, String propertyName, PropertyDefinition propertyDefinition) throws IOException {
         // unlike our super class we need to lazily add property definitions to the index because the property names are different depending on visibility.
+        return false;
     }
 
     @Override

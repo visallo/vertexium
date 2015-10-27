@@ -502,8 +502,9 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex, Searc
 
         for (String indexName : getIndexNames(propertyDefinition)) {
             IndexInfo indexInfo = ensureIndexCreatedAndInitialized(indexName, isStoreSourceData());
-            addPropertyDefinitionToIndex(graph, indexInfo, propertyName, propertyDefinition);
-            indexInfo.addPropertyDefinition(propertyName, propertyDefinition);
+            if (addPropertyDefinitionToIndex(graph, indexInfo, propertyName, propertyDefinition)) {
+                indexInfo.addPropertyDefinition(propertyName, propertyDefinition);
+            }
         }
     }
 
@@ -518,7 +519,7 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex, Searc
         return false;
     }
 
-    protected void addPropertyDefinitionToIndex(Graph graph, IndexInfo indexInfo, String propertyName, PropertyDefinition propertyDefinition) throws IOException {
+    protected boolean addPropertyDefinitionToIndex(Graph graph, IndexInfo indexInfo, String propertyName, PropertyDefinition propertyDefinition) throws IOException {
         if (propertyDefinition.getDataType() == String.class) {
             if (propertyDefinition.getTextIndexHints().contains(TextIndexHint.EXACT_MATCH)) {
                 addPropertyToIndex(graph, indexInfo, propertyName + EXACT_MATCH_PROPERTY_NAME_SUFFIX, String.class, false, propertyDefinition.getBoost(), propertyDefinition.isSortable());
@@ -526,13 +527,18 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex, Searc
             if (propertyDefinition.getTextIndexHints().contains(TextIndexHint.FULL_TEXT)) {
                 addPropertyToIndex(graph, indexInfo, propertyName, String.class, true, propertyDefinition.getBoost(), propertyDefinition.isSortable());
             }
-        } else if (propertyDefinition.getDataType() == GeoPoint.class
+            return true;
+        }
+
+        if (propertyDefinition.getDataType() == GeoPoint.class
                 || propertyDefinition.getDataType() == GeoCircle.class) {
             addPropertyToIndex(graph, indexInfo, propertyName + GEO_PROPERTY_NAME_SUFFIX, propertyDefinition.getDataType(), true, propertyDefinition.getBoost(), propertyDefinition.isSortable());
             addPropertyToIndex(graph, indexInfo, propertyName, String.class, true, propertyDefinition.getBoost(), propertyDefinition.isSortable());
-        } else {
-            addPropertyToIndex(graph, indexInfo, propertyDefinition);
+            return true;
         }
+
+        addPropertyToIndex(graph, indexInfo, propertyDefinition);
+        return true;
     }
 
     @SuppressWarnings("unused")
