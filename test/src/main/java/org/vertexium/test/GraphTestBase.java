@@ -1862,6 +1862,9 @@ public abstract class GraphTestBase {
                 .setProperty("name", "tom", VISIBILITY_A)
                 .setProperty("age", 35, VISIBILITY_B)
                 .save(AUTHORIZATIONS_A_AND_B);
+        graph.prepareEdge("e1", "v1", "v2", "label2", VISIBILITY_A).save(AUTHORIZATIONS_A_AND_B);
+        graph.prepareEdge("e2", "v1", "v2", "label1", VISIBILITY_A).save(AUTHORIZATIONS_A_AND_B);
+        graph.prepareEdge("e3", "v1", "v2", "label3", VISIBILITY_A).save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         List<Vertex> vertices = toList(graph.query(AUTHORIZATIONS_A_AND_B)
@@ -1942,6 +1945,22 @@ public abstract class GraphTestBase {
                 .sort("otherfield", SortDirection.ASCENDING)
                 .vertices());
         Assert.assertEquals(4, count(vertices));
+
+        List<Edge> edges = toList(graph.query(AUTHORIZATIONS_A_AND_B)
+                .sort(Edge.LABEL_PROPERTY_NAME, SortDirection.ASCENDING)
+                .edges());
+        Assert.assertEquals(3, count(edges));
+        assertEquals("e2", edges.get(0).getId());
+        assertEquals("e1", edges.get(1).getId());
+        assertEquals("e3", edges.get(2).getId());
+
+        edges = toList(graph.query(AUTHORIZATIONS_A_AND_B)
+                .sort(Edge.LABEL_PROPERTY_NAME, SortDirection.DESCENDING)
+                .edges());
+        Assert.assertEquals(3, count(edges));
+        assertEquals("e3", edges.get(0).getId());
+        assertEquals("e1", edges.get(1).getId());
+        assertEquals("e2", edges.get(2).getId());
     }
 
     @Test
@@ -3929,12 +3948,16 @@ public abstract class GraphTestBase {
                 .addPropertyValue("k2", "name", "Joseph", VISIBILITY_B)
                 .addPropertyValue("", "age", 20, VISIBILITY_EMPTY)
                 .save(AUTHORIZATIONS_A_AND_B);
-        graph.prepareEdge("e1", "v1", "v2", VISIBILITY_EMPTY)
+        graph.prepareEdge("e1", "v1", "v2", "label1", VISIBILITY_EMPTY)
                 .addPropertyValue("k1", "name", "Joe", VISIBILITY_EMPTY)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.prepareEdge("e2", "v1", "v2", "label1", VISIBILITY_EMPTY)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.prepareEdge("e3", "v1", "v2", "label2", VISIBILITY_EMPTY)
                 .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
-        Map<Object, Long> vertexPropertyCountByValue = queryGraphQueryWithTermsAggregation("name", AUTHORIZATIONS_EMPTY);
+        Map<Object, Long> vertexPropertyCountByValue = queryGraphQueryWithTermsAggregation("name", ElementType.VERTEX, AUTHORIZATIONS_EMPTY);
         if (vertexPropertyCountByValue == null) {
             return;
         }
@@ -3942,22 +3965,30 @@ public abstract class GraphTestBase {
         assertEquals(2L, (long) vertexPropertyCountByValue.get("Joe"));
         assertEquals(searchIndexFieldLevelSecurity ? 1L : 2L, (long) vertexPropertyCountByValue.get("Joseph"));
 
-        vertexPropertyCountByValue = queryGraphQueryWithTermsAggregation("emptyField", AUTHORIZATIONS_EMPTY);
+        vertexPropertyCountByValue = queryGraphQueryWithTermsAggregation("emptyField", ElementType.VERTEX, AUTHORIZATIONS_EMPTY);
         if (vertexPropertyCountByValue == null) {
             return;
         }
         assertEquals(0, vertexPropertyCountByValue.size());
 
-        vertexPropertyCountByValue = queryGraphQueryWithTermsAggregation("name", AUTHORIZATIONS_A_AND_B);
+        vertexPropertyCountByValue = queryGraphQueryWithTermsAggregation("name", ElementType.VERTEX, AUTHORIZATIONS_A_AND_B);
         if (vertexPropertyCountByValue == null) {
             return;
         }
         assertEquals(2, vertexPropertyCountByValue.size());
         assertEquals(2L, (long) vertexPropertyCountByValue.get("Joe"));
         assertEquals(2L, (long) vertexPropertyCountByValue.get("Joseph"));
+
+        Map<Object, Long> edgePropertyCountByValue = queryGraphQueryWithTermsAggregation(Edge.LABEL_PROPERTY_NAME, ElementType.EDGE, AUTHORIZATIONS_A_AND_B);
+        if (edgePropertyCountByValue == null) {
+            return;
+        }
+        assertEquals(2, edgePropertyCountByValue.size());
+        assertEquals(2L, (long) edgePropertyCountByValue.get("label1"));
+        assertEquals(1L, (long) edgePropertyCountByValue.get("label2"));
     }
 
-    private Map<Object, Long> queryGraphQueryWithTermsAggregation(String propertyName, Authorizations authorizations) {
+    private Map<Object, Long> queryGraphQueryWithTermsAggregation(String propertyName, ElementType elementType, Authorizations authorizations) {
         Query q = graph.query(authorizations).limit(0);
         TermsAggregation agg = new TermsAggregation("terms-count", propertyName);
         if (!q.isAggregationSupported(agg)) {
@@ -3965,7 +3996,7 @@ public abstract class GraphTestBase {
             return null;
         }
         q.addAggregation(agg);
-        TermsResult aggregationResult = ((QueryResultsIterable<Vertex>) q.vertices()).getAggregationResult("terms-count", TermsResult.class);
+        TermsResult aggregationResult = (elementType == ElementType.VERTEX ? q.vertices() : q.edges()).getAggregationResult("terms-count", TermsResult.class);
         return termsBucketToMap(aggregationResult.getBuckets());
     }
 

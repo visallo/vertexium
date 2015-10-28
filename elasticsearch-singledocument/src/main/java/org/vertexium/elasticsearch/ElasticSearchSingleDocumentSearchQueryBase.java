@@ -147,6 +147,8 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends ElasticSearchQue
             SortOrder esOrder = sortContainer.direction == SortDirection.ASCENDING ? SortOrder.ASC : SortOrder.DESC;
             if (Element.ID_PROPERTY_NAME.equals(sortContainer.propertyName)) {
                 q.addSort("_uid", esOrder);
+            } else if (Edge.LABEL_PROPERTY_NAME.equals(sortContainer.propertyName)) {
+                q.addSort(ElasticSearchSearchIndexBase.EDGE_LABEL_FIELD_NAME, esOrder);
             } else {
                 PropertyDefinition propertyDefinition = getSearchIndex().getPropertyDefinition(getGraph(), sortContainer.propertyName);
                 if (propertyDefinition == null) {

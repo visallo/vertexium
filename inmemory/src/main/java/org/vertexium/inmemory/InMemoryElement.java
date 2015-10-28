@@ -15,6 +15,7 @@ import java.util.List;
 public abstract class InMemoryElement<TElement extends InMemoryElement> implements Element {
     private final String id;
     private Property idProperty;
+    private Property edgeLabelProperty;
     private InMemoryGraph graph;
     protected final InMemoryTableElement<TElement> inMemoryTableElement;
     private final boolean includeHidden;
@@ -47,6 +48,14 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> implemen
             idProperty = new MutablePropertyImpl(ElementMutation.DEFAULT_KEY, ID_PROPERTY_NAME, getId(), null, getTimestamp(), null, null);
         }
         return idProperty;
+    }
+
+    protected Property getEdgeLabelProperty() {
+        if (edgeLabelProperty == null && this instanceof Edge) {
+            String edgeLabel = ((Edge) this).getLabel();
+            edgeLabelProperty = new MutablePropertyImpl(ElementMutation.DEFAULT_KEY, Edge.LABEL_PROPERTY_NAME, edgeLabel, null, getTimestamp(), null, null);
+        }
+        return edgeLabelProperty;
     }
 
     @Override
@@ -226,6 +235,8 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> implemen
     public Property getProperty(String key, String name, Visibility visibility) {
         if (ID_PROPERTY_NAME.equals(name)) {
             return getIdProperty();
+        } else if (Edge.LABEL_PROPERTY_NAME.equals(name) && this instanceof Edge) {
+            return getEdgeLabelProperty();
         }
         for (Property p : getProperties()) {
             if (!p.getKey().equals(key)) {
@@ -265,6 +276,10 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> implemen
             ArrayList<Property> result = new ArrayList<>();
             result.add(getIdProperty());
             return result;
+        } else if (Edge.LABEL_PROPERTY_NAME.equals(name) && this instanceof Edge) {
+            ArrayList<Property> result = new ArrayList<>();
+            result.add(getEdgeLabelProperty());
+            return result;
         }
         return new FilterIterable<Property>(getProperties()) {
             @Override
@@ -279,6 +294,10 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> implemen
         if (ID_PROPERTY_NAME.equals(name)) {
             ArrayList<Property> result = new ArrayList<>();
             result.add(getIdProperty());
+            return result;
+        } else if (Edge.LABEL_PROPERTY_NAME.equals(name) && this instanceof Edge) {
+            ArrayList<Property> result = new ArrayList<>();
+            result.add(getEdgeLabelProperty());
             return result;
         }
         return new FilterIterable<Property>(getProperties()) {

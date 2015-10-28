@@ -6,6 +6,11 @@ import java.util.EnumSet;
 
 public interface Edge extends Element {
     /**
+     * Meta property name used for sorting and aggregations
+     */
+    String LABEL_PROPERTY_NAME = "__edgeLabel";
+
+    /**
      * The edge label.
      */
     String getLabel();

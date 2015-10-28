@@ -17,6 +17,7 @@ public abstract class ElementBase implements Element {
     private final Graph graph;
     private final String id;
     private Property idProperty;
+    private Property edgeLabelProperty;
     private Visibility visibility;
     private final long timestamp;
     private Set<Visibility> hiddenVisibilities = new HashSet<>();
@@ -80,6 +81,8 @@ public abstract class ElementBase implements Element {
     public Property getProperty(String key, String name, Visibility visibility) {
         if (ID_PROPERTY_NAME.equals(name)) {
             return getIdProperty();
+        } else if (Edge.LABEL_PROPERTY_NAME.equals(name) && this instanceof Edge) {
+            return getEdgeLabelProperty();
         }
         for (Property p : getProperties()) {
             if (!p.getKey().equals(key)) {
@@ -108,6 +111,8 @@ public abstract class ElementBase implements Element {
     public Property getProperty(String name) {
         if (ID_PROPERTY_NAME.equals(name)) {
             return getIdProperty();
+        } else if (Edge.LABEL_PROPERTY_NAME.equals(name) && this instanceof Edge) {
+            return getEdgeLabelProperty();
         }
         Iterator<Property> propertiesWithName = getProperties(name).iterator();
         if (propertiesWithName.hasNext()) {
@@ -125,6 +130,8 @@ public abstract class ElementBase implements Element {
     public Object getPropertyValue(String name, int index) {
         if (ID_PROPERTY_NAME.equals(name)) {
             return getIdProperty();
+        } else if (Edge.LABEL_PROPERTY_NAME.equals(name) && this instanceof Edge) {
+            return getEdgeLabelProperty();
         }
         Iterator<Object> values = getPropertyValues(name).iterator();
         while (values.hasNext() && index >= 0) {
@@ -141,6 +148,8 @@ public abstract class ElementBase implements Element {
     public Object getPropertyValue(String key, String name, int index) {
         if (ID_PROPERTY_NAME.equals(name)) {
             return getIdProperty();
+        } else if (Edge.LABEL_PROPERTY_NAME.equals(name) && this instanceof Edge) {
+            return getEdgeLabelProperty();
         }
         Iterator<Object> values = getPropertyValues(key, name).iterator();
         while (values.hasNext() && index >= 0) {
@@ -168,6 +177,14 @@ public abstract class ElementBase implements Element {
             idProperty = new MutablePropertyImpl(ElementMutation.DEFAULT_KEY, ID_PROPERTY_NAME, getId(), null, getTimestamp(), null, null);
         }
         return idProperty;
+    }
+
+    protected Property getEdgeLabelProperty() {
+        if (edgeLabelProperty == null && this instanceof Edge) {
+            String edgeLabel = ((Edge) this).getLabel();
+            edgeLabelProperty = new MutablePropertyImpl(ElementMutation.DEFAULT_KEY, Edge.LABEL_PROPERTY_NAME, edgeLabel, null, getTimestamp(), null, null);
+        }
+        return edgeLabelProperty;
     }
 
     @Override
@@ -203,6 +220,10 @@ public abstract class ElementBase implements Element {
             ArrayList<Property> result = new ArrayList<>();
             result.add(getIdProperty());
             return result;
+        } else if (Edge.LABEL_PROPERTY_NAME.equals(name) && this instanceof Edge) {
+            ArrayList<Property> result = new ArrayList<>();
+            result.add(getEdgeLabelProperty());
+            return result;
         }
         return new FilterIterable<Property>(getProperties()) {
             @Override
@@ -217,6 +238,10 @@ public abstract class ElementBase implements Element {
         if (ID_PROPERTY_NAME.equals(name)) {
             ArrayList<Property> result = new ArrayList<>();
             result.add(getIdProperty());
+            return result;
+        } else if (Edge.LABEL_PROPERTY_NAME.equals(name) && this instanceof Edge) {
+            ArrayList<Property> result = new ArrayList<>();
+            result.add(getEdgeLabelProperty());
             return result;
         }
         return new FilterIterable<Property>(getProperties()) {

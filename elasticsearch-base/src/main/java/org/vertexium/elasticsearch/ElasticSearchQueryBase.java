@@ -707,21 +707,27 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
     protected List<AggregationBuilder> getElasticsearchTermsAggregations(TermsAggregation agg) {
         List<AggregationBuilder> termsAggs = new ArrayList<>();
         String fieldName = agg.getPropertyName();
-        PropertyDefinition propertyDefinition = getPropertyDefinition(fieldName);
-        for (String propertyName : getPropertyNames(fieldName)) {
-            if (isExactMatchPropertyDefinition(propertyDefinition)) {
-                propertyName = propertyName + ElasticSearchSearchIndexBase.EXACT_MATCH_PROPERTY_NAME_SUFFIX;
-            }
-
-            String visibilityHash = getSearchIndex().getPropertyVisibilityHashFromDeflatedPropertyName(propertyName);
-            TermsBuilder termsAgg = AggregationBuilders.terms(createAggregationName(agg.getAggregationName(), visibilityHash));
-            termsAgg.field(propertyName);
-
-            for (AbstractAggregationBuilder subAgg : getElasticsearchAggregations(agg.getNestedAggregations())) {
-                termsAgg.subAggregation(subAgg);
-            }
-
+        if (Edge.LABEL_PROPERTY_NAME.equals(fieldName)) {
+            TermsBuilder termsAgg = AggregationBuilders.terms(createAggregationName(agg.getAggregationName(), "0"));
+            termsAgg.field(fieldName);
             termsAggs.add(termsAgg);
+        } else {
+            PropertyDefinition propertyDefinition = getPropertyDefinition(fieldName);
+            for (String propertyName : getPropertyNames(fieldName)) {
+                if (isExactMatchPropertyDefinition(propertyDefinition)) {
+                    propertyName = propertyName + ElasticSearchSearchIndexBase.EXACT_MATCH_PROPERTY_NAME_SUFFIX;
+                }
+
+                String visibilityHash = getSearchIndex().getPropertyVisibilityHashFromDeflatedPropertyName(propertyName);
+                TermsBuilder termsAgg = AggregationBuilders.terms(createAggregationName(agg.getAggregationName(), visibilityHash));
+                termsAgg.field(propertyName);
+
+                for (AbstractAggregationBuilder subAgg : getElasticsearchAggregations(agg.getNestedAggregations())) {
+                    termsAgg.subAggregation(subAgg);
+                }
+
+                termsAggs.add(termsAgg);
+            }
         }
         return termsAggs;
     }
