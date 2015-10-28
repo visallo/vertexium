@@ -351,7 +351,7 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
                 filters.add(FilterBuilders.notFilter(FilterBuilders.existsFilter(propertyName + ElasticSearchSearchIndexBase.EXACT_MATCH_PROPERTY_NAME_SUFFIX)));
             }
         }
-        return getSingleFilterOrAndTheFilters(filters);
+        return getSingleFilterOrAndTheFilters(filters, hasNotProperty);
     }
 
     protected FilterBuilder getFilterForHasPropertyContainer(HasPropertyContainer hasProperty) {
@@ -369,7 +369,7 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
                 filters.add(FilterBuilders.existsFilter(propertyName + ElasticSearchSearchIndexBase.EXACT_MATCH_PROPERTY_NAME_SUFFIX));
             }
         }
-        return getSingleFilterOrOrTheFilters(filters);
+        return getSingleFilterOrOrTheFilters(filters, hasProperty);
     }
 
     protected FilterBuilder getFiltersForHasValueContainer(HasValueContainer has) {
@@ -421,26 +421,26 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
                     throw new VertexiumException("Unexpected GeoCompare predicate " + has.predicate);
             }
         }
-        return getSingleFilterOrOrTheFilters(filters);
+        return getSingleFilterOrOrTheFilters(filters, has);
     }
 
-    private FilterBuilder getSingleFilterOrOrTheFilters(List<FilterBuilder> filters) {
+    private FilterBuilder getSingleFilterOrOrTheFilters(List<FilterBuilder> filters, HasContainer has) {
         if (filters.size() > 1) {
             return FilterBuilders.orFilter(filters.toArray(new FilterBuilder[filters.size()]));
         } else if (filters.size() == 1) {
             return filters.get(0);
         } else {
-            throw new VertexiumException("Unexpected filter count, expected at least 1 filter");
+            throw new VertexiumException("Unexpected filter count, expected at least 1 filter for: " + has);
         }
     }
 
-    private FilterBuilder getSingleFilterOrAndTheFilters(List<FilterBuilder> filters) {
+    private FilterBuilder getSingleFilterOrAndTheFilters(List<FilterBuilder> filters, HasContainer has) {
         if (filters.size() > 1) {
             return FilterBuilders.andFilter(filters.toArray(new FilterBuilder[filters.size()]));
         } else if (filters.size() == 1) {
             return filters.get(0);
         } else {
-            throw new VertexiumException("Unexpected filter count, expected at least 1 filter");
+            throw new VertexiumException("Unexpected filter count, expected at least 1 filter for: " + has);
         }
     }
 
@@ -464,7 +464,7 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
                     throw new VertexiumException("Unexpected text predicate " + has.predicate);
             }
         }
-        return getSingleFilterOrOrTheFilters(filters);
+        return getSingleFilterOrOrTheFilters(filters, has);
     }
 
     protected FilterBuilder getFilterForContainsPredicate(Contains contains, HasValueContainer has) {
@@ -491,7 +491,7 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
                     throw new VertexiumException("Unexpected Contains predicate " + has.predicate);
             }
         }
-        return getSingleFilterOrOrTheFilters(filters);
+        return getSingleFilterOrOrTheFilters(filters, has);
     }
 
     protected FilterBuilder getFilterForComparePredicate(Compare compare, HasValueContainer has) {
@@ -536,7 +536,7 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
                     throw new VertexiumException("Unexpected Compare predicate " + has.predicate);
             }
         }
-        return getSingleFilterOrOrTheFilters(filters);
+        return getSingleFilterOrOrTheFilters(filters, has);
     }
 
     protected String[] getPropertyNames(String propertyName) {

@@ -165,6 +165,11 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
 
     public static abstract class HasContainer {
         public abstract boolean isMatch(Element elem);
+
+        @Override
+        public String toString() {
+            return this.getClass().getName() + "{}";
+        }
     }
 
     public static class SortContainer {
@@ -193,6 +198,15 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
         public boolean isMatch(Element elem) {
             return this.predicate.evaluate(elem.getProperties(this.key), this.value, this.propertyDefinitions);
         }
+
+        @Override
+        public String toString() {
+            return this.getClass().getName() + "{" +
+                    "predicate=" + predicate +
+                    ", value=" + value +
+                    ", key='" + key + '\'' +
+                    '}';
+        }
     }
 
     public static class HasPropertyContainer extends HasContainer {
@@ -215,6 +229,13 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
         public String getKey() {
             return key;
         }
+
+        @Override
+        public String toString() {
+            return this.getClass().getName() + "{" +
+                    "key='" + key + '\'' +
+                    '}';
+        }
     }
 
     public static class HasNotPropertyContainer extends HasContainer {
@@ -236,6 +257,13 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
 
         public String getKey() {
             return key;
+        }
+
+        @Override
+        public String toString() {
+            return this.getClass().getName() + "{" +
+                    "key='" + key + '\'' +
+                    '}';
         }
     }
 
