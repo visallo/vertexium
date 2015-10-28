@@ -180,6 +180,14 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
             this.propertyName = propertyName;
             this.direction = direction;
         }
+
+        @Override
+        public String toString() {
+            return this.getClass().getName() + "{" +
+                    "propertyName='" + propertyName + '\'' +
+                    ", direction=" + direction +
+                    '}';
+        }
     }
 
     public static class HasValueContainer extends HasContainer {

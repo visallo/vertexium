@@ -1,5 +1,6 @@
 package org.vertexium.query;
 
+import com.google.common.base.Joiner;
 import org.vertexium.Authorizations;
 
 import java.util.ArrayList;
@@ -79,5 +80,17 @@ public abstract class QueryParameters {
         result.hasContainers.addAll(this.getHasContainers());
         result.sortContainers.addAll(this.getSortContainers());
         return result;
+    }
+
+    @Override
+    public String toString() {
+        return this.getClass().getName() + "{" +
+                "authorizations=" + authorizations +
+                ", limit=" + limit +
+                ", skip=" + skip +
+                ", hasContainers=" + Joiner.on(", ").join(hasContainers) +
+                ", sortContainers=" + Joiner.on(", ").join(sortContainers) +
+                ", edgeLabels=" + Joiner.on(", ").join(edgeLabels) +
+                '}';
     }
 }

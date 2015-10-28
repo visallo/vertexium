@@ -291,6 +291,9 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
     }
 
     private SearchResponse getSearchResponse(ElasticSearchElementType elementType, int skip, int limit, boolean includeAggregations) {
+        if (QUERY_LOGGER.isTraceEnabled()) {
+            QUERY_LOGGER.trace("searching for: " + toString());
+        }
         List<FilterBuilder> filters = getFilters(elementType);
         QueryBuilder query = createQuery(getParameters(), elementType, filters);
         query = scoringStrategy.updateQuery(query);
@@ -770,5 +773,16 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
 
     public String getAggregationName(String name) {
         return getSearchIndex().getAggregationName(name);
+    }
+
+    @Override
+    public String toString() {
+        return this.getClass().getName() + "{" +
+                "parameters=" + getParameters() +
+                ", evaluateHasContainers=" + evaluateHasContainers +
+                ", evaluateQueryString=" + evaluateQueryString +
+                ", evaluateSortContainers=" + evaluateSortContainers +
+                ", pageSize=" + pageSize +
+                '}';
     }
 }
