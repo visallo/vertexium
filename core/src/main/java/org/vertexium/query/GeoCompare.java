@@ -4,13 +4,13 @@ import org.vertexium.Property;
 import org.vertexium.PropertyDefinition;
 import org.vertexium.type.GeoShape;
 
-import java.util.Map;
+import java.util.Collection;
 
 public enum GeoCompare implements Predicate {
     WITHIN;
 
     @Override
-    public boolean evaluate(Iterable<Property> properties, Object second, Map<String, PropertyDefinition> propertyDefinitions) {
+    public boolean evaluate(Iterable<Property> properties, Object second, Collection<PropertyDefinition> propertyDefinitions) {
         for (Property property : properties) {
             if (evaluate(property, second)) {
                 return true;

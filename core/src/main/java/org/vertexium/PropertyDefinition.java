@@ -1,6 +1,7 @@
 package org.vertexium;
 
 import java.io.Serializable;
+import java.util.Collection;
 import java.util.Set;
 
 public class PropertyDefinition implements Serializable {
@@ -56,6 +57,15 @@ public class PropertyDefinition implements Serializable {
 
     public boolean isSortable() {
         return sortable;
+    }
+
+    public static PropertyDefinition findPropertyDefinition(Collection<PropertyDefinition> propertyDefinitions, String propertyName) {
+        for (PropertyDefinition propertyDefinition : propertyDefinitions) {
+            if (propertyDefinition.getPropertyName().equals(propertyName)) {
+                return propertyDefinition;
+            }
+        }
+        throw new VertexiumException("Could not find property definition for property name: " + propertyName);
     }
 
     @Override

@@ -5,13 +5,12 @@ import org.vertexium.util.VertexiumLogger;
 import org.vertexium.util.VertexiumLoggerFactory;
 
 import java.util.EnumSet;
-import java.util.Map;
 
 public class DefaultGraphQuery extends GraphQueryBase {
     private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(DefaultGraphQuery.class);
 
-    public DefaultGraphQuery(Graph graph, String queryString, Map<String, PropertyDefinition> propertyDefinitions, Authorizations authorizations) {
-        super(graph, queryString, propertyDefinitions, authorizations);
+    public DefaultGraphQuery(Graph graph, String queryString, Authorizations authorizations) {
+        super(graph, queryString, authorizations);
     }
 
     @Override

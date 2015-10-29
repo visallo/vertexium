@@ -7,19 +7,15 @@ import org.vertexium.query.SimilarToGraphQuery;
 import org.vertexium.search.SearchIndex;
 import org.vertexium.search.SearchIndexWithVertexPropertyCountByValue;
 
-import java.io.IOException;
 import java.util.EnumSet;
-import java.util.HashMap;
 import java.util.Map;
 
 public abstract class GraphBaseWithSearchIndex extends GraphBase implements Graph {
-    public static final String METADATA_DEFINE_PROPERTY_PREFIX = "defineProperty.";
     public static final String METADATA_ID_GENERATOR_CLASSNAME = "idGenerator.classname";
     private final GraphConfiguration configuration;
     private final IdGenerator idGenerator;
     private SearchIndex searchIndex;
     private boolean foundIdGeneratorClassnameInMetadata;
-    private Map<String, PropertyDefinition> propertyDefinitionCache = new HashMap<>();
 
     protected GraphBaseWithSearchIndex(GraphConfiguration configuration) {
         this.configuration = configuration;
@@ -50,7 +46,7 @@ public abstract class GraphBaseWithSearchIndex extends GraphBase implements Grap
     protected void setupGraphMetadata(GraphMetadataEntry graphMetadataEntry) {
         if (graphMetadataEntry.getKey().startsWith(METADATA_DEFINE_PROPERTY_PREFIX)) {
             if (graphMetadataEntry.getValue() instanceof PropertyDefinition) {
-                setupPropertyDefinition((PropertyDefinition) graphMetadataEntry.getValue());
+                addToPropertyDefinitionCache((PropertyDefinition) graphMetadataEntry.getValue());
             } else {
                 throw new VertexiumException("Invalid property definition metadata: " + graphMetadataEntry.getKey() + " expected " + PropertyDefinition.class.getName() + " found " + graphMetadataEntry.getValue().getClass().getName());
             }
@@ -63,15 +59,6 @@ public abstract class GraphBaseWithSearchIndex extends GraphBase implements Grap
             } else {
                 throw new VertexiumException("Invalid " + METADATA_ID_GENERATOR_CLASSNAME + " expected String found " + graphMetadataEntry.getValue().getClass().getName());
             }
-        }
-    }
-
-    protected void setupPropertyDefinition(PropertyDefinition propertyDefinition) {
-        try {
-            propertyDefinitionCache.put(propertyDefinition.getPropertyName(), propertyDefinition);
-            getSearchIndex().addPropertyDefinition(this, propertyDefinition);
-        } catch (IOException e) {
-            throw new VertexiumException("Could not add property definition to search index", e);
         }
     }
 
@@ -148,46 +135,7 @@ public abstract class GraphBaseWithSearchIndex extends GraphBase implements Grap
     }
 
     @Override
-    public DefinePropertyBuilder defineProperty(final String propertyName) {
-        return new DefinePropertyBuilder(propertyName) {
-            @Override
-            public PropertyDefinition define() {
-                PropertyDefinition propertyDefinition = super.define();
-                try {
-                    getSearchIndex().addPropertyDefinition(GraphBaseWithSearchIndex.this, propertyDefinition);
-                } catch (IOException e) {
-                    throw new VertexiumException("Could not add property definition to search index", e);
-                }
-                savePropertyDefinition(propertyName, propertyDefinition);
-                return propertyDefinition;
-            }
-        };
-    }
-
-    @Override
-    public boolean isPropertyDefined(String propertyName) {
-        return getSearchIndex().isPropertyDefined(propertyName);
-    }
-
-    @Override
     public abstract void drop();
-
-    public void savePropertyDefinition(String propertyName, PropertyDefinition propertyDefinition) {
-        propertyDefinitionCache.put(propertyName, propertyDefinition);
-        setMetadata(getPropertyDefinitionKey(propertyName), propertyDefinition);
-    }
-
-    private String getPropertyDefinitionKey(String propertyName) {
-        return METADATA_DEFINE_PROPERTY_PREFIX + propertyName;
-    }
-
-    public PropertyDefinition getPropertyDefinition(String propertyName) {
-        PropertyDefinition propertyDefinition = propertyDefinitionCache.get(propertyName);
-        if (propertyDefinition != null) {
-            return propertyDefinition;
-        }
-        return (PropertyDefinition) getMetadata(getPropertyDefinitionKey(propertyName));
-    }
 
     @Override
     public boolean isFieldBoostSupported() {

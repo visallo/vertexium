@@ -207,7 +207,7 @@ public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchI
         String elementTypeVisibilityPropertyName = deflatePropertyName(graph, ELEMENT_TYPE_FIELD_NAME, element.getVisibility());
         String indexName = getIndexName(element);
         IndexInfo indexInfo = ensureIndexCreatedAndInitialized(indexName, isStoreSourceData());
-        addPropertyToIndex(graph, indexInfo, elementTypeVisibilityPropertyName, String.class, false, false);
+        addPropertyToIndex(graph, indexInfo, elementTypeVisibilityPropertyName, element.getVisibility(), String.class, false, false);
         return elementTypeVisibilityPropertyName;
     }
 
@@ -340,7 +340,7 @@ public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchI
 
     public Collection<String> getQueryablePropertyNames(Graph graph, boolean includeNonStringFields, Authorizations authorizations) {
         Set<String> propertyNames = new HashSet<>();
-        for (PropertyDefinition propertyDefinition : getAllPropertyDefinitions().values()) {
+        for (PropertyDefinition propertyDefinition : graph.getPropertyDefinitions()) {
             List<String> queryableTypeSuffixes = getQueryableTypeSuffixes(propertyDefinition, includeNonStringFields);
             if (queryableTypeSuffixes.size() == 0) {
                 continue;
@@ -361,15 +361,8 @@ public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchI
 
     public Collection<String> getQueryableElementTypeVisibilityPropertyNames(Graph graph, Authorizations authorizations) {
         Set<String> propertyNames = new HashSet<>();
-        for (PropertyDefinition propertyDefinition : getAllPropertyDefinitions().values()) {
-            String inflatedPropertyName = inflatePropertyName(propertyDefinition.getPropertyName()); // could be stored deflated
-            String deflatedPropertyName = this.nameSubstitutionStrategy.deflate(inflatedPropertyName);
-            if (!inflatedPropertyName.equals(ELEMENT_TYPE_FIELD_NAME)) {
-                continue;
-            }
-            for (String hash : this.propertyNameVisibilitiesStore.getHashes(graph, inflatedPropertyName, authorizations)) {
-                propertyNames.add(deflatedPropertyName + "_" + hash);
-            }
+        for (String hash : propertyNameVisibilitiesStore.getHashes(graph, ELEMENT_TYPE_FIELD_NAME, authorizations)) {
+            propertyNames.add(ELEMENT_TYPE_FIELD_NAME + "_" + hash);
         }
         if (propertyNames.size() == 0) {
             throw new VertexiumNoMatchingPropertiesException("No queryable " + ELEMENT_TYPE_FIELD_NAME + " for authorizations " + authorizations);
@@ -424,7 +417,6 @@ public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchI
                 getClient(),
                 graph,
                 queryString,
-                getAllPropertyDefinitions(),
                 getConfig().getScoringStrategy(),
                 getIndexSelectionStrategy(),
                 getConfig().getQueryPageSize(),
@@ -438,7 +430,6 @@ public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchI
                 graph,
                 vertex,
                 queryString,
-                getAllPropertyDefinitions(),
                 getConfig().getScoringStrategy(),
                 getIndexSelectionStrategy(),
                 getConfig().getQueryPageSize(),
@@ -452,7 +443,6 @@ public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchI
                 graph,
                 similarToFields,
                 similarToText,
-                getAllPropertyDefinitions(),
                 getConfig().getScoringStrategy(),
                 getIndexSelectionStrategy(),
                 getConfig().getQueryPageSize(),
@@ -465,20 +455,14 @@ public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchI
     }
 
     @Override
-    protected boolean addPropertyDefinitionToIndex(Graph graph, IndexInfo indexInfo, String propertyName, PropertyDefinition propertyDefinition) throws IOException {
+    protected boolean addPropertyDefinitionToIndex(Graph graph, IndexInfo indexInfo, String propertyName, Visibility propertyVisibility, PropertyDefinition propertyDefinition) throws IOException {
         // unlike our super class we need to lazily add property definitions to the index because the property names are different depending on visibility.
         return false;
     }
 
-    @Override
-    public PropertyDefinition getPropertyDefinition(Graph graph, String propertyName) {
+    protected PropertyDefinition getPropertyDefinition(Graph graph, String propertyName) {
         propertyName = inflatePropertyNameWithTypeSuffix(propertyName);
-        return ((GraphBaseWithSearchIndex) graph).getPropertyDefinition(propertyName);
-    }
-
-    private void savePropertyDefinition(Graph graph, String propertyName, PropertyDefinition propertyDefinition) {
-        propertyName = inflatePropertyNameWithTypeSuffix(propertyName);
-        ((GraphBaseWithSearchIndex) graph).savePropertyDefinition(propertyName, propertyDefinition);
+        return graph.getPropertyDefinition(propertyName);
     }
 
     @Override
@@ -490,7 +474,7 @@ public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchI
         PropertyDefinition propertyDefinition = getPropertyDefinition(graph, property.getName());
         if (propertyDefinition != null) {
             String deflatedPropertyName = deflatePropertyName(graph, property);
-            super.addPropertyDefinitionToIndex(graph, indexInfo, deflatedPropertyName, propertyDefinition);
+            super.addPropertyDefinitionToIndex(graph, indexInfo, deflatedPropertyName, property.getVisibility(), propertyDefinition);
         } else {
             super.addPropertyToIndex(graph, indexInfo, property);
         }
@@ -498,21 +482,30 @@ public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchI
         propertyDefinition = getPropertyDefinition(graph, property.getName() + EXACT_MATCH_PROPERTY_NAME_SUFFIX);
         if (propertyDefinition != null) {
             String deflatedPropertyName = deflatePropertyName(graph, property);
-            super.addPropertyDefinitionToIndex(graph, indexInfo, deflatedPropertyName, propertyDefinition);
+            super.addPropertyDefinitionToIndex(graph, indexInfo, deflatedPropertyName, property.getVisibility(), propertyDefinition);
         }
 
         if (propertyValue instanceof GeoShape) {
             propertyDefinition = getPropertyDefinition(graph, property.getName() + GEO_PROPERTY_NAME_SUFFIX);
             if (propertyDefinition != null) {
                 String deflatedPropertyName = deflatePropertyName(graph, property);
-                super.addPropertyDefinitionToIndex(graph, indexInfo, deflatedPropertyName, propertyDefinition);
+                super.addPropertyDefinitionToIndex(graph, indexInfo, deflatedPropertyName, property.getVisibility(), propertyDefinition);
             }
         }
     }
 
     @Override
-    protected void addPropertyToIndex(Graph graph, IndexInfo indexInfo, String propertyName, Class dataType, boolean analyzed, Double boost, boolean sortable) throws IOException {
-        if (indexInfo.isPropertyDefined(propertyName)) {
+    protected void addPropertyToIndex(
+            Graph graph,
+            IndexInfo indexInfo,
+            String propertyName,
+            Visibility propertyVisibility,
+            Class dataType,
+            boolean analyzed,
+            Double boost,
+            boolean sortable
+    ) throws IOException {
+        if (indexInfo.isPropertyDefined(propertyName, propertyVisibility)) {
             return;
         }
 
@@ -547,12 +540,17 @@ public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchI
                 .execute()
                 .actionGet();
 
-        PropertyDefinition propertyDefinition = getPropertyDefinition(graph, inflatePropertyName(propertyName));
-        if (propertyDefinition == null) {
-            propertyDefinition = new PropertyDefinition(propertyName, dataType, TextIndexHint.ALL);
+        addPropertyNameVisibility(graph, indexInfo, propertyName, propertyVisibility);
+    }
+
+    @Override
+    protected void addPropertyNameVisibility(Graph graph, IndexInfo indexInfo, String propertyName, Visibility propertyVisibility) {
+        String inflatedPropertyName = inflatePropertyName(propertyName);
+        if (propertyVisibility != null) {
+            this.propertyNameVisibilitiesStore.getHash(graph, inflatedPropertyName, propertyVisibility);
         }
-        indexInfo.addPropertyDefinition(propertyName, propertyDefinition);
-        savePropertyDefinition(graph, propertyName, propertyDefinition);
+        indexInfo.addPropertyNameVisibility(inflatedPropertyName, propertyVisibility);
+        indexInfo.addPropertyNameVisibility(propertyName, propertyVisibility);
     }
 
     @Override

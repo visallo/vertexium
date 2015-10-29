@@ -3,12 +3,7 @@ package org.vertexium.search;
 import org.vertexium.*;
 import org.vertexium.query.*;
 
-import java.util.HashMap;
-import java.util.Map;
-
 public class DefaultSearchIndex implements SearchIndex {
-    private Map<String, PropertyDefinition> propertyDefinitions = new HashMap<>();
-
     @SuppressWarnings("unused")
     public DefaultSearchIndex(GraphConfiguration configuration) {
 
@@ -43,17 +38,17 @@ public class DefaultSearchIndex implements SearchIndex {
 
     @Override
     public GraphQuery queryGraph(Graph graph, String queryString, Authorizations authorizations) {
-        return new DefaultGraphQuery(graph, queryString, this.propertyDefinitions, authorizations);
+        return new DefaultGraphQuery(graph, queryString, authorizations);
     }
 
     @Override
     public MultiVertexQuery queryGraph(Graph graph, String[] vertexIds, String queryString, Authorizations authorizations) {
-        return new DefaultMultiVertexQuery(graph, vertexIds, queryString, this.propertyDefinitions, authorizations);
+        return new DefaultMultiVertexQuery(graph, vertexIds, queryString, authorizations);
     }
 
     @Override
     public VertexQuery queryVertex(Graph graph, Vertex vertex, String queryString, Authorizations authorizations) {
-        return new DefaultVertexQuery(graph, vertex, queryString, this.propertyDefinitions, authorizations);
+        return new DefaultVertexQuery(graph, vertex, queryString, authorizations);
     }
 
     @Override
@@ -64,16 +59,6 @@ public class DefaultSearchIndex implements SearchIndex {
     @Override
     public void shutdown() {
 
-    }
-
-    @Override
-    public void addPropertyDefinition(Graph graph, PropertyDefinition propertyDefinition) {
-        this.propertyDefinitions.put(propertyDefinition.getPropertyName(), propertyDefinition);
-    }
-
-    @Override
-    public boolean isPropertyDefined(String propertyName) {
-        return this.propertyDefinitions.containsKey(propertyName);
     }
 
     @Override

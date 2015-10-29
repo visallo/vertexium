@@ -7,15 +7,15 @@ import org.vertexium.VertexiumException;
 import org.vertexium.property.StreamingPropertyValue;
 import org.vertexium.type.GeoPoint;
 
-import java.util.Map;
+import java.util.Collection;
 
 public enum TextPredicate implements Predicate {
     CONTAINS;
 
     @Override
-    public boolean evaluate(final Iterable<Property> properties, final Object second, Map<String, PropertyDefinition> propertyDefinitions) {
+    public boolean evaluate(final Iterable<Property> properties, final Object second, Collection<PropertyDefinition> propertyDefinitions) {
         for (Property property : properties) {
-            PropertyDefinition propertyDefinition = propertyDefinitions.get(property.getName());
+            PropertyDefinition propertyDefinition = PropertyDefinition.findPropertyDefinition(propertyDefinitions, property.getName());
             if (evaluate(property, second, propertyDefinition)) {
                 return true;
             }

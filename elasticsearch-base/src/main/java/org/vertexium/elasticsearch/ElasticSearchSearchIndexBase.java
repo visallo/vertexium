@@ -64,7 +64,7 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex, Searc
         this.indexSelectionStrategy = this.config.getIndexSelectionStrategy();
         this.allFieldEnabled = this.config.isAllFieldEnabled(getDefaultAllFieldEnabled());
         this.client = createClient(this.config);
-        loadIndexInfos();
+        loadIndexInfos(graph);
     }
 
     protected Client createClient(ElasticSearchSearchIndexConfiguration config) {
@@ -159,7 +159,7 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex, Searc
         return allFieldEnabled;
     }
 
-    protected void loadIndexInfos() {
+    protected void loadIndexInfos(Graph graph) {
         Map<String, IndexStats> indices = getExistingIndexNames();
         for (String indexName : indices.keySet()) {
             if (!indexSelectionStrategy.isIncluded(this, indexName)) {
@@ -174,14 +174,16 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex, Searc
 
             LOGGER.debug("loading index info for %s", indexName);
             indexInfo = createIndexInfo(indexName);
-            indexInfo.addPropertyDefinition(ELEMENT_TYPE_FIELD_NAME, new PropertyDefinition(ELEMENT_TYPE_FIELD_NAME, String.class, EnumSet.of(TextIndexHint.EXACT_MATCH)));
-            indexInfo.addPropertyDefinition(VISIBILITY_FIELD_NAME, new PropertyDefinition(VISIBILITY_FIELD_NAME, String.class, EnumSet.of(TextIndexHint.EXACT_MATCH)));
-            indexInfo.addPropertyDefinition(OUT_VERTEX_ID_FIELD_NAME, new PropertyDefinition(OUT_VERTEX_ID_FIELD_NAME, String.class, EnumSet.of(TextIndexHint.EXACT_MATCH)));
-            indexInfo.addPropertyDefinition(IN_VERTEX_ID_FIELD_NAME, new PropertyDefinition(IN_VERTEX_ID_FIELD_NAME, String.class, EnumSet.of(TextIndexHint.EXACT_MATCH)));
-            indexInfo.addPropertyDefinition(EDGE_LABEL_FIELD_NAME, new PropertyDefinition(EDGE_LABEL_FIELD_NAME, String.class, EnumSet.of(TextIndexHint.EXACT_MATCH)));
+            addPropertyNameVisibility(graph, indexInfo, ELEMENT_TYPE_FIELD_NAME, null);
+            addPropertyNameVisibility(graph, indexInfo, VISIBILITY_FIELD_NAME, null);
+            addPropertyNameVisibility(graph, indexInfo, OUT_VERTEX_ID_FIELD_NAME, null);
+            addPropertyNameVisibility(graph, indexInfo, IN_VERTEX_ID_FIELD_NAME, null);
+            addPropertyNameVisibility(graph, indexInfo, EDGE_LABEL_FIELD_NAME, null);
             indexInfos.put(indexName, indexInfo);
         }
     }
+
+    protected abstract void addPropertyNameVisibility(Graph graph, IndexInfo indexInfo, String propertyName, Visibility propertyVisibility);
 
     private Map<String, IndexStats> getExistingIndexNames() {
         return client.admin().indices().prepareStats().execute().actionGet().getIndices();
@@ -329,7 +331,7 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex, Searc
 
     @Override
     public MultiVertexQuery queryGraph(Graph graph, String[] vertexIds, String queryString, Authorizations authorizations) {
-        return new DefaultMultiVertexQuery(graph, vertexIds, queryString, getAllPropertyDefinitions(), authorizations);
+        return new DefaultMultiVertexQuery(graph, vertexIds, queryString, authorizations);
     }
 
     @Override
@@ -342,14 +344,6 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex, Searc
 
     @Override
     public abstract SimilarToGraphQuery querySimilarTo(Graph graph, String[] similarToFields, String similarToText, Authorizations authorizations);
-
-    public Map<String, PropertyDefinition> getAllPropertyDefinitions() {
-        Map<String, PropertyDefinition> allPropertyDefinitions = new HashMap<>();
-        for (IndexInfo indexInfo : this.indexInfos.values()) {
-            allPropertyDefinitions.putAll(indexInfo.getPropertyDefinitions());
-        }
-        return allPropertyDefinitions;
-    }
 
     @Override
     public void flush() {
@@ -378,49 +372,25 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex, Searc
         }
     }
 
-    @Override
-    public void addPropertyDefinition(Graph graph, PropertyDefinition propertyDefinition) throws IOException {
-        LOGGER.debug("adding property definition: %s", propertyDefinition.toString());
-        String propertyName = deflatePropertyName(propertyDefinition);
-
-        for (String indexName : getIndexNames(propertyDefinition)) {
-            IndexInfo indexInfo = ensureIndexCreatedAndInitialized(indexName, isStoreSourceData());
-            if (addPropertyDefinitionToIndex(graph, indexInfo, propertyName, propertyDefinition)) {
-                indexInfo.addPropertyDefinition(propertyName, propertyDefinition);
-            }
-        }
-    }
-
-    @Override
-    public boolean isPropertyDefined(String propertyName) {
-        for (String indexName : getIndexNamesAsArray()) {
-            IndexInfo indexInfo = ensureIndexCreatedAndInitialized(indexName, isStoreSourceData());
-            if (indexInfo.isPropertyDefined(propertyName)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    protected boolean addPropertyDefinitionToIndex(Graph graph, IndexInfo indexInfo, String propertyName, PropertyDefinition propertyDefinition) throws IOException {
+    protected boolean addPropertyDefinitionToIndex(Graph graph, IndexInfo indexInfo, String propertyName, Visibility propertyVisibility, PropertyDefinition propertyDefinition) throws IOException {
         if (propertyDefinition.getDataType() == String.class) {
             if (propertyDefinition.getTextIndexHints().contains(TextIndexHint.EXACT_MATCH)) {
-                addPropertyToIndex(graph, indexInfo, propertyName + EXACT_MATCH_PROPERTY_NAME_SUFFIX, String.class, false, propertyDefinition.getBoost(), propertyDefinition.isSortable());
+                addPropertyToIndex(graph, indexInfo, propertyName + EXACT_MATCH_PROPERTY_NAME_SUFFIX, propertyVisibility, String.class, false, propertyDefinition.getBoost(), propertyDefinition.isSortable());
             }
             if (propertyDefinition.getTextIndexHints().contains(TextIndexHint.FULL_TEXT)) {
-                addPropertyToIndex(graph, indexInfo, propertyName, String.class, true, propertyDefinition.getBoost(), propertyDefinition.isSortable());
+                addPropertyToIndex(graph, indexInfo, propertyName, propertyVisibility, String.class, true, propertyDefinition.getBoost(), propertyDefinition.isSortable());
             }
             return true;
         }
 
         if (propertyDefinition.getDataType() == GeoPoint.class
                 || propertyDefinition.getDataType() == GeoCircle.class) {
-            addPropertyToIndex(graph, indexInfo, propertyName + GEO_PROPERTY_NAME_SUFFIX, propertyDefinition.getDataType(), true, propertyDefinition.getBoost(), propertyDefinition.isSortable());
-            addPropertyToIndex(graph, indexInfo, propertyName, String.class, true, propertyDefinition.getBoost(), propertyDefinition.isSortable());
+            addPropertyToIndex(graph, indexInfo, propertyName + GEO_PROPERTY_NAME_SUFFIX, propertyVisibility, propertyDefinition.getDataType(), true, propertyDefinition.getBoost(), propertyDefinition.isSortable());
+            addPropertyToIndex(graph, indexInfo, propertyName, propertyVisibility, String.class, true, propertyDefinition.getBoost(), propertyDefinition.isSortable());
             return true;
         }
 
-        addPropertyToIndex(graph, indexInfo, propertyDefinition);
+        addPropertyToIndex(graph, indexInfo, propertyName, propertyVisibility, propertyDefinition.getDataType(), true, propertyDefinition.getBoost(), propertyDefinition.isSortable());
         return true;
     }
 
@@ -456,18 +426,14 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex, Searc
         }
     }
 
-    protected void addPropertyToIndex(Graph graph, IndexInfo indexInfo, String propertyName, Class dataType, boolean analyzed, boolean sortable) throws IOException {
-        addPropertyToIndex(graph, indexInfo, propertyName, dataType, analyzed, null, sortable);
-    }
-
-    private void addPropertyToIndex(Graph graph, IndexInfo indexInfo, PropertyDefinition propertyDefinition) throws IOException {
-        addPropertyToIndex(graph, indexInfo, deflatePropertyName(propertyDefinition), propertyDefinition.getDataType(), true, propertyDefinition.getBoost(), propertyDefinition.isSortable());
+    protected void addPropertyToIndex(Graph graph, IndexInfo indexInfo, String propertyName, Visibility propertyVisibility, Class dataType, boolean analyzed, boolean sortable) throws IOException {
+        addPropertyToIndex(graph, indexInfo, propertyName, propertyVisibility, dataType, analyzed, null, sortable);
     }
 
     public void addPropertyToIndex(Graph graph, IndexInfo indexInfo, Property property) throws IOException {
         String deflatedPropertyName = deflatePropertyName(graph, property);
 
-        if (indexInfo.isPropertyDefined(deflatedPropertyName)) {
+        if (indexInfo.isPropertyDefined(deflatedPropertyName, property.getVisibility())) {
             return;
         }
 
@@ -479,21 +445,21 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex, Searc
                 return;
             }
             dataType = streamingPropertyValue.getValueType();
-            addPropertyToIndex(graph, indexInfo, deflatedPropertyName, dataType, true, false);
+            addPropertyToIndex(graph, indexInfo, deflatedPropertyName, property.getVisibility(), dataType, true, false);
         } else if (propertyValue instanceof String) {
             dataType = String.class;
-            addPropertyToIndex(graph, indexInfo, deflatedPropertyName + EXACT_MATCH_PROPERTY_NAME_SUFFIX, dataType, false, false);
-            addPropertyToIndex(graph, indexInfo, deflatedPropertyName, dataType, true, false);
+            addPropertyToIndex(graph, indexInfo, deflatedPropertyName + EXACT_MATCH_PROPERTY_NAME_SUFFIX, property.getVisibility(), dataType, false, false);
+            addPropertyToIndex(graph, indexInfo, deflatedPropertyName, property.getVisibility(), dataType, true, false);
         } else if (propertyValue instanceof GeoPoint) {
-            addPropertyToIndex(graph, indexInfo, deflatedPropertyName + GEO_PROPERTY_NAME_SUFFIX, GeoPoint.class, true, false);
-            addPropertyToIndex(graph, indexInfo, deflatedPropertyName, String.class, true, false);
+            addPropertyToIndex(graph, indexInfo, deflatedPropertyName + GEO_PROPERTY_NAME_SUFFIX, property.getVisibility(), GeoPoint.class, true, false);
+            addPropertyToIndex(graph, indexInfo, deflatedPropertyName, property.getVisibility(), String.class, true, false);
         } else if (propertyValue instanceof GeoCircle) {
-            addPropertyToIndex(graph, indexInfo, deflatedPropertyName + GEO_PROPERTY_NAME_SUFFIX, GeoCircle.class, true, false);
-            addPropertyToIndex(graph, indexInfo, deflatedPropertyName, String.class, true, false);
+            addPropertyToIndex(graph, indexInfo, deflatedPropertyName + GEO_PROPERTY_NAME_SUFFIX, property.getVisibility(), GeoCircle.class, true, false);
+            addPropertyToIndex(graph, indexInfo, deflatedPropertyName, property.getVisibility(), String.class, true, false);
         } else {
             checkNotNull(propertyValue, "property value cannot be null for property: " + deflatedPropertyName);
             dataType = propertyValue.getClass();
-            addPropertyToIndex(graph, indexInfo, deflatedPropertyName, dataType, true, true);
+            addPropertyToIndex(graph, indexInfo, deflatedPropertyName, property.getVisibility(), dataType, true, true);
         }
     }
 
@@ -517,7 +483,7 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex, Searc
         return new String[]{nameSubstitutionStrategy.deflate(propertyName)};
     }
 
-    protected abstract void addPropertyToIndex(Graph graph, IndexInfo indexInfo, String propertyName, Class dataType, boolean analyzed, Double boost, boolean sortable) throws IOException;
+    protected abstract void addPropertyToIndex(Graph graph, IndexInfo indexInfo, String propertyName, Visibility propertyVisibility, Class dataType, boolean analyzed, Double boost, boolean sortable) throws IOException;
 
     protected boolean shouldIgnoreType(Class dataType) {
         return dataType == byte[].class;
@@ -533,49 +499,49 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex, Searc
 
     protected void addTypeToMapping(XContentBuilder mapping, String propertyName, Class dataType, boolean analyzed, Double boost) throws IOException {
         if (dataType == String.class) {
-            LOGGER.debug("Registering string type for %s", propertyName);
+            LOGGER.debug("Registering 'string' type for %s", propertyName);
             mapping.field("type", "string");
             if (!analyzed) {
                 mapping.field("index", "not_analyzed");
                 mapping.field("ignore_above", EXACT_MATCH_IGNORE_ABOVE_LIMIT);
             }
         } else if (dataType == IpV4Address.class) {
-            LOGGER.debug("Registering IP type for %s", propertyName);
+            LOGGER.debug("Registering 'ip' type for %s", propertyName);
             mapping.field("type", "ip");
-        } else if (dataType == Float.class) {
-            LOGGER.debug("Registering float type for %s", propertyName);
+        } else if (dataType == Float.class || dataType == Float.TYPE) {
+            LOGGER.debug("Registering 'float' type for %s", propertyName);
             mapping.field("type", "float");
-        } else if (dataType == Double.class) {
-            LOGGER.debug("Registering double type for %s", propertyName);
+        } else if (dataType == Double.class || dataType == Double.TYPE) {
+            LOGGER.debug("Registering 'double' type for %s", propertyName);
             mapping.field("type", "double");
-        } else if (dataType == Byte.class) {
-            LOGGER.debug("Registering byte type for %s", propertyName);
+        } else if (dataType == Byte.class || dataType == Byte.TYPE) {
+            LOGGER.debug("Registering 'byte' type for %s", propertyName);
             mapping.field("type", "byte");
-        } else if (dataType == Short.class) {
-            LOGGER.debug("Registering short type for %s", propertyName);
+        } else if (dataType == Short.class || dataType == Short.TYPE) {
+            LOGGER.debug("Registering 'short' type for %s", propertyName);
             mapping.field("type", "short");
-        } else if (dataType == Integer.class) {
-            LOGGER.debug("Registering integer type for %s", propertyName);
+        } else if (dataType == Integer.class || dataType == Integer.TYPE) {
+            LOGGER.debug("Registering 'integer' type for %s", propertyName);
             mapping.field("type", "integer");
-        } else if (dataType == Date.class || dataType == DateOnly.class) {
-            LOGGER.debug("Registering date type for %s", propertyName);
-            mapping.field("type", "date");
-        } else if (dataType == Long.class) {
-            LOGGER.debug("Registering long type for %s", propertyName);
+        } else if (dataType == Long.class || dataType == Long.TYPE) {
+            LOGGER.debug("Registering 'long' type for %s", propertyName);
             mapping.field("type", "long");
-        } else if (dataType == Boolean.class) {
-            LOGGER.debug("Registering boolean type for %s", propertyName);
+        } else if (dataType == Date.class || dataType == DateOnly.class) {
+            LOGGER.debug("Registering 'date' type for %s", propertyName);
+            mapping.field("type", "date");
+        } else if (dataType == Boolean.class || dataType == Boolean.TYPE) {
+            LOGGER.debug("Registering 'boolean' type for %s", propertyName);
             mapping.field("type", "boolean");
         } else if (dataType == GeoPoint.class) {
-            LOGGER.debug("Registering geo_point type for %s", propertyName);
+            LOGGER.debug("Registering 'geo_point' type for %s", propertyName);
             mapping.field("type", "geo_point");
         } else if (dataType == GeoCircle.class) {
-            LOGGER.debug("Registering geo_shape type for %s", propertyName);
+            LOGGER.debug("Registering 'geo_shape' type for %s", propertyName);
             mapping.field("type", "geo_shape");
             mapping.field("tree", "quadtree");
             mapping.field("precision", "100m");
         } else if (Number.class.isAssignableFrom(dataType)) {
-            LOGGER.debug("Registering double type for %s", propertyName);
+            LOGGER.debug("Registering 'double' type for %s", propertyName);
             mapping.field("type", "double");
         } else {
             throw new VertexiumException("Unexpected value type for property \"" + propertyName + "\": " + dataType.getName());
@@ -702,10 +668,6 @@ public abstract class ElasticSearchSearchIndexBase implements SearchIndex, Searc
 
     public boolean isAuthorizationFilterEnabled() {
         return getConfig().isAuthorizationFilterEnabled();
-    }
-
-    public PropertyDefinition getPropertyDefinition(Graph graph, String propertyName) {
-        return getAllPropertyDefinitions().get(propertyName);
     }
 
     protected boolean isReservedFieldName(String fieldName) {

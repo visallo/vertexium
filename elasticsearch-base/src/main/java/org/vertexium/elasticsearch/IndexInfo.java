@@ -1,6 +1,6 @@
 package org.vertexium.elasticsearch;
 
-import org.vertexium.PropertyDefinition;
+import org.vertexium.Visibility;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -9,27 +9,15 @@ import java.util.Set;
 
 public class IndexInfo {
     private final String indexName;
-    private Map<String, PropertyDefinition> propertyDefinitions = new HashMap<>();
     private boolean elementTypeDefined;
+    private Map<String, PropertyInfo> propertyInfos = new HashMap<>();
 
     public IndexInfo(String indexName) {
         this.indexName = indexName;
     }
 
-    public void addPropertyDefinition(String propertyName, PropertyDefinition propertyDefinition) {
-        propertyDefinitions.put(propertyName, propertyDefinition);
-    }
-
-    public boolean isPropertyDefined(String propertyName) {
-        return propertyDefinitions.get(propertyName) != null;
-    }
-
     public String getIndexName() {
         return indexName;
-    }
-
-    public Map<String, PropertyDefinition> getPropertyDefinitions() {
-        return propertyDefinitions;
     }
 
     @Override
@@ -52,5 +40,34 @@ public class IndexInfo {
 
     public void setElementTypeDefined(boolean elementTypeDefined) {
         this.elementTypeDefined = elementTypeDefined;
+    }
+
+    public void addPropertyNameVisibility(String propertyName, Visibility visibility) {
+        PropertyInfo propertyInfo = propertyInfos.get(propertyName);
+        if (propertyInfo == null) {
+            propertyInfo = new PropertyInfo();
+            propertyInfos.put(propertyName, propertyInfo);
+        }
+        propertyInfo.addVisibility(visibility);
+    }
+
+    public boolean isPropertyDefined(String propertyName, Visibility visibility) {
+        PropertyInfo propertyInfo = propertyInfos.get(propertyName);
+        if (propertyInfo == null) {
+            return false;
+        }
+        return propertyInfo.hasVisibility(visibility);
+    }
+
+    private static class PropertyInfo {
+        private Set<Visibility> visibilities = new HashSet<>();
+
+        public void addVisibility(Visibility visibility) {
+            visibilities.add(visibility);
+        }
+
+        public boolean hasVisibility(Visibility visibility) {
+            return visibilities.contains(visibility);
+        }
     }
 }

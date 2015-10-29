@@ -53,7 +53,6 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
             Client client,
             Graph graph,
             String queryString,
-            Map<String, PropertyDefinition> propertyDefinitions,
             ScoringStrategy scoringStrategy,
             IndexSelectionStrategy indexSelectionStrategy,
             boolean evaluateQueryString,
@@ -62,7 +61,7 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
             int pageSize,
             Authorizations authorizations
     ) {
-        super(graph, queryString, propertyDefinitions, authorizations);
+        super(graph, queryString, authorizations);
         this.client = client;
         this.evaluateQueryString = evaluateQueryString;
         this.evaluateHasContainers = evaluateHasContainers;
@@ -78,7 +77,6 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
             Graph graph,
             String[] similarToFields,
             String similarToText,
-            Map<String, PropertyDefinition> propertyDefinitions,
             ScoringStrategy scoringStrategy,
             IndexSelectionStrategy indexSelectionStrategy,
             boolean evaluateQueryString,
@@ -87,7 +85,7 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
             int pageSize,
             Authorizations authorizations
     ) {
-        super(graph, similarToFields, similarToText, propertyDefinitions, authorizations);
+        super(graph, similarToFields, similarToText, authorizations);
         this.client = client;
         this.evaluateQueryString = evaluateQueryString;
         this.evaluateHasContainers = evaluateHasContainers;
@@ -363,6 +361,9 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
             throw new VertexiumNoMatchingPropertiesException(hasProperty.getKey());
         }
         PropertyDefinition propDef = getPropertyDefinition(hasProperty.getKey());
+        if (propDef == null) {
+            throw new VertexiumException("Could not find property definition for property name: " + hasProperty.getKey());
+        }
         List<FilterBuilder> filters = new ArrayList<>();
         for (String propertyName : propertyNames) {
             filters.add(FilterBuilders.existsFilter(propertyName));
@@ -402,7 +403,8 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
                         double lon = geoCircle.getLongitude();
                         double distance = geoCircle.getRadius();
 
-                        PropertyDefinition propertyDefinition = this.getPropertyDefinitions().get(propertyName);
+                        String inflatedPropertyName = getSearchIndex().inflatePropertyName(propertyName);
+                        PropertyDefinition propertyDefinition = getGraph().getPropertyDefinition(inflatedPropertyName);
                         if (propertyDefinition != null && propertyDefinition.getDataType() == GeoCircle.class) {
                             ShapeBuilder shapeBuilder = ShapeBuilder.newCircleBuilder()
                                     .center(lon, lat)
@@ -769,8 +771,8 @@ public abstract class ElasticSearchQueryBase extends QueryBase {
         return aggs;
     }
 
-    private PropertyDefinition getPropertyDefinition(String propertyName) {
-        return getSearchIndex().getPropertyDefinition(getGraph(), propertyName);
+    protected PropertyDefinition getPropertyDefinition(String propertyName) {
+        return getGraph().getPropertyDefinition(propertyName);
     }
 
     protected IndexSelectionStrategy getIndexSelectionStrategy() {

@@ -811,18 +811,6 @@ public interface Graph {
     void reindex(Authorizations authorizations);
 
     /**
-     * Creates a defines property builder. This is typically used by the indexer to give it hints on how it should index a property.
-     *
-     * @param propertyName The name of the property to define.
-     */
-    DefinePropertyBuilder defineProperty(String propertyName);
-
-    /**
-     * Determine if a property is already defined
-     */
-    boolean isPropertyDefined(String propertyName);
-
-    /**
      * Sets metadata on the graph.
      *
      * @param key   The key to the metadata.
@@ -967,4 +955,38 @@ public interface Graph {
      * Gets a count of the number of edges in the system.
      */
     long getEdgeCount(Authorizations authorizations);
+
+    /**
+     * Save a pre-made property definition.
+     *
+     * @param propertyDefinition the property definition to save.
+     */
+    void savePropertyDefinition(PropertyDefinition propertyDefinition);
+
+    /**
+     * Creates a defines property builder. This is typically used by the indexer to give it hints on how it should index a property.
+     *
+     * @param propertyName The name of the property to define.
+     */
+    DefinePropertyBuilder defineProperty(String propertyName);
+
+    /**
+     * Determine if a property is already defined
+     */
+    boolean isPropertyDefined(String propertyName);
+
+    /**
+     * Gets the property definition for the given name.
+     *
+     * @param propertyName name of the property
+     * @return the property definition if found. null otherwise.
+     */
+    PropertyDefinition getPropertyDefinition(String propertyName);
+
+    /**
+     * Gets all property definitions.
+     *
+     * @return all property definitions.
+     */
+    Collection<PropertyDefinition> getPropertyDefinitions();
 }

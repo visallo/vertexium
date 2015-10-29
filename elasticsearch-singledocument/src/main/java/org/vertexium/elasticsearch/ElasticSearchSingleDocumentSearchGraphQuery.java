@@ -14,13 +14,12 @@ public class ElasticSearchSingleDocumentSearchGraphQuery extends ElasticSearchSi
             Client client,
             Graph graph,
             String queryString,
-            Map<String, PropertyDefinition> propertyDefinitions,
             ScoringStrategy scoringStrategy,
             IndexSelectionStrategy indexSelectionStrategy,
             int pageSize,
             Authorizations authorizations
     ) {
-        super(client, graph, queryString, propertyDefinitions, scoringStrategy, indexSelectionStrategy, pageSize, authorizations);
+        super(client, graph, queryString, scoringStrategy, indexSelectionStrategy, pageSize, authorizations);
     }
 
     public ElasticSearchSingleDocumentSearchGraphQuery(
@@ -28,12 +27,11 @@ public class ElasticSearchSingleDocumentSearchGraphQuery extends ElasticSearchSi
             Graph graph,
             String[] similarToFields,
             String similarToText,
-            Map<String, PropertyDefinition> propertyDefinitions,
             ScoringStrategy scoringStrategy,
             IndexSelectionStrategy indexSelectionStrategy,
             int pageSize,
             Authorizations authorizations
     ) {
-        super(client, graph, similarToFields, similarToText, propertyDefinitions, scoringStrategy, indexSelectionStrategy, pageSize, authorizations);
+        super(client, graph, similarToFields, similarToText, scoringStrategy, indexSelectionStrategy, pageSize, authorizations);
     }
 }

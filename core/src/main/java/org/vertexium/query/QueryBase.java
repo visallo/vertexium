@@ -3,23 +3,23 @@ package org.vertexium.query;
 import org.vertexium.*;
 import org.vertexium.util.IterableUtils;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.EnumSet;
+import java.util.List;
 
 public abstract class QueryBase implements Query, SimilarToGraphQuery {
     private final Graph graph;
-    private final Map<String, PropertyDefinition> propertyDefinitions;
     private final QueryParameters parameters;
     private List<Aggregation> aggregations = new ArrayList<>();
 
-    protected QueryBase(Graph graph, String queryString, Map<String, PropertyDefinition> propertyDefinitions, Authorizations authorizations) {
+    protected QueryBase(Graph graph, String queryString, Authorizations authorizations) {
         this.graph = graph;
-        this.propertyDefinitions = propertyDefinitions;
         this.parameters = new QueryStringQueryParameters(queryString, authorizations);
     }
 
-    protected QueryBase(Graph graph, String[] similarToFields, String similarToText, Map<String, PropertyDefinition> propertyDefinitions, Authorizations authorizations) {
+    protected QueryBase(Graph graph, String[] similarToFields, String similarToText, Authorizations authorizations) {
         this.graph = graph;
-        this.propertyDefinitions = propertyDefinitions;
         this.parameters = new SimilarToTextQueryParameters(similarToFields, similarToText, authorizations);
     }
 
@@ -89,10 +89,10 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
     @Override
     public <T> Query range(String propertyName, T startValue, boolean inclusiveStartValue, T endValue, boolean inclusiveEndValue) {
         if (startValue != null) {
-            this.parameters.addHasContainer(new HasValueContainer(propertyName, inclusiveStartValue ? Compare.GREATER_THAN_EQUAL : Compare.GREATER_THAN, startValue, this.propertyDefinitions));
+            this.parameters.addHasContainer(new HasValueContainer(propertyName, inclusiveStartValue ? Compare.GREATER_THAN_EQUAL : Compare.GREATER_THAN, startValue, getGraph().getPropertyDefinitions()));
         }
         if (endValue != null) {
-            this.parameters.addHasContainer(new HasValueContainer(propertyName, inclusiveEndValue ? Compare.LESS_THAN_EQUAL : Compare.LESS_THAN, endValue, this.propertyDefinitions));
+            this.parameters.addHasContainer(new HasValueContainer(propertyName, inclusiveEndValue ? Compare.LESS_THAN_EQUAL : Compare.LESS_THAN, endValue, getGraph().getPropertyDefinitions()));
         }
         return this;
     }
@@ -105,19 +105,19 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
 
     @Override
     public <T> Query has(String propertyName, T value) {
-        this.parameters.addHasContainer(new HasValueContainer(propertyName, Compare.EQUAL, value, this.propertyDefinitions));
+        this.parameters.addHasContainer(new HasValueContainer(propertyName, Compare.EQUAL, value, getGraph().getPropertyDefinitions()));
         return this;
     }
 
     @Override
     public <T> Query hasNot(String propertyName, T value) {
-        this.parameters.addHasContainer(new HasValueContainer(propertyName, Contains.NOT_IN, new Object[]{value}, this.propertyDefinitions));
+        this.parameters.addHasContainer(new HasValueContainer(propertyName, Contains.NOT_IN, new Object[]{value}, getGraph().getPropertyDefinitions()));
         return this;
     }
 
     @Override
     public <T> Query has(String propertyName, Predicate predicate, T value) {
-        this.parameters.addHasContainer(new HasValueContainer(propertyName, predicate, value, this.propertyDefinitions));
+        this.parameters.addHasContainer(new HasValueContainer(propertyName, predicate, value, getGraph().getPropertyDefinitions()));
         return this;
     }
 
@@ -159,10 +159,6 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
         return parameters;
     }
 
-    protected Map<String, PropertyDefinition> getPropertyDefinitions() {
-        return propertyDefinitions;
-    }
-
     public static abstract class HasContainer {
         public abstract boolean isMatch(Element elem);
 
@@ -194,9 +190,9 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
         public String key;
         public Object value;
         public Predicate predicate;
-        private final Map<String, PropertyDefinition> propertyDefinitions;
+        private final Collection<PropertyDefinition> propertyDefinitions;
 
-        public HasValueContainer(final String key, final Predicate predicate, final Object value, Map<String, PropertyDefinition> propertyDefinitions) {
+        public HasValueContainer(final String key, final Predicate predicate, final Object value, Collection<PropertyDefinition> propertyDefinitions) {
             this.key = key;
             this.value = value;
             this.predicate = predicate;

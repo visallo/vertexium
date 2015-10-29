@@ -6,8 +6,8 @@ import java.util.EnumSet;
 import java.util.Map;
 
 public class DefaultVertexQuery extends VertexQueryBase implements VertexQuery {
-    public DefaultVertexQuery(Graph graph, Vertex sourceVertex, String queryString, Map<String, PropertyDefinition> propertyDefinitions, Authorizations authorizations) {
-        super(graph, sourceVertex, queryString, propertyDefinitions, authorizations);
+    public DefaultVertexQuery(Graph graph, Vertex sourceVertex, String queryString, Authorizations authorizations) {
+        super(graph, sourceVertex, queryString, authorizations);
     }
 
     @Override

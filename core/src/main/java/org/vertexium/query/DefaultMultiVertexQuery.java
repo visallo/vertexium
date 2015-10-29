@@ -5,13 +5,12 @@ import org.vertexium.util.IterableUtils;
 import org.vertexium.util.VerticesToEdgeIdsIterable;
 
 import java.util.EnumSet;
-import java.util.Map;
 
 public class DefaultMultiVertexQuery extends QueryBase implements MultiVertexQuery {
     private final String[] vertexIds;
 
-    public DefaultMultiVertexQuery(Graph graph, String[] vertexIds, String queryString, Map<String, PropertyDefinition> propertyDefinitions, Authorizations authorizations) {
-        super(graph, queryString, propertyDefinitions, authorizations);
+    public DefaultMultiVertexQuery(Graph graph, String[] vertexIds, String queryString, Authorizations authorizations) {
+        super(graph, queryString, authorizations);
         this.vertexIds = vertexIds;
     }
 

@@ -3,6 +3,7 @@ package org.vertexium;
 import org.vertexium.event.GraphEvent;
 import org.vertexium.event.GraphEventListener;
 import org.vertexium.id.IdGenerator;
+import org.vertexium.property.StreamingPropertyValue;
 import org.vertexium.query.GraphQuery;
 import org.vertexium.query.MultiVertexQuery;
 import org.vertexium.query.SimilarToGraphQuery;
@@ -17,7 +18,9 @@ import static org.vertexium.util.Preconditions.checkNotNull;
 public abstract class GraphBase implements Graph {
     private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(GraphBase.class);
     protected static final VertexiumLogger QUERY_LOGGER = VertexiumLoggerFactory.getQueryLogger(Graph.class);
+    public static final String METADATA_DEFINE_PROPERTY_PREFIX = "defineProperty.";
     private final List<GraphEventListener> graphEventListeners = new ArrayList<>();
+    private Map<String, PropertyDefinition> propertyDefinitionCache = new HashMap<>();
 
     protected GraphBase() {
 
@@ -666,12 +669,6 @@ public abstract class GraphBase implements Graph {
     public abstract void shutdown();
 
     @Override
-    public abstract DefinePropertyBuilder defineProperty(String propertyName);
-
-    @Override
-    public abstract boolean isPropertyDefined(String propertyName);
-
-    @Override
     public abstract void drop();
 
     @Override
@@ -791,4 +788,61 @@ public abstract class GraphBase implements Graph {
 
     @Override
     public abstract Authorizations createAuthorizations(String... auths);
+
+    @Override
+    public DefinePropertyBuilder defineProperty(String propertyName) {
+        return new DefinePropertyBuilder(propertyName) {
+            @Override
+            public PropertyDefinition define() {
+                PropertyDefinition propertyDefinition = super.define();
+                savePropertyDefinition(propertyDefinition);
+                return propertyDefinition;
+            }
+        };
+    }
+
+    protected void addToPropertyDefinitionCache(PropertyDefinition propertyDefinition) {
+        propertyDefinitionCache.put(propertyDefinition.getPropertyName(), propertyDefinition);
+    }
+
+    public void savePropertyDefinition(PropertyDefinition propertyDefinition) {
+        addToPropertyDefinitionCache(propertyDefinition);
+        setMetadata(getPropertyDefinitionKey(propertyDefinition.getPropertyName()), propertyDefinition);
+    }
+
+    private String getPropertyDefinitionKey(String propertyName) {
+        return METADATA_DEFINE_PROPERTY_PREFIX + propertyName;
+    }
+
+    @Override
+    public PropertyDefinition getPropertyDefinition(String propertyName) {
+        PropertyDefinition propertyDefinition = propertyDefinitionCache.get(propertyName);
+        if (propertyDefinition != null) {
+            return propertyDefinition;
+        }
+        return (PropertyDefinition) getMetadata(getPropertyDefinitionKey(propertyName));
+    }
+
+    @Override
+    public Collection<PropertyDefinition> getPropertyDefinitions() {
+        return propertyDefinitionCache.values();
+    }
+
+    @Override
+    public boolean isPropertyDefined(String propertyName) {
+        return propertyDefinitionCache.containsKey(propertyName);
+    }
+
+    protected void ensurePropertyDefined(String name, Object value) {
+        PropertyDefinition propertyDefinition = getPropertyDefinition(name);
+        if (propertyDefinition == null) {
+            Class<?> valueClass = value.getClass();
+            if (value instanceof StreamingPropertyValue) {
+                valueClass = ((StreamingPropertyValue) value).getValueType();
+            }
+            LOGGER.warn("creating default property definition because a previous definition could not be found for property \"" + name + "\" of type " + valueClass);
+            propertyDefinition = new PropertyDefinition(name, valueClass, TextIndexHint.ALL);
+        }
+        savePropertyDefinition(propertyDefinition);
+    }
 }

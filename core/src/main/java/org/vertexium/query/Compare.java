@@ -1,23 +1,20 @@
 package org.vertexium.query;
 
-import org.vertexium.DateOnly;
-import org.vertexium.Property;
-import org.vertexium.PropertyDefinition;
-import org.vertexium.TextIndexHint;
+import org.vertexium.*;
 import org.vertexium.property.StreamingPropertyValue;
 
+import java.util.Collection;
 import java.util.Date;
-import java.util.Map;
 
 public enum Compare implements Predicate {
     EQUAL, NOT_EQUAL, GREATER_THAN, GREATER_THAN_EQUAL, LESS_THAN, LESS_THAN_EQUAL;
 
     @Override
-    public boolean evaluate(final Iterable<Property> properties, final Object second, Map<String, PropertyDefinition> propertyDefinitions) {
+    public boolean evaluate(final Iterable<Property> properties, final Object second, Collection<PropertyDefinition> propertyDefinitions) {
         boolean foundProperties = false;
         for (Property property : properties) {
             foundProperties = true;
-            PropertyDefinition propertyDefinition = propertyDefinitions.get(property.getName());
+            PropertyDefinition propertyDefinition = PropertyDefinition.findPropertyDefinition(propertyDefinitions, property.getName());
             if (evaluate(property, second, propertyDefinition)) {
                 return true;
             }

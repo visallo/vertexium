@@ -523,6 +523,8 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
             Long timestamp,
             Authorizations authorizations
     ) {
+        ensurePropertyDefined(name, value);
+
         if (timestamp == null) {
             timestamp = IncreasingTime.currentTimeMillis();
         }

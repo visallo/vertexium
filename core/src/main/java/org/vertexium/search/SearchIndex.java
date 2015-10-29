@@ -36,10 +36,6 @@ public interface SearchIndex {
 
     void shutdown();
 
-    void addPropertyDefinition(Graph graph, PropertyDefinition propertyDefinition) throws IOException;
-
-    boolean isPropertyDefined(String propertyName);
-
     boolean isFieldBoostSupported();
 
     void truncate();

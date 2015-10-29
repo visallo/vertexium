@@ -4,15 +4,15 @@ import org.vertexium.Property;
 import org.vertexium.PropertyDefinition;
 import org.vertexium.VertexiumException;
 
-import java.util.Map;
+import java.util.Collection;
 
 public enum Contains implements Predicate {
     IN, NOT_IN;
 
     @Override
-    public boolean evaluate(Iterable<Property> properties, Object second, Map<String, PropertyDefinition> propertyDefinitions) {
+    public boolean evaluate(Iterable<Property> properties, Object second, Collection<PropertyDefinition> propertyDefinitions) {
         for (Property property : properties) {
-            PropertyDefinition propertyDefinition = propertyDefinitions.get(property.getName());
+            PropertyDefinition propertyDefinition = PropertyDefinition.findPropertyDefinition(propertyDefinitions, property.getName());
             if (evaluate(property, second, propertyDefinition)) {
                 return true;
             }

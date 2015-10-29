@@ -11,7 +11,6 @@ import org.vertexium.query.*;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 
 public class ElasticSearchSingleDocumentSearchQueryBase extends ElasticSearchQueryBase implements
         GraphQueryWithHistogramAggregation,
@@ -22,13 +21,12 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends ElasticSearchQue
             Client client,
             Graph graph,
             String queryString,
-            Map<String, PropertyDefinition> propertyDefinitions,
             ScoringStrategy scoringStrategy,
             IndexSelectionStrategy indexSelectionStrategy,
             int pageSize,
             Authorizations authorizations
     ) {
-        super(client, graph, queryString, propertyDefinitions, scoringStrategy, indexSelectionStrategy, false, true, false, pageSize, authorizations);
+        super(client, graph, queryString, scoringStrategy, indexSelectionStrategy, false, true, false, pageSize, authorizations);
     }
 
     public ElasticSearchSingleDocumentSearchQueryBase(
@@ -36,13 +34,12 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends ElasticSearchQue
             Graph graph,
             String[] similarToFields,
             String similarToText,
-            Map<String, PropertyDefinition> propertyDefinitions,
             ScoringStrategy scoringStrategy,
             IndexSelectionStrategy indexSelectionStrategy,
             int pageSize,
             Authorizations authorizations
     ) {
-        super(client, graph, similarToFields, similarToText, propertyDefinitions, scoringStrategy, indexSelectionStrategy, false, true, false, pageSize, authorizations);
+        super(client, graph, similarToFields, similarToText, scoringStrategy, indexSelectionStrategy, false, true, false, pageSize, authorizations);
     }
 
     @Override
@@ -150,7 +147,7 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends ElasticSearchQue
             } else if (Edge.LABEL_PROPERTY_NAME.equals(sortContainer.propertyName)) {
                 q.addSort(ElasticSearchSearchIndexBase.EDGE_LABEL_FIELD_NAME, esOrder);
             } else {
-                PropertyDefinition propertyDefinition = getSearchIndex().getPropertyDefinition(getGraph(), sortContainer.propertyName);
+                PropertyDefinition propertyDefinition = getGraph().getPropertyDefinition(sortContainer.propertyName);
                 if (propertyDefinition == null) {
                     continue;
                 }
