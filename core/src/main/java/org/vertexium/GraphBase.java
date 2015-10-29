@@ -4,6 +4,7 @@ import org.vertexium.event.GraphEvent;
 import org.vertexium.event.GraphEventListener;
 import org.vertexium.id.IdGenerator;
 import org.vertexium.property.StreamingPropertyValue;
+import org.vertexium.property.StreamingPropertyValueRef;
 import org.vertexium.query.GraphQuery;
 import org.vertexium.query.MultiVertexQuery;
 import org.vertexium.query.SimilarToGraphQuery;
@@ -836,13 +837,20 @@ public abstract class GraphBase implements Graph {
     public void ensurePropertyDefined(String name, Object value) {
         PropertyDefinition propertyDefinition = getPropertyDefinition(name);
         if (propertyDefinition == null) {
-            Class<?> valueClass = value.getClass();
-            if (value instanceof StreamingPropertyValue) {
-                valueClass = ((StreamingPropertyValue) value).getValueType();
-            }
+            Class<?> valueClass = getValueType(value);
             LOGGER.warn("creating default property definition because a previous definition could not be found for property \"" + name + "\" of type " + valueClass);
             propertyDefinition = new PropertyDefinition(name, valueClass, TextIndexHint.ALL);
         }
         savePropertyDefinition(propertyDefinition);
+    }
+
+    protected Class<?> getValueType(Object value) {
+        Class<?> valueClass = value.getClass();
+        if (value instanceof StreamingPropertyValue) {
+            valueClass = ((StreamingPropertyValue) value).getValueType();
+        } else if (value instanceof StreamingPropertyValueRef) {
+            valueClass = ((StreamingPropertyValueRef) value).getValueType();
+        }
+        return valueClass;
     }
 }

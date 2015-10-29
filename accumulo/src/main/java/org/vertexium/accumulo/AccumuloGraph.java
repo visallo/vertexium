@@ -2379,6 +2379,14 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         }
     }
 
+    @Override
+    protected Class<?> getValueType(Object value) {
+        if (value instanceof StreamingPropertyValueTableRef) {
+            return ((StreamingPropertyValueTableRef) value).getValueType();
+        }
+        return super.getValueType(value);
+    }
+
     private class AccumuloGraphMetadataStore extends GraphMetadataStore {
         private final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(AccumuloGraphMetadataStore.class);
         private final Pattern ZK_PATH_REPLACEMENT_PATTERN = Pattern.compile("[^a-zA-Z]+");
