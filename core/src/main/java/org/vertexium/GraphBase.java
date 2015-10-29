@@ -821,7 +821,11 @@ public abstract class GraphBase implements Graph {
         if (propertyDefinition != null) {
             return propertyDefinition;
         }
-        return (PropertyDefinition) getMetadata(getPropertyDefinitionKey(propertyName));
+        propertyDefinition = (PropertyDefinition) getMetadata(getPropertyDefinitionKey(propertyName));
+        if (propertyDefinition != null) {
+            propertyDefinitionCache.put(propertyName, propertyDefinition);
+        }
+        return propertyDefinition;
     }
 
     @Override
@@ -836,11 +840,12 @@ public abstract class GraphBase implements Graph {
 
     public void ensurePropertyDefined(String name, Object value) {
         PropertyDefinition propertyDefinition = getPropertyDefinition(name);
-        if (propertyDefinition == null) {
-            Class<?> valueClass = getValueType(value);
-            LOGGER.warn("creating default property definition because a previous definition could not be found for property \"" + name + "\" of type " + valueClass);
-            propertyDefinition = new PropertyDefinition(name, valueClass, TextIndexHint.ALL);
+        if (propertyDefinition != null) {
+            return;
         }
+        Class<?> valueClass = getValueType(value);
+        LOGGER.warn("creating default property definition because a previous definition could not be found for property \"" + name + "\" of type " + valueClass);
+        propertyDefinition = new PropertyDefinition(name, valueClass, TextIndexHint.ALL);
         savePropertyDefinition(propertyDefinition);
     }
 
