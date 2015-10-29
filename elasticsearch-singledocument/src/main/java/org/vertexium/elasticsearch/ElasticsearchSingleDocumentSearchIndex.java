@@ -3,31 +3,45 @@ package org.vertexium.elasticsearch;
 import com.google.common.base.Throwables;
 import net.jodah.recurrent.Recurrent;
 import net.jodah.recurrent.RetryPolicy;
+import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
+import org.elasticsearch.action.admin.cluster.health.ClusterHealthStatus;
+import org.elasticsearch.action.admin.indices.create.CreateIndexResponse;
+import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
+import org.elasticsearch.action.admin.indices.stats.IndexStats;
+import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
+import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchType;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.action.update.UpdateResponse;
+import org.elasticsearch.client.Client;
 import org.elasticsearch.client.Requests;
+import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.common.settings.ImmutableSettings;
+import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.index.engine.VersionConflictEngineException;
 import org.elasticsearch.index.query.FilteredQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.TermFilterBuilder;
+import org.elasticsearch.node.Node;
+import org.elasticsearch.node.NodeBuilder;
 import org.elasticsearch.search.aggregations.Aggregation;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsBuilder;
 import org.vertexium.*;
 import org.vertexium.id.NameSubstitutionStrategy;
 import org.vertexium.property.StreamingPropertyValue;
-import org.vertexium.query.GraphQuery;
-import org.vertexium.query.SimilarToGraphQuery;
-import org.vertexium.query.VertexQuery;
+import org.vertexium.query.*;
+import org.vertexium.search.SearchIndex;
+import org.vertexium.search.SearchIndexWithVertexPropertyCountByValue;
 import org.vertexium.type.GeoCircle;
 import org.vertexium.type.GeoPoint;
 import org.vertexium.type.GeoShape;
+import org.vertexium.type.IpV4Address;
 import org.vertexium.util.ConfigurationUtils;
 import org.vertexium.util.StreamUtils;
 import org.vertexium.util.VertexiumLogger;
@@ -44,8 +58,31 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchIndexBase {
+import static org.vertexium.util.Preconditions.checkNotNull;
+
+public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, SearchIndexWithVertexPropertyCountByValue {
     private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(ElasticsearchSingleDocumentSearchIndex.class);
+    protected static final VertexiumLogger MUTATION_LOGGER = VertexiumLoggerFactory.getMutationLogger(SearchIndex.class);
+    public static final String ELEMENT_TYPE = "element";
+    public static final String ELEMENT_TYPE_FIELD_NAME = "__elementType";
+    public static final String VISIBILITY_FIELD_NAME = "__visibility";
+    public static final String OUT_VERTEX_ID_FIELD_NAME = "__outVertexId";
+    public static final String IN_VERTEX_ID_FIELD_NAME = "__inVertexId";
+    public static final String EDGE_LABEL_FIELD_NAME = "__edgeLabel";
+    public static final String EXACT_MATCH_PROPERTY_NAME_SUFFIX = "_e";
+    public static final String GEO_PROPERTY_NAME_SUFFIX = "_g";
+    public static final int MAX_BATCH_COUNT = 25000;
+    public static final long MAX_BATCH_SIZE = 15 * 1024 * 1024;
+    public static final int EXACT_MATCH_IGNORE_ABOVE_LIMIT = 10000;
+    private static final long IN_PROCESS_NODE_WAIT_TIME_MS = 10 * 60 * 1000;
+    private final Client client;
+    private final ElasticSearchSearchIndexConfiguration config;
+    private final Map<String, IndexInfo> indexInfos = new HashMap<>();
+    private int indexInfosLastSize = 0; // Used to prevent creating a index name array each time
+    private String[] indexNamesAsArray;
+    private IndexSelectionStrategy indexSelectionStrategy;
+    private boolean allFieldEnabled;
+    private Node inProcessNode;
     public static final Pattern PROPERTY_NAME_PATTERN = Pattern.compile("^(.*?)(_([0-9a-f]{32}))?(_([a-z]))?$");
     public static final Pattern AGGREGATION_NAME_PATTERN = Pattern.compile("(.*?)_([0-9a-f]+)");
     public static final String CONFIG_PROPERTY_NAME_VISIBILITIES_STORE = "propertyNameVisibilitiesStore";
@@ -55,36 +92,130 @@ public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchI
     private final Random random = new Random();
 
     public ElasticsearchSingleDocumentSearchIndex(Graph graph, GraphConfiguration config) {
-        super(graph, config);
-        this.nameSubstitutionStrategy = getConfig().getNameSubstitutionStrategy();
+        this.config = new ElasticSearchSearchIndexConfiguration(graph, config);
+        this.nameSubstitutionStrategy = this.config.getNameSubstitutionStrategy();
+        this.indexSelectionStrategy = this.config.getIndexSelectionStrategy();
+        this.allFieldEnabled = this.config.isAllFieldEnabled(false);
         this.propertyNameVisibilitiesStore = createPropertyNameVisibilitiesStore(graph, config);
+        this.client = createClient(this.config);
+        loadIndexInfos(graph);
+    }
+
+    protected Client createClient(ElasticSearchSearchIndexConfiguration config) {
+        if (config.isInProcessNode()) {
+            return createInProcessNode(config);
+        } else {
+            return createTransportClient(config);
+        }
+    }
+
+    private Client createInProcessNode(ElasticSearchSearchIndexConfiguration config) {
+        String dataPath = config.getInProcessNodeDataPath();
+        checkNotNull(dataPath, ElasticSearchSearchIndexConfiguration.IN_PROCESS_NODE_DATA_PATH + " is required for in process Elasticsearch node");
+        String logsPath = config.getInProcessNodeLogsPath();
+        checkNotNull(logsPath, ElasticSearchSearchIndexConfiguration.IN_PROCESS_NODE_LOGS_PATH + " is required for in process Elasticsearch node");
+        String workPath = config.getInProcessNodeWorkPath();
+        checkNotNull(workPath, ElasticSearchSearchIndexConfiguration.IN_PROCESS_NODE_WORK_PATH + " is required for in process Elasticsearch node");
+        int numberOfShards = config.getNumberOfShards();
+
+        NodeBuilder nodeBuilder = NodeBuilder
+                .nodeBuilder();
+        if (config.getClusterName() != null) {
+            nodeBuilder = nodeBuilder.clusterName(config.getClusterName());
+        }
+        this.inProcessNode = nodeBuilder
+                .local(false)
+                .settings(
+                        ImmutableSettings.settingsBuilder()
+                                .put("script.disable_dynamic", "false")
+                                .put("gateway.type", "local")
+                                .put("index.number_of_shards", numberOfShards)
+                                .put("index.number_of_replicas", "0")
+                                .put("path.data", dataPath)
+                                .put("path.logs", logsPath)
+                                .put("path.work", workPath)
+                ).node();
+        inProcessNode.start();
+        Client client = inProcessNode.client();
+
+        long startTime = System.currentTimeMillis();
+        while (true) {
+            if (System.currentTimeMillis() > startTime + IN_PROCESS_NODE_WAIT_TIME_MS) {
+                throw new VertexiumException("Status failed to exit red status after waiting " + IN_PROCESS_NODE_WAIT_TIME_MS + "ms. Giving up.");
+            }
+            ClusterHealthResponse health = client.admin().cluster().prepareHealth().get();
+            if (health.getStatus() != ClusterHealthStatus.RED) {
+                break;
+            }
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                throw new VertexiumException("Could not sleep", e);
+            }
+            LOGGER.info("Status is %s, waiting...", health.getStatus());
+        }
+        return client;
+    }
+
+    private static TransportClient createTransportClient(ElasticSearchSearchIndexConfiguration config) {
+        ImmutableSettings.Builder settingsBuilder = ImmutableSettings.settingsBuilder();
+        if (config.getClusterName() != null) {
+            settingsBuilder.put("cluster.name", config.getClusterName());
+        }
+        TransportClient transportClient = new TransportClient(settingsBuilder.build());
+        for (String esLocation : config.getEsLocations()) {
+            String[] locationSocket = esLocation.split(":");
+            String hostname;
+            int port;
+            if (locationSocket.length == 2) {
+                hostname = locationSocket[0];
+                port = Integer.parseInt(locationSocket[1]);
+            } else if (locationSocket.length == 1) {
+                hostname = locationSocket[0];
+                port = config.getPort();
+            } else {
+                throw new VertexiumException("Invalid elastic search location: " + esLocation);
+            }
+            transportClient.addTransportAddress(new InetSocketTransportAddress(hostname, port));
+        }
+        return transportClient;
+    }
+
+    protected final boolean isAllFieldEnabled() {
+        return allFieldEnabled;
+    }
+
+    private Map<String, IndexStats> getExistingIndexNames() {
+        return client.admin().indices().prepareStats().execute().actionGet().getIndices();
+    }
+
+    protected void loadIndexInfos(Graph graph) {
+        Map<String, IndexStats> indices = getExistingIndexNames();
+        for (String indexName : indices.keySet()) {
+            if (!indexSelectionStrategy.isIncluded(this, indexName)) {
+                LOGGER.debug("skipping index %s, not in indicesToQuery", indexName);
+                continue;
+            }
+
+            IndexInfo indexInfo = indexInfos.get(indexName);
+            if (indexInfo != null) {
+                continue;
+            }
+
+            LOGGER.debug("loading index info for %s", indexName);
+            indexInfo = createIndexInfo(indexName);
+            addPropertyNameVisibility(graph, indexInfo, ELEMENT_TYPE_FIELD_NAME, null);
+            addPropertyNameVisibility(graph, indexInfo, VISIBILITY_FIELD_NAME, null);
+            addPropertyNameVisibility(graph, indexInfo, OUT_VERTEX_ID_FIELD_NAME, null);
+            addPropertyNameVisibility(graph, indexInfo, IN_VERTEX_ID_FIELD_NAME, null);
+            addPropertyNameVisibility(graph, indexInfo, EDGE_LABEL_FIELD_NAME, null);
+            indexInfos.put(indexName, indexInfo);
+        }
     }
 
     private PropertyNameVisibilitiesStore createPropertyNameVisibilitiesStore(Graph graph, GraphConfiguration config) {
         String className = config.getString(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + CONFIG_PROPERTY_NAME_VISIBILITIES_STORE, DEFAULT_PROPERTY_NAME_VISIBILITIES_STORE.getName());
         return ConfigurationUtils.createProvider(className, graph, config);
-    }
-
-    @Override
-    public void shutdown() {
-        super.shutdown();
-        if (propertyNameVisibilitiesStore instanceof Closeable) {
-            try {
-                ((Closeable) propertyNameVisibilitiesStore).close();
-            } catch (IOException e) {
-                Throwables.propagate(e);
-            }
-        }
-    }
-
-    @Override
-    protected boolean isStoreSourceData() {
-        return true;
-    }
-
-    @Override
-    protected boolean getDefaultAllFieldEnabled() {
-        return false;
     }
 
     @SuppressWarnings("unchecked")
@@ -206,7 +337,7 @@ public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchI
     private String addElementTypeVisibilityPropertyToIndex(Graph graph, Element element) throws IOException {
         String elementTypeVisibilityPropertyName = deflatePropertyName(graph, ELEMENT_TYPE_FIELD_NAME, element.getVisibility());
         String indexName = getIndexName(element);
-        IndexInfo indexInfo = ensureIndexCreatedAndInitialized(indexName, isStoreSourceData());
+        IndexInfo indexInfo = ensureIndexCreatedAndInitialized(indexName);
         addPropertyToIndex(graph, indexInfo, elementTypeVisibilityPropertyName, element.getVisibility(), String.class, false, false);
         return elementTypeVisibilityPropertyName;
     }
@@ -272,7 +403,6 @@ public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchI
         }
     }
 
-    @Override
     protected String deflatePropertyName(Graph graph, Property property) {
         String propertyName = property.getName();
         Visibility propertyVisibility = property.getVisibility();
@@ -284,13 +414,12 @@ public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchI
         return this.nameSubstitutionStrategy.deflate(propertyName) + "_" + visibilityHash;
     }
 
-    @Override
     protected String inflatePropertyName(String string) {
         Matcher m = PROPERTY_NAME_PATTERN.matcher(string);
         if (m.matches()) {
             string = m.group(1);
         }
-        return super.inflatePropertyName(string);
+        return nameSubstitutionStrategy.inflate(string);
     }
 
     private String inflatePropertyNameWithTypeSuffix(String string) {
@@ -302,10 +431,9 @@ public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchI
                 string = m.group(1);
             }
         }
-        return super.inflatePropertyName(string);
+        return nameSubstitutionStrategy.inflate(string);
     }
 
-    @Override
     public String getPropertyVisibilityHashFromDeflatedPropertyName(String deflatedPropertyName) {
         Matcher m = PROPERTY_NAME_PATTERN.matcher(deflatedPropertyName);
         if (m.matches()) {
@@ -314,7 +442,6 @@ public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchI
         throw new VertexiumException("Could not match property name: " + deflatedPropertyName);
     }
 
-    @Override
     public String getAggregationName(String name) {
         Matcher m = AGGREGATION_NAME_PATTERN.matcher(name);
         if (m.matches()) {
@@ -323,7 +450,6 @@ public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchI
         throw new VertexiumException("Could not get aggregation name from: " + name);
     }
 
-    @Override
     public String[] getAllMatchingPropertyNames(Graph graph, String propertyName, Authorizations authorizations) {
         Collection<String> hashes = this.propertyNameVisibilitiesStore.getHashes(graph, propertyName, authorizations);
         if (hashes.size() == 0) {
@@ -454,10 +580,26 @@ public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchI
         return true;
     }
 
-    @Override
     protected boolean addPropertyDefinitionToIndex(Graph graph, IndexInfo indexInfo, String propertyName, Visibility propertyVisibility, PropertyDefinition propertyDefinition) throws IOException {
-        // unlike our super class we need to lazily add property definitions to the index because the property names are different depending on visibility.
-        return false;
+        if (propertyDefinition.getDataType() == String.class) {
+            if (propertyDefinition.getTextIndexHints().contains(TextIndexHint.EXACT_MATCH)) {
+                addPropertyToIndex(graph, indexInfo, propertyName + EXACT_MATCH_PROPERTY_NAME_SUFFIX, propertyVisibility, String.class, false, propertyDefinition.getBoost(), propertyDefinition.isSortable());
+            }
+            if (propertyDefinition.getTextIndexHints().contains(TextIndexHint.FULL_TEXT)) {
+                addPropertyToIndex(graph, indexInfo, propertyName, propertyVisibility, String.class, true, propertyDefinition.getBoost(), propertyDefinition.isSortable());
+            }
+            return true;
+        }
+
+        if (propertyDefinition.getDataType() == GeoPoint.class
+                || propertyDefinition.getDataType() == GeoCircle.class) {
+            addPropertyToIndex(graph, indexInfo, propertyName + GEO_PROPERTY_NAME_SUFFIX, propertyVisibility, propertyDefinition.getDataType(), true, propertyDefinition.getBoost(), propertyDefinition.isSortable());
+            addPropertyToIndex(graph, indexInfo, propertyName, propertyVisibility, String.class, true, propertyDefinition.getBoost(), propertyDefinition.isSortable());
+            return true;
+        }
+
+        addPropertyToIndex(graph, indexInfo, propertyName, propertyVisibility, propertyDefinition.getDataType(), true, propertyDefinition.getBoost(), propertyDefinition.isSortable());
+        return true;
     }
 
     protected PropertyDefinition getPropertyDefinition(Graph graph, String propertyName) {
@@ -465,7 +607,6 @@ public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchI
         return graph.getPropertyDefinition(propertyName);
     }
 
-    @Override
     public void addPropertyToIndex(Graph graph, IndexInfo indexInfo, Property property) throws IOException {
         // unlike the super class we need to lookup property definitions based on the property name without
         // the hash and define the property that way.
@@ -474,27 +615,59 @@ public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchI
         PropertyDefinition propertyDefinition = getPropertyDefinition(graph, property.getName());
         if (propertyDefinition != null) {
             String deflatedPropertyName = deflatePropertyName(graph, property);
-            super.addPropertyDefinitionToIndex(graph, indexInfo, deflatedPropertyName, property.getVisibility(), propertyDefinition);
+            addPropertyDefinitionToIndex(graph, indexInfo, deflatedPropertyName, property.getVisibility(), propertyDefinition);
         } else {
-            super.addPropertyToIndex(graph, indexInfo, property);
+            addPropertyToIndexInner(graph, indexInfo, property);
         }
 
         propertyDefinition = getPropertyDefinition(graph, property.getName() + EXACT_MATCH_PROPERTY_NAME_SUFFIX);
         if (propertyDefinition != null) {
             String deflatedPropertyName = deflatePropertyName(graph, property);
-            super.addPropertyDefinitionToIndex(graph, indexInfo, deflatedPropertyName, property.getVisibility(), propertyDefinition);
+            addPropertyDefinitionToIndex(graph, indexInfo, deflatedPropertyName, property.getVisibility(), propertyDefinition);
         }
 
         if (propertyValue instanceof GeoShape) {
             propertyDefinition = getPropertyDefinition(graph, property.getName() + GEO_PROPERTY_NAME_SUFFIX);
             if (propertyDefinition != null) {
                 String deflatedPropertyName = deflatePropertyName(graph, property);
-                super.addPropertyDefinitionToIndex(graph, indexInfo, deflatedPropertyName, property.getVisibility(), propertyDefinition);
+                addPropertyDefinitionToIndex(graph, indexInfo, deflatedPropertyName, property.getVisibility(), propertyDefinition);
             }
         }
     }
 
-    @Override
+    public void addPropertyToIndexInner(Graph graph, IndexInfo indexInfo, Property property) throws IOException {
+        String deflatedPropertyName = deflatePropertyName(graph, property);
+
+        if (indexInfo.isPropertyDefined(deflatedPropertyName, property.getVisibility())) {
+            return;
+        }
+
+        Class dataType;
+        Object propertyValue = property.getValue();
+        if (propertyValue instanceof StreamingPropertyValue) {
+            StreamingPropertyValue streamingPropertyValue = (StreamingPropertyValue) propertyValue;
+            if (!streamingPropertyValue.isSearchIndex()) {
+                return;
+            }
+            dataType = streamingPropertyValue.getValueType();
+            addPropertyToIndex(graph, indexInfo, deflatedPropertyName, property.getVisibility(), dataType, true, false);
+        } else if (propertyValue instanceof String) {
+            dataType = String.class;
+            addPropertyToIndex(graph, indexInfo, deflatedPropertyName + EXACT_MATCH_PROPERTY_NAME_SUFFIX, property.getVisibility(), dataType, false, false);
+            addPropertyToIndex(graph, indexInfo, deflatedPropertyName, property.getVisibility(), dataType, true, false);
+        } else if (propertyValue instanceof GeoPoint) {
+            addPropertyToIndex(graph, indexInfo, deflatedPropertyName + GEO_PROPERTY_NAME_SUFFIX, property.getVisibility(), GeoPoint.class, true, false);
+            addPropertyToIndex(graph, indexInfo, deflatedPropertyName, property.getVisibility(), String.class, true, false);
+        } else if (propertyValue instanceof GeoCircle) {
+            addPropertyToIndex(graph, indexInfo, deflatedPropertyName + GEO_PROPERTY_NAME_SUFFIX, property.getVisibility(), GeoCircle.class, true, false);
+            addPropertyToIndex(graph, indexInfo, deflatedPropertyName, property.getVisibility(), String.class, true, false);
+        } else {
+            checkNotNull(propertyValue, "property value cannot be null for property: " + deflatedPropertyName);
+            dataType = propertyValue.getClass();
+            addPropertyToIndex(graph, indexInfo, deflatedPropertyName, property.getVisibility(), dataType, true, true);
+        }
+    }
+
     protected void addPropertyToIndex(
             Graph graph,
             IndexInfo indexInfo,
@@ -543,7 +716,6 @@ public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchI
         addPropertyNameVisibility(graph, indexInfo, propertyName, propertyVisibility);
     }
 
-    @Override
     protected void addPropertyNameVisibility(Graph graph, IndexInfo indexInfo, String propertyName, Visibility propertyVisibility) {
         String inflatedPropertyName = inflatePropertyName(propertyName);
         if (propertyVisibility != null) {
@@ -553,7 +725,6 @@ public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchI
         indexInfo.addPropertyNameVisibility(propertyName, propertyVisibility);
     }
 
-    @Override
     public void addElementToBulkRequest(Graph graph, BulkRequest bulkRequest, IndexInfo indexInfo, Element element, Authorizations authorizations) {
         try {
             XContentBuilder json = buildJsonContentFromElement(graph, element, authorizations);
@@ -589,8 +760,8 @@ public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchI
             q = q.addAggregation(countAgg);
         }
 
-        if (ElasticSearchQueryBase.QUERY_LOGGER.isTraceEnabled()) {
-            ElasticSearchQueryBase.QUERY_LOGGER.trace("query: %s", q);
+        if (ElasticSearchSingleDocumentSearchQueryBase.QUERY_LOGGER.isTraceEnabled()) {
+            ElasticSearchSingleDocumentSearchQueryBase.QUERY_LOGGER.trace("query: %s", q);
         }
         SearchResponse response = getClient().search(q.request()).actionGet();
         Map<Object, Long> results = new HashMap<>();
@@ -606,5 +777,402 @@ public class ElasticsearchSingleDocumentSearchIndex extends ElasticSearchSearchI
             }
         }
         return results;
+    }
+
+    protected IndexInfo ensureIndexCreatedAndInitialized(String indexName) {
+        IndexInfo indexInfo = indexInfos.get(indexName);
+        if (indexInfo != null && indexInfo.isElementTypeDefined()) {
+            return indexInfo;
+        }
+
+        synchronized (indexInfos) {
+            if (indexInfo == null) {
+                if (!client.admin().indices().prepareExists(indexName).execute().actionGet().isExists()) {
+                    try {
+                        createIndex(indexName, true);
+                    } catch (IOException e) {
+                        throw new VertexiumException("Could not create index: " + indexName, e);
+                    }
+                }
+
+                indexInfo = createIndexInfo(indexName);
+                indexInfos.put(indexName, indexInfo);
+            }
+
+            ensureMappingsCreated(indexInfo);
+
+            return indexInfo;
+        }
+    }
+
+
+    protected IndexInfo createIndexInfo(String indexName) {
+        return new IndexInfo(indexName);
+    }
+
+    protected void ensureMappingsCreated(IndexInfo indexInfo) {
+        if (!indexInfo.isElementTypeDefined()) {
+            try {
+                XContentBuilder mappingBuilder = XContentFactory.jsonBuilder()
+                        .startObject()
+                        .startObject("_source").field("enabled", true).endObject()
+                        .startObject("_all").field("enabled", isAllFieldEnabled()).endObject()
+                        .startObject("properties");
+                createIndexAddFieldsToElementType(mappingBuilder);
+                XContentBuilder mapping = mappingBuilder.endObject()
+                        .endObject();
+
+                client.admin().indices().preparePutMapping(indexInfo.getIndexName())
+                        .setType(ELEMENT_TYPE)
+                        .setSource(mapping)
+                        .execute()
+                        .actionGet();
+                indexInfo.setElementTypeDefined(true);
+            } catch (Throwable e) {
+                throw new VertexiumException("Could not add mappings to index: " + indexInfo.getIndexName(), e);
+            }
+        }
+    }
+
+    protected void createIndexAddFieldsToElementType(XContentBuilder builder) throws IOException {
+        builder
+                .startObject(ELEMENT_TYPE_FIELD_NAME).field("type", "string").field("store", "true").endObject()
+                .startObject(VISIBILITY_FIELD_NAME).field("type", "string").field("analyzer", "keyword").field("index", "not_analyzed").field("store", "true").endObject()
+                .startObject(IN_VERTEX_ID_FIELD_NAME).field("type", "string").field("analyzer", "keyword").field("index", "not_analyzed").field("store", "true").endObject()
+                .startObject(OUT_VERTEX_ID_FIELD_NAME).field("type", "string").field("analyzer", "keyword").field("index", "not_analyzed").field("store", "true").endObject()
+                .startObject(EDGE_LABEL_FIELD_NAME).field("type", "string").field("analyzer", "keyword").field("index", "not_analyzed").field("store", "true").endObject()
+        ;
+        getConfig().getScoringStrategy().addFieldsToElementType(builder);
+    }
+
+    @Override
+    public void deleteProperty(Graph graph, Element element, Property property, Authorizations authorizations) {
+        deleteProperty(graph, element, property.getKey(), deflatePropertyName(graph, property), property.getVisibility(), authorizations);
+    }
+
+    @Override
+    public void deleteProperty(Graph graph, Element element, String propertyKey, String propertyName, Visibility propertyVisibility, Authorizations authorizations) {
+        addElement(graph, element, authorizations);
+    }
+
+    @Override
+    public void addElements(Graph graph, Iterable<? extends Element> elements, Authorizations authorizations) {
+        int totalCount = 0;
+        Map<IndexInfo, BulkRequest> bulkRequests = new HashMap<>();
+        for (Element element : elements) {
+            IndexInfo indexInfo = addPropertiesToIndex(graph, element, element.getProperties());
+            BulkRequest bulkRequest = bulkRequests.get(indexInfo);
+            if (bulkRequest == null) {
+                bulkRequest = new BulkRequest();
+                bulkRequests.put(indexInfo, bulkRequest);
+            }
+
+            if (bulkRequest.numberOfActions() >= MAX_BATCH_COUNT || bulkRequest.estimatedSizeInBytes() > MAX_BATCH_SIZE) {
+                LOGGER.debug("adding elements... %d (est size %d)", bulkRequest.numberOfActions(), bulkRequest.estimatedSizeInBytes());
+                totalCount += bulkRequest.numberOfActions();
+                doBulkRequest(bulkRequest);
+                bulkRequest = new BulkRequest();
+                bulkRequests.put(indexInfo, bulkRequest);
+            }
+            addElementToBulkRequest(graph, bulkRequest, indexInfo, element, authorizations);
+
+            getConfig().getScoringStrategy().addElement(this, graph, bulkRequest, indexInfo, element, authorizations);
+        }
+        for (BulkRequest bulkRequest : bulkRequests.values()) {
+            if (bulkRequest.numberOfActions() > 0) {
+                LOGGER.debug("adding elements... %d (est size %d)", bulkRequest.numberOfActions(), bulkRequest.estimatedSizeInBytes());
+                totalCount += bulkRequest.numberOfActions();
+                doBulkRequest(bulkRequest);
+            }
+        }
+        LOGGER.debug("added %d elements", totalCount);
+
+        if (getConfig().isAutoFlush()) {
+            flush();
+        }
+    }
+
+    @Override
+    public MultiVertexQuery queryGraph(Graph graph, String[] vertexIds, String queryString, Authorizations authorizations) {
+        return new DefaultMultiVertexQuery(graph, vertexIds, queryString, authorizations);
+    }
+
+    @Override
+    public boolean isQuerySimilarToTextSupported() {
+        return true;
+    }
+
+    @Override
+    public void flush() {
+        client.admin().indices().prepareRefresh(getIndexNamesAsArray()).execute().actionGet();
+    }
+
+    protected String[] getIndexNamesAsArray() {
+        if (indexInfos.size() == indexInfosLastSize) {
+            return indexNamesAsArray;
+        }
+        synchronized (this) {
+            Set<String> keys = indexInfos.keySet();
+            indexNamesAsArray = keys.toArray(new String[keys.size()]);
+            indexInfosLastSize = indexInfos.size();
+            return indexNamesAsArray;
+        }
+    }
+
+    @Override
+    public void shutdown() {
+        client.close();
+
+        if (inProcessNode != null) {
+            inProcessNode.stop();
+            inProcessNode = null;
+        }
+
+        if (propertyNameVisibilitiesStore instanceof Closeable) {
+            try {
+                ((Closeable) propertyNameVisibilitiesStore).close();
+            } catch (IOException e) {
+                Throwables.propagate(e);
+            }
+        }
+    }
+
+    @SuppressWarnings("unused")
+    protected String[] getIndexNames(PropertyDefinition propertyDefinition) {
+        return indexSelectionStrategy.getIndexNames(this, propertyDefinition);
+    }
+
+    @SuppressWarnings("unused")
+    protected String getIndexName(Element element) {
+        return indexSelectionStrategy.getIndexName(this, element);
+    }
+
+    protected String[] getIndicesToQuery() {
+        return indexSelectionStrategy.getIndicesToQuery(this);
+    }
+
+    @Override
+    public boolean isFieldBoostSupported() {
+        return true;
+    }
+
+    public IndexInfo addPropertiesToIndex(Graph graph, Element element, Iterable<Property> properties) {
+        try {
+            String indexName = getIndexName(element);
+            IndexInfo indexInfo = ensureIndexCreatedAndInitialized(indexName);
+            for (Property property : properties) {
+                addPropertyToIndex(graph, indexInfo, property);
+            }
+            return indexInfo;
+        } catch (IOException e) {
+            throw new VertexiumException("Could not add properties to index", e);
+        }
+    }
+
+    protected void addPropertyToIndex(Graph graph, IndexInfo indexInfo, String propertyName, Visibility propertyVisibility, Class dataType, boolean analyzed, boolean sortable) throws IOException {
+        addPropertyToIndex(graph, indexInfo, propertyName, propertyVisibility, dataType, analyzed, null, sortable);
+    }
+
+    protected String deflatePropertyName(PropertyDefinition propertyDefinition) {
+        return deflatePropertyName(propertyDefinition.getPropertyName());
+    }
+
+    protected String deflatePropertyName(String propertyName) {
+        return nameSubstitutionStrategy.deflate(propertyName);
+    }
+
+    protected boolean shouldIgnoreType(Class dataType) {
+        return dataType == byte[].class;
+    }
+
+    protected void addTypeToMapping(XContentBuilder mapping, String propertyName, Class dataType, boolean analyzed, Double boost) throws IOException {
+        if (dataType == String.class) {
+            LOGGER.debug("Registering 'string' type for %s", propertyName);
+            mapping.field("type", "string");
+            if (!analyzed) {
+                mapping.field("index", "not_analyzed");
+                mapping.field("ignore_above", EXACT_MATCH_IGNORE_ABOVE_LIMIT);
+            }
+        } else if (dataType == IpV4Address.class) {
+            LOGGER.debug("Registering 'ip' type for %s", propertyName);
+            mapping.field("type", "ip");
+        } else if (dataType == Float.class || dataType == Float.TYPE) {
+            LOGGER.debug("Registering 'float' type for %s", propertyName);
+            mapping.field("type", "float");
+        } else if (dataType == Double.class || dataType == Double.TYPE) {
+            LOGGER.debug("Registering 'double' type for %s", propertyName);
+            mapping.field("type", "double");
+        } else if (dataType == Byte.class || dataType == Byte.TYPE) {
+            LOGGER.debug("Registering 'byte' type for %s", propertyName);
+            mapping.field("type", "byte");
+        } else if (dataType == Short.class || dataType == Short.TYPE) {
+            LOGGER.debug("Registering 'short' type for %s", propertyName);
+            mapping.field("type", "short");
+        } else if (dataType == Integer.class || dataType == Integer.TYPE) {
+            LOGGER.debug("Registering 'integer' type for %s", propertyName);
+            mapping.field("type", "integer");
+        } else if (dataType == Long.class || dataType == Long.TYPE) {
+            LOGGER.debug("Registering 'long' type for %s", propertyName);
+            mapping.field("type", "long");
+        } else if (dataType == Date.class || dataType == DateOnly.class) {
+            LOGGER.debug("Registering 'date' type for %s", propertyName);
+            mapping.field("type", "date");
+        } else if (dataType == Boolean.class || dataType == Boolean.TYPE) {
+            LOGGER.debug("Registering 'boolean' type for %s", propertyName);
+            mapping.field("type", "boolean");
+        } else if (dataType == GeoPoint.class) {
+            LOGGER.debug("Registering 'geo_point' type for %s", propertyName);
+            mapping.field("type", "geo_point");
+        } else if (dataType == GeoCircle.class) {
+            LOGGER.debug("Registering 'geo_shape' type for %s", propertyName);
+            mapping.field("type", "geo_shape");
+            mapping.field("tree", "quadtree");
+            mapping.field("precision", "100m");
+        } else if (Number.class.isAssignableFrom(dataType)) {
+            LOGGER.debug("Registering 'double' type for %s", propertyName);
+            mapping.field("type", "double");
+        } else {
+            throw new VertexiumException("Unexpected value type for property \"" + propertyName + "\": " + dataType.getName());
+        }
+
+        if (boost != null) {
+            mapping.field("boost", boost.doubleValue());
+        }
+    }
+
+    protected void doBulkRequest(BulkRequest bulkRequest) {
+        BulkResponse response = getClient().bulk(bulkRequest).actionGet();
+        if (response.hasFailures()) {
+            for (BulkItemResponse bulkResponse : response) {
+                if (bulkResponse.isFailed()) {
+                    LOGGER.error("Failed to index %s (message: %s)", bulkResponse.getId(), bulkResponse.getFailureMessage());
+                }
+            }
+            throw new VertexiumException("Could not add element.");
+        }
+    }
+
+    @Override
+    public synchronized void truncate() {
+        LOGGER.warn("Truncate of Elasticsearch is not possible, dropping the indices and recreating instead.");
+        drop();
+    }
+
+    @Override
+    public void drop() {
+        Set<String> indexInfosSet = indexInfos.keySet();
+        for (String indexName : indexInfosSet) {
+            try {
+                DeleteIndexRequest deleteRequest = new DeleteIndexRequest(indexName);
+                getClient().admin().indices().delete(deleteRequest).actionGet();
+                indexInfos.remove(indexName);
+            } catch (Exception ex) {
+                throw new VertexiumException("Could not delete index " + indexName, ex);
+            }
+            ensureIndexCreatedAndInitialized(indexName);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    protected void addPropertyValueToPropertiesMap(Map<String, Object> propertiesMap, String propertyName, Object propertyValue) {
+        Object existingValue = propertiesMap.get(propertyName);
+        if (existingValue == null) {
+            propertiesMap.put(propertyName, propertyValue);
+            return;
+        }
+
+        if (existingValue instanceof List) {
+            ((List) existingValue).add(propertyValue);
+            return;
+        }
+
+        List list = new ArrayList();
+        list.add(existingValue);
+        list.add(propertyValue);
+        propertiesMap.put(propertyName, list);
+    }
+
+    protected void convertGeoPoint(Graph graph, XContentBuilder jsonBuilder, Property property, GeoPoint geoPoint) throws IOException {
+        Map<String, Object> propertyValueMap = new HashMap<>();
+        propertyValueMap.put("lat", geoPoint.getLatitude());
+        propertyValueMap.put("lon", geoPoint.getLongitude());
+        jsonBuilder.field(deflatePropertyName(graph, property) + GEO_PROPERTY_NAME_SUFFIX, propertyValueMap);
+        if (geoPoint.getDescription() != null) {
+            jsonBuilder.field(deflatePropertyName(graph, property), geoPoint.getDescription());
+        }
+    }
+
+    protected void convertGeoPoint(Graph graph, Map<String, Object> propertiesMap, Property property, GeoPoint geoPoint) throws IOException {
+        Map<String, Object> propertyValueMap = new HashMap<>();
+        propertyValueMap.put("lat", geoPoint.getLatitude());
+        propertyValueMap.put("lon", geoPoint.getLongitude());
+        addPropertyValueToPropertiesMap(propertiesMap, deflatePropertyName(graph, property) + GEO_PROPERTY_NAME_SUFFIX, propertyValueMap);
+        if (geoPoint.getDescription() != null) {
+            addPropertyValueToPropertiesMap(propertiesMap, deflatePropertyName(graph, property), geoPoint.getDescription());
+        }
+    }
+
+    protected void convertGeoCircle(Graph graph, XContentBuilder jsonBuilder, Property property, GeoCircle geoCircle) throws IOException {
+        Map<String, Object> propertyValueMap = new HashMap<>();
+        propertyValueMap.put("type", "circle");
+        List<Double> coordinates = new ArrayList<>();
+        coordinates.add(geoCircle.getLongitude());
+        coordinates.add(geoCircle.getLatitude());
+        propertyValueMap.put("coordinates", coordinates);
+        propertyValueMap.put("radius", geoCircle.getRadius() + "km");
+        jsonBuilder.field(deflatePropertyName(graph, property) + GEO_PROPERTY_NAME_SUFFIX, propertyValueMap);
+        if (geoCircle.getDescription() != null) {
+            jsonBuilder.field(deflatePropertyName(graph, property), geoCircle.getDescription());
+        }
+    }
+
+    protected void convertGeoCircle(Graph graph, Map<String, Object> propertiesMap, Property property, GeoCircle geoCircle) throws IOException {
+        Map<String, Object> propertyValueMap = new HashMap<>();
+        propertyValueMap.put("type", "circle");
+        List<Double> coordinates = new ArrayList<>();
+        coordinates.add(geoCircle.getLongitude());
+        coordinates.add(geoCircle.getLatitude());
+        propertyValueMap.put("coordinates", coordinates);
+        propertyValueMap.put("radius", geoCircle.getRadius() + "km");
+        addPropertyValueToPropertiesMap(propertiesMap, deflatePropertyName(graph, property) + GEO_PROPERTY_NAME_SUFFIX, propertyValueMap);
+        if (geoCircle.getDescription() != null) {
+            addPropertyValueToPropertiesMap(propertiesMap, deflatePropertyName(graph, property), geoCircle.getDescription());
+        }
+    }
+
+    public IndexSelectionStrategy getIndexSelectionStrategy() {
+        return indexSelectionStrategy;
+    }
+
+    public boolean isAuthorizationFilterEnabled() {
+        return getConfig().isAuthorizationFilterEnabled();
+    }
+
+    protected boolean isReservedFieldName(String fieldName) {
+        return fieldName.equals(ELEMENT_TYPE_FIELD_NAME) || fieldName.equals(VISIBILITY_FIELD_NAME);
+    }
+
+    @SuppressWarnings("unused")
+    protected void createIndex(String indexName, boolean storeSourceData) throws IOException {
+        int shards = getConfig().getNumberOfShards();
+        CreateIndexResponse createResponse = client.admin().indices().prepareCreate(indexName)
+                .setSettings(ImmutableSettings.settingsBuilder().put("number_of_shards", shards))
+                .execute().actionGet();
+
+        ClusterHealthResponse health = client.admin().cluster().prepareHealth(indexName)
+                .setWaitForGreenStatus()
+                .execute().actionGet();
+        LOGGER.debug("Index status: %s", health.toString());
+        if (health.isTimedOut()) {
+            LOGGER.warn("timed out waiting for green index status, for index: %s", indexName);
+        }
+    }
+
+    public Client getClient() {
+        return client;
+    }
+
+    public ElasticSearchSearchIndexConfiguration getConfig() {
+        return config;
     }
 }

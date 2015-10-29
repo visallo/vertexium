@@ -25,32 +25,32 @@ public class DefaultIndexSelectionStrategy implements IndexSelectionStrategy {
     }
 
     @Override
-    public String[] getIndicesToQuery(ElasticSearchSearchIndexBase es) {
+    public String[] getIndicesToQuery(ElasticsearchSingleDocumentSearchIndex es) {
         return indicesToQuery;
     }
 
     @Override
-    public String getIndexName(ElasticSearchSearchIndexBase es, Element element) {
+    public String getIndexName(ElasticsearchSingleDocumentSearchIndex es, Element element) {
         return indicesToQuery[0];
     }
 
     @Override
-    public String[] getIndexNames(ElasticSearchSearchIndexBase es, PropertyDefinition propertyDefinition) {
+    public String[] getIndexNames(ElasticsearchSingleDocumentSearchIndex es, PropertyDefinition propertyDefinition) {
         return indicesToQuery;
     }
 
     @Override
-    public boolean isIncluded(ElasticSearchSearchIndexBase es, String indexName) {
+    public boolean isIncluded(ElasticsearchSingleDocumentSearchIndex es, String indexName) {
         return indexName.equals(indicesToQuery[0]);
     }
 
     @Override
-    public String[] getManagedIndexNames(ElasticSearchSearchIndexBase es) {
+    public String[] getManagedIndexNames(ElasticsearchSingleDocumentSearchIndex es) {
         return indicesToQuery;
     }
 
     @Override
-    public String[] getIndicesToQuery(ElasticSearchQueryBase query, ElasticSearchElementType elementType) {
+    public String[] getIndicesToQuery(ElasticSearchSingleDocumentSearchQueryBase query, ElasticSearchElementType elementType) {
         return indicesToQuery;
     }
 }

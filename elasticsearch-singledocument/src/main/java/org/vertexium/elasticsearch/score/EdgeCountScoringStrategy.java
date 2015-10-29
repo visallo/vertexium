@@ -8,7 +8,7 @@ import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.functionscore.ScoreFunctionBuilder;
 import org.elasticsearch.index.query.functionscore.ScoreFunctionBuilders;
 import org.vertexium.*;
-import org.vertexium.elasticsearch.ElasticSearchSearchIndexBase;
+import org.vertexium.elasticsearch.ElasticsearchSingleDocumentSearchIndex;
 import org.vertexium.elasticsearch.IndexInfo;
 import org.vertexium.elasticsearch.utils.GetResponseUtil;
 import org.vertexium.search.SearchIndex;
@@ -49,7 +49,7 @@ public class EdgeCountScoringStrategy extends ScoringStrategy {
     }
 
     @Override
-    public int addElement(ElasticSearchSearchIndexBase searchIndex, Graph graph, BulkRequest bulkRequest, IndexInfo indexInfo, Element element, Authorizations authorizations) {
+    public int addElement(ElasticsearchSingleDocumentSearchIndex searchIndex, Graph graph, BulkRequest bulkRequest, IndexInfo indexInfo, Element element, Authorizations authorizations) {
         int totalCount = 0;
 
         if (!getConfig().isUpdateEdgeBoost()) {

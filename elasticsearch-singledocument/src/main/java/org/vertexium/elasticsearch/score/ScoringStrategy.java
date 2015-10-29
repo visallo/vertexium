@@ -5,7 +5,7 @@ import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.vertexium.*;
-import org.vertexium.elasticsearch.ElasticSearchSearchIndexBase;
+import org.vertexium.elasticsearch.ElasticsearchSingleDocumentSearchIndex;
 import org.vertexium.elasticsearch.IndexInfo;
 import org.vertexium.search.SearchIndex;
 
@@ -30,7 +30,7 @@ public abstract class ScoringStrategy {
 
     public abstract boolean addFieldsToEdgeDocument(SearchIndex searchIndex, XContentBuilder jsonBuilder, Edge edge, GetResponse existingDocument, Authorizations authorizations) throws IOException;
 
-    public abstract int addElement(ElasticSearchSearchIndexBase searchIndex, Graph graph, BulkRequest bulkRequest, IndexInfo indexInfo, Element element, Authorizations authorizations);
+    public abstract int addElement(ElasticsearchSingleDocumentSearchIndex searchIndex, Graph graph, BulkRequest bulkRequest, IndexInfo indexInfo, Element element, Authorizations authorizations);
 
     public abstract void addFieldsToElementType(XContentBuilder builder) throws IOException;
 

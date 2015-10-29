@@ -40,7 +40,7 @@ public class ElasticSearchGraphQueryIterable<T extends Element> extends DefaultG
     private final Map<String, AggregationResult> aggregationResults;
 
     public ElasticSearchGraphQueryIterable(
-            ElasticSearchQueryBase query,
+            ElasticSearchSingleDocumentSearchQueryBase query,
             SearchResponse searchResponse,
             QueryParameters parameters,
             Iterable<T> iterable,
@@ -52,7 +52,7 @@ public class ElasticSearchGraphQueryIterable<T extends Element> extends DefaultG
             SearchHits hits
     ) {
         super(parameters, iterable, evaluateQueryString, evaluateHasContainers, evaluateSortContainers);
-        ElasticSearchQueryBase query1 = query;
+        ElasticSearchSingleDocumentSearchQueryBase query1 = query;
         SearchResponse searchResponse1 = searchResponse;
         this.totalHits = totalHits;
         this.searchTimeInNanoSeconds = searchTimeInNanoSeconds;
@@ -91,7 +91,7 @@ public class ElasticSearchGraphQueryIterable<T extends Element> extends DefaultG
         return resultType.cast(result);
     }
 
-    private static Map<String, AggregationResult> getAggregationResults(ElasticSearchQueryBase query, SearchResponse searchResponse) {
+    private static Map<String, AggregationResult> getAggregationResults(ElasticSearchSingleDocumentSearchQueryBase query, SearchResponse searchResponse) {
         if (searchResponse == null) {
             return new HashMap<>();
         }
@@ -99,7 +99,7 @@ public class ElasticSearchGraphQueryIterable<T extends Element> extends DefaultG
         return reduceAggregationResults(query, aggsByName);
     }
 
-    private static Map<String, List<Aggregation>> getAggregationResultsByName(ElasticSearchQueryBase query, Iterable<Aggregation> aggs) {
+    private static Map<String, List<Aggregation>> getAggregationResultsByName(ElasticSearchSingleDocumentSearchQueryBase query, Iterable<Aggregation> aggs) {
         Map<String, List<Aggregation>> aggsByName = new HashMap<>();
         if (aggs == null) {
             return aggsByName;
@@ -116,7 +116,7 @@ public class ElasticSearchGraphQueryIterable<T extends Element> extends DefaultG
         return aggsByName;
     }
 
-    private static Map<String, AggregationResult> reduceAggregationResults(ElasticSearchQueryBase query, Map<String, List<Aggregation>> aggsByName) {
+    private static Map<String, AggregationResult> reduceAggregationResults(ElasticSearchSingleDocumentSearchQueryBase query, Map<String, List<Aggregation>> aggsByName) {
         Map<String, AggregationResult> results = new HashMap<>();
         for (Map.Entry<String, List<Aggregation>> entry : aggsByName.entrySet()) {
             results.put(entry.getKey(), reduceAggregationResults(query, entry.getValue()));
@@ -124,7 +124,7 @@ public class ElasticSearchGraphQueryIterable<T extends Element> extends DefaultG
         return results;
     }
 
-    private static AggregationResult reduceAggregationResults(ElasticSearchQueryBase query, List<Aggregation> aggs) {
+    private static AggregationResult reduceAggregationResults(ElasticSearchSingleDocumentSearchQueryBase query, List<Aggregation> aggs) {
         if (aggs.size() == 0) {
             throw new VertexiumException("Cannot reduce zero sized aggregation list");
         }
@@ -144,7 +144,7 @@ public class ElasticSearchGraphQueryIterable<T extends Element> extends DefaultG
         throw new VertexiumException("Unhandled aggregation type: " + first.getClass().getName());
     }
 
-    private static HistogramResult reduceHistogramResults(ElasticSearchQueryBase query, List<Aggregation> aggs) {
+    private static HistogramResult reduceHistogramResults(ElasticSearchSingleDocumentSearchQueryBase query, List<Aggregation> aggs) {
         Map<Object, List<MultiBucketsAggregation.Bucket>> bucketsByKey = new HashMap<>();
         for (Aggregation agg : aggs) {
             if (agg instanceof DateHistogram) {
@@ -184,7 +184,7 @@ public class ElasticSearchGraphQueryIterable<T extends Element> extends DefaultG
         }.reduce(query, bucketsByKey);
     }
 
-    private static TermsResult reduceTermsResults(ElasticSearchQueryBase query, List<Aggregation> aggs) {
+    private static TermsResult reduceTermsResults(ElasticSearchSingleDocumentSearchQueryBase query, List<Aggregation> aggs) {
         Map<Object, List<MultiBucketsAggregation.Bucket>> bucketsByKey = new HashMap<>();
         for (Aggregation agg : aggs) {
             if (agg instanceof Terms) {
@@ -216,7 +216,7 @@ public class ElasticSearchGraphQueryIterable<T extends Element> extends DefaultG
     }
 
     private abstract static class MultiBucketsAggregationReducer<TResult, TBucket> {
-        public TResult reduce(ElasticSearchQueryBase query, Map<Object, List<MultiBucketsAggregation.Bucket>> bucketsByKey) {
+        public TResult reduce(ElasticSearchSingleDocumentSearchQueryBase query, Map<Object, List<MultiBucketsAggregation.Bucket>> bucketsByKey) {
             List<TBucket> buckets = new ArrayList<>();
             for (Map.Entry<Object, List<MultiBucketsAggregation.Bucket>> bucketsByKeyEntry : bucketsByKey.entrySet()) {
                 Object key = bucketsByKeyEntry.getKey();
@@ -239,7 +239,7 @@ public class ElasticSearchGraphQueryIterable<T extends Element> extends DefaultG
         protected abstract TResult bucketsToResults(List<TBucket> buckets);
     }
 
-    private static GeohashResult reduceGeohashResults(ElasticSearchQueryBase query, List<Aggregation> aggs) {
+    private static GeohashResult reduceGeohashResults(ElasticSearchSingleDocumentSearchQueryBase query, List<Aggregation> aggs) {
         Map<Object, List<MultiBucketsAggregation.Bucket>> bucketsByKey = new HashMap<>();
         for (Aggregation agg : aggs) {
             if (agg instanceof GeoHashGrid) {

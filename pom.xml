@@ -364,7 +364,6 @@
         <module>blueprints</module>
         <module>blueprints-test</module>
 
-        <module>elasticsearch-base</module>
         <module>elasticsearch-singledocument</module>
 
         <module>inmemory</module>
