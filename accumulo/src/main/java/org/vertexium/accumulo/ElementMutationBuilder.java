@@ -66,7 +66,7 @@ public abstract class ElementMutationBuilder {
             addPropertySoftDeleteToMutation(m, propertySoftDeleteMutation);
         }
         for (Property property : vertex.getProperties()) {
-            addPropertyToMutation(m, vertexRowKey, property);
+            addPropertyToMutation(vertex.getGraph(), m, vertexRowKey, property);
         }
         return m;
     }
@@ -231,7 +231,7 @@ public abstract class ElementMutationBuilder {
             addPropertySoftDeleteToMutation(m, propertySoftDeleteMutation);
         }
         for (Property property : edge.getProperties()) {
-            addPropertyToMutation(m, edgeRowKey, property);
+            addPropertyToMutation(edge.getGraph(), m, edgeRowKey, property);
         }
         return m;
     }
@@ -294,7 +294,7 @@ public abstract class ElementMutationBuilder {
         return true;
     }
 
-    public void addPropertyToMutation(Mutation m, String rowKey, Property property) {
+    public void addPropertyToMutation(AccumuloGraph graph, Mutation m, String rowKey, Property property) {
         Text columnQualifier = KeyHelper.getColumnQualifierFromPropertyColumnQualifier(property, getNameSubstitutionStrategy());
         ColumnVisibility columnVisibility = visibilityToAccumuloVisibility(property.getVisibility());
         Object propertyValue = property.getValue();
@@ -304,6 +304,9 @@ public abstract class ElementMutationBuilder {
         if (propertyValue instanceof DateOnly) {
             propertyValue = ((DateOnly) propertyValue).getDate();
         }
+
+        graph.ensurePropertyDefined(property.getName(), propertyValue);
+
         Value value = new Value(vertexiumSerializer.objectToBytes(propertyValue));
         m.put(AccumuloElement.CF_PROPERTY, columnQualifier, columnVisibility, property.getTimestamp(), value);
         addPropertyMetadataToMutation(m, property);

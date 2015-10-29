@@ -343,7 +343,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         }
         for (Property property : properties) {
             hasProperty = true;
-            elementMutationBuilder.addPropertyToMutation(m, elementRowKey, property);
+            elementMutationBuilder.addPropertyToMutation(this, m, elementRowKey, property);
         }
         if (hasProperty) {
             addMutations(getWriterFromElementType(element), m);
@@ -1590,7 +1590,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             elementMutationBuilder.addPropertySoftDeleteToMutation(m, property);
             property.setVisibility(apv.getVisibility());
             property.setTimestamp(IncreasingTime.currentTimeMillis());
-            elementMutationBuilder.addPropertyToMutation(m, elementRowKey, property);
+            elementMutationBuilder.addPropertyToMutation(this, m, elementRowKey, property);
             propertyChanged = true;
         }
         if (propertyChanged) {

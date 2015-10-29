@@ -833,7 +833,7 @@ public abstract class GraphBase implements Graph {
         return propertyDefinitionCache.containsKey(propertyName);
     }
 
-    protected void ensurePropertyDefined(String name, Object value) {
+    public void ensurePropertyDefined(String name, Object value) {
         PropertyDefinition propertyDefinition = getPropertyDefinition(name);
         if (propertyDefinition == null) {
             Class<?> valueClass = value.getClass();
