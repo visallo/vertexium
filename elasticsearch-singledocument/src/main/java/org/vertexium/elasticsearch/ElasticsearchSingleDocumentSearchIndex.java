@@ -47,7 +47,6 @@ import org.vertexium.util.StreamUtils;
 import org.vertexium.util.VertexiumLogger;
 import org.vertexium.util.VertexiumLoggerFactory;
 
-import javax.xml.ws.Holder;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
@@ -55,6 +54,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -75,6 +75,7 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
     public static final long MAX_BATCH_SIZE = 15 * 1024 * 1024;
     public static final int EXACT_MATCH_IGNORE_ABOVE_LIMIT = 10000;
     private static final long IN_PROCESS_NODE_WAIT_TIME_MS = 10 * 60 * 1000;
+    private static final int MAX_RETRIES = 3;
     private final Client client;
     private final ElasticSearchSearchIndexConfiguration config;
     private final Map<String, IndexInfo> indexInfos = new HashMap<>();
@@ -237,11 +238,12 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
                 MUTATION_LOGGER.trace("addElement json: %s: %s", element.getId(), source.string());
             }
 
-            final Holder<Boolean> retrying = new Holder<>(false);
+            final AtomicInteger retryCount = new AtomicInteger(0);
 
             Runnable update = new Runnable() {
                 public void run() {
-                    if (retrying.value) {
+                    if (retryCount.get() > 0) {
+                        LOGGER.info("Retrying (%d of %d) due to ES version conflict for document id: %s", retryCount.get(), MAX_RETRIES, element.getId());
                         getClient().get(Requests.getRequest(indexInfo.getIndexName())
                                 .id(element.getId())
                                 .type(ELEMENT_TYPE)
@@ -257,21 +259,20 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
                                 .execute()
                                 .actionGet();
                         if (response.getId() == null) {
-                            throw new VertexiumException("Could not index document " + element.getId());
+                            throw new VertexiumException("Could not index document id: " + element.getId());
                         }
                     } catch (VersionConflictEngineException e) {
-                        LOGGER.warn("ES version conflict detected for id %s. Retrying.", element.getId());
-                        retrying.value = true;
+                        LOGGER.warn("ES version conflict detected for document id: %s", element.getId());
+                        retryCount.incrementAndGet();
                         throw e;
                     }
                 }
             };
 
-            //noinspection unchecked
             RetryPolicy retryPolicy = new RetryPolicy()
                     .retryOn(VersionConflictEngineException.class)
                     .withDelay(100 + random.nextInt(50), TimeUnit.MILLISECONDS)
-                    .withMaxRetries(3);
+                    .withMaxRetries(MAX_RETRIES);
 
             Recurrent.run(update, retryPolicy);
 
