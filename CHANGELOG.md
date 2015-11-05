@@ -1,3 +1,11 @@
+# v2.2.1
+
+* support Geohash searches
+* helper methods on Vertex to get Vertex/Edge pairs
+* better ElasticsearchSingleDocumentSearchIndex retry logging
+* merged ElasticsearchSingleDocument and ElasticsearchBase
+* support edge labels in aggregations
+
 # v2.2.0
 
 * add IP Address type
