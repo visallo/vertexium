@@ -18,6 +18,7 @@ import org.vertexium.mutation.PropertyDeleteMutation;
 import org.vertexium.mutation.PropertySoftDeleteMutation;
 import org.vertexium.query.VertexQuery;
 import org.vertexium.util.ConvertingIterable;
+import org.vertexium.util.FilterIterable;
 import org.vertexium.util.JoinIterable;
 import org.vertexium.util.LookAheadIterable;
 
@@ -334,8 +335,19 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
     }
 
     @Override
-    public Iterable<org.vertexium.EdgeInfo> getEdgeInfos(Direction direction, Authorizations authorizations) {
-        return new ConvertingIterable<Map.Entry<Text, org.vertexium.accumulo.iterator.model.EdgeInfo>, org.vertexium.EdgeInfo>(getEdgeInfos(direction)) {
+    public Iterable<EdgeInfo> getEdgeInfos(Direction direction, Authorizations authorizations) {
+        String[] labels = null;
+        return getEdgeInfos(direction, labels, authorizations);
+    }
+
+    @Override
+    public Iterable<EdgeInfo> getEdgeInfos(Direction direction, String label, Authorizations authorizations) {
+        return getEdgeInfos(direction, new String[]{label}, authorizations);
+    }
+
+    @Override
+    public Iterable<org.vertexium.EdgeInfo> getEdgeInfos(Direction direction, final String[] labels, Authorizations authorizations) {
+        Iterable<EdgeInfo> results = new ConvertingIterable<Map.Entry<Text, org.vertexium.accumulo.iterator.model.EdgeInfo>, org.vertexium.EdgeInfo>(getEdgeInfos(direction)) {
             @Override
             protected org.vertexium.EdgeInfo convert(Map.Entry<Text, org.vertexium.accumulo.iterator.model.EdgeInfo> o) {
                 final String edgeId = o.getKey().toString();
@@ -358,6 +370,20 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
                 };
             }
         };
+        if (labels != null) {
+            results = new FilterIterable<EdgeInfo>(results) {
+                @Override
+                protected boolean isIncluded(EdgeInfo o) {
+                    for (String label : labels) {
+                        if (o.getLabel().equals(label)) {
+                            return true;
+                        }
+                    }
+                    return false;
+                }
+            };
+        }
+        return results;
     }
 
     @Override
@@ -473,5 +499,44 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
 
     private static String[] labelToArrayOrNull(String label) {
         return label == null ? null : new String[]{label};
+    }
+
+    @Override
+    public Iterable<EdgeVertexPair> getEdgeVertexPairs(Direction direction, Authorizations authorizations) {
+        return getEdgeVertexPairs(getEdgeInfos(direction, authorizations), FetchHint.ALL, null, authorizations);
+    }
+
+    @Override
+    public Iterable<EdgeVertexPair> getEdgeVertexPairs(Direction direction, EnumSet<FetchHint> fetchHints, Authorizations authorizations) {
+        return getEdgeVertexPairs(getEdgeInfos(direction, authorizations), fetchHints, null, authorizations);
+    }
+
+    @Override
+    public Iterable<EdgeVertexPair> getEdgeVertexPairs(Direction direction, EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations) {
+        return getEdgeVertexPairs(getEdgeInfos(direction, authorizations), fetchHints, endTime, authorizations);
+    }
+
+    @Override
+    public Iterable<EdgeVertexPair> getEdgeVertexPairs(Direction direction, String label, Authorizations authorizations) {
+        return getEdgeVertexPairs(getEdgeInfos(direction, label, authorizations), FetchHint.ALL, null, authorizations);
+    }
+
+    @Override
+    public Iterable<EdgeVertexPair> getEdgeVertexPairs(Direction direction, String label, EnumSet<FetchHint> fetchHints, Authorizations authorizations) {
+        return getEdgeVertexPairs(getEdgeInfos(direction, label, authorizations), fetchHints, null, authorizations);
+    }
+
+    @Override
+    public Iterable<EdgeVertexPair> getEdgeVertexPairs(Direction direction, String[] labels, Authorizations authorizations) {
+        return getEdgeVertexPairs(getEdgeInfos(direction, labels, authorizations), FetchHint.ALL, null, authorizations);
+    }
+
+    @Override
+    public Iterable<EdgeVertexPair> getEdgeVertexPairs(Direction direction, String[] labels, EnumSet<FetchHint> fetchHints, Authorizations authorizations) {
+        return getEdgeVertexPairs(getEdgeInfos(direction, labels, authorizations), fetchHints, null, authorizations);
+    }
+
+    private Iterable<EdgeVertexPair> getEdgeVertexPairs(Iterable<EdgeInfo> edgeInfos, EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations) {
+        return EdgeVertexPair.getEdgeVertexPairs(getGraph(), getId(), edgeInfos, fetchHints, endTime, authorizations);
     }
 }

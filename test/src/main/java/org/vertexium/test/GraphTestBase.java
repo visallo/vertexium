@@ -1336,6 +1336,30 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    public void testGetEdgeVertexPairs() {
+        Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
+        Vertex v2 = graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_A);
+        Vertex v3 = graph.addVertex("v3", VISIBILITY_A, AUTHORIZATIONS_A);
+        Edge v1_to_v2_label1 = graph.addEdge("v1_to_v2_label1", v1, v2, "label1", VISIBILITY_A, AUTHORIZATIONS_A);
+        Edge v1_to_v2_label2 = graph.addEdge("v1_to_v2_label2", v1, v2, "label2", VISIBILITY_A, AUTHORIZATIONS_A);
+        Edge v1_to_v3_label2 = graph.addEdge("v1_to_v3_label2", v1, v3, "label2", VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.flush();
+
+        v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
+
+        List<EdgeVertexPair> pairs = toList(v1.getEdgeVertexPairs(Direction.BOTH, AUTHORIZATIONS_A));
+        assertEquals(3, pairs.size());
+        assertTrue(pairs.contains(new EdgeVertexPair(v1_to_v2_label1, v2)));
+        assertTrue(pairs.contains(new EdgeVertexPair(v1_to_v2_label2, v2)));
+        assertTrue(pairs.contains(new EdgeVertexPair(v1_to_v3_label2, v3)));
+
+        pairs = toList(v1.getEdgeVertexPairs(Direction.BOTH, "label2", AUTHORIZATIONS_A));
+        assertEquals(2, pairs.size());
+        assertTrue(pairs.contains(new EdgeVertexPair(v1_to_v2_label2, v2)));
+        assertTrue(pairs.contains(new EdgeVertexPair(v1_to_v3_label2, v3)));
+    }
+
+    @Test
     public void testAddEdgeWithProperties() {
         Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
         Vertex v2 = graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_A);

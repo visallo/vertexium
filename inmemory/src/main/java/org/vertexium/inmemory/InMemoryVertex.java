@@ -38,7 +38,18 @@ public class InMemoryVertex extends InMemoryElement<InMemoryVertex> implements V
 
     @Override
     public Iterable<EdgeInfo> getEdgeInfos(Direction direction, Authorizations authorizations) {
-        return new ConvertingIterable<Edge, EdgeInfo>(getEdges(direction, authorizations)) {
+        String[] labels = null;
+        return getEdgeInfos(direction, labels, authorizations);
+    }
+
+    @Override
+    public Iterable<EdgeInfo> getEdgeInfos(Direction direction, String label, Authorizations authorizations) {
+        return getEdgeInfos(direction, new String[]{label}, authorizations);
+    }
+
+    @Override
+    public Iterable<EdgeInfo> getEdgeInfos(Direction direction, final String[] labels, Authorizations authorizations) {
+        Iterable<EdgeInfo> results = new ConvertingIterable<Edge, EdgeInfo>(getEdges(direction, authorizations)) {
             @Override
             protected EdgeInfo convert(final Edge o) {
                 return new EdgeInfo() {
@@ -59,6 +70,20 @@ public class InMemoryVertex extends InMemoryElement<InMemoryVertex> implements V
                 };
             }
         };
+        if (labels != null) {
+            results = new FilterIterable<EdgeInfo>(results) {
+                @Override
+                protected boolean isIncluded(EdgeInfo o) {
+                    for (String label : labels) {
+                        if (o.getLabel().equals(label)) {
+                            return true;
+                        }
+                    }
+                    return false;
+                }
+            };
+        }
+        return results;
     }
 
     @Override
@@ -314,5 +339,44 @@ public class InMemoryVertex extends InMemoryElement<InMemoryVertex> implements V
 
     private static String[] labelToArrayOrNull(String label) {
         return label == null ? null : new String[]{label};
+    }
+
+    @Override
+    public Iterable<EdgeVertexPair> getEdgeVertexPairs(Direction direction, Authorizations authorizations) {
+        return getEdgeVertexPairs(getEdgeInfos(direction, authorizations), FetchHint.ALL, null, authorizations);
+    }
+
+    @Override
+    public Iterable<EdgeVertexPair> getEdgeVertexPairs(Direction direction, EnumSet<FetchHint> fetchHints, Authorizations authorizations) {
+        return getEdgeVertexPairs(getEdgeInfos(direction, authorizations), fetchHints, null, authorizations);
+    }
+
+    @Override
+    public Iterable<EdgeVertexPair> getEdgeVertexPairs(Direction direction, EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations) {
+        return getEdgeVertexPairs(getEdgeInfos(direction, authorizations), fetchHints, endTime, authorizations);
+    }
+
+    @Override
+    public Iterable<EdgeVertexPair> getEdgeVertexPairs(Direction direction, String label, Authorizations authorizations) {
+        return getEdgeVertexPairs(getEdgeInfos(direction, label, authorizations), FetchHint.ALL, null, authorizations);
+    }
+
+    @Override
+    public Iterable<EdgeVertexPair> getEdgeVertexPairs(Direction direction, String label, EnumSet<FetchHint> fetchHints, Authorizations authorizations) {
+        return getEdgeVertexPairs(getEdgeInfos(direction, label, authorizations), fetchHints, null, authorizations);
+    }
+
+    @Override
+    public Iterable<EdgeVertexPair> getEdgeVertexPairs(Direction direction, String[] labels, Authorizations authorizations) {
+        return getEdgeVertexPairs(getEdgeInfos(direction, labels, authorizations), FetchHint.ALL, null, authorizations);
+    }
+
+    @Override
+    public Iterable<EdgeVertexPair> getEdgeVertexPairs(Direction direction, String[] labels, EnumSet<FetchHint> fetchHints, Authorizations authorizations) {
+        return getEdgeVertexPairs(getEdgeInfos(direction, labels, authorizations), fetchHints, null, authorizations);
+    }
+
+    private Iterable<EdgeVertexPair> getEdgeVertexPairs(Iterable<EdgeInfo> edgeInfos, EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations) {
+        return EdgeVertexPair.getEdgeVertexPairs(getGraph(), getId(), edgeInfos, fetchHints, endTime, authorizations);
     }
 }
