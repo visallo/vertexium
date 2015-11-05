@@ -32,7 +32,9 @@ import org.vertexium.elasticsearch.score.ScoringStrategy;
 import org.vertexium.elasticsearch.utils.PagingIterable;
 import org.vertexium.query.*;
 import org.vertexium.type.GeoCircle;
+import org.vertexium.type.GeoHash;
 import org.vertexium.type.GeoPoint;
+import org.vertexium.type.GeoRect;
 import org.vertexium.util.*;
 
 import java.io.IOException;
@@ -515,8 +517,13 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
             String propertyName = key + ElasticsearchSingleDocumentSearchIndex.GEO_PROPERTY_NAME_SUFFIX;
             switch (compare) {
                 case WITHIN:
-                    if (has.value instanceof GeoCircle) {
-                        GeoCircle geoCircle = (GeoCircle) has.value;
+                    Object value = has.value;
+                    if (value instanceof GeoHash) {
+                        value = ((GeoHash) value).toGeoRect();
+                    }
+
+                    if (value instanceof GeoCircle) {
+                        GeoCircle geoCircle = (GeoCircle) value;
                         double lat = geoCircle.getLatitude();
                         double lon = geoCircle.getLongitude();
                         double distance = geoCircle.getRadius();
@@ -536,8 +543,33 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
                                             .point(lat, lon)
                                             .distance(distance, DistanceUnit.KILOMETERS));
                         }
+                    } else if (value instanceof GeoRect) {
+                        GeoRect geoRect = (GeoRect) value;
+                        double nwLat = geoRect.getNorthWest().getLatitude();
+                        double nwLon = geoRect.getNorthWest().getLongitude();
+                        double seLat = geoRect.getSouthEast().getLatitude();
+                        double seLon = geoRect.getSouthEast().getLongitude();
+
+                        String inflatedPropertyName = getSearchIndex().inflatePropertyName(propertyName);
+                        PropertyDefinition propertyDefinition = getGraph().getPropertyDefinition(inflatedPropertyName);
+                        if (propertyDefinition != null && propertyDefinition.getDataType() == GeoCircle.class) {
+                            ShapeBuilder shapeBuilder = ShapeBuilder.newPolygon()
+                                    .point(nwLon, nwLat)
+                                    .point(seLon, nwLat)
+                                    .point(seLon, seLat)
+                                    .point(nwLon, seLat)
+                                    .close();
+                            filters
+                                    .add(new GeoShapeFilterBuilder(propertyName, shapeBuilder));
+                        } else {
+                            filters
+                                    .add(FilterBuilders
+                                            .geoBoundingBoxFilter(propertyName)
+                                            .topLeft(nwLat, nwLon)
+                                            .bottomRight(seLat, seLon));
+                        }
                     } else {
-                        throw new VertexiumException("Unexpected has value type " + has.value.getClass().getName());
+                        throw new VertexiumException("Unexpected has value type " + value.getClass().getName());
                     }
                     break;
                 default:

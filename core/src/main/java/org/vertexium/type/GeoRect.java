@@ -11,6 +11,9 @@ public class GeoRect implements GeoShape {
         this.southEast = southEast;
     }
 
+    /**
+     * Is the given geoShape with in this
+     */
     @Override
     public boolean within(GeoShape geoShape) {
         if (geoShape instanceof GeoPoint) {

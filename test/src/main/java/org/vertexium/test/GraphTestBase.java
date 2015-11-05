@@ -19,9 +19,7 @@ import org.vertexium.search.DefaultSearchIndex;
 import org.vertexium.search.IndexHint;
 import org.vertexium.search.SearchIndex;
 import org.vertexium.test.util.LargeStringInputStream;
-import org.vertexium.type.GeoCircle;
-import org.vertexium.type.GeoPoint;
-import org.vertexium.type.IpV4Address;
+import org.vertexium.type.*;
 import org.vertexium.util.*;
 
 import java.io.ByteArrayInputStream;
@@ -2406,6 +2404,21 @@ public abstract class GraphTestBase {
                 .has("location", GeoCompare.WITHIN, new GeoCircle(38.9186, -77.2297, 25))
                 .vertices());
         Assert.assertEquals(2, count(vertices));
+
+        vertices = toList(graph.query(AUTHORIZATIONS_A)
+                .has("location", GeoCompare.WITHIN, new GeoRect(new GeoPoint(39, -78), new GeoPoint(38, -77)))
+                .vertices());
+        Assert.assertEquals(2, count(vertices));
+
+        vertices = toList(graph.query(AUTHORIZATIONS_A)
+                .has("location", GeoCompare.WITHIN, new GeoHash(38.9186, -77.2297, 2))
+                .vertices());
+        Assert.assertEquals(2, count(vertices));
+
+        vertices = toList(graph.query(AUTHORIZATIONS_A)
+                .has("location", GeoCompare.WITHIN, new GeoHash(38.9186, -77.2297, 3))
+                .vertices());
+        Assert.assertEquals(1, count(vertices));
 
         vertices = toList(graph.query(AUTHORIZATIONS_A)
                 .has("location", TextPredicate.CONTAINS, "Reston")
