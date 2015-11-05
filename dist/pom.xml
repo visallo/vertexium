@@ -58,11 +58,6 @@
         </dependency>
         <dependency>
             <groupId>org.vertexium</groupId>
-            <artifactId>vertexium-elasticsearch-base</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.vertexium</groupId>
             <artifactId>vertexium-elasticsearch-singledocument</artifactId>
             <version>${project.version}</version>
         </dependency>
