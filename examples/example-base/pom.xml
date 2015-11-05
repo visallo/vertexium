@@ -81,21 +81,6 @@
         </dependency>
     </dependencies>
 
-    <repositories>
-        <repository>
-            <id>lumify-releases</id>
-            <url>http://bits.lumify.io/m2/releases/</url>
-        </repository>
-        <repository>
-            <snapshots>
-                <enabled>true</enabled>
-                <updatePolicy>always</updatePolicy>
-            </snapshots>
-            <id>lumify-snapshots</id>
-            <url>http://bits.lumify.io/m2/snapshots/</url>
-        </repository>
-    </repositories>
-
     <build>
         <plugins>
             <plugin>
