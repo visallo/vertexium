@@ -305,7 +305,10 @@ public abstract class ElementMutationBuilder {
             propertyValue = ((DateOnly) propertyValue).getDate();
         }
 
-        graph.ensurePropertyDefined(property.getName(), propertyValue);
+        // graph can be null if this is running in Map Reduce. We can just assume the property is already defined.
+        if (graph != null) {
+            graph.ensurePropertyDefined(property.getName(), propertyValue);
+        }
 
         Value value = new Value(vertexiumSerializer.objectToBytes(propertyValue));
         m.put(AccumuloElement.CF_PROPERTY, columnQualifier, columnVisibility, property.getTimestamp(), value);
