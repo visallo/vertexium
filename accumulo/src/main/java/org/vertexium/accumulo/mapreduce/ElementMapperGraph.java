@@ -9,9 +9,11 @@ import org.vertexium.query.MultiVertexQuery;
 import java.util.EnumSet;
 
 public class ElementMapperGraph extends GraphBase {
+    private static final boolean STRICT_TYPING = false;
     private ElementMapper elementMapper;
 
     public ElementMapperGraph(ElementMapper elementMapper) {
+        super(STRICT_TYPING);
         this.elementMapper = elementMapper;
     }
 

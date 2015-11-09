@@ -1,3 +1,8 @@
+# v2.2.2
+
+* fix property definition bug in map reduce code
+* add `strictTyping` configuration, defaults to `false` for backwards compatibility
+
 # v2.2.1
 
 * support Geohash searches

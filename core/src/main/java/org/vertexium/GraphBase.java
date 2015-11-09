@@ -22,9 +22,10 @@ public abstract class GraphBase implements Graph {
     public static final String METADATA_DEFINE_PROPERTY_PREFIX = "defineProperty.";
     private final List<GraphEventListener> graphEventListeners = new ArrayList<>();
     private Map<String, PropertyDefinition> propertyDefinitionCache = new HashMap<>();
+    private final boolean strictTyping;
 
-    protected GraphBase() {
-
+    protected GraphBase(boolean strictTyping) {
+        this.strictTyping = strictTyping;
     }
 
     @Override
@@ -844,6 +845,9 @@ public abstract class GraphBase implements Graph {
             return;
         }
         Class<?> valueClass = getValueType(value);
+        if (strictTyping) {
+            throw new VertexiumTypeException(name, valueClass);
+        }
         LOGGER.warn("creating default property definition because a previous definition could not be found for property \"" + name + "\" of type " + valueClass);
         propertyDefinition = new PropertyDefinition(name, valueClass, TextIndexHint.ALL);
         savePropertyDefinition(propertyDefinition);

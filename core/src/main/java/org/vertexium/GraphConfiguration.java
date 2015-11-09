@@ -20,6 +20,8 @@ public class GraphConfiguration {
     public static final String DEFAULT_TABLE_NAME_PREFIX = "vertexium";
     public static final String SERIALIZER = "serializer";
     public static final String DEFAULT_SERIALIZER = JavaVertexiumSerializer.class.getName();
+    public static final String STRICT_TYPING = "strictTyping";
+    public static final boolean DEFAULT_STRICT_TYPING = false;
 
     private final Map<String, Object> config;
 
@@ -143,5 +145,9 @@ public class GraphConfiguration {
 
     public String getTableNamePrefix() {
         return getString(TABLE_NAME_PREFIX, DEFAULT_TABLE_NAME_PREFIX);
+    }
+
+    public boolean isStrictTyping() {
+        return getBoolean(STRICT_TYPING, DEFAULT_STRICT_TYPING);
     }
 }
