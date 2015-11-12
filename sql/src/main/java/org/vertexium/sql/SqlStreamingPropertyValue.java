@@ -61,11 +61,10 @@ public class SqlStreamingPropertyValue extends StreamingPropertyValue {
     private InputStream copyInputStream(InputStream inputStream) {
         try {
             long length = getLength();
-            if (length > IN_MEMORY_STREAM_MAX_BYTES) {
+            if (length < 0 || length > IN_MEMORY_STREAM_MAX_BYTES) {
                 return new AutoDeleteFileInputStream(inputStream);
             } else {
-                int initialCapacity = length < 0 ? DEFAULT_IN_MEMORY_INIT_CAPACITY : (int) length;
-                ByteArrayOutputStream outputStream = new ByteArrayOutputStream(initialCapacity);
+                ByteArrayOutputStream outputStream = new ByteArrayOutputStream((int) length);
                 StreamUtils.copy(inputStream, outputStream);
                 return new ByteArrayInputStream(outputStream.toByteArray());
             }
