@@ -2,6 +2,7 @@
 
 * fix property definition bug in map reduce code
 * add `strictTyping` configuration, defaults to `false` for backwards compatibility
+* Use auto deleting file stream if the length of streaming property value is unknown
 
 # v2.2.1
 
