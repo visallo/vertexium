@@ -1,3 +1,7 @@
+# v2.2.3
+
+* if no matching properties are found for a property return an empty result set. See VertexiumNoMatchingPropertiesException
+
 # v2.2.2
 
 * fix property definition bug in map reduce code

@@ -512,6 +512,9 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
 
     protected FilterBuilder getFilterForGeoComparePredicate(GeoCompare compare, HasValueContainer has) {
         String[] keys = getPropertyNames(has.key);
+        if (keys.length == 0) {
+            throw new VertexiumNoMatchingPropertiesException(has.key);
+        }
         List<FilterBuilder> filters = new ArrayList<>();
         for (String key : keys) {
             String propertyName = key + ElasticsearchSingleDocumentSearchIndex.GEO_PROPERTY_NAME_SUFFIX;
@@ -602,6 +605,9 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
     protected FilterBuilder getFilterForTextPredicate(TextPredicate compare, HasValueContainer has) {
         Object value = has.value;
         String[] keys = getPropertyNames(has.key);
+        if (keys.length == 0) {
+            throw new VertexiumNoMatchingPropertiesException(has.key);
+        }
         List<FilterBuilder> filters = new ArrayList<>();
         for (String key : keys) {
             if (value instanceof String) {
@@ -624,6 +630,12 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
 
     protected FilterBuilder getFilterForContainsPredicate(Contains contains, HasValueContainer has) {
         String[] keys = getPropertyNames(has.key);
+        if (keys.length == 0) {
+            if (contains.equals(Contains.NOT_IN)) {
+                return FilterBuilders.matchAllFilter();
+            }
+            throw new VertexiumNoMatchingPropertiesException(has.key);
+        }
         List<FilterBuilder> filters = new ArrayList<>();
         for (String key : keys) {
             if (has.value instanceof Iterable) {
