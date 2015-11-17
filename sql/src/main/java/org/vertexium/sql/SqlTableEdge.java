@@ -19,7 +19,7 @@ public class SqlTableEdge extends SqlTableElement<InMemoryEdge> {
 
     @Override
     public InMemoryEdge createElementInternal(InMemoryGraph graph, boolean includeHidden, Long endTime, Authorizations authorizations) {
-        return new InMemoryEdge(graph, getId(), asInMemoryTableEdge(), includeHidden, endTime, authorizations);
+        return new InMemoryEdge(graph, getId(), asInMemoryTableElement(), includeHidden, endTime, authorizations);
     }
 
     String inVertexId() {
@@ -32,7 +32,8 @@ public class SqlTableEdge extends SqlTableElement<InMemoryEdge> {
         return edgeSetupMutation != null ? edgeSetupMutation.getOutVertexId() : null;
     }
 
-    InMemoryTableEdge asInMemoryTableEdge() {
+    @Override
+    InMemoryTableEdge asInMemoryTableElement() {
         return new InMemoryAdapter(this);
     }
 

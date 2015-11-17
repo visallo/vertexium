@@ -34,6 +34,8 @@ public abstract class SqlTableElement<TElement extends InMemoryElement>
         super(id);
     }
 
+    abstract InMemoryTableElement<TElement> asInMemoryTableElement();
+
     @Override
     public void addAll(Mutation... newMutations) {
         super.addAll(newMutations);
