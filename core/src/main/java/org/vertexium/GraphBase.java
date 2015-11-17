@@ -119,7 +119,7 @@ public abstract class GraphBase implements Graph {
     }
 
     @Override
-    public Iterable<Vertex> getVertices(final Iterable<String> ids, EnumSet<FetchHint> fetchHints, Long endTime, final Authorizations authorizations) {
+    public Iterable<Vertex> getVertices(final Iterable<String> ids, final EnumSet<FetchHint> fetchHints, final Long endTime, final Authorizations authorizations) {
         LOGGER.warn("Getting each vertex one by one! Override getVertices(java.lang.Iterable<java.lang.String>, Authorizations)");
         return new LookAheadIterable<String, Vertex>() {
             @Override
@@ -129,7 +129,7 @@ public abstract class GraphBase implements Graph {
 
             @Override
             protected Vertex convert(String id) {
-                return getVertex(id, authorizations);
+                return getVertex(id, fetchHints, endTime, authorizations);
             }
 
             @Override
