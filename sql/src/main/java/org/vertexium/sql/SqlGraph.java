@@ -101,7 +101,7 @@ public class SqlGraph extends InMemoryGraph {
                 return new ConvertingIterable<InMemoryTableElement<InMemoryVertex>, InMemoryTableVertex>(elements) {
                     @Override
                     protected InMemoryTableVertex convert(InMemoryTableElement<InMemoryVertex> element) {
-                        return ((SqlTableVertex) element).asInMemoryTableVertex();
+                        return ((SqlTableVertex) element).asInMemoryTableElement();
                     }
                 }.iterator();
             }
@@ -118,25 +118,41 @@ public class SqlGraph extends InMemoryGraph {
         }
     }
 
+    @SuppressWarnings("unchecked")
+    @Override
+    public Iterable<Vertex> getVertices(final Iterable<String> ids, final EnumSet<FetchHint> fetchHints,
+                                        final Long endTime, final Authorizations authorizations) {
+        return (Iterable<Vertex>) getElements(ids, fetchHints, endTime, authorizations, vertexMap);
+    }
+
+    @SuppressWarnings("unchecked")
     @Override
     public Iterable<Edge> getEdges(final Iterable<String> ids, final EnumSet<FetchHint> fetchHints, final Long endTime,
                                    final Authorizations authorizations) {
+        return (Iterable<Edge>) getElements(ids, fetchHints, endTime, authorizations, edgeMap);
+    }
+
+    private <T extends InMemoryElement> Iterable<?> getElements(final Iterable<String> ids,
+                                                                final EnumSet<FetchHint> fetchHints, final Long endTime,
+                                                                final Authorizations authorizations,
+                                                                final SqlMap<InMemoryTableElement<T>> sqlMap) {
         final boolean includeHidden = fetchHints.contains(FetchHint.INCLUDE_HIDDEN);
 
-        return new LookAheadIterable<InMemoryTableEdge, Edge>() {
+        return new LookAheadIterable<InMemoryTableElement, T>() {
             @Override
-            protected boolean isIncluded(InMemoryTableEdge element, Edge edge) {
-                return edge != null && SqlGraph.this.isIncluded(element, fetchHints, authorizations);
+            protected boolean isIncluded(InMemoryTableElement srcElement, T destElement) {
+                return destElement != null && SqlGraph.this.isIncluded(srcElement, fetchHints, authorizations);
             }
 
+            @SuppressWarnings("unchecked")
             @Override
-            protected Edge convert(InMemoryTableEdge element) {
-                return element.createElement(SqlGraph.this, includeHidden, endTime, authorizations);
+            protected T convert(InMemoryTableElement element) {
+                return (T) element.createElement(SqlGraph.this, includeHidden, endTime, authorizations);
             }
 
             @SuppressWarnings("unused")
             @Override
-            protected Iterator<InMemoryTableEdge> createIterator() {
+            protected Iterator<InMemoryTableElement> createIterator() {
                 StringBuilder idWhere = new StringBuilder();
                 boolean first = true;
                 for (String id : ids) {
@@ -151,13 +167,13 @@ public class SqlGraph extends InMemoryGraph {
                 if (first) {
                     return Collections.emptyIterator();
                 } else {
-                    Iterator<InMemoryTableElement<InMemoryEdge>> elements = edgeMap.query(idWhere.toString(),
+                    Iterator<InMemoryTableElement<T>> elements = sqlMap.query(idWhere.toString(),
                             Iterables.toArray(ids, Object.class));
 
-                    return new ConvertingIterable<InMemoryTableElement<InMemoryEdge>, InMemoryTableEdge>(elements) {
+                    return new ConvertingIterable<InMemoryTableElement, InMemoryTableElement>(elements) {
                         @Override
-                        protected InMemoryTableEdge convert(InMemoryTableElement<InMemoryEdge> element) {
-                            return ((SqlTableEdge) element).asInMemoryTableEdge();
+                        protected InMemoryTableElement convert(InMemoryTableElement element) {
+                            return ((SqlTableElement) element).asInMemoryTableElement();
                         }
                     }.iterator();
                 }
@@ -189,7 +205,7 @@ public class SqlGraph extends InMemoryGraph {
                 return new ConvertingIterable<InMemoryTableElement<InMemoryEdge>, InMemoryTableEdge>(elements) {
                     @Override
                     protected InMemoryTableEdge convert(InMemoryTableElement<InMemoryEdge> element) {
-                        return ((SqlTableEdge) element).asInMemoryTableEdge();
+                        return ((SqlTableEdge) element).asInMemoryTableElement();
                     }
                 }.iterator();
             }

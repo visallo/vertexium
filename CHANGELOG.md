@@ -1,6 +1,7 @@
 # v2.2.3
 
 * if no matching properties are found for a property return an empty result set. See VertexiumNoMatchingPropertiesException
+* for SqlGraph, optimized SQL query used to retrieve vertices
 
 # v2.2.2
 

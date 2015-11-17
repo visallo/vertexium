@@ -20,7 +20,7 @@ public class SqlEdgeTable extends InMemoryEdgeTable {
         return new ConvertingIterable<InMemoryTableElement<InMemoryEdge>, InMemoryTableEdge>(super.getRowValues()) {
             @Override
             protected InMemoryTableEdge convert(InMemoryTableElement<InMemoryEdge> inMemoryTableElement) {
-                return ((SqlTableEdge) inMemoryTableElement).asInMemoryTableEdge();
+                return ((SqlTableEdge) inMemoryTableElement).asInMemoryTableElement();
             }
         };
     }

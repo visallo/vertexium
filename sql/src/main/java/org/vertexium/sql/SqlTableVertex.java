@@ -20,10 +20,11 @@ public class SqlTableVertex extends SqlTableElement<InMemoryVertex> {
     @Override
     public InMemoryVertex createElementInternal(InMemoryGraph graph, boolean includeHidden, Long endTime,
                                                 Authorizations authorizations) {
-        return new InMemoryVertex(graph, getId(), asInMemoryTableVertex(), includeHidden, endTime, authorizations);
+        return new InMemoryVertex(graph, getId(), asInMemoryTableElement(), includeHidden, endTime, authorizations);
     }
 
-    InMemoryTableVertex asInMemoryTableVertex() {
+    @Override
+    InMemoryTableVertex asInMemoryTableElement() {
         return new InMemoryAdapter(this);
     }
 
