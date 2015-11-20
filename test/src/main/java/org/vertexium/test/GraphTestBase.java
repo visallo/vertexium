@@ -549,31 +549,41 @@ public abstract class GraphTestBase {
         graph.prepareVertex("v1", VISIBILITY_A)
                 .addPropertyValue("key1", "name1", "value1", VISIBILITY_A)
                 .save(AUTHORIZATIONS_A);
+        graph.prepareVertex("v2", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
+        graph.prepareEdge("e1", "v1", "v2", "label1", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
         graph.flush();
-        assertEquals(1, count(graph.getVertices(AUTHORIZATIONS_A)));
+        assertEquals(2, count(graph.getVertices(AUTHORIZATIONS_A)));
         assertEquals(1, count(graph.query(AUTHORIZATIONS_A).has("name1", "value1").vertices()));
+
+        Vertex v2 = graph.getVertex("v2", AUTHORIZATIONS_A);
+        assertEquals(1, v2.getEdgeCount(Direction.BOTH, AUTHORIZATIONS_A));
 
         graph.softDeleteVertex("v1", AUTHORIZATIONS_A);
         graph.flush();
-        assertEquals(0, count(graph.getVertices(AUTHORIZATIONS_A)));
+        assertEquals(1, count(graph.getVertices(AUTHORIZATIONS_A)));
         assertEquals(0, count(graph.query(AUTHORIZATIONS_A).has("name1", "value1").vertices()));
 
+        v2 = graph.getVertex("v2", AUTHORIZATIONS_A);
+        assertEquals(0, v2.getEdgeCount(Direction.BOTH, AUTHORIZATIONS_A));
+
         graph.prepareVertex("v1", VISIBILITY_A)
-                .addPropertyValue("key1", "name1", "value1", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
-        graph.prepareVertex("v2", VISIBILITY_A)
                 .addPropertyValue("key1", "name1", "value1", VISIBILITY_A)
                 .save(AUTHORIZATIONS_A);
         graph.prepareVertex("v3", VISIBILITY_A)
                 .addPropertyValue("key1", "name1", "value1", VISIBILITY_A)
                 .save(AUTHORIZATIONS_A);
+        graph.prepareVertex("v4", VISIBILITY_A)
+                .addPropertyValue("key1", "name1", "value1", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
         graph.flush();
-        assertEquals(3, count(graph.getVertices(AUTHORIZATIONS_A)));
+        assertEquals(4, count(graph.getVertices(AUTHORIZATIONS_A)));
         assertEquals(3, count(graph.query(AUTHORIZATIONS_A).has("name1", "value1").vertices()));
 
-        graph.softDeleteVertex("v2", AUTHORIZATIONS_A);
+        graph.softDeleteVertex("v3", AUTHORIZATIONS_A);
         graph.flush();
-        assertEquals(2, count(graph.getVertices(AUTHORIZATIONS_A)));
+        assertEquals(3, count(graph.getVertices(AUTHORIZATIONS_A)));
         assertEquals(2, count(graph.query(AUTHORIZATIONS_A).has("name1", "value1").vertices()));
     }
 
