@@ -721,6 +721,24 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    public void testSoftDeletePropertyOnAHiddenVertex() {
+        Vertex v1 = graph.prepareVertex("v1", VISIBILITY_EMPTY)
+                .addPropertyValue("key1", "name1", "value1", VISIBILITY_EMPTY)
+                .save(AUTHORIZATIONS_A);
+        graph.flush();
+
+        graph.markVertexHidden(v1, VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.flush();
+
+        v1 = graph.getVertex("v1", FetchHint.ALL_INCLUDING_HIDDEN, AUTHORIZATIONS_A);
+        v1.softDeleteProperty("key1", "name1", AUTHORIZATIONS_A);
+        graph.flush();
+
+        v1 = graph.getVertex("v1", FetchHint.ALL_INCLUDING_HIDDEN, AUTHORIZATIONS_A);
+        assertNull(v1.getProperty("key1", "name1", VISIBILITY_EMPTY));
+    }
+
+    @Test
     public void testMarkHiddenWithVisibilityChange() {
         Vertex v1 = graph.prepareVertex("v1", VISIBILITY_A)
                 .addPropertyValue("key1", "firstName", "Joe", VISIBILITY_A)

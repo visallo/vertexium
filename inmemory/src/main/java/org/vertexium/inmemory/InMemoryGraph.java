@@ -498,10 +498,10 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
         Element element;
         if (inMemoryTableElement instanceof InMemoryTableVertex) {
             inMemoryTableElement.appendSoftDeletePropertyMutation(property.getKey(), property.getName(), property.getVisibility(), timestamp);
-            element = getVertex(inMemoryTableElement.getId(), authorizations);
+            element = getVertex(inMemoryTableElement.getId(), FetchHint.ALL_INCLUDING_HIDDEN, authorizations);
         } else if (inMemoryTableElement instanceof InMemoryTableEdge) {
             inMemoryTableElement.appendSoftDeletePropertyMutation(property.getKey(), property.getName(), property.getVisibility(), timestamp);
-            element = getEdge(inMemoryTableElement.getId(), authorizations);
+            element = getEdge(inMemoryTableElement.getId(), FetchHint.ALL_INCLUDING_HIDDEN, authorizations);
         } else {
             throw new IllegalArgumentException("Unexpected element type: " + inMemoryTableElement.getClass().getName());
         }

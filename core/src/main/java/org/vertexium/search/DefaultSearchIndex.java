@@ -3,6 +3,8 @@ package org.vertexium.search;
 import org.vertexium.*;
 import org.vertexium.query.*;
 
+import static org.vertexium.util.Preconditions.checkNotNull;
+
 public class DefaultSearchIndex implements SearchIndex {
     @SuppressWarnings("unused")
     public DefaultSearchIndex(GraphConfiguration configuration) {
@@ -11,22 +13,22 @@ public class DefaultSearchIndex implements SearchIndex {
 
     @Override
     public void addElement(Graph graph, Element element, Authorizations authorizations) {
-
+        checkNotNull(element, "element cannot be null");
     }
 
     @Override
     public void deleteElement(Graph graph, Element element, Authorizations authorizations) {
-
+        checkNotNull(element, "element cannot be null");
     }
 
     @Override
     public void deleteProperty(Graph graph, Element element, Property property, Authorizations authorizations) {
-
+        checkNotNull(element, "element cannot be null");
     }
 
     @Override
     public void deleteProperty(Graph graph, Element element, String propertyKey, String propertyName, Visibility propertyVisibility, Authorizations authorizations) {
-
+        checkNotNull(element, "element cannot be null");
     }
 
     @Override
