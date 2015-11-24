@@ -158,6 +158,6 @@ public class AccumuloGraphLogger {
     }
 
     public void logEndIterator(long time) {
-        queryLogger.debug("accumulo iterator closed (time %dms)", time);
+        queryLogger.trace("accumulo iterator closed (time %dms)", time);
     }
 }
