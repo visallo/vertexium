@@ -3,6 +3,7 @@
 * if no matching properties are found for a property return an empty result set. See VertexiumNoMatchingPropertiesException
 * for SqlGraph, optimized SQL query used to retrieve vertices
 * fix softDeleteProperty on hidden elements
+* change the default `search.scoringStrategy` to `org.vertexium.elasticsearch.score.NopScoringStrategy`
 
 # v2.2.2
 

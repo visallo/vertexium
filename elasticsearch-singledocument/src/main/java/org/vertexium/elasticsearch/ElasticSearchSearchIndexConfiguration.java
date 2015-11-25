@@ -4,6 +4,7 @@ import org.vertexium.Graph;
 import org.vertexium.GraphConfiguration;
 import org.vertexium.VertexiumException;
 import org.vertexium.elasticsearch.score.EdgeCountScoringStrategy;
+import org.vertexium.elasticsearch.score.NopScoringStrategy;
 import org.vertexium.elasticsearch.score.ScoringStrategy;
 import org.vertexium.id.IdentityNameSubstitutionStrategy;
 import org.vertexium.id.NameSubstitutionStrategy;
@@ -29,7 +30,7 @@ public class ElasticSearchSearchIndexConfiguration {
     public static final String AUTHORIZATION_FILTER_ENABLED = "authorizationFilterEnabled";
     public static final boolean AUTHORIZATION_FILTER_ENABLED_DEFAULT = true;
     public static final String SCORING_STRATEGY_CLASS_NAME = "scoringStrategy";
-    public static final Class<? extends ScoringStrategy> SCORING_STRATEGY_CLASS_NAME_DEFAULT = EdgeCountScoringStrategy.class;
+    public static final Class<? extends ScoringStrategy> SCORING_STRATEGY_CLASS_NAME_DEFAULT = NopScoringStrategy.class;
     public static final String NAME_SUBSTITUTION_STRATEGY_CLASS_NAME = "nameSubstitutionStrategy";
     public static final Class<? extends NameSubstitutionStrategy> NAME_SUBSTITUTION_STRATEGY_CLASS_NAME_DEFAULT = IdentityNameSubstitutionStrategy.class;
     public static final String INDEX_SELECTION_STRATEGY_CLASS_NAME = "indexSelectionStrategy";
