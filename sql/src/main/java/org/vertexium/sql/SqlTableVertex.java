@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.Set;
 
 public class SqlTableVertex extends SqlTableElement<InMemoryVertex> {
+    private static final long serialVersionUID = -4846884637517778537L;
 
     public SqlTableVertex(String id) {
         super(id);
