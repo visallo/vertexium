@@ -16,13 +16,27 @@ public class DefaultGraphQuery extends GraphQueryBase {
     @Override
     public QueryResultsIterable<Vertex> vertices(EnumSet<FetchHint> fetchHints) {
         LOGGER.warn("scanning all vertices! create your own GraphQuery.");
-        return new DefaultGraphQueryIterable<>(getParameters(), this.<Vertex>getIterableFromElementType(ElementType.VERTEX, fetchHints), true, true, true);
+        return new DefaultGraphQueryIterableWithAggregations<>(
+                getParameters(),
+                this.<Vertex>getIterableFromElementType(ElementType.VERTEX, fetchHints),
+                true,
+                true,
+                true,
+                getAggregations()
+        );
     }
 
     @Override
     public QueryResultsIterable<Edge> edges(EnumSet<FetchHint> fetchHints) {
         LOGGER.warn("scanning all edges! create your own GraphQuery.");
-        return new DefaultGraphQueryIterable<>(getParameters(), this.<Edge>getIterableFromElementType(ElementType.EDGE, fetchHints), true, true, true);
+        return new DefaultGraphQueryIterableWithAggregations<>(
+                getParameters(),
+                this.<Edge>getIterableFromElementType(ElementType.EDGE, fetchHints),
+                true,
+                true,
+                true,
+                getAggregations()
+        );
     }
 
     @SuppressWarnings("unchecked")
@@ -35,5 +49,13 @@ public class DefaultGraphQuery extends GraphQueryBase {
             default:
                 throw new VertexiumException("Unexpected element type: " + elementType);
         }
+    }
+
+    @Override
+    public boolean isAggregationSupported(Aggregation aggregation) {
+        if (DefaultGraphQueryIterableWithAggregations.isAggregationSupported(aggregation)) {
+            return true;
+        }
+        return super.isAggregationSupported(aggregation);
     }
 }

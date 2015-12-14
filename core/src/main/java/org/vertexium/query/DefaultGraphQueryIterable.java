@@ -4,7 +4,6 @@ import org.vertexium.Edge;
 import org.vertexium.Element;
 import org.vertexium.Property;
 import org.vertexium.VertexiumException;
-import org.vertexium.util.CloseableIterable;
 import org.vertexium.util.CloseableIterator;
 import org.vertexium.util.CloseableUtils;
 
@@ -51,7 +50,7 @@ public class DefaultGraphQueryIterable<T extends Element> implements
         return iterator(false);
     }
 
-    private Iterator<T> iterator(final boolean iterateAll) {
+    protected Iterator<T> iterator(final boolean iterateAll) {
         final Iterator<T> it = iterable.iterator();
 
         return new CloseableIterator<T>() {
