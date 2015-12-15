@@ -133,6 +133,14 @@ public class KryoVertexiumSerializerTest {
     @Test
     public void testTestClass() {
         TestClass testClass = new TestClass("value1", 42);
+        KryoVertexiumSerializer serializer = new KryoVertexiumSerializer();
+        byte[] v = serializer.objectToBytes(testClass);
+        assertEquals(testClass, serializer.bytesToObject(v));
+    }
+
+    @Test
+    public void testTestClassQuick() {
+        TestClass testClass = new TestClass("value1", 42);
         QuickKryoVertexiumSerializer serializer = new QuickKryoVertexiumSerializer();
         byte[] v = serializer.objectToBytes(testClass);
         assertEquals(testClass, serializer.bytesToObject(v));
@@ -141,10 +149,6 @@ public class KryoVertexiumSerializerTest {
     public static class TestClass {
         private String field1;
         private long field2;
-
-        public TestClass() {
-
-        }
 
         public TestClass(String field1, int field2) {
             this.field1 = field1;

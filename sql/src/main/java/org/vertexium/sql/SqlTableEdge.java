@@ -8,8 +8,6 @@ import org.vertexium.inmemory.mutations.EdgeSetupMutation;
 import org.vertexium.inmemory.mutations.Mutation;
 import org.vertexium.sql.collections.Storable;
 
-import java.io.IOException;
-import java.io.ObjectOutputStream;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;

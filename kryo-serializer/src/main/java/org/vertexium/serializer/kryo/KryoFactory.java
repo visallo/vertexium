@@ -3,6 +3,7 @@ package org.vertexium.serializer.kryo;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.util.DefaultClassResolver;
 import com.esotericsoftware.kryo.util.MapReferenceResolver;
+import org.objenesis.strategy.StdInstantiatorStrategy;
 import org.vertexium.VertexiumException;
 import org.vertexium.property.StreamingPropertyValueRef;
 import org.vertexium.type.GeoCircle;
@@ -27,6 +28,8 @@ public class KryoFactory {
         registerClasses(kryo);
 
         kryo.setAutoReset(true);
+        kryo.setInstantiatorStrategy(new Kryo.DefaultInstantiatorStrategy(new StdInstantiatorStrategy()));
+
         return kryo;
     }
 
