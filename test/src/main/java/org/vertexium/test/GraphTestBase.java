@@ -4109,7 +4109,7 @@ public abstract class GraphTestBase {
             return null;
         }
         q.addAggregation(agg);
-        TermsResult aggregationResult = ((QueryResultsIterable<Vertex>) q.vertices()).getAggregationResult("terms-count", TermsResult.class);
+        TermsResult aggregationResult = q.vertices().getAggregationResult("terms-count", TermsResult.class);
         return nestedTermsBucketToMap(aggregationResult.getBuckets(), "nested");
     }
 
