@@ -15,7 +15,6 @@ import java.util.Map;
 
 public abstract class SqlTableElement<TElement extends InMemoryElement>
         extends InMemoryTableElement<TElement> implements Storable<SqlTableElement<TElement>, SqlGraph> {
-
     private transient Map<String, SqlTableElement<TElement>> container;
     private transient SqlGraph graph;
 

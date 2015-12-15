@@ -8,11 +8,15 @@ import org.vertexium.inmemory.mutations.EdgeSetupMutation;
 import org.vertexium.inmemory.mutations.Mutation;
 import org.vertexium.sql.collections.Storable;
 
+import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 public class SqlTableEdge extends SqlTableElement<InMemoryEdge> {
+    private static final long serialVersionUID = 3053012430427429799L;
+
     public SqlTableEdge(String id) {
         super(id);
     }
