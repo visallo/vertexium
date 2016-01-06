@@ -49,7 +49,7 @@ public class InMemoryVertex extends InMemoryElement<InMemoryVertex> implements V
 
     @Override
     public Iterable<EdgeInfo> getEdgeInfos(Direction direction, final String[] labels, Authorizations authorizations) {
-        Iterable<EdgeInfo> results = new ConvertingIterable<Edge, EdgeInfo>(getEdges(direction, authorizations)) {
+        Iterable<EdgeInfo> results = new ConvertingIterable<Edge, EdgeInfo>(getEdges(direction, getFetchHints(), authorizations)) {
             @Override
             protected EdgeInfo convert(final Edge o) {
                 return new EdgeInfo() {
@@ -110,7 +110,7 @@ public class InMemoryVertex extends InMemoryElement<InMemoryVertex> implements V
 
     @Override
     public Iterable<String> getEdgeIds(Direction direction, Authorizations authorizations) {
-        return new EdgeToEdgeIdIterable(getEdges(direction, authorizations));
+        return new EdgeToEdgeIdIterable(getEdges(direction, getFetchHints(), authorizations));
     }
 
     @Override

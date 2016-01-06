@@ -9,6 +9,7 @@ import org.vertexium.util.FilterIterable;
 import org.vertexium.util.IncreasingTime;
 
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.List;
 
@@ -470,5 +471,13 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> implemen
                 ((MutableProperty) property).setTimestamp(IncreasingTime.currentTimeMillis());
             }
         }
+    }
+
+    protected boolean isIncludeHidden() {
+        return includeHidden;
+    }
+
+    protected EnumSet<FetchHint> getFetchHints() {
+        return isIncludeHidden() ? FetchHint.ALL_INCLUDING_HIDDEN : FetchHint.ALL;
     }
 }
