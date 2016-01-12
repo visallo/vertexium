@@ -5,18 +5,23 @@ import org.apache.accumulo.core.client.security.tokens.AuthenticationToken;
 import org.apache.accumulo.core.client.security.tokens.PasswordToken;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
-import org.vertexium.*;
+import org.vertexium.Graph;
+import org.vertexium.GraphConfiguration;
 import org.vertexium.id.IdentityNameSubstitutionStrategy;
 import org.vertexium.id.NameSubstitutionStrategy;
 import org.vertexium.util.ConfigurationUtils;
 import org.vertexium.util.VertexiumLogger;
 import org.vertexium.util.VertexiumLoggerFactory;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
 
 public class AccumuloGraphConfiguration extends GraphConfiguration {
@@ -51,6 +56,7 @@ public class AccumuloGraphConfiguration extends GraphConfiguration {
     public static final int DEFAULT_MAX_STREAMING_PROPERTY_VALUE_TABLE_DATA_SIZE = 10 * 1024 * 1024;
     public static final String DEFAULT_HDFS_USER = "hadoop";
     public static final String DEFAULT_HDFS_ROOT_DIR = "";
+    public static final String HADOOP_CONF_DIR = HDFS_CONFIG_PREFIX + ".confDir";
     public static final String DEFAULT_DATA_DIR = "/accumuloGraph";
     private static final String DEFAULT_NAME_SUBSTITUTION_STRATEGY = IdentityNameSubstitutionStrategy.class.getName();
     public static final Long DEFAULT_BATCHWRITER_MAX_MEMORY = 50 * 1024 * 1024l;
@@ -60,6 +66,13 @@ public class AccumuloGraphConfiguration extends GraphConfiguration {
     public static final Integer DEFAULT_ACCUMULO_MAX_VERSIONS = null;
     public static final int DEFAULT_NUMBER_OF_QUERY_THREADS = 10;
     public static final String DEFAULT_HDFS_CONTEXT_CLASSPATH = null;
+
+    public static final String[] HADOOP_CONF_FILENAMES = new String[]{
+            "core-site.xml",
+            "hdfs-site.xml",
+            "mapred-site.xml",
+            "yarn-site.xml"
+    };
 
     public AccumuloGraphConfiguration(Map<String, Object> config) {
         super(config);
@@ -105,7 +118,41 @@ public class AccumuloGraphConfiguration extends GraphConfiguration {
             Map.Entry entrySet = (Map.Entry) entrySetObject;
             configuration.set("" + entrySet.getKey(), "" + entrySet.getValue());
         }
+
+        loadHadoopConfigs(configuration);
         return configuration;
+    }
+
+    private void loadHadoopConfigs(Configuration configuration) {
+        String hadoopConfDir = getString(HADOOP_CONF_DIR, null);
+        if (hadoopConfDir != null) {
+            LOGGER.info("hadoop conf dir", hadoopConfDir);
+            File dir = new File(hadoopConfDir);
+            if (dir.isDirectory()) {
+                for (String xmlFilename : HADOOP_CONF_FILENAMES) {
+                    File file = new File(dir, xmlFilename);
+                    if (file.isFile()) {
+                        LOGGER.info("adding resource: %s to Hadoop configuration", file);
+                        try {
+                            FileInputStream in = new FileInputStream(file);
+                            configuration.addResource(in);
+                        } catch (Exception ex) {
+                            LOGGER.warn("error adding resource: " + xmlFilename + " to Hadoop configuration", ex);
+                        }
+                    }
+                }
+
+                StringBuilder sb = new StringBuilder();
+                SortedSet<String> keys = new TreeSet<>();
+                for (Map.Entry<String, String> entry : configuration) {
+                    keys.add(entry.getKey());
+                }
+
+                LOGGER.debug("Hadoop configuration:%n%s", sb.toString());
+            } else {
+                LOGGER.warn("configuration property %s is not a directory", HADOOP_CONF_DIR);
+            }
+        }
     }
 
     public AuthenticationToken getAuthenticationToken() {
