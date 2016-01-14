@@ -20,6 +20,7 @@ import org.elasticsearch.client.Client;
 import org.elasticsearch.client.Requests;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.ImmutableSettings;
+import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
@@ -47,9 +48,7 @@ import org.vertexium.util.StreamUtils;
 import org.vertexium.util.VertexiumLogger;
 import org.vertexium.util.VertexiumLoggerFactory;
 
-import java.io.Closeable;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.*;
@@ -111,13 +110,24 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
     }
 
     private Client createInProcessNode(ElasticSearchSearchIndexConfiguration config) {
-        String dataPath = config.getInProcessNodeDataPath();
-        checkNotNull(dataPath, ElasticSearchSearchIndexConfiguration.IN_PROCESS_NODE_DATA_PATH + " is required for in process Elasticsearch node");
-        String logsPath = config.getInProcessNodeLogsPath();
-        checkNotNull(logsPath, ElasticSearchSearchIndexConfiguration.IN_PROCESS_NODE_LOGS_PATH + " is required for in process Elasticsearch node");
-        String workPath = config.getInProcessNodeWorkPath();
-        checkNotNull(workPath, ElasticSearchSearchIndexConfiguration.IN_PROCESS_NODE_WORK_PATH + " is required for in process Elasticsearch node");
-        int numberOfShards = config.getNumberOfShards();
+        Settings settings = tryReadSettingsFromFile(config);
+        if (settings == null) {
+            String dataPath = config.getInProcessNodeDataPath();
+            checkNotNull(dataPath, ElasticSearchSearchIndexConfiguration.IN_PROCESS_NODE_DATA_PATH + " is required for in process Elasticsearch node");
+            String logsPath = config.getInProcessNodeLogsPath();
+            checkNotNull(logsPath, ElasticSearchSearchIndexConfiguration.IN_PROCESS_NODE_LOGS_PATH + " is required for in process Elasticsearch node");
+            String workPath = config.getInProcessNodeWorkPath();
+            checkNotNull(workPath, ElasticSearchSearchIndexConfiguration.IN_PROCESS_NODE_WORK_PATH + " is required for in process Elasticsearch node");
+            int numberOfShards = config.getNumberOfShards();
+            settings = ImmutableSettings.settingsBuilder()
+                    .put("script.disable_dynamic", "false")
+                    .put("index.number_of_shards", numberOfShards)
+                    .put("index.number_of_replicas", "0")
+                    .put("path.data", dataPath)
+                    .put("path.logs", logsPath)
+                    .put("path.work", workPath)
+                    .build();
+        }
 
         NodeBuilder nodeBuilder = NodeBuilder
                 .nodeBuilder();
@@ -125,17 +135,7 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
             nodeBuilder = nodeBuilder.clusterName(config.getClusterName());
         }
         this.inProcessNode = nodeBuilder
-                .local(false)
-                .settings(
-                        ImmutableSettings.settingsBuilder()
-                                .put("script.disable_dynamic", "false")
-                                .put("gateway.type", "local")
-                                .put("index.number_of_shards", numberOfShards)
-                                .put("index.number_of_replicas", "0")
-                                .put("path.data", dataPath)
-                                .put("path.logs", logsPath)
-                                .put("path.work", workPath)
-                ).node();
+                .settings(settings).node();
         inProcessNode.start();
         Client client = inProcessNode.client();
 
@@ -159,11 +159,15 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
     }
 
     private static TransportClient createTransportClient(ElasticSearchSearchIndexConfiguration config) {
-        ImmutableSettings.Builder settingsBuilder = ImmutableSettings.settingsBuilder();
-        if (config.getClusterName() != null) {
-            settingsBuilder.put("cluster.name", config.getClusterName());
+        Settings settings = tryReadSettingsFromFile(config);
+        if (settings == null) {
+            ImmutableSettings.Builder settingsBuilder = ImmutableSettings.settingsBuilder();
+            if (config.getClusterName() != null) {
+                settingsBuilder.put("cluster.name", config.getClusterName());
+            }
+            settings = settingsBuilder.build();
         }
-        TransportClient transportClient = new TransportClient(settingsBuilder.build());
+        TransportClient transportClient = new TransportClient(settings);
         for (String esLocation : config.getEsLocations()) {
             String[] locationSocket = esLocation.split(":");
             String hostname;
@@ -180,6 +184,21 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
             transportClient.addTransportAddress(new InetSocketTransportAddress(hostname, port));
         }
         return transportClient;
+    }
+
+    private static Settings tryReadSettingsFromFile(ElasticSearchSearchIndexConfiguration config) {
+        File esConfigFile = config.getEsConfigFile();
+        if (esConfigFile == null) {
+            return null;
+        }
+        if (!esConfigFile.exists()) {
+            throw new VertexiumException(esConfigFile.getAbsolutePath() + " does not exist");
+        }
+        try (FileInputStream fileIn = new FileInputStream(esConfigFile)) {
+            return ImmutableSettings.builder().loadFromStream(esConfigFile.getAbsolutePath(), fileIn).build();
+        } catch (IOException e) {
+            throw new VertexiumException("Could not read ES config file: " + esConfigFile.getAbsolutePath(), e);
+        }
     }
 
     protected final boolean isAllFieldEnabled() {
