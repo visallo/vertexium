@@ -1,3 +1,14 @@
+# v2.2.5
+
+* add possible configuration to set hadoop conf dir
+
+# v2.2.4
+
+* term aggregation is supported in the in memory graph query
+* add `serialVersionUID` to serializable SQL classes
+* support no default constructors in Kryo
+* fix in memory getEdgeIds and getEdgeInfos when getting hidden edges to be consistant with AccumuloGraph
+
 # v2.2.3
 
 * if no matching properties are found for a property return an empty result set. See VertexiumNoMatchingPropertiesException
