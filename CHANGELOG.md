@@ -1,3 +1,7 @@
+# v2.2.6
+
+* allow overriding ES configuration
+
 # v2.2.5
 
 * add possible configuration to set hadoop conf dir
