@@ -3,17 +3,15 @@ package org.vertexium.elasticsearch;
 import org.vertexium.Graph;
 import org.vertexium.GraphConfiguration;
 import org.vertexium.VertexiumException;
-import org.vertexium.elasticsearch.score.EdgeCountScoringStrategy;
 import org.vertexium.elasticsearch.score.NopScoringStrategy;
 import org.vertexium.elasticsearch.score.ScoringStrategy;
 import org.vertexium.id.IdentityNameSubstitutionStrategy;
 import org.vertexium.id.NameSubstitutionStrategy;
 import org.vertexium.util.ConfigurationUtils;
-import org.vertexium.util.VertexiumLogger;
-import org.vertexium.util.VertexiumLoggerFactory;
+
+import java.io.File;
 
 public class ElasticSearchSearchIndexConfiguration {
-    private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(ElasticSearchSearchIndexConfiguration.class);
     public static final String STORE_SOURCE_DATA = "storeSourceData";
     public static final boolean STORE_SOURCE_DATA_DEFAULT = false;
     public static final String ES_LOCATIONS = "locations";
@@ -43,6 +41,8 @@ public class ElasticSearchSearchIndexConfiguration {
     public static final String IN_PROCESS_NODE_WORK_PATH = "inProcessNode.workPath";
     public static final String QUERY_PAGE_SIZE = "queryPageSize";
     public static final int QUERY_PAGE_SIZE_DEFAULT = 500;
+    public static final String ES_CONFIG_FILE = "elasticsearch.configFile";
+    public static final String ES_CONFIG_FILE_DEFAULT = null;
 
     private GraphConfiguration graphConfiguration;
     private IndexSelectionStrategy indexSelectionStrategy;
@@ -149,5 +149,13 @@ public class ElasticSearchSearchIndexConfiguration {
 
     public int getQueryPageSize() {
         return graphConfiguration.getInt(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + QUERY_PAGE_SIZE, QUERY_PAGE_SIZE_DEFAULT);
+    }
+
+    public File getEsConfigFile() {
+        String fileName = graphConfiguration.getString(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + ES_CONFIG_FILE, ES_CONFIG_FILE_DEFAULT);
+        if (fileName == null || fileName.length() == 0) {
+            return null;
+        }
+        return new File(fileName);
     }
 }
