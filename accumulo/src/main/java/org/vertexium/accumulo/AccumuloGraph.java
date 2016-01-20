@@ -1530,7 +1530,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         return connector;
     }
 
-    void alterElementVisibility(AccumuloElement element, Visibility newVisibility) {
+    void alterElementVisibility(AccumuloElement element, Visibility newVisibility, Authorizations authorizations) {
         BatchWriter elementWriter = getWriterFromElementType(element);
         String elementRowKey = element.getId();
         Span trace = Trace.start("alterElementVisibility");
@@ -1557,6 +1557,8 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             if (elementMutationBuilder.alterElementVisibility(m, element, newVisibility)) {
                 addMutations(elementWriter, m);
             }
+            element.setVisibility(newVisibility);
+            getSearchIndex().addElement(AccumuloGraph.this, element, authorizations);
         } finally {
             trace.stop();
         }

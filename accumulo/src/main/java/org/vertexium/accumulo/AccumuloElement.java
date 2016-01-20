@@ -118,6 +118,11 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
         return (AccumuloGraph) super.getGraph();
     }
 
+    @Override
+    protected void setVisibility(Visibility visibility) {
+        super.setVisibility(visibility);
+    }
+
     protected <TElement extends Element> void saveExistingElementMutation(ExistingElementMutationImpl<TElement> mutation, Authorizations authorizations) {
         // Order matters a lot here
 
@@ -144,7 +149,7 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
         );
 
         if (mutation.getNewElementVisibility() != null) {
-            getGraph().alterElementVisibility((AccumuloElement) mutation.getElement(), mutation.getNewElementVisibility());
+            getGraph().alterElementVisibility((AccumuloElement) mutation.getElement(), mutation.getNewElementVisibility(), authorizations);
         }
 
         if (mutation instanceof EdgeMutation) {

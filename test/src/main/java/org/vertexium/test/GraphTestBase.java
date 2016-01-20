@@ -2140,6 +2140,27 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    public void testGraphQueryVertexWithVisibilityChange () {
+        graph.prepareVertex("v1", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
+        graph.flush();
+
+        Iterable<Vertex> vertices = graph.query(AUTHORIZATIONS_A).vertices();
+        Assert.assertEquals(1, count(vertices));
+
+        // change to same visibility
+        Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
+        v1 = v1.prepareMutation()
+                .alterElementVisibility(VISIBILITY_EMPTY)
+                .save(AUTHORIZATIONS_A);
+        graph.flush();
+        Assert.assertEquals(VISIBILITY_EMPTY, v1.getVisibility());
+
+        vertices = graph.query(AUTHORIZATIONS_A).vertices();
+        Assert.assertEquals(1, count(vertices));
+    }
+
+    @Test
     public void testGraphQueryVertexHasWithSecurityCantSeeVertex() {
         graph.prepareVertex("v1", VISIBILITY_B)
                 .setProperty("age", 25, VISIBILITY_A)
