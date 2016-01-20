@@ -1,6 +1,7 @@
 # v2.2.6
 
 * allow overriding ES configuration
+* for AccumuloGraph, when altering an element visibility also add the element to the search index with the new visibility
 
 # v2.2.5
 
