@@ -1,10 +1,10 @@
 package org.vertexium.sql;
 
-import com.google.common.base.Throwables;
 import org.skife.jdbi.v2.DBI;
 import org.skife.jdbi.v2.Handle;
 import org.skife.jdbi.v2.StatementContext;
 import org.skife.jdbi.v2.tweak.ResultSetMapper;
+import org.vertexium.VertexiumException;
 import org.vertexium.Visibility;
 import org.vertexium.property.StreamingPropertyValue;
 import org.vertexium.util.AutoDeleteFileInputStream;
@@ -22,7 +22,6 @@ import static org.vertexium.sql.SqlStreamingPropertyTable.*;
 public class SqlStreamingPropertyValue extends StreamingPropertyValue {
 
     private static final int IN_MEMORY_STREAM_MAX_BYTES = 1024 * 1024;
-    private static final int DEFAULT_IN_MEMORY_INIT_CAPACITY = 1024;
 
     private final DBI dbi;
     private final String tableName;
@@ -69,7 +68,7 @@ public class SqlStreamingPropertyValue extends StreamingPropertyValue {
                 return new ByteArrayInputStream(outputStream.toByteArray());
             }
         } catch (IOException ex) {
-            throw Throwables.propagate(ex);
+            throw new VertexiumException(ex);
         }
     }
 

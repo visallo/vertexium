@@ -53,6 +53,10 @@ public class AutoDeleteFileInputStream extends FileInputStream {
         }
     }
 
+    public long getFileLength() {
+        return file.length();
+    }
+
     @VisibleForTesting
     File getFile() {
         return file;
