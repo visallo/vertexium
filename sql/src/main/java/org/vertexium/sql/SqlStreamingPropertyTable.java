@@ -1,16 +1,18 @@
 package org.vertexium.sql;
 
-import com.google.common.base.Throwables;
 import org.skife.jdbi.v2.DBI;
 import org.skife.jdbi.v2.Handle;
 import org.skife.jdbi.v2.StatementContext;
 import org.skife.jdbi.v2.tweak.ResultSetMapper;
 import org.skife.jdbi.v2.util.IntegerMapper;
+import org.vertexium.VertexiumException;
 import org.vertexium.Visibility;
 import org.vertexium.property.StreamingPropertyValue;
 import org.vertexium.property.StreamingPropertyValueRef;
+import org.vertexium.util.AutoDeleteFileInputStream;
 
 import javax.sql.DataSource;
+import java.io.IOException;
 import java.io.InputStream;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -30,6 +32,7 @@ class SqlStreamingPropertyTable {
 
     public StreamingPropertyValueRef put(String elementId, String key, String name, Visibility visibility,
                                          long timestamp, StreamingPropertyValue value) {
+        StreamAndLength streamAndLength = streamAndLength(value.getInputStream(), value.getLength());
         String id = makeId(elementId, key, name, visibility, timestamp);
         try (Handle handle = dbi.open()) {
             int count = handle.createQuery(String.format(
@@ -43,14 +46,20 @@ class SqlStreamingPropertyTable {
                                 "insert into %s (%s, %s, %s, %s) values (?, ?, ?, ?)",
                                 tableName, KEY_COLUMN_NAME, VALUE_COLUMN_NAME, VALUE_TYPE_COLUMN_NAME,
                                 VALUE_LENGTH_COLUMN_NAME),
-                        id, value.getInputStream(), value.getValueType().getName(), value.getLength());
+                        id, streamAndLength.inputStream, value.getValueType().getName(), streamAndLength.length);
             } else {
                 handle.execute(String.format(
                                 "update %s set %s = ?, %s = ? where %s = ?",
                                 tableName, VALUE_COLUMN_NAME, VALUE_LENGTH_COLUMN_NAME, KEY_COLUMN_NAME),
-                        value.getInputStream(), value.getLength(), id);
+                        streamAndLength.inputStream, streamAndLength.length, id);
             }
             return new SqlStreamingPropertyValueRef(value, elementId, key, name, visibility, timestamp);
+        } finally {
+            try {
+                streamAndLength.inputStream.close();
+            } catch (IOException ex) {
+                throw new VertexiumException(ex);
+            }
         }
     }
 
@@ -69,26 +78,48 @@ class SqlStreamingPropertyTable {
         }
     }
 
+    private static StreamAndLength streamAndLength(InputStream inputStream, long length) {
+        if (length < 0) {
+            try {
+                AutoDeleteFileInputStream fileInputStream = new AutoDeleteFileInputStream(inputStream);
+                return new StreamAndLength(fileInputStream, fileInputStream.getFileLength());
+            } catch (IOException ex) {
+                throw new VertexiumException(ex);
+            }
+        } else {
+            return new StreamAndLength(inputStream, length);
+        }
+    }
+
     static String makeId(String elementId, String key, String name, Visibility visibility, long timestamp) {
         return String.format("%s:%s:%s:%s:%d", elementId, key, name, visibility.getVisibilityString(), timestamp);
     }
 
-    static class Row {
+    static final class Row {
         InputStream inputStream;
         Class valueType;
         long length;
     }
 
-    private static class RowResultSetMapper implements ResultSetMapper<Row> {
+    private static final class RowResultSetMapper implements ResultSetMapper<Row> {
         public Row map(int index, ResultSet rs, StatementContext ctx) throws SQLException {
             try {
                 Row row = new Row();
                 row.valueType = Class.forName(rs.getString(VALUE_TYPE_COLUMN_NAME));
                 row.length = rs.getLong(VALUE_LENGTH_COLUMN_NAME);
                 return row;
-            } catch (ClassNotFoundException e) {
-                throw Throwables.propagate(e);
+            } catch (ClassNotFoundException ex) {
+                throw new VertexiumException(ex);
             }
+        }
+    }
+
+    private static final class StreamAndLength {
+        final InputStream inputStream;
+        final long length;
+        StreamAndLength(InputStream inputStream, long length) {
+            this.inputStream = inputStream;
+            this.length = length;
         }
     }
 }
