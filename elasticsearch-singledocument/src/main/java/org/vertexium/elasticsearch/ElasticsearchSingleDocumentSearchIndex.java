@@ -126,6 +126,7 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
                     .put("path.data", dataPath)
                     .put("path.logs", logsPath)
                     .put("path.work", workPath)
+                    .put("discovery.zen.ping.multicast.enabled", false)
                     .build();
         }
 
