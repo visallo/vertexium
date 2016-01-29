@@ -1,3 +1,7 @@
+# v2.2.7
+
+* Elasticsearch: disable in-process zen discovery by default
+
 # v2.2.6
 
 * allow overriding ES configuration
