@@ -2140,7 +2140,7 @@ public abstract class GraphTestBase {
     }
 
     @Test
-    public void testGraphQueryVertexWithVisibilityChange () {
+    public void testGraphQueryVertexWithVisibilityChange() {
         graph.prepareVertex("v1", VISIBILITY_A)
                 .save(AUTHORIZATIONS_A);
         graph.flush();
@@ -3920,6 +3920,61 @@ public abstract class GraphTestBase {
                         .vertices()
         );
         assertTrue(vertices.size() > 0);
+    }
+
+    @Test
+    public void testAllPropertyHistoricalVersions() {
+        Date time25 = createDate(2015, 4, 6, 16, 15, 0);
+        Date time30 = createDate(2015, 4, 6, 16, 16, 0);
+
+        Metadata metadata = new Metadata();
+        metadata.add("author", "author1", VISIBILITY_A);
+        graph.prepareVertex("v1", VISIBILITY_A)
+                .addPropertyValue("", "age", 25, metadata, time25.getTime(), VISIBILITY_A)
+                .addPropertyValue("k1", "name", "k1Time25Value", metadata, time25.getTime(), VISIBILITY_A)
+                .addPropertyValue("k2", "name", "k2Time25Value", metadata, time25.getTime(), VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
+
+        metadata = new Metadata();
+        metadata.add("author", "author2", VISIBILITY_A);
+        graph.prepareVertex("v1", VISIBILITY_A)
+                .addPropertyValue("", "age", 30, metadata, time30.getTime(), VISIBILITY_A)
+                .addPropertyValue("k1", "name", "k1Time30Value", metadata, time30.getTime(), VISIBILITY_A)
+                .addPropertyValue("k2", "name", "k2Time30Value", metadata, time30.getTime(), VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
+        graph.flush();
+
+        Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
+        List<HistoricalPropertyValue> values = toList(v1.getHistoricalPropertyValues(AUTHORIZATIONS_A));
+        assertEquals(6, values.size());
+
+        for (int i = 0; i < 3; i++) {
+            HistoricalPropertyValue item = values.get(i);
+            assertEquals(time30, new Date(values.get(i).getTimestamp()));
+            if (item.getPropertyName().equals("age")) {
+                assertEquals(30, item.getValue());
+            } else if (item.getPropertyName().equals("name") && item.getPropertyKey().equals("k1")) {
+                assertEquals("k1Time30Value", item.getValue());
+            } else if (item.getPropertyName().equals("name") && item.getPropertyKey().equals("k2")) {
+                assertEquals("k2Time30Value", item.getValue());
+            } else {
+                fail("Invalid " + item);
+            }
+        }
+
+        for (int i = 3; i < 6; i++) {
+            HistoricalPropertyValue item = values.get(i);
+            assertEquals(time25, new Date(values.get(i).getTimestamp()));
+            if (item.getPropertyName().equals("age")) {
+                assertEquals(25, item.getValue());
+            } else if (item.getPropertyName().equals("name") && item.getPropertyKey().equals("k1")) {
+                assertEquals("k1Time25Value", item.getValue());
+            } else if (item.getPropertyName().equals("name") && item.getPropertyKey().equals("k2")) {
+                assertEquals("k2Time25Value", item.getValue());
+            } else {
+                fail("Invalid " + item);
+            }
+        }
     }
 
     @Test

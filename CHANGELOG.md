@@ -1,6 +1,7 @@
 # v2.2.8
 
 * SQL: create tables if they do not exist
+* add method to get all historical values of all properties of an element
 
 # v2.2.7
 

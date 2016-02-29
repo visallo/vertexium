@@ -332,6 +332,16 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> implemen
     }
 
     @Override
+    public Iterable<HistoricalPropertyValue> getHistoricalPropertyValues(Authorizations authorizations) {
+        return getHistoricalPropertyValues(null, null, authorizations);
+    }
+
+    @Override
+    public Iterable<HistoricalPropertyValue> getHistoricalPropertyValues(Long startTime, Long endTime, Authorizations authorizations) {
+        return getHistoricalPropertyValues(null, null, null, startTime, endTime, authorizations);
+    }
+
+    @Override
     public Iterable<HistoricalPropertyValue> getHistoricalPropertyValues(String key, String name, Visibility visibility, Long startTime, Long endTime, Authorizations authorizations) {
         return inMemoryTableElement.getHistoricalPropertyValues(key, name, visibility, startTime, endTime, authorizations);
     }

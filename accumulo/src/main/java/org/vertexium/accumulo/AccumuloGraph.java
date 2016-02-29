@@ -748,14 +748,14 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                     String cq = column.getKey().getColumnQualifier().toString();
                     String columnVisibility = column.getKey().getColumnVisibility().toString();
                     if (column.getKey().getColumnFamily().equals(AccumuloElement.CF_PROPERTY)) {
-                        if (!columnVisibility.equals(visibility.getVisibilityString())) {
+                        if (visibility != null && !columnVisibility.equals(visibility.getVisibilityString())) {
                             continue;
                         }
                         PropertyColumnQualifier propertyColumnQualifier = KeyHelper.createPropertyColumnQualifier(cq, getNameSubstitutionStrategy());
-                        if (!propertyColumnQualifier.getPropertyName().equals(name)) {
+                        if (name != null && !propertyColumnQualifier.getPropertyName().equals(name)) {
                             continue;
                         }
-                        if (!propertyColumnQualifier.getPropertyKey().equals(key)) {
+                        if (key != null && !propertyColumnQualifier.getPropertyKey().equals(key)) {
                             continue;
                         }
                         String resultsKey = propertyColumnQualifier.getDiscriminator(columnVisibility, column.getKey().getTimestamp());
@@ -766,7 +766,10 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                         if (value instanceof StreamingPropertyValueTableRef) {
                             value = ((StreamingPropertyValueTableRef) value).toStreamingPropertyValue(this);
                         }
-                        HistoricalPropertyValue hpv = new HistoricalPropertyValue(timestamp, value, metadata, hiddenVisibilities);
+                        String propertyKey = propertyColumnQualifier.getPropertyKey();
+                        String propertyName = propertyColumnQualifier.getPropertyName();
+                        Visibility propertyVisibility = accumuloVisibilityToVisibility(columnVisibility);
+                        HistoricalPropertyValue hpv = new HistoricalPropertyValue(propertyKey, propertyName, propertyVisibility, timestamp, value, metadata, hiddenVisibilities);
                         results.put(resultsKey, hpv);
                     } else if (column.getKey().getColumnFamily().equals(AccumuloElement.CF_PROPERTY_METADATA)) {
                         PropertyMetadataColumnQualifier propertyMetadataColumnQualifier = KeyHelper.createPropertyMetadataColumnQualifier(cq, getNameSubstitutionStrategy());
