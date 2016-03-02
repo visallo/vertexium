@@ -56,6 +56,16 @@ public interface Element {
     Property getProperty(String key, String name, Visibility visibility);
 
     /**
+     * Gets all property values from all timestamps in descending timestamp order.
+     */
+    Iterable<HistoricalPropertyValue> getHistoricalPropertyValues(Authorizations authorizations);
+
+    /**
+     * Gets all property values from the given range of timestamps in descending timestamp order.
+     */
+    Iterable<HistoricalPropertyValue> getHistoricalPropertyValues(final Long startTime, final Long endTime, Authorizations authorizations);
+
+    /**
      * Gets property values from all timestamps in descending timestamp order.
      *
      * @param key        the key of the property.

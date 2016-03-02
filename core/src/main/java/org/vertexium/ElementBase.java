@@ -497,6 +497,19 @@ public abstract class ElementBase implements Element {
     }
 
     @Override
+    public abstract void deleteProperty(String key, String name, Visibility visibility, Authorizations authorizations);
+
+    @Override
+    public Iterable<HistoricalPropertyValue> getHistoricalPropertyValues(Long startTime, Long endTime, Authorizations authorizations) {
+        return getHistoricalPropertyValues(null, null, null, startTime, endTime, authorizations);
+    }
+
+    @Override
+    public Iterable<HistoricalPropertyValue> getHistoricalPropertyValues(Authorizations authorizations) {
+        return getHistoricalPropertyValues(null, null, authorizations);
+    }
+
+    @Override
     public Iterable<HistoricalPropertyValue> getHistoricalPropertyValues(String key, String name, Visibility visibility, Authorizations authorizations) {
         return getHistoricalPropertyValues(key, name, visibility, null, null, authorizations);
     }

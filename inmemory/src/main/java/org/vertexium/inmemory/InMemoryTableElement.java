@@ -113,8 +113,8 @@ public abstract class InMemoryTableElement<TElement extends InMemoryElement> imp
                 continue;
             }
             PropertyMutation pm = (PropertyMutation) m;
-            if (pm.getPropertyKey().equals(key)
-                    && pm.getPropertyName().equals(name)
+            if ((key == null || pm.getPropertyKey().equals(key))
+                    && (name == null || pm.getPropertyName().equals(name))
                     && (visibility == null || pm.getPropertyVisibility().equals(visibility))) {
                 results.add(pm);
             }
@@ -156,6 +156,9 @@ public abstract class InMemoryTableElement<TElement extends InMemoryElement> imp
                 Object value = addPropertyValueMutation.getValue();
                 value = loadIfStreamingPropertyValue(value);
                 HistoricalPropertyValue historicalPropertyValue = new HistoricalPropertyValue(
+                        m.getPropertyKey(),
+                        m.getPropertyName(),
+                        m.getVisibility(),
                         m.getTimestamp(),
                         value,
                         addPropertyValueMutation.getMetadata(),
