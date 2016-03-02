@@ -1,3 +1,7 @@
+# v2.2.8
+
+* SQL: create tables if they do not exist
+
 # v2.2.7
 
 * Elasticsearch: disable in-process zen discovery by default

@@ -22,6 +22,8 @@ public class GraphConfiguration {
     public static final String DEFAULT_SERIALIZER = JavaVertexiumSerializer.class.getName();
     public static final String STRICT_TYPING = "strictTyping";
     public static final boolean DEFAULT_STRICT_TYPING = false;
+    public static final String CREATE_TABLES = "createTables";
+    public static final boolean DEFAULT_CREATE_TABLES = true;
 
     private final Map<String, Object> config;
 
@@ -149,5 +151,9 @@ public class GraphConfiguration {
 
     public boolean isStrictTyping() {
         return getBoolean(STRICT_TYPING, DEFAULT_STRICT_TYPING);
+    }
+
+    public boolean isCreateTables() {
+        return getBoolean(CREATE_TABLES, DEFAULT_CREATE_TABLES);
     }
 }
