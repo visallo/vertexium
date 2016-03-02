@@ -1,15 +1,20 @@
 package org.vertexium.sql;
 
 import org.vertexium.VertexiumException;
+import org.vertexium.util.VertexiumLogger;
+import org.vertexium.util.VertexiumLoggerFactory;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
 public class SqlGraphDDL {
+    private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(SqlGraphDDL.class);
     private static final String BIG_CHAR_COLUMN_TYPE = "clob";
     private static final String BIG_BIN_COLUMN_TYPE = "blob";
+    private static final String GET_TABLES_TABLE_NAME_COLUMN = "TABLE_NAME";
 
     public static void create(DataSource dataSource, SqlGraphConfiguration graphConfig) {
         createMapTable(
@@ -66,12 +71,25 @@ public class SqlGraphDDL {
     private static void runSql(DataSource dataSource, String sql, String tableName) {
         try {
             try (Connection connection = dataSource.getConnection()) {
-                try (Statement statement = connection.createStatement()) {
-                    statement.execute(sql);
+                if (!doesTableExist(connection, tableName)) {
+                    LOGGER.info("creating table %s (sql: %s)", tableName, sql);
+                    try (Statement statement = connection.createStatement()) {
+                        statement.execute(sql);
+                    }
                 }
             }
         } catch (SQLException ex) {
             throw new VertexiumException("Could not create SQL table: " + tableName + " (sql: " + sql + ")", ex);
         }
+    }
+
+    private static boolean doesTableExist(Connection connection, String tableName) throws SQLException {
+        ResultSet tables = connection.getMetaData().getTables(null, null, "%", null);
+        while (tables.next()) {
+            if (tableName.equalsIgnoreCase(tables.getString(GET_TABLES_TABLE_NAME_COLUMN))) {
+                return true;
+            }
+        }
+        return false;
     }
 }
