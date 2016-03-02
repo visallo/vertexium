@@ -52,6 +52,9 @@ public class SqlGraph extends InMemoryGraph {
     }
 
     public static SqlGraph create(SqlGraphConfiguration config) {
+        if (config.isCreateTables()) {
+            SqlGraphDDL.create(config.getDataSource(), config);
+        }
         SqlGraph graph = new SqlGraph(config);
         graph.setup();
         return graph;
@@ -213,9 +216,11 @@ public class SqlGraph extends InMemoryGraph {
     }
 
     @Override
-    protected void alterElementPropertyMetadata(InMemoryTableElement inMemoryTableElement,
-                                             List<SetPropertyMetadata> setPropertyMetadatas,
-                                             Authorizations authorizations) {
+    protected void alterElementPropertyMetadata(
+            InMemoryTableElement inMemoryTableElement,
+            List<SetPropertyMetadata> setPropertyMetadatas,
+            Authorizations authorizations
+    ) {
         super.alterElementPropertyMetadata(inMemoryTableElement, setPropertyMetadatas, authorizations);
         ((Storable) inMemoryTableElement).store();
     }
