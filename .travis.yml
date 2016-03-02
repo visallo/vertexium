@@ -1,5 +1,7 @@
 language: java
 script: mvn test -Ptest,nolog
+jdk:
+  - oraclejdk8
 branches:
   only:
     - master
