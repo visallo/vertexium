@@ -77,7 +77,6 @@
         <maven.plugin.plugin.version>3.2</maven.plugin.plugin.version>
         <maven.plugin.release.version>2.5</maven.plugin.release.version>
         <maven.plugin.scm.version>1.8.1</maven.plugin.scm.version>
-        <maven.plugin.surefire.version>2.16</maven.plugin.surefire.version>
         <maven.plugin.jar.version>2.4</maven.plugin.jar.version>
         <maven.plugin.surefire.version>2.19.1</maven.plugin.surefire.version>
         <maven.plugin.buildnumber.version>1.2</maven.plugin.buildnumber.version>
@@ -419,6 +418,8 @@
                         <version>${maven.plugin.surefire.version}</version>
                         <configuration>
                             <skipTests>false</skipTests>
+                            <reuseForks>false</reuseForks>
+                            <argLine>-Xmx2048m</argLine>
                             <includes>
                                 <include>**/*Test.java</include>
                             </includes>
