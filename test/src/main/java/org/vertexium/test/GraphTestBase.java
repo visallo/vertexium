@@ -3351,6 +3351,42 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    public void testChangeVertexVisibilityAndAlterPropertyVisibilityAndChangePropertyAtTheSameTime() {
+        Metadata metadata = new Metadata();
+        metadata.add("m1", "m1-value1", VISIBILITY_EMPTY);
+        metadata.add("m2", "m2-value1", VISIBILITY_EMPTY);
+        graph.prepareVertex("v1", VISIBILITY_A)
+                .addPropertyValue("k1", "age", 25, metadata, VISIBILITY_A)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.createAuthorizations(AUTHORIZATIONS_ALL);
+        graph.flush();
+
+        Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_ALL);
+        ExistingElementMutation<Vertex> m = v1.prepareMutation();
+        m.alterElementVisibility(VISIBILITY_B);
+        for (Property property : v1.getProperties()) {
+            m.alterPropertyVisibility(property, VISIBILITY_B);
+            m.setPropertyMetadata(property, "m1", "m1-value2", VISIBILITY_EMPTY);
+        }
+        m.save(AUTHORIZATIONS_ALL);
+        graph.flush();
+
+        v1 = graph.getVertex("v1", AUTHORIZATIONS_ALL);
+        assertEquals(VISIBILITY_B, v1.getVisibility());
+        List<Property> properties = toList(v1.getProperties());
+        assertEquals(1, properties.size());
+        assertEquals("age", properties.get(0).getName());
+        assertEquals(VISIBILITY_B, properties.get(0).getVisibility());
+        assertEquals(2, properties.get(0).getMetadata().entrySet().size());
+        assertTrue(properties.get(0).getMetadata().containsKey("m1"));
+        assertEquals("m1-value2", properties.get(0).getMetadata().getEntry("m1").getValue());
+        assertEquals(VISIBILITY_EMPTY, properties.get(0).getMetadata().getEntry("m1").getVisibility());
+        assertTrue(properties.get(0).getMetadata().containsKey("m2"));
+        assertEquals("m2-value1", properties.get(0).getMetadata().getEntry("m2").getValue());
+        assertEquals(VISIBILITY_EMPTY, properties.get(0).getMetadata().getEntry("m2").getVisibility());
+    }
+
+    @Test
     public void testChangeVisibilityVertexProperties() {
         Metadata prop1Metadata = new Metadata();
         prop1Metadata.add("prop1_key1", "value1", VISIBILITY_EMPTY);
