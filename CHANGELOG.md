@@ -1,3 +1,7 @@
+# v2.2.9
+
+* SQL: change varchar size in create tables from 100 to 4000
+
 # v2.2.8
 
 * SQL: create tables if they do not exist
