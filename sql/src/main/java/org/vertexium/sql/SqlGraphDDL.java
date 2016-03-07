@@ -16,6 +16,11 @@ public class SqlGraphDDL {
     private static final String BIG_BIN_COLUMN_TYPE = "blob";
     private static final String GET_TABLES_TABLE_NAME_COLUMN = "TABLE_NAME";
 
+    // Oracle's limit is 4000 (https://docs.oracle.com/cd/B28359_01/server.111/b28320/limits001.htm)
+    // MySQL's limit is 65,535 (http://dev.mysql.com/doc/refman/5.7/en/char.html)
+    // H2's limit is Integer.MAX_VALUE (http://www.h2database.com/html/datatypes.html#varchar_type)
+    private static final int VARCHAR_SIZE = 4000;
+
     public static void create(DataSource dataSource, SqlGraphConfiguration graphConfig) {
         createMapTable(
                 dataSource,
@@ -26,7 +31,7 @@ public class SqlGraphDDL {
                 dataSource,
                 graphConfig.tableNameWithPrefix(SqlGraphConfiguration.EDGE_TABLE_NAME),
                 BIG_CHAR_COLUMN_TYPE,
-                "in_vertex_id varchar(100), out_vertex_id varchar(100)"
+                "in_vertex_id varchar(" + VARCHAR_SIZE + "), out_vertex_id varchar(" + VARCHAR_SIZE + ")"
         );
         createMapTable(
                 dataSource,
@@ -47,7 +52,7 @@ public class SqlGraphDDL {
         if (!additionalColumns.isEmpty()) {
             additionalColumns = ", " + additionalColumns;
         }
-        String sql = String.format("CREATE TABLE IF NOT EXISTS %s (%s varchar(100) primary key, %s %s not null %s)",
+        String sql = String.format("CREATE TABLE IF NOT EXISTS %s (%s varchar(" + VARCHAR_SIZE + ") primary key, %s %s not null %s)",
                 tableName,
                 SqlGraphConfiguration.KEY_COLUMN_NAME,
                 SqlGraphConfiguration.VALUE_COLUMN_NAME,
@@ -58,7 +63,7 @@ public class SqlGraphDDL {
 
     private static void createStreamingPropertiesTable(DataSource dataSource, String tableName) {
         String sql = String.format(
-                "CREATE TABLE IF NOT EXISTS %s (%s varchar(100) primary key, %s %s not null, %s varchar(100) not null, %s bigint not null)",
+                "CREATE TABLE IF NOT EXISTS %s (%s varchar(" + VARCHAR_SIZE + ") primary key, %s %s not null, %s varchar(" + VARCHAR_SIZE + ") not null, %s bigint not null)",
                 tableName,
                 SqlStreamingPropertyTable.KEY_COLUMN_NAME,
                 SqlStreamingPropertyTable.VALUE_COLUMN_NAME,
