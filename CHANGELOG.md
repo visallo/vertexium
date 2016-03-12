@@ -1,3 +1,7 @@
+# v2.2.10
+
+* ACCUMULO: fix find path traversing over deleted edges
+
 # v2.2.9
 
 * SQL: change varchar size in create tables from 100 to 4000

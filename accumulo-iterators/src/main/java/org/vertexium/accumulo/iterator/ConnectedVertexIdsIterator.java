@@ -64,14 +64,16 @@ public class ConnectedVertexIdsIterator extends RowEncodingIterator {
                 if (isMatch(edgeInfo)) {
                     outVertexIds.put(key.getColumnQualifier(), edgeInfo.getVertexId());
                 }
-            } else if (key.getColumnFamily().equals(VertexIterator.CF_OUT_EDGE_HIDDEN)) {
+            } else if (key.getColumnFamily().equals(VertexIterator.CF_OUT_EDGE_HIDDEN)
+                    || key.getColumnFamily().equals(VertexIterator.CF_OUT_EDGE_SOFT_DELETE)) {
                 outVertexIds.remove(key.getColumnQualifier());
             } else if (key.getColumnFamily().equals(VertexIterator.CF_IN_EDGE)) {
                 EdgeInfo edgeInfo = new EdgeInfo(value.get(), key.getTimestamp());
                 if (isMatch(edgeInfo)) {
                     inVertexIds.put(key.getColumnQualifier(), edgeInfo.getVertexId());
                 }
-            } else if (key.getColumnFamily().equals(VertexIterator.CF_IN_EDGE_HIDDEN)) {
+            } else if (key.getColumnFamily().equals(VertexIterator.CF_IN_EDGE_HIDDEN)
+                    || key.getColumnFamily().equals(VertexIterator.CF_IN_EDGE_SOFT_DELETE)) {
                 inVertexIds.remove(key.getColumnQualifier());
             }
         }
