@@ -2737,6 +2737,69 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    public void testFindPathsWithSoftDeletedEdges() {
+        Vertex v1 = graph.addVertex("v1", VISIBILITY_EMPTY, AUTHORIZATIONS_A);
+        Vertex v2 = graph.addVertex("v2", VISIBILITY_EMPTY, AUTHORIZATIONS_A);
+        Vertex v3 = graph.addVertex("v3", VISIBILITY_EMPTY, AUTHORIZATIONS_A);
+        graph.addEdge(v1, v2, "knows", VISIBILITY_EMPTY, AUTHORIZATIONS_A); // v1 -> v2
+        Edge v2ToV3 = graph.addEdge(v2, v3, "knows", VISIBILITY_EMPTY, AUTHORIZATIONS_A); // v2 -> v3
+        graph.flush();
+
+        v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
+        v3 = graph.getVertex("v3", AUTHORIZATIONS_A);
+        List<Path> paths = toList(graph.findPaths("v1", "v3", 2, AUTHORIZATIONS_A));
+
+        // v1 -> v2 -> v3
+        assertEquals(1, paths.size());
+        for (Path path : paths) {
+            assertEquals(3, path.length());
+            assertEquals(path.get(0), v1.getId());
+            assertEquals(path.get(1), v2.getId());
+            assertEquals(path.get(2), v3.getId());
+        }
+
+        graph.softDeleteEdge(v2ToV3, AUTHORIZATIONS_A);
+        graph.flush();
+
+        assertNull(graph.getEdge(v2ToV3.getId(), AUTHORIZATIONS_A));
+        paths = toList(graph.findPaths("v1", "v3", 2, AUTHORIZATIONS_A));
+        assertEquals(0, paths.size());
+    }
+
+    @Test
+    public void testFindPathsWithHiddenEdges() {
+        Vertex v1 = graph.addVertex("v1", VISIBILITY_EMPTY, AUTHORIZATIONS_A_AND_B);
+        Vertex v2 = graph.addVertex("v2", VISIBILITY_EMPTY, AUTHORIZATIONS_A_AND_B);
+        Vertex v3 = graph.addVertex("v3", VISIBILITY_EMPTY, AUTHORIZATIONS_A_AND_B);
+        graph.addEdge(v1, v2, "knows", VISIBILITY_EMPTY, AUTHORIZATIONS_A_AND_B); // v1 -> v2
+        Edge v2ToV3 = graph.addEdge(v2, v3, "knows", VISIBILITY_EMPTY, AUTHORIZATIONS_A_AND_B); // v2 -> v3
+        graph.flush();
+
+        v1 = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B);
+        v3 = graph.getVertex("v3", AUTHORIZATIONS_A_AND_B);
+        List<Path> paths = toList(graph.findPaths("v1", "v3", 2, AUTHORIZATIONS_A_AND_B));
+
+        // v1 -> v2 -> v3
+        assertEquals(1, paths.size());
+        for (Path path : paths) {
+            assertEquals(3, path.length());
+            assertEquals(path.get(0), v1.getId());
+            assertEquals(path.get(1), v2.getId());
+            assertEquals(path.get(2), v3.getId());
+        }
+
+        graph.markEdgeHidden(v2ToV3, VISIBILITY_A, AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        assertNull(graph.getEdge(v2ToV3.getId(), AUTHORIZATIONS_A_AND_B));
+        paths = toList(graph.findPaths("v1", "v3", 2, AUTHORIZATIONS_A));
+        assertEquals(0, paths.size());
+
+        paths = toList(graph.findPaths("v1", "v3", 2, AUTHORIZATIONS_B));
+        assertEquals(1, paths.size());
+    }
+
+    @Test
     public void testFindPathsMultiplePaths() {
         Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
         Vertex v2 = graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_A);
