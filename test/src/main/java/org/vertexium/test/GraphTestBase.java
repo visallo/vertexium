@@ -1424,6 +1424,37 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    public void testChangingPropertyOnEdge() {
+        Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
+        Vertex v2 = graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.prepareEdge("e1", v1, v2, "label1", VISIBILITY_A)
+                .setProperty("propA", "valueA", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        Edge e = graph.getEdge("e1", AUTHORIZATIONS_A_AND_B);
+        Assert.assertEquals(1, count(e.getProperties()));
+        assertEquals("valueA", e.getPropertyValues("propA").iterator().next());
+
+        Property propA = e.getProperty("", "propA");
+        assertNotNull(propA);
+
+        e.markPropertyHidden(propA, VISIBILITY_A, AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        e = graph.getEdge("e1", AUTHORIZATIONS_A_AND_B);
+        Assert.assertEquals(0, count(e.getProperties()));
+        Assert.assertEquals(0, count(e.getPropertyValues("propA")));
+
+        e.setProperty(propA.getName(), "valueA_changed", VISIBILITY_B, AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        e = graph.getEdge("e1", AUTHORIZATIONS_A_AND_B);
+        Assert.assertEquals(1, count(e.getProperties()));
+        assertEquals("valueA_changed", e.getPropertyValues("propA").iterator().next());
+    }
+
+    @Test
     public void testAlterEdgeLabel() {
         Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
         Vertex v2 = graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_A);

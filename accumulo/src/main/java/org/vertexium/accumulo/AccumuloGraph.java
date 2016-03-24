@@ -977,7 +977,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             if (element instanceof Vertex) {
                 addMutations(getVerticesWriter(), getMarkHiddenPropertyMutation(element.getId(), property, timestamp, columnVisibility));
             } else if (element instanceof Edge) {
-                addMutations(getVerticesWriter(), getMarkHiddenPropertyMutation(element.getId(), property, timestamp, columnVisibility));
+                addMutations(getEdgesWriter(), getMarkHiddenPropertyMutation(element.getId(), property, timestamp, columnVisibility));
             }
 
             if (hasEventListeners()) {
