@@ -4623,6 +4623,46 @@ public abstract class GraphTestBase {
         assertEquals("v2", vertices.get(1).getId());
     }
 
+    @Test
+    public void testVertexHashCodeAndEquals() {
+        Vertex v1 = graph.prepareVertex("v1", VISIBILITY_A)
+                .setProperty("prop1", "value1", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
+        Vertex v2 = graph.prepareVertex("v2", VISIBILITY_A)
+                .setProperty("prop1", "value1", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
+        graph.flush();
+
+        Vertex v1Loaded = graph.getVertex("v1", AUTHORIZATIONS_A);
+
+        assertEquals(v1Loaded.hashCode(), v1.hashCode());
+        assertTrue(v1Loaded.equals(v1));
+
+        assertNotEquals(v1Loaded.hashCode(), v2.hashCode());
+        assertFalse(v1Loaded.equals(v2));
+    }
+
+    @Test
+    public void testEdgeHashCodeAndEquals() {
+        Vertex v1 = graph.prepareVertex("v1", VISIBILITY_A).save(AUTHORIZATIONS_A);
+        Vertex v2 = graph.prepareVertex("v2", VISIBILITY_A).save(AUTHORIZATIONS_A);
+        Edge e1 = graph.prepareEdge("e1", v1, v2, "label1", VISIBILITY_A)
+                .setProperty("prop1", "value1", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
+        Edge e2 = graph.prepareEdge("e2", v1, v2, "label1", VISIBILITY_A)
+                .setProperty("prop1", "value1", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
+        graph.flush();
+
+        Edge e1Loaded = graph.getEdge("e1", AUTHORIZATIONS_A);
+
+        assertEquals(e1Loaded.hashCode(), e1.hashCode());
+        assertTrue(e1Loaded.equals(e1));
+
+        assertNotEquals(e1Loaded.hashCode(), e2.hashCode());
+        assertFalse(e1Loaded.equals(e2));
+    }
+
     private List<Vertex> getVertices(long count) {
         List<Vertex> vertices = new ArrayList<>();
         for (int i = 0; i < count; i++) {

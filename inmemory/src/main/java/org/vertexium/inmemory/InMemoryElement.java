@@ -437,6 +437,11 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> implemen
     }
 
     @Override
+    public int hashCode() {
+        return getId().hashCode();
+    }
+
+    @Override
     public boolean equals(Object obj) {
         if (obj instanceof Element) {
             Element objElem = (Element) obj;

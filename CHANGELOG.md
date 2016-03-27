@@ -1,6 +1,7 @@
 # v2.2.10
 
 * ACCUMULO: fix find path traversing over deleted edges
+* InMemory: add `hashCode()` to `InMemoryElement`
 
 # v2.2.9
 
