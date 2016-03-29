@@ -1,3 +1,7 @@
+# v2.2.11
+
+* SQL: Change max primary key in DDL to 767 to fix MySQL
+
 # v2.2.10
 
 * ACCUMULO: fix find path traversing over deleted edges

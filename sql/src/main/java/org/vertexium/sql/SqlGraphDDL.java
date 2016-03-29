@@ -12,9 +12,11 @@ import java.sql.Statement;
 
 public class SqlGraphDDL {
     private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(SqlGraphDDL.class);
-    private static final String BIG_CHAR_COLUMN_TYPE = "clob";
-    private static final String BIG_BIN_COLUMN_TYPE = "blob";
+    private static final String BIG_BIN_COLUMN_TYPE = "LONGBLOB";
     private static final String GET_TABLES_TABLE_NAME_COLUMN = "TABLE_NAME";
+
+    // MySQL's limit is 767 (http://dev.mysql.com/doc/refman/5.7/en/innodb-restrictions.html)
+    private static final int ID_VARCHAR_SIZE = 767;
 
     // Oracle's limit is 4000 (https://docs.oracle.com/cd/B28359_01/server.111/b28320/limits001.htm)
     // MySQL's limit is 65,535 (http://dev.mysql.com/doc/refman/5.7/en/char.html)
@@ -25,18 +27,18 @@ public class SqlGraphDDL {
         createMapTable(
                 dataSource,
                 graphConfig.tableNameWithPrefix(SqlGraphConfiguration.VERTEX_TABLE_NAME),
-                BIG_CHAR_COLUMN_TYPE
+                BIG_BIN_COLUMN_TYPE
         );
         createMapTable(
                 dataSource,
                 graphConfig.tableNameWithPrefix(SqlGraphConfiguration.EDGE_TABLE_NAME),
-                BIG_CHAR_COLUMN_TYPE,
-                "in_vertex_id varchar(" + VARCHAR_SIZE + "), out_vertex_id varchar(" + VARCHAR_SIZE + ")"
+                BIG_BIN_COLUMN_TYPE,
+                "in_vertex_id varchar(" + ID_VARCHAR_SIZE + "), out_vertex_id varchar(" + ID_VARCHAR_SIZE + ")"
         );
         createMapTable(
                 dataSource,
                 graphConfig.tableNameWithPrefix(SqlGraphConfiguration.METADATA_TABLE_NAME),
-                BIG_CHAR_COLUMN_TYPE
+                BIG_BIN_COLUMN_TYPE
         );
         createStreamingPropertiesTable(
                 dataSource,
@@ -52,7 +54,7 @@ public class SqlGraphDDL {
         if (!additionalColumns.isEmpty()) {
             additionalColumns = ", " + additionalColumns;
         }
-        String sql = String.format("CREATE TABLE IF NOT EXISTS %s (%s varchar(" + VARCHAR_SIZE + ") primary key, %s %s not null %s)",
+        String sql = String.format("CREATE TABLE IF NOT EXISTS %s (%s varchar(" + ID_VARCHAR_SIZE + ") primary key, %s %s not null %s)",
                 tableName,
                 SqlGraphConfiguration.KEY_COLUMN_NAME,
                 SqlGraphConfiguration.VALUE_COLUMN_NAME,
@@ -63,7 +65,7 @@ public class SqlGraphDDL {
 
     private static void createStreamingPropertiesTable(DataSource dataSource, String tableName) {
         String sql = String.format(
-                "CREATE TABLE IF NOT EXISTS %s (%s varchar(" + VARCHAR_SIZE + ") primary key, %s %s not null, %s varchar(" + VARCHAR_SIZE + ") not null, %s bigint not null)",
+                "CREATE TABLE IF NOT EXISTS %s (%s varchar(" + ID_VARCHAR_SIZE + ") primary key, %s %s not null, %s varchar(" + VARCHAR_SIZE + ") not null, %s bigint not null)",
                 tableName,
                 SqlStreamingPropertyTable.KEY_COLUMN_NAME,
                 SqlStreamingPropertyTable.VALUE_COLUMN_NAME,
