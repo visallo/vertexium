@@ -1,6 +1,7 @@
 package org.vertexium.elasticsearch;
 
 import com.google.common.base.Throwables;
+import com.google.common.collect.ImmutableMap;
 import net.jodah.recurrent.Recurrent;
 import net.jodah.recurrent.RetryPolicy;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
@@ -30,6 +31,7 @@ import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.TermFilterBuilder;
 import org.elasticsearch.node.Node;
 import org.elasticsearch.node.NodeBuilder;
+import org.elasticsearch.script.ScriptService;
 import org.elasticsearch.search.aggregations.Aggregation;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsBuilder;
@@ -110,6 +112,12 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
     }
 
     private Client createInProcessNode(ElasticSearchSearchIndexConfiguration config) {
+        try {
+            Class.forName("groovy.lang.GroovyShell");
+        } catch (ClassNotFoundException e) {
+            throw new VertexiumException("Unable to load Groovy. This is required when running in-process ES.", e);
+        }
+
         Settings settings = tryReadSettingsFromFile(config);
         if (settings == null) {
             String dataPath = config.getInProcessNodeDataPath();
@@ -868,12 +876,21 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
 
     @Override
     public void deleteProperty(Graph graph, Element element, Property property, Authorizations authorizations) {
-        deleteProperty(graph, element, property.getKey(), deflatePropertyName(graph, property), property.getVisibility(), authorizations);
+        deleteProperty(graph, element, property.getKey(), property.getName(), property.getVisibility(), authorizations);
     }
 
     @Override
     public void deleteProperty(Graph graph, Element element, String propertyKey, String propertyName, Visibility propertyVisibility, Authorizations authorizations) {
-        addElement(graph, element, authorizations);
+        String fieldName = deflatePropertyName(graph, propertyName, propertyVisibility);
+        getClient().prepareUpdate()
+                .setIndex(getIndexName(element))
+                .setId(element.getId())
+                .setType(ELEMENT_TYPE)
+                .setScript(
+                        "ctx._source.remove(fieldName); ctx._source.remove(fieldName + '_e')",
+                        ScriptService.ScriptType.INLINE)
+                .setScriptParams(ImmutableMap.<String, Object>of("fieldName", fieldName))
+                .get();
     }
 
     @Override
