@@ -48,25 +48,25 @@ public abstract class ElementMutationBuilder {
         this.dataDir = dataDir;
     }
 
-    public void saveVertex(AccumuloVertex vertex) {
-        Mutation m = createMutationForVertex(vertex);
+    public void saveVertexBuilder(AccumuloGraph graph, VertexBuilder vertexBuilder, long timestamp) {
+        Mutation m = createMutationForVertexBuilder(graph, vertexBuilder, timestamp);
         saveVertexMutation(m);
     }
 
     protected abstract void saveVertexMutation(Mutation m);
 
-    private Mutation createMutationForVertex(AccumuloVertex vertex) {
-        String vertexRowKey = vertex.getId();
+    private Mutation createMutationForVertexBuilder(AccumuloGraph graph, VertexBuilder vertexBuilder, long timestamp) {
+        String vertexRowKey = vertexBuilder.getVertexId();
         Mutation m = new Mutation(vertexRowKey);
-        m.put(AccumuloVertex.CF_SIGNAL, EMPTY_TEXT, visibilityToAccumuloVisibility(vertex.getVisibility()), vertex.getTimestamp(), EMPTY_VALUE);
-        for (PropertyDeleteMutation propertyDeleteMutation : vertex.getPropertyDeleteMutations()) {
+        m.put(AccumuloVertex.CF_SIGNAL, EMPTY_TEXT, visibilityToAccumuloVisibility(vertexBuilder.getVisibility()), timestamp, EMPTY_VALUE);
+        for (PropertyDeleteMutation propertyDeleteMutation : vertexBuilder.getPropertyDeletes()) {
             addPropertyDeleteToMutation(m, propertyDeleteMutation);
         }
-        for (PropertySoftDeleteMutation propertySoftDeleteMutation : vertex.getPropertySoftDeleteMutations()) {
+        for (PropertySoftDeleteMutation propertySoftDeleteMutation : vertexBuilder.getPropertySoftDeletes()) {
             addPropertySoftDeleteToMutation(m, propertySoftDeleteMutation);
         }
-        for (Property property : vertex.getProperties()) {
-            addPropertyToMutation(vertex.getGraph(), m, vertexRowKey, property);
+        for (Property property : vertexBuilder.getProperties()) {
+            addPropertyToMutation(graph, m, vertexRowKey, property);
         }
         return m;
     }
@@ -174,37 +174,49 @@ public abstract class ElementMutationBuilder {
         results.add(new KeyValuePair(new Key(elementRowKey, AccumuloElement.CF_PROPERTY_SOFT_DELETE, columnQualifier, columnVisibility, currentTimeMillis()), AccumuloElement.SOFT_DELETE_VALUE));
     }
 
-    public void saveEdge(AccumuloEdge edge) {
-        ColumnVisibility edgeColumnVisibility = visibilityToAccumuloVisibility(edge.getVisibility());
-        Mutation m = createMutationForEdge(edge, edgeColumnVisibility);
+    public void saveEdgeBuilder(AccumuloGraph graph, EdgeBuilderBase edgeBuilder, long timestamp) {
+        ColumnVisibility edgeColumnVisibility = visibilityToAccumuloVisibility(edgeBuilder.getVisibility());
+        Mutation m = createMutationForEdgeBuilder(graph, edgeBuilder, edgeColumnVisibility, timestamp);
         saveEdgeMutation(m);
 
-        String edgeLabel = edge.getNewEdgeLabel() != null ? edge.getNewEdgeLabel() : edge.getLabel();
-        saveEdgeInfoOnVertex(edge, edgeLabel, edgeColumnVisibility);
+        String edgeLabel = edgeBuilder.getNewEdgeLabel() != null ? edgeBuilder.getNewEdgeLabel() : edgeBuilder.getLabel();
+        saveEdgeInfoOnVertex(
+                edgeBuilder.getEdgeId(),
+                edgeBuilder.getOutVertexId(),
+                edgeBuilder.getInVertexId(),
+                edgeLabel,
+                edgeColumnVisibility
+        );
     }
 
-    private void saveEdgeInfoOnVertex(AccumuloEdge edge, String edgeLabel, ColumnVisibility edgeColumnVisibility) {
-        Text edgeIdText = new Text(edge.getId());
+    private void saveEdgeInfoOnVertex(String edgeId, String outVertexId, String inVertexId, String edgeLabel, ColumnVisibility edgeColumnVisibility) {
+        Text edgeIdText = new Text(edgeId);
 
         // Update out vertex.
-        Mutation addEdgeToOutMutation = new Mutation(edge.getVertexId(Direction.OUT));
-        EdgeInfo edgeInfo = new EdgeInfo(getNameSubstitutionStrategy().deflate(edgeLabel), edge.getVertexId(Direction.IN));
+        Mutation addEdgeToOutMutation = new Mutation(outVertexId);
+        EdgeInfo edgeInfo = new EdgeInfo(getNameSubstitutionStrategy().deflate(edgeLabel), inVertexId);
         addEdgeToOutMutation.put(AccumuloVertex.CF_OUT_EDGE, edgeIdText, edgeColumnVisibility, edgeInfo.toValue());
         saveVertexMutation(addEdgeToOutMutation);
 
         // Update in vertex.
-        Mutation addEdgeToInMutation = new Mutation(edge.getVertexId(Direction.IN));
-        edgeInfo = new EdgeInfo(getNameSubstitutionStrategy().deflate(edgeLabel), edge.getVertexId(Direction.OUT));
+        Mutation addEdgeToInMutation = new Mutation(inVertexId);
+        edgeInfo = new EdgeInfo(getNameSubstitutionStrategy().deflate(edgeLabel), outVertexId);
         addEdgeToInMutation.put(AccumuloVertex.CF_IN_EDGE, edgeIdText, edgeColumnVisibility, edgeInfo.toValue());
         saveVertexMutation(addEdgeToInMutation);
     }
 
-    public void alterEdgeLabel(AccumuloEdge edge, String newEdgeLabel) {
+    public void alterEdgeLabel(Edge edge, String newEdgeLabel) {
         ColumnVisibility edgeColumnVisibility = visibilityToAccumuloVisibility(edge.getVisibility());
         Mutation m = createAlterEdgeLabelMutation(edge, newEdgeLabel, edgeColumnVisibility);
         saveEdgeMutation(m);
 
-        saveEdgeInfoOnVertex(edge, newEdgeLabel, edgeColumnVisibility);
+        saveEdgeInfoOnVertex(
+                edge.getId(),
+                edge.getVertexId(Direction.OUT),
+                edge.getVertexId(Direction.IN),
+                newEdgeLabel,
+                edgeColumnVisibility
+        );
     }
 
     private ColumnVisibility visibilityToAccumuloVisibility(Visibility visibility) {
@@ -213,30 +225,30 @@ public abstract class ElementMutationBuilder {
 
     protected abstract void saveEdgeMutation(Mutation m);
 
-    private Mutation createMutationForEdge(AccumuloEdge edge, ColumnVisibility edgeColumnVisibility) {
-        String edgeRowKey = edge.getId();
+    private Mutation createMutationForEdgeBuilder(AccumuloGraph graph, EdgeBuilderBase edgeBuilder, ColumnVisibility edgeColumnVisibility, long timestamp) {
+        String edgeRowKey = edgeBuilder.getEdgeId();
         Mutation m = new Mutation(edgeRowKey);
-        String edgeLabel = edge.getLabel();
-        if (edge.getNewEdgeLabel() != null) {
-            edgeLabel = edge.getNewEdgeLabel();
-            m.putDelete(AccumuloEdge.CF_SIGNAL, new Text(edge.getLabel()), edgeColumnVisibility, currentTimeMillis());
+        String edgeLabel = edgeBuilder.getLabel();
+        if (edgeBuilder.getNewEdgeLabel() != null) {
+            edgeLabel = edgeBuilder.getNewEdgeLabel();
+            m.putDelete(AccumuloEdge.CF_SIGNAL, new Text(edgeBuilder.getLabel()), edgeColumnVisibility, currentTimeMillis());
         }
-        m.put(AccumuloEdge.CF_SIGNAL, new Text(edgeLabel), edgeColumnVisibility, edge.getTimestamp(), ElementMutationBuilder.EMPTY_VALUE);
-        m.put(AccumuloEdge.CF_OUT_VERTEX, new Text(edge.getVertexId(Direction.OUT)), edgeColumnVisibility, edge.getTimestamp(), ElementMutationBuilder.EMPTY_VALUE);
-        m.put(AccumuloEdge.CF_IN_VERTEX, new Text(edge.getVertexId(Direction.IN)), edgeColumnVisibility, edge.getTimestamp(), ElementMutationBuilder.EMPTY_VALUE);
-        for (PropertyDeleteMutation propertyDeleteMutation : edge.getPropertyDeleteMutations()) {
+        m.put(AccumuloEdge.CF_SIGNAL, new Text(edgeLabel), edgeColumnVisibility, timestamp, ElementMutationBuilder.EMPTY_VALUE);
+        m.put(AccumuloEdge.CF_OUT_VERTEX, new Text(edgeBuilder.getOutVertexId()), edgeColumnVisibility, timestamp, ElementMutationBuilder.EMPTY_VALUE);
+        m.put(AccumuloEdge.CF_IN_VERTEX, new Text(edgeBuilder.getInVertexId()), edgeColumnVisibility, timestamp, ElementMutationBuilder.EMPTY_VALUE);
+        for (PropertyDeleteMutation propertyDeleteMutation : edgeBuilder.getPropertyDeletes()) {
             addPropertyDeleteToMutation(m, propertyDeleteMutation);
         }
-        for (PropertySoftDeleteMutation propertySoftDeleteMutation : edge.getPropertySoftDeleteMutations()) {
+        for (PropertySoftDeleteMutation propertySoftDeleteMutation : edgeBuilder.getPropertySoftDeletes()) {
             addPropertySoftDeleteToMutation(m, propertySoftDeleteMutation);
         }
-        for (Property property : edge.getProperties()) {
-            addPropertyToMutation(edge.getGraph(), m, edgeRowKey, property);
+        for (Property property : edgeBuilder.getProperties()) {
+            addPropertyToMutation(graph, m, edgeRowKey, property);
         }
         return m;
     }
 
-    private Mutation createAlterEdgeLabelMutation(AccumuloEdge edge, String newEdgeLabel, ColumnVisibility edgeColumnVisibility) {
+    private Mutation createAlterEdgeLabelMutation(Edge edge, String newEdgeLabel, ColumnVisibility edgeColumnVisibility) {
         String edgeRowKey = edge.getId();
         Mutation m = new Mutation(edgeRowKey);
         m.putDelete(AccumuloEdge.CF_SIGNAL, new Text(edge.getLabel()), edgeColumnVisibility, currentTimeMillis());

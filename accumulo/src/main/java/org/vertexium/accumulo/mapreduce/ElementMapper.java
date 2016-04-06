@@ -104,7 +104,11 @@ public abstract class ElementMapper<KEYIN, VALUEIN, KEYOUT, VALUEOUT> extends Ma
             public Vertex save(Authorizations authorizations) {
                 AccumuloGraph graph = null;
                 Iterable<Visibility> hiddenVisibilities = null;
-                AccumuloVertex vertex = new AccumuloVertex(
+
+                // This has to occur before createVertex since it will mutate the properties
+                elementMutationBuilder.saveVertexBuilder(graph, this, timestampLong);
+
+                return new AccumuloVertex(
                         graph,
                         getVertexId(),
                         getVisibility(),
@@ -115,8 +119,6 @@ public abstract class ElementMapper<KEYIN, VALUEIN, KEYOUT, VALUEOUT> extends Ma
                         timestampLong,
                         authorizations
                 );
-                elementMutationBuilder.saveVertex(vertex);
-                return vertex;
             }
         };
     }
@@ -165,6 +167,9 @@ public abstract class ElementMapper<KEYIN, VALUEIN, KEYOUT, VALUEOUT> extends Ma
         return new EdgeBuilderByVertexId(edgeId, outVertexId, inVertexId, label, visibility) {
             @Override
             public Edge save(Authorizations authorizations) {
+                // This has to occur before createEdge since it will mutate the properties
+                elementMutationBuilder.saveEdgeBuilder(null, this, timestampLong);
+
                 AccumuloEdge edge = new AccumuloEdge(
                         null,
                         getEdgeId(),
@@ -180,7 +185,6 @@ public abstract class ElementMapper<KEYIN, VALUEIN, KEYOUT, VALUEOUT> extends Ma
                         timestampLong,
                         authorizations
                 );
-                elementMutationBuilder.saveEdge(edge);
                 return edge;
             }
         };
@@ -202,6 +206,9 @@ public abstract class ElementMapper<KEYIN, VALUEIN, KEYOUT, VALUEOUT> extends Ma
         return new EdgeBuilder(edgeId, outVertex, inVertex, label, visibility) {
             @Override
             public Edge save(Authorizations authorizations) {
+                // This has to occur before createEdge since it will mutate the properties
+                elementMutationBuilder.saveEdgeBuilder(null, this, timestampLong);
+
                 AccumuloEdge edge = new AccumuloEdge(
                         null,
                         getEdgeId(),
@@ -217,7 +224,6 @@ public abstract class ElementMapper<KEYIN, VALUEIN, KEYOUT, VALUEOUT> extends Ma
                         timestampLong,
                         authorizations
                 );
-                elementMutationBuilder.saveEdge(edge);
                 return edge;
             }
         };

@@ -277,9 +277,10 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                 Span trace = Trace.start("prepareVertex");
                 trace.data("vertexId", finalVertexId);
                 try {
-                    AccumuloVertex vertex = createVertex(authorizations);
+                    // This has to occur before createVertex since it will mutate the properties
+                    getElementMutationBuilder().saveVertexBuilder(AccumuloGraph.this, this, timestampLong);
 
-                    getElementMutationBuilder().saveVertex(vertex);
+                    AccumuloVertex vertex = createVertex(authorizations);
 
                     if (getIndexHint() != IndexHint.DO_NOT_INDEX) {
                         getSearchIndex().addElement(AccumuloGraph.this, vertex, authorizations);
@@ -591,10 +592,14 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
     }
 
     @Override
-    public AccumuloEdgeBuilderByVertexId prepareEdge(String edgeId, String outVertexId, String inVertexId, String label, final Long timestamp, Visibility visibility) {
+    public AccumuloEdgeBuilderByVertexId prepareEdge(String edgeId, String outVertexId, String inVertexId, String label, Long timestamp, Visibility visibility) {
         if (edgeId == null) {
             edgeId = getIdGenerator().nextId();
         }
+        if (timestamp == null) {
+            timestamp = IncreasingTime.currentTimeMillis();
+        }
+        final long timestampLong = timestamp;
 
         final String finalEdgeId = edgeId;
         return new AccumuloEdgeBuilderByVertexId(finalEdgeId, outVertexId, inVertexId, label, visibility, elementMutationBuilder) {
@@ -603,7 +608,10 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                 Span trace = Trace.start("prepareEdge");
                 trace.data("edgeId", finalEdgeId);
                 try {
-                    AccumuloEdge edge = AccumuloGraph.this.createEdge(AccumuloGraph.this, this, timestamp, authorizations);
+                    // This has to occur before createEdge since it will mutate the properties
+                    elementMutationBuilder.saveEdgeBuilder(AccumuloGraph.this, this, timestampLong);
+
+                    AccumuloEdge edge = AccumuloGraph.this.createEdge(AccumuloGraph.this, this, timestampLong, authorizations);
                     return savePreparedEdge(this, edge, null, authorizations);
                 } finally {
                     trace.stop();
@@ -612,13 +620,13 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
 
             @Override
             protected AccumuloEdge createEdge(Authorizations authorizations) {
-                return AccumuloGraph.this.createEdge(AccumuloGraph.this, this, timestamp, authorizations);
+                return AccumuloGraph.this.createEdge(AccumuloGraph.this, this, timestampLong, authorizations);
             }
         };
     }
 
     @Override
-    public EdgeBuilder prepareEdge(String edgeId, Vertex outVertex, Vertex inVertex, String label, final Long timestamp, Visibility visibility) {
+    public EdgeBuilder prepareEdge(String edgeId, Vertex outVertex, Vertex inVertex, String label, Long timestamp, Visibility visibility) {
         if (outVertex == null) {
             throw new IllegalArgumentException("outVertex is required");
         }
@@ -628,6 +636,10 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         if (edgeId == null) {
             edgeId = getIdGenerator().nextId();
         }
+        if (timestamp == null) {
+            timestamp = IncreasingTime.currentTimeMillis();
+        }
+        final long timestampLong = timestamp;
 
         final String finalEdgeId = edgeId;
         return new EdgeBuilder(finalEdgeId, outVertex, inVertex, label, visibility) {
@@ -647,7 +659,11 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                             }
                         }
                     };
-                    AccumuloEdge edge = createEdge(AccumuloGraph.this, this, timestamp, authorizations);
+
+                    // This has to occur before createEdge since it will mutate the properties
+                    elementMutationBuilder.saveEdgeBuilder(AccumuloGraph.this, this, timestampLong);
+
+                    AccumuloEdge edge = createEdge(AccumuloGraph.this, this, timestampLong, authorizations);
                     return savePreparedEdge(this, edge, addEdgeToVertex, authorizations);
                 } finally {
                     trace.stop();
@@ -659,13 +675,9 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
     private AccumuloEdge createEdge(
             AccumuloGraph accumuloGraph,
             EdgeBuilderBase edgeBuilder,
-            Long timestamp,
+            long timestamp,
             Authorizations authorizations
     ) {
-        if (timestamp == null) {
-            timestamp = IncreasingTime.currentTimeMillis();
-        }
-
         Iterable<Visibility> hiddenVisibilities = null;
         AccumuloEdge edge = new AccumuloEdge(
                 accumuloGraph,
@@ -691,8 +703,6 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             AddEdgeToVertexRunnable addEdgeToVertex,
             Authorizations authorizations
     ) {
-        elementMutationBuilder.saveEdge(edge);
-
         if (addEdgeToVertex != null) {
             addEdgeToVertex.run(edge);
         }
