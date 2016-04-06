@@ -1452,6 +1452,17 @@ public abstract class GraphTestBase {
         e = graph.getEdge("e1", AUTHORIZATIONS_A_AND_B);
         Assert.assertEquals(1, count(e.getProperties()));
         assertEquals("valueA_changed", e.getPropertyValues("propA").iterator().next());
+
+        e.markPropertyVisible(propA, VISIBILITY_A, AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        e = graph.getEdge("e1", AUTHORIZATIONS_A_AND_B);
+        Assert.assertEquals(2, count(e.getProperties()));
+        Assert.assertEquals(2, count(e.getPropertyValues("propA")));
+
+        List<Object> propertyValues = IterableUtils.toList(e.getPropertyValues("propA"));
+        assertTrue(propertyValues.contains("valueA"));
+        assertTrue(propertyValues.contains("valueA_changed"));
     }
 
     @Test
