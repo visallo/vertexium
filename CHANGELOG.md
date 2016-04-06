@@ -1,11 +1,8 @@
-# v2.2.12
-
-* ACCUMULO: fix `markPropertyVisible` for edge properties
-
 # v2.2.11
 
 * SQL: Change max primary key in DDL to 767 to fix MySQL
 * Elasticsearch: use an inline Groovy script to efficiently delete a property; also fixes query bugs
+* ACCUMULO: fix `markPropertyVisible` for edge properties
 
 # v2.2.10
 
