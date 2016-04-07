@@ -1,31 +1,43 @@
 package org.vertexium.util;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 
+import org.vertexium.Element;
+import org.vertexium.query.Query;
+
+import java.util.Arrays;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
+
+/**
+ * This class contains methods for working with {@link java.util.stream.Stream}.
+ */
 public class StreamUtils {
-    private static final int DEFAULT_BUFFER_SIZE = 1024 * 4;
 
-    public static long copy(InputStream input, OutputStream output) throws IOException {
-        byte[] buffer = new byte[DEFAULT_BUFFER_SIZE];
-        long count = 0;
-        int n;
-        while (-1 != (n = input.read(buffer))) {
-            output.write(buffer, 0, n);
-            count += n;
-        }
-        return count;
+    private StreamUtils() {
     }
 
-    public static byte[] toBytes(InputStream in) throws IOException {
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        copy(in, out);
-        return out.toByteArray();
+    /**
+     * Create a {@link java.util.stream.Stream} containing the results of executing the queries, in order. The results
+     * are not loaded into memory first.
+     */
+    public static Stream<Element> stream(Query... queries) {
+        return Arrays.asList(queries)
+                .stream()
+                .map(query -> StreamSupport.stream(query.elements().spliterator(), false))
+                .reduce(Stream::concat)
+                .orElseGet(Stream::empty);
     }
 
-    public static String toString(InputStream in) throws IOException {
-        return new String(toBytes(in));
+    /**
+     * Create a {@link java.util.stream.Stream} containing the contents of the iterables, in order.  The contents
+     * are not loaded into memory first.
+     */
+    @SafeVarargs
+    public static <T> Stream<T> stream(Iterable<T>... iterables) {
+        return Arrays.asList(iterables)
+                .stream()
+                .map(iterable -> StreamSupport.stream(iterable.spliterator(), false))
+                .reduce(Stream::concat)
+                .orElseGet(Stream::empty);
     }
 }

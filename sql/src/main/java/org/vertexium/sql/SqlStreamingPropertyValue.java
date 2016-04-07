@@ -8,7 +8,7 @@ import org.vertexium.VertexiumException;
 import org.vertexium.Visibility;
 import org.vertexium.property.StreamingPropertyValue;
 import org.vertexium.util.AutoDeleteFileInputStream;
-import org.vertexium.util.StreamUtils;
+import org.vertexium.util.IOUtils;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -64,7 +64,7 @@ public class SqlStreamingPropertyValue extends StreamingPropertyValue {
                 return new AutoDeleteFileInputStream(inputStream);
             } else {
                 ByteArrayOutputStream outputStream = new ByteArrayOutputStream((int) length);
-                StreamUtils.copy(inputStream, outputStream);
+                IOUtils.copy(inputStream, outputStream);
                 return new ByteArrayInputStream(outputStream.toByteArray());
             }
         } catch (IOException ex) {

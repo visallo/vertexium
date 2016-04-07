@@ -51,7 +51,7 @@ public class AutoDeleteFileInputStreamTest {
         file = adFileInputStream.getFile();
         assertTrue(baClosed[0]);
         assertTrue(file.exists());
-        assertEquals(content, StreamUtils.toString(adFileInputStream));
+        assertEquals(content, IOUtils.toString(adFileInputStream));
 
         adFileInputStream.close();
         assertFalse(file.exists());

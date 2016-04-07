@@ -46,7 +46,7 @@ import org.vertexium.type.GeoPoint;
 import org.vertexium.type.GeoShape;
 import org.vertexium.type.IpV4Address;
 import org.vertexium.util.ConfigurationUtils;
-import org.vertexium.util.StreamUtils;
+import org.vertexium.util.IOUtils;
 import org.vertexium.util.VertexiumLogger;
 import org.vertexium.util.VertexiumLoggerFactory;
 
@@ -404,7 +404,7 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
             Class valueType = streamingPropertyValue.getValueType();
             if (valueType == String.class) {
                 InputStream in = streamingPropertyValue.getInputStream();
-                propertyValue = StreamUtils.toString(in);
+                propertyValue = IOUtils.toString(in);
             } else {
                 throw new VertexiumException("Unhandled StreamingPropertyValue type: " + valueType.getName());
             }

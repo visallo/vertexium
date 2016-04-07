@@ -1,7 +1,7 @@
 package org.vertexium.property;
 
 import org.vertexium.VertexiumException;
-import org.vertexium.util.StreamUtils;
+import org.vertexium.util.IOUtils;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -42,7 +42,7 @@ public class StreamingPropertyValue extends PropertyValue implements Serializabl
 
     public String readToString() {
         try {
-            return StreamUtils.toString(getInputStream());
+            return IOUtils.toString(getInputStream());
         } catch (IOException e) {
             throw new VertexiumException("Could not read streaming property value into string", e);
         }
