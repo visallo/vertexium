@@ -1,3 +1,7 @@
+# v2.2.12
+* require JDK 8
+* introduce new `StreamUtils` for working with `java.util.stream.Stream` (renamed existing `StreamUtils` to `IOUtils`)
+
 # v2.2.11
 
 * SQL: Change max primary key in DDL to 767 to fix MySQL

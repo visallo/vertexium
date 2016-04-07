@@ -54,8 +54,8 @@
 
     <properties>
         <java.compiler.showWarnings>true</java.compiler.showWarnings>
-        <java.source.version>1.7</java.source.version>
-        <java.target.version>1.7</java.target.version>
+        <java.source.version>1.8</java.source.version>
+        <java.target.version>1.8</java.target.version>
 
         <junit.version>4.11</junit.version>
         <slf4j.version>1.7.5</slf4j.version>
