@@ -1,6 +1,7 @@
 package org.vertexium.test;
 
 
+import com.google.common.collect.ImmutableMap;
 import org.apache.commons.io.IOUtils;
 import org.junit.After;
 import org.junit.Assert;
@@ -4219,6 +4220,79 @@ public abstract class GraphTestBase {
         assertEquals(25, graph.getVertex("v1", FetchHint.ALL, time25.getTime(), AUTHORIZATIONS_A).getPropertyValue("", "age"));
         assertNull("v3 should not exist at time25", graph.getVertex("v3", FetchHint.ALL, time25.getTime(), AUTHORIZATIONS_A));
         assertEquals("e1 should not exist", 0, count(graph.getEdges(FetchHint.ALL, time25.getTime(), AUTHORIZATIONS_A)));
+    }
+
+    @Test
+    public void testSaveMultipleTimestampedValuesInSameMutationVertex() {
+        String vertexId = "v1";
+        String propertyKey = "k1";
+        String propertyName = "p1";
+        Map<String, Long> values = ImmutableMap.of(
+                "value1", createDate(2016, 4, 6, 9, 20, 0).getTime(),
+                "value2", createDate(2016, 5, 6, 9, 20, 0).getTime(),
+                "value3", createDate(2016, 6, 6, 9, 20, 0).getTime(),
+                "value4", createDate(2016, 7, 6, 9, 20, 0).getTime(),
+                "value5", createDate(2016, 8, 6, 9, 20, 0).getTime()
+        );
+
+        ElementMutation<Vertex> vertexMutation = graph.prepareVertex(vertexId, VISIBILITY_EMPTY);
+        for (Map.Entry<String, Long> entry : values.entrySet()) {
+            vertexMutation.addPropertyValue(propertyKey, propertyName, entry.getKey(), new Metadata(), entry.getValue(), VISIBILITY_EMPTY);
+        }
+        vertexMutation.save(AUTHORIZATIONS_EMPTY);
+        graph.flush();
+
+        Vertex retrievedVertex = graph.getVertex(vertexId, AUTHORIZATIONS_EMPTY);
+        Iterable<HistoricalPropertyValue> historicalPropertyValues = retrievedVertex.getHistoricalPropertyValues(propertyKey, propertyName, VISIBILITY_EMPTY, null, null, AUTHORIZATIONS_EMPTY);
+        compareHistoricalValues(values, historicalPropertyValues);
+    }
+
+    @Test
+    public void testSaveMultipleTimestampedValuesInSameMutationEdge() {
+        Vertex v1 = graph.addVertex("v1", VISIBILITY_EMPTY, AUTHORIZATIONS_EMPTY);
+        Vertex v2 = graph.addVertex("v2", VISIBILITY_EMPTY, AUTHORIZATIONS_EMPTY);
+
+        String edgeId = "e1";
+        String propertyKey = "k1";
+        String propertyName = "p1";
+        Map<String, Long> values = ImmutableMap.of(
+                "value1", createDate(2016, 4, 6, 9, 20, 0).getTime(),
+                "value2", createDate(2016, 5, 6, 9, 20, 0).getTime(),
+                "value3", createDate(2016, 6, 6, 9, 20, 0).getTime(),
+                "value4", createDate(2016, 7, 6, 9, 20, 0).getTime(),
+                "value5", createDate(2016, 8, 6, 9, 20, 0).getTime()
+        );
+
+        ElementMutation<Edge> edgeMutation = graph.prepareEdge(edgeId, v1, v2, "edgeLabel", VISIBILITY_EMPTY);
+        for (Map.Entry<String, Long> entry : values.entrySet()) {
+            edgeMutation.addPropertyValue(propertyKey, propertyName, entry.getKey(), new Metadata(), entry.getValue(), VISIBILITY_EMPTY);
+        }
+        edgeMutation.save(AUTHORIZATIONS_EMPTY);
+        graph.flush();
+
+        Edge retrievedEdge = graph.getEdge(edgeId, AUTHORIZATIONS_EMPTY);
+        Iterable<HistoricalPropertyValue> historicalPropertyValues = retrievedEdge.getHistoricalPropertyValues(propertyKey, propertyName, VISIBILITY_EMPTY, null, null, AUTHORIZATIONS_EMPTY);
+        compareHistoricalValues(values, historicalPropertyValues);
+    }
+
+    private void compareHistoricalValues(Map<String, Long> expectedValues, Iterable<HistoricalPropertyValue> historicalPropertyValues) {
+        Map<String, Long> expectedValuesCopy = new HashMap<>(expectedValues);
+        for (HistoricalPropertyValue historicalPropertyValue : historicalPropertyValues) {
+            String value = (String) historicalPropertyValue.getValue();
+            if (!expectedValuesCopy.containsKey(value)) {
+                throw new VertexiumException("Expected historical values to contain: " + value);
+            }
+            long expectedValue = expectedValuesCopy.remove(value);
+            long ts = historicalPropertyValue.getTimestamp();
+            assertEquals(expectedValue, ts);
+        }
+        if (expectedValuesCopy.size() > 0) {
+            StringBuilder result = new StringBuilder();
+            for (Map.Entry<String, Long> entry : expectedValuesCopy.entrySet()) {
+                result.append(entry.getKey()).append(" = ").append(entry.getValue()).append("\n");
+            }
+            throw new VertexiumException("Missing historical values:\n" + result.toString());
+        }
     }
 
     @Test
