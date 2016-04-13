@@ -41,8 +41,8 @@ public class StreamingPropertyValue extends PropertyValue implements Serializabl
     }
 
     public String readToString() {
-        try {
-            return StreamUtils.toString(getInputStream());
+        try (InputStream in = getInputStream()) {
+            return StreamUtils.toString(in);
         } catch (IOException e) {
             throw new VertexiumException("Could not read streaming property value into string", e);
         }
