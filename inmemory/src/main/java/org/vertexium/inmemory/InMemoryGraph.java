@@ -494,7 +494,7 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
         return true;
     }
 
-    protected void softDeleteProperty(InMemoryTableElement inMemoryTableElement, Property property, Long timestamp, Authorizations authorizations) {
+    protected void softDeleteProperty(InMemoryTableElement inMemoryTableElement, Property property, Long timestamp, IndexHint indexHint, Authorizations authorizations) {
         Element element;
         if (inMemoryTableElement instanceof InMemoryTableVertex) {
             inMemoryTableElement.appendSoftDeletePropertyMutation(property.getKey(), property.getName(), property.getVisibility(), timestamp);
@@ -505,7 +505,9 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
         } else {
             throw new IllegalArgumentException("Unexpected element type: " + inMemoryTableElement.getClass().getName());
         }
-        getSearchIndex().deleteProperty(this, element, property, authorizations);
+        if (indexHint != IndexHint.DO_NOT_INDEX) {
+            getSearchIndex().deleteProperty(this, element, property, authorizations);
+        }
 
         if (hasEventListeners()) {
             fireGraphEvent(new SoftDeletePropertyEvent(this, element, property));

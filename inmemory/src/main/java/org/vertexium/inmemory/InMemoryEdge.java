@@ -76,9 +76,10 @@ public class InMemoryEdge extends InMemoryElement<InMemoryEdge> implements Edge 
         return new ExistingEdgeMutation(this) {
             @Override
             public Edge save(Authorizations authorizations) {
-                saveExistingElementMutation(this, authorizations);
+                IndexHint indexHint = getIndexHint();
+                saveExistingElementMutation(this, indexHint, authorizations);
                 Edge edge = getElement();
-                if (getIndexHint() != IndexHint.DO_NOT_INDEX) {
+                if (indexHint != IndexHint.DO_NOT_INDEX) {
                     saveMutationToSearchIndex(edge, getAlterPropertyVisibilities(), authorizations);
                 }
                 return edge;
