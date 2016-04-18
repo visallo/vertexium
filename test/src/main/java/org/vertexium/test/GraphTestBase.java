@@ -693,6 +693,26 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    public void testSoftDeletePropertyOnEdgeNotIndexed() {
+        Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A_AND_B);
+        Vertex v2 = graph.addVertex("v2", VISIBILITY_B, AUTHORIZATIONS_A_AND_B);
+        ElementBuilder<Edge> elementBuilder = graph.prepareEdge("e1", v1, v2, "label1", VISIBILITY_B)
+                .setProperty("prop1", "value1", VISIBILITY_B);
+        elementBuilder.setIndexHint(IndexHint.DO_NOT_INDEX);
+        Edge e1 = elementBuilder.save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        ExistingElementMutation<Edge> m = e1.prepareMutation();
+        m.softDeleteProperty("prop1", VISIBILITY_B);
+        m.setIndexHint(IndexHint.DO_NOT_INDEX);
+        m.save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        e1 = graph.getEdge("e1", AUTHORIZATIONS_A_AND_B);
+        assertEquals(0, IterableUtils.count(e1.getProperties()));
+    }
+
+    @Test
     public void testSoftDeletePropertyWithVisibility() {
         Vertex v1 = graph.prepareVertex("v1", VISIBILITY_A)
                 .addPropertyValue("key1", "name1", "value1", VISIBILITY_A)

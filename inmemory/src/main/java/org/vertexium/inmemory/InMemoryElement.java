@@ -4,6 +4,7 @@ import org.vertexium.*;
 import org.vertexium.mutation.*;
 import org.vertexium.property.MutableProperty;
 import org.vertexium.property.MutablePropertyImpl;
+import org.vertexium.search.IndexHint;
 import org.vertexium.util.ConvertingIterable;
 import org.vertexium.util.FilterIterable;
 import org.vertexium.util.IncreasingTime;
@@ -90,19 +91,19 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> implemen
     public void softDeleteProperty(String key, String name, Authorizations authorizations) {
         Property property = getProperty(key, name);
         if (property != null) {
-            getGraph().softDeleteProperty(inMemoryTableElement, property, null, authorizations);
+            getGraph().softDeleteProperty(inMemoryTableElement, property, null, IndexHint.INDEX, authorizations);
         }
     }
 
     @Override
     public void softDeleteProperty(String key, String name, Visibility visibility, Authorizations authorizations) {
-        softDeleteProperty(key, name, null, visibility, authorizations);
+        softDeleteProperty(key, name, null, visibility, IndexHint.INDEX, authorizations);
     }
 
-    protected void softDeleteProperty(String key, String name, Long timestamp, Visibility visibility, Authorizations authorizations) {
+    protected void softDeleteProperty(String key, String name, Long timestamp, Visibility visibility, IndexHint indexHint, Authorizations authorizations) {
         Property property = getProperty(key, name, visibility);
         if (property != null) {
-            getGraph().softDeleteProperty(inMemoryTableElement, property, timestamp, authorizations);
+            getGraph().softDeleteProperty(inMemoryTableElement, property, timestamp, indexHint, authorizations);
         }
     }
 
@@ -110,7 +111,7 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> implemen
     public void softDeleteProperties(String name, Authorizations authorizations) {
         Iterable<Property> properties = getProperties(name);
         for (Property property : properties) {
-            getGraph().softDeleteProperty(inMemoryTableElement, property, null, authorizations);
+            getGraph().softDeleteProperty(inMemoryTableElement, property, null, IndexHint.INDEX, authorizations);
         }
     }
 
@@ -369,11 +370,12 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> implemen
         return this.graph;
     }
 
-    void updatePropertiesInternal(VertexBuilder edgeBuilder) {
+    void updatePropertiesInternal(VertexBuilder vertexBuilder) {
         updatePropertiesInternal(
-                edgeBuilder.getProperties(),
-                edgeBuilder.getPropertyDeletes(),
-                edgeBuilder.getPropertySoftDeletes()
+                vertexBuilder.getProperties(),
+                vertexBuilder.getPropertyDeletes(),
+                vertexBuilder.getPropertySoftDeletes(),
+                vertexBuilder.getIndexHint()
         );
     }
 
@@ -381,14 +383,16 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> implemen
         updatePropertiesInternal(
                 edgeBuilder.getProperties(),
                 edgeBuilder.getPropertyDeletes(),
-                edgeBuilder.getPropertySoftDeletes()
+                edgeBuilder.getPropertySoftDeletes(),
+                edgeBuilder.getIndexHint()
         );
     }
 
     protected void updatePropertiesInternal(
             Iterable<Property> properties,
             Iterable<PropertyDeleteMutation> propertyDeleteMutations,
-            Iterable<PropertySoftDeleteMutation> propertySoftDeleteMutations
+            Iterable<PropertySoftDeleteMutation> propertySoftDeleteMutations,
+            IndexHint indexHint
     ) {
         long timestamp = IncreasingTime.currentTimeMillis();
         for (Property property : properties) {
@@ -398,11 +402,11 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> implemen
             deleteProperty(propertyDeleteMutation.getKey(), propertyDeleteMutation.getName(), propertyDeleteMutation.getVisibility(), authorizations);
         }
         for (PropertySoftDeleteMutation propertySoftDeleteMutation : propertySoftDeleteMutations) {
-            softDeleteProperty(propertySoftDeleteMutation.getKey(), propertySoftDeleteMutation.getName(), timestamp, propertySoftDeleteMutation.getVisibility(), authorizations);
+            softDeleteProperty(propertySoftDeleteMutation.getKey(), propertySoftDeleteMutation.getName(), timestamp, propertySoftDeleteMutation.getVisibility(), indexHint, authorizations);
         }
     }
 
-    protected <T extends Element> void saveExistingElementMutation(ExistingElementMutationImpl<T> mutation, Authorizations authorizations) {
+    protected <T extends Element> void saveExistingElementMutation(ExistingElementMutationImpl<T> mutation, IndexHint indexHint, Authorizations authorizations) {
         if (mutation.getElement() != this) {
             throw new VertexiumException("cannot save mutation from another element");
         }
@@ -419,7 +423,8 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> implemen
         updatePropertiesInternal(
                 properties,
                 propertyDeleteMutations,
-                propertySoftDeleteMutations
+                propertySoftDeleteMutations,
+                indexHint
         );
 
         InMemoryGraph graph = getGraph();
