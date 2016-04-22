@@ -1213,4 +1213,13 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
     public ElasticSearchSearchIndexConfiguration getConfig() {
         return config;
     }
+
+    public boolean isPropertyInIndex(String propertyName) {
+        for (Map.Entry<String, IndexInfo> entry : this.indexInfos.entrySet()) {
+            if (entry.getValue().isPropertyDefined(propertyName)) {
+                return true;
+            }
+        }
+        return false;
+    }
 }

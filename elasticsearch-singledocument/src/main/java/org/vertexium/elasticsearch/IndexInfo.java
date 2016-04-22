@@ -59,6 +59,11 @@ public class IndexInfo {
         return propertyInfo.hasVisibility(visibility);
     }
 
+    public boolean isPropertyDefined(String propertyName) {
+        PropertyInfo propertyInfo = propertyInfos.get(propertyName);
+        return propertyInfo != null;
+    }
+
     private static class PropertyInfo {
         private Set<Visibility> visibilities = new HashSet<>();
 
