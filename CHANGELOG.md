@@ -1,3 +1,9 @@
+# v2.2.12
+
+* Elasticsearch: only sort on properties know to be in the index
+* fix inmemory implementation to handle soft deleting with IndexHint of DO NOT INDEX
+* close SPV input stream in readToString
+
 # v2.2.11
 
 * SQL: Change max primary key in DDL to 767 to fix MySQL

@@ -2085,6 +2085,23 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    public void testGraphQuerySortOnPropertyThatHasNoValuesInTheIndex() {
+        graph.defineProperty("age").dataType(Integer.class).sortable(true).define();
+
+        graph.prepareVertex("v1", VISIBILITY_A)
+                .setProperty("name", "joe", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.prepareVertex("v2", VISIBILITY_A)
+                .setProperty("name", "bob", VISIBILITY_B)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        QueryResultsIterable<Vertex> vertices
+                = graph.query(AUTHORIZATIONS_A).sort("age", SortDirection.ASCENDING).vertices();
+        Assert.assertEquals(2, count(vertices));
+    }
+
+    @Test
     public void testGraphQueryVertexHasWithSecurity() {
         graph.prepareVertex("v1", VISIBILITY_A)
                 .setProperty("age", 25, VISIBILITY_A)
