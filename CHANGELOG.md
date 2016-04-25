@@ -1,3 +1,7 @@
+# v2.2.13
+
+* SQL: index vertex columns on edge table
+
 # v2.2.12
 
 * Elasticsearch: only sort on properties know to be in the index

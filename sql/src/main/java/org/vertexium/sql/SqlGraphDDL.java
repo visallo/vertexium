@@ -35,6 +35,11 @@ public class SqlGraphDDL {
                 BIG_BIN_COLUMN_TYPE,
                 "in_vertex_id varchar(" + ID_VARCHAR_SIZE + "), out_vertex_id varchar(" + ID_VARCHAR_SIZE + ")"
         );
+        createColumnIndexes(
+                dataSource,
+                graphConfig.tableNameWithPrefix(SqlGraphConfiguration.EDGE_TABLE_NAME),
+                "in_vertex_id", "out_vertex_id"
+        );
         createMapTable(
                 dataSource,
                 graphConfig.tableNameWithPrefix(SqlGraphConfiguration.METADATA_TABLE_NAME),
@@ -73,6 +78,14 @@ public class SqlGraphDDL {
                 SqlStreamingPropertyTable.VALUE_TYPE_COLUMN_NAME,
                 SqlStreamingPropertyTable.VALUE_LENGTH_COLUMN_NAME);
         runSql(dataSource, sql, tableName);
+    }
+
+    private static void createColumnIndexes(DataSource dataSource, String tableName, String... columnNames) {
+        for (String columnName : columnNames) {
+            String sql = String.format(
+                    "create index idx_%s_%s on %s (%s);", tableName, columnName, tableName, columnName);
+            runSql(dataSource, sql, tableName);
+        }
     }
 
     private static void runSql(DataSource dataSource, String sql, String tableName) {

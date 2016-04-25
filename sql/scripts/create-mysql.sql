@@ -10,8 +10,12 @@ create table visallo_edge (
   id varchar(767) primary key,
   in_vertex_id varchar(767),
   out_vertex_id varchar(767),
-  object longblob not null
+  object longblob not null,
+  KEY idx_visallo_edge_in_vertex_id (in_vertex_id),
+  KEY idx_visallo_edge_out_vertex_id (out_vertex_id)
 );
+create index idx_visallo_edge_in_vertex_id on visallo_edge (in_vertex_id);
+create index idx_visallo_edge_out_vertex_id on visallo_edge (out_vertex_id);
 
 create table visallo_metadata (
   id varchar(767) primary key,
