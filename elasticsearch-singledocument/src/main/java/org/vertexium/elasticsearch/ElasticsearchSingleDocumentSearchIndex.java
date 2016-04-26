@@ -8,6 +8,7 @@ import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthStatus;
 import org.elasticsearch.action.admin.indices.create.CreateIndexResponse;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
+import org.elasticsearch.action.admin.indices.mapping.get.GetMappingsResponse;
 import org.elasticsearch.action.admin.indices.stats.IndexStats;
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
@@ -20,6 +21,9 @@ import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.client.Requests;
 import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.cluster.metadata.MappingMetaData;
+import org.elasticsearch.common.collect.ImmutableOpenMap;
+import org.elasticsearch.common.hppc.cursors.ObjectCursor;
 import org.elasticsearch.common.settings.ImmutableSettings;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
@@ -238,8 +242,54 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
             addPropertyNameVisibility(graph, indexInfo, OUT_VERTEX_ID_FIELD_NAME, null);
             addPropertyNameVisibility(graph, indexInfo, IN_VERTEX_ID_FIELD_NAME, null);
             addPropertyNameVisibility(graph, indexInfo, EDGE_LABEL_FIELD_NAME, null);
+            loadExistingMappingIntoIndexInfo(graph, indexInfo, indexName);
             indexInfos.put(indexName, indexInfo);
         }
+    }
+
+    private void loadExistingMappingIntoIndexInfo(Graph graph, IndexInfo indexInfo, String indexName) {
+        try {
+            GetMappingsResponse mapping = client.admin().indices().prepareGetMappings(indexName).get();
+            for (ObjectCursor<String> mappingIndexName : mapping.getMappings().keys()) {
+                ImmutableOpenMap<String, MappingMetaData> typeMappings = mapping.getMappings().get(mappingIndexName.value);
+                for (ObjectCursor<String> typeName : typeMappings.keys()) {
+                    MappingMetaData typeMapping = typeMappings.get(typeName.value);
+                    Map<String, Map<String, String>> properties = getPropertiesFromTypeMapping(typeMapping);
+                    if (properties == null) {
+                        continue;
+                    }
+
+                    for (Map.Entry<String, Map<String, String>> propertyEntry : properties.entrySet()) {
+                        String rawPropertyName = propertyEntry.getKey();
+                        loadExistingPropertyMappingIntoIndexInfo(graph, indexInfo, rawPropertyName);
+                    }
+                }
+            }
+        } catch (IOException ex) {
+            throw new VertexiumException("Could not load type mappings", ex);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Map<String, String>> getPropertiesFromTypeMapping(MappingMetaData typeMapping) throws IOException {
+        return (Map<String, Map<String, String>>) typeMapping.getSourceAsMap().get("properties");
+    }
+
+    private void loadExistingPropertyMappingIntoIndexInfo(Graph graph, IndexInfo indexInfo, String rawPropertyName) {
+        Matcher m = ElasticsearchSingleDocumentSearchIndex.PROPERTY_NAME_PATTERN.matcher(rawPropertyName);
+        if (!m.matches()) {
+            return;
+        }
+
+        String propertyName = m.group(1);
+        String visibilityHash = m.group(2);
+        if (visibilityHash == null) {
+            Visibility propertyVisibility = null;
+            addPropertyNameVisibility(graph, indexInfo, propertyName, propertyVisibility);
+        }
+        // TODO currently the graph's metadata store is not initialized until after the search index gets create which
+        //      is where this method gets called from. After this we can use MetadataTablePropertyNameVisibilitiesStore
+        //      to look up a visibility from the hash.
     }
 
     private PropertyNameVisibilitiesStore createPropertyNameVisibilitiesStore(Graph graph, GraphConfiguration config) {
