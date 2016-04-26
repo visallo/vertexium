@@ -5,10 +5,7 @@ import org.elasticsearch.action.admin.cluster.state.ClusterStateResponse;
 import org.elasticsearch.common.settings.ImmutableSettings;
 import org.elasticsearch.node.Node;
 import org.elasticsearch.node.NodeBuilder;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
+import org.junit.*;
 import org.vertexium.*;
 import org.vertexium.elasticsearch.score.EdgeCountScoringStrategy;
 import org.vertexium.elasticsearch.score.EdgeCountScoringStrategyConfiguration;
@@ -16,6 +13,8 @@ import org.vertexium.elasticsearch.score.ScoringStrategy;
 import org.vertexium.inmemory.InMemoryAuthorizations;
 import org.vertexium.inmemory.InMemoryGraph;
 import org.vertexium.inmemory.InMemoryGraphConfiguration;
+import org.vertexium.query.QueryResultsIterable;
+import org.vertexium.query.SortDirection;
 import org.vertexium.test.GraphTestBase;
 import org.vertexium.util.VertexiumLogger;
 import org.vertexium.util.VertexiumLoggerFactory;
@@ -26,6 +25,8 @@ import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+
+import static org.vertexium.util.IterableUtils.count;
 
 public abstract class ElasticsearchSingleDocumentSearchIndexTestBase extends GraphTestBase {
     private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(ElasticsearchSingleDocumentSearchIndexTestBase.class);
@@ -157,6 +158,18 @@ public abstract class ElasticsearchSingleDocumentSearchIndexTestBase extends Gra
     @Override
     protected boolean isLuceneQueriesSupported() {
         return true;
+    }
+
+    @Test
+    @Override
+    public void testGraphQuerySortOnPropertyThatHasNoValuesInTheIndex() {
+        super.testGraphQuerySortOnPropertyThatHasNoValuesInTheIndex();
+
+        getSearchIndex().clearIndexInfoCache();
+
+        QueryResultsIterable<Vertex> vertices
+                = graph.query(AUTHORIZATIONS_A).sort("age", SortDirection.ASCENDING).vertices();
+        Assert.assertEquals(2, count(vertices));
     }
 }
 

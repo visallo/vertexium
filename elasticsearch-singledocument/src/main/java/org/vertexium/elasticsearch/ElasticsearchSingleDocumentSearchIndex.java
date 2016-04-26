@@ -83,7 +83,7 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
     private static final int MAX_RETRIES = 3;
     private final Client client;
     private final ElasticSearchSearchIndexConfiguration config;
-    private final Map<String, IndexInfo> indexInfos = new HashMap<>();
+    private Map<String, IndexInfo> indexInfos;
     private int indexInfosLastSize = 0; // Used to prevent creating a index name array each time
     private String[] indexNamesAsArray;
     private IndexSelectionStrategy indexSelectionStrategy;
@@ -104,7 +104,6 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
         this.allFieldEnabled = this.config.isAllFieldEnabled(false);
         this.propertyNameVisibilitiesStore = createPropertyNameVisibilitiesStore(graph, config);
         this.client = createClient(this.config);
-        loadIndexInfos(graph);
     }
 
     protected Client createClient(ElasticSearchSearchIndexConfiguration config) {
@@ -222,7 +221,19 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
         return client.admin().indices().prepareStats().execute().actionGet().getIndices();
     }
 
-    protected void loadIndexInfos(Graph graph) {
+    void clearIndexInfoCache() {
+        this.indexInfos = null;
+    }
+
+    private Map<String, IndexInfo> getIndexInfos(Graph graph) {
+        if (indexInfos == null) {
+            indexInfos = new HashMap<>();
+            loadIndexInfos(graph, indexInfos);
+        }
+        return indexInfos;
+    }
+
+    private void loadIndexInfos(Graph graph, Map<String, IndexInfo> indexInfos) {
         Map<String, IndexStats> indices = getExistingIndexNames();
         for (String indexName : indices.keySet()) {
             if (!indexSelectionStrategy.isIncluded(this, indexName)) {
@@ -283,13 +294,14 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
 
         String propertyName = m.group(1);
         String visibilityHash = m.group(2);
+        Visibility propertyVisibility;
         if (visibilityHash == null) {
-            Visibility propertyVisibility = null;
-            addPropertyNameVisibility(graph, indexInfo, propertyName, propertyVisibility);
+            propertyVisibility = null;
+        } else {
+            visibilityHash = visibilityHash.substring(1); // stop leading _
+            propertyVisibility = this.propertyNameVisibilitiesStore.getVisibilityFromHash(graph, visibilityHash);
         }
-        // TODO currently the graph's metadata store is not initialized until after the search index gets create which
-        //      is where this method gets called from. After this we can use MetadataTablePropertyNameVisibilitiesStore
-        //      to look up a visibility from the hash.
+        addPropertyNameVisibility(graph, indexInfo, propertyName, propertyVisibility);
     }
 
     private PropertyNameVisibilitiesStore createPropertyNameVisibilitiesStore(Graph graph, GraphConfiguration config) {
@@ -355,7 +367,7 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
             Recurrent.run(update, retryPolicy);
 
             if (getConfig().isAutoFlush()) {
-                flush();
+                flush(graph);
             }
         } catch (Exception e) {
             throw new VertexiumException("Could not add element", e);
@@ -416,7 +428,7 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
     private String addElementTypeVisibilityPropertyToIndex(Graph graph, Element element) throws IOException {
         String elementTypeVisibilityPropertyName = deflatePropertyName(graph, ELEMENT_TYPE_FIELD_NAME, element.getVisibility());
         String indexName = getIndexName(element);
-        IndexInfo indexInfo = ensureIndexCreatedAndInitialized(indexName);
+        IndexInfo indexInfo = ensureIndexCreatedAndInitialized(graph, indexName);
         addPropertyToIndex(graph, indexInfo, elementTypeVisibilityPropertyName, element.getVisibility(), String.class, false, false);
         return elementTypeVisibilityPropertyName;
     }
@@ -822,7 +834,7 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
                 QueryBuilders.matchAllQuery(),
                 elementTypeFilterBuilder
         );
-        SearchRequestBuilder q = getClient().prepareSearch(getIndexNamesAsArray())
+        SearchRequestBuilder q = getClient().prepareSearch(getIndexNamesAsArray(graph))
                 .setQuery(queryBuilder)
                 .setSearchType(SearchType.COUNT);
 
@@ -858,13 +870,14 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
         return results;
     }
 
-    protected IndexInfo ensureIndexCreatedAndInitialized(String indexName) {
+    protected IndexInfo ensureIndexCreatedAndInitialized(Graph graph, String indexName) {
+        Map<String, IndexInfo> indexInfos = getIndexInfos(graph);
         IndexInfo indexInfo = indexInfos.get(indexName);
         if (indexInfo != null && indexInfo.isElementTypeDefined()) {
             return indexInfo;
         }
 
-        synchronized (indexInfos) {
+        synchronized (this) {
             if (indexInfo == null) {
                 if (!client.admin().indices().prepareExists(indexName).execute().actionGet().isExists()) {
                     try {
@@ -976,7 +989,7 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
         LOGGER.debug("added %d elements", totalCount);
 
         if (getConfig().isAutoFlush()) {
-            flush();
+            flush(graph);
         }
     }
 
@@ -991,11 +1004,12 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
     }
 
     @Override
-    public void flush() {
-        client.admin().indices().prepareRefresh(getIndexNamesAsArray()).execute().actionGet();
+    public void flush(Graph graph) {
+        client.admin().indices().prepareRefresh(getIndexNamesAsArray(graph)).execute().actionGet();
     }
 
-    protected String[] getIndexNamesAsArray() {
+    protected String[] getIndexNamesAsArray(Graph graph) {
+        Map<String, IndexInfo> indexInfos = getIndexInfos(graph);
         if (indexInfos.size() == indexInfosLastSize) {
             return indexNamesAsArray;
         }
@@ -1047,7 +1061,7 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
     public IndexInfo addPropertiesToIndex(Graph graph, Element element, Iterable<Property> properties) {
         try {
             String indexName = getIndexName(element);
-            IndexInfo indexInfo = ensureIndexCreatedAndInitialized(indexName);
+            IndexInfo indexInfo = ensureIndexCreatedAndInitialized(graph, indexName);
             for (Property property : properties) {
                 addPropertyToIndex(graph, indexInfo, property);
             }
@@ -1141,23 +1155,23 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
     }
 
     @Override
-    public synchronized void truncate() {
+    public synchronized void truncate(Graph graph) {
         LOGGER.warn("Truncate of Elasticsearch is not possible, dropping the indices and recreating instead.");
-        drop();
+        drop(graph);
     }
 
     @Override
-    public void drop() {
-        Set<String> indexInfosSet = indexInfos.keySet();
+    public void drop(Graph graph) {
+        Set<String> indexInfosSet = getIndexInfos(graph).keySet();
         for (String indexName : indexInfosSet) {
             try {
                 DeleteIndexRequest deleteRequest = new DeleteIndexRequest(indexName);
                 getClient().admin().indices().delete(deleteRequest).actionGet();
-                indexInfos.remove(indexName);
+                getIndexInfos(graph).remove(indexName);
             } catch (Exception ex) {
                 throw new VertexiumException("Could not delete index " + indexName, ex);
             }
-            ensureIndexCreatedAndInitialized(indexName);
+            ensureIndexCreatedAndInitialized(graph, indexName);
         }
     }
 
@@ -1264,8 +1278,9 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
         return config;
     }
 
-    public boolean isPropertyInIndex(String propertyName) {
-        for (Map.Entry<String, IndexInfo> entry : this.indexInfos.entrySet()) {
+    public boolean isPropertyInIndex(Graph graph, String propertyName) {
+        Map<String, IndexInfo> indexInfos = getIndexInfos(graph);
+        for (Map.Entry<String, IndexInfo> entry : indexInfos.entrySet()) {
             if (entry.getValue().isPropertyDefined(propertyName)) {
                 return true;
             }

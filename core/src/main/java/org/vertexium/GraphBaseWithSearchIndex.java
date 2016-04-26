@@ -123,7 +123,7 @@ public abstract class GraphBaseWithSearchIndex extends GraphBase implements Grap
     @Override
     public void flush() {
         if (getSearchIndex() != null) {
-            this.searchIndex.flush();
+            this.searchIndex.flush(this);
         }
     }
 
