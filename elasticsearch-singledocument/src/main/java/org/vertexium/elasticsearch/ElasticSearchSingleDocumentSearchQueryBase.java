@@ -145,6 +145,9 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
         if (agg instanceof StatisticsAggregation) {
             return true;
         }
+        if (agg instanceof CalendarFieldAggregation) {
+            return true;
+        }
         return false;
     }
 
@@ -809,6 +812,8 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
                 aggs.addAll(getElasticsearchGeohashAggregations((GeohashAggregation) agg));
             } else if (agg instanceof StatisticsAggregation) {
                 aggs.addAll(getElasticsearchStatisticsAggregations((StatisticsAggregation) agg));
+            } else if (agg instanceof CalendarFieldAggregation) {
+                aggs.addAll(getElasticsearchCalendarFieldAggregation((CalendarFieldAggregation) agg));
             } else {
                 throw new VertexiumException("Could not add aggregation of type: " + agg.getClass().getName());
             }
@@ -882,6 +887,56 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
                 && propertyDefinition.getTextIndexHints().contains(TextIndexHint.EXACT_MATCH);
     }
 
+    private Collection<? extends AbstractAggregationBuilder> getElasticsearchCalendarFieldAggregation(CalendarFieldAggregation agg) {
+        List<AggregationBuilder> aggs = new ArrayList<>();
+        PropertyDefinition propertyDefinition = getPropertyDefinition(agg.getPropertyName());
+        if (propertyDefinition == null) {
+            throw new VertexiumException("Could not find mapping for property: " + agg.getPropertyName());
+        }
+        Class propertyDataType = propertyDefinition.getDataType();
+        for (String propertyName : getPropertyNames(agg.getPropertyName())) {
+            String visibilityHash = getSearchIndex().getPropertyVisibilityHashFromDeflatedPropertyName(propertyName);
+            String aggName = createAggregationName(agg.getAggregationName(), visibilityHash);
+            if (propertyDataType == Date.class) {
+                HistogramBuilder histAgg = AggregationBuilders.histogram(aggName);
+                histAgg.interval(1);
+                if (agg.getMinDocumentCount() != null) {
+                    histAgg.minDocCount(agg.getMinDocumentCount());
+                }
+                histAgg.extendedBounds(0L, 23L);
+                String script = getCalendarFieldAggregationScript(agg, propertyName);
+                histAgg.script(script);
+
+                for (AbstractAggregationBuilder subAgg : getElasticsearchAggregations(agg.getNestedAggregations())) {
+                    histAgg.subAggregation(subAgg);
+                }
+
+                aggs.add(histAgg);
+            } else {
+                throw new VertexiumException("Only dates are supported for hour of day aggregations");
+            }
+        }
+        return aggs;
+    }
+
+    private String getCalendarFieldAggregationScript(CalendarFieldAggregation agg, String propertyName) {
+        switch (agg.getCalendarField()) {
+            case Calendar.DAY_OF_MONTH:
+                return "doc['" + propertyName + "'].date.toDateTime(DateTimeZone.forID(\"" + agg.getTimeZone().getID() + "\")).get(DateTimeFieldType.dayOfMonth())";
+            case Calendar.DAY_OF_WEEK:
+                return "d = doc['" + propertyName + "'].date.toDateTime(DateTimeZone.forID(\"" + agg.getTimeZone().getID() + "\")).get(DateTimeFieldType.dayOfWeek()) + 1; return d > 7 ? d - 7 : d;";
+            case Calendar.HOUR_OF_DAY:
+                return "doc['" + propertyName + "'].date.toDateTime(DateTimeZone.forID(\"" + agg.getTimeZone().getID() + "\")).get(DateTimeFieldType.hourOfDay())";
+            case Calendar.MONTH:
+                return "doc['" + propertyName + "'].date.toDateTime(DateTimeZone.forID(\"" + agg.getTimeZone().getID() + "\")).get(DateTimeFieldType.monthOfYear()) - 1";
+            case Calendar.YEAR:
+                return "doc['" + propertyName + "'].date.toDateTime(DateTimeZone.forID(\"" + agg.getTimeZone().getID() + "\")).get(DateTimeFieldType.year())";
+            default:
+                LOGGER.warn("Slow operation toGregorianCalendar() for calendar field: %d", agg.getCalendarField());
+                return "doc['" + propertyName + "'].date.toDateTime(DateTimeZone.forID(\"" + agg.getTimeZone().getID() + "\")).toGregorianCalendar().get(" + agg.getCalendarField() + ")";
+        }
+    }
+
     protected List<AggregationBuilder> getElasticsearchHistogramAggregations(HistogramAggregation agg) {
         List<AggregationBuilder> aggs = new ArrayList<>();
         PropertyDefinition propertyDefinition = getPropertyDefinition(agg.getFieldName());
@@ -899,6 +954,11 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
                 if (agg.getMinDocumentCount() != null) {
                     dateAgg.minDocCount(agg.getMinDocumentCount());
                 }
+
+                for (AbstractAggregationBuilder subAgg : getElasticsearchAggregations(agg.getNestedAggregations())) {
+                    dateAgg.subAggregation(subAgg);
+                }
+
                 aggs.add(dateAgg);
             } else {
                 HistogramBuilder histogramAgg = AggregationBuilders.histogram(aggName);
@@ -907,6 +967,11 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
                 if (agg.getMinDocumentCount() != null) {
                     histogramAgg.minDocCount(agg.getMinDocumentCount());
                 }
+
+                for (AbstractAggregationBuilder subAgg : getElasticsearchAggregations(agg.getNestedAggregations())) {
+                    histogramAgg.subAggregation(subAgg);
+                }
+
                 aggs.add(histogramAgg);
             }
         }

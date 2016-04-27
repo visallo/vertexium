@@ -1,7 +1,8 @@
-# v2.2.13
+# v2.3.0
 
 * SQL: index vertex columns on edge table
 * Elasticsearch: Load field mapping on startup
+* Search: Add CalendarFieldAggregation
 
 # v2.2.12
 

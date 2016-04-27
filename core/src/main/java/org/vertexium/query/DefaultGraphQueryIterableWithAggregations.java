@@ -34,19 +34,26 @@ public class DefaultGraphQueryIterableWithAggregations<T extends Element> extend
         if (agg instanceof TermsAggregation) {
             return true;
         }
+        if (agg instanceof CalendarFieldAggregation) {
+            return true;
+        }
         return false;
     }
 
+    @SuppressWarnings("unchecked")
     public <TResult extends AggregationResult> TResult getAggregationResult(Aggregation agg, Iterator<T> it) {
         if (agg instanceof TermsAggregation) {
-            return getTermsAggregationResult((TermsAggregation) agg, it);
+            return (TResult) getTermsAggregationResult((TermsAggregation) agg, it);
+        }
+        if (agg instanceof CalendarFieldAggregation) {
+            return (TResult) getCalendarFieldHistogramResult((CalendarFieldAggregation) agg, it);
         }
         throw new VertexiumException("Unhandled aggregation: " + agg.getClass().getName());
     }
 
-    private <TResult extends AggregationResult> TResult getTermsAggregationResult(TermsAggregation agg, Iterator<T> it) {
+    private TermsResult getTermsAggregationResult(TermsAggregation agg, Iterator<T> it) {
         String propertyName = agg.getPropertyName();
-        Map<Object, List<T>> elementsByProperty = getElementsByProperty(it, propertyName);
+        Map<Object, List<T>> elementsByProperty = getElementsByProperty(it, propertyName, new IdentityValueConverter());
 
         List<TermsBucket> buckets = new ArrayList<>();
         for (Map.Entry<Object, List<T>> entry : elementsByProperty.entrySet()) {
@@ -55,7 +62,30 @@ public class DefaultGraphQueryIterableWithAggregations<T extends Element> extend
             Map<String, AggregationResult> nestedResults = getNestedResults(agg.getNestedAggregations(), entry.getValue());
             buckets.add(new TermsBucket(key, count, nestedResults));
         }
-        return (TResult) new TermsResult(buckets);
+        return new TermsResult(buckets);
+    }
+
+    private HistogramResult getCalendarFieldHistogramResult(final CalendarFieldAggregation agg, Iterator<T> it) {
+        String propertyName = agg.getPropertyName();
+        final Calendar calendar = GregorianCalendar.getInstance(agg.getTimeZone());
+        Map<Integer, List<T>> elementsByProperty = getElementsByProperty(it, propertyName, new ValueConverter<Integer>() {
+            @Override
+            public Integer convert(Object o) {
+                Date d = (Date) o;
+                calendar.setTime(d);
+                //noinspection MagicConstant
+                return calendar.get(agg.getCalendarField());
+            }
+        });
+
+        Map<Integer, HistogramBucket> buckets = new HashMap<>(24);
+        for (Map.Entry<Integer, List<T>> entry : elementsByProperty.entrySet()) {
+            int key = entry.getKey();
+            int count = entry.getValue().size();
+            Map<String, AggregationResult> nestedResults = getNestedResults(agg.getNestedAggregations(), entry.getValue());
+            buckets.put(key, new HistogramBucket(key, count, nestedResults));
+        }
+        return new HistogramResult(buckets.values());
     }
 
     private Map<String, AggregationResult> getNestedResults(Iterable<Aggregation> nestedAggregations, List<T> elements) {
@@ -67,20 +97,32 @@ public class DefaultGraphQueryIterableWithAggregations<T extends Element> extend
         return results;
     }
 
-    private Map<Object, List<T>> getElementsByProperty(Iterator<T> it, String propertyName) {
-        Map<Object, List<T>> elementsByProperty = new HashMap<>();
+    private <TKey> Map<TKey, List<T>> getElementsByProperty(Iterator<T> it, String propertyName, ValueConverter<TKey> valueConverter) {
+        Map<TKey, List<T>> elementsByProperty = new HashMap<>();
         while (it.hasNext()) {
             T elem = it.next();
             Iterable<Object> values = elem.getPropertyValues(propertyName);
             for (Object value : values) {
-                List<T> list = elementsByProperty.get(value);
+                TKey convertedValue = valueConverter.convert(value);
+                List<T> list = elementsByProperty.get(convertedValue);
                 if (list == null) {
-                    list = new ArrayList<T>();
-                    elementsByProperty.put(value, list);
+                    list = new ArrayList<>();
+                    elementsByProperty.put(convertedValue, list);
                 }
                 list.add(elem);
             }
         }
         return elementsByProperty;
+    }
+
+    private interface ValueConverter<T> {
+        T convert(Object o);
+    }
+
+    private class IdentityValueConverter implements ValueConverter<Object> {
+        @Override
+        public Object convert(Object o) {
+            return o;
+        }
     }
 }

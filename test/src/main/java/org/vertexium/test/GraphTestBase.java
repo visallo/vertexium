@@ -4629,6 +4629,132 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    public void testGraphQueryWithCalendarFieldAggregation() {
+        graph.prepareVertex("v1", VISIBILITY_EMPTY)
+                .addPropertyValue("", "date", createDate(2016, Calendar.APRIL, 27, 10, 18, 56), VISIBILITY_EMPTY)
+                .save(AUTHORIZATIONS_ALL);
+        graph.prepareVertex("v2", VISIBILITY_EMPTY)
+                .addPropertyValue("", "date", createDate(2017, Calendar.MAY, 26, 10, 18, 56), VISIBILITY_EMPTY)
+                .save(AUTHORIZATIONS_A);
+        graph.prepareVertex("v3", VISIBILITY_A_AND_B)
+                .addPropertyValue("", "date", createDate(2016, Calendar.APRIL, 27, 12, 18, 56), VISIBILITY_EMPTY)
+                .save(AUTHORIZATIONS_ALL);
+        graph.prepareVertex("v4", VISIBILITY_A_AND_B)
+                .addPropertyValue("", "date", createDate(2016, Calendar.APRIL, 24, 12, 18, 56), VISIBILITY_EMPTY)
+                .save(AUTHORIZATIONS_ALL);
+        graph.prepareVertex("v5", VISIBILITY_A_AND_B)
+                .addPropertyValue("", "date", createDate(2016, Calendar.APRIL, 25, 12, 18, 56), VISIBILITY_EMPTY)
+                .save(AUTHORIZATIONS_ALL);
+        graph.prepareVertex("v6", VISIBILITY_A_AND_B)
+                .addPropertyValue("", "date", createDate(2016, Calendar.APRIL, 30, 12, 18, 56), VISIBILITY_EMPTY)
+                .save(AUTHORIZATIONS_ALL);
+        graph.flush();
+
+        // hour of day
+        QueryResultsIterable<Vertex> results = graph.query(AUTHORIZATIONS_ALL)
+                .addAggregation(new CalendarFieldAggregation("agg1", "date", null, TimeZone.getDefault(), Calendar.HOUR_OF_DAY))
+                .limit(0)
+                .vertices();
+
+        HistogramResult aggResult = results.getAggregationResult("agg1", CalendarFieldAggregation.RESULT_CLASS);
+        assertEquals(2, aggResult.getBucketByKey(10).getCount());
+        assertEquals(4, aggResult.getBucketByKey(12).getCount());
+
+        // day of week
+        results = graph.query(AUTHORIZATIONS_ALL)
+                .addAggregation(new CalendarFieldAggregation("agg1", "date", null, TimeZone.getDefault(), Calendar.DAY_OF_WEEK))
+                .limit(0)
+                .vertices();
+
+        aggResult = results.getAggregationResult("agg1", CalendarFieldAggregation.RESULT_CLASS);
+        assertEquals(1, aggResult.getBucketByKey(Calendar.SUNDAY).getCount());
+        assertEquals(1, aggResult.getBucketByKey(Calendar.MONDAY).getCount());
+        assertEquals(2, aggResult.getBucketByKey(Calendar.WEDNESDAY).getCount());
+        assertEquals(1, aggResult.getBucketByKey(Calendar.FRIDAY).getCount());
+        assertEquals(1, aggResult.getBucketByKey(Calendar.SATURDAY).getCount());
+
+        // day of month
+        results = graph.query(AUTHORIZATIONS_ALL)
+                .addAggregation(new CalendarFieldAggregation("agg1", "date", null, TimeZone.getDefault(), Calendar.DAY_OF_MONTH))
+                .limit(0)
+                .vertices();
+
+        aggResult = results.getAggregationResult("agg1", CalendarFieldAggregation.RESULT_CLASS);
+        assertEquals(1, aggResult.getBucketByKey(24).getCount());
+        assertEquals(1, aggResult.getBucketByKey(25).getCount());
+        assertEquals(1, aggResult.getBucketByKey(26).getCount());
+        assertEquals(2, aggResult.getBucketByKey(27).getCount());
+        assertEquals(1, aggResult.getBucketByKey(30).getCount());
+
+        // month
+        results = graph.query(AUTHORIZATIONS_ALL)
+                .addAggregation(new CalendarFieldAggregation("agg1", "date", null, TimeZone.getDefault(), Calendar.MONTH))
+                .limit(0)
+                .vertices();
+
+        aggResult = results.getAggregationResult("agg1", CalendarFieldAggregation.RESULT_CLASS);
+        assertEquals(5, aggResult.getBucketByKey(Calendar.APRIL).getCount());
+        assertEquals(1, aggResult.getBucketByKey(Calendar.MAY).getCount());
+
+        // year
+        results = graph.query(AUTHORIZATIONS_ALL)
+                .addAggregation(new CalendarFieldAggregation("agg1", "date", null, TimeZone.getDefault(), Calendar.YEAR))
+                .limit(0)
+                .vertices();
+
+        aggResult = results.getAggregationResult("agg1", CalendarFieldAggregation.RESULT_CLASS);
+        assertEquals(5, aggResult.getBucketByKey(2016).getCount());
+        assertEquals(1, aggResult.getBucketByKey(2017).getCount());
+
+        // week of year
+        results = graph.query(AUTHORIZATIONS_ALL)
+                .addAggregation(new CalendarFieldAggregation("agg1", "date", null, TimeZone.getDefault(), Calendar.WEEK_OF_YEAR))
+                .limit(0)
+                .vertices();
+
+        aggResult = results.getAggregationResult("agg1", CalendarFieldAggregation.RESULT_CLASS);
+        assertEquals(5, aggResult.getBucketByKey(18).getCount());
+        assertEquals(1, aggResult.getBucketByKey(21).getCount());
+    }
+
+    @Test
+    public void testGraphQueryWithCalendarFieldAggregationNested() {
+        graph.prepareVertex("v1", VISIBILITY_EMPTY)
+                .addPropertyValue("", "date", createDate(2016, Calendar.APRIL, 27, 10, 18, 56), VISIBILITY_EMPTY)
+                .save(AUTHORIZATIONS_ALL);
+        graph.prepareVertex("v2", VISIBILITY_EMPTY)
+                .addPropertyValue("", "date", createDate(2016, Calendar.APRIL, 27, 10, 18, 56), VISIBILITY_EMPTY)
+                .save(AUTHORIZATIONS_ALL);
+        graph.prepareVertex("v3", VISIBILITY_EMPTY)
+                .addPropertyValue("", "date", createDate(2016, Calendar.APRIL, 27, 12, 18, 56), VISIBILITY_EMPTY)
+                .save(AUTHORIZATIONS_A);
+        graph.prepareVertex("v4", VISIBILITY_EMPTY)
+                .addPropertyValue("", "date", createDate(2016, Calendar.APRIL, 28, 10, 18, 56), VISIBILITY_EMPTY)
+                .save(AUTHORIZATIONS_A);
+        graph.flush();
+
+        CalendarFieldAggregation agg = new CalendarFieldAggregation("agg1", "date", null, TimeZone.getDefault(), Calendar.DAY_OF_WEEK);
+        agg.addNestedAggregation(new CalendarFieldAggregation("aggNested", "date", null, TimeZone.getDefault(), Calendar.HOUR_OF_DAY));
+        QueryResultsIterable<Vertex> results = graph.query(AUTHORIZATIONS_ALL)
+                .addAggregation(agg)
+                .limit(0)
+                .vertices();
+
+        HistogramResult aggResult = results.getAggregationResult("agg1", CalendarFieldAggregation.RESULT_CLASS);
+
+        HistogramBucket bucket = aggResult.getBucketByKey(Calendar.WEDNESDAY);
+        assertEquals(3, bucket.getCount());
+        HistogramResult nestedResult = (HistogramResult) bucket.getNestedResults().get("aggNested");
+        assertEquals(2, nestedResult.getBucketByKey(10).getCount());
+        assertEquals(1, nestedResult.getBucketByKey(12).getCount());
+
+        bucket = aggResult.getBucketByKey(Calendar.THURSDAY);
+        assertEquals(1, bucket.getCount());
+        nestedResult = (HistogramResult) bucket.getNestedResults().get("aggNested");
+        assertEquals(1, nestedResult.getBucketByKey(10).getCount());
+    }
+
+    @Test
     public void testLargeFieldValuesThatAreMarkedWithExactMatch() {
         graph.defineProperty("field1").dataType(String.class).textIndexHint(TextIndexHint.EXACT_MATCH).define();
 
