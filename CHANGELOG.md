@@ -1,6 +1,7 @@
 # v2.2.13
 
 * SQL: index vertex columns on edge table
+* Elasticsearch: Load field mapping on startup
 
 # v2.2.12
 

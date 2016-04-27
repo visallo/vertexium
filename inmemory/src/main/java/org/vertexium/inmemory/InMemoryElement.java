@@ -471,7 +471,7 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> implemen
                 Visibility existingVisibility = apv.getExistingVisibility();
                 getGraph().getSearchIndex().deleteProperty(getGraph(), element, apv.getKey(), apv.getName(), existingVisibility, authorizations);
             }
-            getGraph().getSearchIndex().flush();
+            getGraph().getSearchIndex().flush(getGraph());
         }
         getGraph().getSearchIndex().addElement(getGraph(), element, authorizations);
     }

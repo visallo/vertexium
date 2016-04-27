@@ -54,7 +54,7 @@ public class DefaultSearchIndex implements SearchIndex {
     }
 
     @Override
-    public void flush() {
+    public void flush(Graph graph) {
 
     }
 
@@ -69,11 +69,11 @@ public class DefaultSearchIndex implements SearchIndex {
     }
 
     @Override
-    public void truncate() {
+    public void truncate(Graph graph) {
     }
 
     @Override
-    public void drop() {
+    public void drop(Graph graph) {
 
     }
 

@@ -13,7 +13,10 @@ import org.vertexium.property.StreamingPropertyValue;
 import org.vertexium.property.StreamingPropertyValueRef;
 import org.vertexium.search.IndexHint;
 import org.vertexium.search.SearchIndex;
-import org.vertexium.util.*;
+import org.vertexium.util.ConvertingIterable;
+import org.vertexium.util.IncreasingTime;
+import org.vertexium.util.IterableUtils;
+import org.vertexium.util.LookAheadIterable;
 
 import java.util.*;
 
@@ -601,14 +604,14 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
     public void truncate() {
         this.vertices.clear();
         this.edges.clear();
-        getSearchIndex().truncate();
+        getSearchIndex().truncate(this);
     }
 
     @Override
     public void drop() {
         this.vertices.clear();
         this.edges.clear();
-        getSearchIndex().drop();
+        getSearchIndex().drop(this);
     }
 
     protected void alterEdgeLabel(InMemoryTableEdge inMemoryTableEdge, String newEdgeLabel) {

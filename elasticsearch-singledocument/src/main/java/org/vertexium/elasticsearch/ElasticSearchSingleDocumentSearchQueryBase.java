@@ -232,7 +232,7 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
                 if (propertyDefinition == null) {
                     continue;
                 }
-                if (!getSearchIndex().isPropertyInIndex(sortContainer.propertyName)) {
+                if (!getSearchIndex().isPropertyInIndex(getGraph(), sortContainer.propertyName)) {
                     continue;
                 }
                 if (!propertyDefinition.isSortable()) {

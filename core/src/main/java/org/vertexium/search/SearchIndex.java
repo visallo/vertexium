@@ -6,8 +6,6 @@ import org.vertexium.query.MultiVertexQuery;
 import org.vertexium.query.SimilarToGraphQuery;
 import org.vertexium.query.VertexQuery;
 
-import java.io.IOException;
-
 public interface SearchIndex {
     void addElement(Graph graph, Element element, Authorizations authorizations);
 
@@ -32,15 +30,15 @@ public interface SearchIndex {
 
     VertexQuery queryVertex(Graph graph, Vertex vertex, String queryString, Authorizations authorizations);
 
-    void flush();
+    void flush(Graph graph);
 
     void shutdown();
 
     boolean isFieldBoostSupported();
 
-    void truncate();
+    void truncate(Graph graph);
 
-    void drop();
+    void drop(Graph graph);
 
     SearchIndexSecurityGranularity getSearchIndexSecurityGranularity();
 
