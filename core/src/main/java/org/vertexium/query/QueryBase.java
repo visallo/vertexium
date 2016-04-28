@@ -342,4 +342,13 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
     public Collection<Aggregation> getAggregations() {
         return aggregations;
     }
+
+    public Aggregation getAggregationByName(String aggregationName) {
+        for (Aggregation agg : aggregations) {
+            if (agg.getAggregationName().equals(aggregationName)) {
+                return agg;
+            }
+        }
+        return null;
+    }
 }

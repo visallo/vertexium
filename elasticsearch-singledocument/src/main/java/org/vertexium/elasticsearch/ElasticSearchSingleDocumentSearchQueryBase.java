@@ -903,7 +903,6 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
                 if (agg.getMinDocumentCount() != null) {
                     histAgg.minDocCount(agg.getMinDocumentCount());
                 }
-                histAgg.extendedBounds(0L, 23L);
                 String script = getCalendarFieldAggregationScript(agg, propertyName);
                 histAgg.script(script);
 
@@ -920,20 +919,21 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
     }
 
     private String getCalendarFieldAggregationScript(CalendarFieldAggregation agg, String propertyName) {
+        String prefix = "d = doc['" + propertyName + "']; ";
         switch (agg.getCalendarField()) {
             case Calendar.DAY_OF_MONTH:
-                return "doc['" + propertyName + "'].date.toDateTime(DateTimeZone.forID(\"" + agg.getTimeZone().getID() + "\")).get(DateTimeFieldType.dayOfMonth())";
+                return prefix + "d ? d.date.toDateTime(DateTimeZone.forID(\"" + agg.getTimeZone().getID() + "\")).get(DateTimeFieldType.dayOfMonth()) : -1";
             case Calendar.DAY_OF_WEEK:
-                return "d = doc['" + propertyName + "'].date.toDateTime(DateTimeZone.forID(\"" + agg.getTimeZone().getID() + "\")).get(DateTimeFieldType.dayOfWeek()) + 1; return d > 7 ? d - 7 : d;";
+                return prefix + "d = (d ? (d.date.toDateTime(DateTimeZone.forID(\"" + agg.getTimeZone().getID() + "\")).get(DateTimeFieldType.dayOfWeek()) + 1) : -1); return d > 7 ? d - 7 : d;";
             case Calendar.HOUR_OF_DAY:
-                return "doc['" + propertyName + "'].date.toDateTime(DateTimeZone.forID(\"" + agg.getTimeZone().getID() + "\")).get(DateTimeFieldType.hourOfDay())";
+                return prefix + "d ? d.date.toDateTime(DateTimeZone.forID(\"" + agg.getTimeZone().getID() + "\")).get(DateTimeFieldType.hourOfDay()) : -1";
             case Calendar.MONTH:
-                return "doc['" + propertyName + "'].date.toDateTime(DateTimeZone.forID(\"" + agg.getTimeZone().getID() + "\")).get(DateTimeFieldType.monthOfYear()) - 1";
+                return prefix + "d ? (d.date.toDateTime(DateTimeZone.forID(\"" + agg.getTimeZone().getID() + "\")).get(DateTimeFieldType.monthOfYear()) - 1) : -1";
             case Calendar.YEAR:
-                return "doc['" + propertyName + "'].date.toDateTime(DateTimeZone.forID(\"" + agg.getTimeZone().getID() + "\")).get(DateTimeFieldType.year())";
+                return prefix + "d ? d.date.toDateTime(DateTimeZone.forID(\"" + agg.getTimeZone().getID() + "\")).get(DateTimeFieldType.year()) : -1";
             default:
                 LOGGER.warn("Slow operation toGregorianCalendar() for calendar field: %d", agg.getCalendarField());
-                return "doc['" + propertyName + "'].date.toDateTime(DateTimeZone.forID(\"" + agg.getTimeZone().getID() + "\")).toGregorianCalendar().get(" + agg.getCalendarField() + ")";
+                return prefix + "d ? d.date.toDateTime(DateTimeZone.forID(\"" + agg.getTimeZone().getID() + "\")).toGregorianCalendar().get(" + agg.getCalendarField() + ") : -1";
         }
     }
 

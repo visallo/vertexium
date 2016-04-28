@@ -4644,12 +4644,15 @@ public abstract class GraphTestBase {
 
     @Test
     public void testGraphQueryWithCalendarFieldAggregation() {
+        graph.prepareVertex("v0", VISIBILITY_EMPTY)
+                .addPropertyValue("", "other_field", createDate(2016, Calendar.APRIL, 27, 10, 18, 56), VISIBILITY_A)
+                .save(AUTHORIZATIONS_ALL);
         graph.prepareVertex("v1", VISIBILITY_EMPTY)
-                .addPropertyValue("", "date", createDate(2016, Calendar.APRIL, 27, 10, 18, 56), VISIBILITY_EMPTY)
+                .addPropertyValue("", "date", createDate(2016, Calendar.APRIL, 27, 10, 18, 56), VISIBILITY_A)
                 .save(AUTHORIZATIONS_ALL);
         graph.prepareVertex("v2", VISIBILITY_EMPTY)
                 .addPropertyValue("", "date", createDate(2017, Calendar.MAY, 26, 10, 18, 56), VISIBILITY_EMPTY)
-                .save(AUTHORIZATIONS_A);
+                .save(AUTHORIZATIONS_ALL);
         graph.prepareVertex("v3", VISIBILITY_A_AND_B)
                 .addPropertyValue("", "date", createDate(2016, Calendar.APRIL, 27, 12, 18, 56), VISIBILITY_EMPTY)
                 .save(AUTHORIZATIONS_ALL);
@@ -4671,6 +4674,7 @@ public abstract class GraphTestBase {
                 .vertices();
 
         HistogramResult aggResult = results.getAggregationResult("agg1", CalendarFieldAggregation.RESULT_CLASS);
+        assertEquals(2, count(aggResult.getBuckets()));
         assertEquals(2, aggResult.getBucketByKey(10).getCount());
         assertEquals(4, aggResult.getBucketByKey(12).getCount());
 
@@ -4681,6 +4685,7 @@ public abstract class GraphTestBase {
                 .vertices();
 
         aggResult = results.getAggregationResult("agg1", CalendarFieldAggregation.RESULT_CLASS);
+        assertEquals(5, count(aggResult.getBuckets()));
         assertEquals(1, aggResult.getBucketByKey(Calendar.SUNDAY).getCount());
         assertEquals(1, aggResult.getBucketByKey(Calendar.MONDAY).getCount());
         assertEquals(2, aggResult.getBucketByKey(Calendar.WEDNESDAY).getCount());
@@ -4694,6 +4699,7 @@ public abstract class GraphTestBase {
                 .vertices();
 
         aggResult = results.getAggregationResult("agg1", CalendarFieldAggregation.RESULT_CLASS);
+        assertEquals(5, count(aggResult.getBuckets()));
         assertEquals(1, aggResult.getBucketByKey(24).getCount());
         assertEquals(1, aggResult.getBucketByKey(25).getCount());
         assertEquals(1, aggResult.getBucketByKey(26).getCount());
@@ -4707,6 +4713,7 @@ public abstract class GraphTestBase {
                 .vertices();
 
         aggResult = results.getAggregationResult("agg1", CalendarFieldAggregation.RESULT_CLASS);
+        assertEquals(2, count(aggResult.getBuckets()));
         assertEquals(5, aggResult.getBucketByKey(Calendar.APRIL).getCount());
         assertEquals(1, aggResult.getBucketByKey(Calendar.MAY).getCount());
 
@@ -4717,6 +4724,7 @@ public abstract class GraphTestBase {
                 .vertices();
 
         aggResult = results.getAggregationResult("agg1", CalendarFieldAggregation.RESULT_CLASS);
+        assertEquals(2, count(aggResult.getBuckets()));
         assertEquals(5, aggResult.getBucketByKey(2016).getCount());
         assertEquals(1, aggResult.getBucketByKey(2017).getCount());
 
@@ -4727,6 +4735,7 @@ public abstract class GraphTestBase {
                 .vertices();
 
         aggResult = results.getAggregationResult("agg1", CalendarFieldAggregation.RESULT_CLASS);
+        assertEquals(2, count(aggResult.getBuckets()));
         assertEquals(5, aggResult.getBucketByKey(18).getCount());
         assertEquals(1, aggResult.getBucketByKey(21).getCount());
     }
