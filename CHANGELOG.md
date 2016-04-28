@@ -1,3 +1,7 @@
+# v2.3.1
+
+* Elasticsearch: fix calendar date field aggregations with multiple visibilities
+
 # v2.3.0
 
 * SQL: index vertex columns on edge table

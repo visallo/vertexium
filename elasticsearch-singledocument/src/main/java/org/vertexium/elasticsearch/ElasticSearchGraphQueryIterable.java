@@ -159,7 +159,12 @@ public class ElasticSearchGraphQueryIterable<T extends Element> extends DefaultG
                 }
             } else if (agg instanceof Histogram) {
                 Histogram h = (Histogram) agg;
+                org.vertexium.query.Aggregation queryAgg = query.getAggregationByName(query.getAggregationName(h.getName()));
+                boolean isCalendarFieldQuery = queryAgg != null && queryAgg instanceof CalendarFieldAggregation;
                 for (Histogram.Bucket b : h.getBuckets()) {
+                    if (isCalendarFieldQuery && b.getKey().equals("-1")) {
+                        continue;
+                    }
                     List<MultiBucketsAggregation.Bucket> l = bucketsByKey.get(b.getKey());
                     if (l == null) {
                         l = new ArrayList<>();
