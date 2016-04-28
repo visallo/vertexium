@@ -10,4 +10,15 @@ public class HistogramResult extends AggregationResult {
     public Iterable<HistogramBucket> getBuckets() {
         return buckets;
     }
+
+    public HistogramBucket getBucketByKey(Object key) {
+        String keyStr = key.toString();
+        for (HistogramBucket histogramBucket : getBuckets()) {
+            String bucketKey = histogramBucket.getKey().toString();
+            if (bucketKey.equals(keyStr)) {
+                return histogramBucket;
+            }
+        }
+        return null;
+    }
 }
