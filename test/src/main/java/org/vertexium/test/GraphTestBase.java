@@ -153,6 +153,20 @@ public abstract class GraphTestBase {
         assertEquals("prefixA", v.getId());
     }
 
+    @Test
+    public void testStreamingPropertyValueReadAsString() {
+        graph.prepareVertex("v1", VISIBILITY_EMPTY)
+                .setProperty("spv", StreamingPropertyValue.create("Hello World"), VISIBILITY_EMPTY)
+                .save(AUTHORIZATIONS_EMPTY);
+        graph.flush();
+
+        Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_EMPTY);
+        assertEquals("Hello World", ((StreamingPropertyValue) v1.getPropertyValue("spv")).readToString());
+        assertEquals("Wor", ((StreamingPropertyValue) v1.getPropertyValue("spv")).readToString(6, 3));
+        assertEquals("", ((StreamingPropertyValue) v1.getPropertyValue("spv")).readToString("Hello World".length(), 1));
+        assertEquals("Hello World", ((StreamingPropertyValue) v1.getPropertyValue("spv")).readToString(0, 100));
+    }
+
     @SuppressWarnings("AssertEqualsBetweenInconvertibleTypes")
     @Test
     public void testAddStreamingPropertyValue() throws IOException, InterruptedException {

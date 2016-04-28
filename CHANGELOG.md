@@ -3,6 +3,7 @@
 * SQL: index vertex columns on edge table
 * Elasticsearch: Load field mapping on startup
 * Search: Add CalendarFieldAggregation
+* StreamingPropertyValue: Add `readToString` method with offset and limit
 
 # v2.2.12
 
