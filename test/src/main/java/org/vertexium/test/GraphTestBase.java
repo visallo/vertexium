@@ -3530,7 +3530,7 @@ public abstract class GraphTestBase {
         m.save(AUTHORIZATIONS_ALL);
         graph.flush();
 
-        v1 = graph.getVertex("v1", AUTHORIZATIONS_ALL);
+        v1 = graph.getVertex("v1", AUTHORIZATIONS_B);
         assertEquals(VISIBILITY_B, v1.getVisibility());
         List<Property> properties = toList(v1.getProperties());
         assertEquals(1, properties.size());
@@ -3543,6 +3543,19 @@ public abstract class GraphTestBase {
         assertTrue(properties.get(0).getMetadata().containsKey("m2"));
         assertEquals("m2-value1", properties.get(0).getMetadata().getEntry("m2").getValue());
         assertEquals(VISIBILITY_EMPTY, properties.get(0).getMetadata().getEntry("m2").getVisibility());
+
+        v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
+        assertNull("v1 should not be returned for auth a", v1);
+
+        List<Vertex> vertices = toList(graph.query(AUTHORIZATIONS_B)
+                .has("age", Compare.EQUAL, 25)
+                .vertices());
+        assertEquals(1, vertices.size());
+
+        vertices = toList(graph.query(AUTHORIZATIONS_A)
+                .has("age", Compare.EQUAL, 25)
+                .vertices());
+        assertEquals(0, vertices.size());
     }
 
     @Test
@@ -3553,8 +3566,8 @@ public abstract class GraphTestBase {
         Metadata prop2Metadata = new Metadata();
         prop2Metadata.add("prop2_key1", "value1", VISIBILITY_EMPTY);
 
-        graph.prepareVertex("v1", VISIBILITY_A)
-                .setProperty("prop1", "value1", prop1Metadata, VISIBILITY_EMPTY)
+        graph.prepareVertex("v1", VISIBILITY_EMPTY)
+                .setProperty("prop1", "value1", prop1Metadata, VISIBILITY_A)
                 .setProperty("prop2", "value2", prop2Metadata, VISIBILITY_EMPTY)
                 .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
@@ -3569,7 +3582,7 @@ public abstract class GraphTestBase {
         assertNull(v1.getProperty("prop1"));
         assertNotNull(v1.getProperty("prop2"));
 
-        Assert.assertEquals(1, count(graph.query(AUTHORIZATIONS_A_AND_B).has("prop1", "value1").vertices()));
+        Assert.assertEquals(1, count(graph.query(AUTHORIZATIONS_B).has("prop1", "value1").vertices()));
         Assert.assertEquals(0, count(graph.query(AUTHORIZATIONS_A).has("prop1", "value1").vertices()));
 
         v1 = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B);

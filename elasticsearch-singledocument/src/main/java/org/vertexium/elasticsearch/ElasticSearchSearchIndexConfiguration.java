@@ -10,6 +10,8 @@ import org.vertexium.id.NameSubstitutionStrategy;
 import org.vertexium.util.ConfigurationUtils;
 
 import java.io.File;
+import java.util.HashMap;
+import java.util.Map;
 
 public class ElasticSearchSearchIndexConfiguration {
     public static final String STORE_SOURCE_DATA = "storeSourceData";
@@ -39,6 +41,7 @@ public class ElasticSearchSearchIndexConfiguration {
     public static final String IN_PROCESS_NODE_DATA_PATH = "inProcessNode.dataPath";
     public static final String IN_PROCESS_NODE_LOGS_PATH = "inProcessNode.logsPath";
     public static final String IN_PROCESS_NODE_WORK_PATH = "inProcessNode.workPath";
+    public static final String IN_PROCESS_ADDITIONAL_CONFIG_PREFIX = GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + "inProcessNode.additionalConfig.";
     public static final String QUERY_PAGE_SIZE = "queryPageSize";
     public static final int QUERY_PAGE_SIZE_DEFAULT = 500;
     public static final String ES_CONFIG_FILE = "elasticsearch.configFile";
@@ -157,5 +160,21 @@ public class ElasticSearchSearchIndexConfiguration {
             return null;
         }
         return new File(fileName);
+    }
+
+    public Map<String, String> getInProcessNodeAdditionalSettings() {
+        Map<String, String> results = new HashMap<>();
+        for (Object o : graphConfiguration.getConfig().entrySet()) {
+            Map.Entry mapEntry = (Map.Entry) o;
+            if (!(mapEntry.getKey() instanceof String) || !(mapEntry.getValue() instanceof String)) {
+                continue;
+            }
+            String key = (String) mapEntry.getKey();
+            if (key.startsWith(IN_PROCESS_ADDITIONAL_CONFIG_PREFIX)) {
+                String configName = key.substring(IN_PROCESS_ADDITIONAL_CONFIG_PREFIX.length());
+                results.put(configName, (String) mapEntry.getValue());
+            }
+        }
+        return results;
     }
 }

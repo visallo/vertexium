@@ -130,14 +130,20 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
             String workPath = config.getInProcessNodeWorkPath();
             checkNotNull(workPath, ElasticSearchSearchIndexConfiguration.IN_PROCESS_NODE_WORK_PATH + " is required for in process Elasticsearch node");
             int numberOfShards = config.getNumberOfShards();
+
+            Map<String, String> mapSettings = new HashMap<>();
+            mapSettings.put("script.disable_dynamic", "false");
+            mapSettings.put("index.number_of_shards", Integer.toString(numberOfShards));
+            mapSettings.put("index.number_of_replicas", "0");
+            mapSettings.put("path.data", dataPath);
+            mapSettings.put("path.logs", logsPath);
+            mapSettings.put("path.work", workPath);
+            mapSettings.put("discovery.zen.ping.multicast.enabled", "false");
+
+            mapSettings.putAll(config.getInProcessNodeAdditionalSettings());
+
             settings = ImmutableSettings.settingsBuilder()
-                    .put("script.disable_dynamic", "false")
-                    .put("index.number_of_shards", numberOfShards)
-                    .put("index.number_of_replicas", "0")
-                    .put("path.data", dataPath)
-                    .put("path.logs", logsPath)
-                    .put("path.work", workPath)
-                    .put("discovery.zen.ping.multicast.enabled", false)
+                    .put(mapSettings)
                     .build();
         }
 

@@ -1,6 +1,7 @@
 # v2.3.1
 
 * Elasticsearch: fix calendar date field aggregations with multiple visibilities
+* Elasticsearch: Support additional configuration for in process node
 
 # v2.3.0
 
