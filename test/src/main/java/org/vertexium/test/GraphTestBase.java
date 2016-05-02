@@ -4416,6 +4416,74 @@ public abstract class GraphTestBase {
         assertEquals(1L, (long) edgePropertyCountByValue.get("label2"));
     }
 
+    @Test
+    public void testGraphQueryVertexWithTermsAggregationAlterElementVisibility() {
+        graph.prepareVertex("v1", VISIBILITY_A)
+                .addPropertyValue("k1", "age", 25, VISIBILITY_EMPTY)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B);
+        v1.prepareMutation()
+                .alterElementVisibility(VISIBILITY_B)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        Map<Object, Long> propertyCountByValue = queryGraphQueryWithTermsAggregation("age", ElementType.VERTEX, AUTHORIZATIONS_A_AND_B);
+        if (propertyCountByValue == null) {
+            return;
+        }
+        assertEquals(1, propertyCountByValue.size());
+
+        propertyCountByValue = queryGraphQueryWithTermsAggregation("age", ElementType.VERTEX, AUTHORIZATIONS_A);
+        if (propertyCountByValue == null) {
+            return;
+        }
+        assertEquals(0, propertyCountByValue.size());
+
+        propertyCountByValue = queryGraphQueryWithTermsAggregation("age", ElementType.VERTEX, AUTHORIZATIONS_B);
+        if (propertyCountByValue == null) {
+            return;
+        }
+        assertEquals(1, propertyCountByValue.size());
+    }
+
+    @Test
+    public void testGraphQueryEdgeWithTermsAggregationAlterElementVisibility() {
+        graph.prepareVertex("v1", VISIBILITY_EMPTY)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.prepareVertex("v2", VISIBILITY_EMPTY)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.prepareEdge("e1", "v1", "v2", "edge", VISIBILITY_A)
+                .addPropertyValue("k1", "age", 25, VISIBILITY_EMPTY)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        Edge e1 = graph.getEdge("e1", AUTHORIZATIONS_A_AND_B);
+        e1.prepareMutation()
+                .alterElementVisibility(VISIBILITY_B)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        Map<Object, Long> propertyCountByValue = queryGraphQueryWithTermsAggregation("age", ElementType.EDGE, AUTHORIZATIONS_A_AND_B);
+        if (propertyCountByValue == null) {
+            return;
+        }
+        assertEquals(1, propertyCountByValue.size());
+
+        propertyCountByValue = queryGraphQueryWithTermsAggregation("age", ElementType.EDGE, AUTHORIZATIONS_A);
+        if (propertyCountByValue == null) {
+            return;
+        }
+        assertEquals(0, propertyCountByValue.size());
+
+        propertyCountByValue = queryGraphQueryWithTermsAggregation("age", ElementType.EDGE, AUTHORIZATIONS_B);
+        if (propertyCountByValue == null) {
+            return;
+        }
+        assertEquals(1, propertyCountByValue.size());
+    }
+
     private Map<Object, Long> queryGraphQueryWithTermsAggregation(String propertyName, ElementType elementType, Authorizations authorizations) {
         Query q = graph.query(authorizations).limit(0);
         TermsAggregation agg = new TermsAggregation("terms-count", propertyName);

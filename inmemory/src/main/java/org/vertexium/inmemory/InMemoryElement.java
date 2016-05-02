@@ -465,7 +465,13 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> implemen
     }
 
 
-    protected void saveMutationToSearchIndex(Element element, List<AlterPropertyVisibility> alterPropertyVisibilities, Authorizations authorizations) {
+    protected void saveMutationToSearchIndex(
+            Element element,
+            Visibility oldVisibility,
+            Visibility newVisibility,
+            List<AlterPropertyVisibility> alterPropertyVisibilities,
+            Authorizations authorizations
+    ) {
         if (alterPropertyVisibilities != null && alterPropertyVisibilities.size() > 0) {
             for (AlterPropertyVisibility apv : alterPropertyVisibilities) {
                 Visibility existingVisibility = apv.getExistingVisibility();
@@ -473,7 +479,11 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> implemen
             }
             getGraph().getSearchIndex().flush(getGraph());
         }
-        getGraph().getSearchIndex().addElement(getGraph(), element, authorizations);
+        if (newVisibility != null) {
+            getGraph().getSearchIndex().alterElementVisibility(getGraph(), element, oldVisibility, newVisibility, authorizations);
+        } else {
+            getGraph().getSearchIndex().addElement(getGraph(), element, authorizations);
+        }
     }
 
     public boolean canRead(Authorizations authorizations) {

@@ -317,7 +317,15 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
 
     @SuppressWarnings("unchecked")
     @Override
-    public void addElement(Graph graph, final Element element, Authorizations authorizations) {
+    public void addElement(Graph graph, Element element, Authorizations authorizations) {
+        addElementWithScript(graph, element, authorizations);
+    }
+
+    private void addElementWithScript(
+            Graph graph,
+            final Element element,
+            Authorizations authorizations
+    ) {
         if (MUTATION_LOGGER.isTraceEnabled()) {
             MUTATION_LOGGER.trace("addElement: %s", element.getId());
         }
@@ -382,6 +390,29 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
         getConfig().getScoringStrategy().addElement(this, graph, element, authorizations);
     }
 
+    @Override
+    public void alterElementVisibility(
+            Graph graph,
+            Element element,
+            Visibility oldVisibility,
+            Visibility newVisibility,
+            Authorizations authorizations
+    ) {
+        String oldFieldName = deflatePropertyName(graph, ELEMENT_TYPE_FIELD_NAME, oldVisibility);
+        getClient().prepareUpdate()
+                .setIndex(getIndexName(element))
+                .setId(element.getId())
+                .setType(ELEMENT_TYPE)
+                .setScript(
+                        "ctx._source.remove(oldFieldName);",
+                        ScriptService.ScriptType.INLINE)
+                .setScriptParams(ImmutableMap.<String, Object>of(
+                        "oldFieldName", oldFieldName
+                ))
+                .get();
+        addElement(graph, element, authorizations);
+    }
+
     private XContentBuilder buildJsonContentFromElement(Graph graph, Element element, Authorizations authorizations) throws IOException {
         XContentBuilder jsonBuilder;
         jsonBuilder = XContentFactory.jsonBuilder()
@@ -389,13 +420,12 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
 
         String elementTypeVisibilityPropertyName = addElementTypeVisibilityPropertyToIndex(graph, element);
 
+        jsonBuilder.field(ELEMENT_TYPE_FIELD_NAME, getElementTypeValueFromElement(element));
         if (element instanceof Vertex) {
-            jsonBuilder.field(ELEMENT_TYPE_FIELD_NAME, ElasticSearchElementType.VERTEX.getKey());
             jsonBuilder.field(elementTypeVisibilityPropertyName, ElasticSearchElementType.VERTEX.getKey());
             getConfig().getScoringStrategy().addFieldsToVertexDocument(this, jsonBuilder, (Vertex) element, null, authorizations);
         } else if (element instanceof Edge) {
             Edge edge = (Edge) element;
-            jsonBuilder.field(ELEMENT_TYPE_FIELD_NAME, ElasticSearchElementType.EDGE.getKey());
             jsonBuilder.field(elementTypeVisibilityPropertyName, ElasticSearchElementType.VERTEX.getKey());
             getConfig().getScoringStrategy().addFieldsToEdgeDocument(this, jsonBuilder, edge, null, authorizations);
             jsonBuilder.field(IN_VERTEX_ID_FIELD_NAME, edge.getVertexId(Direction.IN));
@@ -416,6 +446,16 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
         }
 
         return jsonBuilder;
+    }
+
+    private String getElementTypeValueFromElement(Element element) {
+        if (element instanceof Vertex) {
+            return ElasticSearchElementType.VERTEX.getKey();
+        }
+        if (element instanceof Edge) {
+            return ElasticSearchElementType.EDGE.getKey();
+        }
+        throw new VertexiumException("Unhandled element type: " + element.getClass().getName());
     }
 
     protected Object convertValueForIndexing(Object obj) {
