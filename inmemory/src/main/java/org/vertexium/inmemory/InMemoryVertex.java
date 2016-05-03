@@ -328,10 +328,17 @@ public class InMemoryVertex extends InMemoryElement<InMemoryVertex> implements V
             @Override
             public Vertex save(Authorizations authorizations) {
                 IndexHint indexHint = getIndexHint();
+                Visibility oldElementVisibility = InMemoryVertex.this.getVisibility();
                 saveExistingElementMutation(this, indexHint, authorizations);
                 Vertex vertex = getElement();
                 if (indexHint != IndexHint.DO_NOT_INDEX) {
-                    saveMutationToSearchIndex(vertex, getAlterPropertyVisibilities(), authorizations);
+                    saveMutationToSearchIndex(
+                            vertex,
+                            oldElementVisibility,
+                            getNewElementVisibility(),
+                            getAlterPropertyVisibilities(),
+                            authorizations
+                    );
                 }
                 return vertex;
             }

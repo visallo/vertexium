@@ -47,4 +47,6 @@ public interface SearchIndex {
     SimilarToGraphQuery querySimilarTo(Graph graph, String[] fields, String text, Authorizations authorizations);
 
     boolean isFieldLevelSecuritySupported();
+
+    void alterElementVisibility(Graph graph, Element element, Visibility oldVisibility, Visibility newVisibility, Authorizations authorizations);
 }
