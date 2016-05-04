@@ -217,6 +217,7 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
         }
 
         this.vertices.getTableElement(vertex.getId()).appendMarkHiddenMutation(visibility);
+        refreshVertexInMemoryTableElement(vertex);
         getSearchIndex().addElement(this, vertex, authorizations);
 
         if (hasEventListeners()) {
@@ -236,6 +237,7 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
         }
 
         this.vertices.getTableElement(vertex.getId()).appendMarkVisibleMutation(visibility);
+        refreshVertexInMemoryTableElement(vertex);
         getSearchIndex().addElement(this, vertex, authorizations);
 
         if (hasEventListeners()) {
@@ -632,5 +634,9 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
         if (hasEventListeners()) {
             fireGraphEvent(new DeletePropertyEvent(this, element, property));
         }
+    }
+
+    private void refreshVertexInMemoryTableElement(Vertex vertex) {
+        ((InMemoryVertex) vertex).setInMemoryTableElement(this.vertices.getTableElement(vertex.getId()));
     }
 }

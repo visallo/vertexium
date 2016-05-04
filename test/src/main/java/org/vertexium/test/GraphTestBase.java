@@ -1045,6 +1045,50 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    public void testMarkVertexAndPropertiesHidden() {
+        graph.prepareVertex("v1", VISIBILITY_EMPTY)
+                .addPropertyValue("k1", "age", 25, VISIBILITY_EMPTY)
+                .addPropertyValue("k2", "age", 30, VISIBILITY_EMPTY)
+                .save(AUTHORIZATIONS_ALL);
+        graph.flush();
+
+        Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_ALL);
+        graph.markVertexHidden(v1, VISIBILITY_A, AUTHORIZATIONS_ALL);
+        for (Property property : v1.getProperties()) {
+            v1.markPropertyHidden(property, VISIBILITY_A, AUTHORIZATIONS_ALL);
+        }
+        graph.flush();
+
+        v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
+        assertNull("v1 was found", v1);
+
+        v1 = graph.getVertex("v1", FetchHint.ALL_INCLUDING_HIDDEN, AUTHORIZATIONS_ALL);
+        assertNotNull("could not find v1", v1);
+        assertEquals(2, count(v1.getProperties()));
+        assertEquals(25, v1.getPropertyValue("k1", "age"));
+        assertEquals(30, v1.getPropertyValue("k2", "age"));
+
+        v1 = graph.getVertex("v1", FetchHint.ALL_INCLUDING_HIDDEN, AUTHORIZATIONS_ALL);
+        graph.markVertexVisible(v1, VISIBILITY_A, AUTHORIZATIONS_ALL);
+        graph.flush();
+
+        Vertex v1AfterVisible = graph.getVertex("v1", AUTHORIZATIONS_A);
+        assertNotNull("could not find v1", v1AfterVisible);
+        assertEquals(0, count(v1AfterVisible.getProperties()));
+
+        for (Property property : v1.getProperties()) {
+            v1.markPropertyVisible(property, VISIBILITY_A, AUTHORIZATIONS_ALL);
+        }
+        graph.flush();
+
+        v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
+        assertNotNull("could not find v1", v1);
+        assertEquals(2, count(v1.getProperties()));
+        assertEquals(25, v1.getPropertyValue("k1", "age"));
+        assertEquals(30, v1.getPropertyValue("k2", "age"));
+    }
+
+    @Test
     public void testMarkVertexHidden() {
         Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_ALL);
         Vertex v2 = graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_ALL);

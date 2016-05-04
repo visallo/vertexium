@@ -19,7 +19,7 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> implemen
     private Property idProperty;
     private Property edgeLabelProperty;
     private InMemoryGraph graph;
-    protected final InMemoryTableElement<TElement> inMemoryTableElement;
+    private InMemoryTableElement<TElement> inMemoryTableElement;
     private final boolean includeHidden;
     private final Long endTime;
     private final Authorizations authorizations;
@@ -509,5 +509,13 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> implemen
 
     protected EnumSet<FetchHint> getFetchHints() {
         return isIncludeHidden() ? FetchHint.ALL_INCLUDING_HIDDEN : FetchHint.ALL;
+    }
+
+    protected InMemoryTableElement<TElement> getInMemoryTableElement() {
+        return inMemoryTableElement;
+    }
+
+    protected void setInMemoryTableElement(InMemoryTableElement<TElement> inMemoryTableElement) {
+        this.inMemoryTableElement = inMemoryTableElement;
     }
 }
