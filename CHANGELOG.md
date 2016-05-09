@@ -1,3 +1,6 @@
+# v2.3.2
+ * ACCUMULO: iterator locations in accumulo config are now stored per table name
+
 # v2.3.1
 
 * Elasticsearch: fix calendar date field aggregations with multiple visibilities
