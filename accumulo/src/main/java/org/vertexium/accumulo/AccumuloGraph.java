@@ -225,8 +225,8 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             }
 
             if (hdfsContextClasspath != null) {
-                connector.instanceOperations().setProperty("general.vfs.context.classpath." + CLASSPATH_CONTEXT_NAME, hdfsContextClasspath);
-                connector.tableOperations().setProperty(tableName, "table.classpath.context", CLASSPATH_CONTEXT_NAME);
+                connector.instanceOperations().setProperty("general.vfs.context.classpath." + CLASSPATH_CONTEXT_NAME + "-" + tableName, hdfsContextClasspath);
+                connector.tableOperations().setProperty(tableName, "table.classpath.context", CLASSPATH_CONTEXT_NAME + "-" + tableName);
             }
         } catch (Exception e) {
             throw new RuntimeException("Unable to create table " + tableName, e);
