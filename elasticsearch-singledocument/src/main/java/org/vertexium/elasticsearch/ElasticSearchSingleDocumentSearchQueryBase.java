@@ -241,7 +241,7 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
                 if (!propertyDefinition.isSortable()) {
                     throw new VertexiumException("Cannot sort on non-sortable fields");
                 }
-                q.addSort(propertyDefinition.getPropertyName(), esOrder);
+                q.addSort(propertyDefinition.getPropertyName() + ElasticsearchSingleDocumentSearchIndex.SORT_PROPERTY_NAME_SUFFIX, esOrder);
             }
         }
     }

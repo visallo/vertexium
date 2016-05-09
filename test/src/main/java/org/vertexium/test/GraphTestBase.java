@@ -2049,20 +2049,12 @@ public abstract class GraphTestBase {
         List<Vertex> vertices = toList(graph.query(AUTHORIZATIONS_A_AND_B)
                 .sort("age", SortDirection.ASCENDING)
                 .vertices());
-        Assert.assertEquals(4, count(vertices));
-        assertEquals("v2", vertices.get(0).getId());
-        assertEquals("v3", vertices.get(1).getId());
-        assertEquals("v4", vertices.get(2).getId());
-        assertEquals("v1", vertices.get(3).getId());
+        assertVertexIds(vertices, new String[]{"v2", "v3", "v4", "v1"});
 
         vertices = toList(graph.query(AUTHORIZATIONS_A_AND_B)
                 .sort("age", SortDirection.DESCENDING)
                 .vertices());
-        Assert.assertEquals(4, count(vertices));
-        assertEquals("v4", vertices.get(0).getId());
-        assertEquals("v3", vertices.get(1).getId());
-        assertEquals("v2", vertices.get(2).getId());
-        assertEquals("v1", vertices.get(3).getId());
+        assertVertexIds(vertices, new String[]{"v4", "v3", "v2", "v1"});
 
         vertices = toList(graph.query(AUTHORIZATIONS_A_AND_B)
                 .sort("name", SortDirection.ASCENDING)
@@ -2086,39 +2078,23 @@ public abstract class GraphTestBase {
                 .sort("name", SortDirection.ASCENDING)
                 .sort("age", SortDirection.ASCENDING)
                 .vertices());
-        Assert.assertEquals(4, count(vertices));
-        assertEquals("v2", vertices.get(0).getId());
-        assertEquals("v1", vertices.get(1).getId());
-        assertEquals("v3", vertices.get(2).getId());
-        assertEquals("v4", vertices.get(3).getId());
+        assertVertexIds(vertices, new String[]{"v2", "v1", "v3", "v4"});
 
         vertices = toList(graph.query(AUTHORIZATIONS_A_AND_B)
                 .sort("name", SortDirection.ASCENDING)
                 .sort("age", SortDirection.DESCENDING)
                 .vertices());
-        Assert.assertEquals(4, count(vertices));
-        assertEquals("v2", vertices.get(0).getId());
-        assertEquals("v1", vertices.get(1).getId());
-        assertEquals("v4", vertices.get(2).getId());
-        assertEquals("v3", vertices.get(3).getId());
+        assertVertexIds(vertices, new String[]{"v2", "v1", "v4", "v3"});
 
         vertices = toList(graph.query(AUTHORIZATIONS_A_AND_B)
                 .sort(Element.ID_PROPERTY_NAME, SortDirection.ASCENDING)
                 .vertices());
-        Assert.assertEquals(4, count(vertices));
-        assertEquals("v1", vertices.get(0).getId());
-        assertEquals("v2", vertices.get(1).getId());
-        assertEquals("v3", vertices.get(2).getId());
-        assertEquals("v4", vertices.get(3).getId());
+        assertVertexIds(vertices, new String[]{"v1", "v2", "v3", "v4"});
 
         vertices = toList(graph.query(AUTHORIZATIONS_A_AND_B)
                 .sort(Element.ID_PROPERTY_NAME, SortDirection.DESCENDING)
                 .vertices());
-        Assert.assertEquals(4, count(vertices));
-        assertEquals("v4", vertices.get(0).getId());
-        assertEquals("v3", vertices.get(1).getId());
-        assertEquals("v2", vertices.get(2).getId());
-        assertEquals("v1", vertices.get(3).getId());
+        assertVertexIds(vertices, new String[]{"v4", "v3", "v2", "v1"});
 
         vertices = toList(graph.query(AUTHORIZATIONS_A_AND_B)
                 .sort("otherfield", SortDirection.ASCENDING)
@@ -2128,18 +2104,12 @@ public abstract class GraphTestBase {
         List<Edge> edges = toList(graph.query(AUTHORIZATIONS_A_AND_B)
                 .sort(Edge.LABEL_PROPERTY_NAME, SortDirection.ASCENDING)
                 .edges());
-        Assert.assertEquals(3, count(edges));
-        assertEquals("e2", edges.get(0).getId());
-        assertEquals("e1", edges.get(1).getId());
-        assertEquals("e3", edges.get(2).getId());
+        assertEdgeIds(edges, new String[]{"e2", "e1", "e3"});
 
         edges = toList(graph.query(AUTHORIZATIONS_A_AND_B)
                 .sort(Edge.LABEL_PROPERTY_NAME, SortDirection.DESCENDING)
                 .edges());
-        Assert.assertEquals(3, count(edges));
-        assertEquals("e3", edges.get(0).getId());
-        assertEquals("e1", edges.get(1).getId());
-        assertEquals("e2", edges.get(2).getId());
+        assertEdgeIds(edges, new String[]{"e3", "e1", "e2"});
     }
 
     @Test
@@ -2157,6 +2127,38 @@ public abstract class GraphTestBase {
         QueryResultsIterable<Vertex> vertices
                 = graph.query(AUTHORIZATIONS_A).sort("age", SortDirection.ASCENDING).vertices();
         Assert.assertEquals(2, count(vertices));
+    }
+
+    @Test
+    public void testGraphQuerySortOnPropertyWhichIsFullTextAndExactMatchIndexed() {
+        graph.defineProperty("name")
+                .dataType(String.class)
+                .sortable(true)
+                .textIndexHint(TextIndexHint.EXACT_MATCH, TextIndexHint.FULL_TEXT)
+                .define();
+
+        graph.prepareVertex("v1", VISIBILITY_A)
+                .setProperty("name", "1-2", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.prepareVertex("v2", VISIBILITY_A)
+                .setProperty("name", "1-1", VISIBILITY_B)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.prepareVertex("v3", VISIBILITY_A)
+                .setProperty("name", "3-1", VISIBILITY_B)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        QueryResultsIterable<Vertex> vertices
+                = graph.query(AUTHORIZATIONS_A_AND_B).sort("name", SortDirection.ASCENDING).vertices();
+        assertVertexIds(vertices, new String[]{"v2", "v1", "v3"});
+
+        vertices = graph.query("3", AUTHORIZATIONS_A_AND_B).vertices();
+        assertVertexIds(vertices, new String[]{"v3"});
+
+        vertices = graph.query("*", AUTHORIZATIONS_A_AND_B)
+                .has("name", Compare.EQUAL, "3-1")
+                .vertices();
+        assertVertexIds(vertices, new String[]{"v3"});
     }
 
     @Test

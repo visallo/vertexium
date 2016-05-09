@@ -1,9 +1,11 @@
 # v2.3.2
- * ACCUMULO: iterator locations in accumulo config are now stored per table name
+
+* ACCUMULO: iterator locations in accumulo config are now stored per table name
+* Elasticsearch: fix: sort by strings with tokens should not effect sort order 
 
 # v2.3.1
 
-* Elasticsearch: fix calendar date field aggregations with multiple visibilities
+* Elasticsearch: fix: calendar date field aggregations with multiple visibilities
 * Elasticsearch: Support additional configuration for in process node
 * Elasticsearch: fix: Aggregation after alter visibility
 * SQL: fix: refresh in memory representation after altering vertex visibility
