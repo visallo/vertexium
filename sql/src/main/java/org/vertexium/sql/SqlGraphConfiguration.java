@@ -18,6 +18,7 @@ public class SqlGraphConfiguration extends InMemoryGraphConfiguration {
     protected static final String CONFIG_JDBC_URL = "sql.jdbc.url";
     protected static final String CONFIG_JDBC_USERNAME = "sql.jdbc.username";
     protected static final String CONFIG_JDBC_PASSWORD = "sql.jdbc.password";
+    protected static final String CONFIG_JMX_NAME = "sql.jmxName";
     protected static final String KEY_COLUMN_NAME = "id";
     protected static final String VALUE_COLUMN_NAME = "object";
     protected static final String VERTEX_TABLE_NAME = "vertex";
@@ -36,11 +37,13 @@ public class SqlGraphConfiguration extends InMemoryGraphConfiguration {
         String url = getConfigString(config, CONFIG_JDBC_URL);
         String username = getConfigString(config, CONFIG_JDBC_USERNAME);
         String password = getConfigString(config, CONFIG_JDBC_PASSWORD);
+        String jmxName = (String) config.get(CONFIG_JMX_NAME);
         dataSource = new BasicDataSource();
         dataSource.setDriverClassName(driverClass);
         dataSource.setUrl(url);
         dataSource.setUsername(username);
         dataSource.setPassword(password);
+        dataSource.setJmxName(jmxName);
         serializer = createSerializer();
     }
 
