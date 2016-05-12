@@ -7,7 +7,6 @@ import org.elasticsearch.search.aggregations.Aggregation;
 import org.elasticsearch.search.aggregations.bucket.MultiBucketsAggregation;
 import org.elasticsearch.search.aggregations.bucket.geogrid.GeoHashGrid;
 import org.elasticsearch.search.aggregations.bucket.geogrid.InternalGeoHashGrid;
-import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogram;
 import org.elasticsearch.search.aggregations.bucket.histogram.Histogram;
 import org.elasticsearch.search.aggregations.bucket.histogram.InternalHistogram;
 import org.elasticsearch.search.aggregations.bucket.terms.InternalTerms;
@@ -147,22 +146,12 @@ public class ElasticSearchGraphQueryIterable<T extends Element> extends DefaultG
     private static HistogramResult reduceHistogramResults(ElasticSearchSingleDocumentSearchQueryBase query, List<Aggregation> aggs) {
         Map<Object, List<MultiBucketsAggregation.Bucket>> bucketsByKey = new HashMap<>();
         for (Aggregation agg : aggs) {
-            if (agg instanceof DateHistogram) {
-                DateHistogram h = (DateHistogram) agg;
-                for (DateHistogram.Bucket b : h.getBuckets()) {
-                    List<MultiBucketsAggregation.Bucket> l = bucketsByKey.get(b.getKeyAsDate().toDate());
-                    if (l == null) {
-                        l = new ArrayList<>();
-                        bucketsByKey.put(b.getKey(), l);
-                    }
-                    l.add(b);
-                }
-            } else if (agg instanceof Histogram) {
+            if (agg instanceof Histogram) {
                 Histogram h = (Histogram) agg;
                 org.vertexium.query.Aggregation queryAgg = query.getAggregationByName(query.getAggregationName(h.getName()));
                 boolean isCalendarFieldQuery = queryAgg != null && queryAgg instanceof CalendarFieldAggregation;
                 for (Histogram.Bucket b : h.getBuckets()) {
-                    if (isCalendarFieldQuery && b.getKey().equals("-1")) {
+                    if (isCalendarFieldQuery && b.getKey().equals(-1L)) {
                         continue;
                     }
                     List<MultiBucketsAggregation.Bucket> l = bucketsByKey.get(b.getKey());
@@ -195,7 +184,7 @@ public class ElasticSearchGraphQueryIterable<T extends Element> extends DefaultG
             if (agg instanceof Terms) {
                 Terms h = (Terms) agg;
                 for (Terms.Bucket b : h.getBuckets()) {
-                    String mapKey = b.getKey();
+                    String mapKey = bucketKeyToString(b.getKey());
                     List<MultiBucketsAggregation.Bucket> existingBucketByName = bucketsByKey.get(mapKey);
                     if (existingBucketByName == null) {
                         existingBucketByName = new ArrayList<>();
@@ -224,7 +213,7 @@ public class ElasticSearchGraphQueryIterable<T extends Element> extends DefaultG
         public TResult reduce(ElasticSearchSingleDocumentSearchQueryBase query, Map<Object, List<MultiBucketsAggregation.Bucket>> bucketsByKey) {
             List<TBucket> buckets = new ArrayList<>();
             for (Map.Entry<Object, List<MultiBucketsAggregation.Bucket>> bucketsByKeyEntry : bucketsByKey.entrySet()) {
-                Object key = bucketsByKeyEntry.getKey();
+                String key = bucketKeyToString(bucketsByKeyEntry.getKey());
                 long count = 0;
                 List<Aggregation> subAggs = new ArrayList<>();
                 for (MultiBucketsAggregation.Bucket b : bucketsByKeyEntry.getValue()) {
@@ -242,6 +231,14 @@ public class ElasticSearchGraphQueryIterable<T extends Element> extends DefaultG
         protected abstract TBucket createBucket(Object key, long count, Map<String, AggregationResult> nestedResults, List<MultiBucketsAggregation.Bucket> buckets);
 
         protected abstract TResult bucketsToResults(List<TBucket> buckets);
+    }
+
+    private static String bucketKeyToString(Object bucketKey) {
+        if (bucketKey instanceof org.elasticsearch.common.geo.GeoPoint) {
+            String geohash = ((org.elasticsearch.common.geo.GeoPoint) bucketKey).getGeohash();
+            return geohash.replaceAll("0+$", "");
+        }
+        return bucketKey.toString();
     }
 
     private static GeohashResult reduceGeohashResults(ElasticSearchSingleDocumentSearchQueryBase query, List<Aggregation> aggs) {
@@ -287,7 +284,7 @@ public class ElasticSearchGraphQueryIterable<T extends Element> extends DefaultG
         List<GeoPoint> geoPoints = new ArrayList<>();
         for (MultiBucketsAggregation.Bucket b : buckets) {
             GeoHashGrid.Bucket gb = (GeoHashGrid.Bucket) b;
-            org.elasticsearch.common.geo.GeoPoint gp = gb.getKeyAsGeoPoint();
+            org.elasticsearch.common.geo.GeoPoint gp = (org.elasticsearch.common.geo.GeoPoint) gb.getKey();
             geoPoints.add(new GeoPoint(gp.getLat(), gp.getLon()));
         }
         return GeoPoint.calculateCenter(geoPoints);

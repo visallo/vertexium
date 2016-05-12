@@ -12,8 +12,9 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.geo.builders.ShapeBuilder;
 import org.elasticsearch.common.unit.DistanceUnit;
+import org.elasticsearch.index.IndexNotFoundException;
 import org.elasticsearch.index.query.*;
-import org.elasticsearch.indices.IndexMissingException;
+import org.elasticsearch.script.Script;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHitField;
 import org.elasticsearch.search.SearchHits;
@@ -21,8 +22,8 @@ import org.elasticsearch.search.aggregations.AbstractAggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.bucket.geogrid.GeoHashGridBuilder;
-import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogram;
 import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramBuilder;
+import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramInterval;
 import org.elasticsearch.search.aggregations.bucket.histogram.HistogramBuilder;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsBuilder;
 import org.elasticsearch.search.aggregations.metrics.stats.extended.ExtendedStatsBuilder;
@@ -39,6 +40,7 @@ import org.vertexium.util.*;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.regex.Pattern;
 
 public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implements
         GraphQueryWithHistogramAggregation,
@@ -151,8 +153,8 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
         return false;
     }
 
-    protected SearchRequestBuilder getSearchRequestBuilder(List<FilterBuilder> filters, QueryBuilder queryBuilder, ElasticSearchElementType elementType, int skip, int limit, boolean includeAggregations) {
-        AndFilterBuilder filterBuilder = getFilterBuilder(filters);
+    protected SearchRequestBuilder getSearchRequestBuilder(List<QueryBuilder> filters, QueryBuilder queryBuilder, ElasticSearchElementType elementType, int skip, int limit, boolean includeAggregations) {
+        AndQueryBuilder filterBuilder = getFilterBuilder(filters);
         String[] indicesToQuery = getIndexSelectionStrategy().getIndicesToQuery(this, elementType);
         if (QUERY_LOGGER.isTraceEnabled()) {
             QUERY_LOGGER.trace("indicesToQuery: %s", Joiner.on(", ").join(indicesToQuery));
@@ -180,15 +182,15 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
         }
         ElasticsearchSingleDocumentSearchIndex es = (ElasticsearchSingleDocumentSearchIndex) ((GraphBaseWithSearchIndex) getGraph()).getSearchIndex();
         Collection<String> fields = es.getQueryablePropertyNames(getGraph(), false, getParameters().getAuthorizations());
-        QueryStringQueryBuilder qs = QueryBuilders.queryString(queryString);
+        QueryStringQueryBuilder qs = QueryBuilders.queryStringQuery(queryString);
         for (String field : fields) {
             qs = qs.field(field);
         }
         return qs;
     }
 
-    protected List<FilterBuilder> getFilters(ElasticSearchElementType elementType) {
-        List<FilterBuilder> filters = new ArrayList<>();
+    protected List<QueryBuilder> getFilters(ElasticSearchElementType elementType) {
+        List<QueryBuilder> filters = new ArrayList<>();
         if (elementType != null) {
             addElementTypeFilter(filters, elementType);
         }
@@ -205,7 +207,7 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
         }
         if (getParameters().getEdgeLabels().size() > 0) {
             String[] edgeLabelsArray = getParameters().getEdgeLabels().toArray(new String[getParameters().getEdgeLabels().size()]);
-            filters.add(FilterBuilders.inFilter(ElasticsearchSingleDocumentSearchIndex.EDGE_LABEL_FIELD_NAME, edgeLabelsArray));
+            filters.add(QueryBuilders.termsQuery(ElasticsearchSingleDocumentSearchIndex.EDGE_LABEL_FIELD_NAME, edgeLabelsArray));
         }
 
         if (getParameters() instanceof QueryStringQueryParameters) {
@@ -213,9 +215,9 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
             if (queryString == null || queryString.equals("*")) {
                 ElasticsearchSingleDocumentSearchIndex es = (ElasticsearchSingleDocumentSearchIndex) ((GraphBaseWithSearchIndex) getGraph()).getSearchIndex();
                 Collection<String> fields = es.getQueryableElementTypeVisibilityPropertyNames(getGraph(), getParameters().getAuthorizations());
-                OrFilterBuilder atLeastOneFieldExistsFilter = new OrFilterBuilder();
+                OrQueryBuilder atLeastOneFieldExistsFilter = new OrQueryBuilder();
                 for (String field : fields) {
-                    atLeastOneFieldExistsFilter.add(new ExistsFilterBuilder(field));
+                    atLeastOneFieldExistsFilter.add(new ExistsQueryBuilder(field));
                 }
                 filters.add(atLeastOneFieldExistsFilter);
             }
@@ -256,7 +258,7 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
                 SearchResponse response;
                 try {
                     response = getSearchResponse(ElasticSearchElementType.VERTEX, skip, limit, includeAggregations);
-                } catch (IndexMissingException ex) {
+                } catch (IndexNotFoundException ex) {
                     LOGGER.debug("Index missing: %s (returning empty iterable)", ex.getMessage());
                     return createEmptyIterable();
                 } catch (VertexiumNoMatchingPropertiesException ex) {
@@ -296,7 +298,7 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
                 SearchResponse response;
                 try {
                     response = getSearchResponse(ElasticSearchElementType.EDGE, skip, limit, includeAggregations);
-                } catch (IndexMissingException ex) {
+                } catch (IndexNotFoundException ex) {
                     LOGGER.debug("Index missing: %s (returning empty iterable)", ex.getMessage());
                     return createEmptyIterable();
                 } catch (VertexiumNoMatchingPropertiesException ex) {
@@ -337,7 +339,7 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
                 SearchResponse response;
                 try {
                     response = getSearchResponse(null, skip, limit, includeAggregations);
-                } catch (IndexMissingException ex) {
+                } catch (IndexNotFoundException ex) {
                     LOGGER.debug("Index missing: %s (returning empty iterable)", ex.getMessage());
                     return createEmptyIterable();
                 } catch (VertexiumNoMatchingPropertiesException ex) {
@@ -443,7 +445,7 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
         if (QUERY_LOGGER.isTraceEnabled()) {
             QUERY_LOGGER.trace("searching for: " + toString());
         }
-        List<FilterBuilder> filters = getFilters(elementType);
+        List<QueryBuilder> filters = getFilters(elementType);
         QueryBuilder query = createQuery(getParameters());
         query = scoringStrategy.updateQuery(query);
         SearchRequestBuilder q = getSearchRequestBuilder(filters, query, elementType, skip, limit, includeAggregations);
@@ -456,7 +458,7 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
                 .actionGet();
     }
 
-    protected FilterBuilder getFilterForHasNotPropertyContainer(HasNotPropertyContainer hasNotProperty) {
+    protected QueryBuilder getFilterForHasNotPropertyContainer(HasNotPropertyContainer hasNotProperty) {
         String[] propertyNames;
         try {
             propertyNames = getPropertyNames(hasNotProperty.getKey());
@@ -466,22 +468,22 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
         } catch (VertexiumNoMatchingPropertiesException ex) {
             // If we can't find a property this means it doesn't exist on any elements so the hasNot query should
             // match all records.
-            return FilterBuilders.matchAllFilter();
+            return QueryBuilders.matchAllQuery();
         }
         PropertyDefinition propDef = getPropertyDefinition(hasNotProperty.getKey());
-        List<FilterBuilder> filters = new ArrayList<>();
+        List<QueryBuilder> filters = new ArrayList<>();
         for (String propertyName : propertyNames) {
-            filters.add(FilterBuilders.notFilter(FilterBuilders.existsFilter(propertyName)));
+            filters.add(QueryBuilders.notQuery(QueryBuilders.existsQuery(propertyName)));
             if (propDef.getDataType().equals(GeoPoint.class)) {
-                filters.add(FilterBuilders.notFilter(FilterBuilders.existsFilter(propertyName + ElasticsearchSingleDocumentSearchIndex.GEO_PROPERTY_NAME_SUFFIX)));
+                filters.add(QueryBuilders.notQuery(QueryBuilders.existsQuery(propertyName + ElasticsearchSingleDocumentSearchIndex.GEO_PROPERTY_NAME_SUFFIX)));
             } else if (isExactMatchPropertyDefinition(propDef)) {
-                filters.add(FilterBuilders.notFilter(FilterBuilders.existsFilter(propertyName + ElasticsearchSingleDocumentSearchIndex.EXACT_MATCH_PROPERTY_NAME_SUFFIX)));
+                filters.add(QueryBuilders.notQuery(QueryBuilders.existsQuery(propertyName + ElasticsearchSingleDocumentSearchIndex.EXACT_MATCH_PROPERTY_NAME_SUFFIX)));
             }
         }
         return getSingleFilterOrAndTheFilters(filters, hasNotProperty);
     }
 
-    protected FilterBuilder getFilterForHasPropertyContainer(HasPropertyContainer hasProperty) {
+    protected QueryBuilder getFilterForHasPropertyContainer(HasPropertyContainer hasProperty) {
         String[] propertyNames = getPropertyNames(hasProperty.getKey());
         if (propertyNames.length == 0) {
             throw new VertexiumNoMatchingPropertiesException(hasProperty.getKey());
@@ -490,19 +492,19 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
         if (propDef == null) {
             throw new VertexiumException("Could not find property definition for property name: " + hasProperty.getKey());
         }
-        List<FilterBuilder> filters = new ArrayList<>();
+        List<QueryBuilder> filters = new ArrayList<>();
         for (String propertyName : propertyNames) {
-            filters.add(FilterBuilders.existsFilter(propertyName));
+            filters.add(QueryBuilders.existsQuery(propertyName));
             if (propDef.getDataType().equals(GeoPoint.class)) {
-                filters.add(FilterBuilders.existsFilter(propertyName + ElasticsearchSingleDocumentSearchIndex.GEO_PROPERTY_NAME_SUFFIX));
+                filters.add(QueryBuilders.existsQuery(propertyName + ElasticsearchSingleDocumentSearchIndex.GEO_PROPERTY_NAME_SUFFIX));
             } else if (isExactMatchPropertyDefinition(propDef)) {
-                filters.add(FilterBuilders.existsFilter(propertyName + ElasticsearchSingleDocumentSearchIndex.EXACT_MATCH_PROPERTY_NAME_SUFFIX));
+                filters.add(QueryBuilders.existsQuery(propertyName + ElasticsearchSingleDocumentSearchIndex.EXACT_MATCH_PROPERTY_NAME_SUFFIX));
             }
         }
         return getSingleFilterOrOrTheFilters(filters, hasProperty);
     }
 
-    protected FilterBuilder getFiltersForHasValueContainer(HasValueContainer has) {
+    protected QueryBuilder getFiltersForHasValueContainer(HasValueContainer has) {
         if (has.predicate instanceof Compare) {
             return getFilterForComparePredicate((Compare) has.predicate, has);
         } else if (has.predicate instanceof Contains) {
@@ -516,12 +518,12 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
         }
     }
 
-    protected FilterBuilder getFilterForGeoComparePredicate(GeoCompare compare, HasValueContainer has) {
+    protected QueryBuilder getFilterForGeoComparePredicate(GeoCompare compare, HasValueContainer has) {
         String[] keys = getPropertyNames(has.key);
         if (keys.length == 0) {
             throw new VertexiumNoMatchingPropertiesException(has.key);
         }
-        List<FilterBuilder> filters = new ArrayList<>();
+        List<QueryBuilder> filters = new ArrayList<>();
         for (String key : keys) {
             String propertyName = key + ElasticsearchSingleDocumentSearchIndex.GEO_PROPERTY_NAME_SUFFIX;
             switch (compare) {
@@ -544,11 +546,11 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
                                     .center(lon, lat)
                                     .radius(distance, DistanceUnit.KILOMETERS);
                             filters
-                                    .add(new GeoShapeFilterBuilder(propertyName, shapeBuilder));
+                                    .add(new GeoShapeQueryBuilder(propertyName, shapeBuilder));
                         } else {
                             filters
-                                    .add(FilterBuilders
-                                            .geoDistanceFilter(propertyName)
+                                    .add(QueryBuilders
+                                            .geoDistanceQuery(propertyName)
                                             .point(lat, lon)
                                             .distance(distance, DistanceUnit.KILOMETERS));
                         }
@@ -569,11 +571,11 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
                                     .point(nwLon, seLat)
                                     .close();
                             filters
-                                    .add(new GeoShapeFilterBuilder(propertyName, shapeBuilder));
+                                    .add(new GeoShapeQueryBuilder(propertyName, shapeBuilder));
                         } else {
                             filters
-                                    .add(FilterBuilders
-                                            .geoBoundingBoxFilter(propertyName)
+                                    .add(QueryBuilders
+                                            .geoBoundingBoxQuery(propertyName)
                                             .topLeft(nwLat, nwLon)
                                             .bottomRight(seLat, seLon));
                         }
@@ -588,9 +590,9 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
         return getSingleFilterOrOrTheFilters(filters, has);
     }
 
-    private FilterBuilder getSingleFilterOrOrTheFilters(List<FilterBuilder> filters, HasContainer has) {
+    private QueryBuilder getSingleFilterOrOrTheFilters(List<QueryBuilder> filters, HasContainer has) {
         if (filters.size() > 1) {
-            return FilterBuilders.orFilter(filters.toArray(new FilterBuilder[filters.size()]));
+            return QueryBuilders.orQuery(filters.toArray(new QueryBuilder[filters.size()]));
         } else if (filters.size() == 1) {
             return filters.get(0);
         } else {
@@ -598,9 +600,9 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
         }
     }
 
-    private FilterBuilder getSingleFilterOrAndTheFilters(List<FilterBuilder> filters, HasContainer has) {
+    private QueryBuilder getSingleFilterOrAndTheFilters(List<QueryBuilder> filters, HasContainer has) {
         if (filters.size() > 1) {
-            return FilterBuilders.andFilter(filters.toArray(new FilterBuilder[filters.size()]));
+            return QueryBuilders.andQuery(filters.toArray(new QueryBuilder[filters.size()]));
         } else if (filters.size() == 1) {
             return filters.get(0);
         } else {
@@ -608,13 +610,13 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
         }
     }
 
-    protected FilterBuilder getFilterForTextPredicate(TextPredicate compare, HasValueContainer has) {
+    protected QueryBuilder getFilterForTextPredicate(TextPredicate compare, HasValueContainer has) {
         Object value = has.value;
         String[] keys = getPropertyNames(has.key);
         if (keys.length == 0) {
             throw new VertexiumNoMatchingPropertiesException(has.key);
         }
-        List<FilterBuilder> filters = new ArrayList<>();
+        List<QueryBuilder> filters = new ArrayList<>();
         for (String key : keys) {
             if (value instanceof String) {
                 value = ((String) value).toLowerCase(); // using the standard analyzer all strings are lower-cased.
@@ -622,9 +624,10 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
             switch (compare) {
                 case CONTAINS:
                     if (value instanceof String) {
-                        filters.add(FilterBuilders.termsFilter(key, splitStringIntoTerms((String) value)).execution("and"));
+                        String[] terms = splitStringIntoTerms((String) value);
+                        filters.add(QueryBuilders.termsQuery(key, terms));
                     } else {
-                        filters.add(FilterBuilders.termFilter(key, value));
+                        filters.add(QueryBuilders.termQuery(key, value));
                     }
                     break;
                 default:
@@ -634,15 +637,15 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
         return getSingleFilterOrOrTheFilters(filters, has);
     }
 
-    protected FilterBuilder getFilterForContainsPredicate(Contains contains, HasValueContainer has) {
+    protected QueryBuilder getFilterForContainsPredicate(Contains contains, HasValueContainer has) {
         String[] keys = getPropertyNames(has.key);
         if (keys.length == 0) {
             if (contains.equals(Contains.NOT_IN)) {
-                return FilterBuilders.matchAllFilter();
+                return QueryBuilders.matchAllQuery();
             }
             throw new VertexiumNoMatchingPropertiesException(has.key);
         }
-        List<FilterBuilder> filters = new ArrayList<>();
+        List<QueryBuilder> filters = new ArrayList<>();
         for (String key : keys) {
             if (has.value instanceof Iterable) {
                 has.value = IterableUtils.toArray((Iterable<?>) has.value, Object.class);
@@ -655,10 +658,10 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
             }
             switch (contains) {
                 case IN:
-                    filters.add(FilterBuilders.inFilter(key, (Object[]) has.value));
+                    filters.add(QueryBuilders.termsQuery(key, (Object[]) has.value));
                     break;
                 case NOT_IN:
-                    filters.add(FilterBuilders.notFilter(FilterBuilders.inFilter(key, (Object[]) has.value)));
+                    filters.add(QueryBuilders.notQuery(QueryBuilders.termsQuery(key, (Object[]) has.value)));
                     break;
                 default:
                     throw new VertexiumException("Unexpected Contains predicate " + has.predicate);
@@ -667,16 +670,16 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
         return getSingleFilterOrOrTheFilters(filters, has);
     }
 
-    protected FilterBuilder getFilterForComparePredicate(Compare compare, HasValueContainer has) {
+    protected QueryBuilder getFilterForComparePredicate(Compare compare, HasValueContainer has) {
         Object value = has.value;
         String[] keys = getPropertyNames(has.key);
         if (keys.length == 0) {
             if (compare.equals(Compare.NOT_EQUAL)) {
-                return FilterBuilders.matchAllFilter();
+                return QueryBuilders.matchAllQuery();
             }
             throw new VertexiumNoMatchingPropertiesException(has.key);
         }
-        List<FilterBuilder> filters = new ArrayList<>();
+        List<QueryBuilder> filters = new ArrayList<>();
         for (String key : keys) {
             if (value instanceof String || value instanceof String[]) {
                 key = key + ElasticsearchSingleDocumentSearchIndex.EXACT_MATCH_PROPERTY_NAME_SUFFIX;
@@ -685,22 +688,24 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
                 case EQUAL:
                     if (value instanceof DateOnly) {
                         DateOnly dateOnlyValue = ((DateOnly) value);
-                        filters.add(FilterBuilders.rangeFilter(key).from(dateOnlyValue.toString()).to(dateOnlyValue.toString()));
+                        String lower = dateOnlyValue.toString() + "T00:00:00.000Z";
+                        String upper = dateOnlyValue.toString() + "T23:59:59.999Z";
+                        filters.add(QueryBuilders.rangeQuery(key).gte(lower).lte(upper));
                     } else {
-                        filters.add(FilterBuilders.termFilter(key, value));
+                        filters.add(QueryBuilders.termQuery(key, value));
                     }
                     break;
                 case GREATER_THAN_EQUAL:
-                    filters.add(FilterBuilders.rangeFilter(key).gte(value));
+                    filters.add(QueryBuilders.rangeQuery(key).gte(value));
                     break;
                 case GREATER_THAN:
-                    filters.add(FilterBuilders.rangeFilter(key).gt(value));
+                    filters.add(QueryBuilders.rangeQuery(key).gt(value));
                     break;
                 case LESS_THAN_EQUAL:
-                    filters.add(FilterBuilders.rangeFilter(key).lte(value));
+                    filters.add(QueryBuilders.rangeQuery(key).lte(value));
                     break;
                 case LESS_THAN:
-                    filters.add(FilterBuilders.rangeFilter(key).lt(value));
+                    filters.add(QueryBuilders.rangeQuery(key).lt(value));
                     break;
                 case NOT_EQUAL:
                     addNotFilter(filters, key, value);
@@ -720,22 +725,22 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
         return (ElasticsearchSingleDocumentSearchIndex) ((GraphBaseWithSearchIndex) getGraph()).getSearchIndex();
     }
 
-    protected void addElementTypeFilter(List<FilterBuilder> filters, ElasticSearchElementType elementType) {
+    protected void addElementTypeFilter(List<QueryBuilder> filters, ElasticSearchElementType elementType) {
         if (elementType != null) {
             filters.add(createElementTypeFilter(elementType));
         }
     }
 
-    protected TermsFilterBuilder createElementTypeFilter(ElasticSearchElementType elementType) {
-        return FilterBuilders.inFilter(ElasticsearchSingleDocumentSearchIndex.ELEMENT_TYPE_FIELD_NAME, elementType.getKey());
+    protected TermQueryBuilder createElementTypeFilter(ElasticSearchElementType elementType) {
+        return QueryBuilders.termQuery(ElasticsearchSingleDocumentSearchIndex.ELEMENT_TYPE_FIELD_NAME, elementType.getKey());
     }
 
-    protected void addNotFilter(List<FilterBuilder> filters, String key, Object value) {
-        filters.add(FilterBuilders.notFilter(FilterBuilders.inFilter(key, value)));
+    protected void addNotFilter(List<QueryBuilder> filters, String key, Object value) {
+        filters.add(QueryBuilders.notQuery(QueryBuilders.termQuery(key, value)));
     }
 
-    protected AndFilterBuilder getFilterBuilder(List<FilterBuilder> filters) {
-        return FilterBuilders.andFilter(filters.toArray(new FilterBuilder[filters.size()]));
+    protected AndQueryBuilder getFilterBuilder(List<QueryBuilder> filters) {
+        return QueryBuilders.andQuery(filters.toArray(new QueryBuilder[filters.size()]));
     }
 
     private String[] splitStringIntoTerms(String value) {
@@ -776,9 +781,6 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
         }
         MoreLikeThisQueryBuilder q = QueryBuilders.moreLikeThisQuery(allFields.toArray(new String[allFields.size()]))
                 .likeText(similarTo.getText());
-        if (similarTo.getPercentTermsToMatch() != null) {
-            q.percentTermsToMatch(similarTo.getPercentTermsToMatch());
-        }
         if (similarTo.getMinTermFrequency() != null) {
             q.minTermFreq(similarTo.getMinTermFrequency());
         }
@@ -902,8 +904,10 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
                 histAgg.interval(1);
                 if (agg.getMinDocumentCount() != null) {
                     histAgg.minDocCount(agg.getMinDocumentCount());
+                } else {
+                    histAgg.minDocCount(1L);
                 }
-                String script = getCalendarFieldAggregationScript(agg, propertyName);
+                Script script = new Script(getCalendarFieldAggregationScript(agg, propertyName));
                 histAgg.script(script);
 
                 for (AbstractAggregationBuilder subAgg : getElasticsearchAggregations(agg.getNestedAggregations())) {
@@ -950,7 +954,12 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
             if (propertyDataType == Date.class) {
                 DateHistogramBuilder dateAgg = AggregationBuilders.dateHistogram(aggName);
                 dateAgg.field(propertyName);
-                dateAgg.interval(new DateHistogram.Interval(agg.getInterval()));
+                String interval = agg.getInterval();
+                if (Pattern.matches("^[0-9\\.]+$", interval)) {
+                    interval += "ms";
+                }
+                dateAgg.interval(new DateHistogramInterval(interval));
+                dateAgg.minDocCount(1L);
                 if (agg.getMinDocumentCount() != null) {
                     dateAgg.minDocCount(agg.getMinDocumentCount());
                 }
@@ -964,6 +973,7 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
                 HistogramBuilder histogramAgg = AggregationBuilders.histogram(aggName);
                 histogramAgg.field(propertyName);
                 histogramAgg.interval(Long.parseLong(agg.getInterval()));
+                histogramAgg.minDocCount(1L);
                 if (agg.getMinDocumentCount() != null) {
                     histogramAgg.minDocCount(agg.getMinDocumentCount());
                 }

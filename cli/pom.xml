@@ -12,7 +12,6 @@
     <packaging>jar</packaging>
 
     <properties>
-        <groovy.version>2.4.5</groovy.version>
         <jline.version>2.13</jline.version>
     </properties>
 
@@ -63,11 +62,6 @@
         <dependency>
             <groupId>org.codehaus.groovy</groupId>
             <artifactId>groovy-groovysh</artifactId>
-            <version>${groovy.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.codehaus.groovy</groupId>
-            <artifactId>groovy-all</artifactId>
             <version>${groovy.version}</version>
         </dependency>
         <dependency>

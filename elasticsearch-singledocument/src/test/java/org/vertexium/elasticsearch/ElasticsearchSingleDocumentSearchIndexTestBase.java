@@ -1,10 +1,13 @@
 package org.vertexium.elasticsearch;
 
 import org.apache.commons.io.FileUtils;
+import org.elasticsearch.Version;
 import org.elasticsearch.action.admin.cluster.state.ClusterStateResponse;
-import org.elasticsearch.common.settings.ImmutableSettings;
+import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.env.Environment;
 import org.elasticsearch.node.Node;
-import org.elasticsearch.node.NodeBuilder;
+import org.elasticsearch.plugins.Plugin;
+import org.elasticsearch.script.groovy.GroovyPlugin;
 import org.junit.*;
 import org.vertexium.*;
 import org.vertexium.elasticsearch.score.EdgeCountScoringStrategy;
@@ -22,9 +25,7 @@ import org.vertexium.util.VertexiumLoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 import static org.vertexium.util.IterableUtils.count;
 
@@ -50,21 +51,27 @@ public abstract class ElasticsearchSingleDocumentSearchIndexTestBase extends Gra
         LOGGER.info("writing to: %s", tempDir);
 
         clusterName = UUID.randomUUID().toString();
-        elasticSearchNode = NodeBuilder
-                .nodeBuilder()
-                .local(false)
-                .clusterName(clusterName)
-                .settings(
-                        ImmutableSettings.settingsBuilder()
-                                .put("script.disable_dynamic", "false")
-                                .put("gateway.type", "local")
-                                .put("index.number_of_shards", "1")
-                                .put("index.number_of_replicas", "0")
-                                .put("path.data", new File(tempDir, "data").getAbsolutePath())
-                                .put("path.logs", new File(tempDir, "logs").getAbsolutePath())
-                                .put("path.work", new File(tempDir, "work").getAbsolutePath())
-                ).node();
+        List<Class<? extends Plugin>> classpathPlugins = new ArrayList<>();
+        classpathPlugins.add(GroovyPlugin.class);
+        elasticSearchNode = new TestNode(
+                Settings.settingsBuilder()
+                        .put("name", clusterName)
+                        .put("cluster.name", clusterName)
+                        .put("node.local", "false")
+                        .put("script.inline", "true")
+                        .put("index.number_of_shards", "1")
+                        .put("index.number_of_replicas", "0")
+                        .put("path.home", tempDir.getAbsolutePath())
+                        .put("discovery.zen.ping.multicast.enabled", "false")
+                        .build(),
+                classpathPlugins);
         elasticSearchNode.start();
+    }
+
+    private static class TestNode extends Node {
+        public TestNode(Settings preparedSettings, Collection<Class<? extends Plugin>> classpathPlugins) {
+            super(new Environment(preparedSettings), Version.CURRENT, classpathPlugins);
+        }
     }
 
     @Before
@@ -77,8 +84,6 @@ public abstract class ElasticsearchSingleDocumentSearchIndexTestBase extends Gra
 
         ClusterStateResponse response = elasticSearchNode.client().admin().cluster().prepareState().execute().actionGet();
         addr = response.getState().getNodes().getNodes().values().iterator().next().value.getAddress().toString();
-        addr = addr.substring("inet[/".length());
-        addr = addr.substring(0, addr.length() - 1);
 
         super.before();
     }
@@ -91,7 +96,6 @@ public abstract class ElasticsearchSingleDocumentSearchIndexTestBase extends Gra
     @AfterClass
     public static void afterClass() throws IOException {
         if (elasticSearchNode != null) {
-            elasticSearchNode.stop();
             elasticSearchNode.close();
         }
         FileUtils.deleteDirectory(tempDir);

@@ -308,15 +308,6 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
     }
 
     @Override
-    public SimilarToGraphQuery percentTermsToMatch(float percentTermsToMatch) {
-        if (!(parameters instanceof SimilarToQueryParameters)) {
-            throw new VertexiumException("Invalid query parameters, expected " + SimilarToQueryParameters.class.getName() + " found " + parameters.getClass().getName());
-        }
-        ((SimilarToQueryParameters) this.parameters).setPercentTermsToMatch(percentTermsToMatch);
-        return this;
-    }
-
-    @Override
     public SimilarToGraphQuery boost(float boost) {
         if (!(parameters instanceof SimilarToQueryParameters)) {
             throw new VertexiumException("Invalid query parameters, expected " + SimilarToQueryParameters.class.getName() + " found " + parameters.getClass().getName());

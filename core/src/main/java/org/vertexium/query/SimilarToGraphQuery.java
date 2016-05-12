@@ -22,11 +22,6 @@ public interface SimilarToGraphQuery extends GraphQuery {
     SimilarToGraphQuery maxDocFrequency(int maxDocFrequency);
 
     /**
-     * The percentage of terms that must match to be considered similar.
-     */
-    SimilarToGraphQuery percentTermsToMatch(float percentTermsToMatch);
-
-    /**
      * The amount of boost to apply to the similarity query.
      */
     SimilarToGraphQuery boost(float boost);

@@ -2016,9 +2016,7 @@ public abstract class GraphTestBase {
         Iterable<Vertex> results = graph.query(AUTHORIZATIONS_A_AND_B).has("name", Contains.IN, strings).vertices();
         assertEquals(2, ((IterableWithTotalHits) results).getTotalHits());
         List<Vertex> vertices = toList(results);
-        assertEquals(2, vertices.size());
-        assertEquals("v1", vertices.get(0).getId());
-        assertEquals("v3", vertices.get(1).getId());
+        assertVertexIdsUnordered(vertices, new String[]{"v1", "v3"});
     }
 
     @Test
@@ -4157,7 +4155,6 @@ public abstract class GraphTestBase {
                         .maxQueryTerms(25)
                         .minDocFrequency(1)
                         .maxDocFrequency(10)
-                        .percentTermsToMatch(0.5f)
                         .boost(2.0f)
                         .vertices()
         );
@@ -4169,7 +4166,6 @@ public abstract class GraphTestBase {
                         .maxQueryTerms(25)
                         .minDocFrequency(1)
                         .maxDocFrequency(10)
-                        .percentTermsToMatch(0.5f)
                         .boost(2.0f)
                         .vertices()
         );
@@ -5098,6 +5094,21 @@ public abstract class GraphTestBase {
         assertEquals("ids length mismatch found:[" + verticesIdsString + "] expected:[" + expectedIdsString + "]", expectedIds.length, verticesList.size());
         for (int i = 0; i < expectedIds.length; i++) {
             assertEquals("at offset: " + i + " found:[" + verticesIdsString + "] expected:[" + expectedIdsString + "]", expectedIds[i], verticesList.get(i).getId());
+        }
+    }
+
+    protected void assertVertexIdsUnordered(Iterable<Vertex> vertices, String[] expectedIds) {
+        String verticesIdsString = idsToString(vertices);
+        String expectedIdsString = idsToString(expectedIds);
+        List<String> vertexIds = new ArrayList<>();
+        for (Vertex vertex : vertices) {
+            vertexIds.add(vertex.getId());
+        }
+        assertEquals("ids length mismatch found:[" + verticesIdsString + "] expected:[" + expectedIdsString + "]", expectedIds.length, vertexIds.size());
+        for (String expectedId : expectedIds) {
+            if (!vertexIds.remove(expectedId)) {
+                throw new VertexiumException("expected vertex: " + expectedId + " found:[" + verticesIdsString + "] expected:[" + expectedIdsString + "]");
+            }
         }
     }
 

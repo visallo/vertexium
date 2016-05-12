@@ -1,11 +1,11 @@
 package org.vertexium.elasticsearch;
 
+import com.carrotsearch.hppc.cursors.ObjectCursor;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
 import net.jodah.recurrent.Recurrent;
 import net.jodah.recurrent.RetryPolicy;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
-import org.elasticsearch.action.admin.cluster.health.ClusterHealthStatus;
 import org.elasticsearch.action.admin.indices.create.CreateIndexResponse;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.admin.indices.mapping.get.GetMappingsResponse;
@@ -21,10 +21,9 @@ import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.client.Requests;
 import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.cluster.health.ClusterHealthStatus;
 import org.elasticsearch.cluster.metadata.MappingMetaData;
 import org.elasticsearch.common.collect.ImmutableOpenMap;
-import org.elasticsearch.common.hppc.cursors.ObjectCursor;
-import org.elasticsearch.common.settings.ImmutableSettings;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.common.xcontent.XContentBuilder;
@@ -32,9 +31,10 @@ import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.index.engine.VersionConflictEngineException;
 import org.elasticsearch.index.query.FilteredQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.index.query.TermFilterBuilder;
+import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.node.Node;
 import org.elasticsearch.node.NodeBuilder;
+import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptService;
 import org.elasticsearch.search.aggregations.Aggregation;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
@@ -57,6 +57,8 @@ import org.vertexium.util.VertexiumLoggerFactory;
 import java.io.*;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -143,7 +145,7 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
 
             mapSettings.putAll(config.getInProcessNodeAdditionalSettings());
 
-            settings = ImmutableSettings.settingsBuilder()
+            settings = Settings.settingsBuilder()
                     .put(mapSettings)
                     .build();
         }
@@ -180,13 +182,13 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
     private static TransportClient createTransportClient(ElasticSearchSearchIndexConfiguration config) {
         Settings settings = tryReadSettingsFromFile(config);
         if (settings == null) {
-            ImmutableSettings.Builder settingsBuilder = ImmutableSettings.settingsBuilder();
+            Settings.Builder settingsBuilder = Settings.settingsBuilder();
             if (config.getClusterName() != null) {
                 settingsBuilder.put("cluster.name", config.getClusterName());
             }
             settings = settingsBuilder.build();
         }
-        TransportClient transportClient = new TransportClient(settings);
+        TransportClient transportClient = TransportClient.builder().settings(settings).build();
         for (String esLocation : config.getEsLocations()) {
             String[] locationSocket = esLocation.split(":");
             String hostname;
@@ -200,7 +202,13 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
             } else {
                 throw new VertexiumException("Invalid elastic search location: " + esLocation);
             }
-            transportClient.addTransportAddress(new InetSocketTransportAddress(hostname, port));
+            InetAddress host;
+            try {
+                host = InetAddress.getByName(hostname);
+            } catch (UnknownHostException ex) {
+                throw new VertexiumException("Could not resolve host: " + hostname, ex);
+            }
+            transportClient.addTransportAddress(new InetSocketTransportAddress(host, port));
         }
         return transportClient;
     }
@@ -214,7 +222,7 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
             throw new VertexiumException(esConfigFile.getAbsolutePath() + " does not exist");
         }
         try (FileInputStream fileIn = new FileInputStream(esConfigFile)) {
-            return ImmutableSettings.builder().loadFromStream(esConfigFile.getAbsolutePath(), fileIn).build();
+            return Settings.builder().loadFromStream(esConfigFile.getAbsolutePath(), fileIn).build();
         } catch (IOException e) {
             throw new VertexiumException("Could not read ES config file: " + esConfigFile.getAbsolutePath(), e);
         }
@@ -400,16 +408,17 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
             Authorizations authorizations
     ) {
         String oldFieldName = deflatePropertyName(graph, ELEMENT_TYPE_FIELD_NAME, oldVisibility);
+        Script script = new Script(
+                "ctx._source.remove(oldFieldName);",
+                ScriptService.ScriptType.INLINE,
+                null,
+                ImmutableMap.<String, Object>of("oldFieldName", oldFieldName)
+        );
         getClient().prepareUpdate()
                 .setIndex(getIndexName(element))
                 .setId(element.getId())
                 .setType(ELEMENT_TYPE)
-                .setScript(
-                        "ctx._source.remove(oldFieldName);",
-                        ScriptService.ScriptType.INLINE)
-                .setScriptParams(ImmutableMap.<String, Object>of(
-                        "oldFieldName", oldFieldName
-                ))
+                .setScript(script)
                 .get();
         addElement(graph, element, authorizations);
     }
@@ -848,7 +857,6 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
                 .admin()
                 .indices()
                 .preparePutMapping(indexInfo.getIndexName())
-                .setIgnoreConflicts(false)
                 .setType(ELEMENT_TYPE)
                 .setSource(mapping)
                 .execute()
@@ -879,7 +887,7 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
 
     @Override
     public Map<Object, Long> getVertexPropertyCountByValue(Graph graph, String propertyName, Authorizations authorizations) {
-        TermFilterBuilder elementTypeFilterBuilder = new TermFilterBuilder(ELEMENT_TYPE_FIELD_NAME, ElasticSearchElementType.VERTEX.getKey());
+        TermQueryBuilder elementTypeFilterBuilder = new TermQueryBuilder(ELEMENT_TYPE_FIELD_NAME, ElasticSearchElementType.VERTEX.getKey());
         FilteredQueryBuilder queryBuilder = QueryBuilders.filteredQuery(
                 QueryBuilders.matchAllQuery(),
                 elementTypeFilterBuilder
@@ -909,7 +917,7 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
         for (Aggregation agg : response.getAggregations().asList()) {
             Terms propertyCountResults = (Terms) agg;
             for (Terms.Bucket propertyCountResult : propertyCountResults.getBuckets()) {
-                String mapKey = propertyCountResult.getKey().toLowerCase();
+                String mapKey = ((String) propertyCountResult.getKey()).toLowerCase();
                 Long previousValue = results.get(mapKey);
                 if (previousValue == null) {
                     previousValue = 0L;
@@ -995,14 +1003,17 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
     @Override
     public void deleteProperty(Graph graph, Element element, String propertyKey, String propertyName, Visibility propertyVisibility, Authorizations authorizations) {
         String fieldName = deflatePropertyName(graph, propertyName, propertyVisibility);
+        Script script = new Script(
+                "ctx._source.remove(fieldName); ctx._source.remove(fieldName + '_e')",
+                ScriptService.ScriptType.INLINE,
+                null,
+                ImmutableMap.<String, Object>of("fieldName", fieldName)
+        );
         getClient().prepareUpdate()
                 .setIndex(getIndexName(element))
                 .setId(element.getId())
                 .setType(ELEMENT_TYPE)
-                .setScript(
-                        "ctx._source.remove(fieldName); ctx._source.remove(fieldName + '_e')",
-                        ScriptService.ScriptType.INLINE)
-                .setScriptParams(ImmutableMap.<String, Object>of("fieldName", fieldName))
+                .setScript(script)
                 .get();
     }
 
@@ -1076,7 +1087,7 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
         client.close();
 
         if (inProcessNode != null) {
-            inProcessNode.stop();
+            inProcessNode.close();
             inProcessNode = null;
         }
 
@@ -1308,7 +1319,7 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
     protected void createIndex(String indexName, boolean storeSourceData) throws IOException {
         int shards = getConfig().getNumberOfShards();
         CreateIndexResponse createResponse = client.admin().indices().prepareCreate(indexName)
-                .setSettings(ImmutableSettings.settingsBuilder().put("number_of_shards", shards))
+                .setSettings(Settings.settingsBuilder().put("number_of_shards", shards))
                 .execute().actionGet();
 
         ClusterHealthResponse health = client.admin().cluster().prepareHealth(indexName)

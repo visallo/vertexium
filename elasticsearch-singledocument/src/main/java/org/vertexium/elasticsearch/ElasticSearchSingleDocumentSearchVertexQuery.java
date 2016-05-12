@@ -1,8 +1,8 @@
 package org.vertexium.elasticsearch;
 
 import org.elasticsearch.client.Client;
-import org.elasticsearch.index.query.FilterBuilder;
-import org.elasticsearch.index.query.FilterBuilders;
+import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
 import org.vertexium.Authorizations;
 import org.vertexium.Direction;
 import org.vertexium.Graph;
@@ -32,15 +32,15 @@ public class ElasticSearchSingleDocumentSearchVertexQuery extends ElasticSearchS
     }
 
     @Override
-    protected List<FilterBuilder> getFilters(ElasticSearchElementType elementType) {
-        List<FilterBuilder> results = super.getFilters(elementType);
+    protected List<QueryBuilder> getFilters(ElasticSearchElementType elementType) {
+        List<QueryBuilder> results = super.getFilters(elementType);
         if (elementType.equals(ElasticSearchElementType.VERTEX)) {
             String[] ids = toArray(sourceVertex.getVertexIds(Direction.BOTH, getParameters().getAuthorizations()), String.class);
-            results.add(FilterBuilders.idsFilter().ids(ids));
+            results.add(QueryBuilders.idsQuery().ids(ids));
         } else if (elementType.equals(ElasticSearchElementType.EDGE)) {
-            FilterBuilder inVertexIdFilter = FilterBuilders.termFilter(ElasticsearchSingleDocumentSearchIndex.IN_VERTEX_ID_FIELD_NAME, sourceVertex.getId());
-            FilterBuilder outVertexIdFilter = FilterBuilders.termFilter(ElasticsearchSingleDocumentSearchIndex.OUT_VERTEX_ID_FIELD_NAME, sourceVertex.getId());
-            results.add(FilterBuilders.orFilter(inVertexIdFilter, outVertexIdFilter));
+            QueryBuilder inVertexIdFilter = QueryBuilders.termQuery(ElasticsearchSingleDocumentSearchIndex.IN_VERTEX_ID_FIELD_NAME, sourceVertex.getId());
+            QueryBuilder outVertexIdFilter = QueryBuilders.termQuery(ElasticsearchSingleDocumentSearchIndex.OUT_VERTEX_ID_FIELD_NAME, sourceVertex.getId());
+            results.add(QueryBuilders.orQuery(inVertexIdFilter, outVertexIdFilter));
         }
         return results;
     }

@@ -23,6 +23,11 @@
             <version>${elasticsearch.version}</version>
         </dependency>
         <dependency>
+            <groupId>org.elasticsearch.module</groupId>
+            <artifactId>lang-groovy</artifactId>
+            <version>${elasticsearch.version}</version>
+        </dependency>
+        <dependency>
             <groupId>com.vividsolutions</groupId>
             <artifactId>jts</artifactId>
             <version>${jts.version}</version>
@@ -59,11 +64,6 @@
             <groupId>org.vertexium</groupId>
             <artifactId>vertexium-inmemory</artifactId>
             <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.codehaus.groovy</groupId>
-            <artifactId>groovy</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>

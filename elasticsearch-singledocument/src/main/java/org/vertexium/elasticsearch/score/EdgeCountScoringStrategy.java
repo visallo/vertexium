@@ -1,5 +1,6 @@
 package org.vertexium.elasticsearch.score;
 
+import com.google.common.collect.ImmutableMap;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.common.xcontent.XContentBuilder;
@@ -7,6 +8,8 @@ import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.functionscore.ScoreFunctionBuilder;
 import org.elasticsearch.index.query.functionscore.ScoreFunctionBuilders;
+import org.elasticsearch.script.Script;
+import org.elasticsearch.script.ScriptService;
 import org.vertexium.*;
 import org.vertexium.elasticsearch.ElasticsearchSingleDocumentSearchIndex;
 import org.vertexium.elasticsearch.IndexInfo;
@@ -96,10 +99,15 @@ public class EdgeCountScoringStrategy extends ScoringStrategy {
             return query;
         }
 
-        ScoreFunctionBuilder scoreFunction = ScoreFunctionBuilders
-                .scriptFunction(getConfig().getScoreFormula(), "groovy")
-                .param("inEdgeMultiplier", getConfig().getInEdgeBoost())
-                .param("outEdgeMultiplier", getConfig().getOutEdgeBoost());
+        Script script = new Script(
+                getConfig().getScoreFormula(),
+                ScriptService.ScriptType.INLINE,
+                null,
+                ImmutableMap.of(
+                        "inEdgeMultiplier", getConfig().getInEdgeBoost(),
+                        "outEdgeMultiplier", getConfig().getOutEdgeBoost()
+                ));
+        ScoreFunctionBuilder scoreFunction = ScoreFunctionBuilders.scriptFunction(script);
 
         return QueryBuilders.functionScoreQuery(query, scoreFunction);
     }
