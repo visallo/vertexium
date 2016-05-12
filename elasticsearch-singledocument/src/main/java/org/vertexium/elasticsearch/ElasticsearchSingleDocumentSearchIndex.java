@@ -76,6 +76,7 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
     public static final String EDGE_LABEL_FIELD_NAME = "__edgeLabel";
     public static final String EXACT_MATCH_PROPERTY_NAME_SUFFIX = "_e";
     public static final String GEO_PROPERTY_NAME_SUFFIX = "_g";
+    public static final String SORT_PROPERTY_NAME_SUFFIX = "_s";
     public static final int MAX_BATCH_COUNT = 25000;
     public static final long MAX_BATCH_SIZE = 15 * 1024 * 1024;
     public static final int EXACT_MATCH_IGNORE_ABOVE_LIMIT = 10000;
@@ -475,7 +476,7 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
         String elementTypeVisibilityPropertyName = deflatePropertyName(graph, ELEMENT_TYPE_FIELD_NAME, element.getVisibility());
         String indexName = getIndexName(element);
         IndexInfo indexInfo = ensureIndexCreatedAndInitialized(graph, indexName);
-        addPropertyToIndex(graph, indexInfo, elementTypeVisibilityPropertyName, element.getVisibility(), String.class, false, false);
+        addPropertyToIndex(graph, indexInfo, elementTypeVisibilityPropertyName, element.getVisibility(), String.class, false);
         return elementTypeVisibilityPropertyName;
     }
 
@@ -525,7 +526,7 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
             }
             if (propertyDefinition != null && propertyDefinition.isSortable()) {
                 String s = ((String) propertyValue).substring(0, Math.min(100, ((String) propertyValue).length()));
-                addPropertyValueToPropertiesMap(propertiesMap, propertyDefinition.getPropertyName(), s);
+                addPropertyValueToPropertiesMap(propertiesMap, propertyDefinition.getPropertyName() + SORT_PROPERTY_NAME_SUFFIX, s);
             }
             return;
         }
@@ -536,7 +537,7 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
 
         addPropertyValueToPropertiesMap(propertiesMap, propertyName, propertyValue);
         if (propertyDefinition != null && propertyDefinition.isSortable()) {
-            addPropertyValueToPropertiesMap(propertiesMap, propertyDefinition.getPropertyName(), propertyValue);
+            addPropertyValueToPropertiesMap(propertiesMap, propertyDefinition.getPropertyName() + SORT_PROPERTY_NAME_SUFFIX, propertyValue);
         }
     }
 
@@ -720,22 +721,26 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
     protected boolean addPropertyDefinitionToIndex(Graph graph, IndexInfo indexInfo, String propertyName, Visibility propertyVisibility, PropertyDefinition propertyDefinition) throws IOException {
         if (propertyDefinition.getDataType() == String.class) {
             if (propertyDefinition.getTextIndexHints().contains(TextIndexHint.EXACT_MATCH)) {
-                addPropertyToIndex(graph, indexInfo, propertyName + EXACT_MATCH_PROPERTY_NAME_SUFFIX, propertyVisibility, String.class, false, propertyDefinition.getBoost(), propertyDefinition.isSortable());
+                addPropertyToIndex(graph, indexInfo, propertyName + EXACT_MATCH_PROPERTY_NAME_SUFFIX, propertyVisibility, String.class, false, propertyDefinition.getBoost());
             }
             if (propertyDefinition.getTextIndexHints().contains(TextIndexHint.FULL_TEXT)) {
-                addPropertyToIndex(graph, indexInfo, propertyName, propertyVisibility, String.class, true, propertyDefinition.getBoost(), propertyDefinition.isSortable());
+                addPropertyToIndex(graph, indexInfo, propertyName, propertyVisibility, String.class, true, propertyDefinition.getBoost());
+            }
+            if (propertyDefinition.isSortable()) {
+                String sortPropertyName = inflatePropertyName(propertyName) + SORT_PROPERTY_NAME_SUFFIX;
+                addPropertyToIndex(graph, indexInfo, sortPropertyName, null, String.class, false, null);
             }
             return true;
         }
 
         if (propertyDefinition.getDataType() == GeoPoint.class
                 || propertyDefinition.getDataType() == GeoCircle.class) {
-            addPropertyToIndex(graph, indexInfo, propertyName + GEO_PROPERTY_NAME_SUFFIX, propertyVisibility, propertyDefinition.getDataType(), true, propertyDefinition.getBoost(), propertyDefinition.isSortable());
-            addPropertyToIndex(graph, indexInfo, propertyName, propertyVisibility, String.class, true, propertyDefinition.getBoost(), propertyDefinition.isSortable());
+            addPropertyToIndex(graph, indexInfo, propertyName + GEO_PROPERTY_NAME_SUFFIX, propertyVisibility, propertyDefinition.getDataType(), true, propertyDefinition.getBoost());
+            addPropertyToIndex(graph, indexInfo, propertyName, propertyVisibility, String.class, true, propertyDefinition.getBoost());
             return true;
         }
 
-        addPropertyToIndex(graph, indexInfo, propertyName, propertyVisibility, propertyDefinition.getDataType(), true, propertyDefinition.getBoost(), propertyDefinition.isSortable());
+        addPropertyToIndex(graph, indexInfo, propertyName, propertyVisibility, propertyDefinition.getDataType(), true, propertyDefinition.getBoost());
         return true;
     }
 
@@ -787,21 +792,21 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
                 return;
             }
             dataType = streamingPropertyValue.getValueType();
-            addPropertyToIndex(graph, indexInfo, deflatedPropertyName, property.getVisibility(), dataType, true, false);
+            addPropertyToIndex(graph, indexInfo, deflatedPropertyName, property.getVisibility(), dataType, true);
         } else if (propertyValue instanceof String) {
             dataType = String.class;
-            addPropertyToIndex(graph, indexInfo, deflatedPropertyName + EXACT_MATCH_PROPERTY_NAME_SUFFIX, property.getVisibility(), dataType, false, false);
-            addPropertyToIndex(graph, indexInfo, deflatedPropertyName, property.getVisibility(), dataType, true, false);
+            addPropertyToIndex(graph, indexInfo, deflatedPropertyName + EXACT_MATCH_PROPERTY_NAME_SUFFIX, property.getVisibility(), dataType, false);
+            addPropertyToIndex(graph, indexInfo, deflatedPropertyName, property.getVisibility(), dataType, true);
         } else if (propertyValue instanceof GeoPoint) {
-            addPropertyToIndex(graph, indexInfo, deflatedPropertyName + GEO_PROPERTY_NAME_SUFFIX, property.getVisibility(), GeoPoint.class, true, false);
-            addPropertyToIndex(graph, indexInfo, deflatedPropertyName, property.getVisibility(), String.class, true, false);
+            addPropertyToIndex(graph, indexInfo, deflatedPropertyName + GEO_PROPERTY_NAME_SUFFIX, property.getVisibility(), GeoPoint.class, true);
+            addPropertyToIndex(graph, indexInfo, deflatedPropertyName, property.getVisibility(), String.class, true);
         } else if (propertyValue instanceof GeoCircle) {
-            addPropertyToIndex(graph, indexInfo, deflatedPropertyName + GEO_PROPERTY_NAME_SUFFIX, property.getVisibility(), GeoCircle.class, true, false);
-            addPropertyToIndex(graph, indexInfo, deflatedPropertyName, property.getVisibility(), String.class, true, false);
+            addPropertyToIndex(graph, indexInfo, deflatedPropertyName + GEO_PROPERTY_NAME_SUFFIX, property.getVisibility(), GeoCircle.class, true);
+            addPropertyToIndex(graph, indexInfo, deflatedPropertyName, property.getVisibility(), String.class, true);
         } else {
             checkNotNull(propertyValue, "property value cannot be null for property: " + deflatedPropertyName);
             dataType = propertyValue.getClass();
-            addPropertyToIndex(graph, indexInfo, deflatedPropertyName, property.getVisibility(), dataType, true, true);
+            addPropertyToIndex(graph, indexInfo, deflatedPropertyName, property.getVisibility(), dataType, true);
         }
     }
 
@@ -812,8 +817,7 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
             Visibility propertyVisibility,
             Class dataType,
             boolean analyzed,
-            Double boost,
-            boolean sortable
+            Double boost
     ) throws IOException {
         if (indexInfo.isPropertyDefined(propertyName, propertyVisibility)) {
             return;
@@ -1117,8 +1121,8 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
         }
     }
 
-    protected void addPropertyToIndex(Graph graph, IndexInfo indexInfo, String propertyName, Visibility propertyVisibility, Class dataType, boolean analyzed, boolean sortable) throws IOException {
-        addPropertyToIndex(graph, indexInfo, propertyName, propertyVisibility, dataType, analyzed, null, sortable);
+    protected void addPropertyToIndex(Graph graph, IndexInfo indexInfo, String propertyName, Visibility propertyVisibility, Class dataType, boolean analyzed) throws IOException {
+        addPropertyToIndex(graph, indexInfo, propertyName, propertyVisibility, dataType, analyzed, null);
     }
 
     protected String deflatePropertyName(PropertyDefinition propertyDefinition) {
