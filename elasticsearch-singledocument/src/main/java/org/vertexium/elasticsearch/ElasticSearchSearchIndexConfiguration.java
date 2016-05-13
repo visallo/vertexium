@@ -14,8 +14,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class ElasticSearchSearchIndexConfiguration {
-    public static final String STORE_SOURCE_DATA = "storeSourceData";
-    public static final boolean STORE_SOURCE_DATA_DEFAULT = false;
     public static final String ES_LOCATIONS = "locations";
     public static final String INDEX_EDGES = "indexEdges";
     public static final boolean INDEX_EDGES_DEFAULT = true;
@@ -38,9 +36,7 @@ public class ElasticSearchSearchIndexConfiguration {
     public static final String ALL_FIELD_ENABLED = "allFieldEnabled";
     public static final String IN_PROCESS_NODE = "inProcessNode";
     public static final boolean IN_PROCESS_NODE_DEFAULT = false;
-    public static final String IN_PROCESS_NODE_DATA_PATH = "inProcessNode.dataPath";
-    public static final String IN_PROCESS_NODE_LOGS_PATH = "inProcessNode.logsPath";
-    public static final String IN_PROCESS_NODE_WORK_PATH = "inProcessNode.workPath";
+    public static final String IN_PROCESS_NODE_HOME_PATH = "inProcessNode.homePath";
     public static final String IN_PROCESS_ADDITIONAL_CONFIG_PREFIX = GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + "inProcessNode.additionalConfig.";
     public static final String QUERY_PAGE_SIZE = "queryPageSize";
     public static final int QUERY_PAGE_SIZE_DEFAULT = 500;
@@ -73,10 +69,6 @@ public class ElasticSearchSearchIndexConfiguration {
 
     public boolean isAutoFlush() {
         return graphConfiguration.getBoolean(GraphConfiguration.AUTO_FLUSH, AUTO_FLUSH_DEFAULT);
-    }
-
-    public boolean isStoreSourceData() {
-        return graphConfiguration.getBoolean(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + STORE_SOURCE_DATA, STORE_SOURCE_DATA_DEFAULT);
     }
 
     public boolean isIndexEdges() {
@@ -138,16 +130,8 @@ public class ElasticSearchSearchIndexConfiguration {
         return graphConfiguration.getBoolean(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + IN_PROCESS_NODE, IN_PROCESS_NODE_DEFAULT);
     }
 
-    public String getInProcessNodeDataPath() {
-        return graphConfiguration.getString(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + IN_PROCESS_NODE_DATA_PATH, null);
-    }
-
-    public String getInProcessNodeLogsPath() {
-        return graphConfiguration.getString(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + IN_PROCESS_NODE_LOGS_PATH, null);
-    }
-
-    public String getInProcessNodeWorkPath() {
-        return graphConfiguration.getString(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + IN_PROCESS_NODE_WORK_PATH, null);
+    public String getInProcessNodeHomePath() {
+        return graphConfiguration.getString(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + IN_PROCESS_NODE_HOME_PATH, null);
     }
 
     public int getQueryPageSize() {

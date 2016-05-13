@@ -126,22 +126,16 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
 
         Settings settings = tryReadSettingsFromFile(config);
         if (settings == null) {
-            String dataPath = config.getInProcessNodeDataPath();
-            checkNotNull(dataPath, ElasticSearchSearchIndexConfiguration.IN_PROCESS_NODE_DATA_PATH + " is required for in process Elasticsearch node");
-            String logsPath = config.getInProcessNodeLogsPath();
-            checkNotNull(logsPath, ElasticSearchSearchIndexConfiguration.IN_PROCESS_NODE_LOGS_PATH + " is required for in process Elasticsearch node");
-            String workPath = config.getInProcessNodeWorkPath();
-            checkNotNull(workPath, ElasticSearchSearchIndexConfiguration.IN_PROCESS_NODE_WORK_PATH + " is required for in process Elasticsearch node");
+            String homePath = config.getInProcessNodeHomePath();
+            checkNotNull(homePath, ElasticSearchSearchIndexConfiguration.IN_PROCESS_NODE_HOME_PATH + " is required for in process Elasticsearch node");
             int numberOfShards = config.getNumberOfShards();
 
             Map<String, String> mapSettings = new HashMap<>();
-            mapSettings.put("script.disable_dynamic", "false");
+            mapSettings.put("script.inline", "true");
             mapSettings.put("index.number_of_shards", Integer.toString(numberOfShards));
             mapSettings.put("index.number_of_replicas", "0");
-            mapSettings.put("path.data", dataPath);
-            mapSettings.put("path.logs", logsPath);
-            mapSettings.put("path.work", workPath);
-            mapSettings.put("discovery.zen.ping.multicast.enabled", "false");
+            mapSettings.put("path.home", homePath);
+            mapSettings.put("discovery.zen.ping.unicast.hosts", "localhost");
 
             mapSettings.putAll(config.getInProcessNodeAdditionalSettings());
 

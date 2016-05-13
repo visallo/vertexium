@@ -62,7 +62,7 @@ public abstract class ElasticsearchSingleDocumentSearchIndexTestBase extends Gra
                         .put("index.number_of_shards", "1")
                         .put("index.number_of_replicas", "0")
                         .put("path.home", tempDir.getAbsolutePath())
-                        .put("discovery.zen.ping.multicast.enabled", "false")
+                        .put("discovery.zen.ping.unicast.hosts", "localhost")
                         .build(),
                 classpathPlugins);
         elasticSearchNode.start();
