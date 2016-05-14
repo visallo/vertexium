@@ -2,6 +2,7 @@ package org.vertexium.cli;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
+import com.google.common.collect.ImmutableList;
 import groovy.lang.Binding;
 import groovy.lang.Closure;
 import groovy.lang.GroovyShell;
@@ -201,7 +202,11 @@ public class VertexiumShell {
         System.out.println("  e     - edge map (usage: e['e1'])");
         try {
             shell.execute("import " + Visibility.class.getPackage().getName() + ".*;");
-            code = shell.run(evalString, filenames);
+            List<String> args = ImmutableList.<String>builder()
+                    .add(evalString)
+                    .addAll(filenames)
+                    .build();
+            code = shell.run(args.toArray(new String[args.size()]));
         } finally {
             System.setSecurityManager(psm);
         }
