@@ -2,7 +2,7 @@
 
 * ACCUMULO: iterator locations in accumulo config are now stored per table name
 * Elasticsearch: fix: sort by strings with tokens should not effect sort order 
-* SQL: Support setting the DBCP JMX name
+* SQL: Switch to HikariCP connection pool
 
 # v2.3.1
 

@@ -1,6 +1,5 @@
 package org.vertexium.sql;
 
-import org.h2.Driver;
 import org.h2.store.fs.FileUtils;
 import org.junit.After;
 import org.junit.Before;
@@ -30,10 +29,9 @@ public class SqlGraphTest extends GraphTestBase {
 
         config = new HashMap<>();
         config.put("", SqlGraph.class.getName());
-        config.put(SqlGraphConfiguration.CONFIG_JDBC_URL, "jdbc:h2:file:" + dbFilePath);
-        config.put(SqlGraphConfiguration.CONFIG_JDBC_DRIVER_CLASS, Driver.class.getName());
-        config.put(SqlGraphConfiguration.CONFIG_JDBC_USERNAME, "username");
-        config.put(SqlGraphConfiguration.CONFIG_JDBC_PASSWORD, "password");
+        config.put("sql.jdbcUrl", "jdbc:h2:file:" + dbFilePath);
+        config.put("sql.username", "username");
+        config.put("sql.password", "password");
         config.put(GraphConfiguration.IDGENERATOR_PROP_PREFIX, UUIDIdGenerator.class.getName());
         config.put(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX, DefaultSearchIndex.class.getName());
         config.put(GraphConfiguration.SERIALIZER, JavaVertexiumSerializer.class.getName());

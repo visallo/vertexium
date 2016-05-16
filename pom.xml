@@ -100,7 +100,7 @@
         <jetty.version>9.2.5.v20141112</jetty.version>
 
         <!-- used by: sql -->
-        <dbcp2.version>2.1.1</dbcp2.version>
+        <HikariCP.version>2.4.6</HikariCP.version>
         <jdbi.version>2.63.1</jdbi.version>
         <h2.version>1.4.188</h2.version>
         <mysql.version>5.1.36</mysql.version>
