@@ -1,4 +1,4 @@
-# v2.3.2
+# v2.4.0
 
 * ACCUMULO: iterator locations in accumulo config are now stored per table name
 * Elasticsearch: fix: sort by strings with tokens should not effect sort order 
