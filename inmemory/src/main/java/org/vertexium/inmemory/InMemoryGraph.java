@@ -1,5 +1,6 @@
 package org.vertexium.inmemory;
 
+import com.google.common.collect.ImmutableSet;
 import org.vertexium.*;
 import org.vertexium.event.*;
 import org.vertexium.id.IdGenerator;
@@ -17,6 +18,7 @@ import org.vertexium.util.ConvertingIterable;
 import org.vertexium.util.IncreasingTime;
 import org.vertexium.util.IterableUtils;
 import org.vertexium.util.LookAheadIterable;
+import org.vertexium.util.FilterIterable;
 
 import java.util.*;
 
@@ -425,6 +427,62 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
     public Authorizations createAuthorizations(String... auths) {
         addValidAuthorizations(auths);
         return new InMemoryAuthorizations(auths);
+    }
+
+    @Override
+    protected void findPathsRecursive(
+            List<Path> foundPaths, final Vertex sourceVertex, Vertex destVertex, String[] labels,
+            int hops, int totalHops, Set<String> seenVertices, Path currentPath, ProgressCallback progressCallback,
+            Authorizations authorizations) {
+        findPathsRecursive(foundPaths, sourceVertex.getId(), destVertex.getId(), labels, hops, totalHops, seenVertices,
+                           currentPath, progressCallback, authorizations);
+    }
+
+    protected void findPathsRecursive(
+            List<Path> foundPaths, String sourceVertexId, String destVertexId, String[] labels,
+            int hops, int totalHops, Set<String> seenVertices, Path currentPath, ProgressCallback progressCallback,
+            Authorizations authorizations) {
+        // if this is our first source vertex report progress back to the progress callback
+        boolean firstLevelRecursion = hops == totalHops;
+        final Set<String> edgeLabels = ImmutableSet.copyOf(labels == null ? new String[0] : labels);
+
+        seenVertices.add(sourceVertexId);
+        if (sourceVertexId.equals(destVertexId)) {
+            foundPaths.add(currentPath);
+        } else if (hops > 0) {
+            Iterable<Edge> edges = new FilterIterable<Edge>(
+                    getEdgesFromVertex(sourceVertexId, FetchHint.ALL, null, authorizations)) {
+                @Override
+                protected boolean isIncluded(Edge edge) {
+                    return edgeLabels.isEmpty() || edgeLabels.contains(edge.getLabel());
+                }
+            };
+            List<String> vertexIds = new ArrayList<>();
+            for (Edge edge : edges) {
+                vertexIds.add(edge.getOtherVertexId(sourceVertexId));
+            }
+
+            int vertexCount = 0;
+            if (firstLevelRecursion) {
+                vertexCount = vertexIds.size();
+            }
+            int i = 0;
+            for (String childId : vertexIds) {
+                if (firstLevelRecursion) {
+                    // this will never get to 100% since i starts at 0. which is good. 100% signifies done and we still
+                    // have work to do.
+                    double progress = (double) i / (double) vertexCount;
+                    progressCallback.progress(progress, ProgressCallback.Step.SEARCHING_EDGES, i + 1, vertexCount);
+                }
+                if (!seenVertices.contains(childId)) {
+                    findPathsRecursive(
+                            foundPaths, childId, destVertexId, labels, hops - 1, totalHops, seenVertices,
+                            new Path(currentPath, childId), progressCallback, authorizations);
+                }
+                i++;
+            }
+        }
+        seenVertices.remove(sourceVertexId);
     }
 
     protected Iterable<Edge> getEdgesFromVertex(final String vertexId, final EnumSet<FetchHint> fetchHints,

@@ -1,3 +1,7 @@
+# v2.4.1
+
+* InMemory and SQL: improved find paths performance
+
 # v2.4.0
 
 * ACCUMULO: iterator locations in accumulo config are now stored per table name
