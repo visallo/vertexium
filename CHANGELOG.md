@@ -1,6 +1,7 @@
 # v2.4.1
 
-* InMemory and SQL: improved find paths performance
+* InMemory/SQL: improved find paths performance
+* InMemory/SQL: fix in-memory vertex properties inadvertently sharing metadata
 
 # v2.4.0
 

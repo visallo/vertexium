@@ -10,7 +10,7 @@ public class AddPropertyValueMutation extends PropertyMutation {
     public AddPropertyValueMutation(long timestamp, String key, String name, Object value, Metadata metadata, Visibility visibility) {
         super(timestamp, key, name, visibility, visibility);
         this.value = value;
-        this.metadata = metadata;
+        this.metadata = new Metadata(metadata);
     }
 
     public Object getValue() {
