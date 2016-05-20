@@ -8,8 +8,20 @@ import java.util.Map;
 
 public class Metadata implements Serializable {
     static final long serialVersionUID = 42L;
-    private Map<String, Entry> entries = new HashMap<>();
     public static final String KEY_SEPARATOR = "\u001f";
+
+    private final Map<String, Entry> entries;
+
+    public Metadata() {
+        entries = new HashMap<>();
+    }
+
+    public Metadata(Metadata copyFromMetadata) {
+        this();
+        if (copyFromMetadata != null) {
+            entries.putAll(copyFromMetadata.entries);
+        }
+    }
 
     public Metadata add(String key, Object value, Visibility visibility) {
         entries.put(toMapKey(key, visibility), new Entry(key, value, visibility));
