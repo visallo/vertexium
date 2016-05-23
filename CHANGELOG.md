@@ -2,6 +2,8 @@
 
 * InMemory/SQL: improved find paths performance
 * InMemory/SQL: fix in-memory vertex properties inadvertently sharing metadata
+* Graph: add methods to get vertices and edges in a range of IDs
+* Accumulo: add methods to get the tablet splits
 
 # v2.4.0
 

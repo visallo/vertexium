@@ -432,6 +432,42 @@ public abstract class AccumuloGraphTestBase extends GraphTestBase {
         }
     }
 
+    @Test
+    public void testListSplits() throws AccumuloSecurityException, TableNotFoundException, AccumuloException {
+        SortedSet<Text> keys = new TreeSet<>();
+        keys.add(new Text("j"));
+        getGraph().getConnector().tableOperations().addSplits(getGraph().getVerticesTableName(), keys);
+
+        keys = new TreeSet<>();
+        keys.add(new Text("k"));
+        getGraph().getConnector().tableOperations().addSplits(getGraph().getEdgesTableName(), keys);
+
+        keys = new TreeSet<>();
+        keys.add(new Text("l"));
+        getGraph().getConnector().tableOperations().addSplits(getGraph().getDataTableName(), keys);
+
+        List<org.vertexium.Range> verticesTableSplits = toList(getGraph().listVerticesTableSplits());
+        assertEquals(2, verticesTableSplits.size());
+        assertEquals(null, verticesTableSplits.get(0).getInclusiveStart());
+        assertEquals("j", verticesTableSplits.get(0).getExclusiveEnd());
+        assertEquals("j", verticesTableSplits.get(1).getInclusiveStart());
+        assertEquals(null, verticesTableSplits.get(1).getExclusiveEnd());
+
+        List<org.vertexium.Range> edgesTableSplits = toList(getGraph().listEdgesTableSplits());
+        assertEquals(2, edgesTableSplits.size());
+        assertEquals(null, edgesTableSplits.get(0).getInclusiveStart());
+        assertEquals("k", edgesTableSplits.get(0).getExclusiveEnd());
+        assertEquals("k", edgesTableSplits.get(1).getInclusiveStart());
+        assertEquals(null, edgesTableSplits.get(1).getExclusiveEnd());
+
+        List<org.vertexium.Range> dataTableSplits = toList(getGraph().listDataTableSplits());
+        assertEquals(2, dataTableSplits.size());
+        assertEquals(null, dataTableSplits.get(0).getInclusiveStart());
+        assertEquals("l", dataTableSplits.get(0).getExclusiveEnd());
+        assertEquals("l", dataTableSplits.get(1).getInclusiveStart());
+        assertEquals(null, dataTableSplits.get(1).getExclusiveEnd());
+    }
+
     @Override
     public AccumuloGraph getGraph() {
         return (AccumuloGraph) super.getGraph();

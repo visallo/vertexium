@@ -6,10 +6,7 @@ import org.vertexium.query.GraphQuery;
 import org.vertexium.query.MultiVertexQuery;
 import org.vertexium.query.SimilarToGraphQuery;
 
-import java.util.Collection;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public interface Graph {
     /**
@@ -148,6 +145,36 @@ public interface Graph {
      * @return The vertex if successful. null if the vertex is not found or the required authorizations were not provided.
      */
     Iterable<Vertex> getVerticesWithPrefix(String vertexIdPrefix, EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations);
+
+    /**
+     * Gets vertices from the graph in the given range.
+     *
+     * @param idRange          The range of ids to get.
+     * @param authorizations The authorizations required to load the vertex.
+     * @return The vertices in the range.
+     */
+    Iterable<Vertex> getVerticesInRange(Range idRange, Authorizations authorizations);
+
+    /**
+     * Gets vertices from the graph in the given range.
+     *
+     * @param idRange          The range of ids to get.
+     * @param fetchHints     Hint at what parts of the vertex to fetch.
+     * @param authorizations The authorizations required to load the vertex.
+     * @return The vertices in the range.
+     */
+    Iterable<Vertex> getVerticesInRange(Range idRange, EnumSet<FetchHint> fetchHints, Authorizations authorizations);
+
+    /**
+     * Gets vertices from the graph in the given range.
+     *
+     * @param idRange          The range of ids to get.
+     * @param fetchHints     Hint at what parts of the vertex to fetch.
+     * @param endTime        Include all changes made up until the point in time.
+     * @param authorizations The authorizations required to load the vertex.
+     * @return The vertices in the range.
+     */
+    Iterable<Vertex> getVerticesInRange(Range idRange, EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations);
 
     /**
      * Gets all vertices on the graph.
@@ -487,6 +514,36 @@ public interface Graph {
      * @return An iterable of all the edges.
      */
     Iterable<Edge> getEdges(EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations);
+
+    /**
+     * Gets edges from the graph in the given range.
+     *
+     * @param idRange          The range of ids to get.
+     * @param authorizations The authorizations required to load the vertex.
+     * @return The edges in the range.
+     */
+    Iterable<Edge> getEdgesInRange(Range idRange, Authorizations authorizations);
+
+    /**
+     * Gets edges from the graph in the given range.
+     *
+     * @param idRange          The range of ids to get.
+     * @param fetchHints     Hint at what parts of the vertex to fetch.
+     * @param authorizations The authorizations required to load the vertex.
+     * @return The edges in the range.
+     */
+    Iterable<Edge> getEdgesInRange(Range idRange, EnumSet<FetchHint> fetchHints, Authorizations authorizations);
+
+    /**
+     * Gets edges from the graph in the given range.
+     *
+     * @param idRange          The range of ids to get.
+     * @param fetchHints     Hint at what parts of the vertex to fetch.
+     * @param endTime        Include all changes made up until the point in time.
+     * @param authorizations The authorizations required to load the vertex.
+     * @return The edges in the range.
+     */
+    Iterable<Edge> getEdgesInRange(Range idRange, EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations);
 
     /**
      * Filters a collection of edge ids by the authorizations of that edge, properties, etc. If
