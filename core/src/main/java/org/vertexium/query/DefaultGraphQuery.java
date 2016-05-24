@@ -15,7 +15,6 @@ public class DefaultGraphQuery extends GraphQueryBase {
 
     @Override
     public QueryResultsIterable<Vertex> vertices(EnumSet<FetchHint> fetchHints) {
-        LOGGER.warn("scanning all vertices! create your own GraphQuery.");
         return new DefaultGraphQueryIterableWithAggregations<>(
                 getParameters(),
                 this.<Vertex>getIterableFromElementType(ElementType.VERTEX, fetchHints),
@@ -28,7 +27,6 @@ public class DefaultGraphQuery extends GraphQueryBase {
 
     @Override
     public QueryResultsIterable<Edge> edges(EnumSet<FetchHint> fetchHints) {
-        LOGGER.warn("scanning all edges! create your own GraphQuery.");
         return new DefaultGraphQueryIterableWithAggregations<>(
                 getParameters(),
                 this.<Edge>getIterableFromElementType(ElementType.EDGE, fetchHints),
