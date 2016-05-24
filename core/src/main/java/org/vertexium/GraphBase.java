@@ -77,7 +77,6 @@ public abstract class GraphBase implements Graph {
 
     @Override
     public Vertex getVertex(String vertexId, EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations) {
-        LOGGER.warn("Performing scan of all vertices! Override getVertex.");
         for (Vertex vertex : getVertices(fetchHints, endTime, authorizations)) {
             if (vertex.getId().equals(vertexId)) {
                 return vertex;
@@ -103,7 +102,6 @@ public abstract class GraphBase implements Graph {
 
     @Override
     public Iterable<Vertex> getVerticesWithPrefix(final String vertexIdPrefix, EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations) {
-        LOGGER.warn("Performing scan of all vertices! Override getVerticesWithPrefix.");
         Iterable<Vertex> vertices = getVertices(fetchHints, endTime, authorizations);
         return new FilterIterable<Vertex>(vertices) {
             @Override
@@ -125,7 +123,6 @@ public abstract class GraphBase implements Graph {
 
     @Override
     public Iterable<Vertex> getVerticesInRange(final Range idRange, EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations) {
-        LOGGER.warn("Performing scan of all vertices! Override getVerticesInRange.");
         Iterable<Vertex> vertices = getVertices(fetchHints, endTime, authorizations);
         return new FilterIterable<Vertex>(vertices) {
             @Override
@@ -142,7 +139,6 @@ public abstract class GraphBase implements Graph {
 
     @Override
     public Iterable<Vertex> getVertices(final Iterable<String> ids, final EnumSet<FetchHint> fetchHints, final Long endTime, final Authorizations authorizations) {
-        LOGGER.warn("Getting each vertex one by one! Override getVertices(java.lang.Iterable<java.lang.String>, Authorizations)");
         return new LookAheadIterable<String, Vertex>() {
             @Override
             protected boolean isIncluded(String src, Vertex vertex) {
@@ -269,7 +265,6 @@ public abstract class GraphBase implements Graph {
 
     @Override
     public Edge getEdge(String edgeId, EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations) {
-        LOGGER.warn("Performing scan of all edges! Override getEdge.");
         for (Edge edge : getEdges(fetchHints, endTime, authorizations)) {
             if (edge.getId().equals(edgeId)) {
                 return edge;
@@ -449,7 +444,6 @@ public abstract class GraphBase implements Graph {
 
     @Override
     public Iterable<Edge> getEdges(final Iterable<String> ids, final EnumSet<FetchHint> fetchHints, final Long endTime, final Authorizations authorizations) {
-        LOGGER.warn("Getting each edge one by one! Override getEdges(java.lang.Iterable<java.lang.String>, Authorizations)");
         return new LookAheadIterable<String, Edge>() {
             @Override
             protected boolean isIncluded(String src, Edge edge) {
@@ -498,7 +492,6 @@ public abstract class GraphBase implements Graph {
 
     @Override
     public Iterable<Edge> getEdgesInRange(final Range idRange, EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations) {
-        LOGGER.warn("Getting each edge one by one! Override getEdgesInRange.");
         Iterable<Edge> edges = getEdges(fetchHints, endTime, authorizations);
         return new FilterIterable<Edge>(edges) {
             @Override
