@@ -114,6 +114,28 @@ public abstract class GraphBase implements Graph {
     }
 
     @Override
+    public Iterable<Vertex> getVerticesInRange(Range idRange, Authorizations authorizations) {
+        return getVerticesInRange(idRange, FetchHint.ALL, authorizations);
+    }
+
+    @Override
+    public Iterable<Vertex> getVerticesInRange(Range idRange, EnumSet<FetchHint> fetchHints, Authorizations authorizations) {
+        return getVerticesInRange(idRange, fetchHints, null, authorizations);
+    }
+
+    @Override
+    public Iterable<Vertex> getVerticesInRange(final Range idRange, EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations) {
+        LOGGER.warn("Performing scan of all vertices! Override getVerticesInRange.");
+        Iterable<Vertex> vertices = getVertices(fetchHints, endTime, authorizations);
+        return new FilterIterable<Vertex>(vertices) {
+            @Override
+            protected boolean isIncluded(Vertex v) {
+                return idRange.isInRange(v.getId());
+            }
+        };
+    }
+
+    @Override
     public Iterable<Vertex> getVertices(final Iterable<String> ids, EnumSet<FetchHint> fetchHints, final Authorizations authorizations) {
         return getVertices(ids, fetchHints, null, authorizations);
     }
@@ -463,6 +485,28 @@ public abstract class GraphBase implements Graph {
 
     @Override
     public abstract Iterable<Edge> getEdges(EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations);
+
+    @Override
+    public Iterable<Edge> getEdgesInRange(Range idRange, Authorizations authorizations) {
+        return getEdgesInRange(idRange, FetchHint.ALL, authorizations);
+    }
+
+    @Override
+    public Iterable<Edge> getEdgesInRange(Range idRange, EnumSet<FetchHint> fetchHints, Authorizations authorizations) {
+        return getEdgesInRange(idRange, fetchHints, null, authorizations);
+    }
+
+    @Override
+    public Iterable<Edge> getEdgesInRange(final Range idRange, EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations) {
+        LOGGER.warn("Getting each edge one by one! Override getEdgesInRange.");
+        Iterable<Edge> edges = getEdges(fetchHints, endTime, authorizations);
+        return new FilterIterable<Edge>(edges) {
+            @Override
+            protected boolean isIncluded(Edge e) {
+                return idRange.isInRange(e.getId());
+            }
+        };
+    }
 
     @Override
     public Iterable<Path> findPaths(String sourceVertexId, String destVertexId, int maxHops, Authorizations authorizations) {

@@ -92,6 +92,9 @@ public class AccumuloGraphLogger {
     }
 
     private String keyToString(Key key) {
+        if (key == null) {
+            return "null";
+        }
         StringBuilder sb = new StringBuilder();
         appendText(sb, key.getRow());
         if (key.getColumnFamily() != null && key.getColumnFamily().getLength() > 0) {

@@ -4,7 +4,10 @@ import com.google.common.collect.Lists;
 import com.google.common.primitives.Longs;
 import org.apache.accumulo.core.client.*;
 import org.apache.accumulo.core.client.Scanner;
-import org.apache.accumulo.core.data.*;
+import org.apache.accumulo.core.data.Key;
+import org.apache.accumulo.core.data.Mutation;
+import org.apache.accumulo.core.data.PartialKey;
+import org.apache.accumulo.core.data.Value;
 import org.apache.accumulo.core.iterators.IteratorUtil;
 import org.apache.accumulo.core.iterators.LongCombiner;
 import org.apache.accumulo.core.iterators.user.RowDeletingIterator;
@@ -749,8 +752,17 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
 
             EnumSet<FetchHint> fetchHints = EnumSet.of(FetchHint.PROPERTIES, FetchHint.PROPERTY_METADATA);
             traceDataFetchHints(trace, fetchHints);
-            Range range = RangeUtils.createRangeFromString(element.getId());
-            final ScannerBase scanner = createElementScanner(fetchHints, elementType, ALL_VERSIONS, startTime, endTime, Lists.newArrayList(range), false, authorizations);
+            org.apache.accumulo.core.data.Range range = RangeUtils.createRangeFromString(element.getId());
+            final ScannerBase scanner = createElementScanner(
+                    fetchHints,
+                    elementType,
+                    ALL_VERSIONS,
+                    startTime,
+                    endTime,
+                    Lists.newArrayList(range),
+                    false,
+                    authorizations
+            );
 
             try {
                 Map<String, HistoricalPropertyValue> results = new HashMap<>();
@@ -1132,7 +1144,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             Span trace = Trace.start("getVertex");
             trace.data("vertexId", vertexId);
             traceDataFetchHints(trace, fetchHints);
-            return singleOrDefault(getVerticesInRange(trace, new Range(vertexId), fetchHints, endTime, authorizations), null);
+            return singleOrDefault(getVerticesInRange(trace, new org.apache.accumulo.core.data.Range(vertexId), fetchHints, endTime, authorizations), null);
         } catch (IllegalStateException ex) {
             throw new VertexiumException("Failed to find vertex with id: " + vertexId, ex);
         } catch (RuntimeException ex) {
@@ -1148,11 +1160,28 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         Span trace = Trace.start("getVerticesWithPrefix");
         trace.data("vertexIdPrefix", vertexIdPrefix);
         traceDataFetchHints(trace, fetchHints);
-        Range range = Range.prefix(vertexIdPrefix);
+        org.apache.accumulo.core.data.Range range = org.apache.accumulo.core.data.Range.prefix(vertexIdPrefix);
         return getVerticesInRange(trace, range, fetchHints, endTime, authorizations);
     }
 
-    private CloseableIterable<Vertex> getVerticesInRange(Span trace, String startId, String endId, EnumSet<FetchHint> fetchHints, Long timestamp, final Authorizations authorizations) throws VertexiumException {
+    @Override
+    public Iterable<Vertex> getVerticesInRange(Range idRange, EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations) {
+        Span trace = Trace.start("getVerticesInRange");
+        trace.data("rangeInclusiveStart", idRange.getInclusiveStart());
+        trace.data("rangeExclusiveStart", idRange.getExclusiveEnd());
+        traceDataFetchHints(trace, fetchHints);
+        org.apache.accumulo.core.data.Range range = vertexiumRangeToAccumuloRange(idRange);
+        return getVerticesInRange(trace, range, fetchHints, endTime, authorizations);
+    }
+
+    private CloseableIterable<Vertex> getVerticesInRange(
+            Span trace,
+            String startId,
+            String endId,
+            EnumSet<FetchHint> fetchHints,
+            Long timestamp,
+            final Authorizations authorizations
+    ) throws VertexiumException {
         trace.data("startId", startId);
         trace.data("endId", endId);
         if (Trace.isTracing() && timestamp != null) {
@@ -1174,7 +1203,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             endKey = new Key(endId).followingKey(PartialKey.ROW);
         }
 
-        Range range = new Range(startKey, endKey);
+        org.apache.accumulo.core.data.Range range = new org.apache.accumulo.core.data.Range(startKey, endKey);
         return getVerticesInRange(trace, range, fetchHints, timestamp, authorizations);
     }
 
@@ -1183,7 +1212,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             Integer maxVersions,
             Long startTime,
             Long endTime,
-            Range range,
+            org.apache.accumulo.core.data.Range range,
             Authorizations authorizations
     ) throws VertexiumException {
         return createElementScanner(fetchHints, ElementType.VERTEX, maxVersions, startTime, endTime, Lists.newArrayList(range), authorizations);
@@ -1194,7 +1223,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             Integer maxVersions,
             Long startTime,
             Long endTime,
-            Range range,
+            org.apache.accumulo.core.data.Range range,
             Authorizations authorizations
     ) throws VertexiumException {
         return createElementScanner(fetchHints, ElementType.EDGE, maxVersions, startTime, endTime, Lists.newArrayList(range), authorizations);
@@ -1206,7 +1235,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             Integer maxVersions,
             Long startTime,
             Long endTime,
-            Collection<Range> ranges,
+            Collection<org.apache.accumulo.core.data.Range> ranges,
             Authorizations authorizations
     ) throws VertexiumException {
         return createElementScanner(fetchHints, elementType, maxVersions, startTime, endTime, ranges, true, authorizations);
@@ -1218,7 +1247,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             Integer maxVersions,
             Long startTime,
             Long endTime,
-            Collection<Range> ranges,
+            Collection<org.apache.accumulo.core.data.Range> ranges,
             boolean useVertexiumElementIterators,
             Authorizations authorizations
     ) throws VertexiumException {
@@ -1226,7 +1255,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             String tableName = getTableNameFromElementType(elementType);
             ScannerBase scanner;
             if (ranges == null || ranges.size() == 1) {
-                Range range = ranges == null ? null : ranges.iterator().next();
+                org.apache.accumulo.core.data.Range range = ranges == null ? null : ranges.iterator().next();
                 scanner = createScanner(tableName, range, authorizations);
             } else {
                 scanner = createBatchScanner(tableName, ranges, authorizations);
@@ -1304,7 +1333,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             Integer maxVersions,
             Long startTime,
             Long endTime,
-            Collection<Range> ranges,
+            Collection<org.apache.accumulo.core.data.Range> ranges,
             Authorizations authorizations
     ) throws VertexiumException {
         return createElementScanner(
@@ -1323,7 +1352,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             Integer maxVersions,
             Long startTime,
             Long endTime,
-            Collection<Range> ranges,
+            Collection<org.apache.accumulo.core.data.Range> ranges,
             Authorizations authorizations
     ) throws VertexiumException {
         return createElementScanner(
@@ -1337,24 +1366,40 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         );
     }
 
-    private ScannerBase createBatchScanner(String tableName, Collection<Range> ranges, Authorizations authorizations) throws TableNotFoundException {
+    private ScannerBase createBatchScanner(
+            String tableName,
+            Collection<org.apache.accumulo.core.data.Range> ranges,
+            Authorizations authorizations
+    ) throws TableNotFoundException {
         org.apache.accumulo.core.security.Authorizations accumuloAuthorizations = toAccumuloAuthorizations(authorizations);
         return createBatchScanner(tableName, ranges, accumuloAuthorizations);
     }
 
-    private ScannerBase createBatchScanner(String tableName, Collection<Range> ranges, org.apache.accumulo.core.security.Authorizations accumuloAuthorizations) throws TableNotFoundException {
+    private ScannerBase createBatchScanner(
+            String tableName,
+            Collection<org.apache.accumulo.core.data.Range> ranges,
+            org.apache.accumulo.core.security.Authorizations accumuloAuthorizations
+    ) throws TableNotFoundException {
         ScannerBase scanner;
         scanner = connector.createBatchScanner(tableName, accumuloAuthorizations, numberOfQueryThreads);
         ((BatchScanner) scanner).setRanges(ranges);
         return scanner;
     }
 
-    private Scanner createScanner(String tableName, Range range, Authorizations authorizations) throws TableNotFoundException {
+    private Scanner createScanner(
+            String tableName,
+            org.apache.accumulo.core.data.Range range,
+            Authorizations authorizations
+    ) throws TableNotFoundException {
         org.apache.accumulo.core.security.Authorizations accumuloAuthorizations = toAccumuloAuthorizations(authorizations);
         return createScanner(tableName, range, accumuloAuthorizations);
     }
 
-    private Scanner createScanner(String tableName, Range range, org.apache.accumulo.core.security.Authorizations accumuloAuthorizations) throws TableNotFoundException {
+    private Scanner createScanner(
+            String tableName,
+            org.apache.accumulo.core.data.Range range,
+            org.apache.accumulo.core.security.Authorizations accumuloAuthorizations
+    ) throws TableNotFoundException {
         Scanner scanner = connector.createScanner(tableName, accumuloAuthorizations);
         if (range != null) {
             scanner.setRange(range);
@@ -1451,7 +1496,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
     public byte[] streamingPropertyValueTableData(String dataRowKey) {
         try {
             final long timerStartTime = System.currentTimeMillis();
-            Range range = new Range(dataRowKey);
+            org.apache.accumulo.core.data.Range range = new org.apache.accumulo.core.data.Range(dataRowKey);
             Scanner scanner = createScanner(getDataTableName(), range, new org.apache.accumulo.core.security.Authorizations());
             GRAPH_LOGGER.logStartIterator(scanner);
             Span trace = Trace.start("streamingPropertyValueTableData");
@@ -1544,6 +1589,42 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
 
     public Connector getConnector() {
         return connector;
+    }
+
+    public Iterable<Range> listVerticesTableSplits() {
+        try {
+            return splitsIterableToRangeIterable(getConnector().tableOperations().listSplits(getVerticesTableName()));
+        } catch (Exception ex) {
+            throw new VertexiumException("Could not get splits for: " + getVerticesTableName(), ex);
+        }
+    }
+
+    public Iterable<Range> listEdgesTableSplits() {
+        try {
+            return splitsIterableToRangeIterable(getConnector().tableOperations().listSplits(getEdgesTableName()));
+        } catch (Exception ex) {
+            throw new VertexiumException("Could not get splits for: " + getVerticesTableName(), ex);
+        }
+    }
+
+    public Iterable<Range> listDataTableSplits() {
+        try {
+            return splitsIterableToRangeIterable(getConnector().tableOperations().listSplits(getDataTableName()));
+        } catch (Exception ex) {
+            throw new VertexiumException("Could not get splits for: " + getVerticesTableName(), ex);
+        }
+    }
+
+    private Iterable<Range> splitsIterableToRangeIterable(final Iterable<Text> splits) {
+        String inclusiveStart = null;
+        List<Range> ranges = new ArrayList<>();
+        for (Text split : splits) {
+            String exclusiveEnd = new Key(split).getRow().toString();
+            ranges.add(new Range(inclusiveStart, exclusiveEnd));
+            inclusiveStart = exclusiveEnd;
+        }
+        ranges.add(new Range(inclusiveStart, null));
+        return ranges;
     }
 
     void alterElementVisibility(AccumuloElement element, Visibility newVisibility, Authorizations authorizations) {
@@ -1698,7 +1779,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                 return new HashSet<>();
             }
 
-            List<Range> ranges = new ArrayList<>();
+            List<org.apache.accumulo.core.data.Range> ranges = new ArrayList<>();
             for (String vertexId : vertexIdsSet) {
                 ranges.add(RangeUtils.createRangeFromString(vertexId));
             }
@@ -1764,7 +1845,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                 return new ArrayList<>();
             }
 
-            List<Range> ranges = new ArrayList<>();
+            List<org.apache.accumulo.core.data.Range> ranges = new ArrayList<>();
             for (String vertexId : vertexIdsSet) {
                 ranges.add(RangeUtils.createRangeFromString(vertexId));
             }
@@ -1951,7 +2032,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                 return new HashMap<>();
             }
 
-            List<Range> ranges = new ArrayList<>();
+            List<org.apache.accumulo.core.data.Range> ranges = new ArrayList<>();
             for (String vertexId : vertexIds) {
                 ranges.add(RangeUtils.createRangeFromString(vertexId));
             }
@@ -2033,7 +2114,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                 return new ArrayList<>();
             }
 
-            List<Range> ranges = new ArrayList<>();
+            List<org.apache.accumulo.core.data.Range> ranges = new ArrayList<>();
             for (String elementId : elementIdsSet) {
                 ranges.add(RangeUtils.createRangeFromString(elementId));
             }
@@ -2077,7 +2158,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         }
     }
 
-    public Iterable<GraphMetadataEntry> getMetadataInRange(final Range range) {
+    public Iterable<GraphMetadataEntry> getMetadataInRange(final org.apache.accumulo.core.data.Range range) {
         final long timerStartTime = System.currentTimeMillis();
 
         return new LookAheadIterable<Map.Entry<Key, Value>, GraphMetadataEntry>() {
@@ -2128,7 +2209,13 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         return graphMetadataStore;
     }
 
-    protected CloseableIterable<Vertex> getVerticesInRange(final Span trace, final Range range, final EnumSet<FetchHint> fetchHints, final Long endTime, final Authorizations authorizations) {
+    protected CloseableIterable<Vertex> getVerticesInRange(
+            final Span trace,
+            final org.apache.accumulo.core.data.Range range,
+            final EnumSet<FetchHint> fetchHints,
+            final Long endTime,
+            final Authorizations authorizations
+    ) {
         final long timerStartTime = System.currentTimeMillis();
 
         return new LookAheadIterable<Map.Entry<Key, Value>, Vertex>() {
@@ -2179,7 +2266,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
 
     @Override
     public CloseableIterable<Vertex> getVertices(Iterable<String> ids, final EnumSet<FetchHint> fetchHints, final Long endTime, final Authorizations authorizations) {
-        final List<Range> ranges = new ArrayList<>();
+        final List<org.apache.accumulo.core.data.Range> ranges = new ArrayList<>();
         int idCount = 0;
         for (String id : ids) {
             ranges.add(RangeUtils.createRangeFromString(id));
@@ -2226,7 +2313,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
 
     @Override
     public CloseableIterable<Edge> getEdges(Iterable<String> ids, final EnumSet<FetchHint> fetchHints, final Long endTime, final Authorizations authorizations) {
-        final List<Range> ranges = new ArrayList<>();
+        final List<org.apache.accumulo.core.data.Range> ranges = new ArrayList<>();
         int idCount = 0;
         for (String id : ids) {
             ranges.add(RangeUtils.createRangeFromString(id));
@@ -2271,7 +2358,40 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         };
     }
 
-    protected CloseableIterable<Edge> getEdgesInRange(final Span trace, String startId, String endId, final EnumSet<FetchHint> fetchHints, final Long endTime, final Authorizations authorizations) throws VertexiumException {
+    @Override
+    public Iterable<Edge> getEdgesInRange(Range idRange, EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations) {
+        Span trace = Trace.start("getEdgesInRange");
+        trace.data("rangeInclusiveStart", idRange.getInclusiveStart());
+        trace.data("rangeExclusiveStart", idRange.getExclusiveEnd());
+        traceDataFetchHints(trace, fetchHints);
+        org.apache.accumulo.core.data.Range range = vertexiumRangeToAccumuloRange(idRange);
+        return getEdgesInRange(trace, range, fetchHints, endTime, authorizations);
+    }
+
+    private org.apache.accumulo.core.data.Range vertexiumRangeToAccumuloRange(Range range) {
+        Key inclusiveStartRow = range.getInclusiveStart() == null ? null : new Key(range.getInclusiveStart());
+        Key exclusiveEndRow = range.getExclusiveEnd() == null ? null : new Key(range.getExclusiveEnd());
+        boolean startKeyInclusive = true;
+        boolean endKeyInclusive = false;
+        return new org.apache.accumulo.core.data.Range(
+                inclusiveStartRow, startKeyInclusive,
+                exclusiveEndRow, endKeyInclusive
+        );
+    }
+
+    protected CloseableIterable<Edge> getEdgesInRange(
+            final Span trace,
+            String startId,
+            String endId,
+            final EnumSet<FetchHint> fetchHints,
+            final Long timestamp,
+            final Authorizations authorizations
+    ) throws VertexiumException {
+        trace.data("startId", startId);
+        trace.data("endId", endId);
+        if (Trace.isTracing() && timestamp != null) {
+            trace.data("timestamp", Long.toString(timestamp));
+        }
         traceDataFetchHints(trace, fetchHints);
 
         final Key startKey;
@@ -2287,6 +2407,19 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         } else {
             endKey = new Key(endId).followingKey(PartialKey.ROW);
         }
+
+        org.apache.accumulo.core.data.Range range = new org.apache.accumulo.core.data.Range(startKey, endKey);
+        return getEdgesInRange(trace, range, fetchHints, timestamp, authorizations);
+    }
+
+    protected CloseableIterable<Edge> getEdgesInRange(
+            final Span trace,
+            final org.apache.accumulo.core.data.Range range,
+            final EnumSet<FetchHint> fetchHints,
+            final Long endTime,
+            final Authorizations authorizations
+    ) throws VertexiumException {
+        traceDataFetchHints(trace, fetchHints);
 
         final long timerStartTime = System.currentTimeMillis();
 
@@ -2305,7 +2438,6 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
 
             @Override
             protected Iterator<Map.Entry<Key, Value>> createIterator() {
-                Range range = new Range(startKey, endKey);
                 scanner = createEdgeScanner(fetchHints, SINGLE_VERSION, null, endTime, range, authorizations);
                 return scanner.iterator();
             }

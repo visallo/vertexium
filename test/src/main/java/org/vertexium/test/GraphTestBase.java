@@ -1006,6 +1006,50 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    public void testGetVerticesInRange() {
+        graph.addVertex("a", VISIBILITY_EMPTY, AUTHORIZATIONS_ALL);
+        graph.addVertex("aa", VISIBILITY_EMPTY, AUTHORIZATIONS_ALL);
+        graph.addVertex("az", VISIBILITY_EMPTY, AUTHORIZATIONS_ALL);
+        graph.addVertex("b", VISIBILITY_EMPTY, AUTHORIZATIONS_ALL);
+        graph.flush();
+
+        List<Vertex> vertices = toList(graph.getVerticesInRange(new Range(null, "a"), AUTHORIZATIONS_ALL));
+        assertVertexIds(vertices, new String[]{});
+
+        vertices = toList(graph.getVerticesInRange(new Range(null, "b"), AUTHORIZATIONS_ALL));
+        assertVertexIds(vertices, new String[]{"a", "aa", "az"});
+
+        vertices = toList(graph.getVerticesInRange(new Range(null, "bb"), AUTHORIZATIONS_ALL));
+        assertVertexIds(vertices, new String[]{"a", "aa", "az", "b"});
+
+        vertices = toList(graph.getVerticesInRange(new Range(null, null), AUTHORIZATIONS_ALL));
+        assertVertexIds(vertices, new String[]{"a", "aa", "az", "b"});
+    }
+
+    @Test
+    public void testGetEdgesInRange() {
+        graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.addEdge("a", "v1", "v2", "label1", VISIBILITY_EMPTY, AUTHORIZATIONS_ALL);
+        graph.addEdge("aa", "v1", "v2", "label1", VISIBILITY_EMPTY, AUTHORIZATIONS_ALL);
+        graph.addEdge("az", "v1", "v2", "label1", VISIBILITY_EMPTY, AUTHORIZATIONS_ALL);
+        graph.addEdge("b", "v1", "v2", "label1", VISIBILITY_EMPTY, AUTHORIZATIONS_ALL);
+        graph.flush();
+
+        List<Edge> edges = toList(graph.getEdgesInRange(new Range(null, "a"), AUTHORIZATIONS_ALL));
+        assertEdgeIds(edges, new String[]{});
+
+        edges = toList(graph.getEdgesInRange(new Range(null, "b"), AUTHORIZATIONS_ALL));
+        assertEdgeIds(edges, new String[]{"a", "aa", "az"});
+
+        edges = toList(graph.getEdgesInRange(new Range(null, "bb"), AUTHORIZATIONS_ALL));
+        assertEdgeIds(edges, new String[]{"a", "aa", "az", "b"});
+
+        edges = toList(graph.getEdgesInRange(new Range(null, null), AUTHORIZATIONS_ALL));
+        assertEdgeIds(edges, new String[]{"a", "aa", "az", "b"});
+    }
+
+    @Test
     public void testGetEdgesWithIds() {
         Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
         Vertex v2 = graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_A);
