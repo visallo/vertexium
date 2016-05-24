@@ -4451,7 +4451,7 @@ public abstract class GraphTestBase {
 
     @Test
     public void testGraphQueryWithTermsAggregation() {
-        boolean searchIndexFieldLevelSecurity = graph instanceof GraphBaseWithSearchIndex ? ((GraphBaseWithSearchIndex) graph).getSearchIndex().isFieldLevelSecuritySupported() : true;
+        boolean searchIndexFieldLevelSecurity = isSearchIndexFieldLevelSecuritySupported();
         graph.defineProperty("name").dataType(String.class).textIndexHint(TextIndexHint.EXACT_MATCH).define();
 
         graph.defineProperty("emptyField").dataType(Integer.class).define();
@@ -4504,6 +4504,13 @@ public abstract class GraphTestBase {
         assertEquals(2, edgePropertyCountByValue.size());
         assertEquals(2L, (long) edgePropertyCountByValue.get("label1"));
         assertEquals(1L, (long) edgePropertyCountByValue.get("label2"));
+    }
+
+    private boolean isSearchIndexFieldLevelSecuritySupported() {
+        if (graph instanceof GraphBaseWithSearchIndex) {
+            return ((GraphBaseWithSearchIndex) graph).getSearchIndex().isFieldLevelSecuritySupported();
+        }
+        return true;
     }
 
     @Test
@@ -4636,7 +4643,7 @@ public abstract class GraphTestBase {
 
     @Test
     public void testGraphQueryWithHistogramAggregation() throws ParseException {
-        boolean searchIndexFieldLevelSecurity = graph instanceof GraphBaseWithSearchIndex ? ((GraphBaseWithSearchIndex) graph).getSearchIndex().isFieldLevelSecuritySupported() : true;
+        boolean searchIndexFieldLevelSecurity = isSearchIndexFieldLevelSecuritySupported();
         SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
 
         graph.defineProperty("emptyField").dataType(Integer.class).define();
@@ -4659,15 +4666,15 @@ public abstract class GraphTestBase {
                 .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
-        Map<Object, Long> histogram = queryGraphQueryWithHistogramAggregation("age", "1", AUTHORIZATIONS_EMPTY);
+        Map<Object, Long> histogram = queryGraphQueryWithHistogramAggregation("age", "1", 0L, new HistogramAggregation.ExtendedBounds<>(20L, 25L), AUTHORIZATIONS_EMPTY);
         if (histogram == null) {
             return;
         }
-        assertEquals(2, histogram.size());
+        assertEquals(6, histogram.size());
         assertEquals(1L, (long) histogram.get("25"));
         assertEquals(searchIndexFieldLevelSecurity ? 2L : 3L, (long) histogram.get("20"));
 
-        histogram = queryGraphQueryWithHistogramAggregation("age", "1", AUTHORIZATIONS_A_AND_B);
+        histogram = queryGraphQueryWithHistogramAggregation("age", "1", null, null, AUTHORIZATIONS_A_AND_B);
         if (histogram == null) {
             return;
         }
@@ -4676,35 +4683,43 @@ public abstract class GraphTestBase {
         assertEquals(3L, (long) histogram.get("20"));
 
         // field that doesn't have any values
-        histogram = queryGraphQueryWithHistogramAggregation("emptyField", "1", AUTHORIZATIONS_A_AND_B);
+        histogram = queryGraphQueryWithHistogramAggregation("emptyField", "1", null, null, AUTHORIZATIONS_A_AND_B);
         if (histogram == null) {
             return;
         }
         assertEquals(0, histogram.size());
 
         // date by 'year'
-        histogram = queryGraphQueryWithHistogramAggregation("birthDate", "year", AUTHORIZATIONS_EMPTY);
+        histogram = queryGraphQueryWithHistogramAggregation("birthDate", "year", null, null, AUTHORIZATIONS_EMPTY);
         if (histogram == null) {
             return;
         }
         assertEquals(2, histogram.size());
 
         // date by milliseconds
-        histogram = queryGraphQueryWithHistogramAggregation("birthDate", (365L * 24L * 60L * 60L * 1000L) + "", AUTHORIZATIONS_EMPTY);
+        histogram = queryGraphQueryWithHistogramAggregation("birthDate", (365L * 24L * 60L * 60L * 1000L) + "", null, null, AUTHORIZATIONS_EMPTY);
         if (histogram == null) {
             return;
         }
         assertEquals(2, histogram.size());
     }
 
-    private Map<Object, Long> queryGraphQueryWithHistogramAggregation(String propertyName, String interval, Authorizations authorizations) {
+    private Map<Object, Long> queryGraphQueryWithHistogramAggregation(
+            String propertyName,
+            String interval,
+            Long minDocCount,
+            HistogramAggregation.ExtendedBounds extendedBounds,
+            Authorizations authorizations
+    ) {
         Query q = graph.query(authorizations).limit(0);
-        if (!(q instanceof GraphQueryWithHistogramAggregation)) {
-            LOGGER.warn("%s unsupported", GraphQueryWithHistogramAggregation.class.getName());
+        HistogramAggregation agg = new HistogramAggregation("hist-count", propertyName, interval, minDocCount);
+        agg.setExtendedBounds(extendedBounds);
+        if (!q.isAggregationSupported(agg)) {
+            LOGGER.warn("%s unsupported", HistogramAggregation.class.getName());
             return null;
         }
-        q = ((GraphQueryWithHistogramAggregation) q).addHistogramAggregation("hist-count", propertyName, interval);
-        return histogramBucketToMap(((IterableWithHistogramResults) q.vertices()).getHistogramResults("hist-count").getBuckets());
+        q.addAggregation(agg);
+        return histogramBucketToMap(q.vertices().getAggregationResult("hist-count", HistogramResult.class).getBuckets());
     }
 
     @Test
@@ -4761,17 +4776,18 @@ public abstract class GraphTestBase {
 
     private StatisticsResult queryGraphQueryWithStatisticsAggregation(String propertyName, Authorizations authorizations) {
         Query q = graph.query(authorizations).limit(0);
-        if (!(q instanceof GraphQueryWithStatisticsAggregation)) {
-            LOGGER.warn("%s unsupported", GraphQueryWithStatisticsAggregation.class.getName());
+        StatisticsAggregation agg = new StatisticsAggregation("stats", propertyName);
+        if (!q.isAggregationSupported(agg)) {
+            LOGGER.warn("%s unsupported", StatisticsAggregation.class.getName());
             return null;
         }
-        q = ((GraphQueryWithStatisticsAggregation) q).addStatisticsAggregation("stats", propertyName);
-        return ((IterableWithStatisticsResults) q.vertices()).getStatisticsResults("stats");
+        q.addAggregation(agg);
+        return q.vertices().getAggregationResult("stats", StatisticsResult.class);
     }
 
     @Test
     public void testGraphQueryWithGeohashAggregation() {
-        boolean searchIndexFieldLevelSecurity = graph instanceof GraphBaseWithSearchIndex ? ((GraphBaseWithSearchIndex) graph).getSearchIndex().isFieldLevelSecuritySupported() : true;
+        boolean searchIndexFieldLevelSecurity = isSearchIndexFieldLevelSecuritySupported();
 
         graph.defineProperty("emptyField").dataType(GeoPoint.class).define();
         graph.defineProperty("location").dataType(GeoPoint.class).define();
@@ -4965,17 +4981,18 @@ public abstract class GraphTestBase {
 
     private Map<String, Long> queryGraphQueryWithGeohashAggregation(String propertyName, int precision, Authorizations authorizations) {
         Query q = graph.query(authorizations).limit(0);
-        if (!(q instanceof GraphQueryWithGeohashAggregation)) {
-            LOGGER.warn("%s unsupported", GraphQueryWithGeohashAggregation.class.getName());
+        GeohashAggregation agg = new GeohashAggregation("geo-count", propertyName, precision);
+        if (!q.isAggregationSupported(agg)) {
+            LOGGER.warn("%s unsupported", GeohashAggregation.class.getName());
             return null;
         }
-        q = ((GraphQueryWithGeohashAggregation) q).addGeohashAggregation("geo-count", propertyName, precision);
-        return geoHashBucketToMap(((IterableWithGeohashResults) q.vertices()).getGeohashResults("geo-count").getBuckets());
+        q.addAggregation(agg);
+        return geoHashBucketToMap(q.vertices().getAggregationResult("geo-count", GeohashResult.class).getBuckets());
     }
 
     @Test
     public void testGetVertexPropertyCountByValue() {
-        boolean searchIndexFieldLevelSecurity = graph instanceof GraphBaseWithSearchIndex ? ((GraphBaseWithSearchIndex) graph).getSearchIndex().isFieldLevelSecuritySupported() : true;
+        boolean searchIndexFieldLevelSecurity = isSearchIndexFieldLevelSecuritySupported();
         graph.defineProperty("name").dataType(String.class).textIndexHint(TextIndexHint.EXACT_MATCH).define();
 
         graph.prepareVertex("v1", VISIBILITY_EMPTY)

@@ -11,6 +11,7 @@ import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.geo.builders.ShapeBuilder;
+import org.elasticsearch.common.joda.time.DateTime;
 import org.elasticsearch.common.unit.DistanceUnit;
 import org.elasticsearch.index.query.*;
 import org.elasticsearch.indices.IndexMissingException;
@@ -954,6 +955,18 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
                 if (agg.getMinDocumentCount() != null) {
                     dateAgg.minDocCount(agg.getMinDocumentCount());
                 }
+                if (agg.getExtendedBounds() != null) {
+                    HistogramAggregation.ExtendedBounds<?> bounds = agg.getExtendedBounds();
+                    if (bounds.getMinMaxType().isAssignableFrom(Long.class)) {
+                        dateAgg.extendedBounds((Long) bounds.getMin(), (Long) bounds.getMax());
+                    } else if (bounds.getMinMaxType().isAssignableFrom(Date.class)) {
+                        dateAgg.extendedBounds(new DateTime(bounds.getMin()), new DateTime(bounds.getMax()));
+                    } else if (bounds.getMinMaxType().isAssignableFrom(String.class)) {
+                        dateAgg.extendedBounds((String) bounds.getMin(), (String) bounds.getMax());
+                    } else {
+                        throw new VertexiumException("Unhandled extended bounds type. Expected Long, String, or Date. Found: " + bounds.getMinMaxType().getName());
+                    }
+                }
 
                 for (AbstractAggregationBuilder subAgg : getElasticsearchAggregations(agg.getNestedAggregations())) {
                     dateAgg.subAggregation(subAgg);
@@ -966,6 +979,14 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
                 histogramAgg.interval(Long.parseLong(agg.getInterval()));
                 if (agg.getMinDocumentCount() != null) {
                     histogramAgg.minDocCount(agg.getMinDocumentCount());
+                }
+                if (agg.getExtendedBounds() != null) {
+                    HistogramAggregation.ExtendedBounds<?> bounds = agg.getExtendedBounds();
+                    if (bounds.getMinMaxType().isAssignableFrom(Long.class)) {
+                        histogramAgg.extendedBounds((Long) bounds.getMin(), (Long) bounds.getMax());
+                    } else {
+                        throw new VertexiumException("Unhandled extended bounds type. Expected Long. Found: " + bounds.getMinMaxType().getName());
+                    }
                 }
 
                 for (AbstractAggregationBuilder subAgg : getElasticsearchAggregations(agg.getNestedAggregations())) {
