@@ -4,9 +4,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-import java.util.*;
+import java.util.Collections;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -18,5 +17,4 @@ public class IterableUtilsTest {
         assertTrue(IterableUtils.isEmpty(Collections.emptyList()));
         assertFalse(IterableUtils.isEmpty(Collections.singletonList("junit")));
     }
-
 }
