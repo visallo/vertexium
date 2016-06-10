@@ -76,6 +76,15 @@ public class IterableUtils {
         return count;
     }
 
+    public static <T> boolean isEmpty(Iterable<T> iterable) {
+        Iterator<T> iterator = iterable.iterator();
+        try {
+            return !iterator.hasNext();
+        } finally {
+            closeQuietly(iterator);
+        }
+    }
+
     public static <T> Iterable<T> toIterable(final T[] arr) {
         return new Iterable<T>() {
             @Override
