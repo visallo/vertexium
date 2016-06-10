@@ -238,12 +238,7 @@ public class InMemoryVertex extends InMemoryElement<InMemoryVertex> implements V
 
     @Override
     public Iterable<Vertex> getVertices(Direction direction, final EnumSet<FetchHint> fetchHints, final Authorizations authorizations) {
-        return new ConvertingIterable<Edge, Vertex>(getEdges(direction, authorizations)) {
-            @Override
-            protected Vertex convert(Edge edge) {
-                return getOtherVertexFromEdge(edge, authorizations);
-            }
-        };
+        return getVertices(direction, (String[])null, fetchHints, authorizations);
     }
 
     @Override
@@ -253,7 +248,7 @@ public class InMemoryVertex extends InMemoryElement<InMemoryVertex> implements V
 
     @Override
     public Iterable<Vertex> getVertices(Direction direction, String label, EnumSet<FetchHint> fetchHints, Authorizations authorizations) {
-        return getVertices(direction, labelToArrayOrNull(label), authorizations);
+        return getVertices(direction, labelToArrayOrNull(label), fetchHints, authorizations);
     }
 
     @Override
@@ -263,52 +258,28 @@ public class InMemoryVertex extends InMemoryElement<InMemoryVertex> implements V
 
     @Override
     public Iterable<Vertex> getVertices(final Direction direction, final String[] labels, final EnumSet<FetchHint> fetchHints, final Authorizations authorizations) {
-        return new ConvertingIterable<Edge, Vertex>(getEdges(direction, labels, authorizations)) {
-            @Override
-            protected Vertex convert(Edge edge) {
-                return getOtherVertexFromEdge(edge, authorizations);
-            }
-        };
+        Iterable<String> vertexIds = getVertexIds(direction, labels, authorizations);
+        return getGraph().getVertices(vertexIds, fetchHints, authorizations);
     }
 
     @Override
     public Iterable<String> getVertexIds(Direction direction, String label, Authorizations authorizations) {
-        return new ConvertingIterable<Vertex, String>(getVertices(direction, label, authorizations)) {
-            @Override
-            protected String convert(Vertex o) {
-                return o.getId();
-            }
-        };
+        return getVertexIds(direction, labelToArrayOrNull(label), authorizations);
     }
 
     @Override
     public Iterable<String> getVertexIds(Direction direction, String[] labels, Authorizations authorizations) {
-        return new ConvertingIterable<Vertex, String>(getVertices(direction, labels, authorizations)) {
+        return new ConvertingIterable<EdgeInfo, String>(getEdgeInfos(direction, labels, authorizations)) {
             @Override
-            protected String convert(Vertex o) {
-                return o.getId();
+            protected String convert(EdgeInfo e) {
+                return e.getVertexId();
             }
         };
     }
 
     @Override
     public Iterable<String> getVertexIds(Direction direction, Authorizations authorizations) {
-        return new ConvertingIterable<Vertex, String>(getVertices(direction, authorizations)) {
-            @Override
-            protected String convert(Vertex o) {
-                return o.getId();
-            }
-        };
-    }
-
-    private Vertex getOtherVertexFromEdge(Edge edge, Authorizations authorizations) {
-        if (edge.getVertexId(Direction.IN).equals(getId())) {
-            return edge.getVertex(Direction.OUT, authorizations);
-        }
-        if (edge.getVertexId(Direction.OUT).equals(getId())) {
-            return edge.getVertex(Direction.IN, authorizations);
-        }
-        throw new IllegalStateException("Edge does not contain vertex on either end");
+        return getVertexIds(direction, (String[])null, authorizations);
     }
 
     @Override
