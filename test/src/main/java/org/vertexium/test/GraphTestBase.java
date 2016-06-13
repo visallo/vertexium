@@ -3111,10 +3111,12 @@ public abstract class GraphTestBase {
         Vertex v2 = graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_A);
         Vertex v3 = graph.addVertex("v3", VISIBILITY_A, AUTHORIZATIONS_A);
         Vertex v4 = graph.addVertex("v4", VISIBILITY_A, AUTHORIZATIONS_A);
+        Vertex v5 = graph.addVertex("v5", VISIBILITY_B, AUTHORIZATIONS_B);
         graph.addEdge(v1, v2, "knows", VISIBILITY_A, AUTHORIZATIONS_A);
         graph.addEdge(v1, v3, "knows", VISIBILITY_A, AUTHORIZATIONS_A);
         graph.addEdge(v1, v4, "knows", VISIBILITY_A, AUTHORIZATIONS_A);
         graph.addEdge(v2, v3, "knows", VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.addEdge(v2, v5, "knows", VISIBILITY_A, AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
@@ -3136,6 +3138,41 @@ public abstract class GraphTestBase {
         Assert.assertEquals(1, count(v4.getVertices(Direction.BOTH, AUTHORIZATIONS_A)));
         Assert.assertEquals(0, count(v4.getVertices(Direction.OUT, AUTHORIZATIONS_A)));
         Assert.assertEquals(1, count(v4.getVertices(Direction.IN, AUTHORIZATIONS_A)));
+    }
+
+    @Test
+    public void testGetVertexIdsFromVertex() {
+        Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
+        Vertex v2 = graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_A);
+        Vertex v3 = graph.addVertex("v3", VISIBILITY_A, AUTHORIZATIONS_A);
+        Vertex v4 = graph.addVertex("v4", VISIBILITY_A, AUTHORIZATIONS_A);
+        Vertex v5 = graph.addVertex("v5", VISIBILITY_B, AUTHORIZATIONS_B);
+        graph.addEdge(v1, v2, "knows", VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.addEdge(v1, v3, "knows", VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.addEdge(v1, v4, "knows", VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.addEdge(v2, v3, "knows", VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.addEdge(v2, v5, "knows", VISIBILITY_A, AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
+        Assert.assertEquals(3, count(v1.getVertexIds(Direction.BOTH, AUTHORIZATIONS_A)));
+        Assert.assertEquals(3, count(v1.getVertexIds(Direction.OUT, AUTHORIZATIONS_A)));
+        Assert.assertEquals(0, count(v1.getVertexIds(Direction.IN, AUTHORIZATIONS_A)));
+
+        v2 = graph.getVertex("v2", AUTHORIZATIONS_A);
+        Assert.assertEquals(3, count(v2.getVertexIds(Direction.BOTH, AUTHORIZATIONS_A)));
+        Assert.assertEquals(2, count(v2.getVertexIds(Direction.OUT, AUTHORIZATIONS_A)));
+        Assert.assertEquals(1, count(v2.getVertexIds(Direction.IN, AUTHORIZATIONS_A)));
+
+        v3 = graph.getVertex("v3", AUTHORIZATIONS_A);
+        Assert.assertEquals(2, count(v3.getVertexIds(Direction.BOTH, AUTHORIZATIONS_A)));
+        Assert.assertEquals(0, count(v3.getVertexIds(Direction.OUT, AUTHORIZATIONS_A)));
+        Assert.assertEquals(2, count(v3.getVertexIds(Direction.IN, AUTHORIZATIONS_A)));
+
+        v4 = graph.getVertex("v4", AUTHORIZATIONS_A);
+        Assert.assertEquals(1, count(v4.getVertexIds(Direction.BOTH, AUTHORIZATIONS_A)));
+        Assert.assertEquals(0, count(v4.getVertexIds(Direction.OUT, AUTHORIZATIONS_A)));
+        Assert.assertEquals(1, count(v4.getVertexIds(Direction.IN, AUTHORIZATIONS_A)));
     }
 
     @Test
