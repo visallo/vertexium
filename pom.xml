@@ -70,14 +70,13 @@
         <apache.curator.version>2.8.0</apache.curator.version>
         <recurrent.version>0.3.2</recurrent.version>
 
-        <maven.plugin.gpg.version>1.4</maven.plugin.gpg.version>
-        <maven.plugin.javadoc.version>2.9.1</maven.plugin.javadoc.version>
-        <maven.plugin.source.version>2.2.1</maven.plugin.source.version>
-        <maven.plugin.compiler.version>3.1</maven.plugin.compiler.version>
-        <maven.plugin.plugin.version>3.2</maven.plugin.plugin.version>
-        <maven.plugin.release.version>2.5</maven.plugin.release.version>
-        <maven.plugin.scm.version>1.8.1</maven.plugin.scm.version>
-        <maven.plugin.jar.version>2.4</maven.plugin.jar.version>
+        <maven.plugin.gpg.version>1.6</maven.plugin.gpg.version>
+        <maven.plugin.javadoc.version>2.10.4</maven.plugin.javadoc.version>
+        <maven.plugin.source.version>3.0.0</maven.plugin.source.version>
+        <maven.plugin.compiler.version>3.5.1</maven.plugin.compiler.version>
+        <maven.plugin.release.version>2.5.3</maven.plugin.release.version>
+        <maven.plugin.scm.version>1.9.4</maven.plugin.scm.version>
+        <maven.plugin.jar.version>3.0.1</maven.plugin.jar.version>
         <maven.plugin.surefire.version>2.19.1</maven.plugin.surefire.version>
         <maven.plugin.buildnumber.version>1.2</maven.plugin.buildnumber.version>
         <maven.plugin.jarjar.version>1.9</maven.plugin.jarjar.version>

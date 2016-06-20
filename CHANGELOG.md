@@ -1,5 +1,7 @@
 # v2.4.2
 
+* Accumulo/Blueprints: Exclude ripple-flow-rdf from dependencies because of transitive dependency issues
+* maven: Update maven plugin versions
 * Util: add helper method that makes it a little cleaner to check for an empty Iterable without having to worry
   about closing the iterator.
 * InMemory/SQL: update the InMemoryVertex implementations of getVertices and getVertexIds in order to make it
