@@ -1,3 +1,11 @@
+# v2.4.2
+
+* Util: add helper method that makes it a little cleaner to check for an empty Iterable without having to worry
+  about closing the iterator.
+* InMemory/SQL: update the InMemoryVertex implementations of getVertices and getVertexIds in order to make it
+  behave consistently with the Accumulo implementation. When faced with edges to Vertices that can't be seen,
+  getVertices will omit them and getVertexIds will return the ids
+
 # v2.4.1
 
 * InMemory/SQL: improved find paths performance
