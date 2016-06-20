@@ -8,7 +8,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>vertexium-accumulo-titan-hadoop</artifactId>
-    <name>Vertexium: Titan Hadoop</name>
+    <name>Vertexium: Accumulo: Titan Hadoop</name>
 
     <properties>
         <titan-hadoop.version>0.5.4</titan-hadoop.version>
@@ -35,6 +35,17 @@
             <groupId>com.thinkaurelius.titan</groupId>
             <artifactId>titan-hadoop-core</artifactId>
             <version>${titan-hadoop.version}</version>
+            <exclusions>
+                <!--
+                    org/restlet/jse/org.restlet/2.1.1 is no longer available which happens to be a transitive
+                    dependency of ripple-flow-rdf. Vertexium does not directly use this feature of titan-hadoop-core
+                    so it is marked as an exclusion
+                -->
+                <exclusion>
+                    <groupId>net.fortytwo.ripple</groupId>
+                    <artifactId>ripple-flow-rdf</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.apache.hadoop</groupId>
