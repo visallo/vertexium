@@ -603,6 +603,31 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    public void testGetSoftDeletedElementWithFetchHintsAndTimestamp() {
+        Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
+        Vertex v2 = graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_A);
+        Edge e1 = graph.addEdge("e1", v1, v2, "label1", VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.flush();
+
+        long beforeDeleteTime = IncreasingTime.currentTimeMillis();
+        graph.softDeleteEdge(e1, AUTHORIZATIONS_A);
+        graph.softDeleteVertex(v1, AUTHORIZATIONS_A);
+        graph.flush();
+
+        assertNull(graph.getEdge(e1.getId(), AUTHORIZATIONS_A));
+        assertNull(graph.getEdge(e1.getId(), FetchHint.ALL, AUTHORIZATIONS_A));
+        assertNull(graph.getEdge(e1.getId(), FetchHint.ALL_INCLUDING_HIDDEN, AUTHORIZATIONS_A));
+        assertNull(graph.getVertex(v1.getId(), AUTHORIZATIONS_A));
+        assertNull(graph.getVertex(v1.getId(), FetchHint.ALL, AUTHORIZATIONS_A));
+        assertNull(graph.getVertex(v1.getId(), FetchHint.ALL_INCLUDING_HIDDEN, AUTHORIZATIONS_A));
+
+        assertNotNull(graph.getEdge(e1.getId(), FetchHint.ALL, beforeDeleteTime, AUTHORIZATIONS_A));
+        assertNotNull(graph.getEdge(e1.getId(), FetchHint.ALL_INCLUDING_HIDDEN, beforeDeleteTime, AUTHORIZATIONS_A));
+        assertNotNull(graph.getVertex(v1.getId(), FetchHint.ALL, beforeDeleteTime, AUTHORIZATIONS_A));
+        assertNotNull(graph.getVertex(v1.getId(), FetchHint.ALL_INCLUDING_HIDDEN, beforeDeleteTime, AUTHORIZATIONS_A));
+    }
+
+    @Test
     public void testSoftDeleteEdge() {
         Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A_AND_B);
         Vertex v2 = graph.addVertex("v2", VISIBILITY_B, AUTHORIZATIONS_A_AND_B);
