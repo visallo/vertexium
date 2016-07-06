@@ -130,7 +130,11 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
         getGraph().alterPropertyMetadatas((AccumuloElement) mutation.getElement(), mutation.getSetPropertyMetadatas());
 
         // altering properties comes next because alterElementVisibility may alter the vertex and we won't find it
-        getGraph().alterElementPropertyVisibilities((AccumuloElement) mutation.getElement(), mutation.getAlterPropertyVisibilities());
+        getGraph().alterElementPropertyVisibilities(
+                (AccumuloElement) mutation.getElement(),
+                mutation.getAlterPropertyVisibilities(),
+                authorizations
+        );
 
         Iterable<PropertyDeleteMutation> propertyDeletes = mutation.getPropertyDeletes();
         Iterable<PropertySoftDeleteMutation> propertySoftDeletes = mutation.getPropertySoftDeletes();

@@ -1672,7 +1672,11 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         elementMutationBuilder.alterEdgeLabel(edge, newEdgeLabel);
     }
 
-    void alterElementPropertyVisibilities(AccumuloElement element, List<AlterPropertyVisibility> alterPropertyVisibilities) {
+    void alterElementPropertyVisibilities(
+            AccumuloElement element,
+            List<AlterPropertyVisibility> alterPropertyVisibilities,
+            Authorizations authorizations
+    ) {
         if (alterPropertyVisibilities.size() == 0) {
             return;
         }
@@ -1683,7 +1687,11 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         boolean propertyChanged = false;
         Mutation m = new Mutation(elementRowKey);
         for (AlterPropertyVisibility apv : alterPropertyVisibilities) {
-            MutableProperty property = (MutableProperty) element.getProperty(apv.getKey(), apv.getName(), apv.getExistingVisibility());
+            MutableProperty property = (MutableProperty) element.getProperty(
+                    apv.getKey(),
+                    apv.getName(),
+                    apv.getExistingVisibility()
+            );
             if (property == null) {
                 throw new VertexiumException("Could not find property " + apv.getKey() + ":" + apv.getName());
             }
@@ -1697,6 +1705,17 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             property.setVisibility(apv.getVisibility());
             property.setTimestamp(IncreasingTime.currentTimeMillis());
             elementMutationBuilder.addPropertyToMutation(this, m, elementRowKey, property);
+
+            // delete the property with the old/existing visibility from the search index
+            getSearchIndex().deleteProperty(
+                    this,
+                    element,
+                    apv.getKey(),
+                    apv.getName(),
+                    apv.getExistingVisibility(),
+                    authorizations
+            );
+
             propertyChanged = true;
         }
         if (propertyChanged) {
