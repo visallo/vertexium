@@ -1,3 +1,7 @@
+# v2.4.3
+
+* Accumulo: fix accumulo not cleaning up property with old visibility in search index
+
 # v2.4.2
 
 * Accumulo/Blueprints: Exclude ripple-flow-rdf from dependencies because of transitive dependency issues
