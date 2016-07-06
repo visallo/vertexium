@@ -3737,6 +3737,16 @@ public abstract class GraphTestBase {
         Assert.assertEquals(1, count(graph.query(AUTHORIZATIONS_B).has("prop1", "value1").vertices()));
         Assert.assertEquals(0, count(graph.query(AUTHORIZATIONS_A).has("prop1", "value1").vertices()));
 
+        Map<Object, Long> propertyCountByValue = queryGraphQueryWithTermsAggregation("prop1", ElementType.VERTEX, AUTHORIZATIONS_A);
+        if (propertyCountByValue != null) {
+            assertEquals(null, propertyCountByValue.get("value1"));
+        }
+
+        propertyCountByValue = queryGraphQueryWithTermsAggregation("prop1", ElementType.VERTEX, AUTHORIZATIONS_B);
+        if (propertyCountByValue != null) {
+            assertEquals(1L, (long) propertyCountByValue.get("value1"));
+        }
+
         v1 = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B);
         Property v1Prop1 = v1.getProperty("prop1");
         assertNotNull(v1Prop1);
