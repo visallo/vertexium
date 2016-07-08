@@ -146,14 +146,17 @@ public abstract class InMemoryTableElement<TElement extends InMemoryElement> imp
             if (m instanceof SoftDeletePropertyMutation) {
                 continue;
             }
+            if (m instanceof AddPropertyMetadataMutation) {
+                continue;
+            }
 
             if (m instanceof MarkPropertyHiddenMutation) {
                 hiddenVisibilities.add(m.getVisibility());
             } else if (m instanceof MarkPropertyVisibleMutation) {
                 hiddenVisibilities.remove(m.getVisibility());
             } else if (m instanceof AddPropertyValueMutation) {
-                AddPropertyValueMutation addPropertyValueMutation = (AddPropertyValueMutation) m;
-                Object value = addPropertyValueMutation.getValue();
+                AddPropertyValueMutation apvm = (AddPropertyValueMutation) m;
+                Object value = apvm.getValue();
                 value = loadIfStreamingPropertyValue(value);
                 HistoricalPropertyValue historicalPropertyValue = new HistoricalPropertyValue(
                         m.getPropertyKey(),
@@ -161,7 +164,7 @@ public abstract class InMemoryTableElement<TElement extends InMemoryElement> imp
                         m.getVisibility(),
                         m.getTimestamp(),
                         value,
-                        addPropertyValueMutation.getMetadata(),
+                        apvm.getMetadata(),
                         hiddenVisibilities
                 );
                 historicalPropertyValues.add(historicalPropertyValue);
@@ -169,6 +172,7 @@ public abstract class InMemoryTableElement<TElement extends InMemoryElement> imp
                 throw new VertexiumException("Unhandled PropertyMutation: " + m.getClass().getName());
             }
         }
+
         Collections.reverse(historicalPropertyValues);
         return historicalPropertyValues;
     }
@@ -228,9 +232,13 @@ public abstract class InMemoryTableElement<TElement extends InMemoryElement> imp
                 timestamp = m.getTimestamp();
             }
             if (m instanceof AddPropertyValueMutation) {
-                value = ((AddPropertyValueMutation) m).getValue();
-                metadata = ((AddPropertyValueMutation) m).getMetadata();
+                AddPropertyValueMutation apvm = (AddPropertyValueMutation) m;
+                value = apvm.getValue();
+                metadata = apvm.getMetadata();
                 softDeleted = false;
+            } else if (m instanceof AddPropertyMetadataMutation) {
+                AddPropertyMetadataMutation apmm = (AddPropertyMetadataMutation) m;
+                metadata = apmm.getMetadata();
             } else if (m instanceof SoftDeletePropertyMutation) {
                 softDeleted = true;
             } else if (m instanceof MarkPropertyHiddenMutation) {
@@ -319,11 +327,18 @@ public abstract class InMemoryTableElement<TElement extends InMemoryElement> imp
         this.mutations.add(new AlterVisibilityMutation(timestamp, newVisibility));
     }
 
-    public void appendAddPropertyMutation(String key, String name, Object value, Metadata metadata, Visibility visibility, Long timestamp) {
+    public void appendAddPropertyValueMutation(String key, String name, Object value, Metadata metadata, Visibility visibility, Long timestamp) {
         if (timestamp == null) {
             timestamp = IncreasingTime.currentTimeMillis();
         }
         this.mutations.add(new AddPropertyValueMutation(timestamp, key, name, value, metadata, visibility));
+    }
+
+    public void appendAddPropertyMetadataMutation(String key, String name, Metadata metadata, Visibility visibility, Long timestamp) {
+        if (timestamp == null) {
+            timestamp = IncreasingTime.currentTimeMillis();
+        }
+        this.mutations.add(new AddPropertyMetadataMutation(timestamp, key, name, metadata, visibility));
     }
 
     public void appendAlterEdgeLabelMutation(String newEdgeLabel) {

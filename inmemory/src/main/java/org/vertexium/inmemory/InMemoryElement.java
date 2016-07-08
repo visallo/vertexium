@@ -411,8 +411,15 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> implemen
             throw new VertexiumException("cannot save mutation from another element");
         }
 
+        // Order matters a lot here
+
+        // Metadata must be altered first because the lookup of a property can include visibility which will be
+        // altered by alterElementPropertyVisibilities
         graph.alterElementPropertyMetadata(inMemoryTableElement, mutation.getSetPropertyMetadatas(), authorizations);
-        graph.alterElementPropertyVisibilities(inMemoryTableElement, mutation.getAlterPropertyVisibilities(), authorizations);
+
+        // Altering properties comes next because alterElementVisibility may alter the vertex and we won't find it
+        graph.alterElementPropertyVisibilities(
+                inMemoryTableElement, mutation.getAlterPropertyVisibilities(), authorizations);
 
         Iterable<Property> properties = mutation.getProperties();
         Iterable<PropertyDeleteMutation> propertyDeleteMutations = mutation.getPropertyDeletes();

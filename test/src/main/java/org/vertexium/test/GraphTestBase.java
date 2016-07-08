@@ -173,7 +173,8 @@ public abstract class GraphTestBase {
         String expectedLargeValue = IOUtils.toString(new LargeStringInputStream(LARGE_PROPERTY_VALUE_SIZE));
         PropertyValue propSmall = new StreamingPropertyValue(new ByteArrayInputStream("value1".getBytes()), String.class, 6);
         PropertyValue propLarge = new StreamingPropertyValue(new ByteArrayInputStream(expectedLargeValue.getBytes()),
-                String.class, expectedLargeValue.length());
+                                                             String.class, expectedLargeValue.length()
+        );
         String largePropertyName = "propLarge/\\*!@#$%^&*()[]{}|";
         Vertex v1 = graph.prepareVertex("v1", VISIBILITY_A)
                 .setProperty("propSmall", propSmall, VISIBILITY_A)
@@ -956,9 +957,9 @@ public abstract class GraphTestBase {
     public void testAddMultipleVertices() {
         List<ElementBuilder<Vertex>> elements = new ArrayList<>();
         elements.add(graph.prepareVertex("v1", VISIBILITY_A)
-                .setProperty("prop1", "v1", VISIBILITY_A));
+                             .setProperty("prop1", "v1", VISIBILITY_A));
         elements.add(graph.prepareVertex("v2", VISIBILITY_A)
-                .setProperty("prop1", "v2", VISIBILITY_A));
+                             .setProperty("prop1", "v2", VISIBILITY_A));
         Iterable<Vertex> vertices = graph.addVertices(elements, AUTHORIZATIONS_A_AND_B);
         assertVertexIds(vertices, new String[]{"v1", "v2"});
         graph.flush();
@@ -2116,18 +2117,18 @@ public abstract class GraphTestBase {
         graph.flush();
 
         List<Vertex> vertices = toList(graph.query(AUTHORIZATIONS_A_AND_B)
-                .sort("age", SortDirection.ASCENDING)
-                .vertices());
+                                               .sort("age", SortDirection.ASCENDING)
+                                               .vertices());
         assertVertexIds(vertices, new String[]{"v2", "v3", "v4", "v1"});
 
         vertices = toList(graph.query(AUTHORIZATIONS_A_AND_B)
-                .sort("age", SortDirection.DESCENDING)
-                .vertices());
+                                  .sort("age", SortDirection.DESCENDING)
+                                  .vertices());
         assertVertexIds(vertices, new String[]{"v4", "v3", "v2", "v1"});
 
         vertices = toList(graph.query(AUTHORIZATIONS_A_AND_B)
-                .sort("name", SortDirection.ASCENDING)
-                .vertices());
+                                  .sort("name", SortDirection.ASCENDING)
+                                  .vertices());
         Assert.assertEquals(4, count(vertices));
         assertEquals("v2", vertices.get(0).getId());
         assertEquals("v1", vertices.get(1).getId());
@@ -2135,8 +2136,8 @@ public abstract class GraphTestBase {
         assertTrue(vertices.get(3).getId().equals("v3") || vertices.get(3).getId().equals("v4"));
 
         vertices = toList(graph.query(AUTHORIZATIONS_A_AND_B)
-                .sort("name", SortDirection.DESCENDING)
-                .vertices());
+                                  .sort("name", SortDirection.DESCENDING)
+                                  .vertices());
         Assert.assertEquals(4, count(vertices));
         assertTrue(vertices.get(0).getId().equals("v3") || vertices.get(0).getId().equals("v4"));
         assertTrue(vertices.get(1).getId().equals("v3") || vertices.get(1).getId().equals("v4"));
@@ -2144,40 +2145,40 @@ public abstract class GraphTestBase {
         assertEquals("v2", vertices.get(3).getId());
 
         vertices = toList(graph.query(AUTHORIZATIONS_A_AND_B)
-                .sort("name", SortDirection.ASCENDING)
-                .sort("age", SortDirection.ASCENDING)
-                .vertices());
+                                  .sort("name", SortDirection.ASCENDING)
+                                  .sort("age", SortDirection.ASCENDING)
+                                  .vertices());
         assertVertexIds(vertices, new String[]{"v2", "v1", "v3", "v4"});
 
         vertices = toList(graph.query(AUTHORIZATIONS_A_AND_B)
-                .sort("name", SortDirection.ASCENDING)
-                .sort("age", SortDirection.DESCENDING)
-                .vertices());
+                                  .sort("name", SortDirection.ASCENDING)
+                                  .sort("age", SortDirection.DESCENDING)
+                                  .vertices());
         assertVertexIds(vertices, new String[]{"v2", "v1", "v4", "v3"});
 
         vertices = toList(graph.query(AUTHORIZATIONS_A_AND_B)
-                .sort(Element.ID_PROPERTY_NAME, SortDirection.ASCENDING)
-                .vertices());
+                                  .sort(Element.ID_PROPERTY_NAME, SortDirection.ASCENDING)
+                                  .vertices());
         assertVertexIds(vertices, new String[]{"v1", "v2", "v3", "v4"});
 
         vertices = toList(graph.query(AUTHORIZATIONS_A_AND_B)
-                .sort(Element.ID_PROPERTY_NAME, SortDirection.DESCENDING)
-                .vertices());
+                                  .sort(Element.ID_PROPERTY_NAME, SortDirection.DESCENDING)
+                                  .vertices());
         assertVertexIds(vertices, new String[]{"v4", "v3", "v2", "v1"});
 
         vertices = toList(graph.query(AUTHORIZATIONS_A_AND_B)
-                .sort("otherfield", SortDirection.ASCENDING)
-                .vertices());
+                                  .sort("otherfield", SortDirection.ASCENDING)
+                                  .vertices());
         Assert.assertEquals(4, count(vertices));
 
         List<Edge> edges = toList(graph.query(AUTHORIZATIONS_A_AND_B)
-                .sort(Edge.LABEL_PROPERTY_NAME, SortDirection.ASCENDING)
-                .edges());
+                                          .sort(Edge.LABEL_PROPERTY_NAME, SortDirection.ASCENDING)
+                                          .edges());
         assertEdgeIds(edges, new String[]{"e2", "e1", "e3"});
 
         edges = toList(graph.query(AUTHORIZATIONS_A_AND_B)
-                .sort(Edge.LABEL_PROPERTY_NAME, SortDirection.DESCENDING)
-                .edges());
+                               .sort(Edge.LABEL_PROPERTY_NAME, SortDirection.DESCENDING)
+                               .edges());
         assertEdgeIds(edges, new String[]{"e3", "e1", "e2"});
     }
 
@@ -2452,7 +2453,8 @@ public abstract class GraphTestBase {
             assertEquals(
                     "if edge indexing was disabled and updating vertices does not destroy the edge counts " +
                             "that were already in place 'v1' should be last since it has no edges",
-                    "v1", allVertices.get(2).getId());
+                    "v1", allVertices.get(2).getId()
+            );
         }
 
         Iterable<Vertex> vertices = graph.query(AUTHORIZATIONS_A_AND_B)
@@ -2486,14 +2488,14 @@ public abstract class GraphTestBase {
         graph.flush();
 
         List<Vertex> vertices = toList(graph.query(new String[]{"v1", "v2"}, AUTHORIZATIONS_A)
-                .has("age", Compare.GREATER_THAN, 27)
-                .vertices());
+                                               .has("age", Compare.GREATER_THAN, 27)
+                                               .vertices());
         Assert.assertEquals(1, vertices.size());
         assertEquals("v2", vertices.get(0).getId());
 
         vertices = toList(graph.query(new String[]{"v1", "v2", "v3"}, AUTHORIZATIONS_A)
-                .has("age", Compare.GREATER_THAN, 27)
-                .vertices());
+                                  .has("age", Compare.GREATER_THAN, 27)
+                                  .vertices());
         Assert.assertEquals(2, vertices.size());
         List<String> vertexIds = toList(new ConvertingIterable<Vertex, String>(vertices) {
             @Override
@@ -2658,8 +2660,8 @@ public abstract class GraphTestBase {
         graph.flush();
 
         List<Vertex> vertices = toList(graph.query(AUTHORIZATIONS_A)
-                .has("location", GeoCompare.WITHIN, new GeoCircle(38.9186, -77.2297, 1))
-                .vertices());
+                                               .has("location", GeoCompare.WITHIN, new GeoCircle(38.9186, -77.2297, 1))
+                                               .vertices());
         Assert.assertEquals(1, count(vertices));
         GeoPoint geoPoint = (GeoPoint) vertices.get(0).getPropertyValue("location");
         assertEquals(38.9186, geoPoint.getLatitude(), 0.001);
@@ -2667,28 +2669,28 @@ public abstract class GraphTestBase {
         assertEquals("Reston, VA", geoPoint.getDescription());
 
         vertices = toList(graph.query(AUTHORIZATIONS_A)
-                .has("location", GeoCompare.WITHIN, new GeoCircle(38.9186, -77.2297, 25))
-                .vertices());
+                                  .has("location", GeoCompare.WITHIN, new GeoCircle(38.9186, -77.2297, 25))
+                                  .vertices());
         Assert.assertEquals(2, count(vertices));
 
         vertices = toList(graph.query(AUTHORIZATIONS_A)
-                .has("location", GeoCompare.WITHIN, new GeoRect(new GeoPoint(39, -78), new GeoPoint(38, -77)))
-                .vertices());
+                                  .has("location", GeoCompare.WITHIN, new GeoRect(new GeoPoint(39, -78), new GeoPoint(38, -77)))
+                                  .vertices());
         Assert.assertEquals(2, count(vertices));
 
         vertices = toList(graph.query(AUTHORIZATIONS_A)
-                .has("location", GeoCompare.WITHIN, new GeoHash(38.9186, -77.2297, 2))
-                .vertices());
+                                  .has("location", GeoCompare.WITHIN, new GeoHash(38.9186, -77.2297, 2))
+                                  .vertices());
         Assert.assertEquals(2, count(vertices));
 
         vertices = toList(graph.query(AUTHORIZATIONS_A)
-                .has("location", GeoCompare.WITHIN, new GeoHash(38.9186, -77.2297, 3))
-                .vertices());
+                                  .has("location", GeoCompare.WITHIN, new GeoHash(38.9186, -77.2297, 3))
+                                  .vertices());
         Assert.assertEquals(1, count(vertices));
 
         vertices = toList(graph.query(AUTHORIZATIONS_A)
-                .has("location", TextPredicate.CONTAINS, "Reston")
-                .vertices());
+                                  .has("location", TextPredicate.CONTAINS, "Reston")
+                                  .vertices());
         Assert.assertEquals(2, count(vertices));
     }
 
@@ -2700,8 +2702,8 @@ public abstract class GraphTestBase {
         graph.flush();
 
         List<Vertex> vertices = toList(graph.query(AUTHORIZATIONS_A_AND_B)
-                .has("location", GeoCompare.WITHIN, new GeoCircle(38.92, -77.23, 10))
-                .vertices());
+                                               .has("location", GeoCompare.WITHIN, new GeoCircle(38.92, -77.23, 10))
+                                               .vertices());
         Assert.assertEquals(1, count(vertices));
         GeoCircle geoCircle = (GeoCircle) vertices.get(0).getPropertyValue("location");
         assertEquals(38.9186, geoCircle.getLatitude(), 0.001);
@@ -3396,7 +3398,8 @@ public abstract class GraphTestBase {
                 totalVerticesToCheck,
                 insertVerticesTime,
                 insertEdgesTime,
-                findRelatedEdgesTime);
+                findRelatedEdgesTime
+        );
     }
 
     @Test
@@ -3700,13 +3703,13 @@ public abstract class GraphTestBase {
         assertNull("v1 should not be returned for auth a", v1);
 
         List<Vertex> vertices = toList(graph.query(AUTHORIZATIONS_B)
-                .has("age", Compare.EQUAL, 25)
-                .vertices());
+                                               .has("age", Compare.EQUAL, 25)
+                                               .vertices());
         assertEquals(1, vertices.size());
 
         vertices = toList(graph.query(AUTHORIZATIONS_A)
-                .has("age", Compare.EQUAL, 25)
-                .vertices());
+                                  .has("age", Compare.EQUAL, 25)
+                                  .vertices());
         assertEquals(0, vertices.size());
     }
 
@@ -3777,6 +3780,34 @@ public abstract class GraphTestBase {
         v1 = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B);
         assertNotNull(v1.getProperty("prop1"));
         assertEquals("value1New2", v1.getPropertyValue("prop1"));
+    }
+
+    @Test
+    public void testAlterVisibilityAndSetMetadataInOneMutation() {
+        Metadata prop1Metadata = new Metadata();
+        prop1Metadata.add("prop1_key1", "metadata1", VISIBILITY_EMPTY);
+
+        graph.prepareVertex("v1", VISIBILITY_EMPTY)
+                .setProperty("prop1", "value1", prop1Metadata, VISIBILITY_A)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B);
+        v1.prepareMutation()
+                .alterPropertyVisibility("prop1", VISIBILITY_B)
+                .setPropertyMetadata("prop1", "prop1_key1", "metadata1New", VISIBILITY_EMPTY)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        v1 = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B);
+        assertNotNull(v1.getProperty("prop1"));
+        assertEquals(VISIBILITY_B, v1.getProperty("prop1").getVisibility());
+        assertEquals("metadata1New", v1.getProperty("prop1").getMetadata().getValue("prop1_key1"));
+
+        List<HistoricalPropertyValue> historicalPropertyValues = toList(v1.getHistoricalPropertyValues(AUTHORIZATIONS_A_AND_B));
+        assertEquals(2, historicalPropertyValues.size());
+        assertEquals("metadata1New", historicalPropertyValues.get(0).getMetadata().getValue("prop1_key1"));
+        assertEquals("metadata1", historicalPropertyValues.get(1).getMetadata().getValue("prop1_key1"));
     }
 
     @Test
@@ -5280,7 +5311,8 @@ public abstract class GraphTestBase {
     }
 
     protected void assertResultsCount(
-            int expectedCount, int expectedTotalHits, QueryResultsIterable<? extends Element> results) {
+            int expectedCount, int expectedTotalHits, QueryResultsIterable<? extends Element> results
+    ) {
         assertEquals(expectedTotalHits, results.getTotalHits());
         assertEquals(expectedCount, count(results));
     }

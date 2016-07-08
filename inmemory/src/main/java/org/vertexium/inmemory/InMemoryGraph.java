@@ -4,10 +4,7 @@ import com.google.common.collect.ImmutableSet;
 import org.vertexium.*;
 import org.vertexium.event.*;
 import org.vertexium.id.IdGenerator;
-import org.vertexium.inmemory.mutations.AlterEdgeLabelMutation;
-import org.vertexium.inmemory.mutations.AlterVisibilityMutation;
-import org.vertexium.inmemory.mutations.EdgeSetupMutation;
-import org.vertexium.inmemory.mutations.ElementTimestampMutation;
+import org.vertexium.inmemory.mutations.*;
 import org.vertexium.mutation.AlterPropertyVisibility;
 import org.vertexium.mutation.SetPropertyMetadata;
 import org.vertexium.property.StreamingPropertyValue;
@@ -598,7 +595,7 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
             value = saveStreamingPropertyValue(element.getId(), key, name, visibility, timestamp,
                     (StreamingPropertyValue) value);
         }
-        inMemoryTableElement.appendAddPropertyMutation(key, name, value, metadata, visibility, timestamp);
+        inMemoryTableElement.appendAddPropertyValueMutation(key, name, value, metadata, visibility, timestamp);
         Property property = inMemoryTableElement.getProperty(key, name, visibility, authorizations);
 
         if (hasEventListeners()) {
@@ -633,19 +630,27 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
                 value = saveStreamingPropertyValue(inMemoryTableElement.getId(), apv.getKey(), apv.getName(),
                         apv.getVisibility(), newTimestamp, (StreamingPropertyValue) value);
             }
-            inMemoryTableElement.appendAddPropertyMutation(apv.getKey(), apv.getName(), value, metadata,
-                    apv.getVisibility(), newTimestamp);
+            inMemoryTableElement.appendAddPropertyValueMutation(
+                    apv.getKey(), apv.getName(), value, metadata, apv.getVisibility(), newTimestamp);
         }
     }
 
-    protected void alterElementPropertyMetadata(InMemoryTableElement element, List<SetPropertyMetadata> setPropertyMetadatas, Authorizations authorizations) {
-        for (SetPropertyMetadata apm : setPropertyMetadatas) {
-            Property property = element.getProperty(apm.getPropertyKey(), apm.getPropertyName(), apm.getPropertyVisibility(), authorizations);
+    protected void alterElementPropertyMetadata(
+            InMemoryTableElement inMemoryTableElement, List<SetPropertyMetadata> setPropertyMetadatas,
+            Authorizations authorizations) {
+        for (SetPropertyMetadata spm : setPropertyMetadatas) {
+            Property property = inMemoryTableElement.getProperty(
+                    spm.getPropertyKey(), spm.getPropertyName(), spm.getPropertyVisibility(), authorizations);
             if (property == null) {
-                throw new VertexiumException("Could not find property " + apm.getPropertyKey() + ":" + apm.getPropertyName());
+                throw new VertexiumException("Could not find property " + spm.getPropertyKey() + ":" + spm.getPropertyName());
             }
 
-            property.getMetadata().add(apm.getMetadataName(), apm.getNewValue(), apm.getMetadataVisibility());
+            Metadata metadata = new Metadata(property.getMetadata());
+            metadata.add(spm.getMetadataName(), spm.getNewValue(), spm.getMetadataVisibility());
+
+            long newTimestamp = IncreasingTime.currentTimeMillis();
+            inMemoryTableElement.appendAddPropertyMetadataMutation(
+                    property.getKey(), property.getName(), metadata, property.getVisibility(), newTimestamp);
         }
     }
 
