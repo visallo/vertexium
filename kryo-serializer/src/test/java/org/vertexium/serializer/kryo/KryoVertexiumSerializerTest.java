@@ -2,18 +2,47 @@ package org.vertexium.serializer.kryo;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.vertexium.GraphConfiguration;
 import org.vertexium.VertexiumSerializer;
 
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
+import java.util.Arrays;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 
+@RunWith(Parameterized.class)
 public class KryoVertexiumSerializerTest {
+    private final boolean compress;
+    private int iterations;
+    private boolean shouldAssertTiming;
+    private GraphConfiguration graphConfiguration;
+
+    @Parameterized.Parameters(name = "compress={0}")
+    public static Iterable<Object[]> initialVisibilitySources() {
+        return Arrays.asList(new Object[][]{
+                {true}, {false}
+        });
+    }
+
+    public KryoVertexiumSerializerTest(boolean compress) {
+        this.compress = compress;
+    }
+
     @Before
     public void before() {
         System.gc();
+
+        Map<String, Object> config = new HashMap<>();
+        config.put(QuickKryoVertexiumSerializer.CONFIG_COMPRESS, compress);
+        shouldAssertTiming = !compress;
+        iterations = compress ? 1000 : 1000000;
+        graphConfiguration = new GraphConfiguration(config);
     }
 
     @Test
@@ -23,20 +52,48 @@ public class KryoVertexiumSerializerTest {
     }
 
     @Test
+    public void testLongString() {
+        System.out.println("testLongString");
+        timeItLongString(new KryoVertexiumSerializer());
+        long quickKryoTime = timeItLongString(new QuickKryoVertexiumSerializer(graphConfiguration));
+        long kryoTime = timeItLongString(new KryoVertexiumSerializer());
+        assertTiming(quickKryoTime, kryoTime);
+    }
+
+    private long timeItLongString(VertexiumSerializer serializer) {
+        return testItString(
+                serializer,
+                "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed consequat libero non nunc interdum " +
+                        "rutrum. Donec ac scelerisque libero, ut elementum ipsum. Donec placerat interdum nunc. Sed " +
+                        "et placerat mi. Morbi tristique, diam a cursus egestas, quam nisi sollicitudin justo, at " +
+                        "vehicula erat felis in risus. Nullam aliquet dictum eros eu cursus. Mauris id tellus cursus," +
+                        " malesuada purus sed, maximus mauris. Suspendisse non consectetur purus. Etiam faucibus ligula " +
+                        "eget ipsum porta finibus. Vestibulum vitae ornare ligula, eget molestie ligula. Praesent " +
+                        "consequat pulvinar sem vel tincidunt. Integer nisl est, gravida id luctus vel, hendrerit " +
+                        "non felis. Quisque sed risus consequat, tempor tellus sit amet, bibendum lorem."
+        );
+    }
+
+    @Test
     public void testString() {
         System.out.println("testString");
         timeItString(new KryoVertexiumSerializer());
-        long quickKryoTime = timeItString(new QuickKryoVertexiumSerializer());
+        long quickKryoTime = timeItString(new QuickKryoVertexiumSerializer(graphConfiguration));
         long kryoTime = timeItString(new KryoVertexiumSerializer());
         assertTiming(quickKryoTime, kryoTime);
     }
 
     private long timeItString(VertexiumSerializer serializer) {
+        String string = "yo mamma";
+        return testItString(serializer, string);
+    }
+
+    private long testItString(VertexiumSerializer serializer, String string) {
         long startTime = System.currentTimeMillis();
         long bytes = 0;
-        for (int i = 0; i < 1000000; i++) {
-            byte[] v = serializer.objectToBytes("yo mamma");
-            assertEquals("yo mamma", serializer.bytesToObject(v));
+        for (int i = 0; i < iterations; i++) {
+            byte[] v = serializer.objectToBytes(string);
+            assertEquals(string, serializer.bytesToObject(v));
             bytes += v.length;
         }
         long endTime = System.currentTimeMillis();
@@ -48,7 +105,7 @@ public class KryoVertexiumSerializerTest {
     public void testBigDecimal() {
         System.out.println("testBigDecimal");
         timeItBigDecimal(new KryoVertexiumSerializer());
-        long quickKryoTime = timeItBigDecimal(new QuickKryoVertexiumSerializer());
+        long quickKryoTime = timeItBigDecimal(new QuickKryoVertexiumSerializer(graphConfiguration));
         long kryoTime = timeItBigDecimal(new KryoVertexiumSerializer());
         assertTiming(quickKryoTime, kryoTime);
     }
@@ -56,7 +113,7 @@ public class KryoVertexiumSerializerTest {
     private long timeItBigDecimal(VertexiumSerializer serializer) {
         long startTime = System.currentTimeMillis();
         long bytes = 0;
-        for (int i = 0; i < 1000000; i++) {
+        for (int i = 0; i < iterations; i++) {
             byte[] v = serializer.objectToBytes(new BigDecimal("42.987654321"));
             assertEquals(new BigDecimal("42.987654321"), serializer.bytesToObject(v));
             bytes += v.length;
@@ -70,7 +127,7 @@ public class KryoVertexiumSerializerTest {
     public void testDate() {
         System.out.println("testDate");
         timeItDate(new KryoVertexiumSerializer());
-        long quickKryoTime = timeItDate(new QuickKryoVertexiumSerializer());
+        long quickKryoTime = timeItDate(new QuickKryoVertexiumSerializer(graphConfiguration));
         long kryoTime = timeItDate(new KryoVertexiumSerializer());
         assertTiming(quickKryoTime, kryoTime);
     }
@@ -78,7 +135,7 @@ public class KryoVertexiumSerializerTest {
     private long timeItDate(VertexiumSerializer serializer) {
         long startTime = System.currentTimeMillis();
         long bytes = 0;
-        for (int i = 0; i < 1000000; i++) {
+        for (int i = 0; i < iterations; i++) {
             Date date = new Date();
             byte[] v = serializer.objectToBytes(date);
             assertEquals(date, serializer.bytesToObject(v));
@@ -93,7 +150,7 @@ public class KryoVertexiumSerializerTest {
     public void testLong() {
         System.out.println("testLong");
         timeItLong(new KryoVertexiumSerializer());
-        long quickKryoTime = timeItLong(new QuickKryoVertexiumSerializer());
+        long quickKryoTime = timeItLong(new QuickKryoVertexiumSerializer(graphConfiguration));
         long kryoTime = timeItLong(new KryoVertexiumSerializer());
         assertTiming(quickKryoTime, kryoTime);
     }
@@ -101,7 +158,7 @@ public class KryoVertexiumSerializerTest {
     private long timeItLong(VertexiumSerializer serializer) {
         long startTime = System.currentTimeMillis();
         long bytes = 0;
-        for (int i = 0; i < 1000000; i++) {
+        for (int i = 0; i < iterations; i++) {
             Long l = 123456L;
             byte[] v = serializer.objectToBytes(l);
             assertEquals(l, serializer.bytesToObject(v));
@@ -116,7 +173,7 @@ public class KryoVertexiumSerializerTest {
     public void testDouble() {
         System.out.println("testDouble");
         timeItDouble(new KryoVertexiumSerializer());
-        long quickKryoTime = timeItDouble(new QuickKryoVertexiumSerializer());
+        long quickKryoTime = timeItDouble(new QuickKryoVertexiumSerializer(graphConfiguration));
         long kryoTime = timeItDouble(new KryoVertexiumSerializer());
         assertTiming(quickKryoTime, kryoTime);
     }
@@ -124,7 +181,7 @@ public class KryoVertexiumSerializerTest {
     private long timeItDouble(VertexiumSerializer serializer) {
         long startTime = System.currentTimeMillis();
         long bytes = 0;
-        for (int i = 0; i < 1000000; i++) {
+        for (int i = 0; i < iterations; i++) {
             double d = 3.1415;
             byte[] v = serializer.objectToBytes(d);
             assertEquals(d, serializer.bytesToObject(v));
@@ -146,15 +203,17 @@ public class KryoVertexiumSerializerTest {
     @Test
     public void testTestClassQuick() {
         TestClass testClass = new TestClass("value1", 42);
-        QuickKryoVertexiumSerializer serializer = new QuickKryoVertexiumSerializer();
+        QuickKryoVertexiumSerializer serializer = new QuickKryoVertexiumSerializer(graphConfiguration);
         byte[] v = serializer.objectToBytes(testClass);
         assertEquals(testClass, serializer.bytesToObject(v));
     }
 
     private void assertTiming(long quickKryoTime, long kryoTime) {
-        // we can't fail when the timing is off because sometimes it's the JVMs fault doing garbage collection or something
-        if (quickKryoTime > kryoTime) {
-            System.err.println("WARNING: quick (" + quickKryoTime + "ms) was slower than Kryo (" + kryoTime + "ms)");
+        if (shouldAssertTiming) {
+            // we can't fail when the timing is off because sometimes it's the JVMs fault doing garbage collection or something
+            if (quickKryoTime > kryoTime) {
+                System.err.println("WARNING: quick (" + quickKryoTime + "ms) was slower than Kryo (" + kryoTime + "ms)");
+            }
         }
     }
 

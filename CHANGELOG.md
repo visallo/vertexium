@@ -1,3 +1,7 @@
+# v2.4.4
+
+* Quick Kryo Serializer: add support to compress the bytes after serialization
+
 # v2.4.3
 
 * Accumulo: fix accumulo not cleaning up property with old visibility in search index
