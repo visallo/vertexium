@@ -3,6 +3,7 @@
 * Quick Kryo Serializer: add support to compress the bytes after serialization
 * InMemory/SQL: Fix historical metadata values getting lost on change of metadata
 * Graph: Remove the comparison of graph in the GraphEvent base class
+* Added interface GraphWithSearchIndex, which GraphBaseWithSearchIndex now implements
 
 # v2.4.3
 
