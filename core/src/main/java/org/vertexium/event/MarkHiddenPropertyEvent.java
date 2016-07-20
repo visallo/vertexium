@@ -46,6 +46,6 @@ public class MarkHiddenPropertyEvent extends GraphEvent {
         }
 
         MarkHiddenPropertyEvent other = (MarkHiddenPropertyEvent) obj;
-        return getElement().equals(other.getElement()) && super.equals(obj);
+        return getElement().equals(other.getElement());
     }
 }

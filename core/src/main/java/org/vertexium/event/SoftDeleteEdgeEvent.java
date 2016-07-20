@@ -32,6 +32,6 @@ public class SoftDeleteEdgeEvent extends GraphEvent {
         }
 
         SoftDeleteEdgeEvent other = (SoftDeleteEdgeEvent) obj;
-        return getEdge().equals(other.getEdge()) && super.equals(obj);
+        return getEdge().equals(other.getEdge());
     }
 }

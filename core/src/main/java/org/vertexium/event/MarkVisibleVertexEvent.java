@@ -32,6 +32,6 @@ public class MarkVisibleVertexEvent extends GraphEvent {
         }
 
         MarkVisibleVertexEvent other = (MarkVisibleVertexEvent) obj;
-        return getVertex().equals(other.getVertex()) && super.equals(obj);
+        return getVertex().equals(other.getVertex());
     }
 }

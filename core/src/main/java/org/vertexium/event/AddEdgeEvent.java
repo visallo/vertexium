@@ -32,6 +32,6 @@ public class AddEdgeEvent extends GraphEvent {
         }
 
         AddEdgeEvent other = (AddEdgeEvent) obj;
-        return getEdge().equals(other.getEdge()) && super.equals(obj);
+        return getEdge().equals(other.getEdge());
     }
 }

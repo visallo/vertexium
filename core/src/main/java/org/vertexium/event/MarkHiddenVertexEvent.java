@@ -32,6 +32,6 @@ public class MarkHiddenVertexEvent extends GraphEvent {
         }
 
         MarkHiddenVertexEvent other = (MarkHiddenVertexEvent) obj;
-        return getVertex().equals(other.getVertex()) && super.equals(obj);
+        return getVertex().equals(other.getVertex());
     }
 }
