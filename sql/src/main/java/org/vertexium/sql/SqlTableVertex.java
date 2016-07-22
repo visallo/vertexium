@@ -149,8 +149,13 @@ public class SqlTableVertex extends SqlTableElement<InMemoryVertex> {
         }
 
         @Override
-        public void appendAddPropertyMutation(String key, String name, Object value, Metadata metadata, Visibility visibility, Long timestamp) {
-            sqlTableVertex.appendAddPropertyMutation(key, name, value, metadata, visibility, timestamp);
+        public void appendAddPropertyValueMutation(String key, String name, Object value, Metadata metadata, Visibility visibility, Long timestamp) {
+            sqlTableVertex.appendAddPropertyValueMutation(key, name, value, metadata, visibility, timestamp);
+        }
+
+        @Override
+        public void appendAddPropertyMetadataMutation(String key, String name, Metadata metadata, Visibility visibility, Long timestamp) {
+            sqlTableVertex.appendAddPropertyMetadataMutation(key, name, metadata, visibility, timestamp);
         }
 
         @Override

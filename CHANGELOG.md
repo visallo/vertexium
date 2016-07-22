@@ -1,6 +1,7 @@
 # v2.4.4
 
 * Quick Kryo Serializer: add support to compress the bytes after serialization
+* InMemory/SQL: Fix historical metadata values getting lost on change of metadata
 
 # v2.4.3
 

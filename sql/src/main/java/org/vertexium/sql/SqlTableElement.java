@@ -92,8 +92,14 @@ public abstract class SqlTableElement<TElement extends InMemoryElement>
     }
 
     @Override
-    public void appendAddPropertyMutation(String key, String name, Object value, Metadata metadata, Visibility visibility, Long timestamp) {
-        super.appendAddPropertyMutation(key, name, value, metadata, visibility, timestamp);
+    public void appendAddPropertyValueMutation(String key, String name, Object value, Metadata metadata, Visibility visibility, Long timestamp) {
+        super.appendAddPropertyValueMutation(key, name, value, metadata, visibility, timestamp);
+        store();
+    }
+
+    @Override
+    public void appendAddPropertyMetadataMutation(String key, String name, Metadata metadata, Visibility visibility, Long timestamp) {
+        super.appendAddPropertyMetadataMutation(key, name, metadata, visibility, timestamp);
         store();
     }
 

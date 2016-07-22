@@ -159,8 +159,8 @@ public class SqlTableEdge extends SqlTableElement<InMemoryEdge> {
         }
 
         @Override
-        public void appendAddPropertyMutation(String key, String name, Object value, Metadata metadata, Visibility visibility, Long timestamp) {
-            sqlTableEdge.appendAddPropertyMutation(key, name, value, metadata, visibility, timestamp);
+        public void appendAddPropertyValueMutation(String key, String name, Object value, Metadata metadata, Visibility visibility, Long timestamp) {
+            sqlTableEdge.appendAddPropertyValueMutation(key, name, value, metadata, visibility, timestamp);
         }
 
         @Override
