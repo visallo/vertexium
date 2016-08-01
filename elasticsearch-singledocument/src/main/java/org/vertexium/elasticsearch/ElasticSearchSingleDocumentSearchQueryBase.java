@@ -179,7 +179,7 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
         if (queryString == null || queryString.equals("*")) {
             return QueryBuilders.matchAllQuery();
         }
-        ElasticsearchSingleDocumentSearchIndex es = (ElasticsearchSingleDocumentSearchIndex) ((GraphBaseWithSearchIndex) getGraph()).getSearchIndex();
+        ElasticsearchSingleDocumentSearchIndex es = (ElasticsearchSingleDocumentSearchIndex) ((GraphWithSearchIndex) getGraph()).getSearchIndex();
         Collection<String> fields = es.getQueryablePropertyNames(getGraph(), false, getParameters().getAuthorizations());
         QueryStringQueryBuilder qs = QueryBuilders.queryString(queryString);
         for (String field : fields) {
@@ -212,7 +212,7 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
         if (getParameters() instanceof QueryStringQueryParameters) {
             String queryString = ((QueryStringQueryParameters) getParameters()).getQueryString();
             if (queryString == null || queryString.equals("*")) {
-                ElasticsearchSingleDocumentSearchIndex es = (ElasticsearchSingleDocumentSearchIndex) ((GraphBaseWithSearchIndex) getGraph()).getSearchIndex();
+                ElasticsearchSingleDocumentSearchIndex es = (ElasticsearchSingleDocumentSearchIndex) ((GraphWithSearchIndex) getGraph()).getSearchIndex();
                 Collection<String> fields = es.getQueryableElementTypeVisibilityPropertyNames(getGraph(), getParameters().getAuthorizations());
                 OrFilterBuilder atLeastOneFieldExistsFilter = new OrFilterBuilder();
                 for (String field : fields) {
@@ -718,7 +718,7 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
     }
 
     protected ElasticsearchSingleDocumentSearchIndex getSearchIndex() {
-        return (ElasticsearchSingleDocumentSearchIndex) ((GraphBaseWithSearchIndex) getGraph()).getSearchIndex();
+        return (ElasticsearchSingleDocumentSearchIndex) ((GraphWithSearchIndex) getGraph()).getSearchIndex();
     }
 
     protected void addElementTypeFilter(List<FilterBuilder> filters, ElasticSearchElementType elementType) {

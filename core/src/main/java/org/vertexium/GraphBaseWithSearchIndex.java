@@ -10,7 +10,7 @@ import org.vertexium.search.SearchIndexWithVertexPropertyCountByValue;
 import java.util.EnumSet;
 import java.util.Map;
 
-public abstract class GraphBaseWithSearchIndex extends GraphBase implements Graph {
+public abstract class GraphBaseWithSearchIndex extends GraphBase implements Graph, GraphWithSearchIndex {
     public static final String METADATA_ID_GENERATOR_CLASSNAME = "idGenerator.classname";
     private final GraphConfiguration configuration;
     private final IdGenerator idGenerator;
@@ -102,6 +102,7 @@ public abstract class GraphBaseWithSearchIndex extends GraphBase implements Grap
         return configuration;
     }
 
+    @Override
     public SearchIndex getSearchIndex() {
         return searchIndex;
     }

@@ -121,7 +121,7 @@ public abstract class ElasticsearchSingleDocumentSearchIndexTestBase extends Gra
     }
 
     private ElasticsearchSingleDocumentSearchIndex getSearchIndex() {
-        return (ElasticsearchSingleDocumentSearchIndex) ((GraphBaseWithSearchIndex) graph).getSearchIndex();
+        return (ElasticsearchSingleDocumentSearchIndex) ((GraphWithSearchIndex) graph).getSearchIndex();
     }
 
     @Override
@@ -131,7 +131,7 @@ public abstract class ElasticsearchSingleDocumentSearchIndexTestBase extends Gra
 
     @Override
     protected boolean disableUpdateEdgeCountInSearchIndex(Graph graph) {
-        ElasticsearchSingleDocumentSearchIndex searchIndex = (ElasticsearchSingleDocumentSearchIndex) ((GraphBaseWithSearchIndex) graph).getSearchIndex();
+        ElasticsearchSingleDocumentSearchIndex searchIndex = (ElasticsearchSingleDocumentSearchIndex) ((GraphWithSearchIndex) graph).getSearchIndex();
         ElasticSearchSearchIndexConfiguration config = searchIndex.getConfig();
         ScoringStrategy scoringStrategy = config.getScoringStrategy();
         if (!(scoringStrategy instanceof EdgeCountScoringStrategy)) {
