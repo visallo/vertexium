@@ -12,13 +12,4 @@ public abstract class GraphEvent {
     public Graph getGraph() {
         return graph;
     }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (obj instanceof GraphEvent) {
-            GraphEvent other = (GraphEvent) obj;
-            return getGraph().equals(other.getGraph());
-        }
-        return false;
-    }
 }

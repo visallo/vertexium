@@ -32,6 +32,6 @@ public class MarkVisibleEdgeEvent extends GraphEvent {
         }
 
         MarkVisibleEdgeEvent other = (MarkVisibleEdgeEvent) obj;
-        return getEdge().equals(other.getEdge()) && super.equals(obj);
+        return getEdge().equals(other.getEdge());
     }
 }

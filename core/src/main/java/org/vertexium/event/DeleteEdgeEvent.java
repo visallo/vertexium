@@ -32,6 +32,6 @@ public class DeleteEdgeEvent extends GraphEvent {
         }
 
         DeleteEdgeEvent other = (DeleteEdgeEvent) obj;
-        return getEdge().equals(other.getEdge()) && super.equals(obj);
+        return getEdge().equals(other.getEdge());
     }
 }

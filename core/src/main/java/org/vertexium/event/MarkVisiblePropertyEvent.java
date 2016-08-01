@@ -46,6 +46,6 @@ public class MarkVisiblePropertyEvent extends GraphEvent {
         }
 
         MarkVisiblePropertyEvent other = (MarkVisiblePropertyEvent) obj;
-        return getElement().equals(other.getElement()) && super.equals(obj);
+        return getElement().equals(other.getElement());
     }
 }

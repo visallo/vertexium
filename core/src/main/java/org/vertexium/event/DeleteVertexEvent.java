@@ -32,6 +32,6 @@ public class DeleteVertexEvent extends GraphEvent {
         }
 
         DeleteVertexEvent other = (DeleteVertexEvent) obj;
-        return getVertex().equals(other.getVertex()) && super.equals(obj);
+        return getVertex().equals(other.getVertex());
     }
 }

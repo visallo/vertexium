@@ -32,6 +32,6 @@ public class AddVertexEvent extends GraphEvent {
         }
 
         AddVertexEvent other = (AddVertexEvent) obj;
-        return getVertex().equals(other.getVertex()) && super.equals(obj);
+        return getVertex().equals(other.getVertex());
     }
 }

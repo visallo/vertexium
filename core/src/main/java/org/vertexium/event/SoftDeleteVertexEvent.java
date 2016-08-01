@@ -32,6 +32,6 @@ public class SoftDeleteVertexEvent extends GraphEvent {
         }
 
         SoftDeleteVertexEvent other = (SoftDeleteVertexEvent) obj;
-        return getVertex().equals(other.getVertex()) && super.equals(obj);
+        return getVertex().equals(other.getVertex());
     }
 }
