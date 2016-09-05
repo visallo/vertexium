@@ -33,6 +33,7 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 
 import static org.junit.Assert.*;
+import static org.junit.Assume.assumeTrue;
 import static org.vertexium.util.IterableUtils.count;
 import static org.vertexium.util.IterableUtils.toList;
 
@@ -5275,6 +5276,70 @@ public abstract class GraphTestBase {
 
         assertNotEquals(e1Loaded.hashCode(), e2.hashCode());
         assertFalse(e1Loaded.equals(e2));
+    }
+
+    @Test
+    public void benchmark() {
+        assumeTrue(benchmarkEnabled());
+        Random random = new Random(1);
+        int vertexCount = 10000;
+        int edgeCount = 10000;
+        int findVerticesByIdCount = 10000;
+
+        benchmarkAddVertices(vertexCount);
+        benchmarkAddEdges(random, vertexCount, edgeCount);
+        benchmarkFindVerticesById(random, vertexCount, findVerticesByIdCount);
+    }
+
+    private void benchmarkAddVertices(int vertexCount) {
+        double startTime = System.currentTimeMillis();
+        for (int i = 0; i < vertexCount; i++) {
+            String vertexId = "v" + i;
+            graph.prepareVertex(vertexId, VISIBILITY_A)
+                    .addPropertyValue("k1", "prop1", "value1 " + i, VISIBILITY_A)
+                    .addPropertyValue("k1", "prop2", "value2 " + i, VISIBILITY_A)
+                    .addPropertyValue("k1", "prop3", "value3 " + i, VISIBILITY_A)
+                    .addPropertyValue("k1", "prop4", "value4 " + i, VISIBILITY_A)
+                    .addPropertyValue("k1", "prop5", "value5 " + i, VISIBILITY_A)
+                    .save(AUTHORIZATIONS_ALL);
+        }
+        graph.flush();
+        double endTime = System.currentTimeMillis();
+        LOGGER.info("add vertices in %.3fs", (endTime - startTime) / 1000);
+    }
+
+    private void benchmarkAddEdges(Random random, int vertexCount, int edgeCount) {
+        double startTime = System.currentTimeMillis();
+        for (int i = 0; i < edgeCount; i++) {
+            String edgeId = "e" + i;
+            String outVertexId = "v" + random.nextInt(vertexCount);
+            String inVertexId = "v" + random.nextInt(vertexCount);
+            graph.prepareEdge(edgeId, outVertexId, inVertexId, "label", VISIBILITY_A)
+                    .addPropertyValue("k1", "prop1", "value1 " + i, VISIBILITY_A)
+                    .addPropertyValue("k1", "prop2", "value2 " + i, VISIBILITY_A)
+                    .addPropertyValue("k1", "prop3", "value3 " + i, VISIBILITY_A)
+                    .addPropertyValue("k1", "prop4", "value4 " + i, VISIBILITY_A)
+                    .addPropertyValue("k1", "prop5", "value5 " + i, VISIBILITY_A)
+                    .save(AUTHORIZATIONS_ALL);
+        }
+        graph.flush();
+        double endTime = System.currentTimeMillis();
+        LOGGER.info("add edges in %.3fs", (endTime - startTime) / 1000);
+    }
+
+    private void benchmarkFindVerticesById(Random random, int vertexCount, int findVerticesByIdCount) {
+        double startTime = System.currentTimeMillis();
+        for (int i = 0; i < findVerticesByIdCount; i++) {
+            String vertexId = "v" + random.nextInt(vertexCount);
+            graph.getVertex(vertexId, AUTHORIZATIONS_ALL);
+        }
+        graph.flush();
+        double endTime = System.currentTimeMillis();
+        LOGGER.info("find vertices by id in %.3fs", (endTime - startTime) / 1000);
+    }
+
+    private boolean benchmarkEnabled() {
+        return Boolean.parseBoolean(System.getProperty("benchmark", "false"));
     }
 
     private List<Vertex> getVertices(long count) {

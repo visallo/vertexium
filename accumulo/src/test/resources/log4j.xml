@@ -15,7 +15,7 @@
     </appender>
 
     <logger name="org.vertexium" additivity="false">
-        <level value="TRACE" />
+        <level value="DEBUG" />
         <appender-ref ref="console" />
     </logger>
     <root>

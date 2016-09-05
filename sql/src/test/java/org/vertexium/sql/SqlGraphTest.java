@@ -5,10 +5,14 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
-import org.vertexium.*;
+import org.vertexium.Authorizations;
+import org.vertexium.Graph;
+import org.vertexium.GraphConfiguration;
+import org.vertexium.GraphFactory;
 import org.vertexium.id.UUIDIdGenerator;
 import org.vertexium.inmemory.InMemoryAuthorizations;
 import org.vertexium.search.DefaultSearchIndex;
+import org.vertexium.serializer.kryo.QuickKryoVertexiumSerializer;
 import org.vertexium.test.GraphTestBase;
 
 import java.io.File;
@@ -34,7 +38,7 @@ public class SqlGraphTest extends GraphTestBase {
         config.put("sql.password", "password");
         config.put(GraphConfiguration.IDGENERATOR_PROP_PREFIX, UUIDIdGenerator.class.getName());
         config.put(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX, DefaultSearchIndex.class.getName());
-        config.put(GraphConfiguration.SERIALIZER, JavaVertexiumSerializer.class.getName());
+        config.put(GraphConfiguration.SERIALIZER, QuickKryoVertexiumSerializer.class.getName());
 
         super.before();
     }
