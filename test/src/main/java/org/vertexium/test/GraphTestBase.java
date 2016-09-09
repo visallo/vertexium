@@ -2822,6 +2822,10 @@ public abstract class GraphTestBase {
         edges = v1.query(AUTHORIZATIONS_A).hasEdgeLabel("edgeA").edges();
         Assert.assertEquals(1, count(edges));
         org.vertexium.test.util.IterableUtils.assertContains(ev1v2, edges);
+
+        vertices = v1.query(AUTHORIZATIONS_A).hasEdgeLabel("edgeA").vertices();
+        Assert.assertEquals(1, count(vertices));
+        org.vertexium.test.util.IterableUtils.assertContains(v2, vertices);
     }
 
     @Test
