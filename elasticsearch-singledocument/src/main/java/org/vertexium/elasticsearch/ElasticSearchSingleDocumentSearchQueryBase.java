@@ -204,7 +204,8 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
                 throw new VertexiumException("Unexpected type " + has.getClass().getName());
             }
         }
-        if (getParameters().getEdgeLabels().size() > 0) {
+        if ((elementType == null || elementType == ElasticSearchElementType.EDGE)
+                && getParameters().getEdgeLabels().size() > 0) {
             String[] edgeLabelsArray = getParameters().getEdgeLabels().toArray(new String[getParameters().getEdgeLabels().size()]);
             filters.add(FilterBuilders.inFilter(ElasticsearchSingleDocumentSearchIndex.EDGE_LABEL_FIELD_NAME, edgeLabelsArray));
         }

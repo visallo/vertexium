@@ -3,6 +3,7 @@ package org.vertexium.query;
 import org.vertexium.*;
 
 import java.util.EnumSet;
+import java.util.List;
 
 public class DefaultVertexQuery extends VertexQueryBase implements VertexQuery {
     public DefaultVertexQuery(Graph graph, Vertex sourceVertex, String queryString, Authorizations authorizations) {
@@ -11,7 +12,16 @@ public class DefaultVertexQuery extends VertexQueryBase implements VertexQuery {
 
     @Override
     public QueryResultsIterable<Vertex> vertices(EnumSet<FetchHint> fetchHints) {
-        Iterable<Vertex> vertices = getSourceVertex().getVertices(Direction.BOTH, fetchHints, getParameters().getAuthorizations());
+        List<String> edgeLabels = getParameters().getEdgeLabels();
+        String[] edgeLabelsArray = edgeLabels == null || edgeLabels.size() == 0
+                ? null
+                : edgeLabels.toArray(new String[edgeLabels.size()]);
+        Iterable<Vertex> vertices = getSourceVertex().getVertices(
+                Direction.BOTH,
+                edgeLabelsArray,
+                fetchHints,
+                getParameters().getAuthorizations()
+        );
         return new DefaultGraphQueryIterableWithAggregations<>(getParameters(), vertices, true, true, true, getAggregations());
     }
 

@@ -35,7 +35,16 @@ public class ElasticSearchSingleDocumentSearchVertexQuery extends ElasticSearchS
     protected List<FilterBuilder> getFilters(ElasticSearchElementType elementType) {
         List<FilterBuilder> results = super.getFilters(elementType);
         if (elementType.equals(ElasticSearchElementType.VERTEX)) {
-            String[] ids = toArray(sourceVertex.getVertexIds(Direction.BOTH, getParameters().getAuthorizations()), String.class);
+            List<String> edgeLabels = getParameters().getEdgeLabels();
+            String[] edgeLabelsArray = edgeLabels == null || edgeLabels.size() == 0
+                    ? null
+                    : edgeLabels.toArray(new String[edgeLabels.size()]);
+            Iterable<String> vertexIds = sourceVertex.getVertexIds(
+                    Direction.BOTH,
+                    edgeLabelsArray,
+                    getParameters().getAuthorizations()
+            );
+            String[] ids = toArray(vertexIds, String.class);
             results.add(FilterBuilders.idsFilter().ids(ids));
         } else if (elementType.equals(ElasticSearchElementType.EDGE)) {
             FilterBuilder inVertexIdFilter = FilterBuilders.termFilter(ElasticsearchSingleDocumentSearchIndex.IN_VERTEX_ID_FIELD_NAME, sourceVertex.getId());
