@@ -1,3 +1,8 @@
+# v2.4.5
+
+* Added: Vertex.query limited by connected edge labels
+* Fixed: Memory leak when using compression in serializer
+
 # v2.4.4
 
 * Quick Kryo Serializer: add support to compress the bytes after serialization
