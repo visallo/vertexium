@@ -36,7 +36,11 @@ public class QuickKryoVertexiumSerializer implements VertexiumSerializer {
     }};
 
     public QuickKryoVertexiumSerializer(GraphConfiguration config) {
-        enableCompression = config.getBoolean(CONFIG_COMPRESS, CONFIG_COMPRESS_DEFAULT);
+        this(config.getBoolean(CONFIG_COMPRESS, CONFIG_COMPRESS_DEFAULT));
+    }
+
+    public QuickKryoVertexiumSerializer(boolean enableCompression) {
+        this.enableCompression = enableCompression;
     }
 
     @Override
@@ -72,8 +76,8 @@ public class QuickKryoVertexiumSerializer implements VertexiumSerializer {
             return bytes;
         }
 
+        Deflater deflater = new Deflater(Deflater.BEST_COMPRESSION);
         try {
-            Deflater deflater = new Deflater(Deflater.BEST_COMPRESSION);
             deflater.setInput(bytes);
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream(bytes.length);
             deflater.finish();
@@ -86,6 +90,8 @@ public class QuickKryoVertexiumSerializer implements VertexiumSerializer {
             return outputStream.toByteArray();
         } catch (Exception ex) {
             throw new VertexiumException("Could not compress bytes", ex);
+        } finally {
+            deflater.end();
         }
     }
 
@@ -94,8 +100,8 @@ public class QuickKryoVertexiumSerializer implements VertexiumSerializer {
             return bytes;
         }
 
+        Inflater inflater = new Inflater();
         try {
-            Inflater inflater = new Inflater();
             inflater.setInput(bytes);
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream(bytes.length);
             byte[] buffer = new byte[1024];
@@ -108,6 +114,8 @@ public class QuickKryoVertexiumSerializer implements VertexiumSerializer {
             return outputStream.toByteArray();
         } catch (Exception ex) {
             throw new VertexiumException("Could not decompress bytes", ex);
+        } finally {
+            inflater.end();
         }
     }
 }
