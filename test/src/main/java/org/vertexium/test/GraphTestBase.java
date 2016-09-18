@@ -1573,6 +1573,52 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    public void testAddEdgeWithNullInOutVertices() {
+        try {
+            String outVertexId = null;
+            String inVertexId = null;
+            getGraph().prepareEdge("e1", outVertexId, inVertexId, "label", VISIBILITY_EMPTY)
+                    .save(AUTHORIZATIONS_ALL);
+            fail("should throw an exception");
+        } catch (Exception ex) {
+            assertNotNull(ex);
+        }
+
+        try {
+            Vertex outVertex = null;
+            Vertex inVertex = null;
+            getGraph().prepareEdge("e1", outVertex, inVertex, "label", VISIBILITY_EMPTY)
+                    .save(AUTHORIZATIONS_ALL);
+            fail("should throw an exception");
+        } catch (Exception ex) {
+            assertNotNull(ex);
+        }
+    }
+
+    @Test
+    public void testAddEdgeWithNullLabels() {
+        try {
+            String label = null;
+            getGraph().prepareEdge("e1", "v1", "v2", label, VISIBILITY_EMPTY)
+                    .save(AUTHORIZATIONS_ALL);
+            fail("should throw an exception");
+        } catch (Exception ex) {
+            assertNotNull(ex);
+        }
+
+        try {
+            String label = null;
+            Vertex outVertex = getGraph().addVertex("v1", VISIBILITY_EMPTY, AUTHORIZATIONS_ALL);
+            Vertex inVertex = getGraph().addVertex("v2", VISIBILITY_EMPTY, AUTHORIZATIONS_ALL);
+            getGraph().prepareEdge("e1", outVertex, inVertex, label, VISIBILITY_EMPTY)
+                    .save(AUTHORIZATIONS_ALL);
+            fail("should throw an exception");
+        } catch (Exception ex) {
+            assertNotNull(ex);
+        }
+    }
+
+    @Test
     public void testChangingPropertyOnEdge() {
         Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
         Vertex v2 = graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_A);

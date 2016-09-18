@@ -596,6 +596,9 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
 
     @Override
     public AccumuloEdgeBuilderByVertexId prepareEdge(String edgeId, String outVertexId, String inVertexId, String label, Long timestamp, Visibility visibility) {
+        checkNotNull(outVertexId, "outVertexId cannot be null");
+        checkNotNull(inVertexId, "inVertexId cannot be null");
+        checkNotNull(label, "label cannot be null");
         if (edgeId == null) {
             edgeId = getIdGenerator().nextId();
         }
@@ -630,12 +633,9 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
 
     @Override
     public EdgeBuilder prepareEdge(String edgeId, Vertex outVertex, Vertex inVertex, String label, Long timestamp, Visibility visibility) {
-        if (outVertex == null) {
-            throw new IllegalArgumentException("outVertex is required");
-        }
-        if (inVertex == null) {
-            throw new IllegalArgumentException("inVertex is required");
-        }
+        checkNotNull(outVertex, "outVertex cannot be null");
+        checkNotNull(inVertex, "inVertex cannot be null");
+        checkNotNull(label, "label cannot be null");
         if (edgeId == null) {
             edgeId = getIdGenerator().nextId();
         }

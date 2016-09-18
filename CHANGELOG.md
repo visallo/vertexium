@@ -3,6 +3,7 @@
 * Added: Vertex.query limited by connected edge labels
 * Fixed: Memory leak when using compression in serializer
 * Speed up Accumulo EdgeInfo and fix null conditions
+* Add validation for edge in/out vertices and label
 
 # v2.4.4
 
