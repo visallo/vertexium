@@ -4,7 +4,6 @@ import org.apache.accumulo.core.data.Value;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 // We are doing custom serialization to make this as fast as possible since this can get called many times
@@ -49,16 +48,41 @@ public class EdgeInfo {
 
     // fast access method to avoid creating a new instance of an EdgeInfo
     public static String getVertexId(Value value) {
-        ByteBuffer in = ByteBuffer.wrap(value.get());
-        readString(in); // skip label
-        return readString(in);
+        byte[] buffer = value.get();
+        int offset = 0;
+
+        // skip label
+        int strLen = readInt(buffer, offset);
+        offset += 4;
+        if (strLen > 0) {
+            offset += strLen;
+        }
+
+        strLen = readInt(buffer, offset);
+        return readString(buffer, offset, strLen);
     }
 
     private void decodeBytes() {
         if (!decoded) {
-            ByteBuffer in = ByteBuffer.wrap(this.bytes);
-            this.label = readString(in);
-            this.vertexId = readString(in);
+            int offset = 0;
+
+            int strLen = readInt(this.bytes, offset);
+            offset += 4;
+            if (strLen < 0) {
+                this.label = null;
+            } else {
+                this.label = readString(this.bytes, offset, strLen);
+                offset += strLen;
+            }
+
+            strLen = readInt(this.bytes, offset);
+            offset += 4;
+            if (strLen < 0) {
+                this.vertexId = null;
+            } else {
+                this.vertexId = readString(this.bytes, offset, strLen);
+            }
+
             this.decoded = true;
         }
     }
@@ -72,20 +96,6 @@ public class EdgeInfo {
         return Arrays.copyOfRange(this.bytes, 4, 4 + labelBytesLength);
     }
 
-    private static String readString(ByteBuffer in) {
-        int labelBytesLength = in.getInt();
-        if (labelBytesLength == -1) {
-            return null;
-        } else {
-            byte[] d = new byte[labelBytesLength];
-            in.get(d);
-            try {
-                return new String(d, CHARSET_NAME);
-            } catch (IOException ex) {
-                throw new VertexiumAccumuloIteratorException("Could not decode edge info", ex);
-            }
-        }
-    }
 
     public static EdgeInfo parse(Value value, long timestamp) {
         return new EdgeInfo(value.get(), timestamp);
@@ -113,24 +123,57 @@ public class EdgeInfo {
                     vertexIdBytes = vertexId.getBytes(CHARSET_NAME);
                     vertexIdBytesLength = vertexIdBytes.length;
                 }
-                int len = 4 + labelBytesLength + 4 + vertexIdBytesLength;
+                int len = 4 + Math.max(0, labelBytesLength) + 4 + Math.max(0, vertexIdBytesLength);
 
-                ByteBuffer buffer = ByteBuffer.allocate(len);
-                buffer.putInt(labelBytesLength);
+                byte[] buffer = new byte[len];
+                int offset = 0;
+
+                writeInt(labelBytesLength, buffer, offset);
+                offset += 4;
                 if (labelBytes != null) {
-                    buffer.put(labelBytes);
-                }
-                buffer.putInt(vertexIdBytesLength);
-                if (vertexIdBytes != null) {
-                    buffer.put(vertexIdBytes);
+                    System.arraycopy(labelBytes, 0, buffer, offset, labelBytesLength);
+                    offset += labelBytesLength;
                 }
 
-                this.bytes = buffer.array();
+                writeInt(vertexIdBytesLength, buffer, offset);
+                offset += 4;
+                if (vertexIdBytes != null) {
+                    System.arraycopy(vertexIdBytes, 0, buffer, offset, vertexIdBytesLength);
+                }
+
+                this.bytes = buffer;
             } catch (UnsupportedEncodingException ex) {
                 throw new VertexiumAccumuloIteratorException("Could not encode edge info", ex);
             }
         }
         return bytes;
+    }
+
+    private void writeInt(int value, byte[] buffer, int offset) {
+        buffer[offset++] = (byte) ((value >> 24) & 0xff);
+        buffer[offset++] = (byte) ((value >> 16) & 0xff);
+        buffer[offset++] = (byte) ((value >> 8) & 0xff);
+        buffer[offset] = (byte) (value & 0xff);
+    }
+
+    private static int readInt(byte[] buffer, int offset) {
+        return (buffer[offset] << 24)
+                | (buffer[offset + 1] << 16)
+                | (buffer[offset + 2] << 8)
+                | (buffer[offset + 3]);
+    }
+
+    private static String readString(byte[] buffer, int offset, int length) {
+        if (length < 0) {
+            return null;
+        }
+        byte[] d = new byte[length];
+        System.arraycopy(buffer, offset, d, 0, length);
+        try {
+            return new String(d, CHARSET_NAME);
+        } catch (IOException ex) {
+            throw new VertexiumAccumuloIteratorException("Could not decode edge info", ex);
+        }
     }
 
     public Value toValue() {
