@@ -2,8 +2,8 @@ package org.vertexium.elasticsearch;
 
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
-import net.jodah.recurrent.Recurrent;
-import net.jodah.recurrent.RetryPolicy;
+import org.elasticsearch.action.ActionRequestBuilder;
+import org.elasticsearch.action.ListenableActionFuture;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthStatus;
 import org.elasticsearch.action.admin.indices.create.CreateIndexResponse;
@@ -17,9 +17,8 @@ import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchType;
 import org.elasticsearch.action.update.UpdateRequest;
-import org.elasticsearch.action.update.UpdateResponse;
+import org.elasticsearch.action.update.UpdateRequestBuilder;
 import org.elasticsearch.client.Client;
-import org.elasticsearch.client.Requests;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.cluster.metadata.MappingMetaData;
 import org.elasticsearch.common.collect.ImmutableOpenMap;
@@ -29,7 +28,6 @@ import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
-import org.elasticsearch.index.engine.VersionConflictEngineException;
 import org.elasticsearch.index.query.FilteredQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.TermFilterBuilder;
@@ -59,7 +57,6 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -96,7 +93,7 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
     public static final Class<? extends PropertyNameVisibilitiesStore> DEFAULT_PROPERTY_NAME_VISIBILITIES_STORE = MetadataTablePropertyNameVisibilitiesStore.class;
     private final NameSubstitutionStrategy nameSubstitutionStrategy;
     private final PropertyNameVisibilitiesStore propertyNameVisibilitiesStore;
-    private final Random random = new Random();
+    private final ThreadLocal<Queue<FlushObject>> flushFutures = new ThreadLocal<>();
 
     public ElasticsearchSingleDocumentSearchIndex(Graph graph, GraphConfiguration config) {
         this.config = new ElasticSearchSearchIndexConfiguration(graph, config);
@@ -343,43 +340,12 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
                 MUTATION_LOGGER.trace("addElement json: %s: %s", element.getId(), source.string());
             }
 
-            final AtomicInteger retryCount = new AtomicInteger(0);
-
-            Runnable update = new Runnable() {
-                public void run() {
-                    if (retryCount.get() > 0) {
-                        LOGGER.info("Retrying (%d of %d) due to ES version conflict for document id: %s", retryCount.get(), MAX_RETRIES, element.getId());
-                        getClient().get(Requests.getRequest(indexInfo.getIndexName())
-                                .id(element.getId())
-                                .type(ELEMENT_TYPE)
-                                .refresh(true))
-                                .actionGet();
-                    }
-
-                    try {
-                        UpdateResponse response = getClient()
-                                .prepareUpdate(indexInfo.getIndexName(), ELEMENT_TYPE, element.getId())
-                                .setDocAsUpsert(true)
-                                .setDoc(source)
-                                .execute()
-                                .actionGet();
-                        if (response.getId() == null) {
-                            throw new VertexiumException("Could not index document id: " + element.getId());
-                        }
-                    } catch (VersionConflictEngineException e) {
-                        LOGGER.warn("ES version conflict detected for document id: %s", element.getId());
-                        retryCount.incrementAndGet();
-                        throw e;
-                    }
-                }
-            };
-
-            RetryPolicy retryPolicy = new RetryPolicy()
-                    .retryOn(VersionConflictEngineException.class)
-                    .withDelay(100 + random.nextInt(50), TimeUnit.MILLISECONDS)
-                    .withMaxRetries(MAX_RETRIES);
-
-            Recurrent.run(update, retryPolicy);
+            UpdateRequestBuilder updateRequestBuilder = getClient()
+                    .prepareUpdate(indexInfo.getIndexName(), ELEMENT_TYPE, element.getId())
+                    .setDocAsUpsert(true)
+                    .setDoc(source)
+                    .setRetryOnConflict(MAX_RETRIES);
+            addActionRequestBuilderForFlush(element.getId(), updateRequestBuilder);
 
             if (getConfig().isAutoFlush()) {
                 flush(graph);
@@ -389,6 +355,20 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
         }
 
         getConfig().getScoringStrategy().addElement(this, graph, element, authorizations);
+    }
+
+    private void addActionRequestBuilderForFlush(String elementId, UpdateRequestBuilder updateRequestBuilder) {
+        ListenableActionFuture future = updateRequestBuilder.execute();
+        getFlushObjectQueue().add(new FlushObject(elementId, updateRequestBuilder, future, 0));
+    }
+
+    private Queue<FlushObject> getFlushObjectQueue() {
+        Queue<FlushObject> queue = flushFutures.get();
+        if (queue == null) {
+            queue = new LinkedList<>();
+            flushFutures.set(queue);
+        }
+        return queue;
     }
 
     @Override
@@ -406,7 +386,8 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
                 .setType(ELEMENT_TYPE)
                 .setScript(
                         "ctx._source.remove(oldFieldName);",
-                        ScriptService.ScriptType.INLINE)
+                        ScriptService.ScriptType.INLINE
+                )
                 .setScriptParams(ImmutableMap.<String, Object>of(
                         "oldFieldName", oldFieldName
                 ))
@@ -684,7 +665,8 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
                 getConfig().getScoringStrategy(),
                 getIndexSelectionStrategy(),
                 getConfig().getQueryPageSize(),
-                authorizations);
+                authorizations
+        );
     }
 
     @Override
@@ -697,7 +679,8 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
                 getConfig().getScoringStrategy(),
                 getIndexSelectionStrategy(),
                 getConfig().getQueryPageSize(),
-                authorizations);
+                authorizations
+        );
     }
 
     @Override
@@ -710,7 +693,8 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
                 getConfig().getScoringStrategy(),
                 getIndexSelectionStrategy(),
                 getConfig().getQueryPageSize(),
-                authorizations);
+                authorizations
+        );
     }
 
     @Override
@@ -1001,7 +985,8 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
                 .setType(ELEMENT_TYPE)
                 .setScript(
                         "ctx._source.remove(fieldName); ctx._source.remove(fieldName + '_e')",
-                        ScriptService.ScriptType.INLINE)
+                        ScriptService.ScriptType.INLINE
+                )
                 .setScriptParams(ImmutableMap.<String, Object>of("fieldName", fieldName))
                 .get();
     }
@@ -1055,7 +1040,28 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
 
     @Override
     public void flush(Graph graph) {
+        flushFlushObjectQueue();
         client.admin().indices().prepareRefresh(getIndexNamesAsArray(graph)).execute().actionGet();
+    }
+
+    private void flushFlushObjectQueue() {
+        Queue<FlushObject> queue = getFlushObjectQueue();
+        while (queue.size() > 0) {
+            FlushObject flushObject = queue.remove();
+            try {
+                flushObject.future.get(30, TimeUnit.SECONDS);
+            } catch (Exception ex) {
+                LOGGER.error("Could not get value from future", ex);
+                String message = String.format("Could not write element \"%s\"", flushObject.elementId);
+                if (flushObject.retryCount >= MAX_RETRIES) {
+                    throw new VertexiumException(message, ex);
+                }
+                LOGGER.warn("%s: %s (retying: %d/%d)", message, ex.getMessage(), flushObject.retryCount + 1, MAX_RETRIES);
+                ListenableActionFuture future = flushObject.actionRequestBuilder.execute();
+                queue.add(new FlushObject(flushObject.elementId, flushObject.actionRequestBuilder, future, flushObject.retryCount + 1));
+            }
+        }
+        queue.clear();
     }
 
     protected String[] getIndexNamesAsArray(Graph graph) {
@@ -1336,5 +1342,24 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
             }
         }
         return false;
+    }
+
+    private class FlushObject {
+        public final String elementId;
+        public final ActionRequestBuilder actionRequestBuilder;
+        public final ListenableActionFuture future;
+        public final int retryCount;
+
+        FlushObject(
+                String elementId,
+                ActionRequestBuilder actionRequestBuilder,
+                ListenableActionFuture future,
+                int retryCount
+        ) {
+            this.elementId = elementId;
+            this.actionRequestBuilder = actionRequestBuilder;
+            this.future = future;
+            this.retryCount = retryCount;
+        }
     }
 }
