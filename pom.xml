@@ -350,7 +350,6 @@
         <module>examples</module>
         <module>cli</module>
         <module>test</module>
-        <module>benchmark</module>
         <module>dist</module>
 
         <module>accumulo</module>
