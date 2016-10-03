@@ -1,6 +1,7 @@
 # v2.4.6
 
 * Added: Optional benchmarks unit test
+* Changed: ElasticSearch: asynchronously submit element updates
 
 # v2.4.5
 
