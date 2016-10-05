@@ -5,12 +5,15 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class Metadata implements Serializable {
     static final long serialVersionUID = 42L;
     public static final String KEY_SEPARATOR = "\u001f";
 
     private final Map<String, Entry> entries;
+    private final transient ReadWriteLock entiresLock = new ReentrantReadWriteLock();
 
     public Metadata() {
         entries = new HashMap<>();
@@ -24,56 +27,96 @@ public class Metadata implements Serializable {
     }
 
     public Metadata add(String key, Object value, Visibility visibility) {
-        entries.put(toMapKey(key, visibility), new Entry(key, value, visibility));
-        return this;
+        entiresLock.writeLock().lock();
+        try {
+            entries.put(toMapKey(key, visibility), new Entry(key, value, visibility));
+            return this;
+        } finally {
+            entiresLock.writeLock().unlock();
+        }
     }
 
     public void remove(String key, Visibility visibility) {
-        entries.remove(toMapKey(key, visibility));
+        entiresLock.writeLock().lock();
+        try {
+            entries.remove(toMapKey(key, visibility));
+        } finally {
+            entiresLock.writeLock().unlock();
+        }
     }
 
     public void clear() {
-        entries.clear();
+        entiresLock.writeLock().lock();
+        try {
+            entries.clear();
+        } finally {
+            entiresLock.writeLock().unlock();
+        }
     }
 
     public void remove(String key) {
-        for (Map.Entry<String, Entry> e : new ArrayList<>(entries.entrySet())) {
-            if (e.getValue().getKey().equals(key)) {
-                entries.remove(e.getKey());
+        entiresLock.writeLock().lock();
+        try {
+            for (Map.Entry<String, Entry> e : new ArrayList<>(entries.entrySet())) {
+                if (e.getValue().getKey().equals(key)) {
+                    entries.remove(e.getKey());
+                }
             }
+        } finally {
+            entiresLock.writeLock().unlock();
         }
     }
 
     public Collection<Entry> entrySet() {
-        return entries.values();
+        entiresLock.readLock().lock();
+        try {
+            return new ArrayList<>(entries.values());
+        } finally {
+            entiresLock.readLock().unlock();
+        }
     }
 
     public Entry getEntry(String key, Visibility visibility) {
-        return entries.get(toMapKey(key, visibility));
+        entiresLock.readLock().lock();
+        try {
+            return entries.get(toMapKey(key, visibility));
+        } finally {
+            entiresLock.readLock().unlock();
+        }
     }
 
     public Entry getEntry(String key) {
-        Entry entry = null;
-        for (Map.Entry<String, Entry> e : entries.entrySet()) {
-            if (e.getValue().getKey().equals(key)) {
-                if (entry != null) {
-                    throw new VertexiumException("Multiple matching entries for key: " + key);
+        entiresLock.readLock().lock();
+        try {
+            Entry entry = null;
+            for (Map.Entry<String, Entry> e : entries.entrySet()) {
+                if (e.getValue().getKey().equals(key)) {
+                    if (entry != null) {
+                        throw new VertexiumException("Multiple matching entries for key: " + key);
+                    }
+                    entry = e.getValue();
                 }
-                entry = e.getValue();
             }
+            return entry;
+        } finally {
+            entiresLock.readLock().unlock();
         }
-        return entry;
     }
 
     public Collection<Entry> getEntries(String key) {
-        Collection<Entry> results = new ArrayList<>();
-        for (Map.Entry<String, Entry> e : entries.entrySet()) {
-            if (e.getValue().getKey().equals(key)) {
-                Entry entry = e.getValue();
-                results.add(entry);
+        entiresLock.readLock().lock();
+        try {
+            Collection<Entry> results = new ArrayList<>();
+            for (Map.Entry<String, Entry> e : entries.entrySet()) {
+                if (e.getValue().getKey().equals(key)) {
+                    Entry entry = e.getValue();
+                    results.add(entry);
+                }
             }
+            return results;
+        } finally {
+            entiresLock.readLock().unlock();
         }
-        return results;
     }
 
     public Object getValue(String key, Visibility visibility) {
@@ -102,12 +145,17 @@ public class Metadata implements Serializable {
     }
 
     public boolean containsKey(String key) {
-        for (Map.Entry<String, Entry> e : entries.entrySet()) {
-            if (e.getValue().getKey().equals(key)) {
-                return true;
+        entiresLock.readLock().lock();
+        try {
+            for (Map.Entry<String, Entry> e : entries.entrySet()) {
+                if (e.getValue().getKey().equals(key)) {
+                    return true;
+                }
             }
+            return false;
+        } finally {
+            entiresLock.readLock().unlock();
         }
-        return false;
     }
 
     public boolean contains(String key, Visibility visibility) {

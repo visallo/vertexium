@@ -3,6 +3,7 @@
 * Added: Optional benchmarks unit test
 * Changed: ElasticSearch: asynchronously submit element updates
 * Changed: AccumuloGraph to use MultiTableBatchWriter
+* Changed: org.vertexium.Metadata accesses are now protected with ReadWriteLock
 
 # v2.4.5
 
