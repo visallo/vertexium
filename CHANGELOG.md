@@ -2,6 +2,7 @@
 
 * Added: Optional benchmarks unit test
 * Changed: ElasticSearch: asynchronously submit element updates
+* Changed: AccumuloGraph to use MultiTableBatchWriter
 
 # v2.4.5
 
