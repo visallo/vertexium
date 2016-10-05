@@ -1056,7 +1056,12 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
                 if (flushObject.retryCount >= MAX_RETRIES) {
                     throw new VertexiumException(message, ex);
                 }
-                LOGGER.warn("%s: %s (retying: %d/%d)", message, ex.getMessage(), flushObject.retryCount + 1, MAX_RETRIES);
+                String logMessage = String.format("%s: %s (retying: %d/%d)", message, ex.getMessage(), flushObject.retryCount + 1, MAX_RETRIES);
+                if (flushObject.retryCount > 0) {
+                    LOGGER.warn("%s", logMessage);
+                } else {
+                    LOGGER.debug("%s", logMessage);
+                }
                 ListenableActionFuture future = flushObject.actionRequestBuilder.execute();
                 queue.add(new FlushObject(flushObject.elementId, flushObject.actionRequestBuilder, future, flushObject.retryCount + 1));
             }
