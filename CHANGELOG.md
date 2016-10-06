@@ -4,6 +4,7 @@
 * Changed: ElasticSearch: asynchronously submit element updates
 * Changed: AccumuloGraph to use MultiTableBatchWriter
 * Changed: org.vertexium.Metadata accesses are now protected with ReadWriteLock
+* Fixed: More checks for null vertex ids or labels when creating edges
 
 # v2.4.5
 

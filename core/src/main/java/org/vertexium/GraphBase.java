@@ -661,6 +661,9 @@ public abstract class GraphBase implements Graph {
             Iterable<EdgeInfo> edgeInfos = outVertex.getEdgeInfos(Direction.OUT, authorizations);
             for (EdgeInfo edgeInfo : edgeInfos) {
                 for (Vertex inVertex : vertices) {
+                    if (edgeInfo.getVertexId() == null) { // This check is for legacy data. null EdgeInfo.vertexIds are no longer permitted
+                        continue;
+                    }
                     if (edgeInfo.getVertexId().equals(inVertex.getId())) {
                         results.add(edgeInfo.getEdgeId());
                     }

@@ -25,6 +25,12 @@ public class EdgeInfo {
     }
 
     public EdgeInfo(String label, String vertexId, long timestamp) {
+        if (label == null) {
+            throw new IllegalArgumentException("label cannot be null");
+        }
+        if (vertexId == null) {
+            throw new IllegalArgumentException("vertexId cannot be null");
+        }
         this.label = label;
         this.vertexId = vertexId;
         this.timestamp = timestamp;
@@ -68,20 +74,12 @@ public class EdgeInfo {
 
             int strLen = readInt(this.bytes, offset);
             offset += 4;
-            if (strLen < 0) {
-                this.label = null;
-            } else {
-                this.label = readString(this.bytes, offset, strLen);
-                offset += strLen;
-            }
+            this.label = readString(this.bytes, offset, strLen);
+            offset += strLen;
 
             strLen = readInt(this.bytes, offset);
             offset += 4;
-            if (strLen < 0) {
-                this.vertexId = null;
-            } else {
-                this.vertexId = readString(this.bytes, offset, strLen);
-            }
+            this.vertexId = readString(this.bytes, offset, strLen);
 
             this.decoded = true;
         }
@@ -89,13 +87,9 @@ public class EdgeInfo {
 
     public byte[] getLabelBytes() {
         // Used to use ByteBuffer here but it was to slow
-        int labelBytesLength = (((int) this.bytes[0]) << 24) + (((int) this.bytes[1]) << 16) + (((int) this.bytes[2]) << 8) + ((int) this.bytes[3]);
-        if (labelBytesLength == -1) {
-            return null;
-        }
+        int labelBytesLength = readInt(this.bytes, 0);
         return Arrays.copyOfRange(this.bytes, 4, 4 + labelBytesLength);
     }
-
 
     public static EdgeInfo parse(Value value, long timestamp) {
         return new EdgeInfo(value.get(), timestamp);
@@ -104,26 +98,12 @@ public class EdgeInfo {
     public byte[] getBytes() {
         if (bytes == null) {
             try {
-                byte[] labelBytes;
-                int labelBytesLength;
-                if (label == null) {
-                    labelBytes = null;
-                    labelBytesLength = -1;
-                } else {
-                    labelBytes = label.getBytes(CHARSET_NAME);
-                    labelBytesLength = labelBytes.length;
-                }
+                byte[] labelBytes = label.getBytes(CHARSET_NAME);
+                int labelBytesLength = labelBytes.length;
 
-                byte[] vertexIdBytes;
-                int vertexIdBytesLength;
-                if (vertexId == null) {
-                    vertexIdBytes = null;
-                    vertexIdBytesLength = -1;
-                } else {
-                    vertexIdBytes = vertexId.getBytes(CHARSET_NAME);
-                    vertexIdBytesLength = vertexIdBytes.length;
-                }
-                int len = 4 + Math.max(0, labelBytesLength) + 4 + Math.max(0, vertexIdBytesLength);
+                byte[] vertexIdBytes = vertexId.getBytes(CHARSET_NAME);
+                int vertexIdBytesLength = vertexIdBytes.length;
+                int len = 4 + labelBytesLength + 4 + vertexIdBytesLength;
 
                 byte[] buffer = new byte[len];
                 int offset = 0;
@@ -157,16 +137,13 @@ public class EdgeInfo {
     }
 
     private static int readInt(byte[] buffer, int offset) {
-        return (buffer[offset] << 24)
-                | (buffer[offset + 1] << 16)
-                | (buffer[offset + 2] << 8)
-                | (buffer[offset + 3]);
+        return ((buffer[offset] & 0xff) << 24)
+                | ((buffer[offset + 1] & 0xff) << 16)
+                | ((buffer[offset + 2] & 0xff) << 8)
+                | ((buffer[offset + 3] & 0xff));
     }
 
     private static String readString(byte[] buffer, int offset, int length) {
-        if (length < 0) {
-            return null;
-        }
         byte[] d = new byte[length];
         System.arraycopy(buffer, offset, d, 0, length);
         try {

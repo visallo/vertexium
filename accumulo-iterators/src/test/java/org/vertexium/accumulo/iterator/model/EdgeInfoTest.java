@@ -7,11 +7,9 @@ import static org.junit.Assert.assertEquals;
 public class EdgeInfoTest {
     @Test
     public void testBytes() {
-        serializeDeserialize(null, null);
         serializeDeserialize("", "");
-        serializeDeserialize("label", null);
-        serializeDeserialize(null, "vertexId");
         serializeDeserialize("label", "vertexId");
+        serializeDeserialize(new String(new char[5000]).replace('\0', 'a'), new String(new char[5000]).replace('\0', 'b'));
     }
 
     private void serializeDeserialize(String label, String vertexId) {
