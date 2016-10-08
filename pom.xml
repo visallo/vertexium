@@ -89,10 +89,10 @@
         <jts.version>1.13</jts.version>
 
         <!-- used by: accumulo* -->
-        <accumulo.version>1.6.1</accumulo.version>
+        <accumulo.version>1.6.6</accumulo.version>
         <zookeeper.version>3.4.5</zookeeper.version>
-        <curator.version>2.8.0</curator.version>
-        <hadoop.version>2.3.0</hadoop.version>
+        <curator.version>2.11.0</curator.version>
+        <hadoop.version>2.6.0</hadoop.version>
 
         <!-- used by: examples-base -->
         <webster.version>1.0.0</webster.version>
