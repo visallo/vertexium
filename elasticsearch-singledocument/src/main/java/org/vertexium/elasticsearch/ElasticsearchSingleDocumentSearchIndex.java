@@ -78,7 +78,7 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
     public static final long MAX_BATCH_SIZE = 15 * 1024 * 1024;
     public static final int EXACT_MATCH_IGNORE_ABOVE_LIMIT = 10000;
     private static final long IN_PROCESS_NODE_WAIT_TIME_MS = 10 * 60 * 1000;
-    private static final int MAX_RETRIES = 3;
+    private static final int MAX_RETRIES = 10;
     private final Client client;
     private final ElasticSearchSearchIndexConfiguration config;
     private Map<String, IndexInfo> indexInfos;
@@ -94,6 +94,7 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
     private final NameSubstitutionStrategy nameSubstitutionStrategy;
     private final PropertyNameVisibilitiesStore propertyNameVisibilitiesStore;
     private final ThreadLocal<Queue<FlushObject>> flushFutures = new ThreadLocal<>();
+    private final Random random = new Random();
 
     public ElasticsearchSingleDocumentSearchIndex(Graph graph, GraphConfiguration config) {
         this.config = new ElasticSearchSearchIndexConfiguration(graph, config);
@@ -359,7 +360,7 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
 
     private void addActionRequestBuilderForFlush(String elementId, UpdateRequestBuilder updateRequestBuilder) {
         ListenableActionFuture future = updateRequestBuilder.execute();
-        getFlushObjectQueue().add(new FlushObject(elementId, updateRequestBuilder, future, 0));
+        getFlushObjectQueue().add(new FlushObject(elementId, updateRequestBuilder, future));
     }
 
     private Queue<FlushObject> getFlushObjectQueue() {
@@ -1049,6 +1050,10 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
         while (queue.size() > 0) {
             FlushObject flushObject = queue.remove();
             try {
+                long t = flushObject.retryTime - System.currentTimeMillis();
+                if (t > 0) {
+                    Thread.sleep(t);
+                }
                 flushObject.future.get(30, TimeUnit.SECONDS);
             } catch (Exception ex) {
                 String message = String.format("Could not write element \"%s\"", flushObject.elementId);
@@ -1056,13 +1061,19 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
                     throw new VertexiumException(message, ex);
                 }
                 String logMessage = String.format("%s: %s (retying: %d/%d)", message, ex.getMessage(), flushObject.retryCount + 1, MAX_RETRIES);
-                if (flushObject.retryCount > 0) {
+                if (flushObject.retryCount > 0) { // don't log warn the first time
                     LOGGER.warn("%s", logMessage);
                 } else {
                     LOGGER.debug("%s", logMessage);
                 }
                 ListenableActionFuture future = flushObject.actionRequestBuilder.execute();
-                queue.add(new FlushObject(flushObject.elementId, flushObject.actionRequestBuilder, future, flushObject.retryCount + 1));
+                queue.add(new FlushObject(
+                        flushObject.elementId,
+                        flushObject.actionRequestBuilder,
+                        future,
+                        flushObject.retryCount + 1,
+                        System.currentTimeMillis() + (flushObject.retryCount * 100) + random.nextInt(500)
+                ));
             }
         }
         queue.clear();
@@ -1353,17 +1364,28 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
         public final ActionRequestBuilder actionRequestBuilder;
         public final ListenableActionFuture future;
         public final int retryCount;
+        private final long retryTime;
+
+        FlushObject(
+                String elementId,
+                UpdateRequestBuilder updateRequestBuilder,
+                ListenableActionFuture future
+        ) {
+            this(elementId, updateRequestBuilder, future, 0, System.currentTimeMillis());
+        }
 
         FlushObject(
                 String elementId,
                 ActionRequestBuilder actionRequestBuilder,
                 ListenableActionFuture future,
-                int retryCount
+                int retryCount,
+                long retryTime
         ) {
             this.elementId = elementId;
             this.actionRequestBuilder = actionRequestBuilder;
             this.future = future;
             this.retryCount = retryCount;
+            this.retryTime = retryTime;
         }
     }
 }
