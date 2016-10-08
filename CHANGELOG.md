@@ -5,6 +5,7 @@
 * Changed: AccumuloGraph to use MultiTableBatchWriter
 * Changed: org.vertexium.Metadata accesses are now protected with ReadWriteLock
 * Fixed: More checks for null vertex ids or labels when creating edges
+* Changed: Upgrade elasticsearch version to 1.7.5
 
 # v2.4.5
 
