@@ -1051,7 +1051,6 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
             try {
                 flushObject.future.get(30, TimeUnit.SECONDS);
             } catch (Exception ex) {
-                LOGGER.error("Could not get value from future", ex);
                 String message = String.format("Could not write element \"%s\"", flushObject.elementId);
                 if (flushObject.retryCount >= MAX_RETRIES) {
                     throw new VertexiumException(message, ex);
