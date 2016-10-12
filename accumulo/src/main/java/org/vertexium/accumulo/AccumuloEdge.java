@@ -12,6 +12,7 @@ import org.vertexium.accumulo.util.DataInputStreamUtils;
 import org.vertexium.mutation.ExistingEdgeMutation;
 import org.vertexium.mutation.PropertyDeleteMutation;
 import org.vertexium.mutation.PropertySoftDeleteMutation;
+import org.vertexium.util.IterableUtils;
 
 import javax.annotation.Nullable;
 import java.io.ByteArrayInputStream;
@@ -19,6 +20,7 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Map;
 
 public class AccumuloEdge extends AccumuloElement implements Edge {
@@ -156,6 +158,18 @@ public class AccumuloEdge extends AccumuloElement implements Edge {
     @Override
     public Vertex getOtherVertex(String myVertexId, EnumSet<FetchHint> fetchHints, Authorizations authorizations) {
         return getGraph().getVertex(getOtherVertexId(myVertexId), fetchHints, authorizations);
+    }
+
+    @Override
+    public EdgeVertices getVertices(Authorizations authorizations) {
+        List<String> ids = new ArrayList<>();
+        ids.add(getVertexId(Direction.OUT));
+        ids.add(getVertexId(Direction.IN));
+        Map<String, Vertex> vertices = IterableUtils.toMapById(getGraph().getVertices(ids, authorizations));
+        return new EdgeVertices(
+                vertices.get(getVertexId(Direction.OUT)),
+                vertices.get(getVertexId(Direction.IN))
+        );
     }
 
     @Override

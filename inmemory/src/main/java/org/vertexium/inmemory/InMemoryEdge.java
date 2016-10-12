@@ -71,6 +71,14 @@ public class InMemoryEdge extends InMemoryElement<InMemoryEdge> implements Edge 
     }
 
     @Override
+    public EdgeVertices getVertices(Authorizations authorizations) {
+        return new EdgeVertices(
+                getVertex(Direction.OUT, authorizations),
+                getVertex(Direction.IN, authorizations)
+        );
+    }
+
+    @Override
     @SuppressWarnings("unchecked")
     public ExistingEdgeMutation prepareMutation() {
         return new ExistingEdgeMutation(this) {

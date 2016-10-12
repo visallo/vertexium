@@ -56,6 +56,11 @@ public interface Edge extends Element {
     Vertex getOtherVertex(String myVertexId, EnumSet<FetchHint> fetchHints, Authorizations authorizations);
 
     /**
+     * Gets both in and out vertices of this edge.
+     */
+    EdgeVertices getVertices(Authorizations authorizations);
+
+    /**
      * Prepares a mutation to allow changing multiple property values at the same time. This method is similar to
      * Graph#prepareEdge(Visibility, Authorizations)
      * in that it allows multiple properties to be changed and saved in a single mutation.

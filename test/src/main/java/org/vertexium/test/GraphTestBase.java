@@ -1456,6 +1456,10 @@ public abstract class GraphTestBase {
         assertEquals(v2, addedEdge.getVertex(Direction.IN, AUTHORIZATIONS_A));
         assertEquals(VISIBILITY_A, addedEdge.getVisibility());
 
+        EdgeVertices addedEdgeVertices = addedEdge.getVertices(AUTHORIZATIONS_A);
+        assertEquals(v1, addedEdgeVertices.getOutVertex());
+        assertEquals(v2, addedEdgeVertices.getInVertex());
+
         graph.getVertex("v1", FetchHint.NONE, AUTHORIZATIONS_A);
         graph.getVertex("v1", FetchHint.ALL, AUTHORIZATIONS_A);
         graph.getVertex("v1", EnumSet.of(FetchHint.PROPERTIES), AUTHORIZATIONS_A);

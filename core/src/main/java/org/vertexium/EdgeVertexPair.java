@@ -1,8 +1,12 @@
 package org.vertexium;
 
 import org.vertexium.util.ConvertingIterable;
+import org.vertexium.util.IterableUtils;
 
-import java.util.*;
+import java.util.EnumSet;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 public class EdgeVertexPair {
     private final Edge edge;
@@ -64,10 +68,7 @@ public class EdgeVertexPair {
             edgeIdsToFetch.add(edgeInfo.getEdgeId());
             vertexIdsToFetch.add(edgeInfo.getVertexId());
         }
-        final Map<String, Vertex> vertices = new HashMap<>();
-        for (Vertex v : graph.getVertices(vertexIdsToFetch, fetchHints, endTime, authorizations)) {
-            vertices.put(v.getId(), v);
-        }
+        final Map<String, Vertex> vertices = IterableUtils.toMapById(graph.getVertices(vertexIdsToFetch, fetchHints, endTime, authorizations));
         Iterable<Edge> edges = graph.getEdges(edgeIdsToFetch, fetchHints, endTime, authorizations);
         return new ConvertingIterable<Edge, EdgeVertexPair>(edges) {
             @Override
