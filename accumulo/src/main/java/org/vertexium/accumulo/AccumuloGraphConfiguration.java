@@ -93,11 +93,14 @@ public class AccumuloGraphConfiguration extends GraphConfiguration {
 
     public Connector createConnector() throws AccumuloSecurityException, AccumuloException {
         LOGGER.info("Connecting to accumulo instance [%s] zookeeper servers [%s]", this.getAccumuloInstanceName(), this.getZookeeperServers());
-        org.apache.commons.configuration.Configuration config = new ClientConfiguration(new ArrayList<org.apache.commons.configuration.Configuration>())
+        ZooKeeperInstance instance = new ZooKeeperInstance(getClientConfiguration());
+        return instance.getConnector(this.getAccumuloUsername(), this.getAuthenticationToken());
+    }
+
+    public ClientConfiguration getClientConfiguration() {
+        return new ClientConfiguration(new ArrayList<org.apache.commons.configuration.Configuration>())
                 .withInstance(this.getAccumuloInstanceName())
                 .withZkHosts(this.getZookeeperServers());
-        ZooKeeperInstance instance = new ZooKeeperInstance(config);
-        return instance.getConnector(this.getAccumuloUsername(), this.getAuthenticationToken());
     }
 
     public FileSystem createFileSystem() throws URISyntaxException, IOException, InterruptedException {

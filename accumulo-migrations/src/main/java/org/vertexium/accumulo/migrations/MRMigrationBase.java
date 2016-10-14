@@ -47,12 +47,9 @@ public abstract class MRMigrationBase extends Configured implements Tool {
         )
         public String configPrefix = "graph";
 
-        @Override
         public void setAccumuloConfigs(Job job) throws AccumuloSecurityException {
-            super.setAccumuloConfigs(job);
-
-            AccumuloInputFormat.setConnectorInfo(job, this.principal, this.getToken());
-            AccumuloOutputFormat.setConnectorInfo(job, this.principal, this.getToken());
+            AccumuloInputFormat.setConnectorInfo(job, getPrincipal(), this.getToken());
+            AccumuloOutputFormat.setConnectorInfo(job, getPrincipal(), this.getToken());
 
             AccumuloInputFormat.setInputTableName(job, getTableName());
             AccumuloInputFormat.setScanAuthorizations(job, this.auths);

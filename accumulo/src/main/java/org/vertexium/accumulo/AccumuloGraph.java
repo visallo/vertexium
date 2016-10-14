@@ -4,6 +4,8 @@ import com.google.common.collect.Lists;
 import com.google.common.primitives.Longs;
 import org.apache.accumulo.core.client.*;
 import org.apache.accumulo.core.client.Scanner;
+import org.apache.accumulo.core.client.admin.NewTableConfiguration;
+import org.apache.accumulo.core.client.admin.TimeType;
 import org.apache.accumulo.core.data.Key;
 import org.apache.accumulo.core.data.Mutation;
 import org.apache.accumulo.core.data.PartialKey;
@@ -15,9 +17,8 @@ import org.apache.accumulo.core.iterators.user.TimestampFilter;
 import org.apache.accumulo.core.iterators.user.VersioningIterator;
 import org.apache.accumulo.core.security.ColumnVisibility;
 import org.apache.accumulo.core.trace.DistributedTrace;
-import org.apache.accumulo.fate.zookeeper.ZooReader;
-import org.apache.accumulo.trace.instrument.Span;
-import org.apache.accumulo.trace.instrument.Trace;
+import org.apache.accumulo.core.trace.Span;
+import org.apache.accumulo.core.trace.Trace;
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
@@ -126,6 +127,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             }
 
             @Override
+            @SuppressWarnings("unchecked")
             protected StreamingPropertyValueRef saveStreamingPropertyValue(String rowKey, Property property, StreamingPropertyValue propertyValue) {
                 StreamingPropertyValueRef streamingPropertyValueRef = super.saveStreamingPropertyValue(rowKey, property, propertyValue);
                 ((MutableProperty) property).setValue(streamingPropertyValueRef.toStreamingPropertyValue(AccumuloGraph.this));
@@ -210,7 +212,10 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                 if (!createTable) {
                     throw new VertexiumException("Table '" + tableName + "' does not exist and 'graph." + GraphConfiguration.CREATE_TABLES + "' is set to false");
                 }
-                connector.tableOperations().create(tableName, false);
+                NewTableConfiguration ntc = new NewTableConfiguration()
+                        .setTimeType(TimeType.MILLIS)
+                        .withoutDefaultIterators();
+                connector.tableOperations().create(tableName, ntc);
 
                 if (maxVersions != null) {
                     // The following parameters match the Accumulo defaults for the VersioningIterator
@@ -257,6 +262,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         }
     }
 
+    @SuppressWarnings("unchecked")
     public static AccumuloGraph create(Map config) throws AccumuloSecurityException, AccumuloException, VertexiumException, InterruptedException, IOException, URISyntaxException {
         return create(new AccumuloGraphConfiguration(config));
     }
@@ -2500,7 +2506,8 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
     public void traceOn(String description, Map<String, String> data) {
         if (!distributedTraceEnabled) {
             try {
-                DistributedTrace.enable(connector.getInstance(), new ZooReader(connector.getInstance().getZooKeepers(), 10000), "vertexium", null);
+                ClientConfiguration conf = getConfiguration().getClientConfiguration();
+                DistributedTrace.enable(null, AccumuloGraph.class.getSimpleName(), conf);
                 distributedTraceEnabled = true;
             } catch (Exception e) {
                 throw new VertexiumException("Could not enable DistributedTrace", e);

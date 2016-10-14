@@ -6,7 +6,7 @@
 * Changed: org.vertexium.Metadata accesses are now protected with ReadWriteLock
 * Fixed: More checks for null vertex ids or labels when creating edges
 * Changed: Upgrade elasticsearch version to 1.7.5
-* Changed: Update accumulo version to 1.6.6
+* Changed: Update accumulo version to 1.7.2
 * Added: getVertices helper method on Edge
 
 # v2.4.5
