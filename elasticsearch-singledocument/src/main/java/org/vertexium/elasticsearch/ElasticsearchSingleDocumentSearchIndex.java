@@ -2,6 +2,7 @@ package org.vertexium.elasticsearch;
 
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.util.concurrent.SettableFuture;
 import org.elasticsearch.action.ActionRequestBuilder;
 import org.elasticsearch.action.ListenableActionFuture;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
@@ -56,6 +57,7 @@ import java.io.*;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.*;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -359,7 +361,14 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
     }
 
     private void addActionRequestBuilderForFlush(String elementId, UpdateRequestBuilder updateRequestBuilder) {
-        ListenableActionFuture future = updateRequestBuilder.execute();
+        Future future = null;
+        try {
+            future = updateRequestBuilder.execute();
+        } catch (Exception ex) {
+            LOGGER.debug("Could not execute update: %s", ex.getMessage());
+            future = SettableFuture.create();
+            ((SettableFuture) future).setException(ex);
+        }
         getFlushObjectQueue().add(new FlushObject(elementId, updateRequestBuilder, future));
     }
 
@@ -1362,14 +1371,14 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
     private class FlushObject {
         public final String elementId;
         public final ActionRequestBuilder actionRequestBuilder;
-        public final ListenableActionFuture future;
+        public final Future future;
         public final int retryCount;
         private final long retryTime;
 
         FlushObject(
                 String elementId,
                 UpdateRequestBuilder updateRequestBuilder,
-                ListenableActionFuture future
+                Future future
         ) {
             this(elementId, updateRequestBuilder, future, 0, System.currentTimeMillis());
         }
@@ -1377,7 +1386,7 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
         FlushObject(
                 String elementId,
                 ActionRequestBuilder actionRequestBuilder,
-                ListenableActionFuture future,
+                Future future,
                 int retryCount,
                 long retryTime
         ) {
