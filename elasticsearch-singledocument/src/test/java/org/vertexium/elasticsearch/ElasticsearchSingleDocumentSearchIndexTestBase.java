@@ -156,6 +156,13 @@ public abstract class ElasticsearchSingleDocumentSearchIndexTestBase extends Gra
     }
 
     @Override
+    protected boolean disableEdgeIndexing(Graph graph) {
+        ElasticsearchSingleDocumentSearchIndex searchIndex = (ElasticsearchSingleDocumentSearchIndex) ((GraphWithSearchIndex) graph).getSearchIndex();
+        searchIndex.getConfig().getGraphConfiguration().set(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + ElasticSearchSearchIndexConfiguration.INDEX_EDGES, "false");
+        return true;
+    }
+
+    @Override
     protected boolean isLuceneQueriesSupported() {
         return true;
     }

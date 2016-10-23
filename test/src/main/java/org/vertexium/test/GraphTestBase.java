@@ -18,7 +18,6 @@ import org.vertexium.property.StreamingPropertyValue;
 import org.vertexium.query.*;
 import org.vertexium.search.DefaultSearchIndex;
 import org.vertexium.search.IndexHint;
-import org.vertexium.search.SearchIndex;
 import org.vertexium.test.util.LargeStringInputStream;
 import org.vertexium.type.*;
 import org.vertexium.util.*;
@@ -2560,10 +2559,7 @@ public abstract class GraphTestBase {
 
     @Test
     public void testDisableEdgeIndexing() throws NoSuchFieldException, IllegalAccessException {
-        if (!disableEdgeIndexing(graph)) {
-            LOGGER.info("skipping %s doesn't support disabling index", SearchIndex.class.getSimpleName());
-            return;
-        }
+        assumeTrue("disabling indexing not supported", disableEdgeIndexing(graph));
 
         Vertex v1 = graph.prepareVertex("v1", VISIBILITY_A).save(AUTHORIZATIONS_A_AND_B);
         Vertex v2 = graph.prepareVertex("v2", VISIBILITY_A).save(AUTHORIZATIONS_A_AND_B);
@@ -2660,18 +2656,18 @@ public abstract class GraphTestBase {
                 .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
-        if (isLuceneQueriesSupported() && isLuceneAndQueriesSupported()) {
-            Iterable<Vertex> vertices = graph.query("Joe AND ferner", AUTHORIZATIONS_A)
-                    .vertices();
-            Assert.assertEquals(1, count(vertices));
-        }
+        assumeTrue("lucene and queries not supported", isLuceneQueriesSupported() && isLuceneAndQueriesSupported());
+
+        Iterable<Vertex> vertices = graph.query("Joe AND ferner", AUTHORIZATIONS_A)
+                .vertices();
+        Assert.assertEquals(1, count(vertices));
     }
 
     @Test
     public void testGraphQueryHasWithSpacesAndFieldedQueryString() {
-        if (!isFieldNamesInQuerySupported()) {
-            return;
-        }
+        assumeTrue("fielded query not supported", isFieldNamesInQuerySupported());
+
+        graph.defineProperty("name").dataType(String.class).textIndexHint(TextIndexHint.ALL).define();
 
         graph.prepareVertex("v1", VISIBILITY_A)
                 .setProperty("name", "Joe Ferner", VISIBILITY_A)
@@ -2681,11 +2677,11 @@ public abstract class GraphTestBase {
                 .setProperty("name", "Joe Smith", VISIBILITY_A)
                 .save(AUTHORIZATIONS_A_AND_B);
 
-        if (isLuceneQueriesSupported()) {
-            Iterable<Vertex> vertices = graph.query("name:\"joe ferner\"", AUTHORIZATIONS_A)
-                    .vertices();
-            Assert.assertEquals(1, count(vertices));
-        }
+        assumeTrue("lucene queries", isLuceneQueriesSupported());
+
+        Iterable<Vertex> vertices = graph.query("name:\"Joe Ferner\"", AUTHORIZATIONS_A)
+                .vertices();
+        Assert.assertEquals(1, count(vertices));
     }
 
     protected boolean isFieldNamesInQuerySupported() {
@@ -3603,10 +3599,7 @@ public abstract class GraphTestBase {
 
     @Test
     public void testFieldBoost() throws Exception {
-        if (!graph.isFieldBoostSupported()) {
-            LOGGER.warn("Boost not supported");
-            return;
-        }
+        assumeTrue("Boost not supported", graph.isFieldBoostSupported());
 
         graph.defineProperty("a")
                 .dataType(String.class)
@@ -3632,10 +3625,7 @@ public abstract class GraphTestBase {
 
     @Test
     public void testVertexBoost() throws Exception {
-        if (!isEdgeBoostSupported()) {
-            LOGGER.warn("Boost not supported");
-            return;
-        }
+        assumeTrue("Boost not supported", isEdgeBoostSupported());
 
         Vertex v1 = graph.prepareVertex("v1", VISIBILITY_A)
                 .save(AUTHORIZATIONS_A_AND_B);
@@ -4155,9 +4145,7 @@ public abstract class GraphTestBase {
 
     @Test
     public void testAddVertexWithoutIndexing() {
-        if (isDefaultSearchIndex()) {
-            return;
-        }
+        assumeTrue("add vertex without indexing not supported", !isDefaultSearchIndex());
 
         graph.prepareVertex("v1", VISIBILITY_A)
                 .setProperty("prop1", "value1", VISIBILITY_A)
@@ -4173,9 +4161,7 @@ public abstract class GraphTestBase {
 
     @Test
     public void testAlterVertexWithoutIndexing() {
-        if (isDefaultSearchIndex()) {
-            return;
-        }
+        assumeTrue("alter vertex without indexing not supported", !isDefaultSearchIndex());
 
         graph.prepareVertex("v1", VISIBILITY_A)
                 .setIndexHint(IndexHint.DO_NOT_INDEX)
@@ -4197,9 +4183,7 @@ public abstract class GraphTestBase {
 
     @Test
     public void testAddEdgeWithoutIndexing() {
-        if (isDefaultSearchIndex()) {
-            return;
-        }
+        assumeTrue("add edge without indexing not supported", !isDefaultSearchIndex());
 
         Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
         Vertex v2 = graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_A);
@@ -4328,10 +4312,7 @@ public abstract class GraphTestBase {
 
     @Test
     public void testSimilarityByText() {
-        if (!graph.isQuerySimilarToTextSupported()) {
-            LOGGER.warn("skipping test. Graph %s does not support query similar to text", graph.getClass().getName());
-            return;
-        }
+        assumeTrue("query similar", graph.isQuerySimilarToTextSupported());
 
         graph.prepareVertex("v1", VISIBILITY_A)
                 .setProperty("text", "Mary had a little lamb, His fleece was white as snow.", VISIBILITY_A)
@@ -4634,31 +4615,23 @@ public abstract class GraphTestBase {
         graph.flush();
 
         Map<Object, Long> vertexPropertyCountByValue = queryGraphQueryWithTermsAggregation("name", ElementType.VERTEX, AUTHORIZATIONS_EMPTY);
-        if (vertexPropertyCountByValue == null) {
-            return;
-        }
+        assumeTrue("terms aggregation not supported", vertexPropertyCountByValue != null);
         assertEquals(2, vertexPropertyCountByValue.size());
         assertEquals(2L, (long) vertexPropertyCountByValue.get("Joe"));
         assertEquals(searchIndexFieldLevelSecurity ? 1L : 2L, (long) vertexPropertyCountByValue.get("Joseph"));
 
         vertexPropertyCountByValue = queryGraphQueryWithTermsAggregation("emptyField", ElementType.VERTEX, AUTHORIZATIONS_EMPTY);
-        if (vertexPropertyCountByValue == null) {
-            return;
-        }
+        assumeTrue("terms aggregation not supported", vertexPropertyCountByValue != null);
         assertEquals(0, vertexPropertyCountByValue.size());
 
         vertexPropertyCountByValue = queryGraphQueryWithTermsAggregation("name", ElementType.VERTEX, AUTHORIZATIONS_A_AND_B);
-        if (vertexPropertyCountByValue == null) {
-            return;
-        }
+        assumeTrue("terms aggregation not supported", vertexPropertyCountByValue != null);
         assertEquals(2, vertexPropertyCountByValue.size());
         assertEquals(2L, (long) vertexPropertyCountByValue.get("Joe"));
         assertEquals(2L, (long) vertexPropertyCountByValue.get("Joseph"));
 
         Map<Object, Long> edgePropertyCountByValue = queryGraphQueryWithTermsAggregation(Edge.LABEL_PROPERTY_NAME, ElementType.EDGE, AUTHORIZATIONS_A_AND_B);
-        if (edgePropertyCountByValue == null) {
-            return;
-        }
+        assumeTrue("terms aggregation not supported", vertexPropertyCountByValue != null);
         assertEquals(2, edgePropertyCountByValue.size());
         assertEquals(2L, (long) edgePropertyCountByValue.get("label1"));
         assertEquals(1L, (long) edgePropertyCountByValue.get("label2"));
@@ -4685,21 +4658,15 @@ public abstract class GraphTestBase {
         graph.flush();
 
         Map<Object, Long> propertyCountByValue = queryGraphQueryWithTermsAggregation("age", ElementType.VERTEX, AUTHORIZATIONS_A_AND_B);
-        if (propertyCountByValue == null) {
-            return;
-        }
+        assumeTrue("terms aggregation not supported", propertyCountByValue != null);
         assertEquals(1, propertyCountByValue.size());
 
         propertyCountByValue = queryGraphQueryWithTermsAggregation("age", ElementType.VERTEX, AUTHORIZATIONS_A);
-        if (propertyCountByValue == null) {
-            return;
-        }
+        assumeTrue("terms aggregation not supported", propertyCountByValue != null);
         assertEquals(0, propertyCountByValue.size());
 
         propertyCountByValue = queryGraphQueryWithTermsAggregation("age", ElementType.VERTEX, AUTHORIZATIONS_B);
-        if (propertyCountByValue == null) {
-            return;
-        }
+        assumeTrue("terms aggregation not supported", propertyCountByValue != null);
         assertEquals(1, propertyCountByValue.size());
     }
 
@@ -4721,21 +4688,15 @@ public abstract class GraphTestBase {
         graph.flush();
 
         Map<Object, Long> propertyCountByValue = queryGraphQueryWithTermsAggregation("age", ElementType.EDGE, AUTHORIZATIONS_A_AND_B);
-        if (propertyCountByValue == null) {
-            return;
-        }
+        assumeTrue("terms aggregation not supported", propertyCountByValue != null);
         assertEquals(1, propertyCountByValue.size());
 
         propertyCountByValue = queryGraphQueryWithTermsAggregation("age", ElementType.EDGE, AUTHORIZATIONS_A);
-        if (propertyCountByValue == null) {
-            return;
-        }
+        assumeTrue("terms aggregation not supported", propertyCountByValue != null);
         assertEquals(0, propertyCountByValue.size());
 
         propertyCountByValue = queryGraphQueryWithTermsAggregation("age", ElementType.EDGE, AUTHORIZATIONS_B);
-        if (propertyCountByValue == null) {
-            return;
-        }
+        assumeTrue("terms aggregation not supported", propertyCountByValue != null);
         assertEquals(1, propertyCountByValue.size());
     }
 
@@ -4775,9 +4736,7 @@ public abstract class GraphTestBase {
         graph.flush();
 
         Map<Object, Map<Object, Long>> vertexPropertyCountByValue = queryGraphQueryWithNestedTermsAggregation("name", "gender", AUTHORIZATIONS_A_AND_B);
-        if (vertexPropertyCountByValue == null) {
-            return;
-        }
+        assumeTrue("terms aggregation not supported", vertexPropertyCountByValue != null);
         assertEquals(2, vertexPropertyCountByValue.size());
         assertEquals(1, vertexPropertyCountByValue.get("Joe").size());
         assertEquals(1L, (long) vertexPropertyCountByValue.get("Joe").get("male"));
@@ -4825,40 +4784,30 @@ public abstract class GraphTestBase {
         graph.flush();
 
         Map<Object, Long> histogram = queryGraphQueryWithHistogramAggregation("age", "1", 0L, new HistogramAggregation.ExtendedBounds<>(20L, 25L), AUTHORIZATIONS_EMPTY);
-        if (histogram == null) {
-            return;
-        }
+        assumeTrue("histogram aggregation not supported", histogram != null);
         assertEquals(6, histogram.size());
         assertEquals(1L, (long) histogram.get("25"));
         assertEquals(searchIndexFieldLevelSecurity ? 2L : 3L, (long) histogram.get("20"));
 
         histogram = queryGraphQueryWithHistogramAggregation("age", "1", null, null, AUTHORIZATIONS_A_AND_B);
-        if (histogram == null) {
-            return;
-        }
+        assumeTrue("histogram aggregation not supported", histogram != null);
         assertEquals(2, histogram.size());
         assertEquals(1L, (long) histogram.get("25"));
         assertEquals(3L, (long) histogram.get("20"));
 
         // field that doesn't have any values
         histogram = queryGraphQueryWithHistogramAggregation("emptyField", "1", null, null, AUTHORIZATIONS_A_AND_B);
-        if (histogram == null) {
-            return;
-        }
+        assumeTrue("histogram aggregation not supported", histogram != null);
         assertEquals(0, histogram.size());
 
         // date by 'year'
         histogram = queryGraphQueryWithHistogramAggregation("birthDate", "year", null, null, AUTHORIZATIONS_EMPTY);
-        if (histogram == null) {
-            return;
-        }
+        assumeTrue("histogram aggregation not supported", histogram != null);
         assertEquals(2, histogram.size());
 
         // date by milliseconds
         histogram = queryGraphQueryWithHistogramAggregation("birthDate", (365L * 24L * 60L * 60L * 1000L) + "", null, null, AUTHORIZATIONS_EMPTY);
-        if (histogram == null) {
-            return;
-        }
+        assumeTrue("histogram aggregation not supported", histogram != null);
         assertEquals(2, histogram.size());
     }
 
@@ -4899,9 +4848,7 @@ public abstract class GraphTestBase {
         graph.flush();
 
         StatisticsResult stats = queryGraphQueryWithStatisticsAggregation("age", AUTHORIZATIONS_EMPTY);
-        if (stats == null) {
-            return;
-        }
+        assumeTrue("statistics aggregation not supported", stats != null);
         assertEquals(3, stats.getCount());
         assertEquals(65.0, stats.getSum(), 0.1);
         assertEquals(20.0, stats.getMin(), 0.1);
@@ -4910,9 +4857,7 @@ public abstract class GraphTestBase {
         assertEquals(21.666666, stats.getAverage(), 0.1);
 
         stats = queryGraphQueryWithStatisticsAggregation("emptyField", AUTHORIZATIONS_EMPTY);
-        if (stats == null) {
-            return;
-        }
+        assumeTrue("statistics aggregation not supported", stats != null);
         assertEquals(0, stats.getCount());
         assertEquals(0.0, stats.getSum(), 0.1);
         assertEquals(0.0, stats.getMin(), 0.1);
@@ -4921,9 +4866,7 @@ public abstract class GraphTestBase {
         assertEquals(0.0, stats.getStandardDeviation(), 0.1);
 
         stats = queryGraphQueryWithStatisticsAggregation("age", AUTHORIZATIONS_A_AND_B);
-        if (stats == null) {
-            return;
-        }
+        assumeTrue("statistics aggregation not supported", stats != null);
         assertEquals(4, stats.getCount());
         assertEquals(95.0, stats.getSum(), 0.1);
         assertEquals(20.0, stats.getMin(), 0.1);
@@ -4965,23 +4908,17 @@ public abstract class GraphTestBase {
         graph.flush();
 
         Map<String, Long> histogram = queryGraphQueryWithGeohashAggregation("location", 2, AUTHORIZATIONS_EMPTY);
-        if (histogram == null) {
-            return;
-        }
+        assumeTrue("geo hash histogram aggregation not supported", histogram != null);
         assertEquals(2, histogram.size());
         assertEquals(1L, (long) histogram.get("gb"));
         assertEquals(searchIndexFieldLevelSecurity ? 2L : 3L, (long) histogram.get("dq"));
 
         histogram = queryGraphQueryWithGeohashAggregation("emptyField", 2, AUTHORIZATIONS_EMPTY);
-        if (histogram == null) {
-            return;
-        }
+        assumeTrue("geo hash histogram aggregation not supported", histogram != null);
         assertEquals(0, histogram.size());
 
         histogram = queryGraphQueryWithGeohashAggregation("location", 2, AUTHORIZATIONS_A_AND_B);
-        if (histogram == null) {
-            return;
-        }
+        assumeTrue("geo hash histogram aggregation not supported", histogram != null);
         assertEquals(2, histogram.size());
         assertEquals(1L, (long) histogram.get("gb"));
         assertEquals(3L, (long) histogram.get("dq"));
@@ -5441,42 +5378,7 @@ public abstract class GraphTestBase {
     }
 
     protected boolean disableEdgeIndexing(Graph graph) {
-        try {
-            if (!(graph instanceof GraphWithSearchIndex)) {
-                LOGGER.debug("Graph does not have a search index");
-                return false;
-            }
-
-            SearchIndex searchIndex = ((GraphWithSearchIndex) graph).getSearchIndex();
-
-            Field configField = findPrivateField(searchIndex.getClass(), "config");
-            if (configField == null) {
-                LOGGER.debug("Could not find 'config' field");
-                return false;
-            }
-
-            configField.setAccessible(true);
-
-            Object config = configField.get(searchIndex);
-            if (config == null) {
-                LOGGER.debug("Could not get 'config' field");
-                return false;
-            }
-
-            Field indexEdgesField = findPrivateField(config.getClass(), "indexEdges");
-            if (indexEdgesField == null) {
-                LOGGER.debug("Could not find 'indexEdgesField' field");
-                return false;
-            }
-
-            indexEdgesField.setAccessible(true);
-
-            indexEdgesField.set(config, false);
-
-            return true;
-        } catch (Exception ex) {
-            throw new VertexiumException("Could not disableEdgeIndexing", ex);
-        }
+        return false;
     }
 
     private Field findPrivateField(Class clazz, String name) {

@@ -59,6 +59,10 @@ public class ElasticSearchSearchIndexConfiguration {
         this.indexSelectionStrategy = getIndexSelectionStrategy(graph, graphConfiguration);
     }
 
+    public GraphConfiguration getGraphConfiguration() {
+        return graphConfiguration;
+    }
+
     public ScoringStrategy getScoringStrategy() {
         return scoringStrategy;
     }
