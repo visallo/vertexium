@@ -52,12 +52,6 @@
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>jline</groupId>
-            <artifactId>jline</artifactId>
-            <version>1.0</version>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
             <groupId>org.vertexium</groupId>
             <artifactId>vertexium-elasticsearch-singledocument</artifactId>
             <version>${project.version}</version>
