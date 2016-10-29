@@ -3,6 +3,7 @@ package org.vertexium;
 import org.vertexium.event.GraphEvent;
 import org.vertexium.event.GraphEventListener;
 import org.vertexium.id.IdGenerator;
+import org.vertexium.mutation.ElementMutation;
 import org.vertexium.property.StreamingPropertyValue;
 import org.vertexium.property.StreamingPropertyValueRef;
 import org.vertexium.query.GraphQuery;
@@ -901,5 +902,15 @@ public abstract class GraphBase implements Graph {
             valueClass = ((StreamingPropertyValueRef) value).getValueType();
         }
         return valueClass;
+    }
+
+    @Override
+    public Iterable<Element> saveElementMutations(Iterable<ElementMutation> mutations, Authorizations authorizations) {
+        List<Element> elements = new ArrayList<>();
+        for (ElementMutation m : mutations) {
+            Element element = m.save(authorizations);
+            elements.add(element);
+        }
+        return elements;
     }
 }

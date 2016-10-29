@@ -1830,6 +1830,21 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    public void testSaveElementMutations() {
+        List<ElementMutation> mutations = new ArrayList<>();
+        for (int i = 0; i < 10; i++) {
+            ElementBuilder<Vertex> m = graph.prepareVertex("v" + i, VISIBILITY_A)
+                    .addPropertyValue("k1", "name", "joe", VISIBILITY_A);
+            mutations.add(m);
+        }
+        graph.saveElementMutations(mutations, AUTHORIZATIONS_ALL);
+        graph.flush();
+
+        QueryResultsIterable<Vertex> vertices = graph.query(AUTHORIZATIONS_ALL).vertices();
+        assertResultsCount(10, 10, vertices);
+    }
+
+    @Test
     public void testGraphQueryWithQueryString() {
         Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_ALL);
         v1.setProperty("description", "This is vertex 1 - dog.", VISIBILITY_A, AUTHORIZATIONS_ALL);
@@ -5232,6 +5247,16 @@ public abstract class GraphTestBase {
         benchmarkFindVerticesById(random, vertexCount, findVerticesByIdCount);
     }
 
+    @Test
+    public void benchmarkSaveElementMutations() {
+        assumeTrue(benchmarkEnabled());
+        int vertexCount = 1000;
+
+        benchmarkAddVertices(vertexCount);
+        benchmarkAddVerticesSaveElementMutations(vertexCount);
+        benchmarkAddVertices(vertexCount);
+    }
+
     private void benchmarkAddVertices(int vertexCount) {
         double startTime = System.currentTimeMillis();
         for (int i = 0; i < vertexCount; i++) {
@@ -5247,6 +5272,25 @@ public abstract class GraphTestBase {
         graph.flush();
         double endTime = System.currentTimeMillis();
         LOGGER.info("add vertices in %.3fs", (endTime - startTime) / 1000);
+    }
+
+    private void benchmarkAddVerticesSaveElementMutations(int vertexCount) {
+        double startTime = System.currentTimeMillis();
+        List<ElementMutation> mutations = new ArrayList<>();
+        for (int i = 0; i < vertexCount; i++) {
+            String vertexId = "v" + i;
+            ElementBuilder<Vertex> m = graph.prepareVertex(vertexId, VISIBILITY_A)
+                    .addPropertyValue("k1", "prop1", "value1 " + i, VISIBILITY_A)
+                    .addPropertyValue("k1", "prop2", "value2 " + i, VISIBILITY_A)
+                    .addPropertyValue("k1", "prop3", "value3 " + i, VISIBILITY_A)
+                    .addPropertyValue("k1", "prop4", "value4 " + i, VISIBILITY_A)
+                    .addPropertyValue("k1", "prop5", "value5 " + i, VISIBILITY_A);
+            mutations.add(m);
+        }
+        graph.saveElementMutations(mutations, AUTHORIZATIONS_ALL);
+        graph.flush();
+        double endTime = System.currentTimeMillis();
+        LOGGER.info("save element mutations in %.3fs", (endTime - startTime) / 1000);
     }
 
     private void benchmarkAddEdges(Random random, int vertexCount, int edgeCount) {

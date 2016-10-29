@@ -2,11 +2,15 @@ package org.vertexium;
 
 import org.vertexium.event.GraphEventListener;
 import org.vertexium.id.IdGenerator;
+import org.vertexium.mutation.ElementMutation;
 import org.vertexium.query.GraphQuery;
 import org.vertexium.query.MultiVertexQuery;
 import org.vertexium.query.SimilarToGraphQuery;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Map;
 
 public interface Graph {
     /**
@@ -149,7 +153,7 @@ public interface Graph {
     /**
      * Gets vertices from the graph in the given range.
      *
-     * @param idRange          The range of ids to get.
+     * @param idRange        The range of ids to get.
      * @param authorizations The authorizations required to load the vertex.
      * @return The vertices in the range.
      */
@@ -158,7 +162,7 @@ public interface Graph {
     /**
      * Gets vertices from the graph in the given range.
      *
-     * @param idRange          The range of ids to get.
+     * @param idRange        The range of ids to get.
      * @param fetchHints     Hint at what parts of the vertex to fetch.
      * @param authorizations The authorizations required to load the vertex.
      * @return The vertices in the range.
@@ -168,7 +172,7 @@ public interface Graph {
     /**
      * Gets vertices from the graph in the given range.
      *
-     * @param idRange          The range of ids to get.
+     * @param idRange        The range of ids to get.
      * @param fetchHints     Hint at what parts of the vertex to fetch.
      * @param endTime        Include all changes made up until the point in time.
      * @param authorizations The authorizations required to load the vertex.
@@ -518,7 +522,7 @@ public interface Graph {
     /**
      * Gets edges from the graph in the given range.
      *
-     * @param idRange          The range of ids to get.
+     * @param idRange        The range of ids to get.
      * @param authorizations The authorizations required to load the vertex.
      * @return The edges in the range.
      */
@@ -527,7 +531,7 @@ public interface Graph {
     /**
      * Gets edges from the graph in the given range.
      *
-     * @param idRange          The range of ids to get.
+     * @param idRange        The range of ids to get.
      * @param fetchHints     Hint at what parts of the vertex to fetch.
      * @param authorizations The authorizations required to load the vertex.
      * @return The edges in the range.
@@ -537,7 +541,7 @@ public interface Graph {
     /**
      * Gets edges from the graph in the given range.
      *
-     * @param idRange          The range of ids to get.
+     * @param idRange        The range of ids to get.
      * @param fetchHints     Hint at what parts of the vertex to fetch.
      * @param endTime        Include all changes made up until the point in time.
      * @param authorizations The authorizations required to load the vertex.
@@ -1046,4 +1050,13 @@ public interface Graph {
      * @return all property definitions.
      */
     Collection<PropertyDefinition> getPropertyDefinitions();
+
+    /**
+     * Saves multiple mutations with a single call.
+     *
+     * @param mutations      the mutations to save
+     * @param authorizations the authorizations used during save
+     * @return the elements which were saved
+     */
+    Iterable<Element> saveElementMutations(Iterable<ElementMutation> mutations, Authorizations authorizations);
 }

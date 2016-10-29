@@ -138,4 +138,9 @@ public interface ElementMutation<T extends Element> {
      * Sets the index hint of this element.
      */
     ElementMutation<T> setIndexHint(IndexHint indexHint);
+
+    /**
+     * Gets the currently set index hint.
+     */
+    IndexHint getIndexHint();
 }

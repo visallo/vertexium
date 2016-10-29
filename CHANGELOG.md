@@ -8,6 +8,7 @@
 * Changed: Upgrade elasticsearch version to 1.7.5
 * Changed: Update accumulo version to 1.7.2
 * Added: getVertices helper method on Edge
+* Added: graph.saveElementMutations
 
 # v2.4.5
 

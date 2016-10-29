@@ -1,13 +1,17 @@
 package org.vertexium;
 
 import org.vertexium.id.IdGenerator;
+import org.vertexium.mutation.ElementMutation;
 import org.vertexium.query.GraphQuery;
 import org.vertexium.query.MultiVertexQuery;
 import org.vertexium.query.SimilarToGraphQuery;
+import org.vertexium.search.IndexHint;
 import org.vertexium.search.SearchIndex;
 import org.vertexium.search.SearchIndexWithVertexPropertyCountByValue;
 
+import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Map;
 
 public abstract class GraphBaseWithSearchIndex extends GraphBase implements Graph, GraphWithSearchIndex {
@@ -156,6 +160,23 @@ public abstract class GraphBaseWithSearchIndex extends GraphBase implements Grap
             return ((SearchIndexWithVertexPropertyCountByValue) getSearchIndex()).getVertexPropertyCountByValue(this, propertyName, authorizations);
         }
         return super.getVertexPropertyCountByValue(propertyName, authorizations);
+    }
+
+    @Override
+    public Iterable<Element> saveElementMutations(Iterable<ElementMutation> mutations, Authorizations authorizations) {
+        List<Element> elements = new ArrayList<>();
+        List<Element> elementsToAddToIndex = new ArrayList<>();
+        for (ElementMutation m : mutations) {
+            IndexHint indexHint = m.getIndexHint();
+            m.setIndexHint(IndexHint.DO_NOT_INDEX);
+            Element element = m.save(authorizations);
+            elements.add(element);
+            if (indexHint == IndexHint.INDEX) {
+                elementsToAddToIndex.add(element);
+            }
+        }
+        getSearchIndex().addElements(this, elementsToAddToIndex, authorizations);
+        return elements;
     }
 
     @Override
