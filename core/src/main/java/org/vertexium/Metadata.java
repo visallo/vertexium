@@ -13,7 +13,7 @@ public class Metadata implements Serializable {
     public static final String KEY_SEPARATOR = "\u001f";
 
     private final Map<String, Entry> entries;
-    private final transient ReadWriteLock entiresLock = new ReentrantReadWriteLock();
+    private transient ReadWriteLock entriesLock = new ReentrantReadWriteLock();
 
     public Metadata() {
         entries = new HashMap<>();
@@ -27,35 +27,35 @@ public class Metadata implements Serializable {
     }
 
     public Metadata add(String key, Object value, Visibility visibility) {
-        entiresLock.writeLock().lock();
+        getEntriesLock().writeLock().lock();
         try {
             entries.put(toMapKey(key, visibility), new Entry(key, value, visibility));
             return this;
         } finally {
-            entiresLock.writeLock().unlock();
+            getEntriesLock().writeLock().unlock();
         }
     }
 
     public void remove(String key, Visibility visibility) {
-        entiresLock.writeLock().lock();
+        getEntriesLock().writeLock().lock();
         try {
             entries.remove(toMapKey(key, visibility));
         } finally {
-            entiresLock.writeLock().unlock();
+            getEntriesLock().writeLock().unlock();
         }
     }
 
     public void clear() {
-        entiresLock.writeLock().lock();
+        getEntriesLock().writeLock().lock();
         try {
             entries.clear();
         } finally {
-            entiresLock.writeLock().unlock();
+            getEntriesLock().writeLock().unlock();
         }
     }
 
     public void remove(String key) {
-        entiresLock.writeLock().lock();
+        getEntriesLock().writeLock().lock();
         try {
             for (Map.Entry<String, Entry> e : new ArrayList<>(entries.entrySet())) {
                 if (e.getValue().getKey().equals(key)) {
@@ -63,30 +63,30 @@ public class Metadata implements Serializable {
                 }
             }
         } finally {
-            entiresLock.writeLock().unlock();
+            getEntriesLock().writeLock().unlock();
         }
     }
 
     public Collection<Entry> entrySet() {
-        entiresLock.readLock().lock();
+        getEntriesLock().readLock().lock();
         try {
             return new ArrayList<>(entries.values());
         } finally {
-            entiresLock.readLock().unlock();
+            getEntriesLock().readLock().unlock();
         }
     }
 
     public Entry getEntry(String key, Visibility visibility) {
-        entiresLock.readLock().lock();
+        getEntriesLock().readLock().lock();
         try {
             return entries.get(toMapKey(key, visibility));
         } finally {
-            entiresLock.readLock().unlock();
+            getEntriesLock().readLock().unlock();
         }
     }
 
     public Entry getEntry(String key) {
-        entiresLock.readLock().lock();
+        getEntriesLock().readLock().lock();
         try {
             Entry entry = null;
             for (Map.Entry<String, Entry> e : entries.entrySet()) {
@@ -99,12 +99,12 @@ public class Metadata implements Serializable {
             }
             return entry;
         } finally {
-            entiresLock.readLock().unlock();
+            getEntriesLock().readLock().unlock();
         }
     }
 
     public Collection<Entry> getEntries(String key) {
-        entiresLock.readLock().lock();
+        getEntriesLock().readLock().lock();
         try {
             Collection<Entry> results = new ArrayList<>();
             for (Map.Entry<String, Entry> e : entries.entrySet()) {
@@ -115,7 +115,7 @@ public class Metadata implements Serializable {
             }
             return results;
         } finally {
-            entiresLock.readLock().unlock();
+            getEntriesLock().readLock().unlock();
         }
     }
 
@@ -145,7 +145,7 @@ public class Metadata implements Serializable {
     }
 
     public boolean containsKey(String key) {
-        entiresLock.readLock().lock();
+        getEntriesLock().readLock().lock();
         try {
             for (Map.Entry<String, Entry> e : entries.entrySet()) {
                 if (e.getValue().getKey().equals(key)) {
@@ -154,7 +154,7 @@ public class Metadata implements Serializable {
             }
             return false;
         } finally {
-            entiresLock.readLock().unlock();
+            getEntriesLock().readLock().unlock();
         }
     }
 
@@ -164,6 +164,14 @@ public class Metadata implements Serializable {
 
     private String toMapKey(String key, Visibility visibility) {
         return key + KEY_SEPARATOR + visibility.getVisibilityString();
+    }
+
+    private ReadWriteLock getEntriesLock() {
+        // entriesLock may be null if this class has just been deserialized
+        if (entriesLock == null) {
+            entriesLock = new ReentrantReadWriteLock();
+        }
+        return entriesLock;
     }
 
     public static class Entry implements Serializable {
