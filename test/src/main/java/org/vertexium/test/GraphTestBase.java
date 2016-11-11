@@ -5248,6 +5248,45 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    public void benchmarkGetPropertyByName() {
+        final int propertyCount = 100;
+
+        assumeTrue(benchmarkEnabled());
+        VertexBuilder m = graph.prepareVertex("v1", VISIBILITY_A);
+        for (int i = 0; i < propertyCount; i++) {
+            m.addPropertyValue("key", "prop" + i, "value " + i, VISIBILITY_A);
+        }
+        m.save(AUTHORIZATIONS_ALL);
+        graph.flush();
+
+        Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_ALL);
+
+        double startTime = System.currentTimeMillis();
+        StringBuilder optimizationBuster = new StringBuilder();
+        for (int i = 0; i < 10000; i++) {
+            for (int propIndex = 0; propIndex < propertyCount; propIndex++) {
+                Object value = v1.getPropertyValue("key", "prop" + propIndex);
+                optimizationBuster.append(value.toString().substring(0, 1));
+            }
+        }
+        double endTime = System.currentTimeMillis();
+        LOGGER.trace("optimizationBuster: %s", optimizationBuster.substring(0, 1));
+        LOGGER.info("get property by name and key in %.3fs", (endTime - startTime) / 1000);
+
+        startTime = System.currentTimeMillis();
+        optimizationBuster = new StringBuilder();
+        for (int i = 0; i < 10000; i++) {
+            for (int propIndex = 0; propIndex < propertyCount; propIndex++) {
+                Object value = v1.getPropertyValue("prop" + propIndex);
+                optimizationBuster.append(value.toString().substring(0, 1));
+            }
+        }
+        endTime = System.currentTimeMillis();
+        LOGGER.trace("optimizationBuster: %s", optimizationBuster.substring(0, 1));
+        LOGGER.info("get property by name in %.3fs", (endTime - startTime) / 1000);
+    }
+
+    @Test
     public void benchmarkSaveElementMutations() {
         assumeTrue(benchmarkEnabled());
         int vertexCount = 1000;

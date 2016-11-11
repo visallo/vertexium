@@ -9,8 +9,12 @@ import org.vertexium.property.MutablePropertyImpl;
 import org.vertexium.property.PropertyValue;
 import org.vertexium.util.ConvertingIterable;
 import org.vertexium.util.FilterIterable;
+import org.vertexium.util.PropertyCollection;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListSet;
 
 public abstract class ElementBase implements Element {
@@ -22,7 +26,7 @@ public abstract class ElementBase implements Element {
     private final long timestamp;
     private Set<Visibility> hiddenVisibilities = new HashSet<>();
 
-    private final ConcurrentSkipListSet<Property> properties;
+    private final PropertyCollection properties;
     private ConcurrentSkipListSet<PropertyDeleteMutation> propertyDeleteMutations;
     private ConcurrentSkipListSet<PropertySoftDeleteMutation> propertySoftDeleteMutations;
     private final Authorizations authorizations;
@@ -42,7 +46,7 @@ public abstract class ElementBase implements Element {
         this.id = id;
         this.visibility = visibility;
         this.timestamp = timestamp;
-        this.properties = new ConcurrentSkipListSet<>();
+        this.properties = new PropertyCollection();
         this.authorizations = authorizations;
         if (hiddenVisibilities != null) {
             for (Visibility v : hiddenVisibilities) {
@@ -84,11 +88,8 @@ public abstract class ElementBase implements Element {
         } else if (Edge.LABEL_PROPERTY_NAME.equals(name) && this instanceof Edge) {
             return getEdgeLabelProperty();
         }
-        for (Property p : getProperties()) {
+        for (Property p : getProperties(name)) {
             if (!p.getKey().equals(key)) {
-                continue;
-            }
-            if (!p.getName().equals(name)) {
                 continue;
             }
             if (visibility == null) {
@@ -133,15 +134,11 @@ public abstract class ElementBase implements Element {
         } else if (Edge.LABEL_PROPERTY_NAME.equals(name) && this instanceof Edge) {
             return getEdgeLabelProperty();
         }
-        Iterator<Object> values = getPropertyValues(name).iterator();
-        while (values.hasNext() && index >= 0) {
-            Object v = values.next();
-            if (index == 0) {
-                return v;
-            }
-            index--;
+        Property property = this.properties.getProperty(name, index);
+        if (property == null) {
+            return null;
         }
-        return null;
+        return property.getValue();
     }
 
     @Override
@@ -151,15 +148,11 @@ public abstract class ElementBase implements Element {
         } else if (Edge.LABEL_PROPERTY_NAME.equals(name) && this instanceof Edge) {
             return getEdgeLabelProperty();
         }
-        Iterator<Object> values = getPropertyValues(key, name).iterator();
-        while (values.hasNext() && index >= 0) {
-            Object v = values.next();
-            if (index == 0) {
-                return v;
-            }
-            index--;
+        Property property = this.properties.getProperty(key, name, index);
+        if (property == null) {
+            return null;
         }
-        return null;
+        return property.getValue();
     }
 
     @Override
@@ -203,7 +196,7 @@ public abstract class ElementBase implements Element {
 
     @Override
     public Iterable<Property> getProperties() {
-        return this.properties;
+        return this.properties.getProperties();
     }
 
     public Iterable<PropertyDeleteMutation> getPropertyDeleteMutations() {
@@ -215,7 +208,7 @@ public abstract class ElementBase implements Element {
     }
 
     @Override
-    public Iterable<Property> getProperties(final String name) {
+    public Iterable<Property> getProperties(String name) {
         if (ID_PROPERTY_NAME.equals(name)) {
             ArrayList<Property> result = new ArrayList<>();
             result.add(getIdProperty());
@@ -225,32 +218,15 @@ public abstract class ElementBase implements Element {
             result.add(getEdgeLabelProperty());
             return result;
         }
-        return new FilterIterable<Property>(getProperties()) {
-            @Override
-            protected boolean isIncluded(Property property) {
-                return property.getName().equals(name);
-            }
-        };
+        return this.properties.getProperties(name);
     }
 
     @Override
     public Iterable<Property> getProperties(final String key, final String name) {
-        if (ID_PROPERTY_NAME.equals(name)) {
-            ArrayList<Property> result = new ArrayList<>();
-            result.add(getIdProperty());
-            return result;
-        } else if (Edge.LABEL_PROPERTY_NAME.equals(name) && this instanceof Edge) {
-            ArrayList<Property> result = new ArrayList<>();
-            result.add(getEdgeLabelProperty());
-            return result;
+        if (ID_PROPERTY_NAME.equals(name) || (Edge.LABEL_PROPERTY_NAME.equals(name) && this instanceof Edge)) {
+            return getProperties(name);
         }
-        return new FilterIterable<Property>(getProperties()) {
-            @Override
-            protected boolean isIncluded(Property property) {
-
-                return property.getName().equals(name) && property.getKey().equals(key);
-            }
-        };
+        return this.properties.getProperties(key, name);
     }
 
     // this method differs setProperties in that it only updates the in memory representation of the properties
@@ -297,7 +273,7 @@ public abstract class ElementBase implements Element {
         }
         Property existingProperty = getProperty(property.getKey(), property.getName(), property.getVisibility());
         if (existingProperty == null) {
-            this.properties.add(property);
+            this.properties.addProperty(property);
         } else {
             if (existingProperty instanceof MutableProperty) {
                 ((MutableProperty) existingProperty).update(property);
@@ -310,7 +286,7 @@ public abstract class ElementBase implements Element {
     protected Property removePropertyInternal(String key, String name, Visibility visibility) {
         Property property = getProperty(key, name, visibility);
         if (property != null) {
-            this.properties.remove(property);
+            this.properties.removeProperty(property);
         }
         return property;
     }
@@ -318,7 +294,7 @@ public abstract class ElementBase implements Element {
     protected Property removePropertyInternal(String key, String name) {
         Property property = getProperty(key, name);
         if (property != null) {
-            this.properties.remove(property);
+            this.properties.removeProperty(property);
         }
         return property;
     }
@@ -326,7 +302,7 @@ public abstract class ElementBase implements Element {
     protected Property softDeletePropertyInternal(String key, String name) {
         Property property = getProperty(key, name);
         if (property != null) {
-            this.properties.remove(property);
+            this.properties.removeProperty(property);
         }
         return property;
     }
@@ -334,24 +310,13 @@ public abstract class ElementBase implements Element {
     protected Property softDeletePropertyInternal(String key, String name, Visibility visibility) {
         Property property = getProperty(key, name, visibility);
         if (property != null) {
-            this.properties.remove(property);
+            this.properties.removeProperty(property);
         }
         return property;
     }
 
     protected Iterable<Property> removePropertyInternal(String name) {
-        List<Property> removedProperties = new ArrayList<>();
-        for (Property p : this.properties) {
-            if (p.getName().equals(name)) {
-                removedProperties.add(p);
-            }
-        }
-
-        for (Property p : removedProperties) {
-            this.properties.remove(p);
-        }
-
-        return removedProperties;
+        return this.properties.removeProperties(name);
     }
 
     public Graph getGraph() {
@@ -477,8 +442,8 @@ public abstract class ElementBase implements Element {
     @Override
     public void mergeProperties(Element element) {
         for (Property property : element.getProperties()) {
-            this.properties.remove(property);
-            this.properties.add(property);
+            this.properties.removeProperty(property);
+            this.properties.addProperty(property);
         }
     }
 

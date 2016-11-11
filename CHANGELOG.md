@@ -1,3 +1,8 @@
+# v2.5.1
+
+* Changed: Speed up property reads by using Maps to directly get the property
+* Fixed: updated to repopulate the Metadata entriesLock in the case that the class gets deserialized
+
 # v2.5.0
 
 * Added: Optional benchmarks unit test
