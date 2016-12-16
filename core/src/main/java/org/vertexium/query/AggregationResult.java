@@ -15,6 +15,9 @@ public abstract class AggregationResult {
         if (resultType.equals(HistogramResult.class)) {
             return resultType.cast(new HistogramResult(new ArrayList<HistogramBucket>()));
         }
+        if (resultType.equals(RangeResult.class)) {
+            return resultType.cast(new RangeResult(new ArrayList<RangeBucket>()));
+        }
         if (resultType.equals(GeohashResult.class)) {
             return resultType.cast(new GeohashResult(new ArrayList<GeohashBucket>()));
         }

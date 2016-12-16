@@ -18,9 +18,10 @@ import org.vertexium.property.StreamingPropertyValue;
 import org.vertexium.query.*;
 import org.vertexium.search.DefaultSearchIndex;
 import org.vertexium.search.IndexHint;
-import org.vertexium.test.util.LargeStringInputStream;
+import org.vertexium.test.util.*;
 import org.vertexium.type.*;
 import org.vertexium.util.*;
+import org.vertexium.util.IterableUtils;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -4842,6 +4843,207 @@ public abstract class GraphTestBase {
         }
         q.addAggregation(agg);
         return histogramBucketToMap(q.vertices().getAggregationResult("hist-count", HistogramResult.class).getBuckets());
+    }
+
+    @Test
+    public void testGraphQueryWithRangeAggregation() throws ParseException {
+        boolean searchIndexFieldLevelSecurity = isSearchIndexFieldLevelSecuritySupported();
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
+
+        graph.defineProperty("emptyField").dataType(Integer.class).define();
+
+        graph.prepareVertex("v1", VISIBILITY_EMPTY)
+                .addPropertyValue("", "age", 25, VISIBILITY_EMPTY)
+                .addPropertyValue("", "birthDate", simpleDateFormat.parse("1990-09-04"), VISIBILITY_EMPTY)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.prepareVertex("v2", VISIBILITY_EMPTY)
+                .addPropertyValue("", "age", 20, VISIBILITY_EMPTY)
+                .addPropertyValue("", "birthDate", simpleDateFormat.parse("1995-09-04"), VISIBILITY_EMPTY)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.prepareVertex("v3", VISIBILITY_EMPTY)
+                .addPropertyValue("", "age", 20, VISIBILITY_EMPTY)
+                .addPropertyValue("", "birthDate", simpleDateFormat.parse("1995-08-15"), VISIBILITY_EMPTY)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.prepareVertex("v4", VISIBILITY_EMPTY)
+                .addPropertyValue("", "age", 20, VISIBILITY_A)
+                .addPropertyValue("", "birthDate", simpleDateFormat.parse("1995-03-02"), VISIBILITY_EMPTY)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        // numeric range
+        RangeResult aggregationResult = queryGraphQueryWithRangeAggregation(
+                "age",
+                null,
+                "lower",
+                21,
+                "middle",
+                23,
+                "upper",
+                AUTHORIZATIONS_EMPTY);
+        assumeTrue("range aggregation not supported", aggregationResult != null);
+        assertEquals(searchIndexFieldLevelSecurity ? 2 : 3, aggregationResult.getBucketByKey("lower").getCount());
+        assertEquals(0, aggregationResult.getBucketByKey("middle").getCount());
+        assertEquals(1, aggregationResult.getBucketByKey("upper").getCount());
+
+        // numeric range with permission to see more data
+        aggregationResult = queryGraphQueryWithRangeAggregation(
+                "age",
+                null,
+                "lower",
+                21,
+                "middle",
+                23,
+                "upper",
+                AUTHORIZATIONS_A_AND_B);
+        assumeTrue("range aggregation not supported", aggregationResult != null);
+        assertEquals(3, aggregationResult.getBucketByKey("lower").getCount());
+        assertEquals(0, aggregationResult.getBucketByKey("middle").getCount());
+        assertEquals(1, aggregationResult.getBucketByKey("upper").getCount());
+
+        // range for a field with no values
+        aggregationResult = queryGraphQueryWithRangeAggregation(
+                "emptyField",
+                null,
+                "lower",
+                21,
+                "middle",
+                23,
+                "upper",
+                AUTHORIZATIONS_EMPTY);
+        assumeTrue("range aggregation not supported", aggregationResult != null);
+        assertEquals(0, IterableUtils.count(aggregationResult.getBuckets()));
+
+        // date range with dates specified as strings
+        aggregationResult = queryGraphQueryWithRangeAggregation(
+                "birthDate",
+                null,
+                "lower",
+                "1991-01-01",
+                "middle",
+                "1995-08-30",
+                "upper",
+                AUTHORIZATIONS_EMPTY);
+        assumeTrue("range aggregation not supported", aggregationResult != null);
+        assertEquals(1, aggregationResult.getBucketByKey("lower").getCount());
+        assertEquals(2, aggregationResult.getBucketByKey("middle").getCount());
+        assertEquals(1, aggregationResult.getBucketByKey("upper").getCount());
+
+        // date range without user specified keys
+        aggregationResult = queryGraphQueryWithRangeAggregation(
+                "birthDate",
+                "yyyy-MM-dd",
+                null,
+                "1991-01-01",
+                null,
+                "1995-08-30",
+                null,
+                AUTHORIZATIONS_EMPTY);
+        assumeTrue("range aggregation not supported", aggregationResult != null);
+        assertEquals(1, aggregationResult.getBucketByKey("*-1991-01-01").getCount());
+        assertEquals(2, aggregationResult.getBucketByKey("1991-01-01-1995-08-30").getCount());
+        assertEquals(1, aggregationResult.getBucketByKey("1995-08-30-*").getCount());
+
+        // date range with dates specified as date objects
+        aggregationResult = queryGraphQueryWithRangeAggregation(
+                "birthDate",
+                null,
+                "lower",
+                simpleDateFormat.parse("1991-01-01"),
+                "middle",
+                simpleDateFormat.parse("1995-08-30"),
+                "upper",
+                AUTHORIZATIONS_EMPTY);
+        assumeTrue("range aggregation not supported", aggregationResult != null);
+        assertEquals(1, aggregationResult.getBucketByKey("lower").getCount());
+        assertEquals(2, aggregationResult.getBucketByKey("middle").getCount());
+        assertEquals(1, aggregationResult.getBucketByKey("upper").getCount());
+    }
+
+    private RangeResult queryGraphQueryWithRangeAggregation(
+            String propertyName,
+            String format,
+            String keyOne,
+            Object boundaryOne,
+            String keyTwo,
+            Object boundaryTwo,
+            String keyThree,
+            Authorizations authorizations) {
+        Query q = graph.query(authorizations).limit(0);
+        RangeAggregation agg = new RangeAggregation("range-count", propertyName, format);
+        if (!q.isAggregationSupported(agg)) {
+            LOGGER.warn("%s unsupported", RangeAggregation.class.getName());
+            return null;
+
+        }
+        agg.addUnboundedTo(keyOne, boundaryOne);
+        agg.addRange(keyTwo, boundaryOne, boundaryTwo);
+        agg.addUnboundedFrom(keyThree, boundaryTwo);
+        q.addAggregation(agg);
+        return q.vertices().getAggregationResult("range-count", RangeResult.class);
+    }
+
+    @Test
+    public void testGraphQueryWithRangeAggregationAndNestedTerms() throws ParseException {
+        graph.prepareVertex("v1", VISIBILITY_EMPTY)
+                .addPropertyValue("", "age", 25, VISIBILITY_EMPTY)
+                .addPropertyValue("", "name", "Alice", VISIBILITY_EMPTY)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.prepareVertex("v2", VISIBILITY_EMPTY)
+                .addPropertyValue("", "age", 20, VISIBILITY_EMPTY)
+                .addPropertyValue("", "name", "Alice", VISIBILITY_EMPTY)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.prepareVertex("v3", VISIBILITY_EMPTY)
+                .addPropertyValue("", "age", 21, VISIBILITY_EMPTY)
+                .addPropertyValue("", "name", "Alice", VISIBILITY_EMPTY)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.prepareVertex("v4", VISIBILITY_EMPTY)
+                .addPropertyValue("", "age", 22, VISIBILITY_EMPTY)
+                .addPropertyValue("", "name", "Bob", VISIBILITY_EMPTY)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        Query q = graph.query(AUTHORIZATIONS_A_AND_B).limit(0);
+        RangeAggregation rangeAggregation = new RangeAggregation("range-count", "age");
+        TermsAggregation termsAggregation = new TermsAggregation("name-count", "name");
+        rangeAggregation.addNestedAggregation(termsAggregation);
+
+        assumeTrue("range aggregation not supported", q.isAggregationSupported(rangeAggregation));
+        assumeTrue("terms aggregation not supported", q.isAggregationSupported(termsAggregation));
+
+
+        rangeAggregation.addUnboundedTo("lower", 23);
+        rangeAggregation.addUnboundedFrom("upper", 23);
+        q.addAggregation(rangeAggregation);
+
+        RangeResult rangeAggResult = q.vertices().getAggregationResult("range-count", RangeResult.class);
+        assertEquals(3, rangeAggResult.getBucketByKey("lower").getCount());
+        assertEquals(1, rangeAggResult.getBucketByKey("upper").getCount());
+
+        Comparator<TermsBucket> bucketComparator = new Comparator<TermsBucket>() {
+            @Override
+            public int compare(TermsBucket b1, TermsBucket b2) {
+                return Long.compare(b2.getCount(), b1.getCount());
+            }
+        };
+
+        Map<String, AggregationResult> lowerNestedResult = rangeAggResult.getBucketByKey("lower").getNestedResults();
+        TermsResult lowerTermsResult = (TermsResult)lowerNestedResult.get(termsAggregation.getAggregationName());
+        List<TermsBucket> lowerTermsBuckets = IterableUtils.toList(lowerTermsResult.getBuckets());
+        Collections.sort(lowerTermsBuckets, bucketComparator);
+        assertEquals(1, lowerNestedResult.size());
+        assertEquals(2, lowerTermsBuckets.size());
+        assertEquals("Alice", lowerTermsBuckets.get(0).getKey());
+        assertEquals(2, lowerTermsBuckets.get(0).getCount());
+        assertEquals("Bob", lowerTermsBuckets.get(1).getKey());
+        assertEquals(1, lowerTermsBuckets.get(1).getCount());
+
+        Map<String, AggregationResult> upperNestedResult = rangeAggResult.getBucketByKey("upper").getNestedResults();
+        TermsResult upperTermsResult = (TermsResult)upperNestedResult.get(termsAggregation.getAggregationName());
+        List<TermsBucket> upperTermsBuckets = IterableUtils.toList(upperTermsResult.getBuckets());
+        assertEquals(1, upperNestedResult.size());
+        assertEquals(1, upperTermsBuckets.size());
+        assertEquals("Alice", upperTermsBuckets.get(0).getKey());
+        assertEquals(1, upperTermsBuckets.get(0).getCount());
     }
 
     @Test

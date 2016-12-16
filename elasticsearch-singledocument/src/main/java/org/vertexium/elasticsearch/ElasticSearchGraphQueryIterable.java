@@ -10,6 +10,8 @@ import org.elasticsearch.search.aggregations.bucket.geogrid.InternalGeoHashGrid;
 import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogram;
 import org.elasticsearch.search.aggregations.bucket.histogram.Histogram;
 import org.elasticsearch.search.aggregations.bucket.histogram.InternalHistogram;
+import org.elasticsearch.search.aggregations.bucket.range.InternalRange;
+import org.elasticsearch.search.aggregations.bucket.range.Range;
 import org.elasticsearch.search.aggregations.bucket.terms.InternalTerms;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.metrics.stats.extended.ExtendedStats;
@@ -132,6 +134,9 @@ public class ElasticSearchGraphQueryIterable<T extends Element> extends DefaultG
         if (first instanceof HistogramAggregation || first instanceof InternalHistogram) {
             return reduceHistogramResults(query, aggs);
         }
+        if (first instanceof RangeAggregation || first instanceof InternalRange) {
+            return reduceRangeResults(query, aggs);
+        }
         if (first instanceof TermsAggregation || first instanceof InternalTerms) {
             return reduceTermsResults(query, aggs);
         }
@@ -185,6 +190,36 @@ public class ElasticSearchGraphQueryIterable<T extends Element> extends DefaultG
             @Override
             protected HistogramResult bucketsToResults(List<HistogramBucket> buckets) {
                 return new HistogramResult(buckets);
+            }
+        }.reduce(query, bucketsByKey);
+    }
+
+    private static RangeResult reduceRangeResults(ElasticSearchSingleDocumentSearchQueryBase query, List<Aggregation> aggs) {
+        Map<Object, List<MultiBucketsAggregation.Bucket>> bucketsByKey = new HashMap<>();
+        for (Aggregation agg : aggs) {
+            if (agg instanceof Range) {
+                Range r = (Range) agg;
+                for (Range.Bucket b : r.getBuckets()) {
+                    List<MultiBucketsAggregation.Bucket> l = bucketsByKey.get(b.getKey());
+                    if (l == null) {
+                        l = new ArrayList<>();
+                        bucketsByKey.put(b.getKey(), l);
+                    }
+                    l.add(b);
+                }
+            } else {
+                throw new VertexiumException("Aggregation is not a range: " + agg.getClass().getName());
+            }
+        }
+        return new MultiBucketsAggregationReducer<RangeResult, RangeBucket>() {
+            @Override
+            protected RangeBucket createBucket(Object key, long count, Map<String, AggregationResult> nestedResults, List<MultiBucketsAggregation.Bucket> buckets) {
+                return new RangeBucket(key, count, nestedResults);
+            }
+
+            @Override
+            protected RangeResult bucketsToResults(List<RangeBucket> buckets) {
+                return new RangeResult(buckets);
             }
         }.reduce(query, bucketsByKey);
     }

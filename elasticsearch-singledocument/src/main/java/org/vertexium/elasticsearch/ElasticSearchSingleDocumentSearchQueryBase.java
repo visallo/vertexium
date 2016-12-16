@@ -2,6 +2,7 @@ package org.vertexium.elasticsearch;
 
 import com.google.common.base.Function;
 import com.google.common.base.Joiner;
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import org.apache.lucene.analysis.TokenStream;
@@ -25,6 +26,8 @@ import org.elasticsearch.search.aggregations.bucket.geogrid.GeoHashGridBuilder;
 import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogram;
 import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramBuilder;
 import org.elasticsearch.search.aggregations.bucket.histogram.HistogramBuilder;
+import org.elasticsearch.search.aggregations.bucket.range.RangeBuilder;
+import org.elasticsearch.search.aggregations.bucket.range.date.DateRangeBuilder;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsBuilder;
 import org.elasticsearch.search.aggregations.metrics.stats.extended.ExtendedStatsBuilder;
 import org.elasticsearch.search.sort.SortOrder;
@@ -135,6 +138,9 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
     @Override
     public boolean isAggregationSupported(Aggregation agg) {
         if (agg instanceof HistogramAggregation) {
+            return true;
+        }
+        if (agg instanceof RangeAggregation) {
             return true;
         }
         if (agg instanceof TermsAggregation) {
@@ -808,6 +814,8 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
         for (Aggregation agg : aggregations) {
             if (agg instanceof HistogramAggregation) {
                 aggs.addAll(getElasticsearchHistogramAggregations((HistogramAggregation) agg));
+            } else if (agg instanceof RangeAggregation) {
+                aggs.addAll(getElasticsearchRangeAggregations((RangeAggregation) agg));
             } else if (agg instanceof TermsAggregation) {
                 aggs.addAll(getElasticsearchTermsAggregations((TermsAggregation) agg));
             } else if (agg instanceof GeohashAggregation) {
@@ -995,6 +1003,64 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
                 }
 
                 aggs.add(histogramAgg);
+            }
+        }
+        return aggs;
+    }
+
+    protected List<AggregationBuilder> getElasticsearchRangeAggregations(RangeAggregation agg) {
+        List<AggregationBuilder> aggs = new ArrayList<>();
+        PropertyDefinition propertyDefinition = getPropertyDefinition(agg.getFieldName());
+        if (propertyDefinition == null) {
+            throw new VertexiumException("Could not find mapping for property: " + agg.getFieldName());
+        }
+        Class propertyDataType = propertyDefinition.getDataType();
+        for (String propertyName : getPropertyNames(agg.getFieldName())) {
+            String visibilityHash = getSearchIndex().getPropertyVisibilityHashFromDeflatedPropertyName(propertyName);
+            String aggName = createAggregationName(agg.getAggregationName(), visibilityHash);
+            if (propertyDataType == Date.class) {
+                DateRangeBuilder dateRangeBuilder = AggregationBuilders.dateRange(aggName);
+                dateRangeBuilder.field(propertyName);
+
+                if (!Strings.isNullOrEmpty(agg.getFormat())) {
+                    dateRangeBuilder.format(agg.getFormat());
+                }
+
+                for (RangeAggregation.Range range : agg.getRanges()) {
+                    dateRangeBuilder.addRange(range.getKey(), range.getFrom(), range.getTo());
+                }
+
+                for (AbstractAggregationBuilder subAgg : getElasticsearchAggregations(agg.getNestedAggregations())) {
+                    dateRangeBuilder.subAggregation(subAgg);
+                }
+
+                aggs.add(dateRangeBuilder);
+            } else {
+                RangeBuilder rangeBuilder = AggregationBuilders.range(aggName);
+                rangeBuilder.field(propertyName);
+
+                if (!Strings.isNullOrEmpty(agg.getFormat())) {
+                    throw new VertexiumException("Invalid use of format for property: " + agg.getFieldName() +
+                            ". Format is only valid for date properties");
+                }
+
+                for (RangeAggregation.Range range : agg.getRanges()) {
+                    Object from = range.getFrom();
+                    Object to = range.getTo();
+                    if ((from != null && !(from instanceof Number)) || (to != null && !(to instanceof Number))) {
+                        throw new VertexiumException("Invalid range for property: " + agg.getFieldName() +
+                                ". Both to and from must be Numeric.");
+                    }
+                    rangeBuilder.addRange(range.getKey(),
+                            from == null ? Double.MIN_VALUE : ((Number)from).doubleValue(),
+                            to == null ? Double.MAX_VALUE : ((Number)to).doubleValue());
+                }
+
+                for (AbstractAggregationBuilder subAgg : getElasticsearchAggregations(agg.getNestedAggregations())) {
+                    rangeBuilder.subAggregation(subAgg);
+                }
+
+                aggs.add(rangeBuilder);
             }
         }
         return aggs;
