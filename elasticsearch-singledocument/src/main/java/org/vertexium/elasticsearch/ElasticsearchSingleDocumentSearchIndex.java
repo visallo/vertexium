@@ -61,6 +61,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import static org.vertexium.util.Preconditions.checkNotNull;
 
@@ -361,7 +362,7 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
     }
 
     private void addActionRequestBuilderForFlush(String elementId, UpdateRequestBuilder updateRequestBuilder) {
-        Future future = null;
+        Future future;
         try {
             future = updateRequestBuilder.execute();
         } catch (Exception ex) {
@@ -398,7 +399,7 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
                         "ctx._source.remove(oldFieldName);",
                         ScriptService.ScriptType.INLINE
                 )
-                .setScriptParams(ImmutableMap.<String, Object>of(
+                .setScriptParams(ImmutableMap.of(
                         "oldFieldName", oldFieldName
                 ))
                 .get();
@@ -473,41 +474,41 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
 
     private Map<String, Object> getProperties(Graph graph, Element element) throws IOException {
         Map<String, Object> propertiesMap = new HashMap<>();
+        List<Property> streamingProperties = new ArrayList<>();
         for (Property property : element.getProperties()) {
-            addPropertyToMap(graph, property, propertiesMap);
+            if (property.getValue() != null && shouldIgnoreType(property.getValue().getClass())) {
+                continue;
+            }
+
+            if (property.getValue() instanceof StreamingPropertyValue) {
+                StreamingPropertyValue spv = (StreamingPropertyValue) property.getValue();
+                if (isStreamingPropertyValueIndexable(graph, property.getName(), spv)) {
+                    streamingProperties.add(property);
+                }
+            } else {
+                addPropertyToMap(graph, property, propertiesMap);
+            }
         }
+        addStreamingPropertyValuesToMap(graph, streamingProperties, propertiesMap);
         return propertiesMap;
     }
 
     private void addPropertyToMap(Graph graph, Property property, Map<String, Object> propertiesMap) throws IOException {
         Object propertyValue = property.getValue();
+        addPropertyToMap(graph, property, propertyValue, propertiesMap);
+    }
+
+    private void addPropertyToMap(Graph graph, Property property, Object propertyValue, Map<String, Object> propertiesMap) {
         String propertyName = deflatePropertyName(graph, property);
         PropertyDefinition propertyDefinition = getPropertyDefinition(graph, propertyName);
-        if (propertyValue != null && shouldIgnoreType(propertyValue.getClass())) {
-            return;
-        } else if (propertyValue instanceof GeoPoint) {
+        if (propertyValue instanceof GeoPoint) {
             convertGeoPoint(graph, propertiesMap, property, (GeoPoint) propertyValue);
             return;
         } else if (propertyValue instanceof GeoCircle) {
             convertGeoCircle(graph, propertiesMap, property, (GeoCircle) propertyValue);
             return;
-        } else if (propertyValue instanceof StreamingPropertyValue) {
-            StreamingPropertyValue streamingPropertyValue = (StreamingPropertyValue) propertyValue;
-            if (!streamingPropertyValue.isSearchIndex()) {
-                return;
-            }
-
-            if (propertyDefinition != null && !propertyDefinition.getTextIndexHints().contains(TextIndexHint.FULL_TEXT)) {
-                return;
-            }
-
-            Class valueType = streamingPropertyValue.getValueType();
-            if (valueType == String.class) {
-                InputStream in = streamingPropertyValue.getInputStream();
-                propertyValue = StreamUtils.toString(in);
-            } else {
-                throw new VertexiumException("Unhandled StreamingPropertyValue type: " + valueType.getName());
-            }
+        } else if (propertyValue instanceof StreamingPropertyString) {
+            propertyValue = ((StreamingPropertyString) propertyValue).getPropertyValue();
         } else if (propertyValue instanceof String) {
             if (propertyDefinition == null || propertyDefinition.getTextIndexHints().contains(TextIndexHint.EXACT_MATCH)) {
                 addPropertyValueToPropertiesMap(propertiesMap, propertyName + EXACT_MATCH_PROPERTY_NAME_SUFFIX, propertyValue);
@@ -529,6 +530,57 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
         addPropertyValueToPropertiesMap(propertiesMap, propertyName, propertyValue);
         if (propertyDefinition != null && propertyDefinition.isSortable()) {
             addPropertyValueToPropertiesMap(propertiesMap, propertyDefinition.getPropertyName() + SORT_PROPERTY_NAME_SUFFIX, propertyValue);
+        }
+    }
+
+    private boolean isStreamingPropertyValueIndexable(Graph graph, String propertyName, StreamingPropertyValue streamingPropertyValue) {
+        if (!streamingPropertyValue.isSearchIndex()) {
+            return false;
+        }
+
+        PropertyDefinition propertyDefinition = getPropertyDefinition(graph, propertyName);
+        if (propertyDefinition != null && !propertyDefinition.getTextIndexHints().contains(TextIndexHint.FULL_TEXT)) {
+            return false;
+        }
+
+        Class valueType = streamingPropertyValue.getValueType();
+        if (valueType == String.class) {
+            return true;
+        } else {
+            throw new VertexiumException("Unhandled StreamingPropertyValue type: " + valueType.getName());
+        }
+    }
+
+    private void addStreamingPropertyValuesToMap(Graph graph, List<Property> properties, Map<String, Object> propertiesMap) {
+        List<StreamingPropertyValue> streamingPropertyValues = properties.stream()
+                .map((property) -> {
+                    if (!(property.getValue() instanceof StreamingPropertyValue)) {
+                        throw new VertexiumException("property with a value that is not a StreamingPropertyValue passed to addStreamingPropertyValuesToMap");
+                    }
+                    return (StreamingPropertyValue) property.getValue();
+                })
+                .collect(Collectors.toList());
+
+        List<InputStream> inputStreams = graph.getStreamingPropertyValueInputStreams(streamingPropertyValues);
+        for (int i = 0; i < properties.size(); i++) {
+            try {
+                String propertyValue = StreamUtils.toString(inputStreams.get(i));
+                addPropertyToMap(graph, properties.get(i), new StreamingPropertyString(propertyValue), propertiesMap);
+            } catch (IOException ex) {
+                throw new VertexiumException("could not convert streaming property to string", ex);
+            }
+        }
+    }
+
+    private static class StreamingPropertyString {
+        private final String propertyValue;
+
+        public StreamingPropertyString(String propertyValue) {
+            this.propertyValue = propertyValue;
+        }
+
+        public String getPropertyValue() {
+            return propertyValue;
         }
     }
 
@@ -1285,7 +1337,7 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
         }
     }
 
-    protected void convertGeoPoint(Graph graph, Map<String, Object> propertiesMap, Property property, GeoPoint geoPoint) throws IOException {
+    protected void convertGeoPoint(Graph graph, Map<String, Object> propertiesMap, Property property, GeoPoint geoPoint) {
         Map<String, Object> propertyValueMap = new HashMap<>();
         propertyValueMap.put("lat", geoPoint.getLatitude());
         propertyValueMap.put("lon", geoPoint.getLongitude());
@@ -1309,7 +1361,7 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
         }
     }
 
-    protected void convertGeoCircle(Graph graph, Map<String, Object> propertiesMap, Property property, GeoCircle geoCircle) throws IOException {
+    protected void convertGeoCircle(Graph graph, Map<String, Object> propertiesMap, Property property, GeoCircle geoCircle) {
         Map<String, Object> propertyValueMap = new HashMap<>();
         propertyValueMap.put("type", "circle");
         List<Double> coordinates = new ArrayList<>();

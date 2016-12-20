@@ -25,6 +25,18 @@ class StreamingPropertyValueTable extends StreamingPropertyValue {
         return this.data.length;
     }
 
+    public String getDataRowKey() {
+        return dataRowKey;
+    }
+
+    public boolean isDataLoaded() {
+        return this.data != null;
+    }
+
+    public void setData(byte[] data) {
+        this.data = data;
+    }
+
     @Override
     public InputStream getInputStream() {
         // we need to store the data here to handle the case that the mutation hasn't been flushed yet but the element is
@@ -34,7 +46,7 @@ class StreamingPropertyValueTable extends StreamingPropertyValue {
     }
 
     private void ensureDataLoaded() {
-        if (this.data == null) {
+        if (!isDataLoaded()) {
             this.data = this.graph.streamingPropertyValueTableData(this.dataRowKey);
         }
     }

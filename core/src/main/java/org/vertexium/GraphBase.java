@@ -12,7 +12,9 @@ import org.vertexium.query.MultiVertexQuery;
 import org.vertexium.query.SimilarToGraphQuery;
 import org.vertexium.util.*;
 
+import java.io.InputStream;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.vertexium.util.IterableUtils.count;
 import static org.vertexium.util.IterableUtils.toSet;
@@ -918,5 +920,12 @@ public abstract class GraphBase implements Graph {
             elements.add(element);
         }
         return elements;
+    }
+
+    @Override
+    public List<InputStream> getStreamingPropertyValueInputStreams(List<StreamingPropertyValue> streamingPropertyValues) {
+        return streamingPropertyValues.stream()
+                .map(StreamingPropertyValue::getInputStream)
+                .collect(Collectors.toList());
     }
 }

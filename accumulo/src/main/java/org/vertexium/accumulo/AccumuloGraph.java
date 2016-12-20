@@ -23,8 +23,6 @@ import org.apache.curator.RetryPolicy;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.recipes.cache.TreeCache;
-import org.apache.curator.framework.recipes.cache.TreeCacheEvent;
-import org.apache.curator.framework.recipes.cache.TreeCacheListener;
 import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.io.Text;
@@ -49,9 +47,11 @@ import org.vertexium.search.IndexHint;
 import org.vertexium.util.*;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.util.*;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import static org.vertexium.util.IterableUtils.singleOrDefault;
 import static org.vertexium.util.IterableUtils.toList;
@@ -799,6 +799,38 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         }
     }
 
+    @Override
+    public List<InputStream> getStreamingPropertyValueInputStreams(List<StreamingPropertyValue> streamingPropertyValues) {
+        if (streamingPropertyValues.size() == 0) {
+            return Collections.emptyList();
+        }
+
+        List<StreamingPropertyValueTable> notLoadedTableSpvs = streamingPropertyValues.stream()
+                .filter((spv) -> spv instanceof StreamingPropertyValueTable)
+                .map((spv) -> (StreamingPropertyValueTable) spv)
+                .filter((spv) -> !spv.isDataLoaded())
+                .collect(Collectors.toList());
+
+        List<String> dataRowKeys = notLoadedTableSpvs.stream()
+                .map(StreamingPropertyValueTable::getDataRowKey)
+                .collect(Collectors.toList());
+
+        Map<String, byte[]> tableInputStreams = streamingPropertyValueTableDatas(dataRowKeys);
+        notLoadedTableSpvs
+                .forEach((spv) -> {
+                    String dataRowKey = spv.getDataRowKey();
+                    byte[] bytes = tableInputStreams.get(dataRowKey);
+                    if (bytes == null) {
+                        throw new VertexiumException("Could not find StreamingPropertyValue data: " + dataRowKey);
+                    }
+                    spv.setData(bytes);
+                });
+
+        return streamingPropertyValues.stream()
+                .map(StreamingPropertyValue::getInputStream)
+                .collect(Collectors.toList());
+    }
+
     private static abstract class AddEdgeToVertexRunnable {
         public abstract void run(AccumuloEdge edge);
     }
@@ -1474,20 +1506,27 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         }
     }
 
-    public byte[] streamingPropertyValueTableData(String dataRowKey) {
+    private Map<String, byte[]> streamingPropertyValueTableDatas(List<String> dataRowKeys) {
         try {
+            if (dataRowKeys.size() == 0) {
+                return Collections.emptyMap();
+            }
+
+            List<org.apache.accumulo.core.data.Range> ranges = dataRowKeys.stream()
+                    .map(RangeUtils::createRangeFromString)
+                    .collect(Collectors.toList());
+
             final long timerStartTime = System.currentTimeMillis();
-            org.apache.accumulo.core.data.Range range = new org.apache.accumulo.core.data.Range(dataRowKey);
-            Scanner scanner = createScanner(getDataTableName(), range, new org.apache.accumulo.core.security.Authorizations());
+            ScannerBase scanner = createBatchScanner(getDataTableName(), ranges, new org.apache.accumulo.core.security.Authorizations());
             GRAPH_LOGGER.logStartIterator(scanner);
             Span trace = Trace.start("streamingPropertyValueTableData");
-            trace.data("dataRowKey", dataRowKey);
+            trace.data("dataRowKeyCount", Integer.toString(dataRowKeys.size()));
             try {
-                Iterator<Map.Entry<Key, Value>> it = scanner.iterator();
-                if (it.hasNext()) {
-                    Map.Entry<Key, Value> col = it.next();
-                    return col.getValue().get();
+                Map<String, byte[]> results = new HashMap<>();
+                for (Map.Entry<Key, Value> col : scanner) {
+                    results.put(col.getKey().getRow().toString(), col.getValue().get());
                 }
+                return results;
             } finally {
                 scanner.close();
                 trace.stop();
@@ -1496,7 +1535,16 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         } catch (Exception ex) {
             throw new VertexiumException(ex);
         }
-        throw new VertexiumException("Unexpected end of row: " + dataRowKey);
+    }
+
+    public byte[] streamingPropertyValueTableData(String dataRowKey) {
+        ArrayList<String> dataRowKeys = Lists.newArrayList(dataRowKey);
+        Map<String, byte[]> map = streamingPropertyValueTableDatas(dataRowKeys);
+        byte[] result = map.get(dataRowKey);
+        if (result == null) {
+            throw new VertexiumException("Could not find data with key: " + dataRowKey);
+        }
+        return result;
     }
 
     public static ColumnVisibility visibilityToAccumuloVisibility(Visibility visibility) {
@@ -1880,11 +1928,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                     if (!columnFamily.equals(AccumuloVertex.CF_OUT_EDGE)) {
                         if (columnFamily.equals(AccumuloVertex.CF_OUT_EDGE_SOFT_DELETE) || columnFamily.equals(AccumuloVertex.CF_OUT_EDGE_HIDDEN)) {
                             softDeletedEdgeIds.add(row.getKey().getColumnQualifier().toString());
-                            for (Iterator<RelatedEdge> i = results.iterator(); i.hasNext(); ) {
-                                if (softDeletedEdgeIds.contains(i.next().getEdgeId())) {
-                                    i.remove();
-                                }
-                            }
+                            results.removeIf(relatedEdge -> softDeletedEdgeIds.contains(relatedEdge.getEdgeId()));
                         }
                         continue;
                     }
@@ -2499,7 +2543,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
     }
 
     public void traceOn(String description) {
-        traceOn(description, new HashMap<String, String>());
+        traceOn(description, new HashMap<>());
     }
 
     @Override
@@ -2557,15 +2601,12 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             this.zkPath = zkPath;
             this.curatorFramework = curatorFramework;
             this.treeCache = new TreeCache(curatorFramework, zkPath);
-            this.treeCache.getListenable().addListener(new TreeCacheListener() {
-                @Override
-                public void childEvent(CuratorFramework client, TreeCacheEvent event) throws Exception {
-                    if (LOGGER.isTraceEnabled()) {
-                        LOGGER.trace("treeCache event, clearing cache");
-                    }
-                    synchronized (entries) {
-                        entries.clear();
-                    }
+            this.treeCache.getListenable().addListener((client, event) -> {
+                if (LOGGER.isTraceEnabled()) {
+                    LOGGER.trace("treeCache event, clearing cache");
+                }
+                synchronized (entries) {
+                    entries.clear();
                 }
             });
             try {
