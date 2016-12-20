@@ -19,7 +19,7 @@ public abstract class ElementBuilder<T extends Element> implements ElementMutati
      * which allows treating the multi-valued nature of properties as only containing a single value. Care must be
      * taken when using this method because properties are not only uniquely identified by just key and name but also
      * visibility so adding properties with the same name and different visibility strings is still permitted.
-     * 
+     * <p>
      * The added property will also be indexed in the configured search provider. The type of the value
      * will determine how it gets indexed.
      *
@@ -36,7 +36,7 @@ public abstract class ElementBuilder<T extends Element> implements ElementMutati
      * which allows treating the multi-valued nature of properties as only containing a single value. Care must be
      * taken when using this method because properties are not only uniquely identified by just key and name but also
      * visibility so adding properties with the same name and different visibility strings is still permitted.
-     *
+     * <p>
      * The added property will also be indexed in the configured search provider. The type of the value
      * will determine how it gets indexed.
      *
@@ -51,7 +51,7 @@ public abstract class ElementBuilder<T extends Element> implements ElementMutati
 
     /**
      * Adds or updates a property.
-     *
+     * <p>
      * The added property will also be indexed in the configured search provider. The type of the value
      * will determine how it gets indexed.
      *
@@ -66,7 +66,7 @@ public abstract class ElementBuilder<T extends Element> implements ElementMutati
 
     /**
      * Adds or updates a property.
-     *
+     * <p>
      * The added property will also be indexed in the configured search provider. The type of the value
      * will determine how it gets indexed.
      *
@@ -155,5 +155,22 @@ public abstract class ElementBuilder<T extends Element> implements ElementMutati
     public ElementMutation<T> setIndexHint(IndexHint indexHint) {
         this.indexHint = indexHint;
         return this;
+    }
+
+    @Override
+    public boolean hasChanges() {
+        if (properties.size() > 0) {
+            return true;
+        }
+
+        if (propertyDeletes.size() > 0) {
+            return true;
+        }
+
+        if (propertySoftDeletes.size() > 0) {
+            return true;
+        }
+
+        return false;
     }
 }

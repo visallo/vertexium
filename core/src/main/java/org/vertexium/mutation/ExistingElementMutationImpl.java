@@ -210,4 +210,33 @@ public abstract class ExistingElementMutationImpl<T extends Element> implements 
         this.indexHint = indexHint;
         return this;
     }
+
+    @Override
+    public boolean hasChanges() {
+        if (properties.size() > 0) {
+            return true;
+        }
+
+        if (propertyDeletes.size() > 0) {
+            return true;
+        }
+
+        if (propertySoftDeletes.size() > 0) {
+            return true;
+        }
+
+        if (newElementVisibility != null) {
+            return true;
+        }
+
+        if (alterPropertyVisibilities.size() > 0) {
+            return true;
+        }
+
+        if (setPropertyMetadatas.size() > 0) {
+            return true;
+        }
+
+        return false;
+    }
 }

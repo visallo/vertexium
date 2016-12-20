@@ -4,7 +4,7 @@ import org.vertexium.*;
 import org.vertexium.search.IndexHint;
 
 public interface ElementMutation<T extends Element> {
-    public static final String DEFAULT_KEY = "";
+    String DEFAULT_KEY = "";
 
     /**
      * saves the properties to the graph.
@@ -143,4 +143,9 @@ public interface ElementMutation<T extends Element> {
      * Gets the currently set index hint.
      */
     IndexHint getIndexHint();
+
+    /**
+     * true, if this mutation has any changes. false, if this mutation is empty.
+     */
+    boolean hasChanges();
 }

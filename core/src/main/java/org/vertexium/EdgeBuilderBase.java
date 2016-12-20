@@ -48,4 +48,13 @@ public abstract class EdgeBuilderBase extends ElementBuilder<Edge> implements Ed
     public abstract String getOutVertexId();
 
     public abstract String getInVertexId();
+
+    @Override
+    public boolean hasChanges() {
+        if (newEdgeLabel != null) {
+            return true;
+        }
+
+        return super.hasChanges();
+    }
 }

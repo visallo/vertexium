@@ -1,3 +1,8 @@
+# v2.5.2
+
+* Added: support for Elasticsearch range aggregations
+* Added: hasChanges method to mutations
+
 # v2.5.1
 
 * Changed: Speed up property reads by using Maps to directly get the property

@@ -19,4 +19,13 @@ public abstract class ExistingEdgeMutation extends ExistingElementMutationImpl<E
     public String getNewEdgeLabel() {
         return newEdgeLabel;
     }
+
+    @Override
+    public boolean hasChanges() {
+        if (newEdgeLabel != null) {
+            return true;
+        }
+
+        return super.hasChanges();
+    }
 }
