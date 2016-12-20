@@ -2,6 +2,7 @@ package org.vertexium;
 
 import org.vertexium.id.IdGenerator;
 import org.vertexium.mutation.ElementMutation;
+import org.vertexium.mutation.ExistingElementMutation;
 import org.vertexium.query.GraphQuery;
 import org.vertexium.query.MultiVertexQuery;
 import org.vertexium.query.SimilarToGraphQuery;
@@ -167,6 +168,11 @@ public abstract class GraphBaseWithSearchIndex extends GraphBase implements Grap
         List<Element> elements = new ArrayList<>();
         List<Element> elementsToAddToIndex = new ArrayList<>();
         for (ElementMutation m : mutations) {
+            if (m instanceof ExistingElementMutation && !m.hasChanges()) {
+                elements.add(((ExistingElementMutation) m).getElement());
+                continue;
+            }
+
             IndexHint indexHint = m.getIndexHint();
             m.setIndexHint(IndexHint.DO_NOT_INDEX);
             Element element = m.save(authorizations);

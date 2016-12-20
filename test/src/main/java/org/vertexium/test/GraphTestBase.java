@@ -18,10 +18,9 @@ import org.vertexium.property.StreamingPropertyValue;
 import org.vertexium.query.*;
 import org.vertexium.search.DefaultSearchIndex;
 import org.vertexium.search.IndexHint;
-import org.vertexium.test.util.*;
+import org.vertexium.test.util.LargeStringInputStream;
 import org.vertexium.type.*;
 import org.vertexium.util.*;
-import org.vertexium.util.IterableUtils;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -1833,16 +1832,31 @@ public abstract class GraphTestBase {
     @Test
     public void testSaveElementMutations() {
         List<ElementMutation> mutations = new ArrayList<>();
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 2; i++) {
             ElementBuilder<Vertex> m = graph.prepareVertex("v" + i, VISIBILITY_A)
                     .addPropertyValue("k1", "name", "joe", VISIBILITY_A);
             mutations.add(m);
         }
+        List<Element> saveVertices = toList(graph.saveElementMutations(mutations, AUTHORIZATIONS_ALL));
+        graph.flush();
+
+        assertEvents(
+                new AddVertexEvent(graph, (Vertex) saveVertices.get(0)),
+                new AddPropertyEvent(graph, saveVertices.get(0), saveVertices.get(0).getProperty("k1", "name")),
+                new AddVertexEvent(graph, (Vertex) saveVertices.get(1)),
+                new AddPropertyEvent(graph, saveVertices.get(1), saveVertices.get(1).getProperty("k1", "name"))
+        );
+        graphEvents.clear();
+
+        QueryResultsIterable<Vertex> vertices = graph.query(AUTHORIZATIONS_ALL).vertices();
+        assertResultsCount(2, 2, vertices);
+
+        mutations.clear();
+        mutations.add(((Vertex) saveVertices.get(0)).prepareMutation());
         graph.saveElementMutations(mutations, AUTHORIZATIONS_ALL);
         graph.flush();
 
-        QueryResultsIterable<Vertex> vertices = graph.query(AUTHORIZATIONS_ALL).vertices();
-        assertResultsCount(10, 10, vertices);
+        assertEvents();
     }
 
     @Test
@@ -4879,7 +4893,8 @@ public abstract class GraphTestBase {
                 "middle",
                 23,
                 "upper",
-                AUTHORIZATIONS_EMPTY);
+                AUTHORIZATIONS_EMPTY
+        );
         assumeTrue("range aggregation not supported", aggregationResult != null);
         assertEquals(searchIndexFieldLevelSecurity ? 2 : 3, aggregationResult.getBucketByKey("lower").getCount());
         assertEquals(0, aggregationResult.getBucketByKey("middle").getCount());
@@ -4894,7 +4909,8 @@ public abstract class GraphTestBase {
                 "middle",
                 23,
                 "upper",
-                AUTHORIZATIONS_A_AND_B);
+                AUTHORIZATIONS_A_AND_B
+        );
         assumeTrue("range aggregation not supported", aggregationResult != null);
         assertEquals(3, aggregationResult.getBucketByKey("lower").getCount());
         assertEquals(0, aggregationResult.getBucketByKey("middle").getCount());
@@ -4909,7 +4925,8 @@ public abstract class GraphTestBase {
                 "middle",
                 23,
                 "upper",
-                AUTHORIZATIONS_EMPTY);
+                AUTHORIZATIONS_EMPTY
+        );
         assumeTrue("range aggregation not supported", aggregationResult != null);
         assertEquals(0, IterableUtils.count(aggregationResult.getBuckets()));
 
@@ -4922,7 +4939,8 @@ public abstract class GraphTestBase {
                 "middle",
                 "1995-08-30",
                 "upper",
-                AUTHORIZATIONS_EMPTY);
+                AUTHORIZATIONS_EMPTY
+        );
         assumeTrue("range aggregation not supported", aggregationResult != null);
         assertEquals(1, aggregationResult.getBucketByKey("lower").getCount());
         assertEquals(2, aggregationResult.getBucketByKey("middle").getCount());
@@ -4937,7 +4955,8 @@ public abstract class GraphTestBase {
                 null,
                 "1995-08-30",
                 null,
-                AUTHORIZATIONS_EMPTY);
+                AUTHORIZATIONS_EMPTY
+        );
         assumeTrue("range aggregation not supported", aggregationResult != null);
         assertEquals(1, aggregationResult.getBucketByKey("*-1991-01-01").getCount());
         assertEquals(2, aggregationResult.getBucketByKey("1991-01-01-1995-08-30").getCount());
@@ -4952,7 +4971,8 @@ public abstract class GraphTestBase {
                 "middle",
                 simpleDateFormat.parse("1995-08-30"),
                 "upper",
-                AUTHORIZATIONS_EMPTY);
+                AUTHORIZATIONS_EMPTY
+        );
         assumeTrue("range aggregation not supported", aggregationResult != null);
         assertEquals(1, aggregationResult.getBucketByKey("lower").getCount());
         assertEquals(2, aggregationResult.getBucketByKey("middle").getCount());
@@ -4967,7 +4987,8 @@ public abstract class GraphTestBase {
             String keyTwo,
             Object boundaryTwo,
             String keyThree,
-            Authorizations authorizations) {
+            Authorizations authorizations
+    ) {
         Query q = graph.query(authorizations).limit(0);
         RangeAggregation agg = new RangeAggregation("range-count", propertyName, format);
         if (!q.isAggregationSupported(agg)) {
@@ -5027,7 +5048,7 @@ public abstract class GraphTestBase {
         };
 
         Map<String, AggregationResult> lowerNestedResult = rangeAggResult.getBucketByKey("lower").getNestedResults();
-        TermsResult lowerTermsResult = (TermsResult)lowerNestedResult.get(termsAggregation.getAggregationName());
+        TermsResult lowerTermsResult = (TermsResult) lowerNestedResult.get(termsAggregation.getAggregationName());
         List<TermsBucket> lowerTermsBuckets = IterableUtils.toList(lowerTermsResult.getBuckets());
         Collections.sort(lowerTermsBuckets, bucketComparator);
         assertEquals(1, lowerNestedResult.size());
@@ -5038,7 +5059,7 @@ public abstract class GraphTestBase {
         assertEquals(1, lowerTermsBuckets.get(1).getCount());
 
         Map<String, AggregationResult> upperNestedResult = rangeAggResult.getBucketByKey("upper").getNestedResults();
-        TermsResult upperTermsResult = (TermsResult)upperNestedResult.get(termsAggregation.getAggregationName());
+        TermsResult upperTermsResult = (TermsResult) upperNestedResult.get(termsAggregation.getAggregationName());
         List<TermsBucket> upperTermsBuckets = IterableUtils.toList(upperTermsResult.getBuckets());
         assertEquals(1, upperNestedResult.size());
         assertEquals(1, upperTermsBuckets.size());
