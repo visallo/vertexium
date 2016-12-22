@@ -72,6 +72,11 @@ public class InMemoryEdge extends InMemoryElement<InMemoryEdge> implements Edge 
 
     @Override
     public EdgeVertices getVertices(Authorizations authorizations) {
+        return getVertices(FetchHint.ALL, authorizations);
+    }
+
+    @Override
+    public EdgeVertices getVertices(EnumSet<FetchHint> fetchHints, Authorizations authorizations) {
         return new EdgeVertices(
                 getVertex(Direction.OUT, authorizations),
                 getVertex(Direction.IN, authorizations)
