@@ -2,6 +2,7 @@
 
 * Added: support for Elasticsearch range aggregations
 * Added: hasChanges method to mutations
+* Fixed: Bulk request conflict by adding a retry count
 
 # v2.5.1
 

@@ -864,6 +864,7 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
         try {
             XContentBuilder json = buildJsonContentFromElement(graph, element, authorizations);
             UpdateRequest indexRequest = new UpdateRequest(indexInfo.getIndexName(), ELEMENT_TYPE, element.getId()).doc(json);
+            indexRequest.retryOnConflict(MAX_RETRIES);
             indexRequest.docAsUpsert(true);
             bulkRequest.add(indexRequest);
         } catch (IOException ex) {
