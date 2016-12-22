@@ -3,6 +3,7 @@
 * Added: support for Elasticsearch range aggregations
 * Added: hasChanges method to mutations
 * Fixed: Bulk request conflict by adding a retry count
+* Added: Edge.getVertices which accepts fetch hints
 
 # v2.5.1
 

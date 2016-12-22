@@ -162,10 +162,15 @@ public class AccumuloEdge extends AccumuloElement implements Edge {
 
     @Override
     public EdgeVertices getVertices(Authorizations authorizations) {
+        return getVertices(FetchHint.ALL, authorizations);
+    }
+
+    @Override
+    public EdgeVertices getVertices(EnumSet<FetchHint> fetchHints, Authorizations authorizations) {
         List<String> ids = new ArrayList<>();
         ids.add(getVertexId(Direction.OUT));
         ids.add(getVertexId(Direction.IN));
-        Map<String, Vertex> vertices = IterableUtils.toMapById(getGraph().getVertices(ids, authorizations));
+        Map<String, Vertex> vertices = IterableUtils.toMapById(getGraph().getVertices(ids, fetchHints, authorizations));
         return new EdgeVertices(
                 vertices.get(getVertexId(Direction.OUT)),
                 vertices.get(getVertexId(Direction.IN))
