@@ -63,4 +63,13 @@ public class FindPathOptions {
         this.progressCallback = progressCallback;
         return this;
     }
+
+    @Override
+    public String toString() {
+        return "FindPathOptions{" +
+                "sourceVertexId='" + sourceVertexId + '\'' +
+                ", destVertexId='" + destVertexId + '\'' +
+                ", maxHops=" + maxHops +
+                '}';
+    }
 }
