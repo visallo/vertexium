@@ -399,7 +399,7 @@ public abstract class ElementMutationBuilder {
             HdfsLargeDataStore largeDataStore = new HdfsLargeDataStore(this.fileSystem, this.dataDir, rowKey, property);
             LimitOutputStream out = new LimitOutputStream(largeDataStore, maxStreamingPropertyValueTableDataSize);
             try {
-                StreamUtils.copy(propertyValue.getInputStream(), out);
+                IOUtils.copy(propertyValue.getInputStream(), out);
             } finally {
                 out.close();
             }

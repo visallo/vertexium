@@ -9,9 +9,7 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 @RunWith(JUnit4.class)
 public class AutoDeleteFileInputStreamTest {
@@ -37,7 +35,7 @@ public class AutoDeleteFileInputStreamTest {
     @Test
     public void tempFileForStreamShouldBeDeletedWhenStreamIsClosed() throws IOException {
         final String content = "stuff";
-        final boolean[] baClosed = new boolean[] { false };
+        final boolean[] baClosed = new boolean[]{false};
         ByteArrayInputStream baInputStream = new ByteArrayInputStream(content.getBytes()) {
             @Override
             public void close() throws IOException {
@@ -51,7 +49,7 @@ public class AutoDeleteFileInputStreamTest {
         file = adFileInputStream.getFile();
         assertTrue(baClosed[0]);
         assertTrue(file.exists());
-        assertEquals(content, StreamUtils.toString(adFileInputStream));
+        assertEquals(content, IOUtils.toString(adFileInputStream));
 
         adFileInputStream.close();
         assertFalse(file.exists());

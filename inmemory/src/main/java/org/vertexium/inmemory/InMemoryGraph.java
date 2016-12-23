@@ -1,6 +1,5 @@
 package org.vertexium.inmemory;
 
-import com.google.common.collect.ImmutableSet;
 import org.vertexium.*;
 import org.vertexium.event.*;
 import org.vertexium.id.IdGenerator;
@@ -17,12 +16,14 @@ import org.vertexium.search.SearchIndex;
 import org.vertexium.util.*;
 
 import java.util.*;
+import java.util.stream.Stream;
 
 import static org.vertexium.util.Preconditions.checkNotNull;
+import static org.vertexium.util.StreamUtils.stream;
 
 public class InMemoryGraph extends GraphBaseWithSearchIndex {
     protected static final InMemoryGraphConfiguration DEFAULT_CONFIGURATION =
-            new InMemoryGraphConfiguration(new HashMap<String, Object>());
+            new InMemoryGraphConfiguration(new HashMap<>());
     private final InMemoryVertexTable vertices;
     private final InMemoryEdgeTable edges;
     private final Set<String> validAuthorizations = new HashSet<>();
@@ -435,39 +436,58 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
 
     @Override
     protected void findPathsRecursive(
-            List<Path> foundPaths, final Vertex sourceVertex, Vertex destVertex, String[] labels,
-            int hops, int totalHops, Set<String> seenVertices, Path currentPath, ProgressCallback progressCallback,
+            FindPathOptions options,
+            List<Path> foundPaths,
+            Vertex sourceVertex,
+            Vertex destVertex,
+            int hops,
+            Set<String> seenVertices,
+            Path currentPath,
+            ProgressCallback progressCallback,
             Authorizations authorizations
     ) {
-        findPathsRecursive(foundPaths, sourceVertex.getId(), destVertex.getId(), labels, hops, totalHops, seenVertices,
-                           currentPath, progressCallback, authorizations
+        findPathsRecursive(
+                options,
+                foundPaths,
+                sourceVertex.getId(),
+                destVertex.getId(),
+                hops,
+                seenVertices,
+                currentPath,
+                progressCallback,
+                authorizations
         );
     }
 
     protected void findPathsRecursive(
-            List<Path> foundPaths, String sourceVertexId, String destVertexId, String[] labels,
-            int hops, int totalHops, Set<String> seenVertices, Path currentPath, ProgressCallback progressCallback,
+            FindPathOptions options,
+            List<Path> foundPaths,
+            String sourceVertexId,
+            String destVertexId,
+            int hops,
+            Set<String> seenVertices,
+            Path currentPath,
+            ProgressCallback progressCallback,
             Authorizations authorizations
     ) {
         // if this is our first source vertex report progress back to the progress callback
-        boolean firstLevelRecursion = hops == totalHops;
-        final Set<String> edgeLabels = ImmutableSet.copyOf(labels == null ? new String[0] : labels);
+        boolean firstLevelRecursion = hops == options.getMaxHops();
 
         seenVertices.add(sourceVertexId);
         if (sourceVertexId.equals(destVertexId)) {
             foundPaths.add(currentPath);
         } else if (hops > 0) {
-            Iterable<Edge> edges = new FilterIterable<Edge>(
-                    getEdgesFromVertex(sourceVertexId, FetchHint.ALL, null, authorizations)) {
-                @Override
-                protected boolean isIncluded(Edge edge) {
-                    return edgeLabels.isEmpty() || edgeLabels.contains(edge.getLabel());
-                }
-            };
+            Stream<Edge> edges = stream(getEdgesFromVertex(sourceVertexId, FetchHint.ALL, null, authorizations))
+                    .filter(edge -> {
+                        if (options.getExcludedLabels() != null) {
+                            if (ArrayUtils.contains(options.getExcludedLabels(), edge.getLabel())) {
+                                return false;
+                            }
+                        }
+                        return options.getLabels() == null || ArrayUtils.contains(options.getLabels(), edge.getLabel());
+                    });
             List<String> vertexIds = new ArrayList<>();
-            for (Edge edge : edges) {
-                vertexIds.add(edge.getOtherVertexId(sourceVertexId));
-            }
+            edges.forEach(edge -> vertexIds.add(edge.getOtherVertexId(sourceVertexId)));
 
             int vertexCount = 0;
             if (firstLevelRecursion) {
@@ -483,8 +503,15 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
                 }
                 if (!seenVertices.contains(childId)) {
                     findPathsRecursive(
-                            foundPaths, childId, destVertexId, labels, hops - 1, totalHops, seenVertices,
-                            new Path(currentPath, childId), progressCallback, authorizations
+                            options,
+                            foundPaths,
+                            childId,
+                            destVertexId,
+                            hops - 1,
+                            seenVertices,
+                            new Path(currentPath, childId),
+                            progressCallback,
+                            authorizations
                     );
                 }
                 i++;

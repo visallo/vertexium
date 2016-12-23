@@ -86,27 +86,22 @@ public class IterableUtils {
     }
 
     public static <T> Iterable<T> toIterable(final T[] arr) {
-        return new Iterable<T>() {
+        return () -> new Iterator<T>() {
+            int index = 0;
+
             @Override
-            public Iterator<T> iterator() {
-                return new Iterator<T>() {
-                    int index = 0;
+            public boolean hasNext() {
+                return index < arr.length;
+            }
 
-                    @Override
-                    public boolean hasNext() {
-                        return index < arr.length;
-                    }
+            @Override
+            public T next() {
+                return arr[index++];
+            }
 
-                    @Override
-                    public T next() {
-                        return arr[index++];
-                    }
-
-                    @Override
-                    public void remove() {
-                        throw new RuntimeException("Not supported");
-                    }
-                };
+            @Override
+            public void remove() {
+                throw new RuntimeException("Not supported");
             }
         };
     }
@@ -161,6 +156,7 @@ public class IterableUtils {
         return sb.toString();
     }
 
+    @SuppressWarnings("unchecked")
     public static Iterable<Element> toElementIterable(Iterable<? extends Element> elements) {
         return (Iterable<Element>) elements;
     }

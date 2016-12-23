@@ -6,6 +6,7 @@
 * Added: Edge.getVertices which accepts fetch hints
 * Changed: avoid saving empty mutations in Graph#saveElementMutations 
 * Added: support to read multiple StreamingPropertyValues with on query
+* Added: Graph.findPath exclusion labels
 
 # v2.5.1
 

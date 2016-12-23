@@ -17,14 +17,24 @@ import java.util.*;
 
 public class ConnectedVertexIdsIterator extends RowEncodingIterator {
     public static final String SETTING_LABEL_PREFIX = "label:";
+    public static final String SETTING_EXCLUDED_LABEL_PREFIX = "excludedLabel:";
     private Set<String> labels;
+    private Set<String> excludedLabels;
 
     public static void setLabels(IteratorSetting settings, String[] labels) {
+        addLabelsToSettings(settings, SETTING_LABEL_PREFIX, labels);
+    }
+
+    public static void setExcludedLabels(IteratorSetting settings, String[] labels) {
+        addLabelsToSettings(settings, SETTING_EXCLUDED_LABEL_PREFIX, labels);
+    }
+
+    private static void addLabelsToSettings(IteratorSetting settings, String settingPrefix, String[] labels) {
         if (labels == null) {
             return;
         }
         for (int i = 0; i < labels.length; i++) {
-            settings.addOption(SETTING_LABEL_PREFIX + i, labels[i]);
+            settings.addOption(settingPrefix + i, labels[i]);
         }
     }
 
@@ -33,12 +43,16 @@ public class ConnectedVertexIdsIterator extends RowEncodingIterator {
         super.init(source, options, env);
 
         Set<String> labels = new HashSet<>();
+        Set<String> excludedLabels = new HashSet<>();
         for (Map.Entry<String, String> option : options.entrySet()) {
             if (option.getKey().startsWith(SETTING_LABEL_PREFIX)) {
                 labels.add(option.getValue());
+            } else if (option.getKey().startsWith(SETTING_EXCLUDED_LABEL_PREFIX)) {
+                excludedLabels.add(option.getValue());
             }
         }
         this.labels = labels.size() == 0 ? null : labels;
+        this.excludedLabels = excludedLabels.size() == 0 ? null : excludedLabels;
     }
 
     public static Set<String> decodeValue(Value value) throws IOException {
@@ -88,6 +102,9 @@ public class ConnectedVertexIdsIterator extends RowEncodingIterator {
     }
 
     private boolean isMatch(EdgeInfo edgeInfo) {
+        if (excludedLabels != null && excludedLabels.contains(edgeInfo.getLabel())) {
+            return false;
+        }
         return labels == null || labels.contains(edgeInfo.getLabel());
     }
 

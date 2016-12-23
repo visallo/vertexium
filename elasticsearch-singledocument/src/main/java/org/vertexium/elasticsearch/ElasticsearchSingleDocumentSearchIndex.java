@@ -49,7 +49,7 @@ import org.vertexium.type.GeoPoint;
 import org.vertexium.type.GeoShape;
 import org.vertexium.type.IpV4Address;
 import org.vertexium.util.ConfigurationUtils;
-import org.vertexium.util.StreamUtils;
+import org.vertexium.util.IOUtils;
 import org.vertexium.util.VertexiumLogger;
 import org.vertexium.util.VertexiumLoggerFactory;
 
@@ -564,7 +564,7 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
         List<InputStream> inputStreams = graph.getStreamingPropertyValueInputStreams(streamingPropertyValues);
         for (int i = 0; i < properties.size(); i++) {
             try {
-                String propertyValue = StreamUtils.toString(inputStreams.get(i));
+                String propertyValue = IOUtils.toString(inputStreams.get(i));
                 addPropertyToMap(graph, properties.get(i), new StreamingPropertyString(propertyValue), propertiesMap);
             } catch (IOException ex) {
                 throw new VertexiumException("could not convert streaming property to string", ex);

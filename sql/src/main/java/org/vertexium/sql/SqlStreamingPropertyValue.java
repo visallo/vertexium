@@ -8,7 +8,7 @@ import org.vertexium.VertexiumException;
 import org.vertexium.Visibility;
 import org.vertexium.property.StreamingPropertyValue;
 import org.vertexium.util.AutoDeleteFileInputStream;
-import org.vertexium.util.StreamUtils;
+import org.vertexium.util.IOUtils;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -31,8 +31,10 @@ public class SqlStreamingPropertyValue extends StreamingPropertyValue {
     private final Visibility visibility;
     private final long timestamp;
 
-    public SqlStreamingPropertyValue(Class valueType, long length, DBI dbi, String tableName, String elementId,
-                                     String key, String name, Visibility visibility, long timestamp) {
+    public SqlStreamingPropertyValue(
+            Class valueType, long length, DBI dbi, String tableName, String elementId,
+            String key, String name, Visibility visibility, long timestamp
+    ) {
         super(null, valueType, length);
         this.dbi = dbi;
         this.tableName = tableName;
@@ -49,7 +51,8 @@ public class SqlStreamingPropertyValue extends StreamingPropertyValue {
             Row row = handle
                     .createQuery(String.format(
                             "select %s from %s where %s = ?",
-                            VALUE_COLUMN_NAME, tableName, KEY_COLUMN_NAME))
+                            VALUE_COLUMN_NAME, tableName, KEY_COLUMN_NAME
+                    ))
                     .bind(0, makeId(elementId, key, name, visibility, timestamp))
                     .map(new RowResultSetMapper()).first();
 
@@ -64,7 +67,7 @@ public class SqlStreamingPropertyValue extends StreamingPropertyValue {
                 return new AutoDeleteFileInputStream(inputStream);
             } else {
                 ByteArrayOutputStream outputStream = new ByteArrayOutputStream((int) length);
-                StreamUtils.copy(inputStream, outputStream);
+                IOUtils.copy(inputStream, outputStream);
                 return new ByteArrayInputStream(outputStream.toByteArray());
             }
         } catch (IOException ex) {

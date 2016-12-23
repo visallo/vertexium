@@ -1255,8 +1255,8 @@ public abstract class GraphTestBase {
         Assert.assertEquals(3, count(graph.getVertices(AUTHORIZATIONS_A)));
         Assert.assertEquals(2, count(graph.getEdges(AUTHORIZATIONS_A)));
         Assert.assertEquals(1, count(graph.getVertex("v1", AUTHORIZATIONS_A).getEdges(Direction.BOTH, AUTHORIZATIONS_A)));
-        Assert.assertEquals(1, count(graph.findPaths("v1", "v3", 2, AUTHORIZATIONS_A_AND_B)));
-        Assert.assertEquals(1, count(graph.findPaths("v1", "v3", 10, AUTHORIZATIONS_A_AND_B)));
+        Assert.assertEquals(1, count(graph.findPaths(new FindPathOptions("v1", "v3", 2), AUTHORIZATIONS_A_AND_B)));
+        Assert.assertEquals(1, count(graph.findPaths(new FindPathOptions("v1", "v3", 10), AUTHORIZATIONS_A_AND_B)));
 
         graph.markEdgeHidden(e1, VISIBILITY_A_AND_B, AUTHORIZATIONS_A);
         graph.flush();
@@ -1276,9 +1276,9 @@ public abstract class GraphTestBase {
         Assert.assertEquals(1, count(graph.getVertex("v1", FetchHint.ALL_INCLUDING_HIDDEN, AUTHORIZATIONS_A_AND_B).getEdges(Direction.BOTH, FetchHint.ALL_INCLUDING_HIDDEN, AUTHORIZATIONS_A_AND_B)));
         Assert.assertEquals(1, count(graph.getVertex("v1", FetchHint.ALL_INCLUDING_HIDDEN, AUTHORIZATIONS_A_AND_B).getEdgeIds(Direction.BOTH, AUTHORIZATIONS_A_AND_B)));
         Assert.assertEquals(1, count(graph.getVertex("v1", FetchHint.ALL_INCLUDING_HIDDEN, AUTHORIZATIONS_A_AND_B).getEdgeInfos(Direction.BOTH, AUTHORIZATIONS_A_AND_B)));
-        Assert.assertEquals(0, count(graph.findPaths("v1", "v3", 2, AUTHORIZATIONS_A_AND_B)));
-        Assert.assertEquals(0, count(graph.findPaths("v1", "v3", 10, AUTHORIZATIONS_A_AND_B)));
-        Assert.assertEquals(1, count(graph.findPaths("v1", "v3", 10, AUTHORIZATIONS_A)));
+        Assert.assertEquals(0, count(graph.findPaths(new FindPathOptions("v1", "v3", 2), AUTHORIZATIONS_A_AND_B)));
+        Assert.assertEquals(0, count(graph.findPaths(new FindPathOptions("v1", "v3", 10), AUTHORIZATIONS_A_AND_B)));
+        Assert.assertEquals(1, count(graph.findPaths(new FindPathOptions("v1", "v3", 10), AUTHORIZATIONS_A)));
         assertNull("found e1 but shouldn't have", graph.getEdge("v1tov2", FetchHint.ALL, AUTHORIZATIONS_A_AND_B));
         Edge e1Hidden = graph.getEdge("v1tov2", FetchHint.ALL_INCLUDING_HIDDEN, AUTHORIZATIONS_A_AND_B);
         assertNotNull("did not find e1 but should have", e1Hidden);
@@ -1293,8 +1293,8 @@ public abstract class GraphTestBase {
         Assert.assertEquals(3, count(graph.getVertices(AUTHORIZATIONS_A)));
         Assert.assertEquals(2, count(graph.getEdges(AUTHORIZATIONS_A)));
         Assert.assertEquals(1, count(graph.getVertex("v1", AUTHORIZATIONS_A).getEdges(Direction.BOTH, AUTHORIZATIONS_A)));
-        Assert.assertEquals(1, count(graph.findPaths("v1", "v3", 2, AUTHORIZATIONS_A_AND_B)));
-        Assert.assertEquals(1, count(graph.findPaths("v1", "v3", 10, AUTHORIZATIONS_A_AND_B)));
+        Assert.assertEquals(1, count(graph.findPaths(new FindPathOptions("v1", "v3", 2), AUTHORIZATIONS_A_AND_B)));
+        Assert.assertEquals(1, count(graph.findPaths(new FindPathOptions("v1", "v3", 10), AUTHORIZATIONS_A_AND_B)));
     }
 
     @Test
@@ -2925,111 +2925,86 @@ public abstract class GraphTestBase {
 
         v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
         v4 = graph.getVertex("v4", AUTHORIZATIONS_A);
-        List<Path> paths = toList(graph.findPaths("v1", "v4", 2, AUTHORIZATIONS_A));
-        List<Path> pathsByLabels = toList(graph.findPaths("v1", "v4", new String[]{"knows"}, 2, AUTHORIZATIONS_A));
+        List<Path> paths = toList(graph.findPaths(new FindPathOptions("v1", "v4", 2), AUTHORIZATIONS_A));
+        List<Path> pathsByLabels = toList(graph.findPaths(new FindPathOptions("v1", "v4", 2).setLabels("knows"), AUTHORIZATIONS_A));
         assertEquals(pathsByLabels, paths);
-        List<Path> pathsByBadLabel = toList(graph.findPaths("v1", "v4", new String[]{"bad"}, 2, AUTHORIZATIONS_A));
+        List<Path> pathsByBadLabel = toList(graph.findPaths(new FindPathOptions("v1", "v4", 2).setLabels("bad"), AUTHORIZATIONS_A));
         assertEquals(0, pathsByBadLabel.size());
-
-        // v1 -> v2 -> v4
-        // v1 -> v3 -> v4
-        assertEquals(2, paths.size());
-        boolean found2 = false;
-        boolean found3 = false;
-        for (Path path : paths) {
-            assertEquals(3, path.length());
-            int i = 0;
-            for (String id : path) {
-                if (i == 0) {
-                    assertEquals(id, v1.getId());
-                } else if (i == 1) {
-                    if (v2.getId().equals(id)) {
-                        found2 = true;
-                    } else if (v3.getId().equals(id)) {
-                        found3 = true;
-                    } else {
-                        fail("center of path is neither v2 or v3 but found " + id);
-                    }
-                } else if (i == 2) {
-                    assertEquals(id, v4.getId());
-                }
-                i++;
-            }
-        }
-        assertTrue("v2 not found in path", found2);
-        assertTrue("v3 not found in path", found3);
+        assertPaths(
+                paths,
+                new Path("v1", "v2", "v4"),
+                new Path("v1", "v3", "v4")
+        );
 
         v4 = graph.getVertex("v4", AUTHORIZATIONS_A);
         v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
-        paths = toList(graph.findPaths("v4", "v1", 2, AUTHORIZATIONS_A));
-        pathsByLabels = toList(graph.findPaths("v4", "v1", new String[]{"knows"}, 2, AUTHORIZATIONS_A));
+        paths = toList(graph.findPaths(new FindPathOptions("v4", "v1", 2), AUTHORIZATIONS_A));
+        pathsByLabels = toList(graph.findPaths(new FindPathOptions("v4", "v1", 2).setLabels("knows"), AUTHORIZATIONS_A));
         assertEquals(pathsByLabels, paths);
-        pathsByBadLabel = toList(graph.findPaths("v4", "v1", new String[]{"bad"}, 2, AUTHORIZATIONS_A));
+        pathsByBadLabel = toList(graph.findPaths(new FindPathOptions("v4", "v1", 2).setLabels("bad"), AUTHORIZATIONS_A));
         assertEquals(0, pathsByBadLabel.size());
-        // v4 -> v2 -> v1
-        // v4 -> v3 -> v1
-        assertEquals(2, paths.size());
-        found2 = false;
-        found3 = false;
-        for (Path path : paths) {
-            assertEquals(3, path.length());
-            int i = 0;
-            for (String id : path) {
-                if (i == 0) {
-                    assertEquals(id, v4.getId());
-                } else if (i == 1) {
-                    if (v2.getId().equals(id)) {
-                        found2 = true;
-                    } else if (v3.getId().equals(id)) {
-                        found3 = true;
-                    } else {
-                        fail("center of path is neither v2 or v3 but found " + id);
-                    }
-                } else if (i == 2) {
-                    assertEquals(id, v1.getId());
-                }
-                i++;
-            }
-        }
-        assertTrue("v2 not found in path", found2);
-        assertTrue("v3 not found in path", found3);
+        assertPaths(
+                paths,
+                new Path("v4", "v2", "v1"),
+                new Path("v4", "v3", "v1")
+        );
 
         v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
         v6 = graph.getVertex("v6", AUTHORIZATIONS_A);
-        paths = toList(graph.findPaths("v1", "v6", 3, AUTHORIZATIONS_A));
-        pathsByLabels = toList(graph.findPaths("v1", "v6", new String[]{"knows"}, 3, AUTHORIZATIONS_A));
+        paths = toList(graph.findPaths(new FindPathOptions("v1", "v6", 3), AUTHORIZATIONS_A));
+        pathsByLabels = toList(graph.findPaths(new FindPathOptions("v1", "v6", 3).setLabels("knows"), AUTHORIZATIONS_A));
         assertEquals(pathsByLabels, paths);
-        pathsByBadLabel = toList(graph.findPaths("v1", "v6", new String[]{"bad"}, 3, AUTHORIZATIONS_A));
+        pathsByBadLabel = toList(graph.findPaths(new FindPathOptions("v1", "v6", 3).setLabels("bad"), AUTHORIZATIONS_A));
         assertEquals(0, pathsByBadLabel.size());
-        // v1 -> v2 -> v4 -> v6
-        // v1 -> v3 -> v4 -> v6
-        assertEquals(2, paths.size());
-        found2 = false;
-        found3 = false;
-        for (Path path : paths) {
-            assertEquals(4, path.length());
-            int i = 0;
-            for (String id : path) {
-                if (i == 0) {
-                    assertEquals(id, v1.getId());
-                } else if (i == 1) {
-                    if (v2.getId().equals(id)) {
-                        found2 = true;
-                    } else if (v3.getId().equals(id)) {
-                        found3 = true;
-                    } else {
-                        fail("center of path is neither v2 or v3 but found " + id);
-                    }
-                } else if (i == 2) {
-                    assertEquals(id, v4.getId());
-                } else if (i == 3) {
-                    assertEquals(id, v6.getId());
-                }
-                i++;
+        assertPaths(
+                paths,
+                new Path("v1", "v2", "v4", "v6"),
+                new Path("v1", "v3", "v4", "v6")
+        );
+    }
+
+    @Test
+    public void testFindPathExcludeLabels() {
+        Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
+        Vertex v2 = graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_A);
+        Vertex v3 = graph.addVertex("v3", VISIBILITY_A, AUTHORIZATIONS_A);
+        Vertex v4 = graph.addVertex("v4", VISIBILITY_A, AUTHORIZATIONS_A);
+
+        graph.addEdge(v1, v2, "a", VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.addEdge(v2, v4, "a", VISIBILITY_A, AUTHORIZATIONS_A);
+
+        graph.addEdge(v1, v3, "b", VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.addEdge(v3, v4, "a", VISIBILITY_A, AUTHORIZATIONS_A);
+
+        graph.flush();
+
+        assertPaths(
+                graph.findPaths(new FindPathOptions("v1", "v4", 2), AUTHORIZATIONS_A),
+                new Path("v1", "v2", "v4"),
+                new Path("v1", "v3", "v4")
+        );
+
+        assertPaths(
+                graph.findPaths(new FindPathOptions("v1", "v4", 2).setExcludedLabels("b"), AUTHORIZATIONS_A),
+                new Path("v1", "v2", "v4")
+        );
+        assertPaths(
+                graph.findPaths(new FindPathOptions("v1", "v4", 3).setExcludedLabels("b"), AUTHORIZATIONS_A),
+                new Path("v1", "v2", "v4")
+        );
+    }
+
+    private void assertPaths(Iterable<Path> found, Path... expected) {
+        List<Path> foundPaths = toList(found);
+        List<Path> expectedPaths = new ArrayList<>();
+        Collections.addAll(expectedPaths, expected);
+
+        assertEquals(expectedPaths.size(), foundPaths.size());
+        for (Path foundPath : foundPaths) {
+            if (!expectedPaths.remove(foundPath)) {
+                fail("Unexpected path: " + foundPath);
             }
         }
-        assertTrue("v2 not found in path", found2);
-        assertTrue("v3 not found in path", found3);
     }
 
     @Test
@@ -3043,7 +3018,7 @@ public abstract class GraphTestBase {
 
         v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
         v3 = graph.getVertex("v3", AUTHORIZATIONS_A);
-        List<Path> paths = toList(graph.findPaths("v1", "v3", 2, AUTHORIZATIONS_A));
+        List<Path> paths = toList(graph.findPaths(new FindPathOptions("v1", "v3", 2), AUTHORIZATIONS_A));
 
         // v1 -> v2 -> v3
         assertEquals(1, paths.size());
@@ -3058,7 +3033,7 @@ public abstract class GraphTestBase {
         graph.flush();
 
         assertNull(graph.getEdge(v2ToV3.getId(), AUTHORIZATIONS_A));
-        paths = toList(graph.findPaths("v1", "v3", 2, AUTHORIZATIONS_A));
+        paths = toList(graph.findPaths(new FindPathOptions("v1", "v3", 2), AUTHORIZATIONS_A));
         assertEquals(0, paths.size());
     }
 
@@ -3073,7 +3048,7 @@ public abstract class GraphTestBase {
 
         v1 = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B);
         v3 = graph.getVertex("v3", AUTHORIZATIONS_A_AND_B);
-        List<Path> paths = toList(graph.findPaths("v1", "v3", 2, AUTHORIZATIONS_A_AND_B));
+        List<Path> paths = toList(graph.findPaths(new FindPathOptions("v1", "v3", 2), AUTHORIZATIONS_A_AND_B));
 
         // v1 -> v2 -> v3
         assertEquals(1, paths.size());
@@ -3088,10 +3063,10 @@ public abstract class GraphTestBase {
         graph.flush();
 
         assertNull(graph.getEdge(v2ToV3.getId(), AUTHORIZATIONS_A_AND_B));
-        paths = toList(graph.findPaths("v1", "v3", 2, AUTHORIZATIONS_A));
+        paths = toList(graph.findPaths(new FindPathOptions("v1", "v3", 2), AUTHORIZATIONS_A));
         assertEquals(0, paths.size());
 
-        paths = toList(graph.findPaths("v1", "v3", 2, AUTHORIZATIONS_B));
+        paths = toList(graph.findPaths(new FindPathOptions("v1", "v3", 2), AUTHORIZATIONS_B));
         assertEquals(1, paths.size());
     }
 
@@ -3115,7 +3090,7 @@ public abstract class GraphTestBase {
         v2 = graph.getVertex("v2", AUTHORIZATIONS_A);
         v5 = graph.getVertex("v5", AUTHORIZATIONS_A);
 
-        List<Path> paths = toList(graph.findPaths("v1", "v2", 2, AUTHORIZATIONS_A));
+        List<Path> paths = toList(graph.findPaths(new FindPathOptions("v1", "v2", 2), AUTHORIZATIONS_A));
         // v1 -> v4 -> v2
         // v1 -> v3 -> v2
         assertEquals(2, paths.size());
@@ -3144,7 +3119,7 @@ public abstract class GraphTestBase {
         assertTrue("v3 not found in path", found3);
         assertTrue("v4 not found in path", found4);
 
-        paths = toList(graph.findPaths("v1", "v2", 3, AUTHORIZATIONS_A));
+        paths = toList(graph.findPaths(new FindPathOptions("v1", "v2", 3), AUTHORIZATIONS_A));
         // v1 -> v4 -> v2
         // v1 -> v3 -> v2
         // v1 -> v3 -> v4 -> v2
@@ -3180,10 +3155,10 @@ public abstract class GraphTestBase {
         assertTrue("v3 not found in path", found3);
         assertTrue("v4 not found in path", found4);
 
-        paths = toList(graph.findPaths("v1", "v5", 2, AUTHORIZATIONS_A));
+        paths = toList(graph.findPaths(new FindPathOptions("v1", "v5", 2), AUTHORIZATIONS_A));
         assertEquals(0, paths.size());
 
-        paths = toList(graph.findPaths("v1", "v5", 3, AUTHORIZATIONS_A));
+        paths = toList(graph.findPaths(new FindPathOptions("v1", "v5", 3), AUTHORIZATIONS_A));
         // v1 -> v4 -> v2 -> v5
         // v1 -> v3 -> v2 -> v5
         assertEquals(2, paths.size());
@@ -5634,12 +5609,7 @@ public abstract class GraphTestBase {
     }
 
     protected List<Vertex> sortById(List<Vertex> vertices) {
-        Collections.sort(vertices, new Comparator<Vertex>() {
-            @Override
-            public int compare(Vertex o1, Vertex o2) {
-                return o1.getId().compareTo(o2.getId());
-            }
-        });
+        Collections.sort(vertices, (o1, o2) -> o1.getId().compareTo(o2.getId()));
         return vertices;
     }
 

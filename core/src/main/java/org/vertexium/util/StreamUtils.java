@@ -1,56 +1,119 @@
 package org.vertexium.util;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import org.vertexium.Element;
+import org.vertexium.VertexiumException;
+import org.vertexium.query.Query;
+
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Spliterators;
+import java.util.function.Function;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 public class StreamUtils {
-    private static final int DEFAULT_BUFFER_SIZE = 1024 * 4;
+    private StreamUtils() {
 
-    public static long copy(InputStream input, OutputStream output) throws IOException {
-        return copy(input, output, 0, Long.MAX_VALUE);
     }
 
-    public static long copy(InputStream input, OutputStream output, long offset, long limit) throws IOException {
-        byte[] buffer = new byte[DEFAULT_BUFFER_SIZE];
-        long count = 0;
-        int n;
-        if (offset > 0) {
-            long skipResult = input.skip(offset);
-            if (skipResult < offset) {
-                return 0;
+    /**
+     * Create a {@link java.util.stream.Stream} containing the results of executing the queries, in order. The results
+     * are not loaded into memory first.
+     */
+    public static Stream<Element> stream(Query... queries) {
+        return Arrays.stream(queries)
+                .map(query -> StreamSupport.stream(query.elements().spliterator(), false))
+                .reduce(Stream::concat)
+                .orElseGet(Stream::empty);
+    }
+
+    /**
+     * Create a {@link java.util.stream.Stream} over the elements of the iterables, in order.  A list of iterators
+     * is first created from the iterables, and passed to {@link #stream(Iterator[])}. The iterable elements are not
+     * loaded into memory first.
+     */
+    @SafeVarargs
+    @SuppressWarnings("unchecked")
+    public static <T> Stream<T> stream(Iterable<T>... iterables) {
+        List<Iterator<T>> iterators = Arrays.stream(iterables)
+                .map(Iterable::iterator)
+                .collect(Collectors.toList());
+
+        return stream(iterators.toArray(new Iterator[iterables.length]));
+    }
+
+    /**
+     * Create a {@link java.util.stream.Stream} over the elements of the iterators, in order.  The iterator elements
+     * are not loaded into memory first.
+     */
+    @SafeVarargs
+    public static <T> Stream<T> stream(Iterator<T>... iterators) {
+        return withCloseHandler(
+                Arrays.stream(iterators)
+                        .map(StreamUtils::streamForIterator)
+                        .reduce(Stream::concat)
+                        .orElseGet(Stream::empty),
+                iterators
+        );
+    }
+
+    @SafeVarargs
+    private static <T> Stream<T> withCloseHandler(Stream<T> stream, Iterator<T>... iterators) {
+        return stream.onClose(() -> {
+            for (Iterator<T> iterator : iterators) {
+                if (iterator instanceof AutoCloseable) {
+                    try {
+                        ((AutoCloseable) iterator).close();
+                    } catch (Exception ex) {
+                        throw new VertexiumException(
+                                String.format("exception occurred when closing %s", iterator.getClass().getName()),
+                                ex
+                        );
+                    }
+                }
             }
-        }
-        long len = limit;
-        while (-1 != (n = input.read(buffer, 0, (int) Math.min(buffer.length, len)))) {
-            output.write(buffer, 0, n);
-            count += n;
-            len -= n;
-            if (len == 0) {
-                break;
-            }
-        }
-        return count;
+        });
     }
 
-    public static byte[] toBytes(InputStream in) throws IOException {
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        copy(in, out);
-        return out.toByteArray();
+    private static <T> Stream<T> streamForIterator(Iterator<T> iterator) {
+        return StreamSupport.stream(Spliterators.spliteratorUnknownSize(iterator, 0), false);
     }
 
-    public static byte[] toBytes(InputStream in, long offset, long limit) throws IOException {
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        copy(in, out, offset, limit);
-        return out.toByteArray();
+    public static <T> Collector<T, ImmutableList.Builder<T>, ImmutableList<T>> toImmutableList() {
+        return Collector.of(
+                ImmutableList.Builder<T>::new,
+                ImmutableList.Builder<T>::add,
+                (l, r) -> l.addAll(r.build()),
+                ImmutableList.Builder<T>::build
+        );
     }
 
-    public static String toString(InputStream in) throws IOException {
-        return new String(toBytes(in));
+    public static <T> Collector<T, ImmutableSet.Builder<T>, ImmutableSet<T>> toImmutableSet() {
+        return Collector.of(
+                ImmutableSet.Builder::new,
+                ImmutableSet.Builder::add,
+                (l, r) -> l.addAll(r.build()),
+                ImmutableSet.Builder<T>::build,
+                Collector.Characteristics.UNORDERED
+        );
     }
 
-    public static String toString(InputStream in, long offset, long limit) throws IOException {
-        return new String(toBytes(in, offset, limit));
+    public static <T, K, V> Collector<T, ImmutableMap.Builder<K, V>, ImmutableMap<K, V>> toImmutableMap(
+            Function<? super T, ? extends K> keyMapper,
+            Function<? super T, ? extends V> valueMapper
+    ) {
+        return Collector.of(
+                ImmutableMap.Builder<K, V>::new,
+                (r, t) -> r.put(keyMapper.apply(t), valueMapper.apply(t)),
+                (l, r) -> l.putAll(r.build()),
+                ImmutableMap.Builder::build,
+                Collector.Characteristics.UNORDERED
+        );
     }
 }

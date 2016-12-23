@@ -810,7 +810,9 @@ public interface Graph {
      * @param maxHops        The maximum number of hops to make before giving up.
      * @param authorizations The authorizations required to load all edges and vertices.
      * @return An Iterable of lists of paths.
+     * @deprecated Use {@link #findPaths(FindPathOptions, Authorizations)}
      */
+    @Deprecated
     Iterable<Path> findPaths(String sourceVertexId, String destVertexId, int maxHops, Authorizations authorizations);
 
     /**
@@ -822,7 +824,9 @@ public interface Graph {
      * @param maxHops        The maximum number of hops to make before giving up.
      * @param authorizations The authorizations required to load all edges and vertices.
      * @return An Iterable of lists of paths.
+     * @deprecated Use {@link #findPaths(FindPathOptions, Authorizations)}
      */
+    @Deprecated
     Iterable<Path> findPaths(String sourceVertexId, String destVertexId, String[] labels, int maxHops, Authorizations authorizations);
 
     /**
@@ -834,7 +838,9 @@ public interface Graph {
      * @param progressCallback Callback used to report progress.
      * @param authorizations   The authorizations required to load all edges and vertices.
      * @return An Iterable of lists of paths.
+     * @deprecated Use {@link #findPaths(FindPathOptions, Authorizations)}
      */
+    @Deprecated
     Iterable<Path> findPaths(String sourceVertexId, String destVertexId, int maxHops, ProgressCallback progressCallback, Authorizations authorizations);
 
     /**
@@ -847,8 +853,19 @@ public interface Graph {
      * @param progressCallback Callback used to report progress.
      * @param authorizations   The authorizations required to load all edges and vertices.
      * @return An Iterable of lists of paths.
+     * @deprecated Use {@link #findPaths(FindPathOptions, Authorizations)}
      */
+    @Deprecated
     Iterable<Path> findPaths(String sourceVertexId, String destVertexId, String[] labels, int maxHops, ProgressCallback progressCallback, Authorizations authorizations);
+
+    /**
+     * Finds all paths between two vertices.
+     *
+     * @param options        Find path options
+     * @param authorizations The authorizations required to load all edges and vertices.
+     * @return An Iterable of lists of paths.
+     */
+    Iterable<Path> findPaths(FindPathOptions options, Authorizations authorizations);
 
     /**
      * Gets the id generator used by this graph to create ids.

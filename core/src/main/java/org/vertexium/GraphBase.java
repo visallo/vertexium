@@ -17,8 +17,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.vertexium.util.IterableUtils.count;
-import static org.vertexium.util.IterableUtils.toSet;
 import static org.vertexium.util.Preconditions.checkNotNull;
+import static org.vertexium.util.StreamUtils.stream;
 
 public abstract class GraphBase implements Graph {
     private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(GraphBase.class);
@@ -182,13 +182,10 @@ public abstract class GraphBase implements Graph {
     public List<Vertex> getVerticesInOrder(Iterable<String> ids, EnumSet<FetchHint> fetchHints, Authorizations authorizations) {
         final List<String> vertexIds = IterableUtils.toList(ids);
         List<Vertex> vertices = IterableUtils.toList(getVertices(vertexIds, authorizations));
-        Collections.sort(vertices, new Comparator<Vertex>() {
-            @Override
-            public int compare(Vertex v1, Vertex v2) {
-                Integer i1 = vertexIds.indexOf(v1.getId());
-                Integer i2 = vertexIds.indexOf(v2.getId());
-                return i1.compareTo(i2);
-            }
+        vertices.sort((v1, v2) -> {
+            Integer i1 = vertexIds.indexOf(v1.getId());
+            Integer i2 = vertexIds.indexOf(v2.getId());
+            return i1.compareTo(i2);
         });
         return vertices;
     }
@@ -372,23 +369,7 @@ public abstract class GraphBase implements Graph {
                         return true;
                     }
                 }
-                if (filters.contains(ElementFilter.PROPERTY) || filters.contains(ElementFilter.PROPERTY_METADATA)) {
-                    for (Property property : edge.getProperties()) {
-                        if (filters.contains(ElementFilter.PROPERTY)) {
-                            if (property.getVisibility().hasAuthorization(authorizationToMatch)) {
-                                return true;
-                            }
-                        }
-                        if (filters.contains(ElementFilter.PROPERTY_METADATA)) {
-                            for (Metadata.Entry entry : property.getMetadata().entrySet()) {
-                                if (entry.getVisibility().hasAuthorization(authorizationToMatch)) {
-                                    return true;
-                                }
-                            }
-                        }
-                    }
-                }
-                return false;
+                return isIncludedByAuthorizations(edge, filters, authorizationToMatch);
             }
         };
         return new ConvertingIterable<Edge, String>(edges) {
@@ -397,6 +378,26 @@ public abstract class GraphBase implements Graph {
                 return edge.getId();
             }
         };
+    }
+
+    private boolean isIncludedByAuthorizations(Element element, EnumSet<ElementFilter> filters, String authorizationToMatch) {
+        if (filters.contains(ElementFilter.PROPERTY) || filters.contains(ElementFilter.PROPERTY_METADATA)) {
+            for (Property property : element.getProperties()) {
+                if (filters.contains(ElementFilter.PROPERTY)) {
+                    if (property.getVisibility().hasAuthorization(authorizationToMatch)) {
+                        return true;
+                    }
+                }
+                if (filters.contains(ElementFilter.PROPERTY_METADATA)) {
+                    for (Metadata.Entry entry : property.getMetadata().entrySet()) {
+                        if (entry.getVisibility().hasAuthorization(authorizationToMatch)) {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+        return false;
     }
 
     @Override
@@ -414,23 +415,7 @@ public abstract class GraphBase implements Graph {
                         return true;
                     }
                 }
-                if (filters.contains(ElementFilter.PROPERTY) || filters.contains(ElementFilter.PROPERTY_METADATA)) {
-                    for (Property property : vertex.getProperties()) {
-                        if (filters.contains(ElementFilter.PROPERTY)) {
-                            if (property.getVisibility().hasAuthorization(authorizationToMatch)) {
-                                return true;
-                            }
-                        }
-                        if (filters.contains(ElementFilter.PROPERTY_METADATA)) {
-                            for (Metadata.Entry entry : property.getMetadata().entrySet()) {
-                                if (entry.getVisibility().hasAuthorization(authorizationToMatch)) {
-                                    return true;
-                                }
-                            }
-                        }
-                    }
-                }
-                return false;
+                return isIncludedByAuthorizations(vertex, filters, authorizationToMatch);
             }
         };
         return new ConvertingIterable<Vertex, String>(vertices) {
@@ -512,13 +497,7 @@ public abstract class GraphBase implements Graph {
 
     @Override
     public Iterable<Path> findPaths(String sourceVertexId, String destVertexId, String[] labels, int maxHops, Authorizations authorizations) {
-        ProgressCallback progressCallback = new ProgressCallback() {
-            @Override
-            public void progress(double progressPercent, Step step, Integer edgeIndex, Integer vertexCount) {
-                LOGGER.debug("findPaths progress %d%%: %s", (int) (progressPercent * 100.0), step.formatMessage(edgeIndex, vertexCount));
-            }
-        };
-        return findPaths(sourceVertexId, destVertexId, labels, maxHops, progressCallback, authorizations);
+        return findPaths(sourceVertexId, destVertexId, labels, maxHops, null, authorizations);
     }
 
     @Override
@@ -528,14 +507,32 @@ public abstract class GraphBase implements Graph {
 
     @Override
     public Iterable<Path> findPaths(String sourceVertexId, String destVertexId, String[] labels, int maxHops, ProgressCallback progressCallback, Authorizations authorizations) {
-        EnumSet<FetchHint> fetchHints = FetchHint.EDGE_REFS;
-        Vertex sourceVertex = getVertex(sourceVertexId, fetchHints, authorizations);
-        if (sourceVertex == null) {
-            throw new IllegalArgumentException("Could not find vertex with id: " + sourceVertexId);
+        FindPathOptions options = new FindPathOptions(sourceVertexId, destVertexId, maxHops);
+        options.setLabels(labels);
+        options.setProgressCallback(progressCallback);
+        return findPaths(options, authorizations);
+    }
+
+    @Override
+    public Iterable<Path> findPaths(FindPathOptions options, Authorizations authorizations) {
+        ProgressCallback progressCallback = options.getProgressCallback();
+        if (progressCallback == null) {
+            progressCallback = new ProgressCallback() {
+                @Override
+                public void progress(double progressPercent, Step step, Integer edgeIndex, Integer vertexCount) {
+                    LOGGER.debug("findPaths progress %d%%: %s", (int) (progressPercent * 100.0), step.formatMessage(edgeIndex, vertexCount));
+                }
+            };
         }
-        Vertex destVertex = getVertex(destVertexId, fetchHints, authorizations);
+
+        EnumSet<FetchHint> fetchHints = FetchHint.EDGE_REFS;
+        Vertex sourceVertex = getVertex(options.getSourceVertexId(), fetchHints, authorizations);
+        if (sourceVertex == null) {
+            throw new IllegalArgumentException("Could not find vertex with id: " + options.getSourceVertexId());
+        }
+        Vertex destVertex = getVertex(options.getDestVertexId(), fetchHints, authorizations);
         if (destVertex == null) {
-            throw new IllegalArgumentException("Could not find vertex with id: " + destVertexId);
+            throw new IllegalArgumentException("Could not find vertex with id: " + options.getDestVertexId());
         }
 
         progressCallback.progress(0, ProgressCallback.Step.FINDING_PATH);
@@ -546,25 +543,42 @@ public abstract class GraphBase implements Graph {
         Path startPath = new Path(sourceVertex.getId());
 
         List<Path> foundPaths = new ArrayList<>();
-        if (maxHops == 2) {
-            findPathsSetIntersection(foundPaths, sourceVertex, destVertex, labels, progressCallback, authorizations);
+        if (options.getMaxHops() == 2) {
+            findPathsSetIntersection(
+                    options,
+                    foundPaths,
+                    sourceVertex,
+                    destVertex,
+                    progressCallback,
+                    authorizations
+            );
         } else {
-            findPathsRecursive(foundPaths, sourceVertex, destVertex, labels, maxHops, maxHops, seenVertices, startPath, progressCallback, authorizations);
+            findPathsRecursive(
+                    options,
+                    foundPaths,
+                    sourceVertex,
+                    destVertex,
+                    options.getMaxHops(),
+                    seenVertices,
+                    startPath,
+                    progressCallback,
+                    authorizations
+            );
         }
 
         progressCallback.progress(1, ProgressCallback.Step.COMPLETE);
         return foundPaths;
     }
 
-    protected void findPathsSetIntersection(List<Path> foundPaths, Vertex sourceVertex, Vertex destVertex, String[] labels, ProgressCallback progressCallback, Authorizations authorizations) {
+    protected void findPathsSetIntersection(FindPathOptions options, List<Path> foundPaths, Vertex sourceVertex, Vertex destVertex, ProgressCallback progressCallback, Authorizations authorizations) {
         String sourceVertexId = sourceVertex.getId();
         String destVertexId = destVertex.getId();
 
         progressCallback.progress(0.1, ProgressCallback.Step.SEARCHING_SOURCE_VERTEX_EDGES);
-        Set<String> sourceVertexConnectedVertexIds = toSet(sourceVertex.getVertexIds(Direction.BOTH, labels, authorizations));
+        Set<String> sourceVertexConnectedVertexIds = filterFindPathEdgeInfo(options, sourceVertex.getEdgeInfos(Direction.BOTH, options.getLabels(), authorizations));
 
         progressCallback.progress(0.3, ProgressCallback.Step.SEARCHING_DESTINATION_VERTEX_EDGES);
-        Set<String> destVertexConnectedVertexIds = toSet(destVertex.getVertexIds(Direction.BOTH, labels, authorizations));
+        Set<String> destVertexConnectedVertexIds = filterFindPathEdgeInfo(options, destVertex.getEdgeInfos(Direction.BOTH, options.getLabels(), authorizations));
 
         progressCallback.progress(0.6, ProgressCallback.Step.MERGING_EDGES);
         sourceVertexConnectedVertexIds.retainAll(destVertexConnectedVertexIds);
@@ -575,15 +589,49 @@ public abstract class GraphBase implements Graph {
         }
     }
 
-    protected void findPathsRecursive(List<Path> foundPaths, final Vertex sourceVertex, Vertex destVertex, String[] labels, int hops, int totalHops, Set<String> seenVertices, Path currentPath, ProgressCallback progressCallback, final Authorizations authorizations) {
+    private Set<String> filterFindPathEdgeInfo(FindPathOptions options, Iterable<EdgeInfo> edgeInfos) {
+        return stream(edgeInfos)
+                .filter(edgeInfo -> {
+                    if (options.getExcludedLabels() != null) {
+                        return !ArrayUtils.contains(options.getExcludedLabels(), edgeInfo.getLabel());
+                    }
+                    return true;
+                })
+                .map(EdgeInfo::getVertexId)
+                .collect(Collectors.toSet());
+    }
+
+    private Iterable<Vertex> filterFindPathEdgePairs(FindPathOptions options, Iterable<EdgeVertexPair> edgeVertexPairs) {
+        return stream(edgeVertexPairs)
+                .filter(edgePair -> {
+                    if (options.getExcludedLabels() != null) {
+                        return !ArrayUtils.contains(options.getExcludedLabels(), edgePair.getEdge().getLabel());
+                    }
+                    return true;
+                })
+                .map(EdgeVertexPair::getVertex)
+                .collect(Collectors.toList());
+    }
+
+    protected void findPathsRecursive(
+            FindPathOptions options,
+            List<Path> foundPaths,
+            Vertex sourceVertex,
+            Vertex destVertex,
+            int hops,
+            Set<String> seenVertices,
+            Path currentPath,
+            ProgressCallback progressCallback,
+            Authorizations authorizations
+    ) {
         // if this is our first source vertex report progress back to the progress callback
-        boolean firstLevelRecursion = hops == totalHops;
+        boolean firstLevelRecursion = hops == options.getMaxHops();
 
         seenVertices.add(sourceVertex.getId());
         if (sourceVertex.getId().equals(destVertex.getId())) {
             foundPaths.add(currentPath);
         } else if (hops > 0) {
-            Iterable<Vertex> vertices = sourceVertex.getVertices(Direction.BOTH, labels, authorizations);
+            Iterable<Vertex> vertices = filterFindPathEdgePairs(options, sourceVertex.getEdgeVertexPairs(Direction.BOTH, options.getLabels(), authorizations));
             int vertexCount = 0;
             if (firstLevelRecursion) {
                 vertices = IterableUtils.toList(vertices);
@@ -597,7 +645,7 @@ public abstract class GraphBase implements Graph {
                     progressCallback.progress(progressPercent, ProgressCallback.Step.SEARCHING_EDGES, i + 1, vertexCount);
                 }
                 if (!seenVertices.contains(child.getId())) {
-                    findPathsRecursive(foundPaths, child, destVertex, labels, hops - 1, totalHops, seenVertices, new Path(currentPath, child.getId()), progressCallback, authorizations);
+                    findPathsRecursive(options, foundPaths, child, destVertex, hops - 1, seenVertices, new Path(currentPath, child.getId()), progressCallback, authorizations);
                 }
                 i++;
             }
