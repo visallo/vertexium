@@ -4,6 +4,7 @@
 * Added: hasChanges method to mutations
 * Fixed: Bulk request conflict by adding a retry count
 * Added: Edge.getVertices which accepts fetch hints
+* Changed: avoid saving empty mutations in Graph#saveElementMutations 
 
 # v2.5.1
 

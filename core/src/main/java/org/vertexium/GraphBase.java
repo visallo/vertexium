@@ -4,6 +4,7 @@ import org.vertexium.event.GraphEvent;
 import org.vertexium.event.GraphEventListener;
 import org.vertexium.id.IdGenerator;
 import org.vertexium.mutation.ElementMutation;
+import org.vertexium.mutation.ExistingElementMutation;
 import org.vertexium.property.StreamingPropertyValue;
 import org.vertexium.property.StreamingPropertyValueRef;
 import org.vertexium.query.GraphQuery;
@@ -908,6 +909,11 @@ public abstract class GraphBase implements Graph {
     public Iterable<Element> saveElementMutations(Iterable<ElementMutation> mutations, Authorizations authorizations) {
         List<Element> elements = new ArrayList<>();
         for (ElementMutation m : mutations) {
+            if (m instanceof ExistingElementMutation && !m.hasChanges()) {
+                elements.add(((ExistingElementMutation) m).getElement());
+                continue;
+            }
+
             Element element = m.save(authorizations);
             elements.add(element);
         }
