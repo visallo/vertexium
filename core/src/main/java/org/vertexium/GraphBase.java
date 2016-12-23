@@ -491,21 +491,25 @@ public abstract class GraphBase implements Graph {
     }
 
     @Override
+    @Deprecated
     public Iterable<Path> findPaths(String sourceVertexId, String destVertexId, int maxHops, Authorizations authorizations) {
         return findPaths(sourceVertexId, destVertexId, null, maxHops, authorizations);
     }
 
     @Override
+    @Deprecated
     public Iterable<Path> findPaths(String sourceVertexId, String destVertexId, String[] labels, int maxHops, Authorizations authorizations) {
         return findPaths(sourceVertexId, destVertexId, labels, maxHops, null, authorizations);
     }
 
     @Override
+    @Deprecated
     public Iterable<Path> findPaths(String sourceVertexId, String destVertexId, int maxHops, ProgressCallback progressCallback, Authorizations authorizations) {
         return findPaths(sourceVertexId, destVertexId, null, maxHops, progressCallback, authorizations);
     }
 
     @Override
+    @Deprecated
     public Iterable<Path> findPaths(String sourceVertexId, String destVertexId, String[] labels, int maxHops, ProgressCallback progressCallback, Authorizations authorizations) {
         FindPathOptions options = new FindPathOptions(sourceVertexId, destVertexId, maxHops);
         options.setLabels(labels);

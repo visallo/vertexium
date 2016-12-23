@@ -1,26 +1,36 @@
 package org.vertexium.accumulo;
 
 import org.apache.accumulo.core.client.Connector;
+import org.apache.accumulo.core.client.admin.NewTableConfiguration;
+import org.apache.accumulo.core.client.admin.TimeType;
+import org.vertexium.VertexiumException;
 
 public class AccumuloGraphTestUtils {
     public static void ensureTableExists(Connector connector, String tableName) {
-        try {
-            if (!connector.tableOperations().exists(tableName)) {
-                connector.tableOperations().create(tableName, false);
-            }
-        } catch (Exception e) {
-            throw new RuntimeException("Unable to create table " + tableName);
+        if (!connector.tableOperations().exists(tableName)) {
+            createTable(connector, tableName);
         }
     }
 
-    public static void dropGraph(Connector connector, String graphDirectoryName) {
+    public static void dropGraph(Connector connector, String tableName) {
         try {
-            if (connector.tableOperations().exists(graphDirectoryName)) {
-                connector.tableOperations().delete(graphDirectoryName);
+            if (connector.tableOperations().exists(tableName)) {
+                connector.tableOperations().delete(tableName);
             }
-            connector.tableOperations().create(graphDirectoryName, false);
         } catch (Exception e) {
-            throw new RuntimeException("Unable to drop graph: " + graphDirectoryName, e);
+            throw new VertexiumException("Unable to drop graph: " + tableName, e);
+        }
+        createTable(connector, tableName);
+    }
+
+    private static void createTable(Connector connector, String tableName) {
+        try {
+            NewTableConfiguration config = new NewTableConfiguration()
+                    .withoutDefaultIterators()
+                    .setTimeType(TimeType.MILLIS);
+            connector.tableOperations().create(tableName, config);
+        } catch (Exception e) {
+            throw new VertexiumException("Unable to create table " + tableName);
         }
     }
 }
