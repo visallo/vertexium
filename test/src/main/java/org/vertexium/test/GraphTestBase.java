@@ -2,6 +2,7 @@ package org.vertexium.test;
 
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 import org.apache.commons.io.IOUtils;
 import org.junit.After;
 import org.junit.Assert;
@@ -24,6 +25,7 @@ import org.vertexium.util.*;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -3625,6 +3627,30 @@ public abstract class GraphTestBase {
         Assert.assertEquals(1, count(graph.query(AUTHORIZATIONS_A).has("fullText", TextPredicate.CONTAINS, "Test").vertices()));
         Assert.assertEquals("un-indexed property shouldn't match partials", 0, count(graph.query(AUTHORIZATIONS_A).has("none", "Test").vertices()));
         Assert.assertEquals("un-indexed property shouldn't match partials", 0, count(graph.query(AUTHORIZATIONS_A).has("none", TextPredicate.CONTAINS, "Test").vertices()));
+    }
+
+    @Test
+    public void testGetStreamingPropertyValueInputStreams() throws Exception {
+        graph.defineProperty("a").dataType(String.class).textIndexHint(TextIndexHint.FULL_TEXT).define();
+        graph.defineProperty("b").dataType(String.class).textIndexHint(TextIndexHint.FULL_TEXT).define();
+        graph.defineProperty("c").dataType(String.class).textIndexHint(TextIndexHint.FULL_TEXT).define();
+
+        graph.prepareVertex("v1", VISIBILITY_A)
+                .setProperty("a", StreamingPropertyValue.create("Test Value A"), VISIBILITY_A)
+                .setProperty("b", StreamingPropertyValue.create("Test Value B"), VISIBILITY_A)
+                .setProperty("c", StreamingPropertyValue.create("Test Value C"), VISIBILITY_A)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B);
+        StreamingPropertyValue spvA = (StreamingPropertyValue) v1.getPropertyValue("a");
+        StreamingPropertyValue spvB = (StreamingPropertyValue) v1.getPropertyValue("b");
+        StreamingPropertyValue spvC = (StreamingPropertyValue) v1.getPropertyValue("c");
+        ArrayList<StreamingPropertyValue> spvs = Lists.newArrayList(spvA, spvB, spvC);
+        List<InputStream> streams = graph.getStreamingPropertyValueInputStreams(spvs);
+        assertEquals("Test Value A", IOUtils.toString(streams.get(0)));
+        assertEquals("Test Value B", IOUtils.toString(streams.get(1)));
+        assertEquals("Test Value C", IOUtils.toString(streams.get(2)));
     }
 
     @Test

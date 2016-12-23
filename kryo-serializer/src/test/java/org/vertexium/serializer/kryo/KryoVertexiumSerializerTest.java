@@ -184,7 +184,7 @@ public class KryoVertexiumSerializerTest {
         for (int i = 0; i < iterations; i++) {
             double d = 3.1415;
             byte[] v = serializer.objectToBytes(d);
-            assertEquals(d, serializer.bytesToObject(v));
+            assertEquals(d, serializer.bytesToObject(v), 0.001);
             bytes += v.length;
         }
         long endTime = System.currentTimeMillis();

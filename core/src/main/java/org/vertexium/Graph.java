@@ -3,10 +3,12 @@ package org.vertexium;
 import org.vertexium.event.GraphEventListener;
 import org.vertexium.id.IdGenerator;
 import org.vertexium.mutation.ElementMutation;
+import org.vertexium.property.StreamingPropertyValue;
 import org.vertexium.query.GraphQuery;
 import org.vertexium.query.MultiVertexQuery;
 import org.vertexium.query.SimilarToGraphQuery;
 
+import java.io.InputStream;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.List;
@@ -1059,4 +1061,13 @@ public interface Graph {
      * @return the elements which were saved
      */
     Iterable<Element> saveElementMutations(Iterable<ElementMutation> mutations, Authorizations authorizations);
+
+    /**
+     * Opens multiple StreamingPropertyValue input streams at once. This can have performance benefits by
+     * reducing the number of queries to the underlying data source.
+     *
+     * @param streamingPropertyValues list of StreamingPropertyValues to get input streams for
+     * @return InputStreams in the same order as the input list
+     */
+    List<InputStream> getStreamingPropertyValueInputStreams(List<StreamingPropertyValue> streamingPropertyValues);
 }
