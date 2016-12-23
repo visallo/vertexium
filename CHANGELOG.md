@@ -1,6 +1,7 @@
 # v2.6.0
 
 * Added: ability to store extended data rows on an element
+* Added: Elasticsearch 2.x support
 
 # v2.5.4
 

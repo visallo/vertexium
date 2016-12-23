@@ -304,7 +304,8 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
                             ids.getExtendedDataIds().size(),
                             ids.getVertexIds().size() + ids.getEdgeIds().size() + ids.getExtendedDataIds().size(),
                             hits.getTotalHits(),
-                            (endTime - startTime) / 1000 / 1000);
+                            (endTime - startTime) / 1000 / 1000
+                    );
                 }
 
                 // since ES doesn't support security we will rely on the graph to provide edge filtering
@@ -325,27 +326,14 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
                     items.add(extendedDataRows);
                 }
                 Iterable<VertexiumObject> vertexiumObjects = new JoinIterable<>(items);
-                vertexiumObjects = sortvertexiumObjectsByResultOrder(vertexiumObjects, ids.getIds());
+                vertexiumObjects = sortVertexiumObjectsByResultOrder(vertexiumObjects, ids.getIds());
                 // TODO instead of passing false here to not evaluate the query string it would be better to support the Lucene query
                 return createIterable(response, filterParameters, vertexiumObjects, evaluateQueryString, evaluateHasContainers, evaluateSortContainers, searchTime, hits);
             }
         };
     }
 
-    private Iterable<ExtendedDataRow> sortExtendedDataByResultOrder(Iterable<ExtendedDataRow> rows, List<ExtendedDataRowId> ids) {
-        ImmutableMap<ExtendedDataRowId, ExtendedDataRow> elementsMap = Maps.uniqueIndex(rows, ExtendedDataRow::getId);
-
-        List<ExtendedDataRow> results = new ArrayList<>();
-        for (ExtendedDataRowId id : ids) {
-            ExtendedDataRow element = elementsMap.get(id);
-            if (element != null) {
-                results.add(element);
-            }
-        }
-        return results;
-    }
-
-    private <T extends VertexiumObject> Iterable<T> sortvertexiumObjectsByResultOrder(Iterable<T> vertexiumObjects, List<String> ids) {
+    private <T extends VertexiumObject> Iterable<T> sortVertexiumObjectsByResultOrder(Iterable<T> vertexiumObjects, List<String> ids) {
         ImmutableMap<String, T> itemMap = Maps.uniqueIndex(vertexiumObjects, vertexiumObject -> {
             if (vertexiumObject instanceof Element) {
                 return ((Element) vertexiumObject).getId();
@@ -531,9 +519,9 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
                         } else {
                             filters
                                     .add(FilterBuilders
-                                            .geoDistanceFilter(propertyName)
-                                            .point(lat, lon)
-                                            .distance(distance, DistanceUnit.KILOMETERS));
+                                                 .geoDistanceFilter(propertyName)
+                                                 .point(lat, lon)
+                                                 .distance(distance, DistanceUnit.KILOMETERS));
                         }
                     } else if (value instanceof GeoRect) {
                         GeoRect geoRect = (GeoRect) value;
@@ -556,9 +544,9 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
                         } else {
                             filters
                                     .add(FilterBuilders
-                                            .geoBoundingBoxFilter(propertyName)
-                                            .topLeft(nwLat, nwLon)
-                                            .bottomRight(seLat, seLon));
+                                                 .geoBoundingBoxFilter(propertyName)
+                                                 .topLeft(nwLat, nwLon)
+                                                 .bottomRight(seLat, seLon));
                         }
                     } else {
                         throw new VertexiumException("Unexpected has value type " + value.getClass().getName());
@@ -1040,7 +1028,7 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
 
                 if (!Strings.isNullOrEmpty(agg.getFormat())) {
                     throw new VertexiumException("Invalid use of format for property: " + agg.getFieldName() +
-                            ". Format is only valid for date properties");
+                                                         ". Format is only valid for date properties");
                 }
 
                 for (RangeAggregation.Range range : agg.getRanges()) {
@@ -1048,7 +1036,7 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
                     Object to = range.getTo();
                     if ((from != null && !(from instanceof Number)) || (to != null && !(to instanceof Number))) {
                         throw new VertexiumException("Invalid range for property: " + agg.getFieldName() +
-                                ". Both to and from must be Numeric.");
+                                                             ". Both to and from must be Numeric.");
                     }
                     rangeBuilder.addRange(
                             range.getKey(),

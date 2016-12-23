@@ -66,8 +66,8 @@ public abstract class ElasticsearchSingleDocumentSearchIndexTestBase extends Gra
 
     private static void installPlugin(File basePath) throws IOException, ZipException {
         File pluginsPath = new File(basePath, "plugins");
-        File vertexiumZipFile = new File(pluginsPath, "vertexium.zip");
-        File vertexiumPluginPath = new File(pluginsPath, "vertexium");
+        File vertexiumZipFile = new File(basePath, "vertexium.zip");
+        File vertexiumPluginPath = new File(pluginsPath, "vertexium-elasticsearch");
         if (!vertexiumPluginPath.mkdirs()) {
             System.out.println("Could not create directories");
         }

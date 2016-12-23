@@ -23,7 +23,10 @@ public interface SimilarToGraphQuery extends GraphQuery {
 
     /**
      * The percentage of terms that must match to be considered similar.
+     *
+     * @deprecated As of 2.6.0 this call has no effect in Elasticsearch and will be remove
      */
+    @Deprecated
     SimilarToGraphQuery percentTermsToMatch(float percentTermsToMatch);
 
     /**

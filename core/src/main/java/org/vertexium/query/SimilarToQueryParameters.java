@@ -52,10 +52,12 @@ public abstract class SimilarToQueryParameters extends QueryParameters {
         this.maxDocFrequency = maxDocFrequency;
     }
 
+    @Deprecated
     public Float getPercentTermsToMatch() {
         return percentTermsToMatch;
     }
 
+    @Deprecated
     public void setPercentTermsToMatch(Float percentTermsToMatch) {
         this.percentTermsToMatch = percentTermsToMatch;
     }
