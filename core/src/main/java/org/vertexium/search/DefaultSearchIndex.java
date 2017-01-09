@@ -1,7 +1,10 @@
 package org.vertexium.search;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.vertexium.*;
 import org.vertexium.query.*;
+
+import java.util.Collection;
 
 import static org.vertexium.util.Preconditions.checkNotNull;
 
@@ -28,12 +31,7 @@ public class DefaultSearchIndex implements SearchIndex {
     }
 
     @Override
-    public void deleteProperty(Graph graph, Element element, Property property, Authorizations authorizations) {
-        checkNotNull(element, "element cannot be null");
-    }
-
-    @Override
-    public void deleteProperty(Graph graph, Element element, String propertyKey, String propertyName, Visibility propertyVisibility, Authorizations authorizations) {
+    public void deleteProperty(Graph graph, Element element, PropertyDescriptor property, Authorizations authorizations) {
         checkNotNull(element, "element cannot be null");
     }
 

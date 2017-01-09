@@ -1,8 +1,10 @@
 package org.vertexium.elasticsearch;
 
 import com.google.common.base.Throwables;
-import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.SettableFuture;
+import org.apache.commons.lang3.StringEscapeUtils;
 import org.elasticsearch.action.ActionRequestBuilder;
 import org.elasticsearch.action.ListenableActionFuture;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
@@ -42,6 +44,7 @@ import org.vertexium.*;
 import org.vertexium.id.NameSubstitutionStrategy;
 import org.vertexium.property.StreamingPropertyValue;
 import org.vertexium.query.*;
+import org.vertexium.PropertyDescriptor;
 import org.vertexium.search.SearchIndex;
 import org.vertexium.search.SearchIndexWithVertexPropertyCountByValue;
 import org.vertexium.type.GeoCircle;
@@ -352,6 +355,7 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
                     .setDocAsUpsert(true)
                     .setDoc(source)
                     .setRetryOnConflict(MAX_RETRIES);
+
             addActionRequestBuilderForFlush(element.getId(), updateRequestBuilder);
 
             if (getConfig().isAutoFlush()) {
@@ -398,19 +402,10 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
             Visibility newVisibility,
             Authorizations authorizations
     ) {
+        // Remove old element field name
         String oldFieldName = deflatePropertyName(graph, ELEMENT_TYPE_FIELD_NAME, oldVisibility);
-        getClient().prepareUpdate()
-                .setIndex(getIndexName(element))
-                .setId(element.getId())
-                .setType(ELEMENT_TYPE)
-                .setScript(
-                        "ctx._source.remove(oldFieldName);",
-                        ScriptService.ScriptType.INLINE
-                )
-                .setScriptParams(ImmutableMap.of(
-                        "oldFieldName", oldFieldName
-                ))
-                .get();
+        removeFieldsFromDocument(element, oldFieldName);
+
         addElement(graph, element, authorizations);
     }
 
@@ -1043,23 +1038,22 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
     }
 
     @Override
-    public void deleteProperty(Graph graph, Element element, Property property, Authorizations authorizations) {
-        deleteProperty(graph, element, property.getKey(), property.getName(), property.getVisibility(), authorizations);
+    public void deleteProperty(Graph graph, Element element, PropertyDescriptor property, Authorizations authorizations) {
+        String fieldName = deflatePropertyName(graph, property.getName(), property.getVisibility());
+        removeFieldsFromDocument(element, fieldName);
+        removeFieldsFromDocument(element, fieldName + "_e");
     }
 
     @Override
-    public void deleteProperty(Graph graph, Element element, String propertyKey, String propertyName, Visibility propertyVisibility, Authorizations authorizations) {
-        String fieldName = deflatePropertyName(graph, propertyName, propertyVisibility);
-        getClient().prepareUpdate()
-                .setIndex(getIndexName(element))
-                .setId(element.getId())
-                .setType(ELEMENT_TYPE)
-                .setScript(
-                        "ctx._source.remove(fieldName); ctx._source.remove(fieldName + '_e')",
-                        ScriptService.ScriptType.INLINE
-                )
-                .setScriptParams(ImmutableMap.<String, Object>of("fieldName", fieldName))
-                .get();
+    public void deleteProperties(Graph graph, Element element, Collection<PropertyDescriptor> propertyList, Authorizations authorizations) {
+        List fields = Lists.newArrayList();
+
+        for (PropertyDescriptor p : propertyList) {
+            String fieldName = deflatePropertyName(graph, p.getName(), p.getVisibility());
+            fields.add(fieldName);
+            fields.add(fieldName + "_e");
+        }
+        removeFieldsFromDocument(element, fields);
     }
 
     @Override
@@ -1115,6 +1109,38 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
         client.admin().indices().prepareRefresh(getIndexNamesAsArray(graph)).execute().actionGet();
     }
 
+    /**
+     * Helper method to remove fields from source. This method will generate a ES update request. Retries on conflict.
+     *
+     * @param element Element that can be mapped to an ES document
+     * @param fields fields to remove
+     */
+    private void removeFieldsFromDocument(Element element, Collection<String> fields) {
+        String script = "";
+        Map<String, Object> params = Maps.newHashMap();
+
+        int i = 0;
+        for (String field : fields) {
+            String fieldName = "fieldName" + (i++);
+            script += "ctx._source.remove(" + fieldName + ");";
+            params.put(fieldName, field);
+        }
+
+        getClient().prepareUpdate()
+                .setIndex(getIndexName(element))
+                .setId(element.getId())
+                .setType(ELEMENT_TYPE)
+                .setScript(script, ScriptService.ScriptType.INLINE)
+                .setRetryOnConflict(MAX_RETRIES)
+                .setScriptParams(params)
+                .get();
+    }
+
+    private void removeFieldsFromDocument(Element element, String field) {
+        removeFieldsFromDocument(element, Lists.newArrayList(field));
+    }
+
+
     private void flushFlushObjectQueue() {
         Queue<FlushObject> queue = getFlushObjectQueue();
         while (queue.size() > 0) {
@@ -1130,7 +1156,7 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
                 if (flushObject.retryCount >= MAX_RETRIES) {
                     throw new VertexiumException(message, ex);
                 }
-                String logMessage = String.format("%s: %s (retying: %d/%d)", message, ex.getMessage(), flushObject.retryCount + 1, MAX_RETRIES);
+                String logMessage = String.format("%s: %s (retrying: %d/%d)", message, ex.getMessage(), flushObject.retryCount + 1, MAX_RETRIES);
                 if (flushObject.retryCount > 0) { // don't log warn the first time
                     LOGGER.warn("%s", logMessage);
                 } else {
@@ -1216,9 +1242,6 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
         addPropertyToIndex(graph, indexInfo, propertyName, propertyVisibility, dataType, analyzed, null);
     }
 
-    protected String deflatePropertyName(PropertyDefinition propertyDefinition) {
-        return deflatePropertyName(propertyDefinition.getPropertyName());
-    }
 
     protected String deflatePropertyName(String propertyName) {
         return nameSubstitutionStrategy.deflate(propertyName);

@@ -44,6 +44,7 @@ import org.vertexium.property.MutableProperty;
 import org.vertexium.property.StreamingPropertyValue;
 import org.vertexium.property.StreamingPropertyValueRef;
 import org.vertexium.search.IndexHint;
+import org.vertexium.PropertyDescriptor;
 import org.vertexium.util.*;
 
 import java.io.IOException;
@@ -383,26 +384,17 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         }
 
         if (indexHint != IndexHint.DO_NOT_INDEX) {
-            for (PropertyDeleteMutation propertyDeleteMutation : propertyDeletes) {
-                getSearchIndex().deleteProperty(
-                        this,
-                        element,
-                        propertyDeleteMutation.getKey(),
-                        propertyDeleteMutation.getName(),
-                        propertyDeleteMutation.getVisibility(),
-                        authorizations
-                );
-            }
-            for (PropertySoftDeleteMutation propertySoftDeleteMutation : propertySoftDeletes) {
-                getSearchIndex().deleteProperty(
-                        this,
-                        element,
-                        propertySoftDeleteMutation.getKey(),
-                        propertySoftDeleteMutation.getName(),
-                        propertySoftDeleteMutation.getVisibility(),
-                        authorizations
-                );
-            }
+            // Bulk delete properties
+            List<PropertyDescriptor> propertyList = Lists.newArrayList();
+            propertyDeletes.forEach( p -> { propertyList.add(PropertyDescriptor.fromPropertyDeleteMutation(p));});
+            propertySoftDeletes.forEach( p -> { propertyList.add(PropertyDescriptor.fromPropertySoftDeleteMutation(p));});
+
+            getSearchIndex().deleteProperties(
+                    this,
+                    element,
+                    propertyList,
+                    authorizations
+            );
             getSearchIndex().addElement(this, element, authorizations);
         }
 
@@ -424,7 +416,11 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         elementMutationBuilder.addPropertyDeleteToMutation(m, property);
         addMutations(element, m);
 
-        getSearchIndex().deleteProperty(this, element, property, authorizations);
+        getSearchIndex().deleteProperty(
+                this,
+                element,
+                PropertyDescriptor.fromProperty(property),
+                authorizations);
 
         if (hasEventListeners()) {
             queueEvent(new DeletePropertyEvent(this, element, property));
@@ -436,7 +432,11 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         elementMutationBuilder.addPropertySoftDeleteToMutation(m, property);
         addMutations(element, m);
 
-        getSearchIndex().deleteProperty(this, element, property, authorizations);
+        getSearchIndex().deleteProperty(
+                this,
+                element,
+                PropertyDescriptor.fromProperty(property),
+                authorizations);
 
         if (hasEventListeners()) {
             queueEvent(new SoftDeletePropertyEvent(this, element, property));
@@ -1808,8 +1808,9 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
 
         String elementRowKey = element.getId();
 
-        boolean propertyChanged = false;
         Mutation m = new Mutation(elementRowKey);
+
+        List <PropertyDescriptor> propertyList = Lists.newArrayList();
         for (AlterPropertyVisibility apv : alterPropertyVisibilities) {
             MutableProperty property = (MutableProperty) element.getProperty(
                     apv.getKey(),
@@ -1830,19 +1831,19 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             property.setTimestamp(apv.getTimestamp());
             elementMutationBuilder.addPropertyToMutation(this, m, elementRowKey, property);
 
+            // Keep track of properties that need to be removed from indices
+            propertyList.add(PropertyDescriptor.from(apv.getKey(), apv.getName(), apv.getExistingVisibility()));
+        }
+
+
+        if(!propertyList.isEmpty()) {
             // delete the property with the old/existing visibility from the search index
-            getSearchIndex().deleteProperty(
+            getSearchIndex().deleteProperties(
                     this,
                     element,
-                    apv.getKey(),
-                    apv.getName(),
-                    apv.getExistingVisibility(),
+                    propertyList,
                     authorizations
             );
-
-            propertyChanged = true;
-        }
-        if (propertyChanged) {
             addMutations(element, m);
         }
     }

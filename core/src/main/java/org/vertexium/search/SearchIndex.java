@@ -6,19 +6,29 @@ import org.vertexium.query.MultiVertexQuery;
 import org.vertexium.query.SimilarToGraphQuery;
 import org.vertexium.query.VertexQuery;
 
+import java.util.Collection;
+
 public interface SearchIndex {
     void addElement(Graph graph, Element element, Authorizations authorizations);
 
     void deleteElement(Graph graph, Element element, Authorizations authorizations);
 
-    void deleteProperty(Graph graph, Element element, Property property, Authorizations authorizations);
+    /**
+     * Default delete property simply calls deleteProperty in a loop. It is up to the SearchIndex implementation to decide
+     * if a collective method can be made more efficient
+     */
+    default void deleteProperties(
+            Graph graph,
+            Element element,
+            Collection<PropertyDescriptor> propertyList,
+            Authorizations authorizations) {
+        propertyList.forEach(p -> deleteProperty(graph, element, p, authorizations));
+    }
 
     void deleteProperty(
             Graph graph,
             Element element,
-            String propertyKey,
-            String propertyName,
-            Visibility propertyVisibility,
+            PropertyDescriptor property,
             Authorizations authorizations
     );
 
