@@ -12,4 +12,8 @@ public class IncreasingTime {
         }
         return last;
     }
+
+    public static void advanceTime(int inc) {
+        last += inc;
+    }
 }

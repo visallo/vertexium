@@ -140,8 +140,6 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
         Iterable<PropertySoftDeleteMutation> propertySoftDeletes = mutation.getPropertySoftDeletes();
         Iterable<Property> properties = mutation.getProperties();
 
-        overridePropertyTimestamps(properties);
-
         updatePropertiesInternal(properties, propertyDeletes, propertySoftDeletes);
         getGraph().saveProperties(
                 (AccumuloElement) mutation.getElement(),
@@ -169,13 +167,5 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
     @Override
     public Iterable<HistoricalPropertyValue> getHistoricalPropertyValues(String key, String name, Visibility visibility, Long startTime, Long endTime, Authorizations authorizations) {
         return getGraph().getHistoricalPropertyValues(this, key, name, visibility, startTime, endTime, authorizations);
-    }
-
-    private void overridePropertyTimestamps(Iterable<Property> properties) {
-        for (Property property : properties) {
-            if (property instanceof MutableProperty) {
-                ((MutableProperty) property).setTimestamp(IncreasingTime.currentTimeMillis());
-            }
-        }
     }
 }

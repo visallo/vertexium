@@ -6,4 +6,6 @@ public interface EdgeMutation extends ElementMutation<Edge> {
     EdgeMutation alterEdgeLabel(String newEdgeLabel);
 
     String getNewEdgeLabel();
+
+    long getAlterEdgeLabelTimestamp();
 }

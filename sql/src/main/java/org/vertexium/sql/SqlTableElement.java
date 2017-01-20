@@ -104,8 +104,8 @@ public abstract class SqlTableElement<TElement extends InMemoryElement>
     }
 
     @Override
-    public void appendAlterEdgeLabelMutation(String newEdgeLabel) {
-        super.appendAlterEdgeLabelMutation(newEdgeLabel);
+    public void appendAlterEdgeLabelMutation(long timestamp, String newEdgeLabel) {
+        super.appendAlterEdgeLabelMutation(timestamp, newEdgeLabel);
         store();
     }
 

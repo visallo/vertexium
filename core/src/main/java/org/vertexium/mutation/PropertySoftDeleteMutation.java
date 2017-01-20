@@ -7,6 +7,8 @@ public abstract class PropertySoftDeleteMutation implements Comparable<PropertyS
 
     public abstract String getName();
 
+    public abstract long getTimestamp();
+
     public abstract Visibility getVisibility();
 
     @Override
