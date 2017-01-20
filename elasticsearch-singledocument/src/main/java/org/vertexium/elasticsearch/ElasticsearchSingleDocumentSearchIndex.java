@@ -344,6 +344,9 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
                 MUTATION_LOGGER.trace("addElement json: %s: %s", element.getId(), source.string());
             }
 
+            if (flushObjectQueueContainsElementId(element.getId())) {
+                flushFlushObjectQueue();
+            }
             UpdateRequestBuilder updateRequestBuilder = getClient()
                     .prepareUpdate(indexInfo.getIndexName(), ELEMENT_TYPE, element.getId())
                     .setDocAsUpsert(true)
@@ -359,6 +362,11 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
         }
 
         getConfig().getScoringStrategy().addElement(this, graph, element, authorizations);
+    }
+
+    private boolean flushObjectQueueContainsElementId(String elementId) {
+        return getFlushObjectQueue().stream()
+                .anyMatch(flushObject -> flushObject.elementId.equals(elementId));
     }
 
     private void addActionRequestBuilderForFlush(String elementId, UpdateRequestBuilder updateRequestBuilder) {
