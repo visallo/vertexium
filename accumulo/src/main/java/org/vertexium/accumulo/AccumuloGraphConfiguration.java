@@ -33,6 +33,7 @@ public class AccumuloGraphConfiguration extends GraphConfiguration {
     public static final String ZOOKEEPER_SERVERS = "zookeeperServers";
     public static final String ZOOKEEPER_METADATA_SYNC_PATH = "zookeeperMetadataSyncPath";
     public static final String ACCUMULO_MAX_VERSIONS = "maxVersions";
+    public static final String HISTORY_IN_SEPARATE_TABLE = "historyInSeparateTable";
     public static final String NAME_SUBSTITUTION_STRATEGY_PROP_PREFIX = "nameSubstitutionStrategy";
     public static final String MAX_STREAMING_PROPERTY_VALUE_TABLE_DATA_SIZE = "maxStreamingPropertyValueTableDataSize";
     public static final String HDFS_USER = HDFS_CONFIG_PREFIX + ".user";
@@ -61,6 +62,7 @@ public class AccumuloGraphConfiguration extends GraphConfiguration {
     public static final Long DEFAULT_BATCHWRITER_TIMEOUT = Long.MAX_VALUE;
     public static final Integer DEFAULT_BATCHWRITER_MAX_WRITE_THREADS = 3;
     public static final Integer DEFAULT_ACCUMULO_MAX_VERSIONS = null;
+    public static final boolean DEFAULT_HISTORY_IN_SEPARATE_TABLE = false;
     public static final int DEFAULT_NUMBER_OF_QUERY_THREADS = 10;
     public static final String DEFAULT_HDFS_CONTEXT_CLASSPATH = null;
 
@@ -221,5 +223,9 @@ public class AccumuloGraphConfiguration extends GraphConfiguration {
 
     public String getZookeeperMetadataSyncPath() {
         return getString(ZOOKEEPER_METADATA_SYNC_PATH, DEFAULT_ZOOKEEPER_METADATA_SYNC_PATH);
+    }
+
+    public boolean isHistoryInSeparateTable() {
+        return getBoolean(HISTORY_IN_SEPARATE_TABLE, DEFAULT_HISTORY_IN_SEPARATE_TABLE);
     }
 }

@@ -49,7 +49,9 @@ public abstract class AccumuloGraphTestBase extends GraphTestBase {
         AccumuloGraphTestUtils.ensureTableExists(connector, GraphConfiguration.DEFAULT_TABLE_NAME_PREFIX);
         AccumuloGraphTestUtils.dropGraph(connector, AccumuloGraph.getDataTableName(GraphConfiguration.DEFAULT_TABLE_NAME_PREFIX));
         AccumuloGraphTestUtils.dropGraph(connector, AccumuloGraph.getVerticesTableName(GraphConfiguration.DEFAULT_TABLE_NAME_PREFIX));
+        AccumuloGraphTestUtils.dropGraph(connector, AccumuloGraph.getHistoryVerticesTableName(GraphConfiguration.DEFAULT_TABLE_NAME_PREFIX));
         AccumuloGraphTestUtils.dropGraph(connector, AccumuloGraph.getEdgesTableName(GraphConfiguration.DEFAULT_TABLE_NAME_PREFIX));
+        AccumuloGraphTestUtils.dropGraph(connector, AccumuloGraph.getHistoryEdgesTableName(GraphConfiguration.DEFAULT_TABLE_NAME_PREFIX));
         AccumuloGraphTestUtils.dropGraph(connector, AccumuloGraph.getMetadataTableName(GraphConfiguration.DEFAULT_TABLE_NAME_PREFIX));
         connector.securityOperations().changeUserAuthorizations(
                 AccumuloGraphConfiguration.DEFAULT_ACCUMULO_USERNAME,
@@ -126,6 +128,7 @@ public abstract class AccumuloGraphTestBase extends GraphTestBase {
         configMap.put(AccumuloGraphConfiguration.AUTO_FLUSH, false);
         configMap.put(AccumuloGraphConfiguration.MAX_STREAMING_PROPERTY_VALUE_TABLE_DATA_SIZE, GraphTestBase.LARGE_PROPERTY_VALUE_SIZE - 1);
         configMap.put(AccumuloGraphConfiguration.DATA_DIR, "/tmp/");
+        configMap.put(AccumuloGraphConfiguration.HISTORY_IN_SEPARATE_TABLE, true);
         return configMap;
     }
 
