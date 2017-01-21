@@ -78,6 +78,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
     private final FileSystem fileSystem;
     private final String dataDir;
     private final CuratorFramework curatorFramework;
+    private final boolean historyInSeparateTable;
     private ThreadLocal<VertexiumMultiTableBatchWriter> elementWriter = new ThreadLocal<>();
     private ThreadLocal<BatchWriter> metadataWriter = new ThreadLocal<>();
     protected ElementMutationBuilder elementMutationBuilder;
@@ -86,7 +87,9 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
     private boolean foundVertexiumSerializerMetadata;
     private final AccumuloNameSubstitutionStrategy nameSubstitutionStrategy;
     private final String verticesTableName;
+    private final String historyVerticesTableName;
     private final String edgesTableName;
+    private final String historyEdgesTableName;
     private final String dataTableName;
     private final String metadataTableName;
     private final int numberOfQueryThreads;
@@ -108,12 +111,12 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         this.elementMutationBuilder = new ElementMutationBuilder(fileSystem, vertexiumSerializer, maxStreamingPropertyValueTableDataSize, dataDir) {
             @Override
             protected void saveVertexMutation(Mutation m) {
-                addMutations(getVerticesWriter(), m);
+                addMutations(ElementType.VERTEX, m);
             }
 
             @Override
             protected void saveEdgeMutation(Mutation m) {
-                addMutations(getEdgesWriter(), m);
+                addMutations(ElementType.EDGE, m);
             }
 
             @Override
@@ -123,7 +126,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
 
             @Override
             protected void saveDataMutation(Mutation dataMutation) {
-                addMutations(getDataWriter(), dataMutation);
+                _addMutations(getDataWriter(), dataMutation);
             }
 
             @Override
@@ -144,6 +147,15 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         this.dataTableName = getDataTableName(getConfiguration().getTableNamePrefix());
         this.metadataTableName = getMetadataTableName(getConfiguration().getTableNamePrefix());
         this.numberOfQueryThreads = getConfiguration().getNumberOfQueryThreads();
+        this.historyInSeparateTable = getConfiguration().isHistoryInSeparateTable();
+
+        if (isHistoryInSeparateTable()) {
+            this.historyVerticesTableName = getHistoryVerticesTableName(getConfiguration().getTableNamePrefix());
+            this.historyEdgesTableName = getHistoryEdgesTableName(getConfiguration().getTableNamePrefix());
+        } else {
+            this.historyVerticesTableName = null;
+            this.historyEdgesTableName = null;
+        }
     }
 
     public static AccumuloGraph create(AccumuloGraphConfiguration config) throws AccumuloSecurityException, AccumuloException, VertexiumException, InterruptedException, IOException, URISyntaxException {
@@ -152,8 +164,18 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         }
         Connector connector = config.createConnector();
         FileSystem fs = config.createFileSystem();
-        ensureTableExists(connector, getVerticesTableName(config.getTableNamePrefix()), config.getMaxVersions(), config.getHdfsContextClasspath(), config.isCreateTables());
-        ensureTableExists(connector, getEdgesTableName(config.getTableNamePrefix()), config.getMaxVersions(), config.getHdfsContextClasspath(), config.isCreateTables());
+        if (config.isHistoryInSeparateTable()) {
+            ensureTableExists(connector, getVerticesTableName(config.getTableNamePrefix()), 1, config.getHdfsContextClasspath(), config.isCreateTables());
+            ensureTableExists(connector, getEdgesTableName(config.getTableNamePrefix()), 1, config.getHdfsContextClasspath(), config.isCreateTables());
+
+            ensureTableExists(connector, getHistoryVerticesTableName(config.getTableNamePrefix()), config.getMaxVersions(), config.getHdfsContextClasspath(), config.isCreateTables());
+            ensureTableExists(connector, getHistoryEdgesTableName(config.getTableNamePrefix()), config.getMaxVersions(), config.getHdfsContextClasspath(), config.isCreateTables());
+            ensureRowDeletingIteratorIsAttached(connector, getHistoryVerticesTableName(config.getTableNamePrefix()));
+            ensureRowDeletingIteratorIsAttached(connector, getHistoryEdgesTableName(config.getTableNamePrefix()));
+        } else {
+            ensureTableExists(connector, getVerticesTableName(config.getTableNamePrefix()), config.getMaxVersions(), config.getHdfsContextClasspath(), config.isCreateTables());
+            ensureTableExists(connector, getEdgesTableName(config.getTableNamePrefix()), config.getMaxVersions(), config.getHdfsContextClasspath(), config.isCreateTables());
+        }
         ensureTableExists(connector, getDataTableName(config.getTableNamePrefix()), 1, config.getHdfsContextClasspath(), config.isCreateTables());
         ensureTableExists(connector, getMetadataTableName(config.getTableNamePrefix()), 1, config.getHdfsContextClasspath(), config.isCreateTables());
         ensureRowDeletingIteratorIsAttached(connector, getVerticesTableName(config.getTableNamePrefix()));
@@ -357,7 +379,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             elementMutationBuilder.addPropertyToMutation(this, m, elementRowKey, property);
         }
         if (hasProperty) {
-            addMutations(getWriterFromElementType(element), m);
+            addMutations(element, m);
         }
 
         if (indexHint != IndexHint.DO_NOT_INDEX) {
@@ -400,7 +422,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
     void deleteProperty(AccumuloElement element, Property property, Authorizations authorizations) {
         Mutation m = new Mutation(element.getId());
         elementMutationBuilder.addPropertyDeleteToMutation(m, property);
-        addMutations(getWriterFromElementType(element), m);
+        addMutations(element, m);
 
         getSearchIndex().deleteProperty(this, element, property, authorizations);
 
@@ -412,7 +434,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
     void softDeleteProperty(AccumuloElement element, Property property, Authorizations authorizations) {
         Mutation m = new Mutation(element.getId());
         elementMutationBuilder.addPropertySoftDeleteToMutation(m, property);
-        addMutations(getWriterFromElementType(element), m);
+        addMutations(element, m);
 
         getSearchIndex().deleteProperty(this, element, property, authorizations);
 
@@ -421,7 +443,18 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         }
     }
 
-    protected void addMutations(BatchWriter writer, Mutation... mutations) {
+    protected void addMutations(Element element, Mutation... mutations) {
+        addMutations(ElementType.getTypeFromElement(element), mutations);
+    }
+
+    protected void addMutations(ElementType elementType, Mutation... mutations) {
+        _addMutations(getWriterFromElementType(elementType), mutations);
+        if (isHistoryInSeparateTable()) {
+            _addMutations(getHistoryWriterFromElementType(elementType), mutations);
+        }
+    }
+
+    protected void _addMutations(BatchWriter writer, Mutation... mutations) {
         try {
             for (Mutation mutation : mutations) {
                 writer.addMutation(mutation);
@@ -446,21 +479,49 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         return getElementWriter(getVerticesTableName());
     }
 
+    protected BatchWriter getHistoryVerticesWriter() {
+        return getElementWriter(getHistoryVerticesTableName());
+    }
+
     protected BatchWriter getEdgesWriter() {
         return getElementWriter(getEdgesTableName());
+    }
+
+    protected BatchWriter getHistoryEdgesWriter() {
+        return getElementWriter(getHistoryEdgesTableName());
     }
 
     protected BatchWriter getDataWriter() {
         return getElementWriter(getDataTableName());
     }
 
-    protected BatchWriter getWriterFromElementType(Element element) {
-        if (element instanceof Vertex) {
-            return getVerticesWriter();
-        } else if (element instanceof Edge) {
-            return getEdgesWriter();
-        } else {
-            throw new VertexiumException("Unexpected element type: " + element.getClass().getName());
+    public BatchWriter getWriterFromElementType(Element element) {
+        return getWriterFromElementType(ElementType.getTypeFromElement(element));
+    }
+
+    public BatchWriter getWriterFromElementType(ElementType elementType) {
+        switch (elementType) {
+            case VERTEX:
+                return getVerticesWriter();
+            case EDGE:
+                return getEdgesWriter();
+            default:
+                throw new VertexiumException("Unexpected element type: " + elementType);
+        }
+    }
+
+    public BatchWriter getHistoryWriterFromElementType(Element element) {
+        return getHistoryWriterFromElementType(ElementType.getTypeFromElement(element));
+    }
+
+    public BatchWriter getHistoryWriterFromElementType(ElementType elementType) {
+        switch (elementType) {
+            case VERTEX:
+                return getHistoryVerticesWriter();
+            case EDGE:
+                return getHistoryEdgesWriter();
+            default:
+                throw new VertexiumException("Unexpected element type: " + elementType);
         }
     }
 
@@ -496,7 +557,8 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                 deleteEdge(edge, authorizations);
             }
 
-            addMutations(getVerticesWriter(), getDeleteRowMutation(vertex.getId()));
+            Mutation deleteRowMutation = getDeleteRowMutation(vertex.getId());
+            addMutations(ElementType.VERTEX, deleteRowMutation);
 
             if (hasEventListeners()) {
                 queueEvent(new DeleteVertexEvent(this, vertex));
@@ -523,7 +585,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                 softDeleteEdge(edge, timestamp, authorizations);
             }
 
-            addMutations(getVerticesWriter(), getSoftDeleteRowMutation(vertex.getId(), timestamp));
+            addMutations(ElementType.VERTEX, getSoftDeleteRowMutation(vertex.getId(), timestamp));
 
             if (hasEventListeners()) {
                 queueEvent(new SoftDeleteVertexEvent(this, vertex));
@@ -546,7 +608,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                 markEdgeHidden(edge, visibility, authorizations);
             }
 
-            addMutations(getVerticesWriter(), getMarkHiddenRowMutation(vertex.getId(), columnVisibility));
+            addMutations(ElementType.VERTEX, getMarkHiddenRowMutation(vertex.getId(), columnVisibility));
 
             if (hasEventListeners()) {
                 queueEvent(new MarkHiddenVertexEvent(this, vertex));
@@ -569,7 +631,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                 markEdgeVisible(edge, visibility, authorizations);
             }
 
-            addMutations(getVerticesWriter(), getMarkVisibleRowMutation(vertex.getId(), columnVisibility));
+            addMutations(ElementType.VERTEX, getMarkVisibleRowMutation(vertex.getId(), columnVisibility));
 
             if (hasEventListeners()) {
                 queueEvent(new MarkVisibleVertexEvent(this, vertex));
@@ -857,10 +919,10 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             Mutation inMutation = new Mutation(edge.getVertexId(Direction.IN));
             inMutation.putDelete(AccumuloVertex.CF_IN_EDGE, new Text(edge.getId()), visibility);
 
-            addMutations(getVerticesWriter(), outMutation, inMutation);
+            addMutations(ElementType.VERTEX, outMutation, inMutation);
 
             // Deletes everything else related to edge.
-            addMutations(getEdgesWriter(), getDeleteRowMutation(edge.getId()));
+            addMutations(ElementType.EDGE, getDeleteRowMutation(edge.getId()));
 
             if (hasEventListeners()) {
                 queueEvent(new DeleteEdgeEvent(this, edge));
@@ -890,10 +952,10 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             Mutation inMutation = new Mutation(edge.getVertexId(Direction.IN));
             inMutation.put(AccumuloVertex.CF_IN_EDGE_SOFT_DELETE, new Text(edge.getId()), visibility, timestamp, AccumuloElement.SOFT_DELETE_VALUE);
 
-            addMutations(getVerticesWriter(), outMutation, inMutation);
+            addMutations(ElementType.VERTEX, outMutation, inMutation);
 
             // Soft deletes everything else related to edge.
-            addMutations(getEdgesWriter(), getSoftDeleteRowMutation(edge.getId(), timestamp));
+            addMutations(ElementType.EDGE, getSoftDeleteRowMutation(edge.getId(), timestamp));
 
             if (hasEventListeners()) {
                 queueEvent(new SoftDeleteEdgeEvent(this, edge));
@@ -926,10 +988,10 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             Mutation inMutation = new Mutation(in.getId());
             inMutation.put(AccumuloVertex.CF_IN_EDGE_HIDDEN, new Text(edge.getId()), columnVisibility, AccumuloElement.HIDDEN_VALUE);
 
-            addMutations(getVerticesWriter(), outMutation, inMutation);
+            addMutations(ElementType.VERTEX, outMutation, inMutation);
 
             // Delete everything else related to edge.
-            addMutations(getEdgesWriter(), getMarkHiddenRowMutation(edge.getId(), columnVisibility));
+            addMutations(ElementType.EDGE, getMarkHiddenRowMutation(edge.getId(), columnVisibility));
 
             if (out instanceof AccumuloVertex) {
                 ((AccumuloVertex) out).removeOutEdge(edge);
@@ -969,10 +1031,10 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             Mutation inMutation = new Mutation(in.getId());
             inMutation.putDelete(AccumuloVertex.CF_IN_EDGE_HIDDEN, new Text(edge.getId()), columnVisibility);
 
-            addMutations(getVerticesWriter(), outMutation, inMutation);
+            addMutations(ElementType.VERTEX, outMutation, inMutation);
 
             // Delete everything else related to edge.
-            addMutations(getEdgesWriter(), getMarkVisibleRowMutation(edge.getId(), columnVisibility));
+            addMutations(ElementType.EDGE, getMarkVisibleRowMutation(edge.getId(), columnVisibility));
 
             if (out instanceof AccumuloVertex) {
                 ((AccumuloVertex) out).addOutEdge(edge);
@@ -1014,9 +1076,9 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             ColumnVisibility columnVisibility = visibilityToAccumuloVisibility(visibility);
 
             if (element instanceof Vertex) {
-                addMutations(getVerticesWriter(), getMarkHiddenPropertyMutation(element.getId(), property, timestamp, columnVisibility));
+                addMutations(ElementType.VERTEX, getMarkHiddenPropertyMutation(element.getId(), property, timestamp, columnVisibility));
             } else if (element instanceof Edge) {
-                addMutations(getEdgesWriter(), getMarkHiddenPropertyMutation(element.getId(), property, timestamp, columnVisibility));
+                addMutations(ElementType.EDGE, getMarkHiddenPropertyMutation(element.getId(), property, timestamp, columnVisibility));
             }
 
             if (hasEventListeners()) {
@@ -1049,9 +1111,9 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             ColumnVisibility columnVisibility = visibilityToAccumuloVisibility(visibility);
 
             if (element instanceof Vertex) {
-                addMutations(getVerticesWriter(), getMarkVisiblePropertyMutation(element.getId(), property, timestamp, columnVisibility));
+                addMutations(ElementType.VERTEX, getMarkVisiblePropertyMutation(element.getId(), property, timestamp, columnVisibility));
             } else if (element instanceof Edge) {
-                addMutations(getEdgesWriter(), getMarkVisiblePropertyMutation(element.getId(), property, timestamp, columnVisibility));
+                addMutations(ElementType.EDGE, getMarkVisiblePropertyMutation(element.getId(), property, timestamp, columnVisibility));
             }
 
             if (hasEventListeners()) {
@@ -1265,7 +1327,12 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             Authorizations authorizations
     ) throws VertexiumException {
         try {
-            String tableName = getTableNameFromElementType(elementType);
+            String tableName;
+            if (isHistoryInSeparateTable() && (startTime != null || endTime != null || maxVersions == null || maxVersions > 1)) {
+                tableName = getHistoryTableNameFromElementType(elementType);
+            } else {
+                tableName = getTableNameFromElementType(elementType);
+            }
             ScannerBase scanner;
             if (ranges == null || ranges.size() == 1) {
                 org.apache.accumulo.core.data.Range range = ranges == null ? null : ranges.iterator().next();
@@ -1483,6 +1550,17 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         }
     }
 
+    public String getHistoryTableNameFromElementType(ElementType elementType) {
+        switch (elementType) {
+            case VERTEX:
+                return getHistoryVerticesTableName();
+            case EDGE:
+                return getHistoryEdgesTableName();
+            default:
+                throw new VertexiumException("Unexpected element type: " + elementType);
+        }
+    }
+
     public org.apache.accumulo.core.security.Authorizations toAccumuloAuthorizations(Authorizations authorizations) {
         if (authorizations == null) {
             throw new NullPointerException("authorizations is required");
@@ -1580,8 +1658,16 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         return tableNamePrefix + "_v";
     }
 
+    public static String getHistoryVerticesTableName(String tableNamePrefix) {
+        return tableNamePrefix + "_vh";
+    }
+
     public static String getEdgesTableName(String tableNamePrefix) {
         return tableNamePrefix.concat("_e");
+    }
+
+    public static String getHistoryEdgesTableName(String tableNamePrefix) {
+        return tableNamePrefix.concat("_eh");
     }
 
     public static String getDataTableName(String tableNamePrefix) {
@@ -1596,8 +1682,16 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         return verticesTableName;
     }
 
+    public String getHistoryVerticesTableName() {
+        return historyVerticesTableName;
+    }
+
     public String getEdgesTableName() {
         return edgesTableName;
+    }
+
+    public String getHistoryEdgesTableName() {
+        return historyEdgesTableName;
     }
 
     public String getDataTableName() {
@@ -1621,26 +1715,30 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
     }
 
     public Iterable<Range> listVerticesTableSplits() {
-        try {
-            return splitsIterableToRangeIterable(getConnector().tableOperations().listSplits(getVerticesTableName()));
-        } catch (Exception ex) {
-            throw new VertexiumException("Could not get splits for: " + getVerticesTableName(), ex);
-        }
+        return listTableSplits(getVerticesTableName());
+    }
+
+    public Iterable<Range> listHistoryVerticesTableSplits() {
+        return listTableSplits(getHistoryVerticesTableName());
     }
 
     public Iterable<Range> listEdgesTableSplits() {
-        try {
-            return splitsIterableToRangeIterable(getConnector().tableOperations().listSplits(getEdgesTableName()));
-        } catch (Exception ex) {
-            throw new VertexiumException("Could not get splits for: " + getVerticesTableName(), ex);
-        }
+        return listTableSplits(getEdgesTableName());
+    }
+
+    public Iterable<Range> listHistoryEdgesTableSplits() {
+        return listTableSplits(getHistoryEdgesTableName());
     }
 
     public Iterable<Range> listDataTableSplits() {
+        return listTableSplits(getDataTableName());
+    }
+
+    private Iterable<Range> listTableSplits(String tableName) {
         try {
-            return splitsIterableToRangeIterable(getConnector().tableOperations().listSplits(getDataTableName()));
+            return splitsIterableToRangeIterable(getConnector().tableOperations().listSplits(tableName));
         } catch (Exception ex) {
-            throw new VertexiumException("Could not get splits for: " + getVerticesTableName(), ex);
+            throw new VertexiumException("Could not get splits for: " + tableName, ex);
         }
     }
 
@@ -1657,32 +1755,30 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
     }
 
     void alterElementVisibility(AccumuloElement element, Visibility newVisibility, Authorizations authorizations) {
-        BatchWriter elementWriter = getWriterFromElementType(element);
         String elementRowKey = element.getId();
         Visibility oldVisibility = element.getVisibility();
         Span trace = Trace.start("alterElementVisibility");
         trace.data("elementRowKey", elementRowKey);
         try {
             if (element instanceof Edge) {
-                BatchWriter vertexWriter = getVerticesWriter();
                 Edge edge = (Edge) element;
 
                 String vertexOutRowKey = edge.getVertexId(Direction.OUT);
                 Mutation vertexOutMutation = new Mutation(vertexOutRowKey);
                 if (elementMutationBuilder.alterEdgeVertexOutVertex(vertexOutMutation, edge, newVisibility)) {
-                    addMutations(vertexWriter, vertexOutMutation);
+                    addMutations(ElementType.VERTEX, vertexOutMutation);
                 }
 
                 String vertexInRowKey = edge.getVertexId(Direction.IN);
                 Mutation vertexInMutation = new Mutation(vertexInRowKey);
                 if (elementMutationBuilder.alterEdgeVertexInVertex(vertexInMutation, edge, newVisibility)) {
-                    addMutations(vertexWriter, vertexInMutation);
+                    addMutations(ElementType.VERTEX, vertexInMutation);
                 }
             }
 
             Mutation m = new Mutation(elementRowKey);
             if (elementMutationBuilder.alterElementVisibility(m, element, newVisibility)) {
-                addMutations(elementWriter, m);
+                addMutations(element, m);
             }
             element.setVisibility(newVisibility);
             getSearchIndex().alterElementVisibility(
@@ -1710,7 +1806,6 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             return;
         }
 
-        BatchWriter writer = getWriterFromElementType(element);
         String elementRowKey = element.getId();
 
         boolean propertyChanged = false;
@@ -1748,7 +1843,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             propertyChanged = true;
         }
         if (propertyChanged) {
-            addMutations(writer, m);
+            addMutations(element, m);
         }
     }
 
@@ -1767,19 +1862,22 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             propertiesToSave.add(property);
         }
 
-        BatchWriter writer = getWriterFromElementType(element);
         String elementRowKey = element.getId();
 
         Mutation m = new Mutation(elementRowKey);
         for (Property property : propertiesToSave) {
             elementMutationBuilder.addPropertyMetadataToMutation(m, property);
         }
-        addMutations(writer, m);
+        addMutations(element, m);
     }
 
     @Override
     public boolean isVisibilityValid(Visibility visibility, Authorizations authorizations) {
         return authorizations.canRead(visibility);
+    }
+
+    private boolean isHistoryInSeparateTable() {
+        return historyInSeparateTable;
     }
 
     @Override
@@ -1789,6 +1887,10 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             this.connector.tableOperations().deleteRows(getEdgesTableName(), null, null);
             this.connector.tableOperations().deleteRows(getVerticesTableName(), null, null);
             this.connector.tableOperations().deleteRows(getMetadataTableName(), null, null);
+            if (isHistoryInSeparateTable()) {
+                this.connector.tableOperations().deleteRows(getHistoryEdgesTableName(), null, null);
+                this.connector.tableOperations().deleteRows(getHistoryVerticesTableName(), null, null);
+            }
             getSearchIndex().truncate(this);
         } catch (Exception ex) {
             throw new VertexiumException("Could not delete rows", ex);
@@ -1802,6 +1904,10 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             dropTableIfExists(getEdgesTableName());
             dropTableIfExists(getVerticesTableName());
             dropTableIfExists(getMetadataTableName());
+            if (isHistoryInSeparateTable()) {
+                dropTableIfExists(getHistoryEdgesTableName());
+                dropTableIfExists(getHistoryVerticesTableName());
+            }
             getSearchIndex().drop(this);
         } catch (Exception ex) {
             throw new VertexiumException("Could not drop tables", ex);
