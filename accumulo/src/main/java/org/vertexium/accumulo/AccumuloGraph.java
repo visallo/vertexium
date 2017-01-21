@@ -1732,7 +1732,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             }
             elementMutationBuilder.addPropertySoftDeleteToMutation(m, property);
             property.setVisibility(apv.getVisibility());
-            property.setTimestamp(IncreasingTime.currentTimeMillis());
+            property.setTimestamp(apv.getTimestamp());
             elementMutationBuilder.addPropertyToMutation(this, m, elementRowKey, property);
 
             // delete the property with the old/existing visibility from the search index

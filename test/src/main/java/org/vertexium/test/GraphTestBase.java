@@ -4522,6 +4522,34 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    public void testTimestampsInExistingElementMutation() {
+        long t1 = createDate(2017, 1, 18, 9, 20, 0).getTime();
+        long t2 = createDate(2017, 1, 19, 9, 20, 0).getTime();
+
+        graph.prepareVertex("v1", VISIBILITY_EMPTY)
+                .addPropertyValue("k1", "prop1", "test1", new Metadata(), t1, VISIBILITY_EMPTY)
+                .save(AUTHORIZATIONS_ALL);
+        graph.flush();
+
+        Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_ALL);
+        assertEquals(t1, v1.getProperty("k1", "prop1").getTimestamp());
+
+        graph.getVertex("v1", AUTHORIZATIONS_ALL)
+                .prepareMutation()
+                .addPropertyValue("k1", "prop1", "test2", new Metadata(), t2, VISIBILITY_EMPTY)
+                .save(AUTHORIZATIONS_ALL);
+        graph.flush();
+
+        v1 = graph.getVertex("v1", AUTHORIZATIONS_ALL);
+        assertEquals(t2, v1.getProperty("k1", "prop1").getTimestamp());
+
+        List<HistoricalPropertyValue> historicalValues = toList(v1.getHistoricalPropertyValues("k1", "prop1", VISIBILITY_EMPTY, AUTHORIZATIONS_ALL));
+        assertEquals(2, historicalValues.size());
+        assertEquals(t1, historicalValues.get(1).getTimestamp());
+        assertEquals(t2, historicalValues.get(0).getTimestamp());
+    }
+
+    @Test
     public void testGraphQueryWithTermsAggregation() {
         boolean searchIndexFieldLevelSecurity = isSearchIndexFieldLevelSecuritySupported();
         graph.defineProperty("name").dataType(String.class).textIndexHint(TextIndexHint.EXACT_MATCH).define();

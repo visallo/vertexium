@@ -19,8 +19,10 @@ public class SqlTableVertex extends SqlTableElement<InMemoryVertex> {
     }
 
     @Override
-    public InMemoryVertex createElementInternal(InMemoryGraph graph, boolean includeHidden, Long endTime,
-                                                Authorizations authorizations) {
+    public InMemoryVertex createElementInternal(
+            InMemoryGraph graph, boolean includeHidden, Long endTime,
+            Authorizations authorizations
+    ) {
         return new InMemoryVertex(graph, getId(), asInMemoryTableElement(), includeHidden, endTime, authorizations);
     }
 
@@ -159,8 +161,8 @@ public class SqlTableVertex extends SqlTableElement<InMemoryVertex> {
         }
 
         @Override
-        public void appendAlterEdgeLabelMutation(String newEdgeLabel) {
-            sqlTableVertex.appendAlterEdgeLabelMutation(newEdgeLabel);
+        public void appendAlterEdgeLabelMutation(long timestamp, String newEdgeLabel) {
+            sqlTableVertex.appendAlterEdgeLabelMutation(timestamp, newEdgeLabel);
         }
 
         @Override

@@ -21,6 +21,11 @@ public class PropertyPropertySoftDeleteMutation extends PropertySoftDeleteMutati
     }
 
     @Override
+    public long getTimestamp() {
+        return property.getTimestamp();
+    }
+
+    @Override
     public Visibility getVisibility() {
         return property.getVisibility();
     }

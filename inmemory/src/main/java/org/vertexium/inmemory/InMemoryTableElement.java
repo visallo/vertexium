@@ -341,8 +341,7 @@ public abstract class InMemoryTableElement<TElement extends InMemoryElement> imp
         this.mutations.add(new AddPropertyMetadataMutation(timestamp, key, name, metadata, visibility));
     }
 
-    public void appendAlterEdgeLabelMutation(String newEdgeLabel) {
-        long timestamp = IncreasingTime.currentTimeMillis();
+    public void appendAlterEdgeLabelMutation(long timestamp, String newEdgeLabel) {
         this.mutations.add(new AlterEdgeLabelMutation(timestamp, newEdgeLabel));
     }
 

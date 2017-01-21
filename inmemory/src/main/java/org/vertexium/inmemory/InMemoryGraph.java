@@ -308,6 +308,9 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
     private Edge savePreparedEdge(final EdgeBuilderBase edgeBuilder, final String outVertexId, final String inVertexId, Long timestamp, Authorizations authorizations) {
         if (timestamp == null) {
             timestamp = IncreasingTime.currentTimeMillis();
+
+            // The timestamps will be incremented below, this will ensure future mutations will be in the future
+            IncreasingTime.advanceTime(10);
         }
         long incrementingTimestamp = timestamp;
         InMemoryTableElement edgeTableElement = this.edges.getTableElement(edgeBuilder.getEdgeId());
@@ -670,18 +673,32 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
             Object value = property.getValue();
             Metadata metadata = property.getMetadata();
 
-            inMemoryTableElement.appendSoftDeletePropertyMutation(apv.getKey(), apv.getName(),
-                                                                  apv.getExistingVisibility(), IncreasingTime.currentTimeMillis()
+            inMemoryTableElement.appendSoftDeletePropertyMutation(
+                    apv.getKey(),
+                    apv.getName(),
+                    apv.getExistingVisibility(),
+                    apv.getTimestamp()
             );
 
-            long newTimestamp = IncreasingTime.currentTimeMillis();
+            long newTimestamp = apv.getTimestamp() + 1;
             if (value instanceof StreamingPropertyValue) {
-                value = saveStreamingPropertyValue(inMemoryTableElement.getId(), apv.getKey(), apv.getName(),
-                                                   apv.getVisibility(), newTimestamp, (StreamingPropertyValue) value
+                value = saveStreamingPropertyValue(
+                        inMemoryTableElement.getId(),
+                        apv.getKey(),
+                        apv.getName(),
+                        apv.getVisibility(),
+                        newTimestamp,
+                        (StreamingPropertyValue) value
                 );
             }
             inMemoryTableElement.appendAddPropertyValueMutation(
-                    apv.getKey(), apv.getName(), value, metadata, apv.getVisibility(), newTimestamp);
+                    apv.getKey(),
+                    apv.getName(),
+                    value,
+                    metadata,
+                    apv.getVisibility(),
+                    newTimestamp
+            );
         }
     }
 
@@ -732,8 +749,8 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
         getSearchIndex().drop(this);
     }
 
-    protected void alterEdgeLabel(InMemoryTableEdge inMemoryTableEdge, String newEdgeLabel) {
-        inMemoryTableEdge.appendAlterEdgeLabelMutation(newEdgeLabel);
+    protected void alterEdgeLabel(InMemoryTableEdge inMemoryTableEdge, long timestamp, String newEdgeLabel) {
+        inMemoryTableEdge.appendAlterEdgeLabelMutation(timestamp, newEdgeLabel);
     }
 
     protected void deleteProperty(

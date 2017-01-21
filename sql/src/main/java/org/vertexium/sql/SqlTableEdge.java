@@ -164,8 +164,8 @@ public class SqlTableEdge extends SqlTableElement<InMemoryEdge> {
         }
 
         @Override
-        public void appendAlterEdgeLabelMutation(String newEdgeLabel) {
-            sqlTableEdge.appendAlterEdgeLabelMutation(newEdgeLabel);
+        public void appendAlterEdgeLabelMutation(long timestamp, String newEdgeLabel) {
+            sqlTableEdge.appendAlterEdgeLabelMutation(timestamp, newEdgeLabel);
         }
 
         @Override

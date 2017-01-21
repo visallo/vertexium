@@ -2,12 +2,10 @@ package org.vertexium.inmemory;
 
 import org.vertexium.*;
 import org.vertexium.mutation.*;
-import org.vertexium.property.MutableProperty;
 import org.vertexium.property.MutablePropertyImpl;
 import org.vertexium.search.IndexHint;
 import org.vertexium.util.ConvertingIterable;
 import org.vertexium.util.FilterIterable;
-import org.vertexium.util.IncreasingTime;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -394,7 +392,6 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> implemen
             Iterable<PropertySoftDeleteMutation> propertySoftDeleteMutations,
             IndexHint indexHint
     ) {
-        long timestamp = IncreasingTime.currentTimeMillis();
         for (Property property : properties) {
             addPropertyValue(property.getKey(), property.getName(), property.getValue(), property.getMetadata(), property.getVisibility(), property.getTimestamp(), false, authorizations);
         }
@@ -402,7 +399,7 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> implemen
             deleteProperty(propertyDeleteMutation.getKey(), propertyDeleteMutation.getName(), propertyDeleteMutation.getVisibility(), authorizations);
         }
         for (PropertySoftDeleteMutation propertySoftDeleteMutation : propertySoftDeleteMutations) {
-            softDeleteProperty(propertySoftDeleteMutation.getKey(), propertySoftDeleteMutation.getName(), timestamp, propertySoftDeleteMutation.getVisibility(), indexHint, authorizations);
+            softDeleteProperty(propertySoftDeleteMutation.getKey(), propertySoftDeleteMutation.getName(), propertySoftDeleteMutation.getTimestamp(), propertySoftDeleteMutation.getVisibility(), indexHint, authorizations);
         }
     }
 
@@ -425,8 +422,6 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> implemen
         Iterable<PropertyDeleteMutation> propertyDeleteMutations = mutation.getPropertyDeletes();
         Iterable<PropertySoftDeleteMutation> propertySoftDeleteMutations = mutation.getPropertySoftDeletes();
 
-        overridePropertyTimestamps(properties);
-
         updatePropertiesInternal(
                 properties,
                 propertyDeleteMutations,
@@ -441,9 +436,9 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> implemen
         }
 
         if (mutation instanceof EdgeMutation) {
-            EdgeMutation edgeMutation = (EdgeMutation) (ElementMutation) mutation;
+            EdgeMutation edgeMutation = (EdgeMutation) mutation;
             if (edgeMutation.getNewEdgeLabel() != null) {
-                graph.alterEdgeLabel((InMemoryTableEdge) inMemoryTableElement, edgeMutation.getNewEdgeLabel());
+                graph.alterEdgeLabel((InMemoryTableEdge) inMemoryTableElement, edgeMutation.getAlterEdgeLabelTimestamp(), edgeMutation.getNewEdgeLabel());
             }
         }
     }
@@ -500,14 +495,6 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> implemen
     @Override
     public Iterable<Visibility> getHiddenVisibilities() {
         return inMemoryTableElement.getHiddenVisibilities();
-    }
-
-    private void overridePropertyTimestamps(Iterable<Property> properties) {
-        for (Property property : properties) {
-            if (property instanceof MutableProperty) {
-                ((MutableProperty) property).setTimestamp(IncreasingTime.currentTimeMillis());
-            }
-        }
     }
 
     protected boolean isIncludeHidden() {
