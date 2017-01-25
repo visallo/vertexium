@@ -2,11 +2,15 @@
 
 * Added: support for Elasticsearch range aggregations
 * Added: hasChanges method to mutations
-* Fixed: Bulk request conflict by adding a retry count
 * Added: Edge.getVertices which accepts fetch hints
-* Changed: avoid saving empty mutations in Graph#saveElementMutations 
 * Added: support to read multiple StreamingPropertyValues with on query
 * Added: Graph.findPath exclusion labels
+* Added: methods to support deleting multiple properties on a single ES request to minimize collisions.
+* Added: support storing history in a separate table
+* Changed: avoid saving empty mutations in Graph#saveElementMutations
+* Changed: if the Elasticsearch write queue already contains element flush
+* Fixed: existing element mutations updating timestamps
+* Fixed: bulk request conflict by adding a retry count
 
 # v2.5.1
 
