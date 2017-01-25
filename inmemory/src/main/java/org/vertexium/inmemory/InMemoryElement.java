@@ -1,9 +1,11 @@
 package org.vertexium.inmemory;
 
+import com.google.common.collect.Lists;
 import org.vertexium.*;
 import org.vertexium.mutation.*;
 import org.vertexium.property.MutablePropertyImpl;
 import org.vertexium.search.IndexHint;
+import org.vertexium.PropertyDescriptor;
 import org.vertexium.util.ConvertingIterable;
 import org.vertexium.util.FilterIterable;
 
@@ -475,10 +477,15 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> implemen
             Authorizations authorizations
     ) {
         if (alterPropertyVisibilities != null && alterPropertyVisibilities.size() > 0) {
-            for (AlterPropertyVisibility apv : alterPropertyVisibilities) {
-                Visibility existingVisibility = apv.getExistingVisibility();
-                getGraph().getSearchIndex().deleteProperty(getGraph(), element, apv.getKey(), apv.getName(), existingVisibility, authorizations);
-            }
+            // Bulk delete
+            List <PropertyDescriptor> propertyList = Lists.newArrayList();
+            alterPropertyVisibilities.forEach( p -> { propertyList.add(PropertyDescriptor.from(p.getKey(), p.getName(), p.getExistingVisibility()));});
+            getGraph().getSearchIndex().deleteProperties(
+                    getGraph(),
+                    element,
+                    propertyList,
+                    authorizations);
+
             getGraph().getSearchIndex().flush(getGraph());
         }
         if (newVisibility != null) {

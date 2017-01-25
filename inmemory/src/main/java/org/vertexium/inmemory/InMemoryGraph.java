@@ -12,6 +12,7 @@ import org.vertexium.mutation.SetPropertyMetadata;
 import org.vertexium.property.StreamingPropertyValue;
 import org.vertexium.property.StreamingPropertyValueRef;
 import org.vertexium.search.IndexHint;
+import org.vertexium.PropertyDescriptor;
 import org.vertexium.search.SearchIndex;
 import org.vertexium.util.*;
 
@@ -613,7 +614,7 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
             throw new IllegalArgumentException("Unexpected element type: " + inMemoryTableElement.getClass().getName());
         }
         if (indexHint != IndexHint.DO_NOT_INDEX) {
-            getSearchIndex().deleteProperty(this, element, property, authorizations);
+            getSearchIndex().deleteProperty(this, element, PropertyDescriptor.fromProperty(property), authorizations);
         }
 
         if (hasEventListeners()) {
@@ -762,7 +763,7 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
         Property property = inMemoryTableElement.getProperty(key, name, visibility, authorizations);
         inMemoryTableElement.deleteProperty(key, name, visibility, authorizations);
 
-        getSearchIndex().deleteProperty(this, element, property, authorizations);
+        getSearchIndex().deleteProperty(this, element, PropertyDescriptor.fromProperty(property), authorizations);
 
         if (hasEventListeners()) {
             fireGraphEvent(new DeletePropertyEvent(this, element, property));
