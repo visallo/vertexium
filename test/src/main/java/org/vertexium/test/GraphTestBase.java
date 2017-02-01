@@ -3447,6 +3447,38 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    public void testMetadataMutationsOnVertex() {
+        Metadata metadataPropB = new Metadata();
+        metadataPropB.add("meta1", "meta1", VISIBILITY_A);
+        Vertex vertex = graph.prepareVertex("v1", VISIBILITY_A)
+                .setProperty("propBmeta", "propBmeta", metadataPropB, VISIBILITY_A)
+                .save(AUTHORIZATIONS_ALL);
+        graph.flush();
+
+        ExistingElementMutation<Vertex> m = vertex.prepareMutation();
+        m.setPropertyMetadata("propBmeta", "meta1", "meta2", VISIBILITY_A);
+        vertex = m.save(AUTHORIZATIONS_ALL);
+
+        assertEquals("meta2", vertex.getProperty("propBmeta").getMetadata().getEntry("meta1").getValue());
+    }
+
+    @Test
+    public void testMetadataMutationsOnEdge() {
+        Metadata metadataPropB = new Metadata();
+        metadataPropB.add("meta1", "meta1", VISIBILITY_A);
+        Edge edge = graph.prepareEdge("v1", "v2", "label", VISIBILITY_A)
+                .setProperty("propBmeta", "propBmeta", metadataPropB, VISIBILITY_A)
+                .save(AUTHORIZATIONS_ALL);
+        graph.flush();
+
+        ExistingElementMutation<Edge> m = edge.prepareMutation();
+        m.setPropertyMetadata("propBmeta", "meta1", "meta2", VISIBILITY_A);
+        edge = m.save(AUTHORIZATIONS_ALL);
+
+        assertEquals("meta2", edge.getProperty("propBmeta").getMetadata().getEntry("meta1").getValue());
+    }
+
+    @Test
     public void testEmptyPropertyMutation() {
         Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_ALL);
         v1.prepareMutation().save(AUTHORIZATIONS_ALL);
