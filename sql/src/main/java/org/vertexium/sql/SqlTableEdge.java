@@ -169,6 +169,11 @@ public class SqlTableEdge extends SqlTableElement<InMemoryEdge> {
         }
 
         @Override
+        public void appendAddPropertyMetadataMutation(String key, String name, Metadata metadata, Visibility visibility, Long timestamp) {
+            sqlTableEdge.appendAddPropertyMetadataMutation(key, name, metadata, visibility, timestamp);
+        }
+
+        @Override
         protected List<Mutation> getFilteredMutations(boolean includeHidden, Long endTime, Authorizations authorizations) {
             return sqlTableEdge.getFilteredMutations(includeHidden, endTime, authorizations);
         }
