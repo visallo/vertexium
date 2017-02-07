@@ -1,13 +1,13 @@
 package org.vertexium.query;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
 public class TermsAggregation extends Aggregation implements SupportsNestedAggregationsAggregation {
     private final String aggregationName;
     private final String propertyName;
     private final List<Aggregation> nestedAggregations = new ArrayList<>();
+    private Integer size;
 
     public TermsAggregation(String aggregationName, String propertyName) {
         this.aggregationName = aggregationName;
@@ -30,5 +30,13 @@ public class TermsAggregation extends Aggregation implements SupportsNestedAggre
     @Override
     public Iterable<Aggregation> getNestedAggregations() {
         return nestedAggregations;
+    }
+
+    public Integer getSize() {
+        return size;
+    }
+
+    public void setSize(Integer size) {
+        this.size = size;
     }
 }

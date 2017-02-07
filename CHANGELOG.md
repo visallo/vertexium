@@ -1,3 +1,7 @@
+# v2.5.3
+
+* Added: size to TermsAggregation
+
 # v2.5.2
 
 * Added: support for Elasticsearch range aggregations
