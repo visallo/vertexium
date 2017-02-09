@@ -2698,19 +2698,23 @@ public abstract class GraphTestBase {
     public void testGraphQueryHasWithSpacesAndFieldedQueryString() {
         assumeTrue("fielded query not supported", isFieldNamesInQuerySupported());
 
-        graph.defineProperty("name").dataType(String.class).textIndexHint(TextIndexHint.ALL).define();
+        graph.defineProperty("http://vertexium.org#name").dataType(String.class).textIndexHint(TextIndexHint.ALL).define();
 
         graph.prepareVertex("v1", VISIBILITY_A)
-                .setProperty("name", "Joe Ferner", VISIBILITY_A)
+                .setProperty("http://vertexium.org#name", "Joe Ferner", VISIBILITY_A)
                 .setProperty("propWithHyphen", "hyphen-word", VISIBILITY_A)
                 .save(AUTHORIZATIONS_A_AND_B);
         graph.prepareVertex("v2", VISIBILITY_A)
-                .setProperty("name", "Joe Smith", VISIBILITY_A)
+                .setProperty("http://vertexium.org#name", "Joe Smith", VISIBILITY_A)
                 .save(AUTHORIZATIONS_A_AND_B);
 
         assumeTrue("lucene queries", isLuceneQueriesSupported());
 
-        Iterable<Vertex> vertices = graph.query("name:\"Joe Ferner\"", AUTHORIZATIONS_A)
+        Iterable<Vertex> vertices = graph.query("http\\:\\/\\/vertexium.org#name:Joe", AUTHORIZATIONS_A)
+                .vertices();
+        Assert.assertEquals(2, count(vertices));
+
+        vertices = graph.query("http\\:\\/\\/vertexium.org#name:\"Joe Ferner\"", AUTHORIZATIONS_A)
                 .vertices();
         Assert.assertEquals(1, count(vertices));
     }

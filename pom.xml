@@ -357,6 +357,7 @@
         <module>examples</module>
         <module>cli</module>
         <module>test</module>
+        <module>security</module>
         <module>dist</module>
 
         <module>accumulo</module>
@@ -369,6 +370,7 @@
         <module>blueprints-test</module>
 
         <module>elasticsearch-singledocument</module>
+        <module>elasticsearch-singledocument-plugin</module>
 
         <module>inmemory</module>
 

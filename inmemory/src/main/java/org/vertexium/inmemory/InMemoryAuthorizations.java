@@ -2,10 +2,10 @@ package org.vertexium.inmemory;
 
 import org.vertexium.VertexiumException;
 import org.vertexium.Visibility;
-import org.vertexium.inmemory.security.Authorizations;
-import org.vertexium.inmemory.security.ColumnVisibility;
-import org.vertexium.inmemory.security.VisibilityEvaluator;
-import org.vertexium.inmemory.security.VisibilityParseException;
+import org.vertexium.security.Authorizations;
+import org.vertexium.security.ColumnVisibility;
+import org.vertexium.security.VisibilityEvaluator;
+import org.vertexium.security.VisibilityParseException;
 import org.vertexium.util.ArrayUtils;
 import org.vertexium.util.Preconditions;
 

@@ -2,6 +2,7 @@
 
 * Added: size to TermsAggregation
 * Added: support for Elasticsearch percentile aggregations
+* Added: Elasticsearch: Field query string support
 
 # v2.5.2
 

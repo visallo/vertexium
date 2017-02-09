@@ -190,12 +190,16 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
             return QueryBuilders.matchAllQuery();
         }
         ElasticsearchSingleDocumentSearchIndex es = (ElasticsearchSingleDocumentSearchIndex) ((GraphWithSearchIndex) getGraph()).getSearchIndex();
-        Collection<String> fields = es.getQueryablePropertyNames(getGraph(), false, getParameters().getAuthorizations());
-        QueryStringQueryBuilder qs = QueryBuilders.queryString(queryString);
-        for (String field : fields) {
-            qs = qs.field(field);
+        if (es.isServerPluginInstalled()) {
+            return VertexiumQueryStringQueryBuilder.build(queryString, getParameters().getAuthorizations());
+        } else {
+            Collection<String> fields = es.getQueryablePropertyNames(getGraph(), getParameters().getAuthorizations());
+            QueryStringQueryBuilder qs = QueryBuilders.queryStringQuery(queryString);
+            for (String field : fields) {
+                qs = qs.field(field);
+            }
+            return qs;
         }
-        return qs;
     }
 
     protected List<FilterBuilder> getFilters(ElasticSearchElementType elementType) {
@@ -388,7 +392,8 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
                             edgeIds.size(),
                             vertexIds.size() + edgeIds.size(),
                             hits.getTotalHits(),
-                            (endTime - startTime) / 1000 / 1000);
+                            (endTime - startTime) / 1000 / 1000
+                    );
                 }
 
                 // since ES doesn't support security we will rely on the graph to provide edge filtering
@@ -560,9 +565,9 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
                         } else {
                             filters
                                     .add(FilterBuilders
-                                            .geoDistanceFilter(propertyName)
-                                            .point(lat, lon)
-                                            .distance(distance, DistanceUnit.KILOMETERS));
+                                                 .geoDistanceFilter(propertyName)
+                                                 .point(lat, lon)
+                                                 .distance(distance, DistanceUnit.KILOMETERS));
                         }
                     } else if (value instanceof GeoRect) {
                         GeoRect geoRect = (GeoRect) value;
@@ -585,9 +590,9 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
                         } else {
                             filters
                                     .add(FilterBuilders
-                                            .geoBoundingBoxFilter(propertyName)
-                                            .topLeft(nwLat, nwLon)
-                                            .bottomRight(seLat, seLon));
+                                                 .geoBoundingBoxFilter(propertyName)
+                                                 .topLeft(nwLat, nwLon)
+                                                 .bottomRight(seLat, seLon));
                         }
                     } else {
                         throw new VertexiumException("Unexpected has value type " + value.getClass().getName());
@@ -1062,7 +1067,7 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
 
                 if (!Strings.isNullOrEmpty(agg.getFormat())) {
                     throw new VertexiumException("Invalid use of format for property: " + agg.getFieldName() +
-                            ". Format is only valid for date properties");
+                                                         ". Format is only valid for date properties");
                 }
 
                 for (RangeAggregation.Range range : agg.getRanges()) {
@@ -1070,11 +1075,13 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
                     Object to = range.getTo();
                     if ((from != null && !(from instanceof Number)) || (to != null && !(to instanceof Number))) {
                         throw new VertexiumException("Invalid range for property: " + agg.getFieldName() +
-                                ". Both to and from must be Numeric.");
+                                                             ". Both to and from must be Numeric.");
                     }
-                    rangeBuilder.addRange(range.getKey(),
-                            from == null ? Double.MIN_VALUE : ((Number)from).doubleValue(),
-                            to == null ? Double.MAX_VALUE : ((Number)to).doubleValue());
+                    rangeBuilder.addRange(
+                            range.getKey(),
+                            from == null ? Double.MIN_VALUE : ((Number) from).doubleValue(),
+                            to == null ? Double.MAX_VALUE : ((Number) to).doubleValue()
+                    );
                 }
 
                 for (AbstractAggregationBuilder subAgg : getElasticsearchAggregations(agg.getNestedAggregations())) {

@@ -18,6 +18,10 @@
         <level value="DEBUG" />
         <appender-ref ref="console" />
     </logger>
+    <logger name="org.vertexium.query.Query.QUERY" additivity="false">
+        <level value="TRACE" />
+        <appender-ref ref="console" />
+    </logger>
     <root>
         <level value="WARN" />
         <appender-ref ref="console" />
