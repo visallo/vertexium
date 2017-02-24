@@ -880,6 +880,9 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
                 String visibilityHash = getSearchIndex().getPropertyVisibilityHashFromDeflatedPropertyName(propertyName);
                 TermsBuilder termsAgg = AggregationBuilders.terms(createAggregationName(agg.getAggregationName(), visibilityHash));
                 termsAgg.field(propertyName);
+                if (agg.getSize() != null) {
+                    termsAgg.size(agg.getSize());
+                }
 
                 for (AbstractAggregationBuilder subAgg : getElasticsearchAggregations(agg.getNestedAggregations())) {
                     termsAgg.subAggregation(subAgg);
