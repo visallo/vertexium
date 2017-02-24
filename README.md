@@ -1,4 +1,4 @@
-Vertexium [![Build Status](https://travis-ci.org/v5analytics/vertexium.svg?branch=master)](https://travis-ci.org/v5analytics/vertexium)
+Vertexium [![Build Status](https://travis-ci.org/visallo/vertexium.svg?branch=master)](https://travis-ci.org/visallo/vertexium)
 =========
 
 Vertexium is an API to manipulate graphs, similar to blueprints. Unlike
@@ -180,7 +180,7 @@ Contributing
 ============
 
 We welcome and encourage participation and contribution from anyone interested
-in using Vertexium. Please see our [contributing guide](https://github.com/v5analytics/vertexium/blob/master/CONTRIBUTING.md)
+in using Vertexium. Please see our [contributing guide](https://github.com/visallo/vertexium/blob/master/CONTRIBUTING.md)
 to better understand how you can pitch in.
 
 License
