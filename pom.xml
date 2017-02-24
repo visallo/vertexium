@@ -5,13 +5,13 @@
         <groupId>org.sonatype.oss</groupId>
         <artifactId>oss-parent</artifactId>
         <version>7</version>
-        <relativePath></relativePath>
+        <relativePath />
     </parent>
 
     <groupId>org.vertexium</groupId>
     <artifactId>vertexium-root</artifactId>
     <packaging>pom</packaging>
-    <version>2.5.2-SNAPSHOT</version>
+    <version>2.5.3-SNAPSHOT</version>
     <name>Vertexium</name>
     <description>
         Vertexium is an API to manipulate graphs, similar to blueprints. Unlike blueprints, every Vertexium method
