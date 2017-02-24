@@ -593,7 +593,7 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
         return deflatePropertyName(graph, propertyName, propertyVisibility);
     }
 
-    private String deflatePropertyName(Graph graph, String propertyName, Visibility propertyVisibility) {
+    protected String deflatePropertyName(Graph graph, String propertyName, Visibility propertyVisibility) {
         String visibilityHash = getVisibilityHash(graph, propertyName, propertyVisibility);
         return this.nameSubstitutionStrategy.deflate(propertyName) + "_" + visibilityHash;
     }

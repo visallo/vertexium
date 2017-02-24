@@ -5083,6 +5083,93 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    public void testGraphQueryWithPercentilesAggregation() throws ParseException {
+        graph.defineProperty("emptyField").dataType(Integer.class).define();
+
+        for (int i = 0; i <= 100; i++) {
+            graph.prepareVertex("v" + i, VISIBILITY_EMPTY)
+                    .addPropertyValue("", "age", i, VISIBILITY_EMPTY)
+                    .save(AUTHORIZATIONS_A_AND_B);
+        }
+        graph.prepareVertex("v200", VISIBILITY_EMPTY)
+                .addPropertyValue("", "age", 30, VISIBILITY_A)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        PercentilesResult percentilesResult = queryGraphQueryWithPercentilesAggregation("age", VISIBILITY_EMPTY, AUTHORIZATIONS_EMPTY);
+        assumeTrue("percentiles aggregation not supported", percentilesResult != null);
+        List<Percentile> percentiles = IterableUtils.toList(percentilesResult.getPercentiles());
+        percentiles.sort(Comparator.comparing(Percentile::getPercentile));
+        assertEquals(7, percentiles.size());
+        assertEquals(1.0, percentiles.get(0).getPercentile(), 0.1);
+        assertEquals(1.0, percentiles.get(0).getValue(), 0.1);
+        assertEquals(5.0, percentiles.get(1).getPercentile(), 0.1);
+        assertEquals(5.0, percentiles.get(1).getValue(), 0.1);
+        assertEquals(25.0, percentiles.get(2).getPercentile(), 0.1);
+        assertEquals(25.0, percentiles.get(2).getValue(), 0.1);
+        assertEquals(50.0, percentiles.get(3).getPercentile(), 0.1);
+        assertEquals(50.0, percentiles.get(3).getValue(), 0.1);
+        assertEquals(75.0, percentiles.get(4).getPercentile(), 0.1);
+        assertEquals(75.0, percentiles.get(4).getValue(), 0.1);
+        assertEquals(95.0, percentiles.get(5).getPercentile(), 0.1);
+        assertEquals(95.0, percentiles.get(5).getValue(), 0.1);
+        assertEquals(99.0, percentiles.get(6).getPercentile(), 0.1);
+        assertEquals(99.0, percentiles.get(6).getValue(), 0.1);
+
+        percentilesResult = queryGraphQueryWithPercentilesAggregation("age", VISIBILITY_EMPTY, AUTHORIZATIONS_EMPTY, 60, 99.99);
+        assumeTrue("statistics aggregation not supported", percentilesResult != null);
+        percentiles = IterableUtils.toList(percentilesResult.getPercentiles());
+        percentiles.sort(Comparator.comparing(Percentile::getPercentile));
+        assertEquals(2, percentiles.size());
+        assertEquals(60.0, percentiles.get(0).getValue(), 0.1);
+        assertEquals(60.0, percentiles.get(0).getValue(), 0.1);
+        assertEquals(99.99, percentiles.get(1).getValue(), 0.1);
+        assertEquals(99.99, percentiles.get(1).getValue(), 0.1);
+
+        percentilesResult = queryGraphQueryWithPercentilesAggregation("emptyField", VISIBILITY_EMPTY, AUTHORIZATIONS_EMPTY);
+        assumeTrue("statistics aggregation not supported", percentilesResult != null);
+        percentiles = IterableUtils.toList(percentilesResult.getPercentiles());
+        assertEquals(0, percentiles.size());
+
+        percentilesResult = queryGraphQueryWithPercentilesAggregation("age", VISIBILITY_A, AUTHORIZATIONS_A_AND_B);
+        assumeTrue("statistics aggregation not supported", percentilesResult != null);
+        percentiles = IterableUtils.toList(percentilesResult.getPercentiles());
+        percentiles.sort(Comparator.comparing(Percentile::getPercentile));
+        assertEquals(7, percentiles.size());
+        assertEquals(1.0, percentiles.get(0).getPercentile(), 0.1);
+        assertEquals(30.0, percentiles.get(0).getValue(), 0.1);
+        assertEquals(5.0, percentiles.get(1).getPercentile(), 0.1);
+        assertEquals(30.0, percentiles.get(1).getValue(), 0.1);
+        assertEquals(25.0, percentiles.get(2).getPercentile(), 0.1);
+        assertEquals(30.0, percentiles.get(2).getValue(), 0.1);
+        assertEquals(50.0, percentiles.get(3).getPercentile(), 0.1);
+        assertEquals(30.0, percentiles.get(3).getValue(), 0.1);
+        assertEquals(75.0, percentiles.get(4).getPercentile(), 0.1);
+        assertEquals(30.0, percentiles.get(4).getValue(), 0.1);
+        assertEquals(95.0, percentiles.get(5).getPercentile(), 0.1);
+        assertEquals(30.0, percentiles.get(5).getValue(), 0.1);
+        assertEquals(99.0, percentiles.get(6).getPercentile(), 0.1);
+        assertEquals(30.0, percentiles.get(6).getValue(), 0.1);
+    }
+
+    private PercentilesResult queryGraphQueryWithPercentilesAggregation(
+            String propertyName,
+            Visibility visibility,
+            Authorizations authorizations,
+            double... percents) {
+        Query q = graph.query(authorizations).limit(0);
+        PercentilesAggregation agg = new PercentilesAggregation("percentiles", propertyName, visibility);
+        agg.setPercents(percents);
+        if (!q.isAggregationSupported(agg)) {
+            LOGGER.warn("%s unsupported", StatisticsAggregation.class.getName());
+            return null;
+        }
+        q.addAggregation(agg);
+        return q.vertices().getAggregationResult("percentiles", PercentilesResult.class);
+    }
+
+
+    @Test
     public void testGraphQueryWithGeohashAggregation() {
         boolean searchIndexFieldLevelSecurity = isSearchIndexFieldLevelSecuritySupported();
 
