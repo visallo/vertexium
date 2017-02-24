@@ -1,6 +1,7 @@
 # v2.5.3
 
 * Added: size to TermsAggregation
+* Added: support for Elasticsearch percentile aggregations
 
 # v2.5.2
 

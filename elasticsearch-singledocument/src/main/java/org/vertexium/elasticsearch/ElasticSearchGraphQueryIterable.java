@@ -14,6 +14,8 @@ import org.elasticsearch.search.aggregations.bucket.range.InternalRange;
 import org.elasticsearch.search.aggregations.bucket.range.Range;
 import org.elasticsearch.search.aggregations.bucket.terms.InternalTerms;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
+import org.elasticsearch.search.aggregations.metrics.percentiles.InternalPercentiles;
+import org.elasticsearch.search.aggregations.metrics.percentiles.Percentiles;
 import org.elasticsearch.search.aggregations.metrics.stats.extended.ExtendedStats;
 import org.elasticsearch.search.aggregations.metrics.stats.extended.InternalExtendedStats;
 import org.vertexium.Element;
@@ -21,6 +23,7 @@ import org.vertexium.VertexiumException;
 import org.vertexium.query.*;
 import org.vertexium.type.GeoPoint;
 import org.vertexium.type.GeoRect;
+import org.vertexium.util.StreamUtils;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -137,6 +140,9 @@ public class ElasticSearchGraphQueryIterable<T extends Element> extends DefaultG
         if (first instanceof RangeAggregation || first instanceof InternalRange) {
             return reduceRangeResults(query, aggs);
         }
+        if (first instanceof PercentilesAggregation || first instanceof InternalPercentiles) {
+            return reducePercentilesResults(query, aggs);
+        }
         if (first instanceof TermsAggregation || first instanceof InternalTerms) {
             return reduceTermsResults(query, aggs);
         }
@@ -222,6 +228,23 @@ public class ElasticSearchGraphQueryIterable<T extends Element> extends DefaultG
                 return new RangeResult(buckets);
             }
         }.reduce(query, bucketsByKey);
+    }
+
+    private static PercentilesResult reducePercentilesResults(ElasticSearchSingleDocumentSearchQueryBase query, List<Aggregation> aggs) {
+        List<Percentile> results = new ArrayList<>();
+        if (aggs.size() != 1) {
+            throw new VertexiumException("Unexpected number of aggregations. Expected 1 but found: " + aggs.size());
+        }
+        Aggregation agg = aggs.get(0);
+        if (agg instanceof Percentiles) {
+            Percentiles percentiles = (Percentiles) agg;
+            StreamUtils.stream(percentiles)
+                    .filter(percentile -> !Double.isNaN(percentile.getValue()))
+                    .forEach(percentile -> results.add(new Percentile(percentile.getPercent(), percentile.getValue())));
+        } else {
+            throw new VertexiumException("Aggregation is not a percentile: " + agg.getClass().getName());
+        }
+        return new PercentilesResult(results);
     }
 
     private static TermsResult reduceTermsResults(ElasticSearchSingleDocumentSearchQueryBase query, List<Aggregation> aggs) {

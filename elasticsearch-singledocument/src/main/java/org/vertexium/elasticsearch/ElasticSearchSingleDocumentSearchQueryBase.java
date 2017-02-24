@@ -29,6 +29,7 @@ import org.elasticsearch.search.aggregations.bucket.histogram.HistogramBuilder;
 import org.elasticsearch.search.aggregations.bucket.range.RangeBuilder;
 import org.elasticsearch.search.aggregations.bucket.range.date.DateRangeBuilder;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsBuilder;
+import org.elasticsearch.search.aggregations.metrics.percentiles.PercentilesBuilder;
 import org.elasticsearch.search.aggregations.metrics.stats.extended.ExtendedStatsBuilder;
 import org.elasticsearch.search.sort.SortOrder;
 import org.vertexium.*;
@@ -141,6 +142,9 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
             return true;
         }
         if (agg instanceof RangeAggregation) {
+            return true;
+        }
+        if (agg instanceof PercentilesAggregation) {
             return true;
         }
         if (agg instanceof TermsAggregation) {
@@ -816,6 +820,8 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
                 aggs.addAll(getElasticsearchHistogramAggregations((HistogramAggregation) agg));
             } else if (agg instanceof RangeAggregation) {
                 aggs.addAll(getElasticsearchRangeAggregations((RangeAggregation) agg));
+            } else if (agg instanceof PercentilesAggregation) {
+                aggs.addAll(getElasticsearchPercentilesAggregations((PercentilesAggregation) agg));
             } else if (agg instanceof TermsAggregation) {
                 aggs.addAll(getElasticsearchTermsAggregations((TermsAggregation) agg));
             } else if (agg instanceof GeohashAggregation) {
@@ -854,6 +860,18 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
             aggs.add(statsAgg);
         }
         return aggs;
+    }
+
+    protected List<AbstractAggregationBuilder> getElasticsearchPercentilesAggregations(PercentilesAggregation agg) {
+        String propertyName = getSearchIndex().deflatePropertyName(getGraph(), agg.getFieldName(), agg.getVisibility());
+        String visibilityHash = getSearchIndex().getPropertyVisibilityHashFromDeflatedPropertyName(propertyName);
+        String aggName = createAggregationName(agg.getAggregationName(), visibilityHash);
+        PercentilesBuilder percentilesAgg = AggregationBuilders.percentiles(aggName);
+        percentilesAgg.field(propertyName);
+        if (agg.getPercents() != null && agg.getPercents().length > 0) {
+            percentilesAgg.percentiles(agg.getPercents());
+        }
+        return Collections.singletonList(percentilesAgg);
     }
 
     private String createAggregationName(String aggName, String visibilityHash) {
