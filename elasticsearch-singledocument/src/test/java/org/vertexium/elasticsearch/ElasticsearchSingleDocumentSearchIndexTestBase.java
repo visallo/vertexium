@@ -1,10 +1,11 @@
 package org.vertexium.elasticsearch;
 
+import net.lingala.zip4j.core.ZipFile;
+import net.lingala.zip4j.exception.ZipException;
 import org.apache.commons.io.FileUtils;
+import org.codelibs.elasticsearch.runner.ElasticsearchClusterRunner;
 import org.elasticsearch.action.admin.cluster.state.ClusterStateResponse;
-import org.elasticsearch.common.settings.ImmutableSettings;
-import org.elasticsearch.node.Node;
-import org.elasticsearch.node.NodeBuilder;
+import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.junit.*;
 import org.vertexium.*;
 import org.vertexium.elasticsearch.score.EdgeCountScoringStrategy;
@@ -21,21 +22,21 @@ import org.vertexium.util.VertexiumLoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+import static org.codelibs.elasticsearch.runner.ElasticsearchClusterRunner.newConfigs;
 import static org.vertexium.util.IterableUtils.count;
 
 public abstract class ElasticsearchSingleDocumentSearchIndexTestBase extends GraphTestBase {
     private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(ElasticsearchSingleDocumentSearchIndexTestBase.class);
     public static final String ES_INDEX_NAME = "vertexium-test";
-    private static File tempDir;
-    private static Node elasticSearchNode;
-    private static String addr;
-    private static String clusterName;
-    private static final boolean USE_REAL_ES = false;
+    public static final String ES_CLUSTER_NAME = "vertexium-test-cluster";
+    private static final String PLUGIN_CLASS_PATH = "/vertexium-elasticsearch-singledocument-plugin.zip";
+    private static ElasticsearchClusterRunner runner;
 
     @Override
     protected Authorizations createAuthorizations(String... auths) {
@@ -44,42 +45,47 @@ public abstract class ElasticsearchSingleDocumentSearchIndexTestBase extends Gra
 
     @BeforeClass
     public static void beforeClass() throws Exception {
-        tempDir = File.createTempFile("elasticsearch-temp", Long.toString(System.nanoTime()));
-        tempDir.delete();
-        tempDir.mkdir();
-        LOGGER.info("writing to: %s", tempDir);
+        File tempDir = new File(System.getProperty("java.io.tmpdir"));
+        File basePath = new File(tempDir, "vertexium-test-" + UUID.randomUUID().toString());
+        LOGGER.info("base path: %s", basePath);
+        installPlugin(basePath);
 
-        clusterName = UUID.randomUUID().toString();
-        elasticSearchNode = NodeBuilder
-                .nodeBuilder()
-                .local(false)
-                .clusterName(clusterName)
-                .settings(
-                        ImmutableSettings.settingsBuilder()
-                                .put("script.disable_dynamic", "false")
-                                .put("gateway.type", "local")
-                                .put("index.number_of_shards", "1")
-                                .put("index.number_of_replicas", "0")
-                                .put("path.data", new File(tempDir, "data").getAbsolutePath())
-                                .put("path.logs", new File(tempDir, "logs").getAbsolutePath())
-                                .put("path.work", new File(tempDir, "work").getAbsolutePath())
-                ).node();
-        elasticSearchNode.start();
+        runner = new ElasticsearchClusterRunner();
+        runner.onBuild((i, builder) ->
+                               builder
+                                       .put("script.disable_dynamic", "false")
+                                       .put("gateway.type", "local")
+                                       .put("index.number_of_shards", "1")
+                                       .put("cluster.name", ES_CLUSTER_NAME)
+                                       .put("index.number_of_replicas", "0")
+        ).build(newConfigs().basePath(basePath.getAbsolutePath()).ramIndexStore().numOfNode(1));
+
+        runner.ensureGreen();
+    }
+
+    private static void installPlugin(File basePath) throws IOException, ZipException {
+        File pluginsPath = new File(basePath, "plugins");
+        File vertexiumZipFile = new File(pluginsPath, "vertexium.zip");
+        File vertexiumPluginPath = new File(pluginsPath, "vertexium");
+        if (!vertexiumPluginPath.mkdirs()) {
+            System.out.println("Could not create directories");
+        }
+        InputStream in = ElasticsearchSingleDocumentSearchIndexTestBase.class.getResourceAsStream(PLUGIN_CLASS_PATH);
+        if (in == null) {
+            throw new VertexiumException("Could not find: " + PLUGIN_CLASS_PATH);
+        }
+        FileUtils.copyInputStreamToFile(in, vertexiumZipFile);
+        ZipFile zipFile = new ZipFile(vertexiumZipFile);
+        zipFile.extractAll(vertexiumPluginPath.getAbsolutePath());
     }
 
     @Before
     @Override
     public void before() throws Exception {
-        if (elasticSearchNode.client().admin().indices().prepareExists(ES_INDEX_NAME).execute().actionGet().isExists()) {
+        if (runner.indexExists(ES_INDEX_NAME)) {
             LOGGER.info("deleting test index: %s", ES_INDEX_NAME);
-            elasticSearchNode.client().admin().indices().prepareDelete(ES_INDEX_NAME).execute().actionGet();
+            runner.deleteIndex(ES_INDEX_NAME);
         }
-
-        ClusterStateResponse response = elasticSearchNode.client().admin().cluster().prepareState().execute().actionGet();
-        addr = response.getState().getNodes().getNodes().values().iterator().next().value.getAddress().toString();
-        addr = addr.substring("inet[/".length());
-        addr = addr.substring(0, addr.length() - 1);
-
         super.before();
     }
 
@@ -90,11 +96,10 @@ public abstract class ElasticsearchSingleDocumentSearchIndexTestBase extends Gra
 
     @AfterClass
     public static void afterClass() throws IOException {
-        if (elasticSearchNode != null) {
-            elasticSearchNode.stop();
-            elasticSearchNode.close();
+        if (runner != null) {
+            runner.close();
+            runner.clean();
         }
-        FileUtils.deleteDirectory(tempDir);
     }
 
     @Override
@@ -109,15 +114,18 @@ public abstract class ElasticsearchSingleDocumentSearchIndexTestBase extends Gra
         config.put(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + DefaultIndexSelectionStrategy.CONFIG_INDEX_NAME, ES_INDEX_NAME);
         config.put(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + ElasticSearchSearchIndexConfiguration.STORE_SOURCE_DATA, "true");
         config.put(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + ElasticSearchSearchIndexConfiguration.SCORING_STRATEGY_CLASS_NAME, EdgeCountScoringStrategy.class.getName());
-        if (USE_REAL_ES) {
-            addr = "localhost";
-        } else {
-            config.put(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + ElasticSearchSearchIndexConfiguration.CLUSTER_NAME, clusterName);
-        }
-        config.put(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + ElasticSearchSearchIndexConfiguration.ES_LOCATIONS, addr);
+        config.put(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + ElasticSearchSearchIndexConfiguration.CLUSTER_NAME, ES_CLUSTER_NAME);
+        config.put(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + ElasticSearchSearchIndexConfiguration.ES_LOCATIONS, getLocation());
         config.putAll(additionalConfiguration);
         InMemoryGraphConfiguration configuration = new InMemoryGraphConfiguration(config);
         return InMemoryGraph.create(configuration);
+    }
+
+    private String getLocation() {
+        ClusterStateResponse responsee = runner.node().client().admin().cluster().prepareState().execute().actionGet();
+        InetSocketTransportAddress address = (InetSocketTransportAddress)
+                responsee.getState().getNodes().getNodes().values().iterator().next().value.getAddress();
+        return "localhost:" + address.address().getPort();
     }
 
     private ElasticsearchSingleDocumentSearchIndex getSearchIndex() {
@@ -149,10 +157,6 @@ public abstract class ElasticsearchSingleDocumentSearchIndexTestBase extends Gra
         }
 
         return true;
-    }
-
-    protected boolean isFieldNamesInQuerySupported() {
-        return false;
     }
 
     @Override

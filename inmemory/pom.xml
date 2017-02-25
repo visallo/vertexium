@@ -18,6 +18,11 @@
         </dependency>
         <dependency>
             <groupId>org.vertexium</groupId>
+            <artifactId>vertexium-security</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.vertexium</groupId>
             <artifactId>vertexium-test</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>

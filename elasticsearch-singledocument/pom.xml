@@ -16,11 +16,22 @@
             <artifactId>vertexium-core</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.vertexium</groupId>
+            <artifactId>vertexium-elasticsearch-singledocument-plugin</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
 
         <dependency>
             <groupId>org.elasticsearch</groupId>
             <artifactId>elasticsearch</artifactId>
             <version>${elasticsearch.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.codelibs</groupId>
+            <artifactId>elasticsearch-cluster-runner</artifactId>
+            <version>1.7.0.0</version>
         </dependency>
         <dependency>
             <groupId>com.vividsolutions</groupId>
@@ -36,6 +47,12 @@
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-log4j12</artifactId>
             <version>${slf4j.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>net.lingala.zip4j</groupId>
+            <artifactId>zip4j</artifactId>
+            <version>1.3.2</version>
             <scope>test</scope>
         </dependency>
         <dependency>

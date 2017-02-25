@@ -4,11 +4,13 @@ import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.SettableFuture;
-import org.apache.commons.lang3.StringEscapeUtils;
 import org.elasticsearch.action.ActionRequestBuilder;
 import org.elasticsearch.action.ListenableActionFuture;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthStatus;
+import org.elasticsearch.action.admin.cluster.node.info.NodeInfo;
+import org.elasticsearch.action.admin.cluster.node.info.NodesInfoResponse;
+import org.elasticsearch.action.admin.cluster.node.info.PluginInfo;
 import org.elasticsearch.action.admin.indices.create.CreateIndexResponse;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.admin.indices.mapping.get.GetMappingsResponse;
@@ -44,7 +46,6 @@ import org.vertexium.*;
 import org.vertexium.id.NameSubstitutionStrategy;
 import org.vertexium.property.StreamingPropertyValue;
 import org.vertexium.query.*;
-import org.vertexium.PropertyDescriptor;
 import org.vertexium.search.SearchIndex;
 import org.vertexium.search.SearchIndexWithVertexPropertyCountByValue;
 import org.vertexium.type.GeoCircle;
@@ -66,6 +67,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import static org.vertexium.elasticsearch.ElasticsearchPropertyNameInfo.PROPERTY_NAME_PATTERN;
 import static org.vertexium.util.Preconditions.checkNotNull;
 
 public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, SearchIndexWithVertexPropertyCountByValue {
@@ -93,7 +95,6 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
     private IndexSelectionStrategy indexSelectionStrategy;
     private boolean allFieldEnabled;
     private Node inProcessNode;
-    public static final Pattern PROPERTY_NAME_PATTERN = Pattern.compile("^(.*?)(_([0-9a-f]{32}))?(_([a-z]))?$");
     public static final Pattern AGGREGATION_NAME_PATTERN = Pattern.compile("(.*?)_([0-9a-f]+)");
     public static final String CONFIG_PROPERTY_NAME_VISIBILITIES_STORE = "propertyNameVisibilitiesStore";
     public static final Class<? extends PropertyNameVisibilitiesStore> DEFAULT_PROPERTY_NAME_VISIBILITIES_STORE = MetadataTablePropertyNameVisibilitiesStore.class;
@@ -101,6 +102,7 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
     private final PropertyNameVisibilitiesStore propertyNameVisibilitiesStore;
     private final ThreadLocal<Queue<FlushObject>> flushFutures = new ThreadLocal<>();
     private final Random random = new Random();
+    private boolean serverPluginInstalled;
 
     public ElasticsearchSingleDocumentSearchIndex(Graph graph, GraphConfiguration config) {
         this.config = new ElasticSearchSearchIndexConfiguration(graph, config);
@@ -109,6 +111,7 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
         this.allFieldEnabled = this.config.isAllFieldEnabled(false);
         this.propertyNameVisibilitiesStore = createPropertyNameVisibilitiesStore(graph, config);
         this.client = createClient(this.config);
+        this.serverPluginInstalled = checkPluginInstalled(this.client);
     }
 
     protected Client createClient(ElasticSearchSearchIndexConfiguration config) {
@@ -224,6 +227,19 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
         }
     }
 
+    private boolean checkPluginInstalled(Client client) {
+        NodesInfoResponse nodesInfoResponse = client.admin().cluster().prepareNodesInfo().setPlugins(true).get();
+        for (NodeInfo nodeInfo : nodesInfoResponse.getNodes()) {
+            for (PluginInfo pluginInfo : nodeInfo.getPlugins().getInfos()) {
+                if ("Vertexium".equals(pluginInfo.getName())) {
+                    return true;
+                }
+            }
+        }
+        LOGGER.warn("Running without the server side Vertexium plugin will be deprecated in the future.");
+        return false;
+    }
+
     protected final boolean isAllFieldEnabled() {
         return allFieldEnabled;
     }
@@ -266,6 +282,8 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
             addPropertyNameVisibility(graph, indexInfo, EDGE_LABEL_FIELD_NAME, null);
             loadExistingMappingIntoIndexInfo(graph, indexInfo, indexName);
             indexInfos.put(indexName, indexInfo);
+
+            updateMetadata(graph, indexInfo);
         }
     }
 
@@ -298,21 +316,11 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
     }
 
     private void loadExistingPropertyMappingIntoIndexInfo(Graph graph, IndexInfo indexInfo, String rawPropertyName) {
-        Matcher m = ElasticsearchSingleDocumentSearchIndex.PROPERTY_NAME_PATTERN.matcher(rawPropertyName);
-        if (!m.matches()) {
+        ElasticsearchPropertyNameInfo p = ElasticsearchPropertyNameInfo.parse(graph, propertyNameVisibilitiesStore, rawPropertyName);
+        if (p == null) {
             return;
         }
-
-        String propertyName = m.group(1);
-        String visibilityHash = m.group(2);
-        Visibility propertyVisibility;
-        if (visibilityHash == null) {
-            propertyVisibility = null;
-        } else {
-            visibilityHash = visibilityHash.substring(1); // stop leading _
-            propertyVisibility = this.propertyNameVisibilitiesStore.getVisibilityFromHash(graph, visibilityHash);
-        }
-        addPropertyNameVisibility(graph, indexInfo, propertyName, propertyVisibility);
+        addPropertyNameVisibility(graph, indexInfo, p.getPropertyName(), p.getPropertyVisibility());
     }
 
     private PropertyNameVisibilitiesStore createPropertyNameVisibilitiesStore(Graph graph, GraphConfiguration config) {
@@ -575,6 +583,10 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
         }
     }
 
+    public boolean isServerPluginInstalled() {
+        return serverPluginInstalled;
+    }
+
     private static class StreamingPropertyString {
         private final String propertyValue;
 
@@ -648,27 +660,6 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
         return results;
     }
 
-    public Collection<String> getQueryablePropertyNames(Graph graph, boolean includeNonStringFields, Authorizations authorizations) {
-        Set<String> propertyNames = new HashSet<>();
-        for (PropertyDefinition propertyDefinition : graph.getPropertyDefinitions()) {
-            List<String> queryableTypeSuffixes = getQueryableTypeSuffixes(propertyDefinition, includeNonStringFields);
-            if (queryableTypeSuffixes.size() == 0) {
-                continue;
-            }
-            String inflatedPropertyName = inflatePropertyName(propertyDefinition.getPropertyName()); // could be stored deflated
-            String deflatedPropertyName = this.nameSubstitutionStrategy.deflate(inflatedPropertyName);
-            if (isReservedFieldName(inflatedPropertyName)) {
-                continue;
-            }
-            for (String hash : this.propertyNameVisibilitiesStore.getHashes(graph, inflatedPropertyName, authorizations)) {
-                for (String typeSuffix : queryableTypeSuffixes) {
-                    propertyNames.add(deflatedPropertyName + "_" + hash + typeSuffix);
-                }
-            }
-        }
-        return propertyNames;
-    }
-
     public Collection<String> getQueryableElementTypeVisibilityPropertyNames(Graph graph, Authorizations authorizations) {
         Set<String> propertyNames = new HashSet<>();
         for (String hash : propertyNameVisibilitiesStore.getHashes(graph, ELEMENT_TYPE_FIELD_NAME, authorizations)) {
@@ -680,7 +671,28 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
         return propertyNames;
     }
 
-    private List<String> getQueryableTypeSuffixes(PropertyDefinition propertyDefinition, boolean includeNonStringFields) {
+    public Collection<String> getQueryablePropertyNames(Graph graph, Authorizations authorizations) {
+        Set<String> propertyNames = new HashSet<>();
+        for (PropertyDefinition propertyDefinition : graph.getPropertyDefinitions()) {
+            List<String> queryableTypeSuffixes = getQueryableTypeSuffixes(propertyDefinition);
+            if (queryableTypeSuffixes.size() == 0) {
+                continue;
+            }
+            String inflatedPropertyName = inflatePropertyName(propertyDefinition.getPropertyName()); // could be stored deflated
+            String deflatedPropertyName = nameSubstitutionStrategy.deflate(inflatedPropertyName);
+            if (isReservedFieldName(inflatedPropertyName)) {
+                continue;
+            }
+            for (String hash : propertyNameVisibilitiesStore.getHashes(graph, inflatedPropertyName, authorizations)) {
+                for (String typeSuffix : queryableTypeSuffixes) {
+                    propertyNames.add(deflatedPropertyName + "_" + hash + typeSuffix);
+                }
+            }
+        }
+        return propertyNames;
+    }
+
+    private static List<String> getQueryableTypeSuffixes(PropertyDefinition propertyDefinition) {
         List<String> typeSuffixes = new ArrayList<>();
         if (propertyDefinition.getDataType() == String.class) {
             if (propertyDefinition.getTextIndexHints().contains(TextIndexHint.EXACT_MATCH)) {
@@ -692,10 +704,12 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
         } else if (propertyDefinition.getDataType() == GeoPoint.class
                 || propertyDefinition.getDataType() == GeoCircle.class) {
             typeSuffixes.add("");
-        } else if (includeNonStringFields && !shouldIgnoreType(propertyDefinition.getDataType())) {
-            typeSuffixes.add("");
         }
         return typeSuffixes;
+    }
+
+    protected static boolean isReservedFieldName(String fieldName) {
+        return fieldName.startsWith("__");
     }
 
     private String getVisibilityHash(Graph graph, String propertyName, Visibility visibility) {
@@ -904,6 +918,53 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
                 .actionGet();
 
         addPropertyNameVisibility(graph, indexInfo, propertyName, propertyVisibility);
+        updateMetadata(graph, indexInfo);
+    }
+
+    private void updateMetadata(Graph graph, IndexInfo indexInfo) {
+        try {
+            XContentBuilder mapping = XContentFactory.jsonBuilder()
+                    .startObject()
+                    .startObject(ELEMENT_TYPE);
+            GetMappingsResponse existingMapping = getClient()
+                    .admin()
+                    .indices()
+                    .prepareGetMappings(indexInfo.getIndexName())
+                    .execute()
+                    .actionGet();
+
+            Map<String, Object> existingElementData = existingMapping.mappings()
+                    .get(indexInfo.getIndexName())
+                    .get(ELEMENT_TYPE)
+                    .getSourceAsMap();
+
+            mapping = mapping.startObject("_meta")
+                    .startObject("vertexium");
+            //noinspection unchecked
+            Map<String, Object> properties = (Map<String, Object>) existingElementData.get("properties");
+            for (String propertyName : properties.keySet()) {
+                ElasticsearchPropertyNameInfo p = ElasticsearchPropertyNameInfo.parse(graph, propertyNameVisibilitiesStore, propertyName);
+                if (p == null || p.getPropertyVisibility() == null) {
+                    continue;
+                }
+                mapping.field(propertyName, p.getPropertyVisibility());
+            }
+            mapping.endObject()
+                    .endObject()
+                    .endObject()
+                    .endObject();
+            getClient()
+                    .admin()
+                    .indices()
+                    .preparePutMapping(indexInfo.getIndexName())
+                    .setIgnoreConflicts(false)
+                    .setType(ELEMENT_TYPE)
+                    .setSource(mapping)
+                    .execute()
+                    .actionGet();
+        } catch (IOException ex) {
+            throw new VertexiumException("Could not update mapping", ex);
+        }
     }
 
     protected void addPropertyNameVisibility(Graph graph, IndexInfo indexInfo, String propertyName, Visibility propertyVisibility) {
@@ -981,7 +1042,7 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
             if (indexInfo == null) {
                 if (!client.admin().indices().prepareExists(indexName).execute().actionGet().isExists()) {
                     try {
-                        createIndex(indexName, true);
+                        createIndex(indexName);
                     } catch (IOException e) {
                         throw new VertexiumException("Could not create index: " + indexName, e);
                     }
@@ -1046,8 +1107,7 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
 
     @Override
     public void deleteProperties(Graph graph, Element element, Collection<PropertyDescriptor> propertyList, Authorizations authorizations) {
-        List fields = Lists.newArrayList();
-
+        List<String> fields = new ArrayList<>();
         for (PropertyDescriptor p : propertyList) {
             String fieldName = deflatePropertyName(graph, p.getName(), p.getVisibility());
             fields.add(fieldName);
@@ -1113,7 +1173,7 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
      * Helper method to remove fields from source. This method will generate a ES update request. Retries on conflict.
      *
      * @param element Element that can be mapped to an ES document
-     * @param fields fields to remove
+     * @param fields  fields to remove
      */
     private void removeFieldsFromDocument(Element element, Collection<String> fields) {
         String script = "";
@@ -1414,12 +1474,8 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
         return getConfig().isAuthorizationFilterEnabled();
     }
 
-    protected boolean isReservedFieldName(String fieldName) {
-        return fieldName.equals(ELEMENT_TYPE_FIELD_NAME) || fieldName.equals(VISIBILITY_FIELD_NAME);
-    }
-
     @SuppressWarnings("unused")
-    protected void createIndex(String indexName, boolean storeSourceData) throws IOException {
+    protected void createIndex(String indexName) throws IOException {
         int shards = getConfig().getNumberOfShards();
         CreateIndexResponse createResponse = client.admin().indices().prepareCreate(indexName)
                 .setSettings(ImmutableSettings.settingsBuilder().put("number_of_shards", shards))
