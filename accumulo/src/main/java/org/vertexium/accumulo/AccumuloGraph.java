@@ -28,6 +28,8 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.io.Text;
 import org.apache.zookeeper.CreateMode;
 import org.vertexium.*;
+import org.vertexium.HistoricalPropertyValue;
+import org.vertexium.HistoricalPropertyValue.HistoricalPropertyValueBuilder;
 import org.vertexium.accumulo.iterator.*;
 import org.vertexium.accumulo.iterator.model.EdgeInfo;
 import org.vertexium.accumulo.iterator.model.PropertyColumnQualifier;
@@ -838,8 +840,34 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                         String propertyKey = propertyColumnQualifier.getPropertyKey();
                         String propertyName = propertyColumnQualifier.getPropertyName();
                         Visibility propertyVisibility = accumuloVisibilityToVisibility(columnVisibility);
-                        HistoricalPropertyValue hpv = new HistoricalPropertyValue(propertyKey, propertyName, propertyVisibility, timestamp, value, metadata, hiddenVisibilities);
+
+                        HistoricalPropertyValue hpv =
+                                new HistoricalPropertyValueBuilder(propertyKey, propertyName)
+                                        .propertyVisibility(propertyVisibility)
+                                        .timestamp(timestamp)
+                                        .value(value)
+                                        .metadata(metadata)
+                                        .hiddenVisibilities(hiddenVisibilities)
+                                        .build();
+
                         results.put(resultsKey, hpv);
+                    } else if (column.getKey().getColumnFamily().equals(AccumuloElement.CF_PROPERTY_SOFT_DELETE)) {
+                        PropertyColumnQualifier propertyColumnQualifier = KeyHelper.createPropertyColumnQualifier(cq, getNameSubstitutionStrategy());
+                        String propertyKey = propertyColumnQualifier.getPropertyKey();
+                        String propertyName = propertyColumnQualifier.getPropertyName();
+                        long timestamp = column.getKey().getTimestamp();
+                        Visibility propertyVisibility = accumuloVisibilityToVisibility(columnVisibility);
+
+                        String resultsKey = propertyColumnQualifier.getDiscriminator(columnVisibility, column.getKey().getTimestamp());
+                        HistoricalPropertyValue hpv =
+                                new HistoricalPropertyValueBuilder(propertyKey, propertyName)
+                                        .propertyVisibility(propertyVisibility)
+                                        .timestamp(timestamp)
+                                        .isDeleted(true)
+                                        .build();
+
+                        results.put(resultsKey, hpv);
+
                     } else if (column.getKey().getColumnFamily().equals(AccumuloElement.CF_PROPERTY_METADATA)) {
                         PropertyMetadataColumnQualifier propertyMetadataColumnQualifier = KeyHelper.createPropertyMetadataColumnQualifier(cq, getNameSubstitutionStrategy());
                         String resultsKey = propertyMetadataColumnQualifier.getPropertyDiscriminator(column.getKey().getTimestamp());

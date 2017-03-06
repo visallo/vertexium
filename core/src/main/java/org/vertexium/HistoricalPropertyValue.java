@@ -3,32 +3,32 @@ package org.vertexium;
 import java.io.Serializable;
 import java.util.Set;
 
+/**
+ * HistoricalPropertyValues are intended to be snapshots of property values in time.
+ * That is, all fields must reflect the state of the property at a given time. This
+ * is important as differences between consecutive historicalPropertyValues are seen
+ * as property changes.
+ */
 public class HistoricalPropertyValue implements Serializable, Comparable<HistoricalPropertyValue> {
     static final long serialVersionUID = 42L;
-    private final String propertyKey;
-    private final String propertyName;
-    private final Visibility propertyVisibility;
-    private final long timestamp;
-    private final Object value;
-    private final Metadata metadata;
-    private Set<Visibility> hiddenVisibilities;
+    private final String propertyKey;               // required
+    private final String propertyName;              // required
+    private final Visibility propertyVisibility;    // optional
+    private final long timestamp;                   // optional
+    private final Object value;                     // optional
+    private final Metadata metadata;                // optional
+    private final boolean isDeleted;                // optional
+    private Set<Visibility> hiddenVisibilities;     // optional
 
-    public HistoricalPropertyValue(
-            String propertyKey,
-            String propertyName,
-            Visibility propertyVisibility,
-            long timestamp,
-            Object value,
-            Metadata metadata,
-            Set<Visibility> hiddenVisibilities
-    ) {
-        this.propertyKey = propertyKey;
-        this.propertyName = propertyName;
-        this.propertyVisibility = propertyVisibility;
-        this.timestamp = timestamp;
-        this.value = value;
-        this.metadata = metadata;
-        this.hiddenVisibilities = hiddenVisibilities;
+    public HistoricalPropertyValue(HistoricalPropertyValueBuilder builder) {
+        this.propertyKey = builder.propertyKey;
+        this.propertyName = builder.propertyName;
+        this.propertyVisibility = builder.propertyVisibility;
+        this.timestamp = builder.timestamp;
+        this.value = builder.value;
+        this.metadata = builder.metadata;
+        this.hiddenVisibilities = builder.hiddenVisibilities;
+        this.isDeleted = builder.isDeleted;
     }
 
     public String getPropertyKey() {
@@ -57,6 +57,10 @@ public class HistoricalPropertyValue implements Serializable, Comparable<Histori
 
     public Set<Visibility> getHiddenVisibilities() {
         return hiddenVisibilities;
+    }
+
+    public boolean isDeleted() {
+        return isDeleted;
     }
 
     @Override
@@ -127,6 +131,54 @@ public class HistoricalPropertyValue implements Serializable, Comparable<Histori
                 ", propertyVisibility=" + propertyVisibility +
                 ", timestamp=" + timestamp +
                 ", value=" + value +
+                ", isDeleted=" + isDeleted +
                 '}';
+    }
+
+    public static class HistoricalPropertyValueBuilder {
+        private String propertyKey;
+        private String propertyName;
+        private Visibility propertyVisibility;
+        private long timestamp;
+        private Object value;
+        private Metadata metadata;
+        private boolean isDeleted;
+        private Set<Visibility> hiddenVisibilities;
+
+        public HistoricalPropertyValueBuilder(String propertyKey, String propertyName) {
+            this.propertyKey = propertyKey;
+            this.propertyName = propertyName;
+        }
+
+        public HistoricalPropertyValueBuilder value(Object value) {
+            this.value = value;
+            return this;
+        }
+        public HistoricalPropertyValueBuilder metadata(Metadata metadata) {
+            this.metadata = metadata;
+            return this;
+        }
+        public HistoricalPropertyValueBuilder isDeleted(boolean isDeleted) {
+            this.isDeleted = isDeleted;
+            return this;
+        }
+        public HistoricalPropertyValueBuilder hiddenVisibilities(Set<Visibility> hiddenVisibilities) {
+            this.hiddenVisibilities = hiddenVisibilities;
+            return this;
+        }
+
+        public HistoricalPropertyValueBuilder propertyVisibility(Visibility propertyVisibility) {
+            this.propertyVisibility = propertyVisibility;
+            return this;
+        }
+
+        public HistoricalPropertyValueBuilder timestamp(long timestamp) {
+            this.timestamp = timestamp;
+            return this;
+        }
+
+        public HistoricalPropertyValue build() {
+            return new HistoricalPropertyValue(this);
+        }
     }
 }
