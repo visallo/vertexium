@@ -5858,7 +5858,7 @@ public abstract class GraphTestBase {
         assertEquals("value3", values.get(2).getValue());
         assertEquals("prop3_A", values.get(3).getPropertyName());
         assertEquals(false, values.get(3).isDeleted());
-        assertEquals("value2", values.get(3).getValue());
+        assertEquals("value4", values.get(3).getValue());
         assertEquals("prop3_A", values.get(4).getPropertyName());
         assertEquals(false, values.get(4).isDeleted());
         assertEquals("value3", values.get(4).getValue());
