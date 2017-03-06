@@ -1,6 +1,7 @@
 package org.vertexium.accumulo;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import com.google.common.primitives.Longs;
 import org.apache.accumulo.core.client.*;
 import org.apache.accumulo.core.client.Scanner;
@@ -815,6 +816,8 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
 
             try {
                 Map<String, HistoricalPropertyValue> results = new HashMap<>();
+                Map<String, Key> softDeleteObserved = new HashMap<>();
+
                 for (Map.Entry<Key, Value> column : scanner) {
                     String cq = column.getKey().getColumnQualifier().toString();
                     String columnVisibility = column.getKey().getColumnVisibility().toString();
@@ -850,6 +853,9 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                                         .hiddenVisibilities(hiddenVisibilities)
                                         .build();
 
+                        // If property had been marked for deletion, clear it out. It was a property change
+                        softDeleteObserved.remove(resultsKey);
+
                         results.put(resultsKey, hpv);
                     } else if (column.getKey().getColumnFamily().equals(AccumuloElement.CF_PROPERTY_SOFT_DELETE)) {
                         PropertyColumnQualifier propertyColumnQualifier = KeyHelper.createPropertyColumnQualifier(cq, getNameSubstitutionStrategy());
@@ -858,15 +864,10 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                         long timestamp = column.getKey().getTimestamp();
                         Visibility propertyVisibility = accumuloVisibilityToVisibility(columnVisibility);
 
+                        //Soft deletes may be triggered by visibility changes as well as property deletions. For now,
+                        // simply capture the event.
                         String resultsKey = propertyColumnQualifier.getDiscriminator(columnVisibility, column.getKey().getTimestamp());
-                        HistoricalPropertyValue hpv =
-                                new HistoricalPropertyValueBuilder(propertyKey, propertyName)
-                                        .propertyVisibility(propertyVisibility)
-                                        .timestamp(timestamp)
-                                        .isDeleted(true)
-                                        .build();
-
-                        results.put(resultsKey, hpv);
+                        softDeleteObserved.put(resultsKey, column.getKey());
 
                     } else if (column.getKey().getColumnFamily().equals(AccumuloElement.CF_PROPERTY_METADATA)) {
                         PropertyMetadataColumnQualifier propertyMetadataColumnQualifier = KeyHelper.createPropertyMetadataColumnQualifier(cq, getNameSubstitutionStrategy());
@@ -880,6 +881,22 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                         hpv.getMetadata().add(propertyMetadataColumnQualifier.getMetadataKey(), value, metadataVisibility);
                     }
                 }
+
+                // Any softDeletes not cleared out by a modification event should be written as delete hpvs
+                for(Map.Entry<String, Key> entry: softDeleteObserved.entrySet()) {
+                    String cq = entry.getValue().getColumnQualifier().toString();
+                    PropertyColumnQualifier propertyColumnQualifier = KeyHelper.createPropertyColumnQualifier(cq, getNameSubstitutionStrategy());
+                    long timestamp = entry.getValue().getTimestamp();
+                    String propertyKey = propertyColumnQualifier.getPropertyKey();
+                    String propertyName = propertyColumnQualifier.getPropertyName();
+
+                    HistoricalPropertyValue hpv =
+                            new HistoricalPropertyValueBuilder(propertyKey, propertyName)
+                                    .timestamp(timestamp)
+                                    .isDeleted(true)
+                                    .build();
+                }
+
                 return new TreeSet<>(results.values());
             } finally {
                 scanner.close();
