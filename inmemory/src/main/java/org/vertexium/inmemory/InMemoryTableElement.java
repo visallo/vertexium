@@ -167,7 +167,7 @@ public abstract class InMemoryTableElement<TElement extends InMemoryElement> imp
             }
             else if (m instanceof AddPropertyMetadataMutation) {
                 builder.metadata(((AddPropertyMetadataMutation) m).getMetadata());
-                historicalPropertyValues.add(builder.build());
+                //historicalPropertyValues.add(builder.build());
             }
             else if (m instanceof MarkPropertyHiddenMutation) {
                 // Ignore
@@ -202,6 +202,9 @@ public abstract class InMemoryTableElement<TElement extends InMemoryElement> imp
                 throw new VertexiumException("Unhandled PropertyMutation: " + m.getClass().getName());
             }
         }
+
+
+
 
         Collections.reverse(historicalPropertyValues);
         return historicalPropertyValues;

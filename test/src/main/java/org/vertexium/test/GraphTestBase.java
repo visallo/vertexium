@@ -5811,14 +5811,25 @@ public abstract class GraphTestBase {
         List<HistoricalPropertyValue> values = toList(v1.getHistoricalPropertyValues(AUTHORIZATIONS_A_AND_B));
         Collections.reverse(values);
         assertEquals(4, values.size());
-        assertEquals("prop1_A", values.get(0).getPropertyName());
-        assertEquals(false, values.get(0).isDeleted());
-        assertEquals("prop2_B", values.get(1).getPropertyName());
-        assertEquals(false, values.get(1).isDeleted());
-        assertEquals("prop3_A", values.get(2).getPropertyName());
-        assertEquals(false, values.get(2).isDeleted());
-        assertEquals("prop2_B", values.get(3).getPropertyName());
-        assertEquals(true, values.get(3).isDeleted());
+
+        boolean isDeletedExpected = false;
+        for (int i = 0; i < 4; i++) {
+            HistoricalPropertyValue item = values.get(i);
+            if (item.getPropertyName().equals("prop1_A")) {
+                assertEquals("prop1_A", values.get(i).getPropertyName());
+                assertEquals(false, values.get(i).isDeleted());
+            } else if (item.getPropertyName().equals("prop2_B")) {
+                assertEquals("prop2_B", values.get(i).getPropertyName());
+                assertEquals(isDeletedExpected, values.get(i).isDeleted());
+                isDeletedExpected = !isDeletedExpected;
+            } else if (item.getPropertyName().equals("prop3_A")) {
+                assertEquals("prop3_A", values.get(i).getPropertyName());
+                assertEquals(false, values.get(i).isDeleted());
+            } else {
+                fail("Invalid " + item);
+            }
+        }
+
     }
 
     @Test
