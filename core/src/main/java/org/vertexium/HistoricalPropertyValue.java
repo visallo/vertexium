@@ -13,12 +13,12 @@ public class HistoricalPropertyValue implements Serializable, Comparable<Histori
     static final long serialVersionUID = 42L;
     private final String propertyKey;               // required
     private final String propertyName;              // required
-    private final Visibility propertyVisibility;    // optional
-    private final long timestamp;                   // optional
-    private final Object value;                     // optional
-    private final Metadata metadata;                // optional
-    private final boolean isDeleted;                // optional
-    private Set<Visibility> hiddenVisibilities;     // optional
+    private final long timestamp;                   // required
+    private final Visibility propertyVisibility;
+    private final Object value;
+    private final Metadata metadata;
+    private final Boolean isDeleted;
+    private Set<Visibility> hiddenVisibilities;
 
     public HistoricalPropertyValue(HistoricalPropertyValueBuilder builder) {
         this.propertyKey = builder.propertyKey;
@@ -60,7 +60,7 @@ public class HistoricalPropertyValue implements Serializable, Comparable<Histori
     }
 
     public boolean isDeleted() {
-        return isDeleted;
+        return (isDeleted != null && isDeleted);
     }
 
     @Override
@@ -138,16 +138,17 @@ public class HistoricalPropertyValue implements Serializable, Comparable<Histori
     public static class HistoricalPropertyValueBuilder {
         private String propertyKey;
         private String propertyName;
-        private Visibility propertyVisibility;
         private long timestamp;
+        private Visibility propertyVisibility;
         private Object value;
         private Metadata metadata;
-        private boolean isDeleted;
+        private Boolean isDeleted;
         private Set<Visibility> hiddenVisibilities;
 
-        public HistoricalPropertyValueBuilder(String propertyKey, String propertyName) {
+        public HistoricalPropertyValueBuilder(String propertyKey, String propertyName, long timestamp) {
             this.propertyKey = propertyKey;
             this.propertyName = propertyName;
+            this.timestamp = timestamp;
         }
 
         public HistoricalPropertyValueBuilder value(Object value) {
@@ -158,7 +159,7 @@ public class HistoricalPropertyValue implements Serializable, Comparable<Histori
             this.metadata = metadata;
             return this;
         }
-        public HistoricalPropertyValueBuilder isDeleted(boolean isDeleted) {
+        public HistoricalPropertyValueBuilder isDeleted(Boolean isDeleted) {
             this.isDeleted = isDeleted;
             return this;
         }

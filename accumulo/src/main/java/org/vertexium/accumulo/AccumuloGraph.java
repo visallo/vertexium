@@ -849,9 +849,8 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                         Visibility propertyVisibility = accumuloVisibilityToVisibility(columnVisibility);
 
                         HistoricalPropertyValue hpv =
-                                new HistoricalPropertyValueBuilder(propertyKey, propertyName)
+                                new HistoricalPropertyValueBuilder(propertyKey, propertyName, timestamp)
                                         .propertyVisibility(propertyVisibility)
-                                        .timestamp(timestamp)
                                         .value(value)
                                         .metadata(metadata)
                                         .hiddenVisibilities(hiddenVisibilities)
@@ -898,8 +897,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                         Visibility propertyVisibility = accumuloVisibilityToVisibility(columnVisibility);
 
                         HistoricalPropertyValue hpv =
-                                new HistoricalPropertyValueBuilder(propertyKey, propertyName)
-                                        .timestamp(timestamp)
+                                new HistoricalPropertyValueBuilder(propertyKey, propertyName, timestamp)
                                         .propertyVisibility(propertyVisibility)
                                         .isDeleted(true)
                                         .build();

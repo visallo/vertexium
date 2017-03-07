@@ -147,7 +147,7 @@ public abstract class InMemoryTableElement<TElement extends InMemoryElement> imp
             String propertyIdentifier = m.getPropertyKey() + m.getPropertyName();
             HistoricalPropertyValueBuilder builder = currentPropertyBuilders.get(propertyIdentifier);
             if(builder == null) {
-                builder = new HistoricalPropertyValueBuilder(m.getPropertyKey(), m.getPropertyName());
+                builder = new HistoricalPropertyValueBuilder(m.getPropertyKey(), m.getPropertyName(), m.getTimestamp());
                 currentPropertyBuilders.put(propertyIdentifier, builder);
             }
 
@@ -164,18 +164,13 @@ public abstract class InMemoryTableElement<TElement extends InMemoryElement> imp
             if (m instanceof SoftDeletePropertyMutation) {
                 builder.isDeleted(true);
                 historicalPropertyValues.add(builder.build());
-            }
-            else if (m instanceof AddPropertyMetadataMutation) {
+            } else if (m instanceof AddPropertyMetadataMutation) {
                 builder.metadata(((AddPropertyMetadataMutation) m).getMetadata());
-                //historicalPropertyValues.add(builder.build());
-            }
-            else if (m instanceof MarkPropertyHiddenMutation) {
+            } else if (m instanceof MarkPropertyHiddenMutation) {
                 // Ignore
-            }
-            else if (m instanceof MarkPropertyVisibleMutation) {
+            } else if (m instanceof MarkPropertyVisibleMutation) {
                 // Ignore
-            }
-            else if (m instanceof AddPropertyValueMutation) {
+            } else if (m instanceof AddPropertyValueMutation) {
                 AddPropertyValueMutation apvm = (AddPropertyValueMutation) m;
                 Object value = apvm.getValue();
                 value = loadIfStreamingPropertyValue(value);
@@ -185,10 +180,9 @@ public abstract class InMemoryTableElement<TElement extends InMemoryElement> imp
                         .value(value)
                         .metadata(apvm.getMetadata())
                         .hiddenVisibilities(hiddenVisibilities)
-                        .isDeleted(false)
-                        .build();
+                        .isDeleted(false);
 
-                // Property modifications use a soft delete immediately followed by un add property mutation.
+                // Property modifications use a soft delete immediately followed by an AddPropertyValueMutation.
                 // If the condition occurs, remove the delete event from the set.
                 if(historicalPropertyValues.size() > 0) {
                     HistoricalPropertyValue last = historicalPropertyValues.get(historicalPropertyValues.size() - 1);
@@ -202,9 +196,6 @@ public abstract class InMemoryTableElement<TElement extends InMemoryElement> imp
                 throw new VertexiumException("Unhandled PropertyMutation: " + m.getClass().getName());
             }
         }
-
-
-
 
         Collections.reverse(historicalPropertyValues);
         return historicalPropertyValues;
