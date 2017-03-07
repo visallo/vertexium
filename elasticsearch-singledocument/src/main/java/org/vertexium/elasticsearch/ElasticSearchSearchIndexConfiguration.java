@@ -27,6 +27,9 @@ public class ElasticSearchSearchIndexConfiguration {
     public static final String NUMBER_OF_SHARDS = "shards";
     public static final int NUMBER_OF_SHARDS_DEFAULT = 5;
     public static final int NUMBER_OF_SHARDS_IN_PROCESS_DEFAULT = 1;
+    public static final String NUMBER_OF_REPLICAS = "replicas";
+    public static final int NUMBER_OF_REPLICAS_DEFAULT = 1;
+    public static final int NUMBER_OF_REPLICAS_IN_PROCESS_DEFAULT = 0;
     public static final String AUTHORIZATION_FILTER_ENABLED = "authorizationFilterEnabled";
     public static final boolean AUTHORIZATION_FILTER_ENABLED_DEFAULT = true;
     public static final String SCORING_STRATEGY_CLASS_NAME = "scoringStrategy";
@@ -128,6 +131,15 @@ public class ElasticSearchSearchIndexConfiguration {
 
     public int getNumberOfShardsDefault() {
         return isInProcessNode() ? NUMBER_OF_SHARDS_IN_PROCESS_DEFAULT : NUMBER_OF_SHARDS_DEFAULT;
+    }
+
+    public int getNumberOfReplicas() {
+        int numberOfReplicasDefault = getNumberOfReplicasDefault();
+        return graphConfiguration.getInt(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + NUMBER_OF_REPLICAS, numberOfReplicasDefault);
+    }
+
+    public int getNumberOfReplicasDefault() {
+        return isInProcessNode() ? NUMBER_OF_REPLICAS_IN_PROCESS_DEFAULT : NUMBER_OF_REPLICAS_DEFAULT;
     }
 
     public boolean isAuthorizationFilterEnabled() {

@@ -1,3 +1,7 @@
+# v2.5.4
+
+* Added: configuration for number of Elasticsearch replicas
+
 # v2.5.3
 
 * Added: size to TermsAggregation

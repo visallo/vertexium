@@ -1476,9 +1476,11 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
 
     @SuppressWarnings("unused")
     protected void createIndex(String indexName) throws IOException {
-        int shards = getConfig().getNumberOfShards();
         CreateIndexResponse createResponse = client.admin().indices().prepareCreate(indexName)
-                .setSettings(ImmutableSettings.settingsBuilder().put("number_of_shards", shards))
+                    .setSettings(ImmutableSettings.settingsBuilder()
+                                         .put("number_of_shards", getConfig().getNumberOfShards())
+                                         .put("number_of_replicas", getConfig().getNumberOfReplicas())
+                    )
                 .execute().actionGet();
 
         ClusterHealthResponse health = client.admin().cluster().prepareHealth(indexName)
