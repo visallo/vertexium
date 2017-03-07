@@ -13,6 +13,7 @@ import org.vertexium.accumulo.iterator.model.EdgeInfo;
 import org.vertexium.accumulo.keys.DataTableRowKey;
 import org.vertexium.accumulo.keys.KeyHelper;
 import org.vertexium.id.NameSubstitutionStrategy;
+import org.vertexium.mutation.ExtendedDataMutation;
 import org.vertexium.mutation.PropertyDeleteMutation;
 import org.vertexium.mutation.PropertyPropertyDeleteMutation;
 import org.vertexium.mutation.PropertySoftDeleteMutation;
@@ -23,8 +24,12 @@ import org.vertexium.util.*;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.vertexium.util.IncreasingTime.currentTimeMillis;
+import static org.vertexium.util.StreamUtils.stream;
 
 public abstract class ElementMutationBuilder {
     private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(ElementMutationBuilder.class);
@@ -51,24 +56,114 @@ public abstract class ElementMutationBuilder {
     public void saveVertexBuilder(AccumuloGraph graph, VertexBuilder vertexBuilder, long timestamp) {
         Mutation m = createMutationForVertexBuilder(graph, vertexBuilder, timestamp);
         saveVertexMutation(m);
+        saveExtendedDataMutations(graph, ElementType.VERTEX, vertexBuilder);
     }
+
+    private void saveExtendedDataMutations(AccumuloGraph graph, ElementType elementType, ElementBuilder elementBuilder) {
+        if (elementBuilder.getExtendedData() == null) {
+            return;
+        }
+
+        Iterable<ExtendedDataMutation> extendedData = elementBuilder.getExtendedData();
+        saveExtendedData(graph, elementBuilder.getElementId(), elementType, extendedData);
+    }
+
+    void saveExtendedData(AccumuloGraph graph, String elementId, ElementType elementType, Iterable<ExtendedDataMutation> extendedData) {
+        Map<String, List<ExtendedDataMutation>> extendedDatasByTableName = stream(extendedData)
+                .collect(Collectors.groupingBy(edm -> edm.getTableName() + edm.getRow()));
+        for (Map.Entry<String, List<ExtendedDataMutation>> entry : extendedDatasByTableName.entrySet()) {
+            List<ExtendedDataMutation> mutationsForTableAndRow = entry.getValue();
+            String tableName = mutationsForTableAndRow.get(0).getTableName();
+            String row = mutationsForTableAndRow.get(0).getRow();
+
+            Mutation m = new Mutation(KeyHelper.createExtendedDataRowKey(elementType, elementId, tableName, row));
+            for (ExtendedDataMutation edm : mutationsForTableAndRow) {
+                Object value = transformValue(edm.getValue(), null, null);
+
+                // graph can be null if this is running in Map Reduce. We can just assume the property is already defined.
+                if (graph != null) {
+                    graph.ensurePropertyDefined(edm.getColumnName(), value);
+                }
+
+                m.put(
+                        AccumuloElement.CF_EXTENDED_DATA,
+                        new Text(edm.getColumnName()),
+                        visibilityToAccumuloVisibility(edm.getVisibility()),
+                        new Value(vertexiumSerializer.objectToBytes(value))
+                );
+            }
+            saveExtendedDataMutation(elementType, m);
+        }
+    }
+
+    protected abstract void saveExtendedDataMutation(ElementType elementType, Mutation m);
 
     protected abstract void saveVertexMutation(Mutation m);
 
     private Mutation createMutationForVertexBuilder(AccumuloGraph graph, VertexBuilder vertexBuilder, long timestamp) {
-        String vertexRowKey = vertexBuilder.getVertexId();
+        String vertexRowKey = vertexBuilder.getElementId();
         Mutation m = new Mutation(vertexRowKey);
         m.put(AccumuloVertex.CF_SIGNAL, EMPTY_TEXT, visibilityToAccumuloVisibility(vertexBuilder.getVisibility()), timestamp, EMPTY_VALUE);
-        for (PropertyDeleteMutation propertyDeleteMutation : vertexBuilder.getPropertyDeletes()) {
+        createMutationForElementBuilder(graph, vertexBuilder, vertexRowKey, m);
+        return m;
+    }
+
+    private <T extends Element> void createMutationForElementBuilder(AccumuloGraph graph, ElementBuilder<T> elementBuilder, String rowKey, Mutation m) {
+        for (PropertyDeleteMutation propertyDeleteMutation : elementBuilder.getPropertyDeletes()) {
             addPropertyDeleteToMutation(m, propertyDeleteMutation);
         }
-        for (PropertySoftDeleteMutation propertySoftDeleteMutation : vertexBuilder.getPropertySoftDeletes()) {
+        for (PropertySoftDeleteMutation propertySoftDeleteMutation : elementBuilder.getPropertySoftDeletes()) {
             addPropertySoftDeleteToMutation(m, propertySoftDeleteMutation);
         }
-        for (Property property : vertexBuilder.getProperties()) {
-            addPropertyToMutation(graph, m, vertexRowKey, property);
+        for (Property property : elementBuilder.getProperties()) {
+            addPropertyToMutation(graph, m, rowKey, property);
         }
-        return m;
+        Iterable<ExtendedDataMutation> extendedData = elementBuilder.getExtendedData();
+        saveExtendedDataMarkers(m, extendedData);
+    }
+
+    public void saveExtendedDataMarkers(
+            String elementId,
+            ElementType elementType,
+            Iterable<ExtendedDataMutation> extendedData
+    ) {
+        Set<TableNameVisibilityPair> uniquePairs = TableNameVisibilityPair.getUniquePairs(extendedData);
+        if (uniquePairs.size() == 0) {
+            return;
+        }
+        Mutation m = new Mutation(elementId);
+        for (TableNameVisibilityPair pair : uniquePairs) {
+            addExtendedDataMarkerToElementMutation(m, pair);
+        }
+        saveElementMutation(elementType, m);
+    }
+
+    private void saveElementMutation(ElementType elementType, Mutation m) {
+        switch (elementType) {
+            case VERTEX:
+                saveVertexMutation(m);
+                break;
+            case EDGE:
+                saveEdgeMutation(m);
+                break;
+            default:
+                throw new VertexiumException("Unhandled element type: " + elementType);
+        }
+    }
+
+    private void saveExtendedDataMarkers(Mutation m, Iterable<ExtendedDataMutation> extendedData) {
+        for (TableNameVisibilityPair pair : TableNameVisibilityPair.getUniquePairs(extendedData)) {
+            addExtendedDataMarkerToElementMutation(m, pair);
+        }
+    }
+
+    private void addExtendedDataMarkerToElementMutation(Mutation m, TableNameVisibilityPair pair) {
+        m.put(
+                AccumuloElement.CF_EXTENDED_DATA,
+                new Text(pair.getTableName()),
+                visibilityToAccumuloVisibility(pair.getVisibility()),
+                new Value(pair.getTableName().getBytes())
+        );
     }
 
     public Iterable<KeyValuePair> getKeyValuePairsForVertex(AccumuloVertex vertex) {
@@ -135,15 +230,23 @@ public abstract class ElementMutationBuilder {
         Text columnQualifier = KeyHelper.getColumnQualifierFromPropertyColumnQualifier(property, getNameSubstitutionStrategy());
         ColumnVisibility columnVisibility = visibilityToAccumuloVisibility(property.getVisibility());
         Object propertyValue = property.getValue();
+        Value value = new Value(vertexiumSerializer.objectToBytes(transformValue(propertyValue, null, null)));
+        results.add(new KeyValuePair(new Key(elementRowKey, AccumuloElement.CF_PROPERTY, columnQualifier, columnVisibility, property.getTimestamp()), value));
+        addPropertyMetadataToKeyValuePairs(results, elementRowKey, property);
+    }
+
+    private Object transformValue(Object propertyValue, String rowKey, Property property) {
         if (propertyValue instanceof StreamingPropertyValue) {
-            throw new VertexiumException("StreamingPropertyValue are not supported");
+            if (rowKey != null && property != null) {
+                propertyValue = saveStreamingPropertyValue(rowKey, property, (StreamingPropertyValue) propertyValue);
+            } else {
+                throw new VertexiumException(StreamingPropertyValue.class.getSimpleName() + " are not supported");
+            }
         }
         if (propertyValue instanceof DateOnly) {
             propertyValue = ((DateOnly) propertyValue).getDate();
         }
-        Value value = new Value(vertexiumSerializer.objectToBytes(propertyValue));
-        results.add(new KeyValuePair(new Key(elementRowKey, AccumuloElement.CF_PROPERTY, columnQualifier, columnVisibility, property.getTimestamp()), value));
-        addPropertyMetadataToKeyValuePairs(results, elementRowKey, property);
+        return propertyValue;
     }
 
     private void addPropertyMetadataToKeyValuePairs(List<KeyValuePair> results, Text vertexRowKey, Property property) {
@@ -181,12 +284,14 @@ public abstract class ElementMutationBuilder {
 
         String edgeLabel = edgeBuilder.getNewEdgeLabel() != null ? edgeBuilder.getNewEdgeLabel() : edgeBuilder.getLabel();
         saveEdgeInfoOnVertex(
-                edgeBuilder.getEdgeId(),
+                edgeBuilder.getElementId(),
                 edgeBuilder.getOutVertexId(),
                 edgeBuilder.getInVertexId(),
                 edgeLabel,
                 edgeColumnVisibility
         );
+
+        saveExtendedDataMutations(graph, ElementType.EDGE, edgeBuilder);
     }
 
     private void saveEdgeInfoOnVertex(String edgeId, String outVertexId, String inVertexId, String edgeLabel, ColumnVisibility edgeColumnVisibility) {
@@ -226,7 +331,7 @@ public abstract class ElementMutationBuilder {
     protected abstract void saveEdgeMutation(Mutation m);
 
     private Mutation createMutationForEdgeBuilder(AccumuloGraph graph, EdgeBuilderBase edgeBuilder, ColumnVisibility edgeColumnVisibility, long timestamp) {
-        String edgeRowKey = edgeBuilder.getEdgeId();
+        String edgeRowKey = edgeBuilder.getElementId();
         Mutation m = new Mutation(edgeRowKey);
         String edgeLabel = edgeBuilder.getLabel();
         if (edgeBuilder.getNewEdgeLabel() != null) {
@@ -236,15 +341,7 @@ public abstract class ElementMutationBuilder {
         m.put(AccumuloEdge.CF_SIGNAL, new Text(edgeLabel), edgeColumnVisibility, timestamp, ElementMutationBuilder.EMPTY_VALUE);
         m.put(AccumuloEdge.CF_OUT_VERTEX, new Text(edgeBuilder.getOutVertexId()), edgeColumnVisibility, timestamp, ElementMutationBuilder.EMPTY_VALUE);
         m.put(AccumuloEdge.CF_IN_VERTEX, new Text(edgeBuilder.getInVertexId()), edgeColumnVisibility, timestamp, ElementMutationBuilder.EMPTY_VALUE);
-        for (PropertyDeleteMutation propertyDeleteMutation : edgeBuilder.getPropertyDeletes()) {
-            addPropertyDeleteToMutation(m, propertyDeleteMutation);
-        }
-        for (PropertySoftDeleteMutation propertySoftDeleteMutation : edgeBuilder.getPropertySoftDeletes()) {
-            addPropertySoftDeleteToMutation(m, propertySoftDeleteMutation);
-        }
-        for (Property property : edgeBuilder.getProperties()) {
-            addPropertyToMutation(graph, m, edgeRowKey, property);
-        }
+        createMutationForElementBuilder(graph, edgeBuilder, edgeRowKey, m);
         return m;
     }
 
@@ -309,13 +406,7 @@ public abstract class ElementMutationBuilder {
     public void addPropertyToMutation(AccumuloGraph graph, Mutation m, String rowKey, Property property) {
         Text columnQualifier = KeyHelper.getColumnQualifierFromPropertyColumnQualifier(property, getNameSubstitutionStrategy());
         ColumnVisibility columnVisibility = visibilityToAccumuloVisibility(property.getVisibility());
-        Object propertyValue = property.getValue();
-        if (propertyValue instanceof StreamingPropertyValue) {
-            propertyValue = saveStreamingPropertyValue(rowKey, property, (StreamingPropertyValue) propertyValue);
-        }
-        if (propertyValue instanceof DateOnly) {
-            propertyValue = ((DateOnly) propertyValue).getDate();
-        }
+        Object propertyValue = transformValue(property.getValue(), rowKey, property);
 
         // graph can be null if this is running in Map Reduce. We can just assume the property is already defined.
         if (graph != null) {

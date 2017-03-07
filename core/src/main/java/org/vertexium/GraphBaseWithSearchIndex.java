@@ -1,8 +1,10 @@
 package org.vertexium;
 
+import com.google.common.collect.Maps;
 import org.vertexium.id.IdGenerator;
 import org.vertexium.mutation.ElementMutation;
 import org.vertexium.mutation.ExistingElementMutation;
+import org.vertexium.mutation.ExtendedDataMutation;
 import org.vertexium.query.GraphQuery;
 import org.vertexium.query.MultiVertexQuery;
 import org.vertexium.query.SimilarToGraphQuery;
@@ -167,6 +169,7 @@ public abstract class GraphBaseWithSearchIndex extends GraphBase implements Grap
     public Iterable<Element> saveElementMutations(Iterable<ElementMutation> mutations, Authorizations authorizations) {
         List<Element> elements = new ArrayList<>();
         List<Element> elementsToAddToIndex = new ArrayList<>();
+        List<ElementAndIterableExtendedDataMutation> extendedDataToIndex = new ArrayList<>();
         for (ElementMutation m : mutations) {
             if (m instanceof ExistingElementMutation && !m.hasChanges()) {
                 elements.add(((ExistingElementMutation) m).getElement());
@@ -179,10 +182,25 @@ public abstract class GraphBaseWithSearchIndex extends GraphBase implements Grap
             elements.add(element);
             if (indexHint == IndexHint.INDEX) {
                 elementsToAddToIndex.add(element);
+                //noinspection unchecked
+                extendedDataToIndex.add(new ElementAndIterableExtendedDataMutation(element, m.getExtendedData()));
             }
         }
         getSearchIndex().addElements(this, elementsToAddToIndex, authorizations);
+        for (ElementAndIterableExtendedDataMutation ed : extendedDataToIndex) {
+            getSearchIndex().addElementExtendedData(this, ed.element, ed.extendedData, authorizations);
+        }
         return elements;
+    }
+
+    private static class ElementAndIterableExtendedDataMutation {
+        public final Element element;
+        public final Iterable<ExtendedDataMutation> extendedData;
+
+        public ElementAndIterableExtendedDataMutation(Element element, Iterable<ExtendedDataMutation> extendedData) {
+            this.element = element;
+            this.extendedData = extendedData;
+        }
     }
 
     @Override

@@ -33,6 +33,7 @@ public class AccumuloGraphConfiguration extends GraphConfiguration {
     public static final String ZOOKEEPER_SERVERS = "zookeeperServers";
     public static final String ZOOKEEPER_METADATA_SYNC_PATH = "zookeeperMetadataSyncPath";
     public static final String ACCUMULO_MAX_VERSIONS = "maxVersions";
+    public static final String ACCUMULO_MAX_EXTENDED_DATA_VERSIONS = "maxExtendedDataVersions";
     public static final String HISTORY_IN_SEPARATE_TABLE = "historyInSeparateTable";
     public static final String NAME_SUBSTITUTION_STRATEGY_PROP_PREFIX = "nameSubstitutionStrategy";
     public static final String MAX_STREAMING_PROPERTY_VALUE_TABLE_DATA_SIZE = "maxStreamingPropertyValueTableDataSize";
@@ -211,6 +212,10 @@ public class AccumuloGraphConfiguration extends GraphConfiguration {
 
     public Integer getMaxVersions() {
         return getInteger(ACCUMULO_MAX_VERSIONS, DEFAULT_ACCUMULO_MAX_VERSIONS);
+    }
+
+    public Integer getExtendedDataMaxVersions() {
+        return getInteger(ACCUMULO_MAX_EXTENDED_DATA_VERSIONS, getMaxVersions());
     }
 
     public int getNumberOfQueryThreads() {

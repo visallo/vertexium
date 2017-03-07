@@ -7,6 +7,7 @@ import org.elasticsearch.index.query.QueryBuilder;
 import org.vertexium.*;
 import org.vertexium.elasticsearch.ElasticsearchSingleDocumentSearchIndex;
 import org.vertexium.elasticsearch.IndexInfo;
+import org.vertexium.mutation.ExtendedDataMutation;
 import org.vertexium.search.SearchIndex;
 
 import java.io.IOException;
@@ -38,5 +39,13 @@ public abstract class ScoringStrategy {
 
     public List<String> getFieldNames() {
         return new ArrayList<>();
+    }
+
+    public void addElementExtendedData(ElasticsearchSingleDocumentSearchIndex elasticsearchSingleDocumentSearchIndex, Graph graph, Element element, String tableName, String rowId, List<ExtendedDataMutation> columns, Authorizations authorizations) {
+
+    }
+
+    public void addFieldsToExtendedDataDocument(ElasticsearchSingleDocumentSearchIndex elasticsearchSingleDocumentSearchIndex, XContentBuilder jsonBuilder, Element element, Object o, String tableName, String rowId, List<ExtendedDataMutation> columns, Authorizations authorizations) {
+
     }
 }

@@ -1,15 +1,11 @@
 package org.vertexium.accumulo;
 
+import com.google.common.collect.ImmutableSet;
 import org.apache.accumulo.core.data.Value;
 import org.apache.hadoop.io.Text;
 import org.vertexium.*;
 import org.vertexium.accumulo.iterator.ElementIterator;
-import org.vertexium.mutation.EdgeMutation;
-import org.vertexium.mutation.ExistingElementMutationImpl;
-import org.vertexium.mutation.PropertyDeleteMutation;
-import org.vertexium.mutation.PropertySoftDeleteMutation;
-import org.vertexium.property.MutableProperty;
-import org.vertexium.util.IncreasingTime;
+import org.vertexium.mutation.*;
 
 import java.io.Serializable;
 
@@ -18,6 +14,7 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
     public static final Text CF_PROPERTY = ElementIterator.CF_PROPERTY;
     public static final Text CF_PROPERTY_METADATA = ElementIterator.CF_PROPERTY_METADATA;
     public static final Text CF_PROPERTY_SOFT_DELETE = ElementIterator.CF_PROPERTY_SOFT_DELETE;
+    public static final Text CF_EXTENDED_DATA = ElementIterator.CF_EXTENDED_DATA;
     public static final Value SOFT_DELETE_VALUE = ElementIterator.SOFT_DELETE_VALUE;
     public static final Value HIDDEN_VALUE = ElementIterator.HIDDEN_VALUE;
     public static final Text CF_PROPERTY_HIDDEN = ElementIterator.CF_PROPERTY_HIDDEN;
@@ -39,6 +36,7 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
             Iterable<PropertyDeleteMutation> propertyDeleteMutations,
             Iterable<PropertySoftDeleteMutation> propertySoftDeleteMutations,
             Iterable<Visibility> hiddenVisibilities,
+            ImmutableSet<String> extendedDataTableNames,
             long timestamp,
             Authorizations authorizations
     ) {
@@ -50,6 +48,7 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
                 propertyDeleteMutations,
                 propertySoftDeleteMutations,
                 hiddenVisibilities,
+                extendedDataTableNames,
                 timestamp,
                 authorizations
         );
@@ -162,10 +161,21 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
                 getGraph().alterEdgeLabel((AccumuloEdge) mutation.getElement(), newEdgeLabel);
             }
         }
+
+        ElementType elementType = ElementType.getTypeFromElement(mutation.getElement());
+        getGraph().saveExtendedDataMutations(mutation.getElement().getId(), elementType, mutation.getExtendedData());
     }
 
     @Override
     public Iterable<HistoricalPropertyValue> getHistoricalPropertyValues(String key, String name, Visibility visibility, Long startTime, Long endTime, Authorizations authorizations) {
         return getGraph().getHistoricalPropertyValues(this, key, name, visibility, startTime, endTime, authorizations);
+    }
+
+    @Override
+    public abstract <T extends Element> ExistingElementMutation<T> prepareMutation();
+
+    @Override
+    public Iterable<ExtendedDataRow> getExtendedData(String tableName) {
+        return getGraph().getExtendedData(ElementType.getTypeFromElement(this), getId(), tableName, getAuthorizations());
     }
 }

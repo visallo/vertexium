@@ -38,6 +38,10 @@ public class ElementBuilderTest {
     }
 
     private static class TestElementBuilder<T extends Element> extends ElementBuilder<T> {
+        protected TestElementBuilder() {
+            super("element1");
+        }
+
         @Override
         public T save(Authorizations authorizations) {
             return null;

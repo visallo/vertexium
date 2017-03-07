@@ -16,15 +16,15 @@ public enum TextPredicate implements Predicate {
     public boolean evaluate(final Iterable<Property> properties, final Object second, Collection<PropertyDefinition> propertyDefinitions) {
         for (Property property : properties) {
             PropertyDefinition propertyDefinition = PropertyDefinition.findPropertyDefinition(propertyDefinitions, property.getName());
-            if (evaluate(property, second, propertyDefinition)) {
+            if (evaluate(property.getValue(), second, propertyDefinition)) {
                 return true;
             }
         }
         return false;
     }
 
-    private boolean evaluate(Property property, Object second, PropertyDefinition propertyDefinition) {
-        Object first = property.getValue();
+    @Override
+    public boolean evaluate(Object first, Object second, PropertyDefinition propertyDefinition) {
         if (!canEvaulate(first) || !canEvaulate(second)) {
             throw new VertexiumException("Text predicates are only valid for string or GeoPoint fields");
         }

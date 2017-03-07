@@ -1,5 +1,6 @@
 package org.vertexium;
 
+import com.google.common.collect.ImmutableSet;
 import org.vertexium.mutation.ElementMutation;
 import org.vertexium.mutation.ExistingElementMutation;
 import org.vertexium.mutation.PropertyDeleteMutation;
@@ -27,6 +28,7 @@ public abstract class ElementBase implements Element {
     private Set<Visibility> hiddenVisibilities = new HashSet<>();
 
     private final PropertyCollection properties;
+    private final ImmutableSet<String> extendedDataTableNames;
     private ConcurrentSkipListSet<PropertyDeleteMutation> propertyDeleteMutations;
     private ConcurrentSkipListSet<PropertySoftDeleteMutation> propertySoftDeleteMutations;
     private final Authorizations authorizations;
@@ -39,6 +41,7 @@ public abstract class ElementBase implements Element {
             Iterable<PropertyDeleteMutation> propertyDeleteMutations,
             Iterable<PropertySoftDeleteMutation> propertySoftDeleteMutations,
             Iterable<Visibility> hiddenVisibilities,
+            ImmutableSet<String> extendedDataTableNames,
             long timestamp,
             Authorizations authorizations
     ) {
@@ -47,6 +50,7 @@ public abstract class ElementBase implements Element {
         this.visibility = visibility;
         this.timestamp = timestamp;
         this.properties = new PropertyCollection();
+        this.extendedDataTableNames = extendedDataTableNames;
         this.authorizations = authorizations;
         if (hiddenVisibilities != null) {
             for (Visibility v : hiddenVisibilities) {
@@ -493,5 +497,10 @@ public abstract class ElementBase implements Element {
                 return true;
             }
         };
+    }
+
+    @Override
+    public ImmutableSet<String> getExtendedDataTableNames() {
+        return extendedDataTableNames;
     }
 }

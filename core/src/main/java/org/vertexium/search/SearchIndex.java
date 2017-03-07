@@ -1,6 +1,7 @@
 package org.vertexium.search;
 
 import org.vertexium.*;
+import org.vertexium.mutation.ExtendedDataMutation;
 import org.vertexium.query.GraphQuery;
 import org.vertexium.query.MultiVertexQuery;
 import org.vertexium.query.SimilarToGraphQuery;
@@ -59,4 +60,8 @@ public interface SearchIndex {
     boolean isFieldLevelSecuritySupported();
 
     void alterElementVisibility(Graph graph, Element element, Visibility oldVisibility, Visibility newVisibility, Authorizations authorizations);
+
+    void addElementExtendedData(Graph graph, Element element, Iterable<ExtendedDataMutation> extendedDatas, Authorizations authorizations);
+
+    void deleteExtendedData(Graph graph, ExtendedDataRowId extendedDataRowId, Authorizations authorizations);
 }

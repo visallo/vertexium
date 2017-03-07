@@ -2,6 +2,7 @@ package org.vertexium.cli;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
+import com.google.common.collect.Lists;
 import groovy.lang.Binding;
 import groovy.lang.Closure;
 import groovy.lang.GroovyShell;
@@ -21,15 +22,21 @@ import org.fusesource.jansi.Ansi;
 import org.fusesource.jansi.AnsiConsole;
 import org.vertexium.Graph;
 import org.vertexium.GraphFactory;
+import org.vertexium.VertexiumException;
 import org.vertexium.Visibility;
 import org.vertexium.cli.commands.*;
+import org.vertexium.query.GeoCompare;
+import org.vertexium.type.GeoPoint;
 import org.vertexium.util.ConfigurationUtils;
 
+import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class VertexiumShell {
     private Groovysh groovysh;
@@ -46,8 +53,11 @@ public class VertexiumShell {
     @Parameter(names = {"-e"}, description = "String to evaluate")
     private String evalString = null;
 
-    @Parameter(names = {"-c"}, description = "Configuration file name", required = true)
+    @Parameter(names = {"-c"}, description = "Configuration file name")
     private List<String> configFileNames = new ArrayList<>();
+
+    @Parameter(names = {"-cd"}, description = "Configuration directories (all files ending in .properties)")
+    private List<String> configDirectories = new ArrayList<>();
 
     @Parameter(names = {"-cp"}, description = "Configuration property prefix")
     private String configPropertyPrefix = null;
@@ -70,6 +80,7 @@ public class VertexiumShell {
 
         setTerminalType(terminalType, suppressColor);
 
+        addConfigDirectoriesToConfigFileNames(configDirectories, configFileNames);
         Map<String, String> config = ConfigurationUtils.loadConfig(configFileNames, configPropertyPrefix);
         Graph graph = new GraphFactory().createGraph(config);
 
@@ -112,6 +123,29 @@ public class VertexiumShell {
 
         startGroovysh(evalString, fileNames);
         return 0;
+    }
+
+    private void addConfigDirectoriesToConfigFileNames(List<String> configDirectories, List<String> configFileNames) {
+        for (String configDirectory : configDirectories) {
+            addConfigDirectoryToConfigFileNames(configDirectory, configFileNames);
+        }
+    }
+
+    private void addConfigDirectoryToConfigFileNames(String configDirectory, List<String> configFileNames) {
+        File dir = new File(configDirectory);
+        if (!dir.exists()) {
+            throw new VertexiumException("Directory does not exist: " + dir.getAbsolutePath());
+        }
+        List<String> files = Lists.newArrayList(dir.listFiles()).stream()
+                .filter(File::isFile)
+                .map(File::getName)
+                .filter(f -> f.endsWith(".properties"))
+                .collect(Collectors.toList());
+        Collections.sort(files);
+        files = files.stream()
+                .map(f -> new File(dir, f).getAbsolutePath())
+                .collect(Collectors.toList());
+        configFileNames.addAll(files);
     }
 
     private void setGroovyShell(Groovysh groovysh, GroovyShell groovyShell) throws NoSuchFieldException, IllegalAccessException {
@@ -201,6 +235,8 @@ public class VertexiumShell {
         System.out.println("  e     - edge map (usage: e['e1'])");
         try {
             shell.execute("import " + Visibility.class.getPackage().getName() + ".*;");
+            shell.execute("import " + GeoPoint.class.getPackage().getName() + ".*;");
+            shell.execute("import " + GeoCompare.class.getPackage().getName() + ".*;");
             code = shell.run(evalString, filenames);
         } finally {
             System.setSecurityManager(psm);

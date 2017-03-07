@@ -1,6 +1,6 @@
 package org.vertexium.elasticsearch.utils;
 
-import org.vertexium.Element;
+import org.vertexium.VertexiumObject;
 import org.vertexium.VertexiumException;
 import org.vertexium.elasticsearch.ElasticSearchGraphQueryIterable;
 import org.vertexium.query.*;
@@ -10,7 +10,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
-public abstract class PagingIterable<T extends Element> implements
+public abstract class PagingIterable<T extends VertexiumObject> implements
         Iterable<T>,
         IterableWithTotalHits<T>,
         IterableWithScores<T>,
@@ -58,7 +58,7 @@ public abstract class PagingIterable<T extends Element> implements
     }
 
     @Override
-    public Map<String, Double> getScores() {
+    public Map<Object, Double> getScores() {
         return this.firstIterable.getScores();
     }
 
@@ -91,11 +91,11 @@ public abstract class PagingIterable<T extends Element> implements
         return it;
     }
 
-    private interface GetPageIterableFunction<T extends Element> {
+    private interface GetPageIterableFunction<T extends VertexiumObject> {
         ElasticSearchGraphQueryIterable<T> getPageIterable(int skip, int limit, boolean includeAggregations);
     }
 
-    private static class MyIterator<T extends Element> implements Iterator<T> {
+    private static class MyIterator<T extends VertexiumObject> implements Iterator<T> {
         private ElasticSearchGraphQueryIterable<T> firstIterable;
         private final int pageSize;
         private final GetPageIterableFunction<T> getPageIterableFunction;

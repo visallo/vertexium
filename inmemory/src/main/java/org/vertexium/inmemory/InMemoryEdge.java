@@ -99,6 +99,7 @@ public class InMemoryEdge extends InMemoryElement<InMemoryEdge> implements Edge 
                             oldVisibility,
                             getNewElementVisibility(),
                             getAlterPropertyVisibilities(),
+                            getExtendedData(),
                             authorizations
                     );
                 }

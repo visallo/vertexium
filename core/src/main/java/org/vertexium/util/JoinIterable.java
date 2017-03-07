@@ -1,15 +1,22 @@
 package org.vertexium.util;
 
+import com.google.common.collect.Iterables;
+
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Queue;
 
 public class JoinIterable<T> implements Iterable<T> {
-    private final Iterable<T>[] iterables;
+    private final Iterable<? extends T>[] iterables;
+
+    public JoinIterable(Iterable<? extends Iterable<? extends T>> iterables) {
+        //noinspection unchecked
+        this(Iterables.toArray(iterables, Iterable.class));
+    }
 
     @SafeVarargs
-    public JoinIterable(Iterable<T>... iterables) {
+    public JoinIterable(Iterable<? extends T>... iterables) {
         this.iterables = iterables;
     }
 
@@ -34,7 +41,7 @@ public class JoinIterable<T> implements Iterable<T> {
             };
         }
 
-        final Queue<Iterable<T>> iterables = new LinkedList<>();
+        final Queue<Iterable<? extends T>> iterables = new LinkedList<>();
         Collections.addAll(iterables, this.iterables);
         final IteratorWrapper it = new IteratorWrapper();
         it.iterator = iterables.remove().iterator();
@@ -86,10 +93,10 @@ public class JoinIterable<T> implements Iterable<T> {
     }
 
     private class IteratorWrapper {
-        public Iterator<T> iterator;
+        public Iterator<? extends T> iterator;
     }
 
-    protected Iterable<T>[] getIterables() {
+    protected Iterable<? extends T>[] getIterables() {
         return iterables;
     }
 }

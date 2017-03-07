@@ -1,11 +1,11 @@
 package org.vertexium.inmemory;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import org.vertexium.*;
 import org.vertexium.mutation.*;
 import org.vertexium.property.MutablePropertyImpl;
 import org.vertexium.search.IndexHint;
-import org.vertexium.PropertyDescriptor;
 import org.vertexium.util.ConvertingIterable;
 import org.vertexium.util.FilterIterable;
 
@@ -105,6 +105,31 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> implemen
         if (property != null) {
             getGraph().softDeleteProperty(inMemoryTableElement, property, timestamp, indexHint, authorizations);
         }
+    }
+
+    protected void extendedData(
+            String tableName,
+            String rowId,
+            String column,
+            Object value,
+            long timestamp,
+            Visibility visibility,
+            Authorizations authorizations
+    ) {
+        ExtendedDataRowId extendedDataRowId = new ExtendedDataRowId(
+                ElementType.getTypeFromElement(this),
+                getId(),
+                tableName,
+                rowId
+        );
+        getGraph().extendedData(
+                extendedDataRowId,
+                column,
+                value,
+                timestamp,
+                visibility,
+                authorizations
+        );
     }
 
     @Override
@@ -375,6 +400,7 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> implemen
                 vertexBuilder.getProperties(),
                 vertexBuilder.getPropertyDeletes(),
                 vertexBuilder.getPropertySoftDeletes(),
+                vertexBuilder.getExtendedData(),
                 vertexBuilder.getIndexHint()
         );
     }
@@ -384,6 +410,7 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> implemen
                 edgeBuilder.getProperties(),
                 edgeBuilder.getPropertyDeletes(),
                 edgeBuilder.getPropertySoftDeletes(),
+                edgeBuilder.getExtendedData(),
                 edgeBuilder.getIndexHint()
         );
     }
@@ -392,6 +419,7 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> implemen
             Iterable<Property> properties,
             Iterable<PropertyDeleteMutation> propertyDeleteMutations,
             Iterable<PropertySoftDeleteMutation> propertySoftDeleteMutations,
+            Iterable<ExtendedDataMutation> extendedDatas,
             IndexHint indexHint
     ) {
         for (Property property : properties) {
@@ -403,6 +431,19 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> implemen
         for (PropertySoftDeleteMutation propertySoftDeleteMutation : propertySoftDeleteMutations) {
             softDeleteProperty(propertySoftDeleteMutation.getKey(), propertySoftDeleteMutation.getName(), propertySoftDeleteMutation.getTimestamp(), propertySoftDeleteMutation.getVisibility(), indexHint, authorizations);
         }
+        for (ExtendedDataMutation extendedData : extendedDatas) {
+            getGraph().ensurePropertyDefined(extendedData.getColumnName(), extendedData.getValue());
+            extendedData(
+                    extendedData.getTableName(),
+                    extendedData.getRow(),
+                    extendedData.getColumnName(),
+                    extendedData.getValue(),
+                    extendedData.getTimestamp(),
+                    extendedData.getVisibility(),
+                    authorizations
+            );
+        }
+
     }
 
     protected <T extends Element> void saveExistingElementMutation(ExistingElementMutationImpl<T> mutation, IndexHint indexHint, Authorizations authorizations) {
@@ -428,6 +469,7 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> implemen
                 properties,
                 propertyDeleteMutations,
                 propertySoftDeleteMutations,
+                mutation.getExtendedData(),
                 indexHint
         );
 
@@ -474,12 +516,15 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> implemen
             Visibility oldVisibility,
             Visibility newVisibility,
             List<AlterPropertyVisibility> alterPropertyVisibilities,
+            Iterable<ExtendedDataMutation> extendedDatas,
             Authorizations authorizations
     ) {
         if (alterPropertyVisibilities != null && alterPropertyVisibilities.size() > 0) {
             // Bulk delete
-            List <PropertyDescriptor> propertyList = Lists.newArrayList();
-            alterPropertyVisibilities.forEach( p -> { propertyList.add(PropertyDescriptor.from(p.getKey(), p.getName(), p.getExistingVisibility()));});
+            List<PropertyDescriptor> propertyList = Lists.newArrayList();
+            alterPropertyVisibilities.forEach(p -> {
+                propertyList.add(PropertyDescriptor.from(p.getKey(), p.getName(), p.getExistingVisibility()));
+            });
             getGraph().getSearchIndex().deleteProperties(
                     getGraph(),
                     element,
@@ -492,6 +537,7 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> implemen
             getGraph().getSearchIndex().alterElementVisibility(getGraph(), element, oldVisibility, newVisibility, authorizations);
         } else {
             getGraph().getSearchIndex().addElement(getGraph(), element, authorizations);
+            getGraph().getSearchIndex().addElementExtendedData(getGraph(), element, extendedDatas, authorizations);
         }
     }
 
@@ -518,5 +564,16 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> implemen
 
     protected void setInMemoryTableElement(InMemoryTableElement<TElement> inMemoryTableElement) {
         this.inMemoryTableElement = inMemoryTableElement;
+    }
+
+    @Override
+    public ImmutableSet<String> getExtendedDataTableNames() {
+        return graph.getExtendedDataTableNames(ElementType.getTypeFromElement(this), id, authorizations);
+    }
+
+    @Override
+    public Iterable<ExtendedDataRow> getExtendedData(String tableName) {
+        //noinspection unchecked
+        return (Iterable<ExtendedDataRow>) graph.getExtendedDataTable(ElementType.getTypeFromElement(this), id, tableName, authorizations);
     }
 }

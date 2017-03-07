@@ -1,10 +1,8 @@
 package org.vertexium.search;
 
-import org.apache.commons.lang3.tuple.Pair;
 import org.vertexium.*;
+import org.vertexium.mutation.ExtendedDataMutation;
 import org.vertexium.query.*;
-
-import java.util.Collection;
 
 import static org.vertexium.util.Preconditions.checkNotNull;
 
@@ -98,5 +96,14 @@ public class DefaultSearchIndex implements SearchIndex {
     @Override
     public boolean isFieldLevelSecuritySupported() {
         return true;
+    }
+
+    @Override
+    public void addElementExtendedData(Graph graph, Element element, Iterable<ExtendedDataMutation> extendedDatas, Authorizations authorizations) {
+    }
+
+    @Override
+    public void deleteExtendedData(Graph graph, ExtendedDataRowId extendedDataRowId, Authorizations authorizations) {
+        checkNotNull(extendedDataRowId, "extendedDataRowId cannot be null");
     }
 }

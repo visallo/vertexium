@@ -1,20 +1,17 @@
 package org.vertexium.query;
 
-import org.vertexium.Edge;
-import org.vertexium.Element;
-import org.vertexium.Property;
-import org.vertexium.VertexiumException;
+import org.vertexium.*;
 import org.vertexium.util.CloseableIterator;
 import org.vertexium.util.CloseableUtils;
 
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
 import static org.vertexium.util.IterableUtils.count;
 import static org.vertexium.util.IterableUtils.toList;
+import static org.vertexium.util.Preconditions.checkNotNull;
 
-public class DefaultGraphQueryIterable<T extends Element> implements
+public class DefaultGraphQueryIterable<T extends VertexiumObject> implements
         Iterable<T>,
         QueryResultsIterable<T> {
     private final QueryParameters parameters;
@@ -29,6 +26,7 @@ public class DefaultGraphQueryIterable<T extends Element> implements
             boolean evaluateHasContainers,
             boolean evaluateSortContainers
     ) {
+        checkNotNull(iterable, "iterable cannot be null");
         this.parameters = parameters;
         this.evaluateQueryString = evaluateQueryString;
         this.evaluateHasContainers = evaluateHasContainers;
@@ -41,7 +39,7 @@ public class DefaultGraphQueryIterable<T extends Element> implements
 
     private Iterable<T> sort(Iterable<T> iterable, List<QueryBase.SortContainer> sortContainers) {
         List<T> list = toList(iterable);
-        Collections.sort(list, new SortContainersComparator<T>(sortContainers));
+        list.sort(new SortContainersComparator<>(sortContainers));
         return list;
     }
 
@@ -136,9 +134,28 @@ public class DefaultGraphQueryIterable<T extends Element> implements
         };
     }
 
-    protected boolean evaluateQueryString(Element elem, String queryString) {
-        for (Property property : elem.getProperties()) {
+    protected boolean evaluateQueryString(VertexiumObject vertexiumObject, String queryString) {
+        if (vertexiumObject instanceof Element) {
+            return evaluateQueryString((Element) vertexiumObject, queryString);
+        } else if (vertexiumObject instanceof ExtendedDataRow) {
+            return evaluateQueryString((ExtendedDataRow) vertexiumObject, queryString);
+        } else {
+            throw new VertexiumException("Unhandled VertexiumObject type: " + vertexiumObject.getClass().getName());
+        }
+    }
+
+    private boolean evaluateQueryString(Element element, String queryString) {
+        for (Property property : element.getProperties()) {
             if (evaluateQueryStringOnValue(property.getValue(), queryString)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean evaluateQueryString(ExtendedDataRow extendedDataRow, String queryString) {
+        for (String propertyName : extendedDataRow.getPropertyNames()) {
+            if (evaluateQueryStringOnValue(extendedDataRow.getPropertyValue(propertyName), queryString)) {
                 return true;
             }
         }

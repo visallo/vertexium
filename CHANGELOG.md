@@ -1,4 +1,9 @@
+# v2.6.0
+
+* Added: ability to store extended data rows on an element
+
 # v2.5.4
+
 * Added: configuration for number of Elasticsearch replicas
 * Changed: Delete events added to HistoricalPropertyValue reporting
 

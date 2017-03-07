@@ -1,6 +1,7 @@
 package org.vertexium.accumulo.mapreduce;
 
 import com.google.common.base.Function;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import org.apache.accumulo.core.client.AccumuloSecurityException;
 import org.apache.accumulo.core.client.security.tokens.AuthenticationToken;
@@ -54,6 +55,9 @@ public class AccumuloVertexInputFormat extends AccumuloElementInputFormatBase<Ve
                     return AccumuloGraph.accumuloVisibilityToVisibility(AccumuloGraph.visibilityToAccumuloVisibility(visibilityText.toString()));
                 }
             });
+            ImmutableSet<String> extendedDataTableNames = vertexElementData.extendedTableNames.size() > 0
+                    ? ImmutableSet.copyOf(vertexElementData.extendedTableNames)
+                    : null;
             return new AccumuloVertex(
                     graph,
                     vertexElementData.id.toString(),
@@ -62,6 +66,7 @@ public class AccumuloVertexInputFormat extends AccumuloElementInputFormatBase<Ve
                     propertyDeleteMutations,
                     propertySoftDeleteMutations,
                     hiddenVisibilities,
+                    extendedDataTableNames,
                     vertexElementData.inEdges,
                     vertexElementData.outEdges,
                     vertexElementData.timestamp,

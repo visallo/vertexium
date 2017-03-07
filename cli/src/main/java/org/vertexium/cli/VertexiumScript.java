@@ -17,6 +17,7 @@ import java.util.Map;
 public class VertexiumScript extends Script {
     private static Graph graph;
     private static Authorizations authorizations;
+    private static final Map<String, LazyExtendedDataTable> contextExtendedDataTables = new HashMap<>();
     private static final Map<String, LazyProperty> contextProperties = new HashMap<>();
     private static final Map<String, LazyEdge> contextEdges = new HashMap<>();
     private static final Map<String, LazyVertex> contextVertices = new HashMap<>();
@@ -73,6 +74,11 @@ public class VertexiumScript extends Script {
             return System.currentTimeMillis();
         }
 
+        Object contextExtendedDataTable = contextExtendedDataTables.get(property);
+        if (contextExtendedDataTable != null) {
+            return contextExtendedDataTable;
+        }
+
         Object contextProperty = contextProperties.get(property);
         if (contextProperty != null) {
             return contextProperty;
@@ -100,6 +106,10 @@ public class VertexiumScript extends Script {
 
     public static void setAuthorizations(Authorizations authorizations) {
         VertexiumScript.authorizations = authorizations;
+    }
+
+    public static Map<String, LazyExtendedDataTable> getContextExtendedDataTables() {
+        return contextExtendedDataTables;
     }
 
     public static Map<String, LazyProperty> getContextProperties() {

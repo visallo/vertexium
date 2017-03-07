@@ -1,5 +1,6 @@
 package org.vertexium.cli.model;
 
+import com.google.common.collect.ImmutableSet;
 import org.vertexium.*;
 import org.vertexium.cli.VertexiumScript;
 
@@ -41,6 +42,22 @@ public class LazyVertex extends ModelBase {
         } else {
             for (Visibility hiddenVisibility : hiddenVisibilities) {
                 writer.println("    " + hiddenVisibility.getVisibilityString());
+            }
+        }
+
+        writer.println("  @|bold extended data table names:|@");
+        VertexiumScript.getContextExtendedDataTables().clear();
+        ImmutableSet<String> extendedDataTableNames = v.getExtendedDataTableNames();
+        if (extendedDataTableNames.size() == 0) {
+            writer.println("    none");
+        } else {
+            int tableIndex = 0;
+            for (String extendedDataTableName : extendedDataTableNames) {
+                String tableIndexString = "t" + tableIndex;
+                writer.println("    @|bold " + tableIndexString + ":|@ " + extendedDataTableName);
+                LazyExtendedDataTable lazyExtendedDataTable = new LazyExtendedDataTable(ElementType.VERTEX, v.getId(), extendedDataTableName);
+                VertexiumScript.getContextExtendedDataTables().put(tableIndexString, lazyExtendedDataTable);
+                tableIndex++;
             }
         }
 

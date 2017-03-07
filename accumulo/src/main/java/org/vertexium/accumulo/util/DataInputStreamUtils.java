@@ -1,6 +1,7 @@
 package org.vertexium.accumulo.util;
 
 import com.google.common.base.Function;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import org.apache.hadoop.io.Text;
@@ -41,6 +42,18 @@ public class DataInputStreamUtils {
             results.add(decodeText(in));
         }
         return results;
+    }
+
+    public static ImmutableSet<String> decodeStringSet(DataInputStream in) throws IOException {
+        int count = in.readInt();
+        if (count == -1) {
+            return null;
+        }
+        ImmutableSet.Builder<String> results = ImmutableSet.builder();
+        for (int i = 0; i < count; i++) {
+            results.add(decodeString(in));
+        }
+        return results.build();
     }
 
     public static Iterable<Property> decodeProperties(AccumuloGraph graph, final DataInputStream in) throws IOException {

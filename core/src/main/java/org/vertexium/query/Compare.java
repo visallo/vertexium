@@ -27,6 +27,12 @@ public enum Compare implements Predicate {
         return false;
     }
 
+    @Override
+    public boolean evaluate(Object first, Object second, PropertyDefinition propertyDefinition) {
+        Compare comparePredicate = this;
+        return evaluate(first, comparePredicate, second, propertyDefinition);
+    }
+
     private boolean evaluate(Property property, Object second, PropertyDefinition propertyDefinition) {
         Object first = property.getValue();
         Compare comparePredicate = this;

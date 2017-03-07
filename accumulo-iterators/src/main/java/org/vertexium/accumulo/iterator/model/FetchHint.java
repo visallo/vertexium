@@ -11,9 +11,10 @@ public enum FetchHint {
     OUT_EDGE_REFS,
     INCLUDE_HIDDEN,
     IN_EDGE_LABELS,
-    OUT_EDGE_LABELS;
+    OUT_EDGE_LABELS,
+    EXTENDED_DATA_TABLE_NAMES;
 
-    public static final EnumSet<FetchHint> ALL = EnumSet.of(PROPERTIES, PROPERTY_METADATA, IN_EDGE_REFS, OUT_EDGE_REFS);
+    public static final EnumSet<FetchHint> ALL = EnumSet.of(PROPERTIES, PROPERTY_METADATA, IN_EDGE_REFS, OUT_EDGE_REFS, EXTENDED_DATA_TABLE_NAMES);
 
     public static String toString(EnumSet<FetchHint> fetchHints) {
         StringBuilder result = new StringBuilder();

@@ -1,12 +1,12 @@
 package org.vertexium.query;
 
-import org.vertexium.Element;
+import org.vertexium.VertexiumObject;
 import org.vertexium.VertexiumException;
 import org.vertexium.util.SelectManyIterable;
 
 import java.io.IOException;
 
-public abstract class QueryResultsSelectManyIterable<TDest extends Element> extends SelectManyIterable<Query, TDest> implements QueryResultsIterable<TDest> {
+public abstract class QueryResultsSelectManyIterable<TDest extends VertexiumObject> extends SelectManyIterable<Query, TDest> implements QueryResultsIterable<TDest> {
     public QueryResultsSelectManyIterable(Iterable<Query> source) {
         super(source);
     }

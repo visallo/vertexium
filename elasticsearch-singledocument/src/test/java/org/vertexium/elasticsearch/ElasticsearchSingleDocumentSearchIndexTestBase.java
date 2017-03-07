@@ -35,6 +35,7 @@ public abstract class ElasticsearchSingleDocumentSearchIndexTestBase extends Gra
     private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(ElasticsearchSingleDocumentSearchIndexTestBase.class);
     public static final String ES_INDEX_NAME = "vertexium-test";
     public static final String ES_CLUSTER_NAME = "vertexium-test-cluster";
+    public static final String ES_EXTENDED_DATA_INDEX_NAME_PREFIX = "vertexium-test-";
     private static final String PLUGIN_CLASS_PATH = "/vertexium-elasticsearch-singledocument-plugin.zip";
     private static ElasticsearchClusterRunner runner;
 
@@ -52,12 +53,12 @@ public abstract class ElasticsearchSingleDocumentSearchIndexTestBase extends Gra
 
         runner = new ElasticsearchClusterRunner();
         runner.onBuild((i, builder) ->
-                               builder
-                                       .put("script.disable_dynamic", "false")
-                                       .put("gateway.type", "local")
-                                       .put("index.number_of_shards", "1")
-                                       .put("cluster.name", ES_CLUSTER_NAME)
-                                       .put("index.number_of_replicas", "0")
+                builder
+                        .put("script.disable_dynamic", "false")
+                        .put("gateway.type", "local")
+                        .put("index.number_of_shards", "1")
+                        .put("cluster.name", ES_CLUSTER_NAME)
+                        .put("index.number_of_replicas", "0")
         ).build(newConfigs().basePath(basePath.getAbsolutePath()).ramIndexStore().numOfNode(1));
 
         runner.ensureGreen();
@@ -82,9 +83,12 @@ public abstract class ElasticsearchSingleDocumentSearchIndexTestBase extends Gra
     @Before
     @Override
     public void before() throws Exception {
-        if (runner.indexExists(ES_INDEX_NAME)) {
-            LOGGER.info("deleting test index: %s", ES_INDEX_NAME);
-            runner.deleteIndex(ES_INDEX_NAME);
+        String[] indices = runner.admin().indices().prepareGetIndex().execute().get().indices();
+        for (String index : indices) {
+            if (index.equals(ES_INDEX_NAME) || index.startsWith(ES_EXTENDED_DATA_INDEX_NAME_PREFIX)) {
+                LOGGER.info("deleting test index: %s", index);
+                runner.admin().indices().prepareDelete(index).execute().actionGet();
+            }
         }
         super.before();
     }
@@ -112,6 +116,7 @@ public abstract class ElasticsearchSingleDocumentSearchIndexTestBase extends Gra
         config.put(GraphConfiguration.AUTO_FLUSH, true);
         config.put(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX, ElasticsearchSingleDocumentSearchIndex.class.getName());
         config.put(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + DefaultIndexSelectionStrategy.CONFIG_INDEX_NAME, ES_INDEX_NAME);
+        config.put(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + DefaultIndexSelectionStrategy.CONFIG_EXTENDED_DATA_INDEX_NAME_PREFIX, ES_EXTENDED_DATA_INDEX_NAME_PREFIX);
         config.put(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + ElasticSearchSearchIndexConfiguration.STORE_SOURCE_DATA, "true");
         config.put(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + ElasticSearchSearchIndexConfiguration.SCORING_STRATEGY_CLASS_NAME, EdgeCountScoringStrategy.class.getName());
         config.put(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + ElasticSearchSearchIndexConfiguration.CLUSTER_NAME, ES_CLUSTER_NAME);

@@ -1,14 +1,11 @@
 package org.vertexium.query;
 
 import org.vertexium.*;
-import org.vertexium.util.VertexiumLogger;
-import org.vertexium.util.VertexiumLoggerFactory;
+import org.vertexium.util.JoinIterable;
 
 import java.util.EnumSet;
 
 public class DefaultGraphQuery extends GraphQueryBase {
-    private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(DefaultGraphQuery.class);
-
     public DefaultGraphQuery(Graph graph, String queryString, Authorizations authorizations) {
         super(graph, queryString, authorizations);
     }
@@ -47,6 +44,15 @@ public class DefaultGraphQuery extends GraphQueryBase {
             default:
                 throw new VertexiumException("Unexpected element type: " + elementType);
         }
+    }
+
+    @Override
+    protected QueryResultsIterable<? extends VertexiumObject> extendedData(EnumSet<FetchHint> extendedDataFetchHints) {
+        EnumSet<FetchHint> extendedDataTableNamesFetchHints = EnumSet.of(FetchHint.EXTENDED_DATA_TABLE_NAMES);
+        return extendedData(extendedDataFetchHints, new JoinIterable<>(
+                getIterableFromElementType(ElementType.VERTEX, extendedDataTableNamesFetchHints),
+                getIterableFromElementType(ElementType.EDGE, extendedDataTableNamesFetchHints)
+        ));
     }
 
     @Override

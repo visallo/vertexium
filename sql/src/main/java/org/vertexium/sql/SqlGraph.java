@@ -22,12 +22,14 @@ public class SqlGraph extends InMemoryGraph {
         final SqlGraphConfiguration configuration;
         final SqlMap<InMemoryTableElement<InMemoryVertex>> vertexMap;
         final SqlMap<InMemoryTableElement<InMemoryEdge>> edgeMap;
+        final SqlExtendedDataTable extendedDataTable;
         final SqlStreamingPropertyTable streamingPropertyTable;
 
         ConfigHolder(SqlGraphConfiguration configuration) {
             this.configuration = configuration;
             this.vertexMap = configuration.newVertexMap();
             this.edgeMap = configuration.newEdgeMap();
+            this.extendedDataTable = configuration.newExtendedDataTable();
             this.streamingPropertyTable = configuration.newStreamingPropertyTable();
         }
     }
@@ -37,8 +39,12 @@ public class SqlGraph extends InMemoryGraph {
     }
 
     private SqlGraph(ConfigHolder configHolder) {
-        super(configHolder.configuration,
-                new SqlVertexTable(configHolder.vertexMap), new SqlEdgeTable(configHolder.edgeMap));
+        super(
+                configHolder.configuration,
+                new SqlVertexTable(configHolder.vertexMap),
+                new SqlEdgeTable(configHolder.edgeMap),
+                configHolder.extendedDataTable
+        );
         this.vertexMap = configHolder.vertexMap;
         this.edgeMap = configHolder.edgeMap;
         this.streamingPropertyTable = configHolder.streamingPropertyTable;

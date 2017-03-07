@@ -28,6 +28,8 @@ public abstract class ElementIterator<T extends ElementData> extends RowEncoding
     public static final String CF_SOFT_DELETE_STRING = "D";
     public static final Text CF_SOFT_DELETE = new Text(CF_SOFT_DELETE_STRING);
     public static final Text CQ_SOFT_DELETE = new Text("D");
+    public static final String CF_EXTENDED_DATA_STRING = "EXTDATA";
+    public static final Text CF_EXTENDED_DATA = new Text(CF_EXTENDED_DATA_STRING);
     public static final Value HIDDEN_VALUE = new Value("".getBytes());
     public static final Value HIDDEN_VALUE_DELETED = new Value("X".getBytes());
     public static final Value SOFT_DELETE_VALUE = new Value("".getBytes());
@@ -101,6 +103,11 @@ public abstract class ElementIterator<T extends ElementData> extends RowEncoding
 
         if (CF_PROPERTY.equals(columnFamily)) {
             extractPropertyData(key, value);
+            return true;
+        }
+
+        if (CF_EXTENDED_DATA.equals(columnFamily)) {
+            this.elementData.extendedTableNames.add(value.toString());
             return true;
         }
 

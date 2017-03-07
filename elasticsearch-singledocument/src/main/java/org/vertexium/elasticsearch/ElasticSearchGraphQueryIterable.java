@@ -18,8 +18,9 @@ import org.elasticsearch.search.aggregations.metrics.percentiles.InternalPercent
 import org.elasticsearch.search.aggregations.metrics.percentiles.Percentiles;
 import org.elasticsearch.search.aggregations.metrics.stats.extended.ExtendedStats;
 import org.elasticsearch.search.aggregations.metrics.stats.extended.InternalExtendedStats;
-import org.vertexium.Element;
+import org.vertexium.VertexiumObject;
 import org.vertexium.VertexiumException;
+import org.vertexium.elasticsearch.utils.ElasticsearchDocIdUtils;
 import org.vertexium.query.*;
 import org.vertexium.type.GeoPoint;
 import org.vertexium.type.GeoRect;
@@ -31,7 +32,7 @@ import java.util.List;
 import java.util.Map;
 
 @SuppressWarnings("deprecation")
-public class ElasticSearchGraphQueryIterable<T extends Element> extends DefaultGraphQueryIterable<T> implements
+public class ElasticSearchGraphQueryIterable<T extends VertexiumObject> extends DefaultGraphQueryIterable<T> implements
         IterableWithTotalHits<T>,
         IterableWithSearchTime<T>,
         IterableWithScores<T>,
@@ -41,7 +42,7 @@ public class ElasticSearchGraphQueryIterable<T extends Element> extends DefaultG
         IterableWithStatisticsResults<T> {
     private final long totalHits;
     private final long searchTimeInNanoSeconds;
-    private final Map<String, Double> scores = new HashMap<>();
+    private final Map<Object, Double> scores = new HashMap<>();
     private final Map<String, AggregationResult> aggregationResults;
 
     public ElasticSearchGraphQueryIterable(
@@ -63,7 +64,7 @@ public class ElasticSearchGraphQueryIterable<T extends Element> extends DefaultG
         this.searchTimeInNanoSeconds = searchTimeInNanoSeconds;
         if (hits != null) {
             for (SearchHit hit : hits.getHits()) {
-                scores.put(hit.getId(), (double) hit.getScore());
+                scores.put(ElasticsearchDocIdUtils.fromSearchHit(hit), (double) hit.getScore());
             }
         }
         this.aggregationResults = getAggregationResults(query1, searchResponse1);
@@ -75,7 +76,7 @@ public class ElasticSearchGraphQueryIterable<T extends Element> extends DefaultG
     }
 
     @Override
-    public Map<String, Double> getScores() {
+    public Map<Object, Double> getScores() {
         return this.scores;
     }
 

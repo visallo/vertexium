@@ -1,6 +1,7 @@
 package org.vertexium.accumulo.mapreduce;
 
 import com.google.common.base.Function;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import org.apache.accumulo.core.client.AccumuloSecurityException;
 import org.apache.accumulo.core.client.security.tokens.AuthenticationToken;
@@ -49,6 +50,9 @@ public class AccumuloEdgeInputFormat extends AccumuloElementInputFormatBase<Edge
                     return AccumuloGraph.accumuloVisibilityToVisibility(AccumuloGraph.visibilityToAccumuloVisibility(visibilityText.toString()));
                 }
             });
+            ImmutableSet<String> extendedDataTableNames = edgeElementData.extendedTableNames.size() > 0
+                    ? ImmutableSet.copyOf(edgeElementData.extendedTableNames)
+                    : null;
             return new AccumuloEdge(
                     graph,
                     edgeElementData.id.toString(),
@@ -61,6 +65,7 @@ public class AccumuloEdgeInputFormat extends AccumuloElementInputFormatBase<Edge
                     propertyDeleteMutations,
                     propertySoftDeleteMutations,
                     hiddenVisibilities,
+                    extendedDataTableNames,
                     edgeElementData.timestamp,
                     authorizations
             );

@@ -14,7 +14,7 @@ public class QueryResultsJoinIterable<T extends Element> extends JoinIterable<T>
 
     @Override
     public <TResult extends AggregationResult> TResult getAggregationResult(String name, Class<? extends TResult> resultType) {
-        for (Iterable<T> iterable : getIterables()) {
+        for (Iterable<? extends T> iterable : getIterables()) {
             if (iterable instanceof QueryResultsIterable) {
                 TResult aggResult = ((QueryResultsIterable<T>) iterable).getAggregationResult(name, resultType);
                 if (aggResult != null) {
@@ -27,7 +27,7 @@ public class QueryResultsJoinIterable<T extends Element> extends JoinIterable<T>
 
     @Override
     public void close() throws IOException {
-        for (Iterable<T> iterable : getIterables()) {
+        for (Iterable<? extends T> iterable : getIterables()) {
             if (iterable instanceof CloseableIterable) {
                 ((CloseableIterable) iterable).close();
             }
@@ -37,7 +37,7 @@ public class QueryResultsJoinIterable<T extends Element> extends JoinIterable<T>
     @Override
     public long getTotalHits() {
         long total = 0;
-        for (Iterable<T> iterable : getIterables()) {
+        for (Iterable<? extends T> iterable : getIterables()) {
             if (iterable instanceof IterableWithTotalHits) {
                 total += ((IterableWithTotalHits) iterable).getTotalHits();
             }

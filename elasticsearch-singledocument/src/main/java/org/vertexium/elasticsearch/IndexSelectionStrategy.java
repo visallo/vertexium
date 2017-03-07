@@ -1,7 +1,10 @@
 package org.vertexium.elasticsearch;
 
 import org.vertexium.Element;
+import org.vertexium.ExtendedDataRowId;
 import org.vertexium.PropertyDefinition;
+
+import java.util.EnumSet;
 
 public interface IndexSelectionStrategy {
     String[] getIndicesToQuery(ElasticsearchSingleDocumentSearchIndex es);
@@ -14,5 +17,9 @@ public interface IndexSelectionStrategy {
 
     String[] getManagedIndexNames(ElasticsearchSingleDocumentSearchIndex es);
 
-    String[] getIndicesToQuery(ElasticSearchSingleDocumentSearchQueryBase query, ElasticSearchElementType elementType);
+    String[] getIndicesToQuery(ElasticSearchSingleDocumentSearchQueryBase query, EnumSet<ElasticsearchDocumentType> elementType);
+
+    String getExtendedDataIndexName(ElasticsearchSingleDocumentSearchIndex es, Element element, String tableName, String rowId);
+
+    String getExtendedDataIndexName(ElasticsearchSingleDocumentSearchIndex es, ExtendedDataRowId rowId);
 }
