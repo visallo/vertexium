@@ -1,6 +1,6 @@
 package org.vertexium.accumulo;
 
-import com.google.common.collect.Lists;
+import com.google.common.collect.*;
 import com.google.common.primitives.Longs;
 import org.apache.accumulo.core.client.*;
 import org.apache.accumulo.core.client.Scanner;
@@ -18,6 +18,8 @@ import org.apache.accumulo.core.trace.DistributedTrace;
 import org.apache.accumulo.fate.zookeeper.ZooReader;
 import org.apache.accumulo.trace.instrument.Span;
 import org.apache.accumulo.trace.instrument.Trace;
+import org.apache.commons.collections.MultiMap;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
@@ -29,6 +31,9 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.io.Text;
 import org.apache.zookeeper.CreateMode;
 import org.vertexium.*;
+import org.vertexium.HistoricalPropertyValue;
+import org.vertexium.HistoricalPropertyValue.HistoricalPropertyValueBuilder;
+import org.vertexium.Range;
 import org.vertexium.accumulo.iterator.*;
 import org.vertexium.accumulo.iterator.model.EdgeInfo;
 import org.vertexium.accumulo.iterator.model.PropertyColumnQualifier;
@@ -766,6 +771,10 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
 
             try {
                 Map<String, HistoricalPropertyValue> results = new HashMap<>();
+
+                ArrayListMultimap<String, String> activeVisibilities = ArrayListMultimap.create();
+                Map<String, Key> softDeleteObserved = Maps.newHashMap();
+
                 for (Map.Entry<Key, Value> column : scanner) {
                     String cq = column.getKey().getColumnQualifier().toString();
                     String columnVisibility = column.getKey().getColumnVisibility().toString();
@@ -791,8 +800,29 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                         String propertyKey = propertyColumnQualifier.getPropertyKey();
                         String propertyName = propertyColumnQualifier.getPropertyName();
                         Visibility propertyVisibility = accumuloVisibilityToVisibility(columnVisibility);
-                        HistoricalPropertyValue hpv = new HistoricalPropertyValue(propertyKey, propertyName, propertyVisibility, timestamp, value, metadata, hiddenVisibilities);
+
+                        HistoricalPropertyValue hpv =
+                                new HistoricalPropertyValueBuilder(propertyKey, propertyName, timestamp)
+                                        .propertyVisibility(propertyVisibility)
+                                        .value(value)
+                                        .metadata(metadata)
+                                        .hiddenVisibilities(hiddenVisibilities)
+                                        .build();
+
+                        String propIdent = propertyKey + ":" + propertyName;
+                        activeVisibilities.put(propIdent, columnVisibility);
+
                         results.put(resultsKey, hpv);
+
+                    } else if (column.getKey().getColumnFamily().equals(AccumuloElement.CF_PROPERTY_SOFT_DELETE)) {
+                        PropertyColumnQualifier propertyColumnQualifier = KeyHelper.createPropertyColumnQualifier(cq, getNameSubstitutionStrategy());
+                        String propertyKey = propertyColumnQualifier.getPropertyKey();
+                        String propertyName = propertyColumnQualifier.getPropertyName();
+
+                        String propIdent = propertyKey + ":" + propertyName;
+                        activeVisibilities.remove(propIdent, columnVisibility);
+                        softDeleteObserved.put(propIdent, column.getKey());
+
                     } else if (column.getKey().getColumnFamily().equals(AccumuloElement.CF_PROPERTY_METADATA)) {
                         PropertyMetadataColumnQualifier propertyMetadataColumnQualifier = KeyHelper.createPropertyMetadataColumnQualifier(cq, getNameSubstitutionStrategy());
                         String resultsKey = propertyMetadataColumnQualifier.getPropertyDiscriminator(column.getKey().getTimestamp());
@@ -805,6 +835,31 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                         hpv.getMetadata().add(propertyMetadataColumnQualifier.getMetadataKey(), value, metadataVisibility);
                     }
                 }
+
+                for(Key entry : softDeleteObserved.values()) {
+                    String cq = entry.getColumnQualifier().toString();
+                    PropertyColumnQualifier propertyColumnQualifier = KeyHelper.createPropertyColumnQualifier(cq, getNameSubstitutionStrategy());
+                    String propertyKey = propertyColumnQualifier.getPropertyKey();
+                    String propertyName = propertyColumnQualifier.getPropertyName();
+                    String propIdent = propertyKey + ":" + propertyName;
+
+                    List<String> active = activeVisibilities.get(propIdent);
+                    if(active == null || active.isEmpty()) {
+                        long timestamp = entry.getTimestamp() + 1;
+                        String columnVisibility = entry.getColumnVisibility().toString();
+                        Visibility propertyVisibility = accumuloVisibilityToVisibility(columnVisibility);
+
+                        HistoricalPropertyValue hpv =
+                                new HistoricalPropertyValueBuilder(propertyKey, propertyName, timestamp)
+                                        .propertyVisibility(propertyVisibility)
+                                        .isDeleted(true)
+                                        .build();
+
+                        String resultsKey = propertyColumnQualifier.getDiscriminator(columnVisibility, timestamp);
+                        results.put(resultsKey, hpv);
+                    }
+                }
+
                 return new TreeSet<>(results.values());
             } finally {
                 scanner.close();

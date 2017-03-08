@@ -1,3 +1,7 @@
+# v2.4.6
+
+* Changed: Delete events added to HistoricalPropertyValue reporting
+
 # v2.4.5
 
 * Added: Vertex.query limited by connected edge labels
