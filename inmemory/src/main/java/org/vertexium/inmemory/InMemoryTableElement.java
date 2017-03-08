@@ -1,6 +1,9 @@
 package org.vertexium.inmemory;
 
+import com.google.common.collect.Maps;
 import org.vertexium.*;
+import org.vertexium.HistoricalPropertyValue;
+import org.vertexium.HistoricalPropertyValue.HistoricalPropertyValueBuilder;
 import org.vertexium.inmemory.mutations.*;
 import org.vertexium.property.MutablePropertyImpl;
 import org.vertexium.property.StreamingPropertyValue;
@@ -132,8 +135,22 @@ public abstract class InMemoryTableElement<TElement extends InMemoryElement> imp
     ) {
         List<PropertyMutation> propertyMutations = findPropertyMutations(key, name, visibility);
         List<HistoricalPropertyValue> historicalPropertyValues = new ArrayList<>();
+
+        /*
+         * There is the expectation that historical property values are a snapshot of the property in
+         * time. This method attempts to reconstruct the property current state from mutations.
+         */
+        Map<String , HistoricalPropertyValueBuilder> currentPropertyBuilders = Maps.newHashMap();
         Set<Visibility> hiddenVisibilities = new HashSet<>();
+
         for (PropertyMutation m : propertyMutations) {
+            String propertyIdentifier = m.getPropertyKey() + m.getPropertyName();
+            HistoricalPropertyValueBuilder builder = currentPropertyBuilders.get(propertyIdentifier);
+            if(builder == null) {
+                builder = new HistoricalPropertyValueBuilder(m.getPropertyKey(), m.getPropertyName(), m.getTimestamp());
+                currentPropertyBuilders.put(propertyIdentifier, builder);
+            }
+
             if (startTime != null && m.getTimestamp() < startTime) {
                 continue;
             }
@@ -143,31 +160,38 @@ public abstract class InMemoryTableElement<TElement extends InMemoryElement> imp
             if (!canRead(m.getVisibility(), authorizations)) {
                 continue;
             }
-            if (m instanceof SoftDeletePropertyMutation) {
-                continue;
-            }
-            if (m instanceof AddPropertyMetadataMutation) {
-                continue;
-            }
 
-            if (m instanceof MarkPropertyHiddenMutation) {
-                hiddenVisibilities.add(m.getVisibility());
+            if (m instanceof SoftDeletePropertyMutation) {
+                builder.isDeleted(true);
+                historicalPropertyValues.add(builder.build());
+            } else if (m instanceof AddPropertyMetadataMutation) {
+                builder.metadata(((AddPropertyMetadataMutation) m).getMetadata());
+            } else if (m instanceof MarkPropertyHiddenMutation) {
+                // Ignore
             } else if (m instanceof MarkPropertyVisibleMutation) {
-                hiddenVisibilities.remove(m.getVisibility());
+                // Ignore
             } else if (m instanceof AddPropertyValueMutation) {
                 AddPropertyValueMutation apvm = (AddPropertyValueMutation) m;
                 Object value = apvm.getValue();
                 value = loadIfStreamingPropertyValue(value);
-                HistoricalPropertyValue historicalPropertyValue = new HistoricalPropertyValue(
-                        m.getPropertyKey(),
-                        m.getPropertyName(),
-                        m.getVisibility(),
-                        m.getTimestamp(),
-                        value,
-                        apvm.getMetadata(),
-                        hiddenVisibilities
-                );
-                historicalPropertyValues.add(historicalPropertyValue);
+
+                builder.propertyVisibility(m.getVisibility())
+                        .timestamp(m.getTimestamp())
+                        .value(value)
+                        .metadata(apvm.getMetadata())
+                        .hiddenVisibilities(hiddenVisibilities)
+                        .isDeleted(false);
+
+                // Property modifications use a soft delete immediately followed by an AddPropertyValueMutation.
+                // If the condition occurs, remove the delete event from the set.
+                if(historicalPropertyValues.size() > 0) {
+                    HistoricalPropertyValue last = historicalPropertyValues.get(historicalPropertyValues.size() - 1);
+                    if (propertyIdentifier.equals(last.getPropertyKey() + last.getPropertyName()) && last.isDeleted()) {
+                        historicalPropertyValues.remove(historicalPropertyValues.size() - 1);
+                    }
+                }
+
+                historicalPropertyValues.add(builder.build());
             } else {
                 throw new VertexiumException("Unhandled PropertyMutation: " + m.getClass().getName());
             }

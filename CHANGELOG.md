@@ -1,6 +1,6 @@
 # v2.5.4
-
 * Added: configuration for number of Elasticsearch replicas
+* Changed: Delete events added to HistoricalPropertyValue reporting
 
 # v2.5.3
 
