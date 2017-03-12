@@ -160,12 +160,18 @@ public abstract class InMemoryTableElement<TElement extends InMemoryElement> imp
             if (!canRead(m.getVisibility(), authorizations)) {
                 continue;
             }
+            // Ignore workspace interactions to avoid duplicated entries
+            if(m.getVisibility() != null && m.getPropertyVisibility().getVisibilityString().matches("(.*)WORKSPACE(.*)")) {
+                continue;
+            }
 
             if (m instanceof SoftDeletePropertyMutation) {
                 builder.isDeleted(true);
+                builder.timestamp(m.getTimestamp());
                 historicalPropertyValues.add(builder.build());
             } else if (m instanceof AddPropertyMetadataMutation) {
                 builder.metadata(((AddPropertyMetadataMutation) m).getMetadata());
+                builder.timestamp(m.getTimestamp());
             } else if (m instanceof MarkPropertyHiddenMutation) {
                 // Ignore
             } else if (m instanceof MarkPropertyVisibleMutation) {
@@ -175,7 +181,7 @@ public abstract class InMemoryTableElement<TElement extends InMemoryElement> imp
                 Object value = apvm.getValue();
                 value = loadIfStreamingPropertyValue(value);
 
-                builder.propertyVisibility(m.getVisibility())
+                builder.propertyVisibility(m.getPropertyVisibility())
                         .timestamp(m.getTimestamp())
                         .value(value)
                         .metadata(apvm.getMetadata())
