@@ -116,6 +116,8 @@ public abstract class ElasticsearchSingleDocumentSearchIndexTestBase extends Gra
         config.put(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + ElasticSearchSearchIndexConfiguration.SCORING_STRATEGY_CLASS_NAME, EdgeCountScoringStrategy.class.getName());
         config.put(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + ElasticSearchSearchIndexConfiguration.CLUSTER_NAME, ES_CLUSTER_NAME);
         config.put(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + ElasticSearchSearchIndexConfiguration.ES_LOCATIONS, getLocation());
+        config.put(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + ElasticSearchSearchIndexConfiguration.NUMBER_OF_SHARDS, 1);
+        config.put(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + ElasticSearchSearchIndexConfiguration.NUMBER_OF_REPLICAS, 0);
         config.putAll(additionalConfiguration);
         InMemoryGraphConfiguration configuration = new InMemoryGraphConfiguration(config);
         return InMemoryGraph.create(configuration);
