@@ -1,11 +1,10 @@
 package org.vertexium;
 
 public abstract class VertexBuilder extends ElementBuilder<Vertex> {
-    private String vertexId;
     private Visibility visibility;
 
     public VertexBuilder(String vertexId, Visibility visibility) {
-        this.vertexId = vertexId;
+        super(vertexId);
         this.visibility = visibility;
     }
 
@@ -18,7 +17,7 @@ public abstract class VertexBuilder extends ElementBuilder<Vertex> {
     public abstract Vertex save(Authorizations authorizations);
 
     public String getVertexId() {
-        return vertexId;
+        return getElementId();
     }
 
     public Visibility getVisibility() {

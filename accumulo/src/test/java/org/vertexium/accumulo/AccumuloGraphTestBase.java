@@ -51,6 +51,7 @@ public abstract class AccumuloGraphTestBase extends GraphTestBase {
         AccumuloGraphTestUtils.dropGraph(connector, AccumuloGraph.getVerticesTableName(GraphConfiguration.DEFAULT_TABLE_NAME_PREFIX));
         AccumuloGraphTestUtils.dropGraph(connector, AccumuloGraph.getHistoryVerticesTableName(GraphConfiguration.DEFAULT_TABLE_NAME_PREFIX));
         AccumuloGraphTestUtils.dropGraph(connector, AccumuloGraph.getEdgesTableName(GraphConfiguration.DEFAULT_TABLE_NAME_PREFIX));
+        AccumuloGraphTestUtils.dropGraph(connector, AccumuloGraph.getExtendedDataTableName(GraphConfiguration.DEFAULT_TABLE_NAME_PREFIX));
         AccumuloGraphTestUtils.dropGraph(connector, AccumuloGraph.getHistoryEdgesTableName(GraphConfiguration.DEFAULT_TABLE_NAME_PREFIX));
         AccumuloGraphTestUtils.dropGraph(connector, AccumuloGraph.getMetadataTableName(GraphConfiguration.DEFAULT_TABLE_NAME_PREFIX));
         connector.securityOperations().changeUserAuthorizations(

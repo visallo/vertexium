@@ -1,5 +1,7 @@
 package org.vertexium.inmemory;
 
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
 import org.vertexium.*;
 import org.vertexium.event.*;
 import org.vertexium.id.IdGenerator;
@@ -12,7 +14,6 @@ import org.vertexium.mutation.SetPropertyMetadata;
 import org.vertexium.property.StreamingPropertyValue;
 import org.vertexium.property.StreamingPropertyValueRef;
 import org.vertexium.search.IndexHint;
-import org.vertexium.PropertyDescriptor;
 import org.vertexium.search.SearchIndex;
 import org.vertexium.util.*;
 
@@ -25,16 +26,18 @@ import static org.vertexium.util.StreamUtils.stream;
 public class InMemoryGraph extends GraphBaseWithSearchIndex {
     protected static final InMemoryGraphConfiguration DEFAULT_CONFIGURATION =
             new InMemoryGraphConfiguration(new HashMap<>());
+    private final Set<String> validAuthorizations = new HashSet<>();
     private final InMemoryVertexTable vertices;
     private final InMemoryEdgeTable edges;
-    private final Set<String> validAuthorizations = new HashSet<>();
+    private final InMemoryExtendedDataTable extendedDataTable;
     private final GraphMetadataStore graphMetadataStore;
 
     protected InMemoryGraph(InMemoryGraphConfiguration configuration) {
         this(
                 configuration,
                 new InMemoryVertexTable(),
-                new InMemoryEdgeTable()
+                new InMemoryEdgeTable(),
+                new MapInMemoryExtendedDataTable()
         );
     }
 
@@ -44,18 +47,21 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
                 idGenerator,
                 searchIndex,
                 new InMemoryVertexTable(),
-                new InMemoryEdgeTable()
+                new InMemoryEdgeTable(),
+                new MapInMemoryExtendedDataTable()
         );
     }
 
     protected InMemoryGraph(
             InMemoryGraphConfiguration configuration,
             InMemoryVertexTable vertices,
-            InMemoryEdgeTable edges
+            InMemoryEdgeTable edges,
+            InMemoryExtendedDataTable extendedDataTable
     ) {
         super(configuration);
         this.vertices = vertices;
         this.edges = edges;
+        this.extendedDataTable = extendedDataTable;
         this.graphMetadataStore = newGraphMetadataStore(configuration);
     }
 
@@ -64,11 +70,13 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
             IdGenerator idGenerator,
             SearchIndex searchIndex,
             InMemoryVertexTable vertices,
-            InMemoryEdgeTable edges
+            InMemoryEdgeTable edges,
+            InMemoryExtendedDataTable extendedDataTable
     ) {
         super(configuration, idGenerator, searchIndex);
         this.vertices = vertices;
         this.edges = edges;
+        this.extendedDataTable = extendedDataTable;
         this.graphMetadataStore = newGraphMetadataStore(configuration);
     }
 
@@ -114,18 +122,18 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
             public Vertex save(Authorizations authorizations) {
                 addValidAuthorizations(authorizations.getAuthorizations());
                 boolean isNew = false;
-                InMemoryTableElement vertexTableElement = InMemoryGraph.this.vertices.getTableElement(getVertexId());
+                InMemoryTableElement vertexTableElement = InMemoryGraph.this.vertices.getTableElement(getElementId());
                 if (vertexTableElement == null) {
                     isNew = true;
                     vertices.append(
-                            getVertexId(),
+                            getElementId(),
                             new AlterVisibilityMutation(timestampLong, getVisibility()),
                             new ElementTimestampMutation(timestampLong)
                     );
                 } else {
-                    vertices.append(getVertexId(), new ElementTimestampMutation(timestampLong));
+                    vertices.append(getElementId(), new ElementTimestampMutation(timestampLong));
                 }
-                InMemoryVertex vertex = InMemoryGraph.this.vertices.get(InMemoryGraph.this, getVertexId(), authorizations);
+                InMemoryVertex vertex = InMemoryGraph.this.vertices.get(InMemoryGraph.this, getElementId(), authorizations);
                 if (isNew && hasEventListeners()) {
                     fireGraphEvent(new AddVertexEvent(InMemoryGraph.this, vertex));
                 }
@@ -134,6 +142,7 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
                 // to more closely simulate how accumulo works. add a potentially sparse (in case of an update) vertex to the search index.
                 if (getIndexHint() != IndexHint.DO_NOT_INDEX) {
                     getSearchIndex().addElement(InMemoryGraph.this, vertex, authorizations);
+                    getSearchIndex().addElementExtendedData(InMemoryGraph.this, vertex, getExtendedData(), authorizations);
                 }
 
                 return vertex;
@@ -174,6 +183,8 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
         for (Edge edgeToDelete : edgesToDelete) {
             deleteEdge(edgeToDelete, authorizations);
         }
+
+        deleteAllExtendedDataForElement(vertex, authorizations);
 
         this.vertices.remove(vertex.getId());
         getSearchIndex().deleteElement(this, vertex, authorizations);
@@ -314,25 +325,25 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
             IncreasingTime.advanceTime(10);
         }
         long incrementingTimestamp = timestamp;
-        InMemoryTableElement edgeTableElement = this.edges.getTableElement(edgeBuilder.getEdgeId());
+        InMemoryTableElement edgeTableElement = this.edges.getTableElement(edgeBuilder.getElementId());
         boolean isNew = false;
         if (edgeTableElement == null) {
             isNew = true;
             edges.append(
-                    edgeBuilder.getEdgeId(),
+                    edgeBuilder.getElementId(),
                     new AlterVisibilityMutation(incrementingTimestamp++, edgeBuilder.getVisibility()),
                     new ElementTimestampMutation(incrementingTimestamp++),
                     new AlterEdgeLabelMutation(incrementingTimestamp++, edgeBuilder.getLabel()),
                     new EdgeSetupMutation(incrementingTimestamp++, outVertexId, inVertexId)
             );
         } else {
-            edges.append(edgeBuilder.getEdgeId(), new ElementTimestampMutation(incrementingTimestamp++));
+            edges.append(edgeBuilder.getElementId(), new ElementTimestampMutation(incrementingTimestamp++));
         }
         if (edgeBuilder.getNewEdgeLabel() != null) {
-            edges.append(edgeBuilder.getEdgeId(), new AlterEdgeLabelMutation(incrementingTimestamp, edgeBuilder.getNewEdgeLabel()));
+            edges.append(edgeBuilder.getElementId(), new AlterEdgeLabelMutation(incrementingTimestamp, edgeBuilder.getNewEdgeLabel()));
         }
 
-        InMemoryEdge edge = this.edges.get(InMemoryGraph.this, edgeBuilder.getEdgeId(), authorizations);
+        InMemoryEdge edge = this.edges.get(InMemoryGraph.this, edgeBuilder.getElementId(), authorizations);
         if (isNew && hasEventListeners()) {
             fireGraphEvent(new AddEdgeEvent(InMemoryGraph.this, edge));
         }
@@ -340,6 +351,7 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
 
         if (edgeBuilder.getIndexHint() != IndexHint.DO_NOT_INDEX) {
             getSearchIndex().addElement(InMemoryGraph.this, edge, authorizations);
+            getSearchIndex().addElementExtendedData(InMemoryGraph.this, edge, edgeBuilder.getExtendedData(), authorizations);
         }
 
         return edge;
@@ -366,6 +378,8 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
         if (!((InMemoryEdge) edge).canRead(authorizations)) {
             return;
         }
+
+        deleteAllExtendedDataForElement(edge, authorizations);
 
         this.edges.remove(edge.getId());
         getSearchIndex().deleteElement(this, edge, authorizations);
@@ -772,5 +786,42 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
 
     private void refreshVertexInMemoryTableElement(Vertex vertex) {
         ((InMemoryVertex) vertex).setInMemoryTableElement(this.vertices.getTableElement(vertex.getId()));
+    }
+
+    public ImmutableSet<String> getExtendedDataTableNames(ElementType elementType, String elementId, Authorizations authorizations) {
+        return extendedDataTable.getTableNames(elementType, elementId, authorizations);
+    }
+
+    public Iterable<? extends ExtendedDataRow> getExtendedDataTable(ElementType elementType, String elementId, String tableName, Authorizations authorizations) {
+        return extendedDataTable.getTable(elementType, elementId, tableName, authorizations);
+    }
+
+    public void extendedData(
+            ExtendedDataRowId rowId,
+            String column,
+            Object value,
+            long timestamp,
+            Visibility visibility,
+            Authorizations authorizations
+    ) {
+        extendedDataTable.addData(rowId, column, value, timestamp, visibility);
+    }
+
+    @Override
+    public void deleteExtendedDataRow(ExtendedDataRowId id, Authorizations authorizations) {
+        List<ExtendedDataRow> rows = Lists.newArrayList(getExtendedData(Lists.newArrayList(id), authorizations));
+        if (rows.size() > 1) {
+            throw new VertexiumException("Found too many extended data rows for id: " + id);
+        }
+        if (rows.size() != 1) {
+            return;
+        }
+
+        this.extendedDataTable.remove(id);
+        getSearchIndex().deleteExtendedData(this, id, authorizations);
+
+        if (hasEventListeners()) {
+            fireGraphEvent(new DeleteExtendedDataRowEvent(this, id));
+        }
     }
 }

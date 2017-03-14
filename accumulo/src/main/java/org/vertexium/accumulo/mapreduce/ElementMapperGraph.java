@@ -73,6 +73,11 @@ public class ElementMapperGraph extends GraphBase {
     }
 
     @Override
+    public void deleteExtendedDataRow(ExtendedDataRowId id, Authorizations authorizations) {
+        throw new VertexiumException("Not supported");
+    }
+
+    @Override
     protected GraphMetadataStore getGraphMetadataStore() {
         throw new VertexiumException("Not supported");
     }

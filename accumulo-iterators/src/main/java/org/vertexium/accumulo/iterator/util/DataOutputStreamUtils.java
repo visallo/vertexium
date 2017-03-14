@@ -26,6 +26,17 @@ public class DataOutputStreamUtils {
         }
     }
 
+    public static void encodeStringSet(DataOutputStream out, Set<String> set) throws IOException {
+        if (set == null) {
+            out.writeInt(-1);
+            return;
+        }
+        out.writeInt(set.size());
+        for (String item : set) {
+            encodeString(out, item);
+        }
+    }
+
     public static void encodeText(DataOutputStream out, Text text) throws IOException {
         if (text == null) {
             out.writeInt(-1);

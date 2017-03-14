@@ -1,9 +1,6 @@
 package org.vertexium.query;
 
-import org.vertexium.Edge;
-import org.vertexium.Element;
-import org.vertexium.FetchHint;
-import org.vertexium.Vertex;
+import org.vertexium.*;
 
 import java.util.Collection;
 import java.util.EnumSet;
@@ -17,6 +14,10 @@ public interface Query {
 
     QueryResultsIterable<Edge> edges(EnumSet<FetchHint> fetchHints);
 
+    QueryResultsIterable<ExtendedDataRow> extendedDataRows();
+
+    QueryResultsIterable<ExtendedDataRow> extendedDataRows(EnumSet<FetchHint> fetchHints);
+
     @Deprecated
     QueryResultsIterable<Edge> edges(String label);
 
@@ -26,6 +27,10 @@ public interface Query {
     QueryResultsIterable<Element> elements();
 
     QueryResultsIterable<Element> elements(EnumSet<FetchHint> fetchHints);
+
+    QueryResultsIterable<? extends VertexiumObject> search(EnumSet<VertexiumObjectType> objectTypes, EnumSet<FetchHint> fetchHints);
+
+    QueryResultsIterable<? extends VertexiumObject> search();
 
     /**
      * Queries for properties in the given range.
@@ -55,7 +60,7 @@ public interface Query {
      * @param edgeLabels The edge labels to filter on.
      * @return The query object, allowing you to chain methods.
      */
-    <T> Query hasEdgeLabel(String... edgeLabels);
+    Query hasEdgeLabel(String... edgeLabels);
 
     /**
      * Adds a edge label filter to the query.
@@ -63,7 +68,44 @@ public interface Query {
      * @param edgeLabels The edge labels to filter on.
      * @return The query object, allowing you to chain methods.
      */
-    <T> Query hasEdgeLabel(Collection<String> edgeLabels);
+    Query hasEdgeLabel(Collection<String> edgeLabels);
+
+    /**
+     * Adds a extended data element filter to the query. This will query any table.
+     *
+     * @param elementType The type of element.
+     * @param elementId   The element id
+     * @return The query object, allowing you to chain methods.
+     */
+    Query hasExtendedData(ElementType elementType, String elementId);
+
+    /**
+     * Adds a extended data element filter to the query. This will limit the search to the supplied extended data
+     * records.
+     *
+     * @param elementType The type of element. null to search all element types.
+     * @param elementId   The element id. null to search all elements.
+     * @param tableName   The table name. null to search all tables.
+     * @return The query object, allowing you to chain methods.
+     */
+    Query hasExtendedData(ElementType elementType, String elementId, String tableName);
+
+    /**
+     * Adds a multiple extended data element filter to the query. These will be or'ed together. This will limit the
+     * search to the supplied extended data records.
+     *
+     * @param filters The list of filters to be or'ed together.
+     * @return The query object, allowing you to chain methods.
+     */
+    Query hasExtendedData(Iterable<HasExtendedDataFilter> filters);
+
+    /**
+     * Adds a extended data table filter to the query.
+     *
+     * @param tableName The table name
+     * @return The query object, allowing you to chain methods.
+     */
+    Query hasExtendedData(String tableName);
 
     /**
      * Adds an {@link Compare#EQUAL} filter to the query.

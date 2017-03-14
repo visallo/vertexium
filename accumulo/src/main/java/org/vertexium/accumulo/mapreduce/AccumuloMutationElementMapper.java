@@ -2,6 +2,7 @@ package org.vertexium.accumulo.mapreduce;
 
 import org.apache.accumulo.core.data.Mutation;
 import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapreduce.Mapper;
 
 import java.io.IOException;
 
@@ -19,6 +20,11 @@ public abstract class AccumuloMutationElementMapper<KEYIN, VALUEIN> extends Elem
     @Override
     protected void saveVertexMutation(Context context, Text verticesTableName, Mutation m) throws IOException, InterruptedException {
         context.write(getKey(context, verticesTableName, m), m);
+    }
+
+    @Override
+    protected void saveExtendedDataMutation(Context context, Text tableName, Mutation m) throws IOException, InterruptedException {
+        context.write(getKey(context, tableName, m), m);
     }
 
     protected Text getKey(Context context, Text tableName, Mutation m) {

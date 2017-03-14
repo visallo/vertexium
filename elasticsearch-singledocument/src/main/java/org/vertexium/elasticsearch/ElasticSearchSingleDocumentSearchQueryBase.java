@@ -1,6 +1,5 @@
 package org.vertexium.elasticsearch;
 
-import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
@@ -17,7 +16,6 @@ import org.elasticsearch.common.unit.DistanceUnit;
 import org.elasticsearch.index.query.*;
 import org.elasticsearch.indices.IndexMissingException;
 import org.elasticsearch.search.SearchHit;
-import org.elasticsearch.search.SearchHitField;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.aggregations.AbstractAggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
@@ -34,13 +32,17 @@ import org.elasticsearch.search.aggregations.metrics.stats.extended.ExtendedStat
 import org.elasticsearch.search.sort.SortOrder;
 import org.vertexium.*;
 import org.vertexium.elasticsearch.score.ScoringStrategy;
+import org.vertexium.elasticsearch.utils.ElasticsearchExtendedDataIdUtils;
 import org.vertexium.elasticsearch.utils.PagingIterable;
 import org.vertexium.query.*;
 import org.vertexium.type.GeoCircle;
 import org.vertexium.type.GeoHash;
 import org.vertexium.type.GeoPoint;
 import org.vertexium.type.GeoRect;
-import org.vertexium.util.*;
+import org.vertexium.util.IterableUtils;
+import org.vertexium.util.JoinIterable;
+import org.vertexium.util.VertexiumLogger;
+import org.vertexium.util.VertexiumLoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
@@ -162,7 +164,14 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
         return false;
     }
 
-    protected SearchRequestBuilder getSearchRequestBuilder(List<FilterBuilder> filters, QueryBuilder queryBuilder, ElasticSearchElementType elementType, int skip, int limit, boolean includeAggregations) {
+    protected SearchRequestBuilder getSearchRequestBuilder(
+            List<FilterBuilder> filters,
+            QueryBuilder queryBuilder,
+            EnumSet<ElasticsearchDocumentType> elementType,
+            int skip,
+            int limit,
+            boolean includeAggregations
+    ) {
         AndFilterBuilder filterBuilder = getFilterBuilder(filters);
         String[] indicesToQuery = getIndexSelectionStrategy().getIndicesToQuery(this, elementType);
         if (QUERY_LOGGER.isTraceEnabled()) {
@@ -173,6 +182,9 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
                 .setTypes(ElasticsearchSingleDocumentSearchIndex.ELEMENT_TYPE)
                 .setQuery(QueryBuilders.filteredQuery(queryBuilder, filterBuilder))
                 .addField(ElasticsearchSingleDocumentSearchIndex.ELEMENT_TYPE_FIELD_NAME)
+                .addField(ElasticsearchSingleDocumentSearchIndex.EXTENDED_DATA_ELEMENT_ID_FIELD_NAME)
+                .addField(ElasticsearchSingleDocumentSearchIndex.EXTENDED_DATA_TABLE_NAME_FIELD_NAME)
+                .addField(ElasticsearchSingleDocumentSearchIndex.EXTENDED_DATA_TABLE_ROW_ID_FIELD_NAME)
                 .setFrom(skip)
                 .setSize(limit);
         if (includeAggregations) {
@@ -202,10 +214,10 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
         }
     }
 
-    protected List<FilterBuilder> getFilters(ElasticSearchElementType elementType) {
+    protected List<FilterBuilder> getFilters(EnumSet<ElasticsearchDocumentType> elementTypes) {
         List<FilterBuilder> filters = new ArrayList<>();
-        if (elementType != null) {
-            addElementTypeFilter(filters, elementType);
+        if (elementTypes != null) {
+            addElementTypeFilter(filters, elementTypes);
         }
         for (HasContainer has : getParameters().getHasContainers()) {
             if (has instanceof HasValueContainer) {
@@ -214,11 +226,13 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
                 filters.add(getFilterForHasPropertyContainer((HasPropertyContainer) has));
             } else if (has instanceof HasNotPropertyContainer) {
                 filters.add(getFilterForHasNotPropertyContainer((HasNotPropertyContainer) has));
+            } else if (has instanceof HasExtendedData) {
+                filters.add(getFilterForHasExtendedData((HasExtendedData) has));
             } else {
                 throw new VertexiumException("Unexpected type " + has.getClass().getName());
             }
         }
-        if ((elementType == null || elementType == ElasticSearchElementType.EDGE)
+        if ((elementTypes == null || elementTypes.contains(ElasticsearchDocumentType.EDGE))
                 && getParameters().getEdgeLabels().size() > 0) {
             String[] edgeLabelsArray = getParameters().getEdgeLabels().toArray(new String[getParameters().getEdgeLabels().size()]);
             filters.add(FilterBuilders.inFilter(ElasticsearchSingleDocumentSearchIndex.EDGE_LABEL_FIELD_NAME, edgeLabelsArray));
@@ -262,16 +276,15 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
         }
     }
 
-
     @Override
-    public QueryResultsIterable<Vertex> vertices(final EnumSet<FetchHint> fetchHints) {
-        return new PagingIterable<Vertex>(getParameters().getSkip(), getParameters().getLimit(), pageSize) {
+    public QueryResultsIterable<? extends VertexiumObject> search(EnumSet<VertexiumObjectType> objectTypes, EnumSet<FetchHint> fetchHints) {
+        return new PagingIterable<VertexiumObject>(getParameters().getSkip(), getParameters().getLimit(), pageSize) {
             @Override
-            protected ElasticSearchGraphQueryIterable<Vertex> getPageIterable(int skip, int limit, boolean includeAggregations) {
+            protected ElasticSearchGraphQueryIterable<VertexiumObject> getPageIterable(int skip, int limit, boolean includeAggregations) {
                 long startTime = System.nanoTime();
                 SearchResponse response;
                 try {
-                    response = getSearchResponse(ElasticSearchElementType.VERTEX, skip, limit, includeAggregations);
+                    response = getSearchResponse(ElasticsearchDocumentType.fromVertexiumObjectTypes(objectTypes), skip, limit, includeAggregations);
                 } catch (IndexMissingException ex) {
                     LOGGER.debug("Index missing: %s (returning empty iterable)", ex.getMessage());
                     return createEmptyIterable();
@@ -280,147 +293,51 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
                     return createEmptyIterable();
                 }
                 final SearchHits hits = response.getHits();
-                List<String> ids = IterableUtils.toList(new ConvertingIterable<SearchHit, String>(hits) {
-                    @Override
-                    protected String convert(SearchHit searchHit) {
-                        return searchHit.getId();
-                    }
-                });
-                long endTime = System.nanoTime();
-                long searchTime = endTime - startTime;
-                if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("elastic search results %d of %d (time: %dms)", ids.size(), hits.getTotalHits(), searchTime / 1000 / 1000);
-                }
-
-                // since ES doesn't support security we will rely on the graph to provide vertex filtering
-                // and rely on the DefaultGraphQueryIterable to provide property filtering
-                QueryParameters filterParameters = getParameters().clone();
-                filterParameters.setSkip(0); // ES already did a skip
-                Iterable<Vertex> vertices = getGraph().getVertices(ids, fetchHints, filterParameters.getAuthorizations());
-                vertices = sortByResultOrder(vertices, ids);
-                return createIterable(response, filterParameters, vertices, evaluateQueryString, evaluateHasContainers, evaluateSortContainers, searchTime, hits);
-            }
-        };
-    }
-
-    @Override
-    public QueryResultsIterable<Edge> edges(final EnumSet<FetchHint> fetchHints) {
-        return new PagingIterable<Edge>(getParameters().getSkip(), getParameters().getLimit(), pageSize) {
-            @Override
-            protected ElasticSearchGraphQueryIterable<Edge> getPageIterable(int skip, int limit, boolean includeAggregations) {
-                long startTime = System.nanoTime();
-                SearchResponse response;
-                try {
-                    response = getSearchResponse(ElasticSearchElementType.EDGE, skip, limit, includeAggregations);
-                } catch (IndexMissingException ex) {
-                    LOGGER.debug("Index missing: %s (returning empty iterable)", ex.getMessage());
-                    return createEmptyIterable();
-                } catch (VertexiumNoMatchingPropertiesException ex) {
-                    LOGGER.debug("Could not find property: %s (returning empty iterable)", ex.getPropertyName());
-                    return createEmptyIterable();
-                }
-                final SearchHits hits = response.getHits();
-                List<String> ids = IterableUtils.toList(new ConvertingIterable<SearchHit, String>(hits) {
-                    @Override
-                    protected String convert(SearchHit searchHit) {
-                        return searchHit.getId();
-                    }
-                });
-                long endTime = System.nanoTime();
-                long searchTime = endTime - startTime;
-                if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug("elastic search results %d of %d (time: %dms)", ids.size(), hits.getTotalHits(), (endTime - startTime) / 1000 / 1000);
-                }
-
-                // since ES doesn't support security we will rely on the graph to provide edge filtering
-                // and rely on the DefaultGraphQueryIterable to provide property filtering
-                QueryParameters filterParameters = getParameters().clone();
-                filterParameters.setSkip(0); // ES already did a skip
-                Iterable<Edge> edges = getGraph().getEdges(ids, fetchHints, filterParameters.getAuthorizations());
-                edges = sortByResultOrder(edges, ids);
-                // TODO instead of passing false here to not evaluate the query string it would be better to support the Lucene query
-                return createIterable(response, filterParameters, edges, evaluateQueryString, evaluateHasContainers, evaluateSortContainers, searchTime, hits);
-            }
-        };
-    }
-
-    @Override
-    public QueryResultsIterable<Element> elements(final EnumSet<FetchHint> fetchHints) {
-        return new PagingIterable<Element>(getParameters().getSkip(), getParameters().getLimit(), pageSize) {
-            @Override
-            protected ElasticSearchGraphQueryIterable<Element> getPageIterable(int skip, int limit, boolean includeAggregations) {
-                long startTime = System.nanoTime();
-                SearchResponse response;
-                try {
-                    response = getSearchResponse(null, skip, limit, includeAggregations);
-                } catch (IndexMissingException ex) {
-                    LOGGER.debug("Index missing: %s (returning empty iterable)", ex.getMessage());
-                    return createEmptyIterable();
-                } catch (VertexiumNoMatchingPropertiesException ex) {
-                    LOGGER.debug("Could not find property: %s (returning empty iterable)", ex.getPropertyName());
-                    return createEmptyIterable();
-                }
-                final SearchHits hits = response.getHits();
-                List<String> vertexIds = new ArrayList<>();
-                List<String> edgeIds = new ArrayList<>();
-                List<String> ids = new ArrayList<>();
-                for (SearchHit hit : hits) {
-                    SearchHitField elementType = hit.getFields().get(ElasticsearchSingleDocumentSearchIndex.ELEMENT_TYPE_FIELD_NAME);
-                    if (elementType == null) {
-                        continue;
-                    }
-                    ElasticSearchElementType et = ElasticSearchElementType.parse(elementType.getValue().toString());
-                    ids.add(hit.getId());
-                    switch (et) {
-                        case VERTEX:
-                            vertexIds.add(hit.getId());
-                            break;
-                        case EDGE:
-                            edgeIds.add(hit.getId());
-                            break;
-                        default:
-                            LOGGER.warn("Unhandled element type returned: %s", elementType);
-                            break;
-                    }
-                }
+                Ids ids = new Ids(hits);
                 long endTime = System.nanoTime();
                 long searchTime = endTime - startTime;
                 if (LOGGER.isDebugEnabled()) {
                     LOGGER.debug(
-                            "elastic search results (vertices: %d, edges: %d = %d) of %d (time: %dms)",
-                            vertexIds.size(),
-                            edgeIds.size(),
-                            vertexIds.size() + edgeIds.size(),
+                            "elasticsearch results (vertices: %d + edges: %d + extended data: %d = %d) of %d (time: %dms)",
+                            ids.getVertexIds().size(),
+                            ids.getEdgeIds().size(),
+                            ids.getExtendedDataIds().size(),
+                            ids.getVertexIds().size() + ids.getEdgeIds().size() + ids.getExtendedDataIds().size(),
                             hits.getTotalHits(),
-                            (endTime - startTime) / 1000 / 1000
-                    );
+                            (endTime - startTime) / 1000 / 1000);
                 }
 
                 // since ES doesn't support security we will rely on the graph to provide edge filtering
                 // and rely on the DefaultGraphQueryIterable to provide property filtering
                 QueryParameters filterParameters = getParameters().clone();
                 filterParameters.setSkip(0); // ES already did a skip
-                Iterable<Element> vertices = IterableUtils.toElementIterable(getGraph().getVertices(vertexIds, fetchHints, filterParameters.getAuthorizations()));
-                Iterable<Element> edges = IterableUtils.toElementIterable(getGraph().getEdges(edgeIds, fetchHints, filterParameters.getAuthorizations()));
-                Iterable<Element> elements = new JoinIterable<>(vertices, edges);
-                elements = sortByResultOrder(elements, ids);
+                List<Iterable<? extends VertexiumObject>> items = new ArrayList<>();
+                if (ids.getVertexIds().size() > 0) {
+                    Iterable<? extends VertexiumObject> vertices = getGraph().getVertices(ids.getVertexIds(), fetchHints, filterParameters.getAuthorizations());
+                    items.add(vertices);
+                }
+                if (ids.getEdgeIds().size() > 0) {
+                    Iterable<? extends VertexiumObject> edges = getGraph().getEdges(ids.getEdgeIds(), fetchHints, filterParameters.getAuthorizations());
+                    items.add(edges);
+                }
+                if (ids.getExtendedDataIds().size() > 0) {
+                    Iterable<? extends VertexiumObject> extendedDataRows = getGraph().getExtendedData(ids.getExtendedDataIds(), filterParameters.getAuthorizations());
+                    items.add(extendedDataRows);
+                }
+                Iterable<VertexiumObject> vertexiumObjects = new JoinIterable<>(items);
+                vertexiumObjects = sortvertexiumObjectsByResultOrder(vertexiumObjects, ids.getIds());
                 // TODO instead of passing false here to not evaluate the query string it would be better to support the Lucene query
-                return createIterable(response, filterParameters, elements, evaluateQueryString, evaluateHasContainers, evaluateSortContainers, searchTime, hits);
+                return createIterable(response, filterParameters, vertexiumObjects, evaluateQueryString, evaluateHasContainers, evaluateSortContainers, searchTime, hits);
             }
         };
     }
 
-    private <T extends Element> Iterable<T> sortByResultOrder(Iterable<T> elements, List<String> ids) {
-        ImmutableMap<String, T> elementsMap = Maps.uniqueIndex(elements, new Function<T, String>() {
-            @Override
-            public String apply(T e) {
-                return e.getId();
-            }
-        });
+    private Iterable<ExtendedDataRow> sortExtendedDataByResultOrder(Iterable<ExtendedDataRow> rows, List<ExtendedDataRowId> ids) {
+        ImmutableMap<ExtendedDataRowId, ExtendedDataRow> elementsMap = Maps.uniqueIndex(rows, ExtendedDataRow::getId);
 
-        List<T> results = new ArrayList<>();
-        for (String id : ids) {
-            T element = elementsMap.get(id);
+        List<ExtendedDataRow> results = new ArrayList<>();
+        for (ExtendedDataRowId id : ids) {
+            ExtendedDataRow element = elementsMap.get(id);
             if (element != null) {
                 results.add(element);
             }
@@ -428,14 +345,35 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
         return results;
     }
 
-    private <T extends Element> EmptyElasticSearchGraphQueryIterable<T> createEmptyIterable() {
+    private <T extends VertexiumObject> Iterable<T> sortvertexiumObjectsByResultOrder(Iterable<T> vertexiumObjects, List<String> ids) {
+        ImmutableMap<String, T> itemMap = Maps.uniqueIndex(vertexiumObjects, vertexiumObject -> {
+            if (vertexiumObject instanceof Element) {
+                return ((Element) vertexiumObject).getId();
+            } else if (vertexiumObject instanceof ExtendedDataRow) {
+                return ElasticsearchExtendedDataIdUtils.toDocId(((ExtendedDataRow) vertexiumObject).getId());
+            } else {
+                throw new VertexiumException("Unhandled searchable item type: " + vertexiumObject.getClass().getName());
+            }
+        });
+
+        List<T> results = new ArrayList<>();
+        for (String id : ids) {
+            T item = itemMap.get(id);
+            if (item != null) {
+                results.add(item);
+            }
+        }
+        return results;
+    }
+
+    private <T extends VertexiumObject> EmptyElasticSearchGraphQueryIterable<T> createEmptyIterable() {
         return new EmptyElasticSearchGraphQueryIterable<>(ElasticSearchSingleDocumentSearchQueryBase.this, getParameters());
     }
 
-    protected <T extends Element> ElasticSearchGraphQueryIterable<T> createIterable(
+    protected <T extends VertexiumObject> ElasticSearchGraphQueryIterable<T> createIterable(
             SearchResponse response,
             QueryParameters filterParameters,
-            Iterable<T> elements,
+            Iterable<T> vertexiumObjects,
             boolean evaluateQueryString,
             boolean evaluateHasContainers,
             boolean evaluateSortContainers,
@@ -446,7 +384,7 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
                 this,
                 response,
                 filterParameters,
-                elements,
+                vertexiumObjects,
                 evaluateQueryString,
                 evaluateHasContainers,
                 evaluateSortContainers,
@@ -456,7 +394,7 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
         );
     }
 
-    private SearchResponse getSearchResponse(ElasticSearchElementType elementType, int skip, int limit, boolean includeAggregations) {
+    private SearchResponse getSearchResponse(EnumSet<ElasticsearchDocumentType> elementType, int skip, int limit, boolean includeAggregations) {
         if (QUERY_LOGGER.isTraceEnabled()) {
             QUERY_LOGGER.trace("searching for: " + toString());
         }
@@ -496,6 +434,34 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
             }
         }
         return getSingleFilterOrAndTheFilters(filters, hasNotProperty);
+    }
+
+    private FilterBuilder getFilterForHasExtendedData(HasExtendedData has) {
+        List<FilterBuilder> filters = new ArrayList<>();
+        for (HasExtendedDataFilter hasExtendedDataFilter : has.getFilters()) {
+            filters.add(getFilterForHasExtendedDataFilter(hasExtendedDataFilter));
+        }
+        return FilterBuilders.orFilter(filters.toArray(new FilterBuilder[filters.size()]));
+    }
+
+    private FilterBuilder getFilterForHasExtendedDataFilter(HasExtendedDataFilter has) {
+        List<FilterBuilder> filters = new ArrayList<>();
+        if (has.getElementType() != null) {
+            filters.add(FilterBuilders.termFilter(
+                    ElasticsearchSingleDocumentSearchIndex.ELEMENT_TYPE_FIELD_NAME,
+                    ElasticsearchDocumentType.getExtendedDataDocumentTypeFromElementType(has.getElementType()).getKey()
+            ));
+        }
+        if (has.getElementId() != null) {
+            filters.add(FilterBuilders.termFilter(ElasticsearchSingleDocumentSearchIndex.EXTENDED_DATA_ELEMENT_ID_FIELD_NAME, has.getElementId()));
+        }
+        if (has.getTableName() != null) {
+            filters.add(FilterBuilders.termFilter(ElasticsearchSingleDocumentSearchIndex.EXTENDED_DATA_TABLE_NAME_FIELD_NAME, has.getTableName()));
+        }
+        if (filters.size() == 0) {
+            throw new VertexiumException("Cannot include a hasExtendedData clause with all nulls");
+        }
+        return FilterBuilders.andFilter(filters.toArray(new FilterBuilder[filters.size()]));
     }
 
     protected FilterBuilder getFilterForHasPropertyContainer(HasPropertyContainer hasProperty) {
@@ -565,9 +531,9 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
                         } else {
                             filters
                                     .add(FilterBuilders
-                                                 .geoDistanceFilter(propertyName)
-                                                 .point(lat, lon)
-                                                 .distance(distance, DistanceUnit.KILOMETERS));
+                                            .geoDistanceFilter(propertyName)
+                                            .point(lat, lon)
+                                            .distance(distance, DistanceUnit.KILOMETERS));
                         }
                     } else if (value instanceof GeoRect) {
                         GeoRect geoRect = (GeoRect) value;
@@ -590,9 +556,9 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
                         } else {
                             filters
                                     .add(FilterBuilders
-                                                 .geoBoundingBoxFilter(propertyName)
-                                                 .topLeft(nwLat, nwLon)
-                                                 .bottomRight(seLat, seLon));
+                                            .geoBoundingBoxFilter(propertyName)
+                                            .topLeft(nwLat, nwLon)
+                                            .bottomRight(seLat, seLon));
                         }
                     } else {
                         throw new VertexiumException("Unexpected has value type " + value.getClass().getName());
@@ -737,14 +703,21 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
         return (ElasticsearchSingleDocumentSearchIndex) ((GraphWithSearchIndex) getGraph()).getSearchIndex();
     }
 
-    protected void addElementTypeFilter(List<FilterBuilder> filters, ElasticSearchElementType elementType) {
+    protected void addElementTypeFilter(List<FilterBuilder> filters, EnumSet<ElasticsearchDocumentType> elementType) {
         if (elementType != null) {
             filters.add(createElementTypeFilter(elementType));
         }
     }
 
-    protected TermsFilterBuilder createElementTypeFilter(ElasticSearchElementType elementType) {
-        return FilterBuilders.inFilter(ElasticsearchSingleDocumentSearchIndex.ELEMENT_TYPE_FIELD_NAME, elementType.getKey());
+    protected TermsFilterBuilder createElementTypeFilter(EnumSet<ElasticsearchDocumentType> elementType) {
+        List<String> values = new ArrayList<>();
+        for (ElasticsearchDocumentType et : elementType) {
+            values.add(et.getKey());
+        }
+        return FilterBuilders.inFilter(
+                ElasticsearchSingleDocumentSearchIndex.ELEMENT_TYPE_FIELD_NAME,
+                values.toArray(new String[values.size()])
+        );
     }
 
     protected void addNotFilter(List<FilterBuilder> filters, String key, Object value) {
@@ -1067,7 +1040,7 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
 
                 if (!Strings.isNullOrEmpty(agg.getFormat())) {
                     throw new VertexiumException("Invalid use of format for property: " + agg.getFieldName() +
-                                                         ". Format is only valid for date properties");
+                            ". Format is only valid for date properties");
                 }
 
                 for (RangeAggregation.Range range : agg.getRanges()) {
@@ -1075,7 +1048,7 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
                     Object to = range.getTo();
                     if ((from != null && !(from instanceof Number)) || (to != null && !(to instanceof Number))) {
                         throw new VertexiumException("Invalid range for property: " + agg.getFieldName() +
-                                                             ". Both to and from must be Numeric.");
+                                ". Both to and from must be Numeric.");
                     }
                     rangeBuilder.addRange(
                             range.getKey(),
@@ -1115,6 +1088,61 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
                 ", evaluateSortContainers=" + evaluateSortContainers +
                 ", pageSize=" + pageSize +
                 '}';
+    }
+
+    private static class Ids {
+        private final List<String> vertexIds;
+        private final List<String> edgeIds;
+        private final List<String> ids;
+        private final List<ExtendedDataRowId> extendedDataIds;
+
+        public Ids(SearchHits hits) {
+            vertexIds = new ArrayList<>();
+            edgeIds = new ArrayList<>();
+            extendedDataIds = new ArrayList<>();
+            ids = new ArrayList<>();
+            for (SearchHit hit : hits) {
+                ElasticsearchDocumentType dt = ElasticsearchDocumentType.fromSearchHit(hit);
+                if (dt == null) {
+                    continue;
+                }
+                String id = hit.getId();
+                switch (dt) {
+                    case VERTEX:
+                        ids.add(id);
+                        vertexIds.add(id);
+                        break;
+                    case EDGE:
+                        ids.add(id);
+                        edgeIds.add(id);
+                        break;
+                    case VERTEX_EXTENDED_DATA:
+                    case EDGE_EXTENDED_DATA:
+                        ids.add(id);
+                        extendedDataIds.add(ElasticsearchExtendedDataIdUtils.fromSearchHit(hit));
+                        break;
+                    default:
+                        LOGGER.warn("Unhandled document type: %s", dt);
+                        break;
+                }
+            }
+        }
+
+        public List<String> getVertexIds() {
+            return vertexIds;
+        }
+
+        public List<String> getEdgeIds() {
+            return edgeIds;
+        }
+
+        public List<String> getIds() {
+            return ids;
+        }
+
+        public List<ExtendedDataRowId> getExtendedDataIds() {
+            return extendedDataIds;
+        }
     }
 }
 

@@ -135,6 +135,11 @@ public interface ElementMutation<T extends Element> {
     Iterable<PropertySoftDeleteMutation> getPropertySoftDeletes();
 
     /**
+     * Gets the extended data mutations.
+     */
+    Iterable<ExtendedDataMutation> getExtendedData();
+
+    /**
      * Sets the index hint of this element.
      */
     ElementMutation<T> setIndexHint(IndexHint indexHint);
@@ -148,4 +153,27 @@ public interface ElementMutation<T extends Element> {
      * true, if this mutation has any changes. false, if this mutation is empty.
      */
     boolean hasChanges();
+
+    /**
+     * Adds an extended data cell to the element.
+     *
+     * @param tableName  The extended data table to add the cell to.
+     * @param row        The row to add the cell to.
+     * @param column     The column name.
+     * @param value      The cell value.
+     * @param visibility The visibility of the value.
+     */
+    ElementMutation<T> addExtendedData(String tableName, String row, String column, Object value, Visibility visibility);
+
+    /**
+     * Adds an extended data cell to the element.
+     *
+     * @param tableName  The extended data table to add the cell to.
+     * @param row        The row to add the cell to.
+     * @param column     The column name.
+     * @param value      The cell value.
+     * @param timestamp  The timestamp of the value. null, to automatically generate one.
+     * @param visibility The visibility of the value.
+     */
+    ElementMutation<T> addExtendedData(String tableName, String row, String column, Object value, Long timestamp, Visibility visibility);
 }

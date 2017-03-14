@@ -49,6 +49,10 @@ public class SqlGraphDDL {
                 dataSource,
                 graphConfig.tableNameWithPrefix(SqlGraphConfiguration.STREAMING_PROPERTIES_TABLE_NAME)
         );
+        createExtendedDataTable(
+                dataSource,
+                graphConfig.tableNameWithPrefix(SqlGraphConfiguration.EXTENDED_DATA_TABLE_NAME)
+        );
     }
 
     private static void createMapTable(DataSource dataSource, String tableName, String valueColumnType) {
@@ -70,13 +74,45 @@ public class SqlGraphDDL {
 
     private static void createStreamingPropertiesTable(DataSource dataSource, String tableName) {
         String sql = String.format(
-                "CREATE TABLE IF NOT EXISTS %s (%s varchar(" + ID_VARCHAR_SIZE + ") primary key, %s %s not null, %s varchar(" + VARCHAR_SIZE + ") not null, %s bigint not null)",
+                "CREATE TABLE IF NOT EXISTS %s (" +
+                        "%s varchar(" + ID_VARCHAR_SIZE + ") primary key," +
+                        "%s %s not null," +
+                        "%s varchar(" + VARCHAR_SIZE + ") not null," +
+                        "%s bigint not null" +
+                        ")",
                 tableName,
                 SqlStreamingPropertyTable.KEY_COLUMN_NAME,
                 SqlStreamingPropertyTable.VALUE_COLUMN_NAME,
                 BIG_BIN_COLUMN_TYPE,
                 SqlStreamingPropertyTable.VALUE_TYPE_COLUMN_NAME,
-                SqlStreamingPropertyTable.VALUE_LENGTH_COLUMN_NAME);
+                SqlStreamingPropertyTable.VALUE_LENGTH_COLUMN_NAME
+        );
+        runSql(dataSource, sql, tableName);
+    }
+
+    private static void createExtendedDataTable(DataSource dataSource, String tableName) {
+        String sql = String.format(
+                "CREATE TABLE IF NOT EXISTS %s (" +
+                        "%s varchar(" + VARCHAR_SIZE + ") not null," +
+                        "%s varchar(" + VARCHAR_SIZE + ") not null," +
+                        "%s varchar(" + VARCHAR_SIZE + ") not null," +
+                        "%s varchar(" + VARCHAR_SIZE + ") not null," +
+                        "%s varchar(" + VARCHAR_SIZE + ") not null," +
+                        "%s %s not null," +
+                        "%s bigint not null," +
+                        "%s varchar(" + VARCHAR_SIZE + ") not null" +
+                        ")",
+                tableName,
+                SqlExtendedDataTable.ELEMENT_TYPE_COLUMN_NAME,
+                SqlExtendedDataTable.ELEMENT_ID_COLUMN_NAME,
+                SqlExtendedDataTable.TABLE_NAME_COLUMN_NAME,
+                SqlExtendedDataTable.ROW_ID_COLUMN_NAME,
+                SqlExtendedDataTable.COLUMN_COLUMN_NAME,
+                SqlExtendedDataTable.VALUE_COLUMN_NAME,
+                BIG_BIN_COLUMN_TYPE,
+                SqlExtendedDataTable.TIMESTAMP_COLUMN_NAME,
+                SqlExtendedDataTable.VISIBILITY_COLUMN_NAME
+        );
         runSql(dataSource, sql, tableName);
     }
 

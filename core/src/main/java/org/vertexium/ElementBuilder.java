@@ -1,9 +1,11 @@
 package org.vertexium;
 
+import com.google.common.collect.ImmutableSet;
 import org.vertexium.mutation.*;
 import org.vertexium.property.MutablePropertyImpl;
 import org.vertexium.search.IndexHint;
 import org.vertexium.util.Preconditions;
+import org.vertexium.util.StreamUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -12,7 +14,17 @@ public abstract class ElementBuilder<T extends Element> implements ElementMutati
     private final List<Property> properties = new ArrayList<>();
     private final List<PropertyDeleteMutation> propertyDeletes = new ArrayList<>();
     private final List<PropertySoftDeleteMutation> propertySoftDeletes = new ArrayList<>();
+    private final List<ExtendedDataMutation> extendedDatas = new ArrayList<>();
+    private final String elementId;
     private IndexHint indexHint = IndexHint.INDEX;
+
+    protected ElementBuilder(String elementId) {
+        this.elementId = elementId;
+    }
+
+    public String getElementId() {
+        return elementId;
+    }
 
     /**
      * Sets or updates a property value. The property key will be set to a constant. This is a convenience method
@@ -128,6 +140,18 @@ public abstract class ElementBuilder<T extends Element> implements ElementMutati
         return this;
     }
 
+    @Override
+    public ElementBuilder<T> addExtendedData(String tableName, String row, String column, Object value, Visibility visibility) {
+        this.extendedDatas.add(new ExtendedDataMutation(tableName, row, column, value, null, visibility));
+        return this;
+    }
+
+    @Override
+    public ElementBuilder<T> addExtendedData(String tableName, String row, String column, Object value, Long timestamp, Visibility visibility) {
+        this.extendedDatas.add(new ExtendedDataMutation(tableName, row, column, value, timestamp, visibility));
+        return this;
+    }
+
     /**
      * saves the element to the graph.
      *
@@ -147,8 +171,18 @@ public abstract class ElementBuilder<T extends Element> implements ElementMutati
         return propertySoftDeletes;
     }
 
+    public Iterable<ExtendedDataMutation> getExtendedData() {
+        return extendedDatas;
+    }
+
     public IndexHint getIndexHint() {
         return indexHint;
+    }
+
+    public ImmutableSet<String> getExtendedDataTableNames() {
+        return extendedDatas.stream()
+                .map(ExtendedDataMutation::getTableName)
+                .collect(StreamUtils.toImmutableSet());
     }
 
     @Override
@@ -168,6 +202,10 @@ public abstract class ElementBuilder<T extends Element> implements ElementMutati
         }
 
         if (propertySoftDeletes.size() > 0) {
+            return true;
+        }
+
+        if (extendedDatas.size() > 0) {
             return true;
         }
 

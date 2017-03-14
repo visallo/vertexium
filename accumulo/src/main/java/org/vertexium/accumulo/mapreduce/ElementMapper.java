@@ -28,6 +28,7 @@ public abstract class ElementMapper<KEYIN, VALUEIN, KEYOUT, VALUEOUT> extends Ma
         final Text edgesTableName = new Text(AccumuloGraph.getEdgesTableName(tableNamePrefix));
         final Text dataTableName = new Text(AccumuloGraph.getDataTableName(tableNamePrefix));
         final Text verticesTableName = new Text(AccumuloGraph.getVerticesTableName(tableNamePrefix));
+        final Text extendedDataTableName = new Text(AccumuloGraph.getExtendedDataTableName(tableNamePrefix));
         long maxStreamingPropertyValueTableDataSize = accumuloGraphConfiguration.getMaxStreamingPropertyValueTableDataSize();
         String dataDir = accumuloGraphConfiguration.getDataDir();
         FileSystem fileSystem;
@@ -61,6 +62,15 @@ public abstract class ElementMapper<KEYIN, VALUEIN, KEYOUT, VALUEOUT> extends Ma
             }
 
             @Override
+            protected void saveExtendedDataMutation(ElementType elementType, Mutation m) {
+                try {
+                    ElementMapper.this.saveExtendedDataMutation(context, extendedDataTableName, m);
+                } catch (Exception e) {
+                    throw new RuntimeException("Could not save edge", e);
+                }
+            }
+
+            @Override
             protected NameSubstitutionStrategy getNameSubstitutionStrategy() {
                 return nameSubstitutionStrategy;
             }
@@ -81,6 +91,8 @@ public abstract class ElementMapper<KEYIN, VALUEIN, KEYOUT, VALUEOUT> extends Ma
     protected abstract void saveEdgeMutation(Context context, Text edgesTableName, Mutation m) throws IOException, InterruptedException;
 
     protected abstract void saveVertexMutation(Context context, Text verticesTableName, Mutation m) throws IOException, InterruptedException;
+
+    protected abstract void saveExtendedDataMutation(Context context, Text tableName, Mutation m) throws IOException, InterruptedException;
 
     public VertexBuilder prepareVertex(Vertex vertex) {
         return prepareVertex(vertex.getId(), null, vertex.getVisibility());
@@ -110,12 +122,13 @@ public abstract class ElementMapper<KEYIN, VALUEIN, KEYOUT, VALUEOUT> extends Ma
 
                 return new AccumuloVertex(
                         graph,
-                        getVertexId(),
+                        getElementId(),
                         getVisibility(),
                         getProperties(),
                         getPropertyDeletes(),
                         getPropertySoftDeletes(),
                         hiddenVisibilities,
+                        getExtendedDataTableNames(),
                         timestampLong,
                         authorizations
                 );
@@ -172,7 +185,7 @@ public abstract class ElementMapper<KEYIN, VALUEIN, KEYOUT, VALUEOUT> extends Ma
 
                 AccumuloEdge edge = new AccumuloEdge(
                         null,
-                        getEdgeId(),
+                        getElementId(),
                         getOutVertexId(),
                         getInVertexId(),
                         getLabel(),
@@ -182,6 +195,7 @@ public abstract class ElementMapper<KEYIN, VALUEIN, KEYOUT, VALUEOUT> extends Ma
                         getPropertyDeletes(),
                         getPropertySoftDeletes(),
                         null,
+                        getExtendedDataTableNames(),
                         timestampLong,
                         authorizations
                 );
@@ -211,7 +225,7 @@ public abstract class ElementMapper<KEYIN, VALUEIN, KEYOUT, VALUEOUT> extends Ma
 
                 AccumuloEdge edge = new AccumuloEdge(
                         null,
-                        getEdgeId(),
+                        getElementId(),
                         getOutVertex().getId(),
                         getInVertex().getId(),
                         getLabel(),
@@ -221,6 +235,7 @@ public abstract class ElementMapper<KEYIN, VALUEIN, KEYOUT, VALUEOUT> extends Ma
                         getPropertyDeletes(),
                         getPropertySoftDeletes(),
                         null,
+                        getExtendedDataTableNames(),
                         timestampLong,
                         authorizations
                 );

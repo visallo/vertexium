@@ -1,6 +1,7 @@
 package org.vertexium.accumulo;
 
 import com.google.common.base.Function;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import org.apache.accumulo.core.data.Key;
 import org.apache.accumulo.core.data.Value;
@@ -17,10 +18,7 @@ import org.vertexium.mutation.ExistingElementMutationImpl;
 import org.vertexium.mutation.PropertyDeleteMutation;
 import org.vertexium.mutation.PropertySoftDeleteMutation;
 import org.vertexium.query.VertexQuery;
-import org.vertexium.util.ConvertingIterable;
-import org.vertexium.util.FilterIterable;
-import org.vertexium.util.JoinIterable;
-import org.vertexium.util.LookAheadIterable;
+import org.vertexium.util.*;
 
 import javax.annotation.Nullable;
 import java.io.ByteArrayInputStream;
@@ -50,6 +48,7 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
             Iterable<PropertyDeleteMutation> propertyDeleteMutations,
             Iterable<PropertySoftDeleteMutation> propertySoftDeleteMutations,
             Iterable<Visibility> hiddenVisibilities,
+            ImmutableSet<String> extendedDataTableNames,
             long timestamp,
             Authorizations authorizations
     ) {
@@ -61,6 +60,7 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
                 propertyDeleteMutations,
                 propertySoftDeleteMutations,
                 hiddenVisibilities,
+                extendedDataTableNames,
                 new EdgesWithEdgeInfo(),
                 new EdgesWithEdgeInfo(),
                 timestamp,
@@ -76,6 +76,7 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
             Iterable<PropertyDeleteMutation> propertyDeleteMutations,
             Iterable<PropertySoftDeleteMutation> propertySoftDeleteMutations,
             Iterable<Visibility> hiddenVisibilities,
+            ImmutableSet<String> extendedDataTableNames,
             Edges inEdges,
             Edges outEdges,
             long timestamp,
@@ -89,6 +90,7 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
                 propertyDeleteMutations,
                 propertySoftDeleteMutations,
                 hiddenVisibilities,
+                extendedDataTableNames,
                 timestamp,
                 authorizations
         );
@@ -122,6 +124,7 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
                 }
             });
             properties = DataInputStreamUtils.decodeProperties(graph, in);
+            ImmutableSet<String> extendedDataTableNames = DataInputStreamUtils.decodeStringSet(in);
             outEdges = DataInputStreamUtils.decodeEdges(in, graph.getNameSubstitutionStrategy());
             inEdges = DataInputStreamUtils.decodeEdges(in, graph.getNameSubstitutionStrategy());
 
@@ -133,6 +136,7 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
                     propertyDeleteMutations,
                     propertySoftDeleteMutations,
                     hiddenVisibilities,
+                    extendedDataTableNames,
                     inEdges,
                     outEdges,
                     timestamp,

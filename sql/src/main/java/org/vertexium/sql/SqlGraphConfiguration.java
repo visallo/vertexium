@@ -3,10 +3,7 @@ package org.vertexium.sql;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import org.vertexium.VertexiumSerializer;
-import org.vertexium.inmemory.InMemoryEdge;
-import org.vertexium.inmemory.InMemoryGraphConfiguration;
-import org.vertexium.inmemory.InMemoryTableElement;
-import org.vertexium.inmemory.InMemoryVertex;
+import org.vertexium.inmemory.*;
 import org.vertexium.sql.collections.SqlMap;
 
 import javax.sql.DataSource;
@@ -19,6 +16,7 @@ public class SqlGraphConfiguration extends InMemoryGraphConfiguration {
     protected static final String VALUE_COLUMN_NAME = "object";
     protected static final String VERTEX_TABLE_NAME = "vertex";
     protected static final String EDGE_TABLE_NAME = "edge";
+    protected static final String EXTENDED_DATA_TABLE_NAME = "extendeddata";
     protected static final String METADATA_TABLE_NAME = "metadata";
     protected static final String STREAMING_PROPERTIES_TABLE_NAME = "streaming_properties";
     protected static final String IN_VERTEX_ID_COLUMN = "in_vertex_id";
@@ -68,6 +66,10 @@ public class SqlGraphConfiguration extends InMemoryGraphConfiguration {
                 return columns;
             }
         };
+    }
+
+    public SqlExtendedDataTable newExtendedDataTable() {
+        return new SqlExtendedDataTable(tableNameWithPrefix(EXTENDED_DATA_TABLE_NAME), dataSource, serializer);
     }
 
     protected SqlMap<InMemoryTableElement<InMemoryVertex>> newVertexMap() {

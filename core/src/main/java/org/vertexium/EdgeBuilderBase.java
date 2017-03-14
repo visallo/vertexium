@@ -4,21 +4,20 @@ import org.vertexium.mutation.EdgeMutation;
 import org.vertexium.util.IncreasingTime;
 
 public abstract class EdgeBuilderBase extends ElementBuilder<Edge> implements EdgeMutation {
-    private final String edgeId;
     private final String label;
     private final Visibility visibility;
     private String newEdgeLabel;
     private long alterEdgeLabelTimestamp;
 
     protected EdgeBuilderBase(String edgeId, String label, Visibility visibility) {
-        this.edgeId = edgeId;
+        super(edgeId);
         this.label = label;
         this.visibility = visibility;
         this.alterEdgeLabelTimestamp = IncreasingTime.currentTimeMillis();
     }
 
     public String getEdgeId() {
-        return edgeId;
+        return getElementId();
     }
 
     public String getLabel() {

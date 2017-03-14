@@ -1,8 +1,11 @@
 package org.vertexium.query;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import org.vertexium.*;
-import org.vertexium.util.IterableUtils;
+import org.vertexium.util.SelectManyIterable;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumSet;
@@ -29,7 +32,10 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
     }
 
     @Override
-    public abstract QueryResultsIterable<Vertex> vertices(EnumSet<FetchHint> fetchHints);
+    public QueryResultsIterable<Vertex> vertices(final EnumSet<FetchHint> fetchHints) {
+        //noinspection unchecked
+        return (QueryResultsIterable<Vertex>) search(EnumSet.of(VertexiumObjectType.VERTEX), fetchHints);
+    }
 
     @Override
     public QueryResultsIterable<Edge> edges() {
@@ -37,10 +43,99 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
     }
 
     @Override
-    public abstract QueryResultsIterable<Edge> edges(EnumSet<FetchHint> fetchHints);
+    public QueryResultsIterable<Edge> edges(final EnumSet<FetchHint> fetchHints) {
+        //noinspection unchecked
+        return (QueryResultsIterable<Edge>) search(EnumSet.of(VertexiumObjectType.EDGE), fetchHints);
+    }
 
     @Override
-    public <T> Query hasEdgeLabel(String... edgeLabels) {
+    public QueryResultsIterable<ExtendedDataRow> extendedDataRows() {
+        return extendedDataRows(FetchHint.ALL);
+    }
+
+    @Override
+    public QueryResultsIterable<ExtendedDataRow> extendedDataRows(EnumSet<FetchHint> fetchHints) {
+        //noinspection unchecked
+        return (QueryResultsIterable<ExtendedDataRow>) search(EnumSet.of(VertexiumObjectType.EXTENDED_DATA), fetchHints);
+    }
+
+    @Override
+    public QueryResultsIterable<? extends VertexiumObject> search() {
+        return search(VertexiumObjectType.ALL, FetchHint.ALL);
+    }
+
+    @Override
+    public QueryResultsIterable<? extends VertexiumObject> search(EnumSet<VertexiumObjectType> objectTypes, EnumSet<FetchHint> fetchHints) {
+        List<QueryResultsIterable<? extends VertexiumObject>> items = new ArrayList<>();
+        if (objectTypes.contains(VertexiumObjectType.VERTEX)) {
+            items.add(vertices(fetchHints));
+        }
+        if (objectTypes.contains(VertexiumObjectType.EDGE)) {
+            items.add(edges(fetchHints));
+        }
+        if (objectTypes.contains(VertexiumObjectType.EXTENDED_DATA)) {
+            items.add(extendedData(fetchHints));
+        }
+
+        return new SelectManySearch(items);
+    }
+
+    private static class SelectManySearch
+            extends SelectManyIterable<QueryResultsIterable<? extends VertexiumObject>, VertexiumObject>
+            implements QueryResultsIterable<VertexiumObject> {
+        public SelectManySearch(Iterable<? extends QueryResultsIterable<? extends VertexiumObject>> source) {
+            super(source);
+        }
+
+        @Override
+        public <TResult extends AggregationResult> TResult getAggregationResult(String name, Class<? extends TResult> resultType) {
+            throw new VertexiumException("Not implemented");
+        }
+
+        @Override
+        public void close() throws IOException {
+
+        }
+
+        @Override
+        public long getTotalHits() {
+            long totalHits = 0;
+            for (QueryResultsIterable queryResultsIterable : getSource()) {
+                totalHits += queryResultsIterable.getTotalHits();
+            }
+            return totalHits;
+        }
+
+        @Override
+        protected Iterable<? extends VertexiumObject> getIterable(QueryResultsIterable<? extends VertexiumObject> source) {
+            return source;
+        }
+    }
+
+    /**
+     * This method should be overridden if {@link #search(EnumSet, EnumSet)} is not overridden.
+     */
+    protected QueryResultsIterable<? extends VertexiumObject> extendedData(EnumSet<FetchHint> fetchHints) {
+        throw new VertexiumException("not implemented");
+    }
+
+    protected QueryResultsIterable<? extends VertexiumObject> extendedData(EnumSet<FetchHint> fetchHints, Iterable<? extends Element> elements) {
+        Iterable<ExtendedDataRow> allExtendedData = new SelectManyIterable<Element, ExtendedDataRow>(elements) {
+            @Override
+            protected Iterable<? extends ExtendedDataRow> getIterable(Element element) {
+                return new SelectManyIterable<String, ExtendedDataRow>(element.getExtendedDataTableNames()) {
+                    @Override
+                    protected Iterable<? extends ExtendedDataRow> getIterable(String tableName) {
+                        return element.getExtendedData(tableName);
+                    }
+                };
+            }
+        };
+        return new DefaultGraphQueryIterableWithAggregations<>(getParameters(), allExtendedData, true, true, true, getAggregations());
+    }
+
+    @Override
+    public Query hasEdgeLabel(String... edgeLabels) {
         for (String edgeLabel : edgeLabels) {
             getParameters().addEdgeLabel(edgeLabel);
         }
@@ -48,10 +143,32 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
     }
 
     @Override
-    public <T> Query hasEdgeLabel(Collection<String> edgeLabels) {
+    public Query hasEdgeLabel(Collection<String> edgeLabels) {
         for (String edgeLabel : edgeLabels) {
             getParameters().addEdgeLabel(edgeLabel);
         }
+        return this;
+    }
+
+    @Override
+    public Query hasExtendedData(ElementType elementType, String elementId) {
+        return hasExtendedData(elementType, elementId, null);
+    }
+
+    @Override
+    public Query hasExtendedData(String tableName) {
+        return hasExtendedData(null, null, tableName);
+    }
+
+    @Override
+    public Query hasExtendedData(ElementType elementType, String elementId, String tableName) {
+        hasExtendedData(Lists.newArrayList(new HasExtendedDataFilter(elementType, elementId, tableName)));
+        return this;
+    }
+
+    @Override
+    public Query hasExtendedData(Iterable<HasExtendedDataFilter> filters) {
+        getParameters().addHasContainer(new HasExtendedData(ImmutableList.copyOf(filters)));
         return this;
     }
 
@@ -76,9 +193,8 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
 
     @Override
     public QueryResultsIterable<Element> elements(EnumSet<FetchHint> fetchHints) {
-        Iterable<Element> vertices = IterableUtils.toElementIterable(vertices(fetchHints));
-        Iterable<Element> edges = IterableUtils.toElementIterable(edges(fetchHints));
-        return new QueryResultsJoinIterable<>(vertices, edges);
+        //noinspection unchecked
+        return (QueryResultsIterable<Element>) search(VertexiumObjectType.ELEMENTS, fetchHints);
     }
 
     @Override
@@ -160,12 +276,29 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
     }
 
     public static abstract class HasContainer {
-        public abstract boolean isMatch(Element elem);
+        public abstract boolean isMatch(VertexiumObject elem);
 
         @Override
         public String toString() {
             return this.getClass().getName() + "{}";
         }
+    }
+
+    private static abstract class HasContainerSplitElementExtendedDataRows extends HasContainer {
+        @Override
+        public boolean isMatch(VertexiumObject vertexiumObject) {
+            if (vertexiumObject instanceof Element) {
+                return isMatch((Element) vertexiumObject);
+            } else if (vertexiumObject instanceof ExtendedDataRow) {
+                return isMatch((ExtendedDataRow) vertexiumObject);
+            } else {
+                throw new VertexiumException("Unhandled VertexiumObject type: " + vertexiumObject.getClass().getName());
+            }
+        }
+
+        protected abstract boolean isMatch(Element element);
+
+        protected abstract boolean isMatch(ExtendedDataRow row);
     }
 
     public static class SortContainer {
@@ -186,7 +319,7 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
         }
     }
 
-    public static class HasValueContainer extends HasContainer {
+    public static class HasValueContainer extends HasContainerSplitElementExtendedDataRows {
         public String key;
         public Object value;
         public Predicate predicate;
@@ -199,8 +332,24 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
             this.propertyDefinitions = propertyDefinitions;
         }
 
-        public boolean isMatch(Element elem) {
-            return this.predicate.evaluate(elem.getProperties(this.key), this.value, this.propertyDefinitions);
+        @Override
+        protected boolean isMatch(ExtendedDataRow extendedDataRow) {
+            Iterable<String> propertyNames = extendedDataRow.getPropertyNames();
+            for (String propertyName : propertyNames) {
+                if (propertyName.equals(this.key)) {
+                    PropertyDefinition propertyDefinition = PropertyDefinition.findPropertyDefinition(this.propertyDefinitions, propertyName);
+                    Object columnValue = extendedDataRow.getPropertyValue(propertyName);
+                    if (this.predicate.evaluate(columnValue, this.value, propertyDefinition)) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        @Override
+        protected boolean isMatch(Element element) {
+            return this.predicate.evaluate(element.getProperties(this.key), this.value, this.propertyDefinitions);
         }
 
         @Override
@@ -213,7 +362,37 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
         }
     }
 
-    public static class HasPropertyContainer extends HasContainer {
+    public static class HasExtendedData extends HasContainer {
+        private final ImmutableList<HasExtendedDataFilter> filters;
+
+        public HasExtendedData(ImmutableList<HasExtendedDataFilter> filters) {
+            this.filters = filters;
+        }
+
+        public ImmutableList<HasExtendedDataFilter> getFilters() {
+            return filters;
+        }
+
+        @Override
+        public boolean isMatch(VertexiumObject elem) {
+            if (!(elem instanceof ExtendedDataRow)) {
+                return false;
+            }
+
+            ExtendedDataRow row = (ExtendedDataRow) elem;
+            ExtendedDataRowId rowId = row.getId();
+            for (HasExtendedDataFilter filter : filters) {
+                if (filter.getElementType() == null || rowId.getElementType().equals(filter.getElementType())
+                        && (filter.getElementId() == null || rowId.getElementId().equals(filter.getElementId()))
+                        && (filter.getTableName() == null || rowId.getTableName().equals(filter.getTableName()))) {
+                    return true;
+                }
+            }
+            return false;
+        }
+    }
+
+    public static class HasPropertyContainer extends HasContainerSplitElementExtendedDataRows {
         private final String key;
 
         public HasPropertyContainer(String key) {
@@ -221,8 +400,18 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
         }
 
         @Override
-        public boolean isMatch(Element elem) {
-            for (Property prop : elem.getProperties()) {
+        protected boolean isMatch(ExtendedDataRow row) {
+            for (String propertyName : row.getPropertyNames()) {
+                if (propertyName.equals(this.key)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        @Override
+        protected boolean isMatch(Element element) {
+            for (Property prop : element.getProperties()) {
                 if (prop.getName().equals(this.key)) {
                     return true;
                 }
@@ -242,7 +431,7 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
         }
     }
 
-    public static class HasNotPropertyContainer extends HasContainer {
+    public static class HasNotPropertyContainer extends HasContainerSplitElementExtendedDataRows {
         private final String key;
 
         public HasNotPropertyContainer(String key) {
@@ -250,8 +439,18 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
         }
 
         @Override
-        public boolean isMatch(Element elem) {
-            for (Property prop : elem.getProperties()) {
+        protected boolean isMatch(ExtendedDataRow row) {
+            for (String propertyName : row.getPropertyNames()) {
+                if (propertyName.equals(this.key)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        @Override
+        protected boolean isMatch(Element element) {
+            for (Property prop : element.getProperties()) {
                 if (prop.getName().equals(this.key)) {
                     return false;
                 }

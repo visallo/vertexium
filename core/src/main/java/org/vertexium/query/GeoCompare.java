@@ -12,17 +12,22 @@ public enum GeoCompare implements Predicate {
     @Override
     public boolean evaluate(Iterable<Property> properties, Object second, Collection<PropertyDefinition> propertyDefinitions) {
         for (Property property : properties) {
-            if (evaluate(property, second)) {
+            if (evaluate(property.getValue(), second)) {
                 return true;
             }
         }
         return false;
     }
 
-    private boolean evaluate(Property property, Object second) {
+    @Override
+    public boolean evaluate(Object first, Object second, PropertyDefinition propertyDefinition) {
+        return evaluate(first, second);
+    }
+
+    private boolean evaluate(Object testValue, Object second) {
         switch (this) {
             case WITHIN:
-                return ((GeoShape) second).within((GeoShape) property.getValue());
+                return ((GeoShape) second).within((GeoShape) testValue);
             default:
                 throw new IllegalArgumentException("Invalid compare: " + this);
         }

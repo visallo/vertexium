@@ -27,6 +27,7 @@ public abstract class ElementData {
     public final Map<String, byte[]> propertyValues = new HashMap<>();
     public final Map<String, Text> propertyVisibilities = new HashMap<>();
     public final Map<String, Long> propertyTimestamps = new HashMap<>();
+    public final Set<String> extendedTableNames = new HashSet<>();
 
     public void clear() {
         id = null;
@@ -41,6 +42,7 @@ public abstract class ElementData {
         propertyValues.clear();
         propertyVisibilities.clear();
         propertyTimestamps.clear();
+        extendedTableNames.clear();
     }
 
     public final Value encode(EnumSet<FetchHint> fetchHints) throws IOException {
@@ -57,6 +59,7 @@ public abstract class ElementData {
         DataOutputStreamUtils.encodeText(out, visibility);
         DataOutputStreamUtils.encodeTextList(out, hiddenVisibilities);
         encodeProperties(out, fetchHints);
+        DataOutputStreamUtils.encodeStringSet(out, extendedTableNames);
     }
 
     private void encodeHeader(DataOutputStream out) throws IOException {

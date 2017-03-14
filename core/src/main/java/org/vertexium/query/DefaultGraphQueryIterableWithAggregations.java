@@ -1,11 +1,12 @@
 package org.vertexium.query;
 
 import org.vertexium.Element;
+import org.vertexium.VertexiumObject;
 import org.vertexium.VertexiumException;
 
 import java.util.*;
 
-public class DefaultGraphQueryIterableWithAggregations<T extends Element> extends DefaultGraphQueryIterable<T> {
+public class DefaultGraphQueryIterableWithAggregations<T extends VertexiumObject> extends DefaultGraphQueryIterable<T> {
     private final Collection<Aggregation> aggregations;
 
     public DefaultGraphQueryIterableWithAggregations(
@@ -100,16 +101,19 @@ public class DefaultGraphQueryIterableWithAggregations<T extends Element> extend
     private <TKey> Map<TKey, List<T>> getElementsByProperty(Iterator<T> it, String propertyName, ValueConverter<TKey> valueConverter) {
         Map<TKey, List<T>> elementsByProperty = new HashMap<>();
         while (it.hasNext()) {
-            T elem = it.next();
-            Iterable<Object> values = elem.getPropertyValues(propertyName);
-            for (Object value : values) {
-                TKey convertedValue = valueConverter.convert(value);
-                List<T> list = elementsByProperty.get(convertedValue);
-                if (list == null) {
-                    list = new ArrayList<>();
-                    elementsByProperty.put(convertedValue, list);
+            T vertexiumObject = it.next();
+            if(vertexiumObject instanceof Element) {
+                Element element = (Element) vertexiumObject;
+                Iterable<Object> values = element.getPropertyValues(propertyName);
+                for (Object value : values) {
+                    TKey convertedValue = valueConverter.convert(value);
+                    List<T> list = elementsByProperty.get(convertedValue);
+                    if (list == null) {
+                        list = new ArrayList<>();
+                        elementsByProperty.put(convertedValue, list);
+                    }
+                    list.add(vertexiumObject);
                 }
-                list.add(elem);
             }
         }
         return elementsByProperty;

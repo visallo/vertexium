@@ -14,7 +14,6 @@ import org.elasticsearch.action.admin.cluster.node.info.PluginInfo;
 import org.elasticsearch.action.admin.indices.create.CreateIndexResponse;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.admin.indices.mapping.get.GetMappingsResponse;
-import org.elasticsearch.action.admin.indices.stats.IndexStats;
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
@@ -33,17 +32,18 @@ import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
-import org.elasticsearch.index.query.FilteredQueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.index.query.TermFilterBuilder;
+import org.elasticsearch.index.query.*;
 import org.elasticsearch.node.Node;
 import org.elasticsearch.node.NodeBuilder;
 import org.elasticsearch.script.ScriptService;
+import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.aggregations.Aggregation;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsBuilder;
 import org.vertexium.*;
+import org.vertexium.elasticsearch.utils.ElasticsearchExtendedDataIdUtils;
 import org.vertexium.id.NameSubstitutionStrategy;
+import org.vertexium.mutation.ExtendedDataMutation;
 import org.vertexium.property.StreamingPropertyValue;
 import org.vertexium.query.*;
 import org.vertexium.search.SearchIndex;
@@ -79,6 +79,9 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
     public static final String OUT_VERTEX_ID_FIELD_NAME = "__outVertexId";
     public static final String IN_VERTEX_ID_FIELD_NAME = "__inVertexId";
     public static final String EDGE_LABEL_FIELD_NAME = "__edgeLabel";
+    public static final String EXTENDED_DATA_ELEMENT_ID_FIELD_NAME = "__extendedDataElementId";
+    public static final String EXTENDED_DATA_TABLE_NAME_FIELD_NAME = "__extendedDataTableName";
+    public static final String EXTENDED_DATA_TABLE_ROW_ID_FIELD_NAME = "__extendedDataRowId";
     public static final String EXACT_MATCH_PROPERTY_NAME_SUFFIX = "_e";
     public static final String GEO_PROPERTY_NAME_SUFFIX = "_g";
     public static final String SORT_PROPERTY_NAME_SUFFIX = "_s";
@@ -244,8 +247,8 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
         return allFieldEnabled;
     }
 
-    private Map<String, IndexStats> getExistingIndexNames() {
-        return client.admin().indices().prepareStats().execute().actionGet().getIndices();
+    public Set<String> getIndexNamesFromElasticsearch() {
+        return client.admin().indices().prepareStats().execute().actionGet().getIndices().keySet();
     }
 
     void clearIndexInfoCache() {
@@ -261,8 +264,8 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
     }
 
     private void loadIndexInfos(Graph graph, Map<String, IndexInfo> indexInfos) {
-        Map<String, IndexStats> indices = getExistingIndexNames();
-        for (String indexName : indices.keySet()) {
+        Set<String> indices = getIndexNamesFromElasticsearch();
+        for (String indexName : indices) {
             if (!indexSelectionStrategy.isIncluded(this, indexName)) {
                 LOGGER.debug("skipping index %s, not in indicesToQuery", indexName);
                 continue;
@@ -276,6 +279,7 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
             LOGGER.debug("loading index info for %s", indexName);
             indexInfo = createIndexInfo(indexName);
             addPropertyNameVisibility(graph, indexInfo, ELEMENT_TYPE_FIELD_NAME, null);
+            addPropertyNameVisibility(graph, indexInfo, EXTENDED_DATA_ELEMENT_ID_FIELD_NAME, null);
             addPropertyNameVisibility(graph, indexInfo, VISIBILITY_FIELD_NAME, null);
             addPropertyNameVisibility(graph, indexInfo, OUT_VERTEX_ID_FIELD_NAME, null);
             addPropertyNameVisibility(graph, indexInfo, IN_VERTEX_ID_FIELD_NAME, null);
@@ -393,6 +397,166 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
         getFlushObjectQueue().add(new FlushObject(elementId, updateRequestBuilder, future));
     }
 
+    @Override
+    public void addElementExtendedData(Graph graph, Element element, Iterable<ExtendedDataMutation> extendedData, Authorizations authorizations) {
+        Map<String, Map<String, List<ExtendedDataMutation>>> extendedDataByTableByRow = mapExtendedDatasByTableByRow(extendedData);
+        for (Map.Entry<String, Map<String, List<ExtendedDataMutation>>> byTable : extendedDataByTableByRow.entrySet()) {
+            String tableName = byTable.getKey();
+            Map<String, List<ExtendedDataMutation>> byRow = byTable.getValue();
+            for (Map.Entry<String, List<ExtendedDataMutation>> row : byRow.entrySet()) {
+                String rowId = row.getKey();
+                List<ExtendedDataMutation> columns = row.getValue();
+                addElementExtendedData(graph, element, tableName, rowId, columns, authorizations);
+            }
+        }
+    }
+
+    @Override
+    public void deleteExtendedData(Graph graph, ExtendedDataRowId rowId, Authorizations authorizations) {
+        String indexName = getExtendedDataIndexName(rowId);
+        String docId = ElasticsearchExtendedDataIdUtils.toDocId(rowId);
+        getClient().prepareDelete(indexName, ELEMENT_TYPE, docId).execute().actionGet();
+    }
+
+    private void addElementExtendedData(
+            Graph graph,
+            Element element,
+            String tableName,
+            String rowId,
+            List<ExtendedDataMutation> columns,
+            Authorizations authorizations
+    ) {
+        if (MUTATION_LOGGER.isTraceEnabled()) {
+            MUTATION_LOGGER.trace("addElementExtendedData: %s:%s:%s", element.getId(), tableName, rowId);
+        }
+
+        final IndexInfo indexInfo = addExtendedDataColumnsToIndex(graph, element, tableName, rowId, columns);
+
+        try {
+            final XContentBuilder jsonBuilder = buildJsonContentFromExtendedDataMutations(graph, element, tableName, rowId, columns, authorizations);
+            final XContentBuilder source = jsonBuilder.endObject();
+            if (MUTATION_LOGGER.isTraceEnabled()) {
+                MUTATION_LOGGER.trace("addElementExtendedData json: %s:%s:%s: %s", element.getId(), tableName, rowId, source.string());
+            }
+
+            String extendedDataDocId = ElasticsearchExtendedDataIdUtils.createForElement(element, tableName, rowId);
+            UpdateRequestBuilder updateRequestBuilder = getClient()
+                    .prepareUpdate(indexInfo.getIndexName(), ELEMENT_TYPE, extendedDataDocId)
+                    .setDocAsUpsert(true)
+                    .setDoc(source)
+                    .setRetryOnConflict(MAX_RETRIES);
+            addActionRequestBuilderForFlush(element.getId(), updateRequestBuilder);
+
+            if (getConfig().isAutoFlush()) {
+                flush(graph);
+            }
+        } catch (Exception e) {
+            throw new VertexiumException("Could not add element extended data", e);
+        }
+
+        getConfig().getScoringStrategy().addElementExtendedData(this, graph, element, tableName, rowId, columns, authorizations);
+    }
+
+    private XContentBuilder buildJsonContentFromExtendedDataMutations(
+            Graph graph,
+            Element element,
+            String tableName,
+            String rowId,
+            List<ExtendedDataMutation> columns,
+            Authorizations authorizations
+    ) throws IOException {
+        XContentBuilder jsonBuilder;
+        jsonBuilder = XContentFactory.jsonBuilder()
+                .startObject();
+
+        jsonBuilder.field(ELEMENT_TYPE_FIELD_NAME, ElasticsearchDocumentType.getExtendedDataDocumentTypeFromElement(element).getKey());
+        String elementTypeVisibilityPropertyName = addElementTypeVisibilityPropertyToIndex(graph, element);
+        jsonBuilder.field(elementTypeVisibilityPropertyName, ElasticsearchDocumentType.VERTEX.getKey());
+        getConfig().getScoringStrategy().addFieldsToExtendedDataDocument(this, jsonBuilder, element, null, tableName, rowId, columns, authorizations);
+        jsonBuilder.field(EXTENDED_DATA_ELEMENT_ID_FIELD_NAME, element.getId());
+        jsonBuilder.field(EXTENDED_DATA_TABLE_NAME_FIELD_NAME, tableName);
+        jsonBuilder.field(EXTENDED_DATA_TABLE_ROW_ID_FIELD_NAME, rowId);
+        if (element instanceof Edge) {
+            Edge edge = (Edge) element;
+            jsonBuilder.field(IN_VERTEX_ID_FIELD_NAME, edge.getVertexId(Direction.IN));
+            jsonBuilder.field(OUT_VERTEX_ID_FIELD_NAME, edge.getVertexId(Direction.OUT));
+            jsonBuilder.field(EDGE_LABEL_FIELD_NAME, edge.getLabel());
+        }
+
+        Map<String, Object> fields = getExtendedDataColumnsAsFields(graph, columns);
+        addFieldsMap(jsonBuilder, fields);
+
+        return jsonBuilder;
+    }
+
+    private Map<String, Object> getExtendedDataColumnsAsFields(Graph graph, List<ExtendedDataMutation> columns) {
+        Map<String, Object> fieldsMap = new HashMap<>();
+        List<ExtendedDataMutation> streamingColumns = new ArrayList<>();
+        for (ExtendedDataMutation column : columns) {
+            if (column.getValue() != null && shouldIgnoreType(column.getValue().getClass())) {
+                continue;
+            }
+
+            if (column.getValue() instanceof StreamingPropertyValue) {
+                StreamingPropertyValue spv = (StreamingPropertyValue) column.getValue();
+                if (isStreamingPropertyValueIndexable(graph, column.getColumnName(), spv)) {
+                    streamingColumns.add(column);
+                }
+            } else {
+                addExtendedDataColumnToFieldMap(graph, column, column.getValue(), fieldsMap);
+            }
+        }
+        addStreamingExtendedDataColumnsValuesToMap(graph, streamingColumns, fieldsMap);
+        return fieldsMap;
+    }
+
+    private void addStreamingExtendedDataColumnsValuesToMap(Graph graph, List<ExtendedDataMutation> columns, Map<String, Object> fieldsMap) {
+        List<StreamingPropertyValue> streamingPropertyValues = columns.stream()
+                .map((column) -> {
+                    if (!(column.getValue() instanceof StreamingPropertyValue)) {
+                        throw new VertexiumException("column with a value that is not a StreamingPropertyValue passed to addStreamingPropertyValuesToFieldMap");
+                    }
+                    return (StreamingPropertyValue) column.getValue();
+                })
+                .collect(Collectors.toList());
+
+        List<InputStream> inputStreams = graph.getStreamingPropertyValueInputStreams(streamingPropertyValues);
+        for (int i = 0; i < columns.size(); i++) {
+            try {
+                String propertyValue = IOUtils.toString(inputStreams.get(i));
+                addExtendedDataColumnToFieldMap(graph, columns.get(i), new StreamingPropertyString(propertyValue), fieldsMap);
+            } catch (IOException ex) {
+                throw new VertexiumException("could not convert streaming property to string", ex);
+            }
+        }
+    }
+
+    private void addExtendedDataColumnToFieldMap(Graph graph, ExtendedDataMutation column, Object value, Map<String, Object> fieldsMap) {
+        String propertyName = deflateExtendedDataColumnName(graph, column);
+        addValuesToFieldMap(graph, fieldsMap, propertyName, value);
+    }
+
+    private void addFieldsMap(XContentBuilder jsonBuilder, Map<String, Object> fields) throws IOException {
+        for (Map.Entry<String, Object> property : fields.entrySet()) {
+            if (property.getValue() instanceof List) {
+                List list = (List) property.getValue();
+                jsonBuilder.field(property.getKey(), list.toArray(new Object[list.size()]));
+            } else {
+                jsonBuilder.field(property.getKey(), convertValueForIndexing(property.getValue()));
+            }
+        }
+    }
+
+    private Map<String, Map<String, List<ExtendedDataMutation>>> mapExtendedDatasByTableByRow(Iterable<ExtendedDataMutation> extendedData) {
+        Map<String, Map<String, List<ExtendedDataMutation>>> results = new HashMap<>();
+        for (ExtendedDataMutation ed : extendedData) {
+            Map<String, List<ExtendedDataMutation>> byRow = results.computeIfAbsent(ed.getTableName(), k -> new HashMap<>());
+            List<ExtendedDataMutation> items = byRow.computeIfAbsent(ed.getRow(), k -> new ArrayList<>());
+            items.add(ed);
+        }
+        return results;
+    }
+
     private Queue<FlushObject> getFlushObjectQueue() {
         Queue<FlushObject> queue = flushFutures.get();
         if (queue == null) {
@@ -426,11 +590,11 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
 
         jsonBuilder.field(ELEMENT_TYPE_FIELD_NAME, getElementTypeValueFromElement(element));
         if (element instanceof Vertex) {
-            jsonBuilder.field(elementTypeVisibilityPropertyName, ElasticSearchElementType.VERTEX.getKey());
+            jsonBuilder.field(elementTypeVisibilityPropertyName, ElasticsearchDocumentType.VERTEX.getKey());
             getConfig().getScoringStrategy().addFieldsToVertexDocument(this, jsonBuilder, (Vertex) element, null, authorizations);
         } else if (element instanceof Edge) {
             Edge edge = (Edge) element;
-            jsonBuilder.field(elementTypeVisibilityPropertyName, ElasticSearchElementType.VERTEX.getKey());
+            jsonBuilder.field(elementTypeVisibilityPropertyName, ElasticsearchDocumentType.VERTEX.getKey());
             getConfig().getScoringStrategy().addFieldsToEdgeDocument(this, jsonBuilder, edge, null, authorizations);
             jsonBuilder.field(IN_VERTEX_ID_FIELD_NAME, edge.getVertexId(Direction.IN));
             jsonBuilder.field(OUT_VERTEX_ID_FIELD_NAME, edge.getVertexId(Direction.OUT));
@@ -439,25 +603,18 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
             throw new VertexiumException("Unexpected element type " + element.getClass().getName());
         }
 
-        Map<String, Object> properties = getProperties(graph, element);
-        for (Map.Entry<String, Object> property : properties.entrySet()) {
-            if (property.getValue() instanceof List) {
-                List list = (List) property.getValue();
-                jsonBuilder.field(property.getKey(), list.toArray(new Object[list.size()]));
-            } else {
-                jsonBuilder.field(property.getKey(), convertValueForIndexing(property.getValue()));
-            }
-        }
+        Map<String, Object> fields = getPropertiesAsFields(graph, element);
+        addFieldsMap(jsonBuilder, fields);
 
         return jsonBuilder;
     }
 
     private String getElementTypeValueFromElement(Element element) {
         if (element instanceof Vertex) {
-            return ElasticSearchElementType.VERTEX.getKey();
+            return ElasticsearchDocumentType.VERTEX.getKey();
         }
         if (element instanceof Edge) {
-            return ElasticSearchElementType.EDGE.getKey();
+            return ElasticsearchDocumentType.EDGE.getKey();
         }
         throw new VertexiumException("Unhandled element type: " + element.getClass().getName());
     }
@@ -483,8 +640,8 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
         return elementTypeVisibilityPropertyName;
     }
 
-    private Map<String, Object> getProperties(Graph graph, Element element) throws IOException {
-        Map<String, Object> propertiesMap = new HashMap<>();
+    private Map<String, Object> getPropertiesAsFields(Graph graph, Element element) throws IOException {
+        Map<String, Object> fieldsMap = new HashMap<>();
         List<Property> streamingProperties = new ArrayList<>();
         for (Property property : element.getProperties()) {
             if (property.getValue() != null && shouldIgnoreType(property.getValue().getClass())) {
@@ -497,26 +654,25 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
                     streamingProperties.add(property);
                 }
             } else {
-                addPropertyToMap(graph, property, propertiesMap);
+                addPropertyToFieldMap(graph, property, property.getValue(), fieldsMap);
             }
         }
-        addStreamingPropertyValuesToMap(graph, streamingProperties, propertiesMap);
-        return propertiesMap;
+        addStreamingPropertyValuesToFieldMap(graph, streamingProperties, fieldsMap);
+        return fieldsMap;
     }
 
-    private void addPropertyToMap(Graph graph, Property property, Map<String, Object> propertiesMap) throws IOException {
-        Object propertyValue = property.getValue();
-        addPropertyToMap(graph, property, propertyValue, propertiesMap);
-    }
-
-    private void addPropertyToMap(Graph graph, Property property, Object propertyValue, Map<String, Object> propertiesMap) {
+    private void addPropertyToFieldMap(Graph graph, Property property, Object propertyValue, Map<String, Object> propertiesMap) {
         String propertyName = deflatePropertyName(graph, property);
+        addValuesToFieldMap(graph, propertiesMap, propertyName, propertyValue);
+    }
+
+    private void addValuesToFieldMap(Graph graph, Map<String, Object> propertiesMap, String propertyName, Object propertyValue) {
         PropertyDefinition propertyDefinition = getPropertyDefinition(graph, propertyName);
         if (propertyValue instanceof GeoPoint) {
-            convertGeoPoint(graph, propertiesMap, property, (GeoPoint) propertyValue);
+            convertGeoPoint(graph, propertiesMap, propertyName, (GeoPoint) propertyValue);
             return;
         } else if (propertyValue instanceof GeoCircle) {
-            convertGeoCircle(graph, propertiesMap, property, (GeoCircle) propertyValue);
+            convertGeoCircle(graph, propertiesMap, propertyName, (GeoCircle) propertyValue);
             return;
         } else if (propertyValue instanceof StreamingPropertyString) {
             propertyValue = ((StreamingPropertyString) propertyValue).getPropertyValue();
@@ -562,11 +718,11 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
         }
     }
 
-    private void addStreamingPropertyValuesToMap(Graph graph, List<Property> properties, Map<String, Object> propertiesMap) {
+    private void addStreamingPropertyValuesToFieldMap(Graph graph, List<Property> properties, Map<String, Object> propertiesMap) {
         List<StreamingPropertyValue> streamingPropertyValues = properties.stream()
                 .map((property) -> {
                     if (!(property.getValue() instanceof StreamingPropertyValue)) {
-                        throw new VertexiumException("property with a value that is not a StreamingPropertyValue passed to addStreamingPropertyValuesToMap");
+                        throw new VertexiumException("property with a value that is not a StreamingPropertyValue passed to addStreamingPropertyValuesToFieldMap");
                     }
                     return (StreamingPropertyValue) property.getValue();
                 })
@@ -576,7 +732,7 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
         for (int i = 0; i < properties.size(); i++) {
             try {
                 String propertyValue = IOUtils.toString(inputStreams.get(i));
-                addPropertyToMap(graph, properties.get(i), new StreamingPropertyString(propertyValue), propertiesMap);
+                addPropertyToFieldMap(graph, properties.get(i), new StreamingPropertyString(propertyValue), propertiesMap);
             } catch (IOException ex) {
                 throw new VertexiumException("could not convert streaming property to string", ex);
             }
@@ -605,7 +761,13 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
         return deflatePropertyName(graph, propertyName, propertyVisibility);
     }
 
-    protected String deflatePropertyName(Graph graph, String propertyName, Visibility propertyVisibility) {
+    protected String deflateExtendedDataColumnName(Graph graph, ExtendedDataMutation extendedDataMutation) {
+        String columnName = extendedDataMutation.getColumnName();
+        Visibility propertyVisibility = extendedDataMutation.getVisibility();
+        return deflatePropertyName(graph, columnName, propertyVisibility);
+    }
+
+    String deflatePropertyName(Graph graph, String propertyName, Visibility propertyVisibility) {
         String visibilityHash = getVisibilityHash(graph, propertyName, propertyVisibility);
         return this.nameSubstitutionStrategy.deflate(propertyName) + "_" + visibilityHash;
     }
@@ -718,16 +880,35 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
 
     @Override
     public void deleteElement(Graph graph, Element element, Authorizations authorizations) {
+        deleteExtendedDataForElement(element);
+
         String indexName = getIndexName(element);
         String id = element.getId();
         if (MUTATION_LOGGER.isTraceEnabled()) {
             LOGGER.trace("deleting document %s", id);
         }
-        getClient().delete(
-                getClient()
-                        .prepareDelete(indexName, ELEMENT_TYPE, id)
-                        .request()
-        ).actionGet();
+        getClient().prepareDelete(indexName, ELEMENT_TYPE, id).execute().actionGet();
+    }
+
+    private void deleteExtendedDataForElement(Element element) {
+        try {
+            FilterBuilder filter = FilterBuilders.termFilter(ElasticsearchSingleDocumentSearchIndex.EXTENDED_DATA_ELEMENT_ID_FIELD_NAME, element.getId());
+
+            SearchRequestBuilder s = getClient().prepareSearch(getIndicesToQuery())
+                    .setTypes(ElasticsearchSingleDocumentSearchIndex.ELEMENT_TYPE)
+                    .setQuery(QueryBuilders.filteredQuery(QueryBuilders.matchAllQuery(), filter))
+                    .addField(ElasticsearchSingleDocumentSearchIndex.EXTENDED_DATA_ELEMENT_ID_FIELD_NAME)
+                    .addField(ElasticsearchSingleDocumentSearchIndex.EXTENDED_DATA_TABLE_NAME_FIELD_NAME)
+                    .addField(ElasticsearchSingleDocumentSearchIndex.EXTENDED_DATA_TABLE_ROW_ID_FIELD_NAME);
+            for (SearchHit hit : s.execute().get().getHits()) {
+                if (MUTATION_LOGGER.isTraceEnabled()) {
+                    LOGGER.trace("deleting extended data document %s", hit.getId());
+                }
+                getClient().prepareDelete(hit.getIndex(), ELEMENT_TYPE, hit.getId()).execute().actionGet();
+            }
+        } catch (Exception ex) {
+            throw new VertexiumException("Could not delete extended data for element: " + element.getId());
+        }
     }
 
     @Override
@@ -840,36 +1021,75 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
         }
     }
 
+    private void addExtendedDataToIndex(Graph graph, IndexInfo indexInfo, ExtendedDataMutation column) throws IOException {
+        // unlike the super class we need to lookup column definitions based on the column name without
+        // the hash and define the column that way.
+        Object columnValue = column.getValue();
+
+        PropertyDefinition propertyDefinition = getPropertyDefinition(graph, column.getColumnName());
+        if (propertyDefinition != null) {
+            String deflatedColumnName = deflateExtendedDataColumnName(graph, column);
+            addPropertyDefinitionToIndex(graph, indexInfo, deflatedColumnName, column.getVisibility(), propertyDefinition);
+        } else {
+            addPropertyToIndexInner(graph, indexInfo, column);
+        }
+
+        propertyDefinition = getPropertyDefinition(graph, column.getColumnName() + EXACT_MATCH_PROPERTY_NAME_SUFFIX);
+        if (propertyDefinition != null) {
+            String deflatedColumnName = deflateExtendedDataColumnName(graph, column);
+            addPropertyDefinitionToIndex(graph, indexInfo, deflatedColumnName, column.getVisibility(), propertyDefinition);
+        }
+
+        if (columnValue instanceof GeoShape) {
+            propertyDefinition = getPropertyDefinition(graph, column.getColumnName() + GEO_PROPERTY_NAME_SUFFIX);
+            if (propertyDefinition != null) {
+                String deflatedPropertyName = deflateExtendedDataColumnName(graph, column);
+                addPropertyDefinitionToIndex(graph, indexInfo, deflatedPropertyName, column.getVisibility(), propertyDefinition);
+            }
+        }
+    }
+
     public void addPropertyToIndexInner(Graph graph, IndexInfo indexInfo, Property property) throws IOException {
         String deflatedPropertyName = deflatePropertyName(graph, property);
+        Object propertyValue = property.getValue();
+        Visibility propertyVisibility = property.getVisibility();
+        addPropertyToIndexInner(graph, indexInfo, deflatedPropertyName, propertyValue, propertyVisibility);
+    }
 
-        if (indexInfo.isPropertyDefined(deflatedPropertyName, property.getVisibility())) {
+    public void addPropertyToIndexInner(Graph graph, IndexInfo indexInfo, ExtendedDataMutation extendedDataMutation) throws IOException {
+        String deflatedPropertyName = deflateExtendedDataColumnName(graph, extendedDataMutation);
+        Object propertyValue = extendedDataMutation.getValue();
+        Visibility propertyVisibility = extendedDataMutation.getVisibility();
+        addPropertyToIndexInner(graph, indexInfo, deflatedPropertyName, propertyValue, propertyVisibility);
+    }
+
+    private void addPropertyToIndexInner(Graph graph, IndexInfo indexInfo, String deflatedPropertyName, Object propertyValue, Visibility propertyVisibility) throws IOException {
+        if (indexInfo.isPropertyDefined(deflatedPropertyName, propertyVisibility)) {
             return;
         }
 
         Class dataType;
-        Object propertyValue = property.getValue();
         if (propertyValue instanceof StreamingPropertyValue) {
             StreamingPropertyValue streamingPropertyValue = (StreamingPropertyValue) propertyValue;
             if (!streamingPropertyValue.isSearchIndex()) {
                 return;
             }
             dataType = streamingPropertyValue.getValueType();
-            addPropertyToIndex(graph, indexInfo, deflatedPropertyName, property.getVisibility(), dataType, true);
+            addPropertyToIndex(graph, indexInfo, deflatedPropertyName, propertyVisibility, dataType, true);
         } else if (propertyValue instanceof String) {
             dataType = String.class;
-            addPropertyToIndex(graph, indexInfo, deflatedPropertyName + EXACT_MATCH_PROPERTY_NAME_SUFFIX, property.getVisibility(), dataType, false);
-            addPropertyToIndex(graph, indexInfo, deflatedPropertyName, property.getVisibility(), dataType, true);
+            addPropertyToIndex(graph, indexInfo, deflatedPropertyName + EXACT_MATCH_PROPERTY_NAME_SUFFIX, propertyVisibility, dataType, false);
+            addPropertyToIndex(graph, indexInfo, deflatedPropertyName, propertyVisibility, dataType, true);
         } else if (propertyValue instanceof GeoPoint) {
-            addPropertyToIndex(graph, indexInfo, deflatedPropertyName + GEO_PROPERTY_NAME_SUFFIX, property.getVisibility(), GeoPoint.class, true);
-            addPropertyToIndex(graph, indexInfo, deflatedPropertyName, property.getVisibility(), String.class, true);
+            addPropertyToIndex(graph, indexInfo, deflatedPropertyName + GEO_PROPERTY_NAME_SUFFIX, propertyVisibility, GeoPoint.class, true);
+            addPropertyToIndex(graph, indexInfo, deflatedPropertyName, propertyVisibility, String.class, true);
         } else if (propertyValue instanceof GeoCircle) {
-            addPropertyToIndex(graph, indexInfo, deflatedPropertyName + GEO_PROPERTY_NAME_SUFFIX, property.getVisibility(), GeoCircle.class, true);
-            addPropertyToIndex(graph, indexInfo, deflatedPropertyName, property.getVisibility(), String.class, true);
+            addPropertyToIndex(graph, indexInfo, deflatedPropertyName + GEO_PROPERTY_NAME_SUFFIX, propertyVisibility, GeoCircle.class, true);
+            addPropertyToIndex(graph, indexInfo, deflatedPropertyName, propertyVisibility, String.class, true);
         } else {
             checkNotNull(propertyValue, "property value cannot be null for property: " + deflatedPropertyName);
             dataType = propertyValue.getClass();
-            addPropertyToIndex(graph, indexInfo, deflatedPropertyName, property.getVisibility(), dataType, true);
+            addPropertyToIndex(graph, indexInfo, deflatedPropertyName, propertyVisibility, dataType, true);
         }
     }
 
@@ -990,7 +1210,7 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
 
     @Override
     public Map<Object, Long> getVertexPropertyCountByValue(Graph graph, String propertyName, Authorizations authorizations) {
-        TermFilterBuilder elementTypeFilterBuilder = new TermFilterBuilder(ELEMENT_TYPE_FIELD_NAME, ElasticSearchElementType.VERTEX.getKey());
+        TermFilterBuilder elementTypeFilterBuilder = new TermFilterBuilder(ELEMENT_TYPE_FIELD_NAME, ElasticsearchDocumentType.VERTEX.getKey());
         FilteredQueryBuilder queryBuilder = QueryBuilders.filteredQuery(
                 QueryBuilders.matchAllQuery(),
                 elementTypeFilterBuilder
@@ -1090,6 +1310,9 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
     protected void createIndexAddFieldsToElementType(XContentBuilder builder) throws IOException {
         builder
                 .startObject(ELEMENT_TYPE_FIELD_NAME).field("type", "string").field("store", "true").endObject()
+                .startObject(EXTENDED_DATA_ELEMENT_ID_FIELD_NAME).field("type", "string").field("index", "not_analyzed").field("store", "true").endObject()
+                .startObject(EXTENDED_DATA_TABLE_ROW_ID_FIELD_NAME).field("type", "string").field("index", "not_analyzed").field("store", "true").endObject()
+                .startObject(EXTENDED_DATA_TABLE_NAME_FIELD_NAME).field("type", "string").field("index", "not_analyzed").field("store", "true").endObject()
                 .startObject(VISIBILITY_FIELD_NAME).field("type", "string").field("analyzer", "keyword").field("index", "not_analyzed").field("store", "true").endObject()
                 .startObject(IN_VERTEX_ID_FIELD_NAME).field("type", "string").field("analyzer", "keyword").field("index", "not_analyzed").field("store", "true").endObject()
                 .startObject(OUT_VERTEX_ID_FIELD_NAME).field("type", "string").field("analyzer", "keyword").field("index", "not_analyzed").field("store", "true").endObject()
@@ -1271,9 +1494,16 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
         return indexSelectionStrategy.getIndexNames(this, propertyDefinition);
     }
 
-    @SuppressWarnings("unused")
     protected String getIndexName(Element element) {
         return indexSelectionStrategy.getIndexName(this, element);
+    }
+
+    protected String getExtendedDataIndexName(Element element, String tableName, String rowId) {
+        return indexSelectionStrategy.getExtendedDataIndexName(this, element, tableName, rowId);
+    }
+
+    protected String getExtendedDataIndexName(ExtendedDataRowId rowId) {
+        return indexSelectionStrategy.getExtendedDataIndexName(this, rowId);
     }
 
     protected String[] getIndicesToQuery() {
@@ -1283,6 +1513,19 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
     @Override
     public boolean isFieldBoostSupported() {
         return true;
+    }
+
+    private IndexInfo addExtendedDataColumnsToIndex(Graph graph, Element element, String tableName, String rowId, List<ExtendedDataMutation> columns) {
+        try {
+            String indexName = getExtendedDataIndexName(element, tableName, rowId);
+            IndexInfo indexInfo = ensureIndexCreatedAndInitialized(graph, indexName);
+            for (ExtendedDataMutation column : columns) {
+                addExtendedDataToIndex(graph, indexInfo, column);
+            }
+            return indexInfo;
+        } catch (IOException e) {
+            throw new VertexiumException("Could not add properties to index", e);
+        }
     }
 
     public IndexInfo addPropertiesToIndex(Graph graph, Element element, Iterable<Property> properties) {
@@ -1428,13 +1671,13 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
         }
     }
 
-    protected void convertGeoPoint(Graph graph, Map<String, Object> propertiesMap, Property property, GeoPoint geoPoint) {
+    protected void convertGeoPoint(Graph graph, Map<String, Object> propertiesMap, String deflatedPropertyName, GeoPoint geoPoint) {
         Map<String, Object> propertyValueMap = new HashMap<>();
         propertyValueMap.put("lat", geoPoint.getLatitude());
         propertyValueMap.put("lon", geoPoint.getLongitude());
-        addPropertyValueToPropertiesMap(propertiesMap, deflatePropertyName(graph, property) + GEO_PROPERTY_NAME_SUFFIX, propertyValueMap);
+        addPropertyValueToPropertiesMap(propertiesMap, deflatedPropertyName + GEO_PROPERTY_NAME_SUFFIX, propertyValueMap);
         if (geoPoint.getDescription() != null) {
-            addPropertyValueToPropertiesMap(propertiesMap, deflatePropertyName(graph, property), geoPoint.getDescription());
+            addPropertyValueToPropertiesMap(propertiesMap, deflatedPropertyName, geoPoint.getDescription());
         }
     }
 
@@ -1452,7 +1695,7 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
         }
     }
 
-    protected void convertGeoCircle(Graph graph, Map<String, Object> propertiesMap, Property property, GeoCircle geoCircle) {
+    protected void convertGeoCircle(Graph graph, Map<String, Object> propertiesMap, String deflatedPropertyName, GeoCircle geoCircle) {
         Map<String, Object> propertyValueMap = new HashMap<>();
         propertyValueMap.put("type", "circle");
         List<Double> coordinates = new ArrayList<>();
@@ -1460,9 +1703,9 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
         coordinates.add(geoCircle.getLatitude());
         propertyValueMap.put("coordinates", coordinates);
         propertyValueMap.put("radius", geoCircle.getRadius() + "km");
-        addPropertyValueToPropertiesMap(propertiesMap, deflatePropertyName(graph, property) + GEO_PROPERTY_NAME_SUFFIX, propertyValueMap);
+        addPropertyValueToPropertiesMap(propertiesMap, deflatedPropertyName + GEO_PROPERTY_NAME_SUFFIX, propertyValueMap);
         if (geoCircle.getDescription() != null) {
-            addPropertyValueToPropertiesMap(propertiesMap, deflatePropertyName(graph, property), geoCircle.getDescription());
+            addPropertyValueToPropertiesMap(propertiesMap, deflatedPropertyName, geoCircle.getDescription());
         }
     }
 

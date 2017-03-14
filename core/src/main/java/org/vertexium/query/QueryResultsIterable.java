@@ -1,9 +1,9 @@
 package org.vertexium.query;
 
-import org.vertexium.Element;
+import org.vertexium.VertexiumObject;
 import org.vertexium.util.CloseableIterable;
 
-public interface QueryResultsIterable<T extends Element> extends
+public interface QueryResultsIterable<T extends VertexiumObject> extends
         IterableWithTotalHits<T>,
         CloseableIterable<T>,
         Iterable<T> {

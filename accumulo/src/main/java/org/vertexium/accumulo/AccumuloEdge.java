@@ -1,6 +1,7 @@
 package org.vertexium.accumulo;
 
 import com.google.common.base.Function;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import org.apache.accumulo.core.data.Key;
 import org.apache.accumulo.core.data.Value;
@@ -44,6 +45,7 @@ public class AccumuloEdge extends AccumuloElement implements Edge {
             Iterable<PropertyDeleteMutation> propertyDeleteMutations,
             Iterable<PropertySoftDeleteMutation> propertySoftDeleteMutations,
             Iterable<Visibility> hiddenVisibilities,
+            ImmutableSet<String> extendedDataTableNames,
             long timestamp,
             Authorizations authorizations
     ) {
@@ -55,6 +57,7 @@ public class AccumuloEdge extends AccumuloElement implements Edge {
                 propertyDeleteMutations,
                 propertySoftDeleteMutations,
                 hiddenVisibilities,
+                extendedDataTableNames,
                 timestamp,
                 authorizations
         );
@@ -90,6 +93,7 @@ public class AccumuloEdge extends AccumuloElement implements Edge {
                 }
             });
             properties = DataInputStreamUtils.decodeProperties(graph, in);
+            ImmutableSet<String> extendedDataTableNames = DataInputStreamUtils.decodeStringSet(in);
             String inVertexId = DataInputStreamUtils.decodeText(in).toString();
             String outVertexId = DataInputStreamUtils.decodeText(in).toString();
             String label = graph.getNameSubstitutionStrategy().inflate(DataInputStreamUtils.decodeText(in));
@@ -106,6 +110,7 @@ public class AccumuloEdge extends AccumuloElement implements Edge {
                     propertyDeleteMutations,
                     propertySoftDeleteMutations,
                     hiddenVisibilities,
+                    extendedDataTableNames,
                     timestamp,
                     authorizations
             );

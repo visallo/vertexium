@@ -12,10 +12,11 @@ public abstract class ExistingElementMutationImpl<T extends Element> implements 
     private final List<Property> properties = new ArrayList<>();
     private final List<PropertyDeleteMutation> propertyDeletes = new ArrayList<>();
     private final List<PropertySoftDeleteMutation> propertySoftDeletes = new ArrayList<>();
-    private Visibility newElementVisibility;
     private final List<AlterPropertyVisibility> alterPropertyVisibilities = new ArrayList<>();
     private final List<SetPropertyMetadata> setPropertyMetadatas = new ArrayList<>();
+    private final List<ExtendedDataMutation> extendedDatas = new ArrayList<>();
     private final T element;
+    private Visibility newElementVisibility;
     private IndexHint indexHint = IndexHint.INDEX;
 
     public ExistingElementMutationImpl(T element) {
@@ -60,6 +61,11 @@ public abstract class ExistingElementMutationImpl<T extends Element> implements 
     @Override
     public Iterable<PropertySoftDeleteMutation> getPropertySoftDeletes() {
         return propertySoftDeletes;
+    }
+
+    @Override
+    public Iterable<ExtendedDataMutation> getExtendedData() {
+        return extendedDatas;
     }
 
     @Override
@@ -185,6 +191,18 @@ public abstract class ExistingElementMutationImpl<T extends Element> implements 
     }
 
     @Override
+    public ExistingElementMutation<T> addExtendedData(String tableName, String row, String column, Object value, Visibility visibility) {
+        this.extendedDatas.add(new ExtendedDataMutation(tableName, row, column, value, null, visibility));
+        return this;
+    }
+
+    @Override
+    public ExistingElementMutation<T> addExtendedData(String tableName, String row, String column, Object value, Long timestamp, Visibility visibility) {
+        this.extendedDatas.add(new ExtendedDataMutation(tableName, row, column, value, timestamp, visibility));
+        return this;
+    }
+
+    @Override
     public T getElement() {
         return element;
     }
@@ -234,6 +252,10 @@ public abstract class ExistingElementMutationImpl<T extends Element> implements 
         }
 
         if (setPropertyMetadatas.size() > 0) {
+            return true;
+        }
+
+        if (extendedDatas.size() > 0) {
             return true;
         }
 

@@ -13,20 +13,21 @@ public enum Contains implements Predicate {
     public boolean evaluate(Iterable<Property> properties, Object second, Collection<PropertyDefinition> propertyDefinitions) {
         for (Property property : properties) {
             PropertyDefinition propertyDefinition = PropertyDefinition.findPropertyDefinition(propertyDefinitions, property.getName());
-            if (evaluate(property, second, propertyDefinition)) {
+            if (evaluate(property.getValue(), second, propertyDefinition)) {
                 return true;
             }
         }
         return false;
     }
 
-    private boolean evaluate(Property property, Object second, PropertyDefinition propertyDefinition) {
+    @Override
+    public boolean evaluate(Object first, Object second, PropertyDefinition propertyDefinition) {
         if (second instanceof Iterable) {
             switch (this) {
                 case IN:
-                    return evaluateInIterable(property, (Iterable) second, propertyDefinition);
+                    return evaluateInIterable(first, (Iterable) second, propertyDefinition);
                 case NOT_IN:
-                    return !evaluateInIterable(property, (Iterable) second, propertyDefinition);
+                    return !evaluateInIterable(first, (Iterable) second, propertyDefinition);
                 default:
                     throw new VertexiumException("Not implemented: " + this);
             }
@@ -35,9 +36,9 @@ public enum Contains implements Predicate {
         if (second.getClass().isArray()) {
             switch (this) {
                 case IN:
-                    return evaluateInIterable(property, (Object[]) second, propertyDefinition);
+                    return evaluateInIterable(first, (Object[]) second, propertyDefinition);
                 case NOT_IN:
-                    return !evaluateInIterable(property, (Object[]) second, propertyDefinition);
+                    return !evaluateInIterable(first, (Object[]) second, propertyDefinition);
                 default:
                     throw new VertexiumException("Not implemented: " + this);
             }
@@ -46,8 +47,7 @@ public enum Contains implements Predicate {
         throw new VertexiumException("Not implemented 'Contains' type. Expected Iterable found " + second.getClass().getName());
     }
 
-    private boolean evaluateInIterable(Property property, Iterable second, PropertyDefinition propertyDefinition) {
-        Object first = property.getValue();
+    private boolean evaluateInIterable(Object first, Iterable second, PropertyDefinition propertyDefinition) {
         for (Object o : second) {
             if (Compare.evaluate(first, Compare.EQUAL, o, propertyDefinition)) {
                 return true;
@@ -56,8 +56,7 @@ public enum Contains implements Predicate {
         return false;
     }
 
-    private boolean evaluateInIterable(Property property, Object[] second, PropertyDefinition propertyDefinition) {
-        Object first = property.getValue();
+    private boolean evaluateInIterable(Object first, Object[] second, PropertyDefinition propertyDefinition) {
         for (Object o : second) {
             if (Compare.evaluate(first, Compare.EQUAL, o, propertyDefinition)) {
                 return true;

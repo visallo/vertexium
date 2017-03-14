@@ -1087,4 +1087,29 @@ public interface Graph {
      * @return InputStreams in the same order as the input list
      */
     List<InputStream> getStreamingPropertyValueInputStreams(List<StreamingPropertyValue> streamingPropertyValues);
+
+    /**
+     * Gets the specified extended data rows.
+     *
+     * @param ids            The ids of the rows to get.
+     * @param authorizations The authorizations used to get the rows
+     * @return Rows
+     */
+    Iterable<ExtendedDataRow> getExtendedData(Iterable<ExtendedDataRowId> ids, Authorizations authorizations);
+
+    /**
+     * Gets the specified extended data rows.
+     *
+     * @param elementType    The type of element to get the rows from
+     * @param elementId      The element id to get the rows from
+     * @param tableName      The name of the table within the element to get the rows from
+     * @param authorizations The authorizations used to get the rows
+     * @return Rows
+     */
+    Iterable<ExtendedDataRow> getExtendedData(ElementType elementType, String elementId, String tableName, Authorizations authorizations);
+
+    /**
+     * Deletes an extended data row
+     */
+    void deleteExtendedDataRow(ExtendedDataRowId id, Authorizations authorizations);
 }

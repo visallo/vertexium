@@ -1,5 +1,6 @@
 package org.vertexium;
 
+import com.google.common.collect.Sets;
 import org.vertexium.event.GraphEvent;
 import org.vertexium.event.GraphEventListener;
 import org.vertexium.id.IdGenerator;
@@ -156,7 +157,7 @@ public abstract class GraphBase implements Graph {
 
             @Override
             protected Iterator<String> createIterator() {
-                return ids.iterator();
+                return Sets.newHashSet(ids).iterator();
             }
         };
     }
@@ -446,7 +447,7 @@ public abstract class GraphBase implements Graph {
 
             @Override
             protected Iterator<String> createIterator() {
-                return ids.iterator();
+                return Sets.newHashSet(ids).iterator();
             }
         };
     }
@@ -858,6 +859,9 @@ public abstract class GraphBase implements Graph {
     public abstract void deleteEdge(Edge edge, Authorizations authorizations);
 
     @Override
+    public abstract void deleteExtendedDataRow(ExtendedDataRowId id, Authorizations authorizations);
+
+    @Override
     public abstract MultiVertexQuery query(String[] vertexIds, String queryString, Authorizations authorizations);
 
     @Override
@@ -979,5 +983,59 @@ public abstract class GraphBase implements Graph {
         return streamingPropertyValues.stream()
                 .map(StreamingPropertyValue::getInputStream)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public Iterable<ExtendedDataRow> getExtendedData(Iterable<ExtendedDataRowId> idsIterable, Authorizations authorizations) {
+        Set<ExtendedDataRowId> ids = Sets.newHashSet(idsIterable);
+        return new FilterIterable<ExtendedDataRow>(getAllExtendedData(authorizations)) {
+            @Override
+            protected boolean isIncluded(ExtendedDataRow row) {
+                return ids.contains(row.getId());
+            }
+        };
+    }
+
+    @Override
+    public Iterable<ExtendedDataRow> getExtendedData(
+            ElementType elementType,
+            String elementId,
+            String tableName,
+            Authorizations authorizations
+    ) {
+        return new FilterIterable<ExtendedDataRow>(getAllExtendedData(authorizations)) {
+            @Override
+            protected boolean isIncluded(ExtendedDataRow row) {
+                ExtendedDataRowId rowId = row.getId();
+                return (elementType != null && elementType.equals(rowId.getElementType()))
+                        && (elementId != null && elementId.equals(rowId.getElementId()))
+                        && (tableName != null && tableName.equals(rowId.getTableName()));
+            }
+        };
+    }
+
+    protected Iterable<ExtendedDataRow> getAllExtendedData(Authorizations authorizations) {
+        JoinIterable<Element> allElements = new JoinIterable<>(getVertices(authorizations), getEdges(authorizations));
+        return new SelectManyIterable<Element, ExtendedDataRow>(allElements) {
+            @Override
+            protected Iterable<? extends ExtendedDataRow> getIterable(Element element) {
+                return new SelectManyIterable<String, ExtendedDataRow>(element.getExtendedDataTableNames()) {
+                    @Override
+                    protected Iterable<? extends ExtendedDataRow> getIterable(String tableName) {
+                        return element.getExtendedData(tableName);
+                    }
+                };
+            }
+        };
+    }
+
+    protected void deleteAllExtendedDataForElement(Element element, Authorizations authorizations) {
+        if (element.getExtendedDataTableNames().size() <= 0) {
+            return;
+        }
+
+        for (ExtendedDataRow row : getExtendedData(ElementType.getTypeFromElement(element), element.getId(), null, authorizations)) {
+            deleteExtendedDataRow(row.getId(), authorizations);
+        }
     }
 }

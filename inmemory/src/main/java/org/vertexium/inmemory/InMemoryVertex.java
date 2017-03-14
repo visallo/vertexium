@@ -308,6 +308,7 @@ public class InMemoryVertex extends InMemoryElement<InMemoryVertex> implements V
                             oldElementVisibility,
                             getNewElementVisibility(),
                             getAlterPropertyVisibilities(),
+                            getExtendedData(),
                             authorizations
                     );
                 }

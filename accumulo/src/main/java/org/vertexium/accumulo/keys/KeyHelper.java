@@ -1,7 +1,10 @@
 package org.vertexium.accumulo.keys;
 
 import org.apache.hadoop.io.Text;
+import org.vertexium.ElementType;
+import org.vertexium.ExtendedDataRowId;
 import org.vertexium.Property;
+import org.vertexium.VertexiumException;
 import org.vertexium.accumulo.iterator.model.KeyBase;
 import org.vertexium.accumulo.iterator.model.PropertyColumnQualifier;
 import org.vertexium.accumulo.iterator.model.PropertyMetadataColumnQualifier;
@@ -15,11 +18,7 @@ import java.nio.charset.CharsetEncoder;
 import java.nio.charset.CodingErrorAction;
 
 public class KeyHelper {
-    private static ThreadLocal<CharsetEncoder> ENCODER_FACTORY = new ThreadLocal<CharsetEncoder>() {
-        protected CharsetEncoder initialValue() {
-            return Charset.forName("UTF-8").newEncoder().onMalformedInput(CodingErrorAction.REPLACE).onUnmappableCharacter(CodingErrorAction.REPLACE);
-        }
-    };
+    private static ThreadLocal<CharsetEncoder> ENCODER_FACTORY = ThreadLocal.withInitial(() -> Charset.forName("UTF-8").newEncoder().onMalformedInput(CodingErrorAction.REPLACE).onUnmappableCharacter(CodingErrorAction.REPLACE));
 
     public static PropertyMetadataColumnQualifier createPropertyMetadataColumnQualifier(String columnQualifier, NameSubstitutionStrategy nameSubstitutionStrategy) {
         String[] parts = KeyBase.splitOnValueSeparator(columnQualifier, 4);
@@ -101,6 +100,50 @@ public class KeyHelper {
             return result;
         } catch (CharacterCodingException cce) {
             throw new RuntimeException("This should never happen", cce);
+        }
+    }
+
+    public static Text createExtendedDataRowKey(ExtendedDataRowId rowId) {
+        return createExtendedDataRowKey(rowId.getElementType(), rowId.getElementId(), rowId.getTableName(), rowId.getRowId());
+    }
+
+    public static Text createExtendedDataRowKey(ElementType elementType, String elementId, String tableName, String row) {
+        String elementTypePrefix = getExtendedDataRowKeyElementTypePrefix(elementType);
+        return new Text(elementTypePrefix + elementId + KeyBase.VALUE_SEPARATOR + tableName + KeyBase.VALUE_SEPARATOR + row);
+    }
+
+    private static String getExtendedDataRowKeyElementTypePrefix(ElementType elementType) {
+        switch (elementType) {
+            case VERTEX:
+                return "V";
+            case EDGE:
+                return "E";
+            default:
+                throw new VertexiumException("Unhandled element type: " + elementType);
+        }
+    }
+
+    public static ExtendedDataRowId parseExtendedDataRowId(Text accumuloRow) {
+        return parseExtendedDataRowId(accumuloRow.toString());
+    }
+
+    public static ExtendedDataRowId parseExtendedDataRowId(String accumuloRow) {
+        ElementType elementType = extendedDataRowIdElementTypePrefixToElementType(accumuloRow.charAt(0));
+        String[] parts = accumuloRow.substring(1).split("" + KeyBase.VALUE_SEPARATOR);
+        if (parts.length != 3) {
+            throw new VertexiumException("Invalid Accumulo row key found for extended data, expected 3 parts found " + parts.length + ": " + accumuloRow);
+        }
+        return new ExtendedDataRowId(elementType, parts[0], parts[1], parts[2]);
+    }
+
+    private static ElementType extendedDataRowIdElementTypePrefixToElementType(char c) {
+        switch (c) {
+            case 'V':
+                return ElementType.VERTEX;
+            case 'E':
+                return ElementType.EDGE;
+            default:
+                throw new VertexiumException("Invalid element type prefix: " + c);
         }
     }
 }

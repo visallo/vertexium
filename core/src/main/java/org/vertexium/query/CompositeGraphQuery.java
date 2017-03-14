@@ -1,5 +1,6 @@
 package org.vertexium.query;
 
+import com.google.common.collect.Lists;
 import org.vertexium.*;
 import org.vertexium.util.SelectManyIterable;
 
@@ -106,6 +107,56 @@ public class CompositeGraphQuery implements Query {
     }
 
     @Override
+    public QueryResultsIterable<ExtendedDataRow> extendedDataRows() {
+        return extendedDataRows(FetchHint.ALL);
+    }
+
+    @Override
+    public QueryResultsIterable<ExtendedDataRow> extendedDataRows(EnumSet<FetchHint> fetchHints) {
+        final Set<ExtendedDataRowId> seenIds = new HashSet<>();
+        return new QueryResultsSelectManyIterable<ExtendedDataRow>(this.queries) {
+            @Override
+            public Iterable<ExtendedDataRow> getIterable(Query query) {
+                return query.extendedDataRows(fetchHints);
+            }
+
+            @Override
+            protected boolean isIncluded(ExtendedDataRow extendedDataRows) {
+                if (seenIds.contains(extendedDataRows.getId())) {
+                    return false;
+                }
+                seenIds.add(extendedDataRows.getId());
+                return super.isIncluded(extendedDataRows);
+            }
+        };
+    }
+
+    @Override
+    public QueryResultsIterable<? extends VertexiumObject> search(EnumSet<VertexiumObjectType> objectTypes, EnumSet<FetchHint> fetchHints) {
+        final Set<Object> seenIds = new HashSet<>();
+        return new QueryResultsSelectManyIterable<VertexiumObject>(this.queries) {
+            @Override
+            public Iterable<? extends VertexiumObject> getIterable(Query query) {
+                return query.search(objectTypes, fetchHints);
+            }
+
+            @Override
+            protected boolean isIncluded(VertexiumObject vertexiumObject) {
+                if (seenIds.contains(vertexiumObject.getId())) {
+                    return false;
+                }
+                seenIds.add(vertexiumObject.getId());
+                return super.isIncluded(vertexiumObject);
+            }
+        };
+    }
+
+    @Override
+    public QueryResultsIterable<? extends VertexiumObject> search() {
+        return search(VertexiumObjectType.ALL, FetchHint.ALL);
+    }
+
+    @Override
     public <T> Query range(String propertyName, T startValue, T endValue) {
         for (Query query : queries) {
             query.range(propertyName, startValue, endValue);
@@ -122,7 +173,7 @@ public class CompositeGraphQuery implements Query {
     }
 
     @Override
-    public <T> Query hasEdgeLabel(String... edgeLabels) {
+    public Query hasEdgeLabel(String... edgeLabels) {
         for (Query query : queries) {
             query.hasEdgeLabel(edgeLabels);
         }
@@ -130,9 +181,36 @@ public class CompositeGraphQuery implements Query {
     }
 
     @Override
-    public <T> Query hasEdgeLabel(Collection<String> edgeLabels) {
+    public Query hasEdgeLabel(Collection<String> edgeLabels) {
         for (Query query : queries) {
             query.hasEdgeLabel(edgeLabels);
+        }
+        return this;
+    }
+
+    @Override
+    public Query hasExtendedData(ElementType elementType, String elementId) {
+        return hasExtendedData(elementType, elementId, null);
+    }
+
+    @Override
+    public Query hasExtendedData(String tableName) {
+        return hasExtendedData(null, null, tableName);
+    }
+
+    @Override
+    public Query hasExtendedData(ElementType elementType, String elementId, String tableName) {
+        for (Query query : queries) {
+            query.hasExtendedData(elementType, elementId, tableName);
+        }
+        return this;
+    }
+
+    @Override
+    public Query hasExtendedData(Iterable<HasExtendedDataFilter> filters) {
+        filters = Lists.newArrayList(filters);
+        for (Query query : queries) {
+            query.hasExtendedData(filters);
         }
         return this;
     }

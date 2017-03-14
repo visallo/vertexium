@@ -1,8 +1,8 @@
 package org.vertexium.test;
 
 
-import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import org.apache.commons.io.IOUtils;
 import org.junit.After;
@@ -32,13 +32,12 @@ import java.math.BigInteger;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
 import static org.junit.Assume.assumeTrue;
+import static org.vertexium.test.util.VertexiumAssert.*;
 import static org.vertexium.util.IterableUtils.count;
 import static org.vertexium.util.IterableUtils.toList;
-import static org.vertexium.util.StreamUtils.stream;
 
 @RunWith(JUnit4.class)
 public abstract class GraphTestBase {
@@ -63,7 +62,6 @@ public abstract class GraphTestBase {
     public static final int LARGE_PROPERTY_VALUE_SIZE = 1024 * 1024 + 1;
 
     protected Graph graph;
-    protected List<GraphEvent> graphEvents;
 
     protected abstract Graph createGraph() throws Exception;
 
@@ -87,11 +85,11 @@ public abstract class GraphTestBase {
     @Before
     public void before() throws Exception {
         graph = createGraph();
-        graphEvents = new ArrayList<>();
+        clearGraphEvents();
         graph.addGraphEventListener(new GraphEventListener() {
             @Override
             public void onGraphEvent(GraphEvent graphEvent) {
-                graphEvents.add(graphEvent);
+                addGraphEvent(graphEvent);
             }
         });
     }
@@ -304,7 +302,7 @@ public abstract class GraphTestBase {
                 new AddPropertyEvent(graph, vertexAdded, vertexAdded.getProperty("prop1")),
                 new AddPropertyEvent(graph, vertexAdded, vertexAdded.getProperty("prop2"))
         );
-        graphEvents.clear();
+        clearGraphEvents();
 
         v = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B);
         vertexAdded = v.prepareMutation()
@@ -438,7 +436,7 @@ public abstract class GraphTestBase {
                 .addPropertyValue("propid2a", "prop2", "value2a", VISIBILITY_A)
                 .save(AUTHORIZATIONS_ALL);
         graph.flush();
-        this.graphEvents.clear();
+        clearGraphEvents();
 
         v = graph.getVertex("v1", AUTHORIZATIONS_A);
         Property prop1_propid1a = v.getProperty("propid1a", "prop1");
@@ -455,7 +453,7 @@ public abstract class GraphTestBase {
                 new DeletePropertyEvent(graph, v, prop1_propid1a),
                 new DeletePropertyEvent(graph, v, prop1_propid1b)
         );
-        this.graphEvents.clear();
+        clearGraphEvents();
 
         Property prop2_propid2a = v.getProperty("propid2a", "prop2");
         v.deleteProperty("propid2a", "prop2", AUTHORIZATIONS_A_AND_B);
@@ -481,7 +479,7 @@ public abstract class GraphTestBase {
                 .addPropertyValue("key1", "prop1", "value1", VISIBILITY_A)
                 .save(AUTHORIZATIONS_A);
         graph.flush();
-        this.graphEvents.clear();
+        clearGraphEvents();
 
         // delete multiple properties
         v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
@@ -501,7 +499,7 @@ public abstract class GraphTestBase {
                 new DeletePropertyEvent(graph, v1, prop1_propid1a),
                 new DeletePropertyEvent(graph, v1, prop1_propid1b)
         );
-        this.graphEvents.clear();
+        clearGraphEvents();
 
         // delete property with key and name
         Property prop2_propid2a = v1.getProperty("propid2a", "prop2");
@@ -515,7 +513,7 @@ public abstract class GraphTestBase {
         assertEvents(
                 new DeletePropertyEvent(graph, v1, prop2_propid2a)
         );
-        this.graphEvents.clear();
+        clearGraphEvents();
 
         // delete property from edge
         Edge e1 = graph.getEdge("e1", AUTHORIZATIONS_A);
@@ -1838,7 +1836,8 @@ public abstract class GraphTestBase {
         List<ElementMutation> mutations = new ArrayList<>();
         for (int i = 0; i < 2; i++) {
             ElementBuilder<Vertex> m = graph.prepareVertex("v" + i, VISIBILITY_A)
-                    .addPropertyValue("k1", "name", "joe", VISIBILITY_A);
+                    .addPropertyValue("k1", "name", "joe", VISIBILITY_A)
+                    .addExtendedData("table1", "row1", "col1", "extended", VISIBILITY_A);
             mutations.add(m);
         }
         List<Element> saveVertices = toList(graph.saveElementMutations(mutations, AUTHORIZATIONS_ALL));
@@ -1850,10 +1849,15 @@ public abstract class GraphTestBase {
                 new AddVertexEvent(graph, (Vertex) saveVertices.get(1)),
                 new AddPropertyEvent(graph, saveVertices.get(1), saveVertices.get(1).getProperty("k1", "name"))
         );
-        graphEvents.clear();
+        clearGraphEvents();
 
         QueryResultsIterable<Vertex> vertices = graph.query(AUTHORIZATIONS_ALL).vertices();
         assertResultsCount(2, 2, vertices);
+
+        QueryResultsIterable<? extends VertexiumObject> items = graph.query(AUTHORIZATIONS_ALL)
+                .has("col1", "extended")
+                .search();
+        assertResultsCount(2, 2, items);
 
         mutations.clear();
         mutations.add(((Vertex) saveVertices.get(0)).prepareMutation());
@@ -5160,7 +5164,8 @@ public abstract class GraphTestBase {
             String propertyName,
             Visibility visibility,
             Authorizations authorizations,
-            double... percents) {
+            double... percents
+    ) {
         Query q = graph.query(authorizations).limit(0);
         PercentilesAggregation agg = new PercentilesAggregation("percentiles", propertyName, visibility);
         agg.setPercents(percents);
@@ -5507,6 +5512,261 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    public void testExtendedData() {
+        Date date1 = new Date(1487083490000L);
+        Date date2 = new Date(1487083480000L);
+        Date date3 = new Date(1487083470000L);
+        graph.prepareVertex("v1", VISIBILITY_A)
+                .addExtendedData("table1", "row1", "date", date1, VISIBILITY_A)
+                .addExtendedData("table1", "row1", "name", "value1", VISIBILITY_A)
+                .addExtendedData("table1", "row2", "date", date2, VISIBILITY_A)
+                .addExtendedData("table1", "row2", "name", "value2", VISIBILITY_A)
+                .addExtendedData("table1", "row3", "date", date3, VISIBILITY_A)
+                .addExtendedData("table1", "row3", "name", "value3", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
+        graph.flush();
+
+        Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
+        assertEquals(ImmutableSet.of("table1"), v1.getExtendedDataTableNames());
+        Iterator<ExtendedDataRow> rows = v1.getExtendedData("table1").iterator();
+
+        ExtendedDataRow row = rows.next();
+        assertEquals(date1, row.getPropertyValue("date"));
+        assertEquals("value1", row.getPropertyValue("name"));
+
+        row = rows.next();
+        assertEquals(date2, row.getPropertyValue("date"));
+        assertEquals("value2", row.getPropertyValue("name"));
+
+        row = rows.next();
+        assertEquals(date3, row.getPropertyValue("date"));
+        assertEquals("value3", row.getPropertyValue("name"));
+
+        assertFalse(rows.hasNext());
+
+        rows = graph.getExtendedData(
+                Lists.newArrayList(
+                        new ExtendedDataRowId(ElementType.VERTEX, "v1", "table1", "row1"),
+                        new ExtendedDataRowId(ElementType.VERTEX, "v1", "table1", "row2")
+                ),
+                AUTHORIZATIONS_A
+        ).iterator();
+
+        row = rows.next();
+        assertEquals(date1, row.getPropertyValue("date"));
+        assertEquals("value1", row.getPropertyValue("name"));
+
+        row = rows.next();
+        assertEquals(date2, row.getPropertyValue("date"));
+        assertEquals("value2", row.getPropertyValue("name"));
+
+        assertFalse(rows.hasNext());
+
+        rows = graph.getExtendedData(ElementType.VERTEX, "v1", "table1", AUTHORIZATIONS_A).iterator();
+
+        row = rows.next();
+        assertEquals(date1, row.getPropertyValue("date"));
+        assertEquals("value1", row.getPropertyValue("name"));
+
+        row = rows.next();
+        assertEquals(date2, row.getPropertyValue("date"));
+        assertEquals("value2", row.getPropertyValue("name"));
+
+        row = rows.next();
+        assertEquals(date3, row.getPropertyValue("date"));
+        assertEquals("value3", row.getPropertyValue("name"));
+
+        assertFalse(rows.hasNext());
+
+        v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
+        v1.prepareMutation()
+                .addExtendedData("table1", "row4", "name", "value4", VISIBILITY_A)
+                .addExtendedData("table2", "row1", "name", "value1", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
+        graph.flush();
+
+        v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
+        assertTrue("table1 should exist", v1.getExtendedDataTableNames().contains("table1"));
+        assertTrue("table2 should exist", v1.getExtendedDataTableNames().contains("table2"));
+
+        List<ExtendedDataRow> rowsList = toList(v1.getExtendedData("table1"));
+        assertEquals(4, rowsList.size());
+        rowsList = toList(v1.getExtendedData("table2"));
+        assertEquals(1, rowsList.size());
+    }
+
+    @Test
+    public void testExtendedDataDelete() {
+        graph.prepareVertex("v1", VISIBILITY_A)
+                .addExtendedData("table1", "row1", "name", "value", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
+        graph.flush();
+
+        graph.deleteVertex("v1", AUTHORIZATIONS_A);
+        graph.flush();
+
+        QueryResultsIterable<? extends VertexiumObject> searchResults = graph.query("value", AUTHORIZATIONS_A)
+                .search();
+        assertEquals(0, searchResults.getTotalHits());
+    }
+
+    @Test
+    public void testExtendedDataQueryVertices() {
+        Date date1 = new Date(1487083490000L);
+        Date date2 = new Date(1487083480000L);
+        graph.prepareVertex("v1", VISIBILITY_A)
+                .addExtendedData("table1", "row1", "date", date1, VISIBILITY_A)
+                .addExtendedData("table1", "row1", "name", "value 1", VISIBILITY_A)
+                .addExtendedData("table1", "row2", "date", date2, VISIBILITY_A)
+                .addExtendedData("table1", "row2", "name", "value 2", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
+        graph.prepareVertex("v2", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
+        graph.flush();
+
+        // Should not come back when finding vertices
+        QueryResultsIterable<Vertex> queryResults = graph.query(AUTHORIZATIONS_A)
+                .has("date", date1)
+                .vertices();
+        assertEquals(0, queryResults.getTotalHits());
+
+        QueryResultsIterable<? extends VertexiumObject> searchResults = graph.query(AUTHORIZATIONS_A)
+                .has("date", date1)
+                .search();
+        assertEquals(1, searchResults.getTotalHits());
+        List<? extends VertexiumObject> searchResultsList = toList(searchResults);
+        assertEquals(1, searchResultsList.size());
+        ExtendedDataRow searchResult = (ExtendedDataRow) searchResultsList.get(0);
+        assertEquals("v1", searchResult.getId().getElementId());
+        assertEquals("row1", searchResult.getId().getRowId());
+
+        searchResults = graph.query("value", AUTHORIZATIONS_A)
+                .search();
+        assertEquals(2, searchResults.getTotalHits());
+        searchResultsList = toList(searchResults);
+        assertEquals(2, searchResultsList.size());
+        assertRowIdsAnyOrder(Lists.newArrayList("row1", "row2"), searchResultsList);
+
+        searchResults = graph.query("value", AUTHORIZATIONS_A)
+                .hasExtendedData(ElementType.VERTEX, "v1", "table1")
+                .search();
+        assertEquals(2, searchResults.getTotalHits());
+        searchResultsList = toList(searchResults);
+        assertEquals(2, searchResultsList.size());
+        assertRowIdsAnyOrder(Lists.newArrayList("row1", "row2"), searchResultsList);
+
+        searchResults = graph.query("value", AUTHORIZATIONS_A)
+                .hasExtendedData("table1")
+                .search();
+        assertEquals(2, searchResults.getTotalHits());
+        searchResultsList = toList(searchResults);
+        assertEquals(2, searchResultsList.size());
+        assertRowIdsAnyOrder(Lists.newArrayList("row1", "row2"), searchResultsList);
+    }
+
+    @Test
+    public void testExtendedDataVertexQuery() {
+        graph.prepareVertex("v1", VISIBILITY_A)
+                .addExtendedData("table1", "row1", "name", "value 1", VISIBILITY_A)
+                .addExtendedData("table1", "row2", "name", "value 2", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
+        graph.prepareVertex("v2", VISIBILITY_A)
+                .addExtendedData("table1", "row3", "name", "value 1", VISIBILITY_A)
+                .addExtendedData("table1", "row4", "name", "value 2", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
+        graph.prepareEdge("e1", "v1", "v2", "label", VISIBILITY_A)
+                .addExtendedData("table1", "row5", "name", "value 1", VISIBILITY_A)
+                .addExtendedData("table1", "row6", "name", "value 2", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
+        graph.flush();
+
+        Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
+        List<ExtendedDataRow> searchResultsList = toList(
+                v1.query(AUTHORIZATIONS_A)
+                        .extendedDataRows()
+        );
+        assertRowIdsAnyOrder(Lists.newArrayList("row3", "row4", "row5", "row6"), searchResultsList);
+    }
+
+    @Test
+    public void testExtendedDataQueryAfterDeleteForVertex() {
+        graph.prepareVertex("v1", VISIBILITY_A)
+                .addExtendedData("table1", "row1", "name", "value 1", VISIBILITY_A)
+                .addExtendedData("table1", "row2", "name", "value 2", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
+        graph.flush();
+
+        List<ExtendedDataRow> searchResultsList = toList(graph.query(AUTHORIZATIONS_A).extendedDataRows());
+        assertRowIdsAnyOrder(Lists.newArrayList("row1", "row2"), searchResultsList);
+
+        graph.deleteVertex("v1", AUTHORIZATIONS_A);
+        graph.flush();
+
+        searchResultsList = toList(graph.query(AUTHORIZATIONS_A).extendedDataRows());
+        assertRowIdsAnyOrder(Lists.newArrayList(), searchResultsList);
+    }
+
+    @Test
+    public void testExtendedDataQueryAfterDeleteForEdge() {
+        graph.prepareVertex("v1", VISIBILITY_A).save(AUTHORIZATIONS_A);
+        graph.prepareVertex("v2", VISIBILITY_A).save(AUTHORIZATIONS_A);
+        graph.prepareEdge("e1", "v1", "v2", "label", VISIBILITY_A)
+                .addExtendedData("table1", "row1", "name", "value 1", VISIBILITY_A)
+                .addExtendedData("table1", "row2", "name", "value 2", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
+        graph.flush();
+
+        List<ExtendedDataRow> searchResultsList = toList(graph.query(AUTHORIZATIONS_A).extendedDataRows());
+        assertRowIdsAnyOrder(Lists.newArrayList("row1", "row2"), searchResultsList);
+
+        graph.deleteEdge("e1", AUTHORIZATIONS_A);
+        graph.flush();
+
+        searchResultsList = toList(graph.query(AUTHORIZATIONS_A).extendedDataRows());
+        assertRowIdsAnyOrder(Lists.newArrayList(), searchResultsList);
+    }
+
+    @Test
+    public void testExtendedDataQueryEdges() {
+        Date date1 = new Date(1487083490000L);
+        Date date2 = new Date(1487083480000L);
+        graph.prepareVertex("v1", VISIBILITY_A).save(AUTHORIZATIONS_A);
+        graph.prepareVertex("v2", VISIBILITY_A).save(AUTHORIZATIONS_A);
+        graph.prepareEdge("e1", "v1", "v2", "label", VISIBILITY_A)
+                .addExtendedData("table1", "row1", "date", date1, VISIBILITY_A)
+                .addExtendedData("table1", "row1", "name", "value 1", VISIBILITY_A)
+                .addExtendedData("table1", "row2", "date", date2, VISIBILITY_A)
+                .addExtendedData("table1", "row2", "name", "value 2", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
+        graph.prepareEdge("e2", "v1", "v2", "label", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
+        graph.flush();
+
+        // Should not come back when finding edges
+        QueryResultsIterable<Edge> queryResults = graph.query(AUTHORIZATIONS_A)
+                .has("date", date1)
+                .edges();
+        assertEquals(0, queryResults.getTotalHits());
+
+        QueryResultsIterable<? extends VertexiumObject> searchResults = graph.query(AUTHORIZATIONS_A)
+                .has("date", date1)
+                .search();
+        assertEquals(1, searchResults.getTotalHits());
+        List<? extends VertexiumObject> searchResultsList = toList(searchResults);
+        assertEquals(1, searchResultsList.size());
+        ExtendedDataRow searchResult = (ExtendedDataRow) searchResultsList.get(0);
+        assertEquals("e1", searchResult.getId().getElementId());
+        assertEquals("row1", searchResult.getId().getRowId());
+
+        searchResults = graph.query("value", AUTHORIZATIONS_A)
+                .search();
+        assertEquals(2, searchResults.getTotalHits());
+        searchResultsList = toList(searchResults);
+        assertEquals(2, searchResultsList.size());
+        assertRowIdsAnyOrder(Lists.newArrayList("row1", "row2"), searchResultsList);
+    }
+
+    @Test
     public void benchmark() {
         assumeTrue(benchmarkEnabled());
         Random random = new Random(1);
@@ -5659,64 +5919,6 @@ public abstract class GraphTestBase {
     protected List<Vertex> sortById(List<Vertex> vertices) {
         Collections.sort(vertices, Comparator.comparing(Element::getId));
         return vertices;
-    }
-
-    protected void assertVertexIdsAnyOrder(Iterable<Vertex> vertices, String... expectedIds) {
-        List<Vertex> sortedVertices = stream(vertices)
-                .sorted(Comparator.comparing(Element::getId))
-                .collect(Collectors.toList());
-        Arrays.sort(expectedIds);
-        assertVertexIds(sortedVertices, expectedIds);
-    }
-
-    protected void assertVertexIds(Iterable<Vertex> vertices, String... expectedIds) {
-        String verticesIdsString = idsToString(vertices);
-        String expectedIdsString = idsToString(expectedIds);
-        List<Vertex> verticesList = toList(vertices);
-        assertEquals("ids length mismatch found:[" + verticesIdsString + "] expected:[" + expectedIdsString + "]", expectedIds.length, verticesList.size());
-        for (int i = 0; i < expectedIds.length; i++) {
-            assertEquals("at offset: " + i + " found:[" + verticesIdsString + "] expected:[" + expectedIdsString + "]", expectedIds[i], verticesList.get(i).getId());
-        }
-    }
-
-    private String idsToString(String[] ids) {
-        return Joiner.on(", ").join(ids);
-    }
-
-    private String idsToString(Iterable<Vertex> vertices) {
-        List<String> idsList = stream(vertices)
-                .map(Element::getId)
-                .collect(Collectors.toList());
-        String[] idsArray = idsList.toArray(new String[idsList.size()]);
-        return idsToString(idsArray);
-    }
-
-    private void assertEvents(GraphEvent... expectedEvents) {
-        assertEquals("Different number of events occurred than were asserted", expectedEvents.length, graphEvents.size());
-
-        for (int i = 0; i < expectedEvents.length; i++) {
-            assertEquals(expectedEvents[i], graphEvents.get(i));
-        }
-    }
-
-    protected void assertEdgeIds(Iterable<Edge> edges, String[] ids) {
-        List<Edge> edgesList = toList(edges);
-        assertEquals("ids length mismatch", ids.length, edgesList.size());
-        for (int i = 0; i < ids.length; i++) {
-            assertEquals("at offset: " + i, ids[i], edgesList.get(i).getId());
-        }
-    }
-
-    protected void assertResultsCount(int expectedCountAndTotalHits, QueryResultsIterable<? extends Element> results) {
-        assertEquals(expectedCountAndTotalHits, results.getTotalHits());
-        assertEquals(expectedCountAndTotalHits, count(results));
-    }
-
-    protected void assertResultsCount(
-            int expectedCount, int expectedTotalHits, QueryResultsIterable<? extends Element> results
-    ) {
-        assertEquals(expectedTotalHits, results.getTotalHits());
-        assertEquals(expectedCount, count(results));
     }
 
     protected boolean disableUpdateEdgeCountInSearchIndex(Graph graph) {
