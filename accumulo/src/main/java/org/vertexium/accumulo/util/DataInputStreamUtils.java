@@ -18,10 +18,7 @@ import org.vertexium.id.NameSubstitutionStrategy;
 import javax.annotation.Nullable;
 import java.io.DataInputStream;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 public class DataInputStreamUtils {
     public static Text decodeText(DataInputStream in) throws IOException {
@@ -56,7 +53,11 @@ public class DataInputStreamUtils {
         return results.build();
     }
 
-    public static Iterable<Property> decodeProperties(AccumuloGraph graph, final DataInputStream in) throws IOException {
+    public static Iterable<Property> decodeProperties(
+            AccumuloGraph graph,
+            DataInputStream in,
+            EnumSet<org.vertexium.FetchHint> fetchHints
+    ) throws IOException {
         List<Property> results = new ArrayList<>();
         while (true) {
             int propId = in.read();
@@ -96,7 +97,8 @@ public class DataInputStreamUtils {
                     metadata,
                     propertyHiddenVisibilities,
                     propertyVisibility,
-                    propertyTimestamp
+                    propertyTimestamp,
+                    fetchHints
             ));
         }
         return results;

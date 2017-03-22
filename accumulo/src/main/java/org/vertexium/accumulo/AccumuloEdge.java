@@ -47,6 +47,7 @@ public class AccumuloEdge extends AccumuloElement implements Edge {
             Iterable<Visibility> hiddenVisibilities,
             ImmutableSet<String> extendedDataTableNames,
             long timestamp,
+            EnumSet<FetchHint> fetchHints,
             Authorizations authorizations
     ) {
         super(
@@ -59,6 +60,7 @@ public class AccumuloEdge extends AccumuloElement implements Edge {
                 hiddenVisibilities,
                 extendedDataTableNames,
                 timestamp,
+                fetchHints,
                 authorizations
         );
         this.outVertexId = outVertexId;
@@ -67,7 +69,13 @@ public class AccumuloEdge extends AccumuloElement implements Edge {
         this.newEdgeLabel = newEdgeLabel;
     }
 
-    public static Edge createFromIteratorValue(AccumuloGraph graph, Key key, Value value, Authorizations authorizations) {
+    public static Edge createFromIteratorValue(
+            AccumuloGraph graph,
+            Key key,
+            Value value,
+            EnumSet<FetchHint> fetchHints,
+            Authorizations authorizations
+    ) {
         try {
             String edgeId;
             Visibility vertexVisibility;
@@ -92,7 +100,7 @@ public class AccumuloEdge extends AccumuloElement implements Edge {
                     return new Visibility(input.toString());
                 }
             });
-            properties = DataInputStreamUtils.decodeProperties(graph, in);
+            properties = DataInputStreamUtils.decodeProperties(graph, in, fetchHints);
             ImmutableSet<String> extendedDataTableNames = DataInputStreamUtils.decodeStringSet(in);
             String inVertexId = DataInputStreamUtils.decodeText(in).toString();
             String outVertexId = DataInputStreamUtils.decodeText(in).toString();
@@ -112,6 +120,7 @@ public class AccumuloEdge extends AccumuloElement implements Edge {
                     hiddenVisibilities,
                     extendedDataTableNames,
                     timestamp,
+                    fetchHints,
                     authorizations
             );
         } catch (IOException ex) {
@@ -142,7 +151,7 @@ public class AccumuloEdge extends AccumuloElement implements Edge {
 
     @Override
     public Vertex getVertex(Direction direction, Authorizations authorizations) {
-        return getVertex(direction, FetchHint.ALL, authorizations);
+        return getVertex(direction, FetchHint.DEFAULT, authorizations);
     }
 
     @Override
@@ -157,7 +166,7 @@ public class AccumuloEdge extends AccumuloElement implements Edge {
 
     @Override
     public Vertex getOtherVertex(String myVertexId, Authorizations authorizations) {
-        return getOtherVertex(myVertexId, FetchHint.ALL, authorizations);
+        return getOtherVertex(myVertexId, FetchHint.DEFAULT, authorizations);
     }
 
     @Override
@@ -167,7 +176,7 @@ public class AccumuloEdge extends AccumuloElement implements Edge {
 
     @Override
     public EdgeVertices getVertices(Authorizations authorizations) {
-        return getVertices(FetchHint.ALL, authorizations);
+        return getVertices(FetchHint.DEFAULT, authorizations);
     }
 
     @Override

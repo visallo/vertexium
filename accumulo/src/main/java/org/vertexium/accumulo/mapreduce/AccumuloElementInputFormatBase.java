@@ -136,7 +136,8 @@ public abstract class AccumuloElementInputFormatBase<TValue extends Element> ext
                 metadata,
                 hiddenVisibilities,
                 visibility,
-                property.timestamp
+                property.timestamp,
+                FetchHint.ALL_INCLUDING_HIDDEN
         );
     }
 }

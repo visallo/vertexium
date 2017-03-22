@@ -100,7 +100,16 @@ public abstract class ElementBuilder<T extends Element> implements ElementMutati
         if (value == null) {
             throw new NullPointerException("property value cannot be null for property: " + name + ":" + key);
         }
-        this.properties.add(new MutablePropertyImpl(key, name, value, metadata, timestamp, null, visibility));
+        this.properties.add(new MutablePropertyImpl(
+                key,
+                name,
+                value,
+                metadata,
+                timestamp,
+                null,
+                visibility,
+                FetchHint.ALL_INCLUDING_HIDDEN
+        ));
         return this;
     }
 

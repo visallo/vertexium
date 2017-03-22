@@ -9,6 +9,7 @@ import org.vertexium.query.QueryResultsIterable;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static junit.framework.TestCase.fail;
 import static org.junit.Assert.assertEquals;
 import static org.vertexium.util.IterableUtils.count;
 import static org.vertexium.util.IterableUtils.toList;
@@ -101,5 +102,14 @@ public class VertexiumAssert {
                 .filter((sr) -> sr instanceof ExtendedDataRow)
                 .map((sr) -> ((ExtendedDataRow) sr).getId().getRowId())
                 .collect(Collectors.toList());
+    }
+
+    public static void assertThrowsException(Runnable fn) {
+        try {
+            fn.run();
+        } catch (Throwable ex) {
+            return;
+        }
+        fail("Should have thrown an exception");
     }
 }

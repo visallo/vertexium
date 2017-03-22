@@ -17,7 +17,7 @@ public class InMemoryVertex extends InMemoryElement<InMemoryVertex> implements V
             InMemoryGraph graph,
             String id,
             InMemoryTableVertex inMemoryTableElement,
-            boolean includeHidden,
+            EnumSet<FetchHint> fetchHints,
             Long endTime,
             Authorizations authorizations
     ) {
@@ -25,7 +25,7 @@ public class InMemoryVertex extends InMemoryElement<InMemoryVertex> implements V
                 graph,
                 id,
                 inMemoryTableElement,
-                includeHidden,
+                fetchHints,
                 endTime,
                 authorizations
         );
@@ -33,7 +33,7 @@ public class InMemoryVertex extends InMemoryElement<InMemoryVertex> implements V
 
     @Override
     public Iterable<Edge> getEdges(Direction direction, Authorizations authorizations) {
-        return getEdges(direction, FetchHint.ALL, authorizations);
+        return getEdges(direction, FetchHint.DEFAULT, authorizations);
     }
 
     @Override
@@ -115,7 +115,7 @@ public class InMemoryVertex extends InMemoryElement<InMemoryVertex> implements V
 
     @Override
     public Iterable<Edge> getEdges(Direction direction, String label, Authorizations authorizations) {
-        return getEdges(direction, label, FetchHint.ALL, authorizations);
+        return getEdges(direction, label, FetchHint.DEFAULT, authorizations);
     }
 
     @Override
@@ -130,7 +130,7 @@ public class InMemoryVertex extends InMemoryElement<InMemoryVertex> implements V
 
     @Override
     public Iterable<Edge> getEdges(Direction direction, String[] labels, Authorizations authorizations) {
-        return getEdges(direction, labels, FetchHint.ALL, authorizations);
+        return getEdges(direction, labels, FetchHint.DEFAULT, authorizations);
     }
 
     @Override
@@ -158,7 +158,7 @@ public class InMemoryVertex extends InMemoryElement<InMemoryVertex> implements V
 
     @Override
     public Iterable<Edge> getEdges(Vertex otherVertex, Direction direction, Authorizations authorizations) {
-        return getEdges(otherVertex, direction, FetchHint.ALL, authorizations);
+        return getEdges(otherVertex, direction, FetchHint.DEFAULT, authorizations);
     }
 
     @Override
@@ -178,7 +178,7 @@ public class InMemoryVertex extends InMemoryElement<InMemoryVertex> implements V
 
     @Override
     public Iterable<Edge> getEdges(Vertex otherVertex, Direction direction, String label, Authorizations authorizations) {
-        return getEdges(otherVertex, direction, label, FetchHint.ALL, authorizations);
+        return getEdges(otherVertex, direction, label, FetchHint.DEFAULT, authorizations);
     }
 
     @Override
@@ -198,7 +198,7 @@ public class InMemoryVertex extends InMemoryElement<InMemoryVertex> implements V
 
     @Override
     public Iterable<Edge> getEdges(Vertex otherVertex, Direction direction, String[] labels, Authorizations authorizations) {
-        return getEdges(otherVertex, direction, labels, FetchHint.ALL, authorizations);
+        return getEdges(otherVertex, direction, labels, FetchHint.DEFAULT, authorizations);
     }
 
     @Override
@@ -233,7 +233,7 @@ public class InMemoryVertex extends InMemoryElement<InMemoryVertex> implements V
 
     @Override
     public Iterable<Vertex> getVertices(Direction direction, Authorizations authorizations) {
-        return getVertices(direction, FetchHint.ALL, authorizations);
+        return getVertices(direction, FetchHint.DEFAULT, authorizations);
     }
 
     @Override
@@ -243,7 +243,7 @@ public class InMemoryVertex extends InMemoryElement<InMemoryVertex> implements V
 
     @Override
     public Iterable<Vertex> getVertices(Direction direction, String label, Authorizations authorizations) {
-        return getVertices(direction, label, FetchHint.ALL, authorizations);
+        return getVertices(direction, label, FetchHint.DEFAULT, authorizations);
     }
 
     @Override
@@ -253,7 +253,7 @@ public class InMemoryVertex extends InMemoryElement<InMemoryVertex> implements V
 
     @Override
     public Iterable<Vertex> getVertices(Direction direction, String[] labels, Authorizations authorizations) {
-        return getVertices(direction, labels, FetchHint.ALL, authorizations);
+        return getVertices(direction, labels, FetchHint.DEFAULT, authorizations);
     }
 
     @Override
@@ -323,7 +323,7 @@ public class InMemoryVertex extends InMemoryElement<InMemoryVertex> implements V
 
     @Override
     public Iterable<EdgeVertexPair> getEdgeVertexPairs(Direction direction, Authorizations authorizations) {
-        return getEdgeVertexPairs(getEdgeInfos(direction, authorizations), FetchHint.ALL, null, authorizations);
+        return getEdgeVertexPairs(getEdgeInfos(direction, authorizations), FetchHint.DEFAULT, null, authorizations);
     }
 
     @Override
@@ -338,7 +338,7 @@ public class InMemoryVertex extends InMemoryElement<InMemoryVertex> implements V
 
     @Override
     public Iterable<EdgeVertexPair> getEdgeVertexPairs(Direction direction, String label, Authorizations authorizations) {
-        return getEdgeVertexPairs(getEdgeInfos(direction, label, authorizations), FetchHint.ALL, null, authorizations);
+        return getEdgeVertexPairs(getEdgeInfos(direction, label, authorizations), FetchHint.DEFAULT, null, authorizations);
     }
 
     @Override
@@ -348,7 +348,7 @@ public class InMemoryVertex extends InMemoryElement<InMemoryVertex> implements V
 
     @Override
     public Iterable<EdgeVertexPair> getEdgeVertexPairs(Direction direction, String[] labels, Authorizations authorizations) {
-        return getEdgeVertexPairs(getEdgeInfos(direction, labels, authorizations), FetchHint.ALL, null, authorizations);
+        return getEdgeVertexPairs(getEdgeInfos(direction, labels, authorizations), FetchHint.DEFAULT, null, authorizations);
     }
 
     @Override
