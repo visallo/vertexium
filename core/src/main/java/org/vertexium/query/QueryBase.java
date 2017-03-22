@@ -28,7 +28,7 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
 
     @Override
     public QueryResultsIterable<Vertex> vertices() {
-        return vertices(FetchHint.ALL);
+        return vertices(FetchHint.DEFAULT);
     }
 
     @Override
@@ -44,7 +44,7 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
 
     @Override
     public QueryResultsIterable<Edge> edges() {
-        return edges(FetchHint.ALL);
+        return edges(FetchHint.DEFAULT);
     }
 
     @Override
@@ -60,7 +60,7 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
 
     @Override
     public QueryResultsIterable<ExtendedDataRow> extendedDataRows() {
-        return extendedDataRows(FetchHint.ALL);
+        return extendedDataRows(FetchHint.DEFAULT);
     }
 
     @Override
@@ -71,7 +71,7 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
 
     @Override
     public QueryResultsIterable<? extends VertexiumObject> search() {
-        return search(VertexiumObjectType.ALL, FetchHint.ALL);
+        return search(VertexiumObjectType.ALL, FetchHint.DEFAULT);
     }
 
     @Override
@@ -204,7 +204,7 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
 
     @Override
     public QueryResultsIterable<Element> elements() {
-        return elements(FetchHint.ALL);
+        return elements(FetchHint.DEFAULT);
     }
 
     @Override

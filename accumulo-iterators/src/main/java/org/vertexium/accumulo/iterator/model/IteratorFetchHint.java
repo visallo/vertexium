@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 
-public enum FetchHint {
+public enum IteratorFetchHint {
     PROPERTIES,
     PROPERTY_METADATA,
     IN_EDGE_REFS,
@@ -14,12 +14,12 @@ public enum FetchHint {
     OUT_EDGE_LABELS,
     EXTENDED_DATA_TABLE_NAMES;
 
-    public static final EnumSet<FetchHint> ALL = EnumSet.of(PROPERTIES, PROPERTY_METADATA, IN_EDGE_REFS, OUT_EDGE_REFS, EXTENDED_DATA_TABLE_NAMES);
+    public static final EnumSet<IteratorFetchHint> ALL = EnumSet.of(PROPERTIES, PROPERTY_METADATA, IN_EDGE_REFS, OUT_EDGE_REFS, EXTENDED_DATA_TABLE_NAMES);
 
-    public static String toString(EnumSet<FetchHint> fetchHints) {
+    public static String toString(EnumSet<IteratorFetchHint> fetchHints) {
         StringBuilder result = new StringBuilder();
         boolean first = true;
-        for (FetchHint fetchHint : fetchHints) {
+        for (IteratorFetchHint fetchHint : fetchHints) {
             if (!first) {
                 result.append(",");
             }
@@ -29,19 +29,19 @@ public enum FetchHint {
         return result.toString();
     }
 
-    public static EnumSet<FetchHint> parse(String fetchHintsString) {
+    public static EnumSet<IteratorFetchHint> parse(String fetchHintsString) {
         if (fetchHintsString == null) {
             throw new NullPointerException("fetchHintsString cannot be null");
         }
         String[] parts = fetchHintsString.split(",");
-        List<FetchHint> results = new ArrayList<>();
+        List<IteratorFetchHint> results = new ArrayList<>();
         for (String part : parts) {
             String name = part.toUpperCase();
             if (name.trim().length() == 0) {
                 continue;
             }
             try {
-                results.add(FetchHint.valueOf(name));
+                results.add(IteratorFetchHint.valueOf(name));
             } catch (IllegalArgumentException ex) {
                 throw new IllegalArgumentException("Could not find enum value: '" + name + "'", ex);
             }
@@ -49,9 +49,9 @@ public enum FetchHint {
         return create(results);
     }
 
-    public static EnumSet<FetchHint> create(List<FetchHint> results) {
+    public static EnumSet<IteratorFetchHint> create(List<IteratorFetchHint> results) {
         if (results.size() == 0) {
-            return EnumSet.noneOf(FetchHint.class);
+            return EnumSet.noneOf(IteratorFetchHint.class);
         } else {
             return EnumSet.copyOf(results);
         }

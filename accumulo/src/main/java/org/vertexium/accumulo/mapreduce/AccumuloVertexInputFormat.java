@@ -14,7 +14,6 @@ import org.vertexium.*;
 import org.vertexium.accumulo.AccumuloGraph;
 import org.vertexium.accumulo.AccumuloVertex;
 import org.vertexium.accumulo.iterator.VertexIterator;
-import org.vertexium.accumulo.iterator.model.FetchHint;
 import org.vertexium.accumulo.iterator.model.VertexElementData;
 import org.vertexium.mutation.PropertyDeleteMutation;
 import org.vertexium.mutation.PropertySoftDeleteMutation;
@@ -25,7 +24,7 @@ import java.util.Iterator;
 import java.util.Map;
 
 public class AccumuloVertexInputFormat extends AccumuloElementInputFormatBase<Vertex> {
-    private static VertexIterator vertexIterator = new VertexIterator(AccumuloGraph.toIteratorFetchHints(org.vertexium.FetchHint.ALL));
+    private static VertexIterator vertexIterator = new VertexIterator(AccumuloGraph.toIteratorFetchHints(FetchHint.DEFAULT));
 
     public static void setInputInfo(Job job, AccumuloGraph graph, String instanceName, String zooKeepers, String principal, AuthenticationToken token, String[] authorizations) throws AccumuloSecurityException {
         String tableName = graph.getVerticesTableName();
@@ -39,13 +38,13 @@ public class AccumuloVertexInputFormat extends AccumuloElementInputFormatBase<Ve
 
     public static Vertex createVertex(AccumuloGraph graph, Iterator<Map.Entry<Key, Value>> row, Authorizations authorizations) {
         try {
-            EnumSet<FetchHint> fetchHints = AccumuloGraph.toIteratorFetchHints(org.vertexium.FetchHint.ALL);
+            EnumSet<FetchHint> fetchHints = FetchHint.DEFAULT;
             VertexElementData vertexElementData = vertexIterator.createElementDataFromRows(row);
             if (vertexElementData == null) {
                 return null;
             }
             Visibility visibility = AccumuloGraph.accumuloVisibilityToVisibility(AccumuloGraph.visibilityToAccumuloVisibility(vertexElementData.visibility.toString()));
-            Iterable<Property> properties = makePropertiesFromElementData(graph, vertexElementData, fetchHints);
+            Iterable<Property> properties = makePropertiesFromElementData(graph, vertexElementData, AccumuloGraph.toIteratorFetchHints(fetchHints));
             Iterable<PropertyDeleteMutation> propertyDeleteMutations = null;
             Iterable<PropertySoftDeleteMutation> propertySoftDeleteMutations = null;
             Iterable<Visibility> hiddenVisibilities = Iterables.transform(vertexElementData.hiddenVisibilities, new Function<Text, Visibility>() {
@@ -70,6 +69,7 @@ public class AccumuloVertexInputFormat extends AccumuloElementInputFormatBase<Ve
                     vertexElementData.inEdges,
                     vertexElementData.outEdges,
                     vertexElementData.timestamp,
+                    fetchHints,
                     authorizations
             );
         } catch (Throwable ex) {

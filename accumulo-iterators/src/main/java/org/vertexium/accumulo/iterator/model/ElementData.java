@@ -45,14 +45,14 @@ public abstract class ElementData {
         extendedTableNames.clear();
     }
 
-    public final Value encode(EnumSet<FetchHint> fetchHints) throws IOException {
+    public final Value encode(EnumSet<IteratorFetchHint> fetchHints) throws IOException {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         DataOutputStream dout = new DataOutputStream(out);
         encode(dout, fetchHints);
         return new Value(out.toByteArray());
     }
 
-    protected void encode(DataOutputStream out, EnumSet<FetchHint> fetchHints) throws IOException {
+    protected void encode(DataOutputStream out, EnumSet<IteratorFetchHint> fetchHints) throws IOException {
         encodeHeader(out);
         DataOutputStreamUtils.encodeText(out, id);
         out.writeLong(timestamp);
@@ -69,7 +69,7 @@ public abstract class ElementData {
 
     protected abstract byte getTypeId();
 
-    private void encodeProperties(final DataOutputStream out, EnumSet<FetchHint> fetchHints) throws IOException {
+    private void encodeProperties(final DataOutputStream out, EnumSet<IteratorFetchHint> fetchHints) throws IOException {
         iterateProperties(new PropertyDataHandler() {
             @Override
             public void handle(
@@ -95,8 +95,8 @@ public abstract class ElementData {
         out.write(PROP_END);
     }
 
-    private void iterateProperties(PropertyDataHandler propertyDataHandler, EnumSet<FetchHint> fetchHints) throws IOException {
-        boolean includeHidden = fetchHints.contains(FetchHint.INCLUDE_HIDDEN);
+    private void iterateProperties(PropertyDataHandler propertyDataHandler, EnumSet<IteratorFetchHint> fetchHints) throws IOException {
+        boolean includeHidden = fetchHints.contains(IteratorFetchHint.INCLUDE_HIDDEN);
         for (Map.Entry<String, byte[]> propertyValueEntry : propertyValues.entrySet()) {
             String key = propertyValueEntry.getKey();
             PropertyColumnQualifier propertyColumnQualifier = propertyColumnQualifiers.get(key);
@@ -118,7 +118,7 @@ public abstract class ElementData {
         }
     }
 
-    public Iterable<Property> getProperties(EnumSet<FetchHint> fetchHints) {
+    public Iterable<Property> getProperties(EnumSet<IteratorFetchHint> fetchHints) {
         final List<Property> results = new ArrayList<>();
         try {
             iterateProperties(new PropertyDataHandler() {

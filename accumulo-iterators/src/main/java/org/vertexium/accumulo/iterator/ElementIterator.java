@@ -42,11 +42,11 @@ public abstract class ElementIterator<T extends ElementData> extends RowEncoding
     public static final String METADATA_COLUMN_QUALIFIER_STRING = "";
     public static final Text METADATA_COLUMN_QUALIFIER = new Text(METADATA_COLUMN_QUALIFIER_STRING);
     private static final String SETTING_FETCH_HINTS = "fetchHints";
-    private EnumSet<FetchHint> fetchHints;
+    private EnumSet<IteratorFetchHint> fetchHints;
     private T elementData;
     private static final Map<Text, PropertyMetadataColumnQualifier> stringToPropertyMetadataColumnQualifierCache = new HashMap<>();
 
-    public ElementIterator(SortedKeyValueIterator<Key, Value> source, EnumSet<FetchHint> fetchHints) {
+    public ElementIterator(SortedKeyValueIterator<Key, Value> source, EnumSet<IteratorFetchHint> fetchHints) {
         this.sourceIter = source;
         this.fetchHints = fetchHints;
         this.elementData = createElementData();
@@ -141,7 +141,7 @@ public abstract class ElementIterator<T extends ElementData> extends RowEncoding
         }
 
         if (CF_HIDDEN.equals(columnFamily)) {
-            if (fetchHints.contains(FetchHint.INCLUDE_HIDDEN)) {
+            if (fetchHints.contains(IteratorFetchHint.INCLUDE_HIDDEN)) {
                 this.elementData.hiddenVisibilities.add(key.getColumnVisibility());
                 return true;
             } else {
@@ -228,17 +228,17 @@ public abstract class ElementIterator<T extends ElementData> extends RowEncoding
         if (options.get(SETTING_FETCH_HINTS) == null) {
             throw new IOException(SETTING_FETCH_HINTS + " is required");
         }
-        fetchHints = FetchHint.parse(options.get(SETTING_FETCH_HINTS));
+        fetchHints = IteratorFetchHint.parse(options.get(SETTING_FETCH_HINTS));
         elementData = createElementData();
     }
 
     protected abstract T createElementData();
 
-    public static void setFetchHints(IteratorSetting iteratorSettings, EnumSet<FetchHint> fetchHints) {
-        iteratorSettings.addOption(SETTING_FETCH_HINTS, FetchHint.toString(fetchHints));
+    public static void setFetchHints(IteratorSetting iteratorSettings, EnumSet<IteratorFetchHint> fetchHints) {
+        iteratorSettings.addOption(SETTING_FETCH_HINTS, IteratorFetchHint.toString(fetchHints));
     }
 
-    public EnumSet<FetchHint> getFetchHints() {
+    public EnumSet<IteratorFetchHint> getFetchHints() {
         return fetchHints;
     }
 

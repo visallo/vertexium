@@ -80,18 +80,18 @@ public class VertexiumBlueprintsGraphQuery extends VertexiumBlueprintsQuery impl
     @Override
     public Iterable<Edge> edges() {
         if (!hasFilter) {
-            return VertexiumBlueprintsConvert.toBlueprintsEdges(graph, graph.getGraph().getEdges(authorizations), authorizations);
+            return VertexiumBlueprintsConvert.toBlueprintsEdges(graph, graph.getGraph().getEdges(graph.getFetchHints(), authorizations), authorizations);
         }
-        Iterable<org.vertexium.Edge> edges = q.edges();
+        Iterable<org.vertexium.Edge> edges = q.edges(graph.getFetchHints());
         return VertexiumBlueprintsConvert.toBlueprintsEdges(graph, edges, authorizations);
     }
 
     @Override
     public Iterable<Vertex> vertices() {
         if (!hasFilter) {
-            return VertexiumBlueprintsConvert.toBlueprintsVertices(graph, graph.getGraph().getVertices(authorizations), authorizations);
+            return VertexiumBlueprintsConvert.toBlueprintsVertices(graph, graph.getGraph().getVertices(graph.getFetchHints(), authorizations), authorizations);
         }
-        Iterable<org.vertexium.Vertex> vertices = q.vertices();
+        Iterable<org.vertexium.Vertex> vertices = q.vertices(graph.getFetchHints());
         return VertexiumBlueprintsConvert.toBlueprintsVertices(graph, vertices, authorizations);
     }
 }

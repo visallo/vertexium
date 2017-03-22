@@ -2,21 +2,30 @@ package org.vertexium.mutation;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.runners.MockitoJUnitRunner;
 import org.vertexium.Authorizations;
 import org.vertexium.Element;
-import org.vertexium.Vertex;
+import org.vertexium.FetchHint;
 import org.vertexium.Visibility;
 import org.vertexium.property.MutablePropertyImpl;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.when;
 
+@RunWith(MockitoJUnitRunner.class)
 public class ExistingElementMutationImplTest {
     private TestExistingElementMutationImpl mutation;
 
+    @Mock
+    private Element element;
+
     @Before
     public void before() {
-        mutation = new TestExistingElementMutationImpl<>((Vertex) null);
+        when(element.getFetchHints()).thenReturn(FetchHint.ALL);
+        mutation = new TestExistingElementMutationImpl<>(element);
     }
 
     @Test
@@ -32,13 +41,31 @@ public class ExistingElementMutationImplTest {
 
     @Test
     public void testHasChangesDeleteProperty() {
-        mutation.deleteProperty(new MutablePropertyImpl("key1", "name1", "value", null, null, null, new Visibility("")));
+        mutation.deleteProperty(new MutablePropertyImpl(
+                "key1",
+                "name1",
+                "value",
+                null,
+                null,
+                null,
+                new Visibility(""),
+                FetchHint.ALL
+        ));
         assertTrue("should have changes", mutation.hasChanges());
     }
 
     @Test
     public void testHasChangesSoftDeleteProperty() {
-        mutation.softDeleteProperty(new MutablePropertyImpl("key1", "name1", "value", null, null, null, new Visibility("")));
+        mutation.softDeleteProperty(new MutablePropertyImpl(
+                "key1",
+                "name1",
+                "value",
+                null,
+                null,
+                null,
+                new Visibility(""),
+                FetchHint.ALL
+        ));
         assertTrue("should have changes", mutation.hasChanges());
     }
 

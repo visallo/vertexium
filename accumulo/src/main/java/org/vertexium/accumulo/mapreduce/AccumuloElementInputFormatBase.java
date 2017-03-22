@@ -20,6 +20,7 @@ import org.vertexium.accumulo.AccumuloGraph;
 import org.vertexium.accumulo.LazyMutableProperty;
 import org.vertexium.accumulo.LazyPropertyMetadata;
 import org.vertexium.accumulo.iterator.model.ElementData;
+import org.vertexium.accumulo.iterator.model.IteratorFetchHint;
 import org.vertexium.util.MapUtils;
 
 import javax.annotation.Nullable;
@@ -104,7 +105,7 @@ public abstract class AccumuloElementInputFormatBase<TValue extends Element> ext
 
     protected abstract TValue createElementFromRow(AccumuloGraph graph, PeekingIterator<Map.Entry<Key, Value>> row, Authorizations authorizations);
 
-    protected static Iterable<Property> makePropertiesFromElementData(final AccumuloGraph graph, ElementData elementData, EnumSet<org.vertexium.accumulo.iterator.model.FetchHint> fetchHints) {
+    protected static Iterable<Property> makePropertiesFromElementData(final AccumuloGraph graph, ElementData elementData, EnumSet<IteratorFetchHint> fetchHints) {
         return Iterables.transform(elementData.getProperties(fetchHints), new Function<org.vertexium.accumulo.iterator.model.Property, Property>() {
             @Nullable
             @Override
@@ -136,7 +137,8 @@ public abstract class AccumuloElementInputFormatBase<TValue extends Element> ext
                 metadata,
                 hiddenVisibilities,
                 visibility,
-                property.timestamp
+                property.timestamp,
+                FetchHint.ALL_INCLUDING_HIDDEN
         );
     }
 }

@@ -41,9 +41,9 @@ public class LazyExtendedDataTable extends ModelBase {
     public Element getElement() {
         switch (elementType) {
             case VERTEX:
-                return getGraph().getVertex(getElementId(), FetchHint.ALL, getTime(), getAuthorizations());
+                return getGraph().getVertex(getElementId(), FetchHint.DEFAULT, getTime(), getAuthorizations());
             case EDGE:
-                return getGraph().getEdge(getElementId(), FetchHint.ALL, getTime(), getAuthorizations());
+                return getGraph().getEdge(getElementId(), FetchHint.DEFAULT, getTime(), getAuthorizations());
             default:
                 throw new VertexiumException("Unhandled element type: " + elementType);
         }

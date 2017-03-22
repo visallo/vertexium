@@ -15,6 +15,7 @@ public enum FetchHint {
     EXTENDED_DATA_TABLE_NAMES;
 
     public static final EnumSet<FetchHint> NONE = EnumSet.noneOf(FetchHint.class);
+    public static final EnumSet<FetchHint> DEFAULT = EnumSet.of(PROPERTIES, IN_EDGE_REFS, OUT_EDGE_REFS, EXTENDED_DATA_TABLE_NAMES);
     public static final EnumSet<FetchHint> ALL = EnumSet.of(PROPERTIES, PROPERTY_METADATA, IN_EDGE_REFS, OUT_EDGE_REFS, EXTENDED_DATA_TABLE_NAMES);
     public static final EnumSet<FetchHint> ALL_INCLUDING_HIDDEN = EnumSet.allOf(FetchHint.class);
     public static final EnumSet<FetchHint> EDGE_REFS = EnumSet.of(IN_EDGE_REFS, OUT_EDGE_REFS);
@@ -58,6 +59,18 @@ public enum FetchHint {
             return EnumSet.noneOf(FetchHint.class);
         } else {
             return EnumSet.copyOf(results);
+        }
+    }
+
+    public static void checkFetchHints(EnumSet<FetchHint> fetchHints, FetchHint neededFetchHint) {
+        checkFetchHints(fetchHints, EnumSet.of(neededFetchHint));
+    }
+
+    public static void checkFetchHints(EnumSet<FetchHint> fetchHints, EnumSet<FetchHint> neededFetchHints) {
+        for (FetchHint neededFetchHint : neededFetchHints) {
+            if (!fetchHints.contains(neededFetchHint)) {
+                throw new VertexiumMissingFetchHintException(fetchHints, neededFetchHints);
+            }
         }
     }
 }

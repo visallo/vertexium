@@ -15,7 +15,6 @@ import org.vertexium.accumulo.AccumuloEdge;
 import org.vertexium.accumulo.AccumuloGraph;
 import org.vertexium.accumulo.iterator.EdgeIterator;
 import org.vertexium.accumulo.iterator.model.EdgeElementData;
-import org.vertexium.accumulo.iterator.model.FetchHint;
 import org.vertexium.mutation.PropertyDeleteMutation;
 import org.vertexium.mutation.PropertySoftDeleteMutation;
 
@@ -24,7 +23,7 @@ import java.util.EnumSet;
 import java.util.Map;
 
 public class AccumuloEdgeInputFormat extends AccumuloElementInputFormatBase<Edge> {
-    private static EdgeIterator edgeIterator = new EdgeIterator(AccumuloGraph.toIteratorFetchHints(org.vertexium.FetchHint.ALL));
+    private static EdgeIterator edgeIterator = new EdgeIterator(AccumuloGraph.toIteratorFetchHints(FetchHint.DEFAULT));
 
     public static void setInputInfo(Job job, AccumuloGraph graph, String instanceName, String zooKeepers, String principal, AuthenticationToken token, String[] authorizations) throws AccumuloSecurityException {
         String tableName = graph.getEdgesTableName();
@@ -32,15 +31,19 @@ public class AccumuloEdgeInputFormat extends AccumuloElementInputFormatBase<Edge
     }
 
     @Override
-    protected Edge createElementFromRow(AccumuloGraph graph, PeekingIterator<Map.Entry<Key, Value>> row, Authorizations authorizations) {
+    protected Edge createElementFromRow(
+            AccumuloGraph graph,
+            PeekingIterator<Map.Entry<Key, Value>> row,
+            Authorizations authorizations
+    ) {
         try {
-            EnumSet<FetchHint> fetchHints = AccumuloGraph.toIteratorFetchHints(org.vertexium.FetchHint.ALL);
+            EnumSet<FetchHint> fetchHints = FetchHint.DEFAULT;
             EdgeElementData edgeElementData = edgeIterator.createElementDataFromRows(row);
             if (edgeElementData == null) {
                 return null;
             }
             Visibility visibility = AccumuloGraph.accumuloVisibilityToVisibility(AccumuloGraph.visibilityToAccumuloVisibility(edgeElementData.visibility.toString()));
-            Iterable<Property> properties = makePropertiesFromElementData(graph, edgeElementData, fetchHints);
+            Iterable<Property> properties = makePropertiesFromElementData(graph, edgeElementData, AccumuloGraph.toIteratorFetchHints(fetchHints));
             Iterable<PropertyDeleteMutation> propertyDeleteMutations = null;
             Iterable<PropertySoftDeleteMutation> propertySoftDeleteMutations = null;
             Iterable<Visibility> hiddenVisibilities = Iterables.transform(edgeElementData.hiddenVisibilities, new Function<Text, Visibility>() {
@@ -67,6 +70,7 @@ public class AccumuloEdgeInputFormat extends AccumuloElementInputFormatBase<Edge
                     hiddenVisibilities,
                     extendedDataTableNames,
                     edgeElementData.timestamp,
+                    fetchHints,
                     authorizations
             );
         } catch (Throwable ex) {

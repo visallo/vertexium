@@ -20,7 +20,7 @@ public class LazyEdgeProperty extends LazyProperty {
 
     @Override
     protected Edge getE() {
-        return getGraph().getEdge(getEdgeId(), FetchHint.ALL, getTime(), getAuthorizations());
+        return getGraph().getEdge(getEdgeId(), FetchHint.DEFAULT, getTime(), getAuthorizations());
     }
 
     @Override

@@ -72,24 +72,26 @@ public class SqlGraph extends InMemoryGraph {
     }
 
     @Override
-    public Vertex getVertex(String vertexId, EnumSet<FetchHint> fetchHints, Long endTime,
-                            Authorizations authorizations) {
+    public Vertex getVertex(
+            String vertexId, EnumSet<FetchHint> fetchHints, Long endTime,
+            Authorizations authorizations
+    ) {
         validateAuthorizations(authorizations);
 
         InMemoryTableElement<InMemoryVertex> element = vertexMap.get(vertexId);
         if (element == null || !isIncludedInTimeSpan(element, fetchHints, endTime, authorizations)) {
             return null;
         } else {
-            return element.createElement(this, fetchHints.contains(FetchHint.INCLUDE_HIDDEN), endTime, authorizations);
+            return element.createElement(this, fetchHints, endTime, authorizations);
         }
     }
 
     @Override
-    public Iterable<Vertex> getVerticesWithPrefix(final String vertexIdPrefix, final EnumSet<FetchHint> fetchHints,
-                                                  final Long endTime, final Authorizations authorizations) {
+    public Iterable<Vertex> getVerticesWithPrefix(
+            final String vertexIdPrefix, final EnumSet<FetchHint> fetchHints,
+            final Long endTime, final Authorizations authorizations
+    ) {
         validateAuthorizations(authorizations);
-
-        final boolean includeHidden = fetchHints.contains(FetchHint.INCLUDE_HIDDEN);
 
         return new LookAheadIterable<InMemoryTableVertex, Vertex>() {
             @Override
@@ -99,13 +101,15 @@ public class SqlGraph extends InMemoryGraph {
 
             @Override
             protected Vertex convert(InMemoryTableVertex element) {
-                return element.createElement(SqlGraph.this, includeHidden, endTime, authorizations);
+                return element.createElement(SqlGraph.this, fetchHints, endTime, authorizations);
             }
 
             @Override
             protected Iterator<InMemoryTableVertex> createIterator() {
-                Iterator<InMemoryTableElement<InMemoryVertex>> elements = vertexMap.query("id like ?",
-                        vertexIdPrefix + "%");
+                Iterator<InMemoryTableElement<InMemoryVertex>> elements = vertexMap.query(
+                        "id like ?",
+                        vertexIdPrefix + "%"
+                );
 
                 return new ConvertingIterable<InMemoryTableElement<InMemoryVertex>, InMemoryTableVertex>(elements) {
                     @Override
@@ -123,30 +127,37 @@ public class SqlGraph extends InMemoryGraph {
         if (element == null || !isIncluded(element, fetchHints, authorizations)) {
             return null;
         } else {
-            return element.createElement(this, fetchHints.contains(FetchHint.INCLUDE_HIDDEN), endTime, authorizations);
+            return element.createElement(this, fetchHints, endTime, authorizations);
         }
     }
 
     @SuppressWarnings("unchecked")
     @Override
-    public Iterable<Vertex> getVertices(final Iterable<String> ids, final EnumSet<FetchHint> fetchHints,
-                                        final Long endTime, final Authorizations authorizations) {
+    public Iterable<Vertex> getVertices(
+            final Iterable<String> ids, final EnumSet<FetchHint> fetchHints,
+            final Long endTime, final Authorizations authorizations
+    ) {
         return (Iterable<Vertex>) getElements(ids, fetchHints, endTime, authorizations, vertexMap);
     }
 
     @SuppressWarnings("unchecked")
     @Override
-    public Iterable<Edge> getEdges(final Iterable<String> ids, final EnumSet<FetchHint> fetchHints, final Long endTime,
-                                   final Authorizations authorizations) {
+    public Iterable<Edge> getEdges(
+            Iterable<String> ids,
+            EnumSet<FetchHint> fetchHints,
+            Long endTime,
+            Authorizations authorizations
+    ) {
         return (Iterable<Edge>) getElements(ids, fetchHints, endTime, authorizations, edgeMap);
     }
 
-    private <T extends InMemoryElement> Iterable<?> getElements(final Iterable<String> ids,
-                                                                final EnumSet<FetchHint> fetchHints, final Long endTime,
-                                                                final Authorizations authorizations,
-                                                                final SqlMap<InMemoryTableElement<T>> sqlMap) {
-        final boolean includeHidden = fetchHints.contains(FetchHint.INCLUDE_HIDDEN);
-
+    private <T extends InMemoryElement> Iterable<?> getElements(
+            Iterable<String> ids,
+            EnumSet<FetchHint> fetchHints,
+            Long endTime,
+            Authorizations authorizations,
+            SqlMap<InMemoryTableElement<T>> sqlMap
+    ) {
         return new LookAheadIterable<InMemoryTableElement, T>() {
             @Override
             protected boolean isIncluded(InMemoryTableElement srcElement, T destElement) {
@@ -156,7 +167,7 @@ public class SqlGraph extends InMemoryGraph {
             @SuppressWarnings("unchecked")
             @Override
             protected T convert(InMemoryTableElement element) {
-                return (T) element.createElement(SqlGraph.this, includeHidden, endTime, authorizations);
+                return (T) element.createElement(SqlGraph.this, fetchHints, endTime, authorizations);
             }
 
             @SuppressWarnings("unused")
@@ -176,8 +187,10 @@ public class SqlGraph extends InMemoryGraph {
                 if (first) {
                     return Collections.emptyIterator();
                 } else {
-                    Iterator<InMemoryTableElement<T>> elements = sqlMap.query(idWhere.toString(),
-                            Iterables.toArray(ids, Object.class));
+                    Iterator<InMemoryTableElement<T>> elements = sqlMap.query(
+                            idWhere.toString(),
+                            Iterables.toArray(ids, Object.class)
+                    );
 
                     return new ConvertingIterable<InMemoryTableElement, InMemoryTableElement>(elements) {
                         @Override
@@ -191,10 +204,12 @@ public class SqlGraph extends InMemoryGraph {
     }
 
     @Override
-    public Iterable<Edge> getEdgesFromVertex(final String vertexId, final EnumSet<FetchHint> fetchHints,
-                                             final Long endTime, final Authorizations authorizations) {
-        final boolean includeHidden = fetchHints.contains(FetchHint.INCLUDE_HIDDEN);
-
+    public Iterable<Edge> getEdgesFromVertex(
+            String vertexId,
+            EnumSet<FetchHint> fetchHints,
+            Long endTime,
+            Authorizations authorizations
+    ) {
         return new LookAheadIterable<InMemoryTableEdge, Edge>() {
             @Override
             protected boolean isIncluded(InMemoryTableEdge element, Edge edge) {
@@ -203,7 +218,7 @@ public class SqlGraph extends InMemoryGraph {
 
             @Override
             protected Edge convert(InMemoryTableEdge element) {
-                return element.createElement(SqlGraph.this, includeHidden, endTime, authorizations);
+                return element.createElement(SqlGraph.this, fetchHints, endTime, authorizations);
             }
 
             @Override
@@ -236,9 +251,11 @@ public class SqlGraph extends InMemoryGraph {
     }
 
     @Override
-    protected StreamingPropertyValueRef saveStreamingPropertyValue(String elementId, String key, String name,
-                                                                   Visibility visibility, long timestamp,
-                                                                   StreamingPropertyValue value) {
+    protected StreamingPropertyValueRef saveStreamingPropertyValue(
+            String elementId, String key, String name,
+            Visibility visibility, long timestamp,
+            StreamingPropertyValue value
+    ) {
         return streamingPropertyTable.put(elementId, key, name, visibility, timestamp, value);
     }
 }

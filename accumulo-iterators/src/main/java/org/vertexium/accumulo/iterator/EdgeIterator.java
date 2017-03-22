@@ -6,7 +6,7 @@ import org.apache.accumulo.core.iterators.IteratorEnvironment;
 import org.apache.accumulo.core.iterators.SortedKeyValueIterator;
 import org.apache.hadoop.io.Text;
 import org.vertexium.accumulo.iterator.model.EdgeElementData;
-import org.vertexium.accumulo.iterator.model.FetchHint;
+import org.vertexium.accumulo.iterator.model.IteratorFetchHint;
 
 import java.util.EnumSet;
 
@@ -19,14 +19,14 @@ public class EdgeIterator extends ElementIterator<EdgeElementData> {
     public static final Text CF_IN_VERTEX = new Text(CF_IN_VERTEX_STRING);
 
     public EdgeIterator() {
-        this(FetchHint.ALL);
+        this(IteratorFetchHint.ALL);
     }
 
-    public EdgeIterator(EnumSet<FetchHint> fetchHints) {
+    public EdgeIterator(EnumSet<IteratorFetchHint> fetchHints) {
         super(null, fetchHints);
     }
 
-    public EdgeIterator(SortedKeyValueIterator<Key, Value> source, EnumSet<FetchHint> fetchHints) {
+    public EdgeIterator(SortedKeyValueIterator<Key, Value> source, EnumSet<IteratorFetchHint> fetchHints) {
         super(source, fetchHints);
     }
 
