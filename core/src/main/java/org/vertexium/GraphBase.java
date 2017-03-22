@@ -92,12 +92,12 @@ public abstract class GraphBase implements Graph {
 
     @Override
     public Vertex getVertex(String vertexId, Authorizations authorizations) throws VertexiumException {
-        return getVertex(vertexId, FetchHint.ALL, authorizations);
+        return getVertex(vertexId, FetchHint.DEFAULT, authorizations);
     }
 
     @Override
     public Iterable<Vertex> getVerticesWithPrefix(String vertexIdPrefix, Authorizations authorizations) {
-        return getVerticesWithPrefix(vertexIdPrefix, FetchHint.ALL, authorizations);
+        return getVerticesWithPrefix(vertexIdPrefix, FetchHint.DEFAULT, authorizations);
     }
 
     @Override
@@ -118,7 +118,7 @@ public abstract class GraphBase implements Graph {
 
     @Override
     public Iterable<Vertex> getVerticesInRange(Range idRange, Authorizations authorizations) {
-        return getVerticesInRange(idRange, FetchHint.ALL, authorizations);
+        return getVerticesInRange(idRange, FetchHint.DEFAULT, authorizations);
     }
 
     @Override
@@ -176,7 +176,7 @@ public abstract class GraphBase implements Graph {
 
     @Override
     public Iterable<Vertex> getVertices(final Iterable<String> ids, final Authorizations authorizations) {
-        return getVertices(ids, FetchHint.ALL, authorizations);
+        return getVertices(ids, FetchHint.DEFAULT, authorizations);
     }
 
     @Override
@@ -193,12 +193,12 @@ public abstract class GraphBase implements Graph {
 
     @Override
     public List<Vertex> getVerticesInOrder(Iterable<String> ids, Authorizations authorizations) {
-        return getVerticesInOrder(ids, FetchHint.ALL, authorizations);
+        return getVerticesInOrder(ids, FetchHint.DEFAULT, authorizations);
     }
 
     @Override
     public Iterable<Vertex> getVertices(Authorizations authorizations) throws VertexiumException {
-        return getVertices(FetchHint.ALL, authorizations);
+        return getVertices(FetchHint.DEFAULT, authorizations);
     }
 
     @Override
@@ -277,7 +277,7 @@ public abstract class GraphBase implements Graph {
 
     @Override
     public Edge getEdge(String edgeId, Authorizations authorizations) {
-        return getEdge(edgeId, FetchHint.ALL, authorizations);
+        return getEdge(edgeId, FetchHint.DEFAULT, authorizations);
     }
 
     @Override
@@ -454,12 +454,12 @@ public abstract class GraphBase implements Graph {
 
     @Override
     public Iterable<Edge> getEdges(final Iterable<String> ids, final Authorizations authorizations) {
-        return getEdges(ids, FetchHint.ALL, authorizations);
+        return getEdges(ids, FetchHint.DEFAULT, authorizations);
     }
 
     @Override
     public Iterable<Edge> getEdges(Authorizations authorizations) {
-        return getEdges(FetchHint.ALL, authorizations);
+        return getEdges(FetchHint.DEFAULT, authorizations);
     }
 
     @Override
@@ -472,7 +472,7 @@ public abstract class GraphBase implements Graph {
 
     @Override
     public Iterable<Edge> getEdgesInRange(Range idRange, Authorizations authorizations) {
-        return getEdgesInRange(idRange, FetchHint.ALL, authorizations);
+        return getEdgesInRange(idRange, FetchHint.DEFAULT, authorizations);
     }
 
     @Override

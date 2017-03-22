@@ -19,7 +19,7 @@ public class CompositeGraphQuery implements Query {
 
     @Override
     public QueryResultsIterable<Vertex> vertices() {
-        return vertices(FetchHint.ALL);
+        return vertices(FetchHint.DEFAULT);
     }
 
     @Override
@@ -44,7 +44,7 @@ public class CompositeGraphQuery implements Query {
 
     @Override
     public QueryResultsIterable<Edge> edges() {
-        return edges(FetchHint.ALL);
+        return edges(FetchHint.DEFAULT);
     }
 
     @Override
@@ -71,7 +71,7 @@ public class CompositeGraphQuery implements Query {
     @Deprecated
     public QueryResultsIterable<Edge> edges(final String label) {
         hasEdgeLabel(label);
-        return edges(FetchHint.ALL);
+        return edges(FetchHint.DEFAULT);
     }
 
     @Override
@@ -83,7 +83,7 @@ public class CompositeGraphQuery implements Query {
 
     @Override
     public QueryResultsIterable<Element> elements() {
-        return elements(FetchHint.ALL);
+        return elements(FetchHint.DEFAULT);
     }
 
     @Override
@@ -108,7 +108,7 @@ public class CompositeGraphQuery implements Query {
 
     @Override
     public QueryResultsIterable<ExtendedDataRow> extendedDataRows() {
-        return extendedDataRows(FetchHint.ALL);
+        return extendedDataRows(FetchHint.DEFAULT);
     }
 
     @Override
@@ -153,7 +153,7 @@ public class CompositeGraphQuery implements Query {
 
     @Override
     public QueryResultsIterable<? extends VertexiumObject> search() {
-        return search(VertexiumObjectType.ALL, FetchHint.ALL);
+        return search(VertexiumObjectType.ALL, FetchHint.DEFAULT);
     }
 
     @Override

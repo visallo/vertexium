@@ -16,11 +16,11 @@ import java.util.List;
 
 public abstract class InMemoryElement<TElement extends InMemoryElement> implements Element {
     private final String id;
+    private final EnumSet<FetchHint> fetchHints;
     private Property idProperty;
     private Property edgeLabelProperty;
     private InMemoryGraph graph;
     private InMemoryTableElement<TElement> inMemoryTableElement;
-    private final boolean includeHidden;
     private final Long endTime;
     private final Authorizations authorizations;
 
@@ -28,13 +28,13 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> implemen
             InMemoryGraph graph,
             String id,
             InMemoryTableElement<TElement> inMemoryTableElement,
-            boolean includeHidden,
+            EnumSet<FetchHint> fetchHints,
             Long endTime,
             Authorizations authorizations
     ) {
         this.graph = graph;
         this.id = id;
-        this.includeHidden = includeHidden;
+        this.fetchHints = fetchHints;
         this.endTime = endTime;
         this.authorizations = authorizations;
         this.inMemoryTableElement = inMemoryTableElement;
@@ -47,7 +47,16 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> implemen
 
     protected Property getIdProperty() {
         if (idProperty == null) {
-            idProperty = new MutablePropertyImpl(ElementMutation.DEFAULT_KEY, ID_PROPERTY_NAME, getId(), null, getTimestamp(), null, null);
+            idProperty = new MutablePropertyImpl(
+                    ElementMutation.DEFAULT_KEY,
+                    ID_PROPERTY_NAME,
+                    getId(),
+                    null,
+                    getTimestamp(),
+                    null,
+                    null,
+                    fetchHints
+            );
         }
         return idProperty;
     }
@@ -55,7 +64,16 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> implemen
     protected Property getEdgeLabelProperty() {
         if (edgeLabelProperty == null && this instanceof Edge) {
             String edgeLabel = ((Edge) this).getLabel();
-            edgeLabelProperty = new MutablePropertyImpl(ElementMutation.DEFAULT_KEY, Edge.LABEL_PROPERTY_NAME, edgeLabel, null, getTimestamp(), null, null);
+            edgeLabelProperty = new MutablePropertyImpl(
+                    ElementMutation.DEFAULT_KEY,
+                    Edge.LABEL_PROPERTY_NAME,
+                    edgeLabel,
+                    null,
+                    getTimestamp(),
+                    null,
+                    null,
+                    fetchHints
+            );
         }
         return edgeLabelProperty;
     }
@@ -354,7 +372,7 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> implemen
 
     @Override
     public Iterable<Property> getProperties() {
-        return inMemoryTableElement.getProperties(includeHidden, endTime, authorizations);
+        return inMemoryTableElement.getProperties(fetchHints, endTime, authorizations);
     }
 
     @Override
@@ -423,7 +441,16 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> implemen
             IndexHint indexHint
     ) {
         for (Property property : properties) {
-            addPropertyValue(property.getKey(), property.getName(), property.getValue(), property.getMetadata(), property.getVisibility(), property.getTimestamp(), false, authorizations);
+            addPropertyValue(
+                    property.getKey(),
+                    property.getName(),
+                    property.getValue(),
+                    property.getMetadata(),
+                    property.getVisibility(),
+                    property.getTimestamp(),
+                    false,
+                    authorizations
+            );
         }
         for (PropertyDeleteMutation propertyDeleteMutation : propertyDeleteMutations) {
             deleteProperty(propertyDeleteMutation.getKey(), propertyDeleteMutation.getName(), propertyDeleteMutation.getVisibility(), authorizations);
@@ -522,14 +549,13 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> implemen
         if (alterPropertyVisibilities != null && alterPropertyVisibilities.size() > 0) {
             // Bulk delete
             List<PropertyDescriptor> propertyList = Lists.newArrayList();
-            alterPropertyVisibilities.forEach(p -> {
-                propertyList.add(PropertyDescriptor.from(p.getKey(), p.getName(), p.getExistingVisibility()));
-            });
+            alterPropertyVisibilities.forEach(p -> propertyList.add(PropertyDescriptor.from(p.getKey(), p.getName(), p.getExistingVisibility())));
             getGraph().getSearchIndex().deleteProperties(
                     getGraph(),
                     element,
                     propertyList,
-                    authorizations);
+                    authorizations
+            );
 
             getGraph().getSearchIndex().flush(getGraph());
         }
@@ -550,12 +576,8 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> implemen
         return inMemoryTableElement.getHiddenVisibilities();
     }
 
-    protected boolean isIncludeHidden() {
-        return includeHidden;
-    }
-
-    protected EnumSet<FetchHint> getFetchHints() {
-        return isIncludeHidden() ? FetchHint.ALL_INCLUDING_HIDDEN : FetchHint.ALL;
+    public EnumSet<FetchHint> getFetchHints() {
+        return fetchHints;
     }
 
     protected InMemoryTableElement<TElement> getInMemoryTableElement() {

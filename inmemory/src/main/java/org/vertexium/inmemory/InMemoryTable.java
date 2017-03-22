@@ -21,12 +21,12 @@ public abstract class InMemoryTable<TElement extends InMemoryElement> {
         this(new ConcurrentSkipListMap<String, InMemoryTableElement<TElement>>());
     }
 
-    public TElement get(InMemoryGraph graph, String id, Authorizations authorizations) {
+    public TElement get(InMemoryGraph graph, String id, EnumSet<FetchHint> fetchHints, Authorizations authorizations) {
         InMemoryTableElement<TElement> inMemoryTableElement = getTableElement(id);
         if (inMemoryTableElement == null) {
             return null;
         }
-        return inMemoryTableElement.createElement(graph, authorizations);
+        return inMemoryTableElement.createElement(graph, fetchHints, authorizations);
     }
 
     public InMemoryTableElement<TElement> getTableElement(String id) {
@@ -52,9 +52,12 @@ public abstract class InMemoryTable<TElement extends InMemoryElement> {
         rows.clear();
     }
 
-    public Iterable<TElement> getAll(final InMemoryGraph graph, final EnumSet<FetchHint> fetchHints, final Long endTime,
-                                     final Authorizations authorizations) {
-        final boolean includeHidden = fetchHints.contains(FetchHint.INCLUDE_HIDDEN);
+    public Iterable<TElement> getAll(
+            InMemoryGraph graph,
+            EnumSet<FetchHint> fetchHints,
+            Long endTime,
+            Authorizations authorizations
+    ) {
         return new LookAheadIterable<InMemoryTableElement<TElement>, TElement>() {
             @Override
             protected boolean isIncluded(InMemoryTableElement<TElement> src, TElement element) {
@@ -63,7 +66,7 @@ public abstract class InMemoryTable<TElement extends InMemoryElement> {
 
             @Override
             protected TElement convert(InMemoryTableElement<TElement> element) {
-                return element.createElement(graph, includeHidden, endTime, authorizations);
+                return element.createElement(graph, fetchHints, endTime, authorizations);
             }
 
             @Override

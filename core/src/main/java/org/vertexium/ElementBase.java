@@ -12,10 +12,7 @@ import org.vertexium.util.ConvertingIterable;
 import org.vertexium.util.FilterIterable;
 import org.vertexium.util.PropertyCollection;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentSkipListSet;
 
 public abstract class ElementBase implements Element {
@@ -25,6 +22,7 @@ public abstract class ElementBase implements Element {
     private Property edgeLabelProperty;
     private Visibility visibility;
     private final long timestamp;
+    private final EnumSet<FetchHint> fetchHints;
     private Set<Visibility> hiddenVisibilities = new HashSet<>();
 
     private final PropertyCollection properties;
@@ -43,12 +41,14 @@ public abstract class ElementBase implements Element {
             Iterable<Visibility> hiddenVisibilities,
             ImmutableSet<String> extendedDataTableNames,
             long timestamp,
+            EnumSet<FetchHint> fetchHints,
             Authorizations authorizations
     ) {
         this.graph = graph;
         this.id = id;
         this.visibility = visibility;
         this.timestamp = timestamp;
+        this.fetchHints = fetchHints;
         this.properties = new PropertyCollection();
         this.extendedDataTableNames = extendedDataTableNames;
         this.authorizations = authorizations;
@@ -171,7 +171,15 @@ public abstract class ElementBase implements Element {
 
     protected Property getIdProperty() {
         if (idProperty == null) {
-            idProperty = new MutablePropertyImpl(ElementMutation.DEFAULT_KEY, ID_PROPERTY_NAME, getId(), null, getTimestamp(), null, null);
+            idProperty = new MutablePropertyImpl(
+                    ElementMutation.DEFAULT_KEY,
+                    ID_PROPERTY_NAME, getId(),
+                    null,
+                    getTimestamp(),
+                    null,
+                    null,
+                    getFetchHints()
+            );
         }
         return idProperty;
     }
@@ -179,7 +187,16 @@ public abstract class ElementBase implements Element {
     protected Property getEdgeLabelProperty() {
         if (edgeLabelProperty == null && this instanceof Edge) {
             String edgeLabel = ((Edge) this).getLabel();
-            edgeLabelProperty = new MutablePropertyImpl(ElementMutation.DEFAULT_KEY, Edge.LABEL_PROPERTY_NAME, edgeLabel, null, getTimestamp(), null, null);
+            edgeLabelProperty = new MutablePropertyImpl(
+                    ElementMutation.DEFAULT_KEY,
+                    Edge.LABEL_PROPERTY_NAME,
+                    edgeLabel,
+                    null,
+                    getTimestamp(),
+                    null,
+                    null,
+                    getFetchHints()
+            );
         }
         return edgeLabelProperty;
     }
@@ -502,5 +519,10 @@ public abstract class ElementBase implements Element {
     @Override
     public ImmutableSet<String> getExtendedDataTableNames() {
         return extendedDataTableNames;
+    }
+
+    @Override
+    public EnumSet<FetchHint> getFetchHints() {
+        return fetchHints;
     }
 }

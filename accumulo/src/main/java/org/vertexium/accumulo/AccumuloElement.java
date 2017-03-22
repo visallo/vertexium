@@ -8,6 +8,7 @@ import org.vertexium.accumulo.iterator.ElementIterator;
 import org.vertexium.mutation.*;
 
 import java.io.Serializable;
+import java.util.EnumSet;
 
 public abstract class AccumuloElement extends ElementBase implements Serializable, HasTimestamp {
     private static final long serialVersionUID = 1L;
@@ -38,6 +39,7 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
             Iterable<Visibility> hiddenVisibilities,
             ImmutableSet<String> extendedDataTableNames,
             long timestamp,
+            EnumSet<FetchHint> fetchHints,
             Authorizations authorizations
     ) {
         super(
@@ -50,6 +52,7 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
                 hiddenVisibilities,
                 extendedDataTableNames,
                 timestamp,
+                fetchHints,
                 authorizations
         );
     }

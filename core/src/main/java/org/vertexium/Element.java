@@ -3,6 +3,8 @@ package org.vertexium;
 import com.google.common.collect.ImmutableSet;
 import org.vertexium.mutation.ExistingElementMutation;
 
+import java.util.EnumSet;
+
 /**
  * An element on the graph. This can be either a vertex or edge.
  * <p/>
@@ -302,4 +304,9 @@ public interface Element extends VertexiumObject {
      * @return Iterable of all the rows.
      */
     Iterable<ExtendedDataRow> getExtendedData(String tableName);
+
+    /**
+     * Fetch hints used when fetching this element.
+     */
+    EnumSet<FetchHint> getFetchHints();
 }

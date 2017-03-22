@@ -1,27 +1,31 @@
 package org.vertexium.property;
 
-import org.vertexium.Authorizations;
-import org.vertexium.Metadata;
-import org.vertexium.Property;
-import org.vertexium.Visibility;
+import org.vertexium.*;
 import org.vertexium.util.IncreasingTime;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 public class MutablePropertyImpl extends MutableProperty {
     private final String key;
     private final String name;
+    private final EnumSet<FetchHint> fetchHints;
     private Set<Visibility> hiddenVisibilities;
     private Object value;
     private Visibility visibility;
     private long timestamp;
     private final Metadata metadata;
 
-    public MutablePropertyImpl(String key, String name, Object value, Metadata metadata, Long timestamp, Set<Visibility> hiddenVisibilities, Visibility visibility) {
-        if (metadata == null) {
+    public MutablePropertyImpl(
+            String key,
+            String name,
+            Object value,
+            Metadata metadata,
+            Long timestamp,
+            Set<Visibility> hiddenVisibilities,
+            Visibility visibility,
+            EnumSet<FetchHint> fetchHints
+    ) {
+        if (metadata == null && fetchHints.contains(FetchHint.PROPERTY_METADATA)) {
             metadata = new Metadata();
         }
 
@@ -32,6 +36,7 @@ public class MutablePropertyImpl extends MutableProperty {
         this.timestamp = timestamp == null ? IncreasingTime.currentTimeMillis() : timestamp;
         this.visibility = visibility;
         this.hiddenVisibilities = hiddenVisibilities;
+        this.fetchHints = fetchHints;
     }
 
     public String getKey() {
@@ -56,6 +61,7 @@ public class MutablePropertyImpl extends MutableProperty {
     }
 
     public Metadata getMetadata() {
+        FetchHint.checkFetchHints(fetchHints, FetchHint.PROPERTY_METADATA);
         return metadata;
     }
 

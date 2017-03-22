@@ -18,7 +18,10 @@ import org.vertexium.mutation.ExistingElementMutationImpl;
 import org.vertexium.mutation.PropertyDeleteMutation;
 import org.vertexium.mutation.PropertySoftDeleteMutation;
 import org.vertexium.query.VertexQuery;
-import org.vertexium.util.*;
+import org.vertexium.util.ConvertingIterable;
+import org.vertexium.util.FilterIterable;
+import org.vertexium.util.JoinIterable;
+import org.vertexium.util.LookAheadIterable;
 
 import javax.annotation.Nullable;
 import java.io.ByteArrayInputStream;
@@ -50,6 +53,7 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
             Iterable<Visibility> hiddenVisibilities,
             ImmutableSet<String> extendedDataTableNames,
             long timestamp,
+            EnumSet<FetchHint> fetchHints,
             Authorizations authorizations
     ) {
         this(
@@ -64,6 +68,7 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
                 new EdgesWithEdgeInfo(),
                 new EdgesWithEdgeInfo(),
                 timestamp,
+                fetchHints,
                 authorizations
         );
     }
@@ -80,6 +85,7 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
             Edges inEdges,
             Edges outEdges,
             long timestamp,
+            EnumSet<FetchHint> fetchHints,
             Authorizations authorizations
     ) {
         super(
@@ -92,13 +98,20 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
                 hiddenVisibilities,
                 extendedDataTableNames,
                 timestamp,
+                fetchHints,
                 authorizations
         );
         this.inEdges = inEdges;
         this.outEdges = outEdges;
     }
 
-    public static Vertex createFromIteratorValue(AccumuloGraph graph, Key key, Value value, Authorizations authorizations) {
+    public static Vertex createFromIteratorValue(
+            AccumuloGraph graph,
+            Key key,
+            Value value,
+            EnumSet<FetchHint> fetchHints,
+            Authorizations authorizations
+    ) {
         try {
             String vertexId;
             Visibility vertexVisibility;
@@ -123,7 +136,7 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
                     return new Visibility(input.toString());
                 }
             });
-            properties = DataInputStreamUtils.decodeProperties(graph, in);
+            properties = DataInputStreamUtils.decodeProperties(graph, in, fetchHints);
             ImmutableSet<String> extendedDataTableNames = DataInputStreamUtils.decodeStringSet(in);
             outEdges = DataInputStreamUtils.decodeEdges(in, graph.getNameSubstitutionStrategy());
             inEdges = DataInputStreamUtils.decodeEdges(in, graph.getNameSubstitutionStrategy());
@@ -140,6 +153,7 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
                     inEdges,
                     outEdges,
                     timestamp,
+                    fetchHints,
                     authorizations
             );
         } catch (IOException ex) {
@@ -149,7 +163,7 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
 
     @Override
     public Iterable<Edge> getEdges(Direction direction, Authorizations authorizations) {
-        return getEdges(direction, FetchHint.ALL, authorizations);
+        return getEdges(direction, FetchHint.DEFAULT, authorizations);
     }
 
     @Override
@@ -169,7 +183,7 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
 
     @Override
     public Iterable<Edge> getEdges(Direction direction, String label, Authorizations authorizations) {
-        return getEdges(direction, label, FetchHint.ALL, authorizations);
+        return getEdges(direction, label, FetchHint.DEFAULT, authorizations);
     }
 
     @Override
@@ -184,7 +198,7 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
 
     @Override
     public Iterable<Edge> getEdges(Direction direction, String[] labels, Authorizations authorizations) {
-        return getEdges(direction, labels, FetchHint.ALL, authorizations);
+        return getEdges(direction, labels, FetchHint.DEFAULT, authorizations);
     }
 
     @Override
@@ -199,7 +213,7 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
 
     @Override
     public Iterable<Edge> getEdges(Vertex otherVertex, Direction direction, Authorizations authorizations) {
-        return getEdges(otherVertex, direction, FetchHint.ALL, authorizations);
+        return getEdges(otherVertex, direction, FetchHint.DEFAULT, authorizations);
     }
 
     @Override
@@ -214,7 +228,7 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
 
     @Override
     public Iterable<Edge> getEdges(Vertex otherVertex, Direction direction, String label, Authorizations authorizations) {
-        return getEdges(otherVertex, direction, label, FetchHint.ALL, authorizations);
+        return getEdges(otherVertex, direction, label, FetchHint.DEFAULT, authorizations);
     }
 
     @Override
@@ -229,7 +243,7 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
 
     @Override
     public Iterable<Edge> getEdges(Vertex otherVertex, Direction direction, String[] labels, Authorizations authorizations) {
-        return getEdges(otherVertex, direction, labels, FetchHint.ALL, authorizations);
+        return getEdges(otherVertex, direction, labels, FetchHint.DEFAULT, authorizations);
     }
 
     @Override
@@ -282,7 +296,7 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
 
     @Override
     public Iterable<Vertex> getVertices(Direction direction, Authorizations authorizations) {
-        return getVertices(direction, FetchHint.ALL, authorizations);
+        return getVertices(direction, FetchHint.DEFAULT, authorizations);
     }
 
     @SuppressWarnings("unused")
@@ -397,7 +411,7 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
 
     @Override
     public Iterable<Vertex> getVertices(Direction direction, String label, Authorizations authorizations) {
-        return getVertices(direction, label, FetchHint.ALL, authorizations);
+        return getVertices(direction, label, FetchHint.DEFAULT, authorizations);
     }
 
     @Override
@@ -407,7 +421,7 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
 
     @Override
     public Iterable<Vertex> getVertices(Direction direction, String[] labels, Authorizations authorizations) {
-        return getVertices(direction, labels, FetchHint.ALL, authorizations);
+        return getVertices(direction, labels, FetchHint.DEFAULT, authorizations);
     }
 
     @Override
@@ -507,7 +521,7 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
 
     @Override
     public Iterable<EdgeVertexPair> getEdgeVertexPairs(Direction direction, Authorizations authorizations) {
-        return getEdgeVertexPairs(getEdgeInfos(direction, authorizations), FetchHint.ALL, null, authorizations);
+        return getEdgeVertexPairs(getEdgeInfos(direction, authorizations), FetchHint.DEFAULT, null, authorizations);
     }
 
     @Override
@@ -522,7 +536,7 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
 
     @Override
     public Iterable<EdgeVertexPair> getEdgeVertexPairs(Direction direction, String label, Authorizations authorizations) {
-        return getEdgeVertexPairs(getEdgeInfos(direction, label, authorizations), FetchHint.ALL, null, authorizations);
+        return getEdgeVertexPairs(getEdgeInfos(direction, label, authorizations), FetchHint.DEFAULT, null, authorizations);
     }
 
     @Override
@@ -532,7 +546,7 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
 
     @Override
     public Iterable<EdgeVertexPair> getEdgeVertexPairs(Direction direction, String[] labels, Authorizations authorizations) {
-        return getEdgeVertexPairs(getEdgeInfos(direction, labels, authorizations), FetchHint.ALL, null, authorizations);
+        return getEdgeVertexPairs(getEdgeInfos(direction, labels, authorizations), FetchHint.DEFAULT, null, authorizations);
     }
 
     @Override
