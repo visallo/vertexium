@@ -506,7 +506,11 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
         return this;
     }
 
+    /**
+     * @deprecated As of 2.6.0 this call has no effect in Elasticsearch and will be remove
+     */
     @Override
+    @Deprecated
     public SimilarToGraphQuery percentTermsToMatch(float percentTermsToMatch) {
         if (!(parameters instanceof SimilarToQueryParameters)) {
             throw new VertexiumException("Invalid query parameters, expected " + SimilarToQueryParameters.class.getName() + " found " + parameters.getClass().getName());
