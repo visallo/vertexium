@@ -1840,6 +1840,37 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    public void testGraphQueryWithFetchHints() {
+        graph.prepareVertex("v1", VISIBILITY_A)
+                .addPropertyValue("k1", "name", "joe", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
+
+        graph.prepareVertex("v2", VISIBILITY_A)
+                .addPropertyValue("k1", "name", "matt", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
+
+        graph.prepareVertex("v3", VISIBILITY_A)
+                .addPropertyValue("k1", "name", "joe", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
+
+        graph.flush();
+
+        assertTrue(graph.getVertexCount(AUTHORIZATIONS_A) == 3);
+
+        QueryResultsIterable<Vertex> vertices = graph.query(AUTHORIZATIONS_A)
+                .has("name", "joe")
+                .vertices(EnumSet.of(FetchHint.PROPERTIES));
+
+        assertResultsCount(2, 2, vertices);
+
+        vertices = graph.query(AUTHORIZATIONS_A)
+                .has("name", "joe")
+                .vertices(FetchHint.NONE);
+
+        assertResultsCount(2, 2, vertices);
+    }
+
+    @Test
     public void testSaveElementMutations() {
         List<ElementMutation> mutations = new ArrayList<>();
         for (int i = 0; i < 2; i++) {
