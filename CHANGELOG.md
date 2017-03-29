@@ -1,4 +1,6 @@
 # v2.5.4
+
+* Fixed: Find Path max 2 hops not returning one hop paths
 * Added: configuration for number of Elasticsearch replicas
 * Changed: Delete events added to HistoricalPropertyValue reporting
 

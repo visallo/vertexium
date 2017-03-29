@@ -584,6 +584,10 @@ public abstract class GraphBase implements Graph {
         progressCallback.progress(0.3, ProgressCallback.Step.SEARCHING_DESTINATION_VERTEX_EDGES);
         Set<String> destVertexConnectedVertexIds = filterFindPathEdgeInfo(options, destVertex.getEdgeInfos(Direction.BOTH, options.getLabels(), authorizations));
 
+        if (sourceVertexConnectedVertexIds.contains(destVertexId)) {
+            foundPaths.add(new Path(sourceVertexId, destVertexId));
+        }
+
         progressCallback.progress(0.6, ProgressCallback.Step.MERGING_EDGES);
         sourceVertexConnectedVertexIds.retainAll(destVertexConnectedVertexIds);
 
