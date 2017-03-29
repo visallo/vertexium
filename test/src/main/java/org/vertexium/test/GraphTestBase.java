@@ -2938,10 +2938,20 @@ public abstract class GraphTestBase {
         graph.addEdge(v4, v6, "knows", VISIBILITY_A, AUTHORIZATIONS_A); // v4 -> v6
         graph.flush();
 
-        List<Path> paths = toList(graph.findPaths(new FindPathOptions("v1", "v4", 2), AUTHORIZATIONS_A));
-        List<Path> pathsByLabels = toList(graph.findPaths(new FindPathOptions("v1", "v4", 2).setLabels("knows"), AUTHORIZATIONS_A));
+        List<Path> paths = toList(graph.findPaths(new FindPathOptions("v1", "v2", 2), AUTHORIZATIONS_A));
+        List<Path> pathsByLabels = toList(graph.findPaths(new FindPathOptions("v1", "v2", 2).setLabels("knows"), AUTHORIZATIONS_A));
         assertEquals(pathsByLabels, paths);
-        List<Path> pathsByBadLabel = toList(graph.findPaths(new FindPathOptions("v1", "v4", 2).setLabels("bad"), AUTHORIZATIONS_A));
+        List<Path> pathsByBadLabel = toList(graph.findPaths(new FindPathOptions("v1", "v2", 2).setLabels("bad"), AUTHORIZATIONS_A));
+        assertEquals(0, pathsByBadLabel.size());
+        assertPaths(
+                paths,
+                new Path("v1", "v2")
+        );
+
+        paths = toList(graph.findPaths(new FindPathOptions("v1", "v4", 2), AUTHORIZATIONS_A));
+        pathsByLabels = toList(graph.findPaths(new FindPathOptions("v1", "v4", 2).setLabels("knows"), AUTHORIZATIONS_A));
+        assertEquals(pathsByLabels, paths);
+        pathsByBadLabel = toList(graph.findPaths(new FindPathOptions("v1", "v4", 2).setLabels("bad"), AUTHORIZATIONS_A));
         assertEquals(0, pathsByBadLabel.size());
         assertPaths(
                 paths,

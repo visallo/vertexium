@@ -58,21 +58,28 @@ public class AccumuloFindPathStrategy {
     }
 
     private void findPathsSetIntersection(List<Path> foundPaths) {
+        String sourceVertexId = options.getSourceVertexId();
+        String destVertexId = options.getDestVertexId();
+        
         Set<String> vertexIds = new HashSet<>();
-        vertexIds.add(options.getSourceVertexId());
-        vertexIds.add(options.getDestVertexId());
+        vertexIds.add(sourceVertexId);
+        vertexIds.add(destVertexId);
         Map<String, Set<String>> connectedVertexIds = getConnectedVertexIds(vertexIds);
 
         progressCallback.progress(0.1, ProgressCallback.Step.SEARCHING_SOURCE_VERTEX_EDGES);
-        Set<String> sourceVertexConnectedVertexIds = connectedVertexIds.get(options.getSourceVertexId());
+        Set<String> sourceVertexConnectedVertexIds = connectedVertexIds.get(sourceVertexId);
         if (sourceVertexConnectedVertexIds == null) {
             return;
         }
 
         progressCallback.progress(0.3, ProgressCallback.Step.SEARCHING_DESTINATION_VERTEX_EDGES);
-        Set<String> destVertexConnectedVertexIds = connectedVertexIds.get(options.getDestVertexId());
+        Set<String> destVertexConnectedVertexIds = connectedVertexIds.get(destVertexId);
         if (destVertexConnectedVertexIds == null) {
             return;
+        }
+
+        if (sourceVertexConnectedVertexIds.contains(destVertexId)) {
+            foundPaths.add(new Path(sourceVertexId, destVertexId));
         }
 
         progressCallback.progress(0.6, ProgressCallback.Step.MERGING_EDGES);
@@ -81,7 +88,7 @@ public class AccumuloFindPathStrategy {
         progressCallback.progress(0.9, ProgressCallback.Step.ADDING_PATHS);
         foundPaths.addAll(
                 sourceVertexConnectedVertexIds.stream()
-                        .map(connectedVertexId -> new Path(options.getSourceVertexId(), connectedVertexId, options.getDestVertexId()))
+                        .map(connectedVertexId -> new Path(sourceVertexId, connectedVertexId, destVertexId))
                         .collect(Collectors.toList())
         );
     }
