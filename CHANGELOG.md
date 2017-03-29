@@ -1,11 +1,11 @@
 # v2.6.0
 
-* Fixed: Find Path max 2 hops not returning one hop paths
 * Added: ability to store extended data rows on an element
 * Added: Elasticsearch 2.x support
 
 # v2.5.4
 
+* Fixed: Find Path max 2 hops not returning one hop paths
 * Added: configuration for number of Elasticsearch replicas
 * Changed: Delete events added to HistoricalPropertyValue reporting
 
