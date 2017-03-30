@@ -4,6 +4,7 @@ import org.vertexium.GraphConfiguration;
 import org.vertexium.util.VertexiumLogger;
 import org.vertexium.util.VertexiumLoggerFactory;
 
+@Deprecated
 public class EdgeCountScoringStrategyConfiguration {
     private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(EdgeCountScoringStrategyConfiguration.class);
     public static final String IN_EDGE_COUNT_FIELD_NAME = "__inEdgeCount";

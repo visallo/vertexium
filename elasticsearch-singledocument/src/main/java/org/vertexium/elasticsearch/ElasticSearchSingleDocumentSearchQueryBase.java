@@ -327,8 +327,10 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
                 }
                 Iterable<VertexiumObject> vertexiumObjects = new JoinIterable<>(items);
                 vertexiumObjects = sortVertexiumObjectsByResultOrder(vertexiumObjects, ids.getIds());
+
+                boolean shouldEvaluateHas = evaluateHasContainers && (fetchHints.contains(FetchHint.PROPERTIES) || fetchHints.contains(FetchHint.EXTENDED_DATA_TABLE_NAMES));
                 // TODO instead of passing false here to not evaluate the query string it would be better to support the Lucene query
-                return createIterable(response, filterParameters, vertexiumObjects, evaluateQueryString, evaluateHasContainers, evaluateSortContainers, searchTime, hits);
+                return createIterable(response, filterParameters, vertexiumObjects, evaluateQueryString, shouldEvaluateHas, evaluateSortContainers, searchTime, hits);
             }
         };
     }

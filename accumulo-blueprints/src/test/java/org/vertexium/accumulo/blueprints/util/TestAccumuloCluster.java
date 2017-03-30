@@ -35,6 +35,7 @@ public class TestAccumuloCluster {
         LOGGER.info("writing to: %s", tempDir);
 
         MiniAccumuloConfig miniAccumuloConfig = new MiniAccumuloConfig(tempDir, ACCUMULO_PASSWORD);
+        miniAccumuloConfig.setZooKeeperStartupTime(60000);
         accumulo = new MiniAccumuloCluster(miniAccumuloConfig);
         accumulo.start();
 

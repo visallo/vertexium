@@ -14,10 +14,6 @@
         </layout>
     </appender>
 
-    <logger name="org.vertexium.query.Query.QUERY" additivity="false">
-        <level value="TRACE" />
-        <appender-ref ref="console" />
-    </logger>
     <logger name="org.vertexium.search.SearchIndex.MUTATION" additivity="false">
         <level value="TRACE" />
         <appender-ref ref="console" />

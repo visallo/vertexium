@@ -63,9 +63,4 @@ public class SqlGraphTest extends GraphTestBase {
     protected Authorizations createAuthorizations(String... auths) {
         return new InMemoryAuthorizations(auths);
     }
-
-    @Override
-    protected boolean isEdgeBoostSupported() {
-        return false;
-    }
 }
