@@ -1,6 +1,6 @@
 package org.vertexium;
 
-public interface VertexiumObject {
+public interface VertexiumObject extends Comparable {
     /**
      * Id of the object
      */

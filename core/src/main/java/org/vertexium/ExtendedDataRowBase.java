@@ -121,4 +121,12 @@ public abstract class ExtendedDataRowBase implements ExtendedDataRow {
         }
         return values.next();
     }
+
+    @Override
+    public int compareTo(Object o) {
+        if (o instanceof ExtendedDataRow) {
+            return getId().compareTo(((ExtendedDataRow) o).getId());
+        }
+        throw new ClassCastException("o must be an " + ExtendedDataRow.class.getName());
+    }
 }

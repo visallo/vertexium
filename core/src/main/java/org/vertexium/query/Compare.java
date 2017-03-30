@@ -1,6 +1,9 @@
 package org.vertexium.query;
 
-import org.vertexium.*;
+import org.vertexium.DateOnly;
+import org.vertexium.Property;
+import org.vertexium.PropertyDefinition;
+import org.vertexium.TextIndexHint;
 import org.vertexium.property.StreamingPropertyValue;
 
 import java.util.Collection;
@@ -101,20 +104,38 @@ public enum Compare implements Predicate {
             second = ((StreamingPropertyValue) second).readToString();
         }
 
+        if (first instanceof Long && second instanceof Long) {
+            long firstLong = (long) first;
+            long secondLong = (long) second;
+            return Long.compare(firstLong, secondLong);
+        }
+        if (first instanceof Integer && second instanceof Integer) {
+            int firstInt = (int) first;
+            int secondInt = (int) second;
+            return Integer.compare(firstInt, secondInt);
+        }
         if (first instanceof Number && second instanceof Number) {
             double firstDouble = ((Number) first).doubleValue();
             double secondDouble = ((Number) second).doubleValue();
             return Double.compare(firstDouble, secondDouble);
         }
         if (first instanceof Number && second instanceof String) {
-            double firstDouble = ((Number) first).doubleValue();
-            double secondDouble = Double.parseDouble(second.toString());
-            return Double.compare(firstDouble, secondDouble);
+            try {
+                double firstDouble = ((Number) first).doubleValue();
+                double secondDouble = Double.parseDouble(second.toString());
+                return Double.compare(firstDouble, secondDouble);
+            } catch (NumberFormatException ex) {
+                return -1;
+            }
         }
         if (first instanceof String && second instanceof Number) {
-            double firstDouble = Double.parseDouble(first.toString());
-            double secondDouble = ((Number) second).doubleValue();
-            return Double.compare(firstDouble, secondDouble);
+            try {
+                double firstDouble = Double.parseDouble(first.toString());
+                double secondDouble = ((Number) second).doubleValue();
+                return Double.compare(firstDouble, secondDouble);
+            } catch (NumberFormatException ex) {
+                return 1;
+            }
         }
         if (first instanceof Comparable) {
             return ((Comparable) first).compareTo(second);

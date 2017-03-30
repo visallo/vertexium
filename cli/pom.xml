@@ -24,6 +24,16 @@
         </dependency>
         <dependency>
             <groupId>org.vertexium</groupId>
+            <artifactId>vertexium-cypher</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.vertexium</groupId>
+            <artifactId>vertexium-kryo-serializer</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.vertexium</groupId>
             <artifactId>vertexium-accumulo</artifactId>
             <version>${project.version}</version>
         </dependency>

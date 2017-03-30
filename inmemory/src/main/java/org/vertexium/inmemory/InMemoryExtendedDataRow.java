@@ -11,7 +11,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-public class InMemoryExtendedDataRow extends ExtendedDataRowBase implements Comparable<InMemoryExtendedDataRow> {
+public class InMemoryExtendedDataRow extends ExtendedDataRowBase {
     private final ExtendedDataRowId id;
     private Map<String, InMemoryProperty> properties = new HashMap<>();
 
@@ -69,11 +69,6 @@ public class InMemoryExtendedDataRow extends ExtendedDataRowBase implements Comp
     @Override
     public Property getProperty(String name) {
         return this.properties.get(name);
-    }
-
-    @Override
-    public int compareTo(InMemoryExtendedDataRow other) {
-        return getId().compareTo(other.getId());
     }
 
     private static class InMemoryProperty extends Property {

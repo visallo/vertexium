@@ -309,4 +309,12 @@ public interface Element extends VertexiumObject {
      * Fetch hints used when fetching this element.
      */
     EnumSet<FetchHint> getFetchHints();
+
+    @Override
+    default int compareTo(Object o) {
+        if (getClass().isInstance(o)) {
+            return getId().compareTo(((Element) o).getId());
+        }
+        throw new ClassCastException("o must be an " + getClass().getName());
+    }
 }
