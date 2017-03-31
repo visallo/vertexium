@@ -15,13 +15,13 @@ public class VertexiumLoggerFactory {
 
     public static VertexiumLogger getLogger(String name) {
         synchronized (logMap) {
-            VertexiumLogger visalloLogger = logMap.get(name);
-            if (visalloLogger != null) {
-                return visalloLogger;
+            VertexiumLogger vertexiumLogger = logMap.get(name);
+            if (vertexiumLogger != null) {
+                return vertexiumLogger;
             }
-            visalloLogger = new VertexiumLogger(LoggerFactory.getLogger(name));
-            logMap.put(name, visalloLogger);
-            return visalloLogger;
+            vertexiumLogger = new VertexiumLogger(LoggerFactory.getLogger(name));
+            logMap.put(name, vertexiumLogger);
+            return vertexiumLogger;
         }
     }
 

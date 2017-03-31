@@ -425,6 +425,9 @@
                     <value>true</value>
                 </property>
             </activation>
+            <modules>
+                <module>multimodule-test</module>
+            </modules>
             <build>
                 <plugins>
                     <plugin>

@@ -1,11 +1,17 @@
 package org.vertexium.accumulo;
 
+import org.junit.ClassRule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
-@RunWith(JUnit4.class)
 public class AccumuloGraphTest extends AccumuloGraphTestBase {
+
+    @ClassRule
+    public static final AccumuloResource accumuloResource = new AccumuloResource();
+
+    @Override
+    public AccumuloResource getAccumuloResource() {
+        return accumuloResource;
+    }
 
     @Override
     protected String substitutionDeflate(String str) {

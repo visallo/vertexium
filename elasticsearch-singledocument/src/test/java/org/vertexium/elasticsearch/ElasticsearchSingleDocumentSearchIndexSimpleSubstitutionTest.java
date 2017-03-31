@@ -1,29 +1,25 @@
 package org.vertexium.elasticsearch;
 
 import com.google.common.base.Joiner;
-import org.vertexium.Graph;
-import org.vertexium.id.SimpleSubstitutionUtils;
+import org.junit.ClassRule;
 
 import java.util.HashMap;
-import java.util.Map;
+
+import static org.vertexium.id.SimpleSubstitutionUtils.*;
 
 public class ElasticsearchSingleDocumentSearchIndexSimpleSubstitutionTest extends ElasticsearchSingleDocumentSearchIndexTestBase {
-    private final String PROP1_PROPERTY_NAME = "prop1";
-    private final String PROP1_SUBSTITUTION_NAME = "p1";
-    private final String PROP_LARGE_PROPERTY_NAME = "propLarge";
-    private final String PROP_LARGE_SUBSTITUTION_NAME = "pL";
-    private final String PROP_SMALL_PROPERTY_NAME = "propSmall";
-    private final String PROP_SMALL_SUBSTITUTION_NAME = "pS";
+    @ClassRule
+    public static ElasticsearchResource elasticsearchResource = new ElasticsearchResource(new HashMap<String, String>() {{
+        put(Joiner.on('.').join(new String[]{SUBSTITUTION_MAP_PREFIX, "0", KEY_IDENTIFIER}), "prop1");
+        put(Joiner.on('.').join(new String[]{SUBSTITUTION_MAP_PREFIX, "0", VALUE_IDENTIFIER}), "p1");
+        put(Joiner.on('.').join(new String[]{SUBSTITUTION_MAP_PREFIX, "1", KEY_IDENTIFIER}), "propLarge");
+        put(Joiner.on('.').join(new String[]{SUBSTITUTION_MAP_PREFIX, "1", VALUE_IDENTIFIER}), "pL");
+        put(Joiner.on('.').join(new String[]{SUBSTITUTION_MAP_PREFIX, "2", KEY_IDENTIFIER}), "propSmall");
+        put(Joiner.on('.').join(new String[]{SUBSTITUTION_MAP_PREFIX, "2", VALUE_IDENTIFIER}), "pS");
+    }});
 
     @Override
-    protected Graph createGraph() throws Exception {
-        Map<String, String> substitutionMap = new HashMap();
-        substitutionMap.put(Joiner.on('.').join(new String[]{SimpleSubstitutionUtils.SUBSTITUTION_MAP_PREFIX, "0", SimpleSubstitutionUtils.KEY_IDENTIFIER}), PROP1_PROPERTY_NAME);
-        substitutionMap.put(Joiner.on('.').join(new String[]{SimpleSubstitutionUtils.SUBSTITUTION_MAP_PREFIX, "0", SimpleSubstitutionUtils.VALUE_IDENTIFIER}), PROP1_SUBSTITUTION_NAME);
-        substitutionMap.put(Joiner.on('.').join(new String[]{SimpleSubstitutionUtils.SUBSTITUTION_MAP_PREFIX, "1", SimpleSubstitutionUtils.KEY_IDENTIFIER}), PROP_LARGE_PROPERTY_NAME);
-        substitutionMap.put(Joiner.on('.').join(new String[]{SimpleSubstitutionUtils.SUBSTITUTION_MAP_PREFIX, "1", SimpleSubstitutionUtils.VALUE_IDENTIFIER}), PROP_LARGE_SUBSTITUTION_NAME);
-        substitutionMap.put(Joiner.on('.').join(new String[]{SimpleSubstitutionUtils.SUBSTITUTION_MAP_PREFIX, "2", SimpleSubstitutionUtils.KEY_IDENTIFIER}), PROP_SMALL_PROPERTY_NAME);
-        substitutionMap.put(Joiner.on('.').join(new String[]{SimpleSubstitutionUtils.SUBSTITUTION_MAP_PREFIX, "2", SimpleSubstitutionUtils.VALUE_IDENTIFIER}), PROP_SMALL_SUBSTITUTION_NAME);
-        return super.createGraph(substitutionMap);
+    protected ElasticsearchResource getElasticsearchResource() {
+        return elasticsearchResource;
     }
 }

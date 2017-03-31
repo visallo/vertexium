@@ -4,13 +4,8 @@ import org.apache.accumulo.core.client.*;
 import org.apache.accumulo.core.data.Key;
 import org.apache.accumulo.core.data.Range;
 import org.apache.accumulo.core.data.Value;
-import org.apache.accumulo.minicluster.MiniAccumuloCluster;
-import org.apache.accumulo.minicluster.MiniAccumuloConfig;
-import org.apache.curator.framework.CuratorFramework;
 import org.apache.hadoop.io.Text;
-import org.junit.After;
 import org.junit.Before;
-import org.junit.ClassRule;
 import org.junit.Test;
 import org.vertexium.*;
 import org.vertexium.accumulo.iterator.model.EdgeInfo;
@@ -18,10 +13,7 @@ import org.vertexium.accumulo.iterator.model.KeyBase;
 import org.vertexium.accumulo.iterator.model.VertexiumInvalidKeyException;
 import org.vertexium.test.GraphTestBase;
 import org.vertexium.util.IterableUtils;
-import org.vertexium.util.VertexiumLogger;
-import org.vertexium.util.VertexiumLoggerFactory;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.*;
@@ -30,137 +22,31 @@ import static junit.framework.TestCase.fail;
 import static org.junit.Assert.*;
 import static org.vertexium.util.IterableUtils.toList;
 
-
 public abstract class AccumuloGraphTestBase extends GraphTestBase {
-    private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(AccumuloGraphTestBase.class);
-    private static final String ACCUMULO_USERNAME = "root";
-    private static final String ACCUMULO_PASSWORD = "test";
-    private File tempDir;
-    private static MiniAccumuloCluster accumulo;
-
-    @ClassRule
-    public static ZookeeperResource zookeeperResource = new ZookeeperResource();
 
     @Before
     @Override
     public void before() throws Exception {
-        ensureAccumuloIsStarted();
-        Connector connector = createConnector();
-        AccumuloGraphTestUtils.ensureTableExists(connector, GraphConfiguration.DEFAULT_TABLE_NAME_PREFIX);
-        AccumuloGraphTestUtils.dropGraph(connector, AccumuloGraph.getDataTableName(GraphConfiguration.DEFAULT_TABLE_NAME_PREFIX));
-        AccumuloGraphTestUtils.dropGraph(connector, AccumuloGraph.getVerticesTableName(GraphConfiguration.DEFAULT_TABLE_NAME_PREFIX));
-        AccumuloGraphTestUtils.dropGraph(connector, AccumuloGraph.getHistoryVerticesTableName(GraphConfiguration.DEFAULT_TABLE_NAME_PREFIX));
-        AccumuloGraphTestUtils.dropGraph(connector, AccumuloGraph.getEdgesTableName(GraphConfiguration.DEFAULT_TABLE_NAME_PREFIX));
-        AccumuloGraphTestUtils.dropGraph(connector, AccumuloGraph.getExtendedDataTableName(GraphConfiguration.DEFAULT_TABLE_NAME_PREFIX));
-        AccumuloGraphTestUtils.dropGraph(connector, AccumuloGraph.getHistoryEdgesTableName(GraphConfiguration.DEFAULT_TABLE_NAME_PREFIX));
-        AccumuloGraphTestUtils.dropGraph(connector, AccumuloGraph.getMetadataTableName(GraphConfiguration.DEFAULT_TABLE_NAME_PREFIX));
-        connector.securityOperations().changeUserAuthorizations(
-                AccumuloGraphConfiguration.DEFAULT_ACCUMULO_USERNAME,
-                new org.apache.accumulo.core.security.Authorizations(
-                        VISIBILITY_A_STRING,
-                        VISIBILITY_B_STRING,
-                        VISIBILITY_C_STRING,
-                        VISIBILITY_MIXED_CASE_STRING
-                )
-        );
-
-        final String path = AccumuloGraphConfiguration.DEFAULT_ZOOKEEPER_METADATA_SYNC_PATH;
-        CuratorFramework curator = zookeeperResource.getApacheCuratorFramework();
-        if (curator.checkExists().forPath(path) != null) {
-            curator.delete().deletingChildrenIfNeeded().forPath(path);
-        }
-
+        getAccumuloResource().dropGraph();
         super.before();
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     protected Graph createGraph() throws AccumuloSecurityException, AccumuloException, VertexiumException, InterruptedException, IOException, URISyntaxException {
-        return AccumuloGraph.create(createConfiguration());
+        return AccumuloGraph.create(new AccumuloGraphConfiguration(getAccumuloResource().createConfig()));
     }
 
-    protected Connector createConnector() throws AccumuloSecurityException, AccumuloException {
-        return createConfiguration().createConnector();
-    }
+    public abstract AccumuloResource getAccumuloResource();
 
     @Override
     protected Authorizations createAuthorizations(String... auths) {
         return new AccumuloAuthorizations(auths);
     }
 
-    @After
-    public void after() throws Exception {
-        super.after();
-    }
-
     @Override
-    protected boolean isEdgeBoostSupported() {
+    protected boolean isFetchHintNoneVertexQuerySupported() {
         return false;
-    }
-
-    @SuppressWarnings("ResultOfMethodCallIgnored")
-    protected void stop() throws IOException, InterruptedException {
-        if (accumulo != null) {
-            LOGGER.info("Stopping accumulo");
-            accumulo.stop();
-            accumulo = null;
-        }
-        tempDir.delete();
-    }
-
-    protected void ensureAccumuloIsStarted() {
-        try {
-            start();
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to start Accumulo mini cluster", e);
-        }
-    }
-
-    private AccumuloGraphConfiguration createConfiguration() {
-        return new AccumuloGraphConfiguration(createConfig());
-    }
-
-    @SuppressWarnings("unchecked")
-    protected Map createConfig() {
-        Map configMap = new HashMap();
-        configMap.put(AccumuloGraphConfiguration.ZOOKEEPER_SERVERS, accumulo.getZooKeepers());
-        configMap.put(AccumuloGraphConfiguration.ACCUMULO_INSTANCE_NAME, accumulo.getInstanceName());
-        configMap.put(AccumuloGraphConfiguration.ACCUMULO_USERNAME, ACCUMULO_USERNAME);
-        configMap.put(AccumuloGraphConfiguration.ACCUMULO_PASSWORD, ACCUMULO_PASSWORD);
-        configMap.put(AccumuloGraphConfiguration.AUTO_FLUSH, false);
-        configMap.put(AccumuloGraphConfiguration.MAX_STREAMING_PROPERTY_VALUE_TABLE_DATA_SIZE, GraphTestBase.LARGE_PROPERTY_VALUE_SIZE - 1);
-        configMap.put(AccumuloGraphConfiguration.DATA_DIR, "/tmp/");
-        configMap.put(AccumuloGraphConfiguration.HISTORY_IN_SEPARATE_TABLE, true);
-        return configMap;
-    }
-
-    @SuppressWarnings("ResultOfMethodCallIgnored")
-    public void start() throws IOException, InterruptedException {
-        if (accumulo != null) {
-            return;
-        }
-
-        LOGGER.info("Starting accumulo");
-
-        tempDir = File.createTempFile("accumulo-temp", Long.toString(System.nanoTime()));
-        tempDir.delete();
-        tempDir.mkdir();
-        LOGGER.info("writing to: %s", tempDir);
-
-        MiniAccumuloConfig miniAccumuloConfig = new MiniAccumuloConfig(tempDir, ACCUMULO_PASSWORD);
-        miniAccumuloConfig.setZooKeeperStartupTime(60000);
-        accumulo = new MiniAccumuloCluster(miniAccumuloConfig);
-        accumulo.start();
-
-        Runtime.getRuntime().addShutdownHook(new Thread() {
-            @Override
-            public void run() {
-                try {
-                    AccumuloGraphTestBase.this.stop();
-                } catch (Exception e) {
-                    System.out.println("Failed to stop Accumulo test cluster");
-                }
-            }
-        });
     }
 
     @Test

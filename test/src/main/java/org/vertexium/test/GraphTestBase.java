@@ -1840,6 +1840,43 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    public void testGraphQueryWithFetchHints() {
+        graph.prepareVertex("v1", VISIBILITY_A)
+                .addPropertyValue("k1", "name", "joe", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
+
+        graph.prepareVertex("v2", VISIBILITY_A)
+                .addPropertyValue("k1", "name", "matt", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
+
+        graph.prepareVertex("v3", VISIBILITY_A)
+                .addPropertyValue("k1", "name", "joe", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
+
+        graph.flush();
+
+        assertTrue(graph.getVertexCount(AUTHORIZATIONS_A) == 3);
+
+        QueryResultsIterable<Vertex> vertices = graph.query(AUTHORIZATIONS_A)
+                .has("name", "joe")
+                .vertices(EnumSet.of(FetchHint.PROPERTIES));
+
+        assertResultsCount(2, 2, vertices);
+
+        assumeTrue("FetchHint.NONE vertex queries are not supported", isFetchHintNoneVertexQuerySupported());
+
+        vertices = graph.query(AUTHORIZATIONS_A)
+                .has("name", "joe")
+                .vertices(FetchHint.NONE);
+
+        assertResultsCount(2, 2, vertices);
+    }
+
+    protected boolean isFetchHintNoneVertexQuerySupported() {
+        return true;
+    }
+
+    @Test
     public void testSaveElementMutations() {
         List<ElementMutation> mutations = new ArrayList<>();
         for (int i = 0; i < 2; i++) {
@@ -2527,8 +2564,6 @@ public abstract class GraphTestBase {
         graph.addEdge("v2tov3", v2, v3, "", VISIBILITY_EMPTY, AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
-        boolean disableUpdateEdgeCountInSearchIndexSuccess = disableUpdateEdgeCountInSearchIndex(graph);
-
         graph.prepareVertex("v1", VISIBILITY_EMPTY)
                 .setProperty("name", "Joe", VISIBILITY_EMPTY)
                 .save(AUTHORIZATIONS_A_AND_B);
@@ -2542,13 +2577,6 @@ public abstract class GraphTestBase {
 
         List<Vertex> allVertices = toList(graph.query(AUTHORIZATIONS_A_AND_B).vertices());
         Assert.assertEquals(3, count(allVertices));
-        if (disableUpdateEdgeCountInSearchIndexSuccess) {
-            assertEquals(
-                    "if edge indexing was disabled and updating vertices does not destroy the edge counts " +
-                            "that were already in place 'v1' should be last since it has no edges",
-                    "v1", allVertices.get(2).getId()
-            );
-        }
 
         Iterable<Vertex> vertices = graph.query(AUTHORIZATIONS_A_AND_B)
                 .has("age", Compare.EQUAL, 25)
@@ -3615,27 +3643,6 @@ public abstract class GraphTestBase {
     }
 
     @Test
-    public void testVertexBoost() throws Exception {
-        assumeTrue("Boost not supported", isEdgeBoostSupported());
-
-        Vertex v1 = graph.prepareVertex("v1", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
-        Vertex v2 = graph.prepareVertex("v2", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
-        Vertex v3 = graph.prepareVertex("v3", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
-
-        graph.addEdge("e1", v3, v2, "link", VISIBILITY_A, AUTHORIZATIONS_A);
-        graph.flush();
-
-        v1.prepareMutation().save(AUTHORIZATIONS_A_AND_B);
-        v2.prepareMutation().save(AUTHORIZATIONS_A_AND_B);
-        v3.prepareMutation().save(AUTHORIZATIONS_A_AND_B);
-
-        assertVertexIds(graph.query(AUTHORIZATIONS_A).vertices(), "v2", "v3", "v1");
-    }
-
-    @Test
     public void testValueTypes() throws Exception {
         Date date = createDate(2014, 2, 24, 13, 0, 5);
 
@@ -4097,6 +4104,9 @@ public abstract class GraphTestBase {
 
     @Test
     public void testPartialUpdateOfVertexPropertyKey() {
+        // see https://github.com/visallo/vertexium/issues/141
+        assumeTrue("Known bug in partial updates", isParitalUpdateOfVertexPropertyKeySupported());
+
         graph.prepareVertex("v1", VISIBILITY_A)
                 .addPropertyValue("key1", "prop", "value1", VISIBILITY_A)
                 .addPropertyValue("key2", "prop", "value2", VISIBILITY_A)
@@ -4132,6 +4142,10 @@ public abstract class GraphTestBase {
                 .has("prop", "value1")
                 .vertices();
         assertVertexIds(vertices);
+    }
+
+    protected boolean isParitalUpdateOfVertexPropertyKeySupported() {
+        return true;
     }
 
     @Test
@@ -5939,10 +5953,6 @@ public abstract class GraphTestBase {
         return vertices;
     }
 
-    protected boolean disableUpdateEdgeCountInSearchIndex(Graph graph) {
-        return false;
-    }
-
     protected boolean disableEdgeIndexing(Graph graph) {
         return false;
     }
@@ -5982,8 +5992,6 @@ public abstract class GraphTestBase {
         }
         return results;
     }
-
-    protected abstract boolean isEdgeBoostSupported();
 
     // Historical Property Value tests
     @Test

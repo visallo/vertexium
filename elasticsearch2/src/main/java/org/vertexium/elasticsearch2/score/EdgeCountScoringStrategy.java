@@ -19,6 +19,7 @@ import org.vertexium.search.SearchIndex;
 import java.io.IOException;
 import java.util.List;
 
+@Deprecated
 public class EdgeCountScoringStrategy extends ScoringStrategy {
     private final EdgeCountScoringStrategyConfiguration config;
 
