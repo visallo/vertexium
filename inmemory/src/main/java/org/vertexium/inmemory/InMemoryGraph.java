@@ -491,6 +491,10 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
         // if this is our first source vertex report progress back to the progress callback
         boolean firstLevelRecursion = hops == options.getMaxHops();
 
+        if (options.isGetAnyPath() && foundPaths.size() == 1) {
+            return;
+        }
+
         seenVertices.add(sourceVertexId);
         if (sourceVertexId.equals(destVertexId)) {
             foundPaths.add(currentPath);

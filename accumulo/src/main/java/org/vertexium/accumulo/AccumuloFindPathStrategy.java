@@ -80,6 +80,9 @@ public class AccumuloFindPathStrategy {
 
         if (sourceVertexConnectedVertexIds.contains(destVertexId)) {
             foundPaths.add(new Path(sourceVertexId, destVertexId));
+            if (options.isGetAnyPath()) {
+                return;
+            }
         }
 
         progressCallback.progress(0.6, ProgressCallback.Step.MERGING_EDGES);
@@ -122,6 +125,9 @@ public class AccumuloFindPathStrategy {
             Path currentPath,
             @SuppressWarnings("UnusedParameters") ProgressCallback progressCallback
     ) {
+        if (options.isGetAnyPath() && foundPaths.size() == 1) {
+            return;
+        }
         seenVertices.add(sourceVertexId);
         if (sourceVertexId.equals(destVertexId)) {
             foundPaths.add(currentPath);
