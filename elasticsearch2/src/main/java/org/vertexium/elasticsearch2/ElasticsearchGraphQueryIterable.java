@@ -17,20 +17,16 @@ import org.elasticsearch.search.aggregations.metrics.percentiles.Percentiles;
 import org.elasticsearch.search.aggregations.metrics.stats.extended.ExtendedStats;
 import org.elasticsearch.search.aggregations.metrics.stats.extended.InternalExtendedStats;
 import org.vertexium.VertexiumException;
-import org.vertexium.VertexiumObject;
 import org.vertexium.elasticsearch2.utils.ElasticsearchDocIdUtils;
 import org.vertexium.query.*;
 import org.vertexium.type.GeoPoint;
 import org.vertexium.type.GeoRect;
 import org.vertexium.util.StreamUtils;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @SuppressWarnings("deprecation")
-public class ElasticsearchGraphQueryIterable<T extends VertexiumObject> extends DefaultGraphQueryIterable<T> implements
+public class ElasticsearchGraphQueryIterable<T> extends DefaultGraphQueryIterable<T> implements
         IterableWithTotalHits<T>,
         IterableWithSearchTime<T>,
         IterableWithScores<T>,
@@ -56,8 +52,6 @@ public class ElasticsearchGraphQueryIterable<T extends VertexiumObject> extends 
             SearchHits hits
     ) {
         super(parameters, iterable, evaluateQueryString, evaluateHasContainers, evaluateSortContainers);
-        ElasticsearchSearchQueryBase query1 = query;
-        SearchResponse searchResponse1 = searchResponse;
         this.totalHits = totalHits;
         this.searchTimeInNanoSeconds = searchTimeInNanoSeconds;
         if (hits != null) {
@@ -65,7 +59,12 @@ public class ElasticsearchGraphQueryIterable<T extends VertexiumObject> extends 
                 scores.put(ElasticsearchDocIdUtils.fromSearchHit(hit), (double) hit.getScore());
             }
         }
-        this.aggregationResults = getAggregationResults(query1, searchResponse1);
+        this.aggregationResults = getAggregationResults(query, searchResponse);
+    }
+
+    @Override
+    protected Iterator<T> iterator(boolean iterateAll) {
+        return super.iterator(true); // Override to always pass true since Elasticsearch has done the skip for us
     }
 
     @Override

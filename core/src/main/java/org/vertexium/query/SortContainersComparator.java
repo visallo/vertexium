@@ -1,7 +1,6 @@
 package org.vertexium.query;
 
 import org.vertexium.Element;
-import org.vertexium.VertexiumObject;
 import org.vertexium.VertexiumException;
 
 import java.util.Comparator;
@@ -9,7 +8,7 @@ import java.util.List;
 
 import static org.vertexium.util.IterableUtils.toList;
 
-public class SortContainersComparator<T extends VertexiumObject> implements Comparator<T> {
+public class SortContainersComparator<T> implements Comparator<T> {
     private final List<QueryBase.SortContainer> sortContainers;
 
     public SortContainersComparator(List<QueryBase.SortContainer> sortContainers) {
@@ -28,7 +27,7 @@ public class SortContainersComparator<T extends VertexiumObject> implements Comp
     }
 
     private int compare(QueryBase.SortContainer sortContainer, T vertexiumObject1, T vertexiumObject2) {
-        if(vertexiumObject1 instanceof Element && vertexiumObject2 instanceof Element) {
+        if (vertexiumObject1 instanceof Element && vertexiumObject2 instanceof Element) {
             Element elem1 = (Element) vertexiumObject1;
             Element elem2 = (Element) vertexiumObject2;
             List<Object> elem1PropertyValues = toList(elem1.getPropertyValues(sortContainer.propertyName));
@@ -48,8 +47,8 @@ public class SortContainersComparator<T extends VertexiumObject> implements Comp
                 }
             }
             return 0;
-        }else{
-            throw new VertexiumException("unexpected searchable item combination: "+vertexiumObject1.getClass().getName()+", "+vertexiumObject2.getClass().getName());
+        } else {
+            throw new VertexiumException("unexpected searchable item combination: " + vertexiumObject1.getClass().getName() + ", " + vertexiumObject2.getClass().getName());
         }
     }
 

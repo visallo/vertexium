@@ -38,6 +38,11 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
     }
 
     @Override
+    public QueryResultsIterable<String> vertexIds() {
+        return new DefaultGraphQueryIdIterable<>(vertices(FetchHint.NONE));
+    }
+
+    @Override
     public QueryResultsIterable<Edge> edges() {
         return edges(FetchHint.ALL);
     }
@@ -46,6 +51,11 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
     public QueryResultsIterable<Edge> edges(final EnumSet<FetchHint> fetchHints) {
         //noinspection unchecked
         return (QueryResultsIterable<Edge>) search(EnumSet.of(VertexiumObjectType.EDGE), fetchHints);
+    }
+
+    @Override
+    public QueryResultsIterable<String> edgeIds() {
+        return new DefaultGraphQueryIdIterable<>(edges(FetchHint.NONE));
     }
 
     @Override
@@ -135,6 +145,12 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
     }
 
     @Override
+    public QueryResultsIterable<ExtendedDataRowId> extendedDataRowIds() {
+        QueryResultsIterable<? extends VertexiumObject> vertexiumObjects = search(EnumSet.of(VertexiumObjectType.EXTENDED_DATA), FetchHint.NONE);
+        return new DefaultGraphQueryIdIterable<>(vertexiumObjects);
+    }
+
+    @Override
     public Query hasEdgeLabel(String... edgeLabels) {
         for (String edgeLabel : edgeLabels) {
             getParameters().addEdgeLabel(edgeLabel);
@@ -195,6 +211,11 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
     public QueryResultsIterable<Element> elements(EnumSet<FetchHint> fetchHints) {
         //noinspection unchecked
         return (QueryResultsIterable<Element>) search(VertexiumObjectType.ELEMENTS, fetchHints);
+    }
+
+    @Override
+    public QueryResultsIterable<String> elementIds() {
+        return new DefaultGraphQueryIdIterable<>(elements(FetchHint.NONE));
     }
 
     @Override

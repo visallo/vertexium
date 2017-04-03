@@ -283,7 +283,6 @@ public class ElasticsearchSearchQueryBase extends QueryBase implements
         return new PagingIterable<VertexiumObject>(getParameters().getSkip(), getParameters().getLimit(), pageSize) {
             @Override
             protected ElasticsearchGraphQueryIterable<VertexiumObject> getPageIterable(int skip, int limit, boolean includeAggregations) {
-                long startTime = System.nanoTime();
                 SearchResponse response;
                 try {
                     response = getSearchResponse(ElasticsearchDocumentType.fromVertexiumObjectTypes(objectTypes), skip, limit, includeAggregations);
@@ -296,17 +295,13 @@ public class ElasticsearchSearchQueryBase extends QueryBase implements
                 }
                 final SearchHits hits = response.getHits();
                 Ids ids = new Ids(hits);
-                long endTime = System.nanoTime();
-                long searchTime = endTime - startTime;
                 if (LOGGER.isDebugEnabled()) {
                     LOGGER.debug(
-                            "elasticsearch results (vertices: %d + edges: %d + extended data: %d = %d) of %d (time: %dms)",
+                            "elasticsearch results (vertices: %d + edges: %d + extended data: %d = %d)",
                             ids.getVertexIds().size(),
                             ids.getEdgeIds().size(),
                             ids.getExtendedDataIds().size(),
-                            ids.getVertexIds().size() + ids.getEdgeIds().size() + ids.getExtendedDataIds().size(),
-                            hits.getTotalHits(),
-                            (endTime - startTime) / 1000 / 1000
+                            ids.getVertexIds().size() + ids.getEdgeIds().size() + ids.getExtendedDataIds().size()
                     );
                 }
 
@@ -332,9 +327,52 @@ public class ElasticsearchSearchQueryBase extends QueryBase implements
 
                 boolean shouldEvaluateHas = evaluateHasContainers && (fetchHints.contains(FetchHint.PROPERTIES) || fetchHints.contains(FetchHint.EXTENDED_DATA_TABLE_NAMES));
                 // TODO instead of passing false here to not evaluate the query string it would be better to support the Lucene query
-                return createIterable(response, filterParameters, vertexiumObjects, evaluateQueryString, shouldEvaluateHas, evaluateSortContainers, searchTime, hits);
+                return createIterable(response, filterParameters, vertexiumObjects, evaluateQueryString, shouldEvaluateHas, evaluateSortContainers, response.getTookInMillis(), hits);
             }
         };
+    }
+
+    public PagingIterable<SearchHit> search(EnumSet<VertexiumObjectType> objectTypes) {
+        return new PagingIterable<SearchHit>(getParameters().getSkip(), getParameters().getLimit(), pageSize) {
+            @Override
+            protected ElasticsearchGraphQueryIterable<SearchHit> getPageIterable(int skip, int limit, boolean includeAggregations) {
+                SearchResponse response;
+                try {
+                    response = getSearchResponse(ElasticsearchDocumentType.fromVertexiumObjectTypes(objectTypes), skip, limit, includeAggregations);
+                } catch (IndexNotFoundException ex) {
+                    LOGGER.debug("Index missing: %s (returning empty iterable)", ex.getMessage());
+                    return createEmptyIterable();
+                } catch (VertexiumNoMatchingPropertiesException ex) {
+                    LOGGER.debug("Could not find property: %s (returning empty iterable)", ex.getPropertyName());
+                    return createEmptyIterable();
+                }
+
+                SearchHits hits = response.getHits();
+                QueryParameters filterParameters = getParameters().clone();
+                Iterable<SearchHit> hitsIterable = IterableUtils.toIterable(hits.hits());
+                return createIterable(response, filterParameters, hitsIterable, false, false, false, response.getTookInMillis(), hits);
+            }
+        };
+    }
+
+    @Override
+    public QueryResultsIterable<String> vertexIds() {
+        return new ElasticsearchGraphQueryIdIterable<>(search(EnumSet.of(VertexiumObjectType.VERTEX)));
+    }
+
+    @Override
+    public QueryResultsIterable<String> edgeIds() {
+        return new ElasticsearchGraphQueryIdIterable<>(search(EnumSet.of(VertexiumObjectType.EDGE)));
+    }
+
+    @Override
+    public QueryResultsIterable<ExtendedDataRowId> extendedDataRowIds() {
+        return new ElasticsearchGraphQueryIdIterable<>(search(EnumSet.of(VertexiumObjectType.EXTENDED_DATA)));
+    }
+
+    @Override
+    public QueryResultsIterable<String> elementIds() {
+        return new ElasticsearchGraphQueryIdIterable<>(search(VertexiumObjectType.ELEMENTS));
     }
 
     private <T extends VertexiumObject> Iterable<T> sortVertexiumObjectsByResultOrder(Iterable<T> vertexiumObjects, List<String> ids) {
@@ -358,18 +396,18 @@ public class ElasticsearchSearchQueryBase extends QueryBase implements
         return results;
     }
 
-    private <T extends VertexiumObject> EmptyElasticsearchGraphQueryIterable<T> createEmptyIterable() {
+    private <T> EmptyElasticsearchGraphQueryIterable<T> createEmptyIterable() {
         return new EmptyElasticsearchGraphQueryIterable<>(ElasticsearchSearchQueryBase.this, getParameters());
     }
 
-    protected <T extends VertexiumObject> ElasticsearchGraphQueryIterable<T> createIterable(
+    protected <T> ElasticsearchGraphQueryIterable<T> createIterable(
             SearchResponse response,
             QueryParameters filterParameters,
             Iterable<T> vertexiumObjects,
             boolean evaluateQueryString,
             boolean evaluateHasContainers,
             boolean evaluateSortContainers,
-            long searchTime,
+            long searchTimeInMillis,
             SearchHits hits
     ) {
         return new ElasticsearchGraphQueryIterable<>(
@@ -381,7 +419,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase implements
                 evaluateHasContainers,
                 evaluateSortContainers,
                 hits.getTotalHits(),
-                searchTime,
+                searchTimeInMillis * 1000000,
                 hits
         );
     }
@@ -399,8 +437,18 @@ public class ElasticsearchSearchQueryBase extends QueryBase implements
         if (QUERY_LOGGER.isTraceEnabled()) {
             QUERY_LOGGER.trace("query: %s", q);
         }
-        return q.execute()
-                .actionGet();
+
+        SearchResponse searchResponse = q.execute().actionGet();
+        SearchHits hits = searchResponse.getHits();
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug(
+                    "elasticsearch results %d of %d (time: %dms)",
+                    hits.hits().length,
+                    hits.getTotalHits(),
+                    searchResponse.getTookInMillis()
+            );
+        }
+        return searchResponse;
     }
 
     protected QueryBuilder getFilterForHasNotPropertyContainer(HasNotPropertyContainer hasNotProperty) {
@@ -752,8 +800,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase implements
         }
     }
 
-    protected QueryBuilder createSimilarToTextQuery(SimilarToTextQueryParameters queryParameters) {
-        SimilarToTextQueryParameters similarTo = queryParameters;
+    protected QueryBuilder createSimilarToTextQuery(SimilarToTextQueryParameters similarTo) {
         List<String> allFields = new ArrayList<>();
         String[] fields = similarTo.getFields();
         for (String field : fields) {

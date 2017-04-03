@@ -32,12 +32,14 @@ import java.math.BigInteger;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
 import static org.junit.Assume.assumeTrue;
 import static org.vertexium.test.util.VertexiumAssert.*;
 import static org.vertexium.util.IterableUtils.count;
 import static org.vertexium.util.IterableUtils.toList;
+import static org.vertexium.util.StreamUtils.stream;
 
 @RunWith(JUnit4.class)
 public abstract class GraphTestBase {
@@ -1775,6 +1777,88 @@ public abstract class GraphTestBase {
 
         Iterable<Edge> allEdges = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B).getEdges(Direction.BOTH, AUTHORIZATIONS_A_AND_B);
         Assert.assertEquals(2, count(allEdges));
+    }
+
+    @Test
+    public void testGraphQueryForIds() {
+        Vertex v1 = graph.prepareVertex("v1", VISIBILITY_A)
+                .addPropertyValue("k1", "name", "joe", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
+        Vertex v2 = graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.prepareVertex("v3", VISIBILITY_A)
+                .addExtendedData("table1", "row1", "name", "value 1", VISIBILITY_A)
+                .addExtendedData("table1", "row2", "name", "value 2", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
+
+        graph.addEdge("e1", v1, v2, "edgeA", VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.addEdge("e2", v1, v2, "edgeB", VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.flush();
+
+        QueryResultsIterable<String> idsIterable = graph.query(AUTHORIZATIONS_A).vertexIds();
+        assertIdsAnyOrder(idsIterable, "v1", "v2", "v3");
+        assertResultsCount(3, 3, idsIterable);
+
+        idsIterable = graph.query(AUTHORIZATIONS_A).skip(1).vertexIds();
+        assertResultsCount(2, 3, idsIterable);
+
+        idsIterable = graph.query(AUTHORIZATIONS_A).limit(1).vertexIds();
+        assertResultsCount(1, 3, idsIterable);
+
+        idsIterable = graph.query(AUTHORIZATIONS_A).skip(1).limit(1).vertexIds();
+        assertResultsCount(1, 3, idsIterable);
+
+        idsIterable = graph.query(AUTHORIZATIONS_A).skip(3).vertexIds();
+        assertResultsCount(0, 3, idsIterable);
+
+        idsIterable = graph.query(AUTHORIZATIONS_A).skip(2).limit(2).vertexIds();
+        assertResultsCount(1, 3, idsIterable);
+
+        idsIterable = graph.query(AUTHORIZATIONS_A).edgeIds();
+        assertIdsAnyOrder(idsIterable, "e1", "e2");
+        assertResultsCount(2, 2, idsIterable);
+
+        idsIterable = graph.query(AUTHORIZATIONS_A).hasEdgeLabel("edgeA").edgeIds();
+        assertIdsAnyOrder(idsIterable, "e1");
+        assertResultsCount(1, 1, idsIterable);
+
+        idsIterable = graph.query(AUTHORIZATIONS_A).hasEdgeLabel("edgeA", "edgeB").edgeIds();
+        assertResultsCount(2, 2, idsIterable);
+
+        idsIterable = graph.query(AUTHORIZATIONS_A).elementIds();
+        assertIdsAnyOrder(idsIterable, "v1", "v2", "v3", "e1", "e2");
+        assertResultsCount(5, 5, idsIterable);
+
+        assumeTrue("FetchHint.NONE vertex queries are not supported", isFetchHintNoneVertexQuerySupported());
+
+        idsIterable = graph.query(AUTHORIZATIONS_A).has("name").vertexIds();
+        assertIdsAnyOrder(idsIterable, "v1");
+        assertResultsCount(1, 1, idsIterable);
+
+        QueryResultsIterable<ExtendedDataRowId> extendedDataRowIds = graph.query(AUTHORIZATIONS_A).hasExtendedData("table1").extendedDataRowIds();
+        List<String> rowIds = stream(extendedDataRowIds).map(ExtendedDataRowId::getRowId).collect(Collectors.toList());
+        assertIdsAnyOrder(rowIds, "row1", "row2");
+        assertResultsCount(2, 2, extendedDataRowIds);
+
+        idsIterable = graph.query(AUTHORIZATIONS_A).hasNot("name").vertexIds();
+        assertIdsAnyOrder(idsIterable, "v2", "v3");
+        assertResultsCount(2, 2, idsIterable);
+
+        idsIterable = graph.query(AUTHORIZATIONS_A).has("notSetProp").vertexIds();
+        assertResultsCount(0, 0, idsIterable);
+
+        idsIterable = graph.query(AUTHORIZATIONS_A).hasNot("notSetProp").vertexIds();
+        assertIdsAnyOrder(idsIterable, "v1", "v2", "v3");
+        assertResultsCount(3, 3, idsIterable);
+
+        idsIterable = graph.query(AUTHORIZATIONS_A).has("notSetProp", Compare.NOT_EQUAL, 5).vertexIds();
+        assertIdsAnyOrder(idsIterable, "v1", "v2", "v3");
+        assertResultsCount(3, 3, idsIterable);
+
+        idsIterable = graph.query(AUTHORIZATIONS_A).has("notSetProp", Compare.EQUAL, 5).vertexIds();
+        assertResultsCount(0, 0, idsIterable);
+
+        idsIterable = graph.query(AUTHORIZATIONS_A).has("notSetProp", Compare.LESS_THAN_EQUAL, 5).vertexIds();
+        assertResultsCount(0, 0, idsIterable);
     }
 
     @Test
