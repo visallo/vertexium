@@ -1,7 +1,10 @@
 language: java
-script: mvn test -Ptest,nolog
+script: mvn test -Pnolog,$TEST_EXECUTION_PROFILE
 jdk:
   - oraclejdk8
+env:
+  - TEST_EXECUTION_PROFILE=test
+  - TEST_EXECUTION_PROFILE=multimodule-test
 branches:
   only:
     - master
