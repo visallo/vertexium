@@ -11,7 +11,7 @@ import static org.vertexium.util.IterableUtils.count;
 import static org.vertexium.util.IterableUtils.toList;
 import static org.vertexium.util.Preconditions.checkNotNull;
 
-public class DefaultGraphQueryIterable<T extends VertexiumObject> implements
+public class DefaultGraphQueryIterable<T> implements
         Iterable<T>,
         QueryResultsIterable<T> {
     private final QueryParameters parameters;
@@ -95,17 +95,18 @@ public class DefaultGraphQueryIterable<T extends VertexiumObject> implements
 
                 while (it.hasNext()) {
                     T elem = it.next();
+                    VertexiumObject vertexiumElem = elem instanceof VertexiumObject ? (VertexiumObject) elem : null;
 
                     boolean match = true;
-                    if (evaluateHasContainers) {
+                    if (evaluateHasContainers && vertexiumElem != null) {
                         for (QueryBase.HasContainer has : parameters.getHasContainers()) {
-                            if (!has.isMatch(elem)) {
+                            if (!has.isMatch(vertexiumElem)) {
                                 match = false;
                                 break;
                             }
                         }
-                        if (elem instanceof Edge && parameters.getEdgeLabels().size() > 0) {
-                            Edge edge = (Edge) elem;
+                        if (vertexiumElem instanceof Edge && parameters.getEdgeLabels().size() > 0) {
+                            Edge edge = (Edge) vertexiumElem;
                             if (!parameters.getEdgeLabels().contains(edge.getLabel())) {
                                 match = false;
                             }
@@ -115,9 +116,10 @@ public class DefaultGraphQueryIterable<T extends VertexiumObject> implements
                         continue;
                     }
                     if (evaluateQueryString
+                            && vertexiumElem != null
                             && parameters instanceof QueryStringQueryParameters
                             && ((QueryStringQueryParameters) parameters).getQueryString() != null
-                            && !evaluateQueryString(elem, ((QueryStringQueryParameters) parameters).getQueryString())
+                            && !evaluateQueryString(vertexiumElem, ((QueryStringQueryParameters) parameters).getQueryString())
                             ) {
                         continue;
                     }

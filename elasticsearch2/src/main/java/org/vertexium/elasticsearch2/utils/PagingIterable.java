@@ -1,8 +1,6 @@
 package org.vertexium.elasticsearch2.utils;
 
-import org.vertexium.Element;
 import org.vertexium.VertexiumException;
-import org.vertexium.VertexiumObject;
 import org.vertexium.elasticsearch2.ElasticsearchGraphQueryIterable;
 import org.vertexium.query.*;
 
@@ -11,7 +9,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
-public abstract class PagingIterable<T extends VertexiumObject> implements
+public abstract class PagingIterable<T> implements
         Iterable<T>,
         IterableWithTotalHits<T>,
         IterableWithScores<T>,
@@ -82,22 +80,17 @@ public abstract class PagingIterable<T extends VertexiumObject> implements
 
     @Override
     public Iterator<T> iterator() {
-        MyIterator<T> it = new MyIterator<>(isFirstCallToIterator ? firstIterable : null, skip, limit, pageSize, new GetPageIterableFunction<T>() {
-            @Override
-            public ElasticsearchGraphQueryIterable<T> getPageIterable(int skip, int limit, boolean includeAggregations) {
-                return PagingIterable.this.getPageIterable(skip, limit, includeAggregations);
-            }
-        });
+        MyIterator<T> it = new MyIterator<>(isFirstCallToIterator ? firstIterable : null, skip, limit, pageSize, PagingIterable.this::getPageIterable);
         isFirstCallToIterator = false;
         return it;
     }
 
-    private interface GetPageIterableFunction<T extends VertexiumObject> {
-        ElasticsearchGraphQueryIterable<T> getPageIterable(int skip, int limit, boolean includeAggregations);
+    private interface GetPageIterableFunction<T> {
+        Iterable<T> getPageIterable(int skip, int limit, boolean includeAggregations);
     }
 
-    private static class MyIterator<T extends VertexiumObject> implements Iterator<T> {
-        private ElasticsearchGraphQueryIterable<T> firstIterable;
+    private static class MyIterator<T> implements Iterator<T> {
+        private Iterable<T> firstIterable;
         private final int pageSize;
         private final GetPageIterableFunction<T> getPageIterableFunction;
         private int nextSkip;
@@ -105,7 +98,7 @@ public abstract class PagingIterable<T extends VertexiumObject> implements
         private int currentIteratorCount;
         private Iterator<T> currentIterator;
 
-        public MyIterator(ElasticsearchGraphQueryIterable<T> firstIterable, long skip, Long limit, int pageSize, GetPageIterableFunction<T> getPageIterableFunction) {
+        public MyIterator(Iterable<T> firstIterable, long skip, Long limit, int pageSize, GetPageIterableFunction<T> getPageIterableFunction) {
             this.firstIterable = firstIterable;
             this.pageSize = pageSize;
             this.getPageIterableFunction = getPageIterableFunction;

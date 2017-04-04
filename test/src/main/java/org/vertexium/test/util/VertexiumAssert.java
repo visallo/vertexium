@@ -4,6 +4,7 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
 import org.vertexium.*;
 import org.vertexium.event.GraphEvent;
+import org.vertexium.query.IterableWithTotalHits;
 import org.vertexium.query.QueryResultsIterable;
 
 import java.util.*;
@@ -16,6 +17,18 @@ import static org.vertexium.util.StreamUtils.stream;
 
 public class VertexiumAssert {
     protected final static List<GraphEvent> graphEvents = new ArrayList<>();
+
+    public static void assertIdsAnyOrder(Iterable<String> ids, String... expectedIds) {
+        List<String> sortedIds = stream(ids).sorted().collect(Collectors.toList());
+        Arrays.sort(expectedIds);
+
+        String idsString = idsToString(sortedIds.toArray(new String[sortedIds.size()]));
+        String expectedIdsString = idsToString(expectedIds);
+        assertEquals("ids length mismatch found:[" + idsString + "] expected:[" + expectedIdsString + "]", expectedIds.length, sortedIds.size());
+        for (int i = 0; i < expectedIds.length; i++) {
+            assertEquals("at offset: " + i + " found:[" + idsString + "] expected:[" + expectedIdsString + "]", expectedIds[i], sortedIds.get(i));
+        }
+    }
 
     public static void assertVertexIdsAnyOrder(Iterable<Vertex> vertices, String... expectedIds) {
         List<Vertex> sortedVertices = stream(vertices)
@@ -77,7 +90,7 @@ public class VertexiumAssert {
     public static void assertResultsCount(
             int expectedCount,
             int expectedTotalHits,
-            QueryResultsIterable<? extends VertexiumObject> results
+            IterableWithTotalHits<?> results
     ) {
         assertEquals(expectedTotalHits, results.getTotalHits());
         assertEquals(expectedCount, count(results));

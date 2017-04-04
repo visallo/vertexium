@@ -43,6 +43,11 @@ public class CompositeGraphQuery implements Query {
     }
 
     @Override
+    public QueryResultsIterable<String> vertexIds() {
+        return new DefaultGraphQueryIdIterable<>(vertices(FetchHint.NONE));
+    }
+
+    @Override
     public QueryResultsIterable<Edge> edges() {
         return edges(FetchHint.ALL);
     }
@@ -65,6 +70,11 @@ public class CompositeGraphQuery implements Query {
                 return super.isIncluded(edge);
             }
         };
+    }
+
+    @Override
+    public QueryResultsIterable<String> edgeIds() {
+        return new DefaultGraphQueryIdIterable<>(edges(FetchHint.NONE));
     }
 
     @Override
@@ -107,6 +117,11 @@ public class CompositeGraphQuery implements Query {
     }
 
     @Override
+    public QueryResultsIterable<String> elementIds() {
+        return new DefaultGraphQueryIdIterable<>(elements(FetchHint.NONE));
+    }
+
+    @Override
     public QueryResultsIterable<ExtendedDataRow> extendedDataRows() {
         return extendedDataRows(FetchHint.ALL);
     }
@@ -129,6 +144,11 @@ public class CompositeGraphQuery implements Query {
                 return super.isIncluded(extendedDataRows);
             }
         };
+    }
+
+    @Override
+    public QueryResultsIterable<ExtendedDataRowId> extendedDataRowIds() {
+        return new DefaultGraphQueryIdIterable<>(extendedDataRows(FetchHint.NONE));
     }
 
     @Override

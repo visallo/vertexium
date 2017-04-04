@@ -1,5 +1,6 @@
 # v2.6.0
 
+* Added: ability to query for vertex/edge/element ids rather than the elements themselves
 * Added: ability to return if there is any paths between two vertices
 * Added: ability to store extended data rows on an element
 * Added: Elasticsearch 2.x support

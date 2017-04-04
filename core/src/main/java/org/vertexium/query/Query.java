@@ -10,13 +10,19 @@ public interface Query {
 
     QueryResultsIterable<Vertex> vertices(EnumSet<FetchHint> fetchHints);
 
+    QueryResultsIterable<String> vertexIds();
+
     QueryResultsIterable<Edge> edges();
 
     QueryResultsIterable<Edge> edges(EnumSet<FetchHint> fetchHints);
 
+    QueryResultsIterable<String> edgeIds();
+
     QueryResultsIterable<ExtendedDataRow> extendedDataRows();
 
     QueryResultsIterable<ExtendedDataRow> extendedDataRows(EnumSet<FetchHint> fetchHints);
+
+    QueryResultsIterable<ExtendedDataRowId> extendedDataRowIds();
 
     @Deprecated
     QueryResultsIterable<Edge> edges(String label);
@@ -27,6 +33,8 @@ public interface Query {
     QueryResultsIterable<Element> elements();
 
     QueryResultsIterable<Element> elements(EnumSet<FetchHint> fetchHints);
+
+    QueryResultsIterable<String> elementIds();
 
     QueryResultsIterable<? extends VertexiumObject> search(EnumSet<VertexiumObjectType> objectTypes, EnumSet<FetchHint> fetchHints);
 
