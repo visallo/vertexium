@@ -1,5 +1,6 @@
 # v2.6.0
 
+* Added: ability to return if there is any paths between two vertices
 * Added: ability to store extended data rows on an element
 * Added: Elasticsearch 2.x support
 * Fixed: Issue #135. Passing FetchHint.NONE when retrieving vertices from Accumulo using Elasticsearch will now properly return the vertices rather than an empty Iterable

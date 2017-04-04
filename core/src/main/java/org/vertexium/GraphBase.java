@@ -587,6 +587,9 @@ public abstract class GraphBase implements Graph {
 
         if (sourceVertexConnectedVertexIds.contains(destVertexId)) {
             foundPaths.add(new Path(sourceVertexId, destVertexId));
+            if (options.isGetAnyPath()) {
+                return;
+            }
         }
 
         progressCallback.progress(0.6, ProgressCallback.Step.MERGING_EDGES);
@@ -635,6 +638,10 @@ public abstract class GraphBase implements Graph {
     ) {
         // if this is our first source vertex report progress back to the progress callback
         boolean firstLevelRecursion = hops == options.getMaxHops();
+
+        if (options.isGetAnyPath() && foundPaths.size() == 1) {
+            return;
+        }
 
         seenVertices.add(sourceVertex.getId());
         if (sourceVertex.getId().equals(destVertex.getId())) {

@@ -7,6 +7,7 @@ public class FindPathOptions {
     private String[] labels;
     private String[] excludedLabels;
     private ProgressCallback progressCallback;
+    private boolean getAnyPath;
 
     /**
      * @param sourceVertexId The source vertex id to start the search from.
@@ -17,6 +18,20 @@ public class FindPathOptions {
         this.sourceVertexId = sourceVertexId;
         this.destVertexId = destVertexId;
         this.maxHops = maxHops;
+        this.getAnyPath = false;
+    }
+
+    /**
+     * @param sourceVertexId The source vertex id to start the search from.
+     * @param destVertexId   The destination vertex id to get to.
+     * @param maxHops        The maximum number of hops to make before giving up.
+     * @param getAnyPath     Return as soon as the first path is found
+     */
+    public FindPathOptions(String sourceVertexId, String destVertexId, int maxHops, boolean getAnyPath) {
+        this.sourceVertexId = sourceVertexId;
+        this.destVertexId = destVertexId;
+        this.maxHops = maxHops;
+        this.getAnyPath = getAnyPath;
     }
 
     public String getSourceVertexId() {
@@ -33,6 +48,10 @@ public class FindPathOptions {
 
     public String[] getLabels() {
         return labels;
+    }
+
+    public boolean isGetAnyPath() {
+        return getAnyPath;
     }
 
     /**
