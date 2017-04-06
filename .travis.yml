@@ -8,3 +8,5 @@ env:
 branches:
   only:
     - master
+    - 2.5.x
+
