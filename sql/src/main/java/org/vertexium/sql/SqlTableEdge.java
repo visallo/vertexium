@@ -8,6 +8,7 @@ import org.vertexium.inmemory.mutations.EdgeSetupMutation;
 import org.vertexium.inmemory.mutations.Mutation;
 import org.vertexium.sql.collections.Storable;
 
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -20,8 +21,8 @@ public class SqlTableEdge extends SqlTableElement<InMemoryEdge> {
     }
 
     @Override
-    public InMemoryEdge createElementInternal(InMemoryGraph graph, boolean includeHidden, Long endTime, Authorizations authorizations) {
-        return new InMemoryEdge(graph, getId(), asInMemoryTableElement(), includeHidden, endTime, authorizations);
+    public InMemoryEdge createElementInternal(InMemoryGraph graph, EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations) {
+        return new InMemoryEdge(graph, getId(), asInMemoryTableElement(), fetchHints, endTime, authorizations);
     }
 
     String inVertexId() {
@@ -99,8 +100,8 @@ public class SqlTableEdge extends SqlTableElement<InMemoryEdge> {
         }
 
         @Override
-        public Property getProperty(String key, String name, Visibility visibility, Authorizations authorizations) {
-            return sqlTableEdge.getProperty(key, name, visibility, authorizations);
+        public Property getProperty(String key, String name, Visibility visibility, EnumSet<FetchHint> fetchHints, Authorizations authorizations) {
+            return sqlTableEdge.getProperty(key, name, visibility, fetchHints, authorizations);
         }
 
         @Override
@@ -119,8 +120,8 @@ public class SqlTableEdge extends SqlTableElement<InMemoryEdge> {
         }
 
         @Override
-        public Iterable<Property> getProperties(boolean includeHidden, Long endTime, Authorizations authorizations) {
-            return sqlTableEdge.getProperties(includeHidden, endTime, authorizations);
+        public Iterable<Property> getProperties(EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations) {
+            return sqlTableEdge.getProperties(fetchHints, endTime, authorizations);
         }
 
         @Override
@@ -194,8 +195,8 @@ public class SqlTableEdge extends SqlTableElement<InMemoryEdge> {
         }
 
         @Override
-        public InMemoryEdge createElement(InMemoryGraph graph, Authorizations authorizations) {
-            return sqlTableEdge.createElement(graph, authorizations);
+        public InMemoryEdge createElement(InMemoryGraph graph, EnumSet<FetchHint> fetchHints, Authorizations authorizations) {
+            return sqlTableEdge.createElement(graph, fetchHints, authorizations);
         }
 
         @Override
@@ -204,8 +205,8 @@ public class SqlTableEdge extends SqlTableElement<InMemoryEdge> {
         }
 
         @Override
-        public InMemoryEdge createElementInternal(InMemoryGraph graph, boolean includeHidden, Long endTime, Authorizations authorizations) {
-            return sqlTableEdge.createElementInternal(graph, includeHidden, endTime, authorizations);
+        public InMemoryEdge createElementInternal(InMemoryGraph graph, EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations) {
+            return sqlTableEdge.createElementInternal(graph, fetchHints, endTime, authorizations);
         }
     }
 }

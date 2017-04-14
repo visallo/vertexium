@@ -4,10 +4,7 @@ import org.vertexium.*;
 import org.vertexium.property.MutableProperty;
 import org.vertexium.property.StreamingPropertyValueRef;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 public class LazyMutableProperty extends MutableProperty {
     private final AccumuloGraph graph;
@@ -15,6 +12,7 @@ public class LazyMutableProperty extends MutableProperty {
     private final String propertyKey;
     private final String propertyName;
     private long timestamp;
+    private final EnumSet<FetchHint> fetchHints;
     private Set<Visibility> hiddenVisibilities;
     private byte[] propertyValue;
     private LazyPropertyMetadata metadata;
@@ -31,7 +29,8 @@ public class LazyMutableProperty extends MutableProperty {
             LazyPropertyMetadata metadata,
             Set<Visibility> hiddenVisibilities,
             Visibility visibility,
-            long timestamp
+            long timestamp,
+            EnumSet<FetchHint> fetchHints
     ) {
         this.graph = graph;
         this.vertexiumSerializer = vertexiumSerializer;
@@ -42,6 +41,7 @@ public class LazyMutableProperty extends MutableProperty {
         this.visibility = visibility;
         this.hiddenVisibilities = hiddenVisibilities;
         this.timestamp = timestamp;
+        this.fetchHints = fetchHints;
     }
 
     @Override
@@ -121,6 +121,7 @@ public class LazyMutableProperty extends MutableProperty {
 
     @Override
     public Metadata getMetadata() {
+        FetchHint.checkFetchHints(fetchHints, FetchHint.PROPERTY_METADATA);
         if (cachedMetadata == null) {
             if (metadata == null) {
                 cachedMetadata = new Metadata();

@@ -5,7 +5,7 @@ import org.vertexium.FetchHint;
 
 public class LazyEdgeMap extends ModelBase {
     public LazyEdge get(String edgeId) {
-        Edge e = getGraph().getEdge(edgeId, FetchHint.ALL, getTime(), getAuthorizations());
+        Edge e = getGraph().getEdge(edgeId, FetchHint.DEFAULT, getTime(), getAuthorizations());
         if (e == null) {
             return null;
         }

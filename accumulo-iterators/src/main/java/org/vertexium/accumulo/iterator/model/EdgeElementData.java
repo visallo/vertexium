@@ -21,7 +21,7 @@ public class EdgeElementData extends ElementData {
     }
 
     @Override
-    protected void encode(DataOutputStream out, EnumSet<FetchHint> fetchHints) throws IOException {
+    protected void encode(DataOutputStream out, EnumSet<IteratorFetchHint> fetchHints) throws IOException {
         super.encode(out, fetchHints);
         DataOutputStreamUtils.encodeText(out, inVertexId);
         DataOutputStreamUtils.encodeText(out, outVertexId);

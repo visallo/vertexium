@@ -6,7 +6,7 @@ import org.apache.accumulo.core.iterators.IteratorEnvironment;
 import org.apache.accumulo.core.iterators.SortedKeyValueIterator;
 import org.apache.hadoop.io.Text;
 import org.vertexium.accumulo.iterator.model.EdgeInfo;
-import org.vertexium.accumulo.iterator.model.FetchHint;
+import org.vertexium.accumulo.iterator.model.IteratorFetchHint;
 import org.vertexium.accumulo.iterator.model.SoftDeleteEdgeInfo;
 import org.vertexium.accumulo.iterator.model.VertexElementData;
 
@@ -30,14 +30,14 @@ public class VertexIterator extends ElementIterator<VertexElementData> {
     public static final Text CF_IN_EDGE_SOFT_DELETE = new Text(CF_IN_EDGE_SOFT_DELETE_STRING);
 
     public VertexIterator() {
-        this(FetchHint.ALL);
+        this(IteratorFetchHint.ALL);
     }
 
-    public VertexIterator(EnumSet<FetchHint> fetchHints) {
+    public VertexIterator(EnumSet<IteratorFetchHint> fetchHints) {
         super(null, fetchHints);
     }
 
-    public VertexIterator(SortedKeyValueIterator<Key, Value> source, EnumSet<FetchHint> fetchHints) {
+    public VertexIterator(SortedKeyValueIterator<Key, Value> source, EnumSet<IteratorFetchHint> fetchHints) {
         super(source, fetchHints);
     }
 
@@ -51,7 +51,7 @@ public class VertexIterator extends ElementIterator<VertexElementData> {
     }
 
     private void removeHiddenAndSoftDeletes() {
-        if (!getFetchHints().contains(FetchHint.INCLUDE_HIDDEN)) {
+        if (!getFetchHints().contains(IteratorFetchHint.INCLUDE_HIDDEN)) {
             for (Text edgeId : this.getElementData().hiddenEdges) {
                 this.getElementData().inEdges.remove(edgeId);
                 this.getElementData().outEdges.remove(edgeId);

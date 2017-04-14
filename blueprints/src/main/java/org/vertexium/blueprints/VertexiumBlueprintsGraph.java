@@ -5,10 +5,13 @@ import com.tinkerpop.blueprints.Features;
 import com.tinkerpop.blueprints.GraphQuery;
 import com.tinkerpop.blueprints.Vertex;
 import org.vertexium.Authorizations;
+import org.vertexium.FetchHint;
 import org.vertexium.Graph;
 import org.vertexium.Visibility;
 import org.vertexium.query.Compare;
 import org.vertexium.util.ConvertingIterable;
+
+import java.util.EnumSet;
 
 public abstract class VertexiumBlueprintsGraph implements com.tinkerpop.blueprints.Graph {
     private static final VertexiumBlueprintsGraphFeatures FEATURES = new VertexiumBlueprintsGraphFeatures();
@@ -40,7 +43,7 @@ public abstract class VertexiumBlueprintsGraph implements com.tinkerpop.blueprin
             throw new IllegalArgumentException("Id cannot be null");
         }
         Authorizations authorizations = getAuthorizationsProvider().getAuthorizations();
-        return VertexiumBlueprintsVertex.create(this, getGraph().getVertex(VertexiumBlueprintsConvert.idToString(id), authorizations), authorizations);
+        return VertexiumBlueprintsVertex.create(this, getGraph().getVertex(VertexiumBlueprintsConvert.idToString(id), getFetchHints(), authorizations), authorizations);
     }
 
     @Override
@@ -52,7 +55,7 @@ public abstract class VertexiumBlueprintsGraph implements com.tinkerpop.blueprin
     @Override
     public Iterable<Vertex> getVertices() {
         final Authorizations authorizations = getAuthorizationsProvider().getAuthorizations();
-        return new ConvertingIterable<org.vertexium.Vertex, Vertex>(getGraph().getVertices(authorizations)) {
+        return new ConvertingIterable<org.vertexium.Vertex, Vertex>(getGraph().getVertices(getFetchHints(), authorizations)) {
             @Override
             protected Vertex convert(org.vertexium.Vertex vertex) {
                 return VertexiumBlueprintsVertex.create(VertexiumBlueprintsGraph.this, vertex, authorizations);
@@ -63,7 +66,7 @@ public abstract class VertexiumBlueprintsGraph implements com.tinkerpop.blueprin
     @Override
     public Iterable<Vertex> getVertices(final String key, final Object value) {
         final Authorizations authorizations = getAuthorizationsProvider().getAuthorizations();
-        return new ConvertingIterable<org.vertexium.Vertex, Vertex>(getGraph().query(authorizations).has(key, Compare.EQUAL, value).vertices()) {
+        return new ConvertingIterable<org.vertexium.Vertex, Vertex>(getGraph().query(authorizations).has(key, Compare.EQUAL, value).vertices(getFetchHints())) {
             @Override
             protected Vertex convert(org.vertexium.Vertex vertex) {
                 return VertexiumBlueprintsVertex.create(VertexiumBlueprintsGraph.this, vertex, authorizations);
@@ -90,7 +93,11 @@ public abstract class VertexiumBlueprintsGraph implements com.tinkerpop.blueprin
             throw new IllegalArgumentException("Id cannot be null");
         }
         Authorizations authorizations = getAuthorizationsProvider().getAuthorizations();
-        return VertexiumBlueprintsEdge.create(this, getGraph().getEdge(VertexiumBlueprintsConvert.idToString(id), authorizations), authorizations);
+        return VertexiumBlueprintsEdge.create(this, getGraph().getEdge(VertexiumBlueprintsConvert.idToString(id), getFetchHints(), authorizations), authorizations);
+    }
+
+    protected EnumSet<FetchHint> getFetchHints() {
+        return FetchHint.ALL;
     }
 
     @Override
@@ -102,7 +109,7 @@ public abstract class VertexiumBlueprintsGraph implements com.tinkerpop.blueprin
     @Override
     public Iterable<Edge> getEdges() {
         final Authorizations authorizations = getAuthorizationsProvider().getAuthorizations();
-        return new ConvertingIterable<org.vertexium.Edge, Edge>(getGraph().getEdges(authorizations)) {
+        return new ConvertingIterable<org.vertexium.Edge, Edge>(getGraph().getEdges(getFetchHints(), authorizations)) {
             @Override
             protected Edge convert(org.vertexium.Edge edge) {
                 return VertexiumBlueprintsEdge.create(VertexiumBlueprintsGraph.this, edge, authorizations);
@@ -113,7 +120,7 @@ public abstract class VertexiumBlueprintsGraph implements com.tinkerpop.blueprin
     @Override
     public Iterable<Edge> getEdges(final String key, final Object value) {
         final Authorizations authorizations = getAuthorizationsProvider().getAuthorizations();
-        return new ConvertingIterable<org.vertexium.Edge, Edge>(getGraph().query(authorizations).has(key, Compare.EQUAL, value).edges()) {
+        return new ConvertingIterable<org.vertexium.Edge, Edge>(getGraph().query(authorizations).has(key, Compare.EQUAL, value).edges(getFetchHints())) {
             @Override
             protected Edge convert(org.vertexium.Edge edge) {
                 return VertexiumBlueprintsEdge.create(VertexiumBlueprintsGraph.this, edge, authorizations);

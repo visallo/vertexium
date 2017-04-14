@@ -25,10 +25,10 @@ public class VertexElementData extends ElementData {
     }
 
     @Override
-    protected void encode(DataOutputStream out, EnumSet<FetchHint> fetchHints) throws IOException {
+    protected void encode(DataOutputStream out, EnumSet<IteratorFetchHint> fetchHints) throws IOException {
         super.encode(out, fetchHints);
-        DataOutputStreamUtils.encodeEdges(out, outEdges, fetchHints.contains(FetchHint.OUT_EDGE_LABELS) && !fetchHints.contains(FetchHint.OUT_EDGE_REFS));
-        DataOutputStreamUtils.encodeEdges(out, inEdges, fetchHints.contains(FetchHint.IN_EDGE_LABELS) && !fetchHints.contains(FetchHint.IN_EDGE_REFS));
+        DataOutputStreamUtils.encodeEdges(out, outEdges, fetchHints.contains(IteratorFetchHint.OUT_EDGE_LABELS) && !fetchHints.contains(IteratorFetchHint.OUT_EDGE_REFS));
+        DataOutputStreamUtils.encodeEdges(out, inEdges, fetchHints.contains(IteratorFetchHint.IN_EDGE_LABELS) && !fetchHints.contains(IteratorFetchHint.IN_EDGE_REFS));
     }
 
     @Override

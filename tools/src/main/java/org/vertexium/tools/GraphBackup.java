@@ -5,11 +5,11 @@ import org.apache.commons.codec.binary.Base64;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.vertexium.*;
-import org.vertexium.*;
 import org.vertexium.property.StreamingPropertyValue;
 import org.vertexium.util.JavaSerializableUtils;
 
 import java.io.*;
+import java.util.EnumSet;
 
 public class GraphBackup extends GraphToolBase {
     public static final String BASE64_PREFIX = "base64/java:";
@@ -41,7 +41,8 @@ public class GraphBackup extends GraphToolBase {
     }
 
     public void save(Graph graph, OutputStream out, Authorizations authorizations) throws IOException {
-        save(graph.getVertices(authorizations), graph.getEdges(authorizations), out);
+        EnumSet<FetchHint> fetchHints = FetchHint.ALL;
+        save(graph.getVertices(fetchHints, authorizations), graph.getEdges(fetchHints, authorizations), out);
     }
 
     public void save(Iterable<Vertex> vertices, Iterable<Edge> edges, OutputStream out) throws IOException {

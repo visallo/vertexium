@@ -7,6 +7,7 @@ import org.vertexium.inmemory.InMemoryVertex;
 import org.vertexium.inmemory.mutations.Mutation;
 import org.vertexium.sql.collections.Storable;
 
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -20,10 +21,12 @@ public class SqlTableVertex extends SqlTableElement<InMemoryVertex> {
 
     @Override
     public InMemoryVertex createElementInternal(
-            InMemoryGraph graph, boolean includeHidden, Long endTime,
+            InMemoryGraph graph,
+            EnumSet<FetchHint> fetchHints,
+            Long endTime,
             Authorizations authorizations
     ) {
-        return new InMemoryVertex(graph, getId(), asInMemoryTableElement(), includeHidden, endTime, authorizations);
+        return new InMemoryVertex(graph, getId(), asInMemoryTableElement(), fetchHints, endTime, authorizations);
     }
 
     @Override
@@ -91,8 +94,8 @@ public class SqlTableVertex extends SqlTableElement<InMemoryVertex> {
         }
 
         @Override
-        public Property getProperty(String key, String name, Visibility visibility, Authorizations authorizations) {
-            return sqlTableVertex.getProperty(key, name, visibility, authorizations);
+        public Property getProperty(String key, String name, Visibility visibility, EnumSet<FetchHint> fetchHints, Authorizations authorizations) {
+            return sqlTableVertex.getProperty(key, name, visibility, fetchHints, authorizations);
         }
 
         @Override
@@ -111,8 +114,8 @@ public class SqlTableVertex extends SqlTableElement<InMemoryVertex> {
         }
 
         @Override
-        public Iterable<Property> getProperties(boolean includeHidden, Long endTime, Authorizations authorizations) {
-            return sqlTableVertex.getProperties(includeHidden, endTime, authorizations);
+        public Iterable<Property> getProperties(EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations) {
+            return sqlTableVertex.getProperties(fetchHints, endTime, authorizations);
         }
 
         @Override
@@ -186,8 +189,8 @@ public class SqlTableVertex extends SqlTableElement<InMemoryVertex> {
         }
 
         @Override
-        public InMemoryVertex createElement(InMemoryGraph graph, Authorizations authorizations) {
-            return sqlTableVertex.createElement(graph, authorizations);
+        public InMemoryVertex createElement(InMemoryGraph graph, EnumSet<FetchHint> fetchHints, Authorizations authorizations) {
+            return sqlTableVertex.createElement(graph, fetchHints, authorizations);
         }
 
         @Override
@@ -196,8 +199,8 @@ public class SqlTableVertex extends SqlTableElement<InMemoryVertex> {
         }
 
         @Override
-        public InMemoryVertex createElementInternal(InMemoryGraph graph, boolean includeHidden, Long endTime, Authorizations authorizations) {
-            return sqlTableVertex.createElementInternal(graph, includeHidden, endTime, authorizations);
+        public InMemoryVertex createElementInternal(InMemoryGraph graph, EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations) {
+            return sqlTableVertex.createElementInternal(graph, fetchHints, endTime, authorizations);
         }
     }
 }
