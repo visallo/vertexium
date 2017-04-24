@@ -1,6 +1,8 @@
 package org.vertexium.accumulo;
 
-import com.google.common.collect.*;
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.primitives.Longs;
 import org.apache.accumulo.core.client.*;
 import org.apache.accumulo.core.client.Scanner;
@@ -19,8 +21,6 @@ import org.apache.accumulo.core.security.ColumnVisibility;
 import org.apache.accumulo.core.trace.DistributedTrace;
 import org.apache.accumulo.core.trace.Span;
 import org.apache.accumulo.core.trace.Trace;
-import org.apache.commons.collections.MultiMap;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
@@ -30,14 +30,13 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.io.Text;
 import org.apache.zookeeper.CreateMode;
 import org.vertexium.*;
-import org.vertexium.HistoricalPropertyValue;
 import org.vertexium.HistoricalPropertyValue.HistoricalPropertyValueBuilder;
-import org.vertexium.Range;
 import org.vertexium.accumulo.iterator.*;
 import org.vertexium.accumulo.iterator.model.EdgeInfo;
 import org.vertexium.accumulo.iterator.model.PropertyColumnQualifier;
 import org.vertexium.accumulo.iterator.model.PropertyMetadataColumnQualifier;
 import org.vertexium.accumulo.iterator.util.ByteArrayWrapper;
+import org.vertexium.accumulo.keys.DataTableRowKey;
 import org.vertexium.accumulo.keys.KeyHelper;
 import org.vertexium.accumulo.util.RangeUtils;
 import org.vertexium.event.*;
@@ -49,7 +48,6 @@ import org.vertexium.property.MutableProperty;
 import org.vertexium.property.StreamingPropertyValue;
 import org.vertexium.property.StreamingPropertyValueRef;
 import org.vertexium.search.IndexHint;
-import org.vertexium.PropertyDescriptor;
 import org.vertexium.util.*;
 
 import java.io.IOException;
@@ -139,7 +137,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             @SuppressWarnings("unchecked")
             protected StreamingPropertyValueRef saveStreamingPropertyValue(String rowKey, Property property, StreamingPropertyValue propertyValue) {
                 StreamingPropertyValueRef streamingPropertyValueRef = super.saveStreamingPropertyValue(rowKey, property, propertyValue);
-                ((MutableProperty) property).setValue(streamingPropertyValueRef.toStreamingPropertyValue(AccumuloGraph.this));
+                ((MutableProperty) property).setValue(streamingPropertyValueRef.toStreamingPropertyValue(AccumuloGraph.this, property.getTimestamp()));
                 return streamingPropertyValueRef;
             }
         };
@@ -391,8 +389,12 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         if (indexHint != IndexHint.DO_NOT_INDEX) {
             // Bulk delete properties
             List<PropertyDescriptor> propertyList = Lists.newArrayList();
-            propertyDeletes.forEach( p -> { propertyList.add(PropertyDescriptor.fromPropertyDeleteMutation(p));});
-            propertySoftDeletes.forEach( p -> { propertyList.add(PropertyDescriptor.fromPropertySoftDeleteMutation(p));});
+            propertyDeletes.forEach(p -> {
+                propertyList.add(PropertyDescriptor.fromPropertyDeleteMutation(p));
+            });
+            propertySoftDeletes.forEach(p -> {
+                propertyList.add(PropertyDescriptor.fromPropertySoftDeleteMutation(p));
+            });
 
             getSearchIndex().deleteProperties(
                     this,
@@ -425,7 +427,8 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                 this,
                 element,
                 PropertyDescriptor.fromProperty(property),
-                authorizations);
+                authorizations
+        );
 
         if (hasEventListeners()) {
             queueEvent(new DeletePropertyEvent(this, element, property));
@@ -441,7 +444,8 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                 this,
                 element,
                 PropertyDescriptor.fromProperty(property),
-                authorizations);
+                authorizations
+        );
 
         if (hasEventListeners()) {
             queueEvent(new SoftDeletePropertyEvent(this, element, property));
@@ -480,23 +484,23 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         return elementWriter.get().getBatchWriter(tableName);
     }
 
-    protected BatchWriter getVerticesWriter() {
+    public BatchWriter getVerticesWriter() {
         return getElementWriter(getVerticesTableName());
     }
 
-    protected BatchWriter getHistoryVerticesWriter() {
+    public BatchWriter getHistoryVerticesWriter() {
         return getElementWriter(getHistoryVerticesTableName());
     }
 
-    protected BatchWriter getEdgesWriter() {
+    public BatchWriter getEdgesWriter() {
         return getElementWriter(getEdgesTableName());
     }
 
-    protected BatchWriter getHistoryEdgesWriter() {
+    public BatchWriter getHistoryEdgesWriter() {
         return getElementWriter(getHistoryEdgesTableName());
     }
 
-    protected BatchWriter getDataWriter() {
+    public BatchWriter getDataWriter() {
         return getElementWriter(getDataTableName());
     }
 
@@ -842,7 +846,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                         Metadata metadata = new Metadata();
                         Set<Visibility> hiddenVisibilities = null; // TODO should we preserve these over time
                         if (value instanceof StreamingPropertyValueTableRef) {
-                            value = ((StreamingPropertyValueTableRef) value).toStreamingPropertyValue(this);
+                            value = ((StreamingPropertyValueTableRef) value).toStreamingPropertyValue(this, timestamp);
                         }
                         String propertyKey = propertyColumnQualifier.getPropertyKey();
                         String propertyName = propertyColumnQualifier.getPropertyName();
@@ -883,7 +887,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                     }
                 }
 
-                for(Key entry : softDeleteObserved.values()) {
+                for (Key entry : softDeleteObserved.values()) {
                     String cq = entry.getColumnQualifier().toString();
                     PropertyColumnQualifier propertyColumnQualifier = KeyHelper.createPropertyColumnQualifier(cq, getNameSubstitutionStrategy());
                     String propertyKey = propertyColumnQualifier.getPropertyKey();
@@ -891,7 +895,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                     String propIdent = propertyKey + ":" + propertyName;
 
                     List<String> active = activeVisibilities.get(propIdent);
-                    if(active == null || active.isEmpty()) {
+                    if (active == null || active.isEmpty()) {
                         long timestamp = entry.getTimestamp() + 1;
                         String columnVisibility = entry.getColumnVisibility().toString();
                         Visibility propertyVisibility = accumuloVisibilityToVisibility(columnVisibility);
@@ -1639,6 +1643,48 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         }
     }
 
+    public byte[] streamingPropertyValueTableData(String dataRowKey, Long timestamp) {
+        try {
+            List<org.apache.accumulo.core.data.Range> ranges = Lists.newArrayList(RangeUtils.createRangeFromString(dataRowKey));
+
+            final long timerStartTime = System.currentTimeMillis();
+            ScannerBase scanner = createBatchScanner(getDataTableName(), ranges, new org.apache.accumulo.core.security.Authorizations());
+            if (timestamp != null && !DataTableRowKey.isLegacy(dataRowKey)) {
+                IteratorSetting iteratorSetting = new IteratorSetting(
+                        80,
+                        TimestampFilter.class.getSimpleName(),
+                        TimestampFilter.class
+                );
+                TimestampFilter.setStart(iteratorSetting, timestamp, true);
+                scanner.addScanIterator(iteratorSetting);
+            }
+
+            GRAPH_LOGGER.logStartIterator(scanner);
+            Span trace = Trace.start("streamingPropertyValueTableData");
+            trace.data("dataRowKeyCount", Integer.toString(1));
+            try {
+                byte[] result = null;
+                for (Map.Entry<Key, Value> col : scanner) {
+                    String foundKey = col.getKey().getRow().toString();
+                    byte[] value = col.getValue().get();
+                    if (foundKey.equals(dataRowKey)) {
+                        result = value;
+                    }
+                }
+                if (result == null) {
+                    throw new VertexiumException("Could not find data with key: " + dataRowKey);
+                }
+                return result;
+            } finally {
+                scanner.close();
+                trace.stop();
+                GRAPH_LOGGER.logEndIterator(System.currentTimeMillis() - timerStartTime);
+            }
+        } catch (Exception ex) {
+            throw new VertexiumException(ex);
+        }
+    }
+
     private Map<String, byte[]> streamingPropertyValueTableDatas(List<String> dataRowKeys) {
         try {
             if (dataRowKeys.size() == 0) {
@@ -1651,6 +1697,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
 
             final long timerStartTime = System.currentTimeMillis();
             ScannerBase scanner = createBatchScanner(getDataTableName(), ranges, new org.apache.accumulo.core.security.Authorizations());
+
             GRAPH_LOGGER.logStartIterator(scanner);
             Span trace = Trace.start("streamingPropertyValueTableData");
             trace.data("dataRowKeyCount", Integer.toString(dataRowKeys.size()));
@@ -1668,16 +1715,6 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         } catch (Exception ex) {
             throw new VertexiumException(ex);
         }
-    }
-
-    public byte[] streamingPropertyValueTableData(String dataRowKey) {
-        ArrayList<String> dataRowKeys = Lists.newArrayList(dataRowKey);
-        Map<String, byte[]> map = streamingPropertyValueTableDatas(dataRowKeys);
-        byte[] result = map.get(dataRowKey);
-        if (result == null) {
-            throw new VertexiumException("Could not find data with key: " + dataRowKey);
-        }
-        return result;
     }
 
     public static ColumnVisibility visibilityToAccumuloVisibility(Visibility visibility) {
@@ -1865,7 +1902,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
 
         Mutation m = new Mutation(elementRowKey);
 
-        List <PropertyDescriptor> propertyList = Lists.newArrayList();
+        List<PropertyDescriptor> propertyList = Lists.newArrayList();
         for (AlterPropertyVisibility apv : alterPropertyVisibilities) {
             MutableProperty property = (MutableProperty) element.getProperty(
                     apv.getKey(),
@@ -1891,7 +1928,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         }
 
 
-        if(!propertyList.isEmpty()) {
+        if (!propertyList.isEmpty()) {
             // delete the property with the old/existing visibility from the search index
             getSearchIndex().deleteProperties(
                     this,

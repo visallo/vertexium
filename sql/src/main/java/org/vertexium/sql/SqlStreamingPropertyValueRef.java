@@ -22,7 +22,7 @@ class SqlStreamingPropertyValueRef extends StreamingPropertyValueRef<SqlGraph> {
     }
 
     @Override
-    public StreamingPropertyValue toStreamingPropertyValue(SqlGraph graph) {
+    public StreamingPropertyValue toStreamingPropertyValue(SqlGraph graph, long timestamp) {
         return graph.getStreamingPropertyTable().get(elementId, key, name, visibility, timestamp)
                 .store(isStore()).searchIndex(isSearchIndex());
     }

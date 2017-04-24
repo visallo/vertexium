@@ -27,7 +27,7 @@ public class StreamingPropertyValueTableRef extends StreamingPropertyValueRef<Ac
     }
 
     @Override
-    public StreamingPropertyValue toStreamingPropertyValue(AccumuloGraph graph) {
-        return new StreamingPropertyValueTable(graph, getDataRowKey(), this);
+    public StreamingPropertyValue toStreamingPropertyValue(AccumuloGraph graph, long timestamp) {
+        return new StreamingPropertyValueTable(graph, getDataRowKey(), this, timestamp);
     }
 }
