@@ -1112,4 +1112,9 @@ public interface Graph {
      * Deletes an extended data row
      */
     void deleteExtendedDataRow(ExtendedDataRowId id, Authorizations authorizations);
+
+    /**
+     * The default fetch hints to use if none are provided
+     */
+    EnumSet<FetchHint> getDefaultFetchHints();
 }

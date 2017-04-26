@@ -78,6 +78,11 @@ public class ElementMapperGraph extends GraphBase {
     }
 
     @Override
+    public EnumSet<FetchHint> getDefaultFetchHints() {
+        throw new VertexiumException("Not supported");
+    }
+
+    @Override
     protected GraphMetadataStore getGraphMetadataStore() {
         throw new VertexiumException("Not supported");
     }

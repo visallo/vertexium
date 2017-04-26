@@ -508,7 +508,7 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
         if (sourceVertexId.equals(destVertexId)) {
             foundPaths.add(currentPath);
         } else if (hops > 0) {
-            Stream<Edge> edges = stream(getEdgesFromVertex(sourceVertexId, FetchHint.DEFAULT, null, authorizations))
+            Stream<Edge> edges = stream(getEdgesFromVertex(sourceVertexId, getDefaultFetchHints(), null, authorizations))
                     .filter(edge -> {
                         if (options.getExcludedLabels() != null) {
                             if (ArrayUtils.contains(options.getExcludedLabels(), edge.getLabel())) {

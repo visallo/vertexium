@@ -15,7 +15,6 @@ public enum FetchHint {
     EXTENDED_DATA_TABLE_NAMES;
 
     public static final EnumSet<FetchHint> NONE = EnumSet.noneOf(FetchHint.class);
-    public static final EnumSet<FetchHint> DEFAULT = EnumSet.of(PROPERTIES, IN_EDGE_REFS, OUT_EDGE_REFS, EXTENDED_DATA_TABLE_NAMES);
     public static final EnumSet<FetchHint> ALL = EnumSet.of(PROPERTIES, PROPERTY_METADATA, IN_EDGE_REFS, OUT_EDGE_REFS, EXTENDED_DATA_TABLE_NAMES);
     public static final EnumSet<FetchHint> ALL_INCLUDING_HIDDEN = EnumSet.allOf(FetchHint.class);
     public static final EnumSet<FetchHint> EDGE_REFS = EnumSet.of(IN_EDGE_REFS, OUT_EDGE_REFS);

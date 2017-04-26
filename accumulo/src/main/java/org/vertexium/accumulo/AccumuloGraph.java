@@ -1659,9 +1659,6 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
 
     private void applyFetchHints(ScannerBase scanner, EnumSet<FetchHint> fetchHints, ElementType elementType) {
         scanner.clearColumns();
-        if (fetchHints.equals(FetchHint.DEFAULT)) {
-            return;
-        }
 
         Iterable<Text> columnFamiliesToFetch = getColumnFamiliesToFetch(elementType, fetchHints);
         for (Text columnFamilyToFetch : columnFamiliesToFetch) {

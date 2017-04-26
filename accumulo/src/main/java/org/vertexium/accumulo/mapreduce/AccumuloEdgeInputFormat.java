@@ -23,7 +23,7 @@ import java.util.EnumSet;
 import java.util.Map;
 
 public class AccumuloEdgeInputFormat extends AccumuloElementInputFormatBase<Edge> {
-    private static EdgeIterator edgeIterator = new EdgeIterator(AccumuloGraph.toIteratorFetchHints(FetchHint.DEFAULT));
+    private static EdgeIterator edgeIterator;
 
     public static void setInputInfo(Job job, AccumuloGraph graph, String instanceName, String zooKeepers, String principal, AuthenticationToken token, String[] authorizations) throws AccumuloSecurityException {
         String tableName = graph.getEdgesTableName();
@@ -37,8 +37,8 @@ public class AccumuloEdgeInputFormat extends AccumuloElementInputFormatBase<Edge
             Authorizations authorizations
     ) {
         try {
-            EnumSet<FetchHint> fetchHints = FetchHint.DEFAULT;
-            EdgeElementData edgeElementData = edgeIterator.createElementDataFromRows(row);
+            EnumSet<FetchHint> fetchHints = graph.getDefaultFetchHints();
+            EdgeElementData edgeElementData = getEdgeIterator(graph).createElementDataFromRows(row);
             if (edgeElementData == null) {
                 return null;
             }
@@ -76,6 +76,13 @@ public class AccumuloEdgeInputFormat extends AccumuloElementInputFormatBase<Edge
         } catch (Throwable ex) {
             throw new VertexiumException("Failed to create vertex", ex);
         }
+    }
+
+    private EdgeIterator getEdgeIterator(AccumuloGraph graph) {
+        if (edgeIterator == null) {
+            edgeIterator = new EdgeIterator(AccumuloGraph.toIteratorFetchHints(graph.getDefaultFetchHints()));
+        }
+        return edgeIterator;
     }
 }
 

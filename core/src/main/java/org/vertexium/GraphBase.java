@@ -92,12 +92,12 @@ public abstract class GraphBase implements Graph {
 
     @Override
     public Vertex getVertex(String vertexId, Authorizations authorizations) throws VertexiumException {
-        return getVertex(vertexId, FetchHint.DEFAULT, authorizations);
+        return getVertex(vertexId, getDefaultFetchHints(), authorizations);
     }
 
     @Override
     public Iterable<Vertex> getVerticesWithPrefix(String vertexIdPrefix, Authorizations authorizations) {
-        return getVerticesWithPrefix(vertexIdPrefix, FetchHint.DEFAULT, authorizations);
+        return getVerticesWithPrefix(vertexIdPrefix, getDefaultFetchHints(), authorizations);
     }
 
     @Override
@@ -118,7 +118,7 @@ public abstract class GraphBase implements Graph {
 
     @Override
     public Iterable<Vertex> getVerticesInRange(Range idRange, Authorizations authorizations) {
-        return getVerticesInRange(idRange, FetchHint.DEFAULT, authorizations);
+        return getVerticesInRange(idRange, getDefaultFetchHints(), authorizations);
     }
 
     @Override
@@ -176,7 +176,7 @@ public abstract class GraphBase implements Graph {
 
     @Override
     public Iterable<Vertex> getVertices(final Iterable<String> ids, final Authorizations authorizations) {
-        return getVertices(ids, FetchHint.DEFAULT, authorizations);
+        return getVertices(ids, getDefaultFetchHints(), authorizations);
     }
 
     @Override
@@ -193,12 +193,12 @@ public abstract class GraphBase implements Graph {
 
     @Override
     public List<Vertex> getVerticesInOrder(Iterable<String> ids, Authorizations authorizations) {
-        return getVerticesInOrder(ids, FetchHint.DEFAULT, authorizations);
+        return getVerticesInOrder(ids, getDefaultFetchHints(), authorizations);
     }
 
     @Override
     public Iterable<Vertex> getVertices(Authorizations authorizations) throws VertexiumException {
-        return getVertices(FetchHint.DEFAULT, authorizations);
+        return getVertices(getDefaultFetchHints(), authorizations);
     }
 
     @Override
@@ -277,7 +277,7 @@ public abstract class GraphBase implements Graph {
 
     @Override
     public Edge getEdge(String edgeId, Authorizations authorizations) {
-        return getEdge(edgeId, FetchHint.DEFAULT, authorizations);
+        return getEdge(edgeId, getDefaultFetchHints(), authorizations);
     }
 
     @Override
@@ -454,12 +454,12 @@ public abstract class GraphBase implements Graph {
 
     @Override
     public Iterable<Edge> getEdges(final Iterable<String> ids, final Authorizations authorizations) {
-        return getEdges(ids, FetchHint.DEFAULT, authorizations);
+        return getEdges(ids, getDefaultFetchHints(), authorizations);
     }
 
     @Override
     public Iterable<Edge> getEdges(Authorizations authorizations) {
-        return getEdges(FetchHint.DEFAULT, authorizations);
+        return getEdges(getDefaultFetchHints(), authorizations);
     }
 
     @Override
@@ -472,7 +472,7 @@ public abstract class GraphBase implements Graph {
 
     @Override
     public Iterable<Edge> getEdgesInRange(Range idRange, Authorizations authorizations) {
-        return getEdgesInRange(idRange, FetchHint.DEFAULT, authorizations);
+        return getEdgesInRange(idRange, getDefaultFetchHints(), authorizations);
     }
 
     @Override

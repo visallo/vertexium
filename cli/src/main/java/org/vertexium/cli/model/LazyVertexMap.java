@@ -10,14 +10,14 @@ public class LazyVertexMap extends ModelBase {
     public Object get(String vertexId) {
         if (vertexId.endsWith("*")) {
             String vertexIdPrefix = vertexId.substring(0, vertexId.length() - 1);
-            Iterable<Vertex> vertices = getGraph().getVerticesWithPrefix(vertexIdPrefix, FetchHint.DEFAULT, getTime(), getAuthorizations());
+            Iterable<Vertex> vertices = getGraph().getVerticesWithPrefix(vertexIdPrefix, getGraph().getDefaultFetchHints(), getTime(), getAuthorizations());
             List<String> results = new ArrayList<>();
             for (Vertex v : vertices) {
                 results.add(v.getId());
             }
             return new LazyVertexList(results);
         } else {
-            Vertex v = getGraph().getVertex(vertexId, FetchHint.DEFAULT, getTime(), getAuthorizations());
+            Vertex v = getGraph().getVertex(vertexId, getGraph().getDefaultFetchHints(), getTime(), getAuthorizations());
             if (v == null) {
                 return null;
             }
