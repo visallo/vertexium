@@ -38,6 +38,7 @@ import org.vertexium.accumulo.iterator.model.IteratorFetchHint;
 import org.vertexium.accumulo.iterator.model.PropertyColumnQualifier;
 import org.vertexium.accumulo.iterator.model.PropertyMetadataColumnQualifier;
 import org.vertexium.accumulo.iterator.util.ByteArrayWrapper;
+import org.vertexium.accumulo.keys.DataTableRowKey;
 import org.vertexium.accumulo.keys.KeyHelper;
 import org.vertexium.accumulo.util.RangeUtils;
 import org.vertexium.event.*;
@@ -142,7 +143,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             @SuppressWarnings("unchecked")
             protected StreamingPropertyValueRef saveStreamingPropertyValue(String rowKey, Property property, StreamingPropertyValue propertyValue) {
                 StreamingPropertyValueRef streamingPropertyValueRef = super.saveStreamingPropertyValue(rowKey, property, propertyValue);
-                ((MutableProperty) property).setValue(streamingPropertyValueRef.toStreamingPropertyValue(AccumuloGraph.this));
+                ((MutableProperty) property).setValue(streamingPropertyValueRef.toStreamingPropertyValue(AccumuloGraph.this, property.getTimestamp()));
                 return streamingPropertyValueRef;
             }
         };
@@ -492,27 +493,27 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         return elementWriter.get().getBatchWriter(tableName);
     }
 
-    protected BatchWriter getVerticesWriter() {
+    public BatchWriter getVerticesWriter() {
         return getElementWriter(getVerticesTableName());
     }
 
-    protected BatchWriter getHistoryVerticesWriter() {
+    public BatchWriter getHistoryVerticesWriter() {
         return getElementWriter(getHistoryVerticesTableName());
     }
 
-    protected BatchWriter getEdgesWriter() {
+    public BatchWriter getEdgesWriter() {
         return getElementWriter(getEdgesTableName());
     }
 
-    protected BatchWriter getHistoryEdgesWriter() {
+    public BatchWriter getHistoryEdgesWriter() {
         return getElementWriter(getHistoryEdgesTableName());
     }
 
-    protected BatchWriter getExtendedDataWriter() {
+    public BatchWriter getExtendedDataWriter() {
         return getElementWriter(getExtendedDataTableName());
     }
 
-    protected BatchWriter getDataWriter() {
+    public BatchWriter getDataWriter() {
         return getElementWriter(getDataTableName());
     }
 
@@ -891,7 +892,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                         Metadata metadata = new Metadata();
                         Set<Visibility> hiddenVisibilities = null; // TODO should we preserve these over time
                         if (value instanceof StreamingPropertyValueTableRef) {
-                            value = ((StreamingPropertyValueTableRef) value).toStreamingPropertyValue(this);
+                            value = ((StreamingPropertyValueTableRef) value).toStreamingPropertyValue(this, timestamp);
                         }
                         String propertyKey = propertyColumnQualifier.getPropertyKey();
                         String propertyName = propertyColumnQualifier.getPropertyName();
@@ -1755,6 +1756,48 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         }
     }
 
+    public byte[] streamingPropertyValueTableData(String dataRowKey, Long timestamp) {
+        try {
+            List<org.apache.accumulo.core.data.Range> ranges = Lists.newArrayList(RangeUtils.createRangeFromString(dataRowKey));
+
+            final long timerStartTime = System.currentTimeMillis();
+            ScannerBase scanner = createBatchScanner(getDataTableName(), ranges, new org.apache.accumulo.core.security.Authorizations());
+            if (timestamp != null && !DataTableRowKey.isLegacy(dataRowKey)) {
+                IteratorSetting iteratorSetting = new IteratorSetting(
+                        80,
+                        TimestampFilter.class.getSimpleName(),
+                        TimestampFilter.class
+                );
+                TimestampFilter.setStart(iteratorSetting, timestamp, true);
+                scanner.addScanIterator(iteratorSetting);
+            }
+
+            GRAPH_LOGGER.logStartIterator(scanner);
+            Span trace = Trace.start("streamingPropertyValueTableData");
+            trace.data("dataRowKeyCount", Integer.toString(1));
+            try {
+                byte[] result = null;
+                for (Map.Entry<Key, Value> col : scanner) {
+                    String foundKey = col.getKey().getRow().toString();
+                    byte[] value = col.getValue().get();
+                    if (foundKey.equals(dataRowKey)) {
+                        result = value;
+                    }
+                }
+                if (result == null) {
+                    throw new VertexiumException("Could not find data with key: " + dataRowKey);
+                }
+                return result;
+            } finally {
+                scanner.close();
+                trace.stop();
+                GRAPH_LOGGER.logEndIterator(System.currentTimeMillis() - timerStartTime);
+            }
+        } catch (Exception ex) {
+            throw new VertexiumException(ex);
+        }
+    }
+
     private Map<String, byte[]> streamingPropertyValueTableDatas(List<String> dataRowKeys) {
         try {
             if (dataRowKeys.size() == 0) {
@@ -1767,6 +1810,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
 
             final long timerStartTime = System.currentTimeMillis();
             ScannerBase scanner = createBatchScanner(getDataTableName(), ranges, new org.apache.accumulo.core.security.Authorizations());
+
             GRAPH_LOGGER.logStartIterator(scanner);
             Span trace = Trace.start("streamingPropertyValueTableData");
             trace.data("dataRowKeyCount", Integer.toString(dataRowKeys.size()));
@@ -1784,16 +1828,6 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         } catch (Exception ex) {
             throw new VertexiumException(ex);
         }
-    }
-
-    public byte[] streamingPropertyValueTableData(String dataRowKey) {
-        ArrayList<String> dataRowKeys = Lists.newArrayList(dataRowKey);
-        Map<String, byte[]> map = streamingPropertyValueTableDatas(dataRowKeys);
-        byte[] result = map.get(dataRowKey);
-        if (result == null) {
-            throw new VertexiumException("Could not find data with key: " + dataRowKey);
-        }
-        return result;
     }
 
     public static ColumnVisibility visibilityToAccumuloVisibility(Visibility visibility) {

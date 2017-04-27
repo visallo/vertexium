@@ -108,7 +108,7 @@ public class LazyMutableProperty extends MutableProperty {
             }
             cachedPropertyValue = this.vertexiumSerializer.bytesToObject(propertyValue);
             if (cachedPropertyValue instanceof StreamingPropertyValueRef) {
-                cachedPropertyValue = ((StreamingPropertyValueRef) cachedPropertyValue).toStreamingPropertyValue(this.graph);
+                cachedPropertyValue = ((StreamingPropertyValueRef) cachedPropertyValue).toStreamingPropertyValue(this.graph, getTimestamp());
             }
         }
         return cachedPropertyValue;

@@ -8,10 +8,12 @@ import java.io.InputStream;
 class StreamingPropertyValueTable extends StreamingPropertyValue {
     private final AccumuloGraph graph;
     private final String dataRowKey;
+    private final long timestamp;
     private transient byte[] data;
 
-    StreamingPropertyValueTable(AccumuloGraph graph, String dataRowKey, StreamingPropertyValueTableRef valueRef) {
+    StreamingPropertyValueTable(AccumuloGraph graph, String dataRowKey, StreamingPropertyValueTableRef valueRef, long timestamp) {
         super(null, valueRef.getValueType());
+        this.timestamp = timestamp;
         this.store(valueRef.isStore());
         this.searchIndex(valueRef.isSearchIndex());
         this.graph = graph;
@@ -47,7 +49,7 @@ class StreamingPropertyValueTable extends StreamingPropertyValue {
 
     private void ensureDataLoaded() {
         if (!isDataLoaded()) {
-            this.data = this.graph.streamingPropertyValueTableData(this.dataRowKey);
+            this.data = this.graph.streamingPropertyValueTableData(this.dataRowKey, this.timestamp);
         }
     }
 }

@@ -8,6 +8,10 @@
 * Fixed: Issue #135. Passing FetchHint.NONE when retrieving vertices from Accumulo using Elasticsearch will now properly return the vertices rather than an empty Iterable
 * Deprecated: EdgeCountScoringStrategy
 
+# v2.5.5
+
+* Changed: Removed timestamp from streaming property value row key. 
+
 # v2.5.4
 
 * Fixed: Find Path max 2 hops not returning one hop paths

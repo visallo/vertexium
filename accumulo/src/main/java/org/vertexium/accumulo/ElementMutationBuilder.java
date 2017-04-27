@@ -536,7 +536,7 @@ public abstract class ElementMutationBuilder {
     private StreamingPropertyValueRef saveStreamingPropertyValueSmall(String rowKey, Property property, byte[] data, StreamingPropertyValue propertyValue) {
         String dataTableRowKey = new DataTableRowKey(rowKey, property).getRowKey();
         Mutation dataMutation = new Mutation(dataTableRowKey);
-        dataMutation.put(EMPTY_TEXT, EMPTY_TEXT, new Value(data));
+        dataMutation.put(EMPTY_TEXT, EMPTY_TEXT, property.getTimestamp(), new Value(data));
         saveDataMutation(dataMutation);
         return new StreamingPropertyValueTableRef(dataTableRowKey, propertyValue, data);
     }
