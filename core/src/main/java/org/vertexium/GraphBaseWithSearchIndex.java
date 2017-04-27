@@ -1,6 +1,5 @@
 package org.vertexium;
 
-import com.google.common.collect.Maps;
 import org.vertexium.id.IdGenerator;
 import org.vertexium.mutation.ElementMutation;
 import org.vertexium.mutation.ExistingElementMutation;
@@ -21,6 +20,7 @@ public abstract class GraphBaseWithSearchIndex extends GraphBase implements Grap
     public static final String METADATA_ID_GENERATOR_CLASSNAME = "idGenerator.classname";
     private final GraphConfiguration configuration;
     private final IdGenerator idGenerator;
+    private final EnumSet<FetchHint> defaultFetchHints;
     private SearchIndex searchIndex;
     private boolean foundIdGeneratorClassnameInMetadata;
 
@@ -29,6 +29,7 @@ public abstract class GraphBaseWithSearchIndex extends GraphBase implements Grap
         this.configuration = configuration;
         this.searchIndex = configuration.createSearchIndex(this);
         this.idGenerator = configuration.createIdGenerator(this);
+        this.defaultFetchHints = FetchHint.parse(configuration.getString(GraphConfiguration.DEFAULT_FETCH_HINTS, GraphConfiguration.DEFAULT_DEFAULT_FETCH_HINTS));
     }
 
     protected GraphBaseWithSearchIndex(GraphConfiguration configuration, IdGenerator idGenerator, SearchIndex searchIndex) {
@@ -36,6 +37,7 @@ public abstract class GraphBaseWithSearchIndex extends GraphBase implements Grap
         this.configuration = configuration;
         this.searchIndex = searchIndex;
         this.idGenerator = idGenerator;
+        this.defaultFetchHints = FetchHint.parse(configuration.getString(GraphConfiguration.DEFAULT_FETCH_HINTS, GraphConfiguration.DEFAULT_DEFAULT_FETCH_HINTS));
     }
 
     protected void setup() {
@@ -253,4 +255,9 @@ public abstract class GraphBaseWithSearchIndex extends GraphBase implements Grap
 
     @Override
     public abstract Authorizations createAuthorizations(String... auths);
+
+    @Override
+    public EnumSet<FetchHint> getDefaultFetchHints() {
+        return defaultFetchHints;
+    }
 }

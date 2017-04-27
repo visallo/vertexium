@@ -47,7 +47,7 @@ public class InMemoryEdge extends InMemoryElement<InMemoryEdge> implements Edge 
 
     @Override
     public Vertex getVertex(Direction direction, Authorizations authorizations) {
-        return getVertex(direction, FetchHint.DEFAULT, authorizations);
+        return getVertex(direction, getGraph().getDefaultFetchHints(), authorizations);
     }
 
     @Override
@@ -62,7 +62,7 @@ public class InMemoryEdge extends InMemoryElement<InMemoryEdge> implements Edge 
 
     @Override
     public Vertex getOtherVertex(String myVertexId, Authorizations authorizations) {
-        return getOtherVertex(myVertexId, FetchHint.DEFAULT, authorizations);
+        return getOtherVertex(myVertexId, getGraph().getDefaultFetchHints(), authorizations);
     }
 
     @Override
@@ -72,7 +72,7 @@ public class InMemoryEdge extends InMemoryElement<InMemoryEdge> implements Edge 
 
     @Override
     public EdgeVertices getVertices(Authorizations authorizations) {
-        return getVertices(FetchHint.DEFAULT, authorizations);
+        return getVertices(getGraph().getDefaultFetchHints(), authorizations);
     }
 
     @Override

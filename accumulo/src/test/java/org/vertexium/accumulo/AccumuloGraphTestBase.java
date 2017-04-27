@@ -65,7 +65,7 @@ public abstract class AccumuloGraphTestBase extends GraphTestBase {
         assertEquals(0, IterableUtils.count(v1.getEdges(Direction.IN, AUTHORIZATIONS_A)));
         assertEquals(0, IterableUtils.count(v1.getEdges(Direction.OUT, AUTHORIZATIONS_A)));
 
-        v1 = graph.getVertex("v1", FetchHint.DEFAULT, AUTHORIZATIONS_A);
+        v1 = graph.getVertex("v1", graph.getDefaultFetchHints(), AUTHORIZATIONS_A);
         assertNotNull(v1);
         assertEquals(1, IterableUtils.count(v1.getProperties()));
         assertEquals(1, IterableUtils.count(v1.getEdges(Direction.IN, AUTHORIZATIONS_A)));
@@ -101,7 +101,7 @@ public abstract class AccumuloGraphTestBase extends GraphTestBase {
         assertEquals("v1", e1.getVertexId(Direction.OUT));
         assertEquals("v2", e1.getVertexId(Direction.IN));
 
-        e1 = graph.getEdge("e1", FetchHint.DEFAULT, AUTHORIZATIONS_A);
+        e1 = graph.getEdge("e1", graph.getDefaultFetchHints(), AUTHORIZATIONS_A);
         assertEquals(1, IterableUtils.count(e1.getProperties()));
         assertEquals("v1", e1.getVertexId(Direction.OUT));
         assertEquals("v2", e1.getVertexId(Direction.IN));
@@ -133,7 +133,14 @@ public abstract class AccumuloGraphTestBase extends GraphTestBase {
         assertEquals("metavalue1", metadata.getEntry("meta1", VISIBILITY_EMPTY).getValue());
 
         AccumuloGraph accumuloGraph = (AccumuloGraph) graph;
-        ScannerBase vertexScanner = accumuloGraph.createVertexScanner(FetchHint.DEFAULT, AccumuloGraph.SINGLE_VERSION, null, null, new Range("V", "W"), AUTHORIZATIONS_EMPTY);
+        ScannerBase vertexScanner = accumuloGraph.createVertexScanner(
+                graph.getDefaultFetchHints(),
+                AccumuloGraph.SINGLE_VERSION,
+                null,
+                null,
+                new Range("V", "W"),
+                AUTHORIZATIONS_EMPTY
+        );
         RowIterator rows = new RowIterator(vertexScanner.iterator());
         while (rows.hasNext()) {
             Iterator<Map.Entry<Key, Value>> row = rows.next();

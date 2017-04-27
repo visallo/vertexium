@@ -7,19 +7,25 @@ import org.vertexium.util.SelectManyIterable;
 import java.util.*;
 
 public class CompositeGraphQuery implements Query {
+    private final Graph graph;
     private final List<Query> queries;
 
-    public CompositeGraphQuery(Query... queries) {
-        this(Arrays.asList(queries));
+    public CompositeGraphQuery(Graph graph, Query... queries) {
+        this(graph, Arrays.asList(queries));
     }
 
-    public CompositeGraphQuery(Collection<Query> queries) {
+    public CompositeGraphQuery(Graph graph, Collection<Query> queries) {
+        this.graph = graph;
         this.queries = new ArrayList<>(queries);
     }
 
     @Override
     public QueryResultsIterable<Vertex> vertices() {
-        return vertices(FetchHint.DEFAULT);
+        return vertices(getGraph().getDefaultFetchHints());
+    }
+
+    private Graph getGraph() {
+        return this.graph;
     }
 
     @Override
@@ -49,7 +55,7 @@ public class CompositeGraphQuery implements Query {
 
     @Override
     public QueryResultsIterable<Edge> edges() {
-        return edges(FetchHint.DEFAULT);
+        return edges(getGraph().getDefaultFetchHints());
     }
 
     @Override
@@ -81,7 +87,7 @@ public class CompositeGraphQuery implements Query {
     @Deprecated
     public QueryResultsIterable<Edge> edges(final String label) {
         hasEdgeLabel(label);
-        return edges(FetchHint.DEFAULT);
+        return edges(getGraph().getDefaultFetchHints());
     }
 
     @Override
@@ -93,7 +99,7 @@ public class CompositeGraphQuery implements Query {
 
     @Override
     public QueryResultsIterable<Element> elements() {
-        return elements(FetchHint.DEFAULT);
+        return elements(getGraph().getDefaultFetchHints());
     }
 
     @Override
@@ -123,7 +129,7 @@ public class CompositeGraphQuery implements Query {
 
     @Override
     public QueryResultsIterable<ExtendedDataRow> extendedDataRows() {
-        return extendedDataRows(FetchHint.DEFAULT);
+        return extendedDataRows(getGraph().getDefaultFetchHints());
     }
 
     @Override
@@ -173,7 +179,7 @@ public class CompositeGraphQuery implements Query {
 
     @Override
     public QueryResultsIterable<? extends VertexiumObject> search() {
-        return search(VertexiumObjectType.ALL, FetchHint.DEFAULT);
+        return search(VertexiumObjectType.ALL, getGraph().getDefaultFetchHints());
     }
 
     @Override

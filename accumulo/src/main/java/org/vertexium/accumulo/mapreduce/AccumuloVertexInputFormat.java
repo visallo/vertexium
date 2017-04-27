@@ -24,7 +24,7 @@ import java.util.Iterator;
 import java.util.Map;
 
 public class AccumuloVertexInputFormat extends AccumuloElementInputFormatBase<Vertex> {
-    private static VertexIterator vertexIterator = new VertexIterator(AccumuloGraph.toIteratorFetchHints(FetchHint.DEFAULT));
+    private static VertexIterator vertexIterator;
 
     public static void setInputInfo(Job job, AccumuloGraph graph, String instanceName, String zooKeepers, String principal, AuthenticationToken token, String[] authorizations) throws AccumuloSecurityException {
         String tableName = graph.getVerticesTableName();
@@ -38,8 +38,8 @@ public class AccumuloVertexInputFormat extends AccumuloElementInputFormatBase<Ve
 
     public static Vertex createVertex(AccumuloGraph graph, Iterator<Map.Entry<Key, Value>> row, Authorizations authorizations) {
         try {
-            EnumSet<FetchHint> fetchHints = FetchHint.DEFAULT;
-            VertexElementData vertexElementData = vertexIterator.createElementDataFromRows(row);
+            EnumSet<FetchHint> fetchHints = graph.getDefaultFetchHints();
+            VertexElementData vertexElementData = getVertexIterator(graph).createElementDataFromRows(row);
             if (vertexElementData == null) {
                 return null;
             }
@@ -75,6 +75,13 @@ public class AccumuloVertexInputFormat extends AccumuloElementInputFormatBase<Ve
         } catch (Throwable ex) {
             throw new VertexiumException("Failed to create vertex", ex);
         }
+    }
+
+    private static VertexIterator getVertexIterator(Graph graph) {
+        if (vertexIterator == null) {
+            vertexIterator = new VertexIterator(AccumuloGraph.toIteratorFetchHints(graph.getDefaultFetchHints()));
+        }
+        return vertexIterator;
     }
 }
 
