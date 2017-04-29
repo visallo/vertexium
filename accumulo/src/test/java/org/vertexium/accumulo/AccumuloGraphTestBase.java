@@ -2,10 +2,12 @@ package org.vertexium.accumulo;
 
 import org.apache.accumulo.core.client.*;
 import org.apache.accumulo.core.data.Key;
+import org.apache.accumulo.core.data.Mutation;
 import org.apache.accumulo.core.data.Range;
 import org.apache.accumulo.core.data.Value;
 import org.apache.accumulo.minicluster.MiniAccumuloCluster;
 import org.apache.accumulo.minicluster.MiniAccumuloConfig;
+import org.apache.commons.io.IOUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.hadoop.io.Text;
 import org.junit.After;
@@ -14,8 +16,11 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.vertexium.*;
 import org.vertexium.accumulo.iterator.model.EdgeInfo;
-import org.vertexium.accumulo.iterator.model.KeyBase;
 import org.vertexium.accumulo.iterator.model.VertexiumInvalidKeyException;
+import org.vertexium.accumulo.keys.DataTableRowKey;
+import org.vertexium.accumulo.keys.KeyHelper;
+import org.vertexium.property.MutablePropertyImpl;
+import org.vertexium.property.StreamingPropertyValue;
 import org.vertexium.test.GraphTestBase;
 import org.vertexium.util.IterableUtils;
 import org.vertexium.util.VertexiumLogger;
@@ -28,6 +33,8 @@ import java.util.*;
 
 import static junit.framework.TestCase.fail;
 import static org.junit.Assert.*;
+import static org.vertexium.accumulo.ElementMutationBuilder.EMPTY_TEXT;
+import static org.vertexium.accumulo.iterator.model.KeyBase.VALUE_SEPARATOR;
 import static org.vertexium.util.IterableUtils.toList;
 
 
@@ -327,7 +334,7 @@ public abstract class AccumuloGraphTestBase extends GraphTestBase {
         assertTrue(pair.getValue().toString().contains("m2_value"));
 
         pair = keyValuePairs.get(i++);
-        assertEquals(new Key(new Text("v1"), AccumuloVertex.CF_SIGNAL, ElementMutationBuilder.EMPTY_TEXT, new Text("a"), 100L), pair.getKey());
+        assertEquals(new Key(new Text("v1"), AccumuloVertex.CF_SIGNAL, EMPTY_TEXT, new Text("a"), 100L), pair.getKey());
         assertEquals(ElementMutationBuilder.EMPTY_VALUE, pair.getValue());
     }
 
@@ -427,7 +434,7 @@ public abstract class AccumuloGraphTestBase extends GraphTestBase {
     public void testPropertyWithValueSeparator() {
         try {
             graph.prepareVertex("v1", VISIBILITY_EMPTY)
-                    .addPropertyValue("prop1" + KeyBase.VALUE_SEPARATOR, "name1", "test", VISIBILITY_EMPTY)
+                    .addPropertyValue("prop1" + VALUE_SEPARATOR, "name1", "test", VISIBILITY_EMPTY)
                     .save(AUTHORIZATIONS_EMPTY);
             throw new RuntimeException("Should have thrown a bad character exception");
         } catch (VertexiumInvalidKeyException ex) {
@@ -469,6 +476,44 @@ public abstract class AccumuloGraphTestBase extends GraphTestBase {
         assertEquals("l", dataTableSplits.get(0).getExclusiveEnd());
         assertEquals("l", dataTableSplits.get(1).getInclusiveStart());
         assertEquals(null, dataTableSplits.get(1).getExclusiveEnd());
+    }
+
+    @Test
+    public void testLegacyStreamingPropertyValuesWithTimestampInRowKey() throws Exception {
+        String vertexId = "v1";
+        graph.prepareVertex(vertexId, VISIBILITY_EMPTY)
+                .save(AUTHORIZATIONS_EMPTY);
+        graph.flush();
+
+        long timestamp = new Date().getTime();
+
+        String propertyKey = "k1";
+        String propertyName = "prop1";
+        String propertyValue = "Hello";
+        String dataRowKey = new DataTableRowKey(vertexId, propertyKey, propertyName).getRowKey() + VALUE_SEPARATOR + timestamp;
+
+        // need to add it manually because the key format changed
+        Mutation addPropertyMutation = new Mutation(vertexId);
+        byte[] data = propertyValue.getBytes();
+        StreamingPropertyValue spv = StreamingPropertyValue.create(propertyValue);
+        StreamingPropertyValueTableRef spvValue = new StreamingPropertyValueTableRef(dataRowKey, spv, data);
+        Metadata metadata = new Metadata();
+        Property property = new MutablePropertyImpl(propertyKey, propertyName, spvValue, metadata, timestamp, new HashSet<>(), new Visibility(""));
+        Text columnQualifier = KeyHelper.getColumnQualifierFromPropertyColumnQualifier(property, getGraph().getNameSubstitutionStrategy());
+        addPropertyMutation.put(AccumuloElement.CF_PROPERTY, columnQualifier, new Value(getGraph().getVertexiumSerializer().objectToBytes(spvValue)));
+        getGraph().getVerticesWriter().addMutation(addPropertyMutation);
+
+        Mutation addDataMutation = new Mutation(dataRowKey);
+        addDataMutation.put(EMPTY_TEXT, EMPTY_TEXT, timestamp - 1000, new Value(data));
+        getGraph().getDataWriter().addMutation(addDataMutation);
+
+        getGraph().flush();
+
+        // verify we can still retrieve it
+        Vertex v1 = graph.getVertex(vertexId, AUTHORIZATIONS_EMPTY);
+        spv = (StreamingPropertyValue) v1.getPropertyValue(propertyKey, propertyName);
+        assertNotNull("spv should not be null", spv);
+        assertEquals(propertyValue, IOUtils.toString(spv.getInputStream()));
     }
 
     @Override

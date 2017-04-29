@@ -2,7 +2,6 @@ package org.vertexium.inmemory;
 
 import com.google.common.collect.Maps;
 import org.vertexium.*;
-import org.vertexium.HistoricalPropertyValue;
 import org.vertexium.HistoricalPropertyValue.HistoricalPropertyValueBuilder;
 import org.vertexium.inmemory.mutations.*;
 import org.vertexium.property.MutablePropertyImpl;
@@ -140,13 +139,13 @@ public abstract class InMemoryTableElement<TElement extends InMemoryElement> imp
          * There is the expectation that historical property values are a snapshot of the property in
          * time. This method attempts to reconstruct the property current state from mutations.
          */
-        Map<String , HistoricalPropertyValueBuilder> currentPropertyBuilders = Maps.newHashMap();
+        Map<String, HistoricalPropertyValueBuilder> currentPropertyBuilders = Maps.newHashMap();
         Set<Visibility> hiddenVisibilities = new HashSet<>();
 
         for (PropertyMutation m : propertyMutations) {
             String propertyIdentifier = m.getPropertyKey() + m.getPropertyName();
             HistoricalPropertyValueBuilder builder = currentPropertyBuilders.get(propertyIdentifier);
-            if(builder == null) {
+            if (builder == null) {
                 builder = new HistoricalPropertyValueBuilder(m.getPropertyKey(), m.getPropertyName(), m.getTimestamp());
                 currentPropertyBuilders.put(propertyIdentifier, builder);
             }
@@ -161,7 +160,7 @@ public abstract class InMemoryTableElement<TElement extends InMemoryElement> imp
                 continue;
             }
             // Ignore workspace interactions to avoid duplicated entries
-            if(m.getVisibility() != null && m.getPropertyVisibility().getVisibilityString().matches("(.*)WORKSPACE(.*)")) {
+            if (m.getVisibility() != null && m.getPropertyVisibility().getVisibilityString().matches("(.*)WORKSPACE(.*)")) {
                 continue;
             }
 
@@ -179,7 +178,7 @@ public abstract class InMemoryTableElement<TElement extends InMemoryElement> imp
             } else if (m instanceof AddPropertyValueMutation) {
                 AddPropertyValueMutation apvm = (AddPropertyValueMutation) m;
                 Object value = apvm.getValue();
-                value = loadIfStreamingPropertyValue(value);
+                value = loadIfStreamingPropertyValue(value, m.getTimestamp());
 
                 builder.propertyVisibility(m.getPropertyVisibility())
                         .timestamp(m.getTimestamp())
@@ -190,7 +189,7 @@ public abstract class InMemoryTableElement<TElement extends InMemoryElement> imp
 
                 // Property modifications use a soft delete immediately followed by an AddPropertyValueMutation.
                 // If the condition occurs, remove the delete event from the set.
-                if(historicalPropertyValues.size() > 0) {
+                if (historicalPropertyValues.size() > 0) {
                     HistoricalPropertyValue last = historicalPropertyValues.get(historicalPropertyValues.size() - 1);
                     if (propertyIdentifier.equals(last.getPropertyKey() + last.getPropertyName()) && last.isDeleted()) {
                         historicalPropertyValues.remove(historicalPropertyValues.size() - 1);
@@ -290,20 +289,20 @@ public abstract class InMemoryTableElement<TElement extends InMemoryElement> imp
         if (propertyKey == null) {
             return null;
         }
-        value = loadIfStreamingPropertyValue(value);
+        value = loadIfStreamingPropertyValue(value, timestamp);
         return new MutablePropertyImpl(propertyKey, propertyName, value, metadata, timestamp, hiddenVisibilities, visibility);
     }
 
-    private Object loadIfStreamingPropertyValue(Object value) {
+    private Object loadIfStreamingPropertyValue(Object value, long timestamp) {
         if (value instanceof StreamingPropertyValueRef) {
-            value = loadStreamingPropertyValue((StreamingPropertyValueRef) value);
+            value = loadStreamingPropertyValue((StreamingPropertyValueRef) value, timestamp);
         }
         return value;
     }
 
-    protected StreamingPropertyValue loadStreamingPropertyValue(StreamingPropertyValueRef<?> streamingPropertyValueRef) {
+    protected StreamingPropertyValue loadStreamingPropertyValue(StreamingPropertyValueRef<?> streamingPropertyValueRef, long timestamp) {
         // There's no need to have a Graph object for the pure in-memory implementation. Subclasses should override.
-        return streamingPropertyValueRef.toStreamingPropertyValue(null);
+        return streamingPropertyValueRef.toStreamingPropertyValue(null, timestamp);
     }
 
     private String toMapKey(PropertyMutation m) {
