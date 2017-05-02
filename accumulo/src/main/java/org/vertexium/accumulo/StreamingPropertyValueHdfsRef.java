@@ -22,7 +22,7 @@ public class StreamingPropertyValueHdfsRef extends StreamingPropertyValueRef<Acc
     }
 
     @Override
-    public StreamingPropertyValue toStreamingPropertyValue(AccumuloGraph graph) {
+    public StreamingPropertyValue toStreamingPropertyValue(AccumuloGraph graph, long timestamp) {
         return new StreamingPropertyValueHdfs(graph.getFileSystem(), new Path(graph.getDataDir(), getPath()), this);
     }
 }

@@ -177,7 +177,7 @@ public abstract class InMemoryTableElement<TElement extends InMemoryElement> imp
             } else if (m instanceof AddPropertyValueMutation) {
                 AddPropertyValueMutation apvm = (AddPropertyValueMutation) m;
                 Object value = apvm.getValue();
-                value = loadIfStreamingPropertyValue(value);
+                value = loadIfStreamingPropertyValue(value, m.getTimestamp());
 
                 builder.propertyVisibility(m.getPropertyVisibility())
                         .timestamp(m.getTimestamp())
@@ -284,20 +284,20 @@ public abstract class InMemoryTableElement<TElement extends InMemoryElement> imp
         if (propertyKey == null) {
             return null;
         }
-        value = loadIfStreamingPropertyValue(value);
+        value = loadIfStreamingPropertyValue(value, timestamp);
         return new MutablePropertyImpl(propertyKey, propertyName, value, metadata, timestamp, hiddenVisibilities, visibility, fetchHints);
     }
 
-    private Object loadIfStreamingPropertyValue(Object value) {
+    private Object loadIfStreamingPropertyValue(Object value, long timestamp) {
         if (value instanceof StreamingPropertyValueRef) {
-            value = loadStreamingPropertyValue((StreamingPropertyValueRef) value);
+            value = loadStreamingPropertyValue((StreamingPropertyValueRef) value, timestamp);
         }
         return value;
     }
 
-    protected StreamingPropertyValue loadStreamingPropertyValue(StreamingPropertyValueRef<?> streamingPropertyValueRef) {
+    protected StreamingPropertyValue loadStreamingPropertyValue(StreamingPropertyValueRef<?> streamingPropertyValueRef, long timestamp) {
         // There's no need to have a Graph object for the pure in-memory implementation. Subclasses should override.
-        return streamingPropertyValueRef.toStreamingPropertyValue(null);
+        return streamingPropertyValueRef.toStreamingPropertyValue(null, timestamp);
     }
 
     private String toMapKey(PropertyMutation m) {

@@ -39,5 +39,5 @@ public abstract class StreamingPropertyValueRef<T extends Graph> implements Seri
         return store;
     }
 
-    public abstract StreamingPropertyValue toStreamingPropertyValue(T graph);
+    public abstract StreamingPropertyValue toStreamingPropertyValue(T graph, long timestamp);
 }

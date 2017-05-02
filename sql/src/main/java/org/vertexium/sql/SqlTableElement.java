@@ -111,7 +111,7 @@ public abstract class SqlTableElement<TElement extends InMemoryElement>
 
     @SuppressWarnings("unchecked")
     @Override
-    protected StreamingPropertyValue loadStreamingPropertyValue(StreamingPropertyValueRef<?> streamingPropertyValueRef) {
-        return ((StreamingPropertyValueRef<SqlGraph>) streamingPropertyValueRef).toStreamingPropertyValue(graph);
+    protected StreamingPropertyValue loadStreamingPropertyValue(StreamingPropertyValueRef<?> streamingPropertyValueRef, long timestamp) {
+        return ((StreamingPropertyValueRef<SqlGraph>) streamingPropertyValueRef).toStreamingPropertyValue(graph, timestamp);
     }
 }

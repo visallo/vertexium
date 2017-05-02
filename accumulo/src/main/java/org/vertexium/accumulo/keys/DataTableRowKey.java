@@ -1,21 +1,25 @@
 package org.vertexium.accumulo.keys;
 
+import org.apache.commons.lang.StringUtils;
 import org.vertexium.Property;
 import org.vertexium.accumulo.iterator.model.KeyBase;
 
 public class DataTableRowKey extends KeyBase {
+    private static final int LEGACY_VALUE_SEPARATOR_COUNT = 3;
     private static final int PARTS_INDEX_ELEMENT_ROW_KEY = 0;
     private static final int PARTS_INDEX_PROPERTY_NAME = 1;
     private static final int PARTS_INDEX_PROPERTY_KEY = 2;
-    private static final int PARTS_INDEX_PROPERTY_TIMESTAMP = 3;
     private final String[] parts;
 
     public DataTableRowKey(String elementRowKey, Property property) {
+        this(elementRowKey, property.getKey(), property.getName());
+    }
+
+    public DataTableRowKey(String elementRowKey, String propertyKey, String propertyName) {
         this.parts = new String[]{
                 elementRowKey,
-                property.getName(),
-                property.getKey(),
-                Long.toString(property.getTimestamp())
+                propertyName,
+                propertyKey
         };
     }
 
@@ -25,8 +29,7 @@ public class DataTableRowKey extends KeyBase {
         assertNoValueSeparator(getPropertyKey());
         return getElementRowKey()
                 + VALUE_SEPARATOR + getPropertyName()
-                + VALUE_SEPARATOR + getPropertyKey()
-                + VALUE_SEPARATOR + getPropertyTimestamp();
+                + VALUE_SEPARATOR + getPropertyKey();
     }
 
     public String getElementRowKey() {
@@ -41,7 +44,10 @@ public class DataTableRowKey extends KeyBase {
         return parts[PARTS_INDEX_PROPERTY_KEY];
     }
 
-    public long getPropertyTimestamp() {
-        return Long.parseLong(parts[PARTS_INDEX_PROPERTY_TIMESTAMP]);
+    public static boolean isLegacy(String dataRowKey) {
+        if (StringUtils.countMatches(dataRowKey, "" + VALUE_SEPARATOR) == LEGACY_VALUE_SEPARATOR_COUNT) {
+            return true;
+        }
+        return false;
     }
 }
