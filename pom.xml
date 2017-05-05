@@ -5,7 +5,7 @@
         <groupId>org.sonatype.oss</groupId>
         <artifactId>oss-parent</artifactId>
         <version>7</version>
-        <relativePath />
+        <relativePath/>
     </parent>
 
     <groupId>org.vertexium</groupId>
@@ -113,6 +113,10 @@
         <mysql.version>5.1.36</mysql.version>
         <xstream.version>1.4.8</xstream.version>
         <mockito.version>1.9.5</mockito.version>
+
+        <!-- used by: cypher -->
+        <antlr4.version>4.7</antlr4.version>
+        <cucumber.version>1.2.5</cucumber.version>
     </properties>
 
     <dependencyManagement>
@@ -371,7 +375,6 @@
         <module>cli</module>
         <module>test</module>
         <module>security</module>
-        <module>dist</module>
 
         <module>accumulo</module>
         <module>accumulo-blueprints</module>
@@ -390,6 +393,8 @@
         <module>inmemory</module>
 
         <module>sql</module>
+
+        <module>cypher</module>
 
         <module>kryo-serializer</module>
         <module>xstream-serializer</module>
@@ -442,6 +447,7 @@
                             <skipTests>false</skipTests>
                             <reuseForks>false</reuseForks>
                             <argLine>-Xmx2048m</argLine>
+                            <argLine>-Dcucumber.options="--tags ~@todo"</argLine>
                             <includes>
                                 <include>**/*Test.java</include>
                             </includes>
@@ -465,6 +471,7 @@
                             <skipTests>true</skipTests>
                             <reuseForks>false</reuseForks>
                             <argLine>-Xmx2048m</argLine>
+                            <argLine>-Dcucumber.options="--tags ~@todo"</argLine>
                             <includes>
                                 <include>**/*Test.java</include>
                             </includes>
@@ -485,7 +492,7 @@
                             <systemProperties>
                                 <!-- This prevents log4j from initializing. Use for Travis CI, which fails the build
                                      when the log output is too long. -->
-                                <log4j.configuration> </log4j.configuration>
+                                <log4j.configuration></log4j.configuration>
                             </systemProperties>
                         </configuration>
                     </plugin>

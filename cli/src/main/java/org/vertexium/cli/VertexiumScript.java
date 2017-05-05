@@ -1,18 +1,29 @@
 package org.vertexium.cli;
 
+import com.google.common.base.Strings;
 import groovy.lang.Script;
 import org.apache.commons.io.IOUtils;
 import org.codehaus.groovy.runtime.InvokerHelper;
 import org.vertexium.*;
-import org.vertexium.cli.model.*;
+import org.vertexium.cli.model.LazyEdge;
+import org.vertexium.cli.model.LazyExtendedDataTable;
+import org.vertexium.cli.model.LazyProperty;
+import org.vertexium.cli.model.LazyVertex;
+import org.vertexium.cli.utils.ShellTableWriter;
+import org.vertexium.cypher.VertexiumCypherQuery;
+import org.vertexium.cypher.VertexiumCypherQueryContext;
+import org.vertexium.cypher.VertexiumCypherResult;
+import org.vertexium.cypher.ast.CypherCompilerContext;
 import org.vertexium.property.StreamingPropertyValue;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public class VertexiumScript extends Script {
     private static Graph graph;
@@ -46,28 +57,8 @@ public class VertexiumScript extends Script {
 
     @Override
     public Object getProperty(String property) {
-        if ("v".equals(property)) {
-            return new LazyVertexMap();
-        }
-
-        if ("e".equals(property)) {
-            return new LazyEdgeMap();
-        }
-
-        if ("g".equals(property)) {
-            return getGraph();
-        }
-
         if ("q".equals(property)) {
             return getGraph().query(getAuthorizations());
-        }
-
-        if ("auths".equals(property)) {
-            return getAuthorizations();
-        }
-
-        if ("time".equals(property)) {
-            return getTime();
         }
 
         if ("now".equals(property)) {
@@ -110,6 +101,13 @@ public class VertexiumScript extends Script {
 
     public static Map<String, LazyExtendedDataTable> getContextExtendedDataTables() {
         return contextExtendedDataTables;
+    }
+
+    public static Object executeCypher(String code) {
+        VertexiumCypherQueryContext ctx = new CliVertexiumCypherQueryContext(getGraph(), getAuthorizations());
+        CypherCompilerContext compilerContext = new CypherCompilerContext(ctx.getFunctions());
+        VertexiumCypherQuery query = VertexiumCypherQuery.parse(compilerContext, code);
+        return query.execute(ctx);
     }
 
     public static Map<String, LazyProperty> getContextProperties() {
@@ -232,7 +230,47 @@ public class VertexiumScript extends Script {
         if (obj instanceof Property) {
             return LazyProperty.toString((Property) obj, "property");
         }
+        if (obj instanceof VertexiumCypherResult) {
+            return vertexiumCypherResultToString((VertexiumCypherResult) obj);
+        }
         return InvokerHelper.toString(obj);
+    }
+
+    private static String vertexiumCypherResultToString(VertexiumCypherResult cypherResult) {
+        VertexiumScript.getContextProperties().clear();
+        AtomicInteger vertexIndex = new AtomicInteger(0);
+        AtomicInteger edgeIndex = new AtomicInteger(0);
+
+        VertexiumCypherQueryContext ctx = new CliVertexiumCypherQueryContext(getGraph(), getAuthorizations());
+        LinkedHashSet<String> columnNames = cypherResult.getColumnNames();
+        List<List<String>> table = new ArrayList<>();
+        table.add(new ArrayList<>(columnNames));
+        table.addAll(
+                cypherResult.stream()
+                        .map(row -> columnNames.stream()
+                                .map(columnName -> row.getByName(columnName))
+                                .map(o -> {
+                                    if (o instanceof Vertex) {
+                                        String vertexIndexString = "v" + vertexIndex.get();
+                                        LazyVertex lazyVertex = new LazyVertex(((Vertex) o).getId());
+                                        VertexiumScript.getContextVertices().put(vertexIndexString, lazyVertex);
+                                        vertexIndex.incrementAndGet();
+                                        return "@|bold " + vertexIndexString + ":|@ " + ((Vertex) o).getId();
+                                    }
+                                    if (o instanceof Edge) {
+                                        String edgeIndexString = "e" + edgeIndex.get();
+                                        LazyEdge lazyEdge = new LazyEdge(((Edge) o).getId());
+                                        VertexiumScript.getContextEdges().put(edgeIndexString, lazyEdge);
+                                        edgeIndex.incrementAndGet();
+                                        return "@|bold " + edgeIndexString + ":|@ " + ((Edge) o).getId();
+                                    }
+                                    return ctx.getResultWriter().columnValueToString(ctx, o);
+                                })
+                                .collect(Collectors.toList()))
+                        .collect(Collectors.toList())
+        );
+
+        return "\n" + ShellTableWriter.tableToString(table);
     }
 
     public static String getTimeString() {

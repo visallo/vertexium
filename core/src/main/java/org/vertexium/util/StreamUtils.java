@@ -7,11 +7,11 @@ import org.vertexium.Element;
 import org.vertexium.VertexiumException;
 import org.vertexium.query.Query;
 
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Spliterators;
+import java.util.*;
+import java.util.function.BiConsumer;
+import java.util.function.BinaryOperator;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -114,6 +114,20 @@ public class StreamUtils {
                 (l, r) -> l.putAll(r.build()),
                 ImmutableMap.Builder::build,
                 Collector.Characteristics.UNORDERED
+        );
+    }
+
+    public static <T> Collector<T, LinkedHashSet<T>, LinkedHashSet<T>> toLinkedHashSet() {
+        return Collector.of(
+                LinkedHashSet::new,
+                HashSet::add,
+                (a1, a2) -> {
+                    LinkedHashSet<T> results = new LinkedHashSet<T>();
+                    results.addAll(a1);
+                    results.addAll(a2);
+                    return results;
+                },
+                ts -> ts
         );
     }
 }

@@ -9,4 +9,7 @@ branches:
   only:
     - master
     - 2.5.x
-
+addons:
+  apt:
+    packages:
+      - oracle-java8-installer

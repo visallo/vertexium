@@ -25,6 +25,8 @@ import org.vertexium.GraphFactory;
 import org.vertexium.VertexiumException;
 import org.vertexium.Visibility;
 import org.vertexium.cli.commands.*;
+import org.vertexium.cli.model.LazyEdgeMap;
+import org.vertexium.cli.model.LazyVertexMap;
 import org.vertexium.query.GeoCompare;
 import org.vertexium.type.GeoPoint;
 import org.vertexium.util.ConfigurationUtils;
@@ -68,6 +70,9 @@ public class VertexiumShell {
     @Parameter(names = {"-t"}, description = "Time")
     private Long time = null;
 
+    @Parameter(names = {"--cypherLabelProperty"}, description = "Cypher label property")
+    private String cypherLabelProperty = null;
+
     @Parameter(description = "File names to execute")
     private List<String> fileNames = new ArrayList<>();
 
@@ -91,6 +96,8 @@ public class VertexiumShell {
         final IO io = new IO();
 
         Logger.io = io;
+
+        CliVertexiumCypherQueryContext.setLabelPropertyName(cypherLabelProperty);
 
         CompilerConfiguration compilerConfiguration = new CompilerConfiguration();
         VertexiumScript.setGraph(graph);
@@ -121,7 +128,15 @@ public class VertexiumShell {
         setGroovyShell(groovysh, groovyShell);
         setResultHook(groovysh, resultHook);
 
-        startGroovysh(evalString, fileNames);
+        Groovysh shell = createShell();
+        shell.execute("import " + Visibility.class.getPackage().getName() + ".*;");
+        shell.execute("v = new " + LazyVertexMap.class.getName() + "();");
+        shell.execute("e = new " + LazyEdgeMap.class.getName() + "();");
+        shell.execute("g = " + VertexiumScript.class.getName() + ".getGraph();");
+        shell.execute("auths = " + VertexiumScript.class.getName() + ".getAuthorizations();");
+        shell.execute("time = " + VertexiumScript.class.getName() + ".getTime();");
+        shell.execute("cypher = { code -> " + VertexiumScript.class.getName() + ".executeCypher(code) };");
+        startGroovysh(shell, evalString, fileNames);
         return 0;
     }
 
@@ -175,40 +190,40 @@ public class VertexiumShell {
         System.exit(result);
     }
 
-    /**
-     * @param evalString commands that will be executed at startup after loading files given with filenames param
-     * @param filenames  files that will be loaded at startup
-     */
-    protected void startGroovysh(String evalString, List<String> filenames) throws IOException {
-        int code;
+    private Groovysh createShell() {
         final Groovysh shell = getGroovysh();
 
         // Add a hook to display some status when shutting down...
-        Runtime.getRuntime().addShutdownHook(new Thread() {
-            @Override
-            public void run() {
-                //
-                // FIXME: We need to configure JLine to catch CTRL-C for us... Use gshell-io's InputPipe
-                //
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            //
+            // FIXME: We need to configure JLine to catch CTRL-C for us... Use gshell-io's InputPipe
+            //
 
-                if (shell.getHistory() != null) {
-                    try {
-                        shell.getHistory().flush();
-                    } catch (IOException e) {
-                        System.out.println("Could not flush history.");
-                    }
+            if (shell.getHistory() != null) {
+                try {
+                    shell.getHistory().flush();
+                } catch (IOException e) {
+                    System.out.println("Could not flush history.");
                 }
             }
-        });
-
-        SecurityManager psm = System.getSecurityManager();
-        System.setSecurityManager(new NoExitSecurityManager());
+        }));
 
         shell.register(new GetAuthsCommand(shell));
         shell.register(new SetAuthsCommand(shell));
         shell.register(new GetTimeCommand(shell));
         shell.register(new SetTimeCommand(shell));
         shell.register(new NowCommand(shell));
+        return shell;
+    }
+
+    /**
+     * @param evalString commands that will be executed at startup after loading files given with filenames param
+     * @param filenames  files that will be loaded at startup
+     */
+    protected void startGroovysh(Groovysh shell, String evalString, List<String> filenames) throws IOException {
+        int code;
+        SecurityManager psm = System.getSecurityManager();
+        System.setSecurityManager(new NoExitSecurityManager());
 
         System.out.println("  _    __          __            _");
         System.out.println(" | |  / /__  _____/ /____  _  __(_)_  ______ ___");
@@ -226,13 +241,14 @@ public class VertexiumShell {
         System.out.println("  g.query('apple', auths).vertices()[0]                    - execute a query for 'apple' and get the first match");
         System.out.println("");
         System.out.println("Global Properties:");
-        System.out.println("  g     - the Graph object");
-        System.out.println("  q     - a query object");
-        System.out.println("  auths - the currently set query authorizations");
-        System.out.println("  time  - the currently set query time");
-        System.out.println("  now   - the current time");
-        System.out.println("  v     - vertex map (usage: v['v1'])");
-        System.out.println("  e     - edge map (usage: e['e1'])");
+        System.out.println("  g      - the Graph object");
+        System.out.println("  q      - a query object");
+        System.out.println("  auths  - the currently set query authorizations");
+        System.out.println("  time   - the currently set query time");
+        System.out.println("  now    - the current time");
+        System.out.println("  v      - vertex map (usage: v['v1'])");
+        System.out.println("  e      - edge map (usage: e['e1'])");
+        System.out.println("  cypher - run a cypher query (usage: cypher(\"\"\"MATCH (n) RETURN n LIMIT 10\"\"\"))");
         try {
             shell.execute("import " + Visibility.class.getPackage().getName() + ".*;");
             shell.execute("import " + GeoPoint.class.getPackage().getName() + ".*;");
