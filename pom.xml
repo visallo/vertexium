@@ -375,7 +375,6 @@
         <module>cli</module>
         <module>test</module>
         <module>security</module>
-        <module>dist</module>
 
         <module>accumulo</module>
         <module>accumulo-blueprints</module>
