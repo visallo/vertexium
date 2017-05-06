@@ -22,7 +22,7 @@ import static org.vertexium.accumulo.ElementMutationBuilder.EMPTY_TEXT;
 
 /**
  * To run in the Vertexium CLI
- * 
+ * <p>
  * d = new org.vertexium.accumulo.tools.DeleteHistoricalLegacyStreamingPropertyValueData(g)
  * options = new org.vertexium.accumulo.tools.DeleteHistoricalLegacyStreamingPropertyValueData.Options()
  * options.setDryRun(false)
@@ -68,7 +68,7 @@ public class DeleteHistoricalLegacyStreamingPropertyValueData {
                         continue;
                     }
 
-                    if (lastRowIdPrefix == null || !rowId.startsWith(lastRowIdPrefix)) {
+                    if (lastRowIdPrefix == null || !isSameProperty(lastRowIdPrefix, rowId)) {
                         deleteRows(writer, rowsToDelete, options);
                         rowsToDelete.clear();
                         lastRowIdPrefix = rowIdParts[0]
@@ -87,6 +87,11 @@ public class DeleteHistoricalLegacyStreamingPropertyValueData {
         } catch (Exception ex) {
             throw new VertexiumException("Could not delete old SPV data", ex);
         }
+    }
+
+    private boolean isSameProperty(String lastRowIdPrefix, String rowId) {
+        return rowId.startsWith(lastRowIdPrefix + DataTableRowKey.VALUE_SEPARATOR)
+                || lastRowIdPrefix.equals(rowId);
     }
 
     private void deleteRows(BatchWriter writer, List<Key> rowsToDelete, Options options) throws MutationsRejectedException {

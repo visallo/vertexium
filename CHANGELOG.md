@@ -10,6 +10,10 @@
 * Fixed: Issue #135. Passing FetchHint.NONE when retrieving vertices from Accumulo using Elasticsearch will now properly return the vertices rather than an empty Iterable
 * Deprecated: EdgeCountScoringStrategy
 
+# v2.5.6
+
+* Fixed: DeleteHistoricalLegacyStreamingPropertyValueData with property keys having common prefix
+
 # v2.5.5
 
 * Changed: Removed timestamp from streaming property value row key. 
