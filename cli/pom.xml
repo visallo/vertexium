@@ -28,37 +28,6 @@
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.vertexium</groupId>
-            <artifactId>vertexium-kryo-serializer</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.vertexium</groupId>
-            <artifactId>vertexium-accumulo</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.vertexium</groupId>
-            <artifactId>vertexium-sql</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>mysql</groupId>
-            <artifactId>mysql-connector-java</artifactId>
-            <version>${mysql.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.vertexium</groupId>
-            <artifactId>vertexium-elasticsearch-singledocument</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.vertexium</groupId>
-            <artifactId>vertexium-test</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
             <groupId>org.json</groupId>
             <artifactId>json</artifactId>
         </dependency>
@@ -85,7 +54,73 @@
             <artifactId>jline</artifactId>
             <version>${jline.version}</version>
         </dependency>
+
+        <dependency>
+            <groupId>org.vertexium</groupId>
+            <artifactId>vertexium-test</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
+
+    <profiles>
+        <profile>
+            <id>cli-kryo</id>
+            <dependencies>
+                <dependency>
+                    <groupId>org.vertexium</groupId>
+                    <artifactId>vertexium-kryo-serializer</artifactId>
+                    <version>${project.version}</version>
+                </dependency>
+            </dependencies>
+        </profile>
+        <profile>
+            <id>cli-accumulo</id>
+            <dependencies>
+                <dependency>
+                    <groupId>org.vertexium</groupId>
+                    <artifactId>vertexium-accumulo</artifactId>
+                    <version>${project.version}</version>
+                </dependency>
+            </dependencies>
+        </profile>
+        <profile>
+            <id>cli-sql</id>
+            <dependencies>
+                <dependency>
+                    <groupId>org.vertexium</groupId>
+                    <artifactId>vertexium-sql</artifactId>
+                    <version>${project.version}</version>
+                </dependency>
+                <dependency>
+                    <groupId>mysql</groupId>
+                    <artifactId>mysql-connector-java</artifactId>
+                    <version>${mysql.version}</version>
+                </dependency>
+            </dependencies>
+        </profile>
+        <profile>
+            <id>cli-elasticsearch</id>
+            <dependencies>
+                <dependency>
+                    <groupId>org.vertexium</groupId>
+                    <artifactId>vertexium-elasticsearch-singledocument</artifactId>
+                    <version>${project.version}</version>
+                </dependency>
+            </dependencies>
+        </profile>
+        <profile>
+            <id>cli-elasticsearch2</id>
+            <dependencies>
+                <dependency>
+                    <groupId>org.vertexium</groupId>
+                    <artifactId>vertexium-elasticsearch2</artifactId>
+                    <version>${project.version}</version>
+                </dependency>
+            </dependencies>
+        </profile>
+    </profiles>
+
 
     <build>
         <plugins>

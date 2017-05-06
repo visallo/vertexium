@@ -5,6 +5,7 @@
 * Added: ability to store extended data rows on an element
 * Added: Elasticsearch 2.x support
 * Added: Cypher query support
+* Added: CLI: profiles to allow running the CLI from within an IDE
 * Changed: The default behavior of calling methods without fetch hints will use the default fetch hints specified in the graph configuration
 * Changed: removed dist module
 * Fixed: Issue #135. Passing FetchHint.NONE when retrieving vertices from Accumulo using Elasticsearch will now properly return the vertices rather than an empty Iterable
