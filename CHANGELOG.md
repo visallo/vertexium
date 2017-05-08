@@ -1,3 +1,7 @@
+# v2.5.6
+
+* Fixed: DeleteHistoricalLegacyStreamingPropertyValueData with property keys having common prefix
+
 # v2.5.5
 
 * Changed: Removed timestamp from streaming property value row key. 
