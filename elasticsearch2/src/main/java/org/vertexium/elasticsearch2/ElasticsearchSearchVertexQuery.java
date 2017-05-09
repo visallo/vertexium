@@ -3,21 +3,21 @@ package org.vertexium.elasticsearch2;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
-import org.vertexium.Authorizations;
-import org.vertexium.Direction;
-import org.vertexium.Graph;
-import org.vertexium.Vertex;
+import org.vertexium.*;
 import org.vertexium.elasticsearch2.score.ScoringStrategy;
 import org.vertexium.query.VertexQuery;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.stream.Stream;
 
-import static org.vertexium.util.IterableUtils.toArray;
+import static org.vertexium.util.StreamUtils.stream;
 
 public class ElasticsearchSearchVertexQuery extends ElasticsearchSearchQueryBase implements VertexQuery {
     private final Vertex sourceVertex;
+    private Direction direction = Direction.BOTH;
+    private String otherVertexId;
 
     public ElasticsearchSearchVertexQuery(
             Client client,
@@ -55,9 +55,36 @@ public class ElasticsearchSearchVertexQuery extends ElasticsearchSearchQueryBase
     }
 
     private QueryBuilder getEdgeFilter() {
-        QueryBuilder inVertexIdFilter = QueryBuilders.termQuery(Elasticsearch2SearchIndex.IN_VERTEX_ID_FIELD_NAME, sourceVertex.getId());
+        switch (direction) {
+            case BOTH:
+                QueryBuilder inVertexIdFilter = getDirectionInEdgeFilter();
+                QueryBuilder outVertexIdFilter = getDirectionOutEdgeFilter();
+                return QueryBuilders.orQuery(inVertexIdFilter, outVertexIdFilter);
+            case OUT:
+                return getDirectionOutEdgeFilter();
+            case IN:
+                return getDirectionInEdgeFilter();
+            default:
+                throw new VertexiumException("unexpected direction: " + direction);
+        }
+    }
+
+    private QueryBuilder getDirectionInEdgeFilter() {
+        QueryBuilder outVertexIdFilter = QueryBuilders.termQuery(Elasticsearch2SearchIndex.IN_VERTEX_ID_FIELD_NAME, sourceVertex.getId());
+        if (otherVertexId != null) {
+            QueryBuilder inVertexIdFilter = QueryBuilders.termQuery(Elasticsearch2SearchIndex.OUT_VERTEX_ID_FIELD_NAME, otherVertexId);
+            return QueryBuilders.andQuery(outVertexIdFilter, inVertexIdFilter);
+        }
+        return outVertexIdFilter;
+    }
+
+    private QueryBuilder getDirectionOutEdgeFilter() {
         QueryBuilder outVertexIdFilter = QueryBuilders.termQuery(Elasticsearch2SearchIndex.OUT_VERTEX_ID_FIELD_NAME, sourceVertex.getId());
-        return QueryBuilders.orQuery(inVertexIdFilter, outVertexIdFilter);
+        if (otherVertexId != null) {
+            QueryBuilder inVertexIdFilter = QueryBuilders.termQuery(Elasticsearch2SearchIndex.IN_VERTEX_ID_FIELD_NAME, otherVertexId);
+            return QueryBuilders.andQuery(outVertexIdFilter, inVertexIdFilter);
+        }
+        return outVertexIdFilter;
     }
 
     private QueryBuilder getVertexFilter(EnumSet<ElasticsearchDocumentType> elementTypes) {
@@ -66,12 +93,15 @@ public class ElasticsearchSearchVertexQuery extends ElasticsearchSearchQueryBase
         String[] edgeLabelsArray = edgeLabels == null || edgeLabels.size() == 0
                 ? null
                 : edgeLabels.toArray(new String[edgeLabels.size()]);
-        Iterable<String> vertexIds = sourceVertex.getVertexIds(
-                Direction.BOTH,
+        Stream<EdgeInfo> edgeInfos = stream(sourceVertex.getEdgeInfos(
+                direction,
                 edgeLabelsArray,
                 getParameters().getAuthorizations()
-        );
-        String[] ids = toArray(vertexIds, String.class);
+        ));
+        if (otherVertexId != null) {
+            edgeInfos = edgeInfos.filter(ei -> ei.getVertexId().equals(otherVertexId));
+        }
+        String[] ids = edgeInfos.map(EdgeInfo::getVertexId).toArray(String[]::new);
 
         if (elementTypes.contains(ElasticsearchDocumentType.VERTEX)) {
             filters.add(QueryBuilders.idsQuery().ids(ids));
@@ -95,5 +125,17 @@ public class ElasticsearchSearchVertexQuery extends ElasticsearchSearchQueryBase
         } else {
             return QueryBuilders.orQuery(filters.toArray(new QueryBuilder[filters.size()]));
         }
+    }
+
+    @Override
+    public VertexQuery hasDirection(Direction direction) {
+        this.direction = direction;
+        return this;
+    }
+
+    @Override
+    public VertexQuery hasOtherVertexId(String otherVertexId) {
+        this.otherVertexId = otherVertexId;
+        return this;
     }
 }

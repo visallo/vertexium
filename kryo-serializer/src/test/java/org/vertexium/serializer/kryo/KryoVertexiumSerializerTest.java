@@ -41,7 +41,7 @@ public class KryoVertexiumSerializerTest {
         Map<String, Object> config = new HashMap<>();
         config.put(QuickKryoVertexiumSerializer.CONFIG_COMPRESS, compress);
         shouldAssertTiming = !compress;
-        iterations = compress ? 1000 : 1000000;
+        iterations = compress ? 100 : 100000;
         graphConfiguration = new GraphConfiguration(config);
     }
 

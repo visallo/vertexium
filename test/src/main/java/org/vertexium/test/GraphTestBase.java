@@ -3033,6 +3033,14 @@ public abstract class GraphTestBase {
         vertices = v1.query(AUTHORIZATIONS_A).hasEdgeLabel("edgeA").vertices();
         Assert.assertEquals(1, count(vertices));
         org.vertexium.test.util.IterableUtils.assertContains(v2, vertices);
+
+        assertVertexIdsAnyOrder(v1.query(AUTHORIZATIONS_A).hasDirection(Direction.OUT).vertices(), "v2", "v3");
+        assertVertexIdsAnyOrder(v1.query(AUTHORIZATIONS_A).hasDirection(Direction.IN).vertices());
+        assertEdgeIdsAnyOrder(v1.query(AUTHORIZATIONS_A).hasDirection(Direction.OUT).edges(), "e v1->v2", "e v1->v3");
+        assertEdgeIdsAnyOrder(v1.query(AUTHORIZATIONS_A).hasDirection(Direction.IN).edges());
+
+        assertVertexIdsAnyOrder(v1.query(AUTHORIZATIONS_A).hasOtherVertexId("v2").vertices(), "v2");
+        assertEdgeIds(v1.query(AUTHORIZATIONS_A).hasOtherVertexId("v2").edges(), "e v1->v2");
     }
 
     @Test
