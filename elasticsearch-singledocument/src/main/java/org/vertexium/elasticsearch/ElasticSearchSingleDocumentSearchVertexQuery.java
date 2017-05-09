@@ -1,25 +1,23 @@
 package org.vertexium.elasticsearch;
 
-import com.google.common.collect.Lists;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.index.query.FilterBuilder;
 import org.elasticsearch.index.query.FilterBuilders;
-import org.elasticsearch.index.query.OrFilterBuilder;
-import org.vertexium.Authorizations;
-import org.vertexium.Direction;
-import org.vertexium.Graph;
-import org.vertexium.Vertex;
+import org.vertexium.*;
 import org.vertexium.elasticsearch.score.ScoringStrategy;
 import org.vertexium.query.VertexQuery;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.stream.Stream;
 
-import static org.vertexium.util.IterableUtils.toArray;
+import static org.vertexium.util.StreamUtils.stream;
 
 public class ElasticSearchSingleDocumentSearchVertexQuery extends ElasticSearchSingleDocumentSearchQueryBase implements VertexQuery {
     private final Vertex sourceVertex;
+    private Direction direction = Direction.BOTH;
+    private String otherVertexId;
 
     public ElasticSearchSingleDocumentSearchVertexQuery(
             Client client,
@@ -57,9 +55,36 @@ public class ElasticSearchSingleDocumentSearchVertexQuery extends ElasticSearchS
     }
 
     private FilterBuilder getEdgeFilter() {
-        FilterBuilder inVertexIdFilter = FilterBuilders.termFilter(ElasticsearchSingleDocumentSearchIndex.IN_VERTEX_ID_FIELD_NAME, sourceVertex.getId());
+        switch (direction) {
+            case BOTH:
+                FilterBuilder inVertexIdFilter = getDirectionInEdgeFilter();
+                FilterBuilder outVertexIdFilter = getDirectionOutEdgeFilter();
+                return FilterBuilders.orFilter(inVertexIdFilter, outVertexIdFilter);
+            case OUT:
+                return getDirectionOutEdgeFilter();
+            case IN:
+                return getDirectionInEdgeFilter();
+            default:
+                throw new VertexiumException("unexpected direction: " + direction);
+        }
+    }
+
+    private FilterBuilder getDirectionInEdgeFilter() {
+        FilterBuilder outVertexIdFilter = FilterBuilders.termFilter(ElasticsearchSingleDocumentSearchIndex.IN_VERTEX_ID_FIELD_NAME, sourceVertex.getId());
+        if (otherVertexId != null) {
+            FilterBuilder inVertexIdFilter = FilterBuilders.termFilter(ElasticsearchSingleDocumentSearchIndex.OUT_VERTEX_ID_FIELD_NAME, otherVertexId);
+            return FilterBuilders.andFilter(outVertexIdFilter, inVertexIdFilter);
+        }
+        return outVertexIdFilter;
+    }
+
+    private FilterBuilder getDirectionOutEdgeFilter() {
         FilterBuilder outVertexIdFilter = FilterBuilders.termFilter(ElasticsearchSingleDocumentSearchIndex.OUT_VERTEX_ID_FIELD_NAME, sourceVertex.getId());
-        return FilterBuilders.orFilter(inVertexIdFilter, outVertexIdFilter);
+        if (otherVertexId != null) {
+            FilterBuilder inVertexIdFilter = FilterBuilders.termFilter(ElasticsearchSingleDocumentSearchIndex.IN_VERTEX_ID_FIELD_NAME, otherVertexId);
+            return FilterBuilders.andFilter(outVertexIdFilter, inVertexIdFilter);
+        }
+        return outVertexIdFilter;
     }
 
     private FilterBuilder getVertexFilter(EnumSet<ElasticsearchDocumentType> elementTypes) {
@@ -68,12 +93,15 @@ public class ElasticSearchSingleDocumentSearchVertexQuery extends ElasticSearchS
         String[] edgeLabelsArray = edgeLabels == null || edgeLabels.size() == 0
                 ? null
                 : edgeLabels.toArray(new String[edgeLabels.size()]);
-        Iterable<String> vertexIds = sourceVertex.getVertexIds(
-                Direction.BOTH,
+        Stream<EdgeInfo> edgeInfos = stream(sourceVertex.getEdgeInfos(
+                direction,
                 edgeLabelsArray,
                 getParameters().getAuthorizations()
-        );
-        String[] ids = toArray(vertexIds, String.class);
+        ));
+        if (otherVertexId != null) {
+            edgeInfos = edgeInfos.filter(ei -> ei.getVertexId().equals(otherVertexId));
+        }
+        String[] ids = edgeInfos.map(EdgeInfo::getVertexId).toArray(String[]::new);
 
         if (elementTypes.contains(ElasticsearchDocumentType.VERTEX)) {
             filters.add(FilterBuilders.idsFilter().ids(ids));
@@ -97,5 +125,17 @@ public class ElasticSearchSingleDocumentSearchVertexQuery extends ElasticSearchS
         } else {
             return FilterBuilders.orFilter(filters.toArray(new FilterBuilder[filters.size()]));
         }
+    }
+
+    @Override
+    public VertexQuery hasDirection(Direction direction) {
+        this.direction = direction;
+        return this;
+    }
+
+    @Override
+    public VertexQuery hasOtherVertexId(String otherVertexId) {
+        this.otherVertexId = otherVertexId;
+        return this;
     }
 }

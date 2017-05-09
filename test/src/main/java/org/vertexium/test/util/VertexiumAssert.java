@@ -75,7 +75,15 @@ public class VertexiumAssert {
         }
     }
 
-    public static void assertEdgeIds(Iterable<Edge> edges, String[] ids) {
+    public static void assertEdgeIdsAnyOrder(Iterable<Edge> edges, String... expectedIds) {
+        List<Edge> sortedEdges = stream(edges)
+                .sorted(Comparator.comparing(Element::getId))
+                .collect(Collectors.toList());
+        Arrays.sort(expectedIds);
+        assertEdgeIds(sortedEdges, expectedIds);
+    }
+
+    public static void assertEdgeIds(Iterable<Edge> edges, String... ids) {
         List<Edge> edgesList = toList(edges);
         assertEquals("ids length mismatch", ids.length, edgesList.size());
         for (int i = 0; i < ids.length; i++) {
