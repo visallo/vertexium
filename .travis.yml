@@ -5,6 +5,7 @@ jdk:
 env:
   - TEST_EXECUTION_PROFILE=test
   - TEST_EXECUTION_PROFILE=accumulo-test
+  - TEST_EXECUTION_PROFILE=cypher-test
   - TEST_EXECUTION_PROFILE=elasticsearch-test
   - TEST_EXECUTION_PROFILE=multimodule-test
 branches:

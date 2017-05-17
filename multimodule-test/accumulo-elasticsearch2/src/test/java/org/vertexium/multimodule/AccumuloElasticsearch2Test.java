@@ -1,4 +1,4 @@
-package org.vertexium.test;
+package org.vertexium.multimodule;
 
 import org.apache.accumulo.core.client.AccumuloException;
 import org.apache.accumulo.core.client.AccumuloSecurityException;
@@ -10,13 +10,13 @@ import org.vertexium.accumulo.AccumuloGraph;
 import org.vertexium.accumulo.AccumuloGraphConfiguration;
 import org.vertexium.accumulo.AccumuloGraphTestBase;
 import org.vertexium.accumulo.AccumuloResource;
-import org.vertexium.elasticsearch.ElasticsearchResource;
+import org.vertexium.elasticsearch2.ElasticsearchResource;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.Map;
 
-public class AccumuloElasticsearchSingleDocumentTest extends AccumuloGraphTestBase {
+public class AccumuloElasticsearch2Test extends AccumuloGraphTestBase {
     @ClassRule
     public static final AccumuloResource accumuloResource = new AccumuloResource();
 
@@ -26,7 +26,6 @@ public class AccumuloElasticsearchSingleDocumentTest extends AccumuloGraphTestBa
     @Before
     @Override
     public void before() throws Exception {
-        accumuloResource.dropGraph();
         elasticsearchResource.dropIndices();
         super.before();
     }
@@ -57,6 +56,11 @@ public class AccumuloElasticsearchSingleDocumentTest extends AccumuloGraphTestBa
     @Override
     protected boolean isLuceneQueriesSupported() {
         return true;
+    }
+
+    @Override
+    protected boolean isFieldNamesInQuerySupported() {
+        return false;
     }
 
     @Override
