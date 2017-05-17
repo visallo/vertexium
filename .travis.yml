@@ -4,6 +4,8 @@ jdk:
   - oraclejdk8
 env:
   - TEST_EXECUTION_PROFILE=test
+  - TEST_EXECUTION_PROFILE=accumulo-test
+  - TEST_EXECUTION_PROFILE=elasticsearch-test
   - TEST_EXECUTION_PROFILE=multimodule-test
 branches:
   only:
