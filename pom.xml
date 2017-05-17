@@ -441,7 +441,7 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-surefire-plugin</artifactId>
-                        <configuration combine.self="override">
+                        <configuration>
                             <systemProperties>
                                 <!-- This prevents log4j from initializing. Use for Travis CI, which fails the build
                                      when the log output is too long. -->
@@ -460,7 +460,7 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-surefire-plugin</artifactId>
-                        <configuration combine.self="override">
+                        <configuration>
                             <skipTests>false</skipTests>
                             <excludes>
                                 <exclude>%regex[.*(multimodule|cypher|accumulo|elasticsearch).*]</exclude>
@@ -477,7 +477,7 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-surefire-plugin</artifactId>
-                        <configuration combine.self="override">
+                        <configuration>
                             <skipTests>false</skipTests>
                             <includes>
                                 <include>%regex[.*(accumulo).*Test.*]</include>
@@ -497,7 +497,7 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-surefire-plugin</artifactId>
-                        <configuration combine.self="override">
+                        <configuration>
                             <skipTests>false</skipTests>
                             <includes>
                                 <include>%regex[.*(cypher).*Test.*]</include>
@@ -517,7 +517,7 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-surefire-plugin</artifactId>
-                        <configuration combine.self="override">
+                        <configuration>
                             <skipTests>false</skipTests>
                             <includes>
                                 <include>%regex[.*(elasticsearch).*Test.*]</include>
@@ -537,7 +537,7 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-surefire-plugin</artifactId>
-                        <configuration combine.self="override">
+                        <configuration>
                             <skipTests>false</skipTests>
                             <includes>
                                 <include>%regex[.*(multimodule).*Test.*]</include>
