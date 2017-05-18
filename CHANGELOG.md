@@ -1,3 +1,7 @@
+# v2.6.1
+
+* Fixed: SQL SPV loading when timestamp is out of sync with property
+
 # v2.6.0
 
 * Added: ability to query for vertex/edge/element ids rather than the elements themselves
