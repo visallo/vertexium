@@ -1924,6 +1924,25 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    public void testGraphQueryWithBoolean() {
+        graph.defineProperty("boolean").dataType(Boolean.class).define();
+
+        graph.prepareVertex("v1", VISIBILITY_A)
+                .addPropertyValue("k1", "boolean", true, VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
+        graph.flush();
+
+        QueryResultsIterable<Vertex> vertices = graph.query("zzzzz", AUTHORIZATIONS_A).vertices();
+        assertResultsCount(0, 0, vertices);
+
+        vertices = graph.query(AUTHORIZATIONS_A).has("boolean", true).vertices();
+        assertResultsCount(1, 1, vertices);
+
+        vertices = graph.query(AUTHORIZATIONS_A).has("boolean", false).vertices();
+        assertResultsCount(0, 0, vertices);
+    }
+
+    @Test
     public void testGraphQueryWithFetchHints() {
         graph.prepareVertex("v1", VISIBILITY_A)
                 .addPropertyValue("k1", "name", "joe", VISIBILITY_A)

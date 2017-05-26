@@ -19,7 +19,6 @@ import org.elasticsearch.common.unit.Fuzziness;
 import org.elasticsearch.common.util.LocaleUtils;
 import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.index.analysis.NamedAnalyzer;
-import org.elasticsearch.index.fielddata.FieldDataType;
 import org.elasticsearch.index.mapper.DocumentMapper;
 import org.elasticsearch.index.mapper.FieldMapper;
 import org.elasticsearch.index.query.QueryParseContext;
@@ -29,6 +28,7 @@ import org.elasticsearch.index.query.support.QueryParsers;
 import org.joda.time.DateTimeZone;
 
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.util.*;
 
 import static org.elasticsearch.common.lucene.search.Queries.fixNegativeQueryIfNeeded;
@@ -40,11 +40,19 @@ public class VertexiumQueryStringQueryParser implements QueryParser {
 
     private final boolean defaultAnalyzeWildcard;
     private final boolean defaultAllowLeadingWildcard;
+    private final Method fieldMapperContentTypeMethod;
 
     @Inject
     public VertexiumQueryStringQueryParser(Settings settings) {
         this.defaultAnalyzeWildcard = settings.getAsBoolean("indices.query.query_string.analyze_wildcard", QueryParserSettings.DEFAULT_ANALYZE_WILDCARD);
         this.defaultAllowLeadingWildcard = settings.getAsBoolean("indices.query.query_string.allowLeadingWildcard", QueryParserSettings.DEFAULT_ALLOW_LEADING_WILDCARD);
+
+        try {
+            fieldMapperContentTypeMethod = FieldMapper.class.getDeclaredMethod("contentType");
+            fieldMapperContentTypeMethod.setAccessible(true);
+        } catch (NoSuchMethodException ex) {
+            throw new RuntimeException("Could not find method 'contentType' on class " + FieldMapper.class.getName(), ex);
+        }
     }
 
     @Override
@@ -272,14 +280,14 @@ public class VertexiumQueryStringQueryParser implements QueryParser {
             FieldNameToVisibilityMap fieldNameToVisibilityMap,
             String[] authorizations
     ) {
-        Map<String, FieldDataType> fieldNameToDataType = getFieldTypes(documentMapper);
+        Map<String, String> fieldNameToDataType = getFieldTypes(documentMapper);
         Set<String> fields = new HashSet<>();
         for (String fieldName : fieldNameToVisibilityMap.getFieldNames()) {
             if (isReservedFieldName(fieldName)) {
                 continue;
             }
 
-            FieldDataType fieldDataType = fieldNameToDataType.get(fieldName);
+            String fieldDataType = fieldNameToDataType.get(fieldName);
             if (!isQueryableFieldType(fieldDataType)) {
                 continue;
             }
@@ -295,12 +303,13 @@ public class VertexiumQueryStringQueryParser implements QueryParser {
         return fieldName.startsWith("__");
     }
 
-    private boolean isQueryableFieldType(FieldDataType fieldDataType) {
-        switch (fieldDataType.getType()) {
+    private boolean isQueryableFieldType(String fieldDataType) {
+        switch (fieldDataType) {
             case "string":
                 return true;
             case "long":
             case "int":
+            case "boolean":
                 return false;
             default:
                 return false;
@@ -316,10 +325,16 @@ public class VertexiumQueryStringQueryParser implements QueryParser {
         return authorizationsSet.toArray(new String[authorizationsSet.size()]);
     }
 
-    private Map<String, FieldDataType> getFieldTypes(DocumentMapper documentMapper) {
-        Map<String, FieldDataType> fieldNameToDataType = new HashMap<>();
+    private Map<String, String> getFieldTypes(DocumentMapper documentMapper) {
+        Map<String, String> fieldNameToDataType = new HashMap<>();
         for (FieldMapper fieldMapper : documentMapper.mappers()) {
-            fieldNameToDataType.put(fieldMapper.name(), fieldMapper.fieldType().fieldDataType());
+            String type;
+            try {
+                type = (String) fieldMapperContentTypeMethod.invoke(fieldMapper);
+            } catch (Exception ex) {
+                throw new RuntimeException("Could not find content type", ex);
+            }
+            fieldNameToDataType.put(fieldMapper.name(), type);
         }
         return fieldNameToDataType;
     }

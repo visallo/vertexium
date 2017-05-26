@@ -1,3 +1,8 @@
+# v2.6.1
+
+* Fixed: SQL SPV loading when timestamp is out of sync with property
+* Fixed: Elasticsearch plugin handling boolean properties in query
+
 # v2.6.0
 
 * Added: ability to query for vertex/edge/element ids rather than the elements themselves
