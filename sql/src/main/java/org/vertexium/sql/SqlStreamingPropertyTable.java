@@ -30,8 +30,14 @@ class SqlStreamingPropertyTable {
         this.dbi = new DBI(dataSource);
     }
 
-    public StreamingPropertyValueRef put(String elementId, String key, String name, Visibility visibility,
-                                         long timestamp, StreamingPropertyValue value) {
+    public StreamingPropertyValueRef put(
+            String elementId,
+            String key,
+            String name,
+            Visibility visibility,
+            long timestamp,
+            StreamingPropertyValue value
+    ) {
         StreamAndLength streamAndLength = streamAndLength(value.getInputStream(), value.getLength());
         String id = makeId(elementId, key, name, visibility, timestamp);
         try (Handle handle = dbi.open()) {
@@ -43,15 +49,19 @@ class SqlStreamingPropertyTable {
 
             if (count == 0) {
                 handle.execute(String.format(
-                                "insert into %s (%s, %s, %s, %s) values (?, ?, ?, ?)",
-                                tableName, KEY_COLUMN_NAME, VALUE_COLUMN_NAME, VALUE_TYPE_COLUMN_NAME,
-                                VALUE_LENGTH_COLUMN_NAME),
-                        id, streamAndLength.inputStream, value.getValueType().getName(), streamAndLength.length);
+                        "insert into %s (%s, %s, %s, %s) values (?, ?, ?, ?)",
+                        tableName, KEY_COLUMN_NAME, VALUE_COLUMN_NAME, VALUE_TYPE_COLUMN_NAME,
+                        VALUE_LENGTH_COLUMN_NAME
+                               ),
+                               id, streamAndLength.inputStream, value.getValueType().getName(), streamAndLength.length
+                );
             } else {
                 handle.execute(String.format(
-                                "update %s set %s = ?, %s = ? where %s = ?",
-                                tableName, VALUE_COLUMN_NAME, VALUE_LENGTH_COLUMN_NAME, KEY_COLUMN_NAME),
-                        streamAndLength.inputStream, streamAndLength.length, id);
+                        "update %s set %s = ?, %s = ? where %s = ?",
+                        tableName, VALUE_COLUMN_NAME, VALUE_LENGTH_COLUMN_NAME, KEY_COLUMN_NAME
+                               ),
+                               streamAndLength.inputStream, streamAndLength.length, id
+                );
             }
             return new SqlStreamingPropertyValueRef(value, elementId, key, name, visibility, timestamp);
         } finally {
@@ -63,18 +73,35 @@ class SqlStreamingPropertyTable {
         }
     }
 
-    public StreamingPropertyValue get(String elementId, String key, String name, Visibility visibility,
-                                      long timestamp) {
+    public StreamingPropertyValue get(
+            String elementId,
+            String key,
+            String name,
+            Visibility visibility,
+            long timestamp
+    ) {
         try (Handle handle = dbi.open()) {
             Row row = handle
                     .createQuery(String.format(
                             "select %s, %s from %s where %s = ?",
-                            VALUE_TYPE_COLUMN_NAME, VALUE_LENGTH_COLUMN_NAME, tableName, KEY_COLUMN_NAME))
+                            VALUE_TYPE_COLUMN_NAME, VALUE_LENGTH_COLUMN_NAME, tableName, KEY_COLUMN_NAME
+                    ))
                     .bind(0, makeId(elementId, key, name, visibility, timestamp))
                     .map(new RowResultSetMapper()).first();
+            if (row == null) {
+                return null;
+            }
 
-            return new SqlStreamingPropertyValue(row.valueType, row.length, dbi, tableName, elementId, key,
-                    name, visibility, timestamp);
+            return new SqlStreamingPropertyValue(
+                    row.valueType,
+                    row.length,
+                    dbi,
+                    tableName,
+                    elementId, key,
+                    name,
+                    visibility,
+                    timestamp
+            );
         }
     }
 
@@ -117,6 +144,7 @@ class SqlStreamingPropertyTable {
     private static final class StreamAndLength {
         final InputStream inputStream;
         final long length;
+
         StreamAndLength(InputStream inputStream, long length) {
             this.inputStream = inputStream;
             this.length = length;

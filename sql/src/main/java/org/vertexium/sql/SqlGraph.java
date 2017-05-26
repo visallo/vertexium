@@ -252,8 +252,11 @@ public class SqlGraph extends InMemoryGraph {
 
     @Override
     protected StreamingPropertyValueRef saveStreamingPropertyValue(
-            String elementId, String key, String name,
-            Visibility visibility, long timestamp,
+            String elementId,
+            String key,
+            String name,
+            Visibility visibility,
+            long timestamp,
             StreamingPropertyValue value
     ) {
         return streamingPropertyTable.put(elementId, key, name, visibility, timestamp, value);

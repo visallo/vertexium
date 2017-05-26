@@ -667,8 +667,13 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
         }
 
         if (value instanceof StreamingPropertyValue) {
-            value = saveStreamingPropertyValue(element.getId(), key, name, visibility, timestamp,
-                                               (StreamingPropertyValue) value
+            value = saveStreamingPropertyValue(
+                    element.getId(),
+                    key,
+                    name,
+                    visibility,
+                    timestamp,
+                    (StreamingPropertyValue) value
             );
         }
         inMemoryTableElement.appendAddPropertyValueMutation(key, name, value, metadata, visibility, timestamp);
