@@ -5,13 +5,13 @@
         <groupId>org.sonatype.oss</groupId>
         <artifactId>oss-parent</artifactId>
         <version>7</version>
-        <relativePath/>
+        <relativePath />
     </parent>
 
     <groupId>org.vertexium</groupId>
     <artifactId>vertexium-root</artifactId>
     <packaging>pom</packaging>
-    <version>2.6.1-SNAPSHOT</version>
+    <version>2.6.1</version>
     <name>Vertexium</name>
     <description>
         Vertexium is an API to manipulate graphs, similar to blueprints. Unlike blueprints, every Vertexium method
@@ -36,7 +36,7 @@
         <url>scm:git:git@github.com:v5analytics/vertexium.git</url>
         <connection>scm:git:git@github.com:v5analytics/vertexium.git</connection>
         <developerConnection>scm:git:git@github.com:v5analytics/vertexium.git</developerConnection>
-        <tag>HEAD</tag>
+        <tag>vertexium-root-2.6.1</tag>
     </scm>
 
     <issueManagement>
@@ -445,7 +445,7 @@
                             <systemProperties>
                                 <!-- This prevents log4j from initializing. Use for Travis CI, which fails the build
                                      when the log output is too long. -->
-                                <log4j.configuration/>
+                                <log4j.configuration />
                             </systemProperties>
                         </configuration>
                     </plugin>
