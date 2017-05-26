@@ -1,3 +1,7 @@
+# v2.5.7
+
+* Fixed: Elasticsearch plugin handling boolean properties in query
+
 # v2.5.6
 
 * Fixed: DeleteHistoricalLegacyStreamingPropertyValueData with property keys having common prefix
