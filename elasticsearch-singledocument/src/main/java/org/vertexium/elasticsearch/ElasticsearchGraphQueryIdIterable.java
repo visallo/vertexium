@@ -2,7 +2,6 @@ package org.vertexium.elasticsearch;
 
 import org.elasticsearch.search.SearchHit;
 import org.vertexium.elasticsearch.utils.ElasticsearchExtendedDataIdUtils;
-import org.vertexium.elasticsearch.utils.PagingIterable;
 import org.vertexium.query.AggregationResult;
 import org.vertexium.query.QueryResultsIterable;
 import org.vertexium.util.CloseableUtils;
@@ -15,9 +14,9 @@ import java.io.IOException;
 public class ElasticsearchGraphQueryIdIterable<T> extends ConvertingIterable<SearchHit, T> implements QueryResultsIterable<T> {
     private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(ElasticsearchGraphQueryIdIterable.class);
 
-    private final PagingIterable<SearchHit> iterable;
+    private final QueryResultsIterable<SearchHit> iterable;
 
-    public ElasticsearchGraphQueryIdIterable(PagingIterable<SearchHit> iterable) {
+    public ElasticsearchGraphQueryIdIterable(QueryResultsIterable<SearchHit> iterable) {
         super(iterable);
         this.iterable = iterable;
     }

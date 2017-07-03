@@ -1,5 +1,6 @@
 package org.vertexium.elasticsearch;
 
+import org.elasticsearch.common.unit.TimeValue;
 import org.vertexium.Graph;
 import org.vertexium.GraphConfiguration;
 import org.vertexium.VertexiumException;
@@ -47,6 +48,10 @@ public class ElasticSearchSearchIndexConfiguration {
     public static final String IN_PROCESS_ADDITIONAL_CONFIG_PREFIX = GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + "inProcessNode.additionalConfig.";
     public static final String QUERY_PAGE_SIZE = "queryPageSize";
     public static final int QUERY_PAGE_SIZE_DEFAULT = 500;
+    public static final String QUERY_PAGING_LIMIT = "queryPagingLimit";
+    public static final int QUERY_PAGING_LIMIT_DEFAULT = 500;
+    public static final String QUERY_SCROLL_KEEP_ALIVE = "queryScrollKeepAlive";
+    public static final String QUERY_SCROLL_KEEP_ALIVE_DEFAULT = "5m";
     public static final String ES_CONFIG_FILE = "elasticsearch.configFile";
     public static final String ES_CONFIG_FILE_DEFAULT = null;
 
@@ -168,6 +173,15 @@ public class ElasticSearchSearchIndexConfiguration {
 
     public int getQueryPageSize() {
         return graphConfiguration.getInt(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + QUERY_PAGE_SIZE, QUERY_PAGE_SIZE_DEFAULT);
+    }
+
+    public int getPagingLimit() {
+        return graphConfiguration.getInt(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + QUERY_PAGING_LIMIT, QUERY_PAGING_LIMIT_DEFAULT);
+    }
+
+    public TimeValue getScrollKeepAlive() {
+        String value = graphConfiguration.getString(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + QUERY_SCROLL_KEEP_ALIVE, QUERY_SCROLL_KEEP_ALIVE_DEFAULT);
+        return TimeValue.parseTimeValue(value, null);
     }
 
     public File getEsConfigFile() {

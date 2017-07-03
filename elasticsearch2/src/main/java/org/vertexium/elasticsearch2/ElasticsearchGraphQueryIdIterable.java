@@ -2,7 +2,6 @@ package org.vertexium.elasticsearch2;
 
 import org.elasticsearch.search.SearchHit;
 import org.vertexium.elasticsearch2.utils.ElasticsearchExtendedDataIdUtils;
-import org.vertexium.elasticsearch2.utils.PagingIterable;
 import org.vertexium.query.AggregationResult;
 import org.vertexium.query.QueryResultsIterable;
 import org.vertexium.util.CloseableUtils;
@@ -18,9 +17,9 @@ public class ElasticsearchGraphQueryIdIterable<T>
 
     private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(ElasticsearchGraphQueryIdIterable.class);
 
-    private final PagingIterable<SearchHit> iterable;
+    private final QueryResultsIterable<SearchHit> iterable;
 
-    public ElasticsearchGraphQueryIdIterable(PagingIterable<SearchHit> iterable) {
+    public ElasticsearchGraphQueryIdIterable(QueryResultsIterable<SearchHit> iterable) {
         super(iterable);
         this.iterable = iterable;
     }
@@ -45,12 +44,12 @@ public class ElasticsearchGraphQueryIdIterable<T>
             switch (dt) {
                 case VERTEX:
                 case EDGE:
-                    convertedId = (T)id;
-                break;
+                    convertedId = (T) id;
+                    break;
                 case VERTEX_EXTENDED_DATA:
                 case EDGE_EXTENDED_DATA:
-                    convertedId = (T)ElasticsearchExtendedDataIdUtils.fromSearchHit(hit);
-                break;
+                    convertedId = (T) ElasticsearchExtendedDataIdUtils.fromSearchHit(hit);
+                    break;
                 default:
                     LOGGER.warn("Unhandled document type: %s", dt);
                     break;

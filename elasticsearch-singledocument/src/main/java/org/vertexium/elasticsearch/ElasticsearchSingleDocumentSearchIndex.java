@@ -922,9 +922,12 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
                 getClient(),
                 graph,
                 queryString,
-                getConfig().getScoringStrategy(),
-                getIndexSelectionStrategy(),
-                getConfig().getQueryPageSize(),
+                new ElasticSearchSingleDocumentSearchQueryBase.Options()
+                        .setScoringStrategy(getConfig().getScoringStrategy())
+                        .setIndexSelectionStrategy(getIndexSelectionStrategy())
+                        .setPageSize(getConfig().getQueryPageSize())
+                        .setPagingLimit(getConfig().getPagingLimit())
+                        .setScrollKeepAlive(getConfig().getScrollKeepAlive()),
                 authorizations
         );
     }
@@ -936,9 +939,12 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
                 graph,
                 vertex,
                 queryString,
-                getConfig().getScoringStrategy(),
-                getIndexSelectionStrategy(),
-                getConfig().getQueryPageSize(),
+                new ElasticSearchSingleDocumentSearchVertexQuery.Options()
+                        .setScoringStrategy(getConfig().getScoringStrategy())
+                        .setIndexSelectionStrategy(getIndexSelectionStrategy())
+                        .setPageSize(getConfig().getQueryPageSize())
+                        .setPagingLimit(getConfig().getPagingLimit())
+                        .setScrollKeepAlive(getConfig().getScrollKeepAlive()),
                 authorizations
         );
     }
@@ -950,9 +956,12 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
                 graph,
                 similarToFields,
                 similarToText,
-                getConfig().getScoringStrategy(),
-                getIndexSelectionStrategy(),
-                getConfig().getQueryPageSize(),
+                new ElasticSearchSingleDocumentSearchQueryBase.Options()
+                        .setScoringStrategy(getConfig().getScoringStrategy())
+                        .setIndexSelectionStrategy(getIndexSelectionStrategy())
+                        .setPageSize(getConfig().getQueryPageSize())
+                        .setPagingLimit(getConfig().getPagingLimit())
+                        .setScrollKeepAlive(getConfig().getScrollKeepAlive()),
                 authorizations
         );
     }
@@ -1720,10 +1729,10 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
     @SuppressWarnings("unused")
     protected void createIndex(String indexName) throws IOException {
         CreateIndexResponse createResponse = client.admin().indices().prepareCreate(indexName)
-                    .setSettings(ImmutableSettings.settingsBuilder()
-                                         .put("number_of_shards", getConfig().getNumberOfShards())
-                                         .put("number_of_replicas", getConfig().getNumberOfReplicas())
-                    )
+                .setSettings(ImmutableSettings.settingsBuilder()
+                                     .put("number_of_shards", getConfig().getNumberOfShards())
+                                     .put("number_of_replicas", getConfig().getNumberOfReplicas())
+                )
                 .execute().actionGet();
 
         ClusterHealthResponse health = client.admin().cluster().prepareHealth(indexName)

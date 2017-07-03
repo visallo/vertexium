@@ -4,7 +4,6 @@ import org.elasticsearch.client.Client;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.vertexium.*;
-import org.vertexium.elasticsearch2.score.ScoringStrategy;
 import org.vertexium.query.VertexQuery;
 
 import java.util.ArrayList;
@@ -24,12 +23,10 @@ public class ElasticsearchSearchVertexQuery extends ElasticsearchSearchQueryBase
             Graph graph,
             Vertex sourceVertex,
             String queryString,
-            ScoringStrategy scoringStrategy,
-            IndexSelectionStrategy indexSelectionStrategy,
-            int pageSize,
+            Options options,
             Authorizations authorizations
     ) {
-        super(client, graph, queryString, scoringStrategy, indexSelectionStrategy, pageSize, authorizations);
+        super(client, graph, queryString, options, authorizations);
         this.sourceVertex = sourceVertex;
     }
 

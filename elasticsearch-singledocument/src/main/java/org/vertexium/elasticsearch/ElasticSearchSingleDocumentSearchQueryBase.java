@@ -13,6 +13,7 @@ import org.elasticsearch.client.Client;
 import org.elasticsearch.common.geo.builders.ShapeBuilder;
 import org.elasticsearch.common.joda.time.DateTime;
 import org.elasticsearch.common.unit.DistanceUnit;
+import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.*;
 import org.elasticsearch.indices.IndexMissingException;
 import org.elasticsearch.search.SearchHit;
@@ -33,6 +34,7 @@ import org.elasticsearch.search.sort.SortOrder;
 import org.vertexium.*;
 import org.vertexium.elasticsearch.score.ScoringStrategy;
 import org.vertexium.elasticsearch.utils.ElasticsearchExtendedDataIdUtils;
+import org.vertexium.elasticsearch.utils.InfiniteScrollIterable;
 import org.vertexium.elasticsearch.utils.PagingIterable;
 import org.vertexium.query.*;
 import org.vertexium.type.GeoCircle;
@@ -62,14 +64,14 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
     private final ScoringStrategy scoringStrategy;
     private final IndexSelectionStrategy indexSelectionStrategy;
     private final int pageSize;
+    private final int pagingLimit;
+    private final TimeValue scrollKeepAlive;
 
     public ElasticSearchSingleDocumentSearchQueryBase(
             Client client,
             Graph graph,
             String queryString,
-            ScoringStrategy scoringStrategy,
-            IndexSelectionStrategy indexSelectionStrategy,
-            int pageSize,
+            Options options,
             Authorizations authorizations
     ) {
         super(graph, queryString, authorizations);
@@ -77,10 +79,12 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
         this.evaluateQueryString = false;
         this.evaluateHasContainers = true;
         this.evaluateSortContainers = false;
-        this.pageSize = pageSize;
-        this.scoringStrategy = scoringStrategy;
-        this.analyzer = new StandardAnalyzer();
-        this.indexSelectionStrategy = indexSelectionStrategy;
+        this.pageSize = options.pageSize;
+        this.scoringStrategy = options.scoringStrategy;
+        this.indexSelectionStrategy = options.indexSelectionStrategy;
+        this.scrollKeepAlive = options.scrollKeepAlive;
+        this.pagingLimit = options.pagingLimit;
+        this.analyzer = options.analyzer;
     }
 
     public ElasticSearchSingleDocumentSearchQueryBase(
@@ -88,9 +92,7 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
             Graph graph,
             String[] similarToFields,
             String similarToText,
-            ScoringStrategy scoringStrategy,
-            IndexSelectionStrategy indexSelectionStrategy,
-            int pageSize,
+            Options options,
             Authorizations authorizations
     ) {
         super(graph, similarToFields, similarToText, authorizations);
@@ -98,10 +100,12 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
         this.evaluateQueryString = false;
         this.evaluateHasContainers = true;
         this.evaluateSortContainers = false;
-        this.pageSize = pageSize;
-        this.scoringStrategy = scoringStrategy;
-        this.analyzer = new StandardAnalyzer();
-        this.indexSelectionStrategy = indexSelectionStrategy;
+        this.pageSize = options.pageSize;
+        this.scoringStrategy = options.scoringStrategy;
+        this.indexSelectionStrategy = options.indexSelectionStrategy;
+        this.scrollKeepAlive = options.scrollKeepAlive;
+        this.pagingLimit = options.pagingLimit;
+        this.analyzer = options.analyzer;
     }
 
     @Override
@@ -162,38 +166,6 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
             return true;
         }
         return false;
-    }
-
-    protected SearchRequestBuilder getSearchRequestBuilder(
-            List<FilterBuilder> filters,
-            QueryBuilder queryBuilder,
-            EnumSet<ElasticsearchDocumentType> elementType,
-            int skip,
-            int limit,
-            boolean includeAggregations
-    ) {
-        AndFilterBuilder filterBuilder = getFilterBuilder(filters);
-        String[] indicesToQuery = getIndexSelectionStrategy().getIndicesToQuery(this, elementType);
-        if (QUERY_LOGGER.isTraceEnabled()) {
-            QUERY_LOGGER.trace("indicesToQuery: %s", Joiner.on(", ").join(indicesToQuery));
-        }
-        SearchRequestBuilder searchRequestBuilder = getClient()
-                .prepareSearch(indicesToQuery)
-                .setTypes(ElasticsearchSingleDocumentSearchIndex.ELEMENT_TYPE)
-                .setQuery(QueryBuilders.filteredQuery(queryBuilder, filterBuilder))
-                .addField(ElasticsearchSingleDocumentSearchIndex.ELEMENT_TYPE_FIELD_NAME)
-                .addField(ElasticsearchSingleDocumentSearchIndex.EXTENDED_DATA_ELEMENT_ID_FIELD_NAME)
-                .addField(ElasticsearchSingleDocumentSearchIndex.EXTENDED_DATA_TABLE_NAME_FIELD_NAME)
-                .addField(ElasticsearchSingleDocumentSearchIndex.EXTENDED_DATA_TABLE_ROW_ID_FIELD_NAME)
-                .setFrom(skip)
-                .setSize(limit);
-        if (includeAggregations) {
-            List<AbstractAggregationBuilder> aggs = getElasticsearchAggregations(getAggregations());
-            for (AbstractAggregationBuilder aggregationBuilder : aggs) {
-                searchRequestBuilder.addAggregation(aggregationBuilder);
-            }
-        }
-        return searchRequestBuilder;
     }
 
     protected QueryBuilder createQueryStringQuery(QueryStringQueryParameters queryParameters) {
@@ -278,6 +250,32 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
 
     @Override
     public QueryResultsIterable<? extends VertexiumObject> search(EnumSet<VertexiumObjectType> objectTypes, EnumSet<FetchHint> fetchHints) {
+        if (shouldUseScrollApi()) {
+            return searchScroll(objectTypes, fetchHints);
+        }
+        return searchPaged(objectTypes, fetchHints);
+    }
+
+    private QueryResultsIterable<? extends VertexiumObject> searchScroll(EnumSet<VertexiumObjectType> objectTypes, EnumSet<FetchHint> fetchHints) {
+        return new QueryInfiniteScrollIterable<VertexiumObject>(objectTypes) {
+            @Override
+            protected ElasticSearchGraphQueryIterable<VertexiumObject> searchResponseToIterable(SearchResponse searchResponse) {
+                return ElasticSearchSingleDocumentSearchQueryBase.this.searchResponseToVertexiumObjectIterable(searchResponse, fetchHints);
+            }
+        };
+    }
+
+    private void closeScroll(String scrollId) {
+        try {
+            client.prepareClearScroll()
+                    .addScrollId(scrollId)
+                    .execute().actionGet();
+        } catch (Exception ex) {
+            throw new VertexiumException("Could not close iterator " + scrollId, ex);
+        }
+    }
+
+    private QueryResultsIterable<? extends VertexiumObject> searchPaged(EnumSet<VertexiumObjectType> objectTypes, EnumSet<FetchHint> fetchHints) {
         return new PagingIterable<VertexiumObject>(getParameters().getSkip(), getParameters().getLimit(), pageSize) {
             @Override
             protected ElasticSearchGraphQueryIterable<VertexiumObject> getPageIterable(int skip, int limit, boolean includeAggregations) {
@@ -291,46 +289,66 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
                     LOGGER.debug("Could not find property: %s (returning empty iterable)", ex.getPropertyName());
                     return createEmptyIterable();
                 }
-                final SearchHits hits = response.getHits();
-                Ids ids = new Ids(hits);
-                if (LOGGER.isDebugEnabled()) {
-                    LOGGER.debug(
-                            "elasticsearch results (vertices: %d + edges: %d + extended data: %d = %d)",
-                            ids.getVertexIds().size(),
-                            ids.getEdgeIds().size(),
-                            ids.getExtendedDataIds().size(),
-                            ids.getVertexIds().size() + ids.getEdgeIds().size() + ids.getExtendedDataIds().size()
-                    );
-                }
-
-                // since ES doesn't support security we will rely on the graph to provide edge filtering
-                // and rely on the DefaultGraphQueryIterable to provide property filtering
-                QueryParameters filterParameters = getParameters().clone();
-                filterParameters.setSkip(0); // ES already did a skip
-                List<Iterable<? extends VertexiumObject>> items = new ArrayList<>();
-                if (ids.getVertexIds().size() > 0) {
-                    Iterable<? extends VertexiumObject> vertices = getGraph().getVertices(ids.getVertexIds(), fetchHints, filterParameters.getAuthorizations());
-                    items.add(vertices);
-                }
-                if (ids.getEdgeIds().size() > 0) {
-                    Iterable<? extends VertexiumObject> edges = getGraph().getEdges(ids.getEdgeIds(), fetchHints, filterParameters.getAuthorizations());
-                    items.add(edges);
-                }
-                if (ids.getExtendedDataIds().size() > 0) {
-                    Iterable<? extends VertexiumObject> extendedDataRows = getGraph().getExtendedData(ids.getExtendedDataIds(), filterParameters.getAuthorizations());
-                    items.add(extendedDataRows);
-                }
-                Iterable<VertexiumObject> vertexiumObjects = new JoinIterable<>(items);
-                vertexiumObjects = sortVertexiumObjectsByResultOrder(vertexiumObjects, ids.getIds());
-
-                boolean shouldEvaluateHas = evaluateHasContainers && (fetchHints.contains(FetchHint.PROPERTIES) || fetchHints.contains(FetchHint.EXTENDED_DATA_TABLE_NAMES));
-                // TODO instead of passing false here to not evaluate the query string it would be better to support the Lucene query
-                return createIterable(response, filterParameters, vertexiumObjects, evaluateQueryString, shouldEvaluateHas, evaluateSortContainers, response.getTookInMillis(), hits);
+                return searchResponseToVertexiumObjectIterable(response, fetchHints);
             }
         };
     }
 
-    public PagingIterable<SearchHit> search(EnumSet<VertexiumObjectType> objectTypes) {
+    private ElasticSearchGraphQueryIterable<VertexiumObject> searchResponseToVertexiumObjectIterable(SearchResponse response, EnumSet<FetchHint> fetchHints) {
+        final SearchHits hits = response.getHits();
+        Ids ids = new Ids(hits);
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug(
+                    "elasticsearch results (vertices: %d + edges: %d + extended data: %d = %d)",
+                    ids.getVertexIds().size(),
+                    ids.getEdgeIds().size(),
+                    ids.getExtendedDataIds().size(),
+                    ids.getVertexIds().size() + ids.getEdgeIds().size() + ids.getExtendedDataIds().size()
+            );
+        }
+
+        // since ES doesn't support security we will rely on the graph to provide edge filtering
+        // and rely on the DefaultGraphQueryIterable to provide property filtering
+        QueryParameters filterParameters = getParameters().clone();
+        filterParameters.setSkip(0); // ES already did a skip
+        List<Iterable<? extends VertexiumObject>> items = new ArrayList<>();
+        if (ids.getVertexIds().size() > 0) {
+            Iterable<? extends VertexiumObject> vertices = getGraph().getVertices(ids.getVertexIds(), fetchHints, filterParameters.getAuthorizations());
+            items.add(vertices);
+        }
+        if (ids.getEdgeIds().size() > 0) {
+            Iterable<? extends VertexiumObject> edges = getGraph().getEdges(ids.getEdgeIds(), fetchHints, filterParameters.getAuthorizations());
+            items.add(edges);
+        }
+        if (ids.getExtendedDataIds().size() > 0) {
+            Iterable<? extends VertexiumObject> extendedDataRows = getGraph().getExtendedData(ids.getExtendedDataIds(), filterParameters.getAuthorizations());
+            items.add(extendedDataRows);
+        }
+        Iterable<VertexiumObject> vertexiumObjects = new JoinIterable<>(items);
+        vertexiumObjects = sortVertexiumObjectsByResultOrder(vertexiumObjects, ids.getIds());
+
+        boolean shouldEvaluateHas = evaluateHasContainers && (fetchHints.contains(FetchHint.PROPERTIES) || fetchHints.contains(FetchHint.EXTENDED_DATA_TABLE_NAMES));
+        // TODO instead of passing false here to not evaluate the query string it would be better to support the Lucene query
+        return createIterable(response, filterParameters, vertexiumObjects, evaluateQueryString, shouldEvaluateHas, evaluateSortContainers, response.getTookInMillis(), hits);
+    }
+
+    public QueryResultsIterable<SearchHit> search(EnumSet<VertexiumObjectType> objectTypes) {
+        if (shouldUseScrollApi()) {
+            return searchScroll(objectTypes);
+        }
+        return searchPaged(objectTypes);
+    }
+
+    private QueryInfiniteScrollIterable<SearchHit> searchScroll(EnumSet<VertexiumObjectType> objectTypes) {
+        return new QueryInfiniteScrollIterable<SearchHit>(objectTypes) {
+            @Override
+            protected ElasticSearchGraphQueryIterable<SearchHit> searchResponseToIterable(SearchResponse searchResponse) {
+                return ElasticSearchSingleDocumentSearchQueryBase.this.searchResponseToSearchHitsIterable(searchResponse);
+            }
+        };
+    }
+
+    private PagingIterable<SearchHit> searchPaged(EnumSet<VertexiumObjectType> objectTypes) {
         return new PagingIterable<SearchHit>(getParameters().getSkip(), getParameters().getLimit(), pageSize) {
             @Override
             protected ElasticSearchGraphQueryIterable<SearchHit> getPageIterable(int skip, int limit, boolean includeAggregations) {
@@ -345,12 +363,16 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
                     return createEmptyIterable();
                 }
 
-                SearchHits hits = response.getHits();
-                QueryParameters filterParameters = getParameters().clone();
-                Iterable<SearchHit> hitsIterable = IterableUtils.toIterable(hits.hits());
-                return createIterable(response, filterParameters, hitsIterable, false, false, false, response.getTookInMillis(), hits);
+                return searchResponseToSearchHitsIterable(response);
             }
         };
+    }
+
+    private ElasticSearchGraphQueryIterable<SearchHit> searchResponseToSearchHitsIterable(SearchResponse response) {
+        SearchHits hits = response.getHits();
+        QueryParameters filterParameters = getParameters().clone();
+        Iterable<SearchHit> hitsIterable = IterableUtils.toIterable(hits.hits());
+        return createIterable(response, filterParameters, hitsIterable, false, false, false, response.getTookInMillis(), hits);
     }
 
     @Override
@@ -423,15 +445,9 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
     }
 
     private SearchResponse getSearchResponse(EnumSet<ElasticsearchDocumentType> elementType, int skip, int limit, boolean includeAggregations) {
-        if (QUERY_LOGGER.isTraceEnabled()) {
-            QUERY_LOGGER.trace("searching for: " + toString());
-        }
-        List<FilterBuilder> filters = getFilters(elementType);
-        QueryBuilder query = createQuery(getParameters());
-        query = scoringStrategy.updateQuery(query);
-        SearchRequestBuilder q = getSearchRequestBuilder(filters, query, elementType, skip, limit, includeAggregations);
-        applySort(q);
-
+        SearchRequestBuilder q = buildQuery(elementType, includeAggregations)
+                .setFrom(skip)
+                .setSize(limit);
         if (QUERY_LOGGER.isTraceEnabled()) {
             QUERY_LOGGER.trace("query: %s", q);
         }
@@ -447,6 +463,39 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
             );
         }
         return searchResponse;
+    }
+
+    private SearchRequestBuilder buildQuery(EnumSet<ElasticsearchDocumentType> elementType, boolean includeAggregations) {
+        if (QUERY_LOGGER.isTraceEnabled()) {
+            QUERY_LOGGER.trace("searching for: " + toString());
+        }
+        List<FilterBuilder> filters = getFilters(elementType);
+        QueryBuilder query = createQuery(getParameters());
+        query = scoringStrategy.updateQuery(query);
+
+        AndFilterBuilder filterBuilder = getFilterBuilder(filters);
+        String[] indicesToQuery = getIndexSelectionStrategy().getIndicesToQuery(this, elementType);
+        if (QUERY_LOGGER.isTraceEnabled()) {
+            QUERY_LOGGER.trace("indicesToQuery: %s", Joiner.on(", ").join(indicesToQuery));
+        }
+        SearchRequestBuilder searchRequestBuilder = getClient()
+                .prepareSearch(indicesToQuery)
+                .setTypes(ElasticsearchSingleDocumentSearchIndex.ELEMENT_TYPE)
+                .setQuery(QueryBuilders.filteredQuery(query, filterBuilder))
+                .addField(ElasticsearchSingleDocumentSearchIndex.ELEMENT_TYPE_FIELD_NAME)
+                .addField(ElasticsearchSingleDocumentSearchIndex.EXTENDED_DATA_ELEMENT_ID_FIELD_NAME)
+                .addField(ElasticsearchSingleDocumentSearchIndex.EXTENDED_DATA_TABLE_NAME_FIELD_NAME)
+                .addField(ElasticsearchSingleDocumentSearchIndex.EXTENDED_DATA_TABLE_ROW_ID_FIELD_NAME);
+        if (includeAggregations) {
+            List<AbstractAggregationBuilder> aggs = getElasticsearchAggregations(getAggregations());
+            for (AbstractAggregationBuilder aggregationBuilder : aggs) {
+                searchRequestBuilder.addAggregation(aggregationBuilder);
+            }
+        }
+
+        applySort(searchRequestBuilder);
+
+        return searchRequestBuilder;
     }
 
     protected FilterBuilder getFilterForHasNotPropertyContainer(HasNotPropertyContainer hasNotProperty) {
@@ -1108,6 +1157,10 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
         return getGraph().getPropertyDefinition(propertyName);
     }
 
+    private boolean shouldUseScrollApi() {
+        return getParameters().getSkip() == 0 && (getParameters().getLimit() == null || getParameters().getLimit() > pagingLimit);
+    }
+
     protected IndexSelectionStrategy getIndexSelectionStrategy() {
         return indexSelectionStrategy;
     }
@@ -1125,6 +1178,48 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
                 ", evaluateSortContainers=" + evaluateSortContainers +
                 ", pageSize=" + pageSize +
                 '}';
+    }
+
+    private abstract class QueryInfiniteScrollIterable<T> extends InfiniteScrollIterable<T> {
+        private final EnumSet<VertexiumObjectType> objectTypes;
+
+        public QueryInfiniteScrollIterable(EnumSet<VertexiumObjectType> objectTypes) {
+            this.objectTypes = objectTypes;
+        }
+
+        @Override
+        protected SearchResponse getInitialSearchResponse() {
+            try {
+                SearchRequestBuilder q = buildQuery(ElasticsearchDocumentType.fromVertexiumObjectTypes(objectTypes), true)
+                        .setScroll(scrollKeepAlive);
+                if (QUERY_LOGGER.isTraceEnabled()) {
+                    QUERY_LOGGER.trace("query: %s", q);
+                }
+                return q.execute().actionGet();
+            } catch (IndexMissingException ex) {
+                LOGGER.debug("Index missing: %s (returning empty iterable)", ex.getMessage());
+                return null;
+            } catch (VertexiumNoMatchingPropertiesException ex) {
+                LOGGER.debug("Could not find property: %s (returning empty iterable)", ex.getPropertyName());
+                return null;
+            }
+        }
+
+        @Override
+        protected SearchResponse getNextSearchResponse(String scrollId) {
+            try {
+                return client.prepareSearchScroll(scrollId)
+                        .setScroll(scrollKeepAlive)
+                        .execute().actionGet();
+            } catch (Exception ex) {
+                throw new VertexiumException("Failed to request more items from scroll " + scrollId, ex);
+            }
+        }
+
+        @Override
+        protected void closeScroll(String scrollId) {
+            ElasticSearchSingleDocumentSearchQueryBase.this.closeScroll(scrollId);
+        }
     }
 
     private static class Ids {
@@ -1179,6 +1274,69 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
 
         public List<ExtendedDataRowId> getExtendedDataIds() {
             return extendedDataIds;
+        }
+    }
+
+    public static class Options {
+        public int pageSize;
+        public ScoringStrategy scoringStrategy;
+        public IndexSelectionStrategy indexSelectionStrategy;
+        public TimeValue scrollKeepAlive;
+        public StandardAnalyzer analyzer = new StandardAnalyzer();
+        public int pagingLimit;
+
+        public int getPageSize() {
+            return pageSize;
+        }
+
+        public Options setPageSize(int pageSize) {
+            this.pageSize = pageSize;
+            return this;
+        }
+
+        public ScoringStrategy getScoringStrategy() {
+            return scoringStrategy;
+        }
+
+        public Options setScoringStrategy(ScoringStrategy scoringStrategy) {
+            this.scoringStrategy = scoringStrategy;
+            return this;
+        }
+
+        public IndexSelectionStrategy getIndexSelectionStrategy() {
+            return indexSelectionStrategy;
+        }
+
+        public Options setIndexSelectionStrategy(IndexSelectionStrategy indexSelectionStrategy) {
+            this.indexSelectionStrategy = indexSelectionStrategy;
+            return this;
+        }
+
+        public TimeValue getScrollKeepAlive() {
+            return scrollKeepAlive;
+        }
+
+        public Options setScrollKeepAlive(TimeValue scrollKeepAlive) {
+            this.scrollKeepAlive = scrollKeepAlive;
+            return this;
+        }
+
+        public StandardAnalyzer getAnalyzer() {
+            return analyzer;
+        }
+
+        public Options setAnalyzer(StandardAnalyzer analyzer) {
+            this.analyzer = analyzer;
+            return this;
+        }
+
+        public int getPagingLimit() {
+            return pagingLimit;
+        }
+
+        public Options setPagingLimit(int pagingLimit) {
+            this.pagingLimit = pagingLimit;
+            return this;
         }
     }
 }

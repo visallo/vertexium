@@ -948,9 +948,12 @@ public class Elasticsearch2SearchIndex implements SearchIndex, SearchIndexWithVe
                 getClient(),
                 graph,
                 queryString,
-                getConfig().getScoringStrategy(),
-                getIndexSelectionStrategy(),
-                getConfig().getQueryPageSize(),
+                new ElasticsearchSearchQueryBase.Options()
+                        .setScoringStrategy(getConfig().getScoringStrategy())
+                        .setIndexSelectionStrategy(getIndexSelectionStrategy())
+                        .setPageSize(getConfig().getQueryPageSize())
+                        .setPagingLimit(getConfig().getPagingLimit())
+                        .setScrollKeepAlive(getConfig().getScrollKeepAlive()),
                 authorizations
         );
     }
@@ -962,9 +965,12 @@ public class Elasticsearch2SearchIndex implements SearchIndex, SearchIndexWithVe
                 graph,
                 vertex,
                 queryString,
-                getConfig().getScoringStrategy(),
-                getIndexSelectionStrategy(),
-                getConfig().getQueryPageSize(),
+                new ElasticsearchSearchVertexQuery.Options()
+                        .setScoringStrategy(getConfig().getScoringStrategy())
+                        .setIndexSelectionStrategy(getIndexSelectionStrategy())
+                        .setPageSize(getConfig().getQueryPageSize())
+                        .setPagingLimit(getConfig().getPagingLimit())
+                        .setScrollKeepAlive(getConfig().getScrollKeepAlive()),
                 authorizations
         );
     }
@@ -976,9 +982,12 @@ public class Elasticsearch2SearchIndex implements SearchIndex, SearchIndexWithVe
                 graph,
                 similarToFields,
                 similarToText,
-                getConfig().getScoringStrategy(),
-                getIndexSelectionStrategy(),
-                getConfig().getQueryPageSize(),
+                new ElasticsearchSearchQueryBase.Options()
+                        .setScoringStrategy(getConfig().getScoringStrategy())
+                        .setIndexSelectionStrategy(getIndexSelectionStrategy())
+                        .setPageSize(getConfig().getQueryPageSize())
+                        .setPagingLimit(getConfig().getPagingLimit())
+                        .setScrollKeepAlive(getConfig().getScrollKeepAlive()),
                 authorizations
         );
     }
