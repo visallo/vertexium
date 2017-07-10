@@ -1,3 +1,7 @@
+# v2.6.2
+
+* Added: Elasticsearch scroll API support
+
 # v2.6.1
 
 * Fixed: SQL SPV loading when timestamp is out of sync with property
