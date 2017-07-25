@@ -424,9 +424,9 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
         }
 
         Vertex inVertex = getVertex(edge.getVertexId(Direction.IN), authorizations);
-        checkNotNull(inVertex, "Could not find in vertex: " + edge.getVertexId(Direction.IN));
+        checkNotNull(inVertex, "Could not find in vertex \"" + edge.getVertexId(Direction.IN) + "\" on edge \"" + edge.getId() + "\"");
         Vertex outVertex = getVertex(edge.getVertexId(Direction.OUT), authorizations);
-        checkNotNull(outVertex, "Could not find out vertex: " + edge.getVertexId(Direction.OUT));
+        checkNotNull(outVertex, "Could not find out vertex \"" + edge.getVertexId(Direction.OUT) + "\" on edge \"" + edge.getId() + "\"");
 
         this.edges.getTableElement(edge.getId()).appendMarkHiddenMutation(visibility);
         getSearchIndex().addElement(this, edge, authorizations);
@@ -443,9 +443,9 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
         }
 
         Vertex inVertex = getVertex(edge.getVertexId(Direction.IN), FetchHint.ALL_INCLUDING_HIDDEN, authorizations);
-        checkNotNull(inVertex, "Could not find in vertex: " + edge.getVertexId(Direction.IN));
+        checkNotNull(inVertex, "Could not find in vertex \"" + edge.getVertexId(Direction.IN) + "\" on edge \"" + edge.getId() + "\"");
         Vertex outVertex = getVertex(edge.getVertexId(Direction.OUT), FetchHint.ALL_INCLUDING_HIDDEN, authorizations);
-        checkNotNull(outVertex, "Could not find out vertex: " + edge.getVertexId(Direction.OUT));
+        checkNotNull(outVertex, "Could not find out vertex \"" + edge.getVertexId(Direction.OUT) + "\" on edge \"" + edge.getId() + "\"");
 
         this.edges.getTableElement(edge.getId()).appendMarkVisibleMutation(visibility);
         getSearchIndex().addElement(this, edge, authorizations);
