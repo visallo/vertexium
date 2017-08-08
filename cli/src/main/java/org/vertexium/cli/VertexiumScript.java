@@ -18,6 +18,7 @@ import org.vertexium.property.StreamingPropertyValue;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.Charset;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
@@ -202,7 +203,7 @@ public class VertexiumScript extends Script {
         try {
             if (spv.getValueType() == String.class) {
                 try (InputStream in = spv.getInputStream()) {
-                    value = IOUtils.toString(in);
+                    value = IOUtils.toString(in, Charset.defaultCharset());
                 }
             } else if (spv.getValueType() == byte[].class) {
                 try (InputStream in = spv.getInputStream()) {

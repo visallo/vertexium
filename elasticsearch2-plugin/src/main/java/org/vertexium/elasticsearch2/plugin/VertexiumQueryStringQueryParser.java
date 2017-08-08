@@ -245,6 +245,7 @@ public class VertexiumQueryStringQueryParser implements QueryParser {
                 return null;
             }
             if (qpSettings.boost() != QueryParserSettings.DEFAULT_BOOST) {
+                //noinspection deprecation
                 query.setBoost(query.getBoost() * qpSettings.boost());
             }
             query = fixNegativeQueryIfNeeded(query);

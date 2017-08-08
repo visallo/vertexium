@@ -4482,7 +4482,6 @@ public abstract class GraphTestBase {
                         .maxQueryTerms(25)
                         .minDocFrequency(1)
                         .maxDocFrequency(10)
-                        .percentTermsToMatch(0.5f)
                         .boost(2.0f)
                         .vertices()
         );
@@ -4494,7 +4493,6 @@ public abstract class GraphTestBase {
                         .maxQueryTerms(25)
                         .minDocFrequency(1)
                         .maxDocFrequency(10)
-                        .percentTermsToMatch(0.5f)
                         .boost(2.0f)
                         .vertices()
         );

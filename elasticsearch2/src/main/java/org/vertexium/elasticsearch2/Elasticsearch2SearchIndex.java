@@ -19,7 +19,6 @@ import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.action.search.SearchType;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.action.update.UpdateRequestBuilder;
 import org.elasticsearch.client.Client;
@@ -31,7 +30,7 @@ import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
-import org.elasticsearch.index.query.FilteredQueryBuilder;
+import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.TermQueryBuilder;
@@ -691,10 +690,10 @@ public class Elasticsearch2SearchIndex implements SearchIndex, SearchIndexWithVe
     private void addValuesToFieldMap(Graph graph, Map<String, Object> propertiesMap, String propertyName, Object propertyValue) {
         PropertyDefinition propertyDefinition = getPropertyDefinition(graph, propertyName);
         if (propertyValue instanceof GeoPoint) {
-            convertGeoPoint(graph, propertiesMap, propertyName, (GeoPoint) propertyValue);
+            convertGeoPoint(propertiesMap, propertyName, (GeoPoint) propertyValue);
             return;
         } else if (propertyValue instanceof GeoCircle) {
-            convertGeoCircle(graph, propertiesMap, propertyName, (GeoCircle) propertyValue);
+            convertGeoCircle(propertiesMap, propertyName, (GeoCircle) propertyValue);
             return;
         } else if (propertyValue instanceof StreamingPropertyString) {
             propertyValue = ((StreamingPropertyString) propertyValue).getPropertyValue();
@@ -922,7 +921,7 @@ public class Elasticsearch2SearchIndex implements SearchIndex, SearchIndexWithVe
 
             SearchRequestBuilder s = getClient().prepareSearch(getIndicesToQuery())
                     .setTypes(ELEMENT_TYPE)
-                    .setQuery(QueryBuilders.filteredQuery(QueryBuilders.matchAllQuery(), filter))
+                    .setQuery(QueryBuilders.boolQuery().must(QueryBuilders.matchAllQuery()).filter(filter))
                     .addField(EXTENDED_DATA_ELEMENT_ID_FIELD_NAME)
                     .addField(EXTENDED_DATA_TABLE_NAME_FIELD_NAME)
                     .addField(EXTENDED_DATA_TABLE_ROW_ID_FIELD_NAME);
@@ -997,7 +996,7 @@ public class Elasticsearch2SearchIndex implements SearchIndex, SearchIndexWithVe
         return true;
     }
 
-    protected boolean addPropertyDefinitionToIndex(Graph graph, IndexInfo indexInfo, String propertyName, Visibility propertyVisibility, PropertyDefinition propertyDefinition) throws IOException {
+    protected void addPropertyDefinitionToIndex(Graph graph, IndexInfo indexInfo, String propertyName, Visibility propertyVisibility, PropertyDefinition propertyDefinition) throws IOException {
         if (propertyDefinition.getDataType() == String.class) {
             if (propertyDefinition.getTextIndexHints().contains(TextIndexHint.EXACT_MATCH)) {
                 addPropertyToIndex(graph, indexInfo, propertyName + EXACT_MATCH_PROPERTY_NAME_SUFFIX, propertyVisibility, String.class, false, propertyDefinition.getBoost());
@@ -1009,18 +1008,17 @@ public class Elasticsearch2SearchIndex implements SearchIndex, SearchIndexWithVe
                 String sortPropertyName = inflatePropertyName(propertyName) + SORT_PROPERTY_NAME_SUFFIX;
                 addPropertyToIndex(graph, indexInfo, sortPropertyName, null, String.class, false, null);
             }
-            return true;
+            return;
         }
 
         if (propertyDefinition.getDataType() == GeoPoint.class
                 || propertyDefinition.getDataType() == GeoCircle.class) {
             addPropertyToIndex(graph, indexInfo, propertyName + GEO_PROPERTY_NAME_SUFFIX, propertyVisibility, propertyDefinition.getDataType(), true, propertyDefinition.getBoost());
             addPropertyToIndex(graph, indexInfo, propertyName, propertyVisibility, String.class, true, propertyDefinition.getBoost());
-            return true;
+            return;
         }
 
         addPropertyToIndex(graph, indexInfo, propertyName, propertyVisibility, propertyDefinition.getDataType(), true, propertyDefinition.getBoost());
-        return true;
     }
 
     protected PropertyDefinition getPropertyDefinition(Graph graph, String propertyName) {
@@ -1244,13 +1242,12 @@ public class Elasticsearch2SearchIndex implements SearchIndex, SearchIndexWithVe
     @Override
     public Map<Object, Long> getVertexPropertyCountByValue(Graph graph, String propertyName, Authorizations authorizations) {
         TermQueryBuilder elementTypeFilterBuilder = new TermQueryBuilder(ELEMENT_TYPE_FIELD_NAME, ElasticsearchDocumentType.VERTEX.getKey());
-        FilteredQueryBuilder queryBuilder = QueryBuilders.filteredQuery(
-                QueryBuilders.matchAllQuery(),
-                elementTypeFilterBuilder
-        );
+        BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery()
+                .must(QueryBuilders.matchAllQuery())
+                .filter(elementTypeFilterBuilder);
         SearchRequestBuilder q = getClient().prepareSearch(getIndexNamesAsArray(graph))
                 .setQuery(queryBuilder)
-                .setSearchType(SearchType.COUNT);
+                .setSize(0);
 
         for (String p : getAllMatchingPropertyNames(graph, propertyName, authorizations)) {
             String countAggName = "count-" + p;
@@ -1432,13 +1429,13 @@ public class Elasticsearch2SearchIndex implements SearchIndex, SearchIndexWithVe
      * @param fields  fields to remove
      */
     private void removeFieldsFromDocument(Element element, Collection<String> fields) {
-        String script = "";
         Map<String, Object> params = Maps.newHashMap();
 
         int i = 0;
+        StringBuilder script = new StringBuilder();
         for (String field : fields) {
             String fieldName = "fieldName" + (i++);
-            script += "ctx._source.remove(" + fieldName + ");";
+            script.append("ctx._source.remove(").append(fieldName).append(");");
             params.put(fieldName, field);
         }
         getClient().prepareUpdate()
@@ -1447,7 +1444,7 @@ public class Elasticsearch2SearchIndex implements SearchIndex, SearchIndexWithVe
                 .setType(ELEMENT_TYPE)
                 .setScript(
                         new Script(
-                                script,
+                                script.toString(),
                                 ScriptService.ScriptType.INLINE,
                                 null,
                                 params
@@ -1582,10 +1579,6 @@ public class Elasticsearch2SearchIndex implements SearchIndex, SearchIndexWithVe
         addPropertyToIndex(graph, indexInfo, propertyName, propertyVisibility, dataType, analyzed, null);
     }
 
-    protected String deflatePropertyName(String propertyName) {
-        return nameSubstitutionStrategy.deflate(propertyName);
-    }
-
     protected boolean shouldIgnoreType(Class dataType) {
         return dataType == byte[].class;
     }
@@ -1697,17 +1690,7 @@ public class Elasticsearch2SearchIndex implements SearchIndex, SearchIndexWithVe
         propertiesMap.put(propertyName, list);
     }
 
-    protected void convertGeoPoint(Graph graph, XContentBuilder jsonBuilder, Property property, GeoPoint geoPoint) throws IOException {
-        Map<String, Object> propertyValueMap = new HashMap<>();
-        propertyValueMap.put("lat", geoPoint.getLatitude());
-        propertyValueMap.put("lon", geoPoint.getLongitude());
-        jsonBuilder.field(deflatePropertyName(graph, property) + GEO_PROPERTY_NAME_SUFFIX, propertyValueMap);
-        if (geoPoint.getDescription() != null) {
-            jsonBuilder.field(deflatePropertyName(graph, property), geoPoint.getDescription());
-        }
-    }
-
-    protected void convertGeoPoint(Graph graph, Map<String, Object> propertiesMap, String deflatedPropertyName, GeoPoint geoPoint) {
+    protected void convertGeoPoint(Map<String, Object> propertiesMap, String deflatedPropertyName, GeoPoint geoPoint) {
         Map<String, Object> propertyValueMap = new HashMap<>();
         propertyValueMap.put("lat", geoPoint.getLatitude());
         propertyValueMap.put("lon", geoPoint.getLongitude());
@@ -1717,21 +1700,7 @@ public class Elasticsearch2SearchIndex implements SearchIndex, SearchIndexWithVe
         }
     }
 
-    protected void convertGeoCircle(Graph graph, XContentBuilder jsonBuilder, Property property, GeoCircle geoCircle) throws IOException {
-        Map<String, Object> propertyValueMap = new HashMap<>();
-        propertyValueMap.put("type", "circle");
-        List<Double> coordinates = new ArrayList<>();
-        coordinates.add(geoCircle.getLongitude());
-        coordinates.add(geoCircle.getLatitude());
-        propertyValueMap.put("coordinates", coordinates);
-        propertyValueMap.put("radius", geoCircle.getRadius() + "km");
-        jsonBuilder.field(deflatePropertyName(graph, property) + GEO_PROPERTY_NAME_SUFFIX, propertyValueMap);
-        if (geoCircle.getDescription() != null) {
-            jsonBuilder.field(deflatePropertyName(graph, property), geoCircle.getDescription());
-        }
-    }
-
-    protected void convertGeoCircle(Graph graph, Map<String, Object> propertiesMap, String deflatedPropertyName, GeoCircle geoCircle) {
+    protected void convertGeoCircle(Map<String, Object> propertiesMap, String deflatedPropertyName, GeoCircle geoCircle) {
         Map<String, Object> propertyValueMap = new HashMap<>();
         propertyValueMap.put("type", "circle");
         List<Double> coordinates = new ArrayList<>();
@@ -1747,10 +1716,6 @@ public class Elasticsearch2SearchIndex implements SearchIndex, SearchIndexWithVe
 
     public IndexSelectionStrategy getIndexSelectionStrategy() {
         return indexSelectionStrategy;
-    }
-
-    public boolean isAuthorizationFilterEnabled() {
-        return getConfig().isAuthorizationFilterEnabled();
     }
 
     @SuppressWarnings("unused")
