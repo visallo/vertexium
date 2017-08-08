@@ -6,8 +6,6 @@ import org.vertexium.GraphConfiguration;
 import org.vertexium.VertexiumException;
 import org.vertexium.elasticsearch.score.NopScoringStrategy;
 import org.vertexium.elasticsearch.score.ScoringStrategy;
-import org.vertexium.id.IdentityNameSubstitutionStrategy;
-import org.vertexium.id.NameSubstitutionStrategy;
 import org.vertexium.util.ConfigurationUtils;
 
 import java.io.File;
@@ -37,8 +35,6 @@ public class ElasticSearchSearchIndexConfiguration {
     public static final String TERM_AGGREGATION_SHARD_SIZE = "termAggregation.shardSize";
     public static final int TERM_AGGREGATION_SHARD_SIZE_DEFAULT = 10;
     public static final Class<? extends ScoringStrategy> SCORING_STRATEGY_CLASS_NAME_DEFAULT = NopScoringStrategy.class;
-    public static final String NAME_SUBSTITUTION_STRATEGY_CLASS_NAME = "nameSubstitutionStrategy";
-    public static final Class<? extends NameSubstitutionStrategy> NAME_SUBSTITUTION_STRATEGY_CLASS_NAME_DEFAULT = IdentityNameSubstitutionStrategy.class;
     public static final String INDEX_SELECTION_STRATEGY_CLASS_NAME = "indexSelectionStrategy";
     public static final Class<? extends IndexSelectionStrategy> INDEX_SELECTION_STRATEGY_CLASS_NAME_DEFAULT = DefaultIndexSelectionStrategy.class;
     public static final String ALL_FIELD_ENABLED = "allFieldEnabled";
@@ -60,12 +56,10 @@ public class ElasticSearchSearchIndexConfiguration {
     private GraphConfiguration graphConfiguration;
     private IndexSelectionStrategy indexSelectionStrategy;
     private ScoringStrategy scoringStrategy;
-    private NameSubstitutionStrategy nameSubstitutionStrategy;
 
     public ElasticSearchSearchIndexConfiguration(Graph graph, GraphConfiguration graphConfiguration) {
         this.graphConfiguration = graphConfiguration;
         this.scoringStrategy = getScoringStrategy(graph, graphConfiguration);
-        this.nameSubstitutionStrategy = getNameSubstitutionStrategy(graph, graphConfiguration);
         this.indexSelectionStrategy = getIndexSelectionStrategy(graph, graphConfiguration);
     }
 
@@ -75,10 +69,6 @@ public class ElasticSearchSearchIndexConfiguration {
 
     public ScoringStrategy getScoringStrategy() {
         return scoringStrategy;
-    }
-
-    public NameSubstitutionStrategy getNameSubstitutionStrategy() {
-        return nameSubstitutionStrategy;
     }
 
     public IndexSelectionStrategy getIndexSelectionStrategy() {
@@ -116,13 +106,6 @@ public class ElasticSearchSearchIndexConfiguration {
     private static ScoringStrategy getScoringStrategy(Graph graph, GraphConfiguration config) {
         String className = config.getString(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + SCORING_STRATEGY_CLASS_NAME, SCORING_STRATEGY_CLASS_NAME_DEFAULT.getName());
         return ConfigurationUtils.createProvider(className, graph, config);
-    }
-
-    private static NameSubstitutionStrategy getNameSubstitutionStrategy(Graph graph, GraphConfiguration config) {
-        String className = config.getString(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + NAME_SUBSTITUTION_STRATEGY_CLASS_NAME, NAME_SUBSTITUTION_STRATEGY_CLASS_NAME_DEFAULT.getName());
-        NameSubstitutionStrategy strategy = ConfigurationUtils.createProvider(className, graph, config);
-        strategy.setup(config.getConfig());
-        return strategy;
     }
 
     public static IndexSelectionStrategy getIndexSelectionStrategy(Graph graph, GraphConfiguration config) {

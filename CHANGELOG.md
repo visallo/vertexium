@@ -1,3 +1,8 @@
+# v3.0.0
+* Changed: Removed ES 2 support and replaced it with ES 5 support
+* Changed: Removed support for NameSubstitutionStrategy from the Elasticsearch modules. NameSubstitutionStrategy is still available for Accumulo modules 
+* Note: Upgrading to this version will require re-indexing if you use NameSubstitutionStrategy or are switching to the ES 5 module. 
+
 # v2.6.2
 
 * Changed: remove deprecated interfaces, examples, and changed Elasticsearch deprecated methods

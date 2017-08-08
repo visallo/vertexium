@@ -3,7 +3,7 @@
     <parent>
         <artifactId>vertexium-root</artifactId>
         <groupId>org.vertexium</groupId>
-        <version>2.6.3-SNAPSHOT</version>
+        <version>3.0.0-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -115,11 +115,11 @@
             </dependencies>
         </profile>
         <profile>
-            <id>cli-elasticsearch2</id>
+            <id>cli-elasticsearch5</id>
             <dependencies>
                 <dependency>
                     <groupId>org.vertexium</groupId>
-                    <artifactId>vertexium-elasticsearch2</artifactId>
+                    <artifactId>vertexium-elasticsearch5</artifactId>
                     <version>${project.version}</version>
                 </dependency>
             </dependencies>
