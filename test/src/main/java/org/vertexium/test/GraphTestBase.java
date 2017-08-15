@@ -3764,6 +3764,75 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    public void testChangeVisibilityPropertiesWithPropertyKey() {
+        graph.prepareVertex("v1", VISIBILITY_EMPTY)
+                .addPropertyValue("k1", "prop1", "value1", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B);
+        v1.prepareMutation()
+                .alterPropertyVisibility("prop1", VISIBILITY_B)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
+        assertNull(v1.getProperty("prop1"));
+
+        assertEquals(1, count(graph.query(AUTHORIZATIONS_B).has("prop1", "value1").vertices()));
+        assertEquals(0, count(graph.query(AUTHORIZATIONS_A).has("prop1", "value1").vertices()));
+
+        Map<Object, Long> propertyCountByValue = queryGraphQueryWithTermsAggregation("prop1", ElementType.VERTEX, AUTHORIZATIONS_A);
+        if (propertyCountByValue != null) {
+            assertEquals(null, propertyCountByValue.get("value1"));
+        }
+
+        propertyCountByValue = queryGraphQueryWithTermsAggregation("prop1", ElementType.VERTEX, AUTHORIZATIONS_B);
+        if (propertyCountByValue != null) {
+            assertEquals(1L, (long) propertyCountByValue.get("value1"));
+        }
+
+        v1 = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B);
+        Property v1Prop1 = v1.getProperty("prop1");
+        assertNotNull(v1Prop1);
+        assertEquals(VISIBILITY_B, v1Prop1.getVisibility());
+
+        graph.prepareVertex("v2", VISIBILITY_EMPTY)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        graph.prepareEdge("e1", "v1", "v2", VISIBILITY_EMPTY)
+                .addPropertyValue("k2", "prop2", "value2", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        Edge e1 = graph.getEdge("e1", AUTHORIZATIONS_A_AND_B);
+        e1.prepareMutation()
+                .alterPropertyVisibility("prop2", VISIBILITY_B)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+        assertNull(e1.getProperty("prop2"));
+
+        assertEquals(1, count(graph.query(AUTHORIZATIONS_B).has("prop2", "value2").edges()));
+        assertEquals(0, count(graph.query(AUTHORIZATIONS_A).has("prop2", "value2").edges()));
+
+        propertyCountByValue = queryGraphQueryWithTermsAggregation("prop2", ElementType.EDGE, AUTHORIZATIONS_A);
+        if (propertyCountByValue != null) {
+            assertEquals(null, propertyCountByValue.get("value2"));
+        }
+
+        propertyCountByValue = queryGraphQueryWithTermsAggregation("prop2", ElementType.EDGE, AUTHORIZATIONS_B);
+        if (propertyCountByValue != null) {
+            assertEquals(1L, (long) propertyCountByValue.get("value2"));
+        }
+
+        e1 = graph.getEdge("e1", AUTHORIZATIONS_A_AND_B);
+        Property e1prop1 = v1.getProperty("prop2");
+        assertNotNull(e1prop1);
+        assertEquals(VISIBILITY_B, e1prop1.getVisibility());
+    }
+
+    @Test
     public void testChangeVisibilityVertexProperties() {
         Metadata prop1Metadata = new Metadata();
         prop1Metadata.add("prop1_key1", "value1", VISIBILITY_EMPTY);
