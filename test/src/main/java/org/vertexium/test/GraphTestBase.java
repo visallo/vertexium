@@ -5882,6 +5882,134 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    public void testPropertyHistoricalVersionsAfterVertexPropertySoftDeleteByName() {
+        graph.prepareVertex("v1", VISIBILITY_A)
+                .addPropertyValue("", "age", 25, VISIBILITY_A)
+                .addPropertyValue("", "gender", "F", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
+        graph.flush();
+
+        Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
+        List<HistoricalPropertyValue> values = toList(v1.getHistoricalPropertyValues(AUTHORIZATIONS_A));
+        assertEquals(2, values.size());
+
+        v1.softDeleteProperties("age", AUTHORIZATIONS_A);
+        graph.flush();
+
+        v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
+        values = toList(v1.getHistoricalPropertyValues(AUTHORIZATIONS_A));
+        Collections.reverse(values);
+        assertEquals(3, values.size());
+        assertEquals("", values.get(0).getPropertyKey());
+        assertEquals("age", values.get(0).getPropertyName());
+        assertEquals(true, values.get(0).isDeleted());
+
+        v1.prepareMutation()
+                .alterPropertyVisibility("gender", VISIBILITY_EMPTY)
+                .save(AUTHORIZATIONS_A);
+        graph.flush();
+
+        v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
+        values = toList(v1.getHistoricalPropertyValues(AUTHORIZATIONS_A));
+        assertEquals(4, values.size());
+
+        v1.softDeleteProperties("gender", AUTHORIZATIONS_A);
+        graph.flush();
+
+        v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
+        values = toList(v1.getHistoricalPropertyValues(AUTHORIZATIONS_A));
+        Collections.reverse(values);
+        assertEquals(5, values.size());
+        assertEquals("", values.get(0).getPropertyKey());
+        assertEquals("gender", values.get(0).getPropertyName());
+        assertEquals(true, values.get(0).isDeleted());
+        assertEquals("", values.get(0).getPropertyVisibility().getVisibilityString());
+        assertEquals("", values.get(1).getPropertyKey());
+        assertEquals("gender", values.get(1).getPropertyName());
+        assertEquals(false, values.get(1).isDeleted());
+        assertEquals("", values.get(1).getPropertyVisibility().getVisibilityString());
+        assertEquals("", values.get(2).getPropertyKey());
+        assertEquals("age", values.get(2).getPropertyName());
+        assertEquals(true, values.get(2).isDeleted());
+        assertEquals(VISIBILITY_A_STRING, values.get(2).getPropertyVisibility().getVisibilityString());
+        assertEquals("", values.get(3).getPropertyKey());
+        assertEquals("gender", values.get(3).getPropertyName());
+        assertEquals(false, values.get(3).isDeleted());
+        assertEquals(VISIBILITY_A_STRING, values.get(3).getPropertyVisibility().getVisibilityString());
+        assertEquals("", values.get(4).getPropertyKey());
+        assertEquals("age", values.get(4).getPropertyName());
+        assertEquals(false, values.get(4).isDeleted());
+        assertEquals(VISIBILITY_A_STRING, values.get(4).getPropertyVisibility().getVisibilityString());
+    }
+
+    @Test
+    public void testPropertyHistoricalVersionsAfterEdgePropertySoftDeleteByName() {
+        graph.prepareVertex("v1", VISIBILITY_A)
+                .save(AUTHORIZATIONS_ALL);
+        graph.prepareVertex("v2", VISIBILITY_A)
+                .save(AUTHORIZATIONS_ALL);
+        graph.flush();
+
+        graph.prepareEdge("e1", "v1", "v2", "label", VISIBILITY_A)
+                .addPropertyValue("k1", "test1", "value", VISIBILITY_A)
+                .addPropertyValue("k2", "test2", "value", VISIBILITY_A)
+                .save(AUTHORIZATIONS_ALL);
+        graph.flush();
+
+        Edge e1 = graph.getEdge("e1", AUTHORIZATIONS_A);
+        List<HistoricalPropertyValue> values = toList(e1.getHistoricalPropertyValues(AUTHORIZATIONS_A));
+        assertEquals(2, values.size());
+
+        e1.softDeleteProperties("test1", AUTHORIZATIONS_A);
+        graph.flush();
+
+        e1 = graph.getEdge("e1", AUTHORIZATIONS_A);
+        values = toList(e1.getHistoricalPropertyValues(AUTHORIZATIONS_A));
+        Collections.reverse(values);
+        assertEquals(3, values.size());
+        assertEquals("k1", values.get(0).getPropertyKey());
+        assertEquals("test1", values.get(0).getPropertyName());
+        assertEquals(true, values.get(0).isDeleted());
+
+        e1.prepareMutation()
+                .alterPropertyVisibility("test2", VISIBILITY_EMPTY)
+                .save(AUTHORIZATIONS_A);
+        graph.flush();
+
+        e1 = graph.getEdge("e1", AUTHORIZATIONS_A);
+        values = toList(e1.getHistoricalPropertyValues(AUTHORIZATIONS_A));
+        assertEquals(4, values.size());
+
+        e1.softDeleteProperties("test2", AUTHORIZATIONS_A);
+        graph.flush();
+
+        e1 = graph.getEdge("e1", AUTHORIZATIONS_A);
+        values = toList(e1.getHistoricalPropertyValues(AUTHORIZATIONS_A));
+        Collections.reverse(values);
+        assertEquals(5, values.size());
+        assertEquals("k2", values.get(0).getPropertyKey());
+        assertEquals("test2", values.get(0).getPropertyName());
+        assertEquals(true, values.get(0).isDeleted());
+        assertEquals("", values.get(0).getPropertyVisibility().getVisibilityString());
+        assertEquals("k2", values.get(1).getPropertyKey());
+        assertEquals("test2", values.get(1).getPropertyName());
+        assertEquals(false, values.get(1).isDeleted());
+        assertEquals("", values.get(1).getPropertyVisibility().getVisibilityString());
+        assertEquals("k1", values.get(2).getPropertyKey());
+        assertEquals("test1", values.get(2).getPropertyName());
+        assertEquals(false, values.get(2).isDeleted());
+        assertEquals(VISIBILITY_A_STRING, values.get(2).getPropertyVisibility().getVisibilityString());
+        assertEquals("k2", values.get(3).getPropertyKey());
+        assertEquals("test2", values.get(3).getPropertyName());
+        assertEquals(false, values.get(3).isDeleted());
+        assertEquals(VISIBILITY_A_STRING, values.get(3).getPropertyVisibility().getVisibilityString());
+        assertEquals("k1", values.get(4).getPropertyKey());
+        assertEquals("test1", values.get(4).getPropertyName());
+        assertEquals(false, values.get(4).isDeleted());
+        assertEquals(VISIBILITY_A_STRING, values.get(4).getPropertyVisibility().getVisibilityString());
+    }
+
+    @Test
     public void historicalPropertyValueModifyPropValue() {
         graph.prepareVertex("v1", VISIBILITY_A)
                 .setProperty("prop1_A", "value1", VISIBILITY_A)
