@@ -2,7 +2,10 @@ package org.vertexium.elasticsearch.utils;
 
 import org.vertexium.VertexiumException;
 import org.vertexium.elasticsearch.ElasticSearchGraphQueryIterable;
-import org.vertexium.query.*;
+import org.vertexium.query.AggregationResult;
+import org.vertexium.query.IterableWithScores;
+import org.vertexium.query.IterableWithTotalHits;
+import org.vertexium.query.QueryResultsIterable;
 
 import java.io.IOException;
 import java.util.Iterator;
@@ -13,10 +16,6 @@ public abstract class PagingIterable<T> implements
         Iterable<T>,
         IterableWithTotalHits<T>,
         IterableWithScores<T>,
-        IterableWithHistogramResults<T>,
-        IterableWithTermsResults<T>,
-        IterableWithGeohashResults<T>,
-        IterableWithStatisticsResults<T>,
         QueryResultsIterable<T> {
     private final long skip;
     private final Long limit;
@@ -34,26 +33,6 @@ public abstract class PagingIterable<T> implements
         int firstIterableLimit = Math.min(pageSize, limit == null ? Integer.MAX_VALUE : limit.intValue());
         this.firstIterable = getPageIterable((int) this.skip, firstIterableLimit, true);
         this.isFirstCallToIterator = true;
-    }
-
-    @Override
-    public GeohashResult getGeohashResults(String name) {
-        return this.firstIterable.getGeohashResults(name);
-    }
-
-    @Override
-    public HistogramResult getHistogramResults(String name) {
-        return this.firstIterable.getHistogramResults(name);
-    }
-
-    @Override
-    public StatisticsResult getStatisticsResults(String name) {
-        return this.firstIterable.getStatisticsResults(name);
-    }
-
-    @Override
-    public TermsResult getTermsResults(String name) {
-        return this.firstIterable.getTermsResults(name);
     }
 
     @Override

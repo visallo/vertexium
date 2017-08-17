@@ -51,11 +51,7 @@ import java.io.IOException;
 import java.util.*;
 import java.util.regex.Pattern;
 
-public class ElasticsearchSearchQueryBase extends QueryBase implements
-        GraphQueryWithHistogramAggregation,
-        GraphQueryWithTermsAggregation,
-        GraphQueryWithGeohashAggregation,
-        GraphQueryWithStatisticsAggregation {
+public class ElasticsearchSearchQueryBase extends QueryBase {
     private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(ElasticsearchSearchQueryBase.class);
     public static final VertexiumLogger QUERY_LOGGER = VertexiumLoggerFactory.getQueryLogger(Query.class);
     private final Client client;
@@ -111,40 +107,6 @@ public class ElasticsearchSearchQueryBase extends QueryBase implements
     }
 
     @Override
-    @Deprecated
-    public GraphQueryWithHistogramAggregation addHistogramAggregation(String aggregationName, String fieldName, String interval, Long minDocumentCount) {
-        addAggregation(new HistogramAggregation(aggregationName, fieldName, interval, minDocumentCount));
-        return this;
-    }
-
-    @Override
-    @Deprecated
-    public GraphQueryWithHistogramAggregation addHistogramAggregation(String aggregationName, String fieldName, String interval) {
-        return addHistogramAggregation(aggregationName, fieldName, interval, null);
-    }
-
-    @Override
-    @Deprecated
-    public GraphQueryWithTermsAggregation addTermsAggregation(String aggregationName, String fieldName) {
-        addAggregation(new TermsAggregation(aggregationName, fieldName));
-        return this;
-    }
-
-    @Override
-    @Deprecated
-    public GraphQueryWithGeohashAggregation addGeohashAggregation(String aggregationName, String fieldName, int precision) {
-        addAggregation(new GeohashAggregation(aggregationName, fieldName, precision));
-        return this;
-    }
-
-    @Override
-    @Deprecated
-    public GraphQueryWithStatisticsAggregation addStatisticsAggregation(String aggregationName, String field) {
-        addAggregation(new StatisticsAggregation(aggregationName, field));
-        return this;
-    }
-
-    @Override
     public boolean isAggregationSupported(Aggregation agg) {
         if (agg instanceof HistogramAggregation) {
             return true;
@@ -178,7 +140,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase implements
         QueryBuilder query = createQuery(getParameters());
         query = scoringStrategy.updateQuery(query);
 
-        AndQueryBuilder filterBuilder = getFilterBuilder(filters);
+        QueryBuilder filterBuilder = getFilterBuilder(filters);
         String[] indicesToQuery = getIndexSelectionStrategy().getIndicesToQuery(this, elementType);
         if (QUERY_LOGGER.isTraceEnabled()) {
             QUERY_LOGGER.trace("indicesToQuery: %s", Joiner.on(", ").join(indicesToQuery));
@@ -186,7 +148,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase implements
         SearchRequestBuilder searchRequestBuilder = getClient()
                 .prepareSearch(indicesToQuery)
                 .setTypes(Elasticsearch2SearchIndex.ELEMENT_TYPE)
-                .setQuery(QueryBuilders.filteredQuery(query, filterBuilder))
+                .setQuery(QueryBuilders.boolQuery().must(query).filter(filterBuilder))
                 .addField(Elasticsearch2SearchIndex.ELEMENT_TYPE_FIELD_NAME)
                 .addField(Elasticsearch2SearchIndex.EXTENDED_DATA_ELEMENT_ID_FIELD_NAME)
                 .addField(Elasticsearch2SearchIndex.EXTENDED_DATA_TABLE_NAME_FIELD_NAME)
@@ -250,10 +212,11 @@ public class ElasticsearchSearchQueryBase extends QueryBase implements
             if (queryString == null || queryString.equals("*")) {
                 Elasticsearch2SearchIndex es = (Elasticsearch2SearchIndex) ((GraphWithSearchIndex) getGraph()).getSearchIndex();
                 Collection<String> fields = es.getQueryableElementTypeVisibilityPropertyNames(getGraph(), getParameters().getAuthorizations());
-                OrQueryBuilder atLeastOneFieldExistsFilter = new OrQueryBuilder();
+                BoolQueryBuilder atLeastOneFieldExistsFilter = QueryBuilders.boolQuery();
                 for (String field : fields) {
-                    atLeastOneFieldExistsFilter.add(new ExistsQueryBuilder(field));
+                    atLeastOneFieldExistsFilter.should(new ExistsQueryBuilder(field));
                 }
+                atLeastOneFieldExistsFilter.minimumNumberShouldMatch(1);
                 filters.add(atLeastOneFieldExistsFilter);
             }
         }
@@ -515,42 +478,49 @@ public class ElasticsearchSearchQueryBase extends QueryBase implements
         PropertyDefinition propDef = getPropertyDefinition(hasNotProperty.getKey());
         List<QueryBuilder> filters = new ArrayList<>();
         for (String propertyName : propertyNames) {
-            filters.add(QueryBuilders.notQuery(QueryBuilders.existsQuery(propertyName)));
+            filters.add(QueryBuilders.boolQuery().mustNot(QueryBuilders.existsQuery(propertyName)));
             if (propDef.getDataType().equals(GeoPoint.class)) {
-                filters.add(QueryBuilders.notQuery(QueryBuilders.existsQuery(propertyName + Elasticsearch2SearchIndex.GEO_PROPERTY_NAME_SUFFIX)));
+                filters.add(QueryBuilders.boolQuery().mustNot(QueryBuilders.existsQuery(propertyName + Elasticsearch2SearchIndex.GEO_PROPERTY_NAME_SUFFIX)));
             } else if (isExactMatchPropertyDefinition(propDef)) {
-                filters.add(QueryBuilders.notQuery(QueryBuilders.existsQuery(propertyName + Elasticsearch2SearchIndex.EXACT_MATCH_PROPERTY_NAME_SUFFIX)));
+                filters.add(QueryBuilders.boolQuery().mustNot(QueryBuilders.existsQuery(propertyName + Elasticsearch2SearchIndex.EXACT_MATCH_PROPERTY_NAME_SUFFIX)));
             }
         }
         return getSingleFilterOrAndTheFilters(filters, hasNotProperty);
     }
 
     private QueryBuilder getFilterForHasExtendedData(HasExtendedData has) {
-        List<QueryBuilder> filters = new ArrayList<>();
+        BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
         for (HasExtendedDataFilter hasExtendedDataFilter : has.getFilters()) {
-            filters.add(getFilterForHasExtendedDataFilter(hasExtendedDataFilter));
+            boolQuery.should(getFilterForHasExtendedDataFilter(hasExtendedDataFilter));
         }
-        return QueryBuilders.orQuery(filters.toArray(new QueryBuilder[filters.size()]));
+        boolQuery.minimumNumberShouldMatch(1);
+        return boolQuery;
     }
 
     private QueryBuilder getFilterForHasExtendedDataFilter(HasExtendedDataFilter has) {
-        List<QueryBuilder> filters = new ArrayList<>();
+        BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
+        boolean hasQuery = false;
         if (has.getElementType() != null) {
-            filters.add(QueryBuilders.termQuery(
-                    Elasticsearch2SearchIndex.ELEMENT_TYPE_FIELD_NAME,
-                    ElasticsearchDocumentType.getExtendedDataDocumentTypeFromElementType(has.getElementType()).getKey()
-            ));
+            boolQuery.must(
+                    QueryBuilders.termQuery(
+                            Elasticsearch2SearchIndex.ELEMENT_TYPE_FIELD_NAME,
+                            ElasticsearchDocumentType.getExtendedDataDocumentTypeFromElementType(has.getElementType()).getKey()
+                    )
+            );
+            hasQuery = true;
         }
         if (has.getElementId() != null) {
-            filters.add(QueryBuilders.termQuery(Elasticsearch2SearchIndex.EXTENDED_DATA_ELEMENT_ID_FIELD_NAME, has.getElementId()));
+            boolQuery.must(QueryBuilders.termQuery(Elasticsearch2SearchIndex.EXTENDED_DATA_ELEMENT_ID_FIELD_NAME, has.getElementId()));
+            hasQuery = true;
         }
         if (has.getTableName() != null) {
-            filters.add(QueryBuilders.termQuery(Elasticsearch2SearchIndex.EXTENDED_DATA_TABLE_NAME_FIELD_NAME, has.getTableName()));
+            boolQuery.must(QueryBuilders.termQuery(Elasticsearch2SearchIndex.EXTENDED_DATA_TABLE_NAME_FIELD_NAME, has.getTableName()));
+            hasQuery = true;
         }
-        if (filters.size() == 0) {
+        if (!hasQuery) {
             throw new VertexiumException("Cannot include a hasExtendedData clause with all nulls");
         }
-        return QueryBuilders.andQuery(filters.toArray(new QueryBuilder[filters.size()]));
+        return boolQuery;
     }
 
     protected QueryBuilder getFilterForHasPropertyContainer(HasPropertyContainer hasProperty) {
@@ -662,7 +632,12 @@ public class ElasticsearchSearchQueryBase extends QueryBase implements
 
     private QueryBuilder getSingleFilterOrOrTheFilters(List<QueryBuilder> filters, HasContainer has) {
         if (filters.size() > 1) {
-            return QueryBuilders.orQuery(filters.toArray(new QueryBuilder[filters.size()]));
+            BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
+            for (QueryBuilder filter : filters) {
+                boolQuery.should(filter);
+            }
+            boolQuery.minimumNumberShouldMatch(1);
+            return boolQuery;
         } else if (filters.size() == 1) {
             return filters.get(0);
         } else {
@@ -672,7 +647,11 @@ public class ElasticsearchSearchQueryBase extends QueryBase implements
 
     private QueryBuilder getSingleFilterOrAndTheFilters(List<QueryBuilder> filters, HasContainer has) {
         if (filters.size() > 1) {
-            return QueryBuilders.andQuery(filters.toArray(new QueryBuilder[filters.size()]));
+            BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
+            for (QueryBuilder filter : filters) {
+                boolQuery.must(filter);
+            }
+            return boolQuery;
         } else if (filters.size() == 1) {
             return filters.get(0);
         } else {
@@ -731,7 +710,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase implements
                     filters.add(QueryBuilders.termsQuery(key, (Object[]) has.value));
                     break;
                 case NOT_IN:
-                    filters.add(QueryBuilders.notQuery(QueryBuilders.termsQuery(key, (Object[]) has.value)));
+                    filters.add(QueryBuilders.boolQuery().mustNot(QueryBuilders.termsQuery(key, (Object[]) has.value)));
                     break;
                 default:
                     throw new VertexiumException("Unexpected Contains predicate " + has.predicate);
@@ -813,11 +792,15 @@ public class ElasticsearchSearchQueryBase extends QueryBase implements
     }
 
     protected void addNotFilter(List<QueryBuilder> filters, String key, Object value) {
-        filters.add(QueryBuilders.notQuery(QueryBuilders.termQuery(key, value)));
+        filters.add(QueryBuilders.boolQuery().mustNot(QueryBuilders.termQuery(key, value)));
     }
 
-    protected AndQueryBuilder getFilterBuilder(List<QueryBuilder> filters) {
-        return QueryBuilders.andQuery(filters.toArray(new QueryBuilder[filters.size()]));
+    protected QueryBuilder getFilterBuilder(List<QueryBuilder> filters) {
+        BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
+        for (QueryBuilder filter : filters) {
+            boolQuery.must(filter);
+        }
+        return boolQuery;
     }
 
     private String[] splitStringIntoTerms(String value) {
@@ -856,7 +839,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase implements
             Collections.addAll(allFields, getPropertyNames(field));
         }
         MoreLikeThisQueryBuilder q = QueryBuilders.moreLikeThisQuery(allFields.toArray(new String[allFields.size()]))
-                .likeText(similarTo.getText());
+                .like(similarTo.getText());
         if (similarTo.getMinTermFrequency() != null) {
             q.minTermFreq(similarTo.getMinTermFrequency());
         }
@@ -1287,6 +1270,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase implements
         }
     }
 
+    @SuppressWarnings("unused")
     public static class Options {
         public int pageSize;
         public ScoringStrategy scoringStrategy;

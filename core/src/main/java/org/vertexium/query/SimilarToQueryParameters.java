@@ -8,7 +8,6 @@ public abstract class SimilarToQueryParameters extends QueryParameters {
     private Integer maxQueryTerms;
     private Integer minDocFrequency;
     private Integer maxDocFrequency;
-    private Float percentTermsToMatch;
     private Float boost;
 
     protected SimilarToQueryParameters(String[] fields, Authorizations authorizations) {
@@ -52,16 +51,6 @@ public abstract class SimilarToQueryParameters extends QueryParameters {
         this.maxDocFrequency = maxDocFrequency;
     }
 
-    @Deprecated
-    public Float getPercentTermsToMatch() {
-        return percentTermsToMatch;
-    }
-
-    @Deprecated
-    public void setPercentTermsToMatch(Float percentTermsToMatch) {
-        this.percentTermsToMatch = percentTermsToMatch;
-    }
-
     public Float getBoost() {
         return boost;
     }
@@ -74,7 +63,6 @@ public abstract class SimilarToQueryParameters extends QueryParameters {
     protected QueryParameters cloneTo(QueryParameters result) {
         ((SimilarToQueryParameters) result).minTermFrequency = getMinTermFrequency();
         ((SimilarToQueryParameters) result).maxQueryTerms = getMaxQueryTerms();
-        ((SimilarToQueryParameters) result).percentTermsToMatch = getPercentTermsToMatch();
         ((SimilarToQueryParameters) result).minDocFrequency = getMinDocFrequency();
         ((SimilarToQueryParameters) result).maxDocFrequency = getMaxDocFrequency();
         ((SimilarToQueryParameters) result).boost = getBoost();

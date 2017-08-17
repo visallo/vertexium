@@ -7,6 +7,8 @@ import org.apache.lucene.search.DisjunctionMaxQuery;
 import org.apache.lucene.search.Query;
 import org.elasticsearch.index.query.QueryParseContext;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -37,16 +39,17 @@ public class VertexiumMapperQueryParser extends MapperQueryParser {
         }
 
         String fieldPrefix = field + "_";
-        DisjunctionMaxQuery query = new DisjunctionMaxQuery(0.0f);
+        List<Query> disjuncts = new ArrayList<>();
         for (String fieldName : fieldNameToVisibilityMap.getFieldNames()) {
             if (fieldName.startsWith(fieldPrefix)) {
                 String visibility = fieldNameToVisibilityMap.getFieldVisibility(fieldName);
                 if (VisibilityUtils.canRead(visibility, authorizations)) {
                     Query termQuery = super.newFieldQuery(analyzer, fieldName, queryText, quoted);
-                    query.add(termQuery);
+                    disjuncts.add(termQuery);
                 }
             }
         }
+        DisjunctionMaxQuery query = new DisjunctionMaxQuery(disjuncts, 0.0f);
 
         if (query.getDisjuncts().size() == 0) {
             return super.newFieldQuery(analyzer, field, queryText, quoted);

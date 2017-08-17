@@ -374,7 +374,6 @@
     <modules>
         <module>core</module>
         <module>tools</module>
-        <module>examples</module>
         <module>cli</module>
         <module>test</module>
         <module>security</module>

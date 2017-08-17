@@ -1,6 +1,7 @@
 package org.vertexium.elasticsearch2;
 
 import org.elasticsearch.client.Client;
+import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.vertexium.*;
@@ -56,7 +57,10 @@ public class ElasticsearchSearchVertexQuery extends ElasticsearchSearchQueryBase
             case BOTH:
                 QueryBuilder inVertexIdFilter = getDirectionInEdgeFilter();
                 QueryBuilder outVertexIdFilter = getDirectionOutEdgeFilter();
-                return QueryBuilders.orQuery(inVertexIdFilter, outVertexIdFilter);
+                return QueryBuilders.boolQuery()
+                        .should(inVertexIdFilter)
+                        .should(outVertexIdFilter)
+                        .minimumNumberShouldMatch(1);
             case OUT:
                 return getDirectionOutEdgeFilter();
             case IN:
@@ -70,7 +74,9 @@ public class ElasticsearchSearchVertexQuery extends ElasticsearchSearchQueryBase
         QueryBuilder outVertexIdFilter = QueryBuilders.termQuery(Elasticsearch2SearchIndex.IN_VERTEX_ID_FIELD_NAME, sourceVertex.getId());
         if (otherVertexId != null) {
             QueryBuilder inVertexIdFilter = QueryBuilders.termQuery(Elasticsearch2SearchIndex.OUT_VERTEX_ID_FIELD_NAME, otherVertexId);
-            return QueryBuilders.andQuery(outVertexIdFilter, inVertexIdFilter);
+            return QueryBuilders.boolQuery()
+                    .must(outVertexIdFilter)
+                    .must(inVertexIdFilter);
         }
         return outVertexIdFilter;
     }
@@ -79,7 +85,9 @@ public class ElasticsearchSearchVertexQuery extends ElasticsearchSearchQueryBase
         QueryBuilder outVertexIdFilter = QueryBuilders.termQuery(Elasticsearch2SearchIndex.OUT_VERTEX_ID_FIELD_NAME, sourceVertex.getId());
         if (otherVertexId != null) {
             QueryBuilder inVertexIdFilter = QueryBuilders.termQuery(Elasticsearch2SearchIndex.IN_VERTEX_ID_FIELD_NAME, otherVertexId);
-            return QueryBuilders.andQuery(outVertexIdFilter, inVertexIdFilter);
+            return QueryBuilders.boolQuery()
+                    .must(outVertexIdFilter)
+                    .must(inVertexIdFilter);
         }
         return outVertexIdFilter;
     }
@@ -106,10 +114,10 @@ public class ElasticsearchSearchVertexQuery extends ElasticsearchSearchQueryBase
 
         if (elementTypes.contains(ElasticsearchDocumentType.VERTEX_EXTENDED_DATA)) {
             for (String vertexId : ids) {
-                filters.add(QueryBuilders.andQuery(
-                        QueryBuilders.termQuery(Elasticsearch2SearchIndex.ELEMENT_TYPE_FIELD_NAME, ElasticsearchDocumentType.VERTEX_EXTENDED_DATA.getKey()),
-                        QueryBuilders.termQuery(Elasticsearch2SearchIndex.EXTENDED_DATA_ELEMENT_ID_FIELD_NAME, vertexId)
-                ));
+                filters.add(
+                        QueryBuilders.boolQuery()
+                                .must(QueryBuilders.termQuery(Elasticsearch2SearchIndex.ELEMENT_TYPE_FIELD_NAME, ElasticsearchDocumentType.VERTEX_EXTENDED_DATA.getKey()))
+                                .must(QueryBuilders.termQuery(Elasticsearch2SearchIndex.EXTENDED_DATA_ELEMENT_ID_FIELD_NAME, vertexId)));
             }
         }
 
@@ -120,7 +128,12 @@ public class ElasticsearchSearchVertexQuery extends ElasticsearchSearchQueryBase
         if (filters.size() == 1) {
             return filters.get(0);
         } else {
-            return QueryBuilders.orQuery(filters.toArray(new QueryBuilder[filters.size()]));
+            BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
+            for (QueryBuilder filter : filters) {
+                boolQuery.should(filter);
+            }
+            boolQuery.minimumNumberShouldMatch(1);
+            return boolQuery;
         }
     }
 

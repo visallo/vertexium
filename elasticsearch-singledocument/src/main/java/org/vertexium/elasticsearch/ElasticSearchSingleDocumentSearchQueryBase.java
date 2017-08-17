@@ -49,11 +49,7 @@ import org.vertexium.util.VertexiumLoggerFactory;
 import java.io.IOException;
 import java.util.*;
 
-public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implements
-        GraphQueryWithHistogramAggregation,
-        GraphQueryWithTermsAggregation,
-        GraphQueryWithGeohashAggregation,
-        GraphQueryWithStatisticsAggregation {
+public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase {
     private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(ElasticSearchSingleDocumentSearchQueryBase.class);
     public static final VertexiumLogger QUERY_LOGGER = VertexiumLoggerFactory.getQueryLogger(Query.class);
     private final Client client;
@@ -106,40 +102,6 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
         this.scrollKeepAlive = options.scrollKeepAlive;
         this.pagingLimit = options.pagingLimit;
         this.analyzer = options.analyzer;
-    }
-
-    @Override
-    @Deprecated
-    public GraphQueryWithHistogramAggregation addHistogramAggregation(String aggregationName, String fieldName, String interval, Long minDocumentCount) {
-        addAggregation(new HistogramAggregation(aggregationName, fieldName, interval, minDocumentCount));
-        return this;
-    }
-
-    @Override
-    @Deprecated
-    public GraphQueryWithHistogramAggregation addHistogramAggregation(String aggregationName, String fieldName, String interval) {
-        return addHistogramAggregation(aggregationName, fieldName, interval, null);
-    }
-
-    @Override
-    @Deprecated
-    public GraphQueryWithTermsAggregation addTermsAggregation(String aggregationName, String fieldName) {
-        addAggregation(new TermsAggregation(aggregationName, fieldName));
-        return this;
-    }
-
-    @Override
-    @Deprecated
-    public GraphQueryWithGeohashAggregation addGeohashAggregation(String aggregationName, String fieldName, int precision) {
-        addAggregation(new GeohashAggregation(aggregationName, fieldName, precision));
-        return this;
-    }
-
-    @Override
-    @Deprecated
-    public GraphQueryWithStatisticsAggregation addStatisticsAggregation(String aggregationName, String field) {
-        addAggregation(new StatisticsAggregation(aggregationName, field));
-        return this;
     }
 
     @Override
@@ -852,9 +814,6 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
         }
         MoreLikeThisQueryBuilder q = QueryBuilders.moreLikeThisQuery(allFields.toArray(new String[allFields.size()]))
                 .likeText(similarTo.getText());
-        if (similarTo.getPercentTermsToMatch() != null) {
-            q.percentTermsToMatch(similarTo.getPercentTermsToMatch());
-        }
         if (similarTo.getMinTermFrequency() != null) {
             q.minTermFreq(similarTo.getMinTermFrequency());
         }

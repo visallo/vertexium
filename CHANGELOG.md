@@ -1,3 +1,7 @@
+# v3.0.0
+
+* Changed: remove deprecated interfaces, examples, and changed Elasticsearch deprecated methods
+
 # v2.6.2
 
 * Added: Elasticsearch scroll API support

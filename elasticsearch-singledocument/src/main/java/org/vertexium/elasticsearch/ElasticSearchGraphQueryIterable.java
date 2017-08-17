@@ -31,11 +31,7 @@ import java.util.*;
 public class ElasticSearchGraphQueryIterable<T> extends DefaultGraphQueryIterable<T> implements
         IterableWithTotalHits<T>,
         IterableWithSearchTime<T>,
-        IterableWithScores<T>,
-        IterableWithHistogramResults<T>,
-        IterableWithTermsResults<T>,
-        IterableWithGeohashResults<T>,
-        IterableWithStatisticsResults<T> {
+        IterableWithScores<T> {
     private final long totalHits;
     private final long searchTimeInNanoSeconds;
     private final Map<Object, Double> scores = new HashMap<>();
@@ -111,11 +107,7 @@ public class ElasticSearchGraphQueryIterable<T> extends DefaultGraphQueryIterabl
         }
         for (Aggregation agg : aggs) {
             String aggName = query.getAggregationName(agg.getName());
-            List<Aggregation> l = aggsByName.get(aggName);
-            if (l == null) {
-                l = new ArrayList<>();
-                aggsByName.put(aggName, l);
-            }
+            List<Aggregation> l = aggsByName.computeIfAbsent(aggName, k -> new ArrayList<>());
             l.add(agg);
         }
         return aggsByName;
@@ -176,11 +168,7 @@ public class ElasticSearchGraphQueryIterable<T> extends DefaultGraphQueryIterabl
                     if (isCalendarFieldQuery && b.getKey().equals("-1")) {
                         continue;
                     }
-                    List<MultiBucketsAggregation.Bucket> l = bucketsByKey.get(b.getKey());
-                    if (l == null) {
-                        l = new ArrayList<>();
-                        bucketsByKey.put(b.getKey(), l);
-                    }
+                    List<MultiBucketsAggregation.Bucket> l = bucketsByKey.computeIfAbsent(b.getKey(), k -> new ArrayList<>());
                     l.add(b);
                 }
             } else {
@@ -206,11 +194,7 @@ public class ElasticSearchGraphQueryIterable<T> extends DefaultGraphQueryIterabl
             if (agg instanceof Range) {
                 Range r = (Range) agg;
                 for (Range.Bucket b : r.getBuckets()) {
-                    List<MultiBucketsAggregation.Bucket> l = bucketsByKey.get(b.getKey());
-                    if (l == null) {
-                        l = new ArrayList<>();
-                        bucketsByKey.put(b.getKey(), l);
-                    }
+                    List<MultiBucketsAggregation.Bucket> l = bucketsByKey.computeIfAbsent(b.getKey(), k -> new ArrayList<>());
                     l.add(b);
                 }
             } else {
@@ -254,11 +238,7 @@ public class ElasticSearchGraphQueryIterable<T> extends DefaultGraphQueryIterabl
                 Terms h = (Terms) agg;
                 for (Terms.Bucket b : h.getBuckets()) {
                     String mapKey = b.getKey();
-                    List<MultiBucketsAggregation.Bucket> existingBucketByName = bucketsByKey.get(mapKey);
-                    if (existingBucketByName == null) {
-                        existingBucketByName = new ArrayList<>();
-                        bucketsByKey.put(mapKey, existingBucketByName);
-                    }
+                    List<MultiBucketsAggregation.Bucket> existingBucketByName = bucketsByKey.computeIfAbsent(mapKey, k -> new ArrayList<>());
                     existingBucketByName.add(b);
                 }
             } else {
@@ -308,11 +288,7 @@ public class ElasticSearchGraphQueryIterable<T> extends DefaultGraphQueryIterabl
             if (agg instanceof GeoHashGrid) {
                 GeoHashGrid h = (GeoHashGrid) agg;
                 for (GeoHashGrid.Bucket b : h.getBuckets()) {
-                    List<MultiBucketsAggregation.Bucket> existingBucket = bucketsByKey.get(b.getKey());
-                    if (existingBucket == null) {
-                        existingBucket = new ArrayList<>();
-                        bucketsByKey.put(b.getKey(), existingBucket);
-                    }
+                    List<MultiBucketsAggregation.Bucket> existingBucket = bucketsByKey.computeIfAbsent(b.getKey(), k -> new ArrayList<>());
                     existingBucket.add(b);
                 }
             } else {
@@ -367,29 +343,5 @@ public class ElasticSearchGraphQueryIterable<T> extends DefaultGraphQueryIterabl
             }
         }
         return StatisticsResult.combine(results);
-    }
-
-    @SuppressWarnings("deprecation")
-    @Override
-    public GeohashResult getGeohashResults(String name) {
-        return this.getAggregationResult(name, GeohashResult.class);
-    }
-
-    @SuppressWarnings("deprecation")
-    @Override
-    public HistogramResult getHistogramResults(String name) {
-        return this.getAggregationResult(name, HistogramResult.class);
-    }
-
-    @SuppressWarnings("deprecation")
-    @Override
-    public StatisticsResult getStatisticsResults(String name) {
-        return this.getAggregationResult(name, StatisticsResult.class);
-    }
-
-    @SuppressWarnings("deprecation")
-    @Override
-    public TermsResult getTermsResults(String name) {
-        return this.getAggregationResult(name, TermsResult.class);
     }
 }
