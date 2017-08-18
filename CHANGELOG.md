@@ -1,6 +1,7 @@
 # v2.4.6
 
 * Changed: Delete events added to HistoricalPropertyValue reporting
+* Add test and javadoc for altering property that has a property key that is not the default
 
 # v2.4.5
 
