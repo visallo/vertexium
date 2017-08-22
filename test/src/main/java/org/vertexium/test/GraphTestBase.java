@@ -3902,7 +3902,7 @@ public abstract class GraphTestBase {
 
         Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B);
         v1.prepareMutation()
-                .alterPropertyVisibility("prop1", VISIBILITY_B)
+                .alterPropertyVisibility("k1", "prop1", VISIBILITY_B)
                 .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
@@ -3931,16 +3931,18 @@ public abstract class GraphTestBase {
                 .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
-        graph.prepareEdge("e1", "v1", "v2", VISIBILITY_EMPTY)
+        graph.prepareEdge("e1", "v1", "v2", "label", VISIBILITY_EMPTY)
                 .addPropertyValue("k2", "prop2", "value2", VISIBILITY_A)
                 .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         Edge e1 = graph.getEdge("e1", AUTHORIZATIONS_A_AND_B);
         e1.prepareMutation()
-                .alterPropertyVisibility("prop2", VISIBILITY_B)
+                .alterPropertyVisibility("k2","prop2", VISIBILITY_B)
                 .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
+
+        e1 = graph.getEdge("e1", AUTHORIZATIONS_A);
         assertNull(e1.getProperty("prop2"));
 
         assertEquals(1, count(graph.query(AUTHORIZATIONS_B).has("prop2", "value2").edges()));
@@ -3957,7 +3959,7 @@ public abstract class GraphTestBase {
         }
 
         e1 = graph.getEdge("e1", AUTHORIZATIONS_A_AND_B);
-        Property e1prop1 = v1.getProperty("prop2");
+        Property e1prop1 = e1.getProperty("prop2");
         assertNotNull(e1prop1);
         assertEquals(VISIBILITY_B, e1prop1.getVisibility());
     }

@@ -23,7 +23,7 @@ public interface ExistingElementMutation<T extends Element> extends ElementMutat
     ExistingElementMutation<T> alterPropertyVisibility(String key, String name, Visibility visibility);
 
     /**
-     * Alters the visibility of a property.
+     * Alters the visibility of a property (assumes the property key is the DEFAULT).
      *
      * @param name       The name of the property to alter the visibility of.
      * @param visibility The new visibility.
