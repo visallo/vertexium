@@ -80,31 +80,27 @@ public class AccumuloEdge extends AccumuloElement implements Edge {
             String edgeId;
             Visibility vertexVisibility;
             Iterable<Property> properties;
-            Iterable<PropertyDeleteMutation> propertyDeleteMutations = new ArrayList<>();
-            Iterable<PropertySoftDeleteMutation> propertySoftDeleteMutations = new ArrayList<>();
             Iterable<Visibility> hiddenVisibilities;
-            Map<String, org.vertexium.accumulo.iterator.model.EdgeInfo> inEdges;
-            Map<String, org.vertexium.accumulo.iterator.model.EdgeInfo> outEdges;
             long timestamp;
 
             ByteArrayInputStream bain = new ByteArrayInputStream(value.get());
             final DataInputStream in = new DataInputStream(bain);
             DataInputStreamUtils.decodeHeader(in, ElementData.TYPE_ID_EDGE);
-            edgeId = DataInputStreamUtils.decodeText(in).toString();
+            edgeId = DataInputStreamUtils.decodeString(in);
             timestamp = in.readLong();
-            vertexVisibility = new Visibility(DataInputStreamUtils.decodeText(in).toString());
-            hiddenVisibilities = Iterables.transform(DataInputStreamUtils.decodeTextList(in), new Function<Text, Visibility>() {
+            vertexVisibility = new Visibility(DataInputStreamUtils.decodeString(in));
+            hiddenVisibilities = Iterables.transform(DataInputStreamUtils.decodeStringSet(in), new Function<String, Visibility>() {
                 @Nullable
                 @Override
-                public Visibility apply(Text input) {
-                    return new Visibility(input.toString());
+                public Visibility apply(String input) {
+                    return new Visibility(input);
                 }
             });
             properties = DataInputStreamUtils.decodeProperties(graph, in, fetchHints);
             ImmutableSet<String> extendedDataTableNames = DataInputStreamUtils.decodeStringSet(in);
-            String inVertexId = DataInputStreamUtils.decodeText(in).toString();
-            String outVertexId = DataInputStreamUtils.decodeText(in).toString();
-            String label = graph.getNameSubstitutionStrategy().inflate(DataInputStreamUtils.decodeText(in));
+            String inVertexId = DataInputStreamUtils.decodeString(in);
+            String outVertexId = DataInputStreamUtils.decodeString(in);
+            String label = graph.getNameSubstitutionStrategy().inflate(DataInputStreamUtils.decodeString(in));
 
             return new AccumuloEdge(
                     graph,
@@ -115,8 +111,8 @@ public class AccumuloEdge extends AccumuloElement implements Edge {
                     null,
                     vertexVisibility,
                     properties,
-                    propertyDeleteMutations,
-                    propertySoftDeleteMutations,
+                    null,
+                    null,
                     hiddenVisibilities,
                     extendedDataTableNames,
                     timestamp,
