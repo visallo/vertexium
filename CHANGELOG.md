@@ -1,6 +1,7 @@
 # v3.0.0
 
 * Changed: remove deprecated interfaces, examples, and changed Elasticsearch deprecated methods
+* Added: Does Not Contain Text Query
 
 # v2.6.2
 

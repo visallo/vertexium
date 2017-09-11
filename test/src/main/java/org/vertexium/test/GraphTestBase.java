@@ -3711,6 +3711,33 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    public void testTextIndexDoesNotContain() throws Exception {
+        graph.defineProperty("both").dataType(String.class).textIndexHint(TextIndexHint.ALL).define();
+        graph.defineProperty("fullText").dataType(String.class).textIndexHint(TextIndexHint.FULL_TEXT).define();
+        graph.defineProperty("exactMatch").dataType(String.class).textIndexHint(TextIndexHint.EXACT_MATCH).define();
+
+        graph.prepareVertex("v1", VISIBILITY_A)
+                .setProperty("exactMatch", "Test Value", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A_AND_B);
+
+        graph.prepareVertex("v2", VISIBILITY_A)
+                .setProperty("both", "Test Value", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A_AND_B);
+
+        graph.prepareVertex("v3", VISIBILITY_A)
+                .setProperty("both", "Temp", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A_AND_B);
+
+        graph.prepareVertex("v4", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        Assert.assertEquals(3, count(graph.query(AUTHORIZATIONS_A).has("both", TextPredicate.DOES_NOT_CONTAIN, "Test").vertices()));
+        Assert.assertEquals(3, count(graph.query(AUTHORIZATIONS_A).has("exactMatch", TextPredicate.DOES_NOT_CONTAIN, "Test").vertices()));
+        Assert.assertEquals(3, count(graph.query(AUTHORIZATIONS_A).has("exactMatch", TextPredicate.DOES_NOT_CONTAIN, "Test Value").vertices()));
+    }
+
+    @Test
     public void testTextIndexStreamingPropertyValue() throws Exception {
         graph.defineProperty("none").dataType(String.class).textIndexHint(TextIndexHint.NONE).define();
         graph.defineProperty("both").dataType(String.class).textIndexHint(TextIndexHint.ALL).define();

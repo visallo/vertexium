@@ -6,14 +6,18 @@ import org.vertexium.TextIndexHint;
 import org.vertexium.VertexiumException;
 import org.vertexium.property.StreamingPropertyValue;
 import org.vertexium.type.GeoPoint;
+import org.vertexium.util.IterableUtils;
 
 import java.util.Collection;
 
 public enum TextPredicate implements Predicate {
-    CONTAINS;
+    CONTAINS, DOES_NOT_CONTAIN;
 
     @Override
     public boolean evaluate(final Iterable<Property> properties, final Object second, Collection<PropertyDefinition> propertyDefinitions) {
+        if (IterableUtils.count(properties) == 0 && this == DOES_NOT_CONTAIN) {
+            return true;
+        }
         for (Property property : properties) {
             PropertyDefinition propertyDefinition = PropertyDefinition.findPropertyDefinition(propertyDefinitions, property.getName());
             if (evaluate(property.getValue(), second, propertyDefinition)) {
@@ -38,6 +42,11 @@ public enum TextPredicate implements Predicate {
                     return false;
                 }
                 return firstString.contains(secondString);
+            case DOES_NOT_CONTAIN:
+                if (propertyDefinition != null && !propertyDefinition.getTextIndexHints().contains(TextIndexHint.FULL_TEXT)) {
+                    return false;
+                }
+                return !firstString.contains(secondString);
             default:
                 throw new IllegalArgumentException("Invalid text predicate: " + this);
         }
