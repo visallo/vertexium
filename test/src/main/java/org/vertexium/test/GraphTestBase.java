@@ -2045,6 +2045,47 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    public void testGraphQueryContainsNotIn() {
+        graph.prepareVertex("v1", VISIBILITY_A)
+                .setProperty("status", "0", VISIBILITY_A)
+                .setProperty("name", "susan", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A_AND_B);
+
+        graph.prepareVertex("v2", VISIBILITY_A)
+                .setProperty("status", "1", VISIBILITY_A)
+                .setProperty("name", "joe", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A_AND_B);
+
+        graph.prepareVertex("v3", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A_AND_B);
+
+        graph.prepareVertex("v4", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A_AND_B);
+
+        graph.prepareVertex("v5", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A_AND_B);
+
+        graph.prepareVertex("v6", VISIBILITY_A)
+                .setProperty("status", "0", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        try {
+            Iterable<Vertex> vertices = graph.query(AUTHORIZATIONS_A)
+                    .has("status", Contains.NOT_IN, new String[]{"0"})
+                    .vertices();
+            Assert.assertEquals(4, count(vertices));
+
+            vertices = graph.query(AUTHORIZATIONS_A)
+                    .has("status", Contains.NOT_IN, new String[]{"0", "1"})
+                    .vertices();
+            Assert.assertEquals(3, count(vertices));
+        } catch (VertexiumNotSupportedException ex) {
+            LOGGER.warn("skipping. Not supported", ex);
+        }
+    }
+
+    @Test
     public void testGraphQueryHasNotGeoPointAndExact() {
         graph.defineProperty("location").dataType(GeoPoint.class).define();
         graph.defineProperty("exact").dataType(String.class).textIndexHint(TextIndexHint.EXACT_MATCH).define();

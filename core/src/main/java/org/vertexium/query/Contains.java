@@ -3,6 +3,7 @@ package org.vertexium.query;
 import org.vertexium.Property;
 import org.vertexium.PropertyDefinition;
 import org.vertexium.VertexiumException;
+import org.vertexium.util.IterableUtils;
 
 import java.util.Collection;
 
@@ -11,6 +12,9 @@ public enum Contains implements Predicate {
 
     @Override
     public boolean evaluate(Iterable<Property> properties, Object second, Collection<PropertyDefinition> propertyDefinitions) {
+        if (IterableUtils.count(properties) == 0 && this == NOT_IN) {
+            return true;
+        }
         for (Property property : properties) {
             PropertyDefinition propertyDefinition = PropertyDefinition.findPropertyDefinition(propertyDefinitions, property.getName());
             if (evaluate(property, second, propertyDefinition)) {
