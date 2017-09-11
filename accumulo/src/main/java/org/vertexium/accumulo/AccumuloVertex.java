@@ -116,24 +116,22 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
             String vertexId;
             Visibility vertexVisibility;
             Iterable<Property> properties;
-            Iterable<PropertyDeleteMutation> propertyDeleteMutations = new ArrayList<>();
-            Iterable<PropertySoftDeleteMutation> propertySoftDeleteMutations = new ArrayList<>();
             Iterable<Visibility> hiddenVisibilities;
             Edges inEdges;
             Edges outEdges;
             long timestamp;
 
             ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(value.get());
-            final DataInputStream in = new DataInputStream(byteArrayInputStream);
+            DataInputStream in = new DataInputStream(byteArrayInputStream);
             DataInputStreamUtils.decodeHeader(in, ElementData.TYPE_ID_VERTEX);
-            vertexId = DataInputStreamUtils.decodeText(in).toString();
+            vertexId = DataInputStreamUtils.decodeString(in);
             timestamp = in.readLong();
-            vertexVisibility = new Visibility(DataInputStreamUtils.decodeText(in).toString());
-            hiddenVisibilities = Iterables.transform(DataInputStreamUtils.decodeTextList(in), new Function<Text, Visibility>() {
+            vertexVisibility = new Visibility(DataInputStreamUtils.decodeString(in));
+            hiddenVisibilities = Iterables.transform(DataInputStreamUtils.decodeStringSet(in), new Function<String, Visibility>() {
                 @Nullable
                 @Override
-                public Visibility apply(Text input) {
-                    return new Visibility(input.toString());
+                public Visibility apply(String input) {
+                    return new Visibility(input);
                 }
             });
             properties = DataInputStreamUtils.decodeProperties(graph, in, fetchHints);
@@ -146,8 +144,8 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
                     vertexId,
                     vertexVisibility,
                     properties,
-                    propertyDeleteMutations,
-                    propertySoftDeleteMutations,
+                    null,
+                    null,
                     hiddenVisibilities,
                     extendedDataTableNames,
                     inEdges,

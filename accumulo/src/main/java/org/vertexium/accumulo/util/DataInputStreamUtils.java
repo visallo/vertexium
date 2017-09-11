@@ -69,7 +69,7 @@ public class DataInputStreamUtils {
             }
             String propertyKey = graph.getNameSubstitutionStrategy().inflate(decodeString(in));
             String propertyName = graph.getNameSubstitutionStrategy().inflate(decodeString(in));
-            Visibility propertyVisibility = new Visibility(decodeText(in).toString());
+            Visibility propertyVisibility = new Visibility(decodeString(in));
             long propertyTimestamp = in.readLong();
             int propertyValueLength = in.readInt();
             byte[] propertyValue = new byte[propertyValueLength];
@@ -77,14 +77,14 @@ public class DataInputStreamUtils {
             if (read != propertyValueLength) {
                 throw new IOException("Unexpected data length expected " + propertyValueLength + " found " + read);
             }
-            List<Text> propertyHiddenVisibilitiesTextList = decodeTextList(in);
+            Set<String> propertyHiddenVisibilitiesStringSet = decodeStringSet(in);
             Set<Visibility> propertyHiddenVisibilities = null;
-            if (propertyHiddenVisibilitiesTextList != null) {
-                propertyHiddenVisibilities = Sets.newHashSet(Iterables.transform(propertyHiddenVisibilitiesTextList, new Function<Text, Visibility>() {
+            if (propertyHiddenVisibilitiesStringSet != null) {
+                propertyHiddenVisibilities = Sets.newHashSet(Iterables.transform(propertyHiddenVisibilitiesStringSet, new Function<String, Visibility>() {
                     @Nullable
                     @Override
-                    public Visibility apply(Text input) {
-                        return new Visibility(input.toString());
+                    public Visibility apply(String input) {
+                        return new Visibility(input);
                     }
                 }));
             }
@@ -148,7 +148,7 @@ public class DataInputStreamUtils {
         EdgesWithEdgeInfo edges = new EdgesWithEdgeInfo();
         int count = in.readInt();
         for (int i = 0; i < count; i++) {
-            String label = new String(decodeByteArray(in), DataOutputStreamUtils.CHARSET);
+            String label = decodeString(in);
             int edgeByLabelCount = in.readInt();
             for (int edgeByLabelIndex = 0; edgeByLabelIndex < edgeByLabelCount; edgeByLabelIndex++) {
                 Text edgeId = decodeText(in);
