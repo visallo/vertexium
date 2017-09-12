@@ -8,6 +8,7 @@ import org.vertexium.property.StreamingPropertyValue;
 import org.vertexium.type.GeoPoint;
 import org.vertexium.util.IterableUtils;
 
+import java.util.Arrays;
 import java.util.Collection;
 
 public enum TextPredicate implements Predicate {
@@ -44,9 +45,10 @@ public enum TextPredicate implements Predicate {
                 return firstString.contains(secondString);
             case DOES_NOT_CONTAIN:
                 if (propertyDefinition != null && !propertyDefinition.getTextIndexHints().contains(TextIndexHint.FULL_TEXT)) {
-                    return false;
+                    return true;
                 }
-                return !firstString.contains(secondString);
+                String[] tokenizedString = firstString.split("\\W+");
+                return !Arrays.asList(tokenizedString).contains(secondString);
             default:
                 throw new IllegalArgumentException("Invalid text predicate: " + this);
         }
