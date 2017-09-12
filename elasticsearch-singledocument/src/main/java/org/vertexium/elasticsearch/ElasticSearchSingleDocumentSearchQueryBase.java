@@ -62,6 +62,7 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase {
     private final int pageSize;
     private final int pagingLimit;
     private final TimeValue scrollKeepAlive;
+    private final int termAggregationShardSize;
 
     public ElasticSearchSingleDocumentSearchQueryBase(
             Client client,
@@ -81,6 +82,7 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase {
         this.scrollKeepAlive = options.scrollKeepAlive;
         this.pagingLimit = options.pagingLimit;
         this.analyzer = options.analyzer;
+        this.termAggregationShardSize = options.termAggregationShardSize;
     }
 
     public ElasticSearchSingleDocumentSearchQueryBase(
@@ -102,6 +104,7 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase {
         this.scrollKeepAlive = options.scrollKeepAlive;
         this.pagingLimit = options.pagingLimit;
         this.analyzer = options.analyzer;
+        this.termAggregationShardSize = options.termAggregationShardSize;
     }
 
     @Override
@@ -910,6 +913,10 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase {
         if (Edge.LABEL_PROPERTY_NAME.equals(fieldName)) {
             TermsBuilder termsAgg = AggregationBuilders.terms(createAggregationName(agg.getAggregationName(), "0"));
             termsAgg.field(fieldName);
+            if (agg.getSize() != null) {
+                termsAgg.size(agg.getSize());
+            }
+            termsAgg.shardSize(termAggregationShardSize);
             termsAggs.add(termsAgg);
         } else {
             PropertyDefinition propertyDefinition = getPropertyDefinition(fieldName);
@@ -924,6 +931,7 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase {
                 if (agg.getSize() != null) {
                     termsAgg.size(agg.getSize());
                 }
+                termsAgg.shardSize(termAggregationShardSize);
 
                 for (AbstractAggregationBuilder subAgg : getElasticsearchAggregations(agg.getNestedAggregations())) {
                     termsAgg.subAggregation(subAgg);
@@ -1243,6 +1251,7 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase {
         public TimeValue scrollKeepAlive;
         public StandardAnalyzer analyzer = new StandardAnalyzer();
         public int pagingLimit;
+        public int termAggregationShardSize;
 
         public int getPageSize() {
             return pageSize;
@@ -1295,6 +1304,13 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase {
 
         public Options setPagingLimit(int pagingLimit) {
             this.pagingLimit = pagingLimit;
+            return this;
+        }
+
+        public int getTermAggregationShardSize () { return termAggregationShardSize; }
+
+        public Options setTermAggregationShardSize (int termAggregationShardSize) {
+            this.termAggregationShardSize = termAggregationShardSize;
             return this;
         }
     }
