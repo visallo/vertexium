@@ -3773,9 +3773,23 @@ public abstract class GraphTestBase {
                 .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
-        Assert.assertEquals(3, count(graph.query(AUTHORIZATIONS_A).has("both", TextPredicate.DOES_NOT_CONTAIN, "Test").vertices()));
-        Assert.assertEquals(3, count(graph.query(AUTHORIZATIONS_A).has("exactMatch", TextPredicate.DOES_NOT_CONTAIN, "Test").vertices()));
-        Assert.assertEquals(3, count(graph.query(AUTHORIZATIONS_A).has("exactMatch", TextPredicate.DOES_NOT_CONTAIN, "Test Value").vertices()));
+        QueryResultsIterable<Vertex> vertices = graph.query(AUTHORIZATIONS_A)
+                .has("both", TextPredicate.DOES_NOT_CONTAIN, "Test")
+                .vertices();
+        Assert.assertEquals(3, count(vertices));
+        vertices.forEach(v -> Arrays.asList("v1", "v3", "v4").contains(v.getId()));
+
+        vertices = graph.query(AUTHORIZATIONS_A)
+                .has("exactMatch", TextPredicate.DOES_NOT_CONTAIN, "Test")
+                .vertices();
+        Assert.assertEquals(3, count(vertices));
+        vertices.forEach(v -> Arrays.asList("v2", "v3", "v4").contains(v.getId()));
+
+        vertices = graph.query(AUTHORIZATIONS_A)
+                .has("exactMatch", TextPredicate.DOES_NOT_CONTAIN, "Test Value")
+                .vertices();
+        Assert.assertEquals(3, count(vertices));
+        vertices.forEach(v -> Arrays.asList("v2", "v3", "v4").contains(v.getId()));
     }
 
     @Test
