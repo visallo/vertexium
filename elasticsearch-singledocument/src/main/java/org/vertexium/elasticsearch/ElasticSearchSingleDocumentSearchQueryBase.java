@@ -56,6 +56,8 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
     private final ScoringStrategy scoringStrategy;
     private final IndexSelectionStrategy indexSelectionStrategy;
     private final int pageSize;
+    private final int termAggregationShardSize;
+    private final int termAggregationSize;
 
     public ElasticSearchSingleDocumentSearchQueryBase(
             Client client,
@@ -64,6 +66,8 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
             ScoringStrategy scoringStrategy,
             IndexSelectionStrategy indexSelectionStrategy,
             int pageSize,
+            int termAggregationShardSize,
+            int termAggregationSize,
             Authorizations authorizations
     ) {
         super(graph, queryString, authorizations);
@@ -75,6 +79,8 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
         this.scoringStrategy = scoringStrategy;
         this.analyzer = new StandardAnalyzer();
         this.indexSelectionStrategy = indexSelectionStrategy;
+        this.termAggregationShardSize = termAggregationShardSize;
+        this.termAggregationSize = termAggregationSize;
     }
 
     public ElasticSearchSingleDocumentSearchQueryBase(
@@ -85,6 +91,8 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
             ScoringStrategy scoringStrategy,
             IndexSelectionStrategy indexSelectionStrategy,
             int pageSize,
+            int termAggregationShardSize,
+            int termAggregationSize,
             Authorizations authorizations
     ) {
         super(graph, similarToFields, similarToText, authorizations);
@@ -96,6 +104,8 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
         this.scoringStrategy = scoringStrategy;
         this.analyzer = new StandardAnalyzer();
         this.indexSelectionStrategy = indexSelectionStrategy;
+        this.termAggregationShardSize = termAggregationShardSize;
+        this.termAggregationSize = termAggregationSize;
     }
 
     @Override
@@ -861,6 +871,8 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
         if (Edge.LABEL_PROPERTY_NAME.equals(fieldName)) {
             TermsBuilder termsAgg = AggregationBuilders.terms(createAggregationName(agg.getAggregationName(), "0"));
             termsAgg.field(fieldName);
+            termsAgg.shardSize(termAggregationShardSize);
+            termsAgg.size(termAggregationSize);
             termsAggs.add(termsAgg);
         } else {
             PropertyDefinition propertyDefinition = getPropertyDefinition(fieldName);
@@ -872,6 +884,8 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
                 String visibilityHash = getSearchIndex().getPropertyVisibilityHashFromDeflatedPropertyName(propertyName);
                 TermsBuilder termsAgg = AggregationBuilders.terms(createAggregationName(agg.getAggregationName(), visibilityHash));
                 termsAgg.field(propertyName);
+                termsAgg.shardSize(termAggregationShardSize);
+                termsAgg.size(termAggregationSize);
 
                 for (AbstractAggregationBuilder subAgg : getElasticsearchAggregations(agg.getNestedAggregations())) {
                     termsAgg.subAggregation(subAgg);

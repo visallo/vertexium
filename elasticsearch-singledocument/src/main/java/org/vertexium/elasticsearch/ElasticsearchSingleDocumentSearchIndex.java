@@ -684,6 +684,8 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
                 getConfig().getScoringStrategy(),
                 getIndexSelectionStrategy(),
                 getConfig().getQueryPageSize(),
+                getConfig().getTermAggregationShardSize(),
+                getConfig().getTermAggregationSize(),
                 authorizations);
     }
 
@@ -697,6 +699,8 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
                 getConfig().getScoringStrategy(),
                 getIndexSelectionStrategy(),
                 getConfig().getQueryPageSize(),
+                getConfig().getTermAggregationShardSize(),
+                getConfig().getTermAggregationSize(),
                 authorizations);
     }
 
@@ -710,6 +714,8 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
                 getConfig().getScoringStrategy(),
                 getIndexSelectionStrategy(),
                 getConfig().getQueryPageSize(),
+                getConfig().getTermAggregationShardSize(),
+                getConfig().getTermAggregationSize(),
                 authorizations);
     }
 

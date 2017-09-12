@@ -25,9 +25,11 @@ public class ElasticSearchSingleDocumentSearchVertexQuery extends ElasticSearchS
             ScoringStrategy scoringStrategy,
             IndexSelectionStrategy indexSelectionStrategy,
             int pageSize,
+            int termAggregationShardSize,
+            int termAggregationSize,
             Authorizations authorizations
     ) {
-        super(client, graph, queryString, scoringStrategy, indexSelectionStrategy, pageSize, authorizations);
+        super(client, graph, queryString, scoringStrategy, indexSelectionStrategy, pageSize, termAggregationShardSize, termAggregationSize, authorizations);
         this.sourceVertex = sourceVertex;
     }
 
