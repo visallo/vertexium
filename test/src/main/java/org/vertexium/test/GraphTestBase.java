@@ -3759,6 +3759,7 @@ public abstract class GraphTestBase {
 
         graph.prepareVertex("v1", VISIBILITY_A)
                 .setProperty("exactMatch", "Test Value", VISIBILITY_A)
+                .setProperty("both", "Test123", VISIBILITY_A)
                 .save(AUTHORIZATIONS_A_AND_B);
 
         graph.prepareVertex("v2", VISIBILITY_A)
@@ -3771,6 +3772,10 @@ public abstract class GraphTestBase {
 
         graph.prepareVertex("v4", VISIBILITY_A)
                 .save(AUTHORIZATIONS_A_AND_B);
+
+        graph.prepareVertex("v5", VISIBILITY_A)
+                .setProperty("both", "Test123 test", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         QueryResultsIterable<Vertex> vertices = graph.query(AUTHORIZATIONS_A)
@@ -3782,14 +3787,14 @@ public abstract class GraphTestBase {
         vertices = graph.query(AUTHORIZATIONS_A)
                 .has("exactMatch", TextPredicate.DOES_NOT_CONTAIN, "Test")
                 .vertices();
-        Assert.assertEquals(3, count(vertices));
-        vertices.forEach(v -> Arrays.asList("v2", "v3", "v4").contains(v.getId()));
+        Assert.assertEquals(5, count(vertices));
+        vertices.forEach(v -> Arrays.asList("v1", "v2", "v3", "v4", "v5").contains(v.getId()));
 
         vertices = graph.query(AUTHORIZATIONS_A)
                 .has("exactMatch", TextPredicate.DOES_NOT_CONTAIN, "Test Value")
                 .vertices();
-        Assert.assertEquals(3, count(vertices));
-        vertices.forEach(v -> Arrays.asList("v2", "v3", "v4").contains(v.getId()));
+        Assert.assertEquals(5, count(vertices));
+        vertices.forEach(v -> Arrays.asList("v1", "v2", "v3", "v4", "v5").contains(v.getId()));
     }
 
     @Test
