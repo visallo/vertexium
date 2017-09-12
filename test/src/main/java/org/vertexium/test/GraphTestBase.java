@@ -3599,9 +3599,32 @@ public abstract class GraphTestBase {
                 .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
-        Assert.assertEquals(3, count(graph.query(AUTHORIZATIONS_A).has("both", TextPredicate.DOES_NOT_CONTAIN, "Test").vertices()));
-        Assert.assertEquals(3, count(graph.query(AUTHORIZATIONS_A).has("exactMatch", TextPredicate.DOES_NOT_CONTAIN, "Test").vertices()));
-        Assert.assertEquals(3, count(graph.query(AUTHORIZATIONS_A).has("exactMatch", TextPredicate.DOES_NOT_CONTAIN, "Test Value").vertices()));
+        QueryResultsIterable<Vertex> vertices = graph.query(AUTHORIZATIONS_A)
+                .has("both", TextPredicate.DOES_NOT_CONTAIN, "Test")
+                .vertices();
+        Assert.assertEquals(3, count(vertices));
+        List<String> expectedVertexIds = Arrays.asList("v1", "v3", "v4");
+        for (Vertex v : vertices) {
+            assertTrue(expectedVertexIds.contains(v.getId()));
+        }
+
+        vertices = graph.query(AUTHORIZATIONS_A)
+                .has("exactMatch", TextPredicate.DOES_NOT_CONTAIN, "Test")
+                .vertices();
+        Assert.assertEquals(3, count(vertices));
+        expectedVertexIds = Arrays.asList("v2", "v3", "v4");
+        for (Vertex v : vertices) {
+            assertTrue(expectedVertexIds.contains(v.getId()));
+        }
+
+        vertices = graph.query(AUTHORIZATIONS_A)
+                .has("exactMatch", TextPredicate.DOES_NOT_CONTAIN, "Test Value")
+                .vertices();
+        Assert.assertEquals(3, count(vertices));
+        expectedVertexIds = Arrays.asList("v2", "v3", "v4");
+        for (Vertex v : vertices) {
+            assertTrue(expectedVertexIds.contains(v.getId()));
+        }
     }
 
     @Test
