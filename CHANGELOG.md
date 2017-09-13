@@ -2,6 +2,7 @@
 
 * Changed: remove deprecated interfaces, examples, and changed Elasticsearch deprecated methods
 * Fixed: Contains.NOT_IN not returning vertices the property does not exist in
+* Added: Does Not Contain Text Query
 
 # v2.6.2
 

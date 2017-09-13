@@ -659,6 +659,13 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase {
                         filters.add(FilterBuilders.termFilter(key, value));
                     }
                     break;
+                case DOES_NOT_CONTAIN:
+                    if (value instanceof String) {
+                        filters.add(FilterBuilders.notFilter(FilterBuilders.termsFilter(key, splitStringIntoTerms((String) value)).execution("and")));
+                    } else {
+                        filters.add(FilterBuilders.notFilter(FilterBuilders.termFilter(key, value)));
+                    }
+                    break;
                 default:
                     throw new VertexiumException("Unexpected text predicate " + has.predicate);
             }
