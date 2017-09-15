@@ -682,6 +682,15 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
                         filters.add(QueryBuilders.termQuery(key, value));
                     }
                     break;
+                case DOES_NOT_CONTAIN:
+                    BoolQueryBuilder boolQueryBuilder = new BoolQueryBuilder();
+                    if (value instanceof String) {
+                        String[] terms = splitStringIntoTerms((String) value);
+                        filters.add(boolQueryBuilder.mustNot(QueryBuilders.termsQuery(key, terms)));
+                    } else {
+                        filters.add(boolQueryBuilder.mustNot(QueryBuilders.termQuery(key, value)));
+                    }
+                    break;
                 default:
                     throw new VertexiumException("Unexpected text predicate " + has.predicate);
             }
