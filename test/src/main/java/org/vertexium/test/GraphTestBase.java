@@ -3619,6 +3619,61 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    public void testTextIndexDoesNotContain() throws Exception {
+        graph.defineProperty("both").dataType(String.class).textIndexHint(TextIndexHint.ALL).define();
+        graph.defineProperty("fullText").dataType(String.class).textIndexHint(TextIndexHint.FULL_TEXT).define();
+        graph.defineProperty("exactMatch").dataType(String.class).textIndexHint(TextIndexHint.EXACT_MATCH).define();
+
+        graph.prepareVertex("v1", VISIBILITY_A)
+                .setProperty("exactMatch", "Test Value", VISIBILITY_A)
+                .setProperty("both", "Test123", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A_AND_B);
+
+        graph.prepareVertex("v2", VISIBILITY_A)
+                .setProperty("both", "Test Value", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A_AND_B);
+
+        graph.prepareVertex("v3", VISIBILITY_A)
+                .setProperty("both", "Temp", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A_AND_B);
+
+        graph.prepareVertex("v4", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A_AND_B);
+
+        graph.prepareVertex("v5", VISIBILITY_A)
+                .setProperty("both", "Test123 test", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        QueryResultsIterable<Vertex> vertices = graph.query(AUTHORIZATIONS_A)
+                .has("both", TextPredicate.DOES_NOT_CONTAIN, "Test")
+                .vertices();
+        Assert.assertEquals(3, count(vertices));
+        List<String> expectedVertexIds = Arrays.asList("v1", "v3", "v4");
+        for (Vertex v : vertices) {
+            assertTrue(expectedVertexIds.contains(v.getId()));
+        }
+
+        vertices = graph.query(AUTHORIZATIONS_A)
+                .has("exactMatch", TextPredicate.DOES_NOT_CONTAIN, "Test")
+                .vertices();
+        Assert.assertEquals(5, count(vertices));
+        expectedVertexIds = Arrays.asList("v1", "v2", "v3", "v4", "v5");
+        for (Vertex v : vertices) {
+            assertTrue(expectedVertexIds.contains(v.getId()));
+        }
+
+        vertices = graph.query(AUTHORIZATIONS_A)
+                .has("exactMatch", TextPredicate.DOES_NOT_CONTAIN, "Test Value")
+                .vertices();
+        Assert.assertEquals(5, count(vertices));
+        expectedVertexIds = Arrays.asList("v1", "v2", "v3", "v4", "v5");
+        for (Vertex v : vertices) {
+            assertTrue(expectedVertexIds.contains(v.getId()));
+        }
+    }
+
+    @Test
     public void testTextIndexStreamingPropertyValue() throws Exception {
         graph.defineProperty("none").dataType(String.class).textIndexHint(TextIndexHint.NONE).define();
         graph.defineProperty("both").dataType(String.class).textIndexHint(TextIndexHint.ALL).define();
