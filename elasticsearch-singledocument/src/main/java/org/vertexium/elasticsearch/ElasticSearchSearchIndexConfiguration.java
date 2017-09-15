@@ -34,6 +34,8 @@ public class ElasticSearchSearchIndexConfiguration {
     public static final String AUTHORIZATION_FILTER_ENABLED = "authorizationFilterEnabled";
     public static final boolean AUTHORIZATION_FILTER_ENABLED_DEFAULT = true;
     public static final String SCORING_STRATEGY_CLASS_NAME = "scoringStrategy";
+    public static final String TERM_AGGREGATION_SHARD_SIZE = "termAggregation.shardSize";
+    public static final int TERM_AGGREGATION_SHARD_SIZE_DEFAULT = 10;
     public static final Class<? extends ScoringStrategy> SCORING_STRATEGY_CLASS_NAME_DEFAULT = NopScoringStrategy.class;
     public static final String NAME_SUBSTITUTION_STRATEGY_CLASS_NAME = "nameSubstitutionStrategy";
     public static final Class<? extends NameSubstitutionStrategy> NAME_SUBSTITUTION_STRATEGY_CLASS_NAME_DEFAULT = IdentityNameSubstitutionStrategy.class;
@@ -145,6 +147,15 @@ public class ElasticSearchSearchIndexConfiguration {
 
     public int getNumberOfReplicasDefault() {
         return isInProcessNode() ? NUMBER_OF_REPLICAS_IN_PROCESS_DEFAULT : NUMBER_OF_REPLICAS_DEFAULT;
+    }
+
+    public int getTermAggregationShardSize() {
+        int termAggregationShardSizeDefault = getTermAggregationShardSizeDefault();
+        return graphConfiguration.getInt(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + TERM_AGGREGATION_SHARD_SIZE, termAggregationShardSizeDefault);
+    }
+
+    public int getTermAggregationShardSizeDefault() {
+        return TERM_AGGREGATION_SHARD_SIZE_DEFAULT;
     }
 
     public boolean isAuthorizationFilterEnabled() {

@@ -952,7 +952,8 @@ public class Elasticsearch2SearchIndex implements SearchIndex, SearchIndexWithVe
                         .setIndexSelectionStrategy(getIndexSelectionStrategy())
                         .setPageSize(getConfig().getQueryPageSize())
                         .setPagingLimit(getConfig().getPagingLimit())
-                        .setScrollKeepAlive(getConfig().getScrollKeepAlive()),
+                        .setScrollKeepAlive(getConfig().getScrollKeepAlive())
+                        .setTermAggregationShardSize(getConfig().getTermAggregationShardSize()),
                 authorizations
         );
     }
@@ -969,7 +970,8 @@ public class Elasticsearch2SearchIndex implements SearchIndex, SearchIndexWithVe
                         .setIndexSelectionStrategy(getIndexSelectionStrategy())
                         .setPageSize(getConfig().getQueryPageSize())
                         .setPagingLimit(getConfig().getPagingLimit())
-                        .setScrollKeepAlive(getConfig().getScrollKeepAlive()),
+                        .setScrollKeepAlive(getConfig().getScrollKeepAlive())
+                        .setTermAggregationShardSize(getConfig().getTermAggregationShardSize()),
                 authorizations
         );
     }
@@ -986,7 +988,8 @@ public class Elasticsearch2SearchIndex implements SearchIndex, SearchIndexWithVe
                         .setIndexSelectionStrategy(getIndexSelectionStrategy())
                         .setPageSize(getConfig().getQueryPageSize())
                         .setPagingLimit(getConfig().getPagingLimit())
-                        .setScrollKeepAlive(getConfig().getScrollKeepAlive()),
+                        .setScrollKeepAlive(getConfig().getScrollKeepAlive())
+                        .setTermAggregationShardSize(getConfig().getTermAggregationShardSize()),
                 authorizations
         );
     }

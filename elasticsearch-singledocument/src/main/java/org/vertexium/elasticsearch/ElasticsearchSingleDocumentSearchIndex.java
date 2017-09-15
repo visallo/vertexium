@@ -927,7 +927,8 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
                         .setIndexSelectionStrategy(getIndexSelectionStrategy())
                         .setPageSize(getConfig().getQueryPageSize())
                         .setPagingLimit(getConfig().getPagingLimit())
-                        .setScrollKeepAlive(getConfig().getScrollKeepAlive()),
+                        .setScrollKeepAlive(getConfig().getScrollKeepAlive())
+                        .setTermAggregationShardSize(getConfig().getTermAggregationShardSize()),
                 authorizations
         );
     }
@@ -944,7 +945,8 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
                         .setIndexSelectionStrategy(getIndexSelectionStrategy())
                         .setPageSize(getConfig().getQueryPageSize())
                         .setPagingLimit(getConfig().getPagingLimit())
-                        .setScrollKeepAlive(getConfig().getScrollKeepAlive()),
+                        .setScrollKeepAlive(getConfig().getScrollKeepAlive())
+                        .setTermAggregationShardSize(getConfig().getTermAggregationShardSize()),
                 authorizations
         );
     }
@@ -961,7 +963,8 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
                         .setIndexSelectionStrategy(getIndexSelectionStrategy())
                         .setPageSize(getConfig().getQueryPageSize())
                         .setPagingLimit(getConfig().getPagingLimit())
-                        .setScrollKeepAlive(getConfig().getScrollKeepAlive()),
+                        .setScrollKeepAlive(getConfig().getScrollKeepAlive())
+                        .setTermAggregationShardSize(getConfig().getTermAggregationShardSize()),
                 authorizations
         );
     }
