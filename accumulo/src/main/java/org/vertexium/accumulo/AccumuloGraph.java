@@ -619,7 +619,14 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                 softDeleteEdge(edge, timestamp, authorizations);
             }
 
-            addMutations(VertexiumObjectType.VERTEX, getSoftDeleteRowMutation(vertex.getId(), timestamp));
+            Mutation softDeleteRowMutation = getSoftDeleteRowMutation(vertex.getId(), timestamp);
+
+            // Delete all properties on this vertex.
+            for (Property property : vertex.getProperties()) {
+                elementMutationBuilder.addPropertySoftDeleteToMutation(softDeleteRowMutation, property);
+            }
+
+            addMutations(VertexiumObjectType.VERTEX, softDeleteRowMutation);
 
             if (hasEventListeners()) {
                 queueEvent(new SoftDeleteVertexEvent(this, vertex));
@@ -1125,8 +1132,14 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
 
             addMutations(VertexiumObjectType.VERTEX, outMutation, inMutation);
 
-            // Soft deletes everything else related to edge.
-            addMutations(VertexiumObjectType.EDGE, getSoftDeleteRowMutation(edge.getId(), timestamp));
+            Mutation softDeleteEdgeMutation = getSoftDeleteRowMutation(edge.getId(), timestamp);
+
+            // Delete all properties on this edge.
+            for (Property property : edge.getProperties()) {
+                elementMutationBuilder.addPropertySoftDeleteToMutation(softDeleteEdgeMutation, property);
+            }
+
+            addMutations(VertexiumObjectType.EDGE, softDeleteEdgeMutation);
 
             if (hasEventListeners()) {
                 queueEvent(new SoftDeleteEdgeEvent(this, edge));

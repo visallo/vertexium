@@ -4,6 +4,7 @@
 * Fixed: Contains.NOT_IN not returning vertices the property does not exist in
 * Added: Does Not Contain Text Query
 * Added: Elasticsearch shard size configuration for term aggregations
+* Fixed: When soft deleting a vertex or an edge, also soft delete all properties for that element
 
 # v2.6.2
 

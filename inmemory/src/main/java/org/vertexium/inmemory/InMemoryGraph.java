@@ -208,7 +208,14 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
             softDeleteEdge(edgeToSoftDelete, timestamp, authorizations);
         }
 
-        this.vertices.getTableElement(vertex.getId()).appendSoftDeleteMutation(timestamp);
+        InMemoryTableElement<InMemoryVertex> tableElement = this.vertices.getTableElement(vertex.getId());
+
+        // Delete all properties on this vertex.
+        for (Property property : vertex.getProperties()) {
+            tableElement.appendSoftDeletePropertyMutation(property.getKey(), property.getName(), property.getVisibility(), timestamp);
+        }
+
+        tableElement.appendSoftDeleteMutation(timestamp);
 
         getSearchIndex().deleteElement(this, vertex, authorizations);
 
@@ -408,7 +415,14 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
             timestamp = IncreasingTime.currentTimeMillis();
         }
 
-        this.edges.getTableElement(edge.getId()).appendSoftDeleteMutation(timestamp);
+        InMemoryTableElement<InMemoryEdge> tableElement = this.edges.getTableElement(edge.getId());
+
+        // Delete all properties on this edge.
+        for (Property property : edge.getProperties()) {
+            tableElement.appendSoftDeletePropertyMutation(property.getKey(), property.getName(), property.getVisibility(), timestamp);
+        }
+
+        tableElement.appendSoftDeleteMutation(timestamp);
 
         getSearchIndex().deleteElement(this, edge, authorizations);
 

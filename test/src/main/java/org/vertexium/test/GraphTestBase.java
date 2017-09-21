@@ -597,6 +597,14 @@ public abstract class GraphTestBase {
         assertEquals(0, v2.getEdgeCount(Direction.BOTH, AUTHORIZATIONS_A));
 
         graph.prepareVertex("v1", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
+        graph.flush();
+        Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
+        assertEquals(0, count(v1.getProperties()));
+        graph.softDeleteVertex("v1", AUTHORIZATIONS_A);
+        graph.flush();
+
+        graph.prepareVertex("v1", VISIBILITY_A)
                 .addPropertyValue("key1", "name1", "value1", VISIBILITY_A)
                 .save(AUTHORIZATIONS_A);
         graph.prepareVertex("v3", VISIBILITY_A)
@@ -645,13 +653,17 @@ public abstract class GraphTestBase {
         Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A_AND_B);
         Vertex v2 = graph.addVertex("v2", VISIBILITY_B, AUTHORIZATIONS_A_AND_B);
         Vertex v3 = graph.addVertex("v3", VISIBILITY_B, AUTHORIZATIONS_A_AND_B);
-        graph.addEdge("e1", v1, v2, "label1", VISIBILITY_B, AUTHORIZATIONS_A_AND_B);
+        graph.prepareEdge("e1", v1, v2, "label1", VISIBILITY_B)
+            .addPropertyValue("key1", "name1", "value1", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.addEdge("e2", v1, v3, "label1", VISIBILITY_B, AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         Edge e1 = graph.getEdge("e1", AUTHORIZATIONS_A_AND_B);
         graph.softDeleteEdge(e1, AUTHORIZATIONS_A_AND_B);
         graph.flush();
+
+        assertNull(graph.getEdge("e1", AUTHORIZATIONS_A_AND_B));
 
         v1 = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B);
         assertEquals(1, count(v1.getEdgeIds(Direction.BOTH, AUTHORIZATIONS_A_AND_B)));
@@ -682,6 +694,11 @@ public abstract class GraphTestBase {
         assertEquals(1, count(v3.getEdgeIds(Direction.BOTH, AUTHORIZATIONS_A_AND_B)));
         assertEquals(1, count(v3.getEdges(Direction.BOTH, AUTHORIZATIONS_A_AND_B)));
         assertEquals(1, count(v3.getVertexIds(Direction.BOTH, AUTHORIZATIONS_A_AND_B)));
+
+        graph.addEdge("e1", v1, v2, "label1", VISIBILITY_B, AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+        e1 = graph.getEdge("e1", AUTHORIZATIONS_A_AND_B);
+        assertEquals(0, count(e1.getProperties()));
     }
 
     @Test
