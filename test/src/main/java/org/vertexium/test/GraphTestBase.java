@@ -1851,15 +1851,12 @@ public abstract class GraphTestBase {
         assertIdsAnyOrder(idsIterable, "v1", "v2", "v3");
         assertResultsCount(3, 3, idsIterable);
 
-        idsIterable = graph.query(AUTHORIZATIONS_A).has("notSetProp", Compare.NOT_EQUAL, 5).vertexIds();
-        assertIdsAnyOrder(idsIterable, "v1", "v2", "v3");
-        assertResultsCount(3, 3, idsIterable);
-
-        idsIterable = graph.query(AUTHORIZATIONS_A).has("notSetProp", Compare.EQUAL, 5).vertexIds();
-        assertResultsCount(0, 0, idsIterable);
-
-        idsIterable = graph.query(AUTHORIZATIONS_A).has("notSetProp", Compare.LESS_THAN_EQUAL, 5).vertexIds();
-        assertResultsCount(0, 0, idsIterable);
+        try {
+            graph.query(AUTHORIZATIONS_A).has("notSetProp", Compare.NOT_EQUAL, 5).vertexIds();
+            fail("Value queries should not be allowed for properties that are not defined.");
+        } catch (VertexiumException ve) {
+            assertEquals("Could not find property definition for property name: notSetProp", ve.getMessage());
+        }
     }
 
     @Test
@@ -1915,14 +1912,12 @@ public abstract class GraphTestBase {
         vertices = graph.query(AUTHORIZATIONS_A).hasNot("notSetProp").vertices();
         assertResultsCount(2, 2, vertices);
 
-        vertices = graph.query(AUTHORIZATIONS_A).has("notSetProp", Compare.NOT_EQUAL, 5).vertices();
-        assertResultsCount(2, 2, vertices);
-
-        vertices = graph.query(AUTHORIZATIONS_A).has("notSetProp", Compare.EQUAL, 5).vertices();
-        assertResultsCount(0, 0, vertices);
-
-        vertices = graph.query(AUTHORIZATIONS_A).has("notSetProp", Compare.LESS_THAN_EQUAL, 5).vertices();
-        assertResultsCount(0, 0, vertices);
+        try {
+            graph.query(AUTHORIZATIONS_A).has("notSetProp", Compare.NOT_EQUAL, 5).vertices();
+            fail("Value queries should not be allowed for properties that are not defined.");
+        } catch (VertexiumException ve) {
+            assertEquals("Could not find property definition for property name: notSetProp", ve.getMessage());
+        }
     }
 
     @Test
@@ -3800,16 +3795,19 @@ public abstract class GraphTestBase {
         vertices.forEach(v -> Arrays.asList("v1", "v3", "v4").contains(v.getId()));
 
         vertices = graph.query(AUTHORIZATIONS_A)
+                .has("exactMatch", "Test Value")
+                .vertices();
+        Assert.assertEquals(1, count(vertices));
+        vertices.forEach(v -> Arrays.asList("v1").contains(v.getId()));
+
+        try {
+        graph.query(AUTHORIZATIONS_A)
                 .has("exactMatch", TextPredicate.DOES_NOT_CONTAIN, "Test")
                 .vertices();
-        Assert.assertEquals(5, count(vertices));
-        vertices.forEach(v -> Arrays.asList("v1", "v2", "v3", "v4", "v5").contains(v.getId()));
-
-        vertices = graph.query(AUTHORIZATIONS_A)
-                .has("exactMatch", TextPredicate.DOES_NOT_CONTAIN, "Test Value")
-                .vertices();
-        Assert.assertEquals(5, count(vertices));
-        vertices.forEach(v -> Arrays.asList("v1", "v2", "v3", "v4", "v5").contains(v.getId()));
+            fail("Full text queries should not be allowed for properties that are not indexed with FULL_TEXT.");
+        } catch (VertexiumException ve) {
+            assertEquals("Check your TextIndexHint settings. Predicate DOES_NOT_CONTAIN cannot be used with property exactMatch", ve.getMessage());
+        }
     }
 
     @Test
@@ -3828,7 +3826,12 @@ public abstract class GraphTestBase {
         Assert.assertEquals(1, count(graph.query(AUTHORIZATIONS_A).has("both", TextPredicate.CONTAINS, "Test").vertices()));
         Assert.assertEquals(1, count(graph.query(AUTHORIZATIONS_A).has("fullText", TextPredicate.CONTAINS, "Test").vertices()));
         Assert.assertEquals("un-indexed property shouldn't match partials", 0, count(graph.query(AUTHORIZATIONS_A).has("none", "Test").vertices()));
-        Assert.assertEquals("un-indexed property shouldn't match partials", 0, count(graph.query(AUTHORIZATIONS_A).has("none", TextPredicate.CONTAINS, "Test").vertices()));
+        try {
+            graph.query(AUTHORIZATIONS_A).has("none", TextPredicate.CONTAINS, "Test");
+            fail("Full text queries should not be allowed for properties that are not indexed with FULL_TEXT.");
+        } catch (VertexiumException ve) {
+            assertEquals("Check your TextIndexHint settings. Predicate CONTAINS cannot be used with property none", ve.getMessage());
+        }
     }
 
     @Test

@@ -24,6 +24,12 @@ public enum GeoCompare implements Predicate {
         return evaluate(first, second);
     }
 
+    @Override
+    public boolean isSupported(PropertyDefinition propertyDefinition) {
+        return true;
+    }
+
+
     private boolean evaluate(Object testValue, Object second) {
         switch (this) {
             case WITHIN:

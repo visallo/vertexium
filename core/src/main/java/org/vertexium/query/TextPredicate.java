@@ -10,6 +10,7 @@ import org.vertexium.util.IterableUtils;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Set;
 
 public enum TextPredicate implements Predicate {
     CONTAINS, DOES_NOT_CONTAIN;
@@ -53,6 +54,13 @@ public enum TextPredicate implements Predicate {
                 throw new IllegalArgumentException("Invalid text predicate: " + this);
         }
     }
+
+    @Override
+    public boolean isSupported(PropertyDefinition propertyDefinition) {
+        Set<TextIndexHint> textIndexHints = propertyDefinition.getTextIndexHints();
+        return textIndexHints != null && textIndexHints.contains(TextIndexHint.FULL_TEXT);
+    }
+
 
     private String valueToString(Object val) {
         if (val instanceof GeoPoint) {

@@ -51,6 +51,12 @@ public enum Contains implements Predicate {
         throw new VertexiumException("Not implemented 'Contains' type. Expected Iterable found " + second.getClass().getName());
     }
 
+    @Override
+    public boolean isSupported(PropertyDefinition propertyDefinition) {
+        return true;
+    }
+
+
     private boolean evaluateInIterable(Object first, Iterable second, PropertyDefinition propertyDefinition) {
         for (Object o : second) {
             if (Compare.evaluate(first, Compare.EQUAL, o, propertyDefinition)) {

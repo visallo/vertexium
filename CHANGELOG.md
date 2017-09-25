@@ -1,6 +1,7 @@
 # v3.0.0
 * Changed: Removed ES 2 support and replaced it with ES 5 support
-* Changed: Removed support for NameSubstitutionStrategy from the Elasticsearch modules. NameSubstitutionStrategy is still available for Accumulo modules 
+* Changed: Removed support for NameSubstitutionStrategy from the Elasticsearch modules. NameSubstitutionStrategy is still available for Accumulo modules
+* Changed: Added property checking when using the `has` method to query the graph for a value. An exception will now be thrown if an attempt is made to either query a property that does not exist or to text query a property that isn't full text indexed
 * Note: Upgrading to this version will require re-indexing if you use NameSubstitutionStrategy or are switching to the ES 5 module. 
 
 # v2.6.2
