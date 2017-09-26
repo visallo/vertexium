@@ -91,7 +91,6 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
     public static final String EXACT_MATCH_FIELD_NAME = "exact";
     public static final String EXACT_MATCH_PROPERTY_NAME_SUFFIX = "." + EXACT_MATCH_FIELD_NAME;
     public static final String GEO_PROPERTY_NAME_SUFFIX = "_g";
-    public static final String SORT_PROPERTY_NAME_SUFFIX = "_s";
     public static final int MAX_BATCH_COUNT = 25000;
     public static final long MAX_BATCH_SIZE = 15 * 1024 * 1024;
     public static final int EXACT_MATCH_IGNORE_ABOVE_LIMIT = 10000;
@@ -666,7 +665,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
         String elementTypeVisibilityPropertyName = addVisibilityToPropertyName(graph, ELEMENT_TYPE_FIELD_NAME, element.getVisibility());
         String indexName = getIndexName(element);
         IndexInfo indexInfo = ensureIndexCreatedAndInitialized(graph, indexName);
-        addPropertyToIndex(graph, indexInfo, elementTypeVisibilityPropertyName, element.getVisibility(), String.class, false, false);
+        addPropertyToIndex(graph, indexInfo, elementTypeVisibilityPropertyName, element.getVisibility(), String.class, false, false, false);
         return elementTypeVisibilityPropertyName;
     }
 
@@ -709,12 +708,9 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
         } else if (propertyValue instanceof String) {
             if (propertyDefinition == null ||
                     propertyDefinition.getTextIndexHints().contains(TextIndexHint.FULL_TEXT) ||
-                    propertyDefinition.getTextIndexHints().contains(TextIndexHint.EXACT_MATCH)) {
+                    propertyDefinition.getTextIndexHints().contains(TextIndexHint.EXACT_MATCH) ||
+                    propertyDefinition.isSortable()) {
                 addPropertyValueToPropertiesMap(propertiesMap, propertyName, propertyValue);
-            }
-            if (propertyDefinition != null && propertyDefinition.isSortable()) {
-                String s = ((String) propertyValue).substring(0, Math.min(100, ((String) propertyValue).length()));
-                addPropertyValueToPropertiesMap(propertiesMap, propertyDefinition.getPropertyName() + SORT_PROPERTY_NAME_SUFFIX, s);
             }
             return;
         }
@@ -724,9 +720,6 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
         }
 
         addPropertyValueToPropertiesMap(propertiesMap, propertyName, propertyValue);
-        if (propertyDefinition != null && propertyDefinition.isSortable()) {
-            addPropertyValueToPropertiesMap(propertiesMap, propertyDefinition.getPropertyName() + SORT_PROPERTY_NAME_SUFFIX, propertyValue);
-        }
     }
 
     private boolean isStreamingPropertyValueIndexable(Graph graph, String propertyName, StreamingPropertyValue streamingPropertyValue) {
@@ -1011,24 +1004,21 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
         if (propertyDefinition.getDataType() == String.class) {
             boolean exact = propertyDefinition.getTextIndexHints().contains(TextIndexHint.EXACT_MATCH);
             boolean analyzed = propertyDefinition.getTextIndexHints().contains(TextIndexHint.FULL_TEXT);
-            if (analyzed || exact) {
-                addPropertyToIndex(graph, indexInfo, propertyName, propertyVisibility, String.class, analyzed, exact);
-            }
-            if (propertyDefinition.isSortable()) {
-                String sortPropertyName = removeVisibilityFromPropertyName(propertyName) + SORT_PROPERTY_NAME_SUFFIX;
-                addPropertyToIndex(graph, indexInfo, sortPropertyName, null, String.class, false, false);
+            boolean sortable = propertyDefinition.isSortable();
+            if (analyzed || exact || sortable) {
+                addPropertyToIndex(graph, indexInfo, propertyName, propertyVisibility, String.class, analyzed, exact, sortable);
             }
             return;
         }
 
         if (propertyDefinition.getDataType() == GeoPoint.class
                 || propertyDefinition.getDataType() == GeoCircle.class) {
-            addPropertyToIndex(graph, indexInfo, propertyName + GEO_PROPERTY_NAME_SUFFIX, propertyVisibility, propertyDefinition.getDataType(), true, false);
-            addPropertyToIndex(graph, indexInfo, propertyName, propertyVisibility, String.class, true, false);
+            addPropertyToIndex(graph, indexInfo, propertyName + GEO_PROPERTY_NAME_SUFFIX, propertyVisibility, propertyDefinition.getDataType(), true, false, false);
+            addPropertyToIndex(graph, indexInfo, propertyName, propertyVisibility, String.class, true, false, false);
             return;
         }
 
-        addPropertyToIndex(graph, indexInfo, propertyName, propertyVisibility, propertyDefinition.getDataType(), true, false);
+        addPropertyToIndex(graph, indexInfo, propertyName, propertyVisibility, propertyDefinition.getDataType(), true, false, false);
     }
 
     protected PropertyDefinition getPropertyDefinition(Graph graph, String propertyName) {
@@ -1118,20 +1108,20 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
                 return;
             }
             dataType = streamingPropertyValue.getValueType();
-            addPropertyToIndex(graph, indexInfo, propertyNameWithVisibility, propertyVisibility, dataType, true, false);
+            addPropertyToIndex(graph, indexInfo, propertyNameWithVisibility, propertyVisibility, dataType, true, false, false);
         } else if (propertyValue instanceof String) {
             dataType = String.class;
-            addPropertyToIndex(graph, indexInfo, propertyNameWithVisibility, propertyVisibility, dataType, true, true);
+            addPropertyToIndex(graph, indexInfo, propertyNameWithVisibility, propertyVisibility, dataType, true, true, false);
         } else if (propertyValue instanceof GeoPoint) {
-            addPropertyToIndex(graph, indexInfo, propertyNameWithVisibility + GEO_PROPERTY_NAME_SUFFIX, propertyVisibility, GeoPoint.class, true, false);
-            addPropertyToIndex(graph, indexInfo, propertyNameWithVisibility, propertyVisibility, String.class, true, false);
+            addPropertyToIndex(graph, indexInfo, propertyNameWithVisibility + GEO_PROPERTY_NAME_SUFFIX, propertyVisibility, GeoPoint.class, true, false, false);
+            addPropertyToIndex(graph, indexInfo, propertyNameWithVisibility, propertyVisibility, String.class, true, false, false);
         } else if (propertyValue instanceof GeoCircle) {
-            addPropertyToIndex(graph, indexInfo, propertyNameWithVisibility + GEO_PROPERTY_NAME_SUFFIX, propertyVisibility, GeoCircle.class, true, false);
-            addPropertyToIndex(graph, indexInfo, propertyNameWithVisibility, propertyVisibility, String.class, true, false);
+            addPropertyToIndex(graph, indexInfo, propertyNameWithVisibility + GEO_PROPERTY_NAME_SUFFIX, propertyVisibility, GeoCircle.class, true, false, false);
+            addPropertyToIndex(graph, indexInfo, propertyNameWithVisibility, propertyVisibility, String.class, true, false, false);
         } else {
             checkNotNull(propertyValue, "property value cannot be null for property: " + propertyNameWithVisibility);
             dataType = propertyValue.getClass();
-            addPropertyToIndex(graph, indexInfo, propertyNameWithVisibility, propertyVisibility, dataType, true, false);
+            addPropertyToIndex(graph, indexInfo, propertyNameWithVisibility, propertyVisibility, dataType, true, false, false);
         }
     }
 
@@ -1142,7 +1132,8 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
             Visibility propertyVisibility,
             Class dataType,
             boolean analyzed,
-            boolean exact
+            boolean exact,
+            boolean sortable
     ) throws IOException {
         if (indexInfo.isPropertyDefined(propertyName, propertyVisibility)) {
             return;
@@ -1158,7 +1149,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
                 .startObject("properties")
                 .startObject(propertyName.replace(".", FIELDNAME_DOT_REPLACEMENT));
 
-        addTypeToMapping(mapping, propertyName, dataType, analyzed, exact);
+        addTypeToMapping(mapping, propertyName, dataType, analyzed, exact, sortable);
 
         mapping
                 .endObject()
@@ -1590,21 +1581,18 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
         return dataType == byte[].class;
     }
 
-    protected void addTypeToMapping(XContentBuilder mapping, String propertyName, Class dataType, boolean analyzed, boolean exact) throws IOException {
+    protected void addTypeToMapping(XContentBuilder mapping, String propertyName, Class dataType, boolean analyzed, boolean exact, boolean sortable) throws IOException {
         if (dataType == String.class) {
             LOGGER.debug("Registering 'string' type for %s", propertyName);
-            if (analyzed || exact) {
+            if (analyzed || exact || sortable) {
                 mapping.field("type", "text");
                 if (!analyzed) {
                     mapping.field("index", "false");
                 }
-                if (exact) {
-                    mapping.startObject("fields")
-                            .startObject(EXACT_MATCH_FIELD_NAME)
-                            .field("type", "keyword")
-                            .field("ignore_above", EXACT_MATCH_IGNORE_ABOVE_LIMIT)
-                            .endObject()
-                            .endObject();
+                if (exact || sortable) {
+                    mapping.startObject("fields");
+                    mapping.startObject(EXACT_MATCH_FIELD_NAME).field("type", "keyword").field("ignore_above", EXACT_MATCH_IGNORE_ABOVE_LIMIT).endObject();
+                    mapping.endObject();
                 }
             } else {
                 mapping.field("type", "keyword");

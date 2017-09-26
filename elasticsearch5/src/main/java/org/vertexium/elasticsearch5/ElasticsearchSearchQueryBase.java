@@ -34,6 +34,9 @@ import org.elasticsearch.search.aggregations.bucket.range.date.DateRangeAggregat
 import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.elasticsearch.search.aggregations.metrics.percentiles.PercentilesAggregationBuilder;
 import org.elasticsearch.search.aggregations.metrics.stats.extended.ExtendedStatsAggregationBuilder;
+import org.elasticsearch.search.sort.ScriptSortBuilder;
+import org.elasticsearch.search.sort.SortBuilders;
+import org.elasticsearch.search.sort.SortMode;
 import org.elasticsearch.search.sort.SortOrder;
 import org.joda.time.DateTime;
 import org.vertexium.*;
@@ -252,7 +255,32 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
                 if (!propertyDefinition.isSortable()) {
                     throw new VertexiumException("Cannot sort on non-sortable fields");
                 }
-                q.addSort(propertyDefinition.getPropertyName().replace(".", FIELDNAME_DOT_REPLACEMENT) + Elasticsearch5SearchIndex.SORT_PROPERTY_NAME_SUFFIX, esOrder);
+
+                String[] propertyNames = getPropertyNames(propertyDefinition.getPropertyName());
+                if (propertyNames.length > 1) {
+                    String scriptSrc = "def fieldValues = []; for (def fieldName : params.fieldNames) { fieldValues.addAll(doc[fieldName].values); } ";
+                    scriptSrc += "if (params.esOrder == 'asc') { Collections.sort(fieldValues); } else { Collections.sort(fieldValues, Collections.reverseOrder()); }";
+                    scriptSrc += "if (params.dataType == 'String') { return fieldValues; } else { return fieldValues.length > 0 ? fieldValues[0] : (params.esOrder == 'asc' ? Integer.MAX_VALUE : Integer.MIN_VALUE); }";
+
+                    List<String> fieldNames = Arrays.stream(propertyNames).map(propertyName ->
+                            propertyName + (propertyDefinition.getDataType() == String.class ? Elasticsearch5SearchIndex.EXACT_MATCH_PROPERTY_NAME_SUFFIX : "")
+                    ).collect(Collectors.toList());
+                    HashMap<String, Object> scriptParams = new HashMap<>();
+                    scriptParams.put("fieldNames", fieldNames);
+                    scriptParams.put("esOrder", esOrder == SortOrder.DESC ? "desc" : "asc");
+                    scriptParams.put("dataType", propertyDefinition.getDataType().getSimpleName());
+                    Script script = new Script(ScriptType.INLINE, Script.DEFAULT_SCRIPT_LANG, scriptSrc, Collections.emptyMap(), scriptParams);
+                    ScriptSortBuilder.ScriptSortType sortType = propertyDefinition.getDataType() == String.class ? ScriptSortBuilder.ScriptSortType.STRING : ScriptSortBuilder.ScriptSortType.NUMBER;
+                    q.addSort(SortBuilders.scriptSort(script, sortType)
+                            .order(esOrder)
+                            .sortMode(esOrder == SortOrder.DESC ? SortMode.MAX : SortMode.MIN));
+                } else {
+                    String sortField = propertyNames[0];
+                    if (propertyDefinition.getDataType() == String.class) {
+                        sortField += Elasticsearch5SearchIndex.EXACT_MATCH_PROPERTY_NAME_SUFFIX;
+                    }
+                    q.addSort(sortField, esOrder);
+                }
             }
         }
     }

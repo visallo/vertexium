@@ -38,6 +38,12 @@
             <artifactId>accumulo-minicluster</artifactId>
             <version>${accumulo.version}</version>
             <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>asm</groupId>
+                    <artifactId>asm</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
@@ -73,7 +79,15 @@
             <exclusions>
                 <exclusion>
                     <groupId>org.ow2.asm</groupId>
-                    <artifactId>asm-debug-all</artifactId>
+                    <artifactId>asm</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.ow2.asm</groupId>
+                    <artifactId>asm-commons</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.ow2.asm</groupId>
+                    <artifactId>asm-tree</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
