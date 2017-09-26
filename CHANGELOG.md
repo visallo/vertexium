@@ -1,12 +1,9 @@
-# v3.0.0
+# v2.6.2
 
 * Changed: remove deprecated interfaces, examples, and changed Elasticsearch deprecated methods
 * Fixed: Contains.NOT_IN not returning vertices the property does not exist in
 * Added: Does Not Contain Text Query
 * Added: Elasticsearch shard size configuration for term aggregations
-
-# v2.6.2
-
 * Added: Elasticsearch scroll API support
 
 # v2.6.1
