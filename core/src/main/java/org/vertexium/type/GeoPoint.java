@@ -2,34 +2,36 @@ package org.vertexium.type;
 
 import org.vertexium.VertexiumException;
 
-import java.io.Serializable;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class GeoPoint implements Serializable, GeoShape, Comparable<GeoPoint> {
+public class GeoPoint extends GeoShapeBase implements Comparable<GeoPoint> {
     private static final long serialVersionUID = 1L;
     private static final double COMPARE_TOLERANCE = 0.00001;
-    private static double EARTH_RADIUS = 6371; // km
     private static final Pattern HOUR_MIN_SECOND_PATTERN = Pattern.compile("\\s*(-)?([0-9\\.]+)°(\\s*([0-9\\.]+)'(\\s*([0-9\\.]+)\")?)?");
     private static final Pattern WITH_DESCRIPTION_PATTERN = Pattern.compile("(.*)\\[(.*)\\]");
     private double latitude;
     private double longitude;
     private Double altitude;
-    private String description;
 
+    /**
+     * Create a geopoint at 0, 0 with an altitude of 0
+     */
     protected GeoPoint() {
-        latitude = 0;
-        longitude = 0;
-        altitude = null;
-        description = null;
     }
 
+    /**
+     * @param latitude    latitude is specified in decimal degrees
+     * @param longitude   longitude is specified in decimal degrees
+     * @param altitude    altitude is specified in kilometers
+     * @param description name or description of this shape
+     */
     public GeoPoint(double latitude, double longitude, Double altitude, String description) {
+        super(description);
         this.latitude = latitude;
         this.longitude = longitude;
         this.altitude = altitude;
-        this.description = description;
     }
 
     public GeoPoint(double latitude, double longitude, Double altitude) {
@@ -56,13 +58,17 @@ public class GeoPoint implements Serializable, GeoShape, Comparable<GeoPoint> {
         return altitude;
     }
 
-    public String getDescription() {
-        return description;
-    }
-
     @Override
     public String toString() {
         return "(" + getLatitude() + ", " + getLongitude() + ")";
+    }
+
+    @Override
+    public boolean intersects(GeoShape geoShape) {
+        if (geoShape instanceof GeoPoint) {
+            return this.equals(geoShape);
+        }
+        return geoShape.intersects(this);
     }
 
     @Override
@@ -87,7 +93,7 @@ public class GeoPoint implements Serializable, GeoShape, Comparable<GeoPoint> {
         if (getClass() != obj.getClass()) {
             return false;
         }
-        final GeoPoint other = (GeoPoint) obj;
+        GeoPoint other = (GeoPoint) obj;
         if (Math.abs(distanceBetween(this, other)) > 0.0001) {
             return false;
         }
@@ -98,25 +104,13 @@ public class GeoPoint implements Serializable, GeoShape, Comparable<GeoPoint> {
     }
 
     public static double distanceBetween(GeoPoint geoPoint1, GeoPoint geoPoint2) {
+        return geoPoint1.distanceFrom(geoPoint2);
+    }
+
+    public double distanceFrom(GeoPoint geoPoint) {
         return distanceBetween(
-                geoPoint1.getLatitude(), geoPoint1.getLongitude(),
-                geoPoint2.getLatitude(), geoPoint2.getLongitude());
-    }
-
-    // see http://www.movable-type.co.uk/scripts/latlong.html
-    public static double distanceBetween(double latitude1, double longitude1, double latitude2, double longitude2) {
-        double dLat = toRadians(latitude2 - latitude1);
-        double dLon = toRadians(longitude2 - longitude1);
-        latitude1 = toRadians(latitude1);
-        latitude2 = toRadians(latitude2);
-
-        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.sin(dLon / 2) * Math.sin(dLon / 2) * Math.cos(latitude1) * Math.cos(latitude2);
-        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        return EARTH_RADIUS * c;
-    }
-
-    private static double toRadians(double v) {
-        return v * Math.PI / 180;
+                this.getLatitude(), this.getLongitude(),
+                geoPoint.getLatitude(), geoPoint.getLongitude());
     }
 
     @Override

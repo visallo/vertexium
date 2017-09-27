@@ -51,6 +51,11 @@ public abstract class ElasticsearchSingleDocumentSearchIndexTestBase extends Gra
         return true;
     }
 
+    @Override
+    protected boolean isAdvancedGeoQuerySupported() {
+        return false;
+    }
+
     @Test
     @Override
     public void testGraphQuerySortOnPropertyThatHasNoValuesInTheIndex() {

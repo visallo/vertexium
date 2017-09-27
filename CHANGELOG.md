@@ -3,7 +3,8 @@
 * Changed: Removed support for NameSubstitutionStrategy from the Elasticsearch modules. NameSubstitutionStrategy is still available for Accumulo modules
 * Changed: Added property checking when using the `has` method to query the graph for a value. An exception will now be thrown if an attempt is made to either query a property that does not exist or to text query a property that isn't full text indexed
 * Note: Upgrading to this version will require re-indexing if you use NameSubstitutionStrategy or are switching to the ES 5 module. 
-
+* ADDED: Support for extended GeoShape storage and search. Currently the new shapes are only supported by the ElasticSearch 5 module.
+ 
 # v2.6.2
 
 * Changed: remove deprecated interfaces, examples, and changed Elasticsearch deprecated methods

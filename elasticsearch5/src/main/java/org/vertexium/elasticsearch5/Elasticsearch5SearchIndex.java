@@ -26,6 +26,7 @@ import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.cluster.health.ClusterHealthStatus;
 import org.elasticsearch.cluster.metadata.MappingMetaData;
 import org.elasticsearch.common.collect.ImmutableOpenMap;
+import org.elasticsearch.common.geo.builders.*;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.common.xcontent.XContentBuilder;
@@ -52,10 +53,7 @@ import org.vertexium.property.StreamingPropertyValue;
 import org.vertexium.query.*;
 import org.vertexium.search.SearchIndex;
 import org.vertexium.search.SearchIndexWithVertexPropertyCountByValue;
-import org.vertexium.type.GeoCircle;
-import org.vertexium.type.GeoPoint;
-import org.vertexium.type.GeoShape;
-import org.vertexium.type.IpV4Address;
+import org.vertexium.type.*;
 import org.vertexium.util.ConfigurationUtils;
 import org.vertexium.util.IOUtils;
 import org.vertexium.util.VertexiumLogger;
@@ -73,6 +71,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import static org.elasticsearch.common.geo.builders.ShapeBuilder.FIELD_COORDINATES;
+import static org.elasticsearch.common.geo.builders.ShapeBuilder.FIELD_GEOMETRIES;
+import static org.elasticsearch.common.geo.builders.ShapeBuilder.FIELD_TYPE;
 import static org.vertexium.elasticsearch5.ElasticsearchPropertyNameInfo.PROPERTY_NAME_PATTERN;
 import static org.vertexium.util.Preconditions.checkNotNull;
 
@@ -91,6 +92,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
     public static final String EXACT_MATCH_FIELD_NAME = "exact";
     public static final String EXACT_MATCH_PROPERTY_NAME_SUFFIX = "." + EXACT_MATCH_FIELD_NAME;
     public static final String GEO_PROPERTY_NAME_SUFFIX = "_g";
+    public static final String GEO_POINT_PROPERTY_NAME_SUFFIX = "_gp"; // Used for geo hash aggregation of geo points
     public static final int MAX_BATCH_COUNT = 25000;
     public static final long MAX_BATCH_SIZE = 15 * 1024 * 1024;
     public static final int EXACT_MATCH_IGNORE_ABOVE_LIMIT = 10000;
@@ -697,11 +699,13 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
 
     private void addValuesToFieldMap(Graph graph, Map<String, Object> propertiesMap, String propertyName, Object propertyValue) {
         PropertyDefinition propertyDefinition = getPropertyDefinition(graph, propertyName);
-        if (propertyValue instanceof GeoPoint) {
-            convertGeoPoint(propertiesMap, propertyName, (GeoPoint) propertyValue);
-            return;
-        } else if (propertyValue instanceof GeoCircle) {
-            convertGeoCircle(propertiesMap, propertyName, (GeoCircle) propertyValue);
+        if (propertyValue instanceof GeoShape) {
+            convertGeoShape(propertiesMap, propertyName, (GeoShape) propertyValue);
+            if (propertyValue instanceof GeoPoint) {
+                GeoPoint geoPoint = (GeoPoint) propertyValue;
+                List<Double> coordinates = Arrays.asList(geoPoint.getLongitude(), geoPoint.getLatitude());
+                addPropertyValueToPropertiesMap(propertiesMap, propertyName + GEO_POINT_PROPERTY_NAME_SUFFIX, coordinates);
+            }
             return;
         } else if (propertyValue instanceof StreamingPropertyString) {
             propertyValue = ((StreamingPropertyString) propertyValue).getPropertyValue();
@@ -883,8 +887,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
             if (propertyDefinition.getTextIndexHints().contains(TextIndexHint.FULL_TEXT)) {
                 typeSuffixes.add("");
             }
-        } else if (propertyDefinition.getDataType() == GeoPoint.class
-                || propertyDefinition.getDataType() == GeoCircle.class) {
+        } else if (GeoShape.class.isAssignableFrom(propertyDefinition.getDataType())) {
             typeSuffixes.add("");
         }
         return typeSuffixes;
@@ -1011,10 +1014,12 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
             return;
         }
 
-        if (propertyDefinition.getDataType() == GeoPoint.class
-                || propertyDefinition.getDataType() == GeoCircle.class) {
+        if (GeoShape.class.isAssignableFrom(propertyDefinition.getDataType())) {
             addPropertyToIndex(graph, indexInfo, propertyName + GEO_PROPERTY_NAME_SUFFIX, propertyVisibility, propertyDefinition.getDataType(), true, false, false);
-            addPropertyToIndex(graph, indexInfo, propertyName, propertyVisibility, String.class, true, false, false);
+            addPropertyToIndex(graph, indexInfo, propertyName, propertyVisibility, String.class, true, true, false);
+            if (propertyDefinition.getDataType() == GeoPoint.class) {
+                addPropertyToIndex(graph, indexInfo, propertyName + GEO_POINT_PROPERTY_NAME_SUFFIX, propertyVisibility, propertyDefinition.getDataType(), true, true, false);
+            }
             return;
         }
 
@@ -1112,12 +1117,12 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
         } else if (propertyValue instanceof String) {
             dataType = String.class;
             addPropertyToIndex(graph, indexInfo, propertyNameWithVisibility, propertyVisibility, dataType, true, true, false);
-        } else if (propertyValue instanceof GeoPoint) {
-            addPropertyToIndex(graph, indexInfo, propertyNameWithVisibility + GEO_PROPERTY_NAME_SUFFIX, propertyVisibility, GeoPoint.class, true, false, false);
-            addPropertyToIndex(graph, indexInfo, propertyNameWithVisibility, propertyVisibility, String.class, true, false, false);
-        } else if (propertyValue instanceof GeoCircle) {
-            addPropertyToIndex(graph, indexInfo, propertyNameWithVisibility + GEO_PROPERTY_NAME_SUFFIX, propertyVisibility, GeoCircle.class, true, false, false);
-            addPropertyToIndex(graph, indexInfo, propertyNameWithVisibility, propertyVisibility, String.class, true, false, false);
+        } else if (propertyValue instanceof GeoShape) {
+            addPropertyToIndex(graph, indexInfo, propertyNameWithVisibility + GEO_PROPERTY_NAME_SUFFIX, propertyVisibility, propertyValue.getClass(), true, false, false);
+            addPropertyToIndex(graph, indexInfo, propertyNameWithVisibility, propertyVisibility, String.class, true, true, false);
+            if (propertyValue instanceof GeoPoint) {
+                addPropertyToIndex(graph, indexInfo, propertyNameWithVisibility + GEO_POINT_PROPERTY_NAME_SUFFIX, propertyVisibility, propertyValue.getClass(), true, true, false);
+            }
         } else {
             checkNotNull(propertyValue, "property value cannot be null for property: " + propertyNameWithVisibility);
             dataType = propertyValue.getClass();
@@ -1625,12 +1630,18 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
         } else if (dataType == Boolean.class || dataType == Boolean.TYPE) {
             LOGGER.debug("Registering 'boolean' type for %s", propertyName);
             mapping.field("type", "boolean");
-        } else if (dataType == GeoPoint.class) {
+        } else if (dataType == GeoPoint.class && exact) {
+            // ES5 doesn't support geo hash aggregations for shapes, so if this is a point marked for EXACT_MATCH
+            // define it as a geo_point instead of a geo_shape. Points end up with 3 fields in the index for this
+            // reason. This one for aggregating as well as the "_g" and description fields that all geoshapes get.
             LOGGER.debug("Registering 'geo_point' type for %s", propertyName);
             mapping.field("type", "geo_point");
-        } else if (dataType == GeoCircle.class) {
+        } else if (GeoShape.class.isAssignableFrom(dataType)) {
             LOGGER.debug("Registering 'geo_shape' type for %s", propertyName);
             mapping.field("type", "geo_shape");
+            if (dataType == GeoPoint.class) {
+                mapping.field("points_only", "true");
+            }
             mapping.field("tree", "quadtree");
             mapping.field("precision", "100m");
         } else if (Number.class.isAssignableFrom(dataType)) {
@@ -1693,28 +1704,106 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
         propertiesMap.put(propertyName, list);
     }
 
-    protected void convertGeoPoint(Map<String, Object> propertiesMap, String propertyNameWithVisibility, GeoPoint geoPoint) {
-        Map<String, Object> propertyValueMap = new HashMap<>();
-        propertyValueMap.put("lat", geoPoint.getLatitude());
-        propertyValueMap.put("lon", geoPoint.getLongitude());
+    protected void convertGeoShape(Map<String, Object> propertiesMap, String propertyNameWithVisibility, GeoShape geoShape) {
+        geoShape.validate();
+
+        Map<String, Object> propertyValueMap;
+        if (geoShape instanceof GeoPoint) {
+            propertyValueMap = convertGeoPoint((GeoPoint) geoShape);
+        } else if (geoShape instanceof GeoCircle) {
+            propertyValueMap = convertGeoCircle((GeoCircle) geoShape);
+        } else if (geoShape instanceof GeoLine) {
+            propertyValueMap = convertGeoLine((GeoLine) geoShape);
+        } else if (geoShape instanceof GeoPolygon) {
+            propertyValueMap = convertGeoPolygon((GeoPolygon) geoShape);
+        } else if (geoShape instanceof GeoCollection) {
+            propertyValueMap = convertGeoCollection((GeoCollection) geoShape);
+        } else if (geoShape instanceof GeoRect) {
+            propertyValueMap = convertGeoRect((GeoRect) geoShape);
+        } else {
+            throw new VertexiumException("Unexpected GeoShape value of type: " + geoShape.getClass().getName());
+        }
+
         addPropertyValueToPropertiesMap(propertiesMap, propertyNameWithVisibility + GEO_PROPERTY_NAME_SUFFIX, propertyValueMap);
-        if (geoPoint.getDescription() != null) {
-            addPropertyValueToPropertiesMap(propertiesMap, propertyNameWithVisibility, geoPoint.getDescription());
+
+        if (geoShape.getDescription() != null) {
+            addPropertyValueToPropertiesMap(propertiesMap, propertyNameWithVisibility, geoShape.getDescription());
         }
     }
 
-    protected void convertGeoCircle(Map<String, Object> propertiesMap, String propertyNameWithVisibility, GeoCircle geoCircle) {
+    protected Map<String, Object> convertGeoPoint(GeoPoint geoPoint) {
         Map<String, Object> propertyValueMap = new HashMap<>();
-        propertyValueMap.put("type", "circle");
+        propertyValueMap.put(FIELD_TYPE, "point");
+        propertyValueMap.put(FIELD_COORDINATES, Arrays.asList(geoPoint.getLongitude(), geoPoint.getLatitude()));
+        return propertyValueMap;
+    }
+
+    protected Map<String, Object> convertGeoCircle(GeoCircle geoCircle) {
+        Map<String, Object> propertyValueMap = new HashMap<>();
+        propertyValueMap.put(FIELD_TYPE, "circle");
         List<Double> coordinates = new ArrayList<>();
         coordinates.add(geoCircle.getLongitude());
         coordinates.add(geoCircle.getLatitude());
-        propertyValueMap.put("coordinates", coordinates);
-        propertyValueMap.put("radius", geoCircle.getRadius() + "km");
-        addPropertyValueToPropertiesMap(propertiesMap, propertyNameWithVisibility + GEO_PROPERTY_NAME_SUFFIX, propertyValueMap);
-        if (geoCircle.getDescription() != null) {
-            addPropertyValueToPropertiesMap(propertiesMap, propertyNameWithVisibility, geoCircle.getDescription());
-        }
+        propertyValueMap.put(FIELD_COORDINATES, coordinates);
+        propertyValueMap.put(CircleBuilder.FIELD_RADIUS, geoCircle.getRadius() + "km");
+        return propertyValueMap;
+    }
+
+    protected Map<String, Object> convertGeoRect(GeoRect geoRect) {
+        Map<String, Object> propertyValueMap = new HashMap<>();
+        propertyValueMap.put(FIELD_TYPE, "envelope");
+        List<List<Double>> coordinates = new ArrayList<>();
+        coordinates.add(Arrays.asList(geoRect.getNorthWest().getLongitude(), geoRect.getNorthWest().getLatitude()));
+        coordinates.add(Arrays.asList(geoRect.getSouthEast().getLongitude(), geoRect.getSouthEast().getLatitude()));
+        propertyValueMap.put(FIELD_COORDINATES, coordinates);
+        return propertyValueMap;
+    }
+
+    protected Map<String, Object> convertGeoLine(GeoLine geoLine) {
+        Map<String, Object> propertyValueMap = new HashMap<>();
+        propertyValueMap.put(FIELD_TYPE, "linestring");
+        List<List<Double>> coordinates = new ArrayList<>();
+        geoLine.getGeoPoints().forEach(geoPoint -> coordinates.add(Arrays.asList(geoPoint.getLongitude(), geoPoint.getLatitude())));
+        propertyValueMap.put(FIELD_COORDINATES, coordinates);
+        return propertyValueMap;
+    }
+
+    protected Map<String, Object> convertGeoPolygon(GeoPolygon geoPolygon) {
+        Map<String, Object> propertyValueMap = new HashMap<>();
+        propertyValueMap.put(FIELD_TYPE, "polygon");
+        List<List<List<Double>>> coordinates = new ArrayList<>();
+        coordinates.add(geoPolygon.getOuterBoundary().stream()
+                .map(geoPoint -> Arrays.asList(geoPoint.getLongitude(), geoPoint.getLatitude()))
+                .collect(Collectors.toList()));
+        geoPolygon.getHoles().forEach(holeBoundary ->
+                coordinates.add(holeBoundary.stream()
+                        .map(geoPoint -> Arrays.asList(geoPoint.getLongitude(), geoPoint.getLatitude()))
+                        .collect(Collectors.toList())));
+        propertyValueMap.put(FIELD_COORDINATES, coordinates);
+        return propertyValueMap;
+    }
+
+    protected Map<String, Object> convertGeoCollection(GeoCollection geoCollection) {
+        Map<String, Object> propertyValueMap = new HashMap<>();
+        propertyValueMap.put(FIELD_TYPE, "geometrycollection");
+
+        List<Map<String, Object>> geometries = new ArrayList<>();
+        geoCollection.getGeoShapes().forEach(geoShape -> {
+            if (geoShape instanceof GeoPoint) {
+                geometries.add(convertGeoPoint((GeoPoint) geoShape));
+            } else if (geoShape instanceof GeoCircle) {
+                geometries.add(convertGeoCircle((GeoCircle) geoShape));
+            } else if (geoShape instanceof GeoLine) {
+                geometries.add(convertGeoLine((GeoLine) geoShape));
+            } else if (geoShape instanceof GeoPolygon) {
+                geometries.add(convertGeoPolygon((GeoPolygon) geoShape));
+            } else {
+                throw new VertexiumException("Unsupported GeoShape value in GeoCollection of type: " + geoShape.getClass().getName());
+            }
+        });
+        propertyValueMap.put(FIELD_GEOMETRIES, geometries);
+
+        return propertyValueMap;
     }
 
     public IndexSelectionStrategy getIndexSelectionStrategy() {

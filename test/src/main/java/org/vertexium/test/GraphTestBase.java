@@ -2970,22 +2970,178 @@ public abstract class GraphTestBase {
         Assert.assertEquals(2, count(vertices));
     }
 
+    protected boolean isAdvancedGeoQuerySupported() {
+        return true;
+    }
+
     @Test
     public void testStoreGeoCircle() {
-        graph.prepareVertex("v1", VISIBILITY_A)
-                .setProperty("location", new GeoCircle(38.9186, -77.2297, 100, "Reston, VA"), VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+        assumeTrue("GeoCircle storage and queries are not supported", isAdvancedGeoQuerySupported());
+
+        GeoCircle within = new GeoCircle(38.6270, -90.1994, 100, "St. Louis, MO - within");
+        GeoCircle contains = new GeoCircle(38.6270, -90.1994, 800, "St. Louis, MO - contains");
+        GeoCircle intersects = new GeoCircle(38.6270, -80.0, 500, "St. Louis, MO - intersects");
+        GeoCircle disjoint = new GeoCircle(38.6270, -70.0, 500, "St. Louis, MO - disjoint");
+
+        doALLGeoshapeTestQueries(intersects, disjoint, within, contains);
+
+        QueryResultsIterable<Vertex> vertices = graph.query(AUTHORIZATIONS_A_AND_B).has("location", within.getDescription()).vertices();
+        assertEquals(1, vertices.getTotalHits());
+        Assert.assertEquals(1, count(vertices));
+
+        GeoCircle geoCircle = (GeoCircle) toList(vertices).get(0).getPropertyValue("location");
+        assertEquals(within, geoCircle);
+        assertEquals(within.getDescription(), geoCircle.getDescription());
+    }
+
+    @Test
+    public void testStoreGeoRect() {
+        assumeTrue("GeoRect storage and queries are not supported", isAdvancedGeoQuerySupported());
+
+        GeoRect within = new GeoRect(new GeoPoint(39.52632, -91.35059), new GeoPoint(37.72767, -89.0482), "St. Louis, MO - within");
+        GeoRect contains = new GeoRect(new GeoPoint(45.82157, -99.42435), new GeoPoint(31.43242, -80.97444), "St. Louis, MO - contains");
+        GeoRect intersects = new GeoRect(new GeoPoint(43.1236, -85.75962), new GeoPoint(34.13039, -74.24038), "St. Louis, MO - intersects");
+        GeoRect disjoint = new GeoRect(new GeoPoint(43.1236, -75.75962), new GeoPoint(34.13039, -64.24038), "St. Louis, MO - disjoint");
+
+        doALLGeoshapeTestQueries(intersects, disjoint, within, contains);
+
+        QueryResultsIterable<Vertex> vertices = graph.query(AUTHORIZATIONS_A_AND_B).has("location", within.getDescription()).vertices();
+        assertEquals(1, vertices.getTotalHits());
+        Assert.assertEquals(1, count(vertices));
+
+        GeoRect geoRect = (GeoRect) toList(vertices).get(0).getPropertyValue("location");
+        assertEquals(within, geoRect);
+        assertEquals(within.getDescription(), geoRect.getDescription());
+    }
+
+    @Test
+    public void testStoreGeoLine() {
+        assumeTrue("GeoLine storage and queries are not supported", isAdvancedGeoQuerySupported());
+
+        GeoLine within = new GeoLine(new GeoPoint(39.5, -90.1994), new GeoPoint(37.9, -90.1994), "St. Louis, MO - within");
+        GeoLine contains = new GeoLine(new GeoPoint(35.0, -100.0), new GeoPoint(39.5, -80), "St. Louis, MO - contains");
+        GeoLine intersects = new GeoLine(new GeoPoint(38.67, -85), new GeoPoint(38.67, -80), "St. Louis, MO - intersects");
+        GeoLine disjoint = new GeoLine(new GeoPoint(38.6, -74.0), new GeoPoint(38.6, -68), "St. Louis, MO - disjoint");
+
+        doALLGeoshapeTestQueries(intersects, disjoint, within, contains);
+
+        QueryResultsIterable<Vertex> vertices = graph.query(AUTHORIZATIONS_A_AND_B).has("location", within.getDescription()).vertices();
+        assertEquals(1, vertices.getTotalHits());
+        Assert.assertEquals(1, count(vertices));
+
+        GeoLine geoLine = (GeoLine) toList(vertices).get(0).getPropertyValue("location");
+        assertEquals(within, geoLine);
+        assertEquals(within.getDescription(), geoLine.getDescription());
+    }
+
+    @Test
+    public void testStoreGeoPolygon() {
+        assumeTrue("GeoPolygon storage and queries are not supported", isAdvancedGeoQuerySupported());
+
+        GeoPolygon within = new GeoPolygon(Arrays.asList(new GeoPoint(39.4, -91.0), new GeoPoint(38.1, -91.0), new GeoPoint(38.627, -89.0), new GeoPoint(39.4, -91.0)), "St. Louis, MO - within");
+        GeoPolygon contains = new GeoPolygon(Arrays.asList(new GeoPoint(50.0, -98.0), new GeoPoint(26.0, -98.0), new GeoPoint(38.627, -75.0), new GeoPoint(50.0, -98.0)), "St. Louis, MO - contains");
+        GeoPolygon intersects = new GeoPolygon(Arrays.asList(new GeoPoint(43.0, -86.0), new GeoPoint(34.0, -86.0), new GeoPoint(38.627, -74.0), new GeoPoint(43.0, -86.0)), "St. Louis, MO - intersects");
+        GeoPolygon disjoint = new GeoPolygon(Arrays.asList(new GeoPoint(43.0, -75.0), new GeoPoint(34.0, -75.0), new GeoPoint(38.627, -65.0), new GeoPoint(43.0, -75.0)), "St. Louis, MO - disjoint");
+
+        // put a hole in the within triangle to make sure it gets stored/retrieved properly
+        within.addHole(Arrays.asList(new GeoPoint(39.0, -90.5), new GeoPoint(38.627, -89.5), new GeoPoint(38.5, -90.5), new GeoPoint(39.0, -90.5)));
+
+        doALLGeoshapeTestQueries(intersects, disjoint, within, contains);
+
+        QueryResultsIterable<Vertex> vertices = graph.query(AUTHORIZATIONS_A_AND_B).has("location", within.getDescription()).vertices();
+        assertEquals(1, vertices.getTotalHits());
+        Assert.assertEquals(1, count(vertices));
+
+        GeoPolygon geoPolygon = (GeoPolygon) toList(vertices).get(0).getPropertyValue("location");
+        assertEquals(within, geoPolygon);
+        assertEquals(within.getDescription(), geoPolygon.getDescription());
+    }
+
+    @Test
+    public void testStoreGeoCollection() {
+        assumeTrue("GeoCollection storage and queries are not supported", isAdvancedGeoQuerySupported());
+
+        GeoCollection within = new GeoCollection("St. Louis, MO - within").addShape(new GeoCircle(38.6270, -90.1994, 100));
+        GeoCollection contains = new GeoCollection("St. Louis, MO - contains").addShape(new GeoCircle(38.6270, -90.1994, 800));
+        GeoCollection intersects = new GeoCollection("St. Louis, MO - intersects").addShape(new GeoCircle(38.6270, -80.0, 500));
+        GeoCollection disjoint = new GeoCollection("St. Louis, MO - disjoint").addShape(new GeoCircle(38.6270, -70.0, 500));
+
+        // Add another shape to within to make sure it stores/retrieves properly
+        within.addShape(new GeoPoint(38.6270, -90.1994));
+
+        doALLGeoshapeTestQueries(intersects, disjoint, within, contains);
+
+        QueryResultsIterable<Vertex> vertices = graph.query(AUTHORIZATIONS_A_AND_B).has("location", within.getDescription()).vertices();
+        assertEquals(1, vertices.getTotalHits());
+        Assert.assertEquals(1, count(vertices));
+
+        GeoCollection geoCollection = (GeoCollection) toList(vertices).get(0).getPropertyValue("location");
+        assertEquals(within.getGeoShapes(), geoCollection.getGeoShapes());
+        assertEquals(within.getDescription(), geoCollection.getDescription());
+    }
+
+    // See https://jsfiddle.net/mwizeman/do5ufpa9/ for a handy way to visualize the layout of the inputs and all of the search areas
+    private void doALLGeoshapeTestQueries(GeoShape intersects, GeoShape disjoint, GeoShape within, GeoShape contains) {
+        graph.defineProperty("location").dataType(GeoShape.class).define();
+        graph.prepareVertex("v1", VISIBILITY_A).setProperty("location", intersects, VISIBILITY_A).save(AUTHORIZATIONS_A_AND_B);
+        graph.prepareVertex("v2", VISIBILITY_A).setProperty("location", disjoint, VISIBILITY_A).save(AUTHORIZATIONS_A_AND_B);
+        graph.prepareVertex("v3", VISIBILITY_A).setProperty("location", within, VISIBILITY_A).save(AUTHORIZATIONS_A_AND_B);
+        graph.prepareVertex("v4", VISIBILITY_A).setProperty("location", contains, VISIBILITY_A).save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
-        List<Vertex> vertices = toList(graph.query(AUTHORIZATIONS_A_AND_B)
-                .has("location", GeoCompare.WITHIN, new GeoCircle(38.92, -77.23, 10))
-                .vertices());
-        Assert.assertEquals(1, count(vertices));
-        GeoCircle geoCircle = (GeoCircle) vertices.get(0).getPropertyValue("location");
-        assertEquals(38.9186, geoCircle.getLatitude(), 0.001);
-        assertEquals(-77.2297, geoCircle.getLongitude(), 0.001);
-        assertEquals(100.0, geoCircle.getRadius(), 0.001);
-        assertEquals("Reston, VA", geoCircle.getDescription());
+        // All of the different search areas to try
+        GeoCircle circle = new GeoCircle(38.6270, -90.1994, 500, "Circle");
+        GeoRect rect = new GeoRect(new GeoPoint(43.1236, -95.9590), new GeoPoint(34.1303, -84.4397), "Rect");
+        GeoPolygon triangle = new GeoPolygon(Arrays.asList(new GeoPoint(43.1236, -95.9590), new GeoPoint(34.1303, -95.9590), new GeoPoint(38.6270, -84.4397), new GeoPoint(43.1236, -95.9590)), "Triangle");
+        GeoLine line = new GeoLine(Arrays.asList(new GeoPoint(34.1303, -95.9590), new GeoPoint(43.1236, -84.4397), new GeoPoint(38.6270, -84.4397)), "Line");
+        GeoCollection collection = new GeoCollection("Collection")
+                .addShape(new GeoCircle(38.6270, -90.1994, 250))
+                .addShape(new GeoLine(new GeoPoint(39.5, -84.0), new GeoPoint(38.5, -84.0)));
+
+        Arrays.asList(circle, rect, triangle, line, collection).forEach(searchArea -> {
+            QueryResultsIterable<Vertex> vertices = graph.query(AUTHORIZATIONS_A_AND_B).has("location", GeoCompare.INTERSECTS, searchArea).vertices();
+            assertEquals("Incorrect total hits match INTERSECTS for shape " + searchArea.getDescription(), 3, vertices.getTotalHits());
+            assertVertexIdsAnyOrder(vertices, "v1", "v3", "v4");
+
+            vertices = graph.query(AUTHORIZATIONS_A_AND_B).has("location", GeoCompare.DISJOINT, searchArea).vertices();
+            assertEquals("Incorrect total hits match DISJOINT for shape " + searchArea.getDescription(), 1, vertices.getTotalHits());
+            assertVertexIdsAnyOrder(vertices, "v2");
+
+            if (searchArea != line) {
+                vertices = graph.query(AUTHORIZATIONS_A_AND_B).has("location", GeoCompare.WITHIN, searchArea).vertices();
+                assertEquals("Incorrect total hits match WITHIN for shape " + searchArea.getDescription(), 1, vertices.getTotalHits());
+                assertVertexIdsAnyOrder(vertices, "v3");
+
+                vertices = graph.query(AUTHORIZATIONS_A_AND_B).has("location", GeoCompare.CONTAINS, searchArea).vertices();
+                if (intersects instanceof GeoLine) {
+                    assertEquals("Incorrect total hits match CONTAINS for shape " + searchArea.getDescription(), 0, vertices.getTotalHits());
+                } else {
+                    assertEquals("Incorrect total hits match CONTAINS for shape " + searchArea.getDescription(), 1, vertices.getTotalHits());
+                    assertVertexIdsAnyOrder(vertices, "v4");
+                }
+            }
+        });
+
+        // Punch a hole in the polygon around the "within" shape and make sure that the results look ok
+        triangle.addHole(Arrays.asList(new GeoPoint(40, -92.5), new GeoPoint(40, -88.5), new GeoPoint(37.4, -88.5), new GeoPoint(37.4, -92.5), new GeoPoint(40, -92.5)));
+        QueryResultsIterable<Vertex> vertices = graph.query(AUTHORIZATIONS_A_AND_B).has("location", GeoCompare.INTERSECTS, triangle).vertices();
+        assertEquals("Incorrect total hits match INTERSECTS for polygon with hole", 2, vertices.getTotalHits());
+        assertVertexIdsAnyOrder(vertices, "v1", "v4");
+
+        vertices = graph.query(AUTHORIZATIONS_A_AND_B).has("location", GeoCompare.DISJOINT, triangle).vertices();
+        assertEquals("Incorrect total hits match DISJOINT for polygon with hole", 2, vertices.getTotalHits());
+        assertVertexIdsAnyOrder(vertices, "v2", "v3");
+
+        vertices = graph.query(AUTHORIZATIONS_A_AND_B).has("location", GeoCompare.WITHIN, triangle).vertices();
+        assertEquals("Incorrect total hits match WITHIN for polygon with hole", 0, vertices.getTotalHits());
+
+        vertices = graph.query(AUTHORIZATIONS_A_AND_B).has("location", GeoCompare.CONTAINS, triangle).vertices();
+        if (intersects instanceof GeoLine) {
+            assertEquals("Incorrect total hits match CONTAINS for polygon with hole", 0, vertices.getTotalHits());
+        } else {
+            assertEquals("Incorrect total hits match CONTAINS for polygon with hole", 1, vertices.getTotalHits());
+            assertVertexIdsAnyOrder(vertices, "v4");
+        }
     }
 
     private Date createDate(int year, int month, int day) {

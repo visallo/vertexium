@@ -36,6 +36,14 @@ public class GeoPointTest {
     }
 
     @Test
+    public void testDistanceFrom() {
+        GeoPoint p1 = new GeoPoint(38.6270, -90.1994);
+        GeoPoint p2 = new GeoPoint(39.0438, -77.4874);
+
+        assertEquals(1101.13d, p1.distanceFrom(p2), 0.01d);
+    }
+
+    @Test
     public void testLongitudinalDistanceTo() {
         GeoPoint topLeft = new GeoPoint(10.0, 0.0);
         GeoPoint bottomRight = new GeoPoint(0.0, 10.0);

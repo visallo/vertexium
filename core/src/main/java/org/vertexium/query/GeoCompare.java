@@ -7,7 +7,20 @@ import org.vertexium.type.GeoShape;
 import java.util.Collection;
 
 public enum GeoCompare implements Predicate {
-    WITHIN;
+    INTERSECTS("intersects"),
+    DISJOINT("disjoint"),
+    WITHIN("within"),
+    CONTAINS("contains");
+
+    private final String compareName;
+
+    GeoCompare(String compareName) {
+        this.compareName = compareName;
+    }
+
+    public String getCompareName() {
+        return compareName;
+    }
 
     @Override
     public boolean evaluate(Iterable<Property> properties, Object second, Collection<PropertyDefinition> propertyDefinitions) {
