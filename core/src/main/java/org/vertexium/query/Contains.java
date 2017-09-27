@@ -52,8 +52,7 @@ public enum Contains implements Predicate {
     }
 
     @Override
-    public boolean isSupported(PropertyDefinition propertyDefinition) {
-        return true;
+    public void validate(PropertyDefinition propertyDefinition) {
     }
 
 

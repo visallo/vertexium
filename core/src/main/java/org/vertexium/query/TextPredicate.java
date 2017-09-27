@@ -56,9 +56,11 @@ public enum TextPredicate implements Predicate {
     }
 
     @Override
-    public boolean isSupported(PropertyDefinition propertyDefinition) {
+    public void validate(PropertyDefinition propertyDefinition) {
         Set<TextIndexHint> textIndexHints = propertyDefinition.getTextIndexHints();
-        return textIndexHints != null && textIndexHints.contains(TextIndexHint.FULL_TEXT);
+        if (textIndexHints == null || !textIndexHints.contains(TextIndexHint.FULL_TEXT)) {
+            throw new VertexiumException("Check your TextIndexHint settings. Property " + propertyDefinition.getPropertyName() + " is not full text indexed.");
+        }
     }
 
 

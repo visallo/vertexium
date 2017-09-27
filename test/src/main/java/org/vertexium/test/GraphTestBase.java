@@ -3806,7 +3806,7 @@ public abstract class GraphTestBase {
                 .vertices();
             fail("Full text queries should not be allowed for properties that are not indexed with FULL_TEXT.");
         } catch (VertexiumException ve) {
-            assertEquals("Check your TextIndexHint settings. Predicate DOES_NOT_CONTAIN cannot be used with property exactMatch", ve.getMessage());
+            assertEquals("Check your TextIndexHint settings. Property exactMatch is not full text indexed.", ve.getMessage());
         }
     }
 
@@ -3830,7 +3830,7 @@ public abstract class GraphTestBase {
             graph.query(AUTHORIZATIONS_A).has("none", TextPredicate.CONTAINS, "Test");
             fail("Full text queries should not be allowed for properties that are not indexed with FULL_TEXT.");
         } catch (VertexiumException ve) {
-            assertEquals("Check your TextIndexHint settings. Predicate CONTAINS cannot be used with property none", ve.getMessage());
+            assertEquals("Check your TextIndexHint settings. Property none is not full text indexed.", ve.getMessage());
         }
     }
 

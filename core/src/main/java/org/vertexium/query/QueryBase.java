@@ -353,9 +353,7 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
             this.propertyDefinitions = propertyDefinitions;
 
             PropertyDefinition propertyDefinition = PropertyDefinition.findPropertyDefinition(propertyDefinitions, key);
-            if (!predicate.isSupported(propertyDefinition)) {
-                throw new VertexiumException("Check your TextIndexHint settings. Predicate " + predicate.toString() + " cannot be used with property " + key);
-            }
+            predicate.validate(propertyDefinition);
         }
 
         @Override

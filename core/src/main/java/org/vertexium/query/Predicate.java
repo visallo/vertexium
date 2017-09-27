@@ -10,5 +10,5 @@ public interface Predicate {
 
     boolean evaluate(Object first, Object second, PropertyDefinition propertyDefinition);
 
-    boolean isSupported(PropertyDefinition propertyDefinition);
+    void validate(PropertyDefinition propertyDefinition);
 }
