@@ -258,9 +258,9 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
 
                 String[] propertyNames = getPropertyNames(propertyDefinition.getPropertyName());
                 if (propertyNames.length > 1) {
-                    String scriptSrc = "def fieldValues = []; for (def fieldName : params.fieldNames) { fieldValues.addAll(doc[fieldName].values); } ";
-                    scriptSrc += "if (params.esOrder == 'asc') { Collections.sort(fieldValues); } else { Collections.sort(fieldValues, Collections.reverseOrder()); }";
-                    scriptSrc += "if (params.dataType == 'String') { return fieldValues; } else { return fieldValues.length > 0 ? fieldValues[0] : (params.esOrder == 'asc' ? Integer.MAX_VALUE : Integer.MIN_VALUE); }";
+                    String scriptSrc = "def fieldValues = []; for (def fieldName : params.fieldNames) { fieldValues.addAll(doc[fieldName].values); } " +
+                            "if (params.esOrder == 'asc') { Collections.sort(fieldValues); } else { Collections.sort(fieldValues, Collections.reverseOrder()); }" +
+                            "if (params.dataType == 'String') { return fieldValues; } else { return fieldValues.length > 0 ? fieldValues[0] : (params.esOrder == 'asc' ? Integer.MAX_VALUE : Integer.MIN_VALUE); }";
 
                     List<String> fieldNames = Arrays.stream(propertyNames).map(propertyName ->
                             propertyName + (propertyDefinition.getDataType() == String.class ? Elasticsearch5SearchIndex.EXACT_MATCH_PROPERTY_NAME_SUFFIX : "")
