@@ -11,6 +11,9 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
+import org.elasticsearch.common.geo.ShapeRelation;
+import org.elasticsearch.common.geo.builders.GeometryCollectionBuilder;
+import org.elasticsearch.common.geo.builders.PolygonBuilder;
 import org.elasticsearch.common.geo.builders.ShapeBuilder;
 import org.elasticsearch.common.geo.builders.ShapeBuilders;
 import org.elasticsearch.common.unit.DistanceUnit;
@@ -364,9 +367,8 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
         Iterable<VertexiumObject> vertexiumObjects = new JoinIterable<>(items);
         vertexiumObjects = sortVertexiumObjectsByResultOrder(vertexiumObjects, ids.getIds());
 
-        boolean shouldEvaluateHas = evaluateHasContainers && (fetchHints.contains(FetchHint.PROPERTIES) || fetchHints.contains(FetchHint.EXTENDED_DATA_TABLE_NAMES));
         // TODO instead of passing false here to not evaluate the query string it would be better to support the Lucene query
-        return createIterable(response, filterParameters, vertexiumObjects, evaluateQueryString, shouldEvaluateHas, evaluateSortContainers, response.getTookInMillis(), hits);
+        return createIterable(response, filterParameters, vertexiumObjects, evaluateQueryString, false, evaluateSortContainers, response.getTookInMillis(), hits);
     }
 
     public QueryResultsIterable<SearchHit> search(EnumSet<VertexiumObjectType> objectTypes) {
@@ -518,7 +520,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
         List<QueryBuilder> filters = new ArrayList<>();
         for (String propertyName : propertyNames) {
             filters.add(QueryBuilders.boolQuery().mustNot(QueryBuilders.existsQuery(propertyName)));
-            if (propDef.getDataType().equals(GeoPoint.class)) {
+            if (GeoShape.class.isAssignableFrom(propDef.getDataType())) {
                 filters.add(QueryBuilders.boolQuery().mustNot(QueryBuilders.existsQuery(propertyName + Elasticsearch5SearchIndex.GEO_PROPERTY_NAME_SUFFIX)));
             } else if (isExactMatchPropertyDefinition(propDef)) {
                 filters.add(QueryBuilders.boolQuery().mustNot(QueryBuilders.existsQuery(propertyName + Elasticsearch5SearchIndex.EXACT_MATCH_PROPERTY_NAME_SUFFIX)));
@@ -574,7 +576,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
         List<QueryBuilder> filters = new ArrayList<>();
         for (String propertyName : propertyNames) {
             filters.add(QueryBuilders.existsQuery(propertyName));
-            if (propDef.getDataType().equals(GeoPoint.class)) {
+            if (GeoShape.class.isAssignableFrom(propDef.getDataType())) {
                 filters.add(QueryBuilders.existsQuery(propertyName + Elasticsearch5SearchIndex.GEO_PROPERTY_NAME_SUFFIX));
             } else if (isExactMatchPropertyDefinition(propDef)) {
                 filters.add(QueryBuilders.existsQuery(propertyName + Elasticsearch5SearchIndex.EXACT_MATCH_PROPERTY_NAME_SUFFIX));
@@ -602,74 +604,73 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
         if (keys.length == 0) {
             throw new VertexiumNoMatchingPropertiesException(has.key);
         }
+
+        if (!(has.value instanceof GeoShape)) {
+            throw new VertexiumNotSupportedException("GeoCompare searches only accept values of type GeoShape");
+        }
+
         List<QueryBuilder> filters = new ArrayList<>();
         for (String key : keys) {
             String propertyName = key + Elasticsearch5SearchIndex.GEO_PROPERTY_NAME_SUFFIX;
-            switch (compare) {
-                case WITHIN:
-                    Object value = has.value;
-                    if (value instanceof GeoHash) {
-                        value = ((GeoHash) value).toGeoRect();
-                    }
 
-                    if (value instanceof GeoCircle) {
-                        GeoCircle geoCircle = (GeoCircle) value;
-                        double lat = geoCircle.getLatitude();
-                        double lon = geoCircle.getLongitude();
-                        double distance = geoCircle.getRadius();
+            String inflatedPropertyName = getSearchIndex().removeVisibilityFromPropertyName(propertyName);
+            PropertyDefinition propertyDefinition = getGraph().getPropertyDefinition(inflatedPropertyName);
 
-                        String inflatedPropertyName = getSearchIndex().removeVisibilityFromPropertyName(propertyName);
-                        PropertyDefinition propertyDefinition = getGraph().getPropertyDefinition(inflatedPropertyName);
-                        if (propertyDefinition != null && propertyDefinition.getDataType() == GeoCircle.class) {
-                            ShapeBuilder shapeBuilder = ShapeBuilders.newCircleBuilder()
-                                    .center(lon, lat)
-                                    .radius(distance, DistanceUnit.KILOMETERS);
-                            filters
-                                    .add(new GeoShapeQueryBuilder(propertyName, shapeBuilder));
-                        } else {
-                            filters
-                                    .add(QueryBuilders
-                                                 .geoDistanceQuery(propertyName)
-                                                 .point(lat, lon)
-                                                 .distance(distance, DistanceUnit.KILOMETERS));
-                        }
-                    } else if (value instanceof GeoRect) {
-                        GeoRect geoRect = (GeoRect) value;
-                        double nwLat = geoRect.getNorthWest().getLatitude();
-                        double nwLon = geoRect.getNorthWest().getLongitude();
-                        double seLat = geoRect.getSouthEast().getLatitude();
-                        double seLon = geoRect.getSouthEast().getLongitude();
-
-                        String inflatedPropertyName = getSearchIndex().removeVisibilityFromPropertyName(propertyName);
-                        PropertyDefinition propertyDefinition = getGraph().getPropertyDefinition(inflatedPropertyName);
-                        if (propertyDefinition != null && propertyDefinition.getDataType() == GeoCircle.class) {
-                            List<Coordinate> coords = new ArrayList<>();
-                            coords.add(new Coordinate(nwLon, nwLat));
-                            coords.add(new Coordinate(seLon, nwLat));
-                            coords.add(new Coordinate(seLon, seLat));
-                            coords.add(new Coordinate(nwLon, seLat));
-                            ShapeBuilder shapeBuilder = ShapeBuilders.newPolygon(coords);
-                            filters
-                                    .add(new GeoShapeQueryBuilder(propertyName, shapeBuilder));
-                        } else {
-                            filters
-                                    .add(
-                                            QueryBuilders.geoBoundingBoxQuery(propertyName)
-                                                    .setCorners(
-                                                            new org.elasticsearch.common.geo.GeoPoint(nwLat, nwLon),
-                                                            new org.elasticsearch.common.geo.GeoPoint(seLat, seLon)
-                                                    )
-                                    );
-                        }
-                    } else {
-                        throw new VertexiumException("Unexpected has value type " + value.getClass().getName());
-                    }
-                    break;
-                default:
-                    throw new VertexiumException("Unexpected GeoCompare predicate " + has.predicate);
+            if (propertyDefinition != null && !GeoShape.class.isAssignableFrom(propertyDefinition.getDataType())) {
+                throw new VertexiumNotSupportedException("Unable to perform geo query on field of type: " + propertyDefinition.getDataType().getName());
             }
+
+            GeoShape value = (GeoShape)has.value;
+            if (value instanceof GeoHash) {
+                value = ((GeoHash) value).toGeoRect();
+            }
+
+            ShapeBuilder shapeBuilder = getShapeBuilder(value);
+            ShapeRelation relation = ShapeRelation.getRelationByName(compare.getCompareName());
+            filters.add(new GeoShapeQueryBuilder(propertyName, shapeBuilder).relation(relation));
         }
         return getSingleFilterOrOrTheFilters(filters, has);
+    }
+
+    private ShapeBuilder getShapeBuilder(GeoShape geoShape) {
+        if (geoShape instanceof GeoCircle) {
+            GeoCircle geoCircle = (GeoCircle) geoShape;
+            return ShapeBuilders.newCircleBuilder()
+                    .center(geoCircle.getLongitude(), geoCircle.getLatitude())
+                    .radius(geoCircle.getRadius(), DistanceUnit.KILOMETERS);
+        } else if (geoShape instanceof GeoRect) {
+            GeoRect geoRect = (GeoRect) geoShape;
+            Coordinate topLeft = new Coordinate(geoRect.getNorthWest().getLongitude(), geoRect.getNorthWest().getLatitude());
+            Coordinate bottomRight = new Coordinate(geoRect.getSouthEast().getLongitude(), geoRect.getSouthEast().getLatitude());
+            return ShapeBuilders.newEnvelope(topLeft, bottomRight);
+        } else if (geoShape instanceof GeoCollection) {
+            GeometryCollectionBuilder shapeBuilder = ShapeBuilders.newGeometryCollection();
+            ((GeoCollection) geoShape).getGeoShapes().forEach(shape -> shapeBuilder.shape(getShapeBuilder(shape)));
+            return shapeBuilder;
+        } else if (geoShape instanceof GeoLine) {
+            List<Coordinate> coordinates = ((GeoLine) geoShape).getGeoPoints().stream()
+                    .map(geoPoint -> new Coordinate(geoPoint.getLongitude(), geoPoint.getLatitude()))
+                    .collect(Collectors.toList());
+            return ShapeBuilders.newLineString(coordinates);
+        } else if (geoShape instanceof GeoPoint) {
+            GeoPoint geoPoint = (GeoPoint) geoShape;
+            return ShapeBuilders.newPoint(geoPoint.getLongitude(), geoPoint.getLatitude());
+        } else if (geoShape instanceof GeoPolygon) {
+            GeoPolygon geoPolygon = (GeoPolygon) geoShape;
+            List<Coordinate> shell = geoPolygon.getOuterBoundary().stream()
+                    .map(geoPoint -> new Coordinate(geoPoint.getLongitude(), geoPoint.getLatitude()))
+                    .collect(Collectors.toList());
+            PolygonBuilder polygonBuilder = ShapeBuilders.newPolygon(shell);
+            geoPolygon.getHoles().forEach(hole -> {
+                List<Coordinate> coordinates = hole.stream()
+                        .map(geoPoint -> new Coordinate(geoPoint.getLongitude(), geoPoint.getLatitude()))
+                        .collect(Collectors.toList());
+                polygonBuilder.hole(ShapeBuilders.newLineString(coordinates));
+            });
+            return polygonBuilder;
+        } else {
+            throw new VertexiumException("Unexpected has value type " + geoShape.getClass().getName());
+        }
     }
 
     private QueryBuilder getSingleFilterOrOrTheFilters(List<QueryBuilder> filters, HasContainer has) {
@@ -968,11 +969,18 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
 
     protected List<AggregationBuilder> getElasticsearchGeohashAggregations(GeohashAggregation agg) {
         List<AggregationBuilder> aggs = new ArrayList<>();
+        PropertyDefinition propertyDefinition = getPropertyDefinition(agg.getFieldName());
+        if (propertyDefinition == null) {
+            throw new VertexiumException("Unknown property " + agg.getFieldName() + " for geohash aggregation.");
+        }
+        if (propertyDefinition.getDataType() != GeoPoint.class) {
+            throw new VertexiumNotSupportedException("Only GeoPoint properties are valid for Geohash aggregation. Invalid property " + agg.getFieldName());
+        }
         for (String propertyName : getPropertyNames(agg.getFieldName())) {
             String visibilityHash = getSearchIndex().getPropertyVisibilityHashFromPropertyName(propertyName);
             String aggName = createAggregationName(agg.getAggregationName(), visibilityHash);
             GeoGridAggregationBuilder geoHashAgg = AggregationBuilders.geohashGrid(aggName);
-            geoHashAgg.field(propertyName + Elasticsearch5SearchIndex.GEO_PROPERTY_NAME_SUFFIX);
+            geoHashAgg.field(propertyName + Elasticsearch5SearchIndex.GEO_POINT_PROPERTY_NAME_SUFFIX);
             geoHashAgg.precision(agg.getPrecision());
             aggs.add(geoHashAgg);
         }

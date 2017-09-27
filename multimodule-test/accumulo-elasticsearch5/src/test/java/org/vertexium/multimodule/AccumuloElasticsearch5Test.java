@@ -82,6 +82,11 @@ public class AccumuloElasticsearch5Test extends AccumuloGraphTestBase {
     }
 
     @Override
+    protected boolean isAdvancedGeoQuerySupported() {
+        return true;
+    }
+
+    @Override
     protected boolean disableEdgeIndexing(Graph graph) {
         return elasticsearchResource.disableEdgeIndexing(graph);
     }

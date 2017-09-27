@@ -52,6 +52,11 @@ public class InMemoryGraphTest extends GraphTestBase {
         super.after();
     }
 
+    @Override
+    protected boolean isAdvancedGeoQuerySupported() {
+        return false;
+    }
+
     @Test
     public void testStrictTyping() {
         Map<String, String> config = createConfig();

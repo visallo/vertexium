@@ -3,7 +3,7 @@ package org.vertexium.type;
 import java.util.HashMap;
 import java.util.Map;
 
-public class GeoHash implements GeoShape {
+public class GeoHash extends GeoShapeBase {
     private static final char[] BASE32 = {
             '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'b', 'c', 'd', 'e', 'f', 'g',
             'h', 'j', 'k', 'm', 'n', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'
@@ -19,12 +19,22 @@ public class GeoHash implements GeoShape {
         }
     }
 
+    public GeoHash(String hash) {
+        this.hash = hash;
+    }
+
+    public GeoHash(String hash, String description) {
+        super(description);
+        this.hash = hash;
+    }
+
     public GeoHash(double latitude, double longitude, int precision) {
         this.hash = encode(latitude, longitude, precision);
     }
 
-    public GeoHash(String hash) {
-        this.hash = hash;
+    public GeoHash(double latitude, double longitude, int precision, String description) {
+        super(description);
+        this.hash = encode(latitude, longitude, precision);
     }
 
     public String getHash() {
@@ -140,5 +150,10 @@ public class GeoHash implements GeoShape {
     @Override
     public boolean within(GeoShape geoShape) {
         return toGeoRect().within(geoShape);
+    }
+
+    @Override
+    public boolean intersects(GeoShape geoShape) {
+        return toGeoRect().intersects(geoShape);
     }
 }

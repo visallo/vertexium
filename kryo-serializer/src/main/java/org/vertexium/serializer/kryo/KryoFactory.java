@@ -6,9 +6,7 @@ import com.esotericsoftware.kryo.util.MapReferenceResolver;
 import org.objenesis.strategy.StdInstantiatorStrategy;
 import org.vertexium.VertexiumException;
 import org.vertexium.property.StreamingPropertyValueRef;
-import org.vertexium.type.GeoCircle;
-import org.vertexium.type.GeoPoint;
-import org.vertexium.type.GeoRect;
+import org.vertexium.type.*;
 
 import java.util.Date;
 import java.util.HashMap;
@@ -40,6 +38,10 @@ public class KryoFactory {
         kryo.register(GeoRect.class, 1006);
         kryo.register(GeoCircle.class, 1007);
         kryo.register(Date.class, 1008);
+        kryo.register(GeoCollection.class, 1009);
+        kryo.register(GeoLine.class, 1010);
+        kryo.register(GeoPolygon.class, 1011);
+        kryo.register(GeoShape.class, 1012);
         registerAccumuloClasses(kryo);
     }
 

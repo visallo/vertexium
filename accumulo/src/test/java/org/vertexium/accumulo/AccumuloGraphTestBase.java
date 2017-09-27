@@ -57,6 +57,11 @@ public abstract class AccumuloGraphTestBase extends GraphTestBase {
         return false;
     }
 
+    @Override
+    protected boolean isAdvancedGeoQuerySupported() {
+        return false;
+    }
+
     @Test
     public void testFilterHints() {
         Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
