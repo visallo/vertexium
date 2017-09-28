@@ -3671,6 +3671,23 @@ public abstract class GraphTestBase {
         for (Vertex v : vertices) {
             assertTrue(expectedVertexIds.contains(v.getId()));
         }
+
+        graph.prepareVertex("v6", VISIBILITY_A)
+                .setProperty("both", "susan-test", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A_AND_B);
+
+        graph.prepareVertex("v7", VISIBILITY_A)
+                .setProperty("both", "susan-test", Visibility.EMPTY)
+                .save(AUTHORIZATIONS_A_AND_B);
+
+        vertices = graph.query(AUTHORIZATIONS_A)
+                .has("both", TextPredicate.DOES_NOT_CONTAIN, "susan")
+                .vertices();
+        Assert.assertEquals(5, count(vertices));
+        expectedVertexIds = Arrays.asList("v1", "v2", "v3", "v4", "v5");
+        for (Vertex v : vertices) {
+            assertTrue(expectedVertexIds.contains(v.getId()));
+        }
     }
 
     @Test
