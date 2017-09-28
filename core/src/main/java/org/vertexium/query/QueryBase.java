@@ -351,6 +351,9 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
             this.value = value;
             this.predicate = predicate;
             this.propertyDefinitions = propertyDefinitions;
+
+            PropertyDefinition propertyDefinition = PropertyDefinition.findPropertyDefinition(propertyDefinitions, key);
+            predicate.validate(propertyDefinition);
         }
 
         @Override

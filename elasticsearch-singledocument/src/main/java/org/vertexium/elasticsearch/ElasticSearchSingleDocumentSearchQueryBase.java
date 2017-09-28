@@ -572,7 +572,7 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase {
                         double lon = geoCircle.getLongitude();
                         double distance = geoCircle.getRadius();
 
-                        String inflatedPropertyName = getSearchIndex().inflatePropertyName(propertyName);
+                        String inflatedPropertyName = getSearchIndex().removeVisibilityFromPropertyName(propertyName);
                         PropertyDefinition propertyDefinition = getGraph().getPropertyDefinition(inflatedPropertyName);
                         if (propertyDefinition != null && propertyDefinition.getDataType() == GeoCircle.class) {
                             ShapeBuilder shapeBuilder = ShapeBuilder.newCircleBuilder()
@@ -594,7 +594,7 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase {
                         double seLat = geoRect.getSouthEast().getLatitude();
                         double seLon = geoRect.getSouthEast().getLongitude();
 
-                        String inflatedPropertyName = getSearchIndex().inflatePropertyName(propertyName);
+                        String inflatedPropertyName = getSearchIndex().removeVisibilityFromPropertyName(propertyName);
                         PropertyDefinition propertyDefinition = getGraph().getPropertyDefinition(inflatedPropertyName);
                         if (propertyDefinition != null && propertyDefinition.getDataType() == GeoCircle.class) {
                             ShapeBuilder shapeBuilder = ShapeBuilder.newPolygon()
@@ -896,7 +896,7 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase {
     }
 
     protected List<AbstractAggregationBuilder> getElasticsearchPercentilesAggregations(PercentilesAggregation agg) {
-        String propertyName = getSearchIndex().deflatePropertyName(getGraph(), agg.getFieldName(), agg.getVisibility());
+        String propertyName = getSearchIndex().addVisibilityToPropertyName(getGraph(), agg.getFieldName(), agg.getVisibility());
         String visibilityHash = getSearchIndex().getPropertyVisibilityHashFromDeflatedPropertyName(propertyName);
         String aggName = createAggregationName(agg.getAggregationName(), visibilityHash);
         PercentilesBuilder percentilesAgg = AggregationBuilders.percentiles(aggName);

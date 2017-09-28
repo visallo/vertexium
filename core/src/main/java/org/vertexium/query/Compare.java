@@ -36,6 +36,11 @@ public enum Compare implements Predicate {
         return evaluate(first, comparePredicate, second, propertyDefinition);
     }
 
+    @Override
+    public void validate(PropertyDefinition propertyDefinition) {
+    }
+
+
     private boolean evaluate(Property property, Object second, PropertyDefinition propertyDefinition) {
         Object first = property.getValue();
         Compare comparePredicate = this;

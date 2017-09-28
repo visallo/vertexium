@@ -42,7 +42,6 @@ import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsBuilder;
 import org.vertexium.*;
 import org.vertexium.elasticsearch.utils.ElasticsearchExtendedDataIdUtils;
-import org.vertexium.id.NameSubstitutionStrategy;
 import org.vertexium.mutation.ExtendedDataMutation;
 import org.vertexium.property.StreamingPropertyValue;
 import org.vertexium.query.*;
@@ -101,7 +100,6 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
     public static final Pattern AGGREGATION_NAME_PATTERN = Pattern.compile("(.*?)_([0-9a-f]+)");
     public static final String CONFIG_PROPERTY_NAME_VISIBILITIES_STORE = "propertyNameVisibilitiesStore";
     public static final Class<? extends PropertyNameVisibilitiesStore> DEFAULT_PROPERTY_NAME_VISIBILITIES_STORE = MetadataTablePropertyNameVisibilitiesStore.class;
-    private final NameSubstitutionStrategy nameSubstitutionStrategy;
     private final PropertyNameVisibilitiesStore propertyNameVisibilitiesStore;
     private final ThreadLocal<Queue<FlushObject>> flushFutures = new ThreadLocal<>();
     private final Random random = new Random();
@@ -109,7 +107,6 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
 
     public ElasticsearchSingleDocumentSearchIndex(Graph graph, GraphConfiguration config) {
         this.config = new ElasticSearchSearchIndexConfiguration(graph, config);
-        this.nameSubstitutionStrategy = this.config.getNameSubstitutionStrategy();
         this.indexSelectionStrategy = this.config.getIndexSelectionStrategy();
         this.allFieldEnabled = this.config.isAllFieldEnabled(false);
         this.propertyNameVisibilitiesStore = createPropertyNameVisibilitiesStore(graph, config);
@@ -532,7 +529,7 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
     }
 
     private void addExtendedDataColumnToFieldMap(Graph graph, ExtendedDataMutation column, Object value, Map<String, Object> fieldsMap) {
-        String propertyName = deflateExtendedDataColumnName(graph, column);
+        String propertyName = addVisibilityToExtendedDataColumnName(graph, column);
         addValuesToFieldMap(graph, fieldsMap, propertyName, value);
     }
 
@@ -575,7 +572,7 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
             Authorizations authorizations
     ) {
         // Remove old element field name
-        String oldFieldName = deflatePropertyName(graph, ELEMENT_TYPE_FIELD_NAME, oldVisibility);
+        String oldFieldName = addVisibilityToPropertyName(graph, ELEMENT_TYPE_FIELD_NAME, oldVisibility);
         removeFieldsFromDocument(element, oldFieldName);
 
         addElement(graph, element, authorizations);
@@ -633,7 +630,7 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
     }
 
     private String addElementTypeVisibilityPropertyToIndex(Graph graph, Element element) throws IOException {
-        String elementTypeVisibilityPropertyName = deflatePropertyName(graph, ELEMENT_TYPE_FIELD_NAME, element.getVisibility());
+        String elementTypeVisibilityPropertyName = addVisibilityToPropertyName(graph, ELEMENT_TYPE_FIELD_NAME, element.getVisibility());
         String indexName = getIndexName(element);
         IndexInfo indexInfo = ensureIndexCreatedAndInitialized(graph, indexName);
         addPropertyToIndex(graph, indexInfo, elementTypeVisibilityPropertyName, element.getVisibility(), String.class, false);
@@ -662,7 +659,7 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
     }
 
     private void addPropertyToFieldMap(Graph graph, Property property, Object propertyValue, Map<String, Object> propertiesMap) {
-        String propertyName = deflatePropertyName(graph, property);
+        String propertyName = addVisibilityToPropertyName(graph, property);
         addValuesToFieldMap(graph, propertiesMap, propertyName, propertyValue);
     }
 
@@ -755,32 +752,32 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
         }
     }
 
-    protected String deflatePropertyName(Graph graph, Property property) {
+    protected String addVisibilityToPropertyName(Graph graph, Property property) {
         String propertyName = property.getName();
         Visibility propertyVisibility = property.getVisibility();
-        return deflatePropertyName(graph, propertyName, propertyVisibility);
+        return addVisibilityToPropertyName(graph, propertyName, propertyVisibility);
     }
 
-    protected String deflateExtendedDataColumnName(Graph graph, ExtendedDataMutation extendedDataMutation) {
+    protected String addVisibilityToExtendedDataColumnName(Graph graph, ExtendedDataMutation extendedDataMutation) {
         String columnName = extendedDataMutation.getColumnName();
         Visibility propertyVisibility = extendedDataMutation.getVisibility();
-        return deflatePropertyName(graph, columnName, propertyVisibility);
+        return addVisibilityToPropertyName(graph, columnName, propertyVisibility);
     }
 
-    String deflatePropertyName(Graph graph, String propertyName, Visibility propertyVisibility) {
+    String addVisibilityToPropertyName(Graph graph, String propertyName, Visibility propertyVisibility) {
         String visibilityHash = getVisibilityHash(graph, propertyName, propertyVisibility);
-        return this.nameSubstitutionStrategy.deflate(propertyName) + "_" + visibilityHash;
+        return propertyName + "_" + visibilityHash;
     }
 
-    protected String inflatePropertyName(String string) {
+    protected String removeVisibilityFromPropertyName(String string) {
         Matcher m = PROPERTY_NAME_PATTERN.matcher(string);
         if (m.matches()) {
             string = m.group(1);
         }
-        return nameSubstitutionStrategy.inflate(string);
+        return string;
     }
 
-    private String inflatePropertyNameWithTypeSuffix(String string) {
+    private String removeVisibilityFromPropertyNameWithTypeSuffix(String string) {
         Matcher m = PROPERTY_NAME_PATTERN.matcher(string);
         if (m.matches()) {
             if (m.groupCount() >= 5 && m.group(5) != null) {
@@ -789,7 +786,7 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
                 string = m.group(1);
             }
         }
-        return nameSubstitutionStrategy.inflate(string);
+        return string;
     }
 
     public String getPropertyVisibilityHashFromDeflatedPropertyName(String deflatedPropertyName) {
@@ -814,10 +811,9 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
             return new String[0];
         }
         String[] results = new String[hashes.size()];
-        String deflatedPropertyName = this.nameSubstitutionStrategy.deflate(propertyName);
         int i = 0;
         for (String hash : hashes) {
-            results[i++] = deflatedPropertyName + "_" + hash;
+            results[i++] = propertyName + "_" + hash;
         }
         return results;
     }
@@ -840,14 +836,13 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
             if (queryableTypeSuffixes.size() == 0) {
                 continue;
             }
-            String inflatedPropertyName = inflatePropertyName(propertyDefinition.getPropertyName()); // could be stored deflated
-            String deflatedPropertyName = nameSubstitutionStrategy.deflate(inflatedPropertyName);
+            String inflatedPropertyName = removeVisibilityFromPropertyName(propertyDefinition.getPropertyName()); // could be stored deflated
             if (isReservedFieldName(inflatedPropertyName)) {
                 continue;
             }
             for (String hash : propertyNameVisibilitiesStore.getHashes(graph, inflatedPropertyName, authorizations)) {
                 for (String typeSuffix : queryableTypeSuffixes) {
-                    propertyNames.add(deflatedPropertyName + "_" + hash + typeSuffix);
+                    propertyNames.add(inflatedPropertyName + "_" + hash + typeSuffix);
                 }
             }
         }
@@ -983,7 +978,7 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
                 addPropertyToIndex(graph, indexInfo, propertyName, propertyVisibility, String.class, true, propertyDefinition.getBoost());
             }
             if (propertyDefinition.isSortable()) {
-                String sortPropertyName = inflatePropertyName(propertyName) + SORT_PROPERTY_NAME_SUFFIX;
+                String sortPropertyName = removeVisibilityFromPropertyName(propertyName) + SORT_PROPERTY_NAME_SUFFIX;
                 addPropertyToIndex(graph, indexInfo, sortPropertyName, null, String.class, false, null);
             }
             return true;
@@ -1001,7 +996,7 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
     }
 
     protected PropertyDefinition getPropertyDefinition(Graph graph, String propertyName) {
-        propertyName = inflatePropertyNameWithTypeSuffix(propertyName);
+        propertyName = removeVisibilityFromPropertyNameWithTypeSuffix(propertyName);
         return graph.getPropertyDefinition(propertyName);
     }
 
@@ -1012,7 +1007,7 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
 
         PropertyDefinition propertyDefinition = getPropertyDefinition(graph, property.getName());
         if (propertyDefinition != null) {
-            String deflatedPropertyName = deflatePropertyName(graph, property);
+            String deflatedPropertyName = addVisibilityToPropertyName(graph, property);
             addPropertyDefinitionToIndex(graph, indexInfo, deflatedPropertyName, property.getVisibility(), propertyDefinition);
         } else {
             addPropertyToIndexInner(graph, indexInfo, property);
@@ -1020,14 +1015,14 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
 
         propertyDefinition = getPropertyDefinition(graph, property.getName() + EXACT_MATCH_PROPERTY_NAME_SUFFIX);
         if (propertyDefinition != null) {
-            String deflatedPropertyName = deflatePropertyName(graph, property);
+            String deflatedPropertyName = addVisibilityToPropertyName(graph, property);
             addPropertyDefinitionToIndex(graph, indexInfo, deflatedPropertyName, property.getVisibility(), propertyDefinition);
         }
 
         if (propertyValue instanceof GeoShape) {
             propertyDefinition = getPropertyDefinition(graph, property.getName() + GEO_PROPERTY_NAME_SUFFIX);
             if (propertyDefinition != null) {
-                String deflatedPropertyName = deflatePropertyName(graph, property);
+                String deflatedPropertyName = addVisibilityToPropertyName(graph, property);
                 addPropertyDefinitionToIndex(graph, indexInfo, deflatedPropertyName, property.getVisibility(), propertyDefinition);
             }
         }
@@ -1040,7 +1035,7 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
 
         PropertyDefinition propertyDefinition = getPropertyDefinition(graph, column.getColumnName());
         if (propertyDefinition != null) {
-            String deflatedColumnName = deflateExtendedDataColumnName(graph, column);
+            String deflatedColumnName = addVisibilityToExtendedDataColumnName(graph, column);
             addPropertyDefinitionToIndex(graph, indexInfo, deflatedColumnName, column.getVisibility(), propertyDefinition);
         } else {
             addPropertyToIndexInner(graph, indexInfo, column);
@@ -1048,28 +1043,28 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
 
         propertyDefinition = getPropertyDefinition(graph, column.getColumnName() + EXACT_MATCH_PROPERTY_NAME_SUFFIX);
         if (propertyDefinition != null) {
-            String deflatedColumnName = deflateExtendedDataColumnName(graph, column);
+            String deflatedColumnName = addVisibilityToExtendedDataColumnName(graph, column);
             addPropertyDefinitionToIndex(graph, indexInfo, deflatedColumnName, column.getVisibility(), propertyDefinition);
         }
 
         if (columnValue instanceof GeoShape) {
             propertyDefinition = getPropertyDefinition(graph, column.getColumnName() + GEO_PROPERTY_NAME_SUFFIX);
             if (propertyDefinition != null) {
-                String deflatedPropertyName = deflateExtendedDataColumnName(graph, column);
+                String deflatedPropertyName = addVisibilityToExtendedDataColumnName(graph, column);
                 addPropertyDefinitionToIndex(graph, indexInfo, deflatedPropertyName, column.getVisibility(), propertyDefinition);
             }
         }
     }
 
     public void addPropertyToIndexInner(Graph graph, IndexInfo indexInfo, Property property) throws IOException {
-        String deflatedPropertyName = deflatePropertyName(graph, property);
+        String deflatedPropertyName = addVisibilityToPropertyName(graph, property);
         Object propertyValue = property.getValue();
         Visibility propertyVisibility = property.getVisibility();
         addPropertyToIndexInner(graph, indexInfo, deflatedPropertyName, propertyValue, propertyVisibility);
     }
 
     public void addPropertyToIndexInner(Graph graph, IndexInfo indexInfo, ExtendedDataMutation extendedDataMutation) throws IOException {
-        String deflatedPropertyName = deflateExtendedDataColumnName(graph, extendedDataMutation);
+        String deflatedPropertyName = addVisibilityToExtendedDataColumnName(graph, extendedDataMutation);
         Object propertyValue = extendedDataMutation.getValue();
         Visibility propertyVisibility = extendedDataMutation.getVisibility();
         addPropertyToIndexInner(graph, indexInfo, deflatedPropertyName, propertyValue, propertyVisibility);
@@ -1200,7 +1195,7 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
     }
 
     protected void addPropertyNameVisibility(Graph graph, IndexInfo indexInfo, String propertyName, Visibility propertyVisibility) {
-        String inflatedPropertyName = inflatePropertyName(propertyName);
+        String inflatedPropertyName = removeVisibilityFromPropertyName(propertyName);
         if (propertyVisibility != null) {
             this.propertyNameVisibilitiesStore.getHash(graph, inflatedPropertyName, propertyVisibility);
         }
@@ -1335,7 +1330,7 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
 
     @Override
     public void deleteProperty(Graph graph, Element element, PropertyDescriptor property, Authorizations authorizations) {
-        String fieldName = deflatePropertyName(graph, property.getName(), property.getVisibility());
+        String fieldName = addVisibilityToPropertyName(graph, property.getName(), property.getVisibility());
         removeFieldsFromDocument(element, fieldName);
         removeFieldsFromDocument(element, fieldName + "_e");
     }
@@ -1344,7 +1339,7 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
     public void deleteProperties(Graph graph, Element element, Collection<PropertyDescriptor> propertyList, Authorizations authorizations) {
         List<String> fields = new ArrayList<>();
         for (PropertyDescriptor p : propertyList) {
-            String fieldName = deflatePropertyName(graph, p.getName(), p.getVisibility());
+            String fieldName = addVisibilityToPropertyName(graph, p.getName(), p.getVisibility());
             fields.add(fieldName);
             fields.add(fieldName + "_e");
         }
@@ -1557,11 +1552,6 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
         addPropertyToIndex(graph, indexInfo, propertyName, propertyVisibility, dataType, analyzed, null);
     }
 
-
-    protected String deflatePropertyName(String propertyName) {
-        return nameSubstitutionStrategy.deflate(propertyName);
-    }
-
     protected boolean shouldIgnoreType(Class dataType) {
         return dataType == byte[].class;
     }
@@ -1677,9 +1667,9 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
         Map<String, Object> propertyValueMap = new HashMap<>();
         propertyValueMap.put("lat", geoPoint.getLatitude());
         propertyValueMap.put("lon", geoPoint.getLongitude());
-        jsonBuilder.field(deflatePropertyName(graph, property) + GEO_PROPERTY_NAME_SUFFIX, propertyValueMap);
+        jsonBuilder.field(addVisibilityToPropertyName(graph, property) + GEO_PROPERTY_NAME_SUFFIX, propertyValueMap);
         if (geoPoint.getDescription() != null) {
-            jsonBuilder.field(deflatePropertyName(graph, property), geoPoint.getDescription());
+            jsonBuilder.field(addVisibilityToPropertyName(graph, property), geoPoint.getDescription());
         }
     }
 
@@ -1701,9 +1691,9 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
         coordinates.add(geoCircle.getLatitude());
         propertyValueMap.put("coordinates", coordinates);
         propertyValueMap.put("radius", geoCircle.getRadius() + "km");
-        jsonBuilder.field(deflatePropertyName(graph, property) + GEO_PROPERTY_NAME_SUFFIX, propertyValueMap);
+        jsonBuilder.field(addVisibilityToPropertyName(graph, property) + GEO_PROPERTY_NAME_SUFFIX, propertyValueMap);
         if (geoCircle.getDescription() != null) {
-            jsonBuilder.field(deflatePropertyName(graph, property), geoCircle.getDescription());
+            jsonBuilder.field(addVisibilityToPropertyName(graph, property), geoCircle.getDescription());
         }
     }
 
@@ -1733,8 +1723,8 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
     protected void createIndex(String indexName) throws IOException {
         CreateIndexResponse createResponse = client.admin().indices().prepareCreate(indexName)
                 .setSettings(ImmutableSettings.settingsBuilder()
-                                     .put("number_of_shards", getConfig().getNumberOfShards())
-                                     .put("number_of_replicas", getConfig().getNumberOfReplicas())
+                        .put("number_of_shards", getConfig().getNumberOfShards())
+                        .put("number_of_replicas", getConfig().getNumberOfReplicas())
                 )
                 .execute().actionGet();
 
