@@ -673,6 +673,9 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase {
                     throw new VertexiumException("Unexpected text predicate " + has.predicate);
             }
         }
+        if (compare.equals(TextPredicate.DOES_NOT_CONTAIN)) {
+            return getSingleFilterOrAndTheFilters(filters, has);
+        }
         return getSingleFilterOrOrTheFilters(filters, has);
     }
 

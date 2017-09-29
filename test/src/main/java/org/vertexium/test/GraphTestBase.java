@@ -3808,6 +3808,20 @@ public abstract class GraphTestBase {
         } catch (VertexiumException ve) {
             assertEquals("Check your TextIndexHint settings. Property exactMatch is not full text indexed.", ve.getMessage());
         }
+
+        graph.prepareVertex("v6", VISIBILITY_A)
+                .setProperty("both", "susan-test", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A_AND_B);
+
+        graph.prepareVertex("v7", VISIBILITY_A)
+                .setProperty("both", "susan-test", Visibility.EMPTY)
+                .save(AUTHORIZATIONS_A_AND_B);
+
+        vertices = graph.query(AUTHORIZATIONS_A)
+                .has("both", TextPredicate.DOES_NOT_CONTAIN, "susan")
+                .vertices();
+        Assert.assertEquals(5, count(vertices));
+        vertices.forEach(v -> Arrays.asList("v1", "v2", "v3", "v4", "v5").contains(v.getId()));
     }
 
     @Test
