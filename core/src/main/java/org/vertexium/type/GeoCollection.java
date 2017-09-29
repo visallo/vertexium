@@ -27,12 +27,12 @@ public class GeoCollection extends GeoShapeBase {
 
     @Override
     public boolean intersects(GeoShape geoShape) {
-        throw new VertexiumException("Not implemented for argument type " + geoShape.getClass().getName());
+        return geoShapes.stream().anyMatch(shape -> shape.intersects(geoShape));
     }
 
     @Override
     public boolean within(GeoShape geoShape) {
-        throw new VertexiumException("Not implemented for argument type " + geoShape.getClass().getName());
+        return geoShapes.stream().anyMatch(shape -> shape.within(geoShape));
     }
 
     public GeoCollection addShape(GeoShape geoShape) {
