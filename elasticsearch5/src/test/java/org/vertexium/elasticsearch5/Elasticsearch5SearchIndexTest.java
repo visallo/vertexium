@@ -11,4 +11,9 @@ public class Elasticsearch5SearchIndexTest extends Elasticsearch5SearchIndexTest
     protected ElasticsearchResource getElasticsearchResource() {
         return elasticsearchResource;
     }
+
+    @Override
+    protected boolean isPainlessDateMath() {
+        return true;
+    }
 }

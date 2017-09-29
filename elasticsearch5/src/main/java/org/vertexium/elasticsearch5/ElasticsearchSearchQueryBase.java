@@ -269,7 +269,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
                     scriptParams.put("fieldNames", fieldNames);
                     scriptParams.put("esOrder", esOrder == SortOrder.DESC ? "desc" : "asc");
                     scriptParams.put("dataType", propertyDefinition.getDataType().getSimpleName());
-                    Script script = new Script(ScriptType.INLINE, Script.DEFAULT_SCRIPT_LANG, scriptSrc, Collections.emptyMap(), scriptParams);
+                    Script script = new Script(ScriptType.INLINE, "painless", scriptSrc, scriptParams);
                     ScriptSortBuilder.ScriptSortType sortType = propertyDefinition.getDataType() == String.class ? ScriptSortBuilder.ScriptSortType.STRING : ScriptSortBuilder.ScriptSortType.NUMBER;
                     q.addSort(SortBuilders.scriptSort(script, sortType)
                             .order(esOrder)
@@ -1072,9 +1072,12 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
                 }
                 Script script = new Script(
                         ScriptType.INLINE,
-                        "groovy",
+                        "painless",
                         getCalendarFieldAggregationScript(agg, propertyName),
-                        new HashMap<>()
+                        ImmutableMap.of(
+                                "tzId", agg.getTimeZone().getID(),
+                                "fieldName", propertyName,
+                                "calendarField", agg.getCalendarField())
                 );
                 histAgg.script(script);
 
@@ -1091,21 +1094,23 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
     }
 
     private String getCalendarFieldAggregationScript(CalendarFieldAggregation agg, String propertyName) {
-        String prefix = "d = doc['" + propertyName + "']; ";
+        String prefix = "def d = doc[params.fieldName]; ZoneId zone = ZoneId.of(params.tzId); " +
+                "if (d == null || d.size() == 0) { return -1; }" +
+                "d = Instant.ofEpochMilli(d.date.millis).atZone(zone);";
         switch (agg.getCalendarField()) {
             case Calendar.DAY_OF_MONTH:
-                return prefix + "d ? d.date.toDateTime(DateTimeZone.forID(\"" + agg.getTimeZone().getID() + "\")).get(DateTimeFieldType.dayOfMonth()) : -1";
+                return prefix + "return d.getDayOfMonth();";
             case Calendar.DAY_OF_WEEK:
-                return prefix + "d = (d ? (d.date.toDateTime(DateTimeZone.forID(\"" + agg.getTimeZone().getID() + "\")).get(DateTimeFieldType.dayOfWeek()) + 1) : -1); return d > 7 ? d - 7 : d;";
+                return prefix + "d = d.getDayOfWeek().getValue() + 1; return d > 7 ? d - 7 : d;";
             case Calendar.HOUR_OF_DAY:
-                return prefix + "d ? d.date.toDateTime(DateTimeZone.forID(\"" + agg.getTimeZone().getID() + "\")).get(DateTimeFieldType.hourOfDay()) : -1";
+                return prefix + "return d.getHour();";
             case Calendar.MONTH:
-                return prefix + "d ? (d.date.toDateTime(DateTimeZone.forID(\"" + agg.getTimeZone().getID() + "\")).get(DateTimeFieldType.monthOfYear()) - 1) : -1";
+                return prefix + "return d.getMonthValue() - 1;";
             case Calendar.YEAR:
-                return prefix + "d ? d.date.toDateTime(DateTimeZone.forID(\"" + agg.getTimeZone().getID() + "\")).get(DateTimeFieldType.year()) : -1";
+                return prefix + "d.getYear();";
             default:
                 LOGGER.warn("Slow operation toGregorianCalendar() for calendar field: %d", agg.getCalendarField());
-                return prefix + "d ? d.date.toDateTime(DateTimeZone.forID(\"" + agg.getTimeZone().getID() + "\")).toGregorianCalendar().get(" + agg.getCalendarField() + ") : -1";
+                return prefix + "return GregorianCalendar.from(d).get(params.calendarField);";
         }
     }
 
