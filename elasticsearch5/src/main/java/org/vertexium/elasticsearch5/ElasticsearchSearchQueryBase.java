@@ -12,10 +12,7 @@ import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.geo.ShapeRelation;
-import org.elasticsearch.common.geo.builders.GeometryCollectionBuilder;
-import org.elasticsearch.common.geo.builders.PolygonBuilder;
-import org.elasticsearch.common.geo.builders.ShapeBuilder;
-import org.elasticsearch.common.geo.builders.ShapeBuilders;
+import org.elasticsearch.common.geo.builders.*;
 import org.elasticsearch.common.unit.DistanceUnit;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.IndexNotFoundException;
@@ -634,43 +631,63 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
 
     private ShapeBuilder getShapeBuilder(GeoShape geoShape) {
         if (geoShape instanceof GeoCircle) {
-            GeoCircle geoCircle = (GeoCircle) geoShape;
-            return ShapeBuilders.newCircleBuilder()
-                    .center(geoCircle.getLongitude(), geoCircle.getLatitude())
-                    .radius(geoCircle.getRadius(), DistanceUnit.KILOMETERS);
+            return getCircleBuilder((GeoCircle) geoShape);
         } else if (geoShape instanceof GeoRect) {
-            GeoRect geoRect = (GeoRect) geoShape;
-            Coordinate topLeft = new Coordinate(geoRect.getNorthWest().getLongitude(), geoRect.getNorthWest().getLatitude());
-            Coordinate bottomRight = new Coordinate(geoRect.getSouthEast().getLongitude(), geoRect.getSouthEast().getLatitude());
-            return ShapeBuilders.newEnvelope(topLeft, bottomRight);
+            return getEnvelopeBuilder((GeoRect) geoShape);
         } else if (geoShape instanceof GeoCollection) {
-            GeometryCollectionBuilder shapeBuilder = ShapeBuilders.newGeometryCollection();
-            ((GeoCollection) geoShape).getGeoShapes().forEach(shape -> shapeBuilder.shape(getShapeBuilder(shape)));
-            return shapeBuilder;
+            return getGeometryCollectionBuilder((GeoCollection) geoShape);
         } else if (geoShape instanceof GeoLine) {
-            List<Coordinate> coordinates = ((GeoLine) geoShape).getGeoPoints().stream()
-                    .map(geoPoint -> new Coordinate(geoPoint.getLongitude(), geoPoint.getLatitude()))
-                    .collect(Collectors.toList());
-            return ShapeBuilders.newLineString(coordinates);
+            return getLineStringBuilder((GeoLine) geoShape);
         } else if (geoShape instanceof GeoPoint) {
-            GeoPoint geoPoint = (GeoPoint) geoShape;
-            return ShapeBuilders.newPoint(geoPoint.getLongitude(), geoPoint.getLatitude());
+            return getPointBuilder((GeoPoint) geoShape);
         } else if (geoShape instanceof GeoPolygon) {
-            GeoPolygon geoPolygon = (GeoPolygon) geoShape;
-            List<Coordinate> shell = geoPolygon.getOuterBoundary().stream()
-                    .map(geoPoint -> new Coordinate(geoPoint.getLongitude(), geoPoint.getLatitude()))
-                    .collect(Collectors.toList());
-            PolygonBuilder polygonBuilder = ShapeBuilders.newPolygon(shell);
-            geoPolygon.getHoles().forEach(hole -> {
-                List<Coordinate> coordinates = hole.stream()
-                        .map(geoPoint -> new Coordinate(geoPoint.getLongitude(), geoPoint.getLatitude()))
-                        .collect(Collectors.toList());
-                polygonBuilder.hole(ShapeBuilders.newLineString(coordinates));
-            });
-            return polygonBuilder;
+            return getPolygonBuilder((GeoPolygon) geoShape);
         } else {
             throw new VertexiumException("Unexpected has value type " + geoShape.getClass().getName());
         }
+    }
+
+    private GeometryCollectionBuilder getGeometryCollectionBuilder(GeoCollection geoCollection) {
+        GeometryCollectionBuilder shapeBuilder = ShapeBuilders.newGeometryCollection();
+        geoCollection.getGeoShapes().forEach(shape -> shapeBuilder.shape(getShapeBuilder(shape)));
+        return shapeBuilder;
+    }
+
+    private PointBuilder getPointBuilder(GeoPoint geoPoint) {
+        return ShapeBuilders.newPoint(geoPoint.getLongitude(), geoPoint.getLatitude());
+    }
+
+    private CircleBuilder getCircleBuilder(GeoCircle geoCircle) {
+        return ShapeBuilders.newCircleBuilder()
+                .center(geoCircle.getLongitude(), geoCircle.getLatitude())
+                .radius(geoCircle.getRadius(), DistanceUnit.KILOMETERS);
+    }
+
+    private EnvelopeBuilder getEnvelopeBuilder(GeoRect geoRect) {
+        Coordinate topLeft = new Coordinate(geoRect.getNorthWest().getLongitude(), geoRect.getNorthWest().getLatitude());
+        Coordinate bottomRight = new Coordinate(geoRect.getSouthEast().getLongitude(), geoRect.getSouthEast().getLatitude());
+        return ShapeBuilders.newEnvelope(topLeft, bottomRight);
+    }
+
+    private LineStringBuilder getLineStringBuilder(GeoLine geoLine) {
+        List<Coordinate> coordinates = geoLine.getGeoPoints().stream()
+                .map(geoPoint -> new Coordinate(geoPoint.getLongitude(), geoPoint.getLatitude()))
+                .collect(Collectors.toList());
+        return ShapeBuilders.newLineString(coordinates);
+    }
+
+    private PolygonBuilder getPolygonBuilder(GeoPolygon geoPolygon) {
+        List<Coordinate> shell = geoPolygon.getOuterBoundary().stream()
+                .map(geoPoint -> new Coordinate(geoPoint.getLongitude(), geoPoint.getLatitude()))
+                .collect(Collectors.toList());
+        PolygonBuilder polygonBuilder = ShapeBuilders.newPolygon(shell);
+        geoPolygon.getHoles().forEach(hole -> {
+            List<Coordinate> coordinates = hole.stream()
+                    .map(geoPoint -> new Coordinate(geoPoint.getLongitude(), geoPoint.getLatitude()))
+                    .collect(Collectors.toList());
+            polygonBuilder.hole(ShapeBuilders.newLineString(coordinates));
+        });
+        return polygonBuilder;
     }
 
     private QueryBuilder getSingleFilterOrOrTheFilters(List<QueryBuilder> filters, HasContainer has) {
