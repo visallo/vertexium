@@ -5563,32 +5563,33 @@ public abstract class GraphTestBase {
 
     @Test
     public void testGraphQueryWithCalendarFieldAggregation() {
+        String dateFieldname = "agg_date_field";
         graph.prepareVertex("v0", VISIBILITY_EMPTY)
                 .addPropertyValue("", "other_field", createDate(2016, Calendar.APRIL, 27, 10, 18, 56), VISIBILITY_A)
                 .save(AUTHORIZATIONS_ALL);
         graph.prepareVertex("v1", VISIBILITY_EMPTY)
-                .addPropertyValue("", "date", createDate(2016, Calendar.APRIL, 27, 10, 18, 56), VISIBILITY_A)
+                .addPropertyValue("", dateFieldname, createDate(2016, Calendar.APRIL, 27, 10, 18, 56), VISIBILITY_A)
                 .save(AUTHORIZATIONS_ALL);
         graph.prepareVertex("v2", VISIBILITY_EMPTY)
-                .addPropertyValue("", "date", createDate(2017, Calendar.MAY, 26, 10, 18, 56), VISIBILITY_EMPTY)
+                .addPropertyValue("", dateFieldname, createDate(2017, Calendar.MAY, 26, 10, 18, 56), VISIBILITY_EMPTY)
                 .save(AUTHORIZATIONS_ALL);
         graph.prepareVertex("v3", VISIBILITY_A_AND_B)
-                .addPropertyValue("", "date", createDate(2016, Calendar.APRIL, 27, 12, 18, 56), VISIBILITY_EMPTY)
+                .addPropertyValue("", dateFieldname, createDate(2016, Calendar.APRIL, 27, 12, 18, 56), VISIBILITY_EMPTY)
                 .save(AUTHORIZATIONS_ALL);
         graph.prepareVertex("v4", VISIBILITY_A_AND_B)
-                .addPropertyValue("", "date", createDate(2016, Calendar.APRIL, 24, 12, 18, 56), VISIBILITY_EMPTY)
+                .addPropertyValue("", dateFieldname, createDate(2016, Calendar.APRIL, 24, 12, 18, 56), VISIBILITY_EMPTY)
                 .save(AUTHORIZATIONS_ALL);
         graph.prepareVertex("v5", VISIBILITY_A_AND_B)
-                .addPropertyValue("", "date", createDate(2016, Calendar.APRIL, 25, 12, 18, 56), VISIBILITY_EMPTY)
+                .addPropertyValue("", dateFieldname, createDate(2016, Calendar.APRIL, 25, 12, 18, 56), VISIBILITY_EMPTY)
                 .save(AUTHORIZATIONS_ALL);
         graph.prepareVertex("v6", VISIBILITY_A_AND_B)
-                .addPropertyValue("", "date", createDate(2016, Calendar.APRIL, 30, 12, 18, 56), VISIBILITY_EMPTY)
+                .addPropertyValue("", dateFieldname, createDate(2016, Calendar.APRIL, 30, 12, 18, 56), VISIBILITY_EMPTY)
                 .save(AUTHORIZATIONS_ALL);
         graph.flush();
 
         // hour of day
         QueryResultsIterable<Vertex> results = graph.query(AUTHORIZATIONS_ALL)
-                .addAggregation(new CalendarFieldAggregation("agg1", "date", null, TimeZone.getDefault(), Calendar.HOUR_OF_DAY))
+                .addAggregation(new CalendarFieldAggregation("agg1", dateFieldname, null, TimeZone.getDefault(), Calendar.HOUR_OF_DAY))
                 .limit(0)
                 .vertices();
 
@@ -5599,7 +5600,7 @@ public abstract class GraphTestBase {
 
         // day of week
         results = graph.query(AUTHORIZATIONS_ALL)
-                .addAggregation(new CalendarFieldAggregation("agg1", "date", null, TimeZone.getDefault(), Calendar.DAY_OF_WEEK))
+                .addAggregation(new CalendarFieldAggregation("agg1", dateFieldname, null, TimeZone.getDefault(), Calendar.DAY_OF_WEEK))
                 .limit(0)
                 .vertices();
 
@@ -5613,7 +5614,7 @@ public abstract class GraphTestBase {
 
         // day of month
         results = graph.query(AUTHORIZATIONS_ALL)
-                .addAggregation(new CalendarFieldAggregation("agg1", "date", null, TimeZone.getDefault(), Calendar.DAY_OF_MONTH))
+                .addAggregation(new CalendarFieldAggregation("agg1", dateFieldname, null, TimeZone.getDefault(), Calendar.DAY_OF_MONTH))
                 .limit(0)
                 .vertices();
 
@@ -5627,7 +5628,7 @@ public abstract class GraphTestBase {
 
         // month
         results = graph.query(AUTHORIZATIONS_ALL)
-                .addAggregation(new CalendarFieldAggregation("agg1", "date", null, TimeZone.getDefault(), Calendar.MONTH))
+                .addAggregation(new CalendarFieldAggregation("agg1", dateFieldname, null, TimeZone.getDefault(), Calendar.MONTH))
                 .limit(0)
                 .vertices();
 
@@ -5638,7 +5639,7 @@ public abstract class GraphTestBase {
 
         // year
         results = graph.query(AUTHORIZATIONS_ALL)
-                .addAggregation(new CalendarFieldAggregation("agg1", "date", null, TimeZone.getDefault(), Calendar.YEAR))
+                .addAggregation(new CalendarFieldAggregation("agg1", dateFieldname, null, TimeZone.getDefault(), Calendar.YEAR))
                 .limit(0)
                 .vertices();
 
@@ -5649,14 +5650,32 @@ public abstract class GraphTestBase {
 
         // week of year
         results = graph.query(AUTHORIZATIONS_ALL)
-                .addAggregation(new CalendarFieldAggregation("agg1", "date", null, TimeZone.getDefault(), Calendar.WEEK_OF_YEAR))
+                .addAggregation(new CalendarFieldAggregation("agg1", dateFieldname, null, TimeZone.getDefault(), Calendar.WEEK_OF_YEAR))
                 .limit(0)
                 .vertices();
 
         aggResult = results.getAggregationResult("agg1", CalendarFieldAggregation.RESULT_CLASS);
-        assertEquals(2, count(aggResult.getBuckets()));
-        assertEquals(5, aggResult.getBucketByKey(18).getCount());
-        assertEquals(1, aggResult.getBucketByKey(21).getCount());
+        if (isPainlessDateMath()) {
+            assertEquals(3, count(aggResult.getBuckets()));
+            assertEquals(1, aggResult.getBucketByKey(16).getCount());
+            assertEquals(4, aggResult.getBucketByKey(17).getCount());
+            assertEquals(1, aggResult.getBucketByKey(21).getCount());
+        } else {
+            assertEquals(2, count(aggResult.getBuckets()));
+            assertEquals(5, aggResult.getBucketByKey(18).getCount());
+            assertEquals(1, aggResult.getBucketByKey(21).getCount());
+        }
+    }
+
+    /**
+     * This is to mitigate a difference in date math between the Joda/Groovy and Painless scripting languages.
+     * The only known difference is when calculating the WEEK_OF_YEAR. Painless appears to begin the week
+     * on Monday while Joda/Groovy appear to use Sunday.
+     *
+     * @return true if date math is performed using the painless scripting language
+     */
+    protected boolean isPainlessDateMath() {
+        return false;
     }
 
     @Test

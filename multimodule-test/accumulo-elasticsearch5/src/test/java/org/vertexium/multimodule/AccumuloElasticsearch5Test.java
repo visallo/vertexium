@@ -87,6 +87,11 @@ public class AccumuloElasticsearch5Test extends AccumuloGraphTestBase {
     }
 
     @Override
+    protected boolean isPainlessDateMath() {
+        return true;
+    }
+
+    @Override
     protected String substitutionDeflate(String str) {
         if (str.equals("author")) {
             return SimpleNameSubstitutionStrategy.SUBS_DELIM + "a" + SimpleNameSubstitutionStrategy.SUBS_DELIM;

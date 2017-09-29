@@ -131,12 +131,6 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
     }
 
     private Client createInProcessNode(ElasticsearchSearchIndexConfiguration config) {
-        try {
-            Class.forName("groovy.lang.GroovyShell");
-        } catch (ClassNotFoundException e) {
-            throw new VertexiumException("Unable to load Groovy. This is required when running in-process ES.", e);
-        }
-
         Settings settings = tryReadSettingsFromFile(config);
         if (settings == null) {
             String dataPath = config.getInProcessNodeDataPath();
@@ -594,12 +588,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
             Authorizations authorizations
     ) {
         String oldFieldName = addVisibilityToPropertyName(graph, ELEMENT_TYPE_FIELD_NAME, oldVisibility);
-        Script script = new Script(
-                ScriptType.INLINE,
-                "groovy",
-                "ctx._source.remove(oldFieldName);",
-                ImmutableMap.of("oldFieldName", oldFieldName)
-        );
+        Script script = new Script(ScriptType.INLINE, "painless", "ctx._source.remove(params.oldFieldName);", ImmutableMap.of("oldFieldName", oldFieldName));
         getClient().prepareUpdate()
                 .setIndex(getIndexName(element))
                 .setId(element.getId())
@@ -1427,27 +1416,17 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
      * @param fields  fields to remove
      */
     private void removeFieldsFromDocument(Element element, Collection<String> fields) {
-        Map<String, Object> params = Maps.newHashMap();
-
-        int i = 0;
-        StringBuilder script = new StringBuilder();
-        for (String field : fields) {
-            String fieldName = "fieldName" + (i++);
-            script.append("ctx._source.remove(").append(fieldName).append(");");
-            params.put(fieldName, field.replace(".", FIELDNAME_DOT_REPLACEMENT));
-        }
+        List<String> fieldNames = fields.stream().map(field -> field.replace(".", FIELDNAME_DOT_REPLACEMENT)).collect(Collectors.toList());
         getClient().prepareUpdate()
                 .setIndex(getIndexName(element))
                 .setId(element.getId())
                 .setType(ELEMENT_TYPE)
-                .setScript(
-                        new Script(
-                                ScriptType.INLINE,
-                                "groovy",
-                                script.toString(),
-                                params
-                        )
-                )
+                .setScript(new Script(
+                        ScriptType.INLINE,
+                        "painless",
+                        "for (def fieldName : params.fieldNames) { ctx._source.remove(fieldName); }",
+                        ImmutableMap.of("fieldNames", fieldNames)
+                ))
                 .setRetryOnConflict(MAX_RETRIES)
                 .get();
     }
