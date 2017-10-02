@@ -1049,4 +1049,54 @@ public abstract class GraphBase implements Graph {
             deleteExtendedDataRow(row.getId(), authorizations);
         }
     }
+
+    @Override
+    public void visitElements(GraphVisitor graphVisitor, Authorizations authorizations) {
+        visitVertices(graphVisitor, authorizations);
+        visitEdges(graphVisitor, authorizations);
+    }
+
+    @Override
+    public void visitVertices(GraphVisitor graphVisitor, Authorizations authorizations) {
+        visit(getVertices(authorizations), graphVisitor);
+    }
+
+    @Override
+    public void visitEdges(GraphVisitor graphVisitor, Authorizations authorizations) {
+        visit(getEdges(authorizations), graphVisitor);
+    }
+
+    @Override
+    public void visit(Iterable<? extends Element> elements, GraphVisitor visitor) {
+        int i = 0;
+        for (Element element : elements) {
+            if (i % 1000000 == 0) {
+                LOGGER.debug("checking: %s", element.getId());
+            }
+
+            visitor.visitElement(element);
+            if (element instanceof Vertex) {
+                visitor.visitVertex((Vertex) element);
+            } else if (element instanceof Edge) {
+                visitor.visitEdge((Edge) element);
+            } else {
+                throw new VertexiumException("Invalid element type to visit: " + element.getClass().getName());
+            }
+
+            for (Property property : element.getProperties()) {
+                visitor.visitProperty(element, property);
+            }
+
+            for (String tableName : element.getExtendedDataTableNames()) {
+                for (ExtendedDataRow extendedDataRow : element.getExtendedData(tableName)) {
+                    visitor.visitExtendedDataRow(element, tableName, extendedDataRow);
+                    for (Property property : extendedDataRow.getProperties()) {
+                        visitor.visitProperty(element, tableName, extendedDataRow, property);
+                    }
+                }
+            }
+
+            i++;
+        }
+    }
 }
