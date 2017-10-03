@@ -32,6 +32,7 @@ import java.math.BigInteger;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
@@ -245,6 +246,22 @@ public abstract class GraphTestBase {
                 .setProperty("prop1", "value1", prop1Metadata, VISIBILITY_A)
                 .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
+
+        AtomicInteger vertexCount = new AtomicInteger();
+        AtomicInteger vertexPropertyCount = new AtomicInteger();
+        graph.visitElements(new DefaultGraphVisitor() {
+            @Override
+            public void visitVertex(Vertex vertex) {
+                vertexCount.incrementAndGet();
+            }
+
+            @Override
+            public void visitProperty(Element element, Property property) {
+                vertexPropertyCount.incrementAndGet();
+            }
+        }, AUTHORIZATIONS_A);
+        assertEquals(1, vertexCount.get());
+        assertEquals(1, vertexPropertyCount.get());
 
         Vertex v = graph.getVertex("v1", FetchHint.ALL, AUTHORIZATIONS_A);
         if (v instanceof HasTimestamp) {
@@ -6057,6 +6074,22 @@ public abstract class GraphTestBase {
                 .addExtendedData("table1", "row3", "name", "value3", VISIBILITY_A)
                 .save(AUTHORIZATIONS_A);
         graph.flush();
+
+        AtomicInteger rowCount = new AtomicInteger();
+        AtomicInteger rowPropertyCount = new AtomicInteger();
+        graph.visitElements(new DefaultGraphVisitor() {
+            @Override
+            public void visitExtendedDataRow(Element element, String tableName, ExtendedDataRow row) {
+                rowCount.incrementAndGet();
+            }
+
+            @Override
+            public void visitProperty(Element element, String tableName, ExtendedDataRow row, Property property) {
+                rowPropertyCount.incrementAndGet();
+            }
+        }, AUTHORIZATIONS_A);
+        assertEquals(3, rowCount.get());
+        assertEquals(6, rowPropertyCount.get());
 
         Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
         assertEquals(ImmutableSet.of("table1"), v1.getExtendedDataTableNames());

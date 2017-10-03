@@ -1117,4 +1117,24 @@ public interface Graph {
      * The default fetch hints to use if none are provided
      */
     EnumSet<FetchHint> getDefaultFetchHints();
+
+    /**
+     * Visits all elements on the graph
+     */
+    void visitElements(GraphVisitor graphVisitor, Authorizations authorizations);
+
+    /**
+     * Visits all vertices on the graph
+     */
+    void visitVertices(GraphVisitor graphVisitor, Authorizations authorizations);
+
+    /**
+     * Visits all edges on the graph
+     */
+    void visitEdges(GraphVisitor graphVisitor, Authorizations authorizations);
+
+    /**
+     * Visits elements using the supplied elements and visitor
+     */
+    void visit(Iterable<? extends Element> elements, GraphVisitor visitor);
 }

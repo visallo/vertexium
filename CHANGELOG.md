@@ -4,6 +4,7 @@
 * Changed: Added property checking when using the `has` method to query the graph for a value. An exception will now be thrown if an attempt is made to either query a property that does not exist or to text query a property that isn't full text indexed
 * Note: Upgrading to this version will require re-indexing if you use NameSubstitutionStrategy or are switching to the ES 5 module. 
 * Added: Support for extended GeoShape storage and search. Currently the new shapes are only supported by the ElasticSearch 5 module.
+* Added: GraphVisitor to visit elements, properties, extended data rows using a visitor pattern
  
 # v2.6.2
 
