@@ -1,5 +1,12 @@
 package org.vertexium.elasticsearch5;
 
+import org.elasticsearch.action.admin.cluster.node.stats.NodeStats;
+import org.elasticsearch.action.admin.cluster.node.stats.NodesStatsAction;
+import org.elasticsearch.action.admin.cluster.node.stats.NodesStatsRequestBuilder;
+import org.elasticsearch.action.admin.cluster.node.stats.NodesStatsResponse;
+import org.elasticsearch.client.AdminClient;
+import org.elasticsearch.client.Client;
+import org.elasticsearch.index.search.stats.SearchStats;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -12,6 +19,10 @@ import org.vertexium.query.QueryResultsIterable;
 import org.vertexium.query.SortDirection;
 import org.vertexium.test.GraphTestBase;
 
+import java.util.List;
+
+import static org.junit.Assert.assertEquals;
+import static org.vertexium.test.util.VertexiumAssert.assertResultsCount;
 import static org.vertexium.util.IterableUtils.count;
 
 public class Elasticsearch5SearchIndexTest extends GraphTestBase {
@@ -71,5 +82,43 @@ public class Elasticsearch5SearchIndexTest extends GraphTestBase {
     @Override
     protected boolean isPainlessDateMath() {
         return true;
+    }
+
+    @Test
+    public void testQueryExecutionCountWhenPaging() {
+        graph.prepareVertex("v1", VISIBILITY_A).save(AUTHORIZATIONS_A);
+        graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.flush();
+
+        long startingNumQueries = getNumQueries();
+
+        QueryResultsIterable<Vertex> vertices = graph.query(AUTHORIZATIONS_A).vertices();
+        assertEquals(startingNumQueries, getNumQueries());
+
+        assertResultsCount(2, 2, vertices);
+        assertEquals(startingNumQueries + 1, getNumQueries());
+
+        vertices = graph.query(AUTHORIZATIONS_A).limit(1).vertices();
+        assertEquals(startingNumQueries + 2, getNumQueries());
+
+        assertResultsCount(1, 2, vertices);
+        assertEquals(startingNumQueries + 2, getNumQueries());
+
+        vertices = graph.query(AUTHORIZATIONS_A).limit(10).vertices();
+        assertEquals(startingNumQueries + 3, getNumQueries());
+
+        assertResultsCount(2, 2, vertices);
+        assertEquals(startingNumQueries + 3, getNumQueries());
+    }
+
+    private long getNumQueries() {
+        Client client = elasticsearchResource.getRunner().client();
+        NodesStatsResponse nodeStats = NodesStatsAction.INSTANCE.newRequestBuilder(client).get();
+
+        List<NodeStats> nodes = nodeStats.getNodes();
+        assertEquals(1, nodes.size());
+
+        SearchStats searchStats = nodes.get(0).getIndices().getSearch();
+        return searchStats.getTotal().getQueryCount();
     }
 }

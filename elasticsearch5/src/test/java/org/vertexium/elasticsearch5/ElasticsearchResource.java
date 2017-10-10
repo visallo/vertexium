@@ -31,7 +31,7 @@ public class ElasticsearchResource extends ExternalResource {
     private static final String ES_INDEX_NAME = "vertexium-test";
     private static final String ES_CLUSTER_NAME = "vertexium-test-cluster";
     private static final String ES_EXTENDED_DATA_INDEX_NAME_PREFIX = "vertexium-test-";
-    private static ElasticsearchClusterRunner runner;
+    private ElasticsearchClusterRunner runner;
 
     private Map extraConfig = null;
 
@@ -140,5 +140,9 @@ public class ElasticsearchResource extends ExternalResource {
         Elasticsearch5SearchIndex searchIndex = (Elasticsearch5SearchIndex) ((GraphWithSearchIndex) graph).getSearchIndex();
         searchIndex.getConfig().getGraphConfiguration().set(SEARCH_INDEX_PROP_PREFIX + "." + INDEX_EDGES, "false");
         return true;
+    }
+
+    public ElasticsearchClusterRunner getRunner() {
+        return runner;
     }
 }

@@ -82,6 +82,7 @@ public abstract class InfiniteScrollIterable<T> implements QueryResultsIterable<
         private Iterator<T> it;
         private T next;
         private T current;
+        private long currentResultNumber = 0;
 
         public InfiniteIterator(String scrollId, Iterator<T> it) {
             this.scrollId = scrollId;
@@ -112,14 +113,20 @@ public abstract class InfiniteScrollIterable<T> implements QueryResultsIterable<
 
             if (it.hasNext()) {
                 this.next = it.next();
+                currentResultNumber++;
             } else {
                 CloseableUtils.closeQuietly(it);
-                QueryResultsIterable<T> iterable = searchResponseToIterable(getNextSearchResponse(scrollId));
-                it = iterable.iterator();
-                if (!it.hasNext()) {
-                    it = null;
-                } else {
-                    this.next = it.next();
+                it = null;
+
+                if (getTotalHits() > currentResultNumber) {
+                    QueryResultsIterable<T> iterable = searchResponseToIterable(getNextSearchResponse(scrollId));
+                    it = iterable.iterator();
+                    if (!it.hasNext()) {
+                        it = null;
+                    } else {
+                        this.next = it.next();
+                        currentResultNumber++;
+                    }
                 }
             }
         }

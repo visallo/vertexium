@@ -135,4 +135,7 @@ public class ElasticsearchResource extends ExternalResource {
         return true;
     }
 
+    public ElasticsearchClusterRunner getRunner() {
+        return runner;
+    }
 }
