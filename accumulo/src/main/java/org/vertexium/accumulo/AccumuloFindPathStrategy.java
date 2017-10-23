@@ -17,6 +17,8 @@ import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.vertexium.util.StreamUtils.stream;
+
 public class AccumuloFindPathStrategy {
     private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(AccumuloFindPathStrategy.class);
     private final AccumuloGraph graph;
@@ -206,7 +208,10 @@ public class AccumuloFindPathStrategy {
                 Map<String, Set<String>> results = new HashMap<>();
                 for (Map.Entry<Key, Value> row : scanner) {
                     try {
-                        Set<String> rowVertexIds = ConnectedVertexIdsIterator.decodeValue(row.getValue());
+                        Map<String, Boolean> verticesExist = graph.doVerticesExist(ConnectedVertexIdsIterator.decodeValue(row.getValue()), authorizations);
+                        Set<String> rowVertexIds =  stream(verticesExist.keySet())
+                                .filter(key -> verticesExist.getOrDefault(key, false))
+                                .collect(Collectors.toSet());
                         results.put(row.getKey().getRow().toString(), rowVertexIds);
                     } catch (IOException e) {
                         throw new VertexiumException("Could not decode vertex ids for row: " + row.getKey().toString(), e);

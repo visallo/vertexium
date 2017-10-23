@@ -3483,6 +3483,61 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    public void testFindPathsWithDifferentVisibilityData() {
+        Vertex v1 = graph.addVertex("v1", VISIBILITY_EMPTY, AUTHORIZATIONS_A);
+        Vertex v2 = graph.addVertex("v2", VISIBILITY_EMPTY, AUTHORIZATIONS_A);
+        Vertex v3 = graph.addVertex("v3", VISIBILITY_EMPTY, AUTHORIZATIONS_A);
+
+        graph.addEdge("v1v2", v1, v2, "knows", VISIBILITY_EMPTY, AUTHORIZATIONS_A); // v1 -> v2
+        graph.addEdge("v2v3", v2, v3, "knows", VISIBILITY_EMPTY, AUTHORIZATIONS_A); // v2 -> v3
+        graph.addEdge("v3v1", v3, v1, "knows", VISIBILITY_EMPTY, AUTHORIZATIONS_A); // v3 -> v1
+        graph.flush();
+
+        List<Path> paths = toList(graph.findPaths(new FindPathOptions("v1", "v3", 2), AUTHORIZATIONS_A));
+        assertPaths(
+                paths,
+                new Path("v1", "v2", "v3"),
+                new Path("v1", "v3")
+        );
+
+        graph.getEdge("v3v1", AUTHORIZATIONS_A)
+                .prepareMutation()
+                .alterElementVisibility(VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
+
+        graph.getVertex("v2", AUTHORIZATIONS_A)
+                .prepareMutation()
+                .alterElementVisibility(VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
+        graph.flush();
+
+        paths = toList(graph.findPaths(new FindPathOptions("v1", "v3", 2), AUTHORIZATIONS_EMPTY));
+        assertEquals(0, paths.size());
+
+        paths = toList(graph.findPaths(new FindPathOptions("v1", "v3", 3), AUTHORIZATIONS_EMPTY));
+        assertEquals(0, paths.size());
+
+        paths = toList(graph.findPaths(new FindPathOptions("v1", "v3", 2), AUTHORIZATIONS_A));
+        assertPaths(
+                paths,
+                new Path("v1", "v2", "v3"),
+                new Path("v1", "v3")
+        );
+
+        graph.getVertex("v2", AUTHORIZATIONS_A)
+                .prepareMutation()
+                .alterElementVisibility(Visibility.EMPTY)
+                .save(AUTHORIZATIONS_A);
+        graph.flush();
+
+        paths = toList(graph.findPaths(new FindPathOptions("v1", "v2", 4), AUTHORIZATIONS_EMPTY));
+        assertPaths(
+                paths,
+                new Path("v1", "v2")
+        );
+    }
+
+    @Test
     public void testHasPath() {
         Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
         Vertex v2 = graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_A);
