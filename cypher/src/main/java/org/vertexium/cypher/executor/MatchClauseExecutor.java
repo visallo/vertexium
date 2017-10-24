@@ -345,61 +345,67 @@ public class MatchClauseExecutor {
             MatchConstraint<?, ?> matchConstraint,
             ExpressionScope scope
     ) {
-        List<String> labelNames = getLabelNamesFromMatchConstraint(matchConstraint);
-        ListMultimap<String, CypherAstBase> propertiesMap = getPropertiesMapFromElementPatterns(ctx, matchConstraint.getPatterns());
-        Iterable<? extends Element> elements;
-        if (labelNames.size() == 0 && propertiesMap.size() == 0) {
-            if (matchConstraint instanceof NodeMatchConstraint) {
-                elements = ctx.getGraph().getVertices(ctx.getFetchHints(), ctx.getAuthorizations());
-            } else if (matchConstraint instanceof RelationshipMatchConstraint) {
-                elements = ctx.getGraph().getEdges(ctx.getFetchHints(), ctx.getAuthorizations());
+        try {
+            List<String> labelNames = getLabelNamesFromMatchConstraint(matchConstraint);
+            ListMultimap<String, CypherAstBase> propertiesMap = getPropertiesMapFromElementPatterns(ctx, matchConstraint.getPatterns());
+            Iterable<? extends Element> elements;
+            if (labelNames.size() == 0 && propertiesMap.size() == 0) {
+                if (matchConstraint instanceof NodeMatchConstraint) {
+                    elements = ctx.getGraph().getVertices(ctx.getFetchHints(), ctx.getAuthorizations());
+                } else if (matchConstraint instanceof RelationshipMatchConstraint) {
+                    elements = ctx.getGraph().getEdges(ctx.getFetchHints(), ctx.getAuthorizations());
+                } else {
+                    throw new VertexiumCypherNotImplemented("unexpected constraint type: " + matchConstraint.getClass().getName());
+                }
             } else {
-                throw new VertexiumCypherNotImplemented("unexpected constraint type: " + matchConstraint.getClass().getName());
-            }
-        } else {
-            Query query = ctx.getGraph().query(ctx.getAuthorizations());
+                Query query = ctx.getGraph().query(ctx.getAuthorizations());
 
-            if (labelNames.size() > 0) {
-                Stream<String> labelNamesStream = labelNames.stream()
-                        .map(ctx::normalizeLabelName);
+                if (labelNames.size() > 0) {
+                    Stream<String> labelNamesStream = labelNames.stream()
+                            .map(ctx::normalizeLabelName);
+
+                    if (matchConstraint instanceof NodeMatchConstraint) {
+
+                        query = labelNamesStream
+                                .reduce(
+                                        query,
+                                        (q, labelName) -> q.has(ctx.getLabelPropertyName(), labelName),
+                                        (q, q2) -> q
+                                );
+                    } else if (matchConstraint instanceof RelationshipMatchConstraint) {
+                        List<String> normalizedLabelNames = labelNamesStream.collect(Collectors.toList());
+                        query = query.hasEdgeLabel(normalizedLabelNames);
+                    } else {
+                        throw new VertexiumCypherNotImplemented("unexpected constraint type: " + matchConstraint.getClass().getName());
+                    }
+                }
+
+                for (Map.Entry<String, CypherAstBase> propertyMatch : propertiesMap.entries()) {
+                    Object value = ctx.getExpressionExecutor().executeExpression(ctx, propertyMatch.getValue(), scope);
+                    if (value instanceof CypherAstBase) {
+                        throw new VertexiumException("unexpected value: " + value.getClass().getName() + ": " + value);
+                    }
+                    if (value instanceof List) {
+                        query.has(propertyMatch.getKey(), Contains.IN, value);
+                    } else {
+                        query.has(propertyMatch.getKey(), value);
+                    }
+                }
 
                 if (matchConstraint instanceof NodeMatchConstraint) {
-                    query = labelNamesStream
-                            .reduce(
-                                    query,
-                                    (q, labelName) -> q.has(ctx.getLabelPropertyName(), labelName),
-                                    (q, q2) -> q
-                            );
+                    elements = query.vertices(ctx.getFetchHints());
                 } else if (matchConstraint instanceof RelationshipMatchConstraint) {
-                    List<String> normalizedLabelNames = labelNamesStream.collect(Collectors.toList());
-                    query = query.hasEdgeLabel(normalizedLabelNames);
+                    elements = query.edges(ctx.getFetchHints());
                 } else {
                     throw new VertexiumCypherNotImplemented("unexpected constraint type: " + matchConstraint.getClass().getName());
                 }
             }
 
-            for (Map.Entry<String, CypherAstBase> propertyMatch : propertiesMap.entries()) {
-                Object value = ctx.getExpressionExecutor().executeExpression(ctx, propertyMatch.getValue(), scope);
-                if (value instanceof CypherAstBase) {
-                    throw new VertexiumException("unexpected value: " + value.getClass().getName() + ": " + value);
-                }
-                if (value instanceof List) {
-                    query.has(propertyMatch.getKey(), Contains.IN, value);
-                } else {
-                    query.has(propertyMatch.getKey(), value);
-                }
-            }
-
-            if (matchConstraint instanceof NodeMatchConstraint) {
-                elements = query.vertices(ctx.getFetchHints());
-            } else if (matchConstraint instanceof RelationshipMatchConstraint) {
-                elements = query.edges(ctx.getFetchHints());
-            } else {
-                throw new VertexiumCypherNotImplemented("unexpected constraint type: " + matchConstraint.getClass().getName());
-            }
+            return Lists.newArrayList(elements);
+        } catch (VertexiumPropertyNotDefinedException e) {
+            LOGGER.error(e.getMessage());
+            return Lists.newArrayList();
         }
-
-        return Lists.newArrayList(elements);
     }
 
     private List<VertexiumCypherScope.PathItem> executeRelationshipConstraint(
