@@ -65,7 +65,7 @@ public class PropertyDefinition implements Serializable {
                 return propertyDefinition;
             }
         }
-        throw new VertexiumException("Could not find property definition for property name: " + propertyName);
+        throw new VertexiumPropertyNotDefinedException("Could not find property definition for property name: " + propertyName);
     }
 
     @Override
