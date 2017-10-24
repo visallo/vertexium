@@ -581,9 +581,17 @@ public abstract class GraphBase implements Graph {
 
         progressCallback.progress(0.1, ProgressCallback.Step.SEARCHING_SOURCE_VERTEX_EDGES);
         Set<String> sourceVertexConnectedVertexIds = filterFindPathEdgeInfo(options, sourceVertex.getEdgeInfos(Direction.BOTH, options.getLabels(), authorizations));
+        Map<String, Boolean> sourceVerticesExist = doVerticesExist(sourceVertexConnectedVertexIds, authorizations);
+        sourceVertexConnectedVertexIds = stream(sourceVerticesExist.keySet())
+                .filter(key -> sourceVerticesExist.getOrDefault(key, false))
+                .collect(Collectors.toSet());
 
         progressCallback.progress(0.3, ProgressCallback.Step.SEARCHING_DESTINATION_VERTEX_EDGES);
         Set<String> destVertexConnectedVertexIds = filterFindPathEdgeInfo(options, destVertex.getEdgeInfos(Direction.BOTH, options.getLabels(), authorizations));
+        Map<String, Boolean> destVerticesExist = doVerticesExist(destVertexConnectedVertexIds, authorizations);
+        destVertexConnectedVertexIds = stream(destVerticesExist.keySet())
+                .filter(key -> destVerticesExist.getOrDefault(key, false))
+                .collect(Collectors.toSet());
 
         if (sourceVertexConnectedVertexIds.contains(destVertexId)) {
             foundPaths.add(new Path(sourceVertexId, destVertexId));

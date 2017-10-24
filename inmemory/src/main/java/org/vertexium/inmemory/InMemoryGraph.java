@@ -518,7 +518,11 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
                         return options.getLabels() == null || ArrayUtils.contains(options.getLabels(), edge.getLabel());
                     });
             List<String> vertexIds = new ArrayList<>();
-            edges.forEach(edge -> vertexIds.add(edge.getOtherVertexId(sourceVertexId)));
+            edges.forEach(edge -> {
+                if (edge.getOtherVertex(sourceVertexId, FetchHint.NONE, authorizations) != null) {
+                    vertexIds.add(edge.getOtherVertexId(sourceVertexId));
+                }
+            });
 
             int vertexCount = 0;
             if (firstLevelRecursion) {

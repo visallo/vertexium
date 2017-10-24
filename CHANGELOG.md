@@ -1,3 +1,6 @@
+# v3.0.1
+* Changed: Find Path to not return a path that contains one or more vertices that is can't be retrieved because of visibility restrictions
+
 # v3.0.0
 * Changed: Removed ES 2 support and replaced it with ES 5 support
 * Changed: Removed support for NameSubstitutionStrategy from the Elasticsearch modules. NameSubstitutionStrategy is still available for Accumulo modules
