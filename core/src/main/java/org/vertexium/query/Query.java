@@ -76,7 +76,7 @@ public interface Query {
      * @param ids The ids to filter on.
      * @return The query object, allowing you to chain methods.
      */
-    Query hasId(Collection<String> ids);
+    Query hasId(Iterable<String> ids);
 
     /**
      * Adds a edge label filter to the query.

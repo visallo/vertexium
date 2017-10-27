@@ -207,7 +207,7 @@ public class CompositeGraphQuery implements Query {
     }
 
     @Override
-    public Query hasId(Collection<String> ids) {
+    public Query hasId(Iterable<String> ids) {
         for (Query query : queries) {
             query.hasId(ids);
         }
