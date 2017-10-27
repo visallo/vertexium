@@ -199,6 +199,22 @@ public class CompositeGraphQuery implements Query {
     }
 
     @Override
+    public Query hasId(String... ids) {
+        for (Query query : queries) {
+            query.hasId(ids);
+        }
+        return this;
+    }
+
+    @Override
+    public Query hasId(Collection<String> ids) {
+        for (Query query : queries) {
+            query.hasId(ids);
+        }
+        return this;
+    }
+
+    @Override
     public Query hasEdgeLabel(String... edgeLabels) {
         for (Query query : queries) {
             query.hasEdgeLabel(edgeLabels);

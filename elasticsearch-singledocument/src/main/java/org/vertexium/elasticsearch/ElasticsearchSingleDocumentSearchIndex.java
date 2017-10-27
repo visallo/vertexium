@@ -1385,7 +1385,20 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
 
     @Override
     public MultiVertexQuery queryGraph(Graph graph, String[] vertexIds, String queryString, Authorizations authorizations) {
-        return new DefaultMultiVertexQuery(graph, vertexIds, queryString, authorizations);
+        return new ElasticSearchSingleDocumentSearchMultiVertexQuery(
+                getClient(),
+                graph,
+                vertexIds,
+                queryString,
+                new ElasticSearchSingleDocumentSearchQueryBase.Options()
+                        .setScoringStrategy(getConfig().getScoringStrategy())
+                        .setIndexSelectionStrategy(getIndexSelectionStrategy())
+                        .setPageSize(getConfig().getQueryPageSize())
+                        .setPagingLimit(getConfig().getPagingLimit())
+                        .setScrollKeepAlive(getConfig().getScrollKeepAlive())
+                        .setTermAggregationShardSize(getConfig().getTermAggregationShardSize()),
+                authorizations
+        );
     }
 
     @Override

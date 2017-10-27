@@ -175,6 +175,12 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase {
             filters.add(FilterBuilders.inFilter(ElasticsearchSingleDocumentSearchIndex.EDGE_LABEL_FIELD_NAME, edgeLabelsArray));
         }
 
+        if ((elementTypes == null || elementTypes.contains(ElasticsearchDocumentType.EDGE) || elementTypes.contains(ElasticsearchDocumentType.VERTEX))
+                && getParameters().getIds().size() > 0) {
+            String[] idsArray = getParameters().getIds().toArray(new String[getParameters().getIds().size()]);
+            filters.add(FilterBuilders.idsFilter().addIds(idsArray));
+        }
+
         if (getParameters() instanceof QueryStringQueryParameters) {
             String queryString = ((QueryStringQueryParameters) getParameters()).getQueryString();
             if (queryString == null || queryString.equals("*")) {

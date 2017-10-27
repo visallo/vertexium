@@ -221,6 +221,12 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
             filters.add(QueryBuilders.termsQuery(Elasticsearch5SearchIndex.EDGE_LABEL_FIELD_NAME, edgeLabelsArray));
         }
 
+        if ((elementTypes == null || elementTypes.contains(ElasticsearchDocumentType.EDGE) || elementTypes.contains(ElasticsearchDocumentType.VERTEX))
+                && getParameters().getIds().size() > 0) {
+            String[] idsArray = getParameters().getIds().toArray(new String[getParameters().getIds().size()]);
+            filters.add(QueryBuilders.idsQuery().addIds(idsArray));
+        }
+
         if (getParameters() instanceof QueryStringQueryParameters) {
             String queryString = ((QueryStringQueryParameters) getParameters()).getQueryString();
             if (queryString == null || queryString.equals("*")) {

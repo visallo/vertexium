@@ -1400,7 +1400,21 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
 
     @Override
     public MultiVertexQuery queryGraph(Graph graph, String[] vertexIds, String queryString, Authorizations authorizations) {
-        return new DefaultMultiVertexQuery(graph, vertexIds, queryString, authorizations);
+        return new ElasticsearchSearchMultiVertexQuery(
+                getClient(),
+                graph,
+                vertexIds,
+                queryString,
+                new ElasticsearchSearchQueryBase.Options()
+                        .setScoringStrategy(getConfig().getScoringStrategy())
+                        .setIndexSelectionStrategy(getIndexSelectionStrategy())
+                        .setPageSize(getConfig().getQueryPageSize())
+                        .setPagingLimit(getConfig().getPagingLimit())
+                        .setScrollKeepAlive(getConfig().getScrollKeepAlive())
+                        .setTermAggregationShardSize(getConfig().getTermAggregationShardSize()),
+                authorizations
+        );
+
     }
 
     @Override

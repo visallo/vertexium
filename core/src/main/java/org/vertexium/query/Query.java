@@ -63,6 +63,22 @@ public interface Query {
     <T> Query range(String propertyName, T startValue, boolean inclusiveStartValue, T endValue, boolean inclusiveEndValue);
 
     /**
+     * Adds an id filter to the query.
+     *
+     * @param ids The ids to filter on.
+     * @return The query object, allowing you to chain methods.
+     */
+    Query hasId(String... ids);
+
+    /**
+     * Adds an id filter to the query.
+     *
+     * @param ids The ids to filter on.
+     * @return The query object, allowing you to chain methods.
+     */
+    Query hasId(Collection<String> ids);
+
+    /**
      * Adds a edge label filter to the query.
      *
      * @param edgeLabels The edge labels to filter on.
