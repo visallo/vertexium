@@ -175,7 +175,7 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
     }
 
     @Override
-    public Query hasId(Collection<String> ids) {
+    public Query hasId(Iterable<String> ids) {
         for (String id : ids) {
             getParameters().addId(id);
         }
