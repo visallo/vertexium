@@ -37,6 +37,14 @@ public class DefaultVertexQuery extends VertexQueryBase implements VertexQuery {
                 }
             };
         }
+        if (getParameters().getIds().size() > 0) {
+            results = new FilterIterable<Vertex>(results) {
+                @Override
+                protected boolean isIncluded(Vertex otherVertex) {
+                    return getParameters().getIds().contains(otherVertex.getId());
+                }
+            };
+        }
         return results;
     }
 

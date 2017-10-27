@@ -15,6 +15,7 @@ public abstract class QueryParameters {
     private final List<QueryBase.HasContainer> hasContainers = new ArrayList<>();
     private final List<QueryBase.SortContainer> sortContainers = new ArrayList<>();
     private final List<String> edgeLabels = new ArrayList<>();
+    private final List<String> ids = new ArrayList<>();
 
     public QueryParameters(Authorizations authorizations) {
         this.authorizations = authorizations;
@@ -72,6 +73,14 @@ public abstract class QueryParameters {
         this.edgeLabels.add(edgeLabel);
     }
 
+    public List<String> getIds() {
+        return ids;
+    }
+
+    public void addId(String id) {
+        this.ids.add(id);
+    }
+
     public abstract QueryParameters clone();
 
     protected QueryParameters cloneTo(QueryParameters result) {
@@ -79,6 +88,8 @@ public abstract class QueryParameters {
         result.setLimit(this.getLimit());
         result.hasContainers.addAll(this.getHasContainers());
         result.sortContainers.addAll(this.getSortContainers());
+        result.edgeLabels.addAll(this.getEdgeLabels());
+        result.ids.addAll(this.getIds());
         return result;
     }
 
@@ -91,6 +102,7 @@ public abstract class QueryParameters {
                 ", hasContainers=" + Joiner.on(", ").join(hasContainers) +
                 ", sortContainers=" + Joiner.on(", ").join(sortContainers) +
                 ", edgeLabels=" + Joiner.on(", ").join(edgeLabels) +
+                ", ids=" + Joiner.on(", ").join(ids) +
                 '}';
     }
 }

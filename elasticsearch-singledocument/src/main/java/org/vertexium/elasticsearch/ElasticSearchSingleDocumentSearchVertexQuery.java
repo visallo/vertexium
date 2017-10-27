@@ -98,6 +98,9 @@ public class ElasticSearchSingleDocumentSearchVertexQuery extends ElasticSearchS
         if (otherVertexId != null) {
             edgeInfos = edgeInfos.filter(ei -> ei.getVertexId().equals(otherVertexId));
         }
+        if (getParameters().getIds().size() > 0) {
+            edgeInfos = edgeInfos.filter(ei -> getParameters().getIds().contains(ei.getVertexId()));
+        }
         String[] ids = edgeInfos.map(EdgeInfo::getVertexId).toArray(String[]::new);
 
         if (elementTypes.contains(ElasticsearchDocumentType.VERTEX)) {

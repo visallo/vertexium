@@ -111,6 +111,11 @@ public class DefaultGraphQueryIterable<T> implements
                                 match = false;
                             }
                         }
+                        if (vertexiumElem instanceof Element && parameters.getIds().size() > 0) {
+                            if (!parameters.getIds().contains(((Element) vertexiumElem).getId())) {
+                                match = false;
+                            }
+                        }
                     }
                     if (!match) {
                         continue;
