@@ -11,6 +11,9 @@ import java.util.Date;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class DefaultIndexSelectionStrategy implements IndexSelectionStrategy {
     private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(DefaultIndexSelectionStrategy.class);
@@ -18,10 +21,11 @@ public class DefaultIndexSelectionStrategy implements IndexSelectionStrategy {
     public static final String DEFAULT_INDEX_NAME = "vertexium";
     public static final String CONFIG_EXTENDED_DATA_INDEX_NAME_PREFIX = "extendedDataIndexNamePrefix";
     public static final String DEFAULT_EXTENDED_DATA_INDEX_NAME_PREFIX = "vertexium_extdata_";
-    private static final long INDEX_UPDATE_MS = 60 * 60 * 1000;
+    private static final long INDEX_UPDATE_MS = 5 * 60 * 1000;
     private final String defaultIndexName;
     private final String extendedDataIndexNamePrefix;
-    private final Set<String> indicesToQuery = new HashSet<>();
+    private final ReadWriteLock indicesToQueryLock = new ReentrantReadWriteLock();
+    private Set<String> indicesToQuery;
     private String[] indicesToQueryArray;
     private long nextUpdateTime;
 
@@ -42,27 +46,58 @@ public class DefaultIndexSelectionStrategy implements IndexSelectionStrategy {
         return prefix;
     }
 
+    private void invalidateIndiciesToQueryCache() {
+        nextUpdateTime = 0;
+    }
+
     @Override
     public String[] getIndicesToQuery(ElasticsearchSingleDocumentSearchIndex es) {
-        Set<String> indicesToQuery = getIndicesToQuerySet(es);
-        if (indicesToQueryArray == null || indicesToQueryArray.length != indicesToQuery.size()) {
-            indicesToQueryArray = indicesToQuery.toArray(new String[indicesToQuery.size()]);
+        Lock readLock = indicesToQueryLock.readLock();
+        readLock.lock();
+        try {
+            if (indicesToQueryArray != null && new Date().getTime() <= nextUpdateTime) {
+                return indicesToQueryArray;
+            }
+        } finally {
+            readLock.unlock();
         }
+        loadIndicesToQuery(es);
         return indicesToQueryArray;
     }
 
     private Set<String> getIndicesToQuerySet(ElasticsearchSingleDocumentSearchIndex es) {
-        if (indicesToQuery.size() == 0 || new Date().getTime() > nextUpdateTime) {
-            indicesToQuery.add(defaultIndexName);
+        Lock readLock = indicesToQueryLock.readLock();
+        readLock.lock();
+        try {
+            if (indicesToQuery != null && new Date().getTime() <= nextUpdateTime) {
+                return indicesToQuery;
+            }
+        } finally {
+            readLock.unlock();
+        }
+        loadIndicesToQuery(es);
+        return indicesToQuery;
+    }
+
+    private void loadIndicesToQuery(ElasticsearchSingleDocumentSearchIndex es) {
+        Lock writeLock = indicesToQueryLock.writeLock();
+        writeLock.lock();
+        try {
+            Set<String> newIndicesToQuery = new HashSet<>();
+            newIndicesToQuery.add(defaultIndexName);
             Set<String> indexNames = es.getIndexNamesFromElasticsearch();
             for (String indexName : indexNames) {
                 if (indexName.startsWith(extendedDataIndexNamePrefix)) {
-                    indicesToQuery.add(indexName);
+                    newIndicesToQuery.add(indexName);
                 }
             }
+
+            indicesToQuery = newIndicesToQuery;
+            indicesToQueryArray = newIndicesToQuery.toArray(new String[newIndicesToQuery.size()]);
             nextUpdateTime = new Date().getTime() + INDEX_UPDATE_MS;
+        } finally {
+            writeLock.unlock();
         }
-        return indicesToQuery;
     }
 
     @Override
@@ -83,7 +118,9 @@ public class DefaultIndexSelectionStrategy implements IndexSelectionStrategy {
     private String getExtendedDataIndexName(ElasticsearchSingleDocumentSearchIndex es, String tableName) {
         String cleanTableName = tableName.replaceAll("[^a-zA-Z0-9]", "_").toLowerCase();
         String extendedDataIndexName = extendedDataIndexNamePrefix + cleanTableName;
-        getIndicesToQuerySet(es).add(extendedDataIndexName);
+        if (!isIncluded(es, extendedDataIndexName)) {
+            invalidateIndiciesToQueryCache();
+        }
         return extendedDataIndexName;
     }
 
