@@ -6314,6 +6314,31 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    public void testExtendedDataEdgeQuery() {
+        graph.prepareVertex("v1", VISIBILITY_A)
+                .addExtendedData("table1", "row1", "name", "value 1", VISIBILITY_A)
+                .addExtendedData("table1", "row2", "name", "value 2", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
+        graph.prepareVertex("v2", VISIBILITY_A)
+                .addExtendedData("table1", "row3", "name", "value 1", VISIBILITY_A)
+                .addExtendedData("table1", "row4", "name", "value 2", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
+        graph.prepareEdge("e1", "v1", "v2", "label", VISIBILITY_A)
+                .addExtendedData("table1", "row5", "name", "value 1", VISIBILITY_A)
+                .addExtendedData("table1", "row6", "name", "value 2", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
+        graph.flush();
+
+        Edge e1 = graph.getEdge("e1", AUTHORIZATIONS_A);
+        List<ExtendedDataRow> searchResultsList = toList(
+                getGraph().query("*", AUTHORIZATIONS_A)
+                        .hasExtendedData(ElementType.EDGE, e1.getId(), "table1")
+                        .extendedDataRows()
+        );
+        assertRowIdsAnyOrder(Lists.newArrayList("row5", "row6"), searchResultsList);
+    }
+
+    @Test
     public void testExtendedDataQueryAfterDeleteForVertex() {
         graph.prepareVertex("v1", VISIBILITY_A)
                 .addExtendedData("table1", "row1", "name", "value 1", VISIBILITY_A)
