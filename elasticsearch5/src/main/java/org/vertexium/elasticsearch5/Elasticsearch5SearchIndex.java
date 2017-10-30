@@ -483,9 +483,10 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
         jsonBuilder = XContentFactory.jsonBuilder()
                 .startObject();
 
-        jsonBuilder.field(ELEMENT_TYPE_FIELD_NAME, ElasticsearchDocumentType.getExtendedDataDocumentTypeFromElement(element).getKey());
+        String elementTypeString = ElasticsearchDocumentType.getExtendedDataDocumentTypeFromElement(element).getKey();
+        jsonBuilder.field(ELEMENT_TYPE_FIELD_NAME, elementTypeString);
         String elementTypeVisibilityPropertyName = addElementTypeVisibilityPropertyToIndex(graph, element);
-        jsonBuilder.field(elementTypeVisibilityPropertyName, ElasticsearchDocumentType.VERTEX.getKey());
+        jsonBuilder.field(elementTypeVisibilityPropertyName, elementTypeString);
         getConfig().getScoringStrategy().addFieldsToExtendedDataDocument(this, jsonBuilder, element, null, tableName, rowId, columns, authorizations);
         jsonBuilder.field(EXTENDED_DATA_ELEMENT_ID_FIELD_NAME, element.getId());
         jsonBuilder.field(EXTENDED_DATA_TABLE_NAME_FIELD_NAME, tableName);
