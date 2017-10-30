@@ -1,5 +1,6 @@
 # v3.0.1
 * Changed: Find Path to not return a path that contains one or more vertices that is can't be retrieved because of visibility restrictions
+* Changed: Reduced DefaultIndexSelectionStrategy cache load time from 1hr to 5min
 * Added: Added a hasId method to the Query class to allow searches to be filtered by element ID.
 
 # v3.0.0
