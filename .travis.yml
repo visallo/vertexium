@@ -1,5 +1,5 @@
 language: java
-script: travis_wait 45 mvn test -Pnolog,$TEST_EXECUTION_PROFILE
+script: travis_wait 60 mvn test -Pnolog,$TEST_EXECUTION_PROFILE
 jdk:
   - oraclejdk8
 env:
