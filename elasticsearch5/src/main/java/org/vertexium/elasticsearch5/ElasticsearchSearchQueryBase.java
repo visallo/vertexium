@@ -59,6 +59,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static org.vertexium.elasticsearch5.Elasticsearch5SearchIndex.FIELDNAME_DOT_REPLACEMENT;
+import static org.vertexium.elasticsearch5.Elasticsearch5SearchIndex.HIDDEN_VERTEX_FIELD_NAME;
 
 public class ElasticsearchSearchQueryBase extends QueryBase {
     private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(ElasticsearchSearchQueryBase.class);
@@ -201,6 +202,14 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
         List<QueryBuilder> filters = new ArrayList<>();
         if (elementTypes != null) {
             addElementTypeFilter(filters, elementTypes);
+        }
+        String[] hiddenVertexPropertyNames = getPropertyNames(HIDDEN_VERTEX_FIELD_NAME);
+        if (hiddenVertexPropertyNames != null && hiddenVertexPropertyNames.length > 0) {
+            BoolQueryBuilder elementIsNotHiddenQuery = QueryBuilders.boolQuery();
+            for (String hiddenVertexPropertyName : hiddenVertexPropertyNames) {
+                elementIsNotHiddenQuery.mustNot(QueryBuilders.existsQuery(hiddenVertexPropertyName));
+            }
+            filters.add(elementIsNotHiddenQuery);
         }
         for (HasContainer has : getParameters().getHasContainers()) {
             if (has instanceof HasValueContainer) {

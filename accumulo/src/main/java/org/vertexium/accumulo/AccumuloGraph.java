@@ -644,6 +644,8 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
 
             addMutations(VertexiumObjectType.VERTEX, getMarkHiddenRowMutation(vertex.getId(), columnVisibility));
 
+            getSearchIndex().markElementHidden(this, vertex, visibility, authorizations);
+
             if (hasEventListeners()) {
                 queueEvent(new MarkHiddenVertexEvent(this, vertex));
             }
@@ -666,6 +668,8 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             }
 
             addMutations(VertexiumObjectType.VERTEX, getMarkVisibleRowMutation(vertex.getId(), columnVisibility));
+
+            getSearchIndex().markElementVisible(this, vertex, visibility, authorizations);
 
             if (hasEventListeners()) {
                 queueEvent(new MarkVisibleVertexEvent(this, vertex));
@@ -1171,6 +1175,8 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                 ((AccumuloVertex) in).removeInEdge(edge);
             }
 
+            getSearchIndex().markElementHidden(this, edge, visibility, authorizations);
+
             if (hasEventListeners()) {
                 queueEvent(new MarkHiddenEdgeEvent(this, edge));
             }
@@ -1213,6 +1219,8 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             if (in instanceof AccumuloVertex) {
                 ((AccumuloVertex) in).addInEdge(edge);
             }
+
+            getSearchIndex().markElementVisible(this, edge, visibility, authorizations);
 
             if (hasEventListeners()) {
                 queueEvent(new MarkVisibleEdgeEvent(this, edge));

@@ -74,6 +74,7 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
     protected static final VertexiumLogger MUTATION_LOGGER = VertexiumLoggerFactory.getMutationLogger(SearchIndex.class);
     public static final String ELEMENT_TYPE = "element";
     public static final String ELEMENT_TYPE_FIELD_NAME = "__elementType";
+    public static final String HIDDEN_VERTEX_FIELD_NAME = "__hidden";
     public static final String VISIBILITY_FIELD_NAME = "__visibility";
     public static final String OUT_VERTEX_ID_FIELD_NAME = "__outVertexId";
     public static final String IN_VERTEX_ID_FIELD_NAME = "__inVertexId";
@@ -601,10 +602,52 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
             throw new VertexiumException("Unexpected element type " + element.getClass().getName());
         }
 
+        for (Visibility hiddenVisibility : element.getHiddenVisibilities()) {
+            String hiddenVisibilityPropertyName = addVisibilityToPropertyName(graph, HIDDEN_VERTEX_FIELD_NAME, hiddenVisibility);
+            if (!isPropertyInIndex(graph, hiddenVisibilityPropertyName)) {
+                String indexName = getIndexName(element);
+                IndexInfo indexInfo = ensureIndexCreatedAndInitialized(graph, indexName);
+                addPropertyToIndex(graph, indexInfo, hiddenVisibilityPropertyName, hiddenVisibility, Boolean.class, false);
+            }
+            jsonBuilder.field(hiddenVisibilityPropertyName, true);
+        }
+
         Map<String, Object> fields = getPropertiesAsFields(graph, element);
         addFieldsMap(jsonBuilder, fields);
 
         return jsonBuilder;
+    }
+
+    @Override
+    public void markElementHidden(Graph graph, Element element, Visibility visibility, Authorizations authorizations) {
+        try {
+            String hiddenVisibilityPropertyName = addVisibilityToPropertyName(graph, HIDDEN_VERTEX_FIELD_NAME, visibility);
+            if (!isPropertyInIndex(graph, hiddenVisibilityPropertyName)) {
+                String indexName = getIndexName(element);
+                IndexInfo indexInfo = ensureIndexCreatedAndInitialized(graph, indexName);
+                addPropertyToIndex(graph, indexInfo, hiddenVisibilityPropertyName, visibility, Boolean.class, false);
+            }
+
+            XContentBuilder jsonBuilder = XContentFactory.jsonBuilder().startObject();
+            jsonBuilder.field(hiddenVisibilityPropertyName, true);
+            jsonBuilder.endObject();
+
+            getClient()
+                    .prepareUpdate(getIndexName(element), ELEMENT_TYPE, element.getId())
+                    .setDoc(jsonBuilder)
+                    .setRetryOnConflict(MAX_RETRIES)
+                    .get();
+        } catch (IOException e) {
+            throw new VertexiumException("Could not mark element hidden", e);
+        }
+    }
+
+    @Override
+    public void markElementVisible(Graph graph, Element element, Visibility visibility, Authorizations authorizations) {
+        String hiddenVisibilityPropertyName = addVisibilityToPropertyName(graph, HIDDEN_VERTEX_FIELD_NAME, visibility);
+        if (isPropertyInIndex(graph, hiddenVisibilityPropertyName)) {
+            removeFieldsFromDocument(element, hiddenVisibilityPropertyName);
+        }
     }
 
     private String getElementTypeValueFromElement(Element element) {
