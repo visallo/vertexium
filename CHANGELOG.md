@@ -3,6 +3,7 @@
 * Changed: Reduced DefaultIndexSelectionStrategy cache load time from 1hr to 5min
 * Added: Added a hasId method to the Query class to allow searches to be filtered by element ID.
 * Fix: Extended data element type value for edges
+* Changed: Field removal from Elasticsearch documents is now queued as a future instead of immediate
 
 # v3.0.0
 * Changed: Removed ES 2 support and replaced it with ES 5 support
