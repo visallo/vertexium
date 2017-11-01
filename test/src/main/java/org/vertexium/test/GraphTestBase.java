@@ -2647,15 +2647,16 @@ public abstract class GraphTestBase {
 
     @Test
     public void testGraphQueryVertexWithVisibilityChange() {
-        graph.prepareVertex("v1", VISIBILITY_A)
+        Vertex v1 = graph.prepareVertex("v1", VISIBILITY_A)
                 .save(AUTHORIZATIONS_A);
         graph.flush();
 
-        Iterable<Vertex> vertices = graph.query(AUTHORIZATIONS_A).vertices();
-        Assert.assertEquals(1, count(vertices));
+        QueryResultsIterable<Vertex> vertices = graph.query(AUTHORIZATIONS_A).vertices();
+        assertResultsCount(1, vertices);
+        assertVertexIds(vertices, v1.getId());
 
         // change to same visibility
-        Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
+        v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
         v1 = v1.prepareMutation()
                 .alterElementVisibility(VISIBILITY_EMPTY)
                 .save(AUTHORIZATIONS_A);
@@ -2663,7 +2664,19 @@ public abstract class GraphTestBase {
         Assert.assertEquals(VISIBILITY_EMPTY, v1.getVisibility());
 
         vertices = graph.query(AUTHORIZATIONS_A).vertices();
-        Assert.assertEquals(1, count(vertices));
+        assertResultsCount(1, vertices);
+        assertVertexIds(vertices, v1.getId());
+
+        // change to new visibility
+        v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
+        v1.prepareMutation()
+                .alterElementVisibility(VISIBILITY_B)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        vertices = graph.query(AUTHORIZATIONS_A).vertices();
+        assertResultsCount(0, vertices);
+        assertEquals(0, count(vertices));
     }
 
     @Test
