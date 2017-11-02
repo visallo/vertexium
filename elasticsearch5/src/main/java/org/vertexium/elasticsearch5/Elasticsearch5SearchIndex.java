@@ -664,7 +664,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
     public void markElementVisible(Graph graph, Element element, Visibility visibility, Authorizations authorizations) {
         String hiddenVisibilityPropertyName = addVisibilityToPropertyName(graph, HIDDEN_VERTEX_FIELD_NAME, visibility);
         if (isPropertyInIndex(graph, hiddenVisibilityPropertyName)) {
-            removeFieldsFromDocument(element, hiddenVisibilityPropertyName);
+            removeFieldsFromDocument(graph, element, hiddenVisibilityPropertyName);
         }
     }
 
