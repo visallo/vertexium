@@ -29,16 +29,19 @@ public class ElasticsearchResource extends ExternalResource {
     private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(ElasticsearchResource.class);
 
     private static final String ES_INDEX_NAME = "vertexium-test";
-    private static final String ES_CLUSTER_NAME = "vertexium-test-cluster";
     private static final String ES_EXTENDED_DATA_INDEX_NAME_PREFIX = "vertexium-test-";
+
     private ElasticsearchClusterRunner runner;
+    private String clusterName;
 
     private Map extraConfig = null;
 
-    public ElasticsearchResource() {
+    public ElasticsearchResource(String clusterName) {
+        this.clusterName = clusterName;
     }
 
-    public ElasticsearchResource(Map extraConfig) {
+    public ElasticsearchResource(String clusterName, Map extraConfig) {
+        this.clusterName = clusterName;
         this.extraConfig = extraConfig;
     }
 
@@ -57,7 +60,7 @@ public class ElasticsearchResource extends ExternalResource {
         runner = new ElasticsearchClusterRunner();
         runner.onBuild((i, builder) ->
                                builder.put("script.inline", "true")
-                                       .put("cluster.name", ES_CLUSTER_NAME)
+                                       .put("cluster.name", clusterName)
                                         .put("http.type", "netty3")
                                         .put("transport.type", "netty3")
         ).build(newConfigs().basePath(basePath.getAbsolutePath()).numOfNode(1));
@@ -111,7 +114,7 @@ public class ElasticsearchResource extends ExternalResource {
         configMap.put(SEARCH_INDEX_PROP_PREFIX, Elasticsearch5SearchIndex.class.getName());
         configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + CONFIG_INDEX_NAME, ES_INDEX_NAME);
         configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + CONFIG_EXTENDED_DATA_INDEX_NAME_PREFIX, ES_EXTENDED_DATA_INDEX_NAME_PREFIX);
-        configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + CLUSTER_NAME, ES_CLUSTER_NAME);
+        configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + CLUSTER_NAME, clusterName);
         configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + ES_LOCATIONS, getLocation());
         configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + NUMBER_OF_SHARDS, 1);
         configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + NUMBER_OF_REPLICAS, 0);
