@@ -18,6 +18,18 @@ public class DefaultSearchIndex implements SearchIndex {
     }
 
     @Override
+    public void markElementHidden(Graph graph, Element element, Visibility visibility, Authorizations authorizations) {
+        checkNotNull(element, "element cannot be null");
+        checkNotNull(visibility, "visibility cannot be null");
+    }
+
+    @Override
+    public void markElementVisible(Graph graph, Element element, Visibility visibility, Authorizations authorizations) {
+        checkNotNull(element, "element cannot be null");
+        checkNotNull(visibility, "visibility cannot be null");
+    }
+
+    @Override
     public void alterElementVisibility(Graph graph, Element element, Visibility oldVisibility, Visibility newVisibility, Authorizations authorizations) {
         checkNotNull(element, "element cannot be null");
         checkNotNull(newVisibility, "newVisibility cannot be null");

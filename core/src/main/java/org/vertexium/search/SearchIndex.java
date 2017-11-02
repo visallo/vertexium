@@ -14,6 +14,10 @@ public interface SearchIndex {
 
     void deleteElement(Graph graph, Element element, Authorizations authorizations);
 
+    void markElementHidden(Graph graph, Element element, Visibility visibility, Authorizations authorizations);
+
+    void markElementVisible(Graph graph, Element element, Visibility visibility, Authorizations authorizations);
+
     /**
      * Default delete property simply calls deleteProperty in a loop. It is up to the SearchIndex implementation to decide
      * if a collective method can be made more efficient

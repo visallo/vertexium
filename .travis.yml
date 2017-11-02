@@ -7,7 +7,8 @@ env:
   - TEST_EXECUTION_PROFILE=accumulo-test
   - TEST_EXECUTION_PROFILE=cypher-test
   - TEST_EXECUTION_PROFILE=elasticsearch-test
-  - TEST_EXECUTION_PROFILE=multimodule-test
+  - TEST_EXECUTION_PROFILE=es17-multimodule-test
+  - TEST_EXECUTION_PROFILE=es5-multimodule-test
 branches:
   only:
     - master
