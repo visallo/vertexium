@@ -230,7 +230,7 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
 
         this.vertices.getTableElement(vertex.getId()).appendMarkHiddenMutation(visibility);
         refreshVertexInMemoryTableElement(vertex);
-        getSearchIndex().addElement(this, vertex, authorizations);
+        getSearchIndex().markElementHidden(this, vertex, visibility, authorizations);
 
         if (hasEventListeners()) {
             fireGraphEvent(new MarkHiddenVertexEvent(this, vertex));
@@ -250,7 +250,7 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
 
         this.vertices.getTableElement(vertex.getId()).appendMarkVisibleMutation(visibility);
         refreshVertexInMemoryTableElement(vertex);
-        getSearchIndex().addElement(this, vertex, authorizations);
+        getSearchIndex().markElementVisible(this, vertex, visibility, authorizations);
 
         if (hasEventListeners()) {
             fireGraphEvent(new MarkVisibleVertexEvent(this, vertex));
@@ -429,7 +429,7 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
         checkNotNull(outVertex, "Could not find out vertex \"" + edge.getVertexId(Direction.OUT) + "\" on edge \"" + edge.getId() + "\"");
 
         this.edges.getTableElement(edge.getId()).appendMarkHiddenMutation(visibility);
-        getSearchIndex().addElement(this, edge, authorizations);
+        getSearchIndex().markElementHidden(this, edge, visibility, authorizations);
 
         if (hasEventListeners()) {
             fireGraphEvent(new MarkHiddenEdgeEvent(this, edge));
@@ -448,7 +448,7 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
         checkNotNull(outVertex, "Could not find out vertex \"" + edge.getVertexId(Direction.OUT) + "\" on edge \"" + edge.getId() + "\"");
 
         this.edges.getTableElement(edge.getId()).appendMarkVisibleMutation(visibility);
-        getSearchIndex().addElement(this, edge, authorizations);
+        getSearchIndex().markElementVisible(this, edge, visibility, authorizations);
 
         if (hasEventListeners()) {
             fireGraphEvent(new MarkVisibleEdgeEvent(this, edge));

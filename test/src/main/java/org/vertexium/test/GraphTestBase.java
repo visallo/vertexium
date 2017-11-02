@@ -1325,6 +1325,37 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    public void testSearchingForHiddenEdges() {
+        Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_ALL);
+        Vertex v2 = graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_ALL);
+        Vertex v3 = graph.addVertex("v3", VISIBILITY_A, AUTHORIZATIONS_ALL);
+        Edge e1 = graph.addEdge("v1tov2", v1, v2, "test", VISIBILITY_A, AUTHORIZATIONS_ALL);
+        Edge e2 = graph.addEdge("v2tov3", v2, v3, "test", VISIBILITY_A, AUTHORIZATIONS_ALL);
+        graph.flush();
+
+        graph.markEdgeHidden(e1, VISIBILITY_B, AUTHORIZATIONS_ALL);
+        graph.flush();
+
+        QueryResultsIterable<Edge> edges = graph.query(AUTHORIZATIONS_A)
+                .edges(EnumSet.of(FetchHint.PROPERTIES));
+        assertResultsCount(2, edges);
+        assertEdgeIdsAnyOrder(edges, e1.getId(), e2.getId());
+
+        edges = graph.query(AUTHORIZATIONS_A_AND_B)
+                .edges(EnumSet.of(FetchHint.PROPERTIES));
+        assertResultsCount(1, edges);
+        assertEdgeIdsAnyOrder(edges, e2.getId());
+
+        graph.markEdgeVisible(e1, VISIBILITY_B, AUTHORIZATIONS_ALL);
+        graph.flush();
+
+        edges = graph.query(AUTHORIZATIONS_A_AND_B)
+                .edges(EnumSet.of(FetchHint.PROPERTIES));
+        assertResultsCount(2, edges);
+        assertEdgeIdsAnyOrder(edges, e1.getId(), e2.getId());
+    }
+
+    @Test
     public void testMarkPropertyHidden() {
         Vertex v1 = graph.prepareVertex("v1", VISIBILITY_A)
                 .addPropertyValue("key1", "prop1", "value1", VISIBILITY_A)
@@ -1398,6 +1429,41 @@ public abstract class GraphTestBase {
         graph.flush();
 
         Assert.assertEquals(3, count(graph.getVertex("v1", AUTHORIZATIONS_A_AND_B).getProperties("prop1")));
+    }
+
+    @Test
+    public void testSearchingForHiddenVertices() {
+        Vertex v1 = graph.prepareVertex("v1", VISIBILITY_A)
+                .addPropertyValue("key1", "prop1", "value1", VISIBILITY_A)
+                .save(AUTHORIZATIONS_ALL);
+        Vertex v2 = graph.prepareVertex("v2", VISIBILITY_A)
+                .addPropertyValue("key1", "prop1", "value1", VISIBILITY_A)
+                .save(AUTHORIZATIONS_ALL);
+        graph.flush();
+
+        graph.markVertexHidden(v1, VISIBILITY_B, AUTHORIZATIONS_ALL);
+        graph.flush();
+
+        QueryResultsIterable<Vertex> vertices = graph.query(AUTHORIZATIONS_A)
+                .has("prop1", "value1")
+                .vertices(EnumSet.of(FetchHint.PROPERTIES));
+        assertResultsCount(2, vertices);
+        assertVertexIdsAnyOrder(vertices, v1.getId(), v2.getId());
+
+        vertices = graph.query(AUTHORIZATIONS_A_AND_B)
+                .has("prop1", "value1")
+                .vertices(EnumSet.of(FetchHint.PROPERTIES));
+        assertResultsCount(1, vertices);
+        assertVertexIdsAnyOrder(vertices, v2.getId());
+
+        graph.markVertexVisible(v1, VISIBILITY_B, AUTHORIZATIONS_ALL);
+        graph.flush();
+
+        vertices = graph.query(AUTHORIZATIONS_A_AND_B)
+                .has("prop1", "value1")
+                .vertices(EnumSet.of(FetchHint.PROPERTIES));
+        assertResultsCount(2, vertices);
+        assertVertexIdsAnyOrder(vertices, v1.getId(), v2.getId());
     }
 
     /**

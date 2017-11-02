@@ -4,7 +4,6 @@ import com.carrotsearch.hppc.cursors.ObjectCursor;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.SettableFuture;
 import org.elasticsearch.action.ActionRequestBuilder;
 import org.elasticsearch.action.ListenableActionFuture;
@@ -26,7 +25,7 @@ import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.cluster.health.ClusterHealthStatus;
 import org.elasticsearch.cluster.metadata.MappingMetaData;
 import org.elasticsearch.common.collect.ImmutableOpenMap;
-import org.elasticsearch.common.geo.builders.*;
+import org.elasticsearch.common.geo.builders.CircleBuilder;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.common.xcontent.XContentBuilder;
@@ -83,6 +82,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
     public static final String ELEMENT_TYPE = "element";
     public static final String ELEMENT_TYPE_FIELD_NAME = "__elementType";
     public static final String VISIBILITY_FIELD_NAME = "__visibility";
+    public static final String HIDDEN_VERTEX_FIELD_NAME = "__hidden";
     public static final String OUT_VERTEX_ID_FIELD_NAME = "__outVertexId";
     public static final String IN_VERTEX_ID_FIELD_NAME = "__inVertexId";
     public static final String EDGE_LABEL_FIELD_NAME = "__edgeLabel";
@@ -619,11 +619,53 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
             throw new VertexiumException("Unexpected element type " + element.getClass().getName());
         }
 
+        for (Visibility hiddenVisibility : element.getHiddenVisibilities()) {
+            String hiddenVisibilityPropertyName = addVisibilityToPropertyName(graph, HIDDEN_VERTEX_FIELD_NAME, hiddenVisibility);
+            if (!isPropertyInIndex(graph, hiddenVisibilityPropertyName)) {
+                String indexName = getIndexName(element);
+                IndexInfo indexInfo = ensureIndexCreatedAndInitialized(graph, indexName);
+                addPropertyToIndex(graph, indexInfo, hiddenVisibilityPropertyName, hiddenVisibility, Boolean.class, false, false, false);
+            }
+            jsonBuilder.field(hiddenVisibilityPropertyName, true);
+        }
+
         Map<String, Object> fields = getPropertiesAsFields(graph, element);
         addFieldsMap(jsonBuilder, fields);
 
         jsonBuilder.endObject();
         return jsonBuilder;
+    }
+
+    @Override
+    public void markElementHidden(Graph graph, Element element, Visibility visibility, Authorizations authorizations) {
+        try {
+            String hiddenVisibilityPropertyName = addVisibilityToPropertyName(graph, HIDDEN_VERTEX_FIELD_NAME, visibility);
+            if (!isPropertyInIndex(graph, hiddenVisibilityPropertyName)) {
+                String indexName = getIndexName(element);
+                IndexInfo indexInfo = ensureIndexCreatedAndInitialized(graph, indexName);
+                addPropertyToIndex(graph, indexInfo, hiddenVisibilityPropertyName, visibility, Boolean.class, false, false, false);
+            }
+
+            XContentBuilder jsonBuilder = XContentFactory.jsonBuilder().startObject();
+            jsonBuilder.field(hiddenVisibilityPropertyName, true);
+            jsonBuilder.endObject();
+
+            getClient()
+                    .prepareUpdate(getIndexName(element), ELEMENT_TYPE, element.getId())
+                    .setDoc(jsonBuilder)
+                    .setRetryOnConflict(MAX_RETRIES)
+                    .get();
+        } catch (IOException e) {
+            throw new VertexiumException("Could not mark element hidden", e);
+        }
+    }
+
+    @Override
+    public void markElementVisible(Graph graph, Element element, Visibility visibility, Authorizations authorizations) {
+        String hiddenVisibilityPropertyName = addVisibilityToPropertyName(graph, HIDDEN_VERTEX_FIELD_NAME, visibility);
+        if (isPropertyInIndex(graph, hiddenVisibilityPropertyName)) {
+            removeFieldsFromDocument(element, hiddenVisibilityPropertyName);
+        }
     }
 
     private String getElementTypeValueFromElement(Element element) {
