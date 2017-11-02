@@ -16,7 +16,7 @@ import static org.vertexium.test.util.VertexiumAssert.assertResultsCount;
 public class ElasticsearchSingleDocumentSearchIndexTest extends ElasticsearchSingleDocumentSearchIndexTestBase {
 
     @ClassRule
-    public static ElasticsearchResource elasticsearchResource = new ElasticsearchResource();
+    public static ElasticsearchResource elasticsearchResource = new ElasticsearchResource(ElasticsearchSingleDocumentSearchIndexTest.class.getName());
 
     @Override
     protected ElasticsearchResource getElasticsearchResource() {

@@ -28,7 +28,7 @@ import static org.vertexium.util.IterableUtils.count;
 public class Elasticsearch5SearchIndexTest extends GraphTestBase {
 
     @ClassRule
-    public static ElasticsearchResource elasticsearchResource = new ElasticsearchResource();
+    public static ElasticsearchResource elasticsearchResource = new ElasticsearchResource(Elasticsearch5SearchIndexTest.class.getName());
 
     @Override
     protected Authorizations createAuthorizations(String... auths) {

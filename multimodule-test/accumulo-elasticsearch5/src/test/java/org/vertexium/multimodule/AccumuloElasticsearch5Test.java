@@ -39,7 +39,7 @@ public class AccumuloElasticsearch5Test extends AccumuloGraphTestBase {
 
 
     @ClassRule
-    public static final ElasticsearchResource elasticsearchResource = new ElasticsearchResource();
+    public static final ElasticsearchResource elasticsearchResource = new ElasticsearchResource(AccumuloElasticsearch5Test.class.getName());
 
     @Before
     @Override

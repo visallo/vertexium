@@ -575,7 +575,7 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
     ) {
         // Remove old element field name
         String oldFieldName = addVisibilityToPropertyName(graph, ELEMENT_TYPE_FIELD_NAME, oldVisibility);
-        removeFieldsFromDocument(element, oldFieldName);
+        removeFieldsFromDocument(graph, element, oldFieldName);
 
         addElement(graph, element, authorizations);
     }
@@ -646,7 +646,7 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
     public void markElementVisible(Graph graph, Element element, Visibility visibility, Authorizations authorizations) {
         String hiddenVisibilityPropertyName = addVisibilityToPropertyName(graph, HIDDEN_VERTEX_FIELD_NAME, visibility);
         if (isPropertyInIndex(graph, hiddenVisibilityPropertyName)) {
-            removeFieldsFromDocument(element, hiddenVisibilityPropertyName);
+            removeFieldsFromDocument(graph, element, hiddenVisibilityPropertyName);
         }
     }
 
@@ -1375,8 +1375,8 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
     @Override
     public void deleteProperty(Graph graph, Element element, PropertyDescriptor property, Authorizations authorizations) {
         String fieldName = addVisibilityToPropertyName(graph, property.getName(), property.getVisibility());
-        removeFieldsFromDocument(element, fieldName);
-        removeFieldsFromDocument(element, fieldName + "_e");
+        removeFieldsFromDocument(graph, element, fieldName);
+        removeFieldsFromDocument(graph, element, fieldName + "_e");
     }
 
     @Override
@@ -1387,7 +1387,7 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
             fields.add(fieldName);
             fields.add(fieldName + "_e");
         }
-        removeFieldsFromDocument(element, fields);
+        removeFieldsFromDocument(graph, element, fields);
     }
 
     @Override
@@ -1459,10 +1459,11 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
     /**
      * Helper method to remove fields from source. This method will generate a ES update request. Retries on conflict.
      *
+     * @param graph   Graph object configured with the index names
      * @param element Element that can be mapped to an ES document
      * @param fields  fields to remove
      */
-    private void removeFieldsFromDocument(Element element, Collection<String> fields) {
+    private void removeFieldsFromDocument(Graph graph, Element element, Collection<String> fields) {
         String script = "";
         Map<String, Object> params = Maps.newHashMap();
 
@@ -1473,18 +1474,23 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
             params.put(fieldName, field);
         }
 
-        getClient().prepareUpdate()
+        UpdateRequestBuilder updateRequestBuilder = getClient().prepareUpdate()
                 .setIndex(getIndexName(element))
                 .setId(element.getId())
                 .setType(ELEMENT_TYPE)
                 .setScript(script, ScriptService.ScriptType.INLINE)
                 .setRetryOnConflict(MAX_RETRIES)
-                .setScriptParams(params)
-                .get();
+                .setScriptParams(params);
+
+        addActionRequestBuilderForFlush(element.getId(), updateRequestBuilder);
+
+        if (getConfig().isAutoFlush()) {
+            flush(graph);
+        }
     }
 
-    private void removeFieldsFromDocument(Element element, String field) {
-        removeFieldsFromDocument(element, Lists.newArrayList(field));
+    private void removeFieldsFromDocument(Graph graph, Element element, String field) {
+        removeFieldsFromDocument(graph, element, Lists.newArrayList(field));
     }
 
 

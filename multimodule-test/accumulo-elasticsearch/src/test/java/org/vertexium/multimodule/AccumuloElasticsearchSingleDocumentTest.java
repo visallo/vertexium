@@ -21,7 +21,7 @@ public class AccumuloElasticsearchSingleDocumentTest extends AccumuloGraphTestBa
     public static final AccumuloResource accumuloResource = new AccumuloResource();
 
     @ClassRule
-    public static final ElasticsearchResource elasticsearchResource = new ElasticsearchResource();
+    public static final ElasticsearchResource elasticsearchResource = new ElasticsearchResource(AccumuloElasticsearchSingleDocumentTest.class.getName());
 
     @Before
     @Override

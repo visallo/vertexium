@@ -403,7 +403,6 @@
         <module>kryo-serializer</module>
         <module>xstream-serializer</module>
 
-        <module>multimodule-test</module>
     </modules>
 
     <profiles>
@@ -550,6 +549,9 @@
                     </plugin>
                 </plugins>
             </build>
+            <modules>
+                <module>multimodule-test</module>
+            </modules>
         </profile>
         <profile>
             <id>es5-multimodule-test</id>
@@ -570,6 +572,9 @@
                     </plugin>
                 </plugins>
             </build>
+            <modules>
+                <module>multimodule-test</module>
+            </modules>
         </profile>
     </profiles>
 </project>
