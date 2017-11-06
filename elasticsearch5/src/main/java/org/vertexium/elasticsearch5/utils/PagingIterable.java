@@ -67,6 +67,8 @@ public abstract class PagingIterable<T> implements
     private class MyIterator implements Iterator<T> {
         private ElasticsearchGraphQueryIterable<T> firstIterable;
         private long currentResultNumber = 0;
+        private long lastIterableResultNumber = 0;
+        private long lastPageSize = 0;
         private Iterator<T> currentIterator;
 
         public MyIterator(ElasticsearchGraphQueryIterable<T> firstIterable) {
@@ -102,15 +104,17 @@ public abstract class PagingIterable<T> implements
 
         private Iterator<T> getNextIterator() {
             long totalReturned = currentResultNumber - skip;
-            if (totalReturned >= limit || currentResultNumber >= getTotalHits()) {
+            long lastIterableCount = currentResultNumber - lastIterableResultNumber;
+            if (totalReturned >= limit || currentResultNumber >= getTotalHits() || lastIterableCount < lastPageSize) {
                 return null;
             }
-            long nextPageSize = Math.min(pageSize, limit - currentResultNumber);
+            long nextPageSize = lastPageSize = Math.min(pageSize, limit - currentResultNumber);
             if (firstIterable == null) {
                 firstIterable = getPageIterable((int)currentResultNumber, (int)nextPageSize, false);
             }
             Iterator<T> it = firstIterable.iterator();
             firstIterable = null;
+            lastIterableResultNumber = currentResultNumber;
             return it;
         }
 

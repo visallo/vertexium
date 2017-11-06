@@ -1475,7 +1475,15 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
      * @param fields  fields to remove
      */
     private void removeFieldsFromDocument(Graph graph, Element element, Collection<String> fields) {
+        if (fields == null || fields.isEmpty()) {
+            return;
+        }
+
         List<String> fieldNames = fields.stream().map(field -> field.replace(".", FIELDNAME_DOT_REPLACEMENT)).collect(Collectors.toList());
+        if (fieldNames.isEmpty()) {
+            return;
+        }
+
         UpdateRequestBuilder updateRequestBuilder = getClient().prepareUpdate()
                 .setIndex(getIndexName(element))
                 .setId(element.getId())
