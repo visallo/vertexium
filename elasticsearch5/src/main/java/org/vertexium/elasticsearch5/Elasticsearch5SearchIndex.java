@@ -135,22 +135,13 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
     private Client createInProcessNode(ElasticsearchSearchIndexConfiguration config) {
         Settings settings = tryReadSettingsFromFile(config);
         if (settings == null) {
-            String dataPath = config.getInProcessNodeDataPath();
-            checkNotNull(dataPath, ElasticsearchSearchIndexConfiguration.IN_PROCESS_NODE_DATA_PATH + " is required for in process Elasticsearch node");
-            String logsPath = config.getInProcessNodeLogsPath();
-            checkNotNull(logsPath, ElasticsearchSearchIndexConfiguration.IN_PROCESS_NODE_LOGS_PATH + " is required for in process Elasticsearch node");
-            String workPath = config.getInProcessNodeWorkPath();
-            checkNotNull(workPath, ElasticsearchSearchIndexConfiguration.IN_PROCESS_NODE_WORK_PATH + " is required for in process Elasticsearch node");
-            int numberOfShards = config.getNumberOfShards();
+            String homePath = config.getInProcessNodeHomePath();
+            checkNotNull(homePath, ElasticsearchSearchIndexConfiguration.IN_PROCESS_NODE_HOME_PATH + " is required for in process Elasticsearch node");
 
             Map<String, String> mapSettings = new HashMap<>();
-            mapSettings.put("script.inline", "true");
-            mapSettings.put("index.number_of_shards", Integer.toString(numberOfShards));
-            mapSettings.put("index.number_of_replicas", "0");
-            mapSettings.put("path.data", dataPath);
-            mapSettings.put("path.logs", logsPath);
-            mapSettings.put("path.work", workPath);
-            mapSettings.put("discovery.zen.ping.multicast.enabled", "false");
+            mapSettings.put("transport.type", "local");
+            mapSettings.put("path.home", homePath);
+            mapSettings.put("http.enabled", "false");
             mapSettings.put("discovery.zen.ping.unicast.hosts", "localhost");
             if (config.getClusterName() != null) {
                 mapSettings.put("cluster.name", config.getClusterName());

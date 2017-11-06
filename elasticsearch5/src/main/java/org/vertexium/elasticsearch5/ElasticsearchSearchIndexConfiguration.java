@@ -39,9 +39,7 @@ public class ElasticsearchSearchIndexConfiguration {
     public static final String ALL_FIELD_ENABLED = "allFieldEnabled";
     public static final String IN_PROCESS_NODE = "inProcessNode";
     public static final boolean IN_PROCESS_NODE_DEFAULT = false;
-    public static final String IN_PROCESS_NODE_DATA_PATH = "inProcessNode.dataPath";
-    public static final String IN_PROCESS_NODE_LOGS_PATH = "inProcessNode.logsPath";
-    public static final String IN_PROCESS_NODE_WORK_PATH = "inProcessNode.workPath";
+    public static final String IN_PROCESS_NODE_HOME_PATH = "inProcessNode.homePath";
     public static final String IN_PROCESS_ADDITIONAL_CONFIG_PREFIX = GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + "inProcessNode.additionalConfig.";
     public static final String ES_SETTINGS_CONFIG_PREFIX = GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + "esSettings.";
     public static final String QUERY_PAGE_SIZE = "queryPageSize";
@@ -155,16 +153,8 @@ public class ElasticsearchSearchIndexConfiguration {
         return graphConfiguration.getBoolean(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + ERROR_ON_MISSING_VERTEXIUM_PLUGIN, ERROR_ON_MISSING_VERTEXIUM_PLUGIN_DEFAULT);
     }
 
-    public String getInProcessNodeDataPath() {
-        return graphConfiguration.getString(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + IN_PROCESS_NODE_DATA_PATH, null);
-    }
-
-    public String getInProcessNodeLogsPath() {
-        return graphConfiguration.getString(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + IN_PROCESS_NODE_LOGS_PATH, null);
-    }
-
-    public String getInProcessNodeWorkPath() {
-        return graphConfiguration.getString(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + IN_PROCESS_NODE_WORK_PATH, null);
+    public String getInProcessNodeHomePath() {
+        return graphConfiguration.getString(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + IN_PROCESS_NODE_HOME_PATH, null);
     }
 
     public int getQueryPageSize() {
