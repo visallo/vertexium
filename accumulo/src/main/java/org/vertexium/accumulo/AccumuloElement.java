@@ -153,6 +153,7 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
         );
 
         if (mutation.getNewElementVisibility() != null) {
+            getGraph().flush();
             getGraph().alterElementVisibility((AccumuloElement) mutation.getElement(), mutation.getNewElementVisibility(), authorizations);
         }
 

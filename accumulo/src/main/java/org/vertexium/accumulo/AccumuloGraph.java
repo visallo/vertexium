@@ -403,12 +403,14 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             propertyDeletes.forEach(p -> propertyList.add(PropertyDescriptor.fromPropertyDeleteMutation(p)));
             propertySoftDeletes.forEach(p -> propertyList.add(PropertyDescriptor.fromPropertySoftDeleteMutation(p)));
 
-            getSearchIndex().deleteProperties(
-                    this,
-                    element,
-                    propertyList,
-                    authorizations
-            );
+            if (!propertyList.isEmpty()) {
+                getSearchIndex().deleteProperties(
+                        this,
+                        element,
+                        propertyList,
+                        authorizations
+                );
+            }
             getSearchIndex().addElement(this, element, authorizations);
         }
 
