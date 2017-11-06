@@ -5,6 +5,8 @@
 * Fix: Extended data element type value for edges
 * Changed: Field removal from Elasticsearch documents is now queued as a future instead of immediate
 * Fix: Marking vertices/edges as hidden will now update the document in the search index as well as the data store
+* Fix: Fixed an infinite looping problem in the PagingIterable that may have resulted from a malformed ES document
+* Fix: `Elasticsearch5SearchIndex.removeFieldsFromDocument` will not run the removal script in Elasticsearch if there are no properties to remove
 
 # v3.0.0
 * Changed: Removed ES 2 support and replaced it with ES 5 support
