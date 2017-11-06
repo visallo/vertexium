@@ -1464,6 +1464,10 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
      * @param fields  fields to remove
      */
     private void removeFieldsFromDocument(Graph graph, Element element, Collection<String> fields) {
+        if (fields == null || fields.isEmpty()) {
+            return;
+        }
+
         String script = "";
         Map<String, Object> params = Maps.newHashMap();
 
