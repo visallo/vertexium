@@ -109,10 +109,16 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
     private Node inProcessNode;
     public static final Pattern AGGREGATION_NAME_PATTERN = Pattern.compile("(.*?)_([0-9a-f]+)");
     public static final String CONFIG_PROPERTY_NAME_VISIBILITIES_STORE = "propertyNameVisibilitiesStore";
+    public static final String CONFIG_PROPERTY_NAME_GEOSHAPE_PRECISION = "geoshapePrecision";
+    public static final String DEFAULT_GEOSHAPE_PRECISION = "100m";
+    public static final String CONFIG_PROPERTY_NAME_GEOSHAPE_ERROR_PCT = "geoshapeErrorPct";
+    public static final String DEFAULT_GEOSHAPE_ERROR_PCT = "0.001";
     public static final Class<? extends PropertyNameVisibilitiesStore> DEFAULT_PROPERTY_NAME_VISIBILITIES_STORE = MetadataTablePropertyNameVisibilitiesStore.class;
     private final PropertyNameVisibilitiesStore propertyNameVisibilitiesStore;
     private final ThreadLocal<Queue<FlushObject>> flushFutures = new ThreadLocal<>();
     private final Random random = new Random();
+    private final String geoShapePrecision;
+    private final String geoShapeErrorPct;
     private boolean serverPluginInstalled;
 
     public Elasticsearch5SearchIndex(Graph graph, GraphConfiguration config) {
@@ -122,6 +128,9 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
         this.propertyNameVisibilitiesStore = createPropertyNameVisibilitiesStore(graph, config);
         this.client = createClient(this.config);
         this.serverPluginInstalled = checkPluginInstalled(this.client);
+
+        geoShapePrecision = config.getString(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + CONFIG_PROPERTY_NAME_GEOSHAPE_PRECISION, DEFAULT_GEOSHAPE_PRECISION);
+        geoShapeErrorPct = config.getString(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + CONFIG_PROPERTY_NAME_GEOSHAPE_ERROR_PCT, DEFAULT_GEOSHAPE_ERROR_PCT);
     }
 
     protected Client createClient(ElasticsearchSearchIndexConfiguration config) {
@@ -1680,7 +1689,8 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
                 mapping.field("points_only", "true");
             }
             mapping.field("tree", "quadtree");
-            mapping.field("precision", "100m");
+            mapping.field("precision", geoShapePrecision);
+            mapping.field("distance_error_pct", geoShapeErrorPct);
         } else if (Number.class.isAssignableFrom(dataType)) {
             LOGGER.debug("Registering 'double' type for %s", propertyName);
             mapping.field("type", "double");
