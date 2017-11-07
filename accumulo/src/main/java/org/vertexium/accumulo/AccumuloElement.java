@@ -153,6 +153,9 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
         );
 
         if (mutation.getNewElementVisibility() != null) {
+            // Flushing here is important!
+            // The call to graph.saveProperties above will issue an update request to the search index.
+            // If we don't ensure that it has completed first, we run the risk of it re-adding the visibility property we are about to remove.
             getGraph().flush();
             getGraph().alterElementVisibility((AccumuloElement) mutation.getElement(), mutation.getNewElementVisibility(), authorizations);
         }
