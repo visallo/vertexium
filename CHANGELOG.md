@@ -1,3 +1,6 @@
+# v3.0.2
+* Fixed: Elasticsearch5 throwing unsupported operation exception when adding/updating a property
+
 # v3.0.1
 * Changed: Find Path to not return a path that contains one or more vertices that is can't be retrieved because of visibility restrictions
 * Changed: Reduced DefaultIndexSelectionStrategy cache load time from 1hr to 5min
