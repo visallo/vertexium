@@ -282,6 +282,22 @@ public class CompositeGraphQuery implements Query {
     }
 
     @Override
+    public <T> Query has(Class dataType, Predicate predicate, T value) {
+        for (Query query : queries) {
+            query.has(dataType, predicate, value);
+        }
+        return this;
+    }
+
+    @Override
+    public <T> Query has(Iterable<String> propertyNames, Predicate predicate, T value) {
+        for (Query query : queries) {
+            query.has(propertyNames, predicate, value);
+        }
+        return this;
+    }
+
+    @Override
     public Query has(String propertyName) {
         for (Query query : queries) {
             query.has(propertyName);

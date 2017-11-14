@@ -2286,6 +2286,124 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    public void testGraphQueryMultiPropertyHas() {
+        String agePropertyName = "age.property";
+        graph.prepareVertex("v1", VISIBILITY_A)
+                .setProperty("text", "hello", VISIBILITY_A)
+                .setProperty("text2", "foo", VISIBILITY_A)
+                .setProperty(agePropertyName, 25, VISIBILITY_A)
+                .setProperty("birthDate", new DateOnly(1989, 1, 5), VISIBILITY_A)
+                .setProperty("lastAccessed", createDate(2014, 2, 24, 13, 0, 5), VISIBILITY_A)
+                .setProperty("location", new GeoPoint(38.9544, -77.3464, "Reston, VA"), VISIBILITY_A)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.prepareVertex("v2", VISIBILITY_A)
+                .setProperty("text", "world", VISIBILITY_A)
+                .setProperty("text2", "foo", VISIBILITY_A)
+                .setProperty(agePropertyName, 30, VISIBILITY_A)
+                .setProperty("birthDate", new DateOnly(1984, 1, 5), VISIBILITY_A)
+                .setProperty("lastAccessed", createDate(2014, 2, 25, 13, 0, 5), VISIBILITY_A)
+                .setProperty("location", new GeoPoint(38.9186, -77.2297, "Reston, VA"), VISIBILITY_A)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        QueryResultsIterable<Vertex> vertices = graph.query(AUTHORIZATIONS_A)
+                .has(String.class, Compare.EQUAL, "hello")
+                .vertices();
+        assertResultsCount(1, vertices);
+        assertVertexIds(vertices, "v1");
+
+        vertices = graph.query(AUTHORIZATIONS_A)
+                .has(String.class, Compare.EQUAL, "foo")
+                .vertices();
+        assertResultsCount(2, vertices);
+        assertVertexIdsAnyOrder(vertices, "v1", "v2");
+
+        vertices = graph.query(AUTHORIZATIONS_A)
+                .has(Arrays.asList("text", "text2"), Compare.EQUAL, "hello")
+                .vertices();
+        assertResultsCount(1, vertices);
+        assertVertexIds(vertices, "v1");
+
+        vertices = graph.query(AUTHORIZATIONS_A)
+                .has(Arrays.asList("text", "text2"), Compare.EQUAL, "foo")
+                .vertices();
+        assertResultsCount(2, vertices);
+        assertVertexIdsAnyOrder(vertices, "v1", "v2");
+
+        vertices = graph.query(AUTHORIZATIONS_A)
+                .has(Arrays.asList("text"), Compare.EQUAL, "foo")
+                .vertices();
+        assertResultsCount(0, vertices);
+
+        vertices = graph.query(AUTHORIZATIONS_A)
+                .has(Number.class, Compare.EQUAL, 25)
+                .vertices();
+        assertResultsCount(1, vertices);
+        assertVertexIds(vertices, "v1");
+
+        vertices = graph.query(AUTHORIZATIONS_A)
+                .has(Date.class, Compare.GREATER_THAN, createDate(2014, 2, 25, 0, 0, 0))
+                .vertices();
+        assertResultsCount(1, vertices);
+        assertVertexIds(vertices, "v2");
+
+        vertices = graph.query(AUTHORIZATIONS_A)
+                .has(Date.class, Compare.LESS_THAN, createDate(2014, 2, 25, 0, 0, 0))
+                .vertices();
+        assertResultsCount(2, vertices);
+        assertVertexIdsAnyOrder(vertices, "v1", "v2");
+
+        vertices = graph.query(AUTHORIZATIONS_A)
+                .has(Date.class, Compare.LESS_THAN, new DateOnly(1985, 1, 5))
+                .vertices();
+        assertResultsCount(1, vertices);
+        assertVertexIds(vertices, "v2");
+
+        vertices = graph.query(AUTHORIZATIONS_A)
+                .has(Date.class, Compare.GREATER_THAN, new DateOnly(2000, 1, 1))
+                .vertices();
+        assertResultsCount(2, vertices);
+        assertVertexIdsAnyOrder(vertices, "v1", "v2");
+
+        vertices = graph.query(AUTHORIZATIONS_A)
+                .has(GeoShape.class, GeoCompare.WITHIN, new GeoCircle(38.9186, -77.2297, 1))
+                .vertices();
+        assertResultsCount(1, vertices);
+        assertVertexIds(vertices, "v2");
+
+        vertices = graph.query(AUTHORIZATIONS_A)
+                .has(GeoPoint.class, GeoCompare.WITHIN, new GeoCircle(38.9186, -77.2297, 1))
+                .vertices();
+        assertResultsCount(1, vertices);
+        assertVertexIds(vertices, "v2");
+
+        vertices = graph.query(AUTHORIZATIONS_A)
+                .has(GeoPoint.class, GeoCompare.WITHIN, new GeoCircle(38.9186, -77.2297, 25))
+                .vertices();
+        assertResultsCount(2, vertices);
+        assertVertexIdsAnyOrder(vertices, "v1", "v2");
+
+        try {
+            graph.query(AUTHORIZATIONS_A)
+                    .has(Date.class, GeoCompare.WITHIN, new GeoCircle(38.9186, -77.2297, 1))
+                    .vertices()
+                    .getTotalHits();
+            fail("GeoCompare searches should not be allowed for date fields");
+        } catch (VertexiumNotSupportedException e) {
+            // expected
+        }
+
+        try {
+            graph.query(AUTHORIZATIONS_A)
+                .has(Double.class, Compare.EQUAL, 25)
+                .vertices();
+            fail("Should not allow searching for a dataType that there are no mappings for");
+        } catch (VertexiumException e) {
+            // expected
+        }
+    }
+
+        @Test
     public void testGraphQueryContainsNotIn() {
         graph.prepareVertex("v1", VISIBILITY_A)
                 .setProperty("status", "0", VISIBILITY_A)

@@ -1,5 +1,6 @@
 package org.vertexium.query;
 
+import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.vertexium.*;
@@ -10,6 +11,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Date;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 public abstract class QueryBase implements Query, SimilarToGraphQuery {
     private final Graph graph;
@@ -275,6 +279,18 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
     }
 
     @Override
+    public <T> Query has(Class dataType, Predicate predicate, T value) {
+        this.parameters.addHasContainer(new MultiPropertyHasValueContainer(dataType, predicate, value, getGraph().getPropertyDefinitions()));
+        return this;
+    }
+
+    @Override
+    public <T> Query has(Iterable<String> propertyNames, Predicate predicate, T value) {
+        this.parameters.addHasContainer(new MultiPropertyHasValueContainer(propertyNames, predicate, value, getGraph().getPropertyDefinitions()));
+        return this;
+    }
+
+    @Override
     public Query has(String propertyName) {
         this.parameters.addHasContainer(new HasPropertyContainer(propertyName));
         return this;
@@ -362,7 +378,7 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
         public Predicate predicate;
         private final Collection<PropertyDefinition> propertyDefinitions;
 
-        public HasValueContainer(final String key, final Predicate predicate, final Object value, Collection<PropertyDefinition> propertyDefinitions) {
+        public HasValueContainer(String key, Predicate predicate, Object value, Collection<PropertyDefinition> propertyDefinitions) {
             this.key = key;
             this.value = value;
             this.predicate = predicate;
@@ -398,6 +414,69 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
                     "predicate=" + predicate +
                     ", value=" + value +
                     ", key='" + key + '\'' +
+                    '}';
+        }
+    }
+
+    public static class MultiPropertyHasValueContainer extends HasContainerSplitElementExtendedDataRows {
+        public final Iterable<String> keys;
+        public final Object value;
+        public final Predicate predicate;
+        public final List<HasValueContainer> hasValueContainers;
+        private final Collection<PropertyDefinition> propertyDefinitions;
+
+        public MultiPropertyHasValueContainer(Iterable<String> keys, Predicate predicate, Object value, Collection<PropertyDefinition> propertyDefinitions) {
+            this.keys = keys;
+            this.value = value;
+            this.predicate = predicate;
+            this.propertyDefinitions = propertyDefinitions;
+
+            hasValueContainers = StreamSupport.stream(keys.spliterator(), false)
+                    .map(key -> new HasValueContainer(key, predicate, value, propertyDefinitions))
+                    .collect(Collectors.toList());
+        }
+
+        public MultiPropertyHasValueContainer(Class dataType, Predicate predicate, Object value, Collection<PropertyDefinition> propertyDefinitions) {
+            this.value = value;
+            this.predicate = predicate;
+            this.propertyDefinitions = propertyDefinitions;
+            this.keys = propertyDefinitions.stream()
+                    .filter(propertyDefinition -> isPropertyOfType(propertyDefinition, dataType))
+                    .map(PropertyDefinition::getPropertyName)
+                    .collect(Collectors.toList());
+
+            hasValueContainers = StreamSupport.stream(keys.spliterator(), false)
+                    .map(key -> new HasValueContainer(key, predicate, value, propertyDefinitions))
+                    .collect(Collectors.toList());
+
+            if (hasValueContainers.isEmpty()) {
+                throw new VertexiumException("Invalid query parameters, no properties of type " + dataType.getName() + " found");
+            }
+        }
+
+        @Override
+        protected boolean isMatch(ExtendedDataRow extendedDataRow) {
+            return hasValueContainers.stream().anyMatch(hvc -> hvc.isMatch(extendedDataRow));
+        }
+
+        @Override
+        protected boolean isMatch(Element element) {
+            return hasValueContainers.stream().anyMatch(hvc -> hvc.isMatch(element));
+        }
+
+        private boolean isPropertyOfType(PropertyDefinition propertyDefinition, Class dataType) {
+            boolean propertyIsDate = DateOnly.class.isAssignableFrom(propertyDefinition.getDataType()) || Date.class.isAssignableFrom(propertyDefinition.getDataType());
+            boolean dataTypeIsDate = DateOnly.class.isAssignableFrom(dataType) || Date.class.isAssignableFrom(dataType);
+
+            return dataType.isAssignableFrom(propertyDefinition.getDataType()) || (propertyIsDate && dataTypeIsDate);
+        }
+
+        @Override
+        public String toString() {
+            return this.getClass().getName() + "{" +
+                    "predicate=" + predicate +
+                    ", value=" + value +
+                    ", keys='" + Joiner.on(", ").join(keys) + '\'' +
                     '}';
         }
     }
