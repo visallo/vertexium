@@ -3,6 +3,7 @@
 * Added: Added a has method to the Query class to allow searches on all properties of a particular data type.
 * Added: Added a has method to the Query class to allow searches for a value across multiple properties.
 * Added: Implemented support all compare operators for DateOnly field types when using Elasticsearch 5.
+* Fixed: Queries with both a query string and aggregations were throwing a "not implemented" exception in the Elasticsearch 5 plugin. 
 
 # v3.0.1
 * Changed: Find Path to not return a path that contains one or more vertices that is can't be retrieved because of visibility restrictions

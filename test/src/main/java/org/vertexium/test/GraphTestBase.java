@@ -5412,10 +5412,16 @@ public abstract class GraphTestBase {
         assertEquals(2L, (long) vertexPropertyCountByValue.get("Joseph"));
 
         Map<Object, Long> edgePropertyCountByValue = queryGraphQueryWithTermsAggregation(Edge.LABEL_PROPERTY_NAME, ElementType.EDGE, AUTHORIZATIONS_A_AND_B);
-        assumeTrue("terms aggregation not supported", vertexPropertyCountByValue != null);
+        assumeTrue("terms aggregation not supported", edgePropertyCountByValue != null);
         assertEquals(2, edgePropertyCountByValue.size());
         assertEquals(2L, (long) edgePropertyCountByValue.get("label1"));
         assertEquals(1L, (long) edgePropertyCountByValue.get("label2"));
+
+        vertexPropertyCountByValue = queryGraphQueryWithTermsAggregation("Joe", "name", ElementType.VERTEX, AUTHORIZATIONS_EMPTY);
+        assumeTrue("terms aggregation not supported", vertexPropertyCountByValue != null);
+        assertEquals(2, vertexPropertyCountByValue.size());
+        assertEquals(2L, (long) vertexPropertyCountByValue.get("Joe"));
+        assertEquals(searchIndexFieldLevelSecurity ? 1L : 2L, (long) vertexPropertyCountByValue.get("Joseph"));
     }
 
     private boolean isSearchIndexFieldLevelSecuritySupported() {
@@ -5482,14 +5488,19 @@ public abstract class GraphTestBase {
     }
 
     private Map<Object, Long> queryGraphQueryWithTermsAggregation(String propertyName, ElementType elementType, Authorizations authorizations) {
-        Query q = graph.query(authorizations).limit(0);
+        return queryGraphQueryWithTermsAggregation(null, propertyName, elementType, authorizations);
+    }
+
+    private Map<Object, Long> queryGraphQueryWithTermsAggregation(String queryString, String propertyName, ElementType elementType, Authorizations authorizations) {
+        Query q = (queryString == null ? graph.query(authorizations) : graph.query(queryString, authorizations)).limit(0);
         TermsAggregation agg = new TermsAggregation("terms-count", propertyName);
         if (!q.isAggregationSupported(agg)) {
             LOGGER.warn("%s unsupported", agg.getClass().getName());
             return null;
         }
         q.addAggregation(agg);
-        TermsResult aggregationResult = (elementType == ElementType.VERTEX ? q.vertices() : q.edges()).getAggregationResult("terms-count", TermsResult.class);
+        QueryResultsIterable<? extends Element> elements = elementType == ElementType.VERTEX ? q.vertices() : q.edges();
+        TermsResult aggregationResult = elements.getAggregationResult("terms-count", TermsResult.class);
         return termsBucketToMap(aggregationResult.getBuckets());
     }
 

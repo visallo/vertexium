@@ -10,6 +10,7 @@ import org.elasticsearch.index.query.QueryStringQueryBuilder;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 public class VertexiumQueryStringQueryBuilder extends QueryStringQueryBuilder {
@@ -25,12 +26,22 @@ public class VertexiumQueryStringQueryBuilder extends QueryStringQueryBuilder {
 
     @Override
     protected void doWriteTo(StreamOutput out) throws IOException {
-        throw new RuntimeException("not implemented");
+        super.doWriteTo(out);
+        out.writeStringArray(authorizations);
     }
 
     @Override
     protected void doXContent(XContentBuilder builder, Params params) throws IOException {
-        throw new RuntimeException("not implemented");
+        builder.startObject("vertexium_query_string");
+        super.doXContent(builder, params);
+
+        builder.startArray("authorizations");
+        for (String authorization : authorizations) {
+            builder.value(authorization);
+        }
+        builder.endArray();
+
+        builder.endObject();
     }
 
     @Override
@@ -41,12 +52,14 @@ public class VertexiumQueryStringQueryBuilder extends QueryStringQueryBuilder {
 
     @Override
     protected boolean doEquals(QueryStringQueryBuilder other) {
-        throw new RuntimeException("not implemented");
+        return other instanceof VertexiumQueryStringQueryBuilder &&
+                super.doEquals(other) &&
+                Objects.deepEquals(this.authorizations, ((VertexiumQueryStringQueryBuilder)other).authorizations);
     }
 
     @Override
     protected int doHashCode() {
-        throw new RuntimeException("not implemented");
+        return Objects.hash(super.doHashCode(), authorizations);
     }
 
     @Override
