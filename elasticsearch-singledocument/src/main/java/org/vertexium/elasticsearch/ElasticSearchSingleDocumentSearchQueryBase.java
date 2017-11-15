@@ -48,6 +48,7 @@ import org.vertexium.util.VertexiumLoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.vertexium.elasticsearch.ElasticsearchSingleDocumentSearchIndex.HIDDEN_VERTEX_FIELD_NAME;
 
@@ -169,6 +170,12 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase {
         for (HasContainer has : getParameters().getHasContainers()) {
             if (has instanceof HasValueContainer) {
                 filters.add(getFiltersForHasValueContainer((HasValueContainer) has));
+            } else if (has instanceof MultiPropertyHasValueContainer) {
+                MultiPropertyHasValueContainer multiHas = (MultiPropertyHasValueContainer) has;
+                List<FilterBuilder> filterBuilders = multiHas.hasValueContainers.stream()
+                        .map(this::getFiltersForHasValueContainer)
+                        .collect(Collectors.toList());
+                filters.add(getSingleFilterOrOrTheFilters(filterBuilders, has));
             } else if (has instanceof HasPropertyContainer) {
                 filters.add(getFilterForHasPropertyContainer((HasPropertyContainer) has));
             } else if (has instanceof HasNotPropertyContainer) {

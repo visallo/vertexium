@@ -214,6 +214,12 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
         for (HasContainer has : getParameters().getHasContainers()) {
             if (has instanceof HasValueContainer) {
                 filters.add(getFiltersForHasValueContainer((HasValueContainer) has));
+            } else if (has instanceof MultiPropertyHasValueContainer) {
+                MultiPropertyHasValueContainer multiHas = (MultiPropertyHasValueContainer) has;
+                List<QueryBuilder> queryBuilders = multiHas.hasValueContainers.stream()
+                        .map(this::getFiltersForHasValueContainer)
+                        .collect(Collectors.toList());
+                filters.add(getSingleFilterOrOrTheFilters(queryBuilders, has));
             } else if (has instanceof HasPropertyContainer) {
                 filters.add(getFilterForHasPropertyContainer((HasPropertyContainer) has));
             } else if (has instanceof HasNotPropertyContainer) {
@@ -828,25 +834,37 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
             }
             switch (compare) {
                 case EQUAL:
-                    if (value instanceof DateOnly) {
-                        DateOnly dateOnlyValue = ((DateOnly) value);
-                        String lower = dateOnlyValue.toString() + "T00:00:00.000Z";
-                        String upper = dateOnlyValue.toString() + "T23:59:59.999Z";
+                    if (has.value instanceof DateOnly) {
+                        DateTime dateTimeValue = ((DateTime) value);
+                        DateTime lower = dateTimeValue.withTime(0, 0, 0, 0);
+                        DateTime upper = dateTimeValue.withTime(23, 59, 59, 999);
                         filters.add(QueryBuilders.rangeQuery(key).gte(lower).lte(upper));
                     } else {
                         filters.add(QueryBuilders.termQuery(key, value));
                     }
                     break;
                 case GREATER_THAN_EQUAL:
+                    if (has.value instanceof DateOnly) {
+                        value = ((DateTime) value).withTime(0, 0, 0, 0);
+                    }
                     filters.add(QueryBuilders.rangeQuery(key).gte(value));
                     break;
                 case GREATER_THAN:
+                    if (has.value instanceof DateOnly) {
+                        value = ((DateTime) value).withTime(23, 59, 59, 999);
+                    }
                     filters.add(QueryBuilders.rangeQuery(key).gt(value));
                     break;
                 case LESS_THAN_EQUAL:
+                    if (has.value instanceof DateOnly) {
+                        value = ((DateTime) value).withTime(23, 59, 59, 999);
+                    }
                     filters.add(QueryBuilders.rangeQuery(key).lte(value));
                     break;
                 case LESS_THAN:
+                    if (has.value instanceof DateOnly) {
+                        value = ((DateTime) value).withTime(0, 0, 0, 0);
+                    }
                     filters.add(QueryBuilders.rangeQuery(key).lt(value));
                     break;
                 case NOT_EQUAL:
@@ -860,6 +878,9 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
     }
 
     private Object convertQueryValue(Object value) {
+        if (value instanceof DateOnly) {
+            value = ((DateOnly) value).getDate();
+        }
         if (value instanceof Date) {
             return new DateTime(((Date) value).getTime());
         }

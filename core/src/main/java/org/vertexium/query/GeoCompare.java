@@ -2,6 +2,7 @@ package org.vertexium.query;
 
 import org.vertexium.Property;
 import org.vertexium.PropertyDefinition;
+import org.vertexium.VertexiumNotSupportedException;
 import org.vertexium.type.GeoShape;
 
 import java.util.Collection;
@@ -39,6 +40,9 @@ public enum GeoCompare implements Predicate {
 
     @Override
     public void validate(PropertyDefinition propertyDefinition) {
+        if (!GeoShape.class.isAssignableFrom(propertyDefinition.getDataType())) {
+            throw new VertexiumNotSupportedException("GeoCompare predicates are not allowed for properties of type " + propertyDefinition.getDataType().getName());
+        }
     }
 
 

@@ -178,6 +178,30 @@ public interface Query {
     <T> Query has(String propertyName, Predicate predicate, T value);
 
     /**
+     * Adds a filter to the query.
+     *
+     * @param propertyNames All properties to query on. A match in any of the given properties will cause a document to match.
+     * @param predicate     One of {@link Compare},
+     *                      {@link TextPredicate},
+     *                      or {@link GeoCompare}.
+     * @param value         The value of the property to query for.
+     * @return The query object, allowing you to chain methods.
+     */
+    <T> Query has(Iterable<String> propertyNames, Predicate predicate, T value);
+
+    /**
+     * Adds a filter to the query.
+     *
+     * @param dataType     All properties with a matching datatype will be queried on. A match in any of the selected properties will cause a document to match.
+     * @param predicate    One of {@link Compare},
+     *                     {@link TextPredicate},
+     *                     or {@link GeoCompare}.
+     * @param value        The value of the property to query for.
+     * @return The query object, allowing you to chain methods.
+     */
+    <T> Query has(Class dataType, Predicate predicate, T value);
+
+    /**
      * Skips the given number of items.
      */
     Query skip(int count);
