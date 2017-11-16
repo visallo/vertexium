@@ -10,6 +10,7 @@ import org.vertexium.Authorizations;
 import org.vertexium.VertexiumException;
 
 import java.io.IOException;
+import java.util.Objects;
 
 public class VertexiumQueryStringQueryBuilder extends QueryStringQueryBuilder {
     public static final String NAME = "vertexium_query_string";
@@ -51,12 +52,14 @@ public class VertexiumQueryStringQueryBuilder extends QueryStringQueryBuilder {
 
     @Override
     protected boolean doEquals(QueryStringQueryBuilder other) {
-        throw new VertexiumException("not implemented");
+        return other instanceof VertexiumQueryStringQueryBuilder &&
+                super.doEquals(other) &&
+                Objects.deepEquals(this.authorizations, ((VertexiumQueryStringQueryBuilder)other).authorizations);
     }
 
     @Override
     protected int doHashCode() {
-        throw new VertexiumException("not implemented");
+        return Objects.hash(super.doHashCode(), authorizations);
     }
 
     @Override
