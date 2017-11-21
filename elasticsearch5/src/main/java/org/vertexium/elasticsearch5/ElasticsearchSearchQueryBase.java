@@ -57,6 +57,7 @@ import java.math.BigInteger;
 import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import static org.vertexium.elasticsearch5.Elasticsearch5SearchIndex.FIELDNAME_DOT_REPLACEMENT;
 import static org.vertexium.elasticsearch5.Elasticsearch5SearchIndex.HIDDEN_VERTEX_FIELD_NAME;
@@ -214,23 +215,6 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
         for (HasContainer has : getParameters().getHasContainers()) {
             if (has instanceof HasValueContainer) {
                 filters.add(getFiltersForHasValueContainer((HasValueContainer) has));
-            } else if (has instanceof MultiPropertyHasValueContainer) {
-                MultiPropertyHasValueContainer multiHas = (MultiPropertyHasValueContainer) has;
-                List<QueryBuilder> queryBuilders = multiHas.hasValueContainers.stream()
-                        .map(hasValueContainer -> {
-                            try {
-                                return this.getFiltersForHasValueContainer(hasValueContainer);
-                            } catch (VertexiumNoMatchingPropertiesException vnmpe) {
-                                LOGGER.debug("Property not found in for multi property searching: " + hasValueContainer.key);
-                                return null;
-                            }
-                        })
-                        .filter(Objects::nonNull)
-                        .collect(Collectors.toList());
-                if (queryBuilders.isEmpty()) {
-                    throw new VertexiumNoMatchingPropertiesException("Unable to find any properties to search on for query: " + has.toString());
-                }
-                filters.add(getSingleFilterOrOrTheFilters(queryBuilders, has));
             } else if (has instanceof HasPropertyContainer) {
                 filters.add(getFilterForHasPropertyContainer((HasPropertyContainer) has));
             } else if (has instanceof HasNotPropertyContainer) {
@@ -534,26 +518,32 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
     }
 
     protected QueryBuilder getFilterForHasNotPropertyContainer(HasNotPropertyContainer hasNotProperty) {
-        String[] propertyNames;
-        try {
-            propertyNames = getPropertyNames(hasNotProperty.getKey());
-            if (propertyNames.length == 0) {
-                throw new VertexiumNoMatchingPropertiesException(hasNotProperty.getKey());
-            }
-        } catch (VertexiumNoMatchingPropertiesException ex) {
-            // If we can't find a property this means it doesn't exist on any elements so the hasNot query should
-            // match all records.
+        PropertyDefinition[] propertyDefinitions = StreamSupport.stream(hasNotProperty.getKeys().spliterator(), false)
+                .map(this::getPropertyDefinition)
+                .filter(Objects::nonNull)
+                .toArray(PropertyDefinition[]::new);
+
+        if (propertyDefinitions.length == 0) {
+            // If we can't find a property this means none of them are defined on the graph
             return QueryBuilders.matchAllQuery();
         }
-        PropertyDefinition propDef = getPropertyDefinition(hasNotProperty.getKey());
+
         List<QueryBuilder> filters = new ArrayList<>();
-        for (String propertyName : propertyNames) {
-            filters.add(QueryBuilders.boolQuery().mustNot(QueryBuilders.existsQuery(propertyName)));
-            if (GeoShape.class.isAssignableFrom(propDef.getDataType())) {
-                filters.add(QueryBuilders.boolQuery().mustNot(QueryBuilders.existsQuery(propertyName + Elasticsearch5SearchIndex.GEO_PROPERTY_NAME_SUFFIX)));
-            } else if (isExactMatchPropertyDefinition(propDef)) {
-                filters.add(QueryBuilders.boolQuery().mustNot(QueryBuilders.existsQuery(propertyName + Elasticsearch5SearchIndex.EXACT_MATCH_PROPERTY_NAME_SUFFIX)));
+        for (PropertyDefinition propDef : propertyDefinitions) {
+            String[] propertyNames = getPropertyNames(propDef.getPropertyName());
+            for (String propertyName : propertyNames) {
+                filters.add(QueryBuilders.boolQuery().mustNot(QueryBuilders.existsQuery(propertyName)));
+                if (GeoShape.class.isAssignableFrom(propDef.getDataType())) {
+                    filters.add(QueryBuilders.boolQuery().mustNot(QueryBuilders.existsQuery(propertyName + Elasticsearch5SearchIndex.GEO_PROPERTY_NAME_SUFFIX)));
+                } else if (isExactMatchPropertyDefinition(propDef)) {
+                    filters.add(QueryBuilders.boolQuery().mustNot(QueryBuilders.existsQuery(propertyName + Elasticsearch5SearchIndex.EXACT_MATCH_PROPERTY_NAME_SUFFIX)));
+                }
             }
+        }
+
+        if (filters.isEmpty()) {
+            // If we didn't add any filters, this means it doesn't exist on any elements so the hasNot query should match all records.
+            return QueryBuilders.matchAllQuery();
         }
         return getSingleFilterOrAndTheFilters(filters, hasNotProperty);
     }
@@ -594,23 +584,34 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
     }
 
     protected QueryBuilder getFilterForHasPropertyContainer(HasPropertyContainer hasProperty) {
-        String[] propertyNames = getPropertyNames(hasProperty.getKey());
-        if (propertyNames.length == 0) {
-            throw new VertexiumNoMatchingPropertiesException(hasProperty.getKey());
+        PropertyDefinition[] propertyDefinitions = StreamSupport.stream(hasProperty.getKeys().spliterator(), false)
+                .map(this::getPropertyDefinition)
+                .filter(Objects::nonNull)
+                .toArray(PropertyDefinition[]::new);
+
+        if (propertyDefinitions.length == 0) {
+            // If we didn't find any property definitions, this means none of them are defined on the graph
+            throw new VertexiumNoMatchingPropertiesException(Joiner.on(", ").join(hasProperty.getKeys()));
         }
-        PropertyDefinition propDef = getPropertyDefinition(hasProperty.getKey());
-        if (propDef == null) {
-            throw new VertexiumException("Could not find property definition for property name: " + hasProperty.getKey());
-        }
+
         List<QueryBuilder> filters = new ArrayList<>();
-        for (String propertyName : propertyNames) {
-            filters.add(QueryBuilders.existsQuery(propertyName));
-            if (GeoShape.class.isAssignableFrom(propDef.getDataType())) {
-                filters.add(QueryBuilders.existsQuery(propertyName + Elasticsearch5SearchIndex.GEO_PROPERTY_NAME_SUFFIX));
-            } else if (isExactMatchPropertyDefinition(propDef)) {
-                filters.add(QueryBuilders.existsQuery(propertyName + Elasticsearch5SearchIndex.EXACT_MATCH_PROPERTY_NAME_SUFFIX));
+        for (PropertyDefinition propDef : propertyDefinitions) {
+            String[] propertyNames = getPropertyNames(propDef.getPropertyName());
+            for (String propertyName : propertyNames) {
+                filters.add(QueryBuilders.existsQuery(propertyName));
+                if (GeoShape.class.isAssignableFrom(propDef.getDataType())) {
+                    filters.add(QueryBuilders.existsQuery(propertyName + Elasticsearch5SearchIndex.GEO_PROPERTY_NAME_SUFFIX));
+                } else if (isExactMatchPropertyDefinition(propDef)) {
+                    filters.add(QueryBuilders.existsQuery(propertyName + Elasticsearch5SearchIndex.EXACT_MATCH_PROPERTY_NAME_SUFFIX));
+                }
             }
         }
+
+        if (filters.isEmpty()) {
+            // If we didn't add any filters, this means it doesn't exist on any elements so raise an error
+            throw new VertexiumNoMatchingPropertiesException(Joiner.on(", ").join(hasProperty.getKeys()));
+        }
+
         return getSingleFilterOrOrTheFilters(filters, hasProperty);
     }
 
@@ -629,35 +630,46 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
     }
 
     protected QueryBuilder getFilterForGeoComparePredicate(GeoCompare compare, HasValueContainer has) {
-        String[] keys = getPropertyNames(has.key);
-        if (keys.length == 0) {
-            throw new VertexiumNoMatchingPropertiesException(has.key);
+        PropertyDefinition[] propertyDefinitions = StreamSupport.stream(has.getKeys().spliterator(), false)
+                .map(this::getPropertyDefinition)
+                .filter(Objects::nonNull)
+                .toArray(PropertyDefinition[]::new);
+
+        if (propertyDefinitions.length == 0) {
+            // If we didn't find any property definitions, this means none of them are defined on the graph
+            throw new VertexiumNoMatchingPropertiesException(Joiner.on(", ").join(has.getKeys()));
         }
 
         if (!(has.value instanceof GeoShape)) {
             throw new VertexiumNotSupportedException("GeoCompare searches only accept values of type GeoShape");
         }
 
+        GeoShape value = (GeoShape)has.value;
+        if (value instanceof GeoHash) {
+            value = ((GeoHash) value).toGeoRect();
+        }
+
         List<QueryBuilder> filters = new ArrayList<>();
-        for (String key : keys) {
-            String propertyName = key + Elasticsearch5SearchIndex.GEO_PROPERTY_NAME_SUFFIX;
-
-            String inflatedPropertyName = getSearchIndex().removeVisibilityFromPropertyName(propertyName);
-            PropertyDefinition propertyDefinition = getGraph().getPropertyDefinition(inflatedPropertyName);
-
+        for (PropertyDefinition propertyDefinition : propertyDefinitions) {
             if (propertyDefinition != null && !GeoShape.class.isAssignableFrom(propertyDefinition.getDataType())) {
                 throw new VertexiumNotSupportedException("Unable to perform geo query on field of type: " + propertyDefinition.getDataType().getName());
             }
 
-            GeoShape value = (GeoShape)has.value;
-            if (value instanceof GeoHash) {
-                value = ((GeoHash) value).toGeoRect();
+            String[] propertyNames = Arrays.stream(getPropertyNames(propertyDefinition.getPropertyName()))
+                    .map(propertyName -> propertyName + Elasticsearch5SearchIndex.GEO_PROPERTY_NAME_SUFFIX)
+                    .toArray(String[]::new);
+            for (String propertyName : propertyNames) {
+                ShapeBuilder shapeBuilder = getShapeBuilder(value);
+                ShapeRelation relation = ShapeRelation.getRelationByName(compare.getCompareName());
+                filters.add(new GeoShapeQueryBuilder(propertyName, shapeBuilder).relation(relation));
             }
-
-            ShapeBuilder shapeBuilder = getShapeBuilder(value);
-            ShapeRelation relation = ShapeRelation.getRelationByName(compare.getCompareName());
-            filters.add(new GeoShapeQueryBuilder(propertyName, shapeBuilder).relation(relation));
         }
+
+        if (filters.isEmpty()) {
+            // If we didn't add any filters, this means it doesn't exist on any elements so raise an error
+            throw new VertexiumNoMatchingPropertiesException(Joiner.on(", ").join(has.getKeys()));
+        }
+
         return getSingleFilterOrOrTheFilters(filters, has);
     }
 
@@ -752,36 +764,40 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
     }
 
     protected QueryBuilder getFilterForTextPredicate(TextPredicate compare, HasValueContainer has) {
-        Object value = has.value;
-        String[] keys = getPropertyNames(has.key);
-        if (keys.length == 0) {
-            throw new VertexiumNoMatchingPropertiesException(has.key);
+        String[] propertyNames = StreamSupport.stream(has.getKeys().spliterator(), false)
+                .flatMap(key -> Arrays.stream(getPropertyNames(key)))
+                .toArray(String[]::new);
+        if (propertyNames.length == 0) {
+            throw new VertexiumNoMatchingPropertiesException(Joiner.on(", ").join(has.getKeys()));
         }
+
+        Object value = has.value;
+        if (value instanceof String) {
+            value = ((String) value).toLowerCase(); // using the standard analyzer all strings are lower-cased.
+        }
+
         List<QueryBuilder> filters = new ArrayList<>();
-        for (String key : keys) {
-            if (value instanceof String) {
-                value = ((String) value).toLowerCase(); // using the standard analyzer all strings are lower-cased.
-            }
+        for (String propertyName : propertyNames) {
             switch (compare) {
                 case CONTAINS:
                     if (value instanceof String) {
                         String[] terms = splitStringIntoTerms((String) value);
                         BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
                         for (String term : terms) {
-                            boolQueryBuilder.must(QueryBuilders.termQuery(key, term));
+                            boolQueryBuilder.must(QueryBuilders.termQuery(propertyName, term));
                         }
                         filters.add(boolQueryBuilder);
                     } else {
-                        filters.add(QueryBuilders.termQuery(key, value));
+                        filters.add(QueryBuilders.termQuery(propertyName, value));
                     }
                     break;
                 case DOES_NOT_CONTAIN:
                     BoolQueryBuilder boolQueryBuilder = new BoolQueryBuilder();
                     if (value instanceof String) {
                         String[] terms = splitStringIntoTerms((String) value);
-                        filters.add(boolQueryBuilder.mustNot(QueryBuilders.termsQuery(key, terms)));
+                        filters.add(boolQueryBuilder.mustNot(QueryBuilders.termsQuery(propertyName, terms)));
                     } else {
-                        filters.add(boolQueryBuilder.mustNot(QueryBuilders.termQuery(key, value)));
+                        filters.add(boolQueryBuilder.mustNot(QueryBuilders.termQuery(propertyName, value)));
                     }
                     break;
                 default:
@@ -795,30 +811,35 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
     }
 
     protected QueryBuilder getFilterForContainsPredicate(Contains contains, HasValueContainer has) {
-        String[] keys = getPropertyNames(has.key);
-        if (keys.length == 0) {
+        String[] propertyNames = StreamSupport.stream(has.getKeys().spliterator(), false)
+                .flatMap(key -> Arrays.stream(getPropertyNames(key)))
+                .toArray(String[]::new);
+        if (propertyNames.length == 0) {
             if (contains.equals(Contains.NOT_IN)) {
                 return QueryBuilders.matchAllQuery();
             }
-            throw new VertexiumNoMatchingPropertiesException(has.key);
+            throw new VertexiumNoMatchingPropertiesException(Joiner.on(", ").join(has.getKeys()));
         }
+
+        Object value = has.value;
+        if (value instanceof Iterable) {
+            value = IterableUtils.toArray((Iterable<?>) value, Object.class);
+        }
+
         List<QueryBuilder> filters = new ArrayList<>();
-        for (String key : keys) {
-            if (has.value instanceof Iterable) {
-                has.value = IterableUtils.toArray((Iterable<?>) has.value, Object.class);
-            }
-            if (has.value instanceof String
-                    || has.value instanceof String[]
-                    || (has.value instanceof Object[] && ((Object[]) has.value).length > 0 && ((Object[]) has.value)[0] instanceof String)
+        for (String propertyName : propertyNames) {
+            if (value instanceof String
+                    || value instanceof String[]
+                    || (value instanceof Object[] && ((Object[]) value).length > 0 && ((Object[]) value)[0] instanceof String)
                     ) {
-                key = key + Elasticsearch5SearchIndex.EXACT_MATCH_PROPERTY_NAME_SUFFIX;
+                propertyName = propertyName + Elasticsearch5SearchIndex.EXACT_MATCH_PROPERTY_NAME_SUFFIX;
             }
             switch (contains) {
                 case IN:
-                    filters.add(QueryBuilders.termsQuery(key, (Object[]) has.value));
+                    filters.add(QueryBuilders.termsQuery(propertyName, (Object[]) value));
                     break;
                 case NOT_IN:
-                    filters.add(QueryBuilders.boolQuery().mustNot(QueryBuilders.termsQuery(key, (Object[]) has.value)));
+                    filters.add(QueryBuilders.boolQuery().mustNot(QueryBuilders.termsQuery(propertyName, (Object[]) value)));
                     break;
                 default:
                     throw new VertexiumException("Unexpected Contains predicate " + has.predicate);
@@ -828,20 +849,25 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
     }
 
     protected QueryBuilder getFilterForComparePredicate(Compare compare, HasValueContainer has) {
-        Object value = convertQueryValue(has.value);
-        String[] keys = getPropertyNames(has.key);
-        if (keys.length == 0) {
+        String[] propertyNames = StreamSupport.stream(has.getKeys().spliterator(), false)
+                .flatMap(key -> Arrays.stream(getPropertyNames(key)))
+                .toArray(String[]::new);
+
+        if (propertyNames.length == 0) {
             if (compare.equals(Compare.NOT_EQUAL)) {
                 return QueryBuilders.matchAllQuery();
             }
-            throw new VertexiumNoMatchingPropertiesException(has.key);
+            throw new VertexiumNoMatchingPropertiesException(Joiner.on(", ").join(has.getKeys()));
         }
+
+        Object value = convertQueryValue(has.value);
+
         List<QueryBuilder> filters = new ArrayList<>();
-        for (String key : keys) {
+        for (String propertyName : propertyNames) {
             if (has.value instanceof IpV4Address) {
                 // this value is converted to a string and should not use the exact match field
             } else if (value instanceof String || value instanceof String[]) {
-                key = key + Elasticsearch5SearchIndex.EXACT_MATCH_PROPERTY_NAME_SUFFIX;
+                propertyName = propertyName + Elasticsearch5SearchIndex.EXACT_MATCH_PROPERTY_NAME_SUFFIX;
             }
             switch (compare) {
                 case EQUAL:
@@ -849,37 +875,37 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
                         DateTime dateTimeValue = ((DateTime) value);
                         DateTime lower = dateTimeValue.withTime(0, 0, 0, 0);
                         DateTime upper = dateTimeValue.withTime(23, 59, 59, 999);
-                        filters.add(QueryBuilders.rangeQuery(key).gte(lower).lte(upper));
+                        filters.add(QueryBuilders.rangeQuery(propertyName).gte(lower).lte(upper));
                     } else {
-                        filters.add(QueryBuilders.termQuery(key, value));
+                        filters.add(QueryBuilders.termQuery(propertyName, value));
                     }
                     break;
                 case GREATER_THAN_EQUAL:
                     if (has.value instanceof DateOnly) {
                         value = ((DateTime) value).withTime(0, 0, 0, 0);
                     }
-                    filters.add(QueryBuilders.rangeQuery(key).gte(value));
+                    filters.add(QueryBuilders.rangeQuery(propertyName).gte(value));
                     break;
                 case GREATER_THAN:
                     if (has.value instanceof DateOnly) {
                         value = ((DateTime) value).withTime(23, 59, 59, 999);
                     }
-                    filters.add(QueryBuilders.rangeQuery(key).gt(value));
+                    filters.add(QueryBuilders.rangeQuery(propertyName).gt(value));
                     break;
                 case LESS_THAN_EQUAL:
                     if (has.value instanceof DateOnly) {
                         value = ((DateTime) value).withTime(23, 59, 59, 999);
                     }
-                    filters.add(QueryBuilders.rangeQuery(key).lte(value));
+                    filters.add(QueryBuilders.rangeQuery(propertyName).lte(value));
                     break;
                 case LESS_THAN:
                     if (has.value instanceof DateOnly) {
                         value = ((DateTime) value).withTime(0, 0, 0, 0);
                     }
-                    filters.add(QueryBuilders.rangeQuery(key).lt(value));
+                    filters.add(QueryBuilders.rangeQuery(propertyName).lt(value));
                     break;
                 case NOT_EQUAL:
-                    addNotFilter(filters, key, value);
+                    addNotFilter(filters, propertyName, value);
                     break;
                 default:
                     throw new VertexiumException("Unexpected Compare predicate " + has.predicate);

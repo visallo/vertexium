@@ -2295,6 +2295,7 @@ public abstract class GraphTestBase {
         graph.prepareVertex("v1", VISIBILITY_A)
                 .setProperty("text", "hello", VISIBILITY_A)
                 .setProperty("text2", "foo", VISIBILITY_A)
+                .setProperty("text3", "bar", VISIBILITY_A)
                 .setProperty(agePropertyName, 25, VISIBILITY_A)
                 .setProperty("birthDate", new DateOnly(1989, 1, 5), VISIBILITY_A)
                 .setProperty("lastAccessed", createDate(2014, 2, 24, 13, 0, 5), VISIBILITY_A)
@@ -2311,6 +2312,49 @@ public abstract class GraphTestBase {
         graph.flush();
 
         QueryResultsIterable<Vertex> vertices = graph.query(AUTHORIZATIONS_A)
+                .has(String.class)
+                .vertices();
+        assertResultsCount(2, vertices);
+        assertVertexIdsAnyOrder(vertices, "v1", "v2");
+
+        vertices = graph.query(AUTHORIZATIONS_A)
+                .hasNot(String.class)
+                .vertices();
+        assertResultsCount(0, vertices);
+
+        try {
+            graph.query(AUTHORIZATIONS_A)
+                    .has(Double.class)
+                    .vertices();
+            fail("Should not allow searching for a dataType that there are no mappings for");
+        } catch (VertexiumException ve) {
+            // expected
+        }
+
+        vertices = graph.query(AUTHORIZATIONS_A)
+                .has(Float.class)
+                .vertices();
+        assertResultsCount(0, vertices);
+
+        vertices = graph.query(AUTHORIZATIONS_A)
+                .hasNot(Float.class)
+                .vertices();
+        assertResultsCount(2, vertices);
+        assertVertexIdsAnyOrder(vertices, "v1", "v2");
+
+        vertices = graph.query(AUTHORIZATIONS_A)
+                .has(Arrays.asList("text3", "unusedStringProp"))
+                .vertices();
+        assertResultsCount(1, vertices);
+        assertVertexIds(vertices, "v1");
+
+        vertices = graph.query(AUTHORIZATIONS_A)
+                .hasNot(Arrays.asList("text3", "unusedStringProp"))
+                .vertices();
+        assertResultsCount(1, vertices);
+        assertVertexIds(vertices, "v2");
+
+        vertices = graph.query(AUTHORIZATIONS_A)
                 .has(String.class, Compare.EQUAL, "hello")
                 .vertices();
         assertResultsCount(1, vertices);
@@ -2393,7 +2437,7 @@ public abstract class GraphTestBase {
                     .vertices()
                     .getTotalHits();
             fail("GeoCompare searches should not be allowed for date fields");
-        } catch (VertexiumNotSupportedException e) {
+        } catch (VertexiumException e) {
             // expected
         }
 
@@ -4234,7 +4278,7 @@ public abstract class GraphTestBase {
         assertVertexIds(vertices, "v1");
 
         try {
-        graph.query(AUTHORIZATIONS_A)
+            graph.query(AUTHORIZATIONS_A)
                 .has("exactMatch", TextPredicate.DOES_NOT_CONTAIN, "Test")
                 .vertices();
             fail("Full text queries should not be allowed for properties that are not indexed with FULL_TEXT.");

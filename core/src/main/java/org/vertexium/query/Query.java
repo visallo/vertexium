@@ -158,12 +158,28 @@ public interface Query {
     Query has(String propertyName);
 
     /**
+     * Adds a filter to the query.
+     *
+     * @param propertyNames A document will match if it contains any properties specified.
+     * @return The query object, allowing you to chain methods.
+     */
+    <T> Query has(Iterable<String> propertyNames);
+
+    /**
      * Adds a hasNot filter to the query.
      *
      * @param propertyName The name of the property the element must not contain.
      * @return The query object, allowing you to chain methods.
      */
     Query hasNot(String propertyName);
+
+    /**
+     * Adds a filter to the query.
+     *
+     * @param propertyNames A document will match if it does not contain any properties specified.
+     * @return The query object, allowing you to chain methods.
+     */
+    <T> Query hasNot(Iterable<String> propertyNames);
 
     /**
      * Adds a filter to the query.
@@ -200,6 +216,23 @@ public interface Query {
      * @return The query object, allowing you to chain methods.
      */
     <T> Query has(Class dataType, Predicate predicate, T value);
+
+
+    /**
+     * Adds a has filter to the query.
+     *
+     * @param dataType A document will match if it contains any properties of the specified datatype.
+     * @return The query object, allowing you to chain methods.
+     */
+    <T> Query has(Class dataType);
+
+    /**
+     * Adds a hasNot filter to the query.
+     *
+     * @param dataType A document will match if it does not contain any properties of the specified datatype.
+     * @return The query object, allowing you to chain methods.
+     */
+    <T> Query hasNot(Class dataType);
 
     /**
      * Skips the given number of items.
