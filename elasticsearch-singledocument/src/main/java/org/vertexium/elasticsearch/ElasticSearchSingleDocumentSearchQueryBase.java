@@ -173,8 +173,19 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase {
             } else if (has instanceof MultiPropertyHasValueContainer) {
                 MultiPropertyHasValueContainer multiHas = (MultiPropertyHasValueContainer) has;
                 List<FilterBuilder> filterBuilders = multiHas.hasValueContainers.stream()
-                        .map(this::getFiltersForHasValueContainer)
+                        .map(hasValueContainer -> {
+                            try {
+                                return this.getFiltersForHasValueContainer(hasValueContainer);
+                            } catch (VertexiumNoMatchingPropertiesException vnmpe) {
+                                LOGGER.debug("Property not found in for multi property searching: " + hasValueContainer.key);
+                                return null;
+                            }
+                        })
+                        .filter(Objects::nonNull)
                         .collect(Collectors.toList());
+                if (filterBuilders.isEmpty()) {
+                    throw new VertexiumNoMatchingPropertiesException("Unable to find any properties to search on for query: " + has.toString());
+                }
                 filters.add(getSingleFilterOrOrTheFilters(filterBuilders, has));
             } else if (has instanceof HasPropertyContainer) {
                 filters.add(getFilterForHasPropertyContainer((HasPropertyContainer) has));

@@ -2287,6 +2287,10 @@ public abstract class GraphTestBase {
 
     @Test
     public void testGraphQueryMultiPropertyHas() {
+        graph.defineProperty("unusedFloatProp").dataType(Float.class).define();
+        graph.defineProperty("unusedDateProp").dataType(Date.class).define();
+        graph.defineProperty("unusedStringProp").dataType(String.class).textIndexHint(TextIndexHint.ALL).define();
+
         String agePropertyName = "age.property";
         graph.prepareVertex("v1", VISIBILITY_A)
                 .setProperty("text", "hello", VISIBILITY_A)
@@ -2401,6 +2405,12 @@ public abstract class GraphTestBase {
         } catch (VertexiumException e) {
             // expected
         }
+
+        // If given a property that is defined in the graph but never used, return no results
+        vertices = graph.query(AUTHORIZATIONS_A)
+                .has(Float.class, Compare.EQUAL, 25)
+                .vertices();
+        assertResultsCount(0, vertices);
     }
 
         @Test
