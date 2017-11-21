@@ -1,7 +1,10 @@
 # v3.0.2
 * Fixed: Elasticsearch5 throwing unsupported operation exception when adding/updating a property
 * Added: Added a has method to the Query class to allow searches on all properties of a particular data type.
+* Added: Added a has method to the Query class to allow searches for any elements with/without a property of a particular data type.
 * Added: Added a has method to the Query class to allow searches for a value across multiple properties.
+* Added: Added a has method to the Query class to allow searches for a elements with a list of properties. The presence of any property in the list will cause the document to match.
+* Added: Added a has method to the Query class to allow searches for a elements without a list of properties. The absence of all properties in the list will cause the document to match.
 * Added: Implemented support all compare operators for DateOnly field types when using Elasticsearch 5.
 * Fixed: Queries with both a query string and aggregations were throwing a "not implemented" exception in the Elasticsearch 5 plugin. 
 
