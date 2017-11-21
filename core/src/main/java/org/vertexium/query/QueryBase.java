@@ -2,18 +2,16 @@ package org.vertexium.query;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import org.vertexium.*;
+import org.vertexium.type.GeoShape;
+import org.vertexium.util.IterableUtils;
 import org.vertexium.util.SelectManyIterable;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.Date;
+import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 
 public abstract class QueryBase implements Query, SimilarToGraphQuery {
     private final Graph graph;
@@ -280,13 +278,25 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
 
     @Override
     public <T> Query has(Class dataType, Predicate predicate, T value) {
-        this.parameters.addHasContainer(new MultiPropertyHasValueContainer(dataType, predicate, value, getGraph().getPropertyDefinitions()));
+        this.parameters.addHasContainer(new HasValueContainer(dataType, predicate, value, getGraph().getPropertyDefinitions()));
+        return this;
+    }
+
+    @Override
+    public <T> Query has(Class dataType) {
+        this.parameters.addHasContainer(new HasPropertyContainer(dataType, getGraph().getPropertyDefinitions()));
+        return this;
+    }
+
+    @Override
+    public <T> Query hasNot(Class dataType) {
+        this.parameters.addHasContainer(new HasNotPropertyContainer(dataType, getGraph().getPropertyDefinitions()));
         return this;
     }
 
     @Override
     public <T> Query has(Iterable<String> propertyNames, Predicate predicate, T value) {
-        this.parameters.addHasContainer(new MultiPropertyHasValueContainer(propertyNames, predicate, value, getGraph().getPropertyDefinitions()));
+        this.parameters.addHasContainer(new HasValueContainer(propertyNames, predicate, value, getGraph().getPropertyDefinitions()));
         return this;
     }
 
@@ -297,8 +307,20 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
     }
 
     @Override
+    public <T> Query has(Iterable<String> propertyNames) {
+        this.parameters.addHasContainer(new HasPropertyContainer(propertyNames));
+        return this;
+    }
+
+    @Override
     public Query hasNot(String propertyName) {
         this.parameters.addHasContainer(new HasNotPropertyContainer(propertyName));
+        return this;
+    }
+
+    @Override
+    public <T> Query hasNot(Iterable<String> propertyNames) {
+        this.parameters.addHasContainer(new HasNotPropertyContainer(propertyNames));
         return this;
     }
 
@@ -352,6 +374,13 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
         protected abstract boolean isMatch(Element element);
 
         protected abstract boolean isMatch(ExtendedDataRow row);
+
+        protected boolean isPropertyOfType(PropertyDefinition propertyDefinition, Class dataType) {
+            boolean propertyIsDate = DateOnly.class.isAssignableFrom(propertyDefinition.getDataType()) || Date.class.isAssignableFrom(propertyDefinition.getDataType());
+            boolean dataTypeIsDate = DateOnly.class.isAssignableFrom(dataType) || Date.class.isAssignableFrom(dataType);
+
+            return dataType.isAssignableFrom(propertyDefinition.getDataType()) || (propertyIsDate && dataTypeIsDate);
+        }
     }
 
     public static class SortContainer {
@@ -373,26 +402,58 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
     }
 
     public static class HasValueContainer extends HasContainerSplitElementExtendedDataRows {
-        public String key;
-        public Object value;
-        public Predicate predicate;
+        public final Set<String> keys;
+        public final Object value;
+        public final Predicate predicate;
         private final Collection<PropertyDefinition> propertyDefinitions;
 
         public HasValueContainer(String key, Predicate predicate, Object value, Collection<PropertyDefinition> propertyDefinitions) {
-            this.key = key;
+            this(Collections.singleton(key), predicate, value, propertyDefinitions);
+        }
+
+        public HasValueContainer(Iterable<String> keys, Predicate predicate, Object value, Collection<PropertyDefinition> propertyDefinitions) {
+            this.keys = IterableUtils.toSet(keys);
             this.value = value;
             this.predicate = predicate;
             this.propertyDefinitions = propertyDefinitions;
 
-            PropertyDefinition propertyDefinition = PropertyDefinition.findPropertyDefinition(propertyDefinitions, key);
-            predicate.validate(propertyDefinition);
+            if (this.keys.isEmpty()) {
+                throw new VertexiumException("Invalid query parameters, no property names specified");
+            }
+            validateParameters();
+        }
+
+        public HasValueContainer(Class dataType, Predicate predicate, Object value, Collection<PropertyDefinition> propertyDefinitions) {
+            this.value = value;
+            this.predicate = predicate;
+            this.keys = propertyDefinitions.stream()
+                    .filter(propertyDefinition -> isPropertyOfType(propertyDefinition, dataType))
+                    .map(PropertyDefinition::getPropertyName)
+                    .collect(Collectors.toSet());
+            this.propertyDefinitions = propertyDefinitions;
+
+            if (this.keys.isEmpty()) {
+                throw new VertexiumException("Invalid query parameters, no properties of type " + dataType.getName() + " found");
+            }
+            validateParameters();
+        }
+
+        private void validateParameters() {
+            this.keys.forEach(key -> {
+                PropertyDefinition propertyDefinition = PropertyDefinition.findPropertyDefinition(propertyDefinitions, key);
+                if (predicate instanceof TextPredicate && !propertyDefinition.getTextIndexHints().contains(TextIndexHint.FULL_TEXT)) {
+                    throw new VertexiumException("Check your TextIndexHint settings. Property " + propertyDefinition.getPropertyName() + " is not full text indexed.");
+                } else if (predicate instanceof GeoCompare && !isPropertyOfType(propertyDefinition, GeoShape.class)) {
+                    throw new VertexiumException("GeoCompare query is only allowed for GeoShape types. Property " + propertyDefinition.getPropertyName() + " is not a GeoShape.");
+                }
+            });
         }
 
         @Override
         protected boolean isMatch(ExtendedDataRow extendedDataRow) {
             Iterable<String> propertyNames = extendedDataRow.getPropertyNames();
             for (String propertyName : propertyNames) {
-                if (propertyName.equals(this.key)) {
+                if (this.keys.contains(propertyName)) {
                     PropertyDefinition propertyDefinition = PropertyDefinition.findPropertyDefinition(this.propertyDefinitions, propertyName);
                     Object columnValue = extendedDataRow.getPropertyValue(propertyName);
                     if (this.predicate.evaluate(columnValue, this.value, propertyDefinition)) {
@@ -401,74 +462,21 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
                 }
             }
             return false;
+
         }
 
         @Override
         protected boolean isMatch(Element element) {
-            return this.predicate.evaluate(element.getProperties(this.key), this.value, this.propertyDefinitions);
-        }
-
-        @Override
-        public String toString() {
-            return this.getClass().getName() + "{" +
-                    "predicate=" + predicate +
-                    ", value=" + value +
-                    ", key='" + key + '\'' +
-                    '}';
-        }
-    }
-
-    public static class MultiPropertyHasValueContainer extends HasContainerSplitElementExtendedDataRows {
-        public final Iterable<String> keys;
-        public final Object value;
-        public final Predicate predicate;
-        public final List<HasValueContainer> hasValueContainers;
-        private final Collection<PropertyDefinition> propertyDefinitions;
-
-        public MultiPropertyHasValueContainer(Iterable<String> keys, Predicate predicate, Object value, Collection<PropertyDefinition> propertyDefinitions) {
-            this.keys = keys;
-            this.value = value;
-            this.predicate = predicate;
-            this.propertyDefinitions = propertyDefinitions;
-
-            hasValueContainers = StreamSupport.stream(keys.spliterator(), false)
-                    .map(key -> new HasValueContainer(key, predicate, value, propertyDefinitions))
-                    .collect(Collectors.toList());
-        }
-
-        public MultiPropertyHasValueContainer(Class dataType, Predicate predicate, Object value, Collection<PropertyDefinition> propertyDefinitions) {
-            this.value = value;
-            this.predicate = predicate;
-            this.propertyDefinitions = propertyDefinitions;
-            this.keys = propertyDefinitions.stream()
-                    .filter(propertyDefinition -> isPropertyOfType(propertyDefinition, dataType))
-                    .map(PropertyDefinition::getPropertyName)
-                    .collect(Collectors.toList());
-
-            hasValueContainers = StreamSupport.stream(keys.spliterator(), false)
-                    .map(key -> new HasValueContainer(key, predicate, value, propertyDefinitions))
-                    .collect(Collectors.toList());
-
-            if (hasValueContainers.isEmpty()) {
-                throw new VertexiumException("Invalid query parameters, no properties of type " + dataType.getName() + " found");
+            for (String key : this.keys) {
+                if (this.predicate.evaluate(element.getProperties(key), this.value, this.propertyDefinitions)) {
+                    return true;
+                }
             }
+            return false;
         }
 
-        @Override
-        protected boolean isMatch(ExtendedDataRow extendedDataRow) {
-            return hasValueContainers.stream().anyMatch(hvc -> hvc.isMatch(extendedDataRow));
-        }
-
-        @Override
-        protected boolean isMatch(Element element) {
-            return hasValueContainers.stream().anyMatch(hvc -> hvc.isMatch(element));
-        }
-
-        private boolean isPropertyOfType(PropertyDefinition propertyDefinition, Class dataType) {
-            boolean propertyIsDate = DateOnly.class.isAssignableFrom(propertyDefinition.getDataType()) || Date.class.isAssignableFrom(propertyDefinition.getDataType());
-            boolean dataTypeIsDate = DateOnly.class.isAssignableFrom(dataType) || Date.class.isAssignableFrom(dataType);
-
-            return dataType.isAssignableFrom(propertyDefinition.getDataType()) || (propertyIsDate && dataTypeIsDate);
+        public Iterable<String> getKeys() {
+            return ImmutableSet.copyOf(this.keys);
         }
 
         @Override
@@ -512,16 +520,31 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
     }
 
     public static class HasPropertyContainer extends HasContainerSplitElementExtendedDataRows {
-        private final String key;
+        private Set<String> keys;
 
         public HasPropertyContainer(String key) {
-            this.key = key;
+            this.keys = Collections.singleton(key);
+        }
+
+        public HasPropertyContainer(Iterable<String> keys) {
+            this.keys = IterableUtils.toSet(keys);
+        }
+
+        public HasPropertyContainer(Class dataType, Collection<PropertyDefinition> propertyDefinitions) {
+            this.keys = propertyDefinitions.stream()
+                    .filter(propertyDefinition -> isPropertyOfType(propertyDefinition, dataType))
+                    .map(PropertyDefinition::getPropertyName)
+                    .collect(Collectors.toSet());
+
+            if (this.keys.isEmpty()) {
+                throw new VertexiumException("Invalid query parameters, no properties of type " + dataType.getName() + " found");
+            }
         }
 
         @Override
         protected boolean isMatch(ExtendedDataRow row) {
             for (String propertyName : row.getPropertyNames()) {
-                if (propertyName.equals(this.key)) {
+                if (this.keys.contains(propertyName)) {
                     return true;
                 }
             }
@@ -531,36 +554,51 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
         @Override
         protected boolean isMatch(Element element) {
             for (Property prop : element.getProperties()) {
-                if (prop.getName().equals(this.key)) {
+                if (this.keys.contains(prop.getName())) {
                     return true;
                 }
             }
             return false;
         }
 
-        public String getKey() {
-            return key;
+        public Iterable<String> getKeys() {
+            return ImmutableSet.copyOf(this.keys);
         }
 
         @Override
         public String toString() {
             return this.getClass().getName() + "{" +
-                    "key='" + key + '\'' +
+                    ", keys='" + Joiner.on(", ").join(keys) + '\'' +
                     '}';
         }
     }
 
     public static class HasNotPropertyContainer extends HasContainerSplitElementExtendedDataRows {
-        private final String key;
+        private Set<String> keys;
 
         public HasNotPropertyContainer(String key) {
-            this.key = key;
+            this.keys = Collections.singleton(key);
+        }
+
+        public HasNotPropertyContainer(Iterable<String> keys) {
+            this.keys = IterableUtils.toSet(keys);
+        }
+
+        public HasNotPropertyContainer(Class dataType, Collection<PropertyDefinition> propertyDefinitions) {
+            this.keys = propertyDefinitions.stream()
+                    .filter(propertyDefinition -> isPropertyOfType(propertyDefinition, dataType))
+                    .map(PropertyDefinition::getPropertyName)
+                    .collect(Collectors.toSet());
+
+            if (this.keys.isEmpty()) {
+                throw new VertexiumException("Invalid query parameters, no properties of type " + dataType.getName() + " found");
+            }
         }
 
         @Override
         protected boolean isMatch(ExtendedDataRow row) {
             for (String propertyName : row.getPropertyNames()) {
-                if (propertyName.equals(this.key)) {
+                if (this.keys.contains(propertyName)) {
                     return false;
                 }
             }
@@ -570,21 +608,21 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
         @Override
         protected boolean isMatch(Element element) {
             for (Property prop : element.getProperties()) {
-                if (prop.getName().equals(this.key)) {
+                if (this.keys.contains(prop.getName())) {
                     return false;
                 }
             }
             return true;
         }
 
-        public String getKey() {
-            return key;
+        public Iterable<String> getKeys() {
+            return ImmutableSet.copyOf(this.keys);
         }
 
         @Override
         public String toString() {
             return this.getClass().getName() + "{" +
-                    "key='" + key + '\'' +
+                    ", keys='" + Joiner.on(", ").join(keys) + '\'' +
                     '}';
         }
     }
