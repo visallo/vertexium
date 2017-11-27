@@ -51,7 +51,8 @@ public abstract class GraphTestBase {
     public static final String VISIBILITY_MIXED_CASE_STRING = "MIXED_CASE_a";
     public static final Visibility VISIBILITY_A = new Visibility(VISIBILITY_A_STRING);
     public static final Visibility VISIBILITY_A_AND_B = new Visibility("a&b");
-    public static final Visibility VISIBILITY_B = new Visibility("b");
+    public static final Visibility VISIBILITY_B = new Visibility(VISIBILITY_B_STRING);
+    public static final Visibility VISIBILITY_C = new Visibility(VISIBILITY_C_STRING);
     public static final Visibility VISIBILITY_MIXED_CASE_a = new Visibility("((MIXED_CASE_a))|b");
     public static final Visibility VISIBILITY_EMPTY = new Visibility("");
     public final Authorizations AUTHORIZATIONS_A;
@@ -2457,7 +2458,39 @@ public abstract class GraphTestBase {
         assertResultsCount(0, vertices);
     }
 
-        @Test
+    @Test
+    public void testGraphQueryHasAuthorization() {
+        graph.prepareVertex("v1", VISIBILITY_A)
+                .setProperty("text", "hello", VISIBILITY_A)
+                .save(AUTHORIZATIONS_ALL);
+        graph.prepareVertex("v2", VISIBILITY_A)
+                .setProperty("text.with.dots", "world", VISIBILITY_B)
+                .save(AUTHORIZATIONS_ALL);
+        graph.prepareVertex("v3", VISIBILITY_C)
+                .setProperty("text", "world", VISIBILITY_A)
+                .save(AUTHORIZATIONS_ALL);
+        graph.flush();
+
+        QueryResultsIterable<Vertex> vertices = graph.query(AUTHORIZATIONS_ALL)
+                .hasAuthorization(VISIBILITY_A_STRING)
+                .vertices();
+        assertResultsCount(3, 3, vertices);
+        assertVertexIdsAnyOrder(vertices, "v1", "v2", "v3");
+
+        vertices = graph.query(AUTHORIZATIONS_ALL)
+                .hasAuthorization(VISIBILITY_B_STRING)
+                .vertices();
+        assertResultsCount(1, 1, vertices);
+        assertVertexIdsAnyOrder(vertices, "v2");
+
+        vertices = graph.query(AUTHORIZATIONS_ALL)
+                .hasAuthorization(VISIBILITY_C_STRING)
+                .vertices();
+        assertResultsCount(1, 1, vertices);
+        assertVertexIdsAnyOrder(vertices, "v3");
+    }
+
+    @Test
     public void testGraphQueryContainsNotIn() {
         graph.prepareVertex("v1", VISIBILITY_A)
                 .setProperty("status", "0", VISIBILITY_A)

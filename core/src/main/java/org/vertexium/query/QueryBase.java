@@ -12,6 +12,7 @@ import org.vertexium.util.SelectManyIterable;
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 public abstract class QueryBase implements Query, SimilarToGraphQuery {
     private final Graph graph;
@@ -181,6 +182,18 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
         for (String id : ids) {
             getParameters().addId(id);
         }
+        return this;
+    }
+
+    @Override
+    public Query hasAuthorization(String... authorizations) {
+        getParameters().addHasContainer(new HasAuthorizationContainer(Arrays.asList(authorizations)));
+        return this;
+    }
+
+    @Override
+    public Query hasAuthorization(Iterable<String> authorizations) {
+        getParameters().addHasContainer(new HasAuthorizationContainer(authorizations));
         return this;
     }
 
@@ -397,6 +410,53 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
             return this.getClass().getName() + "{" +
                     "propertyName='" + propertyName + '\'' +
                     ", direction=" + direction +
+                    '}';
+        }
+    }
+
+    public static class HasAuthorizationContainer extends HasContainerSplitElementExtendedDataRows {
+        public final Set<String> authorizations;
+
+        public HasAuthorizationContainer(Iterable<String> authorizations) {
+            this.authorizations = IterableUtils.toSet(authorizations);
+        }
+
+        @Override
+        protected boolean isMatch(Element element) {
+            for (String authorization : authorizations) {
+                if (element.getVisibility().hasAuthorization(authorization)) {
+                    return true;
+                }
+
+                boolean propertyMatches = StreamSupport.stream(element.getProperties().spliterator(), false)
+                        .anyMatch(property -> property.getVisibility().hasAuthorization(authorization));
+                if (propertyMatches) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        @Override
+        protected boolean isMatch(ExtendedDataRow row) {
+            for (String authorization : authorizations) {
+                boolean propertyMatches = StreamSupport.stream(row.getProperties().spliterator(), false)
+                        .anyMatch(property -> property.getVisibility().hasAuthorization(authorization));
+                if (propertyMatches) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public Iterable<String> getAuthorizations() {
+            return authorizations;
+        }
+
+        @Override
+        public String toString() {
+            return this.getClass().getName() + "{" +
+                    ", authorizations='" + Joiner.on(", ").join(authorizations) + '\'' +
                     '}';
         }
     }

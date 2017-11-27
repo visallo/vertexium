@@ -115,6 +115,10 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
         this.serverPluginInstalled = checkPluginInstalled(this.client);
     }
 
+    public PropertyNameVisibilitiesStore getPropertyNameVisibilitiesStore() {
+        return propertyNameVisibilitiesStore;
+    }
+
     protected Client createClient(ElasticSearchSearchIndexConfiguration config) {
         if (config.isInProcessNode()) {
             return createInProcessNode(config);
@@ -851,6 +855,10 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
 
     public String[] getAllMatchingPropertyNames(Graph graph, String propertyName, Authorizations authorizations) {
         Collection<String> hashes = this.propertyNameVisibilitiesStore.getHashes(graph, propertyName, authorizations);
+        return addHashesToPropertyName(propertyName, hashes);
+    }
+
+    public String[] addHashesToPropertyName(String propertyName, Collection<String> hashes) {
         if (hashes.size() == 0) {
             return new String[0];
         }

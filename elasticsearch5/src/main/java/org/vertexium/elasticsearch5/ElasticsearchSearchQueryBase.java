@@ -221,6 +221,8 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
                 filters.add(getFilterForHasNotPropertyContainer((HasNotPropertyContainer) has));
             } else if (has instanceof HasExtendedData) {
                 filters.add(getFilterForHasExtendedData((HasExtendedData) has));
+            } else if (has instanceof HasAuthorizationContainer) {
+                filters.add(getFilterForHasAuthorizationContainer((HasAuthorizationContainer) has));
             } else {
                 throw new VertexiumException("Unexpected type " + has.getClass().getName());
             }
@@ -581,6 +583,40 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
             throw new VertexiumException("Cannot include a hasExtendedData clause with all nulls");
         }
         return boolQuery;
+    }
+
+    protected QueryBuilder getFilterForHasAuthorizationContainer(HasAuthorizationContainer hasAuthorization) {
+        PropertyNameVisibilitiesStore visibilitiesStore = getSearchIndex().getPropertyNameVisibilitiesStore();
+        Authorizations auths = getParameters().getAuthorizations();
+        Graph graph = getGraph();
+
+        Set<String> hashes = StreamSupport.stream(hasAuthorization.getAuthorizations().spliterator(), false)
+                .flatMap(authorization -> visibilitiesStore.getHashesWithAuthorization(graph, authorization, auths).stream())
+                .collect(Collectors.toSet());
+
+        List<QueryBuilder> filters = new ArrayList<>();
+        for (PropertyDefinition propertyDefinition : graph.getPropertyDefinitions()) {
+            String propertyName = propertyDefinition.getPropertyName();
+
+            Set<String> matchingPropertyHashes = visibilitiesStore.getHashes(graph, propertyName, auths).stream()
+                    .filter(hashes::contains)
+                    .collect(Collectors.toSet());
+            for (String fieldName : getSearchIndex().addHashesToPropertyName(propertyName, matchingPropertyHashes)) {
+                filters.add(QueryBuilders.existsQuery(fieldName.replace(".", FIELDNAME_DOT_REPLACEMENT)));
+            }
+        }
+
+        Collection<String> elementTypeHashes = visibilitiesStore.getHashes(graph, Elasticsearch5SearchIndex.ELEMENT_TYPE_FIELD_NAME, auths);
+        Collection<String> matchingElementTypeHashes = elementTypeHashes.stream().filter(hashes::contains).collect(Collectors.toSet());
+        for (String elementTypeFieldName : getSearchIndex().addHashesToPropertyName(Elasticsearch5SearchIndex.ELEMENT_TYPE_FIELD_NAME, matchingElementTypeHashes)) {
+            filters.add(QueryBuilders.existsQuery(elementTypeFieldName));
+        }
+
+        if (filters.isEmpty()) {
+            throw new VertexiumNoMatchingPropertiesException(Joiner.on(", ").join(hasAuthorization.getAuthorizations()));
+        }
+
+        return getSingleFilterOrOrTheFilters(filters, hasAuthorization);
     }
 
     protected QueryBuilder getFilterForHasPropertyContainer(HasPropertyContainer hasProperty) {

@@ -133,6 +133,10 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
         geoShapeErrorPct = config.getString(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + CONFIG_PROPERTY_NAME_GEOSHAPE_ERROR_PCT, DEFAULT_GEOSHAPE_ERROR_PCT);
     }
 
+    public PropertyNameVisibilitiesStore getPropertyNameVisibilitiesStore() {
+        return propertyNameVisibilitiesStore;
+    }
+
     protected Client createClient(ElasticsearchSearchIndexConfiguration config) {
         if (config.isInProcessNode()) {
             return createInProcessNode(config);
@@ -864,6 +868,10 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
 
     public String[] getAllMatchingPropertyNames(Graph graph, String propertyName, Authorizations authorizations) {
         Collection<String> hashes = this.propertyNameVisibilitiesStore.getHashes(graph, propertyName, authorizations);
+        return addHashesToPropertyName(propertyName, hashes);
+    }
+
+    public String[] addHashesToPropertyName(String propertyName, Collection<String> hashes) {
         if (hashes.size() == 0) {
             return new String[0];
         }

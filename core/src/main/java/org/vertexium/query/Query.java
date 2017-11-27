@@ -95,6 +95,22 @@ public interface Query {
     Query hasEdgeLabel(Collection<String> edgeLabels);
 
     /**
+     * Adds an authorization filter to the query.
+     *
+     * @param authorizations An element will match if it or any of its properties use one of the specified authorizations.
+     * @return The query object, allowing you to chain methods.
+     */
+    Query hasAuthorization(String... authorizations);
+
+    /**
+     * Adds an authorization filter to the query.
+     *
+     * @param authorizations An element will match if it or any of its properties use one of the specified authorizations.
+     * @return The query object, allowing you to chain methods.
+     */
+    Query hasAuthorization(Iterable<String> authorizations);
+
+    /**
      * Adds a extended data element filter to the query. This will query any table.
      *
      * @param elementType The type of element.

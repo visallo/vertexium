@@ -231,6 +231,22 @@ public class CompositeGraphQuery implements Query {
     }
 
     @Override
+    public Query hasAuthorization(String... authorizations) {
+        for (Query query : queries) {
+            query.hasAuthorization(authorizations);
+        }
+        return this;
+    }
+
+    @Override
+    public Query hasAuthorization(Iterable<String> authorizations) {
+        for (Query query : queries) {
+            query.hasAuthorization(authorizations);
+        }
+        return this;
+    }
+
+    @Override
     public Query hasExtendedData(ElementType elementType, String elementId) {
         return hasExtendedData(elementType, elementId, null);
     }
