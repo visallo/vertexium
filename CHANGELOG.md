@@ -1,3 +1,6 @@
+# v3.0.3
+* Added: Added a hasAuthorization method to the Query class to allow searches for any element that uses an authorization string or strings.
+
 # v3.0.2
 * Fixed: Elasticsearch5 throwing unsupported operation exception when adding/updating a property
 * Added: Added a has method to the Query class to allow searches on all properties of a particular data type.

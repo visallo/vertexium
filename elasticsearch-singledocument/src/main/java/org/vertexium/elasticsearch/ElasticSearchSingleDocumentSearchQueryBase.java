@@ -48,6 +48,7 @@ import org.vertexium.util.VertexiumLoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 import static org.vertexium.elasticsearch.ElasticsearchSingleDocumentSearchIndex.HIDDEN_VERTEX_FIELD_NAME;
@@ -176,6 +177,8 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase {
                 filters.add(getFilterForHasNotPropertyContainer((HasNotPropertyContainer) has));
             } else if (has instanceof HasExtendedData) {
                 filters.add(getFilterForHasExtendedData((HasExtendedData) has));
+            } else if (has instanceof HasAuthorizationContainer) {
+                filters.add(getFilterForHasAuthorizationContainer((HasAuthorizationContainer) has));
             } else {
                 throw new VertexiumException("Unexpected type " + has.getClass().getName());
             }
@@ -538,6 +541,40 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase {
             throw new VertexiumException("Cannot include a hasExtendedData clause with all nulls");
         }
         return FilterBuilders.andFilter(filters.toArray(new FilterBuilder[filters.size()]));
+    }
+
+    protected FilterBuilder getFilterForHasAuthorizationContainer(HasAuthorizationContainer hasAuthorization) {
+        PropertyNameVisibilitiesStore visibilitiesStore = getSearchIndex().getPropertyNameVisibilitiesStore();
+        Authorizations auths = getParameters().getAuthorizations();
+        Graph graph = getGraph();
+
+        Set<String> hashes = StreamSupport.stream(hasAuthorization.getAuthorizations().spliterator(), false)
+                .flatMap(authorization -> visibilitiesStore.getHashesWithAuthorization(graph, authorization, auths).stream())
+                .collect(Collectors.toSet());
+
+        List<FilterBuilder> filters = new ArrayList<>();
+        for (PropertyDefinition propertyDefinition : graph.getPropertyDefinitions()) {
+            String propertyName = propertyDefinition.getPropertyName();
+
+            Set<String> matchingPropertyHashes = visibilitiesStore.getHashes(graph, propertyName, auths).stream()
+                    .filter(hashes::contains)
+                    .collect(Collectors.toSet());
+            for (String fieldName : getSearchIndex().addHashesToPropertyName(propertyName, matchingPropertyHashes)) {
+                filters.add(FilterBuilders.existsFilter(fieldName));
+            }
+        }
+
+        Collection<String> elementTypeHashes = visibilitiesStore.getHashes(graph, ElasticsearchSingleDocumentSearchIndex.ELEMENT_TYPE_FIELD_NAME, auths);
+        Collection<String> matchingElementTypeHashes = elementTypeHashes.stream().filter(hashes::contains).collect(Collectors.toSet());
+        for (String elementTypeFieldName : getSearchIndex().addHashesToPropertyName(ElasticsearchSingleDocumentSearchIndex.ELEMENT_TYPE_FIELD_NAME, matchingElementTypeHashes)) {
+            filters.add(FilterBuilders.existsFilter(elementTypeFieldName));
+        }
+
+        if (filters.isEmpty()) {
+            throw new VertexiumNoMatchingPropertiesException(Joiner.on(", ").join(hasAuthorization.getAuthorizations()));
+        }
+
+        return getSingleFilterOrOrTheFilters(filters, hasAuthorization);
     }
 
     protected FilterBuilder getFilterForHasPropertyContainer(HasPropertyContainer hasProperty) {

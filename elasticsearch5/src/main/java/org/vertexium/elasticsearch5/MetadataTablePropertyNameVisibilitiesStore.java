@@ -18,6 +18,18 @@ public class MetadataTablePropertyNameVisibilitiesStore extends PropertyNameVisi
     private static final Charset UTF8 = Charset.forName("utf8");
     private Map<String, Visibility> visibilityCache = new HashMap<>();
 
+    public Collection<String> getHashesWithAuthorization(Graph graph, String authorization, Authorizations authorizations) {
+        List<String> hashes = new ArrayList<>();
+        for (GraphMetadataEntry metadata : graph.getMetadataWithPrefix(HASH_TO_VISIBILITY)) {
+            Visibility visibility = getVisibility((String) metadata.getValue());
+            if (authorizations.canRead(visibility) && visibility.hasAuthorization(authorization)) {
+                String hash = metadata.getKey().substring(HASH_TO_VISIBILITY.length());
+                hashes.add(hash);
+            }
+        }
+        return hashes;
+    }
+
     public Collection<String> getHashes(Graph graph, String propertyName, Authorizations authorizations) {
         List<String> results = new ArrayList<>();
         String prefix = getPropertyNameVisibilityToHashPrefix(propertyName);

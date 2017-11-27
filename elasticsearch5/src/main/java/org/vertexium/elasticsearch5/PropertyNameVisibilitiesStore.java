@@ -12,4 +12,6 @@ public abstract class PropertyNameVisibilitiesStore {
     public abstract String getHash(Graph graph, String propertyName, Visibility visibility);
 
     public abstract Visibility getVisibilityFromHash(Graph graph, String visibilityHash);
+
+    public abstract Collection<String> getHashesWithAuthorization(Graph graph, String authorization, Authorizations authorizations);
 }
