@@ -557,7 +557,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
 
     private void addFieldsMap(XContentBuilder jsonBuilder, Map<String, Object> fields) throws IOException {
         for (Map.Entry<String, Object> property : fields.entrySet()) {
-            String propertyKey = property.getKey().replace(".", FIELDNAME_DOT_REPLACEMENT);
+            String propertyKey = replaceFieldnameDots(property.getKey());
             if (property.getValue() instanceof List) {
                 List list = (List) property.getValue();
                 jsonBuilder.field(propertyKey, list.toArray(new Object[list.size()]));
@@ -864,6 +864,10 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
             return m.group(1);
         }
         throw new VertexiumException("Could not get aggregation name from: " + name);
+    }
+
+    public String replaceFieldnameDots(String fieldName) {
+        return fieldName.replace(".", FIELDNAME_DOT_REPLACEMENT);
     }
 
     public String[] getAllMatchingPropertyNames(Graph graph, String propertyName, Authorizations authorizations) {
@@ -1188,7 +1192,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
                 .startObject()
                 .startObject(ELEMENT_TYPE)
                 .startObject("properties")
-                .startObject(propertyName.replace(".", FIELDNAME_DOT_REPLACEMENT));
+                .startObject(replaceFieldnameDots(propertyName));
 
         addTypeToMapping(mapping, propertyName, dataType, analyzed, exact, sortable);
 
@@ -1240,7 +1244,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
                 if (p == null || p.getPropertyVisibility() == null) {
                     continue;
                 }
-                mapping.field(propertyName.replace(".", FIELDNAME_DOT_REPLACEMENT), p.getPropertyVisibility());
+                mapping.field(replaceFieldnameDots(propertyName), p.getPropertyVisibility());
             }
             mapping.endObject()
                     .endObject()
@@ -1293,7 +1297,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
         for (String p : getAllMatchingPropertyNames(graph, propertyName, authorizations)) {
             String countAggName = "count-" + p;
             PropertyDefinition propertyDefinition = getPropertyDefinition(graph, p);
-            p = p.replace(".", FIELDNAME_DOT_REPLACEMENT);
+            p = replaceFieldnameDots(p);
             if (propertyDefinition != null && propertyDefinition.getTextIndexHints().contains(TextIndexHint.EXACT_MATCH)) {
                 p = p + EXACT_MATCH_PROPERTY_NAME_SUFFIX;
             }
@@ -1487,7 +1491,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
             return;
         }
 
-        List<String> fieldNames = fields.stream().map(field -> field.replace(".", FIELDNAME_DOT_REPLACEMENT)).collect(Collectors.toList());
+        List<String> fieldNames = fields.stream().map(this::replaceFieldnameDots).collect(Collectors.toList());
         if (fieldNames.isEmpty()) {
             return;
         }

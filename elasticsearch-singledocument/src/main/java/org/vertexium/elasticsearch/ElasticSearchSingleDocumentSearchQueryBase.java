@@ -41,10 +41,7 @@ import org.vertexium.type.GeoCircle;
 import org.vertexium.type.GeoHash;
 import org.vertexium.type.GeoPoint;
 import org.vertexium.type.GeoRect;
-import org.vertexium.util.IterableUtils;
-import org.vertexium.util.JoinIterable;
-import org.vertexium.util.VertexiumLogger;
-import org.vertexium.util.VertexiumLoggerFactory;
+import org.vertexium.util.*;
 
 import java.io.IOException;
 import java.util.*;
@@ -548,7 +545,7 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase {
         Authorizations auths = getParameters().getAuthorizations();
         Graph graph = getGraph();
 
-        Set<String> hashes = StreamSupport.stream(hasAuthorization.getAuthorizations().spliterator(), false)
+        Set<String> hashes = StreamUtils.stream(hasAuthorization.getAuthorizations())
                 .flatMap(authorization -> visibilitiesStore.getHashesWithAuthorization(graph, authorization, auths).stream())
                 .collect(Collectors.toSet());
 

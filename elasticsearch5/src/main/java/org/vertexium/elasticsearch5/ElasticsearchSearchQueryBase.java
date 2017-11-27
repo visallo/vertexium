@@ -46,10 +46,7 @@ import org.vertexium.elasticsearch5.utils.InfiniteScrollIterable;
 import org.vertexium.elasticsearch5.utils.PagingIterable;
 import org.vertexium.query.*;
 import org.vertexium.type.*;
-import org.vertexium.util.IterableUtils;
-import org.vertexium.util.JoinIterable;
-import org.vertexium.util.VertexiumLogger;
-import org.vertexium.util.VertexiumLoggerFactory;
+import org.vertexium.util.*;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -59,7 +56,6 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
-import static org.vertexium.elasticsearch5.Elasticsearch5SearchIndex.FIELDNAME_DOT_REPLACEMENT;
 import static org.vertexium.elasticsearch5.Elasticsearch5SearchIndex.HIDDEN_VERTEX_FIELD_NAME;
 
 public class ElasticsearchSearchQueryBase extends QueryBase {
@@ -590,7 +586,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
         Authorizations auths = getParameters().getAuthorizations();
         Graph graph = getGraph();
 
-        Set<String> hashes = StreamSupport.stream(hasAuthorization.getAuthorizations().spliterator(), false)
+        Set<String> hashes = StreamUtils.stream(hasAuthorization.getAuthorizations())
                 .flatMap(authorization -> visibilitiesStore.getHashesWithAuthorization(graph, authorization, auths).stream())
                 .collect(Collectors.toSet());
 
@@ -602,7 +598,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
                     .filter(hashes::contains)
                     .collect(Collectors.toSet());
             for (String fieldName : getSearchIndex().addHashesToPropertyName(propertyName, matchingPropertyHashes)) {
-                filters.add(QueryBuilders.existsQuery(fieldName.replace(".", FIELDNAME_DOT_REPLACEMENT)));
+                filters.add(QueryBuilders.existsQuery(getSearchIndex().replaceFieldnameDots(fieldName)));
             }
         }
 
@@ -972,7 +968,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
     protected String[] getPropertyNames(String propertyName) {
         String[] allMatchingPropertyNames = getSearchIndex().getAllMatchingPropertyNames(getGraph(), propertyName, getParameters().getAuthorizations());
         return Arrays.stream(allMatchingPropertyNames)
-                .map(fieldName -> fieldName.replace(".", FIELDNAME_DOT_REPLACEMENT))
+                .map(getSearchIndex()::replaceFieldnameDots)
                 .collect(Collectors.toList())
                 .toArray(new String[allMatchingPropertyNames.length]);
     }
