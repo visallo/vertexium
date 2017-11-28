@@ -5,6 +5,8 @@ import com.google.common.collect.Lists;
 import org.vertexium.*;
 import org.vertexium.mutation.*;
 import org.vertexium.property.MutablePropertyImpl;
+import org.vertexium.query.ExtendedDataQueryableIterable;
+import org.vertexium.query.QueryableIterable;
 import org.vertexium.search.IndexHint;
 import org.vertexium.util.ConvertingIterable;
 import org.vertexium.util.FilterIterable;
@@ -594,8 +596,12 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> implemen
     }
 
     @Override
-    public Iterable<ExtendedDataRow> getExtendedData(String tableName) {
-        //noinspection unchecked
-        return (Iterable<ExtendedDataRow>) graph.getExtendedDataTable(ElementType.getTypeFromElement(this), id, tableName, authorizations);
+    public QueryableIterable<ExtendedDataRow> getExtendedData(String tableName) {
+        return new ExtendedDataQueryableIterable(
+                getGraph(),
+                this,
+                tableName,
+                graph.getExtendedDataTable(ElementType.getTypeFromElement(this), id, tableName, authorizations)
+        );
     }
 }

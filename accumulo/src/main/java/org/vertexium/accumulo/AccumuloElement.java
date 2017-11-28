@@ -6,6 +6,8 @@ import org.apache.hadoop.io.Text;
 import org.vertexium.*;
 import org.vertexium.accumulo.iterator.ElementIterator;
 import org.vertexium.mutation.*;
+import org.vertexium.query.ExtendedDataQueryableIterable;
+import org.vertexium.query.QueryableIterable;
 
 import java.io.Serializable;
 import java.util.EnumSet;
@@ -182,7 +184,12 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
     public abstract <T extends Element> ExistingElementMutation<T> prepareMutation();
 
     @Override
-    public Iterable<ExtendedDataRow> getExtendedData(String tableName) {
-        return getGraph().getExtendedData(ElementType.getTypeFromElement(this), getId(), tableName, getAuthorizations());
+    public QueryableIterable<ExtendedDataRow> getExtendedData(String tableName) {
+        return new ExtendedDataQueryableIterable(
+                getGraph(),
+                this,
+                tableName,
+                getGraph().getExtendedData(ElementType.getTypeFromElement(this), getId(), tableName, getAuthorizations())
+        );
     }
 }

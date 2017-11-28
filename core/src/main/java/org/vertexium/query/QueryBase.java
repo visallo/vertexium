@@ -90,6 +90,9 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
             items.add(extendedData(fetchHints));
         }
 
+        if (items.size() == 1) {
+            return items.get(0);
+        }
         return new SelectManySearch(items);
     }
 

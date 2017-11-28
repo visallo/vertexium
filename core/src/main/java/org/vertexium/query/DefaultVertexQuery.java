@@ -75,4 +75,12 @@ public class DefaultVertexQuery extends VertexQueryBase implements VertexQuery {
                 allEdges(fetchHints)
         ));
     }
+
+    @Override
+    public boolean isAggregationSupported(Aggregation aggregation) {
+        if (DefaultGraphQueryIterableWithAggregations.isAggregationSupported(aggregation)) {
+            return true;
+        }
+        return super.isAggregationSupported(aggregation);
+    }
 }
