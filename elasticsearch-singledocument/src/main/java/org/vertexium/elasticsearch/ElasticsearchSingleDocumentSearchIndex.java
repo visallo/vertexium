@@ -999,6 +999,11 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
     }
 
     @Override
+    public Query queryExtendedData(Graph graph, Element element, String tableName, String queryString, Authorizations authorizations) {
+        return new DefaultExtendedDataQuery(graph, element, tableName, queryString, authorizations);
+    }
+
+    @Override
     public SimilarToGraphQuery querySimilarTo(Graph graph, String[] similarToFields, String similarToText, Authorizations authorizations) {
         return new ElasticSearchSingleDocumentSearchGraphQuery(
                 getClient(),
@@ -1798,8 +1803,8 @@ public class ElasticsearchSingleDocumentSearchIndex implements SearchIndex, Sear
     protected void createIndex(String indexName) throws IOException {
         CreateIndexResponse createResponse = client.admin().indices().prepareCreate(indexName)
                 .setSettings(ImmutableSettings.settingsBuilder()
-                        .put("number_of_shards", getConfig().getNumberOfShards())
-                        .put("number_of_replicas", getConfig().getNumberOfReplicas())
+                                     .put("number_of_shards", getConfig().getNumberOfShards())
+                                     .put("number_of_replicas", getConfig().getNumberOfReplicas())
                 )
                 .execute().actionGet();
 

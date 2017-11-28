@@ -5614,8 +5614,14 @@ public abstract class GraphTestBase {
                 .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
-        Map<Object, Map<Object, Long>> vertexPropertyCountByValue = queryGraphQueryWithNestedTermsAggregation("name", "gender", AUTHORIZATIONS_A_AND_B);
-        assumeTrue("terms aggregation not supported", vertexPropertyCountByValue != null);
+        Query q = graph.query(AUTHORIZATIONS_A_AND_B).limit(0);
+        TermsAggregation agg = new TermsAggregation("terms-count", "name");
+        agg.addNestedAggregation(new TermsAggregation("nested", "gender"));
+        assumeTrue("terms aggregation not supported", q.isAggregationSupported(agg));
+        q.addAggregation(agg);
+        TermsResult aggregationResult = q.vertices().getAggregationResult("terms-count", TermsResult.class);
+        Map<Object, Map<Object, Long>> vertexPropertyCountByValue = nestedTermsBucketToMap(aggregationResult.getBuckets(), "nested");
+
         assertEquals(2, vertexPropertyCountByValue.size());
         assertEquals(1, vertexPropertyCountByValue.get("Joe").size());
         assertEquals(1L, (long) vertexPropertyCountByValue.get("Joe").get("male"));
@@ -5624,17 +5630,83 @@ public abstract class GraphTestBase {
         assertEquals(2L, (long) vertexPropertyCountByValue.get("Sam").get("female"));
     }
 
-    private Map<Object, Map<Object, Long>> queryGraphQueryWithNestedTermsAggregation(String propertyNameFirst, String propertyNameSecond, Authorizations authorizations) {
-        Query q = graph.query(authorizations).limit(0);
-        TermsAggregation agg = new TermsAggregation("terms-count", propertyNameFirst);
-        agg.addNestedAggregation(new TermsAggregation("nested", propertyNameSecond));
-        if (!q.isAggregationSupported(agg)) {
-            LOGGER.warn("%s unsupported", agg.getClass().getName());
-            return null;
-        }
+    @Test
+    public void testVertexQueryWithNestedTermsAggregation() {
+        graph.defineProperty("name").dataType(String.class).textIndexHint(TextIndexHint.EXACT_MATCH).define();
+        graph.defineProperty("gender").dataType(String.class).textIndexHint(TextIndexHint.EXACT_MATCH).define();
+
+        graph.prepareVertex("v1", VISIBILITY_EMPTY)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.prepareVertex("v2", VISIBILITY_EMPTY)
+                .addPropertyValue("k1", "name", "Joe", VISIBILITY_EMPTY)
+                .addPropertyValue("k1", "gender", "male", VISIBILITY_EMPTY)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.prepareVertex("v3", VISIBILITY_EMPTY)
+                .addPropertyValue("k1", "name", "Sam", VISIBILITY_EMPTY)
+                .addPropertyValue("k1", "gender", "male", VISIBILITY_EMPTY)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.prepareVertex("v4", VISIBILITY_EMPTY)
+                .addPropertyValue("k1", "name", "Sam", VISIBILITY_EMPTY)
+                .addPropertyValue("k1", "gender", "female", VISIBILITY_EMPTY)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.prepareVertex("v5", VISIBILITY_EMPTY)
+                .addPropertyValue("k1", "name", "Sam", VISIBILITY_EMPTY)
+                .addPropertyValue("k1", "gender", "female", VISIBILITY_EMPTY)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.addEdge("v1", "v2", "label1", VISIBILITY_EMPTY, AUTHORIZATIONS_A_AND_B);
+        graph.addEdge("v1", "v3", "label1", VISIBILITY_EMPTY, AUTHORIZATIONS_A_AND_B);
+        graph.addEdge("v1", "v4", "label1", VISIBILITY_EMPTY, AUTHORIZATIONS_A_AND_B);
+        graph.addEdge("v1", "v5", "label1", VISIBILITY_EMPTY, AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        Query q = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B).query(AUTHORIZATIONS_A_AND_B).limit(0);
+        TermsAggregation agg = new TermsAggregation("terms-count", "name");
+        agg.addNestedAggregation(new TermsAggregation("nested", "gender"));
+        assumeTrue("terms aggregation not supported", q.isAggregationSupported(agg));
         q.addAggregation(agg);
         TermsResult aggregationResult = q.vertices().getAggregationResult("terms-count", TermsResult.class);
-        return nestedTermsBucketToMap(aggregationResult.getBuckets(), "nested");
+        Map<Object, Map<Object, Long>> vertexPropertyCountByValue = nestedTermsBucketToMap(aggregationResult.getBuckets(), "nested");
+
+        assertEquals(2, vertexPropertyCountByValue.size());
+        assertEquals(1, vertexPropertyCountByValue.get("Joe").size());
+        assertEquals(1L, (long) vertexPropertyCountByValue.get("Joe").get("male"));
+        assertEquals(2, vertexPropertyCountByValue.get("Sam").size());
+        assertEquals(1L, (long) vertexPropertyCountByValue.get("Sam").get("male"));
+        assertEquals(2L, (long) vertexPropertyCountByValue.get("Sam").get("female"));
+    }
+
+    @Test
+    public void testVertexQueryWithNestedTermsAggregationOnExtendedData() {
+        graph.defineProperty("name").dataType(String.class).textIndexHint(TextIndexHint.EXACT_MATCH).define();
+        graph.defineProperty("gender").dataType(String.class).textIndexHint(TextIndexHint.EXACT_MATCH).define();
+
+        graph.prepareVertex("v1", VISIBILITY_EMPTY)
+                .addExtendedData("t1","r1", "name", "Joe", VISIBILITY_EMPTY)
+                .addExtendedData("t1","r1", "gender", "male", VISIBILITY_EMPTY)
+                .addExtendedData("t1","r2", "name", "Sam", VISIBILITY_EMPTY)
+                .addExtendedData("t1","r2", "gender", "male", VISIBILITY_EMPTY)
+                .addExtendedData("t1","r3", "name", "Sam", VISIBILITY_EMPTY)
+                .addExtendedData("t1","r3", "gender", "female", VISIBILITY_EMPTY)
+                .addExtendedData("t1","r4", "name", "Sam", VISIBILITY_EMPTY)
+                .addExtendedData("t1","r4", "gender", "female", VISIBILITY_EMPTY)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B);
+        Query q = v1.getExtendedData("t1").query(AUTHORIZATIONS_A_AND_B).limit(0);
+        TermsAggregation agg = new TermsAggregation("terms-count", "name");
+        agg.addNestedAggregation(new TermsAggregation("nested", "gender"));
+        assumeTrue("terms aggregation not supported", q.isAggregationSupported(agg));
+        q.addAggregation(agg);
+        TermsResult aggregationResult = q.extendedDataRows().getAggregationResult("terms-count", TermsResult.class);
+        Map<Object, Map<Object, Long>> vertexPropertyCountByValue = nestedTermsBucketToMap(aggregationResult.getBuckets(), "nested");
+
+        assertEquals(2, vertexPropertyCountByValue.size());
+        assertEquals(1, vertexPropertyCountByValue.get("Joe").size());
+        assertEquals(1L, (long) vertexPropertyCountByValue.get("Joe").get("male"));
+        assertEquals(2, vertexPropertyCountByValue.get("Sam").size());
+        assertEquals(1L, (long) vertexPropertyCountByValue.get("Sam").get("male"));
+        assertEquals(2L, (long) vertexPropertyCountByValue.get("Sam").get("female"));
     }
 
     @Test

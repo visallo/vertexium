@@ -2,6 +2,7 @@ package org.vertexium;
 
 import com.google.common.collect.ImmutableSet;
 import org.vertexium.mutation.ExistingElementMutation;
+import org.vertexium.query.QueryableIterable;
 
 import java.util.EnumSet;
 
@@ -303,7 +304,7 @@ public interface Element extends VertexiumObject {
      * @param tableName The name of the table to get rows from.
      * @return Iterable of all the rows.
      */
-    Iterable<ExtendedDataRow> getExtendedData(String tableName);
+    QueryableIterable<ExtendedDataRow> getExtendedData(String tableName);
 
     /**
      * Fetch hints used when fetching this element.

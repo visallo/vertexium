@@ -46,6 +46,7 @@ import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.elasticsearch.transport.client.PreBuiltTransportClient;
 import org.vertexium.*;
+import org.vertexium.Edge;
 import org.vertexium.elasticsearch5.utils.ElasticsearchExtendedDataIdUtils;
 import org.vertexium.mutation.ExtendedDataMutation;
 import org.vertexium.property.StreamingPropertyValue;
@@ -70,9 +71,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import static org.elasticsearch.common.geo.builders.ShapeBuilder.FIELD_COORDINATES;
-import static org.elasticsearch.common.geo.builders.ShapeBuilder.FIELD_GEOMETRIES;
-import static org.elasticsearch.common.geo.builders.ShapeBuilder.FIELD_TYPE;
+import static org.elasticsearch.common.geo.builders.ShapeBuilder.*;
 import static org.vertexium.elasticsearch5.ElasticsearchPropertyNameInfo.PROPERTY_NAME_PATTERN;
 import static org.vertexium.util.Preconditions.checkNotNull;
 
@@ -1021,6 +1020,25 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
     }
 
     @Override
+    public Query queryExtendedData(Graph graph, Element element, String tableName, String queryString, Authorizations authorizations) {
+        return new ElasticsearchSearchExtendedDataQuery(
+                getClient(),
+                graph,
+                element.getId(),
+                tableName,
+                queryString,
+                new ElasticsearchSearchExtendedDataQuery.Options()
+                        .setScoringStrategy(getConfig().getScoringStrategy())
+                        .setIndexSelectionStrategy(getIndexSelectionStrategy())
+                        .setPageSize(getConfig().getQueryPageSize())
+                        .setPagingLimit(getConfig().getPagingLimit())
+                        .setScrollKeepAlive(getConfig().getScrollKeepAlive())
+                        .setTermAggregationShardSize(getConfig().getTermAggregationShardSize()),
+                authorizations
+        );
+    }
+
+    @Override
     public SimilarToGraphQuery querySimilarTo(Graph graph, String[] similarToFields, String similarToText, Authorizations authorizations) {
         return new ElasticsearchSearchGraphQuery(
                 getClient(),
@@ -1834,12 +1852,12 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
         propertyValueMap.put(FIELD_TYPE, "polygon");
         List<List<List<Double>>> coordinates = new ArrayList<>();
         coordinates.add(geoPolygon.getOuterBoundary().stream()
-                .map(geoPoint -> Arrays.asList(geoPoint.getLongitude(), geoPoint.getLatitude()))
-                .collect(Collectors.toList()));
+                                .map(geoPoint -> Arrays.asList(geoPoint.getLongitude(), geoPoint.getLatitude()))
+                                .collect(Collectors.toList()));
         geoPolygon.getHoles().forEach(holeBoundary ->
-                coordinates.add(holeBoundary.stream()
-                        .map(geoPoint -> Arrays.asList(geoPoint.getLongitude(), geoPoint.getLatitude()))
-                        .collect(Collectors.toList())));
+                                              coordinates.add(holeBoundary.stream()
+                                                                      .map(geoPoint -> Arrays.asList(geoPoint.getLongitude(), geoPoint.getLatitude()))
+                                                                      .collect(Collectors.toList())));
         propertyValueMap.put(FIELD_COORDINATES, coordinates);
         return propertyValueMap;
     }
@@ -1875,8 +1893,8 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
     protected void createIndex(String indexName) throws IOException {
         CreateIndexResponse createResponse = client.admin().indices().prepareCreate(indexName)
                 .setSettings(Settings.builder()
-                        .put("number_of_shards", getConfig().getNumberOfShards())
-                        .put("number_of_replicas", getConfig().getNumberOfReplicas())
+                                     .put("number_of_shards", getConfig().getNumberOfShards())
+                                     .put("number_of_replicas", getConfig().getNumberOfReplicas())
                 )
                 .execute().actionGet();
 

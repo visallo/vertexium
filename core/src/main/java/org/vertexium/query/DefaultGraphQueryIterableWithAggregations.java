@@ -1,8 +1,7 @@
 package org.vertexium.query;
 
-import org.vertexium.Element;
-import org.vertexium.VertexiumObject;
 import org.vertexium.VertexiumException;
+import org.vertexium.VertexiumObject;
 
 import java.util.*;
 
@@ -102,18 +101,11 @@ public class DefaultGraphQueryIterableWithAggregations<T extends VertexiumObject
         Map<TKey, List<T>> elementsByProperty = new HashMap<>();
         while (it.hasNext()) {
             T vertexiumObject = it.next();
-            if(vertexiumObject instanceof Element) {
-                Element element = (Element) vertexiumObject;
-                Iterable<Object> values = element.getPropertyValues(propertyName);
-                for (Object value : values) {
-                    TKey convertedValue = valueConverter.convert(value);
-                    List<T> list = elementsByProperty.get(convertedValue);
-                    if (list == null) {
-                        list = new ArrayList<>();
-                        elementsByProperty.put(convertedValue, list);
-                    }
-                    list.add(vertexiumObject);
-                }
+            Iterable<Object> values = vertexiumObject.getPropertyValues(propertyName);
+            for (Object value : values) {
+                TKey convertedValue = valueConverter.convert(value);
+                elementsByProperty.computeIfAbsent(convertedValue, k -> new ArrayList<>())
+                        .add(vertexiumObject);
             }
         }
         return elementsByProperty;

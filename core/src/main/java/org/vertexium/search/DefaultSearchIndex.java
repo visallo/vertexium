@@ -118,4 +118,9 @@ public class DefaultSearchIndex implements SearchIndex {
     public void deleteExtendedData(Graph graph, ExtendedDataRowId extendedDataRowId, Authorizations authorizations) {
         checkNotNull(extendedDataRowId, "extendedDataRowId cannot be null");
     }
+
+    @Override
+    public Query queryExtendedData(Graph graph, Element element, String tableName, String queryString, Authorizations authorizations) {
+        return new DefaultExtendedDataQuery(graph, element, tableName, queryString, authorizations);
+    }
 }

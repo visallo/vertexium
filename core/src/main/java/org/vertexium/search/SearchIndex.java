@@ -2,10 +2,7 @@ package org.vertexium.search;
 
 import org.vertexium.*;
 import org.vertexium.mutation.ExtendedDataMutation;
-import org.vertexium.query.GraphQuery;
-import org.vertexium.query.MultiVertexQuery;
-import org.vertexium.query.SimilarToGraphQuery;
-import org.vertexium.query.VertexQuery;
+import org.vertexium.query.*;
 
 import java.util.Collection;
 
@@ -26,7 +23,8 @@ public interface SearchIndex {
             Graph graph,
             Element element,
             Collection<PropertyDescriptor> propertyList,
-            Authorizations authorizations) {
+            Authorizations authorizations
+    ) {
         propertyList.forEach(p -> deleteProperty(graph, element, p, authorizations));
     }
 
@@ -45,6 +43,10 @@ public interface SearchIndex {
 
     VertexQuery queryVertex(Graph graph, Vertex vertex, String queryString, Authorizations authorizations);
 
+    Query queryExtendedData(Graph graph, Element element, String tableName, String queryString, Authorizations authorizations);
+
+    SimilarToGraphQuery querySimilarTo(Graph graph, String[] fields, String text, Authorizations authorizations);
+
     void flush(Graph graph);
 
     void shutdown();
@@ -58,8 +60,6 @@ public interface SearchIndex {
     SearchIndexSecurityGranularity getSearchIndexSecurityGranularity();
 
     boolean isQuerySimilarToTextSupported();
-
-    SimilarToGraphQuery querySimilarTo(Graph graph, String[] fields, String text, Authorizations authorizations);
 
     boolean isFieldLevelSecuritySupported();
 
