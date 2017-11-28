@@ -6,11 +6,15 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static org.vertexium.util.Preconditions.checkArgument;
+import static org.vertexium.util.Preconditions.checkNotNull;
+
 public class GeoPoint extends GeoShapeBase implements Comparable<GeoPoint> {
     private static final long serialVersionUID = 1L;
     private static final double COMPARE_TOLERANCE = 0.00001;
     private static final Pattern HOUR_MIN_SECOND_PATTERN = Pattern.compile("\\s*(-)?([0-9\\.]+)°(\\s*([0-9\\.]+)'(\\s*([0-9\\.]+)\")?)?");
     private static final Pattern WITH_DESCRIPTION_PATTERN = Pattern.compile("(.*)\\[(.*)\\]");
+    public static final double EQUALS_TOLERANCE_KM = 0.0001;
     private double latitude;
     private double longitude;
     private Double altitude;
@@ -60,7 +64,13 @@ public class GeoPoint extends GeoShapeBase implements Comparable<GeoPoint> {
 
     @Override
     public String toString() {
-        return "(" + getLatitude() + ", " + getLongitude() + ")";
+        String coords;
+        if (getAltitude() != null) {
+            coords = "(" + getLatitude() + ", " + getLongitude() + ", " + getAltitude() + ")";
+        } else {
+            coords = "(" + getLatitude() + ", " + getLongitude() + ")";
+        }
+        return coords + (getDescription() == null ? "" : ": " + getDescription());
     }
 
     @Override
@@ -94,7 +104,7 @@ public class GeoPoint extends GeoShapeBase implements Comparable<GeoPoint> {
             return false;
         }
         GeoPoint other = (GeoPoint) obj;
-        if (Math.abs(distanceBetween(this, other)) > 0.0001) {
+        if (Math.abs(distanceBetween(this, other)) > EQUALS_TOLERANCE_KM) {
             return false;
         }
         if (this.altitude != other.altitude && (this.altitude == null || !this.altitude.equals(other.altitude))) {
@@ -110,7 +120,8 @@ public class GeoPoint extends GeoShapeBase implements Comparable<GeoPoint> {
     public double distanceFrom(GeoPoint geoPoint) {
         return distanceBetween(
                 this.getLatitude(), this.getLongitude(),
-                geoPoint.getLatitude(), geoPoint.getLongitude());
+                geoPoint.getLatitude(), geoPoint.getLongitude()
+        );
     }
 
     @Override
@@ -232,22 +243,38 @@ public class GeoPoint extends GeoShapeBase implements Comparable<GeoPoint> {
     }
 
     public static GeoPoint calculateCenter(List<GeoPoint> geoPoints) {
-        double totalLat = 0.0;
-        double totalLon = 0.0;
+        checkNotNull(geoPoints, "geoPoints cannot be null");
+        checkArgument(geoPoints.size() > 0, "must have at least 1 geoPoints");
+        if (geoPoints.size() == 1) {
+            return geoPoints.get(0);
+        }
+
+        double x = 0.0;
+        double y = 0.0;
+        double z = 0.0;
         double totalAlt = 0.0;
         int altitudeCount = 0;
         for (GeoPoint geoPoint : geoPoints) {
-            totalLat += geoPoint.getLatitude();
-            totalLon += geoPoint.getLongitude();
+            double latRad = Math.toRadians(geoPoint.getLatitude());
+            double lonRad = Math.toRadians(geoPoint.getLongitude());
+            x += Math.sin(latRad) * Math.cos(lonRad);
+            y += Math.sin(latRad) * Math.sin(lonRad);
+            z += Math.cos(latRad);
+
             if (geoPoint.getAltitude() != null) {
                 totalAlt += geoPoint.getAltitude();
                 altitudeCount++;
             }
         }
+
+        x = x / (double) geoPoints.size();
+        y = z / (double) geoPoints.size();
+        y = z / (double) geoPoints.size();
+
         return new GeoPoint(
-                totalLat / (double) geoPoints.size(),
-                totalLon / (double) geoPoints.size(),
-                totalAlt / (double) altitudeCount
+                Math.toDegrees(Math.acos(z / Math.sqrt(x * x + y * y))),
+                Math.toDegrees(Math.atan2(y, x)),
+                altitudeCount == geoPoints.size() ? (totalAlt / (double) altitudeCount) : null
         );
     }
 }

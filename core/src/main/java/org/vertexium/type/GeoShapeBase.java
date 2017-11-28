@@ -5,6 +5,7 @@ import java.io.Serializable;
 public abstract class GeoShapeBase implements GeoShape, Serializable {
     private static final long serialVersionUID = 6993185229233913152L;
     public static double EARTH_RADIUS = 6371; // km
+    public static double EARTH_CIRCUMFERENCE = 2 * Math.PI * EARTH_RADIUS;
     public static final double MIN_LAT = Math.toRadians(-90d);  // -PI/2
     public static final double MAX_LAT = Math.toRadians(90d);   //  PI/2
     public static final double MIN_LON = Math.toRadians(-180d); // -PI
@@ -29,23 +30,26 @@ public abstract class GeoShapeBase implements GeoShape, Serializable {
         return description;
     }
 
-    // see http://janmatuschek.de/LatitudeLongitudeBoundingCoordinates
     public double distanceBetween(double latitude1, double longitude1, double latitude2, double longitude2) {
-        latitude1 = toRadians(latitude1);
-        longitude1 = toRadians(longitude1);
-        latitude2 = toRadians(latitude2);
-        longitude2 = toRadians(longitude2);
+        latitude1 = Math.toRadians(latitude1);
+        longitude1 = Math.toRadians(longitude1);
+        latitude2 = Math.toRadians(latitude2);
+        longitude2 = Math.toRadians(longitude2);
 
-        return Math.acos(Math.sin(latitude1) * Math.sin(latitude2) +
-                Math.cos(latitude1) * Math.cos(latitude2) *
-                        Math.cos(longitude1 - longitude2)) * EARTH_RADIUS;
-    }
+        double cosLat1 = Math.cos(latitude1);
+        double cosLat2 = Math.cos(latitude2);
+        double sinLat1 = Math.sin(latitude1);
+        double sinLat2 = Math.sin(latitude2);
+        double deltaLon = longitude2 - longitude1;
+        double cosDeltaLon = Math.cos(deltaLon);
+        double sinDeltaLon = Math.sin(deltaLon);
 
-    public double toRadians(double v) {
-        return v * Math.PI / 180;
-    }
+        double a = cosLat2 * sinDeltaLon;
+        double b = cosLat1 * sinLat2 - sinLat1 * cosLat2 * cosDeltaLon;
+        double c = sinLat1 * sinLat2 + cosLat1 * cosLat2 * cosDeltaLon;
 
-    public double fromRadians(double r) {
-        return (r * 180) / Math.PI;
+        double rads = Math.atan2(Math.sqrt(a * a + b * b), c);
+        double percent = rads / (2 * Math.PI);
+        return percent * EARTH_CIRCUMFERENCE;
     }
 }

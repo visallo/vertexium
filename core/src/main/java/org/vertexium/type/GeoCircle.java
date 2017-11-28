@@ -77,8 +77,8 @@ public class GeoCircle extends GeoShapeBase {
     // see http://janmatuschek.de/LatitudeLongitudeBoundingCoordinates
     public GeoRect getBoundingBox() {
         double radDist = radius / EARTH_RADIUS;
-        double radLat = toRadians(latitude);
-        double radLon = toRadians(longitude);
+        double radLat = Math.toRadians(latitude);
+        double radLon = Math.toRadians(longitude);
 
         double minLat = radLat - radDist;
         double maxLat = radLat + radDist;
@@ -86,7 +86,7 @@ public class GeoCircle extends GeoShapeBase {
         double minLon, maxLon;
         if (minLat > MIN_LAT && maxLat < MAX_LAT) {
             double deltaLon = Math.asin(Math.sin(radDist) /
-                    Math.cos(radLat));
+                                                Math.cos(radLat));
             minLon = radLon - deltaLon;
             if (minLon < MIN_LON) minLon += 2d * Math.PI;
             maxLon = radLon + deltaLon;
@@ -99,7 +99,10 @@ public class GeoCircle extends GeoShapeBase {
             maxLon = MAX_LON;
         }
 
-        return new GeoRect(new GeoPoint(fromRadians(maxLat), fromRadians(minLon)), new GeoPoint(fromRadians(minLat), fromRadians(maxLon)));
+        return new GeoRect(
+                new GeoPoint(Math.toDegrees(maxLat), Math.toDegrees(minLon)),
+                new GeoPoint(Math.toDegrees(minLat), Math.toDegrees(maxLon))
+        );
     }
 
     @Override
