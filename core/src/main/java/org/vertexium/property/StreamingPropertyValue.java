@@ -8,37 +8,21 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serializable;
 
-public class StreamingPropertyValue extends PropertyValue implements Serializable {
-    static final long serialVersionUID = 42L;
-    private final transient InputStream inputStream;
+public abstract class StreamingPropertyValue extends PropertyValue implements Serializable {
+    private static final long serialVersionUID = -8009009221695795406L;
     private final Class valueType;
-    private final long length;
 
-    public StreamingPropertyValue() {
-        this(null, null);
-    }
-
-    public StreamingPropertyValue(InputStream inputStream, Class valueType) {
-        this(inputStream, valueType, -1);
-    }
-
-    public StreamingPropertyValue(InputStream inputStream, Class valueType, long length) {
-        this.inputStream = inputStream;
+    public StreamingPropertyValue(Class valueType) {
         this.valueType = valueType;
-        this.length = length;
-    }
-
-    public InputStream getInputStream() {
-        return inputStream;
     }
 
     public Class getValueType() {
         return valueType;
     }
 
-    public long getLength() {
-        return length;
-    }
+    public abstract Long getLength();
+
+    public abstract InputStream getInputStream();
 
     public String readToString() {
         try (InputStream in = getInputStream()) {
@@ -58,14 +42,22 @@ public class StreamingPropertyValue extends PropertyValue implements Serializabl
 
     public static StreamingPropertyValue create(String value) {
         InputStream data = new ByteArrayInputStream(value.getBytes());
-        return new StreamingPropertyValue(data, String.class);
+        return new DefaultStreamingPropertyValue(data, String.class);
+    }
+
+    public static StreamingPropertyValue create(InputStream inputStream, Class type, Integer length) {
+        return new DefaultStreamingPropertyValue(inputStream, type, length == null ? null : (long) length);
+    }
+
+    public static StreamingPropertyValue create(InputStream inputStream, Class type) {
+        return new DefaultStreamingPropertyValue(inputStream, type, null);
     }
 
     @Override
     public String toString() {
         return "StreamingPropertyValue{" +
-                "valueType=" + valueType +
-                ", length=" + length +
+                "valueType=" + getValueType() +
+                ", length=" + getLength() +
                 '}';
     }
 }

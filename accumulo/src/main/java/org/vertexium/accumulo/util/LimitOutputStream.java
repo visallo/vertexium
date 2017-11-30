@@ -1,4 +1,4 @@
-package org.vertexium.util;
+package org.vertexium.accumulo.util;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;

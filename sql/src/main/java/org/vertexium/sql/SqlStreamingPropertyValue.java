@@ -6,7 +6,7 @@ import org.skife.jdbi.v2.StatementContext;
 import org.skife.jdbi.v2.tweak.ResultSetMapper;
 import org.vertexium.VertexiumException;
 import org.vertexium.Visibility;
-import org.vertexium.property.StreamingPropertyValue;
+import org.vertexium.property.DefaultStreamingPropertyValue;
 import org.vertexium.util.AutoDeleteFileInputStream;
 import org.vertexium.util.IOUtils;
 
@@ -19,9 +19,9 @@ import java.sql.SQLException;
 
 import static org.vertexium.sql.SqlStreamingPropertyTable.*;
 
-public class SqlStreamingPropertyValue extends StreamingPropertyValue {
-
+public class SqlStreamingPropertyValue extends DefaultStreamingPropertyValue {
     private static final int IN_MEMORY_STREAM_MAX_BYTES = 1024 * 1024;
+    private static final long serialVersionUID = 3515084569014897749L;
 
     private final DBI dbi;
     private final String tableName;
@@ -62,11 +62,11 @@ public class SqlStreamingPropertyValue extends StreamingPropertyValue {
 
     private InputStream copyInputStream(InputStream inputStream) {
         try {
-            long length = getLength();
-            if (length < 0 || length > IN_MEMORY_STREAM_MAX_BYTES) {
+            Long length = getLength();
+            if (length == null || length < 0 || length > IN_MEMORY_STREAM_MAX_BYTES) {
                 return new AutoDeleteFileInputStream(inputStream);
             } else {
-                ByteArrayOutputStream outputStream = new ByteArrayOutputStream((int) length);
+                ByteArrayOutputStream outputStream = new ByteArrayOutputStream((int) (long) length);
                 IOUtils.copy(inputStream, outputStream);
                 return new ByteArrayInputStream(outputStream.toByteArray());
             }

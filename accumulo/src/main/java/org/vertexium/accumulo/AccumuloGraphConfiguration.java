@@ -7,6 +7,9 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.vertexium.Graph;
 import org.vertexium.GraphConfiguration;
+import org.vertexium.accumulo.util.DataInDataTableStreamingPropertyValueStorageStrategy;
+import org.vertexium.accumulo.util.OverflowIntoHdfsStreamingPropertyValueStorageStrategy;
+import org.vertexium.accumulo.util.StreamingPropertyValueStorageStrategy;
 import org.vertexium.id.IdentityNameSubstitutionStrategy;
 import org.vertexium.id.NameSubstitutionStrategy;
 import org.vertexium.util.ConfigurationUtils;
@@ -46,6 +49,7 @@ public class AccumuloGraphConfiguration extends GraphConfiguration {
     public static final String BATCHWRITER_MAX_WRITE_THREADS = BATCHWRITER_CONFIG_PREFIX + ".maxWriteThreads";
     public static final String NUMBER_OF_QUERY_THREADS = "numberOfQueryThreads";
     public static final String HDFS_CONTEXT_CLASSPATH = "hdfsContextClasspath";
+    public static final String STREAMING_PROPERTY_VALUE_STORAGE_STRATEGY_PREFIX = "streamingPropertyValueStorageStrategy";
 
     public static final String DEFAULT_ACCUMULO_PASSWORD = "password";
     public static final String DEFAULT_ACCUMULO_USERNAME = "root";
@@ -66,6 +70,7 @@ public class AccumuloGraphConfiguration extends GraphConfiguration {
     public static final boolean DEFAULT_HISTORY_IN_SEPARATE_TABLE = false;
     public static final int DEFAULT_NUMBER_OF_QUERY_THREADS = 10;
     public static final String DEFAULT_HDFS_CONTEXT_CLASSPATH = null;
+    public static final String DEFAULT_STREAMING_PROPERTY_VALUE_STORAGE_STRATEGY = OverflowIntoHdfsStreamingPropertyValueStorageStrategy.class.getName();
 
     public static final String[] HADOOP_CONF_FILENAMES = new String[]{
             "core-site.xml",
@@ -101,7 +106,7 @@ public class AccumuloGraphConfiguration extends GraphConfiguration {
     }
 
     public ClientConfiguration getClientConfiguration() {
-        return new ClientConfiguration(new ArrayList<org.apache.commons.configuration.Configuration>())
+        return new ClientConfiguration(new ArrayList<>())
                 .withInstance(this.getAccumuloInstanceName())
                 .withZkHosts(this.getZookeeperServers());
     }
@@ -194,6 +199,10 @@ public class AccumuloGraphConfiguration extends GraphConfiguration {
         NameSubstitutionStrategy strategy = ConfigurationUtils.createProvider(graph, this, NAME_SUBSTITUTION_STRATEGY_PROP_PREFIX, DEFAULT_NAME_SUBSTITUTION_STRATEGY);
         strategy.setup(getConfig());
         return strategy;
+    }
+
+    public StreamingPropertyValueStorageStrategy createStreamingPropertyValueStorageStrategy(Graph graph) {
+        return ConfigurationUtils.createProvider(graph, this, STREAMING_PROPERTY_VALUE_STORAGE_STRATEGY_PREFIX, DEFAULT_STREAMING_PROPERTY_VALUE_STORAGE_STRATEGY);
     }
 
     public BatchWriterConfig createBatchWriterConfig() {

@@ -137,7 +137,7 @@ public class GraphRestore extends GraphToolBase {
         Visibility visibility = new Visibility(propertyJson.getString("visibility"));
         Class valueType = Class.forName(propertyJson.getString("valueType"));
         InputStream spvin = new StreamingPropertyValueInputStream(in);
-        StreamingPropertyValue value = new StreamingPropertyValue(spvin, valueType);
+        StreamingPropertyValue value = StreamingPropertyValue.create(spvin, valueType);
         value.searchIndex(propertyJson.optBoolean("searchIndex", false));
         value.store(propertyJson.optBoolean("store", true));
         element.addPropertyValue(key, name, value, metadata, visibility, authorizations);

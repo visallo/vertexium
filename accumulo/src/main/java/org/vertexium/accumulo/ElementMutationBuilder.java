@@ -4,14 +4,13 @@ import org.apache.accumulo.core.data.Key;
 import org.apache.accumulo.core.data.Mutation;
 import org.apache.accumulo.core.data.Value;
 import org.apache.accumulo.core.security.ColumnVisibility;
-import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.io.Text;
 import org.cache2k.Cache;
 import org.cache2k.CacheBuilder;
 import org.vertexium.*;
 import org.vertexium.accumulo.iterator.model.EdgeInfo;
-import org.vertexium.accumulo.keys.DataTableRowKey;
 import org.vertexium.accumulo.keys.KeyHelper;
+import org.vertexium.accumulo.util.StreamingPropertyValueStorageStrategy;
 import org.vertexium.id.NameSubstitutionStrategy;
 import org.vertexium.mutation.ExtendedDataMutation;
 import org.vertexium.mutation.PropertyDeleteMutation;
@@ -19,9 +18,8 @@ import org.vertexium.mutation.PropertyPropertyDeleteMutation;
 import org.vertexium.mutation.PropertySoftDeleteMutation;
 import org.vertexium.property.StreamingPropertyValue;
 import org.vertexium.property.StreamingPropertyValueRef;
-import org.vertexium.util.*;
+import org.vertexium.util.Preconditions;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -32,25 +30,23 @@ import static org.vertexium.util.IncreasingTime.currentTimeMillis;
 import static org.vertexium.util.StreamUtils.stream;
 
 public abstract class ElementMutationBuilder {
-    private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(ElementMutationBuilder.class);
     public static final Text EMPTY_TEXT = new Text("");
     public static final Value EMPTY_VALUE = new Value("".getBytes());
 
-    private final FileSystem fileSystem;
+    private final StreamingPropertyValueStorageStrategy streamingPropertyValueStorageStrategy;
     private final VertexiumSerializer vertexiumSerializer;
-    private final long maxStreamingPropertyValueTableDataSize;
-    private final String dataDir;
     private static final Cache<String, Text> propertyMetadataColumnQualifierTextCache = CacheBuilder
             .newCache(String.class, Text.class)
             .name(ElementMutationBuilder.class, "propertyMetadataColumnQualifierTextCache")
             .maxSize(10000)
             .build();
 
-    protected ElementMutationBuilder(FileSystem fileSystem, VertexiumSerializer vertexiumSerializer, long maxStreamingPropertyValueTableDataSize, String dataDir) {
-        this.fileSystem = fileSystem;
+    protected ElementMutationBuilder(
+            StreamingPropertyValueStorageStrategy streamingPropertyValueStorageStrategy,
+            VertexiumSerializer vertexiumSerializer
+    ) {
+        this.streamingPropertyValueStorageStrategy = streamingPropertyValueStorageStrategy;
         this.vertexiumSerializer = vertexiumSerializer;
-        this.maxStreamingPropertyValueTableDataSize = maxStreamingPropertyValueTableDataSize;
-        this.dataDir = dataDir;
     }
 
     public void saveVertexBuilder(AccumuloGraph graph, VertexBuilder vertexBuilder, long timestamp) {
@@ -486,24 +482,7 @@ public abstract class ElementMutationBuilder {
     }
 
     protected StreamingPropertyValueRef saveStreamingPropertyValue(final String rowKey, final Property property, StreamingPropertyValue propertyValue) {
-        try {
-            HdfsLargeDataStore largeDataStore = new HdfsLargeDataStore(this.fileSystem, this.dataDir, rowKey, property);
-            LimitOutputStream out = new LimitOutputStream(largeDataStore, maxStreamingPropertyValueTableDataSize);
-            try {
-                IOUtils.copy(propertyValue.getInputStream(), out);
-            } finally {
-                out.close();
-            }
-
-            if (out.hasExceededSizeLimit()) {
-                LOGGER.debug("saved large file to \"%s\" (length: %d)", largeDataStore.getFullHdfsPath(), out.getLength());
-                return new StreamingPropertyValueHdfsRef(largeDataStore.getRelativeFileName(), propertyValue);
-            } else {
-                return saveStreamingPropertyValueSmall(rowKey, property, out.getSmall(), propertyValue);
-            }
-        } catch (IOException ex) {
-            throw new VertexiumException(ex);
-        }
+        return streamingPropertyValueStorageStrategy.saveStreamingPropertyValue(this, rowKey, property, propertyValue);
     }
 
     public void addPropertyDeleteToMutation(Mutation m, Property property) {
@@ -533,13 +512,5 @@ public abstract class ElementMutationBuilder {
         m.put(AccumuloElement.CF_PROPERTY_SOFT_DELETE, columnQualifier, columnVisibility, propertySoftDelete.getTimestamp(), AccumuloElement.SOFT_DELETE_VALUE);
     }
 
-    private StreamingPropertyValueRef saveStreamingPropertyValueSmall(String rowKey, Property property, byte[] data, StreamingPropertyValue propertyValue) {
-        String dataTableRowKey = new DataTableRowKey(rowKey, property).getRowKey();
-        Mutation dataMutation = new Mutation(dataTableRowKey);
-        dataMutation.put(EMPTY_TEXT, EMPTY_TEXT, property.getTimestamp(), new Value(data));
-        saveDataMutation(dataMutation);
-        return new StreamingPropertyValueTableRef(dataTableRowKey, propertyValue, data);
-    }
-
-    protected abstract void saveDataMutation(Mutation dataMutation);
+    public abstract void saveDataMutation(Mutation dataMutation);
 }

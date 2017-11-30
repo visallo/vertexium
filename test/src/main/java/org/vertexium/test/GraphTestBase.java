@@ -187,15 +187,18 @@ public abstract class GraphTestBase {
     @Test
     public void testAddStreamingPropertyValue() throws IOException, InterruptedException {
         String expectedLargeValue = IOUtils.toString(new LargeStringInputStream(LARGE_PROPERTY_VALUE_SIZE));
-        PropertyValue propSmall = new StreamingPropertyValue(new ByteArrayInputStream("value1".getBytes()), String.class, 6);
-        PropertyValue propLarge = new StreamingPropertyValue(new ByteArrayInputStream(expectedLargeValue.getBytes()),
-                String.class, expectedLargeValue.length()
+        PropertyValue propSmall = StreamingPropertyValue.create(new ByteArrayInputStream("value1".getBytes()), String.class, 6);
+        PropertyValue propLarge = StreamingPropertyValue.create(
+                new ByteArrayInputStream(expectedLargeValue.getBytes()),
+                String.class,
+                expectedLargeValue.length()
         );
         String largePropertyName = "propLarge/\\*!@#$%^&*()[]{}|";
         Vertex v1 = graph.prepareVertex("v1", VISIBILITY_A)
                 .setProperty("propSmall", propSmall, VISIBILITY_A)
                 .setProperty(largePropertyName, propLarge, VISIBILITY_A)
                 .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
 
         Iterable<Object> propSmallValues = v1.getPropertyValues("propSmall");
         Assert.assertEquals(1, count(propSmallValues));
@@ -203,7 +206,7 @@ public abstract class GraphTestBase {
         assertTrue("propSmallValue was " + propSmallValue.getClass().getName(), propSmallValue instanceof StreamingPropertyValue);
         StreamingPropertyValue value = (StreamingPropertyValue) propSmallValue;
         assertEquals(String.class, value.getValueType());
-        assertEquals("value1".getBytes().length, value.getLength());
+        assertEquals("value1".getBytes().length, (long) value.getLength());
         assertEquals("value1", IOUtils.toString(value.getInputStream()));
         assertEquals("value1", IOUtils.toString(value.getInputStream()));
 
@@ -213,7 +216,7 @@ public abstract class GraphTestBase {
         assertTrue(largePropertyName + " was " + propLargeValue.getClass().getName(), propLargeValue instanceof StreamingPropertyValue);
         value = (StreamingPropertyValue) propLargeValue;
         assertEquals(String.class, value.getValueType());
-        assertEquals(expectedLargeValue.getBytes().length, value.getLength());
+        assertEquals(expectedLargeValue.getBytes().length, (long) value.getLength());
         assertEquals(expectedLargeValue, IOUtils.toString(value.getInputStream()));
         assertEquals(expectedLargeValue, IOUtils.toString(value.getInputStream()));
         graph.flush();
@@ -225,7 +228,7 @@ public abstract class GraphTestBase {
         assertTrue("propSmallValue was " + propSmallValue.getClass().getName(), propSmallValue instanceof StreamingPropertyValue);
         value = (StreamingPropertyValue) propSmallValue;
         assertEquals(String.class, value.getValueType());
-        assertEquals("value1".getBytes().length, value.getLength());
+        assertEquals("value1".getBytes().length, (long) value.getLength());
         assertEquals("value1", IOUtils.toString(value.getInputStream()));
         assertEquals("value1", IOUtils.toString(value.getInputStream()));
 
@@ -235,9 +238,45 @@ public abstract class GraphTestBase {
         assertTrue(largePropertyName + " was " + propLargeValue.getClass().getName(), propLargeValue instanceof StreamingPropertyValue);
         value = (StreamingPropertyValue) propLargeValue;
         assertEquals(String.class, value.getValueType());
-        assertEquals(expectedLargeValue.getBytes().length, value.getLength());
+        assertEquals(expectedLargeValue.getBytes().length, (long) value.getLength());
         assertEquals(expectedLargeValue, IOUtils.toString(value.getInputStream()));
         assertEquals(expectedLargeValue, IOUtils.toString(value.getInputStream()));
+    }
+
+    @Test
+    public void testStreamingPropertyDecreasingSize() throws IOException, InterruptedException {
+        Metadata metadata = new Metadata();
+        Long timestamp = System.currentTimeMillis();
+        String expectedValue = IOUtils.toString(new LargeStringInputStream(LARGE_PROPERTY_VALUE_SIZE));
+        PropertyValue propLarge = StreamingPropertyValue.create(
+                new ByteArrayInputStream(expectedValue.getBytes()),
+                String.class,
+                expectedValue.length()
+        );
+        graph.prepareVertex("v1", VISIBILITY_A)
+                .addPropertyValue("key1", "largeProp", propLarge, metadata, timestamp, VISIBILITY_A)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B);
+        StreamingPropertyValue spv = (StreamingPropertyValue) v1.getPropertyValue("key1", "largeProp");
+        assertEquals(expectedValue, spv.readToString());
+
+        // now save a smaller value, making sure it gets truncated
+        expectedValue = "small";
+        propLarge = StreamingPropertyValue.create(
+                new ByteArrayInputStream(expectedValue.getBytes()),
+                String.class,
+                expectedValue.length()
+        );
+        graph.prepareVertex("v1", VISIBILITY_A)
+                .addPropertyValue("key1", "largeProp", propLarge, metadata, timestamp + 1, VISIBILITY_A)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        v1 = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B);
+        spv = (StreamingPropertyValue) v1.getPropertyValue("key1", "largeProp");
+        assertEquals(expectedValue, spv.readToString());
     }
 
     @Test
@@ -1095,16 +1134,16 @@ public abstract class GraphTestBase {
         graph.flush();
 
         List<Edge> edges = toList(graph.getEdgesInRange(new Range(null, "a"), AUTHORIZATIONS_ALL));
-        assertEdgeIds(edges, new String[]{});
+        assertEdgeIds(edges);
 
         edges = toList(graph.getEdgesInRange(new Range(null, "b"), AUTHORIZATIONS_ALL));
-        assertEdgeIds(edges, new String[]{"a", "aa", "az"});
+        assertEdgeIds(edges, "a", "aa", "az");
 
         edges = toList(graph.getEdgesInRange(new Range(null, "bb"), AUTHORIZATIONS_ALL));
-        assertEdgeIds(edges, new String[]{"a", "aa", "az", "b"});
+        assertEdgeIds(edges, "a", "aa", "az", "b");
 
         edges = toList(graph.getEdgesInRange(new Range(null, null), AUTHORIZATIONS_ALL));
-        assertEdgeIds(edges, new String[]{"a", "aa", "az", "b"});
+        assertEdgeIds(edges, "a", "aa", "az", "b");
     }
 
     @Test
@@ -2745,12 +2784,12 @@ public abstract class GraphTestBase {
         List<Edge> edges = toList(graph.query(AUTHORIZATIONS_A_AND_B)
                 .sort(Edge.LABEL_PROPERTY_NAME, SortDirection.ASCENDING)
                 .edges());
-        assertEdgeIds(edges, new String[]{"e2", "e1", "e3"});
+        assertEdgeIds(edges, "e2", "e1", "e3");
 
         edges = toList(graph.query(AUTHORIZATIONS_A_AND_B)
                 .sort(Edge.LABEL_PROPERTY_NAME, SortDirection.DESCENDING)
                 .edges());
-        assertEdgeIds(edges, new String[]{"e3", "e1", "e2"});
+        assertEdgeIds(edges, "e3", "e1", "e2");
     }
 
     @Test
@@ -4792,8 +4831,8 @@ public abstract class GraphTestBase {
     @Test
     public void testChangeVisibilityOnStreamingProperty() throws IOException {
         String expectedLargeValue = IOUtils.toString(new LargeStringInputStream(LARGE_PROPERTY_VALUE_SIZE));
-        PropertyValue propSmall = new StreamingPropertyValue(new ByteArrayInputStream("value1".getBytes()), String.class);
-        PropertyValue propLarge = new StreamingPropertyValue(new ByteArrayInputStream(expectedLargeValue.getBytes()), String.class);
+        PropertyValue propSmall = StreamingPropertyValue.create(new ByteArrayInputStream("value1".getBytes()), String.class);
+        PropertyValue propLarge = StreamingPropertyValue.create(new ByteArrayInputStream(expectedLargeValue.getBytes()), String.class);
         String largePropertyName = "propLarge/\\*!@#$%^&*()[]{}|";
         graph.prepareVertex("v1", VISIBILITY_A)
                 .setProperty("propSmall", propSmall, VISIBILITY_A)
@@ -5044,7 +5083,7 @@ public abstract class GraphTestBase {
         Iterable<Edge> edges = graph.query(AUTHORIZATIONS_A_AND_B)
                 .has("prop1", "value1")
                 .edges();
-        assertEdgeIds(edges, new String[]{});
+        assertEdgeIds(edges);
     }
 
     @Test
@@ -6176,33 +6215,33 @@ public abstract class GraphTestBase {
 
     @Test
     public void testGraphQueryWithCalendarFieldAggregation() {
-        String dateFieldname = "agg_date_field";
+        String dateFieldName = "agg_date_field";
         graph.prepareVertex("v0", VISIBILITY_EMPTY)
                 .addPropertyValue("", "other_field", createDate(2016, Calendar.APRIL, 27, 10, 18, 56), VISIBILITY_A)
                 .save(AUTHORIZATIONS_ALL);
         graph.prepareVertex("v1", VISIBILITY_EMPTY)
-                .addPropertyValue("", dateFieldname, createDate(2016, Calendar.APRIL, 27, 10, 18, 56), VISIBILITY_A)
+                .addPropertyValue("", dateFieldName, createDate(2016, Calendar.APRIL, 27, 10, 18, 56), VISIBILITY_A)
                 .save(AUTHORIZATIONS_ALL);
         graph.prepareVertex("v2", VISIBILITY_EMPTY)
-                .addPropertyValue("", dateFieldname, createDate(2017, Calendar.MAY, 26, 10, 18, 56), VISIBILITY_EMPTY)
+                .addPropertyValue("", dateFieldName, createDate(2017, Calendar.MAY, 26, 10, 18, 56), VISIBILITY_EMPTY)
                 .save(AUTHORIZATIONS_ALL);
         graph.prepareVertex("v3", VISIBILITY_A_AND_B)
-                .addPropertyValue("", dateFieldname, createDate(2016, Calendar.APRIL, 27, 12, 18, 56), VISIBILITY_EMPTY)
+                .addPropertyValue("", dateFieldName, createDate(2016, Calendar.APRIL, 27, 12, 18, 56), VISIBILITY_EMPTY)
                 .save(AUTHORIZATIONS_ALL);
         graph.prepareVertex("v4", VISIBILITY_A_AND_B)
-                .addPropertyValue("", dateFieldname, createDate(2016, Calendar.APRIL, 24, 12, 18, 56), VISIBILITY_EMPTY)
+                .addPropertyValue("", dateFieldName, createDate(2016, Calendar.APRIL, 24, 12, 18, 56), VISIBILITY_EMPTY)
                 .save(AUTHORIZATIONS_ALL);
         graph.prepareVertex("v5", VISIBILITY_A_AND_B)
-                .addPropertyValue("", dateFieldname, createDate(2016, Calendar.APRIL, 25, 12, 18, 56), VISIBILITY_EMPTY)
+                .addPropertyValue("", dateFieldName, createDate(2016, Calendar.APRIL, 25, 12, 18, 56), VISIBILITY_EMPTY)
                 .save(AUTHORIZATIONS_ALL);
         graph.prepareVertex("v6", VISIBILITY_A_AND_B)
-                .addPropertyValue("", dateFieldname, createDate(2016, Calendar.APRIL, 30, 12, 18, 56), VISIBILITY_EMPTY)
+                .addPropertyValue("", dateFieldName, createDate(2016, Calendar.APRIL, 30, 12, 18, 56), VISIBILITY_EMPTY)
                 .save(AUTHORIZATIONS_ALL);
         graph.flush();
 
         // hour of day
         QueryResultsIterable<Vertex> results = graph.query(AUTHORIZATIONS_ALL)
-                .addAggregation(new CalendarFieldAggregation("agg1", dateFieldname, null, TimeZone.getDefault(), Calendar.HOUR_OF_DAY))
+                .addAggregation(new CalendarFieldAggregation("agg1", dateFieldName, null, TimeZone.getDefault(), Calendar.HOUR_OF_DAY))
                 .limit(0)
                 .vertices();
 
@@ -6213,7 +6252,7 @@ public abstract class GraphTestBase {
 
         // day of week
         results = graph.query(AUTHORIZATIONS_ALL)
-                .addAggregation(new CalendarFieldAggregation("agg1", dateFieldname, null, TimeZone.getDefault(), Calendar.DAY_OF_WEEK))
+                .addAggregation(new CalendarFieldAggregation("agg1", dateFieldName, null, TimeZone.getDefault(), Calendar.DAY_OF_WEEK))
                 .limit(0)
                 .vertices();
 
@@ -6227,7 +6266,7 @@ public abstract class GraphTestBase {
 
         // day of month
         results = graph.query(AUTHORIZATIONS_ALL)
-                .addAggregation(new CalendarFieldAggregation("agg1", dateFieldname, null, TimeZone.getDefault(), Calendar.DAY_OF_MONTH))
+                .addAggregation(new CalendarFieldAggregation("agg1", dateFieldName, null, TimeZone.getDefault(), Calendar.DAY_OF_MONTH))
                 .limit(0)
                 .vertices();
 
@@ -6241,7 +6280,7 @@ public abstract class GraphTestBase {
 
         // month
         results = graph.query(AUTHORIZATIONS_ALL)
-                .addAggregation(new CalendarFieldAggregation("agg1", dateFieldname, null, TimeZone.getDefault(), Calendar.MONTH))
+                .addAggregation(new CalendarFieldAggregation("agg1", dateFieldName, null, TimeZone.getDefault(), Calendar.MONTH))
                 .limit(0)
                 .vertices();
 
@@ -6252,7 +6291,7 @@ public abstract class GraphTestBase {
 
         // year
         results = graph.query(AUTHORIZATIONS_ALL)
-                .addAggregation(new CalendarFieldAggregation("agg1", dateFieldname, null, TimeZone.getDefault(), Calendar.YEAR))
+                .addAggregation(new CalendarFieldAggregation("agg1", dateFieldName, null, TimeZone.getDefault(), Calendar.YEAR))
                 .limit(0)
                 .vertices();
 
@@ -6263,7 +6302,7 @@ public abstract class GraphTestBase {
 
         // week of year
         results = graph.query(AUTHORIZATIONS_ALL)
-                .addAggregation(new CalendarFieldAggregation("agg1", dateFieldname, null, TimeZone.getDefault(), Calendar.WEEK_OF_YEAR))
+                .addAggregation(new CalendarFieldAggregation("agg1", dateFieldName, null, TimeZone.getDefault(), Calendar.WEEK_OF_YEAR))
                 .limit(0)
                 .vertices();
 

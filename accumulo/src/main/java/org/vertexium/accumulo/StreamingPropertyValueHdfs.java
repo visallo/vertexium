@@ -4,17 +4,17 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.vertexium.VertexiumException;
 import org.vertexium.property.StreamingPropertyValue;
-import org.vertexium.property.StreamingPropertyValueRef;
 
 import java.io.IOException;
 import java.io.InputStream;
 
 class StreamingPropertyValueHdfs extends StreamingPropertyValue {
+    private static final long serialVersionUID = 5936794077542255789L;
     private final FileSystem fs;
     private final Path path;
 
-    public StreamingPropertyValueHdfs(FileSystem fs, Path path, StreamingPropertyValueRef streamingPropertyValueRef) {
-        super(null, streamingPropertyValueRef.getValueType());
+    public StreamingPropertyValueHdfs(FileSystem fs, Path path, StreamingPropertyValueHdfsRef streamingPropertyValueRef) {
+        super(streamingPropertyValueRef.getValueType());
         this.store(streamingPropertyValueRef.isStore());
         this.searchIndex(streamingPropertyValueRef.isSearchIndex());
         this.fs = fs;
@@ -22,7 +22,7 @@ class StreamingPropertyValueHdfs extends StreamingPropertyValue {
     }
 
     @Override
-    public long getLength() {
+    public Long getLength() {
         try {
             return fs.getFileStatus(path).getLen();
         } catch (IOException ex) {

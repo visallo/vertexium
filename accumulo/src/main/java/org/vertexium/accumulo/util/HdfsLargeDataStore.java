@@ -1,14 +1,13 @@
-package org.vertexium.accumulo;
+package org.vertexium.accumulo.util;
 
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.vertexium.Property;
-import org.vertexium.util.LimitOutputStream;
 
 import java.io.IOException;
 import java.io.OutputStream;
 
-class HdfsLargeDataStore extends LimitOutputStream.LargeDataStore {
+public class HdfsLargeDataStore extends LimitOutputStream.LargeDataStore {
     private final FileSystem fs;
     private final String dataDir;
     private final String rowKey;
