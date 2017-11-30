@@ -56,7 +56,7 @@ public class BackupRestoreTest {
 
         int largePropertyValueSize = 1000;
         String expectedLargeValue = IOUtils.toString(new LargeStringInputStream(largePropertyValueSize));
-        StreamingPropertyValue largeDataValue = new StreamingPropertyValue(new ByteArrayInputStream(expectedLargeValue.getBytes()), String.class);
+        StreamingPropertyValue largeDataValue = StreamingPropertyValue.create(new ByteArrayInputStream(expectedLargeValue.getBytes()), String.class);
 
         Vertex v1 = graph.prepareVertex("v1", GraphTestBase.VISIBILITY_A)
                 .addPropertyValue("id1a", "prop1", "value1a", prop1Metadata, GraphTestBase.VISIBILITY_A)

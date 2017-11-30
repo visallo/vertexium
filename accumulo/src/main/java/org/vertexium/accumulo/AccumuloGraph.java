@@ -27,7 +27,6 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.recipes.cache.TreeCache;
 import org.apache.curator.retry.ExponentialBackoffRetry;
-import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.io.Text;
 import org.apache.zookeeper.CreateMode;
 import org.vertexium.*;
@@ -38,9 +37,9 @@ import org.vertexium.accumulo.iterator.model.IteratorFetchHint;
 import org.vertexium.accumulo.iterator.model.PropertyColumnQualifier;
 import org.vertexium.accumulo.iterator.model.PropertyMetadataColumnQualifier;
 import org.vertexium.accumulo.iterator.util.ByteArrayWrapper;
-import org.vertexium.accumulo.keys.DataTableRowKey;
 import org.vertexium.accumulo.keys.KeyHelper;
 import org.vertexium.accumulo.util.RangeUtils;
+import org.vertexium.accumulo.util.StreamingPropertyValueStorageStrategy;
 import org.vertexium.event.*;
 import org.vertexium.mutation.*;
 import org.vertexium.property.MutableProperty;
@@ -70,6 +69,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
     private static final Integer METADATA_ACCUMULO_GRAPH_VERSION = 2;
     private static final String METADATA_ACCUMULO_GRAPH_VERSION_KEY = "accumulo.graph.version";
     private static final String METADATA_SERIALIZER = "accumulo.graph.serializer";
+    private static final String METADATA_STREAMING_PROPERTY_VALUE_DATA_WRITER = "accumulo.graph.streamingPropertyValueStorageStrategy";
     private static final Authorizations METADATA_AUTHORIZATIONS = new AccumuloAuthorizations();
     public static final int SINGLE_VERSION = 1;
     public static final Integer ALL_VERSIONS = null;
@@ -79,16 +79,16 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
     private static final String CLASSPATH_CONTEXT_NAME = "vertexium";
     private final Connector connector;
     private final VertexiumSerializer vertexiumSerializer;
-    private final FileSystem fileSystem;
-    private final String dataDir;
     private final CuratorFramework curatorFramework;
     private final boolean historyInSeparateTable;
+    private final StreamingPropertyValueStorageStrategy streamingPropertyValueStorageStrategy;
     private ThreadLocal<VertexiumMultiTableBatchWriter> elementWriter = new ThreadLocal<>();
     private ThreadLocal<BatchWriter> metadataWriter = new ThreadLocal<>();
     protected ElementMutationBuilder elementMutationBuilder;
     private final Queue<GraphEvent> graphEventQueue = new LinkedList<>();
     private Integer accumuloGraphVersion;
     private boolean foundVertexiumSerializerMetadata;
+    private boolean foundStreamingPropertyValueStorageStrategyMetadata;
     private final AccumuloNameSubstitutionStrategy nameSubstitutionStrategy;
     private final String verticesTableName;
     private final String historyVerticesTableName;
@@ -101,19 +101,13 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
     private AccumuloGraphMetadataStore graphMetadataStore;
     private boolean distributedTraceEnabled;
 
-    protected AccumuloGraph(
-            AccumuloGraphConfiguration config,
-            Connector connector,
-            FileSystem fileSystem
-    ) {
+    protected AccumuloGraph(AccumuloGraphConfiguration config, Connector connector) {
         super(config);
         this.connector = connector;
         this.vertexiumSerializer = config.createSerializer(this);
-        this.fileSystem = fileSystem;
-        this.dataDir = config.getDataDir();
         this.nameSubstitutionStrategy = AccumuloNameSubstitutionStrategy.create(config.createSubstitutionStrategy(this));
-        long maxStreamingPropertyValueTableDataSize = config.getMaxStreamingPropertyValueTableDataSize();
-        this.elementMutationBuilder = new ElementMutationBuilder(fileSystem, vertexiumSerializer, maxStreamingPropertyValueTableDataSize, dataDir) {
+        this.streamingPropertyValueStorageStrategy = config.createStreamingPropertyValueStorageStrategy(this);
+        this.elementMutationBuilder = new ElementMutationBuilder(streamingPropertyValueStorageStrategy, vertexiumSerializer) {
             @Override
             protected void saveVertexMutation(Mutation m) {
                 addMutations(VertexiumObjectType.VERTEX, m);
@@ -135,7 +129,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             }
 
             @Override
-            protected void saveDataMutation(Mutation dataMutation) {
+            public void saveDataMutation(Mutation dataMutation) {
                 _addMutations(getDataWriter(), dataMutation);
             }
 
@@ -174,7 +168,6 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             throw new IllegalArgumentException("config cannot be null");
         }
         Connector connector = config.createConnector();
-        FileSystem fs = config.createFileSystem();
         if (config.isHistoryInSeparateTable()) {
             ensureTableExists(connector, getVerticesTableName(config.getTableNamePrefix()), 1, config.getHdfsContextClasspath(), config.isCreateTables());
             ensureTableExists(connector, getEdgesTableName(config.getTableNamePrefix()), 1, config.getHdfsContextClasspath(), config.isCreateTables());
@@ -193,7 +186,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         ensureRowDeletingIteratorIsAttached(connector, getVerticesTableName(config.getTableNamePrefix()));
         ensureRowDeletingIteratorIsAttached(connector, getEdgesTableName(config.getTableNamePrefix()));
         ensureRowDeletingIteratorIsAttached(connector, getDataTableName(config.getTableNamePrefix()));
-        AccumuloGraph graph = new AccumuloGraph(config, connector, fs);
+        AccumuloGraph graph = new AccumuloGraph(config, connector);
         graph.setup();
         return graph;
     }
@@ -215,6 +208,9 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         if (!foundVertexiumSerializerMetadata) {
             setMetadata(METADATA_SERIALIZER, vertexiumSerializer.getClass().getName());
         }
+        if (!foundStreamingPropertyValueStorageStrategyMetadata) {
+            setMetadata(METADATA_STREAMING_PROPERTY_VALUE_DATA_WRITER, streamingPropertyValueStorageStrategy.getClass().getName());
+        }
     }
 
     @Override
@@ -228,15 +224,21 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                 throw new VertexiumException("Invalid accumulo version in metadata. " + graphMetadataEntry);
             }
         } else if (graphMetadataEntry.getKey().equals(METADATA_SERIALIZER)) {
-            if (graphMetadataEntry.getValue() instanceof String) {
-                String vertexiumSerializerClassName = (String) graphMetadataEntry.getValue();
-                if (!vertexiumSerializerClassName.equals(vertexiumSerializer.getClass().getName())) {
-                    throw new VertexiumException("Invalid " + METADATA_SERIALIZER + " expected " + vertexiumSerializerClassName + " found " + vertexiumSerializer.getClass().getName());
-                }
-                foundVertexiumSerializerMetadata = true;
-            } else {
-                throw new VertexiumException("Invalid " + METADATA_SERIALIZER + " expected string found " + graphMetadataEntry.getValue().getClass().getName());
-            }
+            validateClassMetadataEntry(graphMetadataEntry, vertexiumSerializer.getClass());
+            foundVertexiumSerializerMetadata = true;
+        } else if (graphMetadataEntry.getKey().equals(METADATA_STREAMING_PROPERTY_VALUE_DATA_WRITER)) {
+            validateClassMetadataEntry(graphMetadataEntry, streamingPropertyValueStorageStrategy.getClass());
+            foundStreamingPropertyValueStorageStrategyMetadata = true;
+        }
+    }
+
+    private void validateClassMetadataEntry(GraphMetadataEntry graphMetadataEntry, Class expectedClass) {
+        if (!(graphMetadataEntry.getValue() instanceof String)) {
+            throw new VertexiumException("Invalid " + graphMetadataEntry.getKey() + " expected string found " + graphMetadataEntry.getValue().getClass().getName());
+        }
+        String foundClassName = (String) graphMetadataEntry.getValue();
+        if (!foundClassName.equals(expectedClass.getName())) {
+            throw new VertexiumException("Invalid " + graphMetadataEntry.getKey() + " expected " + foundClassName + " found " + expectedClass.getName());
         }
     }
 
@@ -269,7 +271,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                 connector.tableOperations().setProperty(tableName, "table.classpath.context", CLASSPATH_CONTEXT_NAME + "-" + tableName);
             }
         } catch (Exception e) {
-            throw new RuntimeException("Unable to create table " + tableName, e);
+            throw new VertexiumException("Unable to create table " + tableName, e);
         }
     }
 
@@ -483,7 +485,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                 flush();
             }
         } catch (MutationsRejectedException ex) {
-            throw new RuntimeException("Could not add mutation", ex);
+            throw new VertexiumException("Could not add mutation", ex);
         }
     }
 
@@ -560,7 +562,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             this.metadataWriter.set(this.connector.createBatchWriter(getMetadataTableName(), writerConfig));
             return this.metadataWriter.get();
         } catch (TableNotFoundException ex) {
-            throw new RuntimeException("Could not create batch writer", ex);
+            throw new VertexiumException("Could not create batch writer", ex);
         }
     }
 
@@ -897,8 +899,8 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                         Object value = vertexiumSerializer.bytesToObject(column.getValue().get());
                         Metadata metadata = new Metadata();
                         Set<Visibility> hiddenVisibilities = null; // TODO should we preserve these over time
-                        if (value instanceof StreamingPropertyValueTableRef) {
-                            value = ((StreamingPropertyValueTableRef) value).toStreamingPropertyValue(this, timestamp);
+                        if (value instanceof StreamingPropertyValueRef) {
+                            value = ((StreamingPropertyValueRef) value).toStreamingPropertyValue(this, timestamp);
                         }
                         String propertyKey = propertyColumnQualifier.getPropertyKey();
                         String propertyName = propertyColumnQualifier.getPropertyName();
@@ -977,31 +979,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         if (streamingPropertyValues.size() == 0) {
             return Collections.emptyList();
         }
-
-        List<StreamingPropertyValueTable> notLoadedTableSpvs = streamingPropertyValues.stream()
-                .filter((spv) -> spv instanceof StreamingPropertyValueTable)
-                .map((spv) -> (StreamingPropertyValueTable) spv)
-                .filter((spv) -> !spv.isDataLoaded())
-                .collect(Collectors.toList());
-
-        List<String> dataRowKeys = notLoadedTableSpvs.stream()
-                .map(StreamingPropertyValueTable::getDataRowKey)
-                .collect(Collectors.toList());
-
-        Map<String, byte[]> tableInputStreams = streamingPropertyValueTableDatas(dataRowKeys);
-        notLoadedTableSpvs
-                .forEach((spv) -> {
-                    String dataRowKey = spv.getDataRowKey();
-                    byte[] bytes = tableInputStreams.get(dataRowKey);
-                    if (bytes == null) {
-                        throw new VertexiumException("Could not find StreamingPropertyValue data: " + dataRowKey);
-                    }
-                    spv.setData(bytes);
-                });
-
-        return streamingPropertyValues.stream()
-                .map(StreamingPropertyValue::getInputStream)
-                .collect(Collectors.toList());
+        return streamingPropertyValueStorageStrategy.getInputStreams(streamingPropertyValues);
     }
 
     @Override
@@ -1349,7 +1327,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         try {
             flush();
             super.shutdown();
-            fileSystem.close();
+            streamingPropertyValueStorageStrategy.close();
             this.graphMetadataStore.close();
             this.curatorFramework.close();
         } catch (Exception ex) {
@@ -1627,7 +1605,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         );
     }
 
-    private ScannerBase createBatchScanner(
+    public ScannerBase createBatchScanner(
             String tableName,
             Collection<org.apache.accumulo.core.data.Range> ranges,
             Authorizations authorizations
@@ -1636,7 +1614,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         return createBatchScanner(tableName, ranges, accumuloAuthorizations);
     }
 
-    private ScannerBase createBatchScanner(
+    public ScannerBase createBatchScanner(
             String tableName,
             Collection<org.apache.accumulo.core.data.Range> ranges,
             org.apache.accumulo.core.security.Authorizations accumuloAuthorizations
@@ -1766,80 +1744,6 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         }
     }
 
-    public byte[] streamingPropertyValueTableData(String dataRowKey, Long timestamp) {
-        try {
-            List<org.apache.accumulo.core.data.Range> ranges = Lists.newArrayList(RangeUtils.createRangeFromString(dataRowKey));
-
-            final long timerStartTime = System.currentTimeMillis();
-            ScannerBase scanner = createBatchScanner(getDataTableName(), ranges, new org.apache.accumulo.core.security.Authorizations());
-            if (timestamp != null && !DataTableRowKey.isLegacy(dataRowKey)) {
-                IteratorSetting iteratorSetting = new IteratorSetting(
-                        80,
-                        TimestampFilter.class.getSimpleName(),
-                        TimestampFilter.class
-                );
-                TimestampFilter.setStart(iteratorSetting, timestamp, true);
-                scanner.addScanIterator(iteratorSetting);
-            }
-
-            GRAPH_LOGGER.logStartIterator(scanner);
-            Span trace = Trace.start("streamingPropertyValueTableData");
-            trace.data("dataRowKeyCount", Integer.toString(1));
-            try {
-                byte[] result = null;
-                for (Map.Entry<Key, Value> col : scanner) {
-                    String foundKey = col.getKey().getRow().toString();
-                    byte[] value = col.getValue().get();
-                    if (foundKey.equals(dataRowKey)) {
-                        result = value;
-                    }
-                }
-                if (result == null) {
-                    throw new VertexiumException("Could not find data with key: " + dataRowKey);
-                }
-                return result;
-            } finally {
-                scanner.close();
-                trace.stop();
-                GRAPH_LOGGER.logEndIterator(System.currentTimeMillis() - timerStartTime);
-            }
-        } catch (Exception ex) {
-            throw new VertexiumException(ex);
-        }
-    }
-
-    private Map<String, byte[]> streamingPropertyValueTableDatas(List<String> dataRowKeys) {
-        try {
-            if (dataRowKeys.size() == 0) {
-                return Collections.emptyMap();
-            }
-
-            List<org.apache.accumulo.core.data.Range> ranges = dataRowKeys.stream()
-                    .map(RangeUtils::createRangeFromString)
-                    .collect(Collectors.toList());
-
-            final long timerStartTime = System.currentTimeMillis();
-            ScannerBase scanner = createBatchScanner(getDataTableName(), ranges, new org.apache.accumulo.core.security.Authorizations());
-
-            GRAPH_LOGGER.logStartIterator(scanner);
-            Span trace = Trace.start("streamingPropertyValueTableData");
-            trace.data("dataRowKeyCount", Integer.toString(dataRowKeys.size()));
-            try {
-                Map<String, byte[]> results = new HashMap<>();
-                for (Map.Entry<Key, Value> col : scanner) {
-                    results.put(col.getKey().getRow().toString(), col.getValue().get());
-                }
-                return results;
-            } finally {
-                scanner.close();
-                trace.stop();
-                GRAPH_LOGGER.logEndIterator(System.currentTimeMillis() - timerStartTime);
-            }
-        } catch (Exception ex) {
-            throw new VertexiumException(ex);
-        }
-    }
-
     public static ColumnVisibility visibilityToAccumuloVisibility(Visibility visibility) {
         return new ColumnVisibility(visibility.getVisibilityString());
     }
@@ -1929,12 +1833,12 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         return metadataTableName;
     }
 
-    public FileSystem getFileSystem() {
-        return fileSystem;
+    public StreamingPropertyValueStorageStrategy getStreamingPropertyValueStorageStrategy() {
+        return streamingPropertyValueStorageStrategy;
     }
 
-    public String getDataDir() {
-        return dataDir;
+    public AccumuloGraphLogger getGraphLogger() {
+        return GRAPH_LOGGER;
     }
 
     public Connector getConnector() {

@@ -1,17 +1,16 @@
 package org.vertexium.accumulo.mapreduce;
 
 import org.apache.accumulo.core.data.Mutation;
-import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.vertexium.*;
 import org.vertexium.accumulo.*;
+import org.vertexium.accumulo.util.StreamingPropertyValueStorageStrategy;
 import org.vertexium.id.IdGenerator;
 import org.vertexium.id.NameSubstitutionStrategy;
 import org.vertexium.util.IncreasingTime;
 
 import java.io.IOException;
-import java.net.URISyntaxException;
 
 public abstract class ElementMapper<KEYIN, VALUEIN, KEYOUT, VALUEOUT> extends Mapper<KEYIN, VALUEIN, KEYOUT, VALUEOUT> {
     public static final String GRAPH_CONFIG_PREFIX = "graphConfigPrefix";
@@ -29,20 +28,12 @@ public abstract class ElementMapper<KEYIN, VALUEIN, KEYOUT, VALUEOUT> extends Ma
         final Text dataTableName = new Text(AccumuloGraph.getDataTableName(tableNamePrefix));
         final Text verticesTableName = new Text(AccumuloGraph.getVerticesTableName(tableNamePrefix));
         final Text extendedDataTableName = new Text(AccumuloGraph.getExtendedDataTableName(tableNamePrefix));
-        long maxStreamingPropertyValueTableDataSize = accumuloGraphConfiguration.getMaxStreamingPropertyValueTableDataSize();
-        String dataDir = accumuloGraphConfiguration.getDataDir();
-        FileSystem fileSystem;
-        try {
-            fileSystem = accumuloGraphConfiguration.createFileSystem();
-        } catch (URISyntaxException e) {
-            throw new IOException("Could not initialize", e);
-        }
 
         this.graph = new ElementMapperGraph(this);
         VertexiumSerializer vertexiumSerializer = accumuloGraphConfiguration.createSerializer(this.graph);
         nameSubstitutionStrategy = accumuloGraphConfiguration.createSubstitutionStrategy(this.graph);
-
-        this.elementMutationBuilder = new ElementMutationBuilder(fileSystem, vertexiumSerializer, maxStreamingPropertyValueTableDataSize, dataDir) {
+        StreamingPropertyValueStorageStrategy streamingPropertyValueStorageStrategy = accumuloGraphConfiguration.createStreamingPropertyValueStorageStrategy(this.graph);
+        this.elementMutationBuilder = new ElementMutationBuilder(streamingPropertyValueStorageStrategy, vertexiumSerializer) {
             @Override
             protected void saveVertexMutation(Mutation m) {
                 try {
@@ -76,7 +67,7 @@ public abstract class ElementMapper<KEYIN, VALUEIN, KEYOUT, VALUEOUT> extends Ma
             }
 
             @Override
-            protected void saveDataMutation(Mutation m) {
+            public void saveDataMutation(Mutation m) {
                 try {
                     ElementMapper.this.saveDataMutation(context, dataTableName, m);
                 } catch (Exception e) {

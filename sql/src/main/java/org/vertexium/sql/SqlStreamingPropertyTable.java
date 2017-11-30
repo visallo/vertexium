@@ -105,8 +105,8 @@ class SqlStreamingPropertyTable {
         }
     }
 
-    private static StreamAndLength streamAndLength(InputStream inputStream, long length) {
-        if (length < 0) {
+    private static StreamAndLength streamAndLength(InputStream inputStream, Long length) {
+        if (length == null || length < 0) {
             try {
                 AutoDeleteFileInputStream fileInputStream = new AutoDeleteFileInputStream(inputStream);
                 return new StreamAndLength(fileInputStream, fileInputStream.getFileLength());

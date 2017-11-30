@@ -1,10 +1,12 @@
 package org.vertexium.accumulo;
 
 import org.apache.hadoop.fs.Path;
+import org.vertexium.accumulo.util.OverflowIntoHdfsStreamingPropertyValueStorageStrategy;
 import org.vertexium.property.StreamingPropertyValue;
 import org.vertexium.property.StreamingPropertyValueRef;
 
 public class StreamingPropertyValueHdfsRef extends StreamingPropertyValueRef<AccumuloGraph> {
+    private static final long serialVersionUID = -7075231119033637091L;
     private String path;
 
     // here for serialization
@@ -23,6 +25,7 @@ public class StreamingPropertyValueHdfsRef extends StreamingPropertyValueRef<Acc
 
     @Override
     public StreamingPropertyValue toStreamingPropertyValue(AccumuloGraph graph, long timestamp) {
-        return new StreamingPropertyValueHdfs(graph.getFileSystem(), new Path(graph.getDataDir(), getPath()), this);
+        OverflowIntoHdfsStreamingPropertyValueStorageStrategy writer = (OverflowIntoHdfsStreamingPropertyValueStorageStrategy) graph.getStreamingPropertyValueStorageStrategy();
+        return new StreamingPropertyValueHdfs(writer.getFileSystem(), new Path(writer.getDataDir(), getPath()), this);
     }
 }

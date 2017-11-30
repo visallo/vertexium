@@ -1,4 +1,8 @@
+# v3.1.0
+* Added: Accumulo in table storage of streaming property value data
+
 # v3.0.3
+* Changed: Accumulo default data storage to use in table storage and not overflow to HDFS 
 * Added: Added a hasAuthorization method to the Query class to allow searches for any element that uses an authorization string or strings.
 * Added: Query extended data on an element
 * Added: EmptyResultsGraphQuery and EmptyResultsQueryResultsIterable
