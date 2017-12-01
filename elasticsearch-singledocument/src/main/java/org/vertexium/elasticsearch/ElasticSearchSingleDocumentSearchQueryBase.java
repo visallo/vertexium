@@ -48,6 +48,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
+import static org.vertexium.elasticsearch.ElasticsearchSingleDocumentSearchIndex.EXTENDED_DATA_ELEMENT_ID_FIELD_NAME;
 import static org.vertexium.elasticsearch.ElasticsearchSingleDocumentSearchIndex.HIDDEN_VERTEX_FIELD_NAME;
 
 public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase {
@@ -184,6 +185,26 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase {
                 && getParameters().getEdgeLabels().size() > 0) {
             String[] edgeLabelsArray = getParameters().getEdgeLabels().toArray(new String[getParameters().getEdgeLabels().size()]);
             filters.add(FilterBuilders.inFilter(ElasticsearchSingleDocumentSearchIndex.EDGE_LABEL_FIELD_NAME, edgeLabelsArray));
+        }
+
+        if (getParameters().getIds().size() > 0) {
+            List<FilterBuilder> orFilters = new ArrayList<>();
+
+            if (elementTypes == null || elementTypes.contains(ElasticsearchDocumentType.EDGE) || elementTypes.contains(ElasticsearchDocumentType.VERTEX)) {
+                String[] idsArray = getParameters().getIds().toArray(new String[getParameters().getIds().size()]);
+                orFilters.add(FilterBuilders.termsFilter("_id", idsArray));
+            }
+
+            if (elementTypes == null || elementTypes.contains(ElasticsearchDocumentType.EDGE_EXTENDED_DATA) || elementTypes.contains(ElasticsearchDocumentType.VERTEX_EXTENDED_DATA)) {
+                String[] idsArray = getParameters().getIds().toArray(new String[getParameters().getIds().size()]);
+                orFilters.add(FilterBuilders.termsFilter(EXTENDED_DATA_ELEMENT_ID_FIELD_NAME, idsArray));
+            }
+
+            if (orFilters.size() == 1) {
+                filters.add(orFilters.get(0));
+            } else if (orFilters.size() > 1) {
+                filters.add(FilterBuilders.orFilter(orFilters.toArray(new FilterBuilder[orFilters.size()])));
+            }
         }
 
         if ((elementTypes == null || elementTypes.contains(ElasticsearchDocumentType.EDGE) || elementTypes.contains(ElasticsearchDocumentType.VERTEX))
@@ -465,7 +486,7 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase {
                 .setTypes(ElasticsearchSingleDocumentSearchIndex.ELEMENT_TYPE)
                 .setQuery(QueryBuilders.filteredQuery(query, filterBuilder))
                 .addField(ElasticsearchSingleDocumentSearchIndex.ELEMENT_TYPE_FIELD_NAME)
-                .addField(ElasticsearchSingleDocumentSearchIndex.EXTENDED_DATA_ELEMENT_ID_FIELD_NAME)
+                .addField(EXTENDED_DATA_ELEMENT_ID_FIELD_NAME)
                 .addField(ElasticsearchSingleDocumentSearchIndex.EXTENDED_DATA_TABLE_NAME_FIELD_NAME)
                 .addField(ElasticsearchSingleDocumentSearchIndex.EXTENDED_DATA_TABLE_ROW_ID_FIELD_NAME);
         if (includeAggregations) {
@@ -529,7 +550,7 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase {
             ));
         }
         if (has.getElementId() != null) {
-            filters.add(FilterBuilders.termFilter(ElasticsearchSingleDocumentSearchIndex.EXTENDED_DATA_ELEMENT_ID_FIELD_NAME, has.getElementId()));
+            filters.add(FilterBuilders.termFilter(EXTENDED_DATA_ELEMENT_ID_FIELD_NAME, has.getElementId()));
         }
         if (has.getTableName() != null) {
             filters.add(FilterBuilders.termFilter(ElasticsearchSingleDocumentSearchIndex.EXTENDED_DATA_TABLE_NAME_FIELD_NAME, has.getTableName()));
@@ -1202,7 +1223,7 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase {
 
                 if (!Strings.isNullOrEmpty(agg.getFormat())) {
                     throw new VertexiumException("Invalid use of format for property: " + agg.getFieldName() +
-                                                         ". Format is only valid for date properties");
+                            ". Format is only valid for date properties");
                 }
 
                 for (RangeAggregation.Range range : agg.getRanges()) {
@@ -1210,7 +1231,7 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase {
                     Object to = range.getTo();
                     if ((from != null && !(from instanceof Number)) || (to != null && !(to instanceof Number))) {
                         throw new VertexiumException("Invalid range for property: " + agg.getFieldName() +
-                                                             ". Both to and from must be Numeric.");
+                                ". Both to and from must be Numeric.");
                     }
                     rangeBuilder.addRange(
                             range.getKey(),
@@ -1416,9 +1437,11 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase {
             return this;
         }
 
-        public int getTermAggregationShardSize () { return termAggregationShardSize; }
+        public int getTermAggregationShardSize() {
+            return termAggregationShardSize;
+        }
 
-        public Options setTermAggregationShardSize (int termAggregationShardSize) {
+        public Options setTermAggregationShardSize(int termAggregationShardSize) {
             this.termAggregationShardSize = termAggregationShardSize;
             return this;
         }

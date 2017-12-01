@@ -63,7 +63,9 @@ public interface Query {
     <T> Query range(String propertyName, T startValue, boolean inclusiveStartValue, T endValue, boolean inclusiveEndValue);
 
     /**
-     * Adds an id filter to the query.
+     * Adds an id filter to the query. When searching for elements this will limit the search to the elements with
+     * the given ids. When searching for extended data rows this will limit the search to the elements containing the
+     * extended data rows.
      *
      * @param ids The ids to filter on.
      * @return The query object, allowing you to chain methods.
@@ -71,7 +73,9 @@ public interface Query {
     Query hasId(String... ids);
 
     /**
-     * Adds an id filter to the query.
+     * Adds an id filter to the query. When searching for elements this will limit the search to the elements with
+     * the given ids. When searching for extended data rows this will limit the search to the elements containing the
+     * extended data rows.
      *
      * @param ids The ids to filter on.
      * @return The query object, allowing you to chain methods.

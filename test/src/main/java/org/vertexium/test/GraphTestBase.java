@@ -1998,6 +1998,18 @@ public abstract class GraphTestBase {
         vertices = graph.query(AUTHORIZATIONS_A).hasNot("notSetProp").vertices();
         assertResultsCount(2, 2, vertices);
 
+        vertices = graph.query(AUTHORIZATIONS_A).hasId("v1").vertices();
+        assertResultsCount(1, 1, vertices);
+
+        vertices = graph.query(AUTHORIZATIONS_A).hasId("v1", "v2").vertices();
+        assertResultsCount(2, 2, vertices);
+
+        edges = graph.query(AUTHORIZATIONS_A).hasId("e1").edges();
+        assertResultsCount(1, 1, edges);
+
+        edges = graph.query(AUTHORIZATIONS_A).hasId("e1", "e2").edges();
+        assertResultsCount(2, 2, edges);
+
         try {
             graph.query(AUTHORIZATIONS_A).has("notSetProp", Compare.NOT_EQUAL, 5).vertices();
             fail("Value queries should not be allowed for properties that are not defined.");
@@ -6672,6 +6684,12 @@ public abstract class GraphTestBase {
                         .extendedDataRows()
         );
         assertRowIdsAnyOrder(Lists.newArrayList("row3", "row4", "row5", "row6"), searchResultsList);
+
+        QueryResultsIterable<ExtendedDataRow> rows = graph.query(AUTHORIZATIONS_A).hasId("v1").extendedDataRows();
+        assertResultsCount(2, 2, rows);
+
+        rows = graph.query(AUTHORIZATIONS_A).hasId("v1", "v2").extendedDataRows();
+        assertResultsCount(4, 4, rows);
     }
 
     @Test
@@ -6697,6 +6715,12 @@ public abstract class GraphTestBase {
                         .extendedDataRows()
         );
         assertRowIdsAnyOrder(Lists.newArrayList("row5", "row6"), searchResultsList);
+
+        QueryResultsIterable<ExtendedDataRow> rows = graph.query(AUTHORIZATIONS_A).hasId("e1").extendedDataRows();
+        assertResultsCount(2, 2, rows);
+
+        rows = graph.query(AUTHORIZATIONS_A).hasId("v1", "e1").extendedDataRows();
+        assertResultsCount(4, 4, rows);
     }
 
     @Test

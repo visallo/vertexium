@@ -56,6 +56,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
+import static org.vertexium.elasticsearch5.Elasticsearch5SearchIndex.EXTENDED_DATA_ELEMENT_ID_FIELD_NAME;
 import static org.vertexium.elasticsearch5.Elasticsearch5SearchIndex.HIDDEN_VERTEX_FIELD_NAME;
 
 public class ElasticsearchSearchQueryBase extends QueryBase {
@@ -229,10 +230,21 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
             filters.add(QueryBuilders.termsQuery(Elasticsearch5SearchIndex.EDGE_LABEL_FIELD_NAME, edgeLabelsArray));
         }
 
-        if ((elementTypes == null || elementTypes.contains(ElasticsearchDocumentType.EDGE) || elementTypes.contains(ElasticsearchDocumentType.VERTEX))
-                && getParameters().getIds().size() > 0) {
-            String[] idsArray = getParameters().getIds().toArray(new String[getParameters().getIds().size()]);
-            filters.add(QueryBuilders.idsQuery().addIds(idsArray));
+        if (getParameters().getIds().size() > 0) {
+            BoolQueryBuilder orQuery = QueryBuilders.boolQuery()
+                    .minimumShouldMatch(1);
+
+            if (elementTypes == null || elementTypes.contains(ElasticsearchDocumentType.EDGE) || elementTypes.contains(ElasticsearchDocumentType.VERTEX)) {
+                String[] idsArray = getParameters().getIds().toArray(new String[getParameters().getIds().size()]);
+                orQuery.should(QueryBuilders.idsQuery().addIds(idsArray));
+            }
+
+            if (elementTypes == null || elementTypes.contains(ElasticsearchDocumentType.EDGE_EXTENDED_DATA) || elementTypes.contains(ElasticsearchDocumentType.VERTEX_EXTENDED_DATA)) {
+                String[] idsArray = getParameters().getIds().toArray(new String[getParameters().getIds().size()]);
+                orQuery.should(QueryBuilders.termsQuery(EXTENDED_DATA_ELEMENT_ID_FIELD_NAME, idsArray));
+            }
+
+            filters.add(orQuery);
         }
 
         if (getParameters() instanceof QueryStringQueryParameters) {
@@ -676,7 +688,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
             throw new VertexiumNotSupportedException("GeoCompare searches only accept values of type GeoShape");
         }
 
-        GeoShape value = (GeoShape)has.value;
+        GeoShape value = (GeoShape) has.value;
         if (value instanceof GeoHash) {
             value = ((GeoHash) value).toGeoRect();
         }
@@ -1350,7 +1362,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
 
                 if (!Strings.isNullOrEmpty(agg.getFormat())) {
                     throw new VertexiumException("Invalid use of format for property: " + agg.getFieldName() +
-                                                         ". Format is only valid for date properties");
+                            ". Format is only valid for date properties");
                 }
 
                 for (RangeAggregation.Range range : agg.getRanges()) {
@@ -1358,7 +1370,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
                     Object to = range.getTo();
                     if ((from != null && !(from instanceof Number)) || (to != null && !(to instanceof Number))) {
                         throw new VertexiumException("Invalid range for property: " + agg.getFieldName() +
-                                                             ". Both to and from must be Numeric.");
+                                ". Both to and from must be Numeric.");
                     }
                     rangeBuilder.addRange(
                             range.getKey(),
@@ -1591,9 +1603,11 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
             return this;
         }
 
-        public int getTermAggregationShardSize () { return termAggregationShardSize; }
+        public int getTermAggregationShardSize() {
+            return termAggregationShardSize;
+        }
 
-        public Options setTermAggregationShardSize (int termAggregationShardSize) {
+        public Options setTermAggregationShardSize(int termAggregationShardSize) {
             this.termAggregationShardSize = termAggregationShardSize;
             return this;
         }

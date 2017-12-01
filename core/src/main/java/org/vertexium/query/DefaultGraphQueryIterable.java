@@ -111,9 +111,17 @@ public class DefaultGraphQueryIterable<T> implements
                                 match = false;
                             }
                         }
-                        if (vertexiumElem instanceof Element && parameters.getIds().size() > 0) {
-                            if (!parameters.getIds().contains(((Element) vertexiumElem).getId())) {
-                                match = false;
+                        if (parameters.getIds().size() > 0) {
+                            if (vertexiumElem instanceof Element) {
+                                if (!parameters.getIds().contains(((Element) vertexiumElem).getId())) {
+                                    match = false;
+                                }
+                            } else if (vertexiumElem instanceof ExtendedDataRow) {
+                                if (!parameters.getIds().contains(((ExtendedDataRow) vertexiumElem).getId().getElementId())) {
+                                    match = false;
+                                }
+                            } else {
+                                throw new VertexiumException("Unhandled element type: " + vertexiumElem.getClass().getName());
                             }
                         }
                     }

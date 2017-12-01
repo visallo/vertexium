@@ -4,6 +4,7 @@
 * Added: EmptyResultsGraphQuery and EmptyResultsQueryResultsIterable
 * Fixed: GeoPoint.distanceBetween and GeoPoint.calculateCenter calculations
 * Fixed: Elasticsearch5 field limit of 1000
+* Fixed: Query.hasId to work with extended data rows
 * Removed: CompositeGraphQuery
 
 # v3.0.2
