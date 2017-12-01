@@ -2278,14 +2278,6 @@ public abstract class GraphTestBase {
                 .has(agePropertyName, Contains.IN, new Integer[]{25, 30})
                 .vertices();
         Assert.assertEquals(2, count(vertices));
-
-        vertices = new CompositeGraphQuery(
-                graph,
-                graph.query(AUTHORIZATIONS_A).has(agePropertyName, 25),
-                graph.query(AUTHORIZATIONS_A).has(agePropertyName, 25),
-                graph.query(AUTHORIZATIONS_A).has(agePropertyName, 30)
-        ).vertices();
-        Assert.assertEquals(2, count(vertices));
     }
 
     @Test
