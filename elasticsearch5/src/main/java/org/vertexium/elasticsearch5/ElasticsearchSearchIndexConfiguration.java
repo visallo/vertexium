@@ -6,7 +6,6 @@ import org.vertexium.GraphConfiguration;
 import org.vertexium.VertexiumException;
 import org.vertexium.elasticsearch5.score.NopScoringStrategy;
 import org.vertexium.elasticsearch5.score.ScoringStrategy;
-import org.vertexium.id.NameSubstitutionStrategy;
 import org.vertexium.util.ConfigurationUtils;
 
 import java.io.File;
@@ -28,8 +27,6 @@ public class ElasticsearchSearchIndexConfiguration {
     public static final String NUMBER_OF_REPLICAS = "replicas";
     public static final int NUMBER_OF_REPLICAS_DEFAULT = 1;
     public static final int NUMBER_OF_REPLICAS_IN_PROCESS_DEFAULT = 0;
-    public static final String AUTHORIZATION_FILTER_ENABLED = "authorizationFilterEnabled";
-    public static final boolean AUTHORIZATION_FILTER_ENABLED_DEFAULT = true;
     public static final String SCORING_STRATEGY_CLASS_NAME = "scoringStrategy";
     public static final String TERM_AGGREGATION_SHARD_SIZE = "termAggregation.shardSize";
     public static final int TERM_AGGREGATION_SHARD_SIZE_DEFAULT = 10;
@@ -52,11 +49,12 @@ public class ElasticsearchSearchIndexConfiguration {
     public static final String ES_CONFIG_FILE_DEFAULT = null;
     public static final String ERROR_ON_MISSING_VERTEXIUM_PLUGIN = "errorOnMissingVertexiumPlugin";
     public static final boolean ERROR_ON_MISSING_VERTEXIUM_PLUGIN_DEFAULT = false;
+    public static final String INDEX_MAPPING_TOTAL_FIELDS_LIMIT = "indexMappingTotalFieldsLimit";
+    public static final int INDEX_MAPPING_TOTAL_FIELDS_LIMIT_DEFAULT = 100000;
 
     private GraphConfiguration graphConfiguration;
     private IndexSelectionStrategy indexSelectionStrategy;
     private ScoringStrategy scoringStrategy;
-    private NameSubstitutionStrategy nameSubstitutionStrategy;
 
     public ElasticsearchSearchIndexConfiguration(Graph graph, GraphConfiguration graphConfiguration) {
         this.graphConfiguration = graphConfiguration;
@@ -128,6 +126,10 @@ public class ElasticsearchSearchIndexConfiguration {
         return isInProcessNode() ? NUMBER_OF_REPLICAS_IN_PROCESS_DEFAULT : NUMBER_OF_REPLICAS_DEFAULT;
     }
 
+    public int getIndexMappingTotalFieldsLimit() {
+        return graphConfiguration.getInt(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + INDEX_MAPPING_TOTAL_FIELDS_LIMIT, INDEX_MAPPING_TOTAL_FIELDS_LIMIT_DEFAULT);
+    }
+
     public int getTermAggregationShardSize() {
         int termAggregationShardSizeDefault = getTermAggregationShardSizeDefault();
         return graphConfiguration.getInt(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + TERM_AGGREGATION_SHARD_SIZE, termAggregationShardSizeDefault);
@@ -135,10 +137,6 @@ public class ElasticsearchSearchIndexConfiguration {
 
     public int getTermAggregationShardSizeDefault() {
         return TERM_AGGREGATION_SHARD_SIZE_DEFAULT;
-    }
-
-    public boolean isAuthorizationFilterEnabled() {
-        return graphConfiguration.getBoolean(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + AUTHORIZATION_FILTER_ENABLED, AUTHORIZATION_FILTER_ENABLED_DEFAULT);
     }
 
     public boolean isAllFieldEnabled(boolean defaultAllFieldEnabled) {

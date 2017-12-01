@@ -38,6 +38,11 @@ public abstract class ElasticsearchSingleDocumentSearchIndexTestBase extends Gra
     }
 
     @Override
+    protected void addAuthorizations(String... authorizations) {
+        getGraph().createAuthorizations(authorizations);
+    }
+
+    @Override
     protected boolean disableEdgeIndexing(Graph graph) {
         return getElasticsearchResource().disableEdgeIndexing(graph);
     }

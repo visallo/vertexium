@@ -1895,6 +1895,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
                 .setSettings(Settings.builder()
                                      .put("number_of_shards", getConfig().getNumberOfShards())
                                      .put("number_of_replicas", getConfig().getNumberOfReplicas())
+                                     .put("index.mapping.total_fields.limit", getConfig().getIndexMappingTotalFieldsLimit())
                 )
                 .execute().actionGet();
 

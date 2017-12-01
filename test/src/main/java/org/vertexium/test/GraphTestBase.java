@@ -86,6 +86,8 @@ public abstract class GraphTestBase {
 
     protected abstract Authorizations createAuthorizations(String... auths);
 
+    protected abstract void addAuthorizations(String... authorizations);
+
     @Before
     public void before() throws Exception {
         graph = createGraph();
@@ -2444,8 +2446,8 @@ public abstract class GraphTestBase {
 
         try {
             graph.query(AUTHORIZATIONS_A)
-                .has(Double.class, Compare.EQUAL, 25)
-                .vertices();
+                    .has(Double.class, Compare.EQUAL, 25)
+                    .vertices();
             fail("Should not allow searching for a dataType that there are no mappings for");
         } catch (VertexiumException e) {
             // expected
@@ -4063,10 +4065,10 @@ public abstract class GraphTestBase {
         assertEquals(0, relatedEdges.size());
     }
 
-    // Test for performance
-    //@Test
+    @Test
+    @Ignore // performance test
     @SuppressWarnings("unused")
-    private void testFindRelatedEdgesPerformance() {
+    public void testFindRelatedEdgesPerformance() {
         int totalNumberOfVertices = 100;
         int totalNumberOfEdges = 10000;
         int totalVerticesToCheck = 100;
@@ -4312,8 +4314,8 @@ public abstract class GraphTestBase {
 
         try {
             graph.query(AUTHORIZATIONS_A)
-                .has("exactMatch", TextPredicate.DOES_NOT_CONTAIN, "Test")
-                .vertices();
+                    .has("exactMatch", TextPredicate.DOES_NOT_CONTAIN, "Test")
+                    .vertices();
             fail("Full text queries should not be allowed for properties that are not indexed with FULL_TEXT.");
         } catch (VertexiumException ve) {
             assertEquals("Check your TextIndexHint settings. Property exactMatch is not full text indexed.", ve.getMessage());
@@ -5681,14 +5683,14 @@ public abstract class GraphTestBase {
         graph.defineProperty("gender").dataType(String.class).textIndexHint(TextIndexHint.EXACT_MATCH).define();
 
         graph.prepareVertex("v1", VISIBILITY_EMPTY)
-                .addExtendedData("t1","r1", "name", "Joe", VISIBILITY_EMPTY)
-                .addExtendedData("t1","r1", "gender", "male", VISIBILITY_EMPTY)
-                .addExtendedData("t1","r2", "name", "Sam", VISIBILITY_EMPTY)
-                .addExtendedData("t1","r2", "gender", "male", VISIBILITY_EMPTY)
-                .addExtendedData("t1","r3", "name", "Sam", VISIBILITY_EMPTY)
-                .addExtendedData("t1","r3", "gender", "female", VISIBILITY_EMPTY)
-                .addExtendedData("t1","r4", "name", "Sam", VISIBILITY_EMPTY)
-                .addExtendedData("t1","r4", "gender", "female", VISIBILITY_EMPTY)
+                .addExtendedData("t1", "r1", "name", "Joe", VISIBILITY_EMPTY)
+                .addExtendedData("t1", "r1", "gender", "male", VISIBILITY_EMPTY)
+                .addExtendedData("t1", "r2", "name", "Sam", VISIBILITY_EMPTY)
+                .addExtendedData("t1", "r2", "gender", "male", VISIBILITY_EMPTY)
+                .addExtendedData("t1", "r3", "name", "Sam", VISIBILITY_EMPTY)
+                .addExtendedData("t1", "r3", "gender", "female", VISIBILITY_EMPTY)
+                .addExtendedData("t1", "r4", "name", "Sam", VISIBILITY_EMPTY)
+                .addExtendedData("t1", "r4", "gender", "female", VISIBILITY_EMPTY)
                 .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
@@ -7144,5 +7146,42 @@ public abstract class GraphTestBase {
         assertEquals("prop1_A", values.get(4).getPropertyName());
         assertEquals(false, values.get(4).isDeleted());
         assertEquals(VISIBILITY_A, values.get(4).getPropertyVisibility());
+    }
+
+    @Test
+    @Ignore // elasticsearch takes a very long time to run this
+    public void manyVisibilities() {
+        int count = 1010; // 1000 is the default max for elasticsearch
+
+        List<String> authsToAdd = new ArrayList<>();
+        authsToAdd.add("all");
+        for (int i = 0; i < count; i++) {
+            String itemVisibilityString = String.format("v%d", i);
+            authsToAdd.add(itemVisibilityString);
+        }
+        System.out.println("Adding auths");
+        addAuthorizations(authsToAdd.toArray(new String[authsToAdd.size()]));
+
+        System.out.println("Add vertices");
+        for (int i = 0; i < count; i++) {
+            String itemVisibilityString = String.format("v%d", i);
+            Visibility visibility = new Visibility(String.format("v%d|all", i));
+            Authorizations authorizations = createAuthorizations("all", itemVisibilityString);
+            graph.prepareVertex(visibility)
+                    .addPropertyValue("key1", "name1", itemVisibilityString, visibility)
+                    .save(authorizations);
+        }
+        graph.flush();
+
+        System.out.println("Getting vertices");
+        Authorizations authorizations = createAuthorizations("all");
+        ArrayList<Vertex> vertices = Lists.newArrayList(graph.getVertices(authorizations));
+        assertEquals(count, vertices.size());
+
+        System.out.println("Query vertices");
+        vertices = Lists.newArrayList(graph.query(authorizations)
+                .limit((Integer) null)
+                .vertices());
+        assertEquals(count, vertices.size());
     }
 }

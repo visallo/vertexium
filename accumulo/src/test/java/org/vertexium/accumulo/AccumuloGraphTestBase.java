@@ -53,6 +53,11 @@ public abstract class AccumuloGraphTestBase extends GraphTestBase {
     }
 
     @Override
+    protected void addAuthorizations(String... authorizations) {
+        getAccumuloResource().addAuthorizations(getGraph(), authorizations);
+    }
+
+    @Override
     protected boolean isFetchHintNoneVertexQuerySupported() {
         return false;
     }
