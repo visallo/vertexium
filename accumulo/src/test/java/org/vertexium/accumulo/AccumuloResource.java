@@ -3,19 +3,24 @@ package org.vertexium.accumulo;
 import org.apache.accumulo.core.client.AccumuloException;
 import org.apache.accumulo.core.client.AccumuloSecurityException;
 import org.apache.accumulo.core.client.Connector;
+import org.apache.accumulo.core.security.Authorizations;
 import org.apache.accumulo.minicluster.MiniAccumuloCluster;
 import org.apache.accumulo.minicluster.MiniAccumuloConfig;
 import org.junit.rules.ExternalResource;
 import org.vertexium.GraphConfiguration;
+import org.vertexium.VertexiumException;
 import org.vertexium.test.GraphTestBase;
 import org.vertexium.util.VertexiumLogger;
 import org.vertexium.util.VertexiumLoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.vertexium.test.GraphTestBase.*;
 
 public class AccumuloResource extends ExternalResource {
@@ -71,6 +76,29 @@ public class AccumuloResource extends ExternalResource {
                         VISIBILITY_MIXED_CASE_STRING
                 )
         );
+    }
+
+    public void addAuthorizations(AccumuloGraph graph, String... authorizations) {
+        try {
+            String principal = graph.getConnector().whoami();
+            Authorizations currentAuthorizations = graph.getConnector().securityOperations().getUserAuthorizations(principal);
+
+            List<byte[]> newAuthorizationsArray = new ArrayList<>();
+            for (byte[] currentAuth : currentAuthorizations) {
+                newAuthorizationsArray.add(currentAuth);
+            }
+
+            for (String authorization : authorizations) {
+                if (!currentAuthorizations.contains(authorization)) {
+                    newAuthorizationsArray.add(authorization.getBytes(UTF_8));
+                }
+            }
+
+            Authorizations newAuthorizations = new Authorizations(newAuthorizationsArray);
+            graph.getConnector().securityOperations().changeUserAuthorizations(principal, newAuthorizations);
+        } catch (Exception ex) {
+            throw new VertexiumException("could not add authorizations", ex);
+        }
     }
 
     public MiniAccumuloCluster getAccumulo() {

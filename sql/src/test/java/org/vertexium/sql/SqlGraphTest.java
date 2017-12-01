@@ -65,6 +65,11 @@ public class SqlGraphTest extends GraphTestBase {
     }
 
     @Override
+    protected void addAuthorizations(String... authorizations) {
+        getGraph().createAuthorizations(authorizations);
+    }
+
+    @Override
     protected boolean isAdvancedGeoQuerySupported() {
         return false;
     }

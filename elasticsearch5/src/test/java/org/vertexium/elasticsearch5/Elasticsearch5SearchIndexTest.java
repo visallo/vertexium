@@ -35,6 +35,11 @@ public class Elasticsearch5SearchIndexTest extends GraphTestBase {
         return new InMemoryAuthorizations(auths);
     }
 
+    @Override
+    protected void addAuthorizations(String... authorizations) {
+        getGraph().createAuthorizations(authorizations);
+    }
+
     @Before
     @Override
     public void before() throws Exception {
