@@ -11,7 +11,7 @@
     <groupId>org.vertexium</groupId>
     <artifactId>vertexium-root</artifactId>
     <packaging>pom</packaging>
-    <version>3.0.3-SNAPSHOT</version>
+    <version>3.0.3</version>
     <name>Vertexium</name>
     <description>
         Vertexium is an API to manipulate graphs, similar to blueprints. Unlike blueprints, every Vertexium method
@@ -36,7 +36,7 @@
         <url>scm:git:git@github.com:v5analytics/vertexium.git</url>
         <connection>scm:git:git@github.com:v5analytics/vertexium.git</connection>
         <developerConnection>scm:git:git@github.com:v5analytics/vertexium.git</developerConnection>
-        <tag>HEAD</tag>
+        <tag>vertexium-root-3.0.3</tag>
     </scm>
 
     <issueManagement>
