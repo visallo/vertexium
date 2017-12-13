@@ -1,3 +1,6 @@
+# v3.0.4
+* Fixed: Infinite loop in PagingIterable if Elasticsearch returned vertices that wasn't saved in the database yet
+
 # v3.0.3
 * Added: Added a hasAuthorization method to the Query class to allow searches for any element that uses an authorization string or strings.
 * Added: Query extended data on an element

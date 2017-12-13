@@ -110,6 +110,9 @@ public abstract class PagingIterable<T> implements
             }
             long nextPageSize = lastPageSize = Math.min(pageSize, limit - currentResultNumber);
             if (firstIterable == null) {
+                if (nextPageSize <= 0) {
+                    return null;
+                }
                 firstIterable = getPageIterable((int)currentResultNumber, (int)nextPageSize, false);
             }
             Iterator<T> it = firstIterable.iterator();
