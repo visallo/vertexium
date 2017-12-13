@@ -9,10 +9,10 @@ The Vertexium API was designed to be generic, allowing for multiple implementati
 
 * Data storage
   * [Accumulo](accumulo/README.md)
-  * Experimental: [SQL](sql/README.md)
+  * [SQL](sql/README.md)
 
 * Search
-  * [Elasticsearch](elasticsearch-singledocument/README.md)
+  * [Elasticsearch](elasticsearch5/README.md)
 
 Maven
 =====
@@ -37,7 +37,7 @@ Maven
     </dependency>
     <dependency>
         <groupId>org.vertexium</groupId>
-        <artifactId>vertexium-elasticsearch-singledocument</artifactId>
+        <artifactId>vertexium-elasticsearch5</artifactId>
         <version>${vertexium.version}</version>
     </dependency>
     <dependency>

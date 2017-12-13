@@ -109,7 +109,7 @@
             <dependencies>
                 <dependency>
                     <groupId>org.vertexium</groupId>
-                    <artifactId>vertexium-elasticsearch-singledocument</artifactId>
+                    <artifactId>vertexium-elasticsearch5</artifactId>
                     <version>${project.version}</version>
                 </dependency>
             </dependencies>

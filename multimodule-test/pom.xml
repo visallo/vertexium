@@ -13,7 +13,6 @@
     <packaging>pom</packaging>
 
     <modules>
-        <module>accumulo-elasticsearch</module>
         <module>accumulo-elasticsearch5</module>
     </modules>
 </project>

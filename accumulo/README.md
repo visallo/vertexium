@@ -47,6 +47,13 @@ The graph is stored in a hand full of tables with the following schema.
 <tr><td>E[id]</td>                                        <td>PROPMETA</td>   <td>[pname\x1fpkey\x1fpvisibility\x1fmetadataKey]</td> <td>[metadataValue]</td> <td>Element property metadata</td></tr>
 </table>
 
+### extended data
+
+<table>
+<tr><th>Row</th>                                          <th>CF</th>         <th>CQ</th>                                            <th>Value</th>           <th>Description</th></tr>
+<tr><td>E/V [ElementId] [TableName] [Row]</td>            <td>EXTDATA</td>    <td>[column name]</td>                                 <td>[value]</td>         <td>Value</td></tr>
+</table>
+
 StreamingPropertyValue
 ----------------------
 
