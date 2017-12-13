@@ -389,8 +389,6 @@
         <module>blueprints</module>
         <module>blueprints-test</module>
 
-        <module>elasticsearch-singledocument</module>
-        <module>elasticsearch-singledocument-plugin</module>
         <module>elasticsearch5</module>
         <module>elasticsearch5-plugin</module>
 
@@ -529,29 +527,6 @@
                     </plugin>
                 </plugins>
             </build>
-        </profile>
-        <profile>
-            <id>es17-multimodule-test</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-surefire-plugin</artifactId>
-                        <configuration>
-                            <skipTests>false</skipTests>
-                            <includes>
-                                <include>%regex[.*(multimodule).*ElasticsearchSingleDocumentTest.*]</include>
-                            </includes>
-                            <excludes>
-                                <exclude>%regex[.*(elasticsearch|cypher|accumulo).*]</exclude>
-                            </excludes>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-            <modules>
-                <module>multimodule-test</module>
-            </modules>
         </profile>
         <profile>
             <id>es5-multimodule-test</id>

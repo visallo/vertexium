@@ -1,5 +1,6 @@
 # v3.1.0
 * Added: Accumulo in table storage of streaming property value data
+* Removed: ElasticSearch 1.x support
 
 # v3.0.3
 * Changed: Accumulo default data storage to use in table storage and not overflow to HDFS 
