@@ -1,6 +1,7 @@
 # v3.0.4
 * Fixed: Infinite loop in PagingIterable if Elasticsearch returned vertices that wasn't saved in the database yet
 * Fixed: Elasticsearch flush overflow causing excessive exceptions
+* Fixed: Fix Elasticsearch5 missing field exception when sorting on multiple indices
 
 # v3.0.3
 * Added: Added a hasAuthorization method to the Query class to allow searches for any element that uses an authorization string or strings.
