@@ -1905,6 +1905,44 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    public void testGraphQueryPagingForUniqueIdsSortedOrder() {
+        String namePropertyName = "first.name";
+        graph.defineProperty(namePropertyName).dataType(String.class).sortable(true).textIndexHint(TextIndexHint.ALL).define();
+
+        graph.prepareVertex("v1", VISIBILITY_A)
+                .addPropertyValue("k1", namePropertyName, "B", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
+        graph.prepareVertex("v2", VISIBILITY_A)
+                .addPropertyValue("k1", namePropertyName, "A", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
+        graph.prepareVertex("v3", VISIBILITY_A)
+                .addPropertyValue("k1", namePropertyName, "C", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
+        graph.flush();
+
+        QueryResultsIterable<String> idsIterable = graph.query(AUTHORIZATIONS_A).skip(0).limit(1).vertexIds();
+        assertIdsAnyOrder(idsIterable, "v1");
+        assertResultsCount(1, 3, idsIterable);
+
+        idsIterable = graph.query(AUTHORIZATIONS_A).skip(1).limit(1).vertexIds();
+        assertIdsAnyOrder(idsIterable, "v2");
+
+        idsIterable = graph.query(AUTHORIZATIONS_A).skip(2).limit(1).vertexIds();
+        assertIdsAnyOrder(idsIterable, "v3");
+
+        idsIterable = graph.query(AUTHORIZATIONS_A).sort(namePropertyName, SortDirection.ASCENDING).vertexIds();
+        assertResultsCount(3, 3, idsIterable);
+
+        List<Vertex> vertices = toList(graph.query(AUTHORIZATIONS_A)
+                .sort(namePropertyName, SortDirection.ASCENDING)
+                .skip(0)
+                .limit(1)
+                .vertices());
+        assertEquals(1, vertices.size());
+        assertEquals("v2", vertices.get(0).getId());
+    }
+
+    @Test
     public void testGraphQueryForIds() {
         String namePropertyName = "first.name";
         Vertex v1 = graph.prepareVertex("v1", VISIBILITY_A)
