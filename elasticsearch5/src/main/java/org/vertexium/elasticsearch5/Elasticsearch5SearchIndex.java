@@ -403,6 +403,10 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
     }
 
     private void addActionRequestBuilderForFlush(String elementId, UpdateRequestBuilder updateRequestBuilder) {
+        addActionRequestBuilderForFlush(elementId, null, updateRequestBuilder);
+    }
+
+    private void addActionRequestBuilderForFlush(String elementId, String rowId, UpdateRequestBuilder updateRequestBuilder) {
         Future future;
         try {
             future = updateRequestBuilder.execute();
@@ -411,7 +415,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
             future = SettableFuture.create();
             ((SettableFuture) future).setException(ex);
         }
-        getFlushObjectQueue().add(new FlushObject(elementId, updateRequestBuilder, future));
+        getFlushObjectQueue().add(new FlushObject(elementId, rowId, updateRequestBuilder, future));
     }
 
     @Override
@@ -462,7 +466,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
                     .setDocAsUpsert(true)
                     .setDoc(source)
                     .setRetryOnConflict(MAX_RETRIES);
-            addActionRequestBuilderForFlush(element.getId(), updateRequestBuilder);
+            addActionRequestBuilderForFlush(element.getId(), rowId, updateRequestBuilder);
 
             if (getConfig().isAutoFlush()) {
                 flush(graph);
@@ -1539,6 +1543,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
 
     private void flushFlushObjectQueue() {
         Queue<FlushObject> queue = getFlushObjectQueue();
+        int failedToFlushCount = 0;
         while (queue.size() > 0) {
             FlushObject flushObject = queue.remove();
             try {
@@ -1548,9 +1553,11 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
                 }
                 flushObject.future.get(30, TimeUnit.SECONDS);
             } catch (Exception ex) {
-                String message = String.format("Could not write element \"%s\"", flushObject.elementId);
+                String message = String.format("Could not write %s", flushObject);
                 if (flushObject.retryCount >= MAX_RETRIES) {
-                    throw new VertexiumException(message, ex);
+                    failedToFlushCount++;
+                    LOGGER.error("%s", message, ex);
+                    continue;
                 }
                 String logMessage = String.format("%s: %s (retrying: %d/%d)", message, ex.getMessage(), flushObject.retryCount + 1, MAX_RETRIES);
                 if (flushObject.retryCount > 0) { // don't log warn the first time
@@ -1561,6 +1568,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
                 ListenableActionFuture future = flushObject.actionRequestBuilder.execute();
                 queue.add(new FlushObject(
                         flushObject.elementId,
+                        flushObject.extendedDataRowId,
                         flushObject.actionRequestBuilder,
                         future,
                         flushObject.retryCount + 1,
@@ -1569,6 +1577,9 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
             }
         }
         queue.clear();
+        if (failedToFlushCount > 0) {
+            throw new VertexiumException("Failed to flush " + failedToFlushCount + " objects");
+        }
     }
 
     protected String[] getIndexNamesAsArray(Graph graph) {
@@ -1852,12 +1863,12 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
         propertyValueMap.put(FIELD_TYPE, "polygon");
         List<List<List<Double>>> coordinates = new ArrayList<>();
         coordinates.add(geoPolygon.getOuterBoundary().stream()
-                                .map(geoPoint -> Arrays.asList(geoPoint.getLongitude(), geoPoint.getLatitude()))
-                                .collect(Collectors.toList()));
+                .map(geoPoint -> Arrays.asList(geoPoint.getLongitude(), geoPoint.getLatitude()))
+                .collect(Collectors.toList()));
         geoPolygon.getHoles().forEach(holeBoundary ->
-                                              coordinates.add(holeBoundary.stream()
-                                                                      .map(geoPoint -> Arrays.asList(geoPoint.getLongitude(), geoPoint.getLatitude()))
-                                                                      .collect(Collectors.toList())));
+                coordinates.add(holeBoundary.stream()
+                        .map(geoPoint -> Arrays.asList(geoPoint.getLongitude(), geoPoint.getLatitude()))
+                        .collect(Collectors.toList())));
         propertyValueMap.put(FIELD_COORDINATES, coordinates);
         return propertyValueMap;
     }
@@ -1893,9 +1904,9 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
     protected void createIndex(String indexName) throws IOException {
         CreateIndexResponse createResponse = client.admin().indices().prepareCreate(indexName)
                 .setSettings(Settings.builder()
-                                     .put("number_of_shards", getConfig().getNumberOfShards())
-                                     .put("number_of_replicas", getConfig().getNumberOfReplicas())
-                                     .put("index.mapping.total_fields.limit", getConfig().getIndexMappingTotalFieldsLimit())
+                        .put("number_of_shards", getConfig().getNumberOfShards())
+                        .put("number_of_replicas", getConfig().getNumberOfReplicas())
+                        .put("index.mapping.total_fields.limit", getConfig().getIndexMappingTotalFieldsLimit())
                 )
                 .execute().actionGet();
 
@@ -1928,6 +1939,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
 
     private class FlushObject {
         public final String elementId;
+        public final String extendedDataRowId;
         public final ActionRequestBuilder actionRequestBuilder;
         public final Future future;
         public final int retryCount;
@@ -1935,24 +1947,36 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
 
         FlushObject(
                 String elementId,
+                String extendedDataRowId,
                 UpdateRequestBuilder updateRequestBuilder,
                 Future future
         ) {
-            this(elementId, updateRequestBuilder, future, 0, System.currentTimeMillis());
+            this(elementId, extendedDataRowId, updateRequestBuilder, future, 0, System.currentTimeMillis());
         }
 
         FlushObject(
                 String elementId,
+                String extendedDataRowId,
                 ActionRequestBuilder actionRequestBuilder,
                 Future future,
                 int retryCount,
                 long retryTime
         ) {
             this.elementId = elementId;
+            this.extendedDataRowId = extendedDataRowId;
             this.actionRequestBuilder = actionRequestBuilder;
             this.future = future;
             this.retryCount = retryCount;
             this.retryTime = retryTime;
+        }
+
+        @Override
+        public String toString() {
+            if (extendedDataRowId == null) {
+                return String.format("Element \"%s\"", elementId);
+            } else {
+                return String.format("Extended data row \"%s\":\"%s\"", elementId, extendedDataRowId);
+            }
         }
     }
 }
