@@ -6651,6 +6651,10 @@ public abstract class GraphTestBase {
         String rowTwoName = "row.two";
         String dateColumnName = "date.column";
         String nameColumnName = "name.column";
+
+        graph.defineProperty(dateColumnName).sortable(true).dataType(Date.class).define();
+        graph.defineProperty(nameColumnName).sortable(true).textIndexHint(TextIndexHint.values()).dataType(String.class).define();
+
         graph.prepareVertex("v1", VISIBILITY_A)
                 .addExtendedData(tableName, rowOneName, dateColumnName, date1, VISIBILITY_A)
                 .addExtendedData(tableName, rowOneName, nameColumnName, "value 1", VISIBILITY_A)
@@ -6664,6 +6668,7 @@ public abstract class GraphTestBase {
         // Should not come back when finding vertices
         QueryResultsIterable<Vertex> queryResults = graph.query(AUTHORIZATIONS_A)
                 .has(dateColumnName, date1)
+                .sort(dateColumnName, SortDirection.ASCENDING)
                 .vertices();
         assertEquals(0, queryResults.getTotalHits());
 
