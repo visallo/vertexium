@@ -4,6 +4,7 @@
 
 # v3.0.4
 * Fixed: Infinite loop in PagingIterable if Elasticsearch returned vertices that wasn't saved in the database yet
+* Fixed: Fix Elasticsearch5 missing field exception when sorting on multiple indices
 
 # v3.0.3
 * Changed: Accumulo default data storage to use in table storage and not overflow to HDFS 
