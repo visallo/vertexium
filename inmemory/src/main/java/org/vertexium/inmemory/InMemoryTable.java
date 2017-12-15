@@ -7,8 +7,10 @@ import org.vertexium.util.LookAheadIterable;
 
 import java.util.EnumSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.stream.Collectors;
 
 public abstract class InMemoryTable<TElement extends InMemoryElement> {
     private Map<String, InMemoryTableElement<TElement>> rows;
@@ -38,6 +40,11 @@ public abstract class InMemoryTable<TElement extends InMemoryElement> {
         if (inMemoryTableElement == null) {
             inMemoryTableElement = createInMemoryTableElement(id);
             rows.put(id, inMemoryTableElement);
+            // Sort rows by id in ascending order
+            rows = rows.entrySet().stream()
+                    .sorted(Map.Entry.comparingByKey())
+                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue,
+                            (oldValue, newValue) -> oldValue, LinkedHashMap::new));
         }
         inMemoryTableElement.addAll(newMutations);
     }
