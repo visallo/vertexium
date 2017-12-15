@@ -42,6 +42,7 @@ import org.joda.time.DateTime;
 import org.vertexium.*;
 import org.vertexium.elasticsearch5.score.ScoringStrategy;
 import org.vertexium.elasticsearch5.utils.ElasticsearchExtendedDataIdUtils;
+import org.vertexium.elasticsearch5.utils.ElasticsearchTypes;
 import org.vertexium.elasticsearch5.utils.InfiniteScrollIterable;
 import org.vertexium.elasticsearch5.utils.PagingIterable;
 import org.vertexium.query.*;
@@ -269,7 +270,11 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
             if (Element.ID_PROPERTY_NAME.equals(sortContainer.propertyName)) {
                 q.addSort("_uid", esOrder);
             } else if (Edge.LABEL_PROPERTY_NAME.equals(sortContainer.propertyName)) {
-                q.addSort(Elasticsearch5SearchIndex.EDGE_LABEL_FIELD_NAME, esOrder);
+                q.addSort(
+                        SortBuilders.fieldSort(Elasticsearch5SearchIndex.EDGE_LABEL_FIELD_NAME)
+                                .unmappedType("keyword")
+                                .order(esOrder)
+                );
             } else {
                 PropertyDefinition propertyDefinition = getGraph().getPropertyDefinition(sortContainer.propertyName);
                 if (propertyDefinition == null) {
@@ -305,7 +310,11 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
                     if (propertyDefinition.getDataType() == String.class) {
                         sortField += Elasticsearch5SearchIndex.EXACT_MATCH_PROPERTY_NAME_SUFFIX;
                     }
-                    q.addSort(sortField, esOrder);
+                    q.addSort(
+                            SortBuilders.fieldSort(sortField)
+                                    .unmappedType(ElasticsearchTypes.fromJavaClass(propertyDefinition.getDataType()))
+                                    .order(esOrder)
+                    );
                 }
             }
         }
