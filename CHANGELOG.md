@@ -1,5 +1,6 @@
 # v3.0.4
 * Fixed: Infinite loop in PagingIterable if Elasticsearch returned vertices that wasn't saved in the database yet
+* Fixed: Pagination returning duplicate ids on different pages by adding default sort by score and then id. If sorts are specified, sort by score and then id after specified sorts. If sorts are not specified, sort by score and then id.
 
 # v3.0.3
 * Added: Added a hasAuthorization method to the Query class to allow searches for any element that uses an authorization string or strings.
