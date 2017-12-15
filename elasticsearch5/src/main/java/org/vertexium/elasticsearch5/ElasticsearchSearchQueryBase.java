@@ -265,10 +265,12 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
     }
 
     protected void applySort(SearchRequestBuilder q) {
+        boolean sortedById = false;
         for (SortContainer sortContainer : getParameters().getSortContainers()) {
             SortOrder esOrder = sortContainer.direction == SortDirection.ASCENDING ? SortOrder.ASC : SortOrder.DESC;
             if (Element.ID_PROPERTY_NAME.equals(sortContainer.propertyName)) {
                 q.addSort("_uid", esOrder);
+                sortedById = true;
             } else if (Edge.LABEL_PROPERTY_NAME.equals(sortContainer.propertyName)) {
                 q.addSort(
                         SortBuilders.fieldSort(Elasticsearch5SearchIndex.EDGE_LABEL_FIELD_NAME)
@@ -317,6 +319,11 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
                     );
                 }
             }
+        }
+        q.addSort("_score", SortOrder.DESC);
+        if (!sortedById) {
+            // If an id sort isn't specified, default is to sort by score and then sort id by ascending order after specified sorts
+            q.addSort("_uid", SortOrder.ASC);
         }
     }
 
