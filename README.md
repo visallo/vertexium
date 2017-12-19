@@ -186,6 +186,7 @@ to better understand how you can pitch in.
 License
 =======
 
+Copyright 2017 Visallo, LLC
 Copyright 2014 V5 Analytics
 
 Licensed under the Apache License, Version 2.0 (the "License");
