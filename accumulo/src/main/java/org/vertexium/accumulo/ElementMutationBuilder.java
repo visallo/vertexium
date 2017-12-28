@@ -81,7 +81,7 @@ public abstract class ElementMutationBuilder {
 
                 m.put(
                         AccumuloElement.CF_EXTENDED_DATA,
-                        new Text(edm.getColumnName()),
+                        KeyHelper.createExtendedDataColumnQualifier(edm),
                         visibilityToAccumuloVisibility(edm.getVisibility()),
                         new Value(vertexiumSerializer.objectToBytes(value))
                 );
@@ -107,7 +107,7 @@ public abstract class ElementMutationBuilder {
             for (ExtendedDataDeleteMutation edm : mutationsForTableAndRow) {
                 m.putDelete(
                         AccumuloElement.CF_EXTENDED_DATA,
-                        new Text(edm.getColumnName()),
+                        KeyHelper.createExtendedDataColumnQualifier(edm),
                         visibilityToAccumuloVisibility(edm.getVisibility())
                 );
             }

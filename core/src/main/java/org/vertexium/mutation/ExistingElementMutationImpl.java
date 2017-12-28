@@ -202,19 +202,32 @@ public abstract class ExistingElementMutationImpl<T extends Element> implements 
 
     @Override
     public ExistingElementMutation<T> addExtendedData(String tableName, String row, String column, Object value, Visibility visibility) {
-        this.extendedDatas.add(new ExtendedDataMutation(tableName, row, column, value, null, visibility));
-        return this;
+        return addExtendedData(tableName, row, column, null, value, null, visibility);
     }
 
     @Override
     public ExistingElementMutation<T> addExtendedData(String tableName, String row, String column, Object value, Long timestamp, Visibility visibility) {
-        this.extendedDatas.add(new ExtendedDataMutation(tableName, row, column, value, timestamp, visibility));
+        return addExtendedData(tableName, row, column, null, value, timestamp, visibility);
+    }
+
+    @Override
+    public ExistingElementMutation<T> addExtendedData(String tableName, String row, String column, String key, Object value, Visibility visibility) {
+        return addExtendedData(tableName, row, column, key, value, null, visibility);
+    }
+
+    @Override
+    public ExistingElementMutation<T> addExtendedData(String tableName, String row, String column, String key, Object value, Long timestamp, Visibility visibility) {
+        this.extendedDatas.add(new ExtendedDataMutation(tableName, row, column, key, value, timestamp, visibility));
         return this;
     }
 
     @Override
     public ExistingElementMutation<T> deleteExtendedData(String tableName, String row, String column, Visibility visibility) {
-        extendedDataDeletes.add(new ExtendedDataDeleteMutation(tableName, row, column, visibility));
+        return deleteExtendedData(tableName, row, column, null, visibility);
+    }
+
+    public ExistingElementMutation<T> deleteExtendedData(String tableName, String row, String column, String key, Visibility visibility) {
+        extendedDataDeletes.add(new ExtendedDataDeleteMutation(tableName, row, column, key, visibility));
         return this;
     }
 

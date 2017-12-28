@@ -52,12 +52,20 @@ public class IterableUtils {
 
     @SuppressWarnings("unchecked")
     public static <T> T[] toArray(Iterable<? extends T> iterable, Class<T> type) {
+        if (iterable instanceof Collection) {
+            T[] array = (T[]) Array.newInstance(type, ((Collection) iterable).size());
+            return ((Collection<T>) iterable).toArray(array);
+        }
         List<? extends T> list = toList(iterable);
         T[] array = (T[]) Array.newInstance(type, list.size());
         return list.toArray(array);
     }
 
     public static <T> int count(Iterable<T> iterable) {
+        if (iterable instanceof Collection) {
+            return ((Collection) iterable).size();
+        }
+
         int count = 0;
         for (T ignore : iterable) {
             count++;

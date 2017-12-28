@@ -514,18 +514,17 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
 
         @Override
         protected boolean isMatch(ExtendedDataRow extendedDataRow) {
-            Iterable<String> propertyNames = extendedDataRow.getPropertyNames();
-            for (String propertyName : propertyNames) {
-                if (this.keys.contains(propertyName)) {
-                    PropertyDefinition propertyDefinition = PropertyDefinition.findPropertyDefinition(this.propertyDefinitions, propertyName);
-                    Object columnValue = extendedDataRow.getPropertyValue(propertyName);
+            for (Property property : extendedDataRow.getProperties()) {
+                if (this.keys.contains(property.getName())) {
+                    PropertyDefinition propertyDefinition = PropertyDefinition.findPropertyDefinition(this.propertyDefinitions, property.getName());
+                    Object columnValue = extendedDataRow.getPropertyValue(property.getName());
                     if (this.predicate.evaluate(columnValue, this.value, propertyDefinition)) {
                         return true;
                     }
                 }
             }
-            return false;
 
+            return false;
         }
 
         @Override

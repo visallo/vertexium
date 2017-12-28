@@ -33,7 +33,7 @@ public abstract class Property implements Comparable<Property> {
 
     @Override
     public int hashCode() {
-        return getName().hashCode() ^ getKey().hashCode() ^ getVisibility().hashCode();
+        return getName().hashCode() ^ (getKey() == null ? 0 : getKey().hashCode()) ^ getVisibility().hashCode();
     }
 
     @Override

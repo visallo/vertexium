@@ -69,5 +69,14 @@ public interface SearchIndex {
 
     void deleteExtendedData(Graph graph, ExtendedDataRowId extendedDataRowId, Authorizations authorizations);
 
-    void deleteExtendedData(Graph graph, Element element, String tableName, String row, String columnName, Visibility visibility, Authorizations authorizations);
+    void deleteExtendedData(
+            Graph graph,
+            Element element,
+            String tableName,
+            String row,
+            String columnName,
+            String key,
+            Visibility visibility,
+            Authorizations authorizations
+    );
 }

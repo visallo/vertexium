@@ -1,6 +1,7 @@
 package org.vertexium.sql;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
 import org.skife.jdbi.v2.DBI;
 import org.skife.jdbi.v2.Handle;
 import org.skife.jdbi.v2.Query;
@@ -17,6 +18,7 @@ import org.vertexium.util.GroupingIterable;
 import javax.sql.DataSource;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.List;
 
 public class SqlExtendedDataTable extends InMemoryExtendedDataTable {
     private final String tableName;
@@ -25,6 +27,7 @@ public class SqlExtendedDataTable extends InMemoryExtendedDataTable {
     protected static final String TABLE_NAME_COLUMN_NAME = "tableName";
     protected static final String ROW_ID_COLUMN_NAME = "rowId";
     protected static final String COLUMN_COLUMN_NAME = "column";
+    protected static final String KEY_COLUMN_NAME = "key";
     protected static final String VALUE_COLUMN_NAME = "value";
     protected static final String TIMESTAMP_COLUMN_NAME = "timestamp";
     protected static final String VISIBILITY_COLUMN_NAME = "visibility";
@@ -69,8 +72,8 @@ public class SqlExtendedDataTable extends InMemoryExtendedDataTable {
         Query<Row> rows = handle
                 .createQuery(
                         String.format(
-                                "select %s, %s, %s, %s, %s from %s where %s = ? AND %s = ? AND %s = ?",
-                                ROW_ID_COLUMN_NAME, COLUMN_COLUMN_NAME, VALUE_COLUMN_NAME, TIMESTAMP_COLUMN_NAME, VISIBILITY_COLUMN_NAME,
+                                "select %s, %s, %s, %s, %s, %s from %s where %s = ? AND %s = ? AND %s = ?",
+                                ROW_ID_COLUMN_NAME, COLUMN_COLUMN_NAME, KEY_COLUMN_NAME, VALUE_COLUMN_NAME, TIMESTAMP_COLUMN_NAME, VISIBILITY_COLUMN_NAME,
                                 this.tableName,
                                 ELEMENT_TYPE_COLUMN_NAME, ELEMENT_ID_COLUMN_NAME, TABLE_NAME_COLUMN_NAME
                         )
@@ -109,7 +112,7 @@ public class SqlExtendedDataTable extends InMemoryExtendedDataTable {
             @Override
             protected void addToGroup(InMemoryExtendedDataRow extendedDataRow, Row row) {
                 Object value = serializer.bytesToObject(row.value);
-                extendedDataRow.addColumn(row.column, value, row.timestamp, row.visibility);
+                extendedDataRow.addColumn(row.column, row.key, value, row.timestamp, row.visibility);
             }
 
             @Override
@@ -120,17 +123,18 @@ public class SqlExtendedDataTable extends InMemoryExtendedDataTable {
     }
 
     @Override
-    public void addData(ExtendedDataRowId rowId, String column, Object value, long timestamp, Visibility visibility) {
+    public void addData(ExtendedDataRowId rowId, String column, String key, Object value, long timestamp, Visibility visibility) {
         try (Handle handle = dbi.open()) {
             handle.execute(
                     String.format(
-                            "insert into %s (%s, %s, %s, %s, %s, %s, %s, %s) values (?, ?, ?, ?, ?, ?, ?, ?)",
+                            "insert into %s (%s, %s, %s, %s, %s, %s, %s, %s, %s) values (?, ?, ?, ?, ?, ?, ?, ?, ?)",
                             tableName,
                             ELEMENT_TYPE_COLUMN_NAME,
                             ELEMENT_ID_COLUMN_NAME,
                             TABLE_NAME_COLUMN_NAME,
                             ROW_ID_COLUMN_NAME,
                             COLUMN_COLUMN_NAME,
+                            KEY_COLUMN_NAME,
                             VALUE_COLUMN_NAME,
                             TIMESTAMP_COLUMN_NAME,
                             VISIBILITY_COLUMN_NAME
@@ -140,6 +144,7 @@ public class SqlExtendedDataTable extends InMemoryExtendedDataTable {
                     rowId.getTableName(),
                     rowId.getRowId(),
                     column,
+                    key,
                     serializer.objectToBytes(value),
                     timestamp,
                     visibility.getVisibilityString()
@@ -168,19 +173,20 @@ public class SqlExtendedDataTable extends InMemoryExtendedDataTable {
     }
 
     @Override
-    public void removeColumn(ExtendedDataRowId rowId, String columnName, Visibility visibility) {
+    public void removeColumn(ExtendedDataRowId rowId, String columnName, String key, Visibility visibility) {
         try (Handle handle = dbi.open()) {
-            handle.execute(
-                    String.format(
-                            "delete from %s where %s=? AND %s=? AND %s=? AND %s=? AND %s=? AND %s=?",
-                            tableName,
-                            ELEMENT_TYPE_COLUMN_NAME,
-                            ELEMENT_ID_COLUMN_NAME,
-                            TABLE_NAME_COLUMN_NAME,
-                            ROW_ID_COLUMN_NAME,
-                            COLUMN_COLUMN_NAME,
-                            VISIBILITY_COLUMN_NAME
-                    ),
+            String sql = String.format(
+                    "delete from %s where %s=? AND %s=? AND %s=? AND %s=? AND %s=? AND %s=? AND %s",
+                    tableName,
+                    ELEMENT_TYPE_COLUMN_NAME,
+                    ELEMENT_ID_COLUMN_NAME,
+                    TABLE_NAME_COLUMN_NAME,
+                    ROW_ID_COLUMN_NAME,
+                    COLUMN_COLUMN_NAME,
+                    VISIBILITY_COLUMN_NAME,
+                    key == null ? KEY_COLUMN_NAME + " IS NULL" : KEY_COLUMN_NAME + "=?"
+            );
+            List<String> args = Lists.newArrayList(
                     rowId.getElementType().name(),
                     rowId.getElementId(),
                     rowId.getTableName(),
@@ -188,12 +194,17 @@ public class SqlExtendedDataTable extends InMemoryExtendedDataTable {
                     columnName,
                     visibility.getVisibilityString()
             );
+            if (key != null) {
+                args.add(key);
+            }
+            handle.execute(sql, args.toArray(new String[args.size()]));
         }
     }
 
     static final class Row {
         public String rowId;
         public String column;
+        public String key;
         public long timestamp;
         public Visibility visibility;
         public byte[] value;
@@ -204,6 +215,7 @@ public class SqlExtendedDataTable extends InMemoryExtendedDataTable {
             Row row = new Row();
             row.rowId = rs.getString(ROW_ID_COLUMN_NAME);
             row.column = rs.getString(COLUMN_COLUMN_NAME);
+            row.key = rs.getString(KEY_COLUMN_NAME);
             row.value = rs.getBytes(VALUE_COLUMN_NAME);
             row.timestamp = rs.getLong(TIMESTAMP_COLUMN_NAME);
             row.visibility = new Visibility(rs.getString(VISIBILITY_COLUMN_NAME));
