@@ -439,6 +439,22 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
         getClient().prepareDelete(indexName, ELEMENT_TYPE, docId).execute().actionGet();
     }
 
+    @Override
+    public void deleteExtendedData(
+            Graph graph,
+            Element element,
+            String tableName,
+            String row,
+            String columnName,
+            Visibility visibility,
+            Authorizations authorizations
+    ) {
+        String extendedDataDocId = ElasticsearchExtendedDataIdUtils.createForElement(element, tableName, row);
+        String fieldName = addVisibilityToPropertyName(graph, columnName, visibility);
+        String indexName = getExtendedDataIndexName(element, tableName, row);
+        removeFieldsFromDocument(graph, indexName, extendedDataDocId, Lists.newArrayList(fieldName, fieldName + "_e"));
+    }
+
     private void addElementExtendedData(
             Graph graph,
             Element element,
@@ -1501,14 +1517,13 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
         client.admin().indices().prepareRefresh(getIndexNamesAsArray(graph)).execute().actionGet();
     }
 
-    /**
-     * Helper method to remove fields from source. This method will generate a ES update request. Retries on conflict.
-     *
-     * @param graph   Graph object configured with the index names
-     * @param element Element that can be mapped to an ES document
-     * @param fields  fields to remove
-     */
     private void removeFieldsFromDocument(Graph graph, Element element, Collection<String> fields) {
+        String indexName = getIndexName(element);
+        String documentId = element.getId();
+        removeFieldsFromDocument(graph, indexName, documentId, fields);
+    }
+
+    private void removeFieldsFromDocument(Graph graph, String indexName, String documentId, Collection<String> fields) {
         if (fields == null || fields.isEmpty()) {
             return;
         }
@@ -1519,8 +1534,8 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
         }
 
         UpdateRequestBuilder updateRequestBuilder = getClient().prepareUpdate()
-                .setIndex(getIndexName(element))
-                .setId(element.getId())
+                .setIndex(indexName)
+                .setId(documentId)
                 .setType(ELEMENT_TYPE)
                 .setScript(new Script(
                         ScriptType.INLINE,
@@ -1530,7 +1545,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
                 ))
                 .setRetryOnConflict(MAX_RETRIES);
 
-        addActionRequestBuilderForFlush(element.getId(), updateRequestBuilder);
+        addActionRequestBuilderForFlush(documentId, updateRequestBuilder);
 
         if (getConfig().isAutoFlush()) {
             flush(graph);

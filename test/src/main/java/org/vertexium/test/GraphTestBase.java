@@ -2166,8 +2166,10 @@ public abstract class GraphTestBase {
         assertEvents(
                 new AddVertexEvent(graph, (Vertex) saveVertices.get(0)),
                 new AddPropertyEvent(graph, saveVertices.get(0), saveVertices.get(0).getProperty("k1", "name")),
+                new AddExtendedDataEvent(graph, saveVertices.get(0), "table1", "row1", "col1", "extended", VISIBILITY_A),
                 new AddVertexEvent(graph, (Vertex) saveVertices.get(1)),
-                new AddPropertyEvent(graph, saveVertices.get(1), saveVertices.get(1).getProperty("k1", "name"))
+                new AddPropertyEvent(graph, saveVertices.get(1), saveVertices.get(1).getProperty("k1", "name")),
+                new AddExtendedDataEvent(graph, saveVertices.get(1), "table1", "row1", "col1", "extended", VISIBILITY_A)
         );
         clearGraphEvents();
 
@@ -6663,6 +6665,49 @@ public abstract class GraphTestBase {
         assertEquals(4, rowsList.size());
         rowsList = toList(v1.getExtendedData("table2"));
         assertEquals(1, rowsList.size());
+    }
+
+    @Test
+    public void testExtendedDataDeleteColumn() {
+        graph.prepareVertex("v1", VISIBILITY_A)
+                .addExtendedData("table1", "row1", "name", "value", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
+        graph.flush();
+
+        // delete with wrong visibility
+        graph.prepareVertex("v1", VISIBILITY_A)
+                .deleteExtendedData("table1", "row1", "name", VISIBILITY_B)
+                .save(AUTHORIZATIONS_A);
+        graph.flush();
+
+        List<ExtendedDataRow> rows = Lists.newArrayList(graph.getVertex("v1", AUTHORIZATIONS_A).getExtendedData("table1"));
+        assertEquals(1, rows.size());
+        QueryResultsIterable<? extends VertexiumObject> searchResults = graph.query("value", AUTHORIZATIONS_A)
+                .search();
+        assertEquals(1, searchResults.getTotalHits());
+
+        // delete with correct visibility
+        clearGraphEvents();
+        graph.getVertex("v1", AUTHORIZATIONS_A).prepareMutation()
+                .deleteExtendedData("table1", "row1", "name", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
+        graph.flush();
+
+        Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
+        assertEvents(
+                new DeleteExtendedDataEvent(graph, v1, "table1", "row1", "name")
+        );
+
+        if (v1.getExtendedDataTableNames().size() == 0) {
+            assertEquals("table names", 0, v1.getExtendedDataTableNames().size());
+        } else {
+            assertEquals("extended data rows", 0, Lists.newArrayList(v1.getExtendedData("table1")).size());
+        }
+        searchResults = graph.query("value", AUTHORIZATIONS_A)
+                .search();
+        List<VertexiumObject> searchResultsList = toList(searchResults);
+        assertEquals("search result items", 0, searchResultsList.size());
+        assertEquals("total hits", 0, searchResults.getTotalHits());
     }
 
     @Test

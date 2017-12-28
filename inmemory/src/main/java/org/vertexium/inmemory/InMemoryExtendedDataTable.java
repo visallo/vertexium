@@ -26,4 +26,6 @@ public abstract class InMemoryExtendedDataTable {
     );
 
     public abstract void remove(ExtendedDataRowId id);
+
+    public abstract void removeColumn(ExtendedDataRowId extendedDataRowId, String columnName, Visibility visibility);
 }

@@ -50,7 +50,6 @@ import org.vertexium.util.*;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URISyntaxException;
 import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -163,7 +162,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         }
     }
 
-    public static AccumuloGraph create(AccumuloGraphConfiguration config) throws AccumuloSecurityException, AccumuloException, VertexiumException, InterruptedException, IOException, URISyntaxException {
+    public static AccumuloGraph create(AccumuloGraphConfiguration config) {
         if (config == null) {
             throw new IllegalArgumentException("config cannot be null");
         }
@@ -299,7 +298,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
     }
 
     @SuppressWarnings("unchecked")
-    public static AccumuloGraph create(Map config) throws AccumuloSecurityException, AccumuloException, VertexiumException, InterruptedException, IOException, URISyntaxException {
+    public static AccumuloGraph create(Map config) {
         return create(new AccumuloGraphConfiguration(config));
     }
 
@@ -328,16 +327,30 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                     if (getIndexHint() != IndexHint.DO_NOT_INDEX) {
                         getSearchIndex().addElement(AccumuloGraph.this, vertex, authorizations);
                         getSearchIndex().addElementExtendedData(AccumuloGraph.this, vertex, getExtendedData(), authorizations);
+
+                        for (ExtendedDataDeleteMutation m : getExtendedDataDeletes()) {
+                            getSearchIndex().deleteExtendedData(
+                                    AccumuloGraph.this,
+                                    vertex,
+                                    m.getTableName(),
+                                    m.getRow(),
+                                    m.getColumnName(),
+                                    m.getVisibility(),
+                                    authorizations
+                            );
+                        }
                     }
 
                     if (hasEventListeners()) {
                         queueEvent(new AddVertexEvent(AccumuloGraph.this, vertex));
-                        for (Property property : getProperties()) {
-                            queueEvent(new AddPropertyEvent(AccumuloGraph.this, vertex, property));
-                        }
-                        for (PropertyDeleteMutation propertyDeleteMutation : getPropertyDeletes()) {
-                            queueEvent(new DeletePropertyEvent(AccumuloGraph.this, vertex, propertyDeleteMutation));
-                        }
+                        queueEvents(
+                                vertex,
+                                getProperties(),
+                                getPropertyDeletes(),
+                                getPropertySoftDeletes(),
+                                getExtendedData(),
+                                getExtendedDataDeletes()
+                        );
                     }
 
                     return vertex;
@@ -364,6 +377,55 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                 );
             }
         };
+    }
+
+    private void queueEvents(
+            AccumuloElement element,
+            Iterable<Property> properties,
+            Iterable<PropertyDeleteMutation> propertyDeletes,
+            Iterable<PropertySoftDeleteMutation> propertySoftDeletes,
+            Iterable<ExtendedDataMutation> extendedData,
+            Iterable<ExtendedDataDeleteMutation> extendedDataDeletes
+    ) {
+        if (properties != null) {
+            for (Property property : properties) {
+                queueEvent(new AddPropertyEvent(this, element, property));
+            }
+        }
+        if (propertyDeletes != null) {
+            for (PropertyDeleteMutation propertyDeleteMutation : propertyDeletes) {
+                queueEvent(new DeletePropertyEvent(this, element, propertyDeleteMutation));
+            }
+        }
+        if (propertySoftDeletes != null) {
+            for (PropertySoftDeleteMutation propertySoftDeleteMutation : propertySoftDeletes) {
+                queueEvent(new SoftDeletePropertyEvent(this, element, propertySoftDeleteMutation));
+            }
+        }
+        if (extendedData != null) {
+            for (ExtendedDataMutation extendedDataMutation : extendedData) {
+                queueEvent(new AddExtendedDataEvent(
+                        this,
+                        element,
+                        extendedDataMutation.getTableName(),
+                        extendedDataMutation.getRow(),
+                        extendedDataMutation.getColumnName(),
+                        extendedDataMutation.getValue(),
+                        extendedDataMutation.getVisibility()
+                ));
+            }
+        }
+        if (extendedDataDeletes != null) {
+            for (ExtendedDataDeleteMutation extendedDataDeleteMutation : extendedDataDeletes) {
+                queueEvent(new DeleteExtendedDataEvent(
+                        this,
+                        element,
+                        extendedDataDeleteMutation.getTableName(),
+                        extendedDataDeleteMutation.getRow(),
+                        extendedDataDeleteMutation.getColumnName()
+                ));
+            }
+        }
     }
 
     private void queueEvent(GraphEvent graphEvent) {
@@ -417,15 +479,14 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         }
 
         if (hasEventListeners()) {
-            for (Property property : properties) {
-                queueEvent(new AddPropertyEvent(AccumuloGraph.this, element, property));
-            }
-            for (PropertyDeleteMutation propertyDeleteMutation : propertyDeletes) {
-                queueEvent(new DeletePropertyEvent(AccumuloGraph.this, element, propertyDeleteMutation));
-            }
-            for (PropertySoftDeleteMutation propertySoftDeleteMutation : propertySoftDeletes) {
-                queueEvent(new SoftDeletePropertyEvent(AccumuloGraph.this, element, propertySoftDeleteMutation));
-            }
+            queueEvents(
+                    element,
+                    properties,
+                    propertyDeletes,
+                    propertySoftDeletes,
+                    null,
+                    null
+            );
         }
     }
 
@@ -822,19 +883,29 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         if (edgeBuilder.getIndexHint() != IndexHint.DO_NOT_INDEX) {
             getSearchIndex().addElement(AccumuloGraph.this, edge, authorizations);
             getSearchIndex().addElementExtendedData(AccumuloGraph.this, edge, edgeBuilder.getExtendedData(), authorizations);
+            for (ExtendedDataDeleteMutation m : edgeBuilder.getExtendedDataDeletes()) {
+                getSearchIndex().deleteExtendedData(
+                        AccumuloGraph.this,
+                        edge,
+                        m.getTableName(),
+                        m.getRow(),
+                        m.getColumnName(),
+                        m.getVisibility(),
+                        authorizations
+                );
+            }
         }
 
         if (hasEventListeners()) {
-            queueEvent(new AddEdgeEvent(AccumuloGraph.this, edge));
-            for (Property property : edgeBuilder.getProperties()) {
-                queueEvent(new AddPropertyEvent(AccumuloGraph.this, edge, property));
-            }
-            for (PropertyDeleteMutation propertyDeleteMutation : edgeBuilder.getPropertyDeletes()) {
-                queueEvent(new DeletePropertyEvent(AccumuloGraph.this, edge, propertyDeleteMutation));
-            }
-            for (PropertySoftDeleteMutation propertySoftDeleteMutation : edgeBuilder.getPropertySoftDeletes()) {
-                queueEvent(new SoftDeletePropertyEvent(AccumuloGraph.this, edge, propertySoftDeleteMutation));
-            }
+            queueEvent(new AddEdgeEvent(this, edge));
+            queueEvents(
+                    edge,
+                    edgeBuilder.getProperties(),
+                    edgeBuilder.getPropertyDeletes(),
+                    edgeBuilder.getPropertySoftDeletes(),
+                    edgeBuilder.getExtendedData(),
+                    edgeBuilder.getExtendedDataDeletes()
+            );
         }
 
         return edge;
@@ -1019,13 +1090,42 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                 .collect(Collectors.toList());
     }
 
-    void saveExtendedDataMutations(String elementId, ElementType elementType, Iterable<ExtendedDataMutation> extendedData) {
+    void saveExtendedDataMutations(
+            Element element,
+            ElementType elementType,
+            Iterable<ExtendedDataMutation> extendedData,
+            Iterable<ExtendedDataDeleteMutation> extendedDataDeletes
+    ) {
         if (extendedData == null) {
             return;
         }
 
-        elementMutationBuilder.saveExtendedDataMarkers(elementId, elementType, extendedData);
-        elementMutationBuilder.saveExtendedData(this, elementId, elementType, extendedData);
+        elementMutationBuilder.saveExtendedDataMarkers(element.getId(), elementType, extendedData);
+        elementMutationBuilder.saveExtendedData(this, element.getId(), elementType, extendedData);
+        elementMutationBuilder.saveExtendedDataDeletes(this, element.getId(), elementType, extendedDataDeletes);
+
+        if (hasEventListeners()) {
+            for (ExtendedDataMutation extendedDataMutation : extendedData) {
+                queueEvent(new AddExtendedDataEvent(
+                        AccumuloGraph.this,
+                        element,
+                        extendedDataMutation.getTableName(),
+                        extendedDataMutation.getRow(),
+                        extendedDataMutation.getColumnName(),
+                        extendedDataMutation.getValue(),
+                        extendedDataMutation.getVisibility()
+                ));
+            }
+            for (ExtendedDataDeleteMutation extendedDataDeleteMutation : extendedDataDeletes) {
+                queueEvent(new DeleteExtendedDataEvent(
+                        AccumuloGraph.this,
+                        element,
+                        extendedDataDeleteMutation.getTableName(),
+                        extendedDataDeleteMutation.getRow(),
+                        extendedDataDeleteMutation.getColumnName()
+                ));
+            }
+        }
     }
 
     private static abstract class AddEdgeToVertexRunnable {

@@ -4,23 +4,22 @@ import org.vertexium.*;
 import org.vertexium.security.ColumnVisibility;
 import org.vertexium.security.VisibilityEvaluator;
 import org.vertexium.security.VisibilityParseException;
-import org.vertexium.util.ConvertingIterable;
 
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class InMemoryExtendedDataRow extends ExtendedDataRowBase {
     private final ExtendedDataRowId id;
-    private Map<String, InMemoryProperty> properties = new HashMap<>();
+    private Set<InMemoryProperty> properties = new HashSet<>();
 
     public InMemoryExtendedDataRow(ExtendedDataRowId id) {
         this.id = id;
     }
 
     public boolean canRead(VisibilityEvaluator visibilityEvaluator) {
-        return properties.entrySet().stream().anyMatch(e -> e.getValue().canRead(visibilityEvaluator));
+        return properties.stream().anyMatch(e -> e.canRead(visibilityEvaluator));
     }
 
     @Override
@@ -30,7 +29,7 @@ public class InMemoryExtendedDataRow extends ExtendedDataRowBase {
 
     @Override
     public Object getPropertyValue(String propertyName) {
-        InMemoryProperty property = properties.get(propertyName);
+        InMemoryProperty property = getProperty(propertyName);
         if (property == null) {
             return null;
         }
@@ -39,36 +38,38 @@ public class InMemoryExtendedDataRow extends ExtendedDataRowBase {
 
     @Override
     public Set<String> getPropertyNames() {
-        return properties.keySet();
+        return properties.stream().map(InMemoryProperty::getName).collect(Collectors.toSet());
     }
 
     public InMemoryExtendedDataRow toReadable(VisibilityEvaluator visibilityEvaluator) {
         InMemoryExtendedDataRow row = new InMemoryExtendedDataRow(getId());
-        for (Map.Entry<String, InMemoryProperty> column : properties.entrySet()) {
-            if (column.getValue().canRead(visibilityEvaluator)) {
-                row.properties.put(column.getKey(), column.getValue());
+        for (InMemoryProperty column : properties) {
+            if (column.canRead(visibilityEvaluator)) {
+                row.properties.add(column);
             }
         }
         return row;
     }
 
     public void addColumn(String propertyName, Object value, long timestamp, Visibility visibility) {
-        properties.put(propertyName, new InMemoryProperty(id.getTableName(), propertyName, value, timestamp, visibility));
+        properties.add(new InMemoryProperty(id.getTableName(), propertyName, value, timestamp, visibility));
+    }
+
+    public void removeColumn(String columnName, Visibility visibility) {
+        properties.removeIf(p -> p.getName().equals(columnName) && p.getVisibility().equals(visibility));
     }
 
     @Override
     public Iterable<Property> getProperties() {
-        return new ConvertingIterable<InMemoryProperty, Property>(this.properties.values()) {
-            @Override
-            protected Property convert(InMemoryProperty prop) {
-                return prop;
-            }
-        };
+        return this.properties.stream().map(p -> (Property) p).collect(Collectors.toList());
     }
 
     @Override
-    public Property getProperty(String name) {
-        return this.properties.get(name);
+    public InMemoryProperty getProperty(String name) {
+        return properties.stream()
+                .filter(p -> p.getName().equals(name))
+                .findFirst()
+                .orElse(null);
     }
 
     private static class InMemoryProperty extends Property {

@@ -167,6 +167,30 @@ public class SqlExtendedDataTable extends InMemoryExtendedDataTable {
         }
     }
 
+    @Override
+    public void removeColumn(ExtendedDataRowId rowId, String columnName, Visibility visibility) {
+        try (Handle handle = dbi.open()) {
+            handle.execute(
+                    String.format(
+                            "delete from %s where %s=? AND %s=? AND %s=? AND %s=? AND %s=? AND %s=?",
+                            tableName,
+                            ELEMENT_TYPE_COLUMN_NAME,
+                            ELEMENT_ID_COLUMN_NAME,
+                            TABLE_NAME_COLUMN_NAME,
+                            ROW_ID_COLUMN_NAME,
+                            COLUMN_COLUMN_NAME,
+                            VISIBILITY_COLUMN_NAME
+                    ),
+                    rowId.getElementType().name(),
+                    rowId.getElementId(),
+                    rowId.getTableName(),
+                    rowId.getRowId(),
+                    columnName,
+                    visibility.getVisibilityString()
+            );
+        }
+    }
+
     static final class Row {
         public String rowId;
         public String column;

@@ -127,6 +127,10 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> implemen
         }
     }
 
+    private void deleteExtendedData(String tableName, String row, String columnName, Visibility visibility) {
+        getGraph().deleteExtendedData(this, tableName, row, columnName, visibility, authorizations);
+    }
+
     protected void extendedData(
             String tableName,
             String rowId,
@@ -143,6 +147,7 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> implemen
                 rowId
         );
         getGraph().extendedData(
+                this,
                 extendedDataRowId,
                 column,
                 value,
@@ -421,6 +426,7 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> implemen
                 vertexBuilder.getPropertyDeletes(),
                 vertexBuilder.getPropertySoftDeletes(),
                 vertexBuilder.getExtendedData(),
+                vertexBuilder.getExtendedDataDeletes(),
                 vertexBuilder.getIndexHint()
         );
     }
@@ -431,6 +437,7 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> implemen
                 edgeBuilder.getPropertyDeletes(),
                 edgeBuilder.getPropertySoftDeletes(),
                 edgeBuilder.getExtendedData(),
+                edgeBuilder.getExtendedDataDeletes(),
                 edgeBuilder.getIndexHint()
         );
     }
@@ -440,6 +447,7 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> implemen
             Iterable<PropertyDeleteMutation> propertyDeleteMutations,
             Iterable<PropertySoftDeleteMutation> propertySoftDeleteMutations,
             Iterable<ExtendedDataMutation> extendedDatas,
+            Iterable<ExtendedDataDeleteMutation> extendedDataDeletes,
             IndexHint indexHint
     ) {
         for (Property property : properties) {
@@ -472,7 +480,14 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> implemen
                     authorizations
             );
         }
-
+        for (ExtendedDataDeleteMutation extendedDataDelete : extendedDataDeletes) {
+            deleteExtendedData(
+                    extendedDataDelete.getTableName(),
+                    extendedDataDelete.getRow(),
+                    extendedDataDelete.getColumnName(),
+                    extendedDataDelete.getVisibility()
+            );
+        }
     }
 
     protected <T extends Element> void saveExistingElementMutation(ExistingElementMutationImpl<T> mutation, IndexHint indexHint, Authorizations authorizations) {
@@ -499,6 +514,7 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> implemen
                 propertyDeleteMutations,
                 propertySoftDeleteMutations,
                 mutation.getExtendedData(),
+                mutation.getExtendedDataDeletes(),
                 indexHint
         );
 
