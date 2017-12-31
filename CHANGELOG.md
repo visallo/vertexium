@@ -1,6 +1,8 @@
 # v3.1.0
 * Added: Accumulo in table storage of streaming property value data
 * Added: Functions to delete extended data columns
+* Added: Multi-value extended data columns
+* Added: Sorting and aggregating of row ids and table names
 * Removed: ElasticSearch 1.x support
 
 # v3.0.4

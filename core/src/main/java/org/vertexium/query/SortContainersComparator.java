@@ -1,7 +1,7 @@
 package org.vertexium.query;
 
-import org.vertexium.Element;
 import org.vertexium.VertexiumException;
+import org.vertexium.VertexiumObject;
 
 import java.util.Comparator;
 import java.util.List;
@@ -27,9 +27,9 @@ public class SortContainersComparator<T> implements Comparator<T> {
     }
 
     private int compare(QueryBase.SortContainer sortContainer, T vertexiumObject1, T vertexiumObject2) {
-        if (vertexiumObject1 instanceof Element && vertexiumObject2 instanceof Element) {
-            Element elem1 = (Element) vertexiumObject1;
-            Element elem2 = (Element) vertexiumObject2;
+        if (vertexiumObject1 instanceof VertexiumObject && vertexiumObject2 instanceof VertexiumObject) {
+            VertexiumObject elem1 = (VertexiumObject) vertexiumObject1;
+            VertexiumObject elem2 = (VertexiumObject) vertexiumObject2;
             List<Object> elem1PropertyValues = toList(elem1.getPropertyValues(sortContainer.propertyName));
             List<Object> elem2PropertyValues = toList(elem2.getPropertyValues(sortContainer.propertyName));
             if (elem1PropertyValues.size() > 0 && elem2PropertyValues.size() == 0) {

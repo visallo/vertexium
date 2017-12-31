@@ -277,6 +277,18 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
                                 .unmappedType("keyword")
                                 .order(esOrder)
                 );
+            } else if (ExtendedDataRow.TABLE_NAME.equals(sortContainer.propertyName)) {
+                q.addSort(
+                        SortBuilders.fieldSort(Elasticsearch5SearchIndex.EXTENDED_DATA_ELEMENT_ID_FIELD_NAME)
+                                .unmappedType("keyword")
+                                .order(esOrder)
+                );
+            } else if (ExtendedDataRow.ROW_ID.equals(sortContainer.propertyName)) {
+                q.addSort(
+                        SortBuilders.fieldSort(Elasticsearch5SearchIndex.EXTENDED_DATA_TABLE_ROW_ID_FIELD_NAME)
+                                .unmappedType("keyword")
+                                .order(esOrder)
+                );
             } else {
                 PropertyDefinition propertyDefinition = getGraph().getPropertyDefinition(sortContainer.propertyName);
                 if (propertyDefinition == null) {
@@ -1174,7 +1186,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
     protected List<AggregationBuilder> getElasticsearchTermsAggregations(TermsAggregation agg) {
         List<AggregationBuilder> termsAggs = new ArrayList<>();
         String fieldName = agg.getPropertyName();
-        if (Edge.LABEL_PROPERTY_NAME.equals(fieldName)) {
+        if (Edge.LABEL_PROPERTY_NAME.equals(fieldName) || ExtendedDataRow.TABLE_NAME.equals(fieldName)) {
             TermsAggregationBuilder termsAgg = AggregationBuilders.terms(createAggregationName(agg.getAggregationName(), "0"));
             termsAgg.field(fieldName);
             if (agg.getSize() != null) {

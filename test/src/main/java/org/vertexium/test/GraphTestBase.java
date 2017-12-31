@@ -6796,8 +6796,8 @@ public abstract class GraphTestBase {
                 .addExtendedData("table1", "row2", "name", "value 2", VISIBILITY_A)
                 .save(AUTHORIZATIONS_A);
         graph.prepareVertex("v2", VISIBILITY_A)
-                .addExtendedData("table1", "row3", "name", "value 1", VISIBILITY_A)
-                .addExtendedData("table1", "row4", "name", "value 2", VISIBILITY_A)
+                .addExtendedData("table2", "row3", "name", "value 1", VISIBILITY_A)
+                .addExtendedData("table2", "row4", "name", "value 2", VISIBILITY_A)
                 .save(AUTHORIZATIONS_A);
         graph.prepareEdge("e1", "v1", "v2", "label", VISIBILITY_A)
                 .addExtendedData("table1", "row5", "name", "value 1", VISIBILITY_A)
@@ -6817,6 +6817,14 @@ public abstract class GraphTestBase {
 
         rows = graph.query(AUTHORIZATIONS_A).hasId("v1", "v2").extendedDataRows();
         assertResultsCount(4, 4, rows);
+
+        searchResultsList = toList(
+                v1.query(AUTHORIZATIONS_A)
+                        .sort(ExtendedDataRow.TABLE_NAME, SortDirection.ASCENDING)
+                        .sort(ExtendedDataRow.ROW_ID, SortDirection.ASCENDING)
+                        .extendedDataRows()
+        );
+        assertRowIds(Lists.newArrayList("row5", "row6", "row3", "row4"), searchResultsList);
     }
 
     @Test

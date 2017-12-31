@@ -118,6 +118,11 @@ public class VertexiumAssert {
         assertEquals(idsToStringSorted(expectedRowIds), idsToStringSorted(foundRowIds));
     }
 
+    public static void assertRowIds(Iterable<String> expectedRowIds, Iterable<? extends VertexiumObject> searchResults) {
+        List<String> foundRowIds = getRowIds(searchResults);
+        assertEquals(expectedRowIds, foundRowIds);
+    }
+
     private static List<String> getRowIds(Iterable<? extends VertexiumObject> searchResults) {
         return stream(searchResults)
                 .filter((sr) -> sr instanceof ExtendedDataRow)
