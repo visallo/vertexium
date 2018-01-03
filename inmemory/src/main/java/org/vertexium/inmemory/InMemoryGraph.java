@@ -10,6 +10,7 @@ import org.vertexium.inmemory.mutations.AlterVisibilityMutation;
 import org.vertexium.inmemory.mutations.EdgeSetupMutation;
 import org.vertexium.inmemory.mutations.ElementTimestampMutation;
 import org.vertexium.mutation.AlterPropertyVisibility;
+import org.vertexium.mutation.ExtendedDataDeleteMutation;
 import org.vertexium.mutation.SetPropertyMetadata;
 import org.vertexium.property.StreamingPropertyValue;
 import org.vertexium.property.StreamingPropertyValueRef;
@@ -143,6 +144,17 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
                 if (getIndexHint() != IndexHint.DO_NOT_INDEX) {
                     getSearchIndex().addElement(InMemoryGraph.this, vertex, authorizations);
                     getSearchIndex().addElementExtendedData(InMemoryGraph.this, vertex, getExtendedData(), authorizations);
+                    for (ExtendedDataDeleteMutation m : getExtendedDataDeletes()) {
+                        getSearchIndex().deleteExtendedData(
+                                InMemoryGraph.this,
+                                vertex,
+                                m.getTableName(),
+                                m.getRow(),
+                                m.getColumnName(),
+                                m.getVisibility(),
+                                authorizations
+                        );
+                    }
                 }
 
                 return vertex;
@@ -361,6 +373,17 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
         if (edgeBuilder.getIndexHint() != IndexHint.DO_NOT_INDEX) {
             getSearchIndex().addElement(InMemoryGraph.this, edge, authorizations);
             getSearchIndex().addElementExtendedData(InMemoryGraph.this, edge, edgeBuilder.getExtendedData(), authorizations);
+            for (ExtendedDataDeleteMutation m : edgeBuilder.getExtendedDataDeletes()) {
+                getSearchIndex().deleteExtendedData(
+                        InMemoryGraph.this,
+                        edge,
+                        m.getTableName(),
+                        m.getRow(),
+                        m.getColumnName(),
+                        m.getVisibility(),
+                        authorizations
+                );
+            }
         }
 
         return edge;
@@ -830,6 +853,7 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
     }
 
     public void extendedData(
+            Element element,
             ExtendedDataRowId rowId,
             String column,
             Object value,
@@ -838,6 +862,17 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
             Authorizations authorizations
     ) {
         extendedDataTable.addData(rowId, column, value, timestamp, visibility);
+        if (hasEventListeners()) {
+            fireGraphEvent(new AddExtendedDataEvent(
+                    this,
+                    element,
+                    rowId.getTableName(),
+                    rowId.getRowId(),
+                    column,
+                    value,
+                    visibility
+            ));
+        }
     }
 
     @Override
@@ -855,6 +890,26 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
 
         if (hasEventListeners()) {
             fireGraphEvent(new DeleteExtendedDataRowEvent(this, id));
+        }
+    }
+
+    public void deleteExtendedData(
+            InMemoryElement element,
+            String tableName,
+            String row,
+            String columnName,
+            Visibility visibility,
+            Authorizations authorizations
+    ) {
+        extendedDataTable.removeColumn(
+                new ExtendedDataRowId(ElementType.getTypeFromElement(element), element.getId(), tableName, row),
+                columnName,
+                visibility
+        );
+
+        getSearchIndex().deleteExtendedData(this, element, tableName, row, columnName, visibility, authorizations);
+        if (hasEventListeners()) {
+            fireGraphEvent(new DeleteExtendedDataEvent(this, element, tableName, row, columnName));
         }
     }
 }

@@ -46,8 +46,18 @@ public class MapInMemoryExtendedDataTable extends InMemoryExtendedDataTable {
 
     @Override
     public void remove(ExtendedDataRowId rowId) {
-        ElementTypeData data = elementTypeData.computeIfAbsent(rowId.getElementType(), k -> new ElementTypeData());
-        data.removeData(rowId);
+        ElementTypeData data = elementTypeData.get(rowId.getElementType());
+        if (data != null) {
+            data.removeData(rowId);
+        }
+    }
+
+    @Override
+    public void removeColumn(ExtendedDataRowId rowId, String columnName, Visibility visibility) {
+        ElementTypeData data = elementTypeData.get(rowId.getElementType());
+        if (data != null) {
+            data.removeColumn(rowId, columnName, visibility);
+        }
     }
 
     private static class ElementTypeData {
@@ -75,8 +85,17 @@ public class MapInMemoryExtendedDataTable extends InMemoryExtendedDataTable {
         }
 
         public void removeData(ExtendedDataRowId rowId) {
-            ElementData data = elementData.computeIfAbsent(rowId.getElementId(), k -> new ElementData());
-            data.removeData(rowId);
+            ElementData data = elementData.get(rowId.getElementId());
+            if (data != null) {
+                data.removeData(rowId);
+            }
+        }
+
+        public void removeColumn(ExtendedDataRowId rowId, String columnName, Visibility visibility) {
+            ElementData data = elementData.get(rowId.getElementId());
+            if (data != null) {
+                data.removeColumn(rowId, columnName, visibility);
+            }
         }
     }
 
@@ -110,8 +129,17 @@ public class MapInMemoryExtendedDataTable extends InMemoryExtendedDataTable {
         }
 
         public void removeData(ExtendedDataRowId rowId) {
-            Table table = tables.computeIfAbsent(rowId.getTableName(), k -> new Table());
-            table.removeData(rowId);
+            Table table = tables.get(rowId.getTableName());
+            if (table != null) {
+                table.removeData(rowId);
+            }
+        }
+
+        public void removeColumn(ExtendedDataRowId rowId, String columnName, Visibility visibility) {
+            Table table = tables.get(rowId.getTableName());
+            if (table != null) {
+                table.removeColumn(rowId, columnName, visibility);
+            }
         }
 
         private class Table {
@@ -134,18 +162,34 @@ public class MapInMemoryExtendedDataTable extends InMemoryExtendedDataTable {
             }
 
             private InMemoryExtendedDataRow findOrAddRow(ExtendedDataRowId rowId) {
+                InMemoryExtendedDataRow row = findRow(rowId);
+                if (row != null) {
+                    return row;
+                }
+                row = new InMemoryExtendedDataRow(rowId);
+                rows.add(row);
+                return row;
+            }
+
+            private InMemoryExtendedDataRow findRow(ExtendedDataRowId rowId) {
                 for (InMemoryExtendedDataRow row : rows) {
                     if (row.getId().equals(rowId)) {
                         return row;
                     }
                 }
-                InMemoryExtendedDataRow row = new InMemoryExtendedDataRow(rowId);
-                rows.add(row);
-                return row;
+                return null;
             }
 
             public void removeData(ExtendedDataRowId rowId) {
                 rows.removeIf(row -> row.getId().equals(rowId));
+            }
+
+            public void removeColumn(ExtendedDataRowId rowId, String columnName, Visibility visibility) {
+                InMemoryExtendedDataRow row = findRow(rowId);
+                if (row == null) {
+                    return;
+                }
+                row.removeColumn(columnName, visibility);
             }
         }
     }

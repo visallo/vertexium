@@ -1,13 +1,16 @@
 package org.vertexium.accumulo;
 
-import org.apache.accumulo.core.client.*;
+import org.apache.accumulo.core.client.BatchWriterConfig;
+import org.apache.accumulo.core.client.ClientConfiguration;
+import org.apache.accumulo.core.client.Connector;
+import org.apache.accumulo.core.client.ZooKeeperInstance;
 import org.apache.accumulo.core.client.security.tokens.AuthenticationToken;
 import org.apache.accumulo.core.client.security.tokens.PasswordToken;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.vertexium.Graph;
 import org.vertexium.GraphConfiguration;
-import org.vertexium.accumulo.util.DataInDataTableStreamingPropertyValueStorageStrategy;
+import org.vertexium.VertexiumException;
 import org.vertexium.accumulo.util.OverflowIntoHdfsStreamingPropertyValueStorageStrategy;
 import org.vertexium.accumulo.util.StreamingPropertyValueStorageStrategy;
 import org.vertexium.id.IdentityNameSubstitutionStrategy;
@@ -99,10 +102,17 @@ public class AccumuloGraphConfiguration extends GraphConfiguration {
         return map;
     }
 
-    public Connector createConnector() throws AccumuloSecurityException, AccumuloException {
-        LOGGER.info("Connecting to accumulo instance [%s] zookeeper servers [%s]", this.getAccumuloInstanceName(), this.getZookeeperServers());
-        ZooKeeperInstance instance = new ZooKeeperInstance(getClientConfiguration());
-        return instance.getConnector(this.getAccumuloUsername(), this.getAuthenticationToken());
+    public Connector createConnector() {
+        try {
+            LOGGER.info("Connecting to accumulo instance [%s] zookeeper servers [%s]", this.getAccumuloInstanceName(), this.getZookeeperServers());
+            ZooKeeperInstance instance = new ZooKeeperInstance(getClientConfiguration());
+            return instance.getConnector(this.getAccumuloUsername(), this.getAuthenticationToken());
+        } catch (Exception ex) {
+            throw new VertexiumException(
+                    String.format("Could not connect to Accumulo instance [%s] zookeeper servers [%s]", this.getAccumuloInstanceName(), this.getZookeeperServers()),
+                    ex
+            );
+        }
     }
 
     public ClientConfiguration getClientConfiguration() {

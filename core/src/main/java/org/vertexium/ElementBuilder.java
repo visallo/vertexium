@@ -15,6 +15,7 @@ public abstract class ElementBuilder<T extends Element> implements ElementMutati
     private final List<PropertyDeleteMutation> propertyDeletes = new ArrayList<>();
     private final List<PropertySoftDeleteMutation> propertySoftDeletes = new ArrayList<>();
     private final List<ExtendedDataMutation> extendedDatas = new ArrayList<>();
+    private final List<ExtendedDataDeleteMutation> extendedDataDeletes = new ArrayList<>();
     private final String elementId;
     private IndexHint indexHint = IndexHint.INDEX;
 
@@ -161,6 +162,12 @@ public abstract class ElementBuilder<T extends Element> implements ElementMutati
         return this;
     }
 
+    @Override
+    public ElementBuilder<T> deleteExtendedData(String tableName, String row, String column, Visibility visibility) {
+        extendedDataDeletes.add(new ExtendedDataDeleteMutation(tableName, row, column, visibility));
+        return this;
+    }
+
     /**
      * saves the element to the graph.
      *
@@ -182,6 +189,10 @@ public abstract class ElementBuilder<T extends Element> implements ElementMutati
 
     public Iterable<ExtendedDataMutation> getExtendedData() {
         return extendedDatas;
+    }
+
+    public Iterable<ExtendedDataDeleteMutation> getExtendedDataDeletes() {
+        return extendedDataDeletes;
     }
 
     public IndexHint getIndexHint() {
@@ -215,6 +226,10 @@ public abstract class ElementBuilder<T extends Element> implements ElementMutati
         }
 
         if (extendedDatas.size() > 0) {
+            return true;
+        }
+
+        if (extendedDataDeletes.size() > 0) {
             return true;
         }
 

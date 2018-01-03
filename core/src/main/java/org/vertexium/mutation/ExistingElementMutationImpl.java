@@ -16,6 +16,7 @@ public abstract class ExistingElementMutationImpl<T extends Element> implements 
     private final List<AlterPropertyVisibility> alterPropertyVisibilities = new ArrayList<>();
     private final List<SetPropertyMetadata> setPropertyMetadatas = new ArrayList<>();
     private final List<ExtendedDataMutation> extendedDatas = new ArrayList<>();
+    private final List<ExtendedDataDeleteMutation> extendedDataDeletes = new ArrayList<>();
     private final T element;
     private Visibility newElementVisibility;
     private IndexHint indexHint = IndexHint.INDEX;
@@ -75,6 +76,11 @@ public abstract class ExistingElementMutationImpl<T extends Element> implements 
         Preconditions.checkNotNull(property, "property cannot be null");
         propertyDeletes.add(new PropertyPropertyDeleteMutation(property));
         return this;
+    }
+
+    @Override
+    public Iterable<ExtendedDataDeleteMutation> getExtendedDataDeletes() {
+        return extendedDataDeletes;
     }
 
     @Override
@@ -207,6 +213,12 @@ public abstract class ExistingElementMutationImpl<T extends Element> implements 
     }
 
     @Override
+    public ExistingElementMutation<T> deleteExtendedData(String tableName, String row, String column, Visibility visibility) {
+        extendedDataDeletes.add(new ExtendedDataDeleteMutation(tableName, row, column, visibility));
+        return this;
+    }
+
+    @Override
     public T getElement() {
         return element;
     }
@@ -260,6 +272,10 @@ public abstract class ExistingElementMutationImpl<T extends Element> implements 
         }
 
         if (extendedDatas.size() > 0) {
+            return true;
+        }
+
+        if (extendedDataDeletes.size() > 0) {
             return true;
         }
 

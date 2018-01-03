@@ -172,7 +172,13 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
         }
 
         ElementType elementType = ElementType.getTypeFromElement(mutation.getElement());
-        getGraph().saveExtendedDataMutations(mutation.getElement().getId(), elementType, mutation.getExtendedData());
+        getGraph().saveExtendedDataMutations(
+                mutation.getElement(),
+                elementType,
+                mutation.getExtendedData(),
+                mutation.getExtendedDataDeletes(),
+                authorizations
+        );
     }
 
     @Override

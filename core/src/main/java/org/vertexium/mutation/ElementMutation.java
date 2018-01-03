@@ -140,6 +140,11 @@ public interface ElementMutation<T extends Element> {
     Iterable<ExtendedDataMutation> getExtendedData();
 
     /**
+     * Gets the extended data columns currently being deleted in this mutation
+     */
+    Iterable<ExtendedDataDeleteMutation> getExtendedDataDeletes();
+
+    /**
      * Sets the index hint of this element.
      */
     ElementMutation<T> setIndexHint(IndexHint indexHint);
@@ -176,4 +181,14 @@ public interface ElementMutation<T extends Element> {
      * @param visibility The visibility of the value.
      */
     ElementMutation<T> addExtendedData(String tableName, String row, String column, Object value, Long timestamp, Visibility visibility);
+
+    /**
+     * Deletes an extended data cell from an element.
+     *
+     * @param tableName  The extended data table to add the cell to.
+     * @param row        The row to add the cell to.
+     * @param column     The column name.
+     * @param visibility The visibility of the value.
+     */
+    ElementMutation<T> deleteExtendedData(String tableName, String row, String column, Visibility visibility);
 }

@@ -12,10 +12,7 @@ import org.vertexium.accumulo.iterator.model.EdgeInfo;
 import org.vertexium.accumulo.keys.KeyHelper;
 import org.vertexium.accumulo.util.StreamingPropertyValueStorageStrategy;
 import org.vertexium.id.NameSubstitutionStrategy;
-import org.vertexium.mutation.ExtendedDataMutation;
-import org.vertexium.mutation.PropertyDeleteMutation;
-import org.vertexium.mutation.PropertyPropertyDeleteMutation;
-import org.vertexium.mutation.PropertySoftDeleteMutation;
+import org.vertexium.mutation.*;
 import org.vertexium.property.StreamingPropertyValue;
 import org.vertexium.property.StreamingPropertyValueRef;
 import org.vertexium.util.Preconditions;
@@ -53,6 +50,7 @@ public abstract class ElementMutationBuilder {
         Mutation m = createMutationForVertexBuilder(graph, vertexBuilder, timestamp);
         saveVertexMutation(m);
         saveExtendedDataMutations(graph, ElementType.VERTEX, vertexBuilder);
+        saveExtendedDataDeletes(graph, vertexBuilder.getElementId(), ElementType.VERTEX, vertexBuilder.getExtendedDataDeletes());
     }
 
     private void saveExtendedDataMutations(AccumuloGraph graph, ElementType elementType, ElementBuilder elementBuilder) {
@@ -86,6 +84,31 @@ public abstract class ElementMutationBuilder {
                         new Text(edm.getColumnName()),
                         visibilityToAccumuloVisibility(edm.getVisibility()),
                         new Value(vertexiumSerializer.objectToBytes(value))
+                );
+            }
+            saveExtendedDataMutation(elementType, m);
+        }
+    }
+
+    public void saveExtendedDataDeletes(
+            AccumuloGraph graph,
+            String elementId,
+            ElementType elementType,
+            Iterable<ExtendedDataDeleteMutation> extendedDataDeletes
+    ) {
+        Map<String, List<ExtendedDataDeleteMutation>> extendedDataDeletesByTableName = stream(extendedDataDeletes)
+                .collect(Collectors.groupingBy(edm -> edm.getTableName() + edm.getRow()));
+        for (Map.Entry<String, List<ExtendedDataDeleteMutation>> entry : extendedDataDeletesByTableName.entrySet()) {
+            List<ExtendedDataDeleteMutation> mutationsForTableAndRow = entry.getValue();
+            String tableName = mutationsForTableAndRow.get(0).getTableName();
+            String row = mutationsForTableAndRow.get(0).getRow();
+
+            Mutation m = new Mutation(KeyHelper.createExtendedDataRowKey(elementType, elementId, tableName, row));
+            for (ExtendedDataDeleteMutation edm : mutationsForTableAndRow) {
+                m.putDelete(
+                        AccumuloElement.CF_EXTENDED_DATA,
+                        new Text(edm.getColumnName()),
+                        visibilityToAccumuloVisibility(edm.getVisibility())
                 );
             }
             saveExtendedDataMutation(elementType, m);
@@ -288,6 +311,7 @@ public abstract class ElementMutationBuilder {
         );
 
         saveExtendedDataMutations(graph, ElementType.EDGE, edgeBuilder);
+        saveExtendedDataDeletes(graph, edgeBuilder.getElementId(), ElementType.EDGE, edgeBuilder.getExtendedDataDeletes());
     }
 
     private void saveEdgeInfoOnVertex(String edgeId, String outVertexId, String inVertexId, String edgeLabel, ColumnVisibility edgeColumnVisibility) {
