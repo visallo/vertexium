@@ -1094,7 +1094,8 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             Element element,
             ElementType elementType,
             Iterable<ExtendedDataMutation> extendedData,
-            Iterable<ExtendedDataDeleteMutation> extendedDataDeletes
+            Iterable<ExtendedDataDeleteMutation> extendedDataDeletes,
+            Authorizations authorizations
     ) {
         if (extendedData == null) {
             return;
@@ -1103,6 +1104,21 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         elementMutationBuilder.saveExtendedDataMarkers(element.getId(), elementType, extendedData);
         elementMutationBuilder.saveExtendedData(this, element.getId(), elementType, extendedData);
         elementMutationBuilder.saveExtendedDataDeletes(this, element.getId(), elementType, extendedDataDeletes);
+
+        getSearchIndex().addElementExtendedData(this, element, extendedData, authorizations);
+
+        for (ExtendedDataDeleteMutation m : extendedDataDeletes) {
+            getSearchIndex().deleteExtendedData(
+                    this,
+                    element,
+                    m.getTableName(),
+                    m.getRow(),
+                    m.getColumnName(),
+                    m.getVisibility(),
+                    authorizations
+            );
+        }
+
 
         if (hasEventListeners()) {
             for (ExtendedDataMutation extendedDataMutation : extendedData) {

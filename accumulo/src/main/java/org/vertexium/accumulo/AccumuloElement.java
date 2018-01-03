@@ -176,7 +176,8 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
                 mutation.getElement(),
                 elementType,
                 mutation.getExtendedData(),
-                mutation.getExtendedDataDeletes()
+                mutation.getExtendedDataDeletes(),
+                authorizations
         );
     }
 
