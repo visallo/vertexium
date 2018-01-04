@@ -25,9 +25,11 @@ public class LazyExtendedDataTable extends ModelBase {
         writer.println("");
         for (ExtendedDataRow row : getRows()) {
             writer.println("@|bold " + row.getId().getRowId() + ":|@");
-            for (String propertyName : row.getPropertyNames()) {
-                Object value = row.getPropertyValue(propertyName);
-                writer.println("    @|bold " + propertyName + ":|@ " + VertexiumScript.valueToString(value, true));
+            for (Property property : row.getProperties()) {
+                Object value = property.getValue();
+                writer.println("    @|bold " + property.getName() + ":"
+                        + (property.getKey() == null ? "" : property.getKey()) + "|@ "
+                        + VertexiumScript.valueToString(value, true));
             }
         }
 

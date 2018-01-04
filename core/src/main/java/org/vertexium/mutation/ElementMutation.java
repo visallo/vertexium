@@ -183,6 +183,31 @@ public interface ElementMutation<T extends Element> {
     ElementMutation<T> addExtendedData(String tableName, String row, String column, Object value, Long timestamp, Visibility visibility);
 
     /**
+     * Adds an extended data cell to the element.
+     *
+     * @param tableName  The extended data table to add the cell to.
+     * @param row        The row to add the cell to.
+     * @param column     The column name.
+     * @param key        The column multi-value key.
+     * @param value      The cell value.
+     * @param visibility The visibility of the value.
+     */
+    ElementMutation<T> addExtendedData(String tableName, String row, String column, String key, Object value, Visibility visibility);
+
+    /**
+     * Adds an extended data cell to the element.
+     *
+     * @param tableName  The extended data table to add the cell to.
+     * @param row        The row to add the cell to.
+     * @param column     The column name.
+     * @param key        The column multi-value key.
+     * @param value      The cell value.
+     * @param timestamp  The timestamp of the value. null, to automatically generate one.
+     * @param visibility The visibility of the value.
+     */
+    ElementMutation<T> addExtendedData(String tableName, String row, String column, String key, Object value, Long timestamp, Visibility visibility);
+
+    /**
      * Deletes an extended data cell from an element.
      *
      * @param tableName  The extended data table to add the cell to.
@@ -191,4 +216,15 @@ public interface ElementMutation<T extends Element> {
      * @param visibility The visibility of the value.
      */
     ElementMutation<T> deleteExtendedData(String tableName, String row, String column, Visibility visibility);
+
+    /**
+     * Deletes an extended data cell from an element.
+     *
+     * @param tableName  The extended data table to add the cell to.
+     * @param row        The row to add the cell to.
+     * @param column     The column name.
+     * @param key        The column multi-value key.
+     * @param visibility The visibility of the value.
+     */
+    ElementMutation<T> deleteExtendedData(String tableName, String row, String column, String key, Visibility visibility);
 }

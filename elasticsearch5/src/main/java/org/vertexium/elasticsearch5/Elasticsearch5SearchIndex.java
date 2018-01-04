@@ -446,6 +446,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
             String tableName,
             String row,
             String columnName,
+            String key,
             Visibility visibility,
             Authorizations authorizations
     ) {
@@ -1378,7 +1379,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
                 if (!client.admin().indices().prepareExists(indexName).execute().actionGet().isExists()) {
                     try {
                         createIndex(indexName);
-                    } catch (IOException e) {
+                    } catch (Exception e) {
                         throw new VertexiumException("Could not create index: " + indexName, e);
                     }
                 }
@@ -1916,7 +1917,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
     }
 
     @SuppressWarnings("unused")
-    protected void createIndex(String indexName) throws IOException {
+    protected void createIndex(String indexName) {
         CreateIndexResponse createResponse = client.admin().indices().prepareCreate(indexName)
                 .setSettings(Settings.builder()
                         .put("number_of_shards", getConfig().getNumberOfShards())

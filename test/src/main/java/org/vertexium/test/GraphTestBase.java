@@ -1,6 +1,5 @@
 package org.vertexium.test;
 
-
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
@@ -2166,10 +2165,10 @@ public abstract class GraphTestBase {
         assertEvents(
                 new AddVertexEvent(graph, (Vertex) saveVertices.get(0)),
                 new AddPropertyEvent(graph, saveVertices.get(0), saveVertices.get(0).getProperty("k1", "name")),
-                new AddExtendedDataEvent(graph, saveVertices.get(0), "table1", "row1", "col1", "extended", VISIBILITY_A),
+                new AddExtendedDataEvent(graph, saveVertices.get(0), "table1", "row1", "col1", null, "extended", VISIBILITY_A),
                 new AddVertexEvent(graph, (Vertex) saveVertices.get(1)),
                 new AddPropertyEvent(graph, saveVertices.get(1), saveVertices.get(1).getProperty("k1", "name")),
-                new AddExtendedDataEvent(graph, saveVertices.get(1), "table1", "row1", "col1", "extended", VISIBILITY_A)
+                new AddExtendedDataEvent(graph, saveVertices.get(1), "table1", "row1", "col1", null, "extended", VISIBILITY_A)
         );
         clearGraphEvents();
 
@@ -6695,7 +6694,7 @@ public abstract class GraphTestBase {
 
         Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
         assertEvents(
-                new DeleteExtendedDataEvent(graph, v1, "table1", "row1", "name")
+                new DeleteExtendedDataEvent(graph, v1, "table1", "row1", "name", null)
         );
 
         if (v1.getExtendedDataTableNames().size() == 0) {
@@ -6934,6 +6933,45 @@ public abstract class GraphTestBase {
         searchResultsList = toList(searchResults);
         assertEquals(2, searchResultsList.size());
         assertRowIdsAnyOrder(Lists.newArrayList("row1", "row2"), searchResultsList);
+    }
+
+    @Test
+    public void testExtendedDataQueryWithMultiValue() {
+        graph.prepareVertex("v1", VISIBILITY_A)
+                .addExtendedData("table1", "row1", "col1", "key1", "joe", VISIBILITY_A)
+                .addExtendedData("table1", "row1", "col1", "key2", "bob", VISIBILITY_A)
+                .addExtendedData("table1", "row2", "col1", "key1", "joe", VISIBILITY_A)
+                .addExtendedData("table1", "row2", "col1", "key2", "jane", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
+        graph.flush();
+
+        Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
+        QueryableIterable<ExtendedDataRow> rows = v1.getExtendedData("table1");
+        for (ExtendedDataRow row : rows) {
+            if (row.getId().getRowId().equals("row1")) {
+                assertEquals("joe", row.getPropertyValue("key1", "col1"));
+                assertEquals("bob", row.getPropertyValue("key2", "col1"));
+            } else if (row.getId().getRowId().equals("row2")) {
+                assertEquals("joe", row.getPropertyValue("key1", "col1"));
+                assertEquals("jane", row.getPropertyValue("key2", "col1"));
+            } else {
+                throw new VertexiumException("invalid row: " + row.getId());
+            }
+        }
+
+        QueryResultsIterable<? extends VertexiumObject> searchResults = graph.query("joe", AUTHORIZATIONS_A)
+                .search();
+        assertEquals(2, searchResults.getTotalHits());
+        List<? extends VertexiumObject> searchResultsList = toList(searchResults);
+        assertEquals(2, searchResultsList.size());
+        assertRowIdsAnyOrder(Lists.newArrayList("row1", "row2"), searchResultsList);
+
+        searchResults = graph.query("bob", AUTHORIZATIONS_A)
+                .search();
+        assertEquals(1, searchResults.getTotalHits());
+        searchResultsList = toList(searchResults);
+        assertEquals(1, searchResultsList.size());
+        assertRowIdsAnyOrder(Lists.newArrayList("row1"), searchResultsList);
     }
 
     @Test

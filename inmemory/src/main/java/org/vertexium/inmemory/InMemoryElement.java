@@ -127,14 +127,15 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> implemen
         }
     }
 
-    private void deleteExtendedData(String tableName, String row, String columnName, Visibility visibility) {
-        getGraph().deleteExtendedData(this, tableName, row, columnName, visibility, authorizations);
+    private void deleteExtendedData(String tableName, String row, String columnName, String key, Visibility visibility) {
+        getGraph().deleteExtendedData(this, tableName, row, columnName, key, visibility, authorizations);
     }
 
     protected void extendedData(
             String tableName,
             String rowId,
             String column,
+            String key,
             Object value,
             long timestamp,
             Visibility visibility,
@@ -150,6 +151,7 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> implemen
                 this,
                 extendedDataRowId,
                 column,
+                key,
                 value,
                 timestamp,
                 visibility,
@@ -474,6 +476,7 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> implemen
                     extendedData.getTableName(),
                     extendedData.getRow(),
                     extendedData.getColumnName(),
+                    extendedData.getKey(),
                     extendedData.getValue(),
                     extendedData.getTimestamp(),
                     extendedData.getVisibility(),
@@ -485,6 +488,7 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> implemen
                     extendedDataDelete.getTableName(),
                     extendedDataDelete.getRow(),
                     extendedDataDelete.getColumnName(),
+                    extendedDataDelete.getKey(),
                     extendedDataDelete.getVisibility()
             );
         }

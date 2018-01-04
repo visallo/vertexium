@@ -4,6 +4,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import org.vertexium.*;
 import org.vertexium.security.VisibilityEvaluator;
+import org.vertexium.util.IterableUtils;
 import org.vertexium.util.StreamUtils;
 
 import java.util.HashMap;
@@ -36,12 +37,13 @@ public class MapInMemoryExtendedDataTable extends InMemoryExtendedDataTable {
     public synchronized void addData(
             ExtendedDataRowId rowId,
             String column,
+            String key,
             Object value,
             long timestamp,
             Visibility visibility
     ) {
         ElementTypeData data = elementTypeData.computeIfAbsent(rowId.getElementType(), k -> new ElementTypeData());
-        data.addData(rowId, column, value, timestamp, visibility);
+        data.addData(rowId, column, key, value, timestamp, visibility);
     }
 
     @Override
@@ -53,10 +55,10 @@ public class MapInMemoryExtendedDataTable extends InMemoryExtendedDataTable {
     }
 
     @Override
-    public void removeColumn(ExtendedDataRowId rowId, String columnName, Visibility visibility) {
+    public void removeColumn(ExtendedDataRowId rowId, String columnName, String key, Visibility visibility) {
         ElementTypeData data = elementTypeData.get(rowId.getElementType());
         if (data != null) {
-            data.removeColumn(rowId, columnName, visibility);
+            data.removeColumn(rowId, columnName, key, visibility);
         }
     }
 
@@ -79,9 +81,16 @@ public class MapInMemoryExtendedDataTable extends InMemoryExtendedDataTable {
             return data.getTable(tableName, authorizations);
         }
 
-        public synchronized void addData(ExtendedDataRowId rowId, String column, Object value, long timestamp, Visibility visibility) {
+        public synchronized void addData(
+                ExtendedDataRowId rowId,
+                String column,
+                String key,
+                Object value,
+                long timestamp,
+                Visibility visibility
+        ) {
             ElementData data = elementData.computeIfAbsent(rowId.getElementId(), k -> new ElementData());
-            data.addData(rowId, column, value, timestamp, visibility);
+            data.addData(rowId, column, key, value, timestamp, visibility);
         }
 
         public void removeData(ExtendedDataRowId rowId) {
@@ -91,10 +100,10 @@ public class MapInMemoryExtendedDataTable extends InMemoryExtendedDataTable {
             }
         }
 
-        public void removeColumn(ExtendedDataRowId rowId, String columnName, Visibility visibility) {
+        public void removeColumn(ExtendedDataRowId rowId, String columnName, String key, Visibility visibility) {
             ElementData data = elementData.get(rowId.getElementId());
             if (data != null) {
-                data.removeColumn(rowId, columnName, visibility);
+                data.removeColumn(rowId, columnName, key, visibility);
             }
         }
     }
@@ -123,9 +132,16 @@ public class MapInMemoryExtendedDataTable extends InMemoryExtendedDataTable {
             return rows;
         }
 
-        public synchronized void addData(ExtendedDataRowId rowId, String column, Object value, long timestamp, Visibility visibility) {
+        public synchronized void addData(
+                ExtendedDataRowId rowId,
+                String column,
+                String key,
+                Object value,
+                long timestamp,
+                Visibility visibility
+        ) {
             Table table = tables.computeIfAbsent(rowId.getTableName(), k -> new Table());
-            table.addData(rowId, column, value, timestamp, visibility);
+            table.addData(rowId, column, key, value, timestamp, visibility);
         }
 
         public void removeData(ExtendedDataRowId rowId) {
@@ -135,10 +151,10 @@ public class MapInMemoryExtendedDataTable extends InMemoryExtendedDataTable {
             }
         }
 
-        public void removeColumn(ExtendedDataRowId rowId, String columnName, Visibility visibility) {
+        public void removeColumn(ExtendedDataRowId rowId, String columnName, String key, Visibility visibility) {
             Table table = tables.get(rowId.getTableName());
             if (table != null) {
-                table.removeColumn(rowId, columnName, visibility);
+                table.removeColumn(rowId, columnName, key, visibility);
             }
         }
 
@@ -148,7 +164,7 @@ public class MapInMemoryExtendedDataTable extends InMemoryExtendedDataTable {
             public Iterable<ExtendedDataRow> getRows(VisibilityEvaluator visibilityEvaluator) {
                 return rows.stream()
                         .map(row -> row.toReadable(visibilityEvaluator))
-                        .filter(row -> row.getPropertyNames().size() > 0)
+                        .filter(row -> IterableUtils.count(row.getProperties()) > 0)
                         .collect(Collectors.toList());
             }
 
@@ -156,9 +172,16 @@ public class MapInMemoryExtendedDataTable extends InMemoryExtendedDataTable {
                 return rows.stream().anyMatch(r -> r.canRead(visibilityEvaluator));
             }
 
-            public void addData(ExtendedDataRowId rowId, String column, Object value, long timestamp, Visibility visibility) {
+            public void addData(
+                    ExtendedDataRowId rowId,
+                    String column,
+                    String key,
+                    Object value,
+                    long timestamp,
+                    Visibility visibility
+            ) {
                 InMemoryExtendedDataRow row = findOrAddRow(rowId);
-                row.addColumn(column, value, timestamp, visibility);
+                row.addColumn(column, key, value, timestamp, visibility);
             }
 
             private InMemoryExtendedDataRow findOrAddRow(ExtendedDataRowId rowId) {
@@ -184,12 +207,12 @@ public class MapInMemoryExtendedDataTable extends InMemoryExtendedDataTable {
                 rows.removeIf(row -> row.getId().equals(rowId));
             }
 
-            public void removeColumn(ExtendedDataRowId rowId, String columnName, Visibility visibility) {
+            public void removeColumn(ExtendedDataRowId rowId, String columnName, String key, Visibility visibility) {
                 InMemoryExtendedDataRow row = findRow(rowId);
                 if (row == null) {
                     return;
                 }
-                row.removeColumn(columnName, visibility);
+                row.removeColumn(columnName, key, visibility);
             }
         }
     }

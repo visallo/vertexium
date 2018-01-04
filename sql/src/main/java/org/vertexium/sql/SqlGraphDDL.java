@@ -98,6 +98,7 @@ public class SqlGraphDDL {
                         "%s varchar(" + VARCHAR_SIZE + ") not null," +
                         "%s varchar(" + VARCHAR_SIZE + ") not null," +
                         "%s varchar(" + VARCHAR_SIZE + ") not null," +
+                        "%s varchar(" + VARCHAR_SIZE + ")," +
                         "%s %s not null," +
                         "%s bigint not null," +
                         "%s varchar(" + VARCHAR_SIZE + ") not null" +
@@ -108,6 +109,7 @@ public class SqlGraphDDL {
                 SqlExtendedDataTable.TABLE_NAME_COLUMN_NAME,
                 SqlExtendedDataTable.ROW_ID_COLUMN_NAME,
                 SqlExtendedDataTable.COLUMN_COLUMN_NAME,
+                SqlExtendedDataTable.KEY_COLUMN_NAME,
                 SqlExtendedDataTable.VALUE_COLUMN_NAME,
                 BIG_BIN_COLUMN_TYPE,
                 SqlExtendedDataTable.TIMESTAMP_COLUMN_NAME,

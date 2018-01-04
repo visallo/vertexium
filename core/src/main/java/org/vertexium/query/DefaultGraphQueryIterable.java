@@ -169,8 +169,8 @@ public class DefaultGraphQueryIterable<T> implements
     }
 
     private boolean evaluateQueryString(ExtendedDataRow extendedDataRow, String queryString) {
-        for (String propertyName : extendedDataRow.getPropertyNames()) {
-            if (evaluateQueryStringOnValue(extendedDataRow.getPropertyValue(propertyName), queryString)) {
+        for (Property property : extendedDataRow.getProperties()) {
+            if (evaluateQueryStringOnValue(property.getValue(), queryString)) {
                 return true;
             }
         }

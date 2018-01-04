@@ -3,37 +3,44 @@ package org.vertexium.accumulo;
 import org.apache.accumulo.core.data.Key;
 import org.apache.accumulo.core.data.Value;
 import org.vertexium.*;
+import org.vertexium.accumulo.iterator.model.KeyBase;
 
 import java.util.*;
 
 public class AccumuloExtendedDataRow extends ExtendedDataRowBase {
     private final ExtendedDataRowId rowId;
-    private final Map<String, Property> properties;
+    private final Set<Property> properties;
 
     public AccumuloExtendedDataRow(ExtendedDataRowId rowId, SortedMap<Key, Value> row, VertexiumSerializer vertexiumSerializer) {
         this.rowId = rowId;
         this.properties = rowToProperties(rowId, row, vertexiumSerializer);
     }
 
-    private Map<String, Property> rowToProperties(
+    private Set<Property> rowToProperties(
             ExtendedDataRowId rowId,
             SortedMap<Key, Value> row,
             VertexiumSerializer vertexiumSerializer
     ) {
-        Map<String, Property> results = new HashMap<>();
+        Set<Property> results = new HashSet<>();
         for (Map.Entry<Key, Value> rowEntry : row.entrySet()) {
-            String propertyName = rowEntry.getKey().getColumnQualifier().toString();
+            String[] columnQualifierParts = KeyBase.splitOnValueSeparator(rowEntry.getKey().getColumnQualifier().toString());
+            if (columnQualifierParts.length != 1 && columnQualifierParts.length != 2) {
+                throw new VertexiumException("Invalid column qualifier for extended data row: " + rowId + " (expected 1 or 2 parts, found " + columnQualifierParts.length + ")");
+            }
+            String propertyName = columnQualifierParts[0];
+            String propertyKey = columnQualifierParts.length > 1 ? columnQualifierParts[1] : null;
             Object propertyValue = vertexiumSerializer.bytesToObject(rowEntry.getValue().get());
             long timestamp = rowEntry.getKey().getTimestamp();
             Visibility visibility = AccumuloGraph.accumuloVisibilityToVisibility(rowEntry.getKey().getColumnVisibility());
             AccumuloExtendedDataRowProperty prop = new AccumuloExtendedDataRowProperty(
                     rowId.getTableName(),
                     propertyName,
+                    propertyKey,
                     propertyValue,
                     timestamp,
                     visibility
             );
-            results.put(propertyName, prop);
+            results.add(prop);
         }
         return results;
     }
@@ -45,31 +52,13 @@ public class AccumuloExtendedDataRow extends ExtendedDataRowBase {
 
     @Override
     public Iterable<Property> getProperties() {
-        return properties.values();
-    }
-
-    @Override
-    public Property getProperty(String name) {
-        return properties.get(name);
-    }
-
-    @Override
-    public Iterable<String> getPropertyNames() {
-        return properties.keySet();
-    }
-
-    @Override
-    public Object getPropertyValue(String name) {
-        Property property = getProperty(name);
-        if (property == null) {
-            return null;
-        }
-        return property.getValue();
+        return properties;
     }
 
     private static class AccumuloExtendedDataRowProperty extends Property {
         private final String tableName;
         private final String propertyName;
+        private final String propertyKey;
         private final Object propertyValue;
         private final long timestamp;
         private final Visibility visibility;
@@ -77,12 +66,14 @@ public class AccumuloExtendedDataRow extends ExtendedDataRowBase {
         public AccumuloExtendedDataRowProperty(
                 String tableName,
                 String propertyName,
+                String propertyKey,
                 Object propertyValue,
                 long timestamp,
                 Visibility visibility
         ) {
             this.tableName = tableName;
             this.propertyName = propertyName;
+            this.propertyKey = propertyKey;
             this.propertyValue = propertyValue;
             this.timestamp = timestamp;
             this.visibility = visibility;
@@ -90,7 +81,7 @@ public class AccumuloExtendedDataRow extends ExtendedDataRowBase {
 
         @Override
         public String getKey() {
-            return tableName;
+            return propertyKey;
         }
 
         @Override
