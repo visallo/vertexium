@@ -27,20 +27,6 @@ public class InMemoryExtendedDataRow extends ExtendedDataRowBase {
         return id;
     }
 
-    @Override
-    public Object getPropertyValue(String propertyName) {
-        InMemoryProperty property = getProperty(propertyName);
-        if (property == null) {
-            return null;
-        }
-        return property.getValue();
-    }
-
-    @Override
-    public Set<String> getPropertyNames() {
-        return properties.stream().map(InMemoryProperty::getName).collect(Collectors.toSet());
-    }
-
     public InMemoryExtendedDataRow toReadable(VisibilityEvaluator visibilityEvaluator) {
         InMemoryExtendedDataRow row = new InMemoryExtendedDataRow(getId());
         for (InMemoryProperty column : properties) {
@@ -51,12 +37,16 @@ public class InMemoryExtendedDataRow extends ExtendedDataRowBase {
         return row;
     }
 
-    public void addColumn(String propertyName, Object value, long timestamp, Visibility visibility) {
-        properties.add(new InMemoryProperty(id.getTableName(), propertyName, value, timestamp, visibility));
+    public void addColumn(String propertyName, String key, Object value, long timestamp, Visibility visibility) {
+        properties.add(new InMemoryProperty(propertyName, key, value, timestamp, visibility));
     }
 
-    public void removeColumn(String columnName, Visibility visibility) {
-        properties.removeIf(p -> p.getName().equals(columnName) && p.getVisibility().equals(visibility));
+    public void removeColumn(String columnName, String key, Visibility visibility) {
+        properties.removeIf(p ->
+                p.getName().equals(columnName)
+                        && p.getVisibility().equals(visibility)
+                        && ((key == null && p.getKey() == null) || (key != null && key.equals(p.getKey())))
+        );
     }
 
     @Override
@@ -64,25 +54,17 @@ public class InMemoryExtendedDataRow extends ExtendedDataRowBase {
         return this.properties.stream().map(p -> (Property) p).collect(Collectors.toList());
     }
 
-    @Override
-    public InMemoryProperty getProperty(String name) {
-        return properties.stream()
-                .filter(p -> p.getName().equals(name))
-                .findFirst()
-                .orElse(null);
-    }
-
     private static class InMemoryProperty extends Property {
-        private final String key;
         private final String name;
+        private final String key;
         private final long timestamp;
         private final Object value;
         private final Visibility visibility;
         private final ColumnVisibility columnVisibility;
 
-        public InMemoryProperty(String key, String name, Object value, long timestamp, Visibility visibility) {
-            this.key = key;
+        public InMemoryProperty(String name, String key, Object value, long timestamp, Visibility visibility) {
             this.name = name;
+            this.key = key;
             this.value = value;
             this.timestamp = timestamp;
             this.visibility = visibility;

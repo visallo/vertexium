@@ -126,6 +126,7 @@ public class DefaultSearchIndex implements SearchIndex {
             String tableName,
             String row,
             String columnName,
+            String key,
             Visibility visibility,
             Authorizations authorizations
     ) {

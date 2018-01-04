@@ -20,6 +20,7 @@ public abstract class InMemoryExtendedDataTable {
     public abstract void addData(
             ExtendedDataRowId rowId,
             String column,
+            String key,
             Object value,
             long timestamp,
             Visibility visibility
@@ -27,5 +28,5 @@ public abstract class InMemoryExtendedDataTable {
 
     public abstract void remove(ExtendedDataRowId id);
 
-    public abstract void removeColumn(ExtendedDataRowId extendedDataRowId, String columnName, Visibility visibility);
+    public abstract void removeColumn(ExtendedDataRowId extendedDataRowId, String columnName, String key, Visibility visibility);
 }

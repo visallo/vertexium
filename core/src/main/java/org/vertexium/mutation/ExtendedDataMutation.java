@@ -3,40 +3,22 @@ package org.vertexium.mutation;
 import org.vertexium.Visibility;
 import org.vertexium.util.IncreasingTime;
 
-public class ExtendedDataMutation implements Comparable<ExtendedDataMutation> {
-    private final String tableName;
-    private final String row;
-    private final String columnName;
+public class ExtendedDataMutation extends ExtendedDataMutationBase<ExtendedDataMutation> {
     private final Object value;
     private final long timestamp;
-    private final Visibility visibility;
 
     public ExtendedDataMutation(
             String tableName,
             String row,
             String columnName,
+            String key,
             Object value,
             Long timestamp,
             Visibility visibility
     ) {
-        this.tableName = tableName;
-        this.row = row;
-        this.columnName = columnName;
+        super(tableName, row, columnName, key, visibility);
         this.value = value;
         this.timestamp = timestamp == null ? IncreasingTime.currentTimeMillis() : timestamp;
-        this.visibility = visibility;
-    }
-
-    public String getTableName() {
-        return tableName;
-    }
-
-    public String getRow() {
-        return row;
-    }
-
-    public String getColumnName() {
-        return columnName;
     }
 
     public Object getValue() {
@@ -45,41 +27,5 @@ public class ExtendedDataMutation implements Comparable<ExtendedDataMutation> {
 
     public long getTimestamp() {
         return timestamp;
-    }
-
-    public Visibility getVisibility() {
-        return visibility;
-    }
-
-    @Override
-    public String toString() {
-        return "ExtendedDataMutation{" +
-                "tableName='" + tableName + '\'' +
-                ", row='" + row + '\'' +
-                ", columnName='" + columnName + '\'' +
-                ", value=" + value +
-                ", timestamp=" + timestamp +
-                ", visibility=" + visibility +
-                '}';
-    }
-
-    @Override
-    public int compareTo(ExtendedDataMutation other) {
-        int i = tableName.compareTo(other.tableName);
-        if (i != 0) {
-            return i;
-        }
-
-        i = row.compareTo(other.row);
-        if (i != 0) {
-            return i;
-        }
-
-        i = columnName.compareTo(other.columnName);
-        if (i != 0) {
-            return i;
-        }
-
-        return 0;
     }
 }

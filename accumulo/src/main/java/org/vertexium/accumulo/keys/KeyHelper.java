@@ -9,6 +9,7 @@ import org.vertexium.accumulo.iterator.model.KeyBase;
 import org.vertexium.accumulo.iterator.model.PropertyColumnQualifier;
 import org.vertexium.accumulo.iterator.model.PropertyMetadataColumnQualifier;
 import org.vertexium.id.NameSubstitutionStrategy;
+import org.vertexium.mutation.ExtendedDataMutationBase;
 
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
@@ -110,6 +111,14 @@ public class KeyHelper {
     public static Text createExtendedDataRowKey(ElementType elementType, String elementId, String tableName, String row) {
         String elementTypePrefix = getExtendedDataRowKeyElementTypePrefix(elementType);
         return new Text(elementTypePrefix + elementId + KeyBase.VALUE_SEPARATOR + tableName + KeyBase.VALUE_SEPARATOR + row);
+    }
+
+    public static Text createExtendedDataColumnQualifier(ExtendedDataMutationBase edm) {
+        if (edm.getKey() == null) {
+            return new Text(edm.getColumnName());
+        } else {
+            return new Text(edm.getColumnName() + KeyBase.VALUE_SEPARATOR + edm.getKey());
+        }
     }
 
     private static String getExtendedDataRowKeyElementTypePrefix(ElementType elementType) {

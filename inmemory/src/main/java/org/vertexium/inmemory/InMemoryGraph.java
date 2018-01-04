@@ -151,6 +151,7 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
                                 m.getTableName(),
                                 m.getRow(),
                                 m.getColumnName(),
+                                m.getKey(),
                                 m.getVisibility(),
                                 authorizations
                         );
@@ -380,6 +381,7 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
                         m.getTableName(),
                         m.getRow(),
                         m.getColumnName(),
+                        m.getKey(),
                         m.getVisibility(),
                         authorizations
                 );
@@ -856,12 +858,13 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
             Element element,
             ExtendedDataRowId rowId,
             String column,
+            String key,
             Object value,
             long timestamp,
             Visibility visibility,
             Authorizations authorizations
     ) {
-        extendedDataTable.addData(rowId, column, value, timestamp, visibility);
+        extendedDataTable.addData(rowId, column, key, value, timestamp, visibility);
         if (hasEventListeners()) {
             fireGraphEvent(new AddExtendedDataEvent(
                     this,
@@ -869,6 +872,7 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
                     rowId.getTableName(),
                     rowId.getRowId(),
                     column,
+                    key,
                     value,
                     visibility
             ));
@@ -898,18 +902,20 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
             String tableName,
             String row,
             String columnName,
+            String key,
             Visibility visibility,
             Authorizations authorizations
     ) {
         extendedDataTable.removeColumn(
                 new ExtendedDataRowId(ElementType.getTypeFromElement(element), element.getId(), tableName, row),
                 columnName,
+                key,
                 visibility
         );
 
-        getSearchIndex().deleteExtendedData(this, element, tableName, row, columnName, visibility, authorizations);
+        getSearchIndex().deleteExtendedData(this, element, tableName, row, columnName, key, visibility, authorizations);
         if (hasEventListeners()) {
-            fireGraphEvent(new DeleteExtendedDataEvent(this, element, tableName, row, columnName));
+            fireGraphEvent(new DeleteExtendedDataEvent(this, element, tableName, row, columnName, key));
         }
     }
 }

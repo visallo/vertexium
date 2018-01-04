@@ -11,6 +11,7 @@ public class AddExtendedDataEvent extends GraphEvent {
     private final String tableName;
     private final String row;
     private final String columnName;
+    private final String key;
     private final Object value;
     private final Visibility visibility;
 
@@ -20,6 +21,7 @@ public class AddExtendedDataEvent extends GraphEvent {
             String tableName,
             String row,
             String columnName,
+            String key,
             Object value,
             Visibility visibility
     ) {
@@ -28,6 +30,7 @@ public class AddExtendedDataEvent extends GraphEvent {
         this.tableName = tableName;
         this.row = row;
         this.columnName = columnName;
+        this.key = key;
         this.value = value;
         this.visibility = visibility;
     }
@@ -48,12 +51,29 @@ public class AddExtendedDataEvent extends GraphEvent {
         return columnName;
     }
 
+    public String getKey() {
+        return key;
+    }
+
     public Object getValue() {
         return value;
     }
 
     public Visibility getVisibility() {
         return visibility;
+    }
+
+    @Override
+    public String toString() {
+        return "AddExtendedDataEvent{" +
+                "element=" + element +
+                ", tableName='" + tableName + '\'' +
+                ", row='" + row + '\'' +
+                ", columnName='" + columnName + '\'' +
+                ", key='" + key + '\'' +
+                ", value=" + value +
+                ", visibility=" + visibility +
+                '}';
     }
 
     @Override
@@ -69,12 +89,13 @@ public class AddExtendedDataEvent extends GraphEvent {
                 Objects.equals(tableName, that.tableName) &&
                 Objects.equals(row, that.row) &&
                 Objects.equals(columnName, that.columnName) &&
+                Objects.equals(key, that.key) &&
                 Objects.equals(value, that.value) &&
                 Objects.equals(visibility, that.visibility);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(element, tableName, row, columnName, value, visibility);
+        return Objects.hash(element, tableName, row, columnName, key, value, visibility);
     }
 }

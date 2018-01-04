@@ -175,6 +175,7 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
         getGraph().saveExtendedDataMutations(
                 mutation.getElement(),
                 elementType,
+                mutation.getIndexHint(),
                 mutation.getExtendedData(),
                 mutation.getExtendedDataDeletes(),
                 authorizations
