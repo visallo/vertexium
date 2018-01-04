@@ -18,8 +18,8 @@ import java.util.concurrent.ConcurrentSkipListSet;
 public abstract class ElementBase implements Element {
     private final Graph graph;
     private final String id;
-    private Property idProperty;
-    private Property edgeLabelProperty;
+    private transient Property idProperty;
+    private transient Property edgeLabelProperty;
     private Visibility visibility;
     private final long timestamp;
     private final EnumSet<FetchHint> fetchHints;
