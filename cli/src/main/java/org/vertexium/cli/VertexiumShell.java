@@ -55,6 +55,9 @@ public class VertexiumShell {
     @Parameter(names = {"-e"}, description = "String to evaluate")
     private String evalString = null;
 
+    @Parameter(names = {"-ef"}, description = "File to evaluate")
+    private List<String> evalFiles = new ArrayList<>();
+
     @Parameter(names = {"-c"}, description = "Configuration file name")
     private List<String> configFileNames = new ArrayList<>();
 
@@ -253,6 +256,9 @@ public class VertexiumShell {
             shell.execute("import " + Visibility.class.getPackage().getName() + ".*;");
             shell.execute("import " + GeoPoint.class.getPackage().getName() + ".*;");
             shell.execute("import " + GeoCompare.class.getPackage().getName() + ".*;");
+            for (String evalFile : evalFiles) {
+                shell.execute(String.format(":load '%s'", evalFile));
+            }
             code = shell.run(evalString, filenames);
         } finally {
             System.setSecurityManager(psm);

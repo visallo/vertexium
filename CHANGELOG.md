@@ -3,6 +3,7 @@
 * Added: Functions to delete extended data columns
 * Added: Multi-value extended data columns
 * Added: Sorting and aggregating of row ids and table names
+* Added: Option to execute a script from the shell
 * Removed: ElasticSearch 1.x support
 
 # v3.0.4
