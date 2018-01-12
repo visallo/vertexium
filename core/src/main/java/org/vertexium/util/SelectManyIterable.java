@@ -1,6 +1,7 @@
 package org.vertexium.util;
 
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 
 public abstract class SelectManyIterable<TSource, TDest> implements Iterable<TDest> {
     private final Iterable<? extends TSource> source;
@@ -26,6 +27,9 @@ public abstract class SelectManyIterable<TSource, TDest> implements Iterable<TDe
             @Override
             public TDest next() {
                 loadNext();
+                if (next == null) {
+                    throw new NoSuchElementException();
+                }
                 this.current = this.next;
                 this.next = null;
                 return this.current;

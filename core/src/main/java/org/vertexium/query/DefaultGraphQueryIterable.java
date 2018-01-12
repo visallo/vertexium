@@ -6,6 +6,7 @@ import org.vertexium.util.CloseableUtils;
 
 import java.util.Iterator;
 import java.util.List;
+import java.util.NoSuchElementException;
 
 import static org.vertexium.util.IterableUtils.count;
 import static org.vertexium.util.IterableUtils.toList;
@@ -68,6 +69,9 @@ public class DefaultGraphQueryIterable<T> implements
             @Override
             public T next() {
                 loadNext();
+                if (next == null) {
+                    throw new NoSuchElementException();
+                }
                 this.current = this.next;
                 this.next = null;
                 return this.current;

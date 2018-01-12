@@ -1932,6 +1932,9 @@ public abstract class GraphTestBase {
         idsIterable = graph.query(AUTHORIZATIONS_A).sort(namePropertyName, SortDirection.ASCENDING).vertexIds();
         assertResultsCount(3, 3, idsIterable);
 
+        idsIterable = graph.query(AUTHORIZATIONS_A).limit((Long) null).vertexIds();
+        assertResultsCount(3, 3, idsIterable);
+
         List<Vertex> vertices = toList(graph.query(AUTHORIZATIONS_A)
                 .sort(namePropertyName, SortDirection.ASCENDING)
                 .skip(0)

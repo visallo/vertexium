@@ -1,4 +1,5 @@
 # v3.1.0
+* Changed: Properly throw NoSuchElementException from Iterables when next is called with no more elements
 * Added: Accumulo in table storage of streaming property value data
 * Added: Functions to delete extended data columns
 * Added: Multi-value extended data columns

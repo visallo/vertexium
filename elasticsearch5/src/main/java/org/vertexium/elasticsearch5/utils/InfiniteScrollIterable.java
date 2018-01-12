@@ -8,6 +8,7 @@ import org.vertexium.util.CloseableUtils;
 
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 
 public abstract class InfiniteScrollIterable<T> implements QueryResultsIterable<T> {
     private SearchResponse firstResponse;
@@ -101,13 +102,16 @@ public abstract class InfiniteScrollIterable<T> implements QueryResultsIterable<
         @Override
         public T next() {
             loadNext();
+            if (next == null) {
+                throw new NoSuchElementException();
+            }
             this.current = this.next;
             this.next = null;
             return this.current;
         }
 
         private void loadNext() {
-            if (this.next != null) {
+            if (this.next != null || it == null) {
                 return;
             }
 
