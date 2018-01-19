@@ -1,6 +1,7 @@
 package org.vertexium.util;
 
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 
 public class OffsetAndSizeIterable<T> implements CloseableIterable<T> {
     private boolean doneCalled;
@@ -35,6 +36,9 @@ public class OffsetAndSizeIterable<T> implements CloseableIterable<T> {
             @Override
             public T next() {
                 loadNext();
+                if (next == null) {
+                    throw new NoSuchElementException();
+                }
                 this.current = this.next;
                 this.next = null;
                 return this.current;

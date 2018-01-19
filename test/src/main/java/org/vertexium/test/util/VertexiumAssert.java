@@ -12,7 +12,7 @@ import java.util.stream.Collectors;
 
 import static junit.framework.TestCase.fail;
 import static org.junit.Assert.assertEquals;
-import static org.vertexium.util.IterableUtils.count;
+import static org.junit.Assert.assertFalse;
 import static org.vertexium.util.IterableUtils.toList;
 import static org.vertexium.util.StreamUtils.stream;
 
@@ -93,7 +93,7 @@ public class VertexiumAssert {
 
     public static void assertResultsCount(int expectedCountAndTotalHits, QueryResultsIterable<? extends Element> results) {
         assertEquals(expectedCountAndTotalHits, results.getTotalHits());
-        assertEquals(expectedCountAndTotalHits, count(results));
+        assertCount(expectedCountAndTotalHits, results);
     }
 
     public static void assertResultsCount(
@@ -102,7 +102,24 @@ public class VertexiumAssert {
             IterableWithTotalHits<?> results
     ) {
         assertEquals(expectedTotalHits, results.getTotalHits());
-        assertEquals(expectedCount, count(results));
+        assertCount(expectedCount, results);
+    }
+
+    private static void assertCount(int expectedCount, Iterable<?> results) {
+        int count = 0;
+        Iterator<?> it = results.iterator();
+        while (it.hasNext()) {
+            count++;
+            it.next();
+        }
+        assertEquals(expectedCount, count);
+        assertFalse(it.hasNext());
+        try {
+            it.next();
+            throw new VertexiumException("Should throw NoSuchElementException: " + it.getClass().getName());
+        } catch (NoSuchElementException ex) {
+            // OK
+        }
     }
 
     public static void addGraphEvent(GraphEvent graphEvent) {

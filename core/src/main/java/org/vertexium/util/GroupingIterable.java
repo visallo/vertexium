@@ -1,6 +1,7 @@
 package org.vertexium.util;
 
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 
 public abstract class GroupingIterable<TSource, TGroup> implements CloseableIterable<TGroup> {
     private boolean doneCalled;
@@ -30,6 +31,9 @@ public abstract class GroupingIterable<TSource, TGroup> implements CloseableIter
             @Override
             public TGroup next() {
                 loadNext();
+                if (next == null) {
+                    throw new NoSuchElementException();
+                }
                 this.current = this.next;
                 this.next = null;
                 return this.current;

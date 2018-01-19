@@ -1,6 +1,7 @@
 package org.vertexium.util;
 
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 
 public abstract class LookAheadIterable<TSource, TDest> implements CloseableIterable<TDest> {
     private boolean doneCalled;
@@ -25,6 +26,9 @@ public abstract class LookAheadIterable<TSource, TDest> implements CloseableIter
             @Override
             public TDest next() {
                 loadNext();
+                if (next == null) {
+                    throw new NoSuchElementException();
+                }
                 this.current = this.next;
                 this.next = null;
                 return this.current;

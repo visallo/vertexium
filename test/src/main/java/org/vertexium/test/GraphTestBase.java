@@ -243,6 +243,31 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    public void testStreamingPropertyValueLargeReads() throws IOException {
+        String expectedLargeValue = IOUtils.toString(new LargeStringInputStream(LARGE_PROPERTY_VALUE_SIZE));
+        byte[] expectedLargeValueBytes = expectedLargeValue.getBytes();
+        StreamingPropertyValue propLarge = StreamingPropertyValue.create(new ByteArrayInputStream(expectedLargeValueBytes), String.class);
+        graph.prepareVertex("v1", VISIBILITY_A)
+                .setProperty("propLarge", propLarge, VISIBILITY_A)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B);
+        StreamingPropertyValue prop = (StreamingPropertyValue) v1.getPropertyValue("propLarge");
+        byte[] buffer = new byte[LARGE_PROPERTY_VALUE_SIZE * 2];
+        int leftToRead = expectedLargeValueBytes.length;
+        InputStream in = prop.getInputStream();
+        for (int expectedOffset = 0; expectedOffset < expectedLargeValueBytes.length; ) {
+            int sizeRead = in.read(buffer);
+            for (int j = 0; j < sizeRead; j++, expectedOffset++, leftToRead--) {
+                assertEquals("invalid data at offset " + expectedOffset, expectedLargeValueBytes[expectedOffset], buffer[j]);
+            }
+        }
+        assertEquals(0, leftToRead);
+        assertEquals(-1, in.read(buffer));
+    }
+
+    @Test
     public void testStreamingPropertyDecreasingSize() throws IOException, InterruptedException {
         Metadata metadata = new Metadata();
         Long timestamp = System.currentTimeMillis();
@@ -1930,6 +1955,9 @@ public abstract class GraphTestBase {
         assertIdsAnyOrder(idsIterable, "v3");
 
         idsIterable = graph.query(AUTHORIZATIONS_A).sort(namePropertyName, SortDirection.ASCENDING).vertexIds();
+        assertResultsCount(3, 3, idsIterable);
+
+        idsIterable = graph.query(AUTHORIZATIONS_A).limit((Long) null).vertexIds();
         assertResultsCount(3, 3, idsIterable);
 
         List<Vertex> vertices = toList(graph.query(AUTHORIZATIONS_A)
