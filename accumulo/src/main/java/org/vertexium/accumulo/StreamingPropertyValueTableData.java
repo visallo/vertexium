@@ -64,13 +64,15 @@ public class StreamingPropertyValueTableData extends StreamingPropertyValue {
         private ScannerBase scanner;
         private Iterator<Map.Entry<Key, Value>> scannerIterator;
         private long loadedDataLength;
+        private boolean closed;
 
         @Override
         public int read(byte[] dest, int off, int len) throws IOException {
             if (len == 0) {
                 return 0;
             }
-            while (buffer.getUsed() < len && loadMoreData()) {
+            len = Math.min(len, buffer.getSize());
+            while (buffer.getUsed() == 0 && loadMoreData()) {
 
             }
             if (buffer.getUsed() == 0) {
@@ -92,21 +94,31 @@ public class StreamingPropertyValueTableData extends StreamingPropertyValue {
 
         @Override
         public void close() throws IOException {
+            if (closed) {
+                return;
+            }
             if (scanner != null) {
                 scanner.close();
+                scanner = null;
             }
             if (trace != null) {
                 trace.stop();
+                trace = null;
             }
 
             graph.getGraphLogger().logEndIterator(System.currentTimeMillis() - timerStartTime);
             super.close();
+            closed = true;
         }
 
-        private boolean loadMoreData() {
+        private boolean loadMoreData() throws IOException {
+            if (closed) {
+                return false;
+            }
             Iterator<Map.Entry<Key, Value>> it = getScannerIterator();
             while (true) {
                 if (!it.hasNext()) {
+                    close();
                     return false;
                 }
                 Map.Entry<Key, Value> column = it.next();
@@ -131,7 +143,10 @@ public class StreamingPropertyValueTableData extends StreamingPropertyValue {
             }
         }
 
-        private Iterator<Map.Entry<Key, Value>> getScannerIterator() {
+        private Iterator<Map.Entry<Key, Value>> getScannerIterator() throws IOException {
+            if (closed) {
+                throw new IOException("stream already closed");
+            }
             if (scannerIterator != null) {
                 return scannerIterator;
             }
@@ -139,7 +154,10 @@ public class StreamingPropertyValueTableData extends StreamingPropertyValue {
             return scannerIterator;
         }
 
-        private ScannerBase getScanner() {
+        private ScannerBase getScanner() throws IOException {
+            if (closed) {
+                throw new IOException("stream already closed");
+            }
             if (scanner != null) {
                 return scanner;
             }
