@@ -1559,19 +1559,21 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
 
     private void flushFlushObjectQueue() {
         Queue<FlushObject> queue = getFlushObjectQueue();
-        int failedToFlushCount = 0;
+        int sleep = 0;
+        int failedMaxRetriesCount = 0;
         while (queue.size() > 0) {
             FlushObject flushObject = queue.remove();
             try {
-                long t = flushObject.retryTime - System.currentTimeMillis();
-                if (t > 0) {
-                    Thread.sleep(t);
+                if (sleep > 0) {
+                    Thread.sleep(sleep);
                 }
                 flushObject.future.get(30, TimeUnit.SECONDS);
+                sleep = 0;
             } catch (Exception ex) {
+                sleep = sleep == 0 ? 1 : Math.min(sleep * 10, 1 * 60 * 1000);
                 String message = String.format("Could not write %s", flushObject);
                 if (flushObject.retryCount >= MAX_RETRIES) {
-                    failedToFlushCount++;
+                    failedMaxRetriesCount++;
                     LOGGER.error("%s", message, ex);
                     continue;
                 }
@@ -1582,19 +1584,19 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
                     LOGGER.debug("%s", logMessage);
                 }
                 ListenableActionFuture future = flushObject.actionRequestBuilder.execute();
+
                 queue.add(new FlushObject(
                         flushObject.elementId,
                         flushObject.extendedDataRowId,
                         flushObject.actionRequestBuilder,
                         future,
-                        flushObject.retryCount + 1,
-                        System.currentTimeMillis() + (flushObject.retryCount * 100) + random.nextInt(500)
+                        flushObject.retryCount + 1
                 ));
             }
         }
         queue.clear();
-        if (failedToFlushCount > 0) {
-            throw new VertexiumException("Failed to flush " + failedToFlushCount + " objects");
+        if (failedMaxRetriesCount > 0) {
+            throw new VertexiumException("Failed to flush " + failedMaxRetriesCount + " objects");
         }
     }
 
@@ -1959,7 +1961,6 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
         public final ActionRequestBuilder actionRequestBuilder;
         public final Future future;
         public final int retryCount;
-        private final long retryTime;
 
         FlushObject(
                 String elementId,
@@ -1967,7 +1968,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
                 UpdateRequestBuilder updateRequestBuilder,
                 Future future
         ) {
-            this(elementId, extendedDataRowId, updateRequestBuilder, future, 0, System.currentTimeMillis());
+            this(elementId, extendedDataRowId, updateRequestBuilder, future, 0);
         }
 
         FlushObject(
@@ -1975,15 +1976,13 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
                 String extendedDataRowId,
                 ActionRequestBuilder actionRequestBuilder,
                 Future future,
-                int retryCount,
-                long retryTime
+                int retryCount
         ) {
             this.elementId = elementId;
             this.extendedDataRowId = extendedDataRowId;
             this.actionRequestBuilder = actionRequestBuilder;
             this.future = future;
             this.retryCount = retryCount;
-            this.retryTime = retryTime;
         }
 
         @Override
