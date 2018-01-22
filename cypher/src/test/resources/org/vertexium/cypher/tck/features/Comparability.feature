@@ -55,6 +55,7 @@ Feature: Comparability
       | null |
     And no side effects
 
+  @todo
   Scenario Outline: Comparing across types yields null, except numbers
     Given an empty graph
     And having executed:

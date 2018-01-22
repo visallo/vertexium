@@ -1,14 +1,14 @@
 package org.vertexium.cypher.functions.aggregate;
 
-import org.vertexium.Element;
 import org.vertexium.cypher.VertexiumCypherQueryContext;
 import org.vertexium.cypher.VertexiumCypherScope;
 import org.vertexium.cypher.ast.model.CypherAstBase;
 import org.vertexium.cypher.exceptions.VertexiumCypherTypeErrorException;
 import org.vertexium.cypher.executor.ExpressionScope;
 
-import java.util.List;
+import java.util.Collection;
 import java.util.Objects;
+import java.util.stream.Stream;
 
 public class CountFunction extends AggregationFunction {
     @Override
@@ -27,8 +27,12 @@ public class CountFunction extends AggregationFunction {
             throw new VertexiumCypherTypeErrorException(scope, VertexiumCypherScope.class, VertexiumCypherScope.Item.class);
         }
 
-        if (arg0 instanceof List) {
-            return ((List<?>) arg0).stream()
+        if (arg0 instanceof Collection) {
+            arg0 = ((Collection) arg0).stream();
+        }
+
+        if (arg0 instanceof Stream) {
+            return ((Stream<?>) arg0)
                     .filter(Objects::nonNull)
                     .count();
         }

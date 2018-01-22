@@ -2,7 +2,6 @@ package org.vertexium.cypher.executor;
 
 import org.vertexium.cypher.VertexiumCypherScope;
 
-import java.util.Collection;
 import java.util.LinkedHashSet;
 
 public interface ExpressionScope {

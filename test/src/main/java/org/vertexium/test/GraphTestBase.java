@@ -246,13 +246,13 @@ public abstract class GraphTestBase {
     public void testStreamingPropertyValueLargeReads() throws IOException {
         String expectedLargeValue = IOUtils.toString(new LargeStringInputStream(LARGE_PROPERTY_VALUE_SIZE));
         byte[] expectedLargeValueBytes = expectedLargeValue.getBytes();
-        StreamingPropertyValue propLarge = StreamingPropertyValue.create(new ByteArrayInputStream(expectedLargeValueBytes), String.class);
+        PropertyValue propLarge = StreamingPropertyValue.create(new ByteArrayInputStream(expectedLargeValue.getBytes()), String.class);
         graph.prepareVertex("v1", VISIBILITY_A)
                 .setProperty("propLarge", propLarge, VISIBILITY_A)
                 .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
-        Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B);
+        Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
         StreamingPropertyValue prop = (StreamingPropertyValue) v1.getPropertyValue("propLarge");
         byte[] buffer = new byte[LARGE_PROPERTY_VALUE_SIZE * 2];
         int leftToRead = expectedLargeValueBytes.length;
@@ -268,7 +268,7 @@ public abstract class GraphTestBase {
     }
 
     @Test
-    public void testStreamingPropertyDecreasingSize() throws IOException, InterruptedException {
+    public void testStreamingPropertyDecreasingSize() throws IOException {
         Metadata metadata = new Metadata();
         Long timestamp = System.currentTimeMillis();
         String expectedValue = IOUtils.toString(new LargeStringInputStream(LARGE_PROPERTY_VALUE_SIZE));
@@ -6784,6 +6784,7 @@ public abstract class GraphTestBase {
 
         QueryResultsIterable<? extends VertexiumObject> searchResults = graph.query(AUTHORIZATIONS_A)
                 .has(dateColumnName, date1)
+                .sort(dateColumnName, SortDirection.ASCENDING)
                 .search();
         assertEquals(1, searchResults.getTotalHits());
         List<? extends VertexiumObject> searchResultsList = toList(searchResults);

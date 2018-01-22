@@ -2,11 +2,9 @@ package org.vertexium.cypher.executor;
 
 import org.vertexium.Element;
 import org.vertexium.Vertex;
-import org.vertexium.VertexiumException;
 import org.vertexium.cypher.VertexiumCypherQueryContext;
 import org.vertexium.cypher.VertexiumCypherScope;
 import org.vertexium.cypher.ast.model.*;
-import org.vertexium.cypher.exceptions.VertexiumCypherNotImplemented;
 import org.vertexium.cypher.exceptions.VertexiumCypherTypeErrorException;
 import org.vertexium.mutation.ExistingElementMutation;
 import org.vertexium.util.VertexiumLogger;
@@ -17,7 +15,7 @@ public class RemoveClauseExecutor {
 
     public VertexiumCypherScope execute(VertexiumCypherQueryContext ctx, CypherRemoveClause clause, VertexiumCypherScope scope) {
         LOGGER.debug("execute: %s", clause);
-
+        scope.run(); // TODO change the execute to peek and remove instead of consuming the stream
         scope.stream()
                 .forEach(item -> execute(ctx, clause, item));
         return scope;

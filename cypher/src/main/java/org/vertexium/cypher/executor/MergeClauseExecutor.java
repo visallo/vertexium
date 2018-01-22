@@ -7,11 +7,11 @@ import org.vertexium.cypher.ast.model.CypherMergeActionMatch;
 import org.vertexium.cypher.ast.model.CypherMergeClause;
 import org.vertexium.cypher.executor.models.match.PatternPartMatchConstraint;
 import org.vertexium.cypher.executor.utils.MatchConstraintBuilder;
+import org.vertexium.util.StreamUtils;
 import org.vertexium.util.VertexiumLogger;
 import org.vertexium.util.VertexiumLoggerFactory;
 
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.stream.Stream;
 
 public class MergeClauseExecutor {
@@ -19,15 +19,18 @@ public class MergeClauseExecutor {
 
     public VertexiumCypherScope execute(VertexiumCypherQueryContext ctx, CypherMergeClause clause, VertexiumCypherScope scope) {
         LOGGER.debug("execute: %s", clause);
+        scope.run(); // need to materialize the scope
         PatternPartMatchConstraint patternPartConstraint = new MatchConstraintBuilder().patternPartToConstraints(clause.getPatternPart(), false);
         Stream<VertexiumCypherScope> results = scope.stream().map(item -> {
-            List<VertexiumCypherScope.Item> patternPartResults = ctx.getMatchClauseExecutor().executePatternPartConstraint(ctx, patternPartConstraint, item);
-            if (patternPartResults.size() == 0) {
-                List<VertexiumCypherScope.Item> createResults = executeCreate(ctx, clause, patternPartConstraint, item);
-                return VertexiumCypherScope.newItemsScope(createResults, scope);
-            } else {
-                return executeMatch(ctx, clause, patternPartResults.stream(), scope);
-            }
+            Stream<VertexiumCypherScope.Item> patternPartResults = ctx.getMatchClauseExecutor().executePatternPartConstraint(ctx, patternPartConstraint, item);
+            return StreamUtils.ifEmpty(
+                    patternPartResults,
+                    () -> {
+                        Stream<VertexiumCypherScope.Item> createResults = executeCreate(ctx, clause, patternPartConstraint, item);
+                        return VertexiumCypherScope.newItemsScope(createResults, scope);
+                    },
+                    (stream) -> executeMatch(ctx, clause, stream, scope)
+            );
         });
         return results.collect(VertexiumCypherScope.concatStreams(scope));
     }
@@ -44,7 +47,7 @@ public class MergeClauseExecutor {
                     .forEach(ma -> executeMatchMergeAction(ctx, (CypherMergeActionMatch) ma, result));
             return result;
         });
-        return VertexiumCypherScope.newFromItems(results, scope);
+        return VertexiumCypherScope.newItemsScope(results, scope);
     }
 
     private void executeMatchMergeAction(
@@ -55,7 +58,7 @@ public class MergeClauseExecutor {
         ctx.getSetClauseExecutor().execute(ctx, ma.getSet(), existingObj);
     }
 
-    private List<VertexiumCypherScope.Item> executeCreate(
+    private Stream<VertexiumCypherScope.Item> executeCreate(
             VertexiumCypherQueryContext ctx,
             CypherMergeClause clause,
             PatternPartMatchConstraint patternPartConstraint,

@@ -4,6 +4,7 @@ import org.vertexium.*;
 import org.vertexium.cypher.ast.model.CypherNodePattern;
 import org.vertexium.cypher.ast.model.CypherRelationshipPattern;
 import org.vertexium.cypher.executor.*;
+import org.vertexium.cypher.executor.models.match.MatchConstraint;
 import org.vertexium.cypher.functions.CypherFunction;
 import org.vertexium.cypher.functions.aggregate.*;
 import org.vertexium.cypher.functions.list.*;
@@ -17,6 +18,7 @@ import org.vertexium.mutation.ElementMutation;
 import org.vertexium.mutation.ExistingElementMutation;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.vertexium.util.StreamUtils.stream;
@@ -37,6 +39,7 @@ public abstract class VertexiumCypherQueryContext {
     private final SetClauseExecutor setClauseExecutor;
     private final RemoveClauseExecutor removeClauseExecutor;
     private final CypherResultWriter resultWriter;
+    private final Map<MatchConstraint<?, ?>, Long> totalHitsByMatchConstraint = new HashMap<>();
 
     public VertexiumCypherQueryContext(Graph graph, Authorizations authorizations) {
         this.graph = graph;
@@ -311,5 +314,12 @@ public abstract class VertexiumCypherQueryContext {
 
     public String normalizePropertyName(String propertyName) {
         return propertyName;
+    }
+
+    public Long getTotalHitsForMatchConstraint(
+            MatchConstraint<?, ?> matchConstraint,
+            Function<MatchConstraint<?, ?>, Long> computeFn
+    ) {
+        return totalHitsByMatchConstraint.computeIfAbsent(matchConstraint, computeFn);
     }
 }

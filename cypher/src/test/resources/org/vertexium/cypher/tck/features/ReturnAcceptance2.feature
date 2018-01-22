@@ -519,6 +519,7 @@ Feature: ReturnAcceptance2
       | +nodes      | 1 |
       | +properties | 1 |
 
+  @todo
   Scenario: Aggregating by a list property has a correct definition of equality
     Given an empty graph
     And having executed:
@@ -595,6 +596,7 @@ Feature: ReturnAcceptance2
       | 1     |
     And no side effects
 
+  @todo
   Scenario: Handling DISTINCT with lists in maps
     Given an empty graph
     And having executed:

@@ -4,13 +4,13 @@ import org.vertexium.Edge;
 import org.vertexium.Element;
 import org.vertexium.Property;
 import org.vertexium.Vertex;
-import org.vertexium.cypher.exceptions.VertexiumCypherNotImplemented;
 
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.vertexium.util.IterableUtils.count;
 import static org.vertexium.util.StreamUtils.stream;
@@ -34,6 +34,8 @@ public class CypherResultWriter {
             return columnStringToString(o);
         } else if (o instanceof VertexiumCypherScope.PathItem) {
             return columnPathResultToString(ctx, (VertexiumCypherScope.PathItem) o);
+        } else if (o instanceof Stream) {
+            return columnValueIterableToString(ctx, ((Stream<?>) o).collect(Collectors.toList()));
         } else if (o instanceof Iterable) {
             return columnValueIterableToString(ctx, (Iterable<?>) o);
         } else {

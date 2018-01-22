@@ -1,11 +1,8 @@
 package org.vertexium.cypher.functions.aggregate;
 
 import org.vertexium.cypher.VertexiumCypherQueryContext;
-import org.vertexium.cypher.VertexiumCypherScope;
-import org.vertexium.cypher.exceptions.VertexiumCypherNotImplemented;
 import org.vertexium.cypher.executor.ExpressionScope;
 
-import java.util.Comparator;
 import java.util.List;
 
 public class PercentileDiscFunction extends PercentileFunction {

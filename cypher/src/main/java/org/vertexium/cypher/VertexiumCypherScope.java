@@ -14,9 +14,14 @@ import java.util.stream.Stream;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 public class VertexiumCypherScope implements VertexiumCypherResult, ExpressionScope {
-    private final Collection<Item> items;
-    private final LinkedHashSet<String> columnNames;
+    private Stream<Item> itemsStream;
+    private Collection<Item> items;
+    private LinkedHashSet<String> columnNames;
     private final VertexiumCypherScope parentScope;
+
+    private VertexiumCypherScope(Collection<Item> items, VertexiumCypherScope parentScope) {
+        this(items, getColumnNames(items), parentScope);
+    }
 
     private VertexiumCypherScope(Collection<Item> items, LinkedHashSet<String> columnNames, VertexiumCypherScope parentScope) {
         this.items = items;
@@ -29,9 +34,62 @@ public class VertexiumCypherScope implements VertexiumCypherResult, ExpressionSc
         this.parentScope = parentScope;
     }
 
+    private VertexiumCypherScope(Stream<Item> items, VertexiumCypherScope parentScope) {
+        this(items, null, parentScope);
+    }
+
+    private VertexiumCypherScope(Stream<Item> items, LinkedHashSet<String> columnNames, VertexiumCypherScope parentScope) {
+        this.itemsStream = items.peek(item -> {
+            if (item.parentScope == null || parentScope == null) {
+                item.parentScope = this;
+            }
+        });
+        this.columnNames = columnNames;
+        this.parentScope = parentScope;
+    }
+
+    public static VertexiumCypherScope newSingleItemScope(Item item) {
+        return newItemsScope(Lists.newArrayList(item), null);
+    }
+
+    public static VertexiumCypherScope newItemsScope(Stream<Item> itemsStream, VertexiumCypherScope parentScope) {
+        return new VertexiumCypherScope(itemsStream, parentScope);
+    }
+
+    public static VertexiumCypherScope newItemsScope(List<Item> items, VertexiumCypherScope parentScope) {
+        return new VertexiumCypherScope(items, parentScope);
+    }
+
+    public static VertexiumCypherScope newItemsScope(
+            List<Item> items,
+            LinkedHashSet<String> columnNames,
+            VertexiumCypherScope parentScope
+    ) {
+        return new VertexiumCypherScope(items, columnNames, parentScope);
+    }
+
+    public static VertexiumCypherScope newEmpty() {
+        return new VertexiumCypherScope(new ArrayList<>(), new LinkedHashSet<>(), null);
+    }
+
+    public static VertexiumCypherScope newItemsScope(
+            Stream<Item> items,
+            LinkedHashSet<String> columnNames,
+            VertexiumCypherScope parentScope
+    ) {
+        return new VertexiumCypherScope(items, columnNames, parentScope);
+    }
+
     @Override
     public int size() {
-        return items.size();
+        return getItemsCollection().size();
+    }
+
+    private Collection<Item> getItemsCollection() {
+        if (items == null) {
+            items = itemsStream.collect(Collectors.toList());
+        }
+        return items;
     }
 
     public VertexiumCypherScope getParentScope() {
@@ -45,23 +103,21 @@ public class VertexiumCypherScope implements VertexiumCypherResult, ExpressionSc
 
     @Override
     public LinkedHashSet<String> getColumnNames() {
+        if (columnNames == null) {
+            columnNames = getColumnNames(getItemsCollection());
+        }
         return columnNames;
     }
 
     public Stream<Item> stream() {
-        return items.stream();
-    }
-
-    public static VertexiumCypherScope newSingleItemScope(Item item) {
-        return newItemsScope(Lists.newArrayList(item), null);
-    }
-
-    public static VertexiumCypherScope newItemsScope(List<Item> items, VertexiumCypherScope parentScope) {
-        return new VertexiumCypherScope(items, getColumnNames(items), parentScope);
+        if (items != null) {
+            return items.stream();
+        }
+        return itemsStream;
     }
 
     public List<Object> getByName(String name) {
-        List<Object> results = items.stream()
+        List<Object> results = getItemsCollection().stream()
                 .map(i -> i.getByName(name, false))
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
@@ -73,7 +129,7 @@ public class VertexiumCypherScope implements VertexiumCypherResult, ExpressionSc
 
     @Override
     public boolean contains(String name) {
-        boolean results = items.stream()
+        boolean results = getItemsCollection().stream()
                 .anyMatch(i -> i.contains(name, false));
         if (results) {
             return true;
@@ -90,8 +146,8 @@ public class VertexiumCypherScope implements VertexiumCypherResult, ExpressionSc
 
     public VertexiumCypherScope concat(VertexiumCypherScope other, boolean distinct, VertexiumCypherScope parentScope) {
         Collection<Item> newItems = distinct ? new LinkedHashSet<>() : new ArrayList<>();
-        newItems.addAll(items);
-        newItems.addAll(other.items);
+        newItems.addAll(getItemsCollection());
+        newItems.addAll(other.getItemsCollection());
 
         LinkedHashSet<String> allColumnNames = new LinkedHashSet<>(getColumnNames());
         allColumnNames.addAll(other.getColumnNames());
@@ -108,35 +164,12 @@ public class VertexiumCypherScope implements VertexiumCypherResult, ExpressionSc
         );
     }
 
-    public static VertexiumCypherScope newEmpty() {
-        return new VertexiumCypherScope(new ArrayList<>(), new LinkedHashSet<>(), null);
-    }
-
-    public VertexiumCypherScope cartesianProduct(VertexiumCypherScope other, VertexiumCypherScope parentScope) {
-        List<Item> allItems = new ArrayList<>();
-        for (Item item : items) {
-            for (Item itemOther : other.items) {
-                allItems.add(item.concat(itemOther));
-            }
-        }
-        return newFromItems(allItems.stream(), parentScope);
-    }
-
-    public static VertexiumCypherScope newFromItems(Stream<Item> items, VertexiumCypherScope parentScope) {
-        List<Item> itemsList = items.collect(Collectors.toList());
-        return newFromItems(itemsList.stream(), getColumnNames(itemsList), parentScope);
-    }
-
-    private static LinkedHashSet<String> getColumnNames(List<Item> itemsList) {
+    private static LinkedHashSet<String> getColumnNames(Iterable<Item> itemsList) {
         LinkedHashSet<String> results = new LinkedHashSet<>();
         for (Item item : itemsList) {
             results.addAll(item.getColumnNames());
         }
         return results;
-    }
-
-    public static VertexiumCypherScope newFromItems(Stream<Item> items, LinkedHashSet<String> columnNames, VertexiumCypherScope parentScope) {
-        return new VertexiumCypherScope(items.collect(Collectors.toList()), columnNames, parentScope);
     }
 
     public static Item newMapItem(String name, Object value, ExpressionScope parentScope) {
@@ -156,6 +189,14 @@ public class VertexiumCypherScope implements VertexiumCypherResult, ExpressionSc
 
     public static PathItem newEmptyPathItem(String pathName, ExpressionScope parentScope) {
         return new PathItem(pathName, new ArrayList<>(), parentScope);
+    }
+
+    public void run() {
+        try {
+            getItemsCollection();
+        } catch (IllegalStateException ex) {
+            // this is ok because it indicated the stream has already been operated upon or closed
+        }
     }
 
     public static abstract class Item implements VertexiumCypherResult.Row, ExpressionScope {
@@ -204,14 +245,9 @@ public class VertexiumCypherScope implements VertexiumCypherResult, ExpressionSc
         @Override
         public abstract int hashCode();
 
-        public static List<Item> cartesianProduct(List<Item> item0, List<Item> item1) {
-            List<Item> allItems = new ArrayList<>();
-            for (Item item : item0) {
-                for (Item itemOther : item1) {
-                    allItems.add(item.concat(itemOther));
-                }
-            }
-            return allItems;
+        public static Stream<Item> cartesianProduct(Stream<Item> items0, Stream<Item> items1) {
+            List<Item> items1List = items1.collect(Collectors.toList());
+            return items0.flatMap(item0 -> items1List.stream().map(item0::concat));
         }
     }
 
@@ -299,16 +335,14 @@ public class VertexiumCypherScope implements VertexiumCypherResult, ExpressionSc
         }
 
         public PathItem concat(String name, Element element) {
-            List<Entry> allEntries = new ArrayList<>();
-            allEntries.addAll(this.items);
+            List<Entry> allEntries = new ArrayList<>(this.items);
             allEntries.add(new Entry(name, element));
             return new PathItem(pathName, allEntries, getParentScope())
                     .setPrintMode(getPrintMode());
         }
 
         public PathItem concat(PathItem pathItem) {
-            List<Entry> entries = new ArrayList<>();
-            entries.addAll(this.items);
+            List<Entry> entries = new ArrayList<>(this.items);
             int offset = 0;
             if (entries.size() > 0 && pathItem.items.size() > 0
                     && entries.get(entries.size() - 1).element.equals(pathItem.items.get(0).element)) {
@@ -629,7 +663,7 @@ public class VertexiumCypherScope implements VertexiumCypherResult, ExpressionSc
         }
 
         public void add(VertexiumCypherScope other) {
-            items.addAll(other.items);
+            items.addAll(other.getItemsCollection());
         }
 
         public Builder concat(Builder other) {

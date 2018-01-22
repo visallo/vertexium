@@ -7,9 +7,8 @@ import org.vertexium.cypher.exceptions.VertexiumCypherTypeErrorException;
 import org.vertexium.cypher.executor.ExpressionScope;
 import org.vertexium.cypher.utils.ObjectUtils;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Collection;
+import java.util.stream.Stream;
 
 public class SumFunction extends AggregationFunction {
     @Override
@@ -17,22 +16,21 @@ public class SumFunction extends AggregationFunction {
         assertArgumentCount(arguments, 1);
 
         if (scope instanceof VertexiumCypherScope) {
-            List<Object> list = new ArrayList<>();
-            List<VertexiumCypherScope.Item> items = ((VertexiumCypherScope) scope).stream().collect(Collectors.toList());
-            for (VertexiumCypherScope.Item item : items) {
-                Object itemValue = ctx.getExpressionExecutor().executeExpression(ctx, arguments[0], item);
-                list.add(itemValue);
-            }
-            return ObjectUtils.sumNumbers(list);
+            return ObjectUtils.sumNumbers(((VertexiumCypherScope) scope).stream()
+                    .map(item -> ctx.getExpressionExecutor().executeExpression(ctx, arguments[0], item)));
         }
 
         Object arg0 = ctx.getExpressionExecutor().executeExpression(ctx, arguments[0], scope);
 
-        if (arg0 instanceof List) {
-            List<?> list = (List<?>) arg0;
-            return ObjectUtils.sumNumbers(list);
+        if (arg0 instanceof Collection) {
+            arg0 = ((Collection) arg0).stream();
         }
 
-        throw new VertexiumCypherTypeErrorException(arg0, List.class);
+        if (arg0 instanceof Stream) {
+            Stream<?> stream = (Stream<?>) arg0;
+            return ObjectUtils.sumNumbers(stream);
+        }
+
+        throw new VertexiumCypherTypeErrorException(arg0, Collection.class, Stream.class);
     }
 }

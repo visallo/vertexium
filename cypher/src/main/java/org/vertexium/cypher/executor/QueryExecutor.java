@@ -51,6 +51,7 @@ public class QueryExecutor {
         if (clauses.get(clauses.size() - 1) instanceof CypherReturnClause) {
             return scope;
         }
+        scope.run();
         return VertexiumCypherScope.newEmpty();
     }
 

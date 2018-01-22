@@ -186,6 +186,7 @@ Feature: WithAcceptance
       | ({name: 'A'}) |
     And no side effects
 
+  @todo
   Scenario: ORDER BY on an aggregating key
     Given an empty graph
     And having executed:

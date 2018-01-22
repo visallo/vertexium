@@ -7,9 +7,10 @@ import org.vertexium.cypher.ast.model.CypherLiteral;
 import org.vertexium.cypher.exceptions.VertexiumCypherTypeErrorException;
 import org.vertexium.cypher.executor.ExpressionScope;
 
-import java.util.List;
+import java.util.Collection;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class CollectFunction extends AggregationFunction {
     @Override
@@ -21,12 +22,16 @@ public class CollectFunction extends AggregationFunction {
             return Lists.newArrayList(arg0);
         }
 
-        if (arg0 instanceof List) {
-            return ((List<?>) arg0).stream()
+        if (arg0 instanceof Collection) {
+            arg0 = ((Collection) arg0).stream();
+        }
+
+        if (arg0 instanceof Stream) {
+            return ((Stream<?>) arg0)
                     .filter(Objects::nonNull)
                     .collect(Collectors.toList());
         }
 
-        throw new VertexiumCypherTypeErrorException(arg0, List.class);
+        throw new VertexiumCypherTypeErrorException(arg0, Collection.class, Stream.class);
     }
 }

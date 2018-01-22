@@ -9,6 +9,7 @@ import static org.vertexium.util.StreamUtils.stream;
 public abstract class CypherExpression extends CypherAstBase {
     public static String toString(Iterable<CypherAstBase> expressions) {
         return stream(expressions)
+                .map(e -> e == null ? "null" : e)
                 .map(Object::toString)
                 .collect(Collectors.joining(", "));
     }

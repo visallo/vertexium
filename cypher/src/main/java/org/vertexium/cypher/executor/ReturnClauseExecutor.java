@@ -65,7 +65,7 @@ public class ReturnClauseExecutor {
             rows = rows.distinct();
         }
 
-        VertexiumCypherScope results = VertexiumCypherScope.newFromItems(rows, columnNames, scope);
+        VertexiumCypherScope results = VertexiumCypherScope.newItemsScope(rows, columnNames, scope);
 
         return applyReturnBody(ctx, returnBody, results);
     }
@@ -98,6 +98,9 @@ public class ReturnClauseExecutor {
             } else {
                 value = expressionExecutor.executeExpression(ctx, returnItem.getExpression(), scope);
             }
+            if (value instanceof Stream) {
+                value = ((Stream<?>) value).collect(Collectors.toList());
+            }
             value = expandResultMapSubItems(ctx, value, scope);
             values.put(returnItem.getResultColumnName(), value);
         }
@@ -126,7 +129,7 @@ public class ReturnClauseExecutor {
                         o -> {
                             List<VertexiumCypherScope.Item> items = o.getValue();
                             VertexiumCypherScope parentScope = items.get(0).getParentCypherScope();
-                            return VertexiumCypherScope.newFromItems(items.stream(), parentScope);
+                            return VertexiumCypherScope.newItemsScope(items.stream(), parentScope);
                         }
                 ));
     }
@@ -198,7 +201,7 @@ public class ReturnClauseExecutor {
         if (returnBody.getLimit() != null) {
             rows = applyLimitToResults(ctx, rows, returnBody.getLimit(), results);
         }
-        return VertexiumCypherScope.newFromItems(rows, results.getColumnNames(), results.getParentScope());
+        return VertexiumCypherScope.newItemsScope(rows, results.getColumnNames(), results.getParentScope());
     }
 
     private Stream<VertexiumCypherScope.Item> applyOrderByToResults(

@@ -92,6 +92,7 @@ Feature: PatternComprehension
       | [<(:A)-[:T]->(:B)>] |
     And no side effects
 
+  @todo
   Scenario: Using a pattern comprehension in a WITH
     Given an empty graph
     And having executed:
