@@ -33,7 +33,6 @@ public class AccumuloExtendedDataRow extends ExtendedDataRowBase {
             long timestamp = rowEntry.getKey().getTimestamp();
             Visibility visibility = AccumuloGraph.accumuloVisibilityToVisibility(rowEntry.getKey().getColumnVisibility());
             AccumuloExtendedDataRowProperty prop = new AccumuloExtendedDataRowProperty(
-                    rowId.getTableName(),
                     propertyName,
                     propertyKey,
                     propertyValue,
@@ -56,7 +55,6 @@ public class AccumuloExtendedDataRow extends ExtendedDataRowBase {
     }
 
     private static class AccumuloExtendedDataRowProperty extends Property {
-        private final String tableName;
         private final String propertyName;
         private final String propertyKey;
         private final Object propertyValue;
@@ -64,14 +62,12 @@ public class AccumuloExtendedDataRow extends ExtendedDataRowBase {
         private final Visibility visibility;
 
         public AccumuloExtendedDataRowProperty(
-                String tableName,
                 String propertyName,
                 String propertyKey,
                 Object propertyValue,
                 long timestamp,
                 Visibility visibility
         ) {
-            this.tableName = tableName;
             this.propertyName = propertyName;
             this.propertyKey = propertyKey;
             this.propertyValue = propertyValue;
