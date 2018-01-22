@@ -2,7 +2,6 @@ package org.vertexium.cli;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
-import com.google.common.collect.Lists;
 import groovy.lang.Binding;
 import groovy.lang.Closure;
 import groovy.lang.GroovyShell;
@@ -22,7 +21,6 @@ import org.fusesource.jansi.Ansi;
 import org.fusesource.jansi.AnsiConsole;
 import org.vertexium.Graph;
 import org.vertexium.GraphFactory;
-import org.vertexium.VertexiumException;
 import org.vertexium.Visibility;
 import org.vertexium.cli.commands.*;
 import org.vertexium.cli.model.LazyEdgeMap;
@@ -31,65 +29,46 @@ import org.vertexium.query.GeoCompare;
 import org.vertexium.type.GeoPoint;
 import org.vertexium.util.ConfigurationUtils;
 
-import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 public class VertexiumShell {
     private Groovysh groovysh;
 
-    @Parameter(names = {"--help", "-h"}, description = "Print help", help = true)
-    private boolean help;
+    private static class Parameters extends ParametersBase {
+        @Parameter(names = {"-C"}, description = "Suppress colors")
+        private boolean suppressColor;
 
-    @Parameter(names = {"-C"}, description = "Suppress colors")
-    private boolean suppressColor;
+        @Parameter(names = {"-T"}, description = "Terminal type")
+        private String terminalType = TerminalFactory.AUTO;
 
-    @Parameter(names = {"-T"}, description = "Terminal type")
-    private String terminalType = TerminalFactory.AUTO;
+        @Parameter(names = {"-e"}, description = "String to evaluate")
+        private String evalString = null;
 
-    @Parameter(names = {"-e"}, description = "String to evaluate")
-    private String evalString = null;
+        @Parameter(names = {"-ef"}, description = "File to evaluate")
+        private List<String> evalFiles = new ArrayList<>();
 
-    @Parameter(names = {"-ef"}, description = "File to evaluate")
-    private List<String> evalFiles = new ArrayList<>();
+        @Parameter(names = {"-t"}, description = "Time")
+        private Long time = null;
 
-    @Parameter(names = {"-c"}, description = "Configuration file name")
-    private List<String> configFileNames = new ArrayList<>();
-
-    @Parameter(names = {"-cd"}, description = "Configuration directories (all files ending in .properties)")
-    private List<String> configDirectories = new ArrayList<>();
-
-    @Parameter(names = {"-cp"}, description = "Configuration property prefix")
-    private String configPropertyPrefix = null;
-
-    @Parameter(names = {"-a"}, description = "Authorizations")
-    private String authorizations = null;
-
-    @Parameter(names = {"-t"}, description = "Time")
-    private Long time = null;
-
-    @Parameter(names = {"--cypherLabelProperty"}, description = "Cypher label property")
-    private String cypherLabelProperty = null;
-
-    @Parameter(description = "File names to execute")
-    private List<String> fileNames = new ArrayList<>();
+        @Parameter(description = "File names to execute")
+        private List<String> fileNames = new ArrayList<>();
+    }
 
     public int run(String[] args) throws Exception {
-        JCommander j = new JCommander(this, args);
-        if (help) {
+        Parameters params = new Parameters();
+        JCommander j = new JCommander(params, args);
+        if (params.help) {
             j.usage();
             return -1;
         }
 
-        setTerminalType(terminalType, suppressColor);
+        setTerminalType(params.terminalType, params.suppressColor);
 
-        addConfigDirectoriesToConfigFileNames(configDirectories, configFileNames);
-        Map<String, String> config = ConfigurationUtils.loadConfig(configFileNames, configPropertyPrefix);
+        Map<String, String> config = ConfigurationUtils.loadConfig(params.getConfigFileNames(), params.configPropertyPrefix);
         Graph graph = new GraphFactory().createGraph(config);
 
         System.setProperty("groovysh.prompt", "vertexium");
@@ -100,14 +79,14 @@ public class VertexiumShell {
 
         Logger.io = io;
 
-        CliVertexiumCypherQueryContext.setLabelPropertyName(cypherLabelProperty);
+        CliVertexiumCypherQueryContext.setLabelPropertyName(params.cypherLabelProperty);
 
         CompilerConfiguration compilerConfiguration = new CompilerConfiguration();
         VertexiumScript.setGraph(graph);
-        if (authorizations != null) {
-            VertexiumScript.setAuthorizations(graph.createAuthorizations(authorizations.split(",")));
+        if (params.authorizations != null) {
+            VertexiumScript.setAuthorizations(params.getAuthorizations(graph));
         }
-        VertexiumScript.setTime(time);
+        VertexiumScript.setTime(params.time);
         compilerConfiguration.setScriptBaseClass(VertexiumScript.class.getName());
 
         Binding binding = new Binding();
@@ -139,31 +118,8 @@ public class VertexiumShell {
         shell.execute("auths = " + VertexiumScript.class.getName() + ".getAuthorizations();");
         shell.execute("time = " + VertexiumScript.class.getName() + ".getTime();");
         shell.execute("cypher = { code -> " + VertexiumScript.class.getName() + ".executeCypher(code) };");
-        startGroovysh(shell, evalString, fileNames);
+        startGroovysh(params, shell, params.evalString, params.fileNames);
         return 0;
-    }
-
-    private void addConfigDirectoriesToConfigFileNames(List<String> configDirectories, List<String> configFileNames) {
-        for (String configDirectory : configDirectories) {
-            addConfigDirectoryToConfigFileNames(configDirectory, configFileNames);
-        }
-    }
-
-    private void addConfigDirectoryToConfigFileNames(String configDirectory, List<String> configFileNames) {
-        File dir = new File(configDirectory);
-        if (!dir.exists()) {
-            throw new VertexiumException("Directory does not exist: " + dir.getAbsolutePath());
-        }
-        List<String> files = Lists.newArrayList(dir.listFiles()).stream()
-                .filter(File::isFile)
-                .map(File::getName)
-                .filter(f -> f.endsWith(".properties"))
-                .collect(Collectors.toList());
-        Collections.sort(files);
-        files = files.stream()
-                .map(f -> new File(dir, f).getAbsolutePath())
-                .collect(Collectors.toList());
-        configFileNames.addAll(files);
     }
 
     private void setGroovyShell(Groovysh groovysh, GroovyShell groovyShell) throws NoSuchFieldException, IllegalAccessException {
@@ -223,7 +179,7 @@ public class VertexiumShell {
      * @param evalString commands that will be executed at startup after loading files given with filenames param
      * @param filenames  files that will be loaded at startup
      */
-    protected void startGroovysh(Groovysh shell, String evalString, List<String> filenames) throws IOException {
+    protected void startGroovysh(Parameters params, Groovysh shell, String evalString, List<String> filenames) {
         int code;
         SecurityManager psm = System.getSecurityManager();
         System.setSecurityManager(new NoExitSecurityManager());
@@ -256,7 +212,7 @@ public class VertexiumShell {
             shell.execute("import " + Visibility.class.getPackage().getName() + ".*;");
             shell.execute("import " + GeoPoint.class.getPackage().getName() + ".*;");
             shell.execute("import " + GeoCompare.class.getPackage().getName() + ".*;");
-            for (String evalFile : evalFiles) {
+            for (String evalFile : params.evalFiles) {
                 shell.execute(String.format(":load '%s'", evalFile));
             }
             code = shell.run(evalString, filenames);
