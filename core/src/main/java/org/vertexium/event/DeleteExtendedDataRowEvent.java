@@ -11,6 +11,10 @@ public class DeleteExtendedDataRowEvent extends GraphEvent {
         this.id = id;
     }
 
+    public ExtendedDataRowId getId() {
+        return id;
+    }
+
     @Override
     public String toString() {
         return "DeleteExtendedDataRowEvent{" +
