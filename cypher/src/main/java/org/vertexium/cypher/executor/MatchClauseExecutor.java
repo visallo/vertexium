@@ -19,6 +19,8 @@ import org.vertexium.util.VertexiumLogger;
 import org.vertexium.util.VertexiumLoggerFactory;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -175,9 +177,7 @@ public class MatchClauseExecutor {
                 }
             }
         } else if (objByName instanceof Stream) {
-            ((Stream<?>) objByName).forEach(o -> {
-                appendMatchContextsWithFoundItems(matchContexts, patternPartConstraint, foundMatchConstraint, o);
-            });
+            ((Stream<?>) objByName).forEach(o -> appendMatchContextsWithFoundItems(matchContexts, patternPartConstraint, foundMatchConstraint, o));
         } else if (objByName instanceof List) {
             for (Object o : ((List<?>) objByName)) {
                 appendMatchContextsWithFoundItems(matchContexts, patternPartConstraint, foundMatchConstraint, o);
@@ -405,7 +405,6 @@ public class MatchClauseExecutor {
                             .map(ctx::normalizeLabelName);
 
                     if (matchConstraint instanceof NodeMatchConstraint) {
-
                         query = labelNamesStream
                                 .reduce(
                                         query,
@@ -526,64 +525,66 @@ public class MatchClauseExecutor {
             return Stream.empty();
         }
 
-        Stream<VertexiumCypherScope.PathItem> paths = Stream.empty();
+        AtomicReference<Stream<VertexiumCypherScope.PathItem>> paths = new AtomicReference<>(Stream.empty());
 
         if (range.isIn(depth)) {
-            boolean foundEdge = false;
+            AtomicBoolean foundEdge = new AtomicBoolean(false);
             if (startingVertex != null) {
-                for (Edge edge : startingVertex.getEdges(direction, ctx.getFetchHints(), ctx.getAuthorizations())) {
-                    if (previousPath.contains(edge) || matchContext.contains(edge)) {
-                        continue;
-                    }
-                    if (endVertex != null) {
-                        if (!edge.getOtherVertexId(startingVertex.getId()).equals(endVertex.getId())) {
-                            continue;
-                        }
-                    }
-                    if (edgeIsMatch(ctx, edge, labelNames, propertiesMap, scope)) {
-                        paths = Stream.concat(paths, Stream.of(previousPath.concat(name, edge)));
-                        foundEdge = true;
-                    }
-                }
+                findEdges(ctx, name, propertiesMap, startingVertex, direction, labelNames)
+                        .forEach(edge -> {
+                            if (previousPath.contains(edge) || matchContext.contains(edge)) {
+                                return;
+                            }
+                            if (endVertex != null) {
+                                if (!edge.getOtherVertexId(startingVertex.getId()).equals(endVertex.getId())) {
+                                    return;
+                                }
+                            }
+                            if (edgeIsMatch(ctx, edge, labelNames, propertiesMap, scope)) {
+                                paths.set(Stream.concat(paths.get(), Stream.of(previousPath.concat(name, edge))));
+                                foundEdge.set(true);
+                            }
+                        });
             }
-            if (optional && !foundEdge) {
-                paths = Stream.concat(paths, Stream.of(previousPath.concat(name, null)));
+            if (optional && !foundEdge.get()) {
+                paths.set(Stream.concat(paths.get(), Stream.of(previousPath.concat(name, null))));
             }
         }
 
         if (range.isRangeSet()) {
             if (startingVertex != null) {
-                for (Edge edge : startingVertex.getEdges(direction, ctx.getFetchHints(), ctx.getAuthorizations())) {
-                    if (previousPath.contains(edge) || matchContext.contains(edge)) {
-                        continue;
-                    }
-                    if (edgeIsMatch(ctx, edge, labelNames, propertiesMap, scope)) {
-                        Vertex otherVertex = edge.getOtherVertex(startingVertex.getId(), ctx.getFetchHints(), ctx.getAuthorizations());
-                        VertexiumCypherScope.PathItem newPath = previousPath
-                                .concat(name, edge)
-                                .concat(null, otherVertex);
-                        paths = Stream.concat(paths, findPathsToAdd(
-                                ctx,
-                                newPath,
-                                otherVertex,
-                                endVertex,
-                                name,
-                                optional,
-                                range,
-                                depth + 1,
-                                labelNames,
-                                propertiesMap,
-                                direction,
-                                matchContext, scope
-                        ));
-                    }
-                }
+                findEdges(ctx, name, propertiesMap, startingVertex, direction, labelNames)
+                        .forEach(edge -> {
+                            if (previousPath.contains(edge) || matchContext.contains(edge)) {
+                                return;
+                            }
+                            if (edgeIsMatch(ctx, edge, labelNames, propertiesMap, scope)) {
+                                Vertex otherVertex = edge.getOtherVertex(startingVertex.getId(), ctx.getFetchHints(), ctx.getAuthorizations());
+                                VertexiumCypherScope.PathItem newPath = previousPath
+                                        .concat(name, edge)
+                                        .concat(null, otherVertex);
+                                paths.set(Stream.concat(paths.get(), findPathsToAdd(
+                                        ctx,
+                                        newPath,
+                                        otherVertex,
+                                        endVertex,
+                                        name,
+                                        optional,
+                                        range,
+                                        depth + 1,
+                                        labelNames,
+                                        propertiesMap,
+                                        direction,
+                                        matchContext, scope
+                                )));
+                            }
+                        });
             }
             if (optional) {
                 VertexiumCypherScope.PathItem newPath = previousPath
                         .concat(name, null)
                         .concat(null, null);
-                paths = Stream.concat(paths, findPathsToAdd(
+                paths.set(Stream.concat(paths.get(), findPathsToAdd(
                         ctx,
                         newPath,
                         null,
@@ -595,11 +596,33 @@ public class MatchClauseExecutor {
                         propertiesMap,
                         direction,
                         matchContext, scope
-                ));
+                )));
             }
         }
 
-        return paths;
+        return paths.get();
+    }
+
+    private Stream<Edge> findEdges(
+            VertexiumCypherQueryContext ctx,
+            String name,
+            ListMultimap<String, CypherAstBase> propertiesMap,
+            Vertex startingVertex,
+            Direction direction,
+            List<String> labelNames
+    ) {
+        if (name == null && propertiesMap.size() == 0) {
+            return stream(startingVertex.getEdgeInfos(direction, labelNamesToArray(labelNames), ctx.getAuthorizations()))
+                    .map(edgeInfo -> new EdgeInfoEdge(ctx.getGraph(), startingVertex.getId(), edgeInfo, ctx.getFetchHints(), ctx.getAuthorizations()));
+        }
+        return stream(startingVertex.getEdges(direction, labelNamesToArray(labelNames), ctx.getFetchHints(), ctx.getAuthorizations()));
+    }
+
+    private String[] labelNamesToArray(List<String> labelNames) {
+        if (labelNames == null || labelNames.size() == 0) {
+            return null;
+        }
+        return labelNames.toArray(new String[labelNames.size()]);
     }
 
     private boolean edgeIsMatch(
