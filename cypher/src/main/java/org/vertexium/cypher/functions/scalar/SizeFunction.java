@@ -7,6 +7,7 @@ import org.vertexium.cypher.executor.ExpressionScope;
 import org.vertexium.cypher.functions.CypherFunction;
 
 import java.util.Collection;
+import java.util.stream.Stream;
 
 public class SizeFunction extends CypherFunction {
     @Override
@@ -18,6 +19,10 @@ public class SizeFunction extends CypherFunction {
             return ((Collection) arg).size();
         }
 
-        throw new VertexiumCypherTypeErrorException(arg, Collection.class);
+        if (arg instanceof Stream) {
+            return ((Stream) arg).count();
+        }
+
+        throw new VertexiumCypherTypeErrorException(arg, Collection.class, Stream.class);
     }
 }

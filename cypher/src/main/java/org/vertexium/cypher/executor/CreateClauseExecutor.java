@@ -13,6 +13,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class CreateClauseExecutor {
     private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(CreateClauseExecutor.class);
@@ -24,9 +25,9 @@ public class CreateClauseExecutor {
 
     public VertexiumCypherScope execute(VertexiumCypherQueryContext ctx, CypherCreateClause clause, VertexiumCypherScope scope) {
         LOGGER.debug("execute: %s", clause);
-        List<VertexiumCypherScope.Item> results = scope.stream()
-                .map(item -> executeCreate(ctx, clause, item))
-                .collect(Collectors.toList());
+        scope.run(); // materialize existing scope to prevent new items being returned as if they matched the previous step
+        Stream<VertexiumCypherScope.Item> results = scope.stream()
+                .map(item -> executeCreate(ctx, clause, item));
         return VertexiumCypherScope.newItemsScope(results, scope);
     }
 
@@ -108,6 +109,10 @@ public class CreateClauseExecutor {
         element = elements.get(name);
         if (element == null) {
             Object obj = scope.getByName(name);
+            if (obj instanceof Stream) {
+                Stream<?> stream = (Stream<?>) obj;
+                obj = stream.collect(Collectors.toList());
+            }
             if (obj instanceof List) {
                 List list = (List) obj;
                 if (list.size() == 0) {
@@ -116,9 +121,6 @@ public class CreateClauseExecutor {
                 if (list.size() == 1) {
                     obj = list.get(0);
                 }
-            }
-            if (obj instanceof List && ((List) obj).size() == 1) {
-                obj = ((List) obj).get(0);
             }
             if (obj != null && !(obj instanceof Element)) {
                 throw new VertexiumException("Expected Element with name \"" + name + "\", found \"" + obj.getClass().getName() + "\"");
@@ -148,7 +150,7 @@ public class CreateClauseExecutor {
             outVertex = rightVertex;
             inVertex = leftVertex;
         } else {
-            throw new VertexiumException("unexpected direction");
+            throw new VertexiumException("unexpected direction: " + direction);
         }
         String edgeId = ctx.calculateEdgeId(relationshipPattern, item);
         String label = ctx.calculateEdgeLabel(relationshipPattern, outVertex, inVertex, item);

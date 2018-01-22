@@ -8,8 +8,7 @@ import org.vertexium.VertexiumException;
 import org.vertexium.query.Query;
 
 import java.util.*;
-import java.util.function.BiConsumer;
-import java.util.function.BinaryOperator;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collector;
@@ -129,5 +128,20 @@ public class StreamUtils {
                 },
                 ts -> ts
         );
+    }
+
+    public static <TItem, TReturn> TReturn ifEmpty(
+            Stream<TItem> stream,
+            Supplier<TReturn> trueFunc,
+            Function<Stream<TItem>, TReturn> falseFunc
+    ) {
+        Spliterator<TItem> split = stream.spliterator();
+        AtomicReference<TItem> firstItem = new AtomicReference<>();
+        if (split.tryAdvance(firstItem::set)) {
+            Stream<TItem> newStream = Stream.concat(Stream.of(firstItem.get()), StreamSupport.stream(split, stream.isParallel()));
+            return falseFunc.apply(newStream);
+        } else {
+            return trueFunc.get();
+        }
     }
 }

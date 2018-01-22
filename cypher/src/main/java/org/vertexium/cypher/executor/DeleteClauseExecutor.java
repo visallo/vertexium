@@ -11,6 +11,7 @@ import org.vertexium.util.VertexiumLoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class DeleteClauseExecutor {
     private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(DeleteClauseExecutor.class);
@@ -22,9 +23,9 @@ public class DeleteClauseExecutor {
 
     public VertexiumCypherScope execute(VertexiumCypherQueryContext ctx, CypherDeleteClause clause, VertexiumCypherScope scope) {
         LOGGER.debug("execute: %s", clause);
-        List<DeleteElementItem> elementsToDelete = scope.stream()
-                .flatMap(item -> execute(ctx, clause, item).stream())
-                .collect(Collectors.toList());
+        scope.run(); // TODO change the execute to peek and delete instead of consuming the stream
+        Stream<DeleteElementItem> elementsToDelete = scope.stream()
+                .flatMap(item -> execute(ctx, clause, item).stream());
         deleteElements(ctx, elementsToDelete);
         return scope;
     }
@@ -64,9 +65,10 @@ public class DeleteClauseExecutor {
         return elementsToDelete;
     }
 
-    private void deleteElements(VertexiumCypherQueryContext ctx, List<DeleteElementItem> elementsToDelete) {
-        for (DeleteElementItem deleteElementItem : elementsToDelete) {
-            deleteElement(ctx, deleteElementItem.element, deleteElementItem.detach, elementsToDelete);
+    private void deleteElements(VertexiumCypherQueryContext ctx, Stream<DeleteElementItem> elementsToDelete) {
+        List<DeleteElementItem> elementsToDeleteList = elementsToDelete.collect(Collectors.toList());
+        for (DeleteElementItem deleteElementItem : elementsToDeleteList) {
+            deleteElement(ctx, deleteElementItem.element, deleteElementItem.detach, elementsToDeleteList.stream());
         }
     }
 
@@ -74,7 +76,7 @@ public class DeleteClauseExecutor {
             VertexiumCypherQueryContext ctx,
             Element element,
             boolean detach,
-            List<DeleteElementItem> elementsToDelete
+            Stream<DeleteElementItem> elementsToDelete
     ) {
         if (element instanceof Vertex) {
             Vertex vertex = (Vertex) element;
@@ -91,7 +93,7 @@ public class DeleteClauseExecutor {
             VertexiumCypherQueryContext ctx,
             Vertex vertex,
             boolean detach,
-            List<DeleteElementItem> elementsToDelete
+            Stream<DeleteElementItem> elementsToDelete
     ) {
         if (!detach && isAttached(ctx, vertex, elementsToDelete)) {
             throw new VertexiumCypherConstraintVerificationFailedException(
@@ -101,9 +103,9 @@ public class DeleteClauseExecutor {
         ctx.deleteVertex(vertex);
     }
 
-    private boolean isAttached(VertexiumCypherQueryContext ctx, Vertex vertex, List<DeleteElementItem> elementsToDelete) {
+    private boolean isAttached(VertexiumCypherQueryContext ctx, Vertex vertex, Stream<DeleteElementItem> elementsToDelete) {
         for (String vertexId : vertex.getVertexIds(Direction.BOTH, ctx.getAuthorizations())) {
-            if (elementsToDelete.stream().noneMatch(e -> vertexId.equals(e.element.getId()))) {
+            if (elementsToDelete.noneMatch(e -> vertexId.equals(e.element.getId()))) {
                 return true;
             }
         }

@@ -1799,6 +1799,7 @@ Feature: MatchAcceptance2
       | (:A:B:C:D:E:F:G:H:I:J:K:L:M) | (:Z:Y:X:W:V:U) |
     And no side effects
 
+  @todo
   Scenario: Matching longer variable length paths
     Given an empty graph
     And having executed:

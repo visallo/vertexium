@@ -605,8 +605,8 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
 
         @Override
         protected boolean isMatch(ExtendedDataRow row) {
-            for (String propertyName : row.getPropertyNames()) {
-                if (this.keys.contains(propertyName)) {
+            for (Property prop : row.getProperties()) {
+                if (this.keys.contains(prop.getName())) {
                     return true;
                 }
             }
@@ -659,8 +659,8 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
 
         @Override
         protected boolean isMatch(ExtendedDataRow row) {
-            for (String propertyName : row.getPropertyNames()) {
-                if (this.keys.contains(propertyName)) {
+            for (Property prop : row.getProperties()) {
+                if (this.keys.contains(prop.getName())) {
                     return false;
                 }
             }

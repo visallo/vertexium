@@ -40,12 +40,12 @@ public class GraphGlue {
     private Exception lastRuntimeException;
 
     @Given("^any graph$")
-    public void givenAnyGraph() throws Throwable {
+    public void givenAnyGraph() {
         createGraph();
     }
 
     @Given("^an empty graph$")
-    public void givenEmptyGraph() throws Throwable {
+    public void givenEmptyGraph() {
         createGraph();
     }
 
@@ -69,7 +69,7 @@ public class GraphGlue {
     }
 
     @Given("^parameters are:$")
-    public void givenParametersAre(DataTable parameters) throws Throwable {
+    public void givenParametersAre(DataTable parameters) {
         for (List<String> parameterRow : parameters.raw()) {
             String key = parameterRow.get(0);
             String valueString = parameterRow.get(1);
@@ -86,7 +86,7 @@ public class GraphGlue {
     }
 
     @When("^executing(.*)query:$")
-    public void whenExecutingQuery(String queryName, String queryString) throws Throwable {
+    public void whenExecutingQuery(String queryName, String queryString) {
         ctx.clearCounts();
         lastResults = null;
         lastCompileTimeException = null;
@@ -99,13 +99,14 @@ public class GraphGlue {
         }
         try {
             lastResults = query.execute(ctx);
+            lastResults.size();
         } catch (Exception ex) {
             lastRuntimeException = ex;
         }
     }
 
     @Given("^having executed:$")
-    public void givenHavingExecuted(String queryString) throws Throwable {
+    public void givenHavingExecuted(String queryString) {
         CypherCompilerContext compilerContext = new CypherCompilerContext(ctx.getFunctions());
         VertexiumCypherQuery.parse(compilerContext, queryString).execute(ctx);
     }
@@ -295,7 +296,7 @@ public class GraphGlue {
     }
 
     @Then("^a (.*) should be raised at compile time: (.*)$")
-    public void thenASyntaxErrorShouldBeRaisedAtCompileTime(String errorType, String error) throws Throwable {
+    public void thenASyntaxErrorShouldBeRaisedAtCompileTime(String errorType, String error) {
         Exception ex = this.lastCompileTimeException;
         if (ex == null) {
             if (lastRuntimeException != null) {
@@ -320,7 +321,7 @@ public class GraphGlue {
     }
 
     @Then("^a (.*) should be raised at runtime: (.*)$")
-    public void thenATypeErrorShouldBeRaisedAtRuntime(String errorType, String error) throws Throwable {
+    public void thenATypeErrorShouldBeRaisedAtRuntime(String errorType, String error) {
         if (lastRuntimeException == null) {
             if (lastCompileTimeException != null) {
                 fail("statement should have resulted in a runtime exception, but resulted in a compile time exception");
@@ -352,7 +353,7 @@ public class GraphGlue {
     }
 
     @Then("^no side effects$")
-    public void noSideEffects() throws Throwable {
+    public void noSideEffects() {
         assertEquals("+node", 0, ctx.getPlusNodeCount());
         assertEquals("+relationship", 0, ctx.getPlusRelationshipCount());
         assertEquals("+label", 0, ctx.getPlusLabelCount());
@@ -364,7 +365,7 @@ public class GraphGlue {
     }
 
     @Then("^the side effects should be:$")
-    public void thenTheSideEffectsShouldBe(DataTable table) throws Throwable {
+    public void thenTheSideEffectsShouldBe(DataTable table) {
         for (List<String> tableRow : table.raw()) {
             if (tableRow.size() == 2 && tableRow.get(0).equals("+nodes")) {
                 int plusNodes = Integer.parseInt(tableRow.get(1));

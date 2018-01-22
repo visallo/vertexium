@@ -243,6 +243,7 @@ Feature: AggregationAcceptance
       | [1] |
     And no side effects
 
+  @todo
   Scenario: Aggregate on list values
     Given an empty graph
     And having executed:

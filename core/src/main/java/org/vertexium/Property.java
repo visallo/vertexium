@@ -41,7 +41,7 @@ public abstract class Property implements Comparable<Property> {
         if (obj instanceof Property) {
             Property other = (Property) obj;
             return getName().equals(other.getName())
-                    && getKey().equals(other.getKey())
+                    && ((getKey() == null && other.getKey() == null) || (getKey() != null && getKey().equals(other.getKey())))
                     && getVisibility().equals(other.getVisibility());
         }
         return super.equals(obj);

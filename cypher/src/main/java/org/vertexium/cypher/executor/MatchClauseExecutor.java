@@ -13,14 +13,17 @@ import org.vertexium.cypher.exceptions.VertexiumCypherTypeErrorException;
 import org.vertexium.cypher.executor.models.match.*;
 import org.vertexium.cypher.executor.utils.MatchConstraintBuilder;
 import org.vertexium.cypher.utils.ObjectUtils;
-import org.vertexium.query.Contains;
-import org.vertexium.query.Query;
+import org.vertexium.query.*;
+import org.vertexium.util.StreamUtils;
 import org.vertexium.util.VertexiumLogger;
 import org.vertexium.util.VertexiumLoggerFactory;
 
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
+
+import static org.vertexium.util.StreamUtils.stream;
 
 public class MatchClauseExecutor {
     private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(MatchClauseExecutor.class);
@@ -30,21 +33,20 @@ public class MatchClauseExecutor {
             LOGGER.debug("execute: %s", matchClauses.stream().map(CypherMatchClause::toString).collect(Collectors.joining("; ")));
         }
         MatchConstraints matchConstraints = new MatchConstraintBuilder().getMatchConstraints(matchClauses);
-        List<VertexiumCypherScope.Item> results = scope.stream()
-                .flatMap(item -> executeMatchConstraints(ctx, matchConstraints, item).stream())
-                .collect(Collectors.toList());
+        Stream<VertexiumCypherScope.Item> results = scope.stream()
+                .flatMap(item -> executeMatchConstraints(ctx, matchConstraints, item));
         return VertexiumCypherScope.newItemsScope(results, scope);
     }
 
-    private List<VertexiumCypherScope.Item> executeMatchConstraints(
+    private Stream<VertexiumCypherScope.Item> executeMatchConstraints(
             VertexiumCypherQueryContext ctx,
             MatchConstraints matchConstraints,
             ExpressionScope scope
     ) {
-        List<VertexiumCypherScope.Item> results = null;
+        Stream<VertexiumCypherScope.Item> results = null;
 
         for (PatternPartMatchConstraint patternPartMatchConstraint : matchConstraints.getPatternPartMatchConstraints()) {
-            List<VertexiumCypherScope.Item> patternPartResults = executePatternPartConstraint(ctx, patternPartMatchConstraint, scope);
+            Stream<VertexiumCypherScope.Item> patternPartResults = executePatternPartConstraint(ctx, patternPartMatchConstraint, scope);
             if (results != null) {
                 results = VertexiumCypherScope.Item.cartesianProduct(results, patternPartResults);
             } else {
@@ -53,58 +55,96 @@ public class MatchClauseExecutor {
         }
 
         for (CypherAstBase whereExpression : matchConstraints.getWhereExpressions()) {
-            Stream<VertexiumCypherScope.Item> whereResults = ctx.getExpressionExecutor().applyWhereToResults(ctx, results.stream(), whereExpression);
-            results = whereResults.collect(Collectors.toList());
+            results = ctx.getExpressionExecutor().applyWhereToResults(ctx, results, whereExpression);
         }
         return results;
     }
 
-    public List<VertexiumCypherScope.Item> executePatternPartConstraint(
+    public Stream<VertexiumCypherScope.Item> executePatternPartConstraint(
             VertexiumCypherQueryContext ctx,
             PatternPartMatchConstraint patternPartConstraint,
             ExpressionScope scope
     ) {
-        List<MatchContext> matchContexts = getInitialMatchContexts(ctx, patternPartConstraint, scope);
-        while (matchContexts.stream().anyMatch(mc -> !mc.isDone())) {
-            matchContexts = resolveMatchContexts(ctx, matchContexts, scope);
-        }
-
-        Stream<VertexiumCypherScope.Item> results = matchContexts.stream()
+        return StreamSupport.stream(Spliterators.spliteratorUnknownSize(new MatchContextIterator(ctx, patternPartConstraint, scope), Spliterator.IMMUTABLE), false)
                 .map(mc -> mc.toResult(patternPartConstraint.getNamedPaths(), scope));
-
-        return results.collect(Collectors.toList());
     }
 
-    private List<MatchContext> getInitialMatchContexts(VertexiumCypherQueryContext ctx, PatternPartMatchConstraint patternPartConstraint, ExpressionScope scope) {
-        List<MatchContext> matchContexts;
+    private class MatchContextIterator implements Iterator<MatchContext> {
+        private final VertexiumCypherQueryContext ctx;
+        private final ExpressionScope scope;
+        private final LinkedList<Iterator<MatchContext>> matchContextsQueue = new LinkedList<>();
+        private MatchContext next;
+        private MatchContext current;
 
+        public MatchContextIterator(
+                VertexiumCypherQueryContext ctx,
+                PatternPartMatchConstraint patternPartConstraint,
+                ExpressionScope scope
+        ) {
+            this.ctx = ctx;
+            this.scope = scope;
+            matchContextsQueue.add(getInitialMatchContexts(ctx, patternPartConstraint, scope).iterator());
+        }
+
+        @Override
+        public boolean hasNext() {
+            loadNext();
+            return next != null;
+        }
+
+        @Override
+        public MatchContext next() {
+            loadNext();
+            this.current = this.next;
+            this.next = null;
+            return this.current;
+        }
+
+        private void loadNext() {
+            if (this.next != null) {
+                return;
+            }
+
+            while (matchContextsQueue.size() > 0) {
+                Iterator<MatchContext> mcs = matchContextsQueue.peek();
+                if (!mcs.hasNext()) {
+                    matchContextsQueue.remove();
+                    continue;
+                }
+                MatchContext mc = mcs.next();
+                if (mc.isDone()) {
+                    this.next = mc;
+                    return;
+                }
+                matchContextsQueue.addFirst(resolveMatchContext(ctx, mc, scope).iterator());
+            }
+        }
+    }
+
+    private Stream<MatchContext> getInitialMatchContexts(VertexiumCypherQueryContext ctx, PatternPartMatchConstraint patternPartConstraint, ExpressionScope scope) {
         List<MatchConstraint> foundMatchConstraints = findExistingMatchedMatchConstraintInScope(patternPartConstraint, scope);
         if (foundMatchConstraints.size() > 0) {
-            matchContexts = getInitialMatchContextsFromFoundItems(patternPartConstraint, foundMatchConstraints, scope);
-        } else {
-            matchContexts = getInitialMatchContextsBySearching(ctx, patternPartConstraint, scope);
+            return getInitialMatchContextsFromFoundItems(patternPartConstraint, foundMatchConstraints, scope);
         }
-        return matchContexts;
+        return getInitialMatchContextsBySearching(ctx, patternPartConstraint, scope);
     }
 
-    private List<MatchContext> getInitialMatchContextsBySearching(VertexiumCypherQueryContext ctx, PatternPartMatchConstraint patternPartConstraint, ExpressionScope scope) {
-        List<MatchContext> matchContexts;
-        MatchConstraint workingMatchConstraint = MatchContext.getNextConstraintToWorkOn(patternPartConstraint.getMatchConstraints(), new HashMap<>());
-        List<? extends Element> matchingElements = executeFirstMatchConstraint(ctx, workingMatchConstraint, scope);
-        if (matchingElements.size() == 0 && workingMatchConstraint.isOptional()) {
-            matchingElements.add(null);
+    private Stream<MatchContext> getInitialMatchContextsBySearching(VertexiumCypherQueryContext ctx, PatternPartMatchConstraint patternPartConstraint, ExpressionScope scope) {
+        MatchConstraint workingMatchConstraint = MatchContext.getNextConstraintToWorkOn(ctx, scope, patternPartConstraint.getMatchConstraints(), new HashMap<>());
+        LOGGER.debug("working on: %s", workingMatchConstraint);
+        Stream<? extends Element> matchingElements = stream(executeFirstMatchConstraint(ctx, workingMatchConstraint, scope, null));
+        if (workingMatchConstraint.isOptional()) {
+            matchingElements = StreamUtils.ifEmpty(matchingElements, () -> Stream.of((Element) null), s -> s);
         }
-        matchContexts = matchingElements.stream()
+        return matchingElements
                 .map(element -> {
                     List<MatchConstraint> remainingMatchConstraints = new ArrayList<>(patternPartConstraint.getMatchConstraints());
                     remainingMatchConstraints.remove(workingMatchConstraint);
                     return new MatchContext(workingMatchConstraint, element, remainingMatchConstraints);
-                })
-                .collect(Collectors.toList());
-        return matchContexts;
+                });
     }
 
-    private List<MatchContext> getInitialMatchContextsFromFoundItems(
+    private Stream<MatchContext> getInitialMatchContextsFromFoundItems(
             PatternPartMatchConstraint patternPartConstraint,
             List<MatchConstraint> foundMatchConstraints,
             ExpressionScope scope
@@ -114,7 +154,7 @@ public class MatchClauseExecutor {
             Object objByName = scope.getByName(foundMatchConstraint.getName());
             appendMatchContextsWithFoundItems(matchContexts, patternPartConstraint, foundMatchConstraint, objByName);
         }
-        return matchContexts;
+        return matchContexts.stream();
     }
 
     private void appendMatchContextsWithFoundItems(
@@ -134,6 +174,10 @@ public class MatchClauseExecutor {
                     matchContext.addElement(foundMatchConstraint, element);
                 }
             }
+        } else if (objByName instanceof Stream) {
+            ((Stream<?>) objByName).forEach(o -> {
+                appendMatchContextsWithFoundItems(matchContexts, patternPartConstraint, foundMatchConstraint, o);
+            });
         } else if (objByName instanceof List) {
             for (Object o : ((List<?>) objByName)) {
                 appendMatchContextsWithFoundItems(matchContexts, patternPartConstraint, foundMatchConstraint, o);
@@ -150,6 +194,9 @@ public class MatchClauseExecutor {
             if (name != null) {
                 if (scope.contains(name)) {
                     Object obj = scope.getByName(name);
+                    if (obj instanceof Stream) {
+                        obj = ((Stream<?>) obj).collect(Collectors.toList());
+                    }
                     if (obj instanceof List && ((List) obj).size() == 0) {
                         continue;
                     }
@@ -160,20 +207,13 @@ public class MatchClauseExecutor {
         return results;
     }
 
-    private List<MatchContext> resolveMatchContexts(VertexiumCypherQueryContext ctx, List<MatchContext> matchContexts, ExpressionScope scope) {
-        List<MatchContext> newMatchContexts = new ArrayList<>();
-        for (MatchContext matchContext : matchContexts) {
-            if (matchContext.isDone()) {
-                newMatchContexts.add(matchContext);
-            } else {
-                newMatchContexts.addAll(resolveMatchContext(ctx, matchContext, scope));
-            }
-        }
-        return newMatchContexts;
-    }
-
-    private List<MatchContext> resolveMatchContext(VertexiumCypherQueryContext ctx, MatchContext matchContext, ExpressionScope scope) {
-        MatchConstraint<?, ?> matchConstraint = matchContext.getNextConstraintToWorkOn();
+    private Stream<MatchContext> resolveMatchContext(
+            VertexiumCypherQueryContext ctx,
+            MatchContext matchContext,
+            ExpressionScope scope
+    ) {
+        MatchConstraint<?, ?> matchConstraint = matchContext.getNextConstraintToWorkOn(ctx, scope);
+        LOGGER.trace("working on: %s", matchConstraint);
         if (matchConstraint == null) {
             throw new VertexiumCypherException("Cannot solve match clause. Could not find and constraints to work on.");
         } else if (matchConstraint instanceof NodeMatchConstraint) {
@@ -185,7 +225,7 @@ public class MatchClauseExecutor {
         }
     }
 
-    private List<MatchContext> resolveRelationshipMatchContext(
+    private Stream<MatchContext> resolveRelationshipMatchContext(
             VertexiumCypherQueryContext ctx,
             MatchContext matchContext,
             RelationshipMatchConstraint relationshipMatchConstraint,
@@ -197,7 +237,7 @@ public class MatchClauseExecutor {
         }
         Vertex startingVertex = previousVertices.size() > 0 ? previousVertices.get(0) : null;
         Vertex endVertex = previousVertices.size() > 1 ? previousVertices.get(1) : null;
-        List<VertexiumCypherScope.PathItem> paths = executeRelationshipConstraint(
+        Stream<VertexiumCypherScope.PathItem> paths = executeRelationshipConstraint(
                 ctx,
                 startingVertex,
                 endVertex,
@@ -205,12 +245,11 @@ public class MatchClauseExecutor {
                 matchContext,
                 scope
         );
-        return paths.stream()
-                .map(path -> MatchContext.concatPath(relationshipMatchConstraint, matchContext, path))
-                .collect(Collectors.toList());
+        return paths
+                .map(path -> MatchContext.concatPath(relationshipMatchConstraint, matchContext, path));
     }
 
-    private List<MatchContext> resolveNodeMatchContext(
+    private Stream<MatchContext> resolveNodeMatchContext(
             VertexiumCypherQueryContext ctx,
             MatchContext matchContext,
             NodeMatchConstraint nodeMatchConstraint,
@@ -218,21 +257,20 @@ public class MatchClauseExecutor {
     ) {
         List<EdgeVertexConstraint> satisfiedEdgeVertexConstraint = matchContext.getSatisfiedEdgeVertexPairs(ctx, nodeMatchConstraint);
         if (satisfiedEdgeVertexConstraint.size() == 0) {
-            return new ArrayList<>();
+            return Stream.empty();
         }
-        LinkedHashSet<Vertex> vertices = executeNodeConstraints(
+        Stream<Vertex> vertices = executeNodeConstraints(
                 ctx,
                 matchContext,
                 satisfiedEdgeVertexConstraint,
                 nodeMatchConstraint,
                 scope
         );
-        return vertices.stream()
-                .map(v -> MatchContext.concatVertex(nodeMatchConstraint, matchContext, v))
-                .collect(Collectors.toList());
+        return vertices
+                .map(v -> MatchContext.concatVertex(nodeMatchConstraint, matchContext, v));
     }
 
-    private LinkedHashSet<Vertex> executeNodeConstraints(
+    private Stream<Vertex> executeNodeConstraints(
             VertexiumCypherQueryContext ctx,
             MatchContext matchContext,
             List<EdgeVertexConstraint> edgeVertexConstraints,
@@ -248,9 +286,9 @@ public class MatchClauseExecutor {
                 .collect(Collectors.toList());
         ListMultimap<String, CypherAstBase> propertiesMap = getPropertiesMapFromElementPatterns(ctx, matchConstraint.getPatterns());
 
-        LinkedHashSet<Vertex> results = null;
+        Stream<Vertex> results = Stream.empty();
         for (EdgeVertexConstraint edgeVertexConstraint : edgeVertexConstraints) {
-            LinkedHashSet<Vertex> newResults = executeNodeConstraint(
+            Stream<Vertex> newResults = executeNodeConstraint(
                     ctx,
                     matchContext,
                     matchConstraint,
@@ -259,16 +297,12 @@ public class MatchClauseExecutor {
                     propertiesMap,
                     scope
             );
-            if (results == null) {
-                results = newResults;
-            } else {
-                results.addAll(newResults);
-            }
+            results = Stream.concat(results, newResults);
         }
-        return results;
+        return results.distinct();
     }
 
-    private LinkedHashSet<Vertex> executeNodeConstraint(
+    private Stream<Vertex> executeNodeConstraint(
             VertexiumCypherQueryContext ctx,
             MatchContext matchContext,
             NodeMatchConstraint matchConstraint,
@@ -277,7 +311,7 @@ public class MatchClauseExecutor {
             ListMultimap<String, CypherAstBase> propertiesMap,
             ExpressionScope scope
     ) {
-        LinkedHashSet<Vertex> results = new LinkedHashSet<>();
+        List<Vertex> results = new ArrayList<>();
         Edge edge = edgeVertexConstraint.getEdge();
         Vertex previousVertex = edgeVertexConstraint.getVertex();
         MatchConstraint edgeMatchConstraint = edgeVertexConstraint.getEdgeMatchConstraint();
@@ -297,7 +331,7 @@ public class MatchClauseExecutor {
         if (!foundMatch && matchConstraint.isOptional()) {
             results.add(null);
         }
-        return results;
+        return results.stream();
     }
 
     private boolean vertexRelationshipMatches(MatchContext matchContext, NodeMatchConstraint matchConstraint, Vertex vertex) {
@@ -340,26 +374,32 @@ public class MatchClauseExecutor {
         return propertyMapMatch(ctx, vertex, propertiesMap, scope);
     }
 
-    private List<? extends Element> executeFirstMatchConstraint(
+    private static long getTotalHits(
             VertexiumCypherQueryContext ctx,
             MatchConstraint<?, ?> matchConstraint,
             ExpressionScope scope
     ) {
+        return ctx.getTotalHitsForMatchConstraint(
+                matchConstraint,
+                mc -> executeFirstMatchConstraint(ctx, mc, scope, 0L).getTotalHits()
+        );
+    }
+
+    private static IterableWithTotalHits<? extends Element> executeFirstMatchConstraint(
+            VertexiumCypherQueryContext ctx,
+            MatchConstraint<?, ?> matchConstraint,
+            ExpressionScope scope,
+            Long limit
+    ) {
         try {
             List<String> labelNames = getLabelNamesFromMatchConstraint(matchConstraint);
             ListMultimap<String, CypherAstBase> propertiesMap = getPropertiesMapFromElementPatterns(ctx, matchConstraint.getPatterns());
-            Iterable<? extends Element> elements;
+            QueryResultsIterable<? extends Element> elements;
+            Query query = ctx.getGraph().query(ctx.getAuthorizations())
+                    .limit(limit);
             if (labelNames.size() == 0 && propertiesMap.size() == 0) {
-                if (matchConstraint instanceof NodeMatchConstraint) {
-                    elements = ctx.getGraph().getVertices(ctx.getFetchHints(), ctx.getAuthorizations());
-                } else if (matchConstraint instanceof RelationshipMatchConstraint) {
-                    elements = ctx.getGraph().getEdges(ctx.getFetchHints(), ctx.getAuthorizations());
-                } else {
-                    throw new VertexiumCypherNotImplemented("unexpected constraint type: " + matchConstraint.getClass().getName());
-                }
+                elements = executeQuery(ctx, query, matchConstraint);
             } else {
-                Query query = ctx.getGraph().query(ctx.getAuthorizations());
-
                 if (labelNames.size() > 0) {
                     Stream<String> labelNamesStream = labelNames.stream()
                             .map(ctx::normalizeLabelName);
@@ -385,30 +425,43 @@ public class MatchClauseExecutor {
                     if (value instanceof CypherAstBase) {
                         throw new VertexiumException("unexpected value: " + value.getClass().getName() + ": " + value);
                     }
-                    if (value instanceof List) {
+                    if (value instanceof Stream) {
+                        value = ((Stream<?>) value).collect(Collectors.toList());
+                    }
+                    if (value instanceof Collection) {
                         query.has(propertyMatch.getKey(), Contains.IN, value);
                     } else {
                         query.has(propertyMatch.getKey(), value);
                     }
                 }
 
-                if (matchConstraint instanceof NodeMatchConstraint) {
-                    elements = query.vertices(ctx.getFetchHints());
-                } else if (matchConstraint instanceof RelationshipMatchConstraint) {
-                    elements = query.edges(ctx.getFetchHints());
-                } else {
-                    throw new VertexiumCypherNotImplemented("unexpected constraint type: " + matchConstraint.getClass().getName());
-                }
+                elements = executeQuery(ctx, query, matchConstraint);
             }
 
-            return Lists.newArrayList(elements);
+            return elements;
         } catch (VertexiumPropertyNotDefinedException e) {
             LOGGER.error(e.getMessage());
-            return Lists.newArrayList();
+            return new EmptyResultsQueryResultsIterable<>();
         }
     }
 
-    private List<VertexiumCypherScope.PathItem> executeRelationshipConstraint(
+    private static QueryResultsIterable<? extends Element> executeQuery(
+            VertexiumCypherQueryContext ctx,
+            Query query,
+            MatchConstraint<?, ?> matchConstraint
+    ) {
+        QueryResultsIterable<? extends Element> elements;
+        if (matchConstraint instanceof NodeMatchConstraint) {
+            elements = query.vertices(ctx.getFetchHints());
+        } else if (matchConstraint instanceof RelationshipMatchConstraint) {
+            elements = query.edges(ctx.getFetchHints());
+        } else {
+            throw new VertexiumCypherNotImplemented("unexpected constraint type: " + matchConstraint.getClass().getName());
+        }
+        return elements;
+    }
+
+    private Stream<VertexiumCypherScope.PathItem> executeRelationshipConstraint(
             VertexiumCypherQueryContext ctx,
             Vertex startingVertex,
             Vertex endVertex,
@@ -424,15 +477,15 @@ public class MatchClauseExecutor {
         RelationshipMatchRange range = matchConstraint.getRange();
         String name = matchConstraint.getName();
 
-        List<VertexiumCypherScope.PathItem> newPaths = new ArrayList<>();
+        Stream<VertexiumCypherScope.PathItem> newPaths = Stream.empty();
         VertexiumCypherScope.PathItem previousPath = VertexiumCypherScope.newEmptyPathItem(null, scope)
                 .setPrintMode(VertexiumCypherScope.PathItem.PrintMode.RELATIONSHIP_RANGE);
         previousPath = previousPath.concat(null, startingVertex);
         Vertex vertex = (Vertex) previousPath.getLastElement();
         if (range.isRangeSet() && range.isIn(0)) {
-            newPaths.add(previousPath.concat(name, null));
+            newPaths = Stream.concat(newPaths, Stream.of(previousPath.concat(name, null)));
         }
-        List<VertexiumCypherScope.PathItem> newPathsToAdd = findPathsToAdd(
+        Stream<VertexiumCypherScope.PathItem> newPathsToAdd = findPathsToAdd(
                 ctx,
                 previousPath,
                 vertex,
@@ -447,11 +500,11 @@ public class MatchClauseExecutor {
                 matchContext,
                 scope
         );
-        newPaths.addAll(newPathsToAdd);
+        newPaths = Stream.concat(newPaths, newPathsToAdd);
         return newPaths;
     }
 
-    private List<VertexiumCypherScope.PathItem> findPathsToAdd(
+    private Stream<VertexiumCypherScope.PathItem> findPathsToAdd(
             VertexiumCypherQueryContext ctx,
             VertexiumCypherScope.PathItem previousPath,
             Vertex startingVertex,
@@ -466,13 +519,14 @@ public class MatchClauseExecutor {
             MatchContext matchContext,
             ExpressionScope scope
     ) {
-        List<VertexiumCypherScope.PathItem> paths = new ArrayList<>();
         if (range.isRangeSet() && range.getTo() == null && depth > ctx.getMaxUnboundedRange()) {
-            return paths;
+            return Stream.empty();
         }
         if (startingVertex == null && depth > 1) {
-            return paths;
+            return Stream.empty();
         }
+
+        Stream<VertexiumCypherScope.PathItem> paths = Stream.empty();
 
         if (range.isIn(depth)) {
             boolean foundEdge = false;
@@ -487,13 +541,13 @@ public class MatchClauseExecutor {
                         }
                     }
                     if (edgeIsMatch(ctx, edge, labelNames, propertiesMap, scope)) {
-                        paths.add(previousPath.concat(name, edge));
+                        paths = Stream.concat(paths, Stream.of(previousPath.concat(name, edge)));
                         foundEdge = true;
                     }
                 }
             }
             if (optional && !foundEdge) {
-                paths.add(previousPath.concat(name, null));
+                paths = Stream.concat(paths, Stream.of(previousPath.concat(name, null)));
             }
         }
 
@@ -508,7 +562,7 @@ public class MatchClauseExecutor {
                         VertexiumCypherScope.PathItem newPath = previousPath
                                 .concat(name, edge)
                                 .concat(null, otherVertex);
-                        paths.addAll(findPathsToAdd(
+                        paths = Stream.concat(paths, findPathsToAdd(
                                 ctx,
                                 newPath,
                                 otherVertex,
@@ -529,7 +583,7 @@ public class MatchClauseExecutor {
                 VertexiumCypherScope.PathItem newPath = previousPath
                         .concat(name, null)
                         .concat(null, null);
-                paths.addAll(findPathsToAdd(
+                paths = Stream.concat(paths, findPathsToAdd(
                         ctx,
                         newPath,
                         null,
@@ -592,7 +646,7 @@ public class MatchClauseExecutor {
         return results;
     }
 
-    private List<String> getLabelNamesFromMatchConstraint(MatchConstraint<?, ?> matchConstraint) {
+    private static List<String> getLabelNamesFromMatchConstraint(MatchConstraint<?, ?> matchConstraint) {
         List<String> results = new ArrayList<>();
         for (CypherElementPattern pattern : matchConstraint.getPatterns()) {
             if (pattern instanceof CypherNodePattern) {
@@ -616,7 +670,7 @@ public class MatchClauseExecutor {
         return results;
     }
 
-    private <T extends CypherElementPattern> ListMultimap<String, CypherAstBase> getPropertiesMapFromElementPatterns(
+    private static <T extends CypherElementPattern> ListMultimap<String, CypherAstBase> getPropertiesMapFromElementPatterns(
             VertexiumCypherQueryContext ctx,
             List<T> elementPatterns
     ) {
@@ -706,14 +760,19 @@ public class MatchClauseExecutor {
             return remainingMatchConstraints.size() == 0;
         }
 
-        public MatchConstraint<?, ?> getNextConstraintToWorkOn() {
+        public MatchConstraint<?, ?> getNextConstraintToWorkOn(
+                VertexiumCypherQueryContext ctx,
+                ExpressionScope scope
+        ) {
             Map<MatchConstraint, Integer> satisfiedConstraintCount = remainingMatchConstraints.stream()
                     .collect(Collectors.toMap(c -> c, this::getSatisfiedConstraintCount));
 
-            return getNextConstraintToWorkOn(remainingMatchConstraints, satisfiedConstraintCount);
+            return getNextConstraintToWorkOn(ctx, scope, remainingMatchConstraints, satisfiedConstraintCount);
         }
 
         private static MatchConstraint getNextConstraintToWorkOn(
+                VertexiumCypherQueryContext ctx,
+                ExpressionScope scope,
                 Collection<MatchConstraint> remainingMatchConstraints,
                 Map<MatchConstraint, Integer> satisfiedConstraintCount
         ) {
@@ -757,6 +816,13 @@ public class MatchClauseExecutor {
                         }
                         if (o2 instanceof RelationshipMatchConstraint && ((RelationshipMatchConstraint) o2).getRange().isRangeSet()) {
                             return -1;
+                        }
+
+                        long o1Hits = getTotalHits(ctx, o1, scope);
+                        long o2Hits = getTotalHits(ctx, o2, scope);
+                        int i = Long.compare(o1Hits, o2Hits);
+                        if (i != 0) {
+                            return i;
                         }
 
                         // find the one most constrained

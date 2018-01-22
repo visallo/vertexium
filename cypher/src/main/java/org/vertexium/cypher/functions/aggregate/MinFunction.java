@@ -6,8 +6,9 @@ import org.vertexium.cypher.exceptions.VertexiumCypherTypeErrorException;
 import org.vertexium.cypher.executor.ExpressionScope;
 import org.vertexium.cypher.utils.ObjectUtils;
 
-import java.util.List;
+import java.util.Collection;
 import java.util.Objects;
+import java.util.stream.Stream;
 
 public class MinFunction extends AggregationFunction {
     @Override
@@ -15,14 +16,18 @@ public class MinFunction extends AggregationFunction {
         assertArgumentCount(arguments, 1);
         Object arg0 = ctx.getExpressionExecutor().executeExpression(ctx, arguments[0], scope);
 
-        if (arg0 instanceof List) {
-            List<?> list = (List<?>) arg0;
-            return list.stream()
+        if (arg0 instanceof Collection) {
+            arg0 = ((Collection) arg0).stream();
+        }
+
+        if (arg0 instanceof Stream) {
+            Stream<?> list = (Stream<?>) arg0;
+            return list
                     .filter(Objects::nonNull)
                     .min(ObjectUtils::compare)
                     .orElse(null);
         }
 
-        throw new VertexiumCypherTypeErrorException(arg0, List.class);
+        throw new VertexiumCypherTypeErrorException(arg0, Collection.class, Stream.class);
     }
 }

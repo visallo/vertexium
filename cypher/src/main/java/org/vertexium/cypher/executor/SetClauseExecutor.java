@@ -14,12 +14,15 @@ import org.vertexium.util.VertexiumLoggerFactory;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class SetClauseExecutor {
     private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(SetClauseExecutor.class);
 
     public VertexiumCypherScope execute(VertexiumCypherQueryContext ctx, CypherSetClause clause, VertexiumCypherScope scope) {
         LOGGER.debug("execute: %s", clause);
+        scope.run(); // TODO change the execute to peek and set the values instead of consuming the stream
         scope.stream()
                 .forEach(item -> execute(ctx, clause, item));
         return scope;
@@ -58,6 +61,9 @@ public class SetClauseExecutor {
         Object values = ctx.getExpressionExecutor().executeExpression(ctx, setItem.getRight(), item);
         CypherSetItem.Op op = setItem.getOp();
 
+        if (values instanceof Stream) {
+            values = ((Stream<?>) values).collect(Collectors.toList());
+        }
         if (values instanceof List && ((List) values).size() == 1) {
             values = ((List) values).get(0);
         }

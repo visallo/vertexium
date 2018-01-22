@@ -117,8 +117,7 @@ public class ExpressionExecutor {
                     matchScope
             );
             return results.stream()
-                    .map(item -> executeExpression(ctx, patternComprehension.getExpression(), item))
-                    .collect(Collectors.toList());
+                    .map(item -> executeExpression(ctx, patternComprehension.getExpression(), item));
         }
 
         throw new VertexiumException("not implemented \"" + expression.getClass().getName() + "\": " + expression);
@@ -172,8 +171,7 @@ public class ExpressionExecutor {
             return itemScopes;
         }
         return itemScopes
-                .map(itemScope -> executeExpression(ctx, listComprehension.getExpression(), itemScope))
-                .collect(Collectors.toList());
+                .map(itemScope -> executeExpression(ctx, listComprehension.getExpression(), itemScope));
     }
 
     private Stream<ExpressionScope> executeFilterExpression(
@@ -183,7 +181,7 @@ public class ExpressionExecutor {
     ) {
         String name = filterExpression.getIdInCol().getVariable().getName();
         Object values = executeExpression(ctx, filterExpression.getIdInCol().getExpression(), scope);
-        Stream<ExpressionScope> results = stream(toIterable(values))
+        Stream<ExpressionScope> results = toStream(values)
                 .map(value -> VertexiumCypherScope.newMapItem(name, value, scope));
 
         if (filterExpression.getWhere() != null) {
@@ -239,8 +237,7 @@ public class ExpressionExecutor {
         Iterable<?> it = toIterable(array);
         return stream(it)
                 .skip(sliceFrom)
-                .limit(sliceTo - sliceFrom)
-                .collect(Collectors.toList());
+                .limit(sliceTo - sliceFrom);
     }
 
     private Object executeArrayAccess(VertexiumCypherQueryContext ctx, CypherArrayAccess arrayAccess, ExpressionScope scope) {
@@ -287,6 +284,19 @@ public class ExpressionExecutor {
             throw new VertexiumCypherTypeErrorException("ListElementAccessByNonInteger: expected integer, found " + indexObj.getClass().getName());
         }
 
+        if (array instanceof Stream) {
+            if (indexObj instanceof Long) {
+                indexObj = ((Long) indexObj).intValue();
+            }
+
+            if (indexObj instanceof Integer) {
+                int index = (int) indexObj;
+                return ((Stream<?>) array).skip(index).findFirst().get();
+            }
+
+            throw new VertexiumCypherTypeErrorException("ListElementAccessByNonInteger: expected integer, found " + indexObj.getClass().getName());
+        }
+
         throw new VertexiumCypherTypeErrorException("InvalidElementAccess: unexpected object access, found object " + array.getClass().getName() + ": " + array + ", index " + indexObj.getClass().getName() + ": " + indexObj);
     }
 
@@ -326,12 +336,22 @@ public class ExpressionExecutor {
 
     private Iterable<?> toIterable(Object obj) {
         Iterable<?> it;
-        if (obj instanceof CypherListLiteral || obj instanceof List || obj instanceof Set) {
+        if (obj instanceof Stream) {
+            return ((Stream<?>) obj).collect(Collectors.toList());
+        } else if (obj instanceof CypherListLiteral || obj instanceof List || obj instanceof Set) {
             it = (Iterable) obj;
         } else {
             throw new VertexiumCypherNotImplemented("expected iterable, found " + obj == null ? null : obj.getClass().getName());
         }
         return it;
+    }
+
+    private Stream<?> toStream(Object obj) {
+        if (obj instanceof Stream) {
+            return (Stream<?>) obj;
+        } else {
+            return stream(toIterable(obj));
+        }
     }
 
     private Object executeUnaryExpression(
@@ -367,10 +387,9 @@ public class ExpressionExecutor {
         return fn.invoke(ctx, functionInvocation.getArguments(), scope);
     }
 
-    private List<Object> executeList(VertexiumCypherQueryContext context, CypherListLiteral<? extends CypherAstBase> list, ExpressionScope scope) {
+    private Stream<Object> executeList(VertexiumCypherQueryContext context, CypherListLiteral<? extends CypherAstBase> list, ExpressionScope scope) {
         return list.stream()
-                .map(i -> executeExpression(context, i, scope))
-                .collect(Collectors.toList());
+                .map(i -> executeExpression(context, i, scope));
     }
 
     private Object executeLookup(VertexiumCypherQueryContext ctx, CypherLookup expression, ExpressionScope scope) {
@@ -425,12 +444,12 @@ public class ExpressionExecutor {
 
         if (item instanceof Collection) {
             Collection<?> list = (Collection) item;
-            return list.stream()
-                    .map(listItem -> {
-                        Object results = executeLookup(ctx, listItem, expression, scope);
-                        return results;
-                    })
-                    .collect(Collectors.toList());
+            return list.stream().map(listItem -> executeLookup(ctx, listItem, expression, scope));
+        }
+
+        if (item instanceof Stream) {
+            Stream<?> list = (Stream) item;
+            return list.map(listItem -> executeLookup(ctx, listItem, expression, scope));
         }
 
         throw new VertexiumCypherTypeErrorException(item, Element.class, Map.class, Collection.class, null);
@@ -663,6 +682,14 @@ public class ExpressionExecutor {
         }
         if (left instanceof Number && right instanceof Number) {
             return ObjectUtils.addNumbers((Number) left, (Number) right);
+        }
+
+        if (left instanceof Stream && right instanceof Stream) {
+            return Stream.concat((Stream) left, (Stream) right);
+        }
+
+        if (left instanceof Stream) {
+            return Stream.concat((Stream) left, Stream.of(right));
         }
 
         if (left instanceof List && right instanceof List) {
