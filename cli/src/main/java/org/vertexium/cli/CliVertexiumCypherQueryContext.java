@@ -1,5 +1,6 @@
 package org.vertexium.cli;
 
+import com.google.common.collect.Sets;
 import org.vertexium.*;
 import org.vertexium.cypher.VertexiumCypherQueryContext;
 import org.vertexium.cypher.ast.model.CypherNodePattern;
@@ -28,7 +29,7 @@ public class CliVertexiumCypherQueryContext extends VertexiumCypherQueryContext 
 
     @Override
     public String getLabelPropertyName() {
-        return CliVertexiumCypherQueryContext.labelPropertyName;
+        return labelPropertyName;
     }
 
     @Override
@@ -63,12 +64,12 @@ public class CliVertexiumCypherQueryContext extends VertexiumCypherQueryContext 
 
     @Override
     public boolean isLabelProperty(Property property) {
-        throw new VertexiumException("not implemented");
+        return property.getName().equals(getLabelPropertyName());
     }
 
     @Override
     public Set<String> getVertexLabels(Vertex vertex) {
-        throw new VertexiumException("not implemented");
+        return Sets.newHashSet((String) vertex.getPropertyValue(getLabelPropertyName()));
     }
 
     @Override
