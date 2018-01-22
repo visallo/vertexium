@@ -4,19 +4,14 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import org.vertexium.*;
 import org.vertexium.mutation.*;
-import org.vertexium.property.MutablePropertyImpl;
 import org.vertexium.query.ExtendedDataQueryableIterable;
 import org.vertexium.query.QueryableIterable;
 import org.vertexium.search.IndexHint;
-import org.vertexium.util.ConvertingIterable;
-import org.vertexium.util.FilterIterable;
 
-import java.util.ArrayList;
 import java.util.EnumSet;
-import java.util.Iterator;
 import java.util.List;
 
-public abstract class InMemoryElement<TElement extends InMemoryElement> implements Element {
+public abstract class InMemoryElement<TElement extends InMemoryElement> extends ElementBase {
     private final String id;
     private final EnumSet<FetchHint> fetchHints;
     private Property idProperty;
@@ -47,39 +42,6 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> implemen
         return this.id;
     }
 
-    protected Property getIdProperty() {
-        if (idProperty == null) {
-            idProperty = new MutablePropertyImpl(
-                    ElementMutation.DEFAULT_KEY,
-                    ID_PROPERTY_NAME,
-                    getId(),
-                    null,
-                    getTimestamp(),
-                    null,
-                    null,
-                    fetchHints
-            );
-        }
-        return idProperty;
-    }
-
-    protected Property getEdgeLabelProperty() {
-        if (edgeLabelProperty == null && this instanceof Edge) {
-            String edgeLabel = ((Edge) this).getLabel();
-            edgeLabelProperty = new MutablePropertyImpl(
-                    ElementMutation.DEFAULT_KEY,
-                    Edge.LABEL_PROPERTY_NAME,
-                    edgeLabel,
-                    null,
-                    getTimestamp(),
-                    null,
-                    null,
-                    fetchHints
-            );
-        }
-        return edgeLabelProperty;
-    }
-
     @Override
     public Visibility getVisibility() {
         return inMemoryTableElement.getVisibility();
@@ -91,28 +53,8 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> implemen
     }
 
     @Override
-    public void deleteProperty(String key, String name, Authorizations authorizations) {
-        deleteProperty(key, name, null, authorizations);
-    }
-
-    @Override
     public void deleteProperty(String key, String name, Visibility visibility, Authorizations authorizations) {
         getGraph().deleteProperty(this, inMemoryTableElement, key, name, visibility, authorizations);
-    }
-
-    @Override
-    public void deleteProperties(String name, Authorizations authorizations) {
-        for (Property p : getProperties(name)) {
-            deleteProperty(p.getKey(), p.getName(), p.getVisibility(), authorizations);
-        }
-    }
-
-    @Override
-    public void softDeleteProperty(String key, String name, Authorizations authorizations) {
-        Property property = getProperty(key, name);
-        if (property != null) {
-            getGraph().softDeleteProperty(inMemoryTableElement, property, null, IndexHint.INDEX, authorizations);
-        }
     }
 
     @Override
@@ -160,71 +102,20 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> implemen
     }
 
     @Override
-    public void softDeleteProperties(String name, Authorizations authorizations) {
-        Iterable<Property> properties = getProperties(name);
-        for (Property property : properties) {
-            getGraph().softDeleteProperty(inMemoryTableElement, property, null, IndexHint.INDEX, authorizations);
-        }
-    }
-
-    @Override
     public void markPropertyHidden(Property property, Long timestamp, Visibility visibility, Authorizations authorizations) {
-        markPropertyHidden(property.getKey(), property.getName(), property.getVisibility(), timestamp, visibility, authorizations);
-    }
-
-    @Override
-    public void markPropertyHidden(Property property, Visibility visibility, Authorizations authorizations) {
-        markPropertyHidden(property, null, visibility, authorizations);
-    }
-
-    @Override
-    public void markPropertyHidden(String key, String name, Visibility propertyVisibility, Long timestamp, Visibility visibility, Authorizations authorizations) {
-        getGraph().markPropertyHidden(this, inMemoryTableElement, key, name, propertyVisibility, timestamp, visibility, authorizations);
-    }
-
-    @Override
-    public void markPropertyHidden(String key, String name, Visibility propertyVisibility, Visibility visibility, Authorizations authorizations) {
-        getGraph().markPropertyHidden(this, inMemoryTableElement, key, name, propertyVisibility, null, visibility, authorizations);
+        getGraph().markPropertyHidden(
+                this,
+                inMemoryTableElement,
+                property,
+                null,
+                visibility,
+                authorizations
+        );
     }
 
     @Override
     public void markPropertyVisible(Property property, Long timestamp, Visibility visibility, Authorizations authorizations) {
         getGraph().markPropertyVisible(this, inMemoryTableElement, property.getKey(), property.getName(), property.getVisibility(), timestamp, visibility, authorizations);
-    }
-
-    @Override
-    public void markPropertyVisible(String key, String name, Visibility propertyVisibility, Visibility visibility, Authorizations authorizations) {
-        getGraph().markPropertyVisible(this, inMemoryTableElement, key, name, propertyVisibility, null, visibility, authorizations);
-    }
-
-    @Override
-    public void markPropertyVisible(String key, String name, Visibility propertyVisibility, Long timestamp, Visibility visibility, Authorizations authorizations) {
-        getGraph().markPropertyVisible(this, inMemoryTableElement, key, name, propertyVisibility, timestamp, visibility, authorizations);
-    }
-
-    @Override
-    public void markPropertyVisible(Property property, Visibility visibility, Authorizations authorizations) {
-        markPropertyVisible(property, null, visibility, authorizations);
-    }
-
-    @Override
-    public Iterable<Object> getPropertyValues(String name) {
-        return new ConvertingIterable<Property, Object>(getProperties(name)) {
-            @Override
-            protected Object convert(Property o) {
-                return o.getValue();
-            }
-        };
-    }
-
-    @Override
-    public Iterable<Object> getPropertyValues(String key, String name) {
-        return new ConvertingIterable<Property, Object>(getProperties(key, name)) {
-            @Override
-            protected Object convert(Property o) {
-                return o.getValue();
-            }
-        };
     }
 
     @Override
@@ -239,139 +130,16 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> implemen
         return p == null ? null : p.getValue();
     }
 
-    @Override
-    public Object getPropertyValue(String name, int index) {
-        Iterator<Object> values = getPropertyValues(name).iterator();
-        while (values.hasNext() && index >= 0) {
-            Object v = values.next();
-            if (index == 0) {
-                return v;
-            }
-            index--;
-        }
-        return null;
-    }
-
-    @Override
-    public Object getPropertyValue(String key, String name, int index) {
-        Iterator<Object> values = getPropertyValues(key, name).iterator();
-        while (values.hasNext() && index >= 0) {
-            Object v = values.next();
-            if (index == 0) {
-                return v;
-            }
-            index--;
-        }
-        return null;
-    }
-
-    @Override
-    public void setProperty(String name, Object value, Visibility visibility, Authorizations authorizations) {
-        addPropertyValue(ElementMutation.DEFAULT_KEY, name, value, visibility, authorizations);
-    }
-
-    @Override
-    public void setProperty(String name, Object value, Metadata metadata, Visibility visibility, Authorizations authorizations) {
-        addPropertyValue(ElementMutation.DEFAULT_KEY, name, value, metadata, visibility, authorizations);
-    }
-
-    @Override
-    public void addPropertyValue(String key, String name, Object value, Visibility visibility, Authorizations authorizations) {
-        addPropertyValue(key, name, value, null, visibility, authorizations);
-    }
-
-    @Override
-    public Property getProperty(String key, String name) {
-        return getProperty(key, name, null);
-    }
-
-    @Override
-    public Property getProperty(String key, String name, Visibility visibility) {
-        if (ID_PROPERTY_NAME.equals(name)) {
-            return getIdProperty();
-        } else if (Edge.LABEL_PROPERTY_NAME.equals(name) && this instanceof Edge) {
-            return getEdgeLabelProperty();
-        }
-        for (Property p : getProperties()) {
-            if (!p.getKey().equals(key)) {
-                continue;
-            }
-            if (!p.getName().equals(name)) {
-                continue;
-            }
-            if (visibility == null) {
-                return p;
-            }
-            if (!visibility.equals(p.getVisibility())) {
-                continue;
-            }
-            return p;
-        }
-        return null;
-    }
-
-    @Override
-    public Property getProperty(String name, Visibility visibility) {
-        return getProperty(ElementMutation.DEFAULT_KEY, name, visibility);
-    }
-
-    @Override
-    public Property getProperty(String name) {
-        Iterator<Property> propertiesWithName = getProperties(name).iterator();
-        if (propertiesWithName.hasNext()) {
-            return propertiesWithName.next();
-        }
-        return null;
-    }
-
-    @Override
-    public Iterable<Property> getProperties(final String name) {
-        if (ID_PROPERTY_NAME.equals(name)) {
-            ArrayList<Property> result = new ArrayList<>();
-            result.add(getIdProperty());
-            return result;
-        } else if (Edge.LABEL_PROPERTY_NAME.equals(name) && this instanceof Edge) {
-            ArrayList<Property> result = new ArrayList<>();
-            result.add(getEdgeLabelProperty());
-            return result;
-        }
-        return new FilterIterable<Property>(getProperties()) {
-            @Override
-            protected boolean isIncluded(Property property) {
-                return property.getName().equals(name);
-            }
-        };
-    }
-
-    @Override
-    public Iterable<Property> getProperties(final String key, final String name) {
-        if (ID_PROPERTY_NAME.equals(name)) {
-            ArrayList<Property> result = new ArrayList<>();
-            result.add(getIdProperty());
-            return result;
-        } else if (Edge.LABEL_PROPERTY_NAME.equals(name) && this instanceof Edge) {
-            ArrayList<Property> result = new ArrayList<>();
-            result.add(getEdgeLabelProperty());
-            return result;
-        }
-        return new FilterIterable<Property>(getProperties()) {
-            @Override
-            protected boolean isIncluded(Property property) {
-                return property.getName().equals(name) && property.getKey().equals(key);
-            }
-        };
-    }
-
-    @Override
-    public void addPropertyValue(String key, String name, Object value, Metadata metadata, Visibility visibility, Authorizations authorizations) {
-        addPropertyValue(key, name, value, metadata, visibility, null, true, authorizations);
-    }
-
     public void addPropertyValue(String key, String name, Object value, Metadata metadata, Visibility visibility, Long timestamp, boolean indexAfterAdd, Authorizations authorizations) {
         getGraph().addPropertyValue(this, inMemoryTableElement, key, name, value, metadata, visibility, timestamp, authorizations);
         if (indexAfterAdd) {
             getGraph().getSearchIndex().addElement(getGraph(), this, authorizations);
         }
+    }
+
+    @Override
+    public void markPropertyVisible(String key, String name, Visibility propertyVisibility, Long timestamp, Visibility visibility, Authorizations authorizations) {
+        getGraph().markPropertyVisible(this, inMemoryTableElement, key, name, propertyVisibility, timestamp, visibility, authorizations);
     }
 
     @Override
@@ -385,32 +153,12 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> implemen
     }
 
     @Override
-    public Iterable<HistoricalPropertyValue> getHistoricalPropertyValues(Authorizations authorizations) {
-        return getHistoricalPropertyValues(null, null, authorizations);
-    }
-
-    @Override
-    public Iterable<HistoricalPropertyValue> getHistoricalPropertyValues(Long startTime, Long endTime, Authorizations authorizations) {
-        return getHistoricalPropertyValues(null, null, null, startTime, endTime, authorizations);
-    }
-
-    @Override
     public Iterable<HistoricalPropertyValue> getHistoricalPropertyValues(String key, String name, Visibility visibility, Long startTime, Long endTime, Authorizations authorizations) {
         return inMemoryTableElement.getHistoricalPropertyValues(key, name, visibility, startTime, endTime, authorizations);
     }
 
     @Override
-    public Iterable<HistoricalPropertyValue> getHistoricalPropertyValues(String key, String name, Visibility visibility, Authorizations authorizations) {
-        return getHistoricalPropertyValues(key, name, visibility, null, null, authorizations);
-    }
-
-    @Override
     public abstract <T extends Element> ExistingElementMutation<T> prepareMutation();
-
-    @Override
-    public void mergeProperties(Element element) {
-        // since the backing store is shared there is no need to do this
-    }
 
     @Override
     public Authorizations getAuthorizations() {

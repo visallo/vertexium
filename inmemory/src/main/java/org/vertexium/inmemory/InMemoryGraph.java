@@ -273,9 +273,7 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
     public void markPropertyHidden(
             InMemoryElement element,
             InMemoryTableElement inMemoryTableElement,
-            String key,
-            String name,
-            Visibility propertyVisibility,
+            Property property,
             Long timestamp,
             Visibility visibility,
             Authorizations authorizations
@@ -284,10 +282,17 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
             return;
         }
 
-        Property property = inMemoryTableElement.appendMarkPropertyHiddenMutation(key, name, propertyVisibility, timestamp, visibility, authorizations);
+        Property hiddenProperty = inMemoryTableElement.appendMarkPropertyHiddenMutation(
+                property.getKey(),
+                property.getName(),
+                property.getVisibility(),
+                timestamp,
+                visibility,
+                authorizations
+        );
 
-        if (property != null && hasEventListeners()) {
-            fireGraphEvent(new MarkHiddenPropertyEvent(this, element, property, visibility));
+        if (hiddenProperty != null && hasEventListeners()) {
+            fireGraphEvent(new MarkHiddenPropertyEvent(this, element, hiddenProperty, visibility));
         }
     }
 

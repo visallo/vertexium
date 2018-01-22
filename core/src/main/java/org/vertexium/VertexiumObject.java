@@ -1,5 +1,9 @@
 package org.vertexium;
 
+import org.vertexium.util.ConvertingIterable;
+
+import java.util.Iterator;
+
 public interface VertexiumObject extends Comparable {
     /**
      * Id of the object
@@ -18,7 +22,13 @@ public interface VertexiumObject extends Comparable {
      * @param name the name of the property.
      * @return The property if found. null, if not found.
      */
-    Property getProperty(String name);
+    default Property getProperty(String name) {
+        Iterator<Property> propertiesWithName = getProperties(name).iterator();
+        if (propertiesWithName.hasNext()) {
+            return propertiesWithName.next();
+        }
+        return null;
+    }
 
     /**
      * Convenience method to retrieve the first value of the property with the given name. This method calls
@@ -29,7 +39,9 @@ public interface VertexiumObject extends Comparable {
      * @param name The name of the property to retrieve
      * @return The value of the property. null, if the property was not found.
      */
-    Object getPropertyValue(String name);
+    default Object getPropertyValue(String name) {
+        return getPropertyValue(name, 0);
+    }
 
     /**
      * Gets a property by key and name.
@@ -38,7 +50,9 @@ public interface VertexiumObject extends Comparable {
      * @param name the name of the property.
      * @return The property if found. null, if not found.
      */
-    Property getProperty(String key, String name);
+    default Property getProperty(String key, String name) {
+        return getProperty(key, name, null);
+    }
 
     /**
      * Gets a property by key, name, and visibility.
@@ -82,7 +96,14 @@ public interface VertexiumObject extends Comparable {
      *
      * @param name The name of the property to retrieve
      */
-    Iterable<Object> getPropertyValues(String name);
+    default Iterable<Object> getPropertyValues(String name) {
+        return new ConvertingIterable<Property, Object>(getProperties(name)) {
+            @Override
+            protected Object convert(Property o) {
+                return o.getValue();
+            }
+        };
+    }
 
     /**
      * an Iterable of all the property values with the given name and key on this element that you have access to based on the authorizations
@@ -91,7 +112,14 @@ public interface VertexiumObject extends Comparable {
      * @param key  The property key
      * @param name The name of the property to retrieve
      */
-    Iterable<Object> getPropertyValues(String key, String name);
+    default Iterable<Object> getPropertyValues(String key, String name) {
+        return new ConvertingIterable<Property, Object>(getProperties(key, name)) {
+            @Override
+            protected Object convert(Property p) {
+                return p.getValue();
+            }
+        };
+    }
 
     /**
      * Convenience method to retrieve the first value of the property with the given name. This method calls
@@ -103,7 +131,9 @@ public interface VertexiumObject extends Comparable {
      * @param name The name of the property to retrieve
      * @return The value of the property. null, if the property was not found.
      */
-    Object getPropertyValue(String key, String name);
+    default Object getPropertyValue(String key, String name) {
+        return getPropertyValue(key, name, 0);
+    }
 
     /**
      * Gets the nth property value of the named property. If the named property has multiple values this method
@@ -118,7 +148,17 @@ public interface VertexiumObject extends Comparable {
      * @param index The zero based index into the values.
      * @return The value of the property. null, if the property doesn't exist or doesn't have that many values.
      */
-    Object getPropertyValue(String name, int index);
+    default Object getPropertyValue(String name, int index) {
+        Iterator<Object> values = getPropertyValues(name).iterator();
+        while (values.hasNext() && index >= 0) {
+            Object v = values.next();
+            if (index == 0) {
+                return v;
+            }
+            index--;
+        }
+        return null;
+    }
 
     /**
      * Gets the nth property value of the named property. If the named property has multiple values this method
@@ -134,5 +174,15 @@ public interface VertexiumObject extends Comparable {
      * @param index The zero based index into the values.
      * @return The value of the property. null, if the property doesn't exist or doesn't have that many values.
      */
-    Object getPropertyValue(String key, String name, int index);
+    default Object getPropertyValue(String key, String name, int index) {
+        Iterator<Object> values = getPropertyValues(key, name).iterator();
+        while (values.hasNext() && index >= 0) {
+            Object v = values.next();
+            if (index == 0) {
+                return v;
+            }
+            index--;
+        }
+        return null;
+    }
 }

@@ -39,11 +39,6 @@ public abstract class ExtendedDataRowBase implements ExtendedDataRow {
     }
 
     @Override
-    public Property getProperty(String key, String name) {
-        return getProperty(key, name, null);
-    }
-
-    @Override
     public Property getProperty(String key, String name, Visibility visibility) {
         if (ExtendedDataRow.ROW_ID.equals(name)) {
             return getRowIdProperty();
@@ -93,21 +88,6 @@ public abstract class ExtendedDataRowBase implements ExtendedDataRow {
             @Override
             protected boolean isIncluded(Property prop) {
                 return isMatch(prop, key, name, null);
-            }
-        };
-    }
-
-    @Override
-    public Iterable<Object> getPropertyValues(String name) {
-        return getPropertyValues(null, name);
-    }
-
-    @Override
-    public Iterable<Object> getPropertyValues(String key, String name) {
-        return new ConvertingIterable<Property, Object>(getProperties(key, name)) {
-            @Override
-            protected Object convert(Property prop) {
-                return prop.getValue();
             }
         };
     }
