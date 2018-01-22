@@ -7,6 +7,9 @@ import org.vertexium.cypher.executor.*;
 import org.vertexium.cypher.executor.models.match.MatchConstraint;
 import org.vertexium.cypher.functions.CypherFunction;
 import org.vertexium.cypher.functions.aggregate.*;
+import org.vertexium.cypher.functions.date.DayFunction;
+import org.vertexium.cypher.functions.date.MonthFunction;
+import org.vertexium.cypher.functions.date.YearFunction;
 import org.vertexium.cypher.functions.list.*;
 import org.vertexium.cypher.functions.math.*;
 import org.vertexium.cypher.functions.predicate.*;
@@ -135,6 +138,11 @@ public abstract class VertexiumCypherQueryContext {
         addFunction("toUpper", new ToUpperFunction());
         addFunction("upper", new ToUpperFunction());
         addFunction("trim", new TrimFunction());
+
+        // date
+        addFunction("year", new YearFunction());
+        addFunction("month", new MonthFunction());
+        addFunction("day", new DayFunction());
 
         this.resultWriter = new CypherResultWriter();
         this.expressionExecutor = new ExpressionExecutor();
