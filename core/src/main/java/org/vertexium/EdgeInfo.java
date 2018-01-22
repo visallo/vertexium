@@ -6,4 +6,6 @@ public interface EdgeInfo {
     String getLabel();
 
     String getVertexId();
+
+    Direction getDirection();
 }

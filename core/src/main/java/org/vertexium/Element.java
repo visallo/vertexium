@@ -3,6 +3,7 @@ package org.vertexium;
 import com.google.common.collect.ImmutableSet;
 import org.vertexium.mutation.ExistingElementMutation;
 import org.vertexium.query.QueryableIterable;
+import org.vertexium.util.FilterIterable;
 
 import java.util.EnumSet;
 
@@ -37,12 +38,16 @@ public interface Element extends VertexiumObject {
     /**
      * Gets all property values from all timestamps in descending timestamp order.
      */
-    Iterable<HistoricalPropertyValue> getHistoricalPropertyValues(Authorizations authorizations);
+    default Iterable<HistoricalPropertyValue> getHistoricalPropertyValues(Authorizations authorizations) {
+        return getHistoricalPropertyValues(null, null, authorizations);
+    }
 
     /**
      * Gets all property values from the given range of timestamps in descending timestamp order.
      */
-    Iterable<HistoricalPropertyValue> getHistoricalPropertyValues(final Long startTime, final Long endTime, Authorizations authorizations);
+    default Iterable<HistoricalPropertyValue> getHistoricalPropertyValues(final Long startTime, final Long endTime, Authorizations authorizations) {
+        return getHistoricalPropertyValues(null, null, null, startTime, endTime, authorizations);
+    }
 
     /**
      * Gets property values from all timestamps in descending timestamp order.
@@ -51,7 +56,9 @@ public interface Element extends VertexiumObject {
      * @param name       the name of the property.
      * @param visibility The visibility of the property to get.
      */
-    Iterable<HistoricalPropertyValue> getHistoricalPropertyValues(String key, String name, Visibility visibility, Authorizations authorizations);
+    default Iterable<HistoricalPropertyValue> getHistoricalPropertyValues(String key, String name, Visibility visibility, Authorizations authorizations) {
+        return getHistoricalPropertyValues(key, name, visibility, null, null, authorizations);
+    }
 
     /**
      * Gets property values from the given range of timestamps in descending timestamp order.
@@ -60,7 +67,27 @@ public interface Element extends VertexiumObject {
      * @param name       the name of the property.
      * @param visibility The visibility of the property to get.
      */
-    Iterable<HistoricalPropertyValue> getHistoricalPropertyValues(String key, String name, Visibility visibility, final Long startTime, final Long endTime, Authorizations authorizations);
+    default Iterable<HistoricalPropertyValue> getHistoricalPropertyValues(
+            String key,
+            String name,
+            Visibility visibility,
+            Long startTime,
+            Long endTime,
+            Authorizations authorizations
+    ) {
+        return new FilterIterable<HistoricalPropertyValue>(getHistoricalPropertyValues(key, name, visibility, authorizations)) {
+            @Override
+            protected boolean isIncluded(HistoricalPropertyValue pv) {
+                if (startTime != null && pv.getTimestamp() < startTime) {
+                    return false;
+                }
+                if (endTime != null && pv.getTimestamp() > endTime) {
+                    return false;
+                }
+                return true;
+            }
+        };
+    }
 
     /**
      * Prepares a mutation to allow changing multiple property values at the same time. This method is similar to
@@ -78,7 +105,9 @@ public interface Element extends VertexiumObject {
      * @param key  The property key.
      * @param name The property name.
      */
-    void deleteProperty(String key, String name, Authorizations authorizations);
+    default void deleteProperty(String key, String name, Authorizations authorizations) {
+        deleteProperty(key, name, null, authorizations);
+    }
 
     /**
      * Permanently deletes a property given it's key and name from the element. Only properties which you have access
@@ -96,7 +125,11 @@ public interface Element extends VertexiumObject {
      *
      * @param name The name of the property to delete.
      */
-    void deleteProperties(String name, Authorizations authorizations);
+    default void deleteProperties(String name, Authorizations authorizations) {
+        for (Property p : getProperties(name)) {
+            deleteProperty(p.getKey(), p.getName(), p.getVisibility(), authorizations);
+        }
+    }
 
     /**
      * Soft deletes a property given it's key and name from the element. Only properties which you have access
@@ -105,7 +138,9 @@ public interface Element extends VertexiumObject {
      * @param key  The property key.
      * @param name The property name.
      */
-    void softDeleteProperty(String key, String name, Authorizations authorizations);
+    default void softDeleteProperty(String key, String name, Authorizations authorizations) {
+        softDeleteProperty(key, name, null, authorizations);
+    }
 
     /**
      * Soft deletes a property given it's key and name from the element for a given visibility. Only properties which you have access
@@ -123,7 +158,11 @@ public interface Element extends VertexiumObject {
      *
      * @param name The name of the property to delete.
      */
-    void softDeleteProperties(String name, Authorizations authorizations);
+    default void softDeleteProperties(String name, Authorizations authorizations) {
+        for (Property property : getProperties(name)) {
+            softDeleteProperty(property.getKey(), property.getName(), property.getVisibility(), authorizations);
+        }
+    }
 
     /**
      * Gets the graph that this element belongs to.
@@ -138,7 +177,9 @@ public interface Element extends VertexiumObject {
      * @param value      The value of the property.
      * @param visibility The visibility to give this property.
      */
-    void addPropertyValue(String key, String name, Object value, Visibility visibility, Authorizations authorizations);
+    default void addPropertyValue(String key, String name, Object value, Visibility visibility, Authorizations authorizations) {
+        prepareMutation().addPropertyValue(key, name, value, visibility).save(authorizations);
+    }
 
     /**
      * Adds or updates a property.
@@ -149,7 +190,9 @@ public interface Element extends VertexiumObject {
      * @param metadata   The metadata to assign to this property.
      * @param visibility The visibility to give this property.
      */
-    void addPropertyValue(String key, String name, Object value, Metadata metadata, Visibility visibility, Authorizations authorizations);
+    default void addPropertyValue(String key, String name, Object value, Metadata metadata, Visibility visibility, Authorizations authorizations) {
+        prepareMutation().addPropertyValue(key, name, value, metadata, visibility).save(authorizations);
+    }
 
     /**
      * Sets or updates a property value. The property key will be set to a constant. This is a convenience method
@@ -161,7 +204,9 @@ public interface Element extends VertexiumObject {
      * @param value      The value of the property.
      * @param visibility The visibility to give this property.
      */
-    void setProperty(String name, Object value, Visibility visibility, Authorizations authorizations);
+    default void setProperty(String name, Object value, Visibility visibility, Authorizations authorizations) {
+        prepareMutation().setProperty(name, value, visibility).save(authorizations);
+    }
 
     /**
      * Sets or updates a property value. The property key will be set to a constant. This is a convenience method
@@ -174,19 +219,14 @@ public interface Element extends VertexiumObject {
      * @param metadata   The metadata to assign to this property.
      * @param visibility The visibility to give this property.
      */
-    void setProperty(String name, Object value, Metadata metadata, Visibility visibility, Authorizations authorizations);
+    default void setProperty(String name, Object value, Metadata metadata, Visibility visibility, Authorizations authorizations) {
+        prepareMutation().setProperty(name, value, metadata, visibility).save(authorizations);
+    }
 
     /**
      * Gets the authorizations used to get this element.
      */
     Authorizations getAuthorizations();
-
-    /**
-     * Merge the given element's properties into this.
-     *
-     * @param element The element to merge properties from.
-     */
-    void mergeProperties(Element element);
 
     /**
      * Marks a property as hidden for a given visibility.
@@ -199,7 +239,9 @@ public interface Element extends VertexiumObject {
      *                           it as hidden for only a subset of authorizations.
      * @param authorizations     The authorizations used.
      */
-    void markPropertyHidden(String key, String name, Visibility propertyVisibility, Visibility visibility, Authorizations authorizations);
+    default void markPropertyHidden(String key, String name, Visibility propertyVisibility, Visibility visibility, Authorizations authorizations) {
+        markPropertyHidden(key, name, propertyVisibility, null, visibility, authorizations);
+    }
 
     /**
      * Marks a property as hidden for a given visibility.
@@ -213,7 +255,16 @@ public interface Element extends VertexiumObject {
      *                           it as hidden for only a subset of authorizations.
      * @param authorizations     The authorizations used.
      */
-    void markPropertyHidden(String key, String name, Visibility propertyVisibility, Long timestamp, Visibility visibility, Authorizations authorizations);
+    default void markPropertyHidden(String key, String name, Visibility propertyVisibility, Long timestamp, Visibility visibility, Authorizations authorizations) {
+        Iterable<Property> properties = getProperties(key, name);
+        for (Property property : properties) {
+            if (property.getVisibility().equals(propertyVisibility)) {
+                markPropertyHidden(property, timestamp, visibility, authorizations);
+                return;
+            }
+        }
+        throw new IllegalArgumentException("Could not find property " + key + " : " + name + " : " + propertyVisibility);
+    }
 
     /**
      * Marks a property as hidden for a given visibility.
@@ -224,7 +275,9 @@ public interface Element extends VertexiumObject {
      *                       it as hidden for only a subset of authorizations.
      * @param authorizations The authorizations used.
      */
-    void markPropertyHidden(Property property, Visibility visibility, Authorizations authorizations);
+    default void markPropertyHidden(Property property, Visibility visibility, Authorizations authorizations) {
+        markPropertyHidden(property, null, visibility, authorizations);
+    }
 
     /**
      * Marks a property as hidden for a given visibility.
@@ -247,7 +300,9 @@ public interface Element extends VertexiumObject {
      * @param visibility         The visibility string under which this property is now visible.
      * @param authorizations     The authorizations used.
      */
-    void markPropertyVisible(String key, String name, Visibility propertyVisibility, Visibility visibility, Authorizations authorizations);
+    default void markPropertyVisible(String key, String name, Visibility propertyVisibility, Visibility visibility, Authorizations authorizations) {
+        markPropertyVisible(key, name, propertyVisibility, null, visibility, authorizations);
+    }
 
     /**
      * Marks a property as visible for a given visibility, effectively undoing markPropertyHidden.
@@ -259,7 +314,16 @@ public interface Element extends VertexiumObject {
      * @param visibility         The visibility string under which this property is now visible.
      * @param authorizations     The authorizations used.
      */
-    void markPropertyVisible(String key, String name, Visibility propertyVisibility, Long timestamp, Visibility visibility, Authorizations authorizations);
+    default void markPropertyVisible(String key, String name, Visibility propertyVisibility, Long timestamp, Visibility visibility, Authorizations authorizations) {
+        Iterable<Property> properties = getProperties(key, name);
+        for (Property property : properties) {
+            if (property.getVisibility().equals(propertyVisibility)) {
+                markPropertyVisible(property, timestamp, visibility, authorizations);
+                return;
+            }
+        }
+        throw new IllegalArgumentException("Could not find property " + key + " : " + name + " : " + propertyVisibility);
+    }
 
     /**
      * Marks a property as visible for a given visibility, effectively undoing markPropertyHidden.
@@ -268,7 +332,9 @@ public interface Element extends VertexiumObject {
      * @param visibility     The visibility string under which this property is now visible.
      * @param authorizations The authorizations used.
      */
-    void markPropertyVisible(Property property, Visibility visibility, Authorizations authorizations);
+    default void markPropertyVisible(Property property, Visibility visibility, Authorizations authorizations) {
+        markPropertyVisible(property, null, visibility, authorizations);
+    }
 
     /**
      * Marks a property as visible for a given visibility, effectively undoing markPropertyHidden.
@@ -286,7 +352,14 @@ public interface Element extends VertexiumObject {
      * @param authorizations the authorizations to check against.
      * @return true, if it would be hidden from those authorizations.
      */
-    boolean isHidden(Authorizations authorizations);
+    default boolean isHidden(Authorizations authorizations) {
+        for (Visibility visibility : getHiddenVisibilities()) {
+            if (authorizations.canRead(visibility)) {
+                return true;
+            }
+        }
+        return false;
+    }
 
     /**
      * Gets the list of hidden visibilities

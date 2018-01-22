@@ -51,21 +51,28 @@ public class InMemoryVertex extends InMemoryElement<InMemoryVertex> implements V
     public Iterable<EdgeInfo> getEdgeInfos(Direction direction, final String[] labels, Authorizations authorizations) {
         Iterable<EdgeInfo> results = new ConvertingIterable<Edge, EdgeInfo>(getEdges(direction, getFetchHints(), authorizations)) {
             @Override
-            protected EdgeInfo convert(final Edge o) {
+            protected EdgeInfo convert(Edge edge) {
                 return new EdgeInfo() {
                     @Override
                     public String getEdgeId() {
-                        return o.getId();
+                        return edge.getId();
                     }
 
                     @Override
                     public String getLabel() {
-                        return o.getLabel();
+                        return edge.getLabel();
                     }
 
                     @Override
                     public String getVertexId() {
-                        return o.getOtherVertexId(InMemoryVertex.this.getId());
+                        return edge.getOtherVertexId(InMemoryVertex.this.getId());
+                    }
+
+                    @Override
+                    public Direction getDirection() {
+                        return edge.getVertexId(Direction.OUT).equals(this.getVertexId())
+                                ? Direction.OUT
+                                : Direction.IN;
                     }
                 };
             }
@@ -238,7 +245,7 @@ public class InMemoryVertex extends InMemoryElement<InMemoryVertex> implements V
 
     @Override
     public Iterable<Vertex> getVertices(Direction direction, final EnumSet<FetchHint> fetchHints, final Authorizations authorizations) {
-        return getVertices(direction, (String[])null, fetchHints, authorizations);
+        return getVertices(direction, (String[]) null, fetchHints, authorizations);
     }
 
     @Override
@@ -279,7 +286,7 @@ public class InMemoryVertex extends InMemoryElement<InMemoryVertex> implements V
 
     @Override
     public Iterable<String> getVertexIds(Direction direction, Authorizations authorizations) {
-        return getVertexIds(direction, (String[])null, authorizations);
+        return getVertexIds(direction, (String[]) null, authorizations);
     }
 
     @Override

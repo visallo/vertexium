@@ -197,7 +197,7 @@ public class SqlExtendedDataTable extends InMemoryExtendedDataTable {
             if (key != null) {
                 args.add(key);
             }
-            handle.execute(sql, args.toArray(new String[args.size()]));
+            handle.execute(sql, (Object[]) args.toArray(new Object[args.size()]));
         }
     }
 

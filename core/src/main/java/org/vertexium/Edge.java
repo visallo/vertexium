@@ -1,8 +1,12 @@
 package org.vertexium;
 
 import org.vertexium.mutation.ExistingEdgeMutation;
+import org.vertexium.util.IterableUtils;
 
+import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.List;
+import java.util.Map;
 
 public interface Edge extends Element {
     /**
@@ -29,7 +33,9 @@ public interface Edge extends Element {
      * @param direction The side of the edge to get the vertex from (IN or OUT).
      * @return The vertex.
      */
-    Vertex getVertex(Direction direction, Authorizations authorizations);
+    default Vertex getVertex(Direction direction, Authorizations authorizations) {
+        return getVertex(direction, getGraph().getDefaultFetchHints(), authorizations);
+    }
 
     /**
      * Get the attach vertex on either side of the edge.
@@ -38,7 +44,10 @@ public interface Edge extends Element {
      * @param fetchHints Hint on what should be fetched from the datastore.
      * @return The vertex.
      */
-    Vertex getVertex(Direction direction, EnumSet<FetchHint> fetchHints, Authorizations authorizations);
+    default Vertex getVertex(Direction direction, EnumSet<FetchHint> fetchHints, Authorizations authorizations) {
+        String vertexId = getVertexId(direction);
+        return getGraph().getVertex(vertexId, fetchHints, authorizations);
+    }
 
     /**
      * Given a vertexId that represents one side of a relationship, get me the id of the other side.
@@ -48,22 +57,38 @@ public interface Edge extends Element {
     /**
      * Given a vertexId that represents one side of a relationship, get me the vertex of the other side.
      */
-    Vertex getOtherVertex(String myVertexId, Authorizations authorizations);
+    default Vertex getOtherVertex(String myVertexId, Authorizations authorizations) {
+        return getOtherVertex(myVertexId, getGraph().getDefaultFetchHints(), authorizations);
+    }
 
     /**
      * Given a vertexId that represents one side of a relationship, get me the vertex of the other side.
      */
-    Vertex getOtherVertex(String myVertexId, EnumSet<FetchHint> fetchHints, Authorizations authorizations);
+    default Vertex getOtherVertex(String myVertexId, EnumSet<FetchHint> fetchHints, Authorizations authorizations) {
+        String vertexId = getOtherVertexId(myVertexId);
+        return getGraph().getVertex(vertexId, fetchHints, authorizations);
+    }
 
     /**
      * Gets both in and out vertices of this edge.
      */
-    EdgeVertices getVertices(Authorizations authorizations);
+    default EdgeVertices getVertices(Authorizations authorizations) {
+        return getVertices(getGraph().getDefaultFetchHints(), authorizations);
+    }
 
     /**
      * Gets both in and out vertices of this edge.
      */
-    EdgeVertices getVertices(EnumSet<FetchHint> fetchHints, Authorizations authorizations);
+    default EdgeVertices getVertices(EnumSet<FetchHint> fetchHints, Authorizations authorizations) {
+        List<String> ids = new ArrayList<>();
+        ids.add(getVertexId(Direction.OUT));
+        ids.add(getVertexId(Direction.IN));
+        Map<String, Vertex> vertices = IterableUtils.toMapById(getGraph().getVertices(ids, fetchHints, authorizations));
+        return new EdgeVertices(
+                vertices.get(getVertexId(Direction.OUT)),
+                vertices.get(getVertexId(Direction.IN))
+        );
+    }
 
     /**
      * Prepares a mutation to allow changing multiple property values at the same time. This method is similar to
