@@ -17,6 +17,7 @@ import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.metrics.percentiles.Percentiles;
 import org.elasticsearch.search.aggregations.metrics.stats.extended.ExtendedStats;
 import org.elasticsearch.search.aggregations.metrics.stats.extended.InternalExtendedStats;
+import org.elasticsearch.search.aggregations.metrics.tophits.TopHits;
 import org.vertexium.VertexiumException;
 import org.vertexium.elasticsearch5.utils.ElasticsearchDocIdUtils;
 import org.vertexium.query.*;
@@ -105,6 +106,9 @@ public class ElasticsearchGraphQueryIterable<T> extends DefaultGraphQueryIterabl
             return aggsByName;
         }
         for (Aggregation agg : aggs) {
+            if (agg.getName().equals(ElasticsearchSearchQueryBase.TOP_HITS_AGGREGATION_NAME)) {
+                continue;
+            }
             String aggName = query.getAggregationName(agg.getName());
             List<Aggregation> l = aggsByName.computeIfAbsent(aggName, k -> new ArrayList<>());
             l.add(agg);
@@ -226,7 +230,8 @@ public class ElasticsearchGraphQueryIterable<T> extends DefaultGraphQueryIterabl
             if (agg instanceof Terms) {
                 Terms h = (Terms) agg;
                 for (Terms.Bucket b : h.getBuckets()) {
-                    String mapKey = bucketKeyToString(b.getKey());
+                    TopHits exactMatchTopHits = b.getAggregations().get(ElasticsearchSearchQueryBase.TOP_HITS_AGGREGATION_NAME);
+                    String mapKey = bucketKeyToString(b.getKey(), exactMatchTopHits);
                     List<MultiBucketsAggregation.Bucket> existingBucketByName = bucketsByKey.computeIfAbsent(mapKey, k -> new ArrayList<>());
                     existingBucketByName.add(b);
                 }
@@ -251,7 +256,7 @@ public class ElasticsearchGraphQueryIterable<T> extends DefaultGraphQueryIterabl
         public TResult reduce(ElasticsearchSearchQueryBase query, Map<Object, List<MultiBucketsAggregation.Bucket>> bucketsByKey) {
             List<TBucket> buckets = new ArrayList<>();
             for (Map.Entry<Object, List<MultiBucketsAggregation.Bucket>> bucketsByKeyEntry : bucketsByKey.entrySet()) {
-                String key = bucketKeyToString(bucketsByKeyEntry.getKey());
+                String key = bucketKeyToString(bucketsByKeyEntry.getKey(), null);
                 long count = 0;
                 List<Aggregation> subAggs = new ArrayList<>();
                 for (MultiBucketsAggregation.Bucket b : bucketsByKeyEntry.getValue()) {
@@ -271,7 +276,7 @@ public class ElasticsearchGraphQueryIterable<T> extends DefaultGraphQueryIterabl
         protected abstract TResult bucketsToResults(List<TBucket> buckets);
     }
 
-    private static String bucketKeyToString(Object bucketKey) {
+    private static String bucketKeyToString(Object bucketKey, TopHits exactMatchTopHits) {
         // to maintain backwards compatibility decimals ending in ".0" should not contain the decimal place
         if (bucketKey instanceof Number) {
             String strBucketKey = bucketKey.toString();
@@ -279,6 +284,25 @@ public class ElasticsearchGraphQueryIterable<T> extends DefaultGraphQueryIterabl
                 strBucketKey = strBucketKey.substring(0, strBucketKey.length() - 2);
             }
             return strBucketKey;
+        }
+
+        if (exactMatchTopHits != null) {
+            if (exactMatchTopHits.getHits().getTotalHits() > 0) {
+                SearchHit hit = exactMatchTopHits.getHits().getAt(0);
+                for (Object o : hit.getSourceAsMap().values()) {
+                    // for multi-value properties find the item that matches regardless of case
+                    if (o instanceof Iterable) {
+                        for (Object oItem : ((Iterable) o)) {
+                            String oItemString = oItem.toString();
+                            if (bucketKey.equals(oItemString.toLowerCase())) {
+                                return oItemString;
+                            }
+                        }
+                    }
+
+                    return o.toString();
+                }
+            }
         }
 
         if (bucketKey instanceof org.elasticsearch.common.geo.GeoPoint) {

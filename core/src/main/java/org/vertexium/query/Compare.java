@@ -109,6 +109,13 @@ public enum Compare implements Predicate {
             second = ((StreamingPropertyValue) second).readToString();
         }
 
+        if (first instanceof String) {
+            first = ((String) first).toLowerCase();
+        }
+        if (second instanceof String) {
+            second = ((String) second).toLowerCase();
+        }
+
         if (first instanceof Long && second instanceof Long) {
             long firstLong = (long) first;
             long secondLong = (long) second;

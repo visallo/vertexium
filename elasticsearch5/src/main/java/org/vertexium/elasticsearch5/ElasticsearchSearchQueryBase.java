@@ -63,6 +63,7 @@ import static org.vertexium.elasticsearch5.Elasticsearch5SearchIndex.HIDDEN_VERT
 public class ElasticsearchSearchQueryBase extends QueryBase {
     private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(ElasticsearchSearchQueryBase.class);
     public static final VertexiumLogger QUERY_LOGGER = VertexiumLoggerFactory.getQueryLogger(Query.class);
+    public static final String TOP_HITS_AGGREGATION_NAME = "__visallo_top_hits";
     private final Client client;
     private final boolean evaluateHasContainers;
     private final boolean evaluateQueryString;
@@ -461,7 +462,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
     private ElasticsearchGraphQueryIterable<SearchHit> searchResponseToSearchHitsIterable(SearchResponse response) {
         SearchHits hits = response.getHits();
         QueryParameters filterParameters = getParameters().clone();
-        Iterable<SearchHit> hitsIterable = IterableUtils.toIterable(hits.hits());
+        Iterable<SearchHit> hitsIterable = IterableUtils.toIterable(hits.getHits());
         return createIterable(response, filterParameters, hitsIterable, false, false, false, response.getTookInMillis(), hits);
     }
 
@@ -547,7 +548,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug(
                     "elasticsearch results %d of %d (time: %dms)",
-                    hits.hits().length,
+                    hits.getHits().length,
                     hits.getTotalHits(),
                     searchResponse.getTookInMillis()
             );
@@ -1197,17 +1198,30 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
         } else {
             PropertyDefinition propertyDefinition = getPropertyDefinition(fieldName);
             for (String propertyName : getPropertyNames(fieldName)) {
-                if (isExactMatchPropertyDefinition(propertyDefinition)) {
-                    propertyName = propertyName + Elasticsearch5SearchIndex.EXACT_MATCH_PROPERTY_NAME_SUFFIX;
+                boolean exactMatchProperty = isExactMatchPropertyDefinition(propertyDefinition);
+                String propertyNameWithSuffix;
+                if (exactMatchProperty) {
+                    propertyNameWithSuffix = propertyName + Elasticsearch5SearchIndex.EXACT_MATCH_PROPERTY_NAME_SUFFIX;
+                } else {
+                    propertyNameWithSuffix = propertyName;
                 }
 
-                String visibilityHash = getSearchIndex().getPropertyVisibilityHashFromPropertyName(propertyName);
-                TermsAggregationBuilder termsAgg = AggregationBuilders.terms(createAggregationName(agg.getAggregationName(), visibilityHash));
-                termsAgg.field(propertyName);
+                String visibilityHash = getSearchIndex().getPropertyVisibilityHashFromPropertyName(propertyNameWithSuffix);
+                String aggregationName = createAggregationName(agg.getAggregationName(), visibilityHash);
+                TermsAggregationBuilder termsAgg = AggregationBuilders.terms(aggregationName);
+                termsAgg.field(propertyNameWithSuffix);
                 if (agg.getSize() != null) {
                     termsAgg.size(agg.getSize());
                 }
                 termsAgg.shardSize(termAggregationShardSize);
+
+                if (exactMatchProperty && propertyDefinition.getTextIndexHints().contains(TextIndexHint.FULL_TEXT)) {
+                    termsAgg.subAggregation(
+                            AggregationBuilders.topHits(TOP_HITS_AGGREGATION_NAME)
+                                    .fetchSource(new String[]{propertyName}, new String[0])
+                                    .size(1)
+                    );
+                }
 
                 for (AggregationBuilder subAgg : getElasticsearchAggregations(agg.getNestedAggregations())) {
                     termsAgg.subAggregation(subAgg);

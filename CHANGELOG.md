@@ -8,6 +8,7 @@
 * Added: Option to execute a script from the shell
 * Fixed: Streaming property value input stream from data table
 * Fixed: Elasticsearch5 retry logic to sleep per request failure instead of batch of failures
+* Fixed: Mixed case searching on exact match properties
 * Removed: ElasticSearch 1.x support
 
 # v3.0.4

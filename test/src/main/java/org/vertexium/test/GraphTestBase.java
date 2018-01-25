@@ -5571,7 +5571,7 @@ public abstract class GraphTestBase {
     @Test
     public void testGraphQueryWithTermsAggregation() {
         boolean searchIndexFieldLevelSecurity = isSearchIndexFieldLevelSecuritySupported();
-        graph.defineProperty("name").dataType(String.class).textIndexHint(TextIndexHint.EXACT_MATCH).define();
+        graph.defineProperty("name").dataType(String.class).textIndexHint(TextIndexHint.EXACT_MATCH, TextIndexHint.FULL_TEXT).define();
 
         graph.defineProperty("emptyField").dataType(Integer.class).define();
 
@@ -5705,7 +5705,7 @@ public abstract class GraphTestBase {
 
     @Test
     public void testGraphQueryWithNestedTermsAggregation() {
-        graph.defineProperty("name").dataType(String.class).textIndexHint(TextIndexHint.EXACT_MATCH).define();
+        graph.defineProperty("name").dataType(String.class).textIndexHint(TextIndexHint.EXACT_MATCH, TextIndexHint.FULL_TEXT).define();
         graph.defineProperty("gender").dataType(String.class).textIndexHint(TextIndexHint.EXACT_MATCH).define();
 
         graph.prepareVertex("v1", VISIBILITY_EMPTY)
@@ -5744,7 +5744,7 @@ public abstract class GraphTestBase {
 
     @Test
     public void testVertexQueryWithNestedTermsAggregation() {
-        graph.defineProperty("name").dataType(String.class).textIndexHint(TextIndexHint.EXACT_MATCH).define();
+        graph.defineProperty("name").dataType(String.class).textIndexHint(TextIndexHint.EXACT_MATCH, TextIndexHint.FULL_TEXT).define();
         graph.defineProperty("gender").dataType(String.class).textIndexHint(TextIndexHint.EXACT_MATCH).define();
 
         graph.prepareVertex("v1", VISIBILITY_EMPTY)
@@ -5789,7 +5789,7 @@ public abstract class GraphTestBase {
 
     @Test
     public void testVertexQueryWithNestedTermsAggregationOnExtendedData() {
-        graph.defineProperty("name").dataType(String.class).textIndexHint(TextIndexHint.EXACT_MATCH).define();
+        graph.defineProperty("name").dataType(String.class).textIndexHint(TextIndexHint.EXACT_MATCH, TextIndexHint.FULL_TEXT).define();
         graph.defineProperty("gender").dataType(String.class).textIndexHint(TextIndexHint.EXACT_MATCH).define();
 
         graph.prepareVertex("v1", VISIBILITY_EMPTY)
@@ -6592,6 +6592,36 @@ public abstract class GraphTestBase {
 
         assertNotEquals(e1Loaded.hashCode(), e2.hashCode());
         assertFalse(e1Loaded.equals(e2));
+    }
+
+    @Test
+    public void testCaseSensitivityOfExactMatch() {
+        graph.defineProperty("text").dataType(String.class).textIndexHint(TextIndexHint.EXACT_MATCH, TextIndexHint.FULL_TEXT).define();
+        graph.prepareVertex("v1", VISIBILITY_A)
+                .setProperty("text", "Joe", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
+        graph.prepareVertex("v2", VISIBILITY_A)
+                .setProperty("text", "joe", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
+        graph.prepareVertex("v3", VISIBILITY_A)
+                .setProperty("text", "JOE", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
+        graph.prepareVertex("v4", VISIBILITY_A)
+                .setProperty("text", "Joe", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
+        graph.flush();
+
+        QueryResultsIterable<Vertex> vertices = graph.query(AUTHORIZATIONS_A)
+                .has("text", Compare.EQUAL, "Joe")
+                .addAggregation(new TermsAggregation("agg1", "text"))
+                .vertices();
+        assertVertexIdsAnyOrder(vertices, "v1", "v2", "v3", "v4");
+
+        TermsResult agg = vertices.getAggregationResult("agg1", TermsResult.class);
+        ArrayList<TermsBucket> buckets = Lists.newArrayList(agg.getBuckets());
+        assertEquals(1, buckets.size());
+        assertEquals("Joe", buckets.get(0).getKey());
+        assertEquals(4L, buckets.get(0).getCount());
     }
 
     @Test
