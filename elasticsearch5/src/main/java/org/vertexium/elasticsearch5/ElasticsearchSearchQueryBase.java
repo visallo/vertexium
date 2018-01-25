@@ -1481,6 +1481,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
         protected SearchResponse getInitialSearchResponse() {
             try {
                 SearchRequestBuilder q = buildQuery(ElasticsearchDocumentType.fromVertexiumObjectTypes(objectTypes), true)
+                        .setSize(pageSize)
                         .setScroll(scrollKeepAlive);
                 if (QUERY_LOGGER.isTraceEnabled()) {
                     QUERY_LOGGER.trace("query: %s", q);
