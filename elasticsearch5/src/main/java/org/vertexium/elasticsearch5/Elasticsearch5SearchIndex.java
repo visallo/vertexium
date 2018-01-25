@@ -92,6 +92,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
     public static final String EXACT_MATCH_PROPERTY_NAME_SUFFIX = "." + EXACT_MATCH_FIELD_NAME;
     public static final String GEO_PROPERTY_NAME_SUFFIX = "_g";
     public static final String GEO_POINT_PROPERTY_NAME_SUFFIX = "_gp"; // Used for geo hash aggregation of geo points
+    public static final String LOWERCASER_NORMALIZER_NAME = "visallo_lowercaser";
     public static final int MAX_BATCH_COUNT = 25000;
     public static final long MAX_BATCH_SIZE = 15 * 1024 * 1024;
     public static final int EXACT_MATCH_IGNORE_ABOVE_LIMIT = 10000;
@@ -1701,12 +1702,17 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
                 }
                 if (exact || sortable) {
                     mapping.startObject("fields");
-                    mapping.startObject(EXACT_MATCH_FIELD_NAME).field("type", "keyword").field("ignore_above", EXACT_MATCH_IGNORE_ABOVE_LIMIT).endObject();
+                    mapping.startObject(EXACT_MATCH_FIELD_NAME)
+                            .field("type", "keyword")
+                            .field("ignore_above", EXACT_MATCH_IGNORE_ABOVE_LIMIT)
+                            .field("normalizer", LOWERCASER_NORMALIZER_NAME)
+                            .endObject();
                     mapping.endObject();
                 }
             } else {
                 mapping.field("type", "keyword");
                 mapping.field("ignore_above", EXACT_MATCH_IGNORE_ABOVE_LIMIT);
+                mapping.field("normalizer", LOWERCASER_NORMALIZER_NAME);
             }
         } else if (dataType == IpV4Address.class) {
             LOGGER.debug("Registering 'ip' type for %s", propertyName);
@@ -1919,12 +1925,22 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
     }
 
     @SuppressWarnings("unused")
-    protected void createIndex(String indexName) {
+    protected void createIndex(String indexName) throws IOException {
         CreateIndexResponse createResponse = client.admin().indices().prepareCreate(indexName)
-                .setSettings(Settings.builder()
-                        .put("number_of_shards", getConfig().getNumberOfShards())
-                        .put("number_of_replicas", getConfig().getNumberOfReplicas())
-                        .put("index.mapping.total_fields.limit", getConfig().getIndexMappingTotalFieldsLimit())
+                .setSettings(XContentFactory.jsonBuilder()
+                        .startObject()
+                        .startObject("analysis")
+                        .startObject("normalizer")
+                        .startObject(LOWERCASER_NORMALIZER_NAME)
+                        .field("type", "custom")
+                        .array("filter", "lowercase")
+                        .endObject()
+                        .endObject()
+                        .endObject()
+                        .field("number_of_shards", getConfig().getNumberOfShards())
+                        .field("number_of_replicas", getConfig().getNumberOfReplicas())
+                        .field("index.mapping.total_fields.limit", getConfig().getIndexMappingTotalFieldsLimit())
+                        .endObject()
                 )
                 .execute().actionGet();
 

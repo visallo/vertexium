@@ -4,6 +4,7 @@ import org.vertexium.VertexiumException;
 import org.vertexium.VertexiumObject;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class DefaultGraphQueryIterableWithAggregations<T extends VertexiumObject> extends DefaultGraphQueryIterable<T> {
     private final Collection<Aggregation> aggregations;
@@ -53,7 +54,8 @@ public class DefaultGraphQueryIterableWithAggregations<T extends VertexiumObject
 
     private TermsResult getTermsAggregationResult(TermsAggregation agg, Iterator<T> it) {
         String propertyName = agg.getPropertyName();
-        Map<Object, List<T>> elementsByProperty = getElementsByProperty(it, propertyName, new IdentityValueConverter());
+        Map<Object, List<T>> elementsByProperty = getElementsByProperty(it, propertyName, o -> o);
+        elementsByProperty = collapseBucketsByCase(elementsByProperty);
 
         List<TermsBucket> buckets = new ArrayList<>();
         for (Map.Entry<Object, List<T>> entry : elementsByProperty.entrySet()) {
@@ -65,17 +67,55 @@ public class DefaultGraphQueryIterableWithAggregations<T extends VertexiumObject
         return new TermsResult(buckets);
     }
 
+    private Map<Object, List<T>> collapseBucketsByCase(Map<Object, List<T>> elementsByProperty) {
+        Map<String, List<Map.Entry<Object, List<T>>>> stringEntries = new HashMap<>();
+        Map<Object, List<T>> results = new HashMap<>();
+
+        // for strings first group them by there lowercase version
+        for (Map.Entry<Object, List<T>> entry : elementsByProperty.entrySet()) {
+            if (entry.getKey() instanceof String) {
+                String lowerCaseKey = ((String) entry.getKey()).toLowerCase();
+                List<Map.Entry<Object, List<T>>> l = stringEntries.computeIfAbsent(lowerCaseKey, s -> new ArrayList<>());
+                l.add(entry);
+            } else {
+                results.put(entry.getKey(), entry.getValue());
+            }
+        }
+
+        // for strings find the best key (the one with the most entries) and use that as the bucket name
+        for (Map.Entry<String, List<Map.Entry<Object, List<T>>>> entry : stringEntries.entrySet()) {
+            results.put(
+                    findBestKey(entry.getValue()),
+                    entry.getValue().stream()
+                            .flatMap(l -> l.getValue().stream())
+                            .collect(Collectors.toList())
+            );
+        }
+        return results;
+
+
+    }
+
+    private Object findBestKey(List<Map.Entry<Object, List<T>>> value) {
+        int longestListLength = 0;
+        String longestString = null;
+        for (Map.Entry<Object, List<T>> entry : value) {
+            if (entry.getValue().size() >= longestListLength) {
+                longestListLength = entry.getValue().size();
+                longestString = (String) entry.getKey();
+            }
+        }
+        return longestString;
+    }
+
     private HistogramResult getCalendarFieldHistogramResult(final CalendarFieldAggregation agg, Iterator<T> it) {
         String propertyName = agg.getPropertyName();
         final Calendar calendar = GregorianCalendar.getInstance(agg.getTimeZone());
-        Map<Integer, List<T>> elementsByProperty = getElementsByProperty(it, propertyName, new ValueConverter<Integer>() {
-            @Override
-            public Integer convert(Object o) {
-                Date d = (Date) o;
-                calendar.setTime(d);
-                //noinspection MagicConstant
-                return calendar.get(agg.getCalendarField());
-            }
+        Map<Integer, List<T>> elementsByProperty = getElementsByProperty(it, propertyName, o -> {
+            Date d = (Date) o;
+            calendar.setTime(d);
+            //noinspection MagicConstant
+            return calendar.get(agg.getCalendarField());
         });
 
         Map<Integer, HistogramBucket> buckets = new HashMap<>(24);
@@ -113,12 +153,5 @@ public class DefaultGraphQueryIterableWithAggregations<T extends VertexiumObject
 
     private interface ValueConverter<T> {
         T convert(Object o);
-    }
-
-    private class IdentityValueConverter implements ValueConverter<Object> {
-        @Override
-        public Object convert(Object o) {
-            return o;
-        }
     }
 }
