@@ -116,6 +116,32 @@ public class Elasticsearch5SearchIndexTest extends GraphTestBase {
         assertEquals(startingNumQueries + 3, getNumQueries());
     }
 
+    @Test
+    public void testQueryExecutionCountWhenScrollingApi() {
+        Elasticsearch5SearchIndex searchIndex = (Elasticsearch5SearchIndex) ((GraphWithSearchIndex) graph).getSearchIndex();
+        searchIndex.getConfig().getGraphConfiguration().set(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + ElasticsearchSearchIndexConfiguration.QUERY_PAGE_SIZE, 1);
+
+        graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.flush();
+
+        long startingNumQueries = getNumQueries();
+
+        QueryResultsIterable<Vertex> vertices = graph.query(AUTHORIZATIONS_A).vertices();
+        assertResultsCount(2, vertices);
+        assertEquals(startingNumQueries + 2, getNumQueries());
+
+        searchIndex = (Elasticsearch5SearchIndex) ((GraphWithSearchIndex) graph).getSearchIndex();
+        searchIndex.getConfig().getGraphConfiguration().set(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + ElasticsearchSearchIndexConfiguration.QUERY_PAGE_SIZE, 2);
+
+        graph.addVertex("v3", VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.flush();
+
+        vertices = graph.query(AUTHORIZATIONS_A).vertices();
+        assertResultsCount(3, vertices);
+        assertEquals(startingNumQueries + 4, getNumQueries());
+    }
+
     private long getNumQueries() {
         Client client = elasticsearchResource.getRunner().client();
         NodesStatsResponse nodeStats = NodesStatsAction.INSTANCE.newRequestBuilder(client).get();
