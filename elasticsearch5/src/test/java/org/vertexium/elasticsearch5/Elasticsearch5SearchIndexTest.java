@@ -125,9 +125,11 @@ public class Elasticsearch5SearchIndexTest extends GraphTestBase {
         graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_A);
         graph.flush();
 
+        long startingNumQueries = getNumQueries();
+
         QueryResultsIterable<Vertex> vertices = graph.query(AUTHORIZATIONS_A).vertices();
         assertResultsCount(2, vertices);
-        assertEquals(2, getNumQueries());
+        assertEquals(startingNumQueries + 2, getNumQueries());
 
         searchIndex = (Elasticsearch5SearchIndex) ((GraphWithSearchIndex) graph).getSearchIndex();
         searchIndex.getConfig().getGraphConfiguration().set(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + ElasticsearchSearchIndexConfiguration.QUERY_PAGE_SIZE, 2);
@@ -137,7 +139,7 @@ public class Elasticsearch5SearchIndexTest extends GraphTestBase {
 
         vertices = graph.query(AUTHORIZATIONS_A).vertices();
         assertResultsCount(3, vertices);
-        assertEquals(4, getNumQueries());
+        assertEquals(startingNumQueries + 4, getNumQueries());
     }
 
     private long getNumQueries() {
