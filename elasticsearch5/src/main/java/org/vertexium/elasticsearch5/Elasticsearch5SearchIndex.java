@@ -5,8 +5,6 @@ import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.SettableFuture;
-import org.elasticsearch.action.ActionRequestBuilder;
-import org.elasticsearch.action.ListenableActionFuture;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
 import org.elasticsearch.action.admin.cluster.node.info.NodeInfo;
 import org.elasticsearch.action.admin.cluster.node.info.NodesInfoResponse;
@@ -48,6 +46,7 @@ import org.elasticsearch.transport.client.PreBuiltTransportClient;
 import org.vertexium.*;
 import org.vertexium.Edge;
 import org.vertexium.elasticsearch5.utils.ElasticsearchExtendedDataIdUtils;
+import org.vertexium.elasticsearch5.utils.FlushObjectQueue;
 import org.vertexium.mutation.ExtendedDataMutation;
 import org.vertexium.property.StreamingPropertyValue;
 import org.vertexium.query.*;
@@ -66,7 +65,6 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.*;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -114,8 +112,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
     public static final String DEFAULT_GEOSHAPE_ERROR_PCT = "0.001";
     public static final Class<? extends PropertyNameVisibilitiesStore> DEFAULT_PROPERTY_NAME_VISIBILITIES_STORE = MetadataTablePropertyNameVisibilitiesStore.class;
     private final PropertyNameVisibilitiesStore propertyNameVisibilitiesStore;
-    private final ThreadLocal<Queue<FlushObject>> flushFutures = new ThreadLocal<>();
-    private final Random random = new Random();
+    private final ThreadLocal<FlushObjectQueue> flushFutures = new ThreadLocal<>();
     private final String geoShapePrecision;
     private final String geoShapeErrorPct;
     private boolean serverPluginInstalled;
@@ -377,7 +374,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
             }
 
             if (flushObjectQueueContainsElementId(element.getId())) {
-                flushFlushObjectQueue();
+                getFlushObjectQueue().flush();
             }
             UpdateRequestBuilder updateRequestBuilder = getClient()
                     .prepareUpdate(indexInfo.getIndexName(), ELEMENT_TYPE, element.getId())
@@ -399,7 +396,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
 
     private boolean flushObjectQueueContainsElementId(String elementId) {
         return getFlushObjectQueue().stream()
-                .anyMatch(flushObject -> flushObject.elementId.equals(elementId));
+                .anyMatch(flushObject -> flushObject.getElementId().equals(elementId));
     }
 
     private void addActionRequestBuilderForFlush(String elementId, UpdateRequestBuilder updateRequestBuilder) {
@@ -415,7 +412,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
             future = SettableFuture.create();
             ((SettableFuture) future).setException(ex);
         }
-        getFlushObjectQueue().add(new FlushObject(elementId, rowId, updateRequestBuilder, future));
+        getFlushObjectQueue().add(elementId, rowId, updateRequestBuilder, future);
     }
 
     @Override
@@ -597,10 +594,10 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
         return results;
     }
 
-    private Queue<FlushObject> getFlushObjectQueue() {
-        Queue<FlushObject> queue = flushFutures.get();
+    private FlushObjectQueue getFlushObjectQueue() {
+        FlushObjectQueue queue = flushFutures.get();
         if (queue == null) {
-            queue = new LinkedList<>();
+            queue = new FlushObjectQueue();
             flushFutures.set(queue);
         }
         return queue;
@@ -1514,7 +1511,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
 
     @Override
     public void flush(Graph graph) {
-        flushFlushObjectQueue();
+        getFlushObjectQueue().flush();
         client.admin().indices().prepareRefresh(getIndexNamesAsArray(graph)).execute().actionGet();
     }
 
@@ -1555,49 +1552,6 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
 
     private void removeFieldsFromDocument(Graph graph, Element element, String field) {
         removeFieldsFromDocument(graph, element, Lists.newArrayList(field));
-    }
-
-    private void flushFlushObjectQueue() {
-        Queue<FlushObject> queue = getFlushObjectQueue();
-        int sleep = 0;
-        int failedMaxRetriesCount = 0;
-        while (queue.size() > 0) {
-            FlushObject flushObject = queue.remove();
-            try {
-                if (sleep > 0) {
-                    Thread.sleep(sleep);
-                }
-                flushObject.future.get(30, TimeUnit.SECONDS);
-                sleep = 0;
-            } catch (Exception ex) {
-                sleep = sleep == 0 ? 1 : Math.min(sleep * 10, 1 * 60 * 1000);
-                String message = String.format("Could not write %s", flushObject);
-                if (flushObject.retryCount >= MAX_RETRIES) {
-                    failedMaxRetriesCount++;
-                    LOGGER.error("%s", message, ex);
-                    continue;
-                }
-                String logMessage = String.format("%s: %s (retrying: %d/%d)", message, ex.getMessage(), flushObject.retryCount + 1, MAX_RETRIES);
-                if (flushObject.retryCount > 0) { // don't log warn the first time
-                    LOGGER.warn("%s", logMessage);
-                } else {
-                    LOGGER.debug("%s", logMessage);
-                }
-                ListenableActionFuture future = flushObject.actionRequestBuilder.execute();
-
-                queue.add(new FlushObject(
-                        flushObject.elementId,
-                        flushObject.extendedDataRowId,
-                        flushObject.actionRequestBuilder,
-                        future,
-                        flushObject.retryCount + 1
-                ));
-            }
-        }
-        queue.clear();
-        if (failedMaxRetriesCount > 0) {
-            throw new VertexiumException("Failed to flush " + failedMaxRetriesCount + " objects");
-        }
     }
 
     protected String[] getIndexNamesAsArray(Graph graph) {
@@ -1953,45 +1907,5 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
             }
         }
         return false;
-    }
-
-    private class FlushObject {
-        public final String elementId;
-        public final String extendedDataRowId;
-        public final ActionRequestBuilder actionRequestBuilder;
-        public final Future future;
-        public final int retryCount;
-
-        FlushObject(
-                String elementId,
-                String extendedDataRowId,
-                UpdateRequestBuilder updateRequestBuilder,
-                Future future
-        ) {
-            this(elementId, extendedDataRowId, updateRequestBuilder, future, 0);
-        }
-
-        FlushObject(
-                String elementId,
-                String extendedDataRowId,
-                ActionRequestBuilder actionRequestBuilder,
-                Future future,
-                int retryCount
-        ) {
-            this.elementId = elementId;
-            this.extendedDataRowId = extendedDataRowId;
-            this.actionRequestBuilder = actionRequestBuilder;
-            this.future = future;
-            this.retryCount = retryCount;
-        }
-
-        @Override
-        public String toString() {
-            if (extendedDataRowId == null) {
-                return String.format("Element \"%s\"", elementId);
-            } else {
-                return String.format("Extended data row \"%s\":\"%s\"", elementId, extendedDataRowId);
-            }
-        }
     }
 }
