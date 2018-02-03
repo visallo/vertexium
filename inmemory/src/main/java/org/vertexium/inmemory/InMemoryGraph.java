@@ -923,4 +923,9 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
             fireGraphEvent(new DeleteExtendedDataEvent(this, element, tableName, row, columnName, key));
         }
     }
+
+    @Override
+    public void flushGraph() {
+        // no need to do anything here
+    }
 }
