@@ -1416,6 +1416,11 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
     }
 
     @Override
+    public void flushGraph() {
+        flushWriter(this.elementWriter.get());
+    }
+
+    @Override
     public void flush() {
         if (hasEventListeners()) {
             synchronized (this.graphEventQueue) {

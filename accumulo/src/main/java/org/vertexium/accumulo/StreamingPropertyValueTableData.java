@@ -128,18 +128,21 @@ public class StreamingPropertyValueTableData extends StreamingPropertyValue {
                         continue;
                     }
 
-                    throw new VertexiumException("unexpected metadata column qualifier: " + column.getKey().getColumnQualifier());
+                    throw new VertexiumException("unexpected metadata column qualifier: " + column.getKey().getColumnQualifier() + " (row: " + column.getKey().getRow() + ")");
                 }
 
                 if (column.getKey().getColumnFamily().equals(DATA_COLUMN_FAMILY)) {
                     byte[] data = column.getValue().get();
+                    if (length == null) {
+                        throw new VertexiumException("unexpected missing length (row: " + column.getKey().getRow() + ")");
+                    }
                     long len = Math.min(data.length, length - loadedDataLength);
                     buffer.write(data, 0, (int) len);
                     loadedDataLength += len;
                     return true;
                 }
 
-                throw new VertexiumException("unexpected column family: " + column.getKey().getColumnFamily());
+                throw new VertexiumException("unexpected column family: " + column.getKey().getColumnFamily() + " (row: " + column.getKey().getRow() + ")");
             }
         }
 

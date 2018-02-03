@@ -9,6 +9,7 @@
 * Fixed: Streaming property value input stream from data table
 * Fixed: Elasticsearch5 retry logic to sleep per request failure instead of batch of failures
 * Fixed: Mixed case searching on exact match properties
+* Fixed: Intermittent bug while indexing streaming property values under high load
 * Removed: ElasticSearch 1.x support
 
 # v3.0.4

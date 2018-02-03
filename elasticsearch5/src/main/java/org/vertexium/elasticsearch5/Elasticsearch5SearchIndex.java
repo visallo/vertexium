@@ -803,6 +803,9 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
                     return (StreamingPropertyValue) property.getValue();
                 })
                 .collect(Collectors.toList());
+        if (streamingPropertyValues.size() > 0 && graph instanceof GraphWithSearchIndex) {
+            ((GraphWithSearchIndex) graph).flushGraph();
+        }
 
         List<InputStream> inputStreams = graph.getStreamingPropertyValueInputStreams(streamingPropertyValues);
         for (int i = 0; i < properties.size(); i++) {
