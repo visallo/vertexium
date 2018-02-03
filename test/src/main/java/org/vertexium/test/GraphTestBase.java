@@ -4422,14 +4422,9 @@ public abstract class GraphTestBase {
                 .vertices();
         assertVertexIds(vertices, "v1");
 
-        try {
-            graph.query(AUTHORIZATIONS_A)
-                    .has("exactMatch", TextPredicate.DOES_NOT_CONTAIN, "Test")
-                    .vertices();
-            fail("Full text queries should not be allowed for properties that are not indexed with FULL_TEXT.");
-        } catch (VertexiumException ve) {
-            assertEquals("Check your TextIndexHint settings. Property exactMatch is not full text indexed.", ve.getMessage());
-        }
+        graph.query(AUTHORIZATIONS_A)
+                .has("exactMatch", TextPredicate.DOES_NOT_CONTAIN, "Test")
+                .vertices();
 
         graph.prepareVertex("v6", VISIBILITY_A)
                 .setProperty("both", "susan-test", VISIBILITY_A)
@@ -6596,7 +6591,7 @@ public abstract class GraphTestBase {
 
     @Test
     public void testCaseSensitivityOfExactMatch() {
-        graph.defineProperty("text").dataType(String.class).textIndexHint(TextIndexHint.EXACT_MATCH, TextIndexHint.FULL_TEXT).define();
+        graph.defineProperty("text").dataType(String.class).textIndexHint(TextIndexHint.EXACT_MATCH).define();
         graph.prepareVertex("v1", VISIBILITY_A)
                 .setProperty("text", "Joe", VISIBILITY_A)
                 .save(AUTHORIZATIONS_A);

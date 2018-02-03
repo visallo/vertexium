@@ -1,6 +1,7 @@
 # v3.1.0
 * Changed: Set Elasticsearch scroll api query to have a size that is the same as page size
 * Changed: Properly throw NoSuchElementException from Iterables when next is called with no more elements
+* Changed: If exact match is chosen for a property, full text is automatically enabled to support aggregation results 
 * Added: Accumulo in table storage of streaming property value data
 * Added: Functions to delete extended data columns
 * Added: Multi-value extended data columns
