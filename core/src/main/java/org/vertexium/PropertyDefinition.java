@@ -35,6 +35,11 @@ public class PropertyDefinition implements Serializable {
         this.propertyName = propertyName;
         this.dataType = dataType;
         this.textIndexHints = textIndexHints;
+        // to return the correct values for aggregations we need the original value. The only way to get this is to look
+        // at the original text stored in the full text. The exact match index only contains lower cased values.
+        if (textIndexHints != null && textIndexHints.contains(TextIndexHint.EXACT_MATCH)) {
+            this.textIndexHints.add(TextIndexHint.FULL_TEXT);
+        }
         this.boost = boost;
         this.sortable = sortable;
     }
