@@ -1,5 +1,6 @@
 package org.vertexium;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.vertexium.event.GraphEvent;
 import org.vertexium.event.GraphEventListener;
@@ -1013,6 +1014,18 @@ public abstract class GraphBase implements Graph {
                 return ids.contains(row.getId());
             }
         };
+    }
+
+    @Override
+    public ExtendedDataRow getExtendedData(ExtendedDataRowId id, Authorizations authorizations) {
+        ArrayList<ExtendedDataRow> rows = Lists.newArrayList(getExtendedData(Lists.newArrayList(id), authorizations));
+        if (rows.size() == 0) {
+            return null;
+        }
+        if (rows.size() == 1) {
+            return rows.get(0);
+        }
+        throw new VertexiumException("Expected 0 or 1 rows found " + rows.size());
     }
 
     @Override

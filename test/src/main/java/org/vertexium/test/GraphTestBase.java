@@ -6668,6 +6668,11 @@ public abstract class GraphTestBase {
 
         assertFalse(rows.hasNext());
 
+        row = graph.getExtendedData(new ExtendedDataRowId(ElementType.VERTEX, "v1", "table1", "row1"), AUTHORIZATIONS_A);
+        assertEquals("row1", row.getId().getRowId());
+        assertEquals(date1, row.getPropertyValue("date"));
+        assertEquals("value1", row.getPropertyValue("name"));
+
         rows = graph.getExtendedData(
                 Lists.newArrayList(
                         new ExtendedDataRowId(ElementType.VERTEX, "v1", "table1", "row1"),

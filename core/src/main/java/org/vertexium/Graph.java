@@ -1098,6 +1098,15 @@ public interface Graph {
     Iterable<ExtendedDataRow> getExtendedData(Iterable<ExtendedDataRowId> ids, Authorizations authorizations);
 
     /**
+     * Gets the specified extended data row.
+     *
+     * @param id             The id of the row to get.
+     * @param authorizations The authorizations used to get the rows
+     * @return Rows
+     */
+    ExtendedDataRow getExtendedData(ExtendedDataRowId id, Authorizations authorizations);
+
+    /**
      * Gets the specified extended data rows.
      *
      * @param elementType    The type of element to get the rows from
