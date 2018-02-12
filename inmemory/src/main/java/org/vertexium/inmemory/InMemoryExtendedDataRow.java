@@ -38,7 +38,9 @@ public class InMemoryExtendedDataRow extends ExtendedDataRowBase {
     }
 
     public void addColumn(String propertyName, String key, Object value, long timestamp, Visibility visibility) {
-        properties.add(new InMemoryProperty(propertyName, key, value, timestamp, visibility));
+        InMemoryProperty prop = new InMemoryProperty(propertyName, key, value, timestamp, visibility);
+        properties.remove(prop);
+        properties.add(prop);
     }
 
     public void removeColumn(String columnName, String key, Visibility visibility) {

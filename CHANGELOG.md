@@ -1,3 +1,6 @@
+# v3.1.1
+* Fixed: InMemory update extended data with different value
+
 # v3.1.0
 * Changed: Set Elasticsearch scroll api query to have a size that is the same as page size
 * Changed: Properly throw NoSuchElementException from Iterables when next is called with no more elements

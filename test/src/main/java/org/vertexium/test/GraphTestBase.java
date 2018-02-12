@@ -6720,6 +6720,27 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    public void testExtendedDataDifferentValue() {
+        graph.prepareVertex("v1", VISIBILITY_A)
+                .addExtendedData("table1", "row1", "name", "value1", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
+        graph.flush();
+
+        Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
+        ArrayList<ExtendedDataRow> rows = Lists.newArrayList(v1.getExtendedData("table1"));
+        assertEquals("value1", rows.get(0).getPropertyValue("name"));
+
+        graph.prepareVertex("v1", VISIBILITY_A)
+                .addExtendedData("table1", "row1", "name", "value2", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
+        graph.flush();
+
+        v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
+        rows = Lists.newArrayList(v1.getExtendedData("table1"));
+        assertEquals("value2", rows.get(0).getPropertyValue("name"));
+    }
+
+    @Test
     public void testExtendedDataDeleteColumn() {
         graph.prepareVertex("v1", VISIBILITY_A)
                 .addExtendedData("table1", "row1", "name", "value", VISIBILITY_A)
