@@ -1,3 +1,6 @@
+# v3.1.2
+* Fixed: Find path when edge labels are deflated
+
 # v3.1.1
 * Added: Graph.getExtendedData to get a single extended data row
 * Fixed: InMemory update extended data with different value

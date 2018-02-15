@@ -54,6 +54,10 @@ public abstract class GraphTestBase {
     public static final Visibility VISIBILITY_C = new Visibility(VISIBILITY_C_STRING);
     public static final Visibility VISIBILITY_MIXED_CASE_a = new Visibility("((MIXED_CASE_a))|b");
     public static final Visibility VISIBILITY_EMPTY = new Visibility("");
+    public static final String LABEL_LABEL1 = "label1";
+    public static final String LABEL_LABEL2 = "label2";
+    public static final String LABEL_LABEL3 = "label3";
+    public static final String LABEL_BAD = "bad";
     public final Authorizations AUTHORIZATIONS_A;
     public final Authorizations AUTHORIZATIONS_B;
     public final Authorizations AUTHORIZATIONS_C;
@@ -568,7 +572,7 @@ public abstract class GraphTestBase {
                 .addPropertyValue("propid2a", "prop2", "value2a", VISIBILITY_A)
                 .save(AUTHORIZATIONS_A_AND_B);
         Vertex v2 = graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_A);
-        graph.prepareEdge("e1", v1, v2, "edge1", VISIBILITY_A)
+        graph.prepareEdge("e1", v1, v2, LABEL_LABEL1, VISIBILITY_A)
                 .addPropertyValue("key1", "prop1", "value1", VISIBILITY_A)
                 .save(AUTHORIZATIONS_A);
         graph.flush();
@@ -662,7 +666,7 @@ public abstract class GraphTestBase {
                 .save(AUTHORIZATIONS_A);
         graph.prepareVertex("v2", VISIBILITY_A)
                 .save(AUTHORIZATIONS_A);
-        graph.prepareEdge("e1", "v1", "v2", "label1", VISIBILITY_A)
+        graph.prepareEdge("e1", "v1", "v2", LABEL_LABEL1, VISIBILITY_A)
                 .save(AUTHORIZATIONS_A);
         graph.flush();
         assertEquals(2, count(graph.getVertices(AUTHORIZATIONS_A)));
@@ -702,7 +706,7 @@ public abstract class GraphTestBase {
     public void testGetSoftDeletedElementWithFetchHintsAndTimestamp() {
         Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
         Vertex v2 = graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_A);
-        Edge e1 = graph.addEdge("e1", v1, v2, "label1", VISIBILITY_A, AUTHORIZATIONS_A);
+        Edge e1 = graph.addEdge("e1", v1, v2, LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_A);
         graph.flush();
 
         long beforeDeleteTime = IncreasingTime.currentTimeMillis();
@@ -728,8 +732,8 @@ public abstract class GraphTestBase {
         Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A_AND_B);
         Vertex v2 = graph.addVertex("v2", VISIBILITY_B, AUTHORIZATIONS_A_AND_B);
         Vertex v3 = graph.addVertex("v3", VISIBILITY_B, AUTHORIZATIONS_A_AND_B);
-        graph.addEdge("e1", v1, v2, "label1", VISIBILITY_B, AUTHORIZATIONS_A_AND_B);
-        graph.addEdge("e2", v1, v3, "label1", VISIBILITY_B, AUTHORIZATIONS_A_AND_B);
+        graph.addEdge("e1", v1, v2, LABEL_LABEL1, VISIBILITY_B, AUTHORIZATIONS_A_AND_B);
+        graph.addEdge("e2", v1, v3, LABEL_LABEL1, VISIBILITY_B, AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         Edge e1 = graph.getEdge("e1", AUTHORIZATIONS_A_AND_B);
@@ -831,7 +835,7 @@ public abstract class GraphTestBase {
     public void testSoftDeletePropertyOnEdgeNotIndexed() {
         Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A_AND_B);
         Vertex v2 = graph.addVertex("v2", VISIBILITY_B, AUTHORIZATIONS_A_AND_B);
-        ElementBuilder<Edge> elementBuilder = graph.prepareEdge("e1", v1, v2, "label1", VISIBILITY_B)
+        ElementBuilder<Edge> elementBuilder = graph.prepareEdge("e1", v1, v2, LABEL_LABEL1, VISIBILITY_B)
                 .setProperty("prop1", "value1", VISIBILITY_B);
         elementBuilder.setIndexHint(IndexHint.DO_NOT_INDEX);
         Edge e1 = elementBuilder.save(AUTHORIZATIONS_A_AND_B);
@@ -1151,10 +1155,10 @@ public abstract class GraphTestBase {
     public void testGetEdgesInRange() {
         graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
         graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_A);
-        graph.addEdge("a", "v1", "v2", "label1", VISIBILITY_EMPTY, AUTHORIZATIONS_ALL);
-        graph.addEdge("aa", "v1", "v2", "label1", VISIBILITY_EMPTY, AUTHORIZATIONS_ALL);
-        graph.addEdge("az", "v1", "v2", "label1", VISIBILITY_EMPTY, AUTHORIZATIONS_ALL);
-        graph.addEdge("b", "v1", "v2", "label1", VISIBILITY_EMPTY, AUTHORIZATIONS_ALL);
+        graph.addEdge("a", "v1", "v2", LABEL_LABEL1, VISIBILITY_EMPTY, AUTHORIZATIONS_ALL);
+        graph.addEdge("aa", "v1", "v2", LABEL_LABEL1, VISIBILITY_EMPTY, AUTHORIZATIONS_ALL);
+        graph.addEdge("az", "v1", "v2", LABEL_LABEL1, VISIBILITY_EMPTY, AUTHORIZATIONS_ALL);
+        graph.addEdge("b", "v1", "v2", LABEL_LABEL1, VISIBILITY_EMPTY, AUTHORIZATIONS_ALL);
         graph.flush();
 
         List<Edge> edges = toList(graph.getEdgesInRange(new Range(null, "a"), AUTHORIZATIONS_ALL));
@@ -1175,16 +1179,16 @@ public abstract class GraphTestBase {
         Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
         Vertex v2 = graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_A);
         Vertex v3 = graph.addVertex("v3", VISIBILITY_A, AUTHORIZATIONS_A);
-        graph.prepareEdge("e1", v1, v2, "", VISIBILITY_A)
+        graph.prepareEdge("e1", v1, v2, LABEL_LABEL1, VISIBILITY_A)
                 .setProperty("prop1", "e1", VISIBILITY_A)
                 .save(AUTHORIZATIONS_A_AND_B);
-        graph.prepareEdge("e1a", v1, v2, "", VISIBILITY_A)
+        graph.prepareEdge("e1a", v1, v2, LABEL_LABEL1, VISIBILITY_A)
                 .setProperty("prop1", "e1a", VISIBILITY_A)
                 .save(AUTHORIZATIONS_A_AND_B);
-        graph.prepareEdge("e2", v1, v3, "", VISIBILITY_A)
+        graph.prepareEdge("e2", v1, v3, LABEL_LABEL1, VISIBILITY_A)
                 .setProperty("prop1", "e2", VISIBILITY_A)
                 .save(AUTHORIZATIONS_A_AND_B);
-        graph.prepareEdge("e3", v2, v3, "", VISIBILITY_A)
+        graph.prepareEdge("e3", v2, v3, LABEL_LABEL1, VISIBILITY_A)
                 .setProperty("prop1", "e3", VISIBILITY_A)
                 .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
@@ -1257,7 +1261,7 @@ public abstract class GraphTestBase {
     public void testMarkVertexHidden() {
         Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_ALL);
         Vertex v2 = graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_ALL);
-        graph.addEdge("v1tov2", v1, v2, "test", VISIBILITY_A, AUTHORIZATIONS_ALL);
+        graph.addEdge("v1tov2", v1, v2, LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_ALL);
         graph.flush();
 
         List<String> vertexIdList = new ArrayList<>();
@@ -1328,8 +1332,8 @@ public abstract class GraphTestBase {
         Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_ALL);
         Vertex v2 = graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_ALL);
         Vertex v3 = graph.addVertex("v3", VISIBILITY_A, AUTHORIZATIONS_ALL);
-        Edge e1 = graph.addEdge("v1tov2", v1, v2, "test", VISIBILITY_A, AUTHORIZATIONS_ALL);
-        graph.addEdge("v2tov3", v2, v3, "test", VISIBILITY_A, AUTHORIZATIONS_ALL);
+        Edge e1 = graph.addEdge("v1tov2", v1, v2, LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_ALL);
+        graph.addEdge("v2tov3", v2, v3, LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_ALL);
         graph.flush();
 
         List<String> edgeIdList = new ArrayList<>();
@@ -1395,8 +1399,8 @@ public abstract class GraphTestBase {
         Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_ALL);
         Vertex v2 = graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_ALL);
         Vertex v3 = graph.addVertex("v3", VISIBILITY_A, AUTHORIZATIONS_ALL);
-        Edge e1 = graph.addEdge("v1tov2", v1, v2, "test", VISIBILITY_A, AUTHORIZATIONS_ALL);
-        Edge e2 = graph.addEdge("v2tov3", v2, v3, "test", VISIBILITY_A, AUTHORIZATIONS_ALL);
+        Edge e1 = graph.addEdge("v1tov2", v1, v2, LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_ALL);
+        Edge e2 = graph.addEdge("v2tov3", v2, v3, LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_ALL);
         graph.flush();
 
         graph.markEdgeHidden(e1, VISIBILITY_B, AUTHORIZATIONS_ALL);
@@ -1544,9 +1548,9 @@ public abstract class GraphTestBase {
         Vertex w2 = graph.addVertex("w2", VISIBILITY_B, AUTHORIZATIONS_B);
         Vertex e1 = graph.addVertex("e1", VISIBILITY_EMPTY, AUTHORIZATIONS_A);
         Vertex e2 = graph.addVertex("e2", VISIBILITY_EMPTY, AUTHORIZATIONS_A);
-        graph.addEdge("w1-e1", w1, e1, "test", VISIBILITY_A, AUTHORIZATIONS_A);
-        graph.addEdge("w2-e1", w2, e1, "test", VISIBILITY_B, AUTHORIZATIONS_B);
-        graph.addEdge("e1-e2", e1, e2, "test", VISIBILITY_EMPTY, AUTHORIZATIONS_A);
+        graph.addEdge("w1-e1", w1, e1, LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.addEdge("w2-e1", w2, e1, LABEL_LABEL1, VISIBILITY_B, AUTHORIZATIONS_B);
+        graph.addEdge("e1-e2", e1, e2, LABEL_LABEL1, VISIBILITY_EMPTY, AUTHORIZATIONS_A);
         graph.flush();
 
         e1 = graph.getVertex("e1", AUTHORIZATIONS_EMPTY);
@@ -1605,11 +1609,11 @@ public abstract class GraphTestBase {
     public void testAddEdge() {
         Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
         Vertex v2 = graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_A);
-        Edge addedEdge = graph.addEdge("e1", v1, v2, "label1", VISIBILITY_A, AUTHORIZATIONS_A);
+        Edge addedEdge = graph.addEdge("e1", v1, v2, LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_A);
         graph.flush();
         assertNotNull(addedEdge);
         assertEquals("e1", addedEdge.getId());
-        assertEquals("label1", addedEdge.getLabel());
+        assertEquals(LABEL_LABEL1, addedEdge.getLabel());
         assertEquals("v1", addedEdge.getVertexId(Direction.OUT));
         assertEquals(v1, addedEdge.getVertex(Direction.OUT, AUTHORIZATIONS_A));
         assertEquals("v2", addedEdge.getVertexId(Direction.IN));
@@ -1637,7 +1641,7 @@ public abstract class GraphTestBase {
         e = graph.getEdge("e1", AUTHORIZATIONS_A);
         assertNotNull(e);
         assertEquals("e1", e.getId());
-        assertEquals("label1", e.getLabel());
+        assertEquals(LABEL_LABEL1, e.getLabel());
         assertEquals("v1", e.getVertexId(Direction.OUT));
         assertEquals(v1, e.getVertex(Direction.OUT, AUTHORIZATIONS_A));
         assertEquals("v2", e.getVertexId(Direction.IN));
@@ -1656,9 +1660,9 @@ public abstract class GraphTestBase {
     public void testGetEdge() {
         Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
         Vertex v2 = graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_A);
-        graph.addEdge("e1to2label1", v1, v2, "label1", VISIBILITY_A, AUTHORIZATIONS_A);
-        graph.addEdge("e1to2label2", v1, v2, "label2", VISIBILITY_A, AUTHORIZATIONS_A);
-        graph.addEdge("e2to1", v2.getId(), v1.getId(), "label1", VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.addEdge("e1to2label1", v1, v2, LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.addEdge("e1to2label2", v1, v2, LABEL_LABEL2, VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.addEdge("e2to1", v2.getId(), v1.getId(), LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_A);
         graph.flush();
 
         v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
@@ -1669,16 +1673,16 @@ public abstract class GraphTestBase {
         Assert.assertEquals(3, count(v1.getEdges(v2, Direction.BOTH, AUTHORIZATIONS_A)));
         Assert.assertEquals(2, count(v1.getEdges(v2, Direction.OUT, AUTHORIZATIONS_A)));
         Assert.assertEquals(1, count(v1.getEdges(v2, Direction.IN, AUTHORIZATIONS_A)));
-        Assert.assertEquals(2, count(v1.getEdges(v2, Direction.BOTH, "label1", AUTHORIZATIONS_A)));
-        Assert.assertEquals(1, count(v1.getEdges(v2, Direction.OUT, "label1", AUTHORIZATIONS_A)));
-        Assert.assertEquals(1, count(v1.getEdges(v2, Direction.IN, "label1", AUTHORIZATIONS_A)));
-        Assert.assertEquals(3, count(v1.getEdges(v2, Direction.BOTH, new String[]{"label1", "label2"}, AUTHORIZATIONS_A)));
-        Assert.assertEquals(2, count(v1.getEdges(v2, Direction.OUT, new String[]{"label1", "label2"}, AUTHORIZATIONS_A)));
-        Assert.assertEquals(1, count(v1.getEdges(v2, Direction.IN, new String[]{"label1", "label2"}, AUTHORIZATIONS_A)));
+        Assert.assertEquals(2, count(v1.getEdges(v2, Direction.BOTH, LABEL_LABEL1, AUTHORIZATIONS_A)));
+        Assert.assertEquals(1, count(v1.getEdges(v2, Direction.OUT, LABEL_LABEL1, AUTHORIZATIONS_A)));
+        Assert.assertEquals(1, count(v1.getEdges(v2, Direction.IN, LABEL_LABEL1, AUTHORIZATIONS_A)));
+        Assert.assertEquals(3, count(v1.getEdges(v2, Direction.BOTH, new String[]{LABEL_LABEL1, LABEL_LABEL2}, AUTHORIZATIONS_A)));
+        Assert.assertEquals(2, count(v1.getEdges(v2, Direction.OUT, new String[]{LABEL_LABEL1, LABEL_LABEL2}, AUTHORIZATIONS_A)));
+        Assert.assertEquals(1, count(v1.getEdges(v2, Direction.IN, new String[]{LABEL_LABEL1, LABEL_LABEL2}, AUTHORIZATIONS_A)));
 
-        Assert.assertArrayEquals(new String[]{"label1", "label2"}, IterableUtils.toArray(v1.getEdgeLabels(Direction.OUT, AUTHORIZATIONS_A), String.class));
-        Assert.assertArrayEquals(new String[]{"label1"}, IterableUtils.toArray(v1.getEdgeLabels(Direction.IN, AUTHORIZATIONS_A), String.class));
-        Assert.assertArrayEquals(new String[]{"label1", "label2"}, IterableUtils.toArray(v1.getEdgeLabels(Direction.BOTH, AUTHORIZATIONS_A), String.class));
+        Assert.assertArrayEquals(new String[]{LABEL_LABEL1, LABEL_LABEL2}, IterableUtils.toArray(v1.getEdgeLabels(Direction.OUT, AUTHORIZATIONS_A), String.class));
+        Assert.assertArrayEquals(new String[]{LABEL_LABEL1}, IterableUtils.toArray(v1.getEdgeLabels(Direction.IN, AUTHORIZATIONS_A), String.class));
+        Assert.assertArrayEquals(new String[]{LABEL_LABEL1, LABEL_LABEL2}, IterableUtils.toArray(v1.getEdgeLabels(Direction.BOTH, AUTHORIZATIONS_A), String.class));
     }
 
     @Test
@@ -1686,9 +1690,9 @@ public abstract class GraphTestBase {
         Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
         Vertex v2 = graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_A);
         Vertex v3 = graph.addVertex("v3", VISIBILITY_A, AUTHORIZATIONS_A);
-        Edge v1_to_v2_label1 = graph.addEdge("v1_to_v2_label1", v1, v2, "label1", VISIBILITY_A, AUTHORIZATIONS_A);
-        Edge v1_to_v2_label2 = graph.addEdge("v1_to_v2_label2", v1, v2, "label2", VISIBILITY_A, AUTHORIZATIONS_A);
-        Edge v1_to_v3_label2 = graph.addEdge("v1_to_v3_label2", v1, v3, "label2", VISIBILITY_A, AUTHORIZATIONS_A);
+        Edge v1_to_v2_label1 = graph.addEdge("v1_to_v2_label1", v1, v2, LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_A);
+        Edge v1_to_v2_label2 = graph.addEdge("v1_to_v2_label2", v1, v2, LABEL_LABEL2, VISIBILITY_A, AUTHORIZATIONS_A);
+        Edge v1_to_v3_label2 = graph.addEdge("v1_to_v3_label2", v1, v3, LABEL_LABEL2, VISIBILITY_A, AUTHORIZATIONS_A);
         graph.flush();
 
         v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
@@ -1699,7 +1703,7 @@ public abstract class GraphTestBase {
         assertTrue(pairs.contains(new EdgeVertexPair(v1_to_v2_label2, v2)));
         assertTrue(pairs.contains(new EdgeVertexPair(v1_to_v3_label2, v3)));
 
-        pairs = toList(v1.getEdgeVertexPairs(Direction.BOTH, "label2", AUTHORIZATIONS_A));
+        pairs = toList(v1.getEdgeVertexPairs(Direction.BOTH, LABEL_LABEL2, AUTHORIZATIONS_A));
         assertEquals(2, pairs.size());
         assertTrue(pairs.contains(new EdgeVertexPair(v1_to_v2_label2, v2)));
         assertTrue(pairs.contains(new EdgeVertexPair(v1_to_v3_label2, v3)));
@@ -1709,7 +1713,7 @@ public abstract class GraphTestBase {
     public void testAddEdgeWithProperties() {
         Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
         Vertex v2 = graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_A);
-        Edge addedEdge = graph.prepareEdge("e1", v1, v2, "label1", VISIBILITY_A)
+        Edge addedEdge = graph.prepareEdge("e1", v1, v2, LABEL_LABEL1, VISIBILITY_A)
                 .setProperty("propA", "valueA", VISIBILITY_A)
                 .setProperty("propB", "valueB", VISIBILITY_B)
                 .save(AUTHORIZATIONS_A_AND_B);
@@ -1742,7 +1746,7 @@ public abstract class GraphTestBase {
         try {
             String outVertexId = null;
             String inVertexId = null;
-            getGraph().prepareEdge("e1", outVertexId, inVertexId, "label", VISIBILITY_EMPTY)
+            getGraph().prepareEdge("e1", outVertexId, inVertexId, LABEL_LABEL1, VISIBILITY_EMPTY)
                     .save(AUTHORIZATIONS_ALL);
             fail("should throw an exception");
         } catch (Exception ex) {
@@ -1752,7 +1756,7 @@ public abstract class GraphTestBase {
         try {
             Vertex outVertex = null;
             Vertex inVertex = null;
-            getGraph().prepareEdge("e1", outVertex, inVertex, "label", VISIBILITY_EMPTY)
+            getGraph().prepareEdge("e1", outVertex, inVertex, LABEL_LABEL1, VISIBILITY_EMPTY)
                     .save(AUTHORIZATIONS_ALL);
             fail("should throw an exception");
         } catch (Exception ex) {
@@ -1787,7 +1791,7 @@ public abstract class GraphTestBase {
     public void testChangingPropertyOnEdge() {
         Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
         Vertex v2 = graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_A);
-        graph.prepareEdge("e1", v1, v2, "label1", VISIBILITY_A)
+        graph.prepareEdge("e1", v1, v2, LABEL_LABEL1, VISIBILITY_A)
                 .setProperty("propA", "valueA", VISIBILITY_A)
                 .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
@@ -1829,34 +1833,34 @@ public abstract class GraphTestBase {
     public void testAlterEdgeLabel() {
         Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
         Vertex v2 = graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_A);
-        graph.prepareEdge("e1", v1, v2, "label1", VISIBILITY_A)
+        graph.prepareEdge("e1", v1, v2, LABEL_LABEL1, VISIBILITY_A)
                 .setProperty("propA", "valueA", VISIBILITY_A)
                 .save(AUTHORIZATIONS_A);
         graph.flush();
 
         Edge e = graph.getEdge("e1", AUTHORIZATIONS_A);
-        assertEquals("label1", e.getLabel());
+        assertEquals(LABEL_LABEL1, e.getLabel());
         Assert.assertEquals(1, count(e.getProperties()));
         assertEquals("valueA", e.getPropertyValues("propA").iterator().next());
         Assert.assertEquals(1, count(v1.getEdges(Direction.OUT, AUTHORIZATIONS_A)));
-        Assert.assertEquals("label1", IterableUtils.single(v1.getEdgeLabels(Direction.OUT, AUTHORIZATIONS_A)));
+        Assert.assertEquals(LABEL_LABEL1, IterableUtils.single(v1.getEdgeLabels(Direction.OUT, AUTHORIZATIONS_A)));
         Assert.assertEquals(1, count(v2.getEdges(Direction.IN, AUTHORIZATIONS_A)));
-        Assert.assertEquals("label1", IterableUtils.single(v2.getEdgeLabels(Direction.IN, AUTHORIZATIONS_A)));
+        Assert.assertEquals(LABEL_LABEL1, IterableUtils.single(v2.getEdgeLabels(Direction.IN, AUTHORIZATIONS_A)));
 
         e.prepareMutation()
-                .alterEdgeLabel("label2")
+                .alterEdgeLabel(LABEL_LABEL2)
                 .save(AUTHORIZATIONS_A);
         graph.flush();
         e = graph.getEdge("e1", AUTHORIZATIONS_A);
-        assertEquals("label2", e.getLabel());
+        assertEquals(LABEL_LABEL2, e.getLabel());
         Assert.assertEquals(1, count(e.getProperties()));
         assertEquals("valueA", e.getPropertyValues("propA").iterator().next());
         v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
         Assert.assertEquals(1, count(v1.getEdges(Direction.OUT, AUTHORIZATIONS_A)));
-        Assert.assertEquals("label2", IterableUtils.single(v1.getEdgeLabels(Direction.OUT, AUTHORIZATIONS_A)));
+        Assert.assertEquals(LABEL_LABEL2, IterableUtils.single(v1.getEdgeLabels(Direction.OUT, AUTHORIZATIONS_A)));
         v2 = graph.getVertex("v2", AUTHORIZATIONS_A);
         Assert.assertEquals(1, count(v2.getEdges(Direction.IN, AUTHORIZATIONS_A)));
-        Assert.assertEquals("label2", IterableUtils.single(v2.getEdgeLabels(Direction.IN, AUTHORIZATIONS_A)));
+        Assert.assertEquals(LABEL_LABEL2, IterableUtils.single(v2.getEdgeLabels(Direction.IN, AUTHORIZATIONS_A)));
 
         graph.prepareEdge(e.getId(), e.getVertexId(Direction.OUT), e.getVertexId(Direction.IN), e.getLabel(), e.getVisibility())
                 .alterEdgeLabel("label3")
@@ -1878,7 +1882,7 @@ public abstract class GraphTestBase {
     public void testDeleteEdge() {
         Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
         Vertex v2 = graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_A);
-        Edge addedEdge = graph.addEdge("e1", v1, v2, "label1", VISIBILITY_A, AUTHORIZATIONS_A);
+        Edge addedEdge = graph.addEdge("e1", v1, v2, LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_A);
         graph.flush();
 
         Assert.assertEquals(1, count(graph.getEdges(AUTHORIZATIONS_A)));
@@ -1912,17 +1916,17 @@ public abstract class GraphTestBase {
     public void testAddEdgeWithVisibility() {
         Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
         Vertex v2 = graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_A);
-        graph.addEdge("e1", v1, v2, "edgeA", VISIBILITY_A, AUTHORIZATIONS_A);
-        graph.addEdge("e2", v1, v2, "edgeB", VISIBILITY_B, AUTHORIZATIONS_B);
+        graph.addEdge("e1", v1, v2, LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.addEdge("e2", v1, v2, LABEL_LABEL2, VISIBILITY_B, AUTHORIZATIONS_B);
         graph.flush();
 
         Iterable<Edge> aEdges = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B).getEdges(Direction.BOTH, AUTHORIZATIONS_A);
         Assert.assertEquals(1, count(aEdges));
-        assertEquals("edgeA", IterableUtils.single(aEdges).getLabel());
+        assertEquals(LABEL_LABEL1, IterableUtils.single(aEdges).getLabel());
 
         Iterable<Edge> bEdges = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B).getEdges(Direction.BOTH, AUTHORIZATIONS_B);
         Assert.assertEquals(1, count(bEdges));
-        assertEquals("edgeB", IterableUtils.single(bEdges).getLabel());
+        assertEquals(LABEL_LABEL2, IterableUtils.single(bEdges).getLabel());
 
         Iterable<Edge> allEdges = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B).getEdges(Direction.BOTH, AUTHORIZATIONS_A_AND_B);
         Assert.assertEquals(2, count(allEdges));
@@ -1981,8 +1985,8 @@ public abstract class GraphTestBase {
                 .addExtendedData("table1", "row2", namePropertyName, "value 2", VISIBILITY_A)
                 .save(AUTHORIZATIONS_A);
 
-        graph.addEdge("e1", v1, v2, "edgeA", VISIBILITY_A, AUTHORIZATIONS_A);
-        graph.addEdge("e2", v1, v2, "edgeB", VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.addEdge("e1", v1, v2, LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.addEdge("e2", v1, v2, LABEL_LABEL2, VISIBILITY_A, AUTHORIZATIONS_A);
         graph.flush();
 
         QueryResultsIterable<String> idsIterable = graph.query(AUTHORIZATIONS_A).vertexIds();
@@ -2008,11 +2012,11 @@ public abstract class GraphTestBase {
         assertIdsAnyOrder(idsIterable, "e1", "e2");
         assertResultsCount(2, 2, idsIterable);
 
-        idsIterable = graph.query(AUTHORIZATIONS_A).hasEdgeLabel("edgeA").edgeIds();
+        idsIterable = graph.query(AUTHORIZATIONS_A).hasEdgeLabel(LABEL_LABEL1).edgeIds();
         assertIdsAnyOrder(idsIterable, "e1");
         assertResultsCount(1, 1, idsIterable);
 
-        idsIterable = graph.query(AUTHORIZATIONS_A).hasEdgeLabel("edgeA", "edgeB").edgeIds();
+        idsIterable = graph.query(AUTHORIZATIONS_A).hasEdgeLabel(LABEL_LABEL1, LABEL_LABEL2).edgeIds();
         assertResultsCount(2, 2, idsIterable);
 
         idsIterable = graph.query(AUTHORIZATIONS_A).elementIds();
@@ -2056,8 +2060,8 @@ public abstract class GraphTestBase {
                 .addPropertyValue("k1", namePropertyName, "joe", VISIBILITY_A)
                 .save(AUTHORIZATIONS_A);
         Vertex v2 = graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_A);
-        graph.addEdge("e1", v1, v2, "edgeA", VISIBILITY_A, AUTHORIZATIONS_A);
-        graph.addEdge("e2", v1, v2, "edgeB", VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.addEdge("e1", v1, v2, LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.addEdge("e2", v1, v2, LABEL_LABEL2, VISIBILITY_A, AUTHORIZATIONS_A);
         graph.flush();
 
         QueryResultsIterable<Vertex> vertices = graph.query(AUTHORIZATIONS_A).vertices();
@@ -2081,10 +2085,10 @@ public abstract class GraphTestBase {
         QueryResultsIterable<Edge> edges = graph.query(AUTHORIZATIONS_A).edges();
         assertResultsCount(2, 2, edges);
 
-        edges = graph.query(AUTHORIZATIONS_A).hasEdgeLabel("edgeA").edges();
+        edges = graph.query(AUTHORIZATIONS_A).hasEdgeLabel(LABEL_LABEL1).edges();
         assertResultsCount(1, 1, edges);
 
-        edges = graph.query(AUTHORIZATIONS_A).hasEdgeLabel("edgeA", "edgeB").edges();
+        edges = graph.query(AUTHORIZATIONS_A).hasEdgeLabel(LABEL_LABEL1, LABEL_LABEL2).edges();
         assertResultsCount(2, 2, edges);
 
         QueryResultsIterable<Element> elements = graph.query(AUTHORIZATIONS_A).elements();
@@ -2222,7 +2226,7 @@ public abstract class GraphTestBase {
         v1.setProperty("description", "This is vertex 1 - dog.", VISIBILITY_A, AUTHORIZATIONS_ALL);
         Vertex v2 = graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_ALL);
         v2.setProperty("description", "This is vertex 2 - cat.", VISIBILITY_B, AUTHORIZATIONS_ALL);
-        Edge e1 = graph.addEdge("e1", v1, v2, "edgeA", VISIBILITY_A, AUTHORIZATIONS_A);
+        Edge e1 = graph.addEdge("e1", v1, v2, LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_A);
         e1.setProperty("description", "This is edge 1 - dog to cat.", VISIBILITY_A, AUTHORIZATIONS_ALL);
         getGraph().flush();
 
@@ -2248,7 +2252,7 @@ public abstract class GraphTestBase {
         v1.setProperty("description", "This is vertex 1 - dog.", VISIBILITY_A, AUTHORIZATIONS_ALL);
         Vertex v2 = graph.addVertex("v2", VISIBILITY_B, AUTHORIZATIONS_ALL);
         v2.setProperty("description", "This is vertex 2 - cat.", VISIBILITY_B, AUTHORIZATIONS_ALL);
-        Edge e1 = graph.addEdge("e1", v1, v2, "edgeA", VISIBILITY_A, AUTHORIZATIONS_A);
+        Edge e1 = graph.addEdge("e1", v1, v2, LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_A);
         e1.setProperty("edgeDescription", "This is edge 1 - dog to cat.", VISIBILITY_A, AUTHORIZATIONS_ALL);
         getGraph().flush();
 
@@ -2788,9 +2792,9 @@ public abstract class GraphTestBase {
                 .setProperty(namePropertyName, "tom", VISIBILITY_A)
                 .setProperty(agePropertyName, 35, VISIBILITY_B)
                 .save(AUTHORIZATIONS_A_AND_B);
-        graph.prepareEdge("e1", "v1", "v2", "label2", VISIBILITY_A).save(AUTHORIZATIONS_A_AND_B);
-        graph.prepareEdge("e2", "v1", "v2", "label1", VISIBILITY_A).save(AUTHORIZATIONS_A_AND_B);
-        graph.prepareEdge("e3", "v1", "v2", "label3", VISIBILITY_A).save(AUTHORIZATIONS_A_AND_B);
+        graph.prepareEdge("e1", "v1", "v2", LABEL_LABEL2, VISIBILITY_A).save(AUTHORIZATIONS_A_AND_B);
+        graph.prepareEdge("e2", "v1", "v2", LABEL_LABEL1, VISIBILITY_A).save(AUTHORIZATIONS_A_AND_B);
+        graph.prepareEdge("e3", "v1", "v2", LABEL_LABEL3, VISIBILITY_A).save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         List<Vertex> vertices = toList(graph.query(AUTHORIZATIONS_A_AND_B)
@@ -3098,10 +3102,10 @@ public abstract class GraphTestBase {
         Vertex v2 = graph.prepareVertex("v2", VISIBILITY_A).save(AUTHORIZATIONS_A_AND_B);
         Vertex v3 = graph.prepareVertex("v3", VISIBILITY_A).save(AUTHORIZATIONS_A_AND_B);
 
-        graph.prepareEdge("e1", v1, v2, "edge", VISIBILITY_A)
+        graph.prepareEdge("e1", v1, v2, LABEL_LABEL1, VISIBILITY_A)
                 .setProperty("age", 25, VISIBILITY_A)
                 .save(AUTHORIZATIONS_A_AND_B);
-        graph.prepareEdge("e2", v1, v3, "edge", VISIBILITY_A)
+        graph.prepareEdge("e2", v1, v3, LABEL_LABEL1, VISIBILITY_A)
                 .setProperty("age", 25, VISIBILITY_B)
                 .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
@@ -3121,7 +3125,7 @@ public abstract class GraphTestBase {
                 .save(AUTHORIZATIONS_A_AND_B);
         Vertex v3 = graph.prepareVertex("v3", VISIBILITY_EMPTY)
                 .save(AUTHORIZATIONS_A_AND_B);
-        graph.addEdge("v2tov3", v2, v3, "", VISIBILITY_EMPTY, AUTHORIZATIONS_A_AND_B);
+        graph.addEdge("v2tov3", v2, v3, LABEL_LABEL1, VISIBILITY_EMPTY, AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         graph.prepareVertex("v1", VISIBILITY_EMPTY)
@@ -3195,7 +3199,7 @@ public abstract class GraphTestBase {
         Vertex v1 = graph.prepareVertex("v1", VISIBILITY_A).save(AUTHORIZATIONS_A_AND_B);
         Vertex v2 = graph.prepareVertex("v2", VISIBILITY_A).save(AUTHORIZATIONS_A_AND_B);
 
-        graph.prepareEdge("e1", v1, v2, "edge", VISIBILITY_A)
+        graph.prepareEdge("e1", v1, v2, LABEL_LABEL1, VISIBILITY_A)
                 .setProperty("prop1", "value1", VISIBILITY_A)
                 .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
@@ -3625,13 +3629,13 @@ public abstract class GraphTestBase {
         Vertex v3 = graph.addVertex("v3", VISIBILITY_A, AUTHORIZATIONS_ALL);
         v3.setProperty(propertyName, "value3", VISIBILITY_A, AUTHORIZATIONS_ALL);
 
-        Edge ev1v2 = graph.prepareEdge("e v1->v2", v1, v2, "edgeA", VISIBILITY_A)
+        Edge ev1v2 = graph.prepareEdge("e v1->v2", v1, v2, LABEL_LABEL1, VISIBILITY_A)
                 .setProperty(propertyName, "value1", VISIBILITY_A)
                 .save(AUTHORIZATIONS_A);
-        Edge ev1v3 = graph.prepareEdge("e v1->v3", v1, v3, "edgeB", VISIBILITY_A)
+        Edge ev1v3 = graph.prepareEdge("e v1->v3", v1, v3, LABEL_LABEL2, VISIBILITY_A)
                 .setProperty(propertyName, "value2", VISIBILITY_A)
                 .save(AUTHORIZATIONS_A);
-        graph.prepareEdge("e v2->v3", v2, v3, "edgeB", VISIBILITY_A)
+        graph.prepareEdge("e v2->v3", v2, v3, LABEL_LABEL2, VISIBILITY_A)
                 .setProperty(propertyName, "value2", VISIBILITY_A)
                 .save(AUTHORIZATIONS_A);
         graph.flush();
@@ -3660,16 +3664,16 @@ public abstract class GraphTestBase {
         org.vertexium.test.util.IterableUtils.assertContains(ev1v2, edges);
         org.vertexium.test.util.IterableUtils.assertContains(ev1v3, edges);
 
-        edges = v1.query(AUTHORIZATIONS_A).hasEdgeLabel("edgeA", "edgeB").edges();
+        edges = v1.query(AUTHORIZATIONS_A).hasEdgeLabel(LABEL_LABEL1, LABEL_LABEL2).edges();
         Assert.assertEquals(2, count(edges));
         org.vertexium.test.util.IterableUtils.assertContains(ev1v2, edges);
         org.vertexium.test.util.IterableUtils.assertContains(ev1v3, edges);
 
-        edges = v1.query(AUTHORIZATIONS_A).hasEdgeLabel("edgeA").edges();
+        edges = v1.query(AUTHORIZATIONS_A).hasEdgeLabel(LABEL_LABEL1).edges();
         Assert.assertEquals(1, count(edges));
         org.vertexium.test.util.IterableUtils.assertContains(ev1v2, edges);
 
-        vertices = v1.query(AUTHORIZATIONS_A).hasEdgeLabel("edgeA").vertices();
+        vertices = v1.query(AUTHORIZATIONS_A).hasEdgeLabel(LABEL_LABEL1).vertices();
         Assert.assertEquals(1, count(vertices));
         org.vertexium.test.util.IterableUtils.assertContains(v2, vertices);
 
@@ -3690,18 +3694,18 @@ public abstract class GraphTestBase {
         Vertex v4 = graph.addVertex("v4", VISIBILITY_A, AUTHORIZATIONS_A);
         Vertex v5 = graph.addVertex("v5", VISIBILITY_A, AUTHORIZATIONS_A);
         Vertex v6 = graph.addVertex("v6", VISIBILITY_A, AUTHORIZATIONS_A);
-        graph.addEdge(v1, v2, "knows", VISIBILITY_A, AUTHORIZATIONS_A); // v1 -> v2
-        graph.addEdge(v2, v4, "knows", VISIBILITY_A, AUTHORIZATIONS_A); // v2 -> v4
-        graph.addEdge(v1, v3, "knows", VISIBILITY_A, AUTHORIZATIONS_A); // v1 -> v3
-        graph.addEdge(v3, v4, "knows", VISIBILITY_A, AUTHORIZATIONS_A); // v3 -> v4
-        graph.addEdge(v3, v5, "knows", VISIBILITY_A, AUTHORIZATIONS_A); // v3 -> v5
-        graph.addEdge(v4, v6, "knows", VISIBILITY_A, AUTHORIZATIONS_A); // v4 -> v6
+        graph.addEdge(v1, v2, LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_A); // v1 -> v2
+        graph.addEdge(v2, v4, LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_A); // v2 -> v4
+        graph.addEdge(v1, v3, LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_A); // v1 -> v3
+        graph.addEdge(v3, v4, LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_A); // v3 -> v4
+        graph.addEdge(v3, v5, LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_A); // v3 -> v5
+        graph.addEdge(v4, v6, LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_A); // v4 -> v6
         graph.flush();
 
         List<Path> paths = toList(graph.findPaths(new FindPathOptions("v1", "v2", 2), AUTHORIZATIONS_A));
-        List<Path> pathsByLabels = toList(graph.findPaths(new FindPathOptions("v1", "v2", 2).setLabels("knows"), AUTHORIZATIONS_A));
+        List<Path> pathsByLabels = toList(graph.findPaths(new FindPathOptions("v1", "v2", 2).setLabels(LABEL_LABEL1), AUTHORIZATIONS_A));
         assertEquals(pathsByLabels, paths);
-        List<Path> pathsByBadLabel = toList(graph.findPaths(new FindPathOptions("v1", "v2", 2).setLabels("bad"), AUTHORIZATIONS_A));
+        List<Path> pathsByBadLabel = toList(graph.findPaths(new FindPathOptions("v1", "v2", 2).setLabels(LABEL_BAD), AUTHORIZATIONS_A));
         assertEquals(0, pathsByBadLabel.size());
         assertPaths(
                 paths,
@@ -3709,9 +3713,9 @@ public abstract class GraphTestBase {
         );
 
         paths = toList(graph.findPaths(new FindPathOptions("v1", "v4", 2), AUTHORIZATIONS_A));
-        pathsByLabels = toList(graph.findPaths(new FindPathOptions("v1", "v4", 2).setLabels("knows"), AUTHORIZATIONS_A));
+        pathsByLabels = toList(graph.findPaths(new FindPathOptions("v1", "v4", 2).setLabels(LABEL_LABEL1), AUTHORIZATIONS_A));
         assertEquals(pathsByLabels, paths);
-        pathsByBadLabel = toList(graph.findPaths(new FindPathOptions("v1", "v4", 2).setLabels("bad"), AUTHORIZATIONS_A));
+        pathsByBadLabel = toList(graph.findPaths(new FindPathOptions("v1", "v4", 2).setLabels(LABEL_BAD), AUTHORIZATIONS_A));
         assertEquals(0, pathsByBadLabel.size());
         assertPaths(
                 paths,
@@ -3720,9 +3724,9 @@ public abstract class GraphTestBase {
         );
 
         paths = toList(graph.findPaths(new FindPathOptions("v4", "v1", 2), AUTHORIZATIONS_A));
-        pathsByLabels = toList(graph.findPaths(new FindPathOptions("v4", "v1", 2).setLabels("knows"), AUTHORIZATIONS_A));
+        pathsByLabels = toList(graph.findPaths(new FindPathOptions("v4", "v1", 2).setLabels(LABEL_LABEL1), AUTHORIZATIONS_A));
         assertEquals(pathsByLabels, paths);
-        pathsByBadLabel = toList(graph.findPaths(new FindPathOptions("v4", "v1", 2).setLabels("bad"), AUTHORIZATIONS_A));
+        pathsByBadLabel = toList(graph.findPaths(new FindPathOptions("v4", "v1", 2).setLabels(LABEL_BAD), AUTHORIZATIONS_A));
         assertEquals(0, pathsByBadLabel.size());
         assertPaths(
                 paths,
@@ -3731,9 +3735,9 @@ public abstract class GraphTestBase {
         );
 
         paths = toList(graph.findPaths(new FindPathOptions("v1", "v6", 3), AUTHORIZATIONS_A));
-        pathsByLabels = toList(graph.findPaths(new FindPathOptions("v1", "v6", 3).setLabels("knows"), AUTHORIZATIONS_A));
+        pathsByLabels = toList(graph.findPaths(new FindPathOptions("v1", "v6", 3).setLabels(LABEL_LABEL1), AUTHORIZATIONS_A));
         assertEquals(pathsByLabels, paths);
-        pathsByBadLabel = toList(graph.findPaths(new FindPathOptions("v1", "v6", 3).setLabels("bad"), AUTHORIZATIONS_A));
+        pathsByBadLabel = toList(graph.findPaths(new FindPathOptions("v1", "v6", 3).setLabels(LABEL_BAD), AUTHORIZATIONS_A));
         assertEquals(0, pathsByBadLabel.size());
         assertPaths(
                 paths,
@@ -3749,11 +3753,11 @@ public abstract class GraphTestBase {
         Vertex v3 = graph.addVertex("v3", VISIBILITY_A, AUTHORIZATIONS_A);
         Vertex v4 = graph.addVertex("v4", VISIBILITY_A, AUTHORIZATIONS_A);
 
-        graph.addEdge(v1, v2, "a", VISIBILITY_A, AUTHORIZATIONS_A);
-        graph.addEdge(v2, v4, "a", VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.addEdge(v1, v2, LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.addEdge(v2, v4, LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_A);
 
-        graph.addEdge(v1, v3, "b", VISIBILITY_A, AUTHORIZATIONS_A);
-        graph.addEdge(v3, v4, "a", VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.addEdge(v1, v3, LABEL_LABEL2, VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.addEdge(v3, v4, LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_A);
 
         graph.flush();
 
@@ -3764,11 +3768,11 @@ public abstract class GraphTestBase {
         );
 
         assertPaths(
-                graph.findPaths(new FindPathOptions("v1", "v4", 2).setExcludedLabels("b"), AUTHORIZATIONS_A),
+                graph.findPaths(new FindPathOptions("v1", "v4", 2).setExcludedLabels(LABEL_LABEL2), AUTHORIZATIONS_A),
                 new Path("v1", "v2", "v4")
         );
         assertPaths(
-                graph.findPaths(new FindPathOptions("v1", "v4", 3).setExcludedLabels("b"), AUTHORIZATIONS_A),
+                graph.findPaths(new FindPathOptions("v1", "v4", 3).setExcludedLabels(LABEL_LABEL2), AUTHORIZATIONS_A),
                 new Path("v1", "v2", "v4")
         );
     }
@@ -3791,8 +3795,8 @@ public abstract class GraphTestBase {
         Vertex v1 = graph.addVertex("v1", VISIBILITY_EMPTY, AUTHORIZATIONS_A);
         Vertex v2 = graph.addVertex("v2", VISIBILITY_EMPTY, AUTHORIZATIONS_A);
         Vertex v3 = graph.addVertex("v3", VISIBILITY_EMPTY, AUTHORIZATIONS_A);
-        graph.addEdge(v1, v2, "knows", VISIBILITY_EMPTY, AUTHORIZATIONS_A); // v1 -> v2
-        Edge v2ToV3 = graph.addEdge(v2, v3, "knows", VISIBILITY_EMPTY, AUTHORIZATIONS_A); // v2 -> v3
+        graph.addEdge(v1, v2, LABEL_LABEL1, VISIBILITY_EMPTY, AUTHORIZATIONS_A); // v1 -> v2
+        Edge v2ToV3 = graph.addEdge(v2, v3, LABEL_LABEL1, VISIBILITY_EMPTY, AUTHORIZATIONS_A); // v2 -> v3
         graph.flush();
 
         List<Path> paths = toList(graph.findPaths(new FindPathOptions("v1", "v3", 2), AUTHORIZATIONS_A));
@@ -3814,8 +3818,8 @@ public abstract class GraphTestBase {
         Vertex v1 = graph.addVertex("v1", VISIBILITY_EMPTY, AUTHORIZATIONS_A_AND_B);
         Vertex v2 = graph.addVertex("v2", VISIBILITY_EMPTY, AUTHORIZATIONS_A_AND_B);
         Vertex v3 = graph.addVertex("v3", VISIBILITY_EMPTY, AUTHORIZATIONS_A_AND_B);
-        graph.addEdge(v1, v2, "knows", VISIBILITY_EMPTY, AUTHORIZATIONS_A_AND_B); // v1 -> v2
-        Edge v2ToV3 = graph.addEdge(v2, v3, "knows", VISIBILITY_EMPTY, AUTHORIZATIONS_A_AND_B); // v2 -> v3
+        graph.addEdge(v1, v2, LABEL_LABEL1, VISIBILITY_EMPTY, AUTHORIZATIONS_A_AND_B); // v1 -> v2
+        Edge v2ToV3 = graph.addEdge(v2, v3, LABEL_LABEL1, VISIBILITY_EMPTY, AUTHORIZATIONS_A_AND_B); // v2 -> v3
         graph.flush();
 
         List<Path> paths = toList(graph.findPaths(new FindPathOptions("v1", "v3", 2), AUTHORIZATIONS_A_AND_B));
@@ -3843,12 +3847,12 @@ public abstract class GraphTestBase {
         Vertex v4 = graph.addVertex("v4", VISIBILITY_A, AUTHORIZATIONS_A);
         Vertex v5 = graph.addVertex("v5", VISIBILITY_A, AUTHORIZATIONS_A);
 
-        graph.addEdge(v1, v4, "knows", VISIBILITY_A, AUTHORIZATIONS_A); // v1 -> v4
-        graph.addEdge(v1, v3, "knows", VISIBILITY_A, AUTHORIZATIONS_A); // v1 -> v3
-        graph.addEdge(v3, v4, "knows", VISIBILITY_A, AUTHORIZATIONS_A); // v3 -> v4
-        graph.addEdge(v2, v3, "knows", VISIBILITY_A, AUTHORIZATIONS_A); // v2 -> v3
-        graph.addEdge(v4, v2, "knows", VISIBILITY_A, AUTHORIZATIONS_A); // v4 -> v2
-        graph.addEdge(v2, v5, "knows", VISIBILITY_A, AUTHORIZATIONS_A); // v2 -> v5
+        graph.addEdge(v1, v4, LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_A); // v1 -> v4
+        graph.addEdge(v1, v3, LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_A); // v1 -> v3
+        graph.addEdge(v3, v4, LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_A); // v3 -> v4
+        graph.addEdge(v2, v3, LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_A); // v2 -> v3
+        graph.addEdge(v4, v2, LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_A); // v4 -> v2
+        graph.addEdge(v2, v5, LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_A); // v2 -> v5
         graph.flush();
 
         List<Path> paths = toList(graph.findPaths(new FindPathOptions("v1", "v2", 2), AUTHORIZATIONS_A));
@@ -3884,9 +3888,9 @@ public abstract class GraphTestBase {
         Vertex v2 = graph.addVertex("v2", VISIBILITY_EMPTY, AUTHORIZATIONS_A);
         Vertex v3 = graph.addVertex("v3", VISIBILITY_EMPTY, AUTHORIZATIONS_A);
 
-        graph.addEdge("v1v2", v1, v2, "knows", VISIBILITY_EMPTY, AUTHORIZATIONS_A); // v1 -> v2
-        graph.addEdge("v2v3", v2, v3, "knows", VISIBILITY_EMPTY, AUTHORIZATIONS_A); // v2 -> v3
-        graph.addEdge("v3v1", v3, v1, "knows", VISIBILITY_EMPTY, AUTHORIZATIONS_A); // v3 -> v1
+        graph.addEdge("v1v2", v1, v2, LABEL_LABEL1, VISIBILITY_EMPTY, AUTHORIZATIONS_A); // v1 -> v2
+        graph.addEdge("v2v3", v2, v3, LABEL_LABEL1, VISIBILITY_EMPTY, AUTHORIZATIONS_A); // v2 -> v3
+        graph.addEdge("v3v1", v3, v1, LABEL_LABEL1, VISIBILITY_EMPTY, AUTHORIZATIONS_A); // v3 -> v1
         graph.flush();
 
         List<Path> paths = toList(graph.findPaths(new FindPathOptions("v1", "v3", 2), AUTHORIZATIONS_A));
@@ -3941,11 +3945,11 @@ public abstract class GraphTestBase {
         Vertex v4 = graph.addVertex("v4", VISIBILITY_A, AUTHORIZATIONS_A);
         Vertex v5 = graph.addVertex("v5", VISIBILITY_A, AUTHORIZATIONS_A);
 
-        graph.addEdge(v1, v3, "knows", VISIBILITY_A, AUTHORIZATIONS_A); // v1 -> v3
-        graph.addEdge(v3, v4, "knows", VISIBILITY_A, AUTHORIZATIONS_A); // v3 -> v4
-        graph.addEdge(v2, v3, "knows", VISIBILITY_A, AUTHORIZATIONS_A); // v2 -> v3
-        graph.addEdge(v4, v2, "knows", VISIBILITY_A, AUTHORIZATIONS_A); // v4 -> v2
-        graph.addEdge(v2, v5, "knows", VISIBILITY_A, AUTHORIZATIONS_A); // v2 -> v5
+        graph.addEdge(v1, v3, LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_A); // v1 -> v3
+        graph.addEdge(v3, v4, LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_A); // v3 -> v4
+        graph.addEdge(v2, v3, LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_A); // v2 -> v3
+        graph.addEdge(v4, v2, LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_A); // v4 -> v2
+        graph.addEdge(v2, v5, LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_A); // v2 -> v5
         graph.flush();
 
         List<Path> paths = toList(graph.findPaths(new FindPathOptions("v1", "v4", 2, true), AUTHORIZATIONS_A));
@@ -3965,11 +3969,11 @@ public abstract class GraphTestBase {
         Vertex v3 = graph.addVertex("v3", VISIBILITY_A, AUTHORIZATIONS_A);
         Vertex v4 = graph.addVertex("v4", VISIBILITY_A, AUTHORIZATIONS_A);
         Vertex v5 = graph.addVertex("v5", VISIBILITY_B, AUTHORIZATIONS_B);
-        graph.addEdge(v1, v2, "knows", VISIBILITY_A, AUTHORIZATIONS_A);
-        graph.addEdge(v1, v3, "knows", VISIBILITY_A, AUTHORIZATIONS_A);
-        graph.addEdge(v1, v4, "knows", VISIBILITY_A, AUTHORIZATIONS_A);
-        graph.addEdge(v2, v3, "knows", VISIBILITY_A, AUTHORIZATIONS_A);
-        graph.addEdge(v2, v5, "knows", VISIBILITY_A, AUTHORIZATIONS_A_AND_B);
+        graph.addEdge(v1, v2, LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.addEdge(v1, v3, LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.addEdge(v1, v4, LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.addEdge(v2, v3, LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.addEdge(v2, v5, LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
@@ -4000,11 +4004,11 @@ public abstract class GraphTestBase {
         Vertex v3 = graph.addVertex("v3", VISIBILITY_A, AUTHORIZATIONS_A);
         Vertex v4 = graph.addVertex("v4", VISIBILITY_A, AUTHORIZATIONS_A);
         Vertex v5 = graph.addVertex("v5", VISIBILITY_B, AUTHORIZATIONS_B);
-        graph.addEdge(v1, v2, "knows", VISIBILITY_A, AUTHORIZATIONS_A);
-        graph.addEdge(v1, v3, "knows", VISIBILITY_A, AUTHORIZATIONS_A);
-        graph.addEdge(v1, v4, "knows", VISIBILITY_A, AUTHORIZATIONS_A);
-        graph.addEdge(v2, v3, "knows", VISIBILITY_A, AUTHORIZATIONS_A);
-        graph.addEdge(v2, v5, "knows", VISIBILITY_A, AUTHORIZATIONS_A_AND_B);
+        graph.addEdge(v1, v2, LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.addEdge(v1, v3, LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.addEdge(v1, v4, LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.addEdge(v2, v3, LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.addEdge(v2, v5, LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
@@ -4065,11 +4069,11 @@ public abstract class GraphTestBase {
         Vertex v2 = graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_A);
         Vertex v3 = graph.addVertex("v3", VISIBILITY_A, AUTHORIZATIONS_A);
         Vertex v4 = graph.addVertex("v4", VISIBILITY_A, AUTHORIZATIONS_A);
-        Edge ev1v2 = graph.addEdge("e v1->v2", v1, v2, "", VISIBILITY_A, AUTHORIZATIONS_A);
-        Edge ev1v3 = graph.addEdge("e v1->v3", v1, v3, "", VISIBILITY_A, AUTHORIZATIONS_A);
-        Edge ev2v3 = graph.addEdge("e v2->v3", v2, v3, "", VISIBILITY_A, AUTHORIZATIONS_A);
-        Edge ev3v1 = graph.addEdge("e v3->v1", v3, v1, "", VISIBILITY_A, AUTHORIZATIONS_A);
-        graph.addEdge("e v3->v4", v3, v4, "", VISIBILITY_A, AUTHORIZATIONS_A);
+        Edge ev1v2 = graph.addEdge("e v1->v2", v1, v2, LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_A);
+        Edge ev1v3 = graph.addEdge("e v1->v3", v1, v3, LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_A);
+        Edge ev2v3 = graph.addEdge("e v2->v3", v2, v3, LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_A);
+        Edge ev3v1 = graph.addEdge("e v3->v1", v3, v1, LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.addEdge("e v3->v4", v3, v4, LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_A);
         graph.flush();
 
         List<String> vertexIds = new ArrayList<>();
@@ -4090,11 +4094,11 @@ public abstract class GraphTestBase {
         Vertex v2 = graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_A);
         Vertex v3 = graph.addVertex("v3", VISIBILITY_A, AUTHORIZATIONS_A);
         Vertex v4 = graph.addVertex("v4", VISIBILITY_A, AUTHORIZATIONS_A);
-        Edge ev1v2 = graph.addEdge("e v1->v2", v1, v2, "", VISIBILITY_A, AUTHORIZATIONS_A);
-        Edge ev1v3 = graph.addEdge("e v1->v3", v1, v3, "", VISIBILITY_A, AUTHORIZATIONS_A);
-        Edge ev2v3 = graph.addEdge("e v2->v3", v2, v3, "", VISIBILITY_A, AUTHORIZATIONS_A);
-        Edge ev3v1 = graph.addEdge("e v3->v1", v3, v1, "", VISIBILITY_A, AUTHORIZATIONS_A);
-        graph.addEdge("e v3->v4", v3, v4, "", VISIBILITY_A, AUTHORIZATIONS_A);
+        Edge ev1v2 = graph.addEdge("e v1->v2", v1, v2, LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_A);
+        Edge ev1v3 = graph.addEdge("e v1->v3", v1, v3, LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_A);
+        Edge ev2v3 = graph.addEdge("e v2->v3", v2, v3, LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_A);
+        Edge ev3v1 = graph.addEdge("e v3->v1", v3, v1, LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.addEdge("e v3->v4", v3, v4, LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_A);
 
         List<Vertex> vertices = new ArrayList<>();
         vertices.add(v1);
@@ -4114,11 +4118,11 @@ public abstract class GraphTestBase {
         Vertex v2 = graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_A);
         Vertex v3 = graph.addVertex("v3", VISIBILITY_A, AUTHORIZATIONS_A);
         Vertex v4 = graph.addVertex("v4", VISIBILITY_A, AUTHORIZATIONS_A);
-        graph.addEdge("e v1->v2", v1, v2, "label1", VISIBILITY_A, AUTHORIZATIONS_A);
-        graph.addEdge("e v1->v3", v1, v3, "label1", VISIBILITY_A, AUTHORIZATIONS_A);
-        graph.addEdge("e v2->v3", v2, v3, "label2", VISIBILITY_A, AUTHORIZATIONS_A);
-        graph.addEdge("e v3->v1", v3, v1, "label2", VISIBILITY_A, AUTHORIZATIONS_A);
-        graph.addEdge("e v3->v4", v3, v4, "", VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.addEdge("e v1->v2", v1, v2, LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.addEdge("e v1->v3", v1, v3, LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.addEdge("e v2->v3", v2, v3, LABEL_LABEL2, VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.addEdge("e v3->v1", v3, v1, LABEL_LABEL2, VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.addEdge("e v3->v4", v3, v4, LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_A);
         graph.flush();
 
         List<String> vertexIds = new ArrayList<>();
@@ -4127,17 +4131,17 @@ public abstract class GraphTestBase {
         vertexIds.add("v3");
         List<RelatedEdge> relatedEdges = toList(graph.findRelatedEdgeSummary(vertexIds, AUTHORIZATIONS_A));
         assertEquals(4, relatedEdges.size());
-        org.vertexium.test.util.IterableUtils.assertContains(new RelatedEdgeImpl("e v1->v2", "label1", v1.getId(), v2.getId()), relatedEdges);
-        org.vertexium.test.util.IterableUtils.assertContains(new RelatedEdgeImpl("e v1->v3", "label1", v1.getId(), v3.getId()), relatedEdges);
-        org.vertexium.test.util.IterableUtils.assertContains(new RelatedEdgeImpl("e v2->v3", "label2", v2.getId(), v3.getId()), relatedEdges);
-        org.vertexium.test.util.IterableUtils.assertContains(new RelatedEdgeImpl("e v3->v1", "label2", v3.getId(), v1.getId()), relatedEdges);
+        org.vertexium.test.util.IterableUtils.assertContains(new RelatedEdgeImpl("e v1->v2", LABEL_LABEL1, v1.getId(), v2.getId()), relatedEdges);
+        org.vertexium.test.util.IterableUtils.assertContains(new RelatedEdgeImpl("e v1->v3", LABEL_LABEL1, v1.getId(), v3.getId()), relatedEdges);
+        org.vertexium.test.util.IterableUtils.assertContains(new RelatedEdgeImpl("e v2->v3", LABEL_LABEL2, v2.getId(), v3.getId()), relatedEdges);
+        org.vertexium.test.util.IterableUtils.assertContains(new RelatedEdgeImpl("e v3->v1", LABEL_LABEL2, v3.getId(), v1.getId()), relatedEdges);
     }
 
     @Test
     public void testFindRelatedEdgeSummaryAfterSoftDelete() {
         Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
         Vertex v2 = graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_A);
-        Edge e1 = graph.addEdge("e v1->v2", v1, v2, "label1", VISIBILITY_A, AUTHORIZATIONS_A);
+        Edge e1 = graph.addEdge("e v1->v2", v1, v2, LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_A);
         graph.flush();
 
         List<String> vertexIds = new ArrayList<>();
@@ -4145,7 +4149,7 @@ public abstract class GraphTestBase {
         vertexIds.add("v2");
         List<RelatedEdge> relatedEdges = toList(graph.findRelatedEdgeSummary(vertexIds, AUTHORIZATIONS_A));
         assertEquals(1, relatedEdges.size());
-        org.vertexium.test.util.IterableUtils.assertContains(new RelatedEdgeImpl("e v1->v2", "label1", v1.getId(), v2.getId()), relatedEdges);
+        org.vertexium.test.util.IterableUtils.assertContains(new RelatedEdgeImpl("e v1->v2", LABEL_LABEL1, v1.getId(), v2.getId()), relatedEdges);
 
         graph.softDeleteEdge(e1, AUTHORIZATIONS_A);
         graph.flush();
@@ -4158,7 +4162,7 @@ public abstract class GraphTestBase {
     public void testFindRelatedEdgeSummaryAfterMarkedHidden() {
         Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
         Vertex v2 = graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_A);
-        Edge e1 = graph.addEdge("e v1->v2", v1, v2, "label1", VISIBILITY_A, AUTHORIZATIONS_A);
+        Edge e1 = graph.addEdge("e v1->v2", v1, v2, LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_A);
         graph.flush();
 
         List<String> vertexIds = new ArrayList<>();
@@ -4166,7 +4170,7 @@ public abstract class GraphTestBase {
         vertexIds.add("v2");
         List<RelatedEdge> relatedEdges = toList(graph.findRelatedEdgeSummary(vertexIds, AUTHORIZATIONS_A));
         assertEquals(1, relatedEdges.size());
-        org.vertexium.test.util.IterableUtils.assertContains(new RelatedEdgeImpl("e v1->v2", "label1", v1.getId(), v2.getId()), relatedEdges);
+        org.vertexium.test.util.IterableUtils.assertContains(new RelatedEdgeImpl("e v1->v2", LABEL_LABEL1, v1.getId(), v2.getId()), relatedEdges);
 
         graph.markEdgeHidden(e1, VISIBILITY_A, AUTHORIZATIONS_A);
         graph.flush();
@@ -4199,7 +4203,7 @@ public abstract class GraphTestBase {
         for (int i = 0; i < totalNumberOfEdges; i++) {
             Vertex outVertex = vertices.get(random.nextInt(vertices.size()));
             Vertex inVertex = vertices.get(random.nextInt(vertices.size()));
-            graph.addEdge("e" + i, outVertex, inVertex, "", VISIBILITY_A, AUTHORIZATIONS_A);
+            graph.addEdge("e" + i, outVertex, inVertex, LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_A);
         }
         graph.flush();
         endTime = new Date();
@@ -4234,7 +4238,7 @@ public abstract class GraphTestBase {
         Vertex v2 = graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_A);
         Metadata metadataPropB = new Metadata();
         metadataPropB.add("meta1", "meta1", VISIBILITY_A);
-        graph.prepareEdge("e1", v1, v2, "label", VISIBILITY_A)
+        graph.prepareEdge("e1", v1, v2, LABEL_LABEL1, VISIBILITY_A)
                 .setProperty("propA", "propA", VISIBILITY_A)
                 .setProperty("propB", "propB", VISIBILITY_A_AND_B)
                 .setProperty("propBmeta", "propBmeta", metadataPropB, VISIBILITY_A)
@@ -4332,7 +4336,7 @@ public abstract class GraphTestBase {
     public void testMetadataMutationsOnEdge() {
         Metadata metadataPropB = new Metadata();
         metadataPropB.add("meta1", "meta1", VISIBILITY_A);
-        Edge edge = graph.prepareEdge("v1", "v2", "label", VISIBILITY_A)
+        Edge edge = graph.prepareEdge("v1", "v2", LABEL_LABEL1, VISIBILITY_A)
                 .setProperty("propBmeta", "propBmeta", metadataPropB, VISIBILITY_A)
                 .save(AUTHORIZATIONS_ALL);
         graph.flush();
@@ -4667,7 +4671,7 @@ public abstract class GraphTestBase {
                 .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
-        graph.prepareEdge("e1", "v1", "v2", "label", VISIBILITY_EMPTY)
+        graph.prepareEdge("e1", "v1", "v2", LABEL_LABEL1, VISIBILITY_EMPTY)
                 .addPropertyValue("k2", "prop2", "value2", VISIBILITY_A)
                 .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
@@ -4835,7 +4839,7 @@ public abstract class GraphTestBase {
         Vertex v2 = graph.prepareVertex("v2", VISIBILITY_EMPTY)
                 .save(AUTHORIZATIONS_A_AND_B);
 
-        graph.prepareEdge("e1", v1, v2, "", VISIBILITY_A)
+        graph.prepareEdge("e1", v1, v2, LABEL_LABEL1, VISIBILITY_A)
                 .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
@@ -5136,7 +5140,7 @@ public abstract class GraphTestBase {
 
         Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
         Vertex v2 = graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_A);
-        graph.prepareEdge("e1", v1, v2, "label1", VISIBILITY_A)
+        graph.prepareEdge("e1", v1, v2, LABEL_LABEL1, VISIBILITY_A)
                 .setProperty("prop1", "value1", VISIBILITY_A)
                 .setIndexHint(IndexHint.DO_NOT_INDEX)
                 .save(AUTHORIZATIONS_A);
@@ -5439,7 +5443,7 @@ public abstract class GraphTestBase {
         Vertex v2 = graph.prepareVertex("v2", time25.getTime(), VISIBILITY_A)
                 .addPropertyValue("", "age", 20, metadata, time25.getTime(), VISIBILITY_A)
                 .save(AUTHORIZATIONS_A);
-        graph.prepareEdge("e1", v1, v2, "label1", time30.getTime(), VISIBILITY_A)
+        graph.prepareEdge("e1", v1, v2, LABEL_LABEL1, time30.getTime(), VISIBILITY_A)
                 .save(AUTHORIZATIONS_A);
 
         graph.prepareVertex("v1", time30.getTime(), VISIBILITY_A)
@@ -5503,7 +5507,7 @@ public abstract class GraphTestBase {
                 "value5", createDate(2016, 8, 6, 9, 20, 0).getTime()
         );
 
-        ElementMutation<Edge> edgeMutation = graph.prepareEdge(edgeId, v1, v2, "edgeLabel", VISIBILITY_EMPTY);
+        ElementMutation<Edge> edgeMutation = graph.prepareEdge(edgeId, v1, v2, LABEL_LABEL1, VISIBILITY_EMPTY);
         for (Map.Entry<String, Long> entry : values.entrySet()) {
             edgeMutation.addPropertyValue(propertyKey, propertyName, entry.getKey(), new Metadata(), entry.getValue(), VISIBILITY_EMPTY);
         }
@@ -5580,12 +5584,12 @@ public abstract class GraphTestBase {
                 .addPropertyValue("k2", "name", "Joseph", VISIBILITY_B)
                 .addPropertyValue("", "age", 20, VISIBILITY_EMPTY)
                 .save(AUTHORIZATIONS_A_AND_B);
-        graph.prepareEdge("e1", "v1", "v2", "label1", VISIBILITY_EMPTY)
+        graph.prepareEdge("e1", "v1", "v2", LABEL_LABEL1, VISIBILITY_EMPTY)
                 .addPropertyValue("k1", "name", "Joe", VISIBILITY_EMPTY)
                 .save(AUTHORIZATIONS_A_AND_B);
-        graph.prepareEdge("e2", "v1", "v2", "label1", VISIBILITY_EMPTY)
+        graph.prepareEdge("e2", "v1", "v2", LABEL_LABEL1, VISIBILITY_EMPTY)
                 .save(AUTHORIZATIONS_A_AND_B);
-        graph.prepareEdge("e3", "v1", "v2", "label2", VISIBILITY_EMPTY)
+        graph.prepareEdge("e3", "v1", "v2", LABEL_LABEL2, VISIBILITY_EMPTY)
                 .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
@@ -5608,8 +5612,8 @@ public abstract class GraphTestBase {
         Map<Object, Long> edgePropertyCountByValue = queryGraphQueryWithTermsAggregation(Edge.LABEL_PROPERTY_NAME, ElementType.EDGE, AUTHORIZATIONS_A_AND_B);
         assumeTrue("terms aggregation not supported", edgePropertyCountByValue != null);
         assertEquals(2, edgePropertyCountByValue.size());
-        assertEquals(2L, (long) edgePropertyCountByValue.get("label1"));
-        assertEquals(1L, (long) edgePropertyCountByValue.get("label2"));
+        assertEquals(2L, (long) edgePropertyCountByValue.get(LABEL_LABEL1));
+        assertEquals(1L, (long) edgePropertyCountByValue.get(LABEL_LABEL2));
 
         vertexPropertyCountByValue = queryGraphQueryWithTermsAggregation("Joe", "name", ElementType.VERTEX, AUTHORIZATIONS_EMPTY);
         assumeTrue("terms aggregation not supported", vertexPropertyCountByValue != null);
@@ -5657,7 +5661,7 @@ public abstract class GraphTestBase {
                 .save(AUTHORIZATIONS_A_AND_B);
         graph.prepareVertex("v2", VISIBILITY_EMPTY)
                 .save(AUTHORIZATIONS_A_AND_B);
-        graph.prepareEdge("e1", "v1", "v2", "edge", VISIBILITY_A)
+        graph.prepareEdge("e1", "v1", "v2", LABEL_LABEL1, VISIBILITY_A)
                 .addPropertyValue("k1", "age", 25, VISIBILITY_EMPTY)
                 .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
@@ -5760,10 +5764,10 @@ public abstract class GraphTestBase {
                 .addPropertyValue("k1", "name", "Sam", VISIBILITY_EMPTY)
                 .addPropertyValue("k1", "gender", "female", VISIBILITY_EMPTY)
                 .save(AUTHORIZATIONS_A_AND_B);
-        graph.addEdge("v1", "v2", "label1", VISIBILITY_EMPTY, AUTHORIZATIONS_A_AND_B);
-        graph.addEdge("v1", "v3", "label1", VISIBILITY_EMPTY, AUTHORIZATIONS_A_AND_B);
-        graph.addEdge("v1", "v4", "label1", VISIBILITY_EMPTY, AUTHORIZATIONS_A_AND_B);
-        graph.addEdge("v1", "v5", "label1", VISIBILITY_EMPTY, AUTHORIZATIONS_A_AND_B);
+        graph.addEdge("v1", "v2", LABEL_LABEL1, VISIBILITY_EMPTY, AUTHORIZATIONS_A_AND_B);
+        graph.addEdge("v1", "v3", LABEL_LABEL1, VISIBILITY_EMPTY, AUTHORIZATIONS_A_AND_B);
+        graph.addEdge("v1", "v4", LABEL_LABEL1, VISIBILITY_EMPTY, AUTHORIZATIONS_A_AND_B);
+        graph.addEdge("v1", "v5", LABEL_LABEL1, VISIBILITY_EMPTY, AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         Query q = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B).query(AUTHORIZATIONS_A_AND_B).limit(0);
@@ -6470,7 +6474,7 @@ public abstract class GraphTestBase {
                 .addPropertyValue("k2", "name", "Joseph", VISIBILITY_B)
                 .addPropertyValue("", "age", 20, VISIBILITY_EMPTY)
                 .save(AUTHORIZATIONS_A_AND_B);
-        graph.prepareEdge("e1", "v1", "v2", VISIBILITY_EMPTY)
+        graph.prepareEdge("e1", "v1", LABEL_LABEL1, VISIBILITY_EMPTY)
                 .addPropertyValue("k1", "name", "Joe", VISIBILITY_EMPTY)
                 .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
@@ -6490,7 +6494,7 @@ public abstract class GraphTestBase {
     public void testGetCounts() {
         Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
         Vertex v2 = graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_A);
-        graph.addEdge("e1", v1, v2, "edge1", VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.addEdge("e1", v1, v2, LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_A);
         graph.flush();
 
         assertEquals(2, graph.getVertexCount(AUTHORIZATIONS_A));
@@ -6504,15 +6508,15 @@ public abstract class GraphTestBase {
         Vertex v3 = graph.addVertex("v3", VISIBILITY_A, AUTHORIZATIONS_ALL);
         graph.flush();
 
-        graph.addEdge("e v1->v2", v1, v2, "labelA", VISIBILITY_A, AUTHORIZATIONS_ALL);
-        graph.addEdge("e v1->v3", v1, v3, "labelB", VISIBILITY_A, AUTHORIZATIONS_ALL);
+        graph.addEdge("e v1->v2", v1, v2, LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_ALL);
+        graph.addEdge("e v1->v3", v1, v3, LABEL_LABEL2, VISIBILITY_A, AUTHORIZATIONS_ALL);
         graph.flush();
 
         v1 = graph.getVertex("v1", FetchHint.EDGE_LABELS, AUTHORIZATIONS_ALL);
         List<String> edgeLabels = toList(v1.getEdgeLabels(Direction.BOTH, AUTHORIZATIONS_ALL));
         assertEquals(2, edgeLabels.size());
-        assertTrue("labelA missing", edgeLabels.contains("labelA"));
-        assertTrue("labelB missing", edgeLabels.contains("labelB"));
+        assertTrue(LABEL_LABEL1 + " missing", edgeLabels.contains(LABEL_LABEL1));
+        assertTrue(LABEL_LABEL2 + " missing", edgeLabels.contains(LABEL_LABEL2));
     }
 
     @Test
@@ -6572,10 +6576,10 @@ public abstract class GraphTestBase {
     public void testEdgeHashCodeAndEquals() {
         Vertex v1 = graph.prepareVertex("v1", VISIBILITY_A).save(AUTHORIZATIONS_A);
         Vertex v2 = graph.prepareVertex("v2", VISIBILITY_A).save(AUTHORIZATIONS_A);
-        Edge e1 = graph.prepareEdge("e1", v1, v2, "label1", VISIBILITY_A)
+        Edge e1 = graph.prepareEdge("e1", v1, v2, LABEL_LABEL1, VISIBILITY_A)
                 .setProperty("prop1", "value1", VISIBILITY_A)
                 .save(AUTHORIZATIONS_A);
-        Edge e2 = graph.prepareEdge("e2", v1, v2, "label1", VISIBILITY_A)
+        Edge e2 = graph.prepareEdge("e2", v1, v2, LABEL_LABEL1, VISIBILITY_A)
                 .setProperty("prop1", "value1", VISIBILITY_A)
                 .save(AUTHORIZATIONS_A);
         graph.flush();
@@ -6878,7 +6882,7 @@ public abstract class GraphTestBase {
                 .addExtendedData("table2", "row3", "name", "value 1", VISIBILITY_A)
                 .addExtendedData("table2", "row4", "name", "value 2", VISIBILITY_A)
                 .save(AUTHORIZATIONS_A);
-        graph.prepareEdge("e1", "v1", "v2", "label", VISIBILITY_A)
+        graph.prepareEdge("e1", "v1", "v2", LABEL_LABEL1, VISIBILITY_A)
                 .addExtendedData("table1", "row5", "name", "value 1", VISIBILITY_A)
                 .addExtendedData("table1", "row6", "name", "value 2", VISIBILITY_A)
                 .save(AUTHORIZATIONS_A);
@@ -6916,7 +6920,7 @@ public abstract class GraphTestBase {
                 .addExtendedData("table1", "row3", "name", "value 1", VISIBILITY_A)
                 .addExtendedData("table1", "row4", "name", "value 2", VISIBILITY_A)
                 .save(AUTHORIZATIONS_A);
-        graph.prepareEdge("e1", "v1", "v2", "label", VISIBILITY_A)
+        graph.prepareEdge("e1", "v1", "v2", LABEL_LABEL1, VISIBILITY_A)
                 .addExtendedData("table1", "row5", "name", "value 1", VISIBILITY_A)
                 .addExtendedData("table1", "row6", "name", "value 2", VISIBILITY_A)
                 .save(AUTHORIZATIONS_A);
@@ -6959,7 +6963,7 @@ public abstract class GraphTestBase {
     public void testExtendedDataQueryAfterDeleteForEdge() {
         graph.prepareVertex("v1", VISIBILITY_A).save(AUTHORIZATIONS_A);
         graph.prepareVertex("v2", VISIBILITY_A).save(AUTHORIZATIONS_A);
-        graph.prepareEdge("e1", "v1", "v2", "label", VISIBILITY_A)
+        graph.prepareEdge("e1", "v1", "v2", LABEL_LABEL1, VISIBILITY_A)
                 .addExtendedData("table1", "row1", "name", "value 1", VISIBILITY_A)
                 .addExtendedData("table1", "row2", "name", "value 2", VISIBILITY_A)
                 .save(AUTHORIZATIONS_A);
@@ -6981,13 +6985,13 @@ public abstract class GraphTestBase {
         Date date2 = new Date(1487083480000L);
         graph.prepareVertex("v1", VISIBILITY_A).save(AUTHORIZATIONS_A);
         graph.prepareVertex("v2", VISIBILITY_A).save(AUTHORIZATIONS_A);
-        graph.prepareEdge("e1", "v1", "v2", "label", VISIBILITY_A)
+        graph.prepareEdge("e1", "v1", "v2", LABEL_LABEL1, VISIBILITY_A)
                 .addExtendedData("table1", "row1", "date", date1, VISIBILITY_A)
                 .addExtendedData("table1", "row1", "name", "value 1", VISIBILITY_A)
                 .addExtendedData("table1", "row2", "date", date2, VISIBILITY_A)
                 .addExtendedData("table1", "row2", "name", "value 2", VISIBILITY_A)
                 .save(AUTHORIZATIONS_A);
-        graph.prepareEdge("e2", "v1", "v2", "label", VISIBILITY_A)
+        graph.prepareEdge("e2", "v1", "v2", LABEL_LABEL1, VISIBILITY_A)
                 .save(AUTHORIZATIONS_A);
         graph.flush();
 
@@ -7173,7 +7177,7 @@ public abstract class GraphTestBase {
             String edgeId = "e" + i;
             String outVertexId = "v" + random.nextInt(vertexCount);
             String inVertexId = "v" + random.nextInt(vertexCount);
-            graph.prepareEdge(edgeId, outVertexId, inVertexId, "label", VISIBILITY_A)
+            graph.prepareEdge(edgeId, outVertexId, inVertexId, LABEL_LABEL1, VISIBILITY_A)
                     .addPropertyValue("k1", "prop1", "value1 " + i, VISIBILITY_A)
                     .addPropertyValue("k1", "prop2", "value2 " + i, VISIBILITY_A)
                     .addPropertyValue("k1", "prop3", "value3 " + i, VISIBILITY_A)
