@@ -63,7 +63,7 @@ public class DataInDataTableStreamingPropertyValueStorageStrategy implements Str
             dataMutation.put(METADATA_COLUMN_FAMILY, METADATA_LENGTH_COLUMN_QUALIFIER, property.getTimestamp(), new Value(Longs.toByteArray(offset)));
             elementMutationBuilder.saveDataMutation(dataMutation);
 
-            return new StreamingPropertyValueTableDataRef(dataTableRowKey, streamingPropertyValue);
+            return new StreamingPropertyValueTableDataRef(dataTableRowKey, streamingPropertyValue, offset);
         } catch (Exception ex) {
             throw new VertexiumException("Could not store streaming property value", ex);
         }

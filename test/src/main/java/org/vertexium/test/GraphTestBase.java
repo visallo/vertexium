@@ -190,7 +190,7 @@ public abstract class GraphTestBase {
         PropertyValue propLarge = StreamingPropertyValue.create(
                 new ByteArrayInputStream(expectedLargeValue.getBytes()),
                 String.class,
-                expectedLargeValue.length()
+                null
         );
         String largePropertyName = "propLarge/\\*!@#$%^&*()[]{}|";
         Vertex v1 = graph.prepareVertex("v1", VISIBILITY_A)
@@ -4480,8 +4480,11 @@ public abstract class GraphTestBase {
 
         Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B);
         StreamingPropertyValue spvA = (StreamingPropertyValue) v1.getPropertyValue("a");
+        assertEquals(12L, (long) spvA.getLength());
         StreamingPropertyValue spvB = (StreamingPropertyValue) v1.getPropertyValue("b");
+        assertEquals(12L, (long) spvA.getLength());
         StreamingPropertyValue spvC = (StreamingPropertyValue) v1.getPropertyValue("c");
+        assertEquals(12L, (long) spvA.getLength());
         ArrayList<StreamingPropertyValue> spvs = Lists.newArrayList(spvA, spvB, spvC);
         List<InputStream> streams = graph.getStreamingPropertyValueInputStreams(spvs);
         assertEquals("Test Value A", IOUtils.toString(streams.get(0)));
