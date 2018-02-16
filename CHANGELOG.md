@@ -1,4 +1,5 @@
 # v3.1.2
+* Fixed: Find path when edge labels are deflated
 * Fixed: Accumulo stream property value in table data length of reference
 
 # v3.1.1

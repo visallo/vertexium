@@ -19,6 +19,12 @@ public class AccumuloSimpleSubstitutionGraphTest extends AccumuloGraphTestBase {
         put(Joiner.on('.').join(new String[]{SUBSTITUTION_MAP_PREFIX, "1", VALUE_IDENTIFIER}), "a");
         put(Joiner.on('.').join(new String[]{SUBSTITUTION_MAP_PREFIX, "2", KEY_IDENTIFIER}), "label");
         put(Joiner.on('.').join(new String[]{SUBSTITUTION_MAP_PREFIX, "2", VALUE_IDENTIFIER}), "l");
+        put(Joiner.on('.').join(new String[]{SUBSTITUTION_MAP_PREFIX, "3", KEY_IDENTIFIER}), LABEL_LABEL1);
+        put(Joiner.on('.').join(new String[]{SUBSTITUTION_MAP_PREFIX, "3", VALUE_IDENTIFIER}), "l1");
+        put(Joiner.on('.').join(new String[]{SUBSTITUTION_MAP_PREFIX, "4", KEY_IDENTIFIER}), LABEL_LABEL2);
+        put(Joiner.on('.').join(new String[]{SUBSTITUTION_MAP_PREFIX, "4", VALUE_IDENTIFIER}), "l2");
+        put(Joiner.on('.').join(new String[]{SUBSTITUTION_MAP_PREFIX, "5", KEY_IDENTIFIER}), LABEL_LABEL3);
+        put(Joiner.on('.').join(new String[]{SUBSTITUTION_MAP_PREFIX, "5", VALUE_IDENTIFIER}), "l3");
     }});
 
     @Override

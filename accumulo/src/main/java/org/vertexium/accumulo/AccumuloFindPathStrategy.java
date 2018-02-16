@@ -25,6 +25,8 @@ public class AccumuloFindPathStrategy {
     private final FindPathOptions options;
     private final ProgressCallback progressCallback;
     private final Authorizations authorizations;
+    private final String[] deflatedLabels;
+    private final String[] deflatedExcludedLabels;
 
     public AccumuloFindPathStrategy(
             AccumuloGraph graph,
@@ -36,6 +38,20 @@ public class AccumuloFindPathStrategy {
         this.options = options;
         this.progressCallback = progressCallback;
         this.authorizations = authorizations;
+        this.deflatedLabels = deflateLabels(graph.getNameSubstitutionStrategy(), options.getLabels());
+        this.deflatedExcludedLabels = deflateLabels(graph.getNameSubstitutionStrategy(), options.getExcludedLabels());
+    }
+
+    private static String[] deflateLabels(AccumuloNameSubstitutionStrategy nameSubstitutionStrategy, String[] labels) {
+        if (labels == null) {
+            return null;
+        }
+        String[] results = new String[labels.length];
+        for (int i = 0; i < labels.length; i++) {
+            String label = labels[i];
+            results[i] = nameSubstitutionStrategy.deflate(label);
+        }
+        return results;
     }
 
     public Iterable<Path> findPaths() {
@@ -62,7 +78,7 @@ public class AccumuloFindPathStrategy {
     private void findPathsSetIntersection(List<Path> foundPaths) {
         String sourceVertexId = options.getSourceVertexId();
         String destVertexId = options.getDestVertexId();
-        
+
         Set<String> vertexIds = new HashSet<>();
         vertexIds.add(sourceVertexId);
         vertexIds.add(destVertexId);
@@ -199,8 +215,8 @@ public class AccumuloFindPathStrategy {
                     ConnectedVertexIdsIterator.class.getSimpleName(),
                     ConnectedVertexIdsIterator.class
             );
-            ConnectedVertexIdsIterator.setLabels(connectedVertexIdsIteratorSettings, options.getLabels());
-            ConnectedVertexIdsIterator.setExcludedLabels(connectedVertexIdsIteratorSettings, options.getExcludedLabels());
+            ConnectedVertexIdsIterator.setLabels(connectedVertexIdsIteratorSettings, deflatedLabels);
+            ConnectedVertexIdsIterator.setExcludedLabels(connectedVertexIdsIteratorSettings, deflatedExcludedLabels);
             scanner.addScanIterator(connectedVertexIdsIteratorSettings);
 
             final long timerStartTime = System.currentTimeMillis();
@@ -209,7 +225,7 @@ public class AccumuloFindPathStrategy {
                 for (Map.Entry<Key, Value> row : scanner) {
                     try {
                         Map<String, Boolean> verticesExist = graph.doVerticesExist(ConnectedVertexIdsIterator.decodeValue(row.getValue()), authorizations);
-                        Set<String> rowVertexIds =  stream(verticesExist.keySet())
+                        Set<String> rowVertexIds = stream(verticesExist.keySet())
                                 .filter(key -> verticesExist.getOrDefault(key, false))
                                 .collect(Collectors.toSet());
                         results.put(row.getKey().getRow().toString(), rowVertexIds);
