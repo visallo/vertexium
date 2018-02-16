@@ -1,3 +1,6 @@
+# v3.1.2
+* Fixed: Accumulo stream property value in table data length of reference
+
 # v3.1.1
 * Added: Graph.getExtendedData to get a single extended data row
 * Fixed: InMemory update extended data with different value
