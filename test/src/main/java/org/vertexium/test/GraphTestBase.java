@@ -186,7 +186,7 @@ public abstract class GraphTestBase {
     @Test
     public void testAddStreamingPropertyValue() throws IOException, InterruptedException {
         String expectedLargeValue = IOUtils.toString(new LargeStringInputStream(LARGE_PROPERTY_VALUE_SIZE));
-        PropertyValue propSmall = StreamingPropertyValue.create(new ByteArrayInputStream("value1".getBytes()), String.class, 6);
+        PropertyValue propSmall = StreamingPropertyValue.create(new ByteArrayInputStream("value1".getBytes()), String.class, 6L);
         PropertyValue propLarge = StreamingPropertyValue.create(
                 new ByteArrayInputStream(expectedLargeValue.getBytes()),
                 String.class,
@@ -275,7 +275,7 @@ public abstract class GraphTestBase {
         PropertyValue propLarge = StreamingPropertyValue.create(
                 new ByteArrayInputStream(expectedValue.getBytes()),
                 String.class,
-                expectedValue.length()
+                (long) expectedValue.length()
         );
         graph.prepareVertex("v1", VISIBILITY_A)
                 .addPropertyValue("key1", "largeProp", propLarge, metadata, timestamp, VISIBILITY_A)
@@ -291,7 +291,7 @@ public abstract class GraphTestBase {
         propLarge = StreamingPropertyValue.create(
                 new ByteArrayInputStream(expectedValue.getBytes()),
                 String.class,
-                expectedValue.length()
+                (long) expectedValue.length()
         );
         graph.prepareVertex("v1", VISIBILITY_A)
                 .addPropertyValue("key1", "largeProp", propLarge, metadata, timestamp + 1, VISIBILITY_A)

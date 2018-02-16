@@ -45,8 +45,8 @@ public abstract class StreamingPropertyValue extends PropertyValue implements Se
         return new DefaultStreamingPropertyValue(data, String.class);
     }
 
-    public static StreamingPropertyValue create(InputStream inputStream, Class type, Integer length) {
-        return new DefaultStreamingPropertyValue(inputStream, type, length == null ? null : (long) length);
+    public static StreamingPropertyValue create(InputStream inputStream, Class type, Long length) {
+        return new DefaultStreamingPropertyValue(inputStream, type, length);
     }
 
     public static StreamingPropertyValue create(InputStream inputStream, Class type) {
