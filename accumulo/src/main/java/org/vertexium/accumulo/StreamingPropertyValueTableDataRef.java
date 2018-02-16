@@ -16,11 +16,11 @@ public class StreamingPropertyValueTableDataRef extends StreamingPropertyValueRe
         length = null;
     }
 
-    public StreamingPropertyValueTableDataRef(String dataRowKey, StreamingPropertyValue propertyValue) {
+    public StreamingPropertyValueTableDataRef(String dataRowKey, StreamingPropertyValue propertyValue, long length) {
         super(propertyValue);
         this.dataRowKey = dataRowKey;
-        valueType = propertyValue.getValueType();
-        length = propertyValue.getLength();
+        this.valueType = propertyValue.getValueType();
+        this.length = length;
     }
 
     @Override
