@@ -145,11 +145,11 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
         return false;
     }
 
-    private SearchRequestBuilder buildQuery(EnumSet<ElasticsearchDocumentType> elementType, boolean includeAggregations) {
+    private SearchRequestBuilder buildQuery(EnumSet<ElasticsearchDocumentType> elementType, EnumSet<FetchHint> fetchHints, boolean includeAggregations) {
         if (QUERY_LOGGER.isTraceEnabled()) {
             QUERY_LOGGER.trace("searching for: " + toString());
         }
-        List<QueryBuilder> filters = getFilters(elementType);
+        List<QueryBuilder> filters = getFilters(elementType, fetchHints);
         QueryBuilder query = createQuery(getParameters());
         query = scoringStrategy.updateQuery(query);
 
@@ -198,18 +198,21 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
         }
     }
 
-    protected List<QueryBuilder> getFilters(EnumSet<ElasticsearchDocumentType> elementTypes) {
+    protected List<QueryBuilder> getFilters(EnumSet<ElasticsearchDocumentType> elementTypes, EnumSet<FetchHint> fetchHints) {
         List<QueryBuilder> filters = new ArrayList<>();
         if (elementTypes != null) {
             addElementTypeFilter(filters, elementTypes);
         }
-        String[] hiddenVertexPropertyNames = getPropertyNames(HIDDEN_VERTEX_FIELD_NAME);
-        if (hiddenVertexPropertyNames != null && hiddenVertexPropertyNames.length > 0) {
-            BoolQueryBuilder elementIsNotHiddenQuery = QueryBuilders.boolQuery();
-            for (String hiddenVertexPropertyName : hiddenVertexPropertyNames) {
-                elementIsNotHiddenQuery.mustNot(QueryBuilders.existsQuery(hiddenVertexPropertyName));
+
+        if (!fetchHints.contains(FetchHint.INCLUDE_HIDDEN)) {
+            String[] hiddenVertexPropertyNames = getPropertyNames(HIDDEN_VERTEX_FIELD_NAME);
+            if (hiddenVertexPropertyNames != null && hiddenVertexPropertyNames.length > 0) {
+                BoolQueryBuilder elementIsNotHiddenQuery = QueryBuilders.boolQuery();
+                for (String hiddenVertexPropertyName : hiddenVertexPropertyNames) {
+                    elementIsNotHiddenQuery.mustNot(QueryBuilders.existsQuery(hiddenVertexPropertyName));
+                }
+                filters.add(elementIsNotHiddenQuery);
             }
-            filters.add(elementIsNotHiddenQuery);
         }
         for (HasContainer has : getParameters().getHasContainers()) {
             if (has instanceof HasValueContainer) {
@@ -349,7 +352,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
     }
 
     private QueryResultsIterable<? extends VertexiumObject> searchScroll(EnumSet<VertexiumObjectType> objectTypes, EnumSet<FetchHint> fetchHints) {
-        return new QueryInfiniteScrollIterable<VertexiumObject>(objectTypes) {
+        return new QueryInfiniteScrollIterable<VertexiumObject>(objectTypes, fetchHints) {
             @Override
             protected ElasticsearchGraphQueryIterable<VertexiumObject> searchResponseToIterable(SearchResponse searchResponse) {
                 return ElasticsearchSearchQueryBase.this.searchResponseToVertexiumObjectIterable(searchResponse, fetchHints);
@@ -373,7 +376,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
             protected ElasticsearchGraphQueryIterable<VertexiumObject> getPageIterable(int skip, int limit, boolean includeAggregations) {
                 SearchResponse response;
                 try {
-                    response = getSearchResponse(ElasticsearchDocumentType.fromVertexiumObjectTypes(objectTypes), skip, limit, includeAggregations);
+                    response = getSearchResponse(ElasticsearchDocumentType.fromVertexiumObjectTypes(objectTypes), fetchHints, skip, limit, includeAggregations);
                 } catch (IndexNotFoundException ex) {
                     LOGGER.debug("Index missing: %s (returning empty iterable)", ex.getMessage());
                     return createEmptyIterable();
@@ -423,15 +426,15 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
         return createIterable(response, filterParameters, vertexiumObjects, evaluateQueryString, false, evaluateSortContainers, response.getTookInMillis(), hits);
     }
 
-    public QueryResultsIterable<SearchHit> search(EnumSet<VertexiumObjectType> objectTypes) {
+    private QueryResultsIterable<SearchHit> searchHits(EnumSet<VertexiumObjectType> objectTypes, EnumSet<FetchHint> fetchHints) {
         if (shouldUseScrollApi()) {
-            return searchScroll(objectTypes);
+            return searchScrollHits(objectTypes, fetchHints);
         }
-        return searchPaged(objectTypes);
+        return searchPagedHits(objectTypes, fetchHints);
     }
 
-    private QueryInfiniteScrollIterable<SearchHit> searchScroll(EnumSet<VertexiumObjectType> objectTypes) {
-        return new QueryInfiniteScrollIterable<SearchHit>(objectTypes) {
+    private QueryInfiniteScrollIterable<SearchHit> searchScrollHits(EnumSet<VertexiumObjectType> objectTypes, EnumSet<FetchHint> fetchHints) {
+        return new QueryInfiniteScrollIterable<SearchHit>(objectTypes, fetchHints) {
             @Override
             protected ElasticsearchGraphQueryIterable<SearchHit> searchResponseToIterable(SearchResponse searchResponse) {
                 return ElasticsearchSearchQueryBase.this.searchResponseToSearchHitsIterable(searchResponse);
@@ -439,13 +442,13 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
         };
     }
 
-    private PagingIterable<SearchHit> searchPaged(EnumSet<VertexiumObjectType> objectTypes) {
+    private PagingIterable<SearchHit> searchPagedHits(EnumSet<VertexiumObjectType> objectTypes, EnumSet<FetchHint> fetchHints) {
         return new PagingIterable<SearchHit>(getParameters().getSkip(), getParameters().getLimit(), pageSize) {
             @Override
             protected ElasticsearchGraphQueryIterable<SearchHit> getPageIterable(int skip, int limit, boolean includeAggregations) {
                 SearchResponse response;
                 try {
-                    response = getSearchResponse(ElasticsearchDocumentType.fromVertexiumObjectTypes(objectTypes), skip, limit, includeAggregations);
+                    response = getSearchResponse(ElasticsearchDocumentType.fromVertexiumObjectTypes(objectTypes), fetchHints, skip, limit, includeAggregations);
                 } catch (IndexNotFoundException ex) {
                     LOGGER.debug("Index missing: %s (returning empty iterable)", ex.getMessage());
                     return createEmptyIterable();
@@ -467,23 +470,27 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
     }
 
     @Override
-    public QueryResultsIterable<String> vertexIds() {
-        return new ElasticsearchGraphQueryIdIterable<>(search(EnumSet.of(VertexiumObjectType.VERTEX)));
+    public QueryResultsIterable<String> vertexIds(EnumSet<IdFetchHint> idFetchHints) {
+        EnumSet<FetchHint> fetchHints = IdFetchHint.toFetchHints(idFetchHints);
+        return new ElasticsearchGraphQueryIdIterable<>(searchHits(EnumSet.of(VertexiumObjectType.VERTEX), fetchHints));
     }
 
     @Override
-    public QueryResultsIterable<String> edgeIds() {
-        return new ElasticsearchGraphQueryIdIterable<>(search(EnumSet.of(VertexiumObjectType.EDGE)));
+    public QueryResultsIterable<String> edgeIds(EnumSet<IdFetchHint> idFetchHints) {
+        EnumSet<FetchHint> fetchHints = IdFetchHint.toFetchHints(idFetchHints);
+        return new ElasticsearchGraphQueryIdIterable<>(searchHits(EnumSet.of(VertexiumObjectType.EDGE), fetchHints));
     }
 
     @Override
-    public QueryResultsIterable<ExtendedDataRowId> extendedDataRowIds() {
-        return new ElasticsearchGraphQueryIdIterable<>(search(EnumSet.of(VertexiumObjectType.EXTENDED_DATA)));
+    public QueryResultsIterable<ExtendedDataRowId> extendedDataRowIds(EnumSet<IdFetchHint> idFetchHints) {
+        EnumSet<FetchHint> fetchHints = IdFetchHint.toFetchHints(idFetchHints);
+        return new ElasticsearchGraphQueryIdIterable<>(searchHits(EnumSet.of(VertexiumObjectType.EXTENDED_DATA), fetchHints));
     }
 
     @Override
-    public QueryResultsIterable<String> elementIds() {
-        return new ElasticsearchGraphQueryIdIterable<>(search(VertexiumObjectType.ELEMENTS));
+    public QueryResultsIterable<String> elementIds(EnumSet<IdFetchHint> idFetchHints) {
+        EnumSet<FetchHint> fetchHints = IdFetchHint.toFetchHints(idFetchHints);
+        return new ElasticsearchGraphQueryIdIterable<>(searchHits(VertexiumObjectType.ELEMENTS, fetchHints));
     }
 
     private <T extends VertexiumObject> Iterable<T> sortVertexiumObjectsByResultOrder(Iterable<T> vertexiumObjects, List<String> ids) {
@@ -535,8 +542,8 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
         );
     }
 
-    private SearchResponse getSearchResponse(EnumSet<ElasticsearchDocumentType> elementType, int skip, int limit, boolean includeAggregations) {
-        SearchRequestBuilder q = buildQuery(elementType, includeAggregations)
+    private SearchResponse getSearchResponse(EnumSet<ElasticsearchDocumentType> elementType, EnumSet<FetchHint> fetchHints, int skip, int limit, boolean includeAggregations) {
+        SearchRequestBuilder q = buildQuery(elementType, fetchHints, includeAggregations)
                 .setFrom(skip)
                 .setSize(limit);
         if (QUERY_LOGGER.isTraceEnabled()) {
@@ -1486,15 +1493,17 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
 
     private abstract class QueryInfiniteScrollIterable<T> extends InfiniteScrollIterable<T> {
         private final EnumSet<VertexiumObjectType> objectTypes;
+        private final EnumSet<FetchHint> fetchHints;
 
-        public QueryInfiniteScrollIterable(EnumSet<VertexiumObjectType> objectTypes) {
+        public QueryInfiniteScrollIterable(EnumSet<VertexiumObjectType> objectTypes, EnumSet<FetchHint> fetchHints) {
             this.objectTypes = objectTypes;
+            this.fetchHints = fetchHints;
         }
 
         @Override
         protected SearchResponse getInitialSearchResponse() {
             try {
-                SearchRequestBuilder q = buildQuery(ElasticsearchDocumentType.fromVertexiumObjectTypes(objectTypes), true)
+                SearchRequestBuilder q = buildQuery(ElasticsearchDocumentType.fromVertexiumObjectTypes(objectTypes), fetchHints, true)
                         .setSize(pageSize)
                         .setScroll(scrollKeepAlive);
                 if (QUERY_LOGGER.isTraceEnabled()) {

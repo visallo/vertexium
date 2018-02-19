@@ -26,6 +26,11 @@ public class EmptyResultsGraphQuery implements Query {
     }
 
     @Override
+    public QueryResultsIterable<String> vertexIds(EnumSet<IdFetchHint> idFetchHints) {
+        return new EmptyResultsQueryResultsIterable<>();
+    }
+
+    @Override
     public QueryResultsIterable<Edge> edges() {
         return new EmptyResultsQueryResultsIterable<>();
     }
@@ -37,6 +42,11 @@ public class EmptyResultsGraphQuery implements Query {
 
     @Override
     public QueryResultsIterable<String> edgeIds() {
+        return new EmptyResultsQueryResultsIterable<>();
+    }
+
+    @Override
+    public QueryResultsIterable<String> edgeIds(EnumSet<IdFetchHint> idFetchHints) {
         return new EmptyResultsQueryResultsIterable<>();
     }
 
@@ -68,6 +78,11 @@ public class EmptyResultsGraphQuery implements Query {
     }
 
     @Override
+    public QueryResultsIterable<String> elementIds(EnumSet<IdFetchHint> idFetchHints) {
+        return new EmptyResultsQueryResultsIterable<>();
+    }
+
+    @Override
     public QueryResultsIterable<ExtendedDataRow> extendedDataRows() {
         return new EmptyResultsQueryResultsIterable<>();
     }
@@ -79,6 +94,11 @@ public class EmptyResultsGraphQuery implements Query {
 
     @Override
     public QueryResultsIterable<ExtendedDataRowId> extendedDataRowIds() {
+        return new EmptyResultsQueryResultsIterable<>();
+    }
+
+    @Override
+    public QueryResultsIterable<ExtendedDataRowId> extendedDataRowIds(EnumSet<IdFetchHint> idFetchHints) {
         return new EmptyResultsQueryResultsIterable<>();
     }
 
