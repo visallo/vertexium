@@ -32,8 +32,8 @@ public class ElasticsearchSearchVertexQuery extends ElasticsearchSearchQueryBase
     }
 
     @Override
-    protected List<QueryBuilder> getFilters(EnumSet<ElasticsearchDocumentType> elementTypes) {
-        List<QueryBuilder> filters = super.getFilters(elementTypes);
+    protected List<QueryBuilder> getFilters(EnumSet<ElasticsearchDocumentType> elementTypes, EnumSet<FetchHint> fetchHints) {
+        List<QueryBuilder> filters = super.getFilters(elementTypes, fetchHints);
 
         List<QueryBuilder> relatedFilters = new ArrayList<>();
 

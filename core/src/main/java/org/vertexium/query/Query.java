@@ -10,19 +10,75 @@ public interface Query {
 
     QueryResultsIterable<Vertex> vertices(EnumSet<FetchHint> fetchHints);
 
+    /**
+     * Execute the query and return the ids of all matching vertices.
+     * This method will not load the data from storage, which is more
+     * efficient in cases where you only need to know the ids of matching vertices.
+     * Hidden vertices are not included in the results.
+     *
+     * @return The ids of vertices that match this query.
+     */
     QueryResultsIterable<String> vertexIds();
+
+    /**
+     * Execute the query and return the ids of all matching vertices.
+     * This method will not load the data from storage, which is more
+     * efficient in cases where you only need to know the ids of matching vertices.
+     *
+     * @param fetchHints Details about which data to fetch.
+     * @return The ids of vertices that match this query.
+     */
+    QueryResultsIterable<String> vertexIds(EnumSet<IdFetchHint> fetchHints);
 
     QueryResultsIterable<Edge> edges();
 
     QueryResultsIterable<Edge> edges(EnumSet<FetchHint> fetchHints);
 
+    /**
+     * Execute the query and return the ids of all matching edges.
+     * This method will not load the data from storage, which is more
+     * efficient in cases where you only need to know the ids of matching edges.
+     * Hidden edges are not included in the results.
+     *
+     * @return The ids of edges that match this query.
+     */
     QueryResultsIterable<String> edgeIds();
+
+    /**
+     * Execute the query and return the ids of all matching edges.
+     * This method will not load the data from storage, which is more
+     * efficient in cases where you only need to know the ids of matching edges.
+     * Hidden edges are not included in the results.
+     *
+     * @param fetchHints Details about which data to fetch.
+     * @return The ids of edges that match this query.
+     */
+    QueryResultsIterable<String> edgeIds(EnumSet<IdFetchHint> fetchHints);
 
     QueryResultsIterable<ExtendedDataRow> extendedDataRows();
 
     QueryResultsIterable<ExtendedDataRow> extendedDataRows(EnumSet<FetchHint> fetchHints);
 
+    /**
+     * Execute the query and return the ids of all matching extended data rows.
+     * This method will not load the data from storage, which is more
+     * efficient in cases where you only need to know the ids of matching extended data rows.
+     * Hidden extended data rows are not included in the results.
+     *
+     * @return The ids of extended data rows that match this query.
+     */
     QueryResultsIterable<ExtendedDataRowId> extendedDataRowIds();
+
+    /**
+     * Execute the query and return the ids of all matching extended data rows.
+     * This method will not load the data from storage, which is more
+     * efficient in cases where you only need to know the ids of matching extended data rows.
+     * Hidden extended data rows are not included in the results.
+     *
+     * @param fetchHints Details about which data to fetch.
+     * @return The ids of extended data rows that match this query.
+     */
+    QueryResultsIterable<ExtendedDataRowId> extendedDataRowIds(EnumSet<IdFetchHint> fetchHints);
 
     @Deprecated
     QueryResultsIterable<Edge> edges(String label);
@@ -34,7 +90,26 @@ public interface Query {
 
     QueryResultsIterable<Element> elements(EnumSet<FetchHint> fetchHints);
 
+    /**
+     * Execute the query and return the ids of all matching elements.
+     * This method will not load the data from storage, which is more
+     * efficient in cases where you only need to know the ids of matching elements.
+     * Hidden elements are not included in the results.
+     *
+     * @return The ids of elements that match this query.
+     */
     QueryResultsIterable<String> elementIds();
+
+    /**
+     * Execute the query and return the ids of all matching elements.
+     * This method will not load the data from storage, which is more
+     * efficient in cases where you only need to know the ids of matching elements.
+     * Hidden elements are not included in the results.
+     *
+     * @param includeHidden Whether or not to include hidden elements in the results
+     * @return The ids of elements that match this query.
+     */
+    QueryResultsIterable<String> elementIds(EnumSet<IdFetchHint> fetchHints);
 
     QueryResultsIterable<? extends VertexiumObject> search(EnumSet<VertexiumObjectType> objectTypes, EnumSet<FetchHint> fetchHints);
 

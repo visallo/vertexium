@@ -42,7 +42,12 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
 
     @Override
     public QueryResultsIterable<String> vertexIds() {
-        return new DefaultGraphQueryIdIterable<>(vertices(FetchHint.NONE));
+        return vertexIds(IdFetchHint.NONE);
+    }
+
+    @Override
+    public QueryResultsIterable<String> vertexIds(EnumSet<IdFetchHint> idFetchHints) {
+        return new DefaultGraphQueryIdIterable<>(vertices(IdFetchHint.toFetchHints(idFetchHints)));
     }
 
     @Override
@@ -58,7 +63,12 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
 
     @Override
     public QueryResultsIterable<String> edgeIds() {
-        return new DefaultGraphQueryIdIterable<>(edges(FetchHint.NONE));
+        return edgeIds(IdFetchHint.NONE);
+    }
+
+    @Override
+    public QueryResultsIterable<String> edgeIds(EnumSet<IdFetchHint> idFetchHints) {
+        return new DefaultGraphQueryIdIterable<>(edges(IdFetchHint.toFetchHints(idFetchHints)));
     }
 
     @Override
@@ -152,7 +162,13 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
 
     @Override
     public QueryResultsIterable<ExtendedDataRowId> extendedDataRowIds() {
-        QueryResultsIterable<? extends VertexiumObject> vertexiumObjects = search(EnumSet.of(VertexiumObjectType.EXTENDED_DATA), FetchHint.NONE);
+        return extendedDataRowIds(IdFetchHint.NONE);
+    }
+
+    @Override
+    public QueryResultsIterable<ExtendedDataRowId> extendedDataRowIds(EnumSet<IdFetchHint> idFetchHints) {
+        EnumSet<FetchHint> fetchHints = IdFetchHint.toFetchHints(idFetchHints);
+        QueryResultsIterable<? extends VertexiumObject> vertexiumObjects = search(EnumSet.of(VertexiumObjectType.EXTENDED_DATA), fetchHints);
         return new DefaultGraphQueryIdIterable<>(vertexiumObjects);
     }
 
@@ -249,7 +265,12 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
 
     @Override
     public QueryResultsIterable<String> elementIds() {
-        return new DefaultGraphQueryIdIterable<>(elements(FetchHint.NONE));
+        return elementIds(IdFetchHint.NONE);
+    }
+
+    @Override
+    public QueryResultsIterable<String> elementIds(EnumSet<IdFetchHint> idFetchHints) {
+        return new DefaultGraphQueryIdIterable<>(elements(IdFetchHint.toFetchHints(idFetchHints)));
     }
 
     @Override

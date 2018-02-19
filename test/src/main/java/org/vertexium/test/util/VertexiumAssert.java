@@ -32,29 +32,11 @@ public class VertexiumAssert {
     }
 
     public static void assertVertexIdsAnyOrder(Iterable<Vertex> vertices, String... expectedIds) {
-        List<Vertex> sortedVertices = stream(vertices)
-                .sorted(Comparator.comparing(Element::getId))
-                .collect(Collectors.toList());
-        Arrays.sort(expectedIds);
-        assertVertexIds(sortedVertices, expectedIds);
+        assertElementIdsAnyOrder(vertices, expectedIds);
     }
 
     public static void assertVertexIds(Iterable<Vertex> vertices, String... expectedIds) {
-        String verticesIdsString = vertexIdsToString(vertices);
-        String expectedIdsString = idsToString(expectedIds);
-        List<Vertex> verticesList = toList(vertices);
-        assertEquals("ids length mismatch found:[" + verticesIdsString + "] expected:[" + expectedIdsString + "]", expectedIds.length, verticesList.size());
-        for (int i = 0; i < expectedIds.length; i++) {
-            assertEquals("at offset: " + i + " found:[" + verticesIdsString + "] expected:[" + expectedIdsString + "]", expectedIds[i], verticesList.get(i).getId());
-        }
-    }
-
-    public static String vertexIdsToString(Iterable<Vertex> vertices) {
-        List<String> idsList = stream(vertices)
-                .map(Element::getId)
-                .collect(Collectors.toList());
-        String[] idsArray = idsList.toArray(new String[idsList.size()]);
-        return idsToString(idsArray);
+        assertElementIds(vertices, expectedIds);
     }
 
     public static String idsToString(String[] ids) {
@@ -76,20 +58,29 @@ public class VertexiumAssert {
     }
 
     public static void assertEdgeIdsAnyOrder(Iterable<Edge> edges, String... expectedIds) {
-        List<Edge> sortedEdges = stream(edges)
-                .sorted(Comparator.comparing(Element::getId))
-                .collect(Collectors.toList());
-        Arrays.sort(expectedIds);
-        assertEdgeIds(sortedEdges, expectedIds);
+        assertElementIdsAnyOrder(edges, expectedIds);
     }
 
     public static void assertEdgeIds(Iterable<Edge> edges, String... ids) {
-        List<Edge> edgesList = toList(edges);
-        assertEquals("ids length mismatch", ids.length, edgesList.size());
+        assertElementIds(edges, ids);
+    }
+
+    public static void assertElementIdsAnyOrder(Iterable<? extends Element> elements, String... expectedIds) {
+        List<Element> sortedElements = stream(elements)
+                .sorted(Comparator.comparing(Element::getId))
+                .collect(Collectors.toList());
+        Arrays.sort(expectedIds);
+        assertElementIds(sortedElements, expectedIds);
+    }
+
+    public static void assertElementIds(Iterable<? extends Element> elements, String... ids) {
+        List<Element> elementList = toList(elements);
+        assertEquals("ids length mismatch", ids.length, elementList.size());
         for (int i = 0; i < ids.length; i++) {
-            assertEquals("at offset: " + i, ids[i], edgesList.get(i).getId());
+            assertEquals("at offset: " + i, ids[i], elementList.get(i).getId());
         }
     }
+
 
     public static void assertResultsCount(int expectedCountAndTotalHits, QueryResultsIterable<? extends Element> results) {
         assertEquals(expectedCountAndTotalHits, results.getTotalHits());
