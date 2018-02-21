@@ -132,7 +132,11 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
                             new ElementTimestampMutation(timestampLong)
                     );
                 } else {
-                    vertices.append(getElementId(), new ElementTimestampMutation(timestampLong));
+                    if (vertexTableElement.getVisibility().equals(getVisibility())) {
+                        vertices.append(getElementId(), new ElementTimestampMutation(timestampLong));
+                    } else {
+                        vertices.append(getElementId(), new AlterVisibilityMutation(timestampLong, getVisibility()), new ElementTimestampMutation(timestampLong));
+                    }
                 }
                 InMemoryVertex vertex = InMemoryGraph.this.vertices.get(InMemoryGraph.this, getElementId(), FetchHint.ALL_INCLUDING_HIDDEN, authorizations);
                 if (isNew && hasEventListeners()) {

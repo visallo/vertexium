@@ -703,6 +703,47 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    public void testReAddingSoftDeletedVertex() {
+        Vertex v1 = graph.prepareVertex("v1", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
+        graph.flush();
+
+        assertEquals(VISIBILITY_A.getVisibilityString(), v1.getVisibility().getVisibilityString());
+
+        graph.softDeleteVertex(v1, AUTHORIZATIONS_A);
+        graph.flush();
+
+        graph.prepareVertex("v1", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
+        graph.flush();
+
+        v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
+        assertNotNull(v1);
+        assertEquals(VISIBILITY_A.getVisibilityString(), v1.getVisibility().getVisibilityString());
+
+        graph.softDeleteVertex(v1, AUTHORIZATIONS_A);
+        graph.flush();
+
+        graph.prepareVertex("v1", VISIBILITY_A_AND_B)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        v1 = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B);
+        assertNotNull(v1);
+        assertEquals(VISIBILITY_A_AND_B.getVisibilityString(), v1.getVisibility().getVisibilityString());
+
+        graph.softDeleteVertex(v1, AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        graph.addVertex("v1", VISIBILITY_EMPTY, AUTHORIZATIONS_EMPTY);
+        graph.flush();
+
+        v1 = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B);
+        assertNotNull(v1);
+        assertEquals(VISIBILITY_EMPTY.getVisibilityString(), v1.getVisibility().getVisibilityString());
+    }
+
+    @Test
     public void testGetSoftDeletedElementWithFetchHintsAndTimestamp() {
         Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
         Vertex v2 = graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_A);

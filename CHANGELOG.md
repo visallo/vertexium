@@ -1,4 +1,5 @@
 # v3.1.2
+* Fixed: InMemory and Accumulo fix wrong vertex being returned after re-adding the same vertex with a different visibility after soft delete
 * Fixed: Find path when edge labels are deflated
 * Fixed: Accumulo stream property value in table data length of reference
 * Fixed: Query will now return hidden elements/vertices/edges if FetchHint.INCLUDE_HIDDEN is passed
