@@ -650,11 +650,14 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
             }
         }
 
-        Collection<String> elementTypeHashes = visibilitiesStore.getHashes(graph, Elasticsearch5SearchIndex.ELEMENT_TYPE_FIELD_NAME, auths);
-        Collection<String> matchingElementTypeHashes = elementTypeHashes.stream().filter(hashes::contains).collect(Collectors.toSet());
-        for (String elementTypeFieldName : getSearchIndex().addHashesToPropertyName(Elasticsearch5SearchIndex.ELEMENT_TYPE_FIELD_NAME, matchingElementTypeHashes)) {
-            filters.add(QueryBuilders.existsQuery(elementTypeFieldName));
-        }
+        List<String> internalFields = Arrays.asList(Elasticsearch5SearchIndex.ELEMENT_TYPE_FIELD_NAME, Elasticsearch5SearchIndex.HIDDEN_VERTEX_FIELD_NAME);
+        internalFields.forEach(fieldName -> {
+            Collection<String> fieldHashes = visibilitiesStore.getHashes(graph, fieldName, auths);
+            Collection<String> matchingFieldHashes = fieldHashes.stream().filter(hashes::contains).collect(Collectors.toSet());
+            for (String fieldNameWithHash : getSearchIndex().addHashesToPropertyName(fieldName, matchingFieldHashes)) {
+                filters.add(QueryBuilders.existsQuery(fieldNameWithHash));
+            }
+        });
 
         if (filters.isEmpty()) {
             throw new VertexiumNoMatchingPropertiesException(Joiner.on(", ").join(hasAuthorization.getAuthorizations()));

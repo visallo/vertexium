@@ -2648,6 +2648,69 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    public void testGraphQueryHasAuthorizationWithHidden() {
+        Vertex v1 = graph.addVertex("v1", Visibility.EMPTY, AUTHORIZATIONS_A);
+        Vertex v2 = graph.addVertex("v2", Visibility.EMPTY, AUTHORIZATIONS_A);
+        Edge e1 = graph.addEdge("e1", v1.getId(), v2.getId(), "junit edge", Visibility.EMPTY, AUTHORIZATIONS_A);
+        graph.flush();
+
+        graph.markEdgeHidden(e1, VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.markVertexHidden(v1, VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.flush();
+
+        QueryResultsIterable<Vertex> vertices = graph.query(AUTHORIZATIONS_A).hasAuthorization(VISIBILITY_A_STRING).vertices(FetchHint.ALL);
+        assertResultsCount(0, vertices);
+
+        QueryResultsIterable<String> vertexIds = graph.query(AUTHORIZATIONS_A).hasAuthorization(VISIBILITY_A_STRING).vertexIds(IdFetchHint.NONE);
+        assertResultsCount(0, 0, vertexIds);
+
+        vertexIds = graph.query(AUTHORIZATIONS_A).hasAuthorization(VISIBILITY_A_STRING).vertexIds();
+        assertResultsCount(0, 0, vertexIds);
+
+        vertices = graph.query(AUTHORIZATIONS_A).hasAuthorization(VISIBILITY_A_STRING).vertices(FetchHint.ALL_INCLUDING_HIDDEN);
+        assertResultsCount(1, vertices);
+        assertVertexIdsAnyOrder(vertices, v1.getId());
+
+        vertexIds = graph.query(AUTHORIZATIONS_A).hasAuthorization(VISIBILITY_A_STRING).vertexIds(IdFetchHint.ALL_INCLUDING_HIDDEN);
+        assertResultsCount(1, 1, vertexIds);
+        assertIdsAnyOrder(vertexIds, v1.getId());
+
+        QueryResultsIterable<Edge> edges = graph.query(AUTHORIZATIONS_A).hasAuthorization(VISIBILITY_A_STRING).edges(FetchHint.ALL);
+        assertResultsCount(0, edges);
+
+        QueryResultsIterable<String> edgeIds = graph.query(AUTHORIZATIONS_A).hasAuthorization(VISIBILITY_A_STRING).edgeIds(IdFetchHint.NONE);
+        assertResultsCount(0, 0, edgeIds);
+
+        edgeIds = graph.query(AUTHORIZATIONS_A).hasAuthorization(VISIBILITY_A_STRING).edgeIds();
+        assertResultsCount(0, 0, edgeIds);
+
+        edges = graph.query(AUTHORIZATIONS_A).hasAuthorization(VISIBILITY_A_STRING).edges(FetchHint.ALL_INCLUDING_HIDDEN);
+        assertResultsCount(1, edges);
+        assertEdgeIdsAnyOrder(edges, e1.getId());
+
+        edgeIds = graph.query(AUTHORIZATIONS_A).hasAuthorization(VISIBILITY_A_STRING).edgeIds(IdFetchHint.ALL_INCLUDING_HIDDEN);
+        assertResultsCount(1, 1, edgeIds);
+        assertIdsAnyOrder(edgeIds, e1.getId());
+
+        QueryResultsIterable<Element> elements = graph.query(AUTHORIZATIONS_A).hasAuthorization(VISIBILITY_A_STRING).elements(FetchHint.ALL);
+        assertResultsCount(0, elements);
+
+        QueryResultsIterable<String> elementIds = graph.query(AUTHORIZATIONS_A).hasAuthorization(VISIBILITY_A_STRING).elementIds(IdFetchHint.NONE);
+        assertResultsCount(0, 0, elementIds);
+
+        elementIds = graph.query(AUTHORIZATIONS_A).hasAuthorization(VISIBILITY_A_STRING).elementIds();
+        assertResultsCount(0, 0, elementIds);
+
+        elements = graph.query(AUTHORIZATIONS_A).hasAuthorization(VISIBILITY_A_STRING).elements(FetchHint.ALL_INCLUDING_HIDDEN);
+        assertResultsCount(2, elements);
+        assertElementIdsAnyOrder(elements, v1.getId(), e1.getId());
+
+        elementIds = graph.query(AUTHORIZATIONS_A).hasAuthorization(VISIBILITY_A_STRING).elementIds(IdFetchHint.ALL_INCLUDING_HIDDEN);
+        assertResultsCount(2, 2, elementIds);
+        assertIdsAnyOrder(elementIds, v1.getId(), e1.getId());
+    }
+
+    @Test
     public void testGraphQueryContainsNotIn() {
         graph.prepareVertex("v1", VISIBILITY_A)
                 .setProperty("status", "0", VISIBILITY_A)
