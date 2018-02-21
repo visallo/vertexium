@@ -452,6 +452,12 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
                     return true;
                 }
 
+                boolean hiddenVisibilityMatches = StreamSupport.stream(element.getHiddenVisibilities().spliterator(), false)
+                        .anyMatch(visibility -> visibility.hasAuthorization(authorization));
+                if (hiddenVisibilityMatches) {
+                    return true;
+                }
+
                 boolean propertyMatches = StreamSupport.stream(element.getProperties().spliterator(), false)
                         .anyMatch(property -> property.getVisibility().hasAuthorization(authorization));
                 if (propertyMatches) {

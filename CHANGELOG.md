@@ -2,6 +2,7 @@
 * Fixed: Find path when edge labels are deflated
 * Fixed: Accumulo stream property value in table data length of reference
 * Fixed: Query will now return hidden elements/vertices/edges if FetchHint.INCLUDE_HIDDEN is passed
+* Fixed: Query.hasAuthorization will now match elements whose only use of an authorization is a hidden field
 * Added: Query methods elementIds/vertexIds/edgeIds are overloaded to accept IdFetchHint, which makes it possible to include ids for hidden elements
 
 # v3.1.1
