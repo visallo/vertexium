@@ -112,10 +112,12 @@ public abstract class ElementIterator<T extends ElementData> extends RowEncoding
         }
 
         if (getVisibilitySignal().equals(columnFamily)) {
-            elementData.visibility = key.getColumnVisibility();
-            elementData.timestamp = key.getTimestamp();
-            processSignalColumn(key.getColumnQualifier());
-            return true;
+            if (elementData.timestamp == 0 || key.getTimestamp() > elementData.timestamp) {
+                elementData.visibility = key.getColumnVisibility();
+                elementData.timestamp = key.getTimestamp();
+                processSignalColumn(key.getColumnQualifier());
+                return true;
+            }
         }
 
         if (processColumn(key, value, columnFamily, key.getColumnQualifier())) {
