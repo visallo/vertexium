@@ -1046,6 +1046,18 @@ public abstract class GraphBase implements Graph {
         };
     }
 
+    @Override
+    public Iterable<ExtendedDataRow> getExtendedDataInRange(ElementType elementType, Range elementIdRange, Authorizations authorizations) {
+        return new FilterIterable<ExtendedDataRow>(getAllExtendedData(authorizations)) {
+            @Override
+            protected boolean isIncluded(ExtendedDataRow row) {
+                ExtendedDataRowId rowId = row.getId();
+                return elementType.equals(rowId.getElementType())
+                        && elementIdRange.isInRange(rowId.getElementId());
+            }
+        };
+    }
+
     protected Iterable<ExtendedDataRow> getAllExtendedData(Authorizations authorizations) {
         JoinIterable<Element> allElements = new JoinIterable<>(getVertices(authorizations), getEdges(authorizations));
         return new SelectManyIterable<Element, ExtendedDataRow>(allElements) {

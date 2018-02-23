@@ -6910,6 +6910,67 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    public void testExtendedDataInRange() {
+        graph.prepareVertex("a", VISIBILITY_A)
+                .addExtendedData("table1", "row1", "name", "value1", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
+        graph.prepareVertex("aa", VISIBILITY_A)
+                .addExtendedData("table1", "row1", "name", "value2", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
+        graph.prepareVertex("az", VISIBILITY_A)
+                .addExtendedData("table1", "row1", "name", "value3", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
+        graph.prepareVertex("b", VISIBILITY_A)
+                .addExtendedData("table1", "row1", "name", "value4", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
+        graph.prepareEdge("aa", "a", "aa", "edge1", VISIBILITY_A)
+                .addExtendedData("table1", "row1", "name", "value5", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
+        graph.flush();
+
+        List<ExtendedDataRow> rows = toList(graph.getExtendedDataInRange(ElementType.VERTEX, new Range(null, "a"), AUTHORIZATIONS_A));
+        assertEquals(0, rows.size());
+
+        rows = toList(graph.getExtendedDataInRange(ElementType.VERTEX, new Range(null, "b"), AUTHORIZATIONS_A));
+        assertEquals(3, rows.size());
+        List<String> rowValues = rows.stream().map(row -> row.getPropertyValue("name").toString()).collect(Collectors.toList());
+        assertIdsAnyOrder(rowValues, "value1", "value2", "value3");
+
+        rows = toList(graph.getExtendedDataInRange(ElementType.VERTEX, new Range(null, "bb"), AUTHORIZATIONS_A));
+        assertEquals(4, rows.size());
+        rowValues = rows.stream().map(row -> row.getPropertyValue("name").toString()).collect(Collectors.toList());
+        assertIdsAnyOrder(rowValues, "value1", "value2", "value3", "value4");
+
+        rows = toList(graph.getExtendedDataInRange(ElementType.VERTEX, new Range("aa", "b"), AUTHORIZATIONS_A));
+        assertEquals(2, rows.size());
+        rowValues = rows.stream().map(row -> row.getPropertyValue("name").toString()).collect(Collectors.toList());
+        assertIdsAnyOrder(rowValues, "value2", "value3");
+
+        rows = toList(graph.getExtendedDataInRange(ElementType.VERTEX, new Range(null, null), AUTHORIZATIONS_A));
+        assertEquals(4, rows.size());
+        rowValues = rows.stream().map(row -> row.getPropertyValue("name").toString()).collect(Collectors.toList());
+        assertIdsAnyOrder(rowValues, "value1", "value2", "value3", "value4");
+
+        rows = toList(graph.getExtendedDataInRange(ElementType.EDGE, new Range(null, "a"), AUTHORIZATIONS_A));
+        assertEquals(0, rows.size());
+
+        rows = toList(graph.getExtendedDataInRange(ElementType.EDGE, new Range(null, "b"), AUTHORIZATIONS_A));
+        assertEquals(1, rows.size());
+        rowValues = rows.stream().map(row -> row.getPropertyValue("name").toString()).collect(Collectors.toList());
+        assertIdsAnyOrder(rowValues, "value5");
+
+        rows = toList(graph.getExtendedDataInRange(ElementType.EDGE, new Range("aa", "b"), AUTHORIZATIONS_A));
+        assertEquals(1, rows.size());
+        rowValues = rows.stream().map(row -> row.getPropertyValue("name").toString()).collect(Collectors.toList());
+        assertIdsAnyOrder(rowValues, "value5");
+
+        rows = toList(graph.getExtendedDataInRange(ElementType.EDGE, new Range(null, null), AUTHORIZATIONS_A));
+        assertEquals(1, rows.size());
+        rowValues = rows.stream().map(row -> row.getPropertyValue("name").toString()).collect(Collectors.toList());
+        assertIdsAnyOrder(rowValues, "value5");
+    }
+
+    @Test
     public void testExtendedDataDifferentValue() {
         graph.prepareVertex("v1", VISIBILITY_A)
                 .addExtendedData("table1", "row1", "name", "value1", VISIBILITY_A)
