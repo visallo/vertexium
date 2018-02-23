@@ -1088,6 +1088,21 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         }
     }
 
+    @Override
+    public Iterable<ExtendedDataRow> getExtendedDataInRange(ElementType elementType, Range elementIdRange, Authorizations authorizations) {
+        Range extendedDataRowKeyRange = KeyHelper.createExtendedDataRowKeyRange(elementType, elementIdRange);
+        return getExtendedDataInRange(extendedDataRowKeyRange, authorizations);
+    }
+
+    public Iterable<ExtendedDataRow> getExtendedDataInRange(Range extendedDataRowKeyRange, Authorizations authorizations) {
+        Span trace = Trace.start("getExtendedDataInRange");
+        trace.data("rangeInclusiveStart", extendedDataRowKeyRange.getInclusiveStart());
+        trace.data("rangeExclusiveStart", extendedDataRowKeyRange.getExclusiveEnd());
+
+        org.apache.accumulo.core.data.Range range = vertexiumRangeToAccumuloRange(extendedDataRowKeyRange);
+        return getExtendedDataRowsInRange(trace, Collections.singletonList(range), authorizations);
+    }
+
     private List<org.apache.accumulo.core.data.Range> extendedDataRowIdToRange(Iterable<ExtendedDataRowId> ids) {
         return stream(ids)
                 .map(id -> org.apache.accumulo.core.data.Range.prefix(KeyHelper.createExtendedDataRowKey(id)))
@@ -1993,6 +2008,10 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
 
     public Iterable<Range> listDataTableSplits() {
         return listTableSplits(getDataTableName());
+    }
+
+    public Iterable<Range> listExtendedDataTableSplits() {
+        return listTableSplits(getExtendedDataTableName());
     }
 
     private Iterable<Range> listTableSplits(String tableName) {

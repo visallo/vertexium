@@ -1118,6 +1118,16 @@ public interface Graph {
     Iterable<ExtendedDataRow> getExtendedData(ElementType elementType, String elementId, String tableName, Authorizations authorizations);
 
     /**
+     * Gets extended data rows from the graph in the given range.
+     *
+     * @param elementType    The type of element to get the rows from
+     * @param elementIdRange The range of element ids to get extended data rows for.
+     * @param authorizations The authorizations required to load the vertex.
+     * @return The extended data rows for the element ids in the range.
+     */
+    Iterable<ExtendedDataRow> getExtendedDataInRange(ElementType elementType, Range elementIdRange, Authorizations authorizations);
+
+    /**
      * Deletes an extended data row
      */
     void deleteExtendedDataRow(ExtendedDataRowId id, Authorizations authorizations);

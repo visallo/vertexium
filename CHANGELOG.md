@@ -5,6 +5,7 @@
 * Fixed: Query will now return hidden elements/vertices/edges if FetchHint.INCLUDE_HIDDEN is passed
 * Fixed: Query.hasAuthorization will now match elements whose only use of an authorization is a hidden field
 * Added: Query methods elementIds/vertexIds/edgeIds are overloaded to accept IdFetchHint, which makes it possible to include ids for hidden elements
+* Added: Graph.getExtendedDataInRange in order to bulk load ranges of extended data rows
 
 # v3.1.1
 * Added: Graph.getExtendedData to get a single extended data row

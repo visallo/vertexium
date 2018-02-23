@@ -1,10 +1,7 @@
 package org.vertexium.accumulo.keys;
 
 import org.apache.hadoop.io.Text;
-import org.vertexium.ElementType;
-import org.vertexium.ExtendedDataRowId;
-import org.vertexium.Property;
-import org.vertexium.VertexiumException;
+import org.vertexium.*;
 import org.vertexium.accumulo.iterator.model.KeyBase;
 import org.vertexium.accumulo.iterator.model.PropertyColumnQualifier;
 import org.vertexium.accumulo.iterator.model.PropertyMetadataColumnQualifier;
@@ -119,6 +116,23 @@ public class KeyHelper {
         } else {
             return new Text(edm.getColumnName() + KeyBase.VALUE_SEPARATOR + edm.getKey());
         }
+    }
+
+    public static Range createExtendedDataRowKeyRange(ElementType elementType, Range elementIdRange) {
+        String elementTypePrefix = getExtendedDataRowKeyElementTypePrefix(elementType);
+        String inclusiveStart = elementIdRange.getInclusiveStart();
+        if (inclusiveStart == null) {
+            inclusiveStart = "";
+        }
+        inclusiveStart = elementTypePrefix + inclusiveStart;
+
+        String exclusiveEnd = elementIdRange.getExclusiveEnd();
+        if (exclusiveEnd != null) {
+            exclusiveEnd = elementTypePrefix + exclusiveEnd;
+        } else if (elementType == ElementType.EDGE) {
+            exclusiveEnd = getExtendedDataRowKeyElementTypePrefix(ElementType.VERTEX);
+        }
+        return new Range(inclusiveStart, exclusiveEnd);
     }
 
     private static String getExtendedDataRowKeyElementTypePrefix(ElementType elementType) {
