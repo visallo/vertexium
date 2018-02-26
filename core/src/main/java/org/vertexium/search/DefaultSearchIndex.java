@@ -115,6 +115,10 @@ public class DefaultSearchIndex implements SearchIndex {
     }
 
     @Override
+    public void addExtendedData(Graph graph, Iterable<ExtendedDataRow> extendedDatas, Authorizations authorizations) {
+    }
+
+    @Override
     public void deleteExtendedData(Graph graph, ExtendedDataRowId extendedDataRowId, Authorizations authorizations) {
         checkNotNull(extendedDataRowId, "extendedDataRowId cannot be null");
     }

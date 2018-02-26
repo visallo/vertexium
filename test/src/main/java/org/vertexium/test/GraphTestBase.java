@@ -19,6 +19,7 @@ import org.vertexium.property.StreamingPropertyValue;
 import org.vertexium.query.*;
 import org.vertexium.search.DefaultSearchIndex;
 import org.vertexium.search.IndexHint;
+import org.vertexium.search.SearchIndex;
 import org.vertexium.test.util.LargeStringInputStream;
 import org.vertexium.type.*;
 import org.vertexium.util.*;
@@ -1109,6 +1110,34 @@ public abstract class GraphTestBase {
             assertVertexIds(graph.query(AUTHORIZATIONS_A_AND_B).has("prop1", "v1").vertices(), "v1");
             assertVertexIds(graph.query(AUTHORIZATIONS_A_AND_B).has("prop1", "v2").vertices(), "v2");
         }
+    }
+
+    @Test
+    public void testAddExtendedDataRows() {
+        graph.prepareVertex("v1", VISIBILITY_A)
+                .addExtendedData("table1", "row1", "name", "value1", VISIBILITY_A)
+                .addExtendedData("table1", "row2", "name", "value2", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
+        graph.flush();
+
+        if (graph instanceof GraphWithSearchIndex) {
+            SearchIndex searchIndex = ((GraphWithSearchIndex) graph).getSearchIndex();
+            searchIndex.truncate(graph);
+            searchIndex.flush(graph);
+        }
+
+        Iterable<ExtendedDataRow> extendedData = graph.getExtendedData(ElementType.VERTEX, "v1", "table1", AUTHORIZATIONS_A);
+        searchIndex.addExtendedData(graph, extendedData, AUTHORIZATIONS_A);
+
+        QueryResultsIterable<ExtendedDataRow> rows = graph.query(AUTHORIZATIONS_A)
+                .has("name", "value1")
+                .extendedDataRows();
+        assertResultsCount(1, 1, rows);
+
+        ExtendedDataRow row = IterableUtils.single(rows);
+        assertEquals("v1", row.getId().getElementId());
+        assertEquals("table1", row.getId().getTableName());
+        assertEquals("row1", row.getId().getRowId());
     }
 
     @Test
