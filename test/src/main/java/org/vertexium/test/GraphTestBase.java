@@ -1124,10 +1124,10 @@ public abstract class GraphTestBase {
             SearchIndex searchIndex = ((GraphWithSearchIndex) graph).getSearchIndex();
             searchIndex.truncate(graph);
             searchIndex.flush(graph);
-        }
 
-        Iterable<ExtendedDataRow> extendedData = graph.getExtendedData(ElementType.VERTEX, "v1", "table1", AUTHORIZATIONS_A);
-        searchIndex.addExtendedData(graph, extendedData, AUTHORIZATIONS_A);
+            Iterable<ExtendedDataRow> extendedData = graph.getExtendedData(ElementType.VERTEX, "v1", "table1", AUTHORIZATIONS_A);
+            searchIndex.addExtendedData(graph, extendedData, AUTHORIZATIONS_A);
+        }
 
         QueryResultsIterable<ExtendedDataRow> rows = graph.query(AUTHORIZATIONS_A)
                 .has("name", "value1")
