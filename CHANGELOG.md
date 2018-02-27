@@ -10,6 +10,7 @@
 * Added: Graph.getExtendedDataInRange in order to bulk load ranges of extended data rows
 * Added: SearchIndex.addExtendedData to allow for reindexing extended data
 * Added: Elasticsearch exception if any shard failures occur on queries
+* Added: Elasticsearch option to force disable the use of the server side plugin 
 
 # v3.1.1
 * Added: Graph.getExtendedData to get a single extended data row
