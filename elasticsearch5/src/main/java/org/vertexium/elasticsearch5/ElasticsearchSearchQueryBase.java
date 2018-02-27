@@ -459,25 +459,25 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
 
     @Override
     public QueryResultsIterable<String> vertexIds(EnumSet<IdFetchHint> idFetchHints) {
-        EnumSet<FetchHint> fetchHints = IdFetchHint.toFetchHints(idFetchHints);
+        EnumSet<FetchHint> fetchHints = idFetchHintsToElementFetchHints(idFetchHints);
         return new ElasticsearchGraphQueryIdIterable<>(getIdStrategy(), searchHits(EnumSet.of(VertexiumObjectType.VERTEX), fetchHints));
     }
 
     @Override
     public QueryResultsIterable<String> edgeIds(EnumSet<IdFetchHint> idFetchHints) {
-        EnumSet<FetchHint> fetchHints = IdFetchHint.toFetchHints(idFetchHints);
+        EnumSet<FetchHint> fetchHints = idFetchHintsToElementFetchHints(idFetchHints);
         return new ElasticsearchGraphQueryIdIterable<>(getIdStrategy(), searchHits(EnumSet.of(VertexiumObjectType.EDGE), fetchHints));
     }
 
     @Override
     public QueryResultsIterable<ExtendedDataRowId> extendedDataRowIds(EnumSet<IdFetchHint> idFetchHints) {
-        EnumSet<FetchHint> fetchHints = IdFetchHint.toFetchHints(idFetchHints);
+        EnumSet<FetchHint> fetchHints = idFetchHintsToElementFetchHints(idFetchHints);
         return new ElasticsearchGraphQueryIdIterable<>(getIdStrategy(), searchHits(EnumSet.of(VertexiumObjectType.EXTENDED_DATA), fetchHints));
     }
 
     @Override
     public QueryResultsIterable<String> elementIds(EnumSet<IdFetchHint> idFetchHints) {
-        EnumSet<FetchHint> fetchHints = IdFetchHint.toFetchHints(idFetchHints);
+        EnumSet<FetchHint> fetchHints = idFetchHintsToElementFetchHints(idFetchHints);
         return new ElasticsearchGraphQueryIdIterable<>(getIdStrategy(), searchHits(VertexiumObjectType.ELEMENTS, fetchHints));
     }
 
@@ -638,7 +638,11 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
             }
         }
 
-        List<String> internalFields = Arrays.asList(Elasticsearch5SearchIndex.ELEMENT_TYPE_FIELD_NAME, Elasticsearch5SearchIndex.HIDDEN_VERTEX_FIELD_NAME);
+        List<String> internalFields = Arrays.asList(
+                Elasticsearch5SearchIndex.ELEMENT_TYPE_FIELD_NAME,
+                Elasticsearch5SearchIndex.HIDDEN_VERTEX_FIELD_NAME,
+                Elasticsearch5SearchIndex.HIDDEN_PROPERTY_FIELD_NAME
+        );
         internalFields.forEach(fieldName -> {
             Collection<String> fieldHashes = visibilitiesStore.getHashes(graph, fieldName, auths);
             Collection<String> matchingFieldHashes = fieldHashes.stream().filter(hashes::contains).collect(Collectors.toSet());
@@ -1473,6 +1477,10 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
 
     public IdStrategy getIdStrategy() {
         return getSearchIndex().getIdStrategy();
+    }
+
+    protected EnumSet<FetchHint> idFetchHintsToElementFetchHints(EnumSet<IdFetchHint> idFetchHints) {
+        return idFetchHints.contains(IdFetchHint.INCLUDE_HIDDEN) ? EnumSet.of(FetchHint.INCLUDE_HIDDEN) : FetchHint.NONE;
     }
 
     @Override

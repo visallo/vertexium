@@ -64,6 +64,7 @@ public abstract class GraphTestBase {
     public final Authorizations AUTHORIZATIONS_C;
     public final Authorizations AUTHORIZATIONS_MIXED_CASE_a_AND_B;
     public final Authorizations AUTHORIZATIONS_A_AND_B;
+    public final Authorizations AUTHORIZATIONS_B_AND_C;
     public final Authorizations AUTHORIZATIONS_EMPTY;
     public final Authorizations AUTHORIZATIONS_BAD;
     public final Authorizations AUTHORIZATIONS_ALL;
@@ -82,6 +83,7 @@ public abstract class GraphTestBase {
         AUTHORIZATIONS_B = createAuthorizations("b");
         AUTHORIZATIONS_C = createAuthorizations("c");
         AUTHORIZATIONS_A_AND_B = createAuthorizations("a", "b");
+        AUTHORIZATIONS_B_AND_C = createAuthorizations("b", "c");
         AUTHORIZATIONS_MIXED_CASE_a_AND_B = createAuthorizations("MIXED_CASE_a", "b");
         AUTHORIZATIONS_EMPTY = createAuthorizations();
         AUTHORIZATIONS_BAD = createAuthorizations("bad");
@@ -2692,11 +2694,15 @@ public abstract class GraphTestBase {
     public void testGraphQueryHasAuthorizationWithHidden() {
         Vertex v1 = graph.addVertex("v1", Visibility.EMPTY, AUTHORIZATIONS_A);
         Vertex v2 = graph.addVertex("v2", Visibility.EMPTY, AUTHORIZATIONS_A);
+        Vertex v3 = graph.prepareVertex("v3", VISIBILITY_EMPTY)
+                .addPropertyValue("junit", "name", "value", VISIBILITY_B)
+                .save(AUTHORIZATIONS_B_AND_C);
         Edge e1 = graph.addEdge("e1", v1.getId(), v2.getId(), "junit edge", Visibility.EMPTY, AUTHORIZATIONS_A);
         graph.flush();
 
         graph.markEdgeHidden(e1, VISIBILITY_A, AUTHORIZATIONS_A);
         graph.markVertexHidden(v1, VISIBILITY_A, AUTHORIZATIONS_A);
+        v3.markPropertyHidden("junit", "name", VISIBILITY_B, VISIBILITY_C, AUTHORIZATIONS_B_AND_C);
         graph.flush();
 
         QueryResultsIterable<Vertex> vertices = graph.query(AUTHORIZATIONS_A).hasAuthorization(VISIBILITY_A_STRING).vertices(FetchHint.ALL);
@@ -2712,9 +2718,17 @@ public abstract class GraphTestBase {
         assertResultsCount(1, vertices);
         assertVertexIdsAnyOrder(vertices, v1.getId());
 
+        vertices = graph.query(AUTHORIZATIONS_B_AND_C).hasAuthorization(VISIBILITY_C_STRING).vertices(FetchHint.ALL_INCLUDING_HIDDEN);
+        assertResultsCount(1, vertices);
+        assertVertexIdsAnyOrder(vertices, v3.getId());
+
         vertexIds = graph.query(AUTHORIZATIONS_A).hasAuthorization(VISIBILITY_A_STRING).vertexIds(IdFetchHint.ALL_INCLUDING_HIDDEN);
         assertResultsCount(1, 1, vertexIds);
         assertIdsAnyOrder(vertexIds, v1.getId());
+
+        vertexIds = graph.query(AUTHORIZATIONS_B_AND_C).hasAuthorization(VISIBILITY_C_STRING).vertexIds(IdFetchHint.ALL_INCLUDING_HIDDEN);
+        assertResultsCount(1, 1, vertexIds);
+        assertIdsAnyOrder(vertexIds, v3.getId());
 
         QueryResultsIterable<Edge> edges = graph.query(AUTHORIZATIONS_A).hasAuthorization(VISIBILITY_A_STRING).edges(FetchHint.ALL);
         assertResultsCount(0, edges);
