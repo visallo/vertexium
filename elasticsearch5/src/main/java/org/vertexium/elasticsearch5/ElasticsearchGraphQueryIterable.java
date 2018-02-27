@@ -19,7 +19,6 @@ import org.elasticsearch.search.aggregations.metrics.stats.extended.ExtendedStat
 import org.elasticsearch.search.aggregations.metrics.stats.extended.InternalExtendedStats;
 import org.elasticsearch.search.aggregations.metrics.tophits.TopHits;
 import org.vertexium.VertexiumException;
-import org.vertexium.elasticsearch5.utils.ElasticsearchDocIdUtils;
 import org.vertexium.query.*;
 import org.vertexium.type.GeoPoint;
 import org.vertexium.type.GeoRect;
@@ -54,7 +53,7 @@ public class ElasticsearchGraphQueryIterable<T> extends DefaultGraphQueryIterabl
         this.searchTimeInNanoSeconds = searchTimeInNanoSeconds;
         if (hits != null) {
             for (SearchHit hit : hits.getHits()) {
-                scores.put(ElasticsearchDocIdUtils.fromSearchHit(hit), (double) hit.getScore());
+                scores.put(query.getIdStrategy().fromSearchHit(hit), (double) hit.getScore());
             }
         }
         this.aggregationResults = getAggregationResults(query, searchResponse);

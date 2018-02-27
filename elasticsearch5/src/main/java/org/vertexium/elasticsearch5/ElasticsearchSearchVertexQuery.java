@@ -12,6 +12,7 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.stream.Stream;
 
+import static org.vertexium.elasticsearch5.Elasticsearch5SearchIndex.ELEMENT_ID_FIELD_NAME;
 import static org.vertexium.util.StreamUtils.stream;
 
 public class ElasticsearchSearchVertexQuery extends ElasticsearchSearchQueryBase implements VertexQuery {
@@ -112,7 +113,7 @@ public class ElasticsearchSearchVertexQuery extends ElasticsearchSearchQueryBase
         String[] ids = edgeInfos.map(EdgeInfo::getVertexId).toArray(String[]::new);
 
         if (elementTypes.contains(ElasticsearchDocumentType.VERTEX)) {
-            filters.add(QueryBuilders.idsQuery().addIds(ids));
+            filters.add(QueryBuilders.termsQuery(ELEMENT_ID_FIELD_NAME, ids));
         }
 
         if (elementTypes.contains(ElasticsearchDocumentType.VERTEX_EXTENDED_DATA)) {
@@ -120,7 +121,7 @@ public class ElasticsearchSearchVertexQuery extends ElasticsearchSearchQueryBase
                 filters.add(
                         QueryBuilders.boolQuery()
                                 .must(QueryBuilders.termQuery(Elasticsearch5SearchIndex.ELEMENT_TYPE_FIELD_NAME, ElasticsearchDocumentType.VERTEX_EXTENDED_DATA.getKey()))
-                                .must(QueryBuilders.termQuery(Elasticsearch5SearchIndex.EXTENDED_DATA_ELEMENT_ID_FIELD_NAME, vertexId)));
+                                .must(QueryBuilders.termQuery(Elasticsearch5SearchIndex.ELEMENT_ID_FIELD_NAME, vertexId)));
             }
         }
 

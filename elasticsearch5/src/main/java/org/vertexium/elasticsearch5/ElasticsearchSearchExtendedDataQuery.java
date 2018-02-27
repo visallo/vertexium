@@ -39,7 +39,7 @@ public class ElasticsearchSearchExtendedDataQuery extends ElasticsearchSearchQue
                                 ElasticsearchDocumentType.VERTEX_EXTENDED_DATA.getKey(),
                                 ElasticsearchDocumentType.EDGE_EXTENDED_DATA.getKey()
                         ))
-                        .must(QueryBuilders.termQuery(Elasticsearch5SearchIndex.EXTENDED_DATA_ELEMENT_ID_FIELD_NAME, elementId))
+                        .must(QueryBuilders.termQuery(Elasticsearch5SearchIndex.ELEMENT_ID_FIELD_NAME, elementId))
                         .must(QueryBuilders.termQuery(Elasticsearch5SearchIndex.EXTENDED_DATA_TABLE_NAME_FIELD_NAME, tableName))
         );
         return filters;
