@@ -15,7 +15,7 @@ import java.util.Optional;
 
 public class VertexiumQueryStringQueryBuilder extends QueryStringQueryBuilder {
     public static final String NAME = "vertexium_query_string";
-    public static final String ELEMENT_DOCUMENT_MAPPER_NAME = "element";
+    public static final String ELEMENT_DOCUMENT_MAPPER_NAME = "e";
 
     private final String[] authorizations;
 

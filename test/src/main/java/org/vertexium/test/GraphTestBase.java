@@ -2018,14 +2018,26 @@ public abstract class GraphTestBase {
                 .save(AUTHORIZATIONS_A);
         graph.flush();
 
-        QueryResultsIterable<String> idsIterable = graph.query(AUTHORIZATIONS_A).skip(0).limit(1).vertexIds();
+        QueryResultsIterable<String> idsIterable = graph.query(AUTHORIZATIONS_A)
+                .sort(Element.ID_PROPERTY_NAME, SortDirection.ASCENDING)
+                .skip(0)
+                .limit(1)
+                .vertexIds();
         assertIdsAnyOrder(idsIterable, "v1");
         assertResultsCount(1, 3, idsIterable);
 
-        idsIterable = graph.query(AUTHORIZATIONS_A).skip(1).limit(1).vertexIds();
+        idsIterable = graph.query(AUTHORIZATIONS_A)
+                .sort(Element.ID_PROPERTY_NAME, SortDirection.ASCENDING)
+                .skip(1)
+                .limit(1)
+                .vertexIds();
         assertIdsAnyOrder(idsIterable, "v2");
 
-        idsIterable = graph.query(AUTHORIZATIONS_A).skip(2).limit(1).vertexIds();
+        idsIterable = graph.query(AUTHORIZATIONS_A)
+                .sort(Element.ID_PROPERTY_NAME, SortDirection.ASCENDING)
+                .skip(2)
+                .limit(1)
+                .vertexIds();
         assertIdsAnyOrder(idsIterable, "v3");
 
         idsIterable = graph.query(AUTHORIZATIONS_A).sort(namePropertyName, SortDirection.ASCENDING).vertexIds();

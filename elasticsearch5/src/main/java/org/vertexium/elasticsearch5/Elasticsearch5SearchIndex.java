@@ -45,7 +45,6 @@ import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilde
 import org.elasticsearch.transport.client.PreBuiltTransportClient;
 import org.vertexium.*;
 import org.vertexium.Edge;
-import org.vertexium.elasticsearch5.utils.ElasticsearchExtendedDataIdUtils;
 import org.vertexium.elasticsearch5.utils.FlushObjectQueue;
 import org.vertexium.mutation.ExtendedDataMutation;
 import org.vertexium.property.StreamingPropertyValue;
@@ -75,14 +74,13 @@ import static org.vertexium.util.Preconditions.checkNotNull;
 public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVertexPropertyCountByValue {
     private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(Elasticsearch5SearchIndex.class);
     protected static final VertexiumLogger MUTATION_LOGGER = VertexiumLoggerFactory.getMutationLogger(SearchIndex.class);
-    public static final String ELEMENT_TYPE = "element";
+    public static final String ELEMENT_ID_FIELD_NAME = "__elementId";
     public static final String ELEMENT_TYPE_FIELD_NAME = "__elementType";
     public static final String VISIBILITY_FIELD_NAME = "__visibility";
     public static final String HIDDEN_VERTEX_FIELD_NAME = "__hidden";
     public static final String OUT_VERTEX_ID_FIELD_NAME = "__outVertexId";
     public static final String IN_VERTEX_ID_FIELD_NAME = "__inVertexId";
     public static final String EDGE_LABEL_FIELD_NAME = "__edgeLabel";
-    public static final String EXTENDED_DATA_ELEMENT_ID_FIELD_NAME = "__extendedDataElementId";
     public static final String EXTENDED_DATA_TABLE_NAME_FIELD_NAME = "__extendedDataTableName";
     public static final String EXTENDED_DATA_TABLE_ROW_ID_FIELD_NAME = "__extendedDataRowId";
     public static final String EXACT_MATCH_FIELD_NAME = "exact";
@@ -116,6 +114,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
     private final String geoShapePrecision;
     private final String geoShapeErrorPct;
     private boolean serverPluginInstalled;
+    private final IdStrategy idStrategy;
 
     public Elasticsearch5SearchIndex(Graph graph, GraphConfiguration config) {
         this.config = new ElasticsearchSearchIndexConfiguration(graph, config);
@@ -124,9 +123,9 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
         this.propertyNameVisibilitiesStore = createPropertyNameVisibilitiesStore(graph, config);
         this.client = createClient(this.config);
         this.serverPluginInstalled = checkPluginInstalled(this.client);
-
-        geoShapePrecision = config.getString(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + CONFIG_PROPERTY_NAME_GEOSHAPE_PRECISION, DEFAULT_GEOSHAPE_PRECISION);
-        geoShapeErrorPct = config.getString(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + CONFIG_PROPERTY_NAME_GEOSHAPE_ERROR_PCT, DEFAULT_GEOSHAPE_ERROR_PCT);
+        this.geoShapePrecision = config.getString(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + CONFIG_PROPERTY_NAME_GEOSHAPE_PRECISION, DEFAULT_GEOSHAPE_PRECISION);
+        this.geoShapeErrorPct = config.getString(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + CONFIG_PROPERTY_NAME_GEOSHAPE_ERROR_PCT, DEFAULT_GEOSHAPE_ERROR_PCT);
+        this.idStrategy = new IdStrategy();
     }
 
     public PropertyNameVisibilitiesStore getPropertyNameVisibilitiesStore() {
@@ -293,8 +292,8 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
 
             LOGGER.debug("loading index info for %s", indexName);
             indexInfo = createIndexInfo(indexName);
+            addPropertyNameVisibility(graph, indexInfo, ELEMENT_ID_FIELD_NAME, null);
             addPropertyNameVisibility(graph, indexInfo, ELEMENT_TYPE_FIELD_NAME, null);
-            addPropertyNameVisibility(graph, indexInfo, EXTENDED_DATA_ELEMENT_ID_FIELD_NAME, null);
             addPropertyNameVisibility(graph, indexInfo, VISIBILITY_FIELD_NAME, null);
             addPropertyNameVisibility(graph, indexInfo, OUT_VERTEX_ID_FIELD_NAME, null);
             addPropertyNameVisibility(graph, indexInfo, IN_VERTEX_ID_FIELD_NAME, null);
@@ -385,7 +384,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
             getConfig().getScoringStrategy().addElement(this, graph, element, authorizations);
 
             return getClient()
-                    .prepareUpdate(indexInfo.getIndexName(), ELEMENT_TYPE, element.getId())
+                    .prepareUpdate(indexInfo.getIndexName(), getIdStrategy().getType(), getIdStrategy().createElementDocId(element))
                     .setDocAsUpsert(true)
                     .setDoc(source)
                     .setRetryOnConflict(MAX_RETRIES);
@@ -432,8 +431,8 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
     @Override
     public void deleteExtendedData(Graph graph, ExtendedDataRowId rowId, Authorizations authorizations) {
         String indexName = getExtendedDataIndexName(rowId);
-        String docId = ElasticsearchExtendedDataIdUtils.toDocId(rowId);
-        getClient().prepareDelete(indexName, ELEMENT_TYPE, docId).execute().actionGet();
+        String docId = getIdStrategy().createExtendedDataDocId(rowId);
+        getClient().prepareDelete(indexName, getIdStrategy().getType(), docId).execute().actionGet();
     }
 
     @Override
@@ -447,7 +446,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
             Visibility visibility,
             Authorizations authorizations
     ) {
-        String extendedDataDocId = ElasticsearchExtendedDataIdUtils.createForElement(element, tableName, row);
+        String extendedDataDocId = getIdStrategy().createExtendedDataDocId(element, tableName, row);
         String fieldName = addVisibilityToPropertyName(graph, columnName, visibility);
         String indexName = getExtendedDataIndexName(element, tableName, row);
         removeFieldsFromDocument(graph, indexName, extendedDataDocId, Lists.newArrayList(fieldName, fieldName + "_e"));
@@ -536,9 +535,9 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
 
             getConfig().getScoringStrategy().addElementExtendedData(this, graph, element, tableName, rowId, columns, authorizations);
 
-            String extendedDataDocId = ElasticsearchExtendedDataIdUtils.createForElement(element, tableName, rowId);
+            String extendedDataDocId = getIdStrategy().createExtendedDataDocId(element, tableName, rowId);
             return getClient()
-                    .prepareUpdate(indexInfo.getIndexName(), ELEMENT_TYPE, extendedDataDocId)
+                    .prepareUpdate(indexInfo.getIndexName(), getIdStrategy().getType(), extendedDataDocId)
                     .setDocAsUpsert(true)
                     .setDoc(source)
                     .setRetryOnConflict(MAX_RETRIES);
@@ -560,11 +559,11 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
                 .startObject();
 
         String elementTypeString = ElasticsearchDocumentType.getExtendedDataDocumentTypeFromElement(element).getKey();
+        jsonBuilder.field(ELEMENT_ID_FIELD_NAME, element.getId());
         jsonBuilder.field(ELEMENT_TYPE_FIELD_NAME, elementTypeString);
         String elementTypeVisibilityPropertyName = addElementTypeVisibilityPropertyToIndex(graph, element);
         jsonBuilder.field(elementTypeVisibilityPropertyName, elementTypeString);
         getConfig().getScoringStrategy().addFieldsToExtendedDataDocument(this, jsonBuilder, element, null, tableName, rowId, columns, authorizations);
-        jsonBuilder.field(EXTENDED_DATA_ELEMENT_ID_FIELD_NAME, element.getId());
         jsonBuilder.field(EXTENDED_DATA_TABLE_NAME_FIELD_NAME, tableName);
         jsonBuilder.field(EXTENDED_DATA_TABLE_ROW_ID_FIELD_NAME, rowId);
         if (element instanceof Edge) {
@@ -691,6 +690,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
 
         String elementTypeVisibilityPropertyName = addElementTypeVisibilityPropertyToIndex(graph, element);
 
+        jsonBuilder.field(ELEMENT_ID_FIELD_NAME, element.getId());
         jsonBuilder.field(ELEMENT_TYPE_FIELD_NAME, getElementTypeValueFromElement(element));
         if (element instanceof Vertex) {
             jsonBuilder.field(elementTypeVisibilityPropertyName, ElasticsearchDocumentType.VERTEX.getKey());
@@ -738,7 +738,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
             jsonBuilder.endObject();
 
             getClient()
-                    .prepareUpdate(getIndexName(element), ELEMENT_TYPE, element.getId())
+                    .prepareUpdate(getIndexName(element), getIdStrategy().getType(), getIdStrategy().createElementDocId(element))
                     .setDoc(jsonBuilder)
                     .setRetryOnConflict(MAX_RETRIES)
                     .get();
@@ -1032,26 +1032,26 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
         deleteExtendedDataForElement(element);
 
         String indexName = getIndexName(element);
-        String id = element.getId();
+        String docId = getIdStrategy().createElementDocId(element);
         if (MUTATION_LOGGER.isTraceEnabled()) {
-            LOGGER.trace("deleting document %s", id);
+            LOGGER.trace("deleting document %s (docId: %s)", element.getId(), docId);
         }
         getClient().delete(
                 getClient()
-                        .prepareDelete(indexName, ELEMENT_TYPE, id)
+                        .prepareDelete(indexName, getIdStrategy().getType(), docId)
                         .request()
         ).actionGet();
     }
 
     private void deleteExtendedDataForElement(Element element) {
         try {
-            QueryBuilder filter = QueryBuilders.termQuery(EXTENDED_DATA_ELEMENT_ID_FIELD_NAME, element.getId());
+            QueryBuilder filter = QueryBuilders.termQuery(ELEMENT_ID_FIELD_NAME, element.getId());
 
             SearchRequestBuilder s = getClient().prepareSearch(getIndicesToQuery())
-                    .setTypes(ELEMENT_TYPE)
+                    .setTypes(getIdStrategy().getType())
                     .setQuery(QueryBuilders.boolQuery().must(QueryBuilders.matchAllQuery()).filter(filter))
                     .storedFields(
-                            EXTENDED_DATA_ELEMENT_ID_FIELD_NAME,
+                            ELEMENT_ID_FIELD_NAME,
                             EXTENDED_DATA_TABLE_NAME_FIELD_NAME,
                             EXTENDED_DATA_TABLE_ROW_ID_FIELD_NAME
                     );
@@ -1060,7 +1060,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
                 if (MUTATION_LOGGER.isTraceEnabled()) {
                     LOGGER.trace("deleting extended data document %s", hit.getId());
                 }
-                getClient().prepareDelete(hit.getIndex(), ELEMENT_TYPE, hit.getId()).execute().actionGet();
+                getClient().prepareDelete(hit.getIndex(), hit.getType(), hit.getId()).execute().actionGet();
             }
         } catch (Exception ex) {
             throw new VertexiumException("Could not delete extended data for element: " + element.getId());
@@ -1251,7 +1251,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
 
         XContentBuilder mapping = XContentFactory.jsonBuilder()
                 .startObject()
-                .startObject(ELEMENT_TYPE)
+                .startObject(getIdStrategy().getType())
                 .startObject("properties")
                 .startObject(replaceFieldnameDots(propertyName));
 
@@ -1270,7 +1270,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
                 .admin()
                 .indices()
                 .preparePutMapping(indexInfo.getIndexName())
-                .setType(ELEMENT_TYPE)
+                .setType(getIdStrategy().getType())
                 .setSource(mapping)
                 .execute()
                 .actionGet();
@@ -1283,7 +1283,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
         try {
             XContentBuilder mapping = XContentFactory.jsonBuilder()
                     .startObject()
-                    .startObject(ELEMENT_TYPE);
+                    .startObject(getIdStrategy().getType());
             GetMappingsResponse existingMapping = getClient()
                     .admin()
                     .indices()
@@ -1293,7 +1293,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
 
             Map<String, Object> existingElementData = existingMapping.mappings()
                     .get(indexInfo.getIndexName())
-                    .get(ELEMENT_TYPE)
+                    .get(getIdStrategy().getType())
                     .getSourceAsMap();
 
             mapping = mapping.startObject("_meta")
@@ -1315,7 +1315,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
                     .admin()
                     .indices()
                     .preparePutMapping(indexInfo.getIndexName())
-                    .setType(ELEMENT_TYPE)
+                    .setType(getIdStrategy().getType())
                     .setSource(mapping)
                     .execute()
                     .actionGet();
@@ -1422,7 +1422,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
                         .endObject();
 
                 client.admin().indices().preparePutMapping(indexInfo.getIndexName())
-                        .setType(ELEMENT_TYPE)
+                        .setType(getIdStrategy().getType())
                         .setSource(mapping)
                         .execute()
                         .actionGet();
@@ -1435,8 +1435,8 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
 
     protected void createIndexAddFieldsToElementType(XContentBuilder builder) throws IOException {
         builder
+                .startObject(ELEMENT_ID_FIELD_NAME).field("type", "keyword").field("store", "true").endObject()
                 .startObject(ELEMENT_TYPE_FIELD_NAME).field("type", "keyword").field("store", "true").endObject()
-                .startObject(EXTENDED_DATA_ELEMENT_ID_FIELD_NAME).field("type", "keyword").field("store", "true").endObject()
                 .startObject(EXTENDED_DATA_TABLE_ROW_ID_FIELD_NAME).field("type", "keyword").field("store", "true").endObject()
                 .startObject(EXTENDED_DATA_TABLE_NAME_FIELD_NAME).field("type", "keyword").field("store", "true").endObject()
                 .startObject(VISIBILITY_FIELD_NAME).field("type", "keyword").field("store", "true").endObject()
@@ -1536,7 +1536,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
 
     private void removeFieldsFromDocument(Graph graph, Element element, Collection<String> fields) {
         String indexName = getIndexName(element);
-        String documentId = element.getId();
+        String documentId = getIdStrategy().createElementDocId(element);
         removeFieldsFromDocument(graph, indexName, documentId, fields);
     }
 
@@ -1553,7 +1553,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
         UpdateRequestBuilder updateRequestBuilder = getClient().prepareUpdate()
                 .setIndex(indexName)
                 .setId(documentId)
-                .setType(ELEMENT_TYPE)
+                .setType(getIdStrategy().getType())
                 .setScript(new Script(
                         ScriptType.INLINE,
                         "painless",
@@ -1931,6 +1931,10 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
 
     public ElasticsearchSearchIndexConfiguration getConfig() {
         return config;
+    }
+
+    public IdStrategy getIdStrategy() {
+        return idStrategy;
     }
 
     public boolean isPropertyInIndex(Graph graph, String propertyName) {

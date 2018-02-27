@@ -41,7 +41,6 @@ import org.elasticsearch.search.sort.SortOrder;
 import org.joda.time.DateTime;
 import org.vertexium.*;
 import org.vertexium.elasticsearch5.score.ScoringStrategy;
-import org.vertexium.elasticsearch5.utils.ElasticsearchExtendedDataIdUtils;
 import org.vertexium.elasticsearch5.utils.ElasticsearchTypes;
 import org.vertexium.elasticsearch5.utils.InfiniteScrollIterable;
 import org.vertexium.elasticsearch5.utils.PagingIterable;
@@ -57,7 +56,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
-import static org.vertexium.elasticsearch5.Elasticsearch5SearchIndex.EXTENDED_DATA_ELEMENT_ID_FIELD_NAME;
+import static org.vertexium.elasticsearch5.Elasticsearch5SearchIndex.ELEMENT_ID_FIELD_NAME;
 import static org.vertexium.elasticsearch5.Elasticsearch5SearchIndex.HIDDEN_VERTEX_FIELD_NAME;
 import static org.vertexium.elasticsearch5.utils.SearchResponseUtils.checkForFailures;
 
@@ -161,11 +160,11 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
         }
         SearchRequestBuilder searchRequestBuilder = getClient()
                 .prepareSearch(indicesToQuery)
-                .setTypes(Elasticsearch5SearchIndex.ELEMENT_TYPE)
+                .setTypes(getSearchIndex().getIdStrategy().getType())
                 .setQuery(QueryBuilders.boolQuery().must(query).filter(filterBuilder))
                 .storedFields(
+                        Elasticsearch5SearchIndex.ELEMENT_ID_FIELD_NAME,
                         Elasticsearch5SearchIndex.ELEMENT_TYPE_FIELD_NAME,
-                        Elasticsearch5SearchIndex.EXTENDED_DATA_ELEMENT_ID_FIELD_NAME,
                         Elasticsearch5SearchIndex.EXTENDED_DATA_TABLE_NAME_FIELD_NAME,
                         Elasticsearch5SearchIndex.EXTENDED_DATA_TABLE_ROW_ID_FIELD_NAME
                 );
@@ -237,20 +236,8 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
         }
 
         if (getParameters().getIds().size() > 0) {
-            BoolQueryBuilder orQuery = QueryBuilders.boolQuery()
-                    .minimumShouldMatch(1);
-
-            if (elementTypes == null || elementTypes.contains(ElasticsearchDocumentType.EDGE) || elementTypes.contains(ElasticsearchDocumentType.VERTEX)) {
-                String[] idsArray = getParameters().getIds().toArray(new String[getParameters().getIds().size()]);
-                orQuery.should(QueryBuilders.idsQuery().addIds(idsArray));
-            }
-
-            if (elementTypes == null || elementTypes.contains(ElasticsearchDocumentType.EDGE_EXTENDED_DATA) || elementTypes.contains(ElasticsearchDocumentType.VERTEX_EXTENDED_DATA)) {
-                String[] idsArray = getParameters().getIds().toArray(new String[getParameters().getIds().size()]);
-                orQuery.should(QueryBuilders.termsQuery(EXTENDED_DATA_ELEMENT_ID_FIELD_NAME, idsArray));
-            }
-
-            filters.add(orQuery);
+            String[] idsArray = getParameters().getIds().toArray(new String[getParameters().getIds().size()]);
+            filters.add(QueryBuilders.termsQuery(ELEMENT_ID_FIELD_NAME, idsArray));
         }
 
         if (getParameters() instanceof QueryStringQueryParameters) {
@@ -274,7 +261,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
         for (SortContainer sortContainer : getParameters().getSortContainers()) {
             SortOrder esOrder = sortContainer.direction == SortDirection.ASCENDING ? SortOrder.ASC : SortOrder.DESC;
             if (Element.ID_PROPERTY_NAME.equals(sortContainer.propertyName)) {
-                q.addSort("_uid", esOrder);
+                q.addSort(Elasticsearch5SearchIndex.ELEMENT_ID_FIELD_NAME, esOrder);
                 sortedById = true;
             } else if (Edge.LABEL_PROPERTY_NAME.equals(sortContainer.propertyName)) {
                 q.addSort(
@@ -284,7 +271,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
                 );
             } else if (ExtendedDataRow.TABLE_NAME.equals(sortContainer.propertyName)) {
                 q.addSort(
-                        SortBuilders.fieldSort(Elasticsearch5SearchIndex.EXTENDED_DATA_ELEMENT_ID_FIELD_NAME)
+                        SortBuilders.fieldSort(Elasticsearch5SearchIndex.ELEMENT_ID_FIELD_NAME)
                                 .unmappedType("keyword")
                                 .order(esOrder)
                 );
@@ -392,7 +379,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
 
     private ElasticsearchGraphQueryIterable<VertexiumObject> searchResponseToVertexiumObjectIterable(SearchResponse response, EnumSet<FetchHint> fetchHints) {
         final SearchHits hits = response.getHits();
-        Ids ids = new Ids(hits);
+        Ids ids = new Ids(getIdStrategy(), hits);
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug(
                     "elasticsearch results (vertices: %d + edges: %d + extended data: %d = %d)",
@@ -473,25 +460,25 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
     @Override
     public QueryResultsIterable<String> vertexIds(EnumSet<IdFetchHint> idFetchHints) {
         EnumSet<FetchHint> fetchHints = IdFetchHint.toFetchHints(idFetchHints);
-        return new ElasticsearchGraphQueryIdIterable<>(searchHits(EnumSet.of(VertexiumObjectType.VERTEX), fetchHints));
+        return new ElasticsearchGraphQueryIdIterable<>(getIdStrategy(), searchHits(EnumSet.of(VertexiumObjectType.VERTEX), fetchHints));
     }
 
     @Override
     public QueryResultsIterable<String> edgeIds(EnumSet<IdFetchHint> idFetchHints) {
         EnumSet<FetchHint> fetchHints = IdFetchHint.toFetchHints(idFetchHints);
-        return new ElasticsearchGraphQueryIdIterable<>(searchHits(EnumSet.of(VertexiumObjectType.EDGE), fetchHints));
+        return new ElasticsearchGraphQueryIdIterable<>(getIdStrategy(), searchHits(EnumSet.of(VertexiumObjectType.EDGE), fetchHints));
     }
 
     @Override
     public QueryResultsIterable<ExtendedDataRowId> extendedDataRowIds(EnumSet<IdFetchHint> idFetchHints) {
         EnumSet<FetchHint> fetchHints = IdFetchHint.toFetchHints(idFetchHints);
-        return new ElasticsearchGraphQueryIdIterable<>(searchHits(EnumSet.of(VertexiumObjectType.EXTENDED_DATA), fetchHints));
+        return new ElasticsearchGraphQueryIdIterable<>(getIdStrategy(), searchHits(EnumSet.of(VertexiumObjectType.EXTENDED_DATA), fetchHints));
     }
 
     @Override
     public QueryResultsIterable<String> elementIds(EnumSet<IdFetchHint> idFetchHints) {
         EnumSet<FetchHint> fetchHints = IdFetchHint.toFetchHints(idFetchHints);
-        return new ElasticsearchGraphQueryIdIterable<>(searchHits(VertexiumObjectType.ELEMENTS, fetchHints));
+        return new ElasticsearchGraphQueryIdIterable<>(getIdStrategy(), searchHits(VertexiumObjectType.ELEMENTS, fetchHints));
     }
 
     private <T extends VertexiumObject> Iterable<T> sortVertexiumObjectsByResultOrder(Iterable<T> vertexiumObjects, List<String> ids) {
@@ -499,7 +486,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
             if (vertexiumObject instanceof Element) {
                 return ((Element) vertexiumObject).getId();
             } else if (vertexiumObject instanceof ExtendedDataRow) {
-                return ElasticsearchExtendedDataIdUtils.toDocId(((ExtendedDataRow) vertexiumObject).getId());
+                return ((ExtendedDataRow) vertexiumObject).getId().toString();
             } else {
                 throw new VertexiumException("Unhandled searchable item type: " + vertexiumObject.getClass().getName());
             }
@@ -617,7 +604,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
             hasQuery = true;
         }
         if (has.getElementId() != null) {
-            boolQuery.must(QueryBuilders.termQuery(Elasticsearch5SearchIndex.EXTENDED_DATA_ELEMENT_ID_FIELD_NAME, has.getElementId()));
+            boolQuery.must(QueryBuilders.termQuery(Elasticsearch5SearchIndex.ELEMENT_ID_FIELD_NAME, has.getElementId()));
             hasQuery = true;
         }
         if (has.getTableName() != null) {
@@ -1484,6 +1471,10 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
         return getSearchIndex().getAggregationName(name);
     }
 
+    public IdStrategy getIdStrategy() {
+        return getSearchIndex().getIdStrategy();
+    }
+
     @Override
     public String toString() {
         return this.getClass().getName() + "{" +
@@ -1546,7 +1537,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
         private final List<String> ids;
         private final List<ExtendedDataRowId> extendedDataIds;
 
-        public Ids(SearchHits hits) {
+        public Ids(IdStrategy idStrategy, SearchHits hits) {
             vertexIds = new ArrayList<>();
             edgeIds = new ArrayList<>();
             extendedDataIds = new ArrayList<>();
@@ -1556,20 +1547,22 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
                 if (dt == null) {
                     continue;
                 }
-                String id = hit.getId();
                 switch (dt) {
                     case VERTEX:
-                        ids.add(id);
-                        vertexIds.add(id);
+                        String vertexId = idStrategy.vertexIdFromSearchHit(hit);
+                        ids.add(vertexId);
+                        vertexIds.add(vertexId);
                         break;
                     case EDGE:
-                        ids.add(id);
-                        edgeIds.add(id);
+                        String edgeId = idStrategy.edgeIdFromSearchHit(hit);
+                        ids.add(edgeId);
+                        edgeIds.add(edgeId);
                         break;
                     case VERTEX_EXTENDED_DATA:
                     case EDGE_EXTENDED_DATA:
-                        ids.add(id);
-                        extendedDataIds.add(ElasticsearchExtendedDataIdUtils.fromSearchHit(hit));
+                        ExtendedDataRowId extendedDataRowId = idStrategy.extendedDataRowIdFromSearchHit(hit);
+                        ids.add(extendedDataRowId.toString());
+                        extendedDataIds.add(extendedDataRowId);
                         break;
                     default:
                         LOGGER.warn("Unhandled document type: %s", dt);
