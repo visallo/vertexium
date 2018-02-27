@@ -1,6 +1,9 @@
 package org.vertexium.elasticsearch5.plugin;
 
+import com.carrotsearch.hppc.cursors.ObjectCursor;
 import org.apache.lucene.search.Query;
+import org.elasticsearch.cluster.metadata.MappingMetaData;
+import org.elasticsearch.common.collect.ImmutableOpenMap;
 import org.elasticsearch.common.io.stream.StreamInput;
 import org.elasticsearch.common.io.stream.StreamOutput;
 import org.elasticsearch.common.xcontent.XContentBuilder;
@@ -9,6 +12,7 @@ import org.elasticsearch.index.query.QueryShardContext;
 import org.elasticsearch.index.query.QueryStringQueryBuilder;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -54,7 +58,7 @@ public class VertexiumQueryStringQueryBuilder extends QueryStringQueryBuilder {
     protected boolean doEquals(QueryStringQueryBuilder other) {
         return other instanceof VertexiumQueryStringQueryBuilder &&
                 super.doEquals(other) &&
-                Objects.deepEquals(this.authorizations, ((VertexiumQueryStringQueryBuilder)other).authorizations);
+                Objects.deepEquals(this.authorizations, ((VertexiumQueryStringQueryBuilder) other).authorizations);
     }
 
     @Override
@@ -72,15 +76,34 @@ public class VertexiumQueryStringQueryBuilder extends QueryStringQueryBuilder {
     }
 
     protected FieldNameToVisibilityMap getFieldNameToVisibilityMap(QueryShardContext context) {
-        Map<String, Object> elementMetadata = context.getMapperService().documentMapper(ELEMENT_DOCUMENT_MAPPER_NAME).meta();
-        if (elementMetadata == null) {
-            throw new NullPointerException("Could not find " + ELEMENT_DOCUMENT_MAPPER_NAME + " metadata");
-        }
+        try {
+            Map<String, String> results = new HashMap<>();
+            ImmutableOpenMap<String, ImmutableOpenMap<String, MappingMetaData>> mappings
+                    = context.getClient().admin().indices().prepareGetMappings().get().getMappings();
+            for (ObjectCursor<String> index : mappings.keys()) {
+                ImmutableOpenMap<String, MappingMetaData> types = mappings.get(index.value);
+                if (types == null) {
+                    continue;
+                }
+                MappingMetaData elementMetadata = types.get(ELEMENT_DOCUMENT_MAPPER_NAME);
+                if (elementMetadata == null) {
+                    continue;
+                }
+                //noinspection unchecked
+                Map<String, Map<String, String>> meta = (Map<String, Map<String, String>>) elementMetadata.getSourceAsMap().get("_meta");
+                if (meta == null) {
+                    continue;
+                }
+                Map<String, String> vertexiumMeta = meta.get("vertexium");
+                if (vertexiumMeta == null) {
+                    continue;
+                }
+                results.putAll(vertexiumMeta);
+            }
 
-        Object vertexiumMeta = elementMetadata.get("vertexium");
-        if (vertexiumMeta == null) {
-            throw new NullPointerException("Could not find vertexium metadata in field mapping");
+            return FieldNameToVisibilityMap.createFromVertexiumMetadata(results);
+        } catch (IOException ex) {
+            throw new RuntimeException("Could not get mappings", ex);
         }
-        return FieldNameToVisibilityMap.createFromVertexiumMetadata(vertexiumMeta);
     }
 }
