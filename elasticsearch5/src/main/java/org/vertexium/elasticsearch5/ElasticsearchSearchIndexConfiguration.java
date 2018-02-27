@@ -49,8 +49,16 @@ public class ElasticsearchSearchIndexConfiguration {
     public static final String ES_CONFIG_FILE_DEFAULT = null;
     public static final String ERROR_ON_MISSING_VERTEXIUM_PLUGIN = "errorOnMissingVertexiumPlugin";
     public static final boolean ERROR_ON_MISSING_VERTEXIUM_PLUGIN_DEFAULT = false;
+    public static final String FORCE_DISABLE_VERTEXIUM_PLUGIN = "forceDisableVertexiumPlugin";
+    private static final boolean FORCE_DISABLE_VERTEXIUM_PLUGIN_DEFAULT = false;
     public static final String INDEX_MAPPING_TOTAL_FIELDS_LIMIT = "indexMappingTotalFieldsLimit";
     public static final int INDEX_MAPPING_TOTAL_FIELDS_LIMIT_DEFAULT = 100000;
+    public static final String PROPERTY_NAME_VISIBILITIES_STORE = "propertyNameVisibilitiesStore";
+    public static final Class<? extends PropertyNameVisibilitiesStore> PROPERTY_NAME_VISIBILITIES_STORE_DEFAULT = MetadataTablePropertyNameVisibilitiesStore.class;
+    public static final String GEOSHAPE_PRECISION = "geoshapePrecision";
+    public static final String GEOSHAPE_PRECISION_DEFAULT = "100m";
+    public static final String GEOSHAPE_ERROR_PCT = "geoshapeErrorPct";
+    public static final String GEOSHAPE_ERROR_PCT_DEFAULT = "0.001";
 
     private GraphConfiguration graphConfiguration;
     private IndexSelectionStrategy indexSelectionStrategy;
@@ -166,6 +174,23 @@ public class ElasticsearchSearchIndexConfiguration {
     public TimeValue getScrollKeepAlive() {
         String value = graphConfiguration.getString(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + QUERY_SCROLL_KEEP_ALIVE, QUERY_SCROLL_KEEP_ALIVE_DEFAULT);
         return TimeValue.parseTimeValue(value, null, "");
+    }
+
+    public String getGeoShapePrecision() {
+        return graphConfiguration.getString(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + GEOSHAPE_PRECISION, GEOSHAPE_PRECISION_DEFAULT);
+    }
+
+    public String getGeoShapeErrorPct() {
+        return graphConfiguration.getString(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + GEOSHAPE_ERROR_PCT, GEOSHAPE_ERROR_PCT_DEFAULT);
+    }
+
+    public boolean isForceDisableVertexiumPlugin() {
+        return graphConfiguration.getBoolean(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + FORCE_DISABLE_VERTEXIUM_PLUGIN, FORCE_DISABLE_VERTEXIUM_PLUGIN_DEFAULT);
+    }
+
+    public PropertyNameVisibilitiesStore createPropertyNameVisibilitiesStore(Graph graph) {
+        String className = graphConfiguration.getString(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + PROPERTY_NAME_VISIBILITIES_STORE, PROPERTY_NAME_VISIBILITIES_STORE_DEFAULT.getName());
+        return ConfigurationUtils.createProvider(className, graph, graphConfiguration);
     }
 
     public File getEsConfigFile() {

@@ -192,7 +192,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
             Collection<String> fields = es.getQueryablePropertyNames(getGraph(), getParameters().getAuthorizations());
             QueryStringQueryBuilder qs = QueryBuilders.queryStringQuery(queryString);
             for (String field : fields) {
-                qs = qs.field(field);
+                qs = qs.field(getSearchIndex().replaceFieldnameDots(field));
             }
             return qs;
         }

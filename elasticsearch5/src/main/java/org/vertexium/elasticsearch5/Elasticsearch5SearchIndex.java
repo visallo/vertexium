@@ -103,12 +103,6 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
     private boolean allFieldEnabled;
     private Node inProcessNode;
     public static final Pattern AGGREGATION_NAME_PATTERN = Pattern.compile("(.*?)_([0-9a-f]+)");
-    public static final String CONFIG_PROPERTY_NAME_VISIBILITIES_STORE = "propertyNameVisibilitiesStore";
-    public static final String CONFIG_PROPERTY_NAME_GEOSHAPE_PRECISION = "geoshapePrecision";
-    public static final String DEFAULT_GEOSHAPE_PRECISION = "100m";
-    public static final String CONFIG_PROPERTY_NAME_GEOSHAPE_ERROR_PCT = "geoshapeErrorPct";
-    public static final String DEFAULT_GEOSHAPE_ERROR_PCT = "0.001";
-    public static final Class<? extends PropertyNameVisibilitiesStore> DEFAULT_PROPERTY_NAME_VISIBILITIES_STORE = MetadataTablePropertyNameVisibilitiesStore.class;
     private final PropertyNameVisibilitiesStore propertyNameVisibilitiesStore;
     private final ThreadLocal<FlushObjectQueue> flushFutures = new ThreadLocal<>();
     private final String geoShapePrecision;
@@ -120,11 +114,11 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
         this.config = new ElasticsearchSearchIndexConfiguration(graph, config);
         this.indexSelectionStrategy = this.config.getIndexSelectionStrategy();
         this.allFieldEnabled = this.config.isAllFieldEnabled(false);
-        this.propertyNameVisibilitiesStore = createPropertyNameVisibilitiesStore(graph, config);
+        this.propertyNameVisibilitiesStore = this.config.createPropertyNameVisibilitiesStore(graph);
         this.client = createClient(this.config);
         this.serverPluginInstalled = checkPluginInstalled(this.client);
-        this.geoShapePrecision = config.getString(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + CONFIG_PROPERTY_NAME_GEOSHAPE_PRECISION, DEFAULT_GEOSHAPE_PRECISION);
-        this.geoShapeErrorPct = config.getString(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + CONFIG_PROPERTY_NAME_GEOSHAPE_ERROR_PCT, DEFAULT_GEOSHAPE_ERROR_PCT);
+        this.geoShapePrecision = this.config.getGeoShapePrecision();
+        this.geoShapeErrorPct = this.config.getGeoShapeErrorPct();
         this.idStrategy = new IdStrategy();
     }
 
@@ -242,6 +236,11 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
     }
 
     private boolean checkPluginInstalled(Client client) {
+        if (config.isForceDisableVertexiumPlugin()) {
+            LOGGER.info("Forcing the vertexium plugin off. Running without the server side Vertexium plugin will disable some features.");
+            return false;
+        }
+
         NodesInfoResponse nodesInfoResponse = client.admin().cluster().prepareNodesInfo().setPlugins(true).get();
         for (NodeInfo nodeInfo : nodesInfoResponse.getNodes()) {
             for (PluginInfo pluginInfo : nodeInfo.getPlugins().getPluginInfos()) {
@@ -253,7 +252,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
         if (config.isErrorOnMissingVertexiumPlugin()) {
             throw new VertexiumException("Vertexium plugin cannot be found");
         }
-        LOGGER.warn("Running without the server side Vertexium plugin will be deprecated in the future.");
+        LOGGER.warn("Running without the server side Vertexium plugin will disable some features.");
         return false;
     }
 
@@ -339,11 +338,6 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
             return;
         }
         addPropertyNameVisibility(graph, indexInfo, p.getPropertyName(), p.getPropertyVisibility());
-    }
-
-    private PropertyNameVisibilitiesStore createPropertyNameVisibilitiesStore(Graph graph, GraphConfiguration config) {
-        String className = config.getString(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + CONFIG_PROPERTY_NAME_VISIBILITIES_STORE, DEFAULT_PROPERTY_NAME_VISIBILITIES_STORE.getName());
-        return ConfigurationUtils.createProvider(className, graph, config);
     }
 
     @SuppressWarnings("unchecked")
