@@ -69,6 +69,7 @@ import java.util.stream.Collectors;
 
 import static org.elasticsearch.common.geo.builders.ShapeBuilder.*;
 import static org.vertexium.elasticsearch5.ElasticsearchPropertyNameInfo.PROPERTY_NAME_PATTERN;
+import static org.vertexium.elasticsearch5.utils.SearchResponseUtils.checkForFailures;
 import static org.vertexium.util.Preconditions.checkNotNull;
 
 public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVertexPropertyCountByValue {
@@ -1054,7 +1055,8 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
                             EXTENDED_DATA_TABLE_NAME_FIELD_NAME,
                             EXTENDED_DATA_TABLE_ROW_ID_FIELD_NAME
                     );
-            for (SearchHit hit : s.execute().get().getHits()) {
+            SearchResponse searchResponse = checkForFailures(s.execute().get());
+            for (SearchHit hit : searchResponse.getHits()) {
                 if (MUTATION_LOGGER.isTraceEnabled()) {
                     LOGGER.trace("deleting extended data document %s", hit.getId());
                 }
@@ -1359,7 +1361,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
         if (ElasticsearchSearchQueryBase.QUERY_LOGGER.isTraceEnabled()) {
             ElasticsearchSearchQueryBase.QUERY_LOGGER.trace("query: %s", q);
         }
-        SearchResponse response = getClient().search(q.request()).actionGet();
+        SearchResponse response = checkForFailures(getClient().search(q.request()).actionGet());
         Map<Object, Long> results = new HashMap<>();
         for (Aggregation agg : response.getAggregations().asList()) {
             Terms propertyCountResults = (Terms) agg;
