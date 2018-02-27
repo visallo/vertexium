@@ -109,7 +109,8 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
     private final String geoShapePrecision;
     private final String geoShapeErrorPct;
     private boolean serverPluginInstalled;
-    private final IdStrategy idStrategy;
+    private final IdStrategy idStrategy = new IdStrategy();
+    private final IndexRefreshTracker indexRefreshTracker = new IndexRefreshTracker();
 
     public Elasticsearch5SearchIndex(Graph graph, GraphConfiguration config) {
         this.config = new ElasticsearchSearchIndexConfiguration(graph, config);
@@ -120,7 +121,6 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
         this.serverPluginInstalled = checkPluginInstalled(this.client);
         this.geoShapePrecision = this.config.getGeoShapePrecision();
         this.geoShapeErrorPct = this.config.getGeoShapeErrorPct();
-        this.idStrategy = new IdStrategy();
     }
 
     public PropertyNameVisibilitiesStore getPropertyNameVisibilitiesStore() {
@@ -377,7 +377,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
             }
 
             getConfig().getScoringStrategy().addElement(this, graph, element, authorizations);
-
+            getIndexRefreshTracker().pushChange(indexInfo.getIndexName());
             return getClient()
                     .prepareUpdate(indexInfo.getIndexName(), getIdStrategy().getType(), getIdStrategy().createElementDocId(element))
                     .setDocAsUpsert(true)
@@ -427,6 +427,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
     public void deleteExtendedData(Graph graph, ExtendedDataRowId rowId, Authorizations authorizations) {
         String indexName = getExtendedDataIndexName(rowId);
         String docId = getIdStrategy().createExtendedDataDocId(rowId);
+        getIndexRefreshTracker().pushChange(indexName);
         getClient().prepareDelete(indexName, getIdStrategy().getType(), docId).execute().actionGet();
     }
 
@@ -531,6 +532,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
             getConfig().getScoringStrategy().addElementExtendedData(this, graph, element, tableName, rowId, columns, authorizations);
 
             String extendedDataDocId = getIdStrategy().createExtendedDataDocId(element, tableName, rowId);
+            getIndexRefreshTracker().pushChange(indexInfo.getIndexName());
             return getClient()
                     .prepareUpdate(indexInfo.getIndexName(), getIdStrategy().getType(), extendedDataDocId)
                     .setDocAsUpsert(true)
@@ -722,8 +724,8 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
     public void markElementHidden(Graph graph, Element element, Visibility visibility, Authorizations authorizations) {
         try {
             String hiddenVisibilityPropertyName = addVisibilityToPropertyName(graph, HIDDEN_VERTEX_FIELD_NAME, visibility);
+            String indexName = getIndexName(element);
             if (!isPropertyInIndex(graph, hiddenVisibilityPropertyName)) {
-                String indexName = getIndexName(element);
                 IndexInfo indexInfo = ensureIndexCreatedAndInitialized(graph, indexName);
                 addPropertyToIndex(graph, indexInfo, hiddenVisibilityPropertyName, visibility, Boolean.class, false, false, false);
             }
@@ -732,8 +734,9 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
             jsonBuilder.field(hiddenVisibilityPropertyName, true);
             jsonBuilder.endObject();
 
+            getIndexRefreshTracker().pushChange(indexName);
             getClient()
-                    .prepareUpdate(getIndexName(element), getIdStrategy().getType(), getIdStrategy().createElementDocId(element))
+                    .prepareUpdate(indexName, getIdStrategy().getType(), getIdStrategy().createElementDocId(element))
                     .setDoc(jsonBuilder)
                     .setRetryOnConflict(MAX_RETRIES)
                     .get();
@@ -1063,6 +1066,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
         if (MUTATION_LOGGER.isTraceEnabled()) {
             LOGGER.trace("deleting document %s (docId: %s)", element.getId(), docId);
         }
+        getIndexRefreshTracker().pushChange(indexName);
         getClient().delete(
                 getClient()
                         .prepareDelete(indexName, getIdStrategy().getType(), docId)
@@ -1087,6 +1091,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
                 if (MUTATION_LOGGER.isTraceEnabled()) {
                     LOGGER.trace("deleting extended data document %s", hit.getId());
                 }
+                getIndexRefreshTracker().pushChange(hit.getIndex());
                 getClient().prepareDelete(hit.getIndex(), hit.getType(), hit.getId()).execute().actionGet();
             }
         } catch (Exception ex) {
@@ -1558,7 +1563,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
     @Override
     public void flush(Graph graph) {
         getFlushObjectQueue().flush();
-        client.admin().indices().prepareRefresh(getIndexNamesAsArray(graph)).execute().actionGet();
+        getIndexRefreshTracker().refresh(client);
     }
 
     private void removeFieldsFromDocument(Graph graph, Element element, Collection<String> fields) {
@@ -1577,6 +1582,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
             return;
         }
 
+        getIndexRefreshTracker().pushChange(indexName);
         UpdateRequestBuilder updateRequestBuilder = getClient().prepareUpdate()
                 .setIndex(indexName)
                 .setId(documentId)
@@ -1962,6 +1968,10 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
 
     public IdStrategy getIdStrategy() {
         return idStrategy;
+    }
+
+    public IndexRefreshTracker getIndexRefreshTracker() {
+        return indexRefreshTracker;
     }
 
     public boolean isPropertyInIndex(Graph graph, String propertyName) {

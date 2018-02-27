@@ -1,5 +1,6 @@
 # v3.2.0
 * Changed: Elasticsearch _id and _type fields to be much smaller to minimize the size of the _uid field data cache 
+* Changed: Elasticsearch to only refresh the indices that were changed
 * Fixed: InMemory and Accumulo fix wrong vertex being returned after re-adding the same vertex with a different visibility after soft delete
 * Fixed: Find path when edge labels are deflated
 * Fixed: Accumulo stream property value in table data length of reference
