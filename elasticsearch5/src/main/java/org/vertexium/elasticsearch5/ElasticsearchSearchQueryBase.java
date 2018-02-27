@@ -59,6 +59,7 @@ import java.util.stream.StreamSupport;
 
 import static org.vertexium.elasticsearch5.Elasticsearch5SearchIndex.EXTENDED_DATA_ELEMENT_ID_FIELD_NAME;
 import static org.vertexium.elasticsearch5.Elasticsearch5SearchIndex.HIDDEN_VERTEX_FIELD_NAME;
+import static org.vertexium.elasticsearch5.utils.SearchResponseUtils.checkForFailures;
 
 public class ElasticsearchSearchQueryBase extends QueryBase {
     private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(ElasticsearchSearchQueryBase.class);
@@ -550,7 +551,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
             QUERY_LOGGER.trace("query: %s", q);
         }
 
-        SearchResponse searchResponse = q.execute().actionGet();
+        SearchResponse searchResponse = checkForFailures(q.execute().actionGet());
         SearchHits hits = searchResponse.getHits();
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug(
@@ -1512,7 +1513,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
                 if (QUERY_LOGGER.isTraceEnabled()) {
                     QUERY_LOGGER.trace("query: %s", q);
                 }
-                return q.execute().actionGet();
+                return checkForFailures(q.execute().actionGet());
             } catch (IndexNotFoundException ex) {
                 LOGGER.debug("Index missing: %s (returning empty iterable)", ex.getMessage());
                 return null;
