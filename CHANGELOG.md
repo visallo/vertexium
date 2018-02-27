@@ -7,6 +7,7 @@
 * Fixed: Query will now return hidden elements/vertices/edges if FetchHint.INCLUDE_HIDDEN is passed
 * Fixed: Query.hasAuthorization will now match elements whose only use of an authorization is that the element is hidden
 * Fixed: Query.hasAuthorization will now match elements whose only use of an authorization is a hidden property
+* Fixed: Elasticsearch server plugin missing fields while querying across indices
 * Added: Query methods elementIds/vertexIds/edgeIds are overloaded to accept IdFetchHint, which makes it possible to include ids for hidden elements
 * Added: Graph.getExtendedDataInRange in order to bulk load ranges of extended data rows
 * Added: SearchIndex.addExtendedData to allow for reindexing extended data
