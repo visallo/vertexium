@@ -736,7 +736,10 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
             for (String propertyName : propertyNames) {
                 ShapeBuilder shapeBuilder = getShapeBuilder(value);
                 ShapeRelation relation = ShapeRelation.getRelationByName(compare.getCompareName());
-                filters.add(new GeoShapeQueryBuilder(propertyName, shapeBuilder).relation(relation));
+                filters.add(new GeoShapeQueryBuilder(propertyName, shapeBuilder)
+                        .ignoreUnmapped(true)
+                        .relation(relation)
+                );
             }
         }
 
