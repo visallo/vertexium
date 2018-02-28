@@ -8,6 +8,7 @@ import org.vertexium.*;
 import org.vertexium.type.GeoShape;
 import org.vertexium.util.IterableUtils;
 import org.vertexium.util.SelectManyIterable;
+import org.vertexium.util.StreamUtils;
 
 import java.io.IOException;
 import java.util.*;
@@ -47,7 +48,8 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
 
     @Override
     public QueryResultsIterable<String> vertexIds(EnumSet<IdFetchHint> idFetchHints) {
-        return new DefaultGraphQueryIdIterable<>(vertices(IdFetchHint.toFetchHints(idFetchHints)));
+        EnumSet<FetchHint> fetchHints = idFetchHintsToElementFetchHints(idFetchHints);
+        return new DefaultGraphQueryIdIterable<>(vertices(fetchHints));
     }
 
     @Override
@@ -68,7 +70,8 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
 
     @Override
     public QueryResultsIterable<String> edgeIds(EnumSet<IdFetchHint> idFetchHints) {
-        return new DefaultGraphQueryIdIterable<>(edges(IdFetchHint.toFetchHints(idFetchHints)));
+        EnumSet<FetchHint> fetchHints = idFetchHintsToElementFetchHints(idFetchHints);
+        return new DefaultGraphQueryIdIterable<>(edges(fetchHints));
     }
 
     @Override
@@ -167,7 +170,7 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
 
     @Override
     public QueryResultsIterable<ExtendedDataRowId> extendedDataRowIds(EnumSet<IdFetchHint> idFetchHints) {
-        EnumSet<FetchHint> fetchHints = IdFetchHint.toFetchHints(idFetchHints);
+        EnumSet<FetchHint> fetchHints = idFetchHintsToElementFetchHints(idFetchHints);
         QueryResultsIterable<? extends VertexiumObject> vertexiumObjects = search(EnumSet.of(VertexiumObjectType.EXTENDED_DATA), fetchHints);
         return new DefaultGraphQueryIdIterable<>(vertexiumObjects);
     }
@@ -270,7 +273,8 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
 
     @Override
     public QueryResultsIterable<String> elementIds(EnumSet<IdFetchHint> idFetchHints) {
-        return new DefaultGraphQueryIdIterable<>(elements(IdFetchHint.toFetchHints(idFetchHints)));
+        EnumSet<FetchHint> fetchHints = idFetchHintsToElementFetchHints(idFetchHints);
+        return new DefaultGraphQueryIdIterable<>(elements(fetchHints));
     }
 
     @Override
@@ -452,14 +456,20 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
                     return true;
                 }
 
-                boolean hiddenVisibilityMatches = StreamSupport.stream(element.getHiddenVisibilities().spliterator(), false)
+                boolean hiddenVisibilityMatches = StreamUtils.stream(element.getHiddenVisibilities())
                         .anyMatch(visibility -> visibility.hasAuthorization(authorization));
                 if (hiddenVisibilityMatches) {
                     return true;
                 }
 
-                boolean propertyMatches = StreamSupport.stream(element.getProperties().spliterator(), false)
-                        .anyMatch(property -> property.getVisibility().hasAuthorization(authorization));
+                boolean propertyMatches = StreamUtils.stream(element.getProperties())
+                        .anyMatch(property -> {
+                            if (property.getVisibility().hasAuthorization(authorization)) {
+                                return true;
+                            }
+                            return StreamUtils.stream(property.getHiddenVisibilities())
+                                    .anyMatch(visibility -> visibility.hasAuthorization(authorization));
+                        });
                 if (propertyMatches) {
                     return true;
                 }
@@ -786,5 +796,9 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
             }
         }
         return null;
+    }
+
+    protected EnumSet<FetchHint> idFetchHintsToElementFetchHints(EnumSet<IdFetchHint> idFetchHints) {
+        return idFetchHints.contains(IdFetchHint.INCLUDE_HIDDEN) ? FetchHint.ALL_INCLUDING_HIDDEN : FetchHint.ALL;
     }
 }

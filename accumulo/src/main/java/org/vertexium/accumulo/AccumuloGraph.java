@@ -1380,6 +1380,8 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                 addMutations(VertexiumObjectType.EDGE, getMarkHiddenPropertyMutation(element.getId(), property, timestamp, columnVisibility));
             }
 
+            getSearchIndex().markPropertyHidden(this, element, property, visibility, authorizations);
+
             if (hasEventListeners()) {
                 fireGraphEvent(new MarkHiddenPropertyEvent(this, element, property, visibility));
             }
@@ -1414,6 +1416,8 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             } else if (element instanceof Edge) {
                 addMutations(VertexiumObjectType.EDGE, getMarkVisiblePropertyMutation(element.getId(), property, timestamp, columnVisibility));
             }
+
+            getSearchIndex().markPropertyVisible(this, element, property, visibility, authorizations);
 
             if (hasEventListeners()) {
                 fireGraphEvent(new MarkVisiblePropertyEvent(this, element, property, visibility));

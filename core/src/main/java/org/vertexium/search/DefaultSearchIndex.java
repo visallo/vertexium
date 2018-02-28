@@ -30,6 +30,20 @@ public class DefaultSearchIndex implements SearchIndex {
     }
 
     @Override
+    public void markPropertyHidden(Graph graph, Element element, Property property, Visibility visibility, Authorizations authorizations) {
+        checkNotNull(element, "element cannot be null");
+        checkNotNull(property, "property cannot be null");
+        checkNotNull(visibility, "visibility cannot be null");
+    }
+
+    @Override
+    public void markPropertyVisible(Graph graph, Element element, Property property, Visibility visibility, Authorizations authorizations) {
+        checkNotNull(element, "element cannot be null");
+        checkNotNull(property, "property cannot be null");
+        checkNotNull(visibility, "visibility cannot be null");
+    }
+
+    @Override
     public void alterElementVisibility(Graph graph, Element element, Visibility oldVisibility, Visibility newVisibility, Authorizations authorizations) {
         checkNotNull(element, "element cannot be null");
         checkNotNull(newVisibility, "newVisibility cannot be null");
