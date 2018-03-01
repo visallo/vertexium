@@ -2501,6 +2501,7 @@ public abstract class GraphTestBase {
                 .setProperty("birthDate", new DateOnly(1989, 1, 5), VISIBILITY_A)
                 .setProperty("lastAccessed", createDate(2014, 2, 24, 13, 0, 5), VISIBILITY_A)
                 .setProperty("location", new GeoPoint(38.9544, -77.3464, "Reston, VA"), VISIBILITY_A)
+                .addExtendedData("table1", "row1", "column1", "value1", VISIBILITY_A)
                 .save(AUTHORIZATIONS_A_AND_B);
         graph.prepareVertex("v2", VISIBILITY_A)
                 .setProperty("text", "world", VISIBILITY_A)
