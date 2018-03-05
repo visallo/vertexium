@@ -1,3 +1,6 @@
+# v3.2.1
+* Fixed: Prevent concurrent modification exceptions when using InMemoryGraph through synchronizing the methods and also returning Collection copies. 
+
 # v3.2.0
 * Changed: Elasticsearch _id and _type fields to be much smaller to minimize the size of the _uid field data cache 
 * Changed: Elasticsearch to only refresh the indices that were changed
