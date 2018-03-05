@@ -81,9 +81,8 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
     private final CuratorFramework curatorFramework;
     private final boolean historyInSeparateTable;
     private final StreamingPropertyValueStorageStrategy streamingPropertyValueStorageStrategy;
-    private ThreadLocal<VertexiumMultiTableBatchWriter> elementWriter = new ThreadLocal<>();
-    private ThreadLocal<BatchWriter> metadataWriter = new ThreadLocal<>();
-    protected ElementMutationBuilder elementMutationBuilder;
+    private final MultiTableBatchWriter batchWriter;
+    protected final ElementMutationBuilder elementMutationBuilder;
     private final Queue<GraphEvent> graphEventQueue = new LinkedList<>();
     private Integer accumuloGraphVersion;
     private boolean foundVertexiumSerializerMetadata;
@@ -97,7 +96,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
     private final String dataTableName;
     private final String metadataTableName;
     private final int numberOfQueryThreads;
-    private AccumuloGraphMetadataStore graphMetadataStore;
+    private final AccumuloGraphMetadataStore graphMetadataStore;
     private boolean distributedTraceEnabled;
 
     protected AccumuloGraph(AccumuloGraphConfiguration config, Connector connector) {
@@ -160,6 +159,9 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             this.historyVerticesTableName = null;
             this.historyEdgesTableName = null;
         }
+
+        BatchWriterConfig writerConfig = getConfiguration().createBatchWriterConfig();
+        this.batchWriter = connector.createMultiTableBatchWriter(writerConfig);
     }
 
     public static AccumuloGraph create(AccumuloGraphConfiguration config) {
@@ -553,40 +555,36 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         }
     }
 
-    private BatchWriter getElementWriter(String tableName) {
-        if (elementWriter.get() == null) {
-            BatchWriterConfig writerConfig = getConfiguration().createBatchWriterConfig();
-            elementWriter.set(new VertexiumMultiTableBatchWriter(connector.createMultiTableBatchWriter(writerConfig)));
-        }
-        return elementWriter.get().getBatchWriter(tableName);
+    public BatchWriter getVerticesWriter() {
+        return getWriterForTable(getVerticesTableName());
     }
 
-    public BatchWriter getVerticesWriter() {
-        return getElementWriter(getVerticesTableName());
+    private BatchWriter getWriterForTable(String tableName) {
+        try {
+            return batchWriter.getBatchWriter(tableName);
+        } catch (Exception e) {
+            throw new VertexiumException("Unable to get writer for table " + tableName, e);
+        }
     }
 
     public BatchWriter getHistoryVerticesWriter() {
-        return getElementWriter(getHistoryVerticesTableName());
+        return getWriterForTable(getHistoryVerticesTableName());
     }
 
     public BatchWriter getEdgesWriter() {
-        return getElementWriter(getEdgesTableName());
+        return getWriterForTable(getEdgesTableName());
     }
 
     public BatchWriter getHistoryEdgesWriter() {
-        return getElementWriter(getHistoryEdgesTableName());
+        return getWriterForTable(getHistoryEdgesTableName());
     }
 
     public BatchWriter getExtendedDataWriter() {
-        return getElementWriter(getExtendedDataTableName());
+        return getWriterForTable(getExtendedDataTableName());
     }
 
     public BatchWriter getDataWriter() {
-        return getElementWriter(getDataTableName());
-    }
-
-    public BatchWriter getWriterFromElementType(Element element) {
-        return getWriterFromElementType(VertexiumObjectType.getTypeFromElement(element));
+        return getWriterForTable(getDataTableName());
     }
 
     public BatchWriter getWriterFromElementType(VertexiumObjectType objectType) {
@@ -602,10 +600,6 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         }
     }
 
-    public BatchWriter getHistoryWriterFromElementType(Element element) {
-        return getHistoryWriterFromElementType(VertexiumObjectType.getTypeFromElement(element));
-    }
-
     public BatchWriter getHistoryWriterFromElementType(VertexiumObjectType objectType) {
         switch (objectType) {
             case VERTEX:
@@ -618,16 +612,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
     }
 
     protected BatchWriter getMetadataWriter() {
-        try {
-            if (this.metadataWriter.get() != null) {
-                return this.metadataWriter.get();
-            }
-            BatchWriterConfig writerConfig = getConfiguration().createBatchWriterConfig();
-            this.metadataWriter.set(this.connector.createBatchWriter(getMetadataTableName(), writerConfig));
-            return this.metadataWriter.get();
-        } catch (TableNotFoundException ex) {
-            throw new VertexiumException("Could not create batch writer", ex);
-        }
+        return getWriterForTable(getMetadataTableName());
     }
 
     @Override
@@ -1436,7 +1421,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
 
     @Override
     public void flushGraph() {
-        flushWriter(this.elementWriter.get());
+        flushWriter(this.batchWriter);
     }
 
     @Override
@@ -1452,7 +1437,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
     }
 
     private void flushWritersAndSuper() {
-        flushWriter(this.elementWriter.get());
+        flushWriter(this.batchWriter);
         super.flush();
     }
 
@@ -1463,12 +1448,18 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         }
     }
 
-    private static void flushWriter(VertexiumMultiTableBatchWriter writer) {
+    private static void flushWriter(MultiTableBatchWriter writer) {
         if (writer == null) {
             return;
         }
 
-        writer.flush();
+        try {
+            if (!writer.isClosed()) {
+                writer.flush();
+            }
+        } catch (MutationsRejectedException e) {
+            throw new VertexiumException("Unable to flush writer", e);
+        }
     }
 
     @Override
@@ -1479,6 +1470,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             streamingPropertyValueStorageStrategy.close();
             this.graphMetadataStore.close();
             this.curatorFramework.close();
+            this.batchWriter.close();
         } catch (Exception ex) {
             throw new VertexiumException(ex);
         }
@@ -2976,7 +2968,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                 m.put(AccumuloElement.METADATA_COLUMN_FAMILY, AccumuloElement.METADATA_COLUMN_QUALIFIER, new Value(valueBytes));
                 BatchWriter writer = getMetadataWriter();
                 writer.addMutation(m);
-                writer.flush();
+                flush();
             } catch (MutationsRejectedException ex) {
                 throw new VertexiumException("Could not add metadata " + key, ex);
             }
@@ -3012,45 +3004,6 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                 }
                 return e.getValue();
             }
-        }
-    }
-
-    private class VertexiumMultiTableBatchWriter {
-        private final MultiTableBatchWriter multiTableBatchWriter;
-
-        public VertexiumMultiTableBatchWriter(MultiTableBatchWriter multiTableBatchWriter) {
-            this.multiTableBatchWriter = multiTableBatchWriter;
-        }
-
-        public BatchWriter getBatchWriter(String tableName) {
-            try {
-                return multiTableBatchWriter.getBatchWriter(tableName);
-            } catch (AccumuloException | AccumuloSecurityException | TableNotFoundException ex) {
-                throw new VertexiumException("Could not get batch writer for table: " + tableName, ex);
-            }
-        }
-
-        public void flush() {
-            try {
-                multiTableBatchWriter.flush();
-            } catch (MutationsRejectedException ex) {
-                throw new VertexiumException("Could not flush writer", ex);
-            }
-        }
-
-        @Override
-        public String toString() {
-            return "VertexiumMultiTableBatchWriter{" +
-                    "multiTableBatchWriter=" + multiTableBatchWriter +
-                    '}';
-        }
-
-        @Override
-        protected void finalize() throws Throwable {
-            if (!multiTableBatchWriter.isClosed()) {
-                multiTableBatchWriter.close();
-            }
-            super.finalize();
         }
     }
 }
