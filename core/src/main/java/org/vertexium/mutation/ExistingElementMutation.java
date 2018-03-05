@@ -4,6 +4,8 @@ import org.vertexium.Element;
 import org.vertexium.Property;
 import org.vertexium.Visibility;
 
+import java.util.List;
+
 public interface ExistingElementMutation<T extends Element> extends ElementMutation<T> {
     /**
      * Alters the visibility of a property.
@@ -31,11 +33,26 @@ public interface ExistingElementMutation<T extends Element> extends ElementMutat
     ExistingElementMutation<T> alterPropertyVisibility(String name, Visibility visibility);
 
     /**
+     * Gets the properties whose visibilities are being altered in this mutation.
+     */
+    List<AlterPropertyVisibility> getAlterPropertyVisibilities();
+
+    /**
      * Alters the visibility of the element (vertex or edge).
      *
      * @param visibility The new visibility.
      */
     ExistingElementMutation<T> alterElementVisibility(Visibility visibility);
+
+    /**
+     * Get the new element visibility or null if not being altered in this mutation.
+     */
+    Visibility getNewElementVisibility();
+
+    /**
+     * Get the old element visibility.
+     */
+    Visibility getOldElementVisibility();
 
     /**
      * Sets a property metadata value on a property.
@@ -67,6 +84,11 @@ public interface ExistingElementMutation<T extends Element> extends ElementMutat
      * @param visibility   The visibility of the metadata item
      */
     ExistingElementMutation<T> setPropertyMetadata(String propertyName, String metadataName, Object newValue, Visibility visibility);
+
+    /**
+     * Gets all of the property metadata changes that are part of this mutation.
+     */
+    List<SetPropertyMetadata> getSetPropertyMetadatas();
 
     /**
      * Permanently deletes all default properties with that name irregardless of visibility.

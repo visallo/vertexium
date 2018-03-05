@@ -1,3 +1,6 @@
+# v3.2.1
+* Changed: When saving an ExistingElementMutation, the Elastisearch5Index will now apply the mutations using a painless script rather than making multiple requests.
+
 # v3.2.0
 * Changed: Elasticsearch _id and _type fields to be much smaller to minimize the size of the _uid field data cache 
 * Changed: Elasticsearch to only refresh the indices that were changed

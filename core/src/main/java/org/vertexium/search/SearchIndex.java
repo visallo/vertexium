@@ -1,6 +1,7 @@
 package org.vertexium.search;
 
 import org.vertexium.*;
+import org.vertexium.mutation.ExistingElementMutation;
 import org.vertexium.mutation.ExtendedDataMutation;
 import org.vertexium.query.*;
 
@@ -8,6 +9,8 @@ import java.util.Collection;
 
 public interface SearchIndex {
     void addElement(Graph graph, Element element, Authorizations authorizations);
+
+    <TElement extends Element> void updateElement(Graph graph, ExistingElementMutation<TElement> mutation, Authorizations authorizations);
 
     void deleteElement(Graph graph, Element element, Authorizations authorizations);
 

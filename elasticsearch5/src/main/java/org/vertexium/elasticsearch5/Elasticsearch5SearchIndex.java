@@ -46,6 +46,7 @@ import org.elasticsearch.transport.client.PreBuiltTransportClient;
 import org.vertexium.*;
 import org.vertexium.Edge;
 import org.vertexium.elasticsearch5.utils.FlushObjectQueue;
+import org.vertexium.mutation.ExistingElementMutation;
 import org.vertexium.mutation.ExtendedDataMutation;
 import org.vertexium.property.StreamingPropertyValue;
 import org.vertexium.query.*;
@@ -344,10 +345,6 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
     @SuppressWarnings("unchecked")
     @Override
     public void addElement(Graph graph, Element element, Authorizations authorizations) {
-        addElementWithScript(graph, element, authorizations);
-    }
-
-    private void addElementWithScript(Graph graph, Element element, Authorizations authorizations) {
         if (MUTATION_LOGGER.isTraceEnabled()) {
             MUTATION_LOGGER.trace("addElement: %s", element.getId());
         }
@@ -365,6 +362,75 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
 
         if (getConfig().isAutoFlush()) {
             flush(graph);
+        }
+    }
+
+    @Override
+    public <TElement extends Element> void updateElement(Graph graph, ExistingElementMutation<TElement> mutation, Authorizations authorizations) {
+        Element element = mutation.getElement();
+
+        if (MUTATION_LOGGER.isTraceEnabled()) {
+            MUTATION_LOGGER.trace("updateElement: %s", element.getId());
+        }
+
+        if (!getConfig().isIndexEdges() && element instanceof Edge) {
+            return;
+        }
+
+        if (flushObjectQueueContainsElementId(element.getId())) {
+            getFlushObjectQueue().flush();
+        }
+
+        Map<String, Object> fieldsToAdd = getPropertiesAsFields(graph, mutation.getProperties());
+        Map<String, String> fieldVisibilityChanges = new HashMap<>();
+        List<String> fieldsToRemove = new ArrayList<>();
+        mutation.getAlterPropertyVisibilities().stream()
+                .filter(p -> p.getExistingVisibility() != null && !p.getExistingVisibility().equals(p.getVisibility()))
+                .forEach(p -> {
+                    String oldFieldName = addVisibilityToPropertyName(graph, p.getName(), p.getExistingVisibility());
+                    String newFieldName = addVisibilityToPropertyName(graph, p.getName(), p.getVisibility());
+                    fieldVisibilityChanges.put(oldFieldName, newFieldName);
+                });
+        mutation.getPropertyDeletes().forEach(p -> fieldsToRemove.add(addVisibilityToPropertyName(graph, p.getName(), p.getVisibility())));
+        mutation.getPropertySoftDeletes().forEach(p -> fieldsToRemove.add(addVisibilityToPropertyName(graph, p.getName(), p.getVisibility())));
+
+        if (mutation.getNewElementVisibility() != null) {
+            String oldFieldName = addVisibilityToPropertyName(graph, ELEMENT_TYPE_FIELD_NAME, mutation.getOldElementVisibility());
+            String newFieldName = addVisibilityToPropertyName(graph, ELEMENT_TYPE_FIELD_NAME, mutation.getNewElementVisibility());
+            fieldVisibilityChanges.put(oldFieldName, newFieldName);
+        }
+
+        IndexInfo indexInfo = addPropertiesToIndex(graph, element, mutation.getProperties());
+        mutation.getAlterPropertyVisibilities().stream()
+                .filter(p -> p.getExistingVisibility() != null && !p.getExistingVisibility().equals(p.getVisibility()))
+                .forEach(p -> {
+                    PropertyDefinition propertyDefinition = getPropertyDefinition(graph, p.getName());
+                    if (propertyDefinition != null) {
+                        try {
+                            addPropertyDefinitionToIndex(graph, indexInfo, p.getName(), p.getVisibility(), propertyDefinition);
+                        } catch (Exception e) {
+                            throw new VertexiumException("Unable to add property to index: " + p, e);
+                        }
+                    }
+                });
+        if (mutation.getNewElementVisibility() != null) {
+            try {
+                String newFieldName = addVisibilityToPropertyName(graph, ELEMENT_TYPE_FIELD_NAME, mutation.getNewElementVisibility());
+                addPropertyToIndex(graph, indexInfo, newFieldName, element.getVisibility(), String.class, false, false, false);
+            } catch (Exception e) {
+                throw new VertexiumException("Unable to add new element type visibility to index", e);
+            }
+        }
+
+        String documentId = getIdStrategy().createElementDocId(element);
+        UpdateRequestBuilder updateRequestBuilder = prepareUpdateFieldsOnDocument(indexInfo.getIndexName(), documentId, fieldsToAdd, fieldsToRemove, fieldVisibilityChanges);
+        if (updateRequestBuilder != null) {
+            getIndexRefreshTracker().pushChange(indexInfo.getIndexName());
+            addActionRequestBuilderForFlush(element.getId(), updateRequestBuilder);
+
+            if (getConfig().isAutoFlush()) {
+                flush(graph);
+            }
         }
     }
 
@@ -713,7 +779,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
             jsonBuilder.field(hiddenVisibilityPropertyName, true);
         }
 
-        Map<String, Object> fields = getPropertiesAsFields(graph, element);
+        Map<String, Object> fields = getPropertiesAsFields(graph, element.getProperties());
         addFieldsMap(jsonBuilder, fields);
 
         jsonBuilder.endObject();
@@ -816,10 +882,10 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
         return elementTypeVisibilityPropertyName;
     }
 
-    private Map<String, Object> getPropertiesAsFields(Graph graph, Element element) {
+    private Map<String, Object> getPropertiesAsFields(Graph graph, Iterable<Property> properties) {
         Map<String, Object> fieldsMap = new HashMap<>();
         List<Property> streamingProperties = new ArrayList<>();
-        for (Property property : element.getProperties()) {
+        for (Property property : properties) {
             if (property.getValue() != null && shouldIgnoreType(property.getValue().getClass())) {
                 continue;
             }
@@ -1488,13 +1554,17 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
 
     @Override
     public void deleteProperties(Graph graph, Element element, Collection<PropertyDescriptor> propertyList, Authorizations authorizations) {
+        removeFieldsFromDocument(graph, element, convertPropertyDescriptorsToFieldNames(graph, propertyList));
+    }
+
+    private List<String> convertPropertyDescriptorsToFieldNames(Graph graph, Collection<PropertyDescriptor> propertyList) {
         List<String> fields = new ArrayList<>();
         for (PropertyDescriptor p : propertyList) {
             String fieldName = addVisibilityToPropertyName(graph, p.getName(), p.getVisibility());
             fields.add(fieldName);
             fields.add(fieldName + "_e");
         }
-        removeFieldsFromDocument(graph, element, fields);
+        return fields;
     }
 
     @Override
@@ -1566,6 +1636,10 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
         getIndexRefreshTracker().refresh(client);
     }
 
+    private void removeFieldsFromDocument(Graph graph, Element element, String field) {
+        removeFieldsFromDocument(graph, element, Lists.newArrayList(field));
+    }
+
     private void removeFieldsFromDocument(Graph graph, Element element, Collection<String> fields) {
         String indexName = getIndexName(element);
         String documentId = getIdStrategy().createElementDocId(element);
@@ -1577,13 +1651,22 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
             return;
         }
 
+        getIndexRefreshTracker().pushChange(indexName);
+        UpdateRequestBuilder updateRequestBuilder = prepareRemoveFieldsFromDocument(indexName, documentId, fields);
+        addActionRequestBuilderForFlush(documentId, updateRequestBuilder);
+
+        if (getConfig().isAutoFlush()) {
+            flush(graph);
+        }
+    }
+
+    private UpdateRequestBuilder prepareRemoveFieldsFromDocument(String indexName, String documentId, Collection<String> fields) {
         List<String> fieldNames = fields.stream().map(this::replaceFieldnameDots).collect(Collectors.toList());
         if (fieldNames.isEmpty()) {
-            return;
+            return null;
         }
 
-        getIndexRefreshTracker().pushChange(indexName);
-        UpdateRequestBuilder updateRequestBuilder = getClient().prepareUpdate()
+        return getClient().prepareUpdate()
                 .setIndex(indexName)
                 .setId(documentId)
                 .setType(getIdStrategy().getType())
@@ -1594,16 +1677,40 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
                         ImmutableMap.of("fieldNames", fieldNames)
                 ))
                 .setRetryOnConflict(MAX_RETRIES);
-
-        addActionRequestBuilderForFlush(documentId, updateRequestBuilder);
-
-        if (getConfig().isAutoFlush()) {
-            flush(graph);
-        }
     }
 
-    private void removeFieldsFromDocument(Graph graph, Element element, String field) {
-        removeFieldsFromDocument(graph, element, Lists.newArrayList(field));
+    private UpdateRequestBuilder prepareUpdateFieldsOnDocument(
+            String indexName,
+            String documentId,
+            Map<String, Object> fieldsToAdd,
+            Collection<String> fieldsToRemove,
+            Map<String, String> fieldsToRename
+    ) {
+        if ((fieldsToAdd == null || fieldsToAdd.isEmpty()) &&
+                (fieldsToRemove == null || fieldsToRemove.isEmpty()) &&
+                (fieldsToRename == null || fieldsToRename.isEmpty())) {
+            return null;
+        }
+
+        fieldsToAdd = fieldsToAdd == null ? Collections.emptyMap() : fieldsToAdd.entrySet().stream()
+                .collect(Collectors.toMap(e -> replaceFieldnameDots(e.getKey()), Map.Entry::getValue));
+        fieldsToRemove = fieldsToRemove == null ? Collections.emptyList() : fieldsToRemove.stream().map(this::replaceFieldnameDots).collect(Collectors.toList());
+        fieldsToRename = fieldsToRename == null ? Collections.emptyMap() : fieldsToRename.entrySet().stream()
+                .collect(Collectors.toMap(e -> replaceFieldnameDots(e.getKey()), e -> replaceFieldnameDots(e.getValue())));
+
+        return getClient().prepareUpdate()
+                .setIndex(indexName)
+                .setId(documentId)
+                .setType(getIdStrategy().getType())
+                .setScript(new Script(
+                        ScriptType.INLINE,
+                        "painless",
+                        "for (def fieldName : params.fieldsToRemove) { ctx._source.remove(fieldName); } " +
+                                "for (fieldToRename in params.fieldsToRename.entrySet()) { ctx._source[fieldToRename.getValue()] = ctx._source[fieldToRename.getKey()]; ctx._source.remove(fieldToRename.getKey()); } " +
+                                "for (fieldToAdd in params.fieldsToAdd.entrySet()) { ctx._source[fieldToAdd.getKey()] = fieldToAdd.getValue(); }",
+                        ImmutableMap.of("fieldsToAdd", fieldsToAdd, "fieldsToRemove", fieldsToRemove, "fieldsToRename", fieldsToRename)
+                ))
+                .setRetryOnConflict(MAX_RETRIES);
     }
 
     protected String[] getIndexNamesAsArray(Graph graph) {
