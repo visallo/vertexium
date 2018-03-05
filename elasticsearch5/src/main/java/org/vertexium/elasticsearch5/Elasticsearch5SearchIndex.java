@@ -367,7 +367,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
 
     @Override
     public <TElement extends Element> void updateElement(Graph graph, ExistingElementMutation<TElement> mutation, Authorizations authorizations) {
-        Element element = mutation.getElement();
+        TElement element = mutation.getElement();
 
         if (MUTATION_LOGGER.isTraceEnabled()) {
             MUTATION_LOGGER.trace("updateElement: %s", element.getId());
@@ -381,9 +381,30 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
             getFlushObjectQueue().flush();
         }
 
-        Map<String, Object> fieldsToAdd = getPropertiesAsFields(graph, mutation.getProperties());
+        UpdateRequestBuilder updateRequestBuilder = prepareUpdateForMutation(graph, mutation);
+
+        if (updateRequestBuilder != null) {
+            IndexInfo indexInfo = addMutationPropertiesToIndex(graph, mutation);
+            getIndexRefreshTracker().pushChange(indexInfo.getIndexName());
+            addActionRequestBuilderForFlush(element.getId(), updateRequestBuilder);
+
+            if (getConfig().isAutoFlush()) {
+                flush(graph);
+            }
+        }
+    }
+
+    private <TElement extends Element> UpdateRequestBuilder prepareUpdateForMutation(
+            Graph graph,
+            ExistingElementMutation<TElement> mutation
+    ) {
+        TElement element = mutation.getElement();
         Map<String, String> fieldVisibilityChanges = new HashMap<>();
         List<String> fieldsToRemove = new ArrayList<>();
+
+        Map<String, Object> fieldsToAdd = new HashMap<>(getPropertiesAsFields(graph, mutation.getProperties()));
+
+        // If a property visibility changes, that's simply a field rename
         mutation.getAlterPropertyVisibilities().stream()
                 .filter(p -> p.getExistingVisibility() != null && !p.getExistingVisibility().equals(p.getVisibility()))
                 .forEach(p -> {
@@ -391,15 +412,26 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
                     String newFieldName = addVisibilityToPropertyName(graph, p.getName(), p.getVisibility());
                     fieldVisibilityChanges.put(oldFieldName, newFieldName);
                 });
+
+        // Property delete/softDelete is simply a removal of the associated fields from the document
         mutation.getPropertyDeletes().forEach(p -> fieldsToRemove.add(addVisibilityToPropertyName(graph, p.getName(), p.getVisibility())));
         mutation.getPropertySoftDeletes().forEach(p -> fieldsToRemove.add(addVisibilityToPropertyName(graph, p.getName(), p.getVisibility())));
 
+        // If the element visibility changes, that's simply a field rename
         if (mutation.getNewElementVisibility() != null) {
             String oldFieldName = addVisibilityToPropertyName(graph, ELEMENT_TYPE_FIELD_NAME, mutation.getOldElementVisibility());
             String newFieldName = addVisibilityToPropertyName(graph, ELEMENT_TYPE_FIELD_NAME, mutation.getNewElementVisibility());
             fieldVisibilityChanges.put(oldFieldName, newFieldName);
         }
 
+        String documentId = getIdStrategy().createElementDocId(element);
+        String indexName = getIndexName(element);
+        IndexInfo indexInfo = ensureIndexCreatedAndInitialized(graph, indexName);
+        return prepareUpdateFieldsOnDocument(indexInfo.getIndexName(), documentId, fieldsToAdd, fieldsToRemove, fieldVisibilityChanges);
+    }
+
+    private <TElement extends Element> IndexInfo addMutationPropertiesToIndex(Graph graph, ExistingElementMutation<TElement> mutation) {
+        TElement element = mutation.getElement();
         IndexInfo indexInfo = addPropertiesToIndex(graph, element, mutation.getProperties());
         mutation.getAlterPropertyVisibilities().stream()
                 .filter(p -> p.getExistingVisibility() != null && !p.getExistingVisibility().equals(p.getVisibility()))
@@ -421,17 +453,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
                 throw new VertexiumException("Unable to add new element type visibility to index", e);
             }
         }
-
-        String documentId = getIdStrategy().createElementDocId(element);
-        UpdateRequestBuilder updateRequestBuilder = prepareUpdateFieldsOnDocument(indexInfo.getIndexName(), documentId, fieldsToAdd, fieldsToRemove, fieldVisibilityChanges);
-        if (updateRequestBuilder != null) {
-            getIndexRefreshTracker().pushChange(indexInfo.getIndexName());
-            addActionRequestBuilderForFlush(element.getId(), updateRequestBuilder);
-
-            if (getConfig().isAutoFlush()) {
-                flush(graph);
-            }
-        }
+        return indexInfo;
     }
 
     private UpdateRequestBuilder prepareUpdate(Graph graph, Element element, Authorizations authorizations) {
