@@ -5,6 +5,7 @@ import org.vertexium.FetchHint;
 import org.vertexium.inmemory.mutations.Mutation;
 import org.vertexium.util.LookAheadIterable;
 
+import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.Map;
@@ -29,7 +30,7 @@ public abstract class InMemoryTable<TElement extends InMemoryElement> {
         return inMemoryTableElement.createElement(graph, fetchHints, authorizations);
     }
 
-    public InMemoryTableElement<TElement> getTableElement(String id) {
+    public synchronized InMemoryTableElement<TElement> getTableElement(String id) {
         return rows.get(id);
     }
 
@@ -44,11 +45,11 @@ public abstract class InMemoryTable<TElement extends InMemoryElement> {
 
     protected abstract InMemoryTableElement<TElement> createInMemoryTableElement(String id);
 
-    public void remove(String id) {
+    public synchronized void remove(String id) {
         rows.remove(id);
     }
 
-    public void clear() {
+    public synchronized void clear() {
         rows.clear();
     }
 
@@ -71,12 +72,12 @@ public abstract class InMemoryTable<TElement extends InMemoryElement> {
 
             @Override
             protected Iterator<InMemoryTableElement<TElement>> createIterator() {
-                return rows.values().iterator();
+                return getRowValues().iterator();
             }
         };
     }
 
-    public Iterable<InMemoryTableElement<TElement>> getRowValues() {
-        return this.rows.values();
+    public synchronized Iterable<InMemoryTableElement<TElement>> getRowValues() {
+        return new ArrayList<>(this.rows.values());
     }
 }
