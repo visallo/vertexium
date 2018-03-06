@@ -19,10 +19,14 @@ public abstract class ExistingElementMutationImpl<T extends Element> implements 
     private final List<ExtendedDataDeleteMutation> extendedDataDeletes = new ArrayList<>();
     private final T element;
     private Visibility newElementVisibility;
+    private Visibility oldElementVisibility;
     private IndexHint indexHint = IndexHint.INDEX;
 
     public ExistingElementMutationImpl(T element) {
         this.element = element;
+        if (element != null) {
+            this.oldElementVisibility = element.getVisibility();
+        }
     }
 
     public abstract T save(Authorizations authorizations);
@@ -238,6 +242,11 @@ public abstract class ExistingElementMutationImpl<T extends Element> implements 
 
     public Visibility getNewElementVisibility() {
         return newElementVisibility;
+    }
+
+    @Override
+    public Visibility getOldElementVisibility() {
+        return oldElementVisibility;
     }
 
     public List<AlterPropertyVisibility> getAlterPropertyVisibilities() {

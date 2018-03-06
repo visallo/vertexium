@@ -10,13 +10,11 @@ import org.vertexium.property.MutableProperty;
 import org.vertexium.property.PropertyValue;
 import org.vertexium.query.ExtendedDataQueryableIterable;
 import org.vertexium.query.QueryableIterable;
+import org.vertexium.search.IndexHint;
 import org.vertexium.util.PropertyCollection;
 
 import java.io.Serializable;
-import java.util.EnumSet;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentSkipListSet;
 
 public abstract class AccumuloElement extends ElementBase implements Serializable, HasTimestamp {
@@ -113,39 +111,25 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
         return (AccumuloGraph) graph;
     }
 
-    protected <TElement extends Element> void saveExistingElementMutation(ExistingElementMutationImpl<TElement> mutation, Authorizations authorizations) {
-        // Order matters a lot here
+    protected <TElement extends Element> void saveExistingElementMutation(ExistingElementMutation<TElement> mutation, Authorizations authorizations) {
+        // Order matters a lot in this method
+        AccumuloElement element = (AccumuloElement) mutation.getElement();
 
         // metadata must be altered first because the lookup of a property can include visibility which will be altered by alterElementPropertyVisibilities
-        getGraph().alterPropertyMetadatas((AccumuloElement) mutation.getElement(), mutation.getSetPropertyMetadatas());
+        getGraph().alterPropertyMetadatas(element, mutation.getSetPropertyMetadatas());
 
         // altering properties comes next because alterElementVisibility may alter the vertex and we won't find it
-        getGraph().alterElementPropertyVisibilities(
-                (AccumuloElement) mutation.getElement(),
-                mutation.getAlterPropertyVisibilities(),
-                authorizations
-        );
+        getGraph().alterElementPropertyVisibilities(element, mutation.getAlterPropertyVisibilities());
 
         Iterable<PropertyDeleteMutation> propertyDeletes = mutation.getPropertyDeletes();
         Iterable<PropertySoftDeleteMutation> propertySoftDeletes = mutation.getPropertySoftDeletes();
         Iterable<Property> properties = mutation.getProperties();
 
         updatePropertiesInternal(properties, propertyDeletes, propertySoftDeletes);
-        getGraph().saveProperties(
-                (AccumuloElement) mutation.getElement(),
-                properties,
-                propertyDeletes,
-                propertySoftDeletes,
-                mutation.getIndexHint(),
-                authorizations
-        );
+        getGraph().saveProperties(element, properties, propertyDeletes, propertySoftDeletes);
 
         if (mutation.getNewElementVisibility() != null) {
-            // Flushing here is important!
-            // The call to graph.saveProperties above will issue an update request to the search index.
-            // If we don't ensure that it has completed first, we run the risk of it re-adding the visibility property we are about to remove.
-            getGraph().flush();
-            getGraph().alterElementVisibility((AccumuloElement) mutation.getElement(), mutation.getNewElementVisibility(), authorizations);
+            getGraph().alterElementVisibility(element, mutation.getNewElementVisibility());
         }
 
         if (mutation instanceof EdgeMutation) {
@@ -155,6 +139,10 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
             if (newEdgeLabel != null) {
                 getGraph().alterEdgeLabel((AccumuloEdge) mutation.getElement(), newEdgeLabel);
             }
+        }
+
+        if (mutation.getIndexHint() != IndexHint.DO_NOT_INDEX) {
+            getGraph().getSearchIndex().updateElement(graph, mutation, authorizations);
         }
 
         ElementType elementType = ElementType.getTypeFromElement(mutation.getElement());

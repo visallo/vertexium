@@ -1,6 +1,7 @@
 package org.vertexium.search;
 
 import org.vertexium.*;
+import org.vertexium.mutation.ExistingElementMutation;
 import org.vertexium.mutation.ExtendedDataMutation;
 import org.vertexium.query.*;
 
@@ -15,6 +16,11 @@ public class DefaultSearchIndex implements SearchIndex {
     @Override
     public void addElement(Graph graph, Element element, Authorizations authorizations) {
         checkNotNull(element, "element cannot be null");
+    }
+
+    @Override
+    public <TElement extends Element> void updateElement(Graph graph, ExistingElementMutation<TElement> mutation, Authorizations authorizations) {
+        checkNotNull(mutation, "mutation cannot be null");
     }
 
     @Override

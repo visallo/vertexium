@@ -443,9 +443,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             AccumuloElement element,
             Iterable<Property> properties,
             Iterable<PropertyDeleteMutation> propertyDeletes,
-            Iterable<PropertySoftDeleteMutation> propertySoftDeletes,
-            IndexHint indexHint,
-            Authorizations authorizations
+            Iterable<PropertySoftDeleteMutation> propertySoftDeletes
     ) {
         String elementRowKey = element.getId();
         Mutation m = new Mutation(elementRowKey);
@@ -464,23 +462,6 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         }
         if (hasProperty) {
             addMutations(element, m);
-        }
-
-        if (indexHint != IndexHint.DO_NOT_INDEX) {
-            // Bulk delete properties
-            List<PropertyDescriptor> propertyList = Lists.newArrayList();
-            propertyDeletes.forEach(p -> propertyList.add(PropertyDescriptor.fromPropertyDeleteMutation(p)));
-            propertySoftDeletes.forEach(p -> propertyList.add(PropertyDescriptor.fromPropertySoftDeleteMutation(p)));
-
-            if (!propertyList.isEmpty()) {
-                getSearchIndex().deleteProperties(
-                        this,
-                        element,
-                        propertyList,
-                        authorizations
-                );
-            }
-            getSearchIndex().addElement(this, element, authorizations);
         }
 
         if (hasEventListeners()) {
@@ -2030,9 +2011,8 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         return ranges;
     }
 
-    void alterElementVisibility(AccumuloElement element, Visibility newVisibility, Authorizations authorizations) {
+    void alterElementVisibility(AccumuloElement element, Visibility newVisibility) {
         String elementRowKey = element.getId();
-        Visibility oldVisibility = element.getVisibility();
         Span trace = Trace.start("alterElementVisibility");
         trace.data("elementRowKey", elementRowKey);
         try {
@@ -2057,13 +2037,6 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                 addMutations(element, m);
             }
             element.setVisibility(newVisibility);
-            getSearchIndex().alterElementVisibility(
-                    AccumuloGraph.this,
-                    element,
-                    oldVisibility,
-                    newVisibility,
-                    authorizations
-            );
         } finally {
             trace.stop();
         }
@@ -2073,11 +2046,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         elementMutationBuilder.alterEdgeLabel(edge, newEdgeLabel);
     }
 
-    void alterElementPropertyVisibilities(
-            AccumuloElement element,
-            List<AlterPropertyVisibility> alterPropertyVisibilities,
-            Authorizations authorizations
-    ) {
+    void alterElementPropertyVisibilities(AccumuloElement element, List<AlterPropertyVisibility> alterPropertyVisibilities) {
         if (alterPropertyVisibilities.size() == 0) {
             return;
         }
@@ -2113,13 +2082,6 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
 
 
         if (!propertyList.isEmpty()) {
-            // delete the property with the old/existing visibility from the search index
-            getSearchIndex().deleteProperties(
-                    this,
-                    element,
-                    propertyList,
-                    authorizations
-            );
             addMutations(element, m);
         }
     }

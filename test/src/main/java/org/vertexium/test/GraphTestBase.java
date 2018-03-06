@@ -4832,6 +4832,8 @@ public abstract class GraphTestBase {
         graph.createAuthorizations(AUTHORIZATIONS_ALL);
         graph.flush();
 
+        assertResultsCount(1, 1, graph.query(AUTHORIZATIONS_A).has("age", 25).vertices());
+
         Vertex v1 = graph.getVertex("v1", FetchHint.ALL, AUTHORIZATIONS_ALL);
         ExistingElementMutation<Vertex> m = v1.prepareMutation();
         m.alterElementVisibility(VISIBILITY_B);
@@ -4859,15 +4861,8 @@ public abstract class GraphTestBase {
         v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
         assertNull("v1 should not be returned for auth a", v1);
 
-        List<Vertex> vertices = toList(graph.query(AUTHORIZATIONS_B)
-                .has("age", Compare.EQUAL, 25)
-                .vertices());
-        assertEquals(1, vertices.size());
-
-        vertices = toList(graph.query(AUTHORIZATIONS_A)
-                .has("age", Compare.EQUAL, 25)
-                .vertices());
-        assertEquals(0, vertices.size());
+        assertResultsCount(0, 0, graph.query(AUTHORIZATIONS_A).has("age", 25).vertices());
+        assertResultsCount(1, 1, graph.query(AUTHORIZATIONS_B).has("age", 25).vertices());
     }
 
     @Test
@@ -4965,8 +4960,8 @@ public abstract class GraphTestBase {
         assertNull(v1.getProperty("prop1"));
         assertNotNull(v1.getProperty("prop2"));
 
-        Assert.assertEquals(1, count(graph.query(AUTHORIZATIONS_B).has("prop1", "value1").vertices()));
-        Assert.assertEquals(0, count(graph.query(AUTHORIZATIONS_A).has("prop1", "value1").vertices()));
+        assertResultsCount(0, 0, graph.query(AUTHORIZATIONS_A).has("prop1", "value1").vertices());
+        assertResultsCount(1, 1, graph.query(AUTHORIZATIONS_B).has("prop1", "value1").vertices());
 
         Map<Object, Long> propertyCountByValue = queryGraphQueryWithTermsAggregation("prop1", ElementType.VERTEX, AUTHORIZATIONS_A);
         if (propertyCountByValue != null) {
@@ -4993,6 +4988,11 @@ public abstract class GraphTestBase {
                 .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
+        assertResultsCount(0, 0, graph.query(AUTHORIZATIONS_B).has("prop1", "value1").vertices());
+        assertResultsCount(0, 0, graph.query(AUTHORIZATIONS_A).has("prop1", "value1").vertices());
+        assertResultsCount(0, 0, graph.query(AUTHORIZATIONS_B).has("prop1", "value1New").vertices());
+        assertResultsCount(1, 1, graph.query(AUTHORIZATIONS_A).has("prop1", "value1New").vertices());
+
         v1 = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B);
         assertNotNull(v1.getProperty("prop1"));
         assertEquals("value1New", v1.getPropertyValue("prop1"));
@@ -5008,6 +5008,13 @@ public abstract class GraphTestBase {
         v1 = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B);
         assertNotNull(v1.getProperty("prop1"));
         assertEquals("value1New2", v1.getPropertyValue("prop1"));
+
+        assertResultsCount(0, 0, graph.query(AUTHORIZATIONS_B).has("prop1", "value1").vertices());
+        assertResultsCount(0, 0, graph.query(AUTHORIZATIONS_A).has("prop1", "value1").vertices());
+        assertResultsCount(0, 0, graph.query(AUTHORIZATIONS_B).has("prop1", "value1New").vertices());
+        assertResultsCount(0, 0, graph.query(AUTHORIZATIONS_A).has("prop1", "value1New").vertices());
+        assertResultsCount(0, 0, graph.query(AUTHORIZATIONS_B).has("prop1", "value1New2").vertices());
+        assertResultsCount(1, 1, graph.query(AUTHORIZATIONS_A).has("prop1", "value1New2").vertices());
     }
 
     @Test
