@@ -16,10 +16,7 @@ import org.vertexium.util.VertexiumLoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.vertexium.test.GraphTestBase.*;
@@ -61,13 +58,6 @@ public class AccumuloResource extends ExternalResource {
     public void dropGraph() throws Exception {
         Connector connector = createConnector();
         AccumuloGraphTestUtils.ensureTableExists(connector, GraphConfiguration.DEFAULT_TABLE_NAME_PREFIX);
-        AccumuloGraphTestUtils.dropGraph(connector, AccumuloGraph.getDataTableName(GraphConfiguration.DEFAULT_TABLE_NAME_PREFIX));
-        AccumuloGraphTestUtils.dropGraph(connector, AccumuloGraph.getVerticesTableName(GraphConfiguration.DEFAULT_TABLE_NAME_PREFIX));
-        AccumuloGraphTestUtils.dropGraph(connector, AccumuloGraph.getHistoryVerticesTableName(GraphConfiguration.DEFAULT_TABLE_NAME_PREFIX));
-        AccumuloGraphTestUtils.dropGraph(connector, AccumuloGraph.getEdgesTableName(GraphConfiguration.DEFAULT_TABLE_NAME_PREFIX));
-        AccumuloGraphTestUtils.dropGraph(connector, AccumuloGraph.getExtendedDataTableName(GraphConfiguration.DEFAULT_TABLE_NAME_PREFIX));
-        AccumuloGraphTestUtils.dropGraph(connector, AccumuloGraph.getHistoryEdgesTableName(GraphConfiguration.DEFAULT_TABLE_NAME_PREFIX));
-        AccumuloGraphTestUtils.dropGraph(connector, AccumuloGraph.getMetadataTableName(GraphConfiguration.DEFAULT_TABLE_NAME_PREFIX));
         connector.securityOperations().changeUserAuthorizations(
                 AccumuloGraphConfiguration.DEFAULT_ACCUMULO_USERNAME,
                 new org.apache.accumulo.core.security.Authorizations(
@@ -116,8 +106,10 @@ public class AccumuloResource extends ExternalResource {
         configMap.put(AccumuloGraphConfiguration.AUTO_FLUSH, false);
         configMap.put(AccumuloGraphConfiguration.MAX_STREAMING_PROPERTY_VALUE_TABLE_DATA_SIZE, GraphTestBase.LARGE_PROPERTY_VALUE_SIZE - 1);
         configMap.put(AccumuloGraphConfiguration.DATA_DIR, "/tmp/");
-        configMap.put(AccumuloGraphConfiguration.HISTORY_IN_SEPARATE_TABLE, true);
+        configMap.put(AccumuloGraphConfiguration.HISTORY_IN_SEPARATE_TABLE, false);
+        configMap.put(AccumuloGraphConfiguration.ACCUMULO_MAX_DATA_TABLE_VERSIONS, -1);
         configMap.put(AccumuloGraphConfiguration.STREAMING_PROPERTY_VALUE_STORAGE_STRATEGY_PREFIX, DataInDataTableStreamingPropertyValueStorageStrategy.class.getName());
+        configMap.put(AccumuloGraphConfiguration.TABLE_NAME_PREFIX, UUID.randomUUID().toString().replace('-', '_'));
 
         if (extraConfig != null) {
             configMap.putAll(extraConfig);

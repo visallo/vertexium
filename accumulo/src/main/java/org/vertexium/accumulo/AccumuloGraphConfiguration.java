@@ -39,6 +39,7 @@ public class AccumuloGraphConfiguration extends GraphConfiguration {
     public static final String ZOOKEEPER_SERVERS = "zookeeperServers";
     public static final String ZOOKEEPER_METADATA_SYNC_PATH = "zookeeperMetadataSyncPath";
     public static final String ACCUMULO_MAX_VERSIONS = "maxVersions";
+    public static final String ACCUMULO_MAX_DATA_TABLE_VERSIONS = "maxDataTableVersions";
     public static final String ACCUMULO_MAX_EXTENDED_DATA_VERSIONS = "maxExtendedDataVersions";
     public static final String HISTORY_IN_SEPARATE_TABLE = "historyInSeparateTable";
     public static final String NAME_SUBSTITUTION_STRATEGY_PROP_PREFIX = "nameSubstitutionStrategy";
@@ -70,6 +71,7 @@ public class AccumuloGraphConfiguration extends GraphConfiguration {
     public static final Long DEFAULT_BATCHWRITER_TIMEOUT = Long.MAX_VALUE;
     public static final Integer DEFAULT_BATCHWRITER_MAX_WRITE_THREADS = 3;
     public static final Integer DEFAULT_ACCUMULO_MAX_VERSIONS = null;
+    public static final Integer DEFAULT_ACCUMULO_MAX_DATA_TABLE_VERSIONS = 1;
     public static final boolean DEFAULT_HISTORY_IN_SEPARATE_TABLE = false;
     public static final int DEFAULT_NUMBER_OF_QUERY_THREADS = 10;
     public static final String DEFAULT_HDFS_CONTEXT_CLASSPATH = null;
@@ -235,6 +237,10 @@ public class AccumuloGraphConfiguration extends GraphConfiguration {
 
     public Integer getExtendedDataMaxVersions() {
         return getInteger(ACCUMULO_MAX_EXTENDED_DATA_VERSIONS, getMaxVersions());
+    }
+
+    public Integer getDataTableMaxVersions() {
+        return getInteger(ACCUMULO_MAX_DATA_TABLE_VERSIONS, DEFAULT_ACCUMULO_MAX_DATA_TABLE_VERSIONS);
     }
 
     public int getNumberOfQueryThreads() {

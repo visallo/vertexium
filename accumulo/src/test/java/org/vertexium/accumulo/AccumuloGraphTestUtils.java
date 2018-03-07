@@ -12,17 +12,6 @@ public class AccumuloGraphTestUtils {
         }
     }
 
-    public static void dropGraph(Connector connector, String tableName) {
-        try {
-            if (connector.tableOperations().exists(tableName)) {
-                connector.tableOperations().delete(tableName);
-            }
-        } catch (Exception e) {
-            throw new VertexiumException("Unable to drop graph: " + tableName, e);
-        }
-        createTable(connector, tableName);
-    }
-
     private static void createTable(Connector connector, String tableName) {
         try {
             NewTableConfiguration config = new NewTableConfiguration()

@@ -182,7 +182,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             ensureTableExists(connector, getEdgesTableName(config.getTableNamePrefix()), config.getMaxVersions(), config.getHdfsContextClasspath(), config.isCreateTables());
         }
         ensureTableExists(connector, getExtendedDataTableName(config.getTableNamePrefix()), config.getExtendedDataMaxVersions(), config.getHdfsContextClasspath(), config.isCreateTables());
-        ensureTableExists(connector, getDataTableName(config.getTableNamePrefix()), 1, config.getHdfsContextClasspath(), config.isCreateTables());
+        ensureTableExists(connector, getDataTableName(config.getTableNamePrefix()), config.getDataTableMaxVersions(), config.getHdfsContextClasspath(), config.isCreateTables());
         ensureTableExists(connector, getMetadataTableName(config.getTableNamePrefix()), 1, config.getHdfsContextClasspath(), config.isCreateTables());
         ensureRowDeletingIteratorIsAttached(connector, getVerticesTableName(config.getTableNamePrefix()));
         ensureRowDeletingIteratorIsAttached(connector, getEdgesTableName(config.getTableNamePrefix()));
@@ -254,7 +254,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                         .withoutDefaultIterators();
                 connector.tableOperations().create(tableName, ntc);
 
-                if (maxVersions != null) {
+                if (maxVersions != null && maxVersions > 0) {
                     // The following parameters match the Accumulo defaults for the VersioningIterator
                     IteratorSetting versioningSettings = new IteratorSetting(
                             ACCUMULO_DEFAULT_VERSIONING_ITERATOR_PRIORITY,
