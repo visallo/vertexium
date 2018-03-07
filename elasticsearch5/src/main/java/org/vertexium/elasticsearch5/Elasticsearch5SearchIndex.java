@@ -394,17 +394,46 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
         }
     }
 
-    private <TElement extends Element> UpdateRequestBuilder prepareUpdateForMutation(
-            Graph graph,
-            ExistingElementMutation<TElement> mutation
-    ) {
+    private <TElement extends Element> UpdateRequestBuilder prepareUpdateForMutation(Graph graph, ExistingElementMutation<TElement> mutation) {
         TElement element = mutation.getElement();
-        Map<String, String> fieldVisibilityChanges = new HashMap<>();
+
+        Map<String, String> fieldVisibilityChanges = getFieldVisibilityChanges(graph, mutation);
+        List<String> fieldsToRemove = getFieldsToRemove(graph, mutation);
+        Map<String, Object> fieldsToSet = getFieldsToSet(graph, mutation);
+
+        String documentId = getIdStrategy().createElementDocId(element);
+        String indexName = getIndexName(element);
+        IndexInfo indexInfo = ensureIndexCreatedAndInitialized(graph, indexName);
+        return prepareUpdateFieldsOnDocument(indexInfo.getIndexName(), documentId, fieldsToSet, fieldsToRemove, fieldVisibilityChanges);
+    }
+
+    private <TElement extends Element> Map<String, Object> getFieldsToSet(Graph graph, ExistingElementMutation<TElement> mutation) {
+        TElement element = mutation.getElement();
+
+        Map<String, Object> fieldsToSet = new HashMap<>();
+
+        mutation.getProperties().forEach(p ->
+                addExistingValuesToFieldMap(graph, element, p.getName(), p.getVisibility(), fieldsToSet));
+        mutation.getPropertyDeletes().forEach(p ->
+                addExistingValuesToFieldMap(graph, element, p.getName(), p.getVisibility(), fieldsToSet));
+        mutation.getPropertySoftDeletes().forEach(p ->
+                addExistingValuesToFieldMap(graph, element, p.getName(), p.getVisibility(), fieldsToSet));
+
+        return fieldsToSet;
+    }
+
+    private <TElement extends Element> List<String> getFieldsToRemove(Graph graph, ExistingElementMutation<TElement> mutation) {
         List<String> fieldsToRemove = new ArrayList<>();
+        mutation.getPropertyDeletes().forEach(p ->
+                fieldsToRemove.add(addVisibilityToPropertyName(graph, p.getName(), p.getVisibility())));
+        mutation.getPropertySoftDeletes().forEach(p ->
+                fieldsToRemove.add(addVisibilityToPropertyName(graph, p.getName(), p.getVisibility())));
+        return fieldsToRemove;
+    }
 
-        Map<String, Object> fieldsToAdd = new HashMap<>(getPropertiesAsFields(graph, mutation.getProperties()));
+    private <TElement extends Element> Map<String, String> getFieldVisibilityChanges(Graph graph, ExistingElementMutation<TElement> mutation) {
+        Map<String, String> fieldVisibilityChanges = new HashMap<>();
 
-        // If a property visibility changes, that's simply a field rename
         mutation.getAlterPropertyVisibilities().stream()
                 .filter(p -> p.getExistingVisibility() != null && !p.getExistingVisibility().equals(p.getVisibility()))
                 .forEach(p -> {
@@ -413,21 +442,26 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
                     fieldVisibilityChanges.put(oldFieldName, newFieldName);
                 });
 
-        // Property delete/softDelete is simply a removal of the associated fields from the document
-        mutation.getPropertyDeletes().forEach(p -> fieldsToRemove.add(addVisibilityToPropertyName(graph, p.getName(), p.getVisibility())));
-        mutation.getPropertySoftDeletes().forEach(p -> fieldsToRemove.add(addVisibilityToPropertyName(graph, p.getName(), p.getVisibility())));
-
-        // If the element visibility changes, that's simply a field rename
         if (mutation.getNewElementVisibility() != null) {
             String oldFieldName = addVisibilityToPropertyName(graph, ELEMENT_TYPE_FIELD_NAME, mutation.getOldElementVisibility());
             String newFieldName = addVisibilityToPropertyName(graph, ELEMENT_TYPE_FIELD_NAME, mutation.getNewElementVisibility());
             fieldVisibilityChanges.put(oldFieldName, newFieldName);
         }
+        return fieldVisibilityChanges;
+    }
 
-        String documentId = getIdStrategy().createElementDocId(element);
-        String indexName = getIndexName(element);
-        IndexInfo indexInfo = ensureIndexCreatedAndInitialized(graph, indexName);
-        return prepareUpdateFieldsOnDocument(indexInfo.getIndexName(), documentId, fieldsToAdd, fieldsToRemove, fieldVisibilityChanges);
+    private void addExistingValuesToFieldMap(Graph graph, Element element, String propertyName, Visibility propertyVisibility, Map<String, Object> fieldsToSet) {
+        String fieldName = addVisibilityToPropertyName(graph, propertyName, propertyVisibility);
+
+        Map<String, Object> remainingProperties = getPropertiesAsFields(graph, element.getProperties(propertyName));
+        if (remainingProperties != null && remainingProperties.containsKey(fieldName)) {
+            Object remainingValue = remainingProperties.get(fieldName);
+            if (remainingValue instanceof List) {
+                ((List) remainingValue).forEach(v -> addPropertyValueToPropertiesMap(fieldsToSet, fieldName, v));
+            } else {
+                addPropertyValueToPropertiesMap(fieldsToSet, fieldName, remainingValue);
+            }
+        }
     }
 
     private <TElement extends Element> IndexInfo addMutationPropertiesToIndex(Graph graph, ExistingElementMutation<TElement> mutation) {
@@ -1569,24 +1603,31 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
 
     @Override
     public void deleteProperty(Graph graph, Element element, PropertyDescriptor property, Authorizations authorizations) {
-        String fieldName = addVisibilityToPropertyName(graph, property.getName(), property.getVisibility());
-        removeFieldsFromDocument(graph, element, fieldName);
-        removeFieldsFromDocument(graph, element, fieldName + "_e");
+        deleteProperties(graph, element, Collections.singletonList(property), authorizations);
     }
 
     @Override
     public void deleteProperties(Graph graph, Element element, Collection<PropertyDescriptor> propertyList, Authorizations authorizations) {
-        removeFieldsFromDocument(graph, element, convertPropertyDescriptorsToFieldNames(graph, propertyList));
-    }
-
-    private List<String> convertPropertyDescriptorsToFieldNames(Graph graph, Collection<PropertyDescriptor> propertyList) {
-        List<String> fields = new ArrayList<>();
-        for (PropertyDescriptor p : propertyList) {
+        List<String> fieldsToRemove = new ArrayList<>();
+        Map<String, Object> fieldsToSet = new HashMap<>();
+        propertyList.forEach(p -> {
             String fieldName = addVisibilityToPropertyName(graph, p.getName(), p.getVisibility());
-            fields.add(fieldName);
-            fields.add(fieldName + "_e");
+            fieldsToRemove.add(fieldName);
+            addExistingValuesToFieldMap(graph, element, p.getName(), p.getVisibility(), fieldsToSet);
+        });
+
+        String documentId = getIdStrategy().createElementDocId(element);
+        String indexName = getIndexName(element);
+        IndexInfo indexInfo = ensureIndexCreatedAndInitialized(graph, indexName);
+        UpdateRequestBuilder updateRequestBuilder = prepareUpdateFieldsOnDocument(indexInfo.getIndexName(), documentId, fieldsToSet, fieldsToRemove, Collections.emptyMap());
+        if (updateRequestBuilder != null) {
+            getIndexRefreshTracker().pushChange(indexInfo.getIndexName());
+            addActionRequestBuilderForFlush(element.getId(), updateRequestBuilder);
+
+            if (getConfig().isAutoFlush()) {
+                flush(graph);
+            }
         }
-        return fields;
     }
 
     @Override
@@ -1704,17 +1745,17 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
     private UpdateRequestBuilder prepareUpdateFieldsOnDocument(
             String indexName,
             String documentId,
-            Map<String, Object> fieldsToAdd,
+            Map<String, Object> fieldsToSet,
             Collection<String> fieldsToRemove,
             Map<String, String> fieldsToRename
     ) {
-        if ((fieldsToAdd == null || fieldsToAdd.isEmpty()) &&
+        if ((fieldsToSet == null || fieldsToSet.isEmpty()) &&
                 (fieldsToRemove == null || fieldsToRemove.isEmpty()) &&
                 (fieldsToRename == null || fieldsToRename.isEmpty())) {
             return null;
         }
 
-        fieldsToAdd = fieldsToAdd == null ? Collections.emptyMap() : fieldsToAdd.entrySet().stream()
+        fieldsToSet = fieldsToSet == null ? Collections.emptyMap() : fieldsToSet.entrySet().stream()
                 .collect(Collectors.toMap(e -> replaceFieldnameDots(e.getKey()), Map.Entry::getValue));
         fieldsToRemove = fieldsToRemove == null ? Collections.emptyList() : fieldsToRemove.stream().map(this::replaceFieldnameDots).collect(Collectors.toList());
         fieldsToRename = fieldsToRename == null ? Collections.emptyMap() : fieldsToRename.entrySet().stream()
@@ -1729,8 +1770,8 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
                         "painless",
                         "for (def fieldName : params.fieldsToRemove) { ctx._source.remove(fieldName); } " +
                                 "for (fieldToRename in params.fieldsToRename.entrySet()) { ctx._source[fieldToRename.getValue()] = ctx._source[fieldToRename.getKey()]; ctx._source.remove(fieldToRename.getKey()); } " +
-                                "for (fieldToAdd in params.fieldsToAdd.entrySet()) { ctx._source[fieldToAdd.getKey()] = fieldToAdd.getValue(); }",
-                        ImmutableMap.of("fieldsToAdd", fieldsToAdd, "fieldsToRemove", fieldsToRemove, "fieldsToRename", fieldsToRename)
+                                "for (fieldToSet in params.fieldsToSet.entrySet()) { ctx._source[fieldToSet.getKey()] = fieldToSet.getValue(); }",
+                        ImmutableMap.of("fieldsToSet", fieldsToSet, "fieldsToRemove", fieldsToRemove, "fieldsToRename", fieldsToRename)
                 ))
                 .setRetryOnConflict(MAX_RETRIES);
     }
