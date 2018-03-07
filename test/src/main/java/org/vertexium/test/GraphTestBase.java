@@ -2305,6 +2305,65 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    public void testAddValuesToExistingProperties() {
+        Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_ALL);
+        getGraph().flush();
+
+        graph.defineProperty("p1").dataType(String.class).sortable(true).textIndexHint(TextIndexHint.ALL).define();
+
+        v1.addPropertyValue("k1", "p1", "val1", VISIBILITY_A, AUTHORIZATIONS_ALL);
+        getGraph().flush();
+
+        assertIdsAnyOrder(getGraph().query(AUTHORIZATIONS_ALL).has("p1", "val1").vertexIds(), "v1");
+
+        v1.addPropertyValue("k2", "p1", "val2", VISIBILITY_A, AUTHORIZATIONS_ALL);
+        getGraph().flush();
+
+        assertIdsAnyOrder(getGraph().query(AUTHORIZATIONS_ALL).has("p1", "val1").vertexIds(), "v1");
+        assertIdsAnyOrder(getGraph().query(AUTHORIZATIONS_ALL).has("p1", "val2").vertexIds(), "v1");
+        assertResultsCount(0, 0, getGraph().query(AUTHORIZATIONS_ALL).has("p1", "val3").vertexIds());
+
+        v1.addPropertyValue("k1", "p1", "val3", VISIBILITY_A, AUTHORIZATIONS_ALL);
+        getGraph().flush();
+
+        assertIdsAnyOrder(getGraph().query(AUTHORIZATIONS_ALL).has("p1", "val3").vertexIds(), "v1");
+        assertIdsAnyOrder(getGraph().query(AUTHORIZATIONS_ALL).has("p1", "val2").vertexIds(), "v1");
+        assertResultsCount(0, 0, getGraph().query(AUTHORIZATIONS_ALL).has("p1", "val1").vertexIds());
+    }
+
+    @Test
+    public void testRemoveValuesFromMultivalueProperties() {
+        graph.defineProperty("p1").dataType(String.class).sortable(true).textIndexHint(TextIndexHint.ALL).define();
+
+        Vertex v1 = graph.prepareVertex("v1", VISIBILITY_A)
+                .addPropertyValue("k1", "p1", "v1", VISIBILITY_A)
+                .addPropertyValue("k2", "p1", "v2", VISIBILITY_A)
+                .save(AUTHORIZATIONS_ALL);
+        getGraph().flush();
+
+        assertIdsAnyOrder(getGraph().query(AUTHORIZATIONS_ALL).has("p1", "v1").vertexIds(), "v1");
+        assertIdsAnyOrder(getGraph().query(AUTHORIZATIONS_ALL).has("p1", "v2").vertexIds(), "v1");
+        assertResultsCount(0, 0, getGraph().query(AUTHORIZATIONS_ALL).has("p1", "v3").vertexIds());
+
+        v1.prepareMutation()
+                .addPropertyValue("k3", "p1", "v3", VISIBILITY_A)
+                .deleteProperty("k1", "p1", VISIBILITY_A)
+                .save(AUTHORIZATIONS_ALL);
+        getGraph().flush();
+
+        assertIdsAnyOrder(getGraph().query(AUTHORIZATIONS_ALL).has("p1", "v2").vertexIds(), "v1");
+        assertIdsAnyOrder(getGraph().query(AUTHORIZATIONS_ALL).has("p1", "v3").vertexIds(), "v1");
+        assertResultsCount(0, 0, getGraph().query(AUTHORIZATIONS_ALL).has("p1", "v1").vertexIds());
+
+        v1.deleteProperty("k2", "p1", VISIBILITY_A, AUTHORIZATIONS_ALL);
+        getGraph().flush();
+
+        assertIdsAnyOrder(getGraph().query(AUTHORIZATIONS_ALL).has("p1", "v3").vertexIds(), "v1");
+        assertResultsCount(0, 0, getGraph().query(AUTHORIZATIONS_ALL).has("p1", "v1").vertexIds());
+        assertResultsCount(0, 0, getGraph().query(AUTHORIZATIONS_ALL).has("p1", "v2").vertexIds());
+    }
+
+    @Test
     public void testGraphQueryWithQueryString() {
         Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_ALL);
         v1.setProperty("description", "This is vertex 1 - dog.", VISIBILITY_A, AUTHORIZATIONS_ALL);
