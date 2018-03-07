@@ -310,6 +310,98 @@ public abstract class GraphTestBase {
         assertEquals(expectedValue, spv.readToString());
     }
 
+    protected boolean isInputStreamMarkResetSupported() {
+        return true;
+    }
+
+    @Test
+    public void testStreamingPropertyValueMarkReset() throws IOException {
+        assumeTrue("InputStream mark/reset is not supported", isInputStreamMarkResetSupported());
+
+        String expectedLargeValue = "abcdefghijk";
+        PropertyValue propLarge = StreamingPropertyValue.create(new ByteArrayInputStream(expectedLargeValue.getBytes()), String.class);
+        graph.prepareVertex("v1", VISIBILITY_A)
+                .setProperty("propLarge", propLarge, VISIBILITY_A)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
+        StreamingPropertyValue prop = (StreamingPropertyValue) v1.getPropertyValue("propLarge");
+
+        InputStream in = prop.getInputStream();
+
+        byte[] buffer = new byte[15];
+        int sizeRead = in.read(buffer);
+        assertEquals(11, sizeRead);
+        assertEquals("abcdefghijk", new String(buffer, 0, sizeRead));
+
+        in.reset();
+        buffer = new byte[3];
+        sizeRead = in.read(buffer);
+        assertEquals(3, sizeRead);
+        assertEquals("abc", new String(buffer, 0, sizeRead));
+        assertEquals('d', (char) in.read());
+        assertEquals('e', (char) in.read());
+
+        in.mark(32);
+        buffer = new byte[5];
+        sizeRead = in.read(buffer);
+        assertEquals(5, sizeRead);
+        assertEquals("fghij", new String(buffer, 0, sizeRead));
+
+        in.reset();
+        buffer = new byte[10];
+        sizeRead = in.read(buffer);
+        assertEquals(6, sizeRead);
+        assertEquals("fghijk", new String(buffer, 0, sizeRead));
+
+        assertEquals(-1, in.read(buffer));
+
+        in.reset();
+        buffer = new byte[10];
+        sizeRead = in.read(buffer);
+        assertEquals(6, sizeRead);
+        assertEquals("fghijk", new String(buffer, 0, sizeRead));
+    }
+
+    @Test
+    public void testStreamingPropertyValueMarkResetLargeReads() throws IOException {
+        assumeTrue("InputStream mark/reset is not supported", isInputStreamMarkResetSupported());
+
+        String expectedLargeValue = IOUtils.toString(new LargeStringInputStream(LARGE_PROPERTY_VALUE_SIZE));
+        byte[] expectedLargeValueBytes = expectedLargeValue.getBytes();
+        PropertyValue propLarge = StreamingPropertyValue.create(new ByteArrayInputStream(expectedLargeValue.getBytes()), String.class);
+        graph.prepareVertex("v1", VISIBILITY_A)
+                .setProperty("propLarge", propLarge, VISIBILITY_A)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
+        StreamingPropertyValue prop = (StreamingPropertyValue) v1.getPropertyValue("propLarge");
+
+        InputStream in = prop.getInputStream();
+        int amountToRead = expectedLargeValueBytes.length - 8;
+        byte[] buffer = null;
+        while (amountToRead > 0) {
+            buffer = new byte[amountToRead];
+            amountToRead -= in.read(buffer);
+        }
+
+        assertEquals(expectedLargeValue.charAt(expectedLargeValue.length() - 9), (char)buffer[buffer.length - 1]);
+        in.mark(32);
+        buffer = new byte[2];
+        int sizeRead = in.read(buffer);
+        assertEquals(2, sizeRead);
+        assertEquals(expectedLargeValue.charAt(expectedLargeValue.length() - 8), (char)buffer[0]);
+        assertEquals(expectedLargeValue.charAt(expectedLargeValue.length() - 7), (char)buffer[1]);
+        assertEquals(expectedLargeValue.charAt(expectedLargeValue.length() - 6), (char)in.read());
+
+        in.reset();
+        sizeRead = in.read(buffer);
+        assertEquals(2, sizeRead);
+        assertEquals(expectedLargeValue.charAt(expectedLargeValue.length() - 8), (char)buffer[0]);
+    }
+
     @Test
     public void testAddVertexPropertyWithMetadata() {
         Metadata prop1Metadata = new Metadata();

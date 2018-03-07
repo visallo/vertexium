@@ -66,6 +66,12 @@ public class StreamingPropertyValueTableData extends StreamingPropertyValue {
         private long loadedDataLength;
         private boolean closed;
 
+        private long markRowIndex = 0;
+        private long markByteOffsetInRow = 0;
+        private long markLoadedDataLength = 0;
+        private long currentDataRowIndex = -1;
+        private long currentByteOffsetInRow;
+
         @Override
         public int read(byte[] dest, int off, int len) throws IOException {
             if (len == 0) {
@@ -78,7 +84,10 @@ public class StreamingPropertyValueTableData extends StreamingPropertyValue {
             if (buffer.getUsed() == 0) {
                 return -1;
             }
-            return buffer.read(dest, off, len);
+
+            int bytesRead = buffer.read(dest, off, len);
+            currentByteOffsetInRow += bytesRead;
+            return bytesRead;
         }
 
         @Override
@@ -89,6 +98,7 @@ public class StreamingPropertyValueTableData extends StreamingPropertyValue {
                     return -1;
                 }
             }
+            currentByteOffsetInRow++;
             return buffer.read();
         }
 
@@ -97,6 +107,7 @@ public class StreamingPropertyValueTableData extends StreamingPropertyValue {
             if (closed) {
                 return;
             }
+            scannerIterator = null;
             if (scanner != null) {
                 scanner.close();
                 scanner = null;
@@ -132,12 +143,16 @@ public class StreamingPropertyValueTableData extends StreamingPropertyValue {
                 }
 
                 if (column.getKey().getColumnFamily().equals(DATA_COLUMN_FAMILY)) {
+                    currentDataRowIndex++;
+                    currentByteOffsetInRow = 0;
+
                     byte[] data = column.getValue().get();
                     if (length == null) {
                         throw new VertexiumException("unexpected missing length (row: " + column.getKey().getRow() + ")");
                     }
                     long len = Math.min(data.length, length - loadedDataLength);
                     buffer.write(data, 0, (int) len);
+                    markLoadedDataLength = loadedDataLength;
                     loadedDataLength += len;
                     return true;
                 }
@@ -186,6 +201,55 @@ public class StreamingPropertyValueTableData extends StreamingPropertyValue {
             trace = Trace.start("streamingPropertyValueTableData");
             trace.data("dataRowKeyCount", Integer.toString(1));
             return scanner;
+        }
+
+        @Override
+        public synchronized void mark(int readlimit) {
+            markRowIndex = currentDataRowIndex;
+            markByteOffsetInRow = currentByteOffsetInRow;
+        }
+
+        @Override
+        public synchronized void reset() throws IOException {
+            buffer.clear();
+            if (scannerIterator != null) {
+                scannerIterator = null;
+            }
+
+            closed = false;
+
+            currentDataRowIndex = -1;
+            currentByteOffsetInRow = 0;
+            loadedDataLength = markLoadedDataLength;
+
+            Iterator<Map.Entry<Key, Value>> it = getScannerIterator();
+            while (true) {
+                if (!it.hasNext()) {
+                    close();
+                    return;
+                }
+                Map.Entry<Key, Value> column = it.next();
+                if (column.getKey().getColumnFamily().equals(DATA_COLUMN_FAMILY)) {
+                    currentDataRowIndex++;
+                    currentByteOffsetInRow = 0;
+                    if (currentDataRowIndex == markRowIndex) {
+                        byte[] data = column.getValue().get();
+                        long len = Math.min(data.length, length - loadedDataLength);
+                        buffer.write(data, 0, (int) len);
+                        loadedDataLength += len;
+                        while (currentByteOffsetInRow != markByteOffsetInRow) {
+                            buffer.read();
+                            currentByteOffsetInRow++;
+                        }
+                        return;
+                    }
+                }
+            }
+        }
+
+        @Override
+        public boolean markSupported() {
+            return true;
         }
     }
 }

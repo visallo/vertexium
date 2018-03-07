@@ -73,4 +73,9 @@ public class SqlGraphTest extends GraphTestBase {
     protected boolean isAdvancedGeoQuerySupported() {
         return false;
     }
+
+    @Override
+    protected boolean isInputStreamMarkResetSupported() {
+        return false;
+    }
 }
