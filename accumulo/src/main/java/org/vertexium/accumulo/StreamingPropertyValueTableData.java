@@ -63,6 +63,7 @@ public class StreamingPropertyValueTableData extends StreamingPropertyValue {
         private Span trace;
         private ScannerBase scanner;
         private Iterator<Map.Entry<Key, Value>> scannerIterator;
+        private long previousLoadedDataLength;
         private long loadedDataLength;
         private boolean closed;
 
@@ -152,7 +153,7 @@ public class StreamingPropertyValueTableData extends StreamingPropertyValue {
                     }
                     long len = Math.min(data.length, length - loadedDataLength);
                     buffer.write(data, 0, (int) len);
-                    markLoadedDataLength = loadedDataLength;
+                    previousLoadedDataLength = loadedDataLength;
                     loadedDataLength += len;
                     return true;
                 }
@@ -205,8 +206,9 @@ public class StreamingPropertyValueTableData extends StreamingPropertyValue {
 
         @Override
         public synchronized void mark(int readlimit) {
-            markRowIndex = currentDataRowIndex;
+            markRowIndex = Math.max(0, currentDataRowIndex);
             markByteOffsetInRow = currentByteOffsetInRow;
+            markLoadedDataLength = previousLoadedDataLength;
         }
 
         @Override

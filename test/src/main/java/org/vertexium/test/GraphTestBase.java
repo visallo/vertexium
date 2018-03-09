@@ -403,6 +403,35 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    public void testStreamingPropertyValueResetMutlipleLargeReadsUntilEnd() throws IOException {
+        assumeTrue("InputStream mark/reset is not supported", isInputStreamMarkResetSupported());
+
+        String expectedLargeValue = IOUtils.toString(new LargeStringInputStream(LARGE_PROPERTY_VALUE_SIZE));
+        byte[] expectedLargeValueBytes = expectedLargeValue.getBytes();
+        PropertyValue propLarge = StreamingPropertyValue.create(new ByteArrayInputStream(expectedLargeValue.getBytes()), String.class);
+        graph.prepareVertex("v1", VISIBILITY_A)
+                .setProperty("propLarge", propLarge, VISIBILITY_A)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
+        StreamingPropertyValue prop = (StreamingPropertyValue) v1.getPropertyValue("propLarge");
+
+        InputStream in = prop.getInputStream();
+        in.mark(2);
+        for (int i = 0; i < 3; i++) {
+            int totalBytesRead = 0;
+            while (in.read() >= 0) {
+                totalBytesRead++;
+                assertTrue("Read past end of input stream", totalBytesRead <= expectedLargeValueBytes.length);
+            }
+            assertEquals("Read unexpected number of bytes on loop: " + i, expectedLargeValueBytes.length, totalBytesRead);
+            assertEquals(-1, in.read());
+            in.reset();
+        }
+    }
+
+    @Test
     public void testAddVertexPropertyWithMetadata() {
         Metadata prop1Metadata = new Metadata();
         prop1Metadata.add("metadata1", "metadata1Value", VISIBILITY_A);
