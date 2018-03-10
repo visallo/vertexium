@@ -387,19 +387,19 @@ public abstract class GraphTestBase {
             amountToRead -= in.read(buffer);
         }
 
-        assertEquals(expectedLargeValue.charAt(expectedLargeValue.length() - 9), (char)buffer[buffer.length - 1]);
+        assertEquals(expectedLargeValue.charAt(expectedLargeValue.length() - 9), (char) buffer[buffer.length - 1]);
         in.mark(32);
         buffer = new byte[2];
         int sizeRead = in.read(buffer);
         assertEquals(2, sizeRead);
-        assertEquals(expectedLargeValue.charAt(expectedLargeValue.length() - 8), (char)buffer[0]);
-        assertEquals(expectedLargeValue.charAt(expectedLargeValue.length() - 7), (char)buffer[1]);
-        assertEquals(expectedLargeValue.charAt(expectedLargeValue.length() - 6), (char)in.read());
+        assertEquals(expectedLargeValue.charAt(expectedLargeValue.length() - 8), (char) buffer[0]);
+        assertEquals(expectedLargeValue.charAt(expectedLargeValue.length() - 7), (char) buffer[1]);
+        assertEquals(expectedLargeValue.charAt(expectedLargeValue.length() - 6), (char) in.read());
 
         in.reset();
         sizeRead = in.read(buffer);
         assertEquals(2, sizeRead);
-        assertEquals(expectedLargeValue.charAt(expectedLargeValue.length() - 8), (char)buffer[0]);
+        assertEquals(expectedLargeValue.charAt(expectedLargeValue.length() - 8), (char) buffer[0]);
     }
 
     @Test
@@ -3114,8 +3114,10 @@ public abstract class GraphTestBase {
     public void testGraphQuerySort() {
         String namePropertyName = "first.name";
         String agePropertyName = "age";
+        String genderPropertyName = "gender";
         graph.defineProperty(agePropertyName).dataType(Integer.class).sortable(true).define();
         graph.defineProperty(namePropertyName).dataType(String.class).sortable(true).textIndexHint(TextIndexHint.EXACT_MATCH).define();
+        graph.defineProperty(genderPropertyName).dataType(String.class).sortable(true).textIndexHint(TextIndexHint.FULL_TEXT, TextIndexHint.EXACT_MATCH).define();
 
         graph.prepareVertex("v1", VISIBILITY_A)
                 .setProperty(namePropertyName, "joe", VISIBILITY_A)
@@ -3201,6 +3203,26 @@ public abstract class GraphTestBase {
                 .sort(Edge.LABEL_PROPERTY_NAME, SortDirection.DESCENDING)
                 .edges());
         assertEdgeIds(edges, "e3", "e1", "e2");
+
+        graph.prepareVertex("v5", VISIBILITY_A)
+                .setProperty(genderPropertyName, "female", VISIBILITY_A)
+                .addExtendedData("table1", "row1", "column1", "value1", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.prepareVertex("v6", VISIBILITY_A)
+                .setProperty(genderPropertyName, "male", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        vertices = toList(graph.query(AUTHORIZATIONS_A_AND_B)
+                .sort(genderPropertyName, SortDirection.ASCENDING)
+                .vertices());
+        Assert.assertEquals(6, count(vertices));
+        assertEquals("v5", vertices.get(0).getId());
+        assertEquals("v6", vertices.get(1).getId());
+        assertTrue(vertices.get(2).getId().equals("v2") || vertices.get(2).getId().equals("v1"));
+        assertTrue(vertices.get(3).getId().equals("v2") || vertices.get(3).getId().equals("v1"));
+        assertTrue(vertices.get(4).getId().equals("v3") || vertices.get(4).getId().equals("v4"));
+        assertTrue(vertices.get(5).getId().equals("v3") || vertices.get(5).getId().equals("v4"));
     }
 
     @Test
