@@ -64,6 +64,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
     private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(ElasticsearchSearchQueryBase.class);
     public static final VertexiumLogger QUERY_LOGGER = VertexiumLoggerFactory.getQueryLogger(Query.class);
     public static final String TOP_HITS_AGGREGATION_NAME = "__visallo_top_hits";
+    public static final String KEYWORD_UNMAPPED_TYPE = "keyword";
     private final Client client;
     private final boolean evaluateHasContainers;
     private final boolean evaluateQueryString;
@@ -266,19 +267,19 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
             } else if (Edge.LABEL_PROPERTY_NAME.equals(sortContainer.propertyName)) {
                 q.addSort(
                         SortBuilders.fieldSort(Elasticsearch5SearchIndex.EDGE_LABEL_FIELD_NAME)
-                                .unmappedType("keyword")
+                                .unmappedType(KEYWORD_UNMAPPED_TYPE)
                                 .order(esOrder)
                 );
             } else if (ExtendedDataRow.TABLE_NAME.equals(sortContainer.propertyName)) {
                 q.addSort(
                         SortBuilders.fieldSort(Elasticsearch5SearchIndex.ELEMENT_ID_FIELD_NAME)
-                                .unmappedType("keyword")
+                                .unmappedType(KEYWORD_UNMAPPED_TYPE)
                                 .order(esOrder)
                 );
             } else if (ExtendedDataRow.ROW_ID.equals(sortContainer.propertyName)) {
                 q.addSort(
                         SortBuilders.fieldSort(Elasticsearch5SearchIndex.EXTENDED_DATA_TABLE_ROW_ID_FIELD_NAME)
-                                .unmappedType("keyword")
+                                .unmappedType(KEYWORD_UNMAPPED_TYPE)
                                 .order(esOrder)
                 );
             } else {
@@ -313,12 +314,14 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
                             .sortMode(esOrder == SortOrder.DESC ? SortMode.MAX : SortMode.MIN));
                 } else {
                     String sortField = propertyNames[0];
+                    String unmappedType = ElasticsearchTypes.fromJavaClass(propertyDefinition.getDataType());
                     if (propertyDefinition.getDataType() == String.class) {
                         sortField += Elasticsearch5SearchIndex.EXACT_MATCH_PROPERTY_NAME_SUFFIX;
+                        unmappedType = KEYWORD_UNMAPPED_TYPE;
                     }
                     q.addSort(
                             SortBuilders.fieldSort(sortField)
-                                    .unmappedType(ElasticsearchTypes.fromJavaClass(propertyDefinition.getDataType()))
+                                    .unmappedType(unmappedType)
                                     .order(esOrder)
                     );
                 }

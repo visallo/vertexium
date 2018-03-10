@@ -2,7 +2,8 @@
 * Changed: When saving an ExistingElementMutation, the Elastisearch5Index will now apply the mutations using a painless script rather than making multiple requests.
 * Changed: When using Accumulo, all threads now share a single batch writer rather than creating a new writer for every thread. This allows client programs to more effectively use multi-threading.
 * Fixed: Prevent concurrent modification exceptions when using InMemoryGraph through synchronizing the methods and also returning Collection copies. 
-* Fixed: The InputStream for a StreamingPropertyValue stored in Accumulo now supports mark/reset.  
+* Fixed: The InputStream for a StreamingPropertyValue stored in Accumulo now supports mark/reset.
+* Fixed: Elasticsearch sort throwing errors for String properties while querying across indices
 
 # v3.2.0
 * Changed: Elasticsearch _id and _type fields to be much smaller to minimize the size of the _uid field data cache 
