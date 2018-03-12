@@ -106,7 +106,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
     private Node inProcessNode;
     public static final Pattern AGGREGATION_NAME_PATTERN = Pattern.compile("(.*?)_([0-9a-f]+)");
     private final PropertyNameVisibilitiesStore propertyNameVisibilitiesStore;
-    private final ThreadLocal<FlushObjectQueue> flushFutures = new ThreadLocal<>();
+    private final FlushObjectQueue flushObjectQueue = new FlushObjectQueue();
     private final String geoShapePrecision;
     private final String geoShapeErrorPct;
     private boolean serverPluginInstalled;
@@ -353,8 +353,8 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
             return;
         }
 
-        if (flushObjectQueueContainsElementId(element.getId())) {
-            getFlushObjectQueue().flush();
+        if (flushObjectQueue.containsElementId(element.getId())) {
+            flushObjectQueue.flush();
         }
 
         UpdateRequestBuilder updateRequestBuilder = prepareUpdate(graph, element, authorizations);
@@ -377,8 +377,8 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
             return;
         }
 
-        if (flushObjectQueueContainsElementId(element.getId())) {
-            getFlushObjectQueue().flush();
+        if (flushObjectQueue.containsElementId(element.getId())) {
+            flushObjectQueue.flush();
         }
 
         UpdateRequestBuilder updateRequestBuilder = prepareUpdateForMutation(graph, mutation);
@@ -510,11 +510,6 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
         }
     }
 
-    private boolean flushObjectQueueContainsElementId(String elementId) {
-        return getFlushObjectQueue().stream()
-                .anyMatch(flushObject -> flushObject.getElementId().equals(elementId));
-    }
-
     private void addActionRequestBuilderForFlush(String elementId, UpdateRequestBuilder updateRequestBuilder) {
         addActionRequestBuilderForFlush(elementId, null, updateRequestBuilder);
     }
@@ -528,7 +523,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
             future = SettableFuture.create();
             ((SettableFuture) future).setException(ex);
         }
-        getFlushObjectQueue().add(elementId, rowId, updateRequestBuilder, future);
+        flushObjectQueue.add(elementId, rowId, updateRequestBuilder, future);
     }
 
     @Override
@@ -776,15 +771,6 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
             elementExtendedData.add(row);
         });
         return rowsByElementTypeByElementId;
-    }
-
-    private FlushObjectQueue getFlushObjectQueue() {
-        FlushObjectQueue queue = flushFutures.get();
-        if (queue == null) {
-            queue = new FlushObjectQueue();
-            flushFutures.set(queue);
-        }
-        return queue;
     }
 
     @Override
@@ -1695,7 +1681,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
 
     @Override
     public void flush(Graph graph) {
-        getFlushObjectQueue().flush();
+        flushObjectQueue.flush();
         getIndexRefreshTracker().refresh(client);
     }
 
