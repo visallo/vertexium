@@ -3,8 +3,6 @@ package org.vertexium;
 import org.vertexium.mutation.ExistingElementMutation;
 import org.vertexium.query.VertexQuery;
 
-import java.util.EnumSet;
-
 public interface Vertex extends Element {
     /**
      * Gets all edges attached to this vertex.
@@ -23,7 +21,7 @@ public interface Vertex extends Element {
      * @param authorizations The authorizations used to find the edges.
      * @return An Iterable of edges.
      */
-    Iterable<Edge> getEdges(Direction direction, EnumSet<FetchHint> fetchHints, Authorizations authorizations);
+    Iterable<Edge> getEdges(Direction direction, FetchHints fetchHints, Authorizations authorizations);
 
     /**
      * Gets all edges attached to this vertex.
@@ -34,7 +32,7 @@ public interface Vertex extends Element {
      * @param authorizations The authorizations used to find the edges.
      * @return An Iterable of edges.
      */
-    Iterable<Edge> getEdges(Direction direction, EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations);
+    Iterable<Edge> getEdges(Direction direction, FetchHints fetchHints, Long endTime, Authorizations authorizations);
 
     /**
      * Gets the connected edge ids.
@@ -64,7 +62,7 @@ public interface Vertex extends Element {
      * @param authorizations The authorizations used to find the edges.
      * @return An Iterable of edges.
      */
-    Iterable<Edge> getEdges(Direction direction, String label, EnumSet<FetchHint> fetchHints, Authorizations authorizations);
+    Iterable<Edge> getEdges(Direction direction, String label, FetchHints fetchHints, Authorizations authorizations);
 
     /**
      * Gets the connected edge ids.
@@ -95,7 +93,7 @@ public interface Vertex extends Element {
      * @param authorizations The authorizations used to find the edges.
      * @return An Iterable of edges.
      */
-    Iterable<Edge> getEdges(Direction direction, String[] labels, EnumSet<FetchHint> fetchHints, Authorizations authorizations);
+    Iterable<Edge> getEdges(Direction direction, String[] labels, FetchHints fetchHints, Authorizations authorizations);
 
     /**
      * Gets the connected edge ids.
@@ -126,7 +124,7 @@ public interface Vertex extends Element {
      * @param authorizations The authorizations used to find the edges.
      * @return An Iterable of edges.
      */
-    Iterable<Edge> getEdges(Vertex otherVertex, Direction direction, EnumSet<FetchHint> fetchHints, Authorizations authorizations);
+    Iterable<Edge> getEdges(Vertex otherVertex, Direction direction, FetchHints fetchHints, Authorizations authorizations);
 
     /**
      * Gets the connected edge ids.
@@ -159,7 +157,7 @@ public interface Vertex extends Element {
      * @param authorizations The authorizations used to find the edges.
      * @return An Iterable of edges.
      */
-    Iterable<Edge> getEdges(Vertex otherVertex, Direction direction, String label, EnumSet<FetchHint> fetchHints, Authorizations authorizations);
+    Iterable<Edge> getEdges(Vertex otherVertex, Direction direction, String label, FetchHints fetchHints, Authorizations authorizations);
 
     /**
      * Gets the connected edge ids.
@@ -193,7 +191,7 @@ public interface Vertex extends Element {
      * @param authorizations The authorizations used to find the edges.
      * @return An Iterable of edges.
      */
-    Iterable<Edge> getEdges(Vertex otherVertex, Direction direction, String[] labels, EnumSet<FetchHint> fetchHints, Authorizations authorizations);
+    Iterable<Edge> getEdges(Vertex otherVertex, Direction direction, String[] labels, FetchHints fetchHints, Authorizations authorizations);
 
     /**
      * Gets a list of edge ids between this vertex and another vertex.
@@ -270,7 +268,7 @@ public interface Vertex extends Element {
      * @param authorizations The authorizations used to find the vertices.
      * @return An Iterable of vertices.
      */
-    Iterable<Vertex> getVertices(Direction direction, EnumSet<FetchHint> fetchHints, Authorizations authorizations);
+    Iterable<Vertex> getVertices(Direction direction, FetchHints fetchHints, Authorizations authorizations);
 
     /**
      * Similar to getEdges but gets the vertices on the other side of the edges attached to this vertex that have the given label.
@@ -291,7 +289,7 @@ public interface Vertex extends Element {
      * @param authorizations The authorizations used to find the vertices.
      * @return An Iterable of vertices.
      */
-    Iterable<Vertex> getVertices(Direction direction, String label, EnumSet<FetchHint> fetchHints, Authorizations authorizations);
+    Iterable<Vertex> getVertices(Direction direction, String label, FetchHints fetchHints, Authorizations authorizations);
 
     /**
      * Similar to getEdges but gets the vertices on the other side of the edges attached to this vertex that have any of the given labels.
@@ -312,7 +310,7 @@ public interface Vertex extends Element {
      * @param authorizations The authorizations used to find the vertices.
      * @return An Iterable of vertices.
      */
-    Iterable<Vertex> getVertices(Direction direction, String[] labels, EnumSet<FetchHint> fetchHints, Authorizations authorizations);
+    Iterable<Vertex> getVertices(Direction direction, String[] labels, FetchHints fetchHints, Authorizations authorizations);
 
     /**
      * Gets vertex ids of connected vertices.
@@ -386,7 +384,7 @@ public interface Vertex extends Element {
      * @param authorizations The authorizations used to find the edge/vertex pairs.
      * @return An Iterable of edge/vertex pairs.
      */
-    Iterable<EdgeVertexPair> getEdgeVertexPairs(Direction direction, EnumSet<FetchHint> fetchHints, Authorizations authorizations);
+    Iterable<EdgeVertexPair> getEdgeVertexPairs(Direction direction, FetchHints fetchHints, Authorizations authorizations);
 
     /**
      * Gets all edge/vertex pairs attached to this vertex.
@@ -397,7 +395,7 @@ public interface Vertex extends Element {
      * @param authorizations The authorizations used to find the edge/vertex pairs.
      * @return An Iterable of edge/vertex pairs.
      */
-    Iterable<EdgeVertexPair> getEdgeVertexPairs(Direction direction, EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations);
+    Iterable<EdgeVertexPair> getEdgeVertexPairs(Direction direction, FetchHints fetchHints, Long endTime, Authorizations authorizations);
 
     /**
      * Gets all edge/vertex pairs with the given label attached to this vertex.
@@ -418,7 +416,7 @@ public interface Vertex extends Element {
      * @param authorizations The authorizations used to find the edge/vertex pairs.
      * @return An Iterable of edge/vertex pairs.
      */
-    Iterable<EdgeVertexPair> getEdgeVertexPairs(Direction direction, String label, EnumSet<FetchHint> fetchHints, Authorizations authorizations);
+    Iterable<EdgeVertexPair> getEdgeVertexPairs(Direction direction, String label, FetchHints fetchHints, Authorizations authorizations);
 
     /**
      * Gets all edge/vertex pairs with any of the given labels attached to this vertex.
@@ -439,5 +437,5 @@ public interface Vertex extends Element {
      * @param authorizations The authorizations used to find the edge/vertex pairs.
      * @return An Iterable of edge/vertex pairs.
      */
-    Iterable<EdgeVertexPair> getEdgeVertexPairs(Direction direction, String[] labels, EnumSet<FetchHint> fetchHints, Authorizations authorizations);
+    Iterable<EdgeVertexPair> getEdgeVertexPairs(Direction direction, String[] labels, FetchHints fetchHints, Authorizations authorizations);
 }

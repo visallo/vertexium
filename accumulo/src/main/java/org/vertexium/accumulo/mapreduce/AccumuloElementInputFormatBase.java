@@ -20,7 +20,7 @@ import org.vertexium.accumulo.AccumuloGraph;
 import org.vertexium.accumulo.LazyMutableProperty;
 import org.vertexium.accumulo.LazyPropertyMetadata;
 import org.vertexium.accumulo.iterator.model.ElementData;
-import org.vertexium.accumulo.iterator.model.IteratorFetchHint;
+import org.vertexium.accumulo.iterator.model.IteratorFetchHints;
 import org.vertexium.util.MapUtils;
 
 import javax.annotation.Nullable;
@@ -45,17 +45,17 @@ public abstract class AccumuloElementInputFormatBase<TValue extends Element> ext
         job.getConfiguration().setStrings(VertexiumMRUtils.CONFIG_AUTHORIZATIONS, authorizations);
     }
 
-    public static void setFetchHints(Job job, ElementType elementType, EnumSet<FetchHint> fetchHints) {
+    public static void setFetchHints(Job job, ElementType elementType, FetchHints fetchHints) {
         Iterable<Text> columnFamiliesToFetch = AccumuloGraph.getColumnFamiliesToFetch(elementType, fetchHints);
         Collection<Pair<Text, Text>> columnFamilyColumnQualifierPairs = new ArrayList<>();
         for (Text columnFamilyToFetch : columnFamiliesToFetch) {
-            columnFamilyColumnQualifierPairs.add(new Pair<Text, Text>(columnFamilyToFetch, null));
+            columnFamilyColumnQualifierPairs.add(new Pair<>(columnFamilyToFetch, null));
         }
         AccumuloInputFormat.fetchColumns(job, columnFamilyColumnQualifierPairs);
     }
 
     @Override
-    public List<InputSplit> getSplits(JobContext jobContext) throws IOException, InterruptedException {
+    public List<InputSplit> getSplits(JobContext jobContext) throws IOException {
         return accumuloInputFormat.getSplits(jobContext);
     }
 
@@ -105,7 +105,7 @@ public abstract class AccumuloElementInputFormatBase<TValue extends Element> ext
 
     protected abstract TValue createElementFromRow(AccumuloGraph graph, PeekingIterator<Map.Entry<Key, Value>> row, Authorizations authorizations);
 
-    protected static Iterable<Property> makePropertiesFromElementData(final AccumuloGraph graph, ElementData elementData, EnumSet<IteratorFetchHint> fetchHints) {
+    protected static Iterable<Property> makePropertiesFromElementData(final AccumuloGraph graph, ElementData elementData, IteratorFetchHints fetchHints) {
         return Iterables.transform(elementData.getProperties(fetchHints), new Function<org.vertexium.accumulo.iterator.model.Property, Property>() {
             @Nullable
             @Override
@@ -138,7 +138,7 @@ public abstract class AccumuloElementInputFormatBase<TValue extends Element> ext
                 hiddenVisibilities,
                 visibility,
                 property.timestamp,
-                FetchHint.ALL_INCLUDING_HIDDEN
+                FetchHints.ALL_INCLUDING_HIDDEN
         );
     }
 }

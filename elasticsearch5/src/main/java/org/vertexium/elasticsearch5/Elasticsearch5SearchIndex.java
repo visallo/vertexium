@@ -593,14 +593,14 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
         // prefetch the vertices and edges for performance
         Map<String, Vertex> verticesById;
         if (rowsByElementTypeAndId.containsKey(ElementType.VERTEX) && !rowsByElementTypeAndId.get(ElementType.VERTEX).isEmpty()) {
-            Iterable<Vertex> vertices = graph.getVertices(rowsByElementTypeAndId.get(ElementType.VERTEX).keySet(), FetchHint.NONE, authorizations);
+            Iterable<Vertex> vertices = graph.getVertices(rowsByElementTypeAndId.get(ElementType.VERTEX).keySet(), FetchHints.NONE, authorizations);
             verticesById = StreamUtils.stream(vertices).collect(Collectors.toMap(Vertex::getId, Function.identity()));
         } else {
             verticesById = new HashMap<>();
         }
         Map<String, Edge> edgesById;
         if (rowsByElementTypeAndId.containsKey(ElementType.EDGE) && !rowsByElementTypeAndId.get(ElementType.EDGE).isEmpty()) {
-            edgesById = StreamUtils.stream(graph.getEdges(rowsByElementTypeAndId.get(ElementType.EDGE).keySet(), FetchHint.NONE, authorizations))
+            edgesById = StreamUtils.stream(graph.getEdges(rowsByElementTypeAndId.get(ElementType.EDGE).keySet(), FetchHints.NONE, authorizations))
                     .collect(Collectors.toMap(Edge::getId, Function.identity()));
         } else {
             edgesById = new HashMap<>();

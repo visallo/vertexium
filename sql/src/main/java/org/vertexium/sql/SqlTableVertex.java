@@ -22,7 +22,7 @@ public class SqlTableVertex extends SqlTableElement<InMemoryVertex> {
     @Override
     public InMemoryVertex createElementInternal(
             InMemoryGraph graph,
-            EnumSet<FetchHint> fetchHints,
+            FetchHints fetchHints,
             Long endTime,
             Authorizations authorizations
     ) {
@@ -94,7 +94,7 @@ public class SqlTableVertex extends SqlTableElement<InMemoryVertex> {
         }
 
         @Override
-        public Property getProperty(String key, String name, Visibility visibility, EnumSet<FetchHint> fetchHints, Authorizations authorizations) {
+        public Property getProperty(String key, String name, Visibility visibility, FetchHints fetchHints, Authorizations authorizations) {
             return sqlTableVertex.getProperty(key, name, visibility, fetchHints, authorizations);
         }
 
@@ -114,7 +114,7 @@ public class SqlTableVertex extends SqlTableElement<InMemoryVertex> {
         }
 
         @Override
-        public Iterable<Property> getProperties(EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations) {
+        public Iterable<Property> getProperties(FetchHints fetchHints, Long endTime, Authorizations authorizations) {
             return sqlTableVertex.getProperties(fetchHints, endTime, authorizations);
         }
 
@@ -189,7 +189,7 @@ public class SqlTableVertex extends SqlTableElement<InMemoryVertex> {
         }
 
         @Override
-        public InMemoryVertex createElement(InMemoryGraph graph, EnumSet<FetchHint> fetchHints, Authorizations authorizations) {
+        public InMemoryVertex createElement(InMemoryGraph graph, FetchHints fetchHints, Authorizations authorizations) {
             return sqlTableVertex.createElement(graph, fetchHints, authorizations);
         }
 
@@ -199,7 +199,7 @@ public class SqlTableVertex extends SqlTableElement<InMemoryVertex> {
         }
 
         @Override
-        public InMemoryVertex createElementInternal(InMemoryGraph graph, EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations) {
+        public InMemoryVertex createElementInternal(InMemoryGraph graph, FetchHints fetchHints, Long endTime, Authorizations authorizations) {
             return sqlTableVertex.createElementInternal(graph, fetchHints, endTime, authorizations);
         }
     }

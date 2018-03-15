@@ -1,9 +1,7 @@
 package org.vertexium.inmemory;
 
 import org.vertexium.Authorizations;
-import org.vertexium.FetchHint;
-
-import java.util.EnumSet;
+import org.vertexium.FetchHints;
 
 public class InMemoryTableVertex extends InMemoryTableElement<InMemoryVertex> {
     public InMemoryTableVertex(String id) {
@@ -11,7 +9,7 @@ public class InMemoryTableVertex extends InMemoryTableElement<InMemoryVertex> {
     }
 
     @Override
-    public InMemoryVertex createElementInternal(InMemoryGraph graph, EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations) {
+    public InMemoryVertex createElementInternal(InMemoryGraph graph, FetchHints fetchHints, Long endTime, Authorizations authorizations) {
         return new InMemoryVertex(graph, getId(), this, fetchHints, endTime, authorizations);
     }
 }

@@ -11,13 +11,13 @@ public class EdgeInfoEdge extends ElementBase implements Edge {
     private final String sourceVertexId;
     private final EdgeInfo edgeInfo;
     private final Authorizations authorizations;
-    private final EnumSet<FetchHint> fetchHints;
+    private final FetchHints fetchHints;
 
     public EdgeInfoEdge(
             Graph graph,
             String sourceVertexId,
             EdgeInfo edgeInfo,
-            EnumSet<FetchHint> fetchHints,
+            FetchHints fetchHints,
             Authorizations authorizations
     ) {
         this.graph = graph;
@@ -125,7 +125,7 @@ public class EdgeInfoEdge extends ElementBase implements Edge {
     }
 
     @Override
-    public EnumSet<FetchHint> getFetchHints() {
+    public FetchHints getFetchHints() {
         return fetchHints;
     }
 

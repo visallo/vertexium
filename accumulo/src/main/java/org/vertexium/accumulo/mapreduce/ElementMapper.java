@@ -121,7 +121,7 @@ public abstract class ElementMapper<KEYIN, VALUEIN, KEYOUT, VALUEOUT> extends Ma
                         hiddenVisibilities,
                         getExtendedDataTableNames(),
                         timestampLong,
-                        FetchHint.ALL_INCLUDING_HIDDEN,
+                        FetchHints.ALL_INCLUDING_HIDDEN,
                         authorizations
                 );
             }
@@ -189,7 +189,7 @@ public abstract class ElementMapper<KEYIN, VALUEIN, KEYOUT, VALUEOUT> extends Ma
                         null,
                         getExtendedDataTableNames(),
                         timestampLong,
-                        FetchHint.ALL_INCLUDING_HIDDEN,
+                        FetchHints.ALL_INCLUDING_HIDDEN,
                         authorizations
                 );
                 return edge;
@@ -230,7 +230,7 @@ public abstract class ElementMapper<KEYIN, VALUEIN, KEYOUT, VALUEOUT> extends Ma
                         null,
                         getExtendedDataTableNames(),
                         timestampLong,
-                        FetchHint.ALL_INCLUDING_HIDDEN,
+                        FetchHints.ALL_INCLUDING_HIDDEN,
                         authorizations
                 );
                 return edge;

@@ -16,13 +16,13 @@ public class DefaultMultiVertexQuery extends QueryBase implements MultiVertexQue
     }
 
     @Override
-    public QueryResultsIterable<Vertex> vertices(EnumSet<FetchHint> fetchHints) {
+    public QueryResultsIterable<Vertex> vertices(FetchHints fetchHints) {
         Iterable<Vertex> vertices = getGraph().getVertices(IterableUtils.toIterable(getVertexIds()), fetchHints, getParameters().getAuthorizations());
         return new DefaultGraphQueryIterableWithAggregations<>(getParameters(), vertices, true, true, true, getAggregations());
     }
 
     @Override
-    public QueryResultsIterable<Edge> edges(EnumSet<FetchHint> fetchHints) {
+    public QueryResultsIterable<Edge> edges(FetchHints fetchHints) {
         Iterable<Vertex> vertices = getGraph().getVertices(IterableUtils.toIterable(getVertexIds()), fetchHints, getParameters().getAuthorizations());
         Iterable<String> edgeIds = new VerticesToEdgeIdsIterable(vertices, getParameters().getAuthorizations());
         Iterable<Edge> edges = getGraph().getEdges(edgeIds, fetchHints, getParameters().getAuthorizations());
@@ -30,7 +30,7 @@ public class DefaultMultiVertexQuery extends QueryBase implements MultiVertexQue
     }
 
     @Override
-    protected QueryResultsIterable<? extends VertexiumObject> extendedData(EnumSet<FetchHint> fetchHints) {
+    protected QueryResultsIterable<? extends VertexiumObject> extendedData(FetchHints fetchHints) {
         Iterable<Vertex> vertices = getGraph().getVertices(IterableUtils.toIterable(getVertexIds()), fetchHints, getParameters().getAuthorizations());
         Iterable<String> edgeIds = new VerticesToEdgeIdsIterable(vertices, getParameters().getAuthorizations());
         Iterable<Edge> edges = getGraph().getEdges(edgeIds, fetchHints, getParameters().getAuthorizations());

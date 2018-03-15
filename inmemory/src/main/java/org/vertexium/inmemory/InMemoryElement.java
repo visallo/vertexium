@@ -13,7 +13,7 @@ import java.util.List;
 
 public abstract class InMemoryElement<TElement extends InMemoryElement> extends ElementBase {
     private final String id;
-    private final EnumSet<FetchHint> fetchHints;
+    private final FetchHints fetchHints;
     private Property idProperty;
     private Property edgeLabelProperty;
     private InMemoryGraph graph;
@@ -25,7 +25,7 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> extends 
             InMemoryGraph graph,
             String id,
             InMemoryTableElement<TElement> inMemoryTableElement,
-            EnumSet<FetchHint> fetchHints,
+            FetchHints fetchHints,
             Long endTime,
             Authorizations authorizations
     ) {
@@ -346,7 +346,7 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> extends 
         return inMemoryTableElement.getHiddenVisibilities();
     }
 
-    public EnumSet<FetchHint> getFetchHints() {
+    public FetchHints getFetchHints() {
         return fetchHints;
     }
 

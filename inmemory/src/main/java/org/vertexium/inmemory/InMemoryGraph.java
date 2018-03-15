@@ -138,7 +138,7 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
                         vertices.append(getElementId(), new AlterVisibilityMutation(timestampLong, getVisibility()), new ElementTimestampMutation(timestampLong));
                     }
                 }
-                InMemoryVertex vertex = InMemoryGraph.this.vertices.get(InMemoryGraph.this, getElementId(), FetchHint.ALL_INCLUDING_HIDDEN, authorizations);
+                InMemoryVertex vertex = InMemoryGraph.this.vertices.get(InMemoryGraph.this, getElementId(), FetchHints.ALL_INCLUDING_HIDDEN, authorizations);
                 if (isNew && hasEventListeners()) {
                     fireGraphEvent(new AddVertexEvent(InMemoryGraph.this, vertex));
                 }
@@ -172,7 +172,7 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
     }
 
     @Override
-    public Iterable<Vertex> getVertices(EnumSet<FetchHint> fetchHints, final Long endTime, final Authorizations authorizations) throws VertexiumException {
+    public Iterable<Vertex> getVertices(FetchHints fetchHints, final Long endTime, final Authorizations authorizations) throws VertexiumException {
         validateAuthorizations(authorizations);
         return new ConvertingIterable<InMemoryVertex, Vertex>(this.vertices.getAll(InMemoryGraph.this, fetchHints, endTime, authorizations)) {
             @Override
@@ -260,7 +260,7 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
             return;
         }
 
-        List<Edge> edgesToMarkVisible = IterableUtils.toList(vertex.getEdges(Direction.BOTH, FetchHint.ALL_INCLUDING_HIDDEN, authorizations));
+        List<Edge> edgesToMarkVisible = IterableUtils.toList(vertex.getEdges(Direction.BOTH, FetchHints.ALL_INCLUDING_HIDDEN, authorizations));
         for (Edge edgeToMarkVisible : edgesToMarkVisible) {
             markEdgeVisible(edgeToMarkVisible, visibility, authorizations);
         }
@@ -378,7 +378,7 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
             edges.append(edgeBuilder.getElementId(), new AlterEdgeLabelMutation(incrementingTimestamp, edgeBuilder.getNewEdgeLabel()));
         }
 
-        InMemoryEdge edge = this.edges.get(InMemoryGraph.this, edgeBuilder.getElementId(), FetchHint.ALL_INCLUDING_HIDDEN, authorizations);
+        InMemoryEdge edge = this.edges.get(InMemoryGraph.this, edgeBuilder.getElementId(), FetchHints.ALL_INCLUDING_HIDDEN, authorizations);
         if (isNew && hasEventListeners()) {
             fireGraphEvent(new AddEdgeEvent(InMemoryGraph.this, edge));
         }
@@ -405,7 +405,7 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
     }
 
     @Override
-    public Iterable<Edge> getEdges(EnumSet<FetchHint> fetchHints, final Long endTime, final Authorizations authorizations) {
+    public Iterable<Edge> getEdges(FetchHints fetchHints, final Long endTime, final Authorizations authorizations) {
         return new ConvertingIterable<InMemoryEdge, Edge>(this.edges.getAll(InMemoryGraph.this, fetchHints, endTime, authorizations)) {
             @Override
             protected Edge convert(InMemoryEdge o) {
@@ -480,9 +480,9 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
             return;
         }
 
-        Vertex inVertex = getVertex(edge.getVertexId(Direction.IN), FetchHint.ALL_INCLUDING_HIDDEN, authorizations);
+        Vertex inVertex = getVertex(edge.getVertexId(Direction.IN), FetchHints.ALL_INCLUDING_HIDDEN, authorizations);
         checkNotNull(inVertex, "Could not find in vertex \"" + edge.getVertexId(Direction.IN) + "\" on edge \"" + edge.getId() + "\"");
-        Vertex outVertex = getVertex(edge.getVertexId(Direction.OUT), FetchHint.ALL_INCLUDING_HIDDEN, authorizations);
+        Vertex outVertex = getVertex(edge.getVertexId(Direction.OUT), FetchHints.ALL_INCLUDING_HIDDEN, authorizations);
         checkNotNull(outVertex, "Could not find out vertex \"" + edge.getVertexId(Direction.OUT) + "\" on edge \"" + edge.getId() + "\"");
 
         this.edges.getTableElement(edge.getId()).appendMarkVisibleMutation(visibility);
@@ -557,7 +557,7 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
                     });
             List<String> vertexIds = new ArrayList<>();
             edges.forEach(edge -> {
-                if (edge.getOtherVertex(sourceVertexId, FetchHint.NONE, authorizations) != null) {
+                if (edge.getOtherVertex(sourceVertexId, FetchHints.NONE, authorizations) != null) {
                     vertexIds.add(edge.getOtherVertexId(sourceVertexId));
                 }
             });
@@ -595,7 +595,7 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
 
     protected Iterable<Edge> getEdgesFromVertex(
             String vertexId,
-            EnumSet<FetchHint> fetchHints,
+            FetchHints fetchHints,
             Long endTime,
             Authorizations authorizations
     ) {
@@ -629,10 +629,10 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
     }
 
     protected boolean isIncluded(
-            InMemoryTableElement element, EnumSet<FetchHint> fetchHints,
+            InMemoryTableElement element, FetchHints fetchHints,
             Authorizations authorizations
     ) {
-        boolean includeHidden = fetchHints.contains(FetchHint.INCLUDE_HIDDEN);
+        boolean includeHidden = fetchHints.isIncludeHidden();
 
         if (!element.canRead(authorizations)) {
             return false;
@@ -648,10 +648,10 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
     }
 
     protected boolean isIncludedInTimeSpan(
-            InMemoryTableElement element, EnumSet<FetchHint> fetchHints, Long endTime,
+            InMemoryTableElement element, FetchHints fetchHints, Long endTime,
             Authorizations authorizations
     ) {
-        boolean includeHidden = fetchHints.contains(FetchHint.INCLUDE_HIDDEN);
+        boolean includeHidden = fetchHints.isIncludeHidden();
 
         if (!element.canRead(authorizations)) {
             return false;
@@ -675,10 +675,10 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
         Element element;
         if (inMemoryTableElement instanceof InMemoryTableVertex) {
             inMemoryTableElement.appendSoftDeletePropertyMutation(property.getKey(), property.getName(), property.getVisibility(), timestamp);
-            element = getVertex(inMemoryTableElement.getId(), FetchHint.ALL_INCLUDING_HIDDEN, authorizations);
+            element = getVertex(inMemoryTableElement.getId(), FetchHints.ALL_INCLUDING_HIDDEN, authorizations);
         } else if (inMemoryTableElement instanceof InMemoryTableEdge) {
             inMemoryTableElement.appendSoftDeletePropertyMutation(property.getKey(), property.getName(), property.getVisibility(), timestamp);
-            element = getEdge(inMemoryTableElement.getId(), FetchHint.ALL_INCLUDING_HIDDEN, authorizations);
+            element = getEdge(inMemoryTableElement.getId(), FetchHints.ALL_INCLUDING_HIDDEN, authorizations);
         } else {
             throw new IllegalArgumentException("Unexpected element type: " + inMemoryTableElement.getClass().getName());
         }
@@ -719,7 +719,7 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
             );
         }
         inMemoryTableElement.appendAddPropertyValueMutation(key, name, value, metadata, visibility, timestamp);
-        Property property = inMemoryTableElement.getProperty(key, name, visibility, FetchHint.ALL_INCLUDING_HIDDEN, authorizations);
+        Property property = inMemoryTableElement.getProperty(key, name, visibility, FetchHints.ALL_INCLUDING_HIDDEN, authorizations);
 
         if (hasEventListeners()) {
             fireGraphEvent(new AddPropertyEvent(this, element, property));
@@ -740,7 +740,7 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
                     apv.getKey(),
                     apv.getName(),
                     apv.getExistingVisibility(),
-                    FetchHint.ALL_INCLUDING_HIDDEN,
+                    FetchHints.ALL_INCLUDING_HIDDEN,
                     authorizations
             );
             if (property == null) {
@@ -790,7 +790,7 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
                     spm.getPropertyKey(),
                     spm.getPropertyName(),
                     spm.getPropertyVisibility(),
-                    FetchHint.ALL_INCLUDING_HIDDEN,
+                    FetchHints.ALL_INCLUDING_HIDDEN,
                     authorizations
             );
             if (property == null) {
@@ -845,7 +845,7 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
             Visibility visibility,
             Authorizations authorizations
     ) {
-        Property property = inMemoryTableElement.getProperty(key, name, visibility, FetchHint.ALL_INCLUDING_HIDDEN, authorizations);
+        Property property = inMemoryTableElement.getProperty(key, name, visibility, FetchHints.ALL_INCLUDING_HIDDEN, authorizations);
         inMemoryTableElement.deleteProperty(key, name, visibility, authorizations);
 
         getSearchIndex().deleteProperty(this, element, PropertyDescriptor.fromProperty(property), authorizations);

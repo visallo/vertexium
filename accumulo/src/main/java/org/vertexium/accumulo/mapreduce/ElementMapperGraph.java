@@ -23,7 +23,7 @@ public class ElementMapperGraph extends GraphBase {
     }
 
     @Override
-    public Iterable<Vertex> getVertices(EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations) {
+    public Iterable<Vertex> getVertices(FetchHints fetchHints, Long endTime, Authorizations authorizations) {
         throw new VertexiumException("Not supported");
     }
 
@@ -63,7 +63,7 @@ public class ElementMapperGraph extends GraphBase {
     }
 
     @Override
-    public Iterable<Edge> getEdges(EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations) {
+    public Iterable<Edge> getEdges(FetchHints fetchHints, Long endTime, Authorizations authorizations) {
         throw new VertexiumException("Not supported");
     }
 
@@ -78,7 +78,7 @@ public class ElementMapperGraph extends GraphBase {
     }
 
     @Override
-    public EnumSet<FetchHint> getDefaultFetchHints() {
+    public FetchHints getDefaultFetchHints() {
         throw new VertexiumException("Not supported");
     }
 

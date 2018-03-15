@@ -37,7 +37,7 @@ public class DefaultExtendedDataQuery extends QueryBase {
     }
 
     @Override
-    protected QueryResultsIterable<? extends VertexiumObject> extendedData(EnumSet<FetchHint> fetchHints) {
+    protected QueryResultsIterable<? extends VertexiumObject> extendedData(FetchHints fetchHints) {
         return new DefaultGraphQueryIterableWithAggregations<>(
                 getParameters(),
                 getElement().getExtendedData(getTableName()),

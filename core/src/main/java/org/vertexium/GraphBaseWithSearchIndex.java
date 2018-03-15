@@ -12,7 +12,6 @@ import org.vertexium.search.SearchIndex;
 import org.vertexium.search.SearchIndexWithVertexPropertyCountByValue;
 
 import java.util.ArrayList;
-import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 
@@ -20,7 +19,7 @@ public abstract class GraphBaseWithSearchIndex extends GraphBase implements Grap
     public static final String METADATA_ID_GENERATOR_CLASSNAME = "idGenerator.classname";
     private final GraphConfiguration configuration;
     private final IdGenerator idGenerator;
-    private final EnumSet<FetchHint> defaultFetchHints;
+    private final FetchHints defaultFetchHints;
     private SearchIndex searchIndex;
     private boolean foundIdGeneratorClassnameInMetadata;
 
@@ -29,7 +28,7 @@ public abstract class GraphBaseWithSearchIndex extends GraphBase implements Grap
         this.configuration = configuration;
         this.searchIndex = configuration.createSearchIndex(this);
         this.idGenerator = configuration.createIdGenerator(this);
-        this.defaultFetchHints = FetchHint.parse(configuration.getString(GraphConfiguration.DEFAULT_FETCH_HINTS, GraphConfiguration.DEFAULT_DEFAULT_FETCH_HINTS));
+        this.defaultFetchHints = FetchHints.ALL;
     }
 
     protected GraphBaseWithSearchIndex(GraphConfiguration configuration, IdGenerator idGenerator, SearchIndex searchIndex) {
@@ -37,7 +36,7 @@ public abstract class GraphBaseWithSearchIndex extends GraphBase implements Grap
         this.configuration = configuration;
         this.searchIndex = searchIndex;
         this.idGenerator = idGenerator;
-        this.defaultFetchHints = FetchHint.parse(configuration.getString(GraphConfiguration.DEFAULT_FETCH_HINTS, GraphConfiguration.DEFAULT_DEFAULT_FETCH_HINTS));
+        this.defaultFetchHints = FetchHints.ALL;
     }
 
     protected void setup() {
@@ -209,7 +208,7 @@ public abstract class GraphBaseWithSearchIndex extends GraphBase implements Grap
     public abstract VertexBuilder prepareVertex(String vertexId, Long timestamp, Visibility visibility);
 
     @Override
-    public abstract Iterable<Vertex> getVertices(EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations);
+    public abstract Iterable<Vertex> getVertices(FetchHints fetchHints, Long endTime, Authorizations authorizations);
 
     @Override
     public abstract EdgeBuilder prepareEdge(String edgeId, Vertex outVertex, Vertex inVertex, String label, Long timestamp, Visibility visibility);
@@ -224,7 +223,7 @@ public abstract class GraphBaseWithSearchIndex extends GraphBase implements Grap
     public abstract void softDeleteEdge(Edge edge, Long timestamp, Authorizations authorizations);
 
     @Override
-    public abstract Iterable<Edge> getEdges(EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations);
+    public abstract Iterable<Edge> getEdges(FetchHints fetchHints, Long endTime, Authorizations authorizations);
 
     @Override
     protected abstract GraphMetadataStore getGraphMetadataStore();
@@ -257,7 +256,7 @@ public abstract class GraphBaseWithSearchIndex extends GraphBase implements Grap
     public abstract Authorizations createAuthorizations(String... auths);
 
     @Override
-    public EnumSet<FetchHint> getDefaultFetchHints() {
+    public FetchHints getDefaultFetchHints() {
         return defaultFetchHints;
     }
 }

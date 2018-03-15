@@ -16,7 +16,7 @@ public class EmptyResultsGraphQuery implements Query {
     }
 
     @Override
-    public QueryResultsIterable<Vertex> vertices(final EnumSet<FetchHint> fetchHints) {
+    public QueryResultsIterable<Vertex> vertices(final FetchHints fetchHints) {
         return new EmptyResultsQueryResultsIterable<>();
     }
 
@@ -36,7 +36,7 @@ public class EmptyResultsGraphQuery implements Query {
     }
 
     @Override
-    public QueryResultsIterable<Edge> edges(final EnumSet<FetchHint> fetchHints) {
+    public QueryResultsIterable<Edge> edges(final FetchHints fetchHints) {
         return new EmptyResultsQueryResultsIterable<>();
     }
 
@@ -58,7 +58,7 @@ public class EmptyResultsGraphQuery implements Query {
 
     @Override
     @Deprecated
-    public QueryResultsIterable<Edge> edges(final String label, final EnumSet<FetchHint> fetchHints) {
+    public QueryResultsIterable<Edge> edges(final String label, final FetchHints fetchHints) {
         return new EmptyResultsQueryResultsIterable<>();
     }
 
@@ -68,7 +68,7 @@ public class EmptyResultsGraphQuery implements Query {
     }
 
     @Override
-    public QueryResultsIterable<Element> elements(final EnumSet<FetchHint> fetchHints) {
+    public QueryResultsIterable<Element> elements(final FetchHints fetchHints) {
         return new EmptyResultsQueryResultsIterable<>();
     }
 
@@ -88,7 +88,7 @@ public class EmptyResultsGraphQuery implements Query {
     }
 
     @Override
-    public QueryResultsIterable<ExtendedDataRow> extendedDataRows(EnumSet<FetchHint> fetchHints) {
+    public QueryResultsIterable<ExtendedDataRow> extendedDataRows(FetchHints fetchHints) {
         return new EmptyResultsQueryResultsIterable<>();
     }
 
@@ -103,7 +103,7 @@ public class EmptyResultsGraphQuery implements Query {
     }
 
     @Override
-    public QueryResultsIterable<? extends VertexiumObject> search(EnumSet<VertexiumObjectType> objectTypes, EnumSet<FetchHint> fetchHints) {
+    public QueryResultsIterable<? extends VertexiumObject> search(EnumSet<VertexiumObjectType> objectTypes, FetchHints fetchHints) {
         return new EmptyResultsQueryResultsIterable<>();
     }
 

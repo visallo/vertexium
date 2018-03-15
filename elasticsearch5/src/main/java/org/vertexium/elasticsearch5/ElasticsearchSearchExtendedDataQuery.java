@@ -4,7 +4,7 @@ import org.elasticsearch.client.Client;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.vertexium.Authorizations;
-import org.vertexium.FetchHint;
+import org.vertexium.FetchHints;
 import org.vertexium.Graph;
 import org.vertexium.query.GraphQuery;
 
@@ -30,7 +30,7 @@ public class ElasticsearchSearchExtendedDataQuery extends ElasticsearchSearchQue
     }
 
     @Override
-    protected List<QueryBuilder> getFilters(EnumSet<ElasticsearchDocumentType> elementTypes, EnumSet<FetchHint> fetchHints) {
+    protected List<QueryBuilder> getFilters(EnumSet<ElasticsearchDocumentType> elementTypes, FetchHints fetchHints) {
         List<QueryBuilder> filters = super.getFilters(elementTypes, fetchHints);
         filters.add(
                 QueryBuilders.boolQuery()

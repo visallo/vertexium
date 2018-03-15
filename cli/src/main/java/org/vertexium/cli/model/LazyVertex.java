@@ -85,7 +85,7 @@ public class LazyVertex extends ModelBase {
         int edgeIndex = 0;
 
         writer.println("  @|bold out edges:|@");
-        for (Edge edge : v.getEdges(Direction.OUT, FetchHint.ALL_INCLUDING_HIDDEN, getTime(), getAuthorizations())) {
+        for (Edge edge : v.getEdges(Direction.OUT, FetchHints.ALL_INCLUDING_HIDDEN, getTime(), getAuthorizations())) {
             String edgeIndexString = "e" + edgeIndex;
             boolean isHidden = edge.isHidden(getAuthorizations());
             try {
@@ -112,7 +112,7 @@ public class LazyVertex extends ModelBase {
         }
 
         writer.println("  @|bold in edges:|@");
-        for (Edge edge : v.getEdges(Direction.IN, FetchHint.ALL_INCLUDING_HIDDEN, getTime(), getAuthorizations())) {
+        for (Edge edge : v.getEdges(Direction.IN, FetchHints.ALL_INCLUDING_HIDDEN, getTime(), getAuthorizations())) {
             String edgeIndexString = "e" + edgeIndex;
             boolean isHidden = edge.isHidden(getAuthorizations());
             try {
@@ -142,7 +142,7 @@ public class LazyVertex extends ModelBase {
     }
 
     private Vertex getV() {
-        return getGraph().getVertex(getId(), FetchHint.ALL_INCLUDING_HIDDEN, getTime(), getAuthorizations());
+        return getGraph().getVertex(getId(), FetchHints.ALL_INCLUDING_HIDDEN, getTime(), getAuthorizations());
     }
 
     public String getId() {

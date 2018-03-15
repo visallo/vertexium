@@ -8,7 +8,7 @@ import java.util.EnumSet;
 public interface Query {
     QueryResultsIterable<Vertex> vertices();
 
-    QueryResultsIterable<Vertex> vertices(EnumSet<FetchHint> fetchHints);
+    QueryResultsIterable<Vertex> vertices(FetchHints fetchHints);
 
     /**
      * Execute the query and return the ids of all matching vertices.
@@ -32,7 +32,7 @@ public interface Query {
 
     QueryResultsIterable<Edge> edges();
 
-    QueryResultsIterable<Edge> edges(EnumSet<FetchHint> fetchHints);
+    QueryResultsIterable<Edge> edges(FetchHints fetchHints);
 
     /**
      * Execute the query and return the ids of all matching edges.
@@ -57,7 +57,7 @@ public interface Query {
 
     QueryResultsIterable<ExtendedDataRow> extendedDataRows();
 
-    QueryResultsIterable<ExtendedDataRow> extendedDataRows(EnumSet<FetchHint> fetchHints);
+    QueryResultsIterable<ExtendedDataRow> extendedDataRows(FetchHints fetchHints);
 
     /**
      * Execute the query and return the ids of all matching extended data rows.
@@ -84,11 +84,11 @@ public interface Query {
     QueryResultsIterable<Edge> edges(String label);
 
     @Deprecated
-    QueryResultsIterable<Edge> edges(String label, EnumSet<FetchHint> fetchHints);
+    QueryResultsIterable<Edge> edges(String label, FetchHints fetchHints);
 
     QueryResultsIterable<Element> elements();
 
-    QueryResultsIterable<Element> elements(EnumSet<FetchHint> fetchHints);
+    QueryResultsIterable<Element> elements(FetchHints fetchHints);
 
     /**
      * Execute the query and return the ids of all matching elements.
@@ -106,12 +106,11 @@ public interface Query {
      * efficient in cases where you only need to know the ids of matching elements.
      * Hidden elements are not included in the results.
      *
-     * @param includeHidden Whether or not to include hidden elements in the results
      * @return The ids of elements that match this query.
      */
     QueryResultsIterable<String> elementIds(EnumSet<IdFetchHint> fetchHints);
 
-    QueryResultsIterable<? extends VertexiumObject> search(EnumSet<VertexiumObjectType> objectTypes, EnumSet<FetchHint> fetchHints);
+    QueryResultsIterable<? extends VertexiumObject> search(EnumSet<VertexiumObjectType> objectTypes, FetchHints fetchHints);
 
     QueryResultsIterable<? extends VertexiumObject> search();
 

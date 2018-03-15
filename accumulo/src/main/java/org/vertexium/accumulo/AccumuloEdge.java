@@ -13,16 +13,12 @@ import org.vertexium.accumulo.util.DataInputStreamUtils;
 import org.vertexium.mutation.ExistingEdgeMutation;
 import org.vertexium.mutation.PropertyDeleteMutation;
 import org.vertexium.mutation.PropertySoftDeleteMutation;
-import org.vertexium.util.IterableUtils;
 
 import javax.annotation.Nullable;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.EnumSet;
-import java.util.List;
-import java.util.Map;
 
 public class AccumuloEdge extends AccumuloElement implements Edge {
     public static final Text CF_SIGNAL = EdgeIterator.CF_SIGNAL;
@@ -47,7 +43,7 @@ public class AccumuloEdge extends AccumuloElement implements Edge {
             Iterable<Visibility> hiddenVisibilities,
             ImmutableSet<String> extendedDataTableNames,
             long timestamp,
-            EnumSet<FetchHint> fetchHints,
+            FetchHints fetchHints,
             Authorizations authorizations
     ) {
         super(
@@ -73,7 +69,7 @@ public class AccumuloEdge extends AccumuloElement implements Edge {
             AccumuloGraph graph,
             Key key,
             Value value,
-            EnumSet<FetchHint> fetchHints,
+            FetchHints fetchHints,
             Authorizations authorizations
     ) {
         try {
@@ -166,7 +162,7 @@ public class AccumuloEdge extends AccumuloElement implements Edge {
     }
 
     @Override
-    public Vertex getOtherVertex(String myVertexId, EnumSet<FetchHint> fetchHints, Authorizations authorizations) {
+    public Vertex getOtherVertex(String myVertexId, FetchHints fetchHints, Authorizations authorizations) {
         return getGraph().getVertex(getOtherVertexId(myVertexId), fetchHints, authorizations);
     }
 
@@ -176,7 +172,7 @@ public class AccumuloEdge extends AccumuloElement implements Edge {
     }
 
     @Override
-    public Vertex getVertex(Direction direction, EnumSet<FetchHint> fetchHints, Authorizations authorizations) {
+    public Vertex getVertex(Direction direction, FetchHints fetchHints, Authorizations authorizations) {
         return getGraph().getVertex(getVertexId(direction), fetchHints, authorizations);
     }
 

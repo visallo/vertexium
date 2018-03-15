@@ -12,6 +12,7 @@ import org.vertexium.accumulo.iterator.model.*;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.regex.Pattern;
 
 public abstract class ElementIterator<T extends ElementData> extends RowEncodingIterator {
     public static final String CF_PROPERTY_STRING = "PROP";
@@ -41,12 +42,14 @@ public abstract class ElementIterator<T extends ElementData> extends RowEncoding
     public static final Text METADATA_COLUMN_FAMILY = new Text(METADATA_COLUMN_FAMILY_STRING);
     public static final String METADATA_COLUMN_QUALIFIER_STRING = "";
     public static final Text METADATA_COLUMN_QUALIFIER = new Text(METADATA_COLUMN_QUALIFIER_STRING);
-    private static final String SETTING_FETCH_HINTS = "fetchHints";
-    private EnumSet<IteratorFetchHint> fetchHints;
+    private static final String SETTING_FETCH_HINTS_PREFIX = "fetchHints.";
+    private static final String RECORD_SEPARATOR = "\u001f";
+    private static final Pattern RECORD_SEPARATOR_PATTERN = Pattern.compile(Pattern.quote(RECORD_SEPARATOR));
+    private IteratorFetchHints fetchHints;
     private T elementData;
     private static final Map<Text, PropertyMetadataColumnQualifier> stringToPropertyMetadataColumnQualifierCache = new HashMap<>();
 
-    public ElementIterator(SortedKeyValueIterator<Key, Value> source, EnumSet<IteratorFetchHint> fetchHints) {
+    public ElementIterator(SortedKeyValueIterator<Key, Value> source, IteratorFetchHints fetchHints) {
         this.sourceIter = source;
         this.fetchHints = fetchHints;
         this.elementData = createElementData();
@@ -141,7 +144,7 @@ public abstract class ElementIterator<T extends ElementData> extends RowEncoding
         }
 
         if (CF_HIDDEN.equals(columnFamily)) {
-            if (fetchHints.contains(IteratorFetchHint.INCLUDE_HIDDEN)) {
+            if (fetchHints.isIncludeHidden()) {
                 this.elementData.hiddenVisibilities.add(key.getColumnVisibility());
                 return true;
             } else {
@@ -186,13 +189,15 @@ public abstract class ElementIterator<T extends ElementData> extends RowEncoding
             propertyMetadataColumnQualifier = new PropertyMetadataColumnQualifier(columnQualifier);
             stringToPropertyMetadataColumnQualifierCache.put(columnQualifier, propertyMetadataColumnQualifier);
         }
-        String discriminator = propertyMetadataColumnQualifier.getPropertyDiscriminator(timestamp);
-        PropertyMetadata propertyMetadata = elementData.propertyMetadata.get(discriminator);
-        if (propertyMetadata == null) {
-            propertyMetadata = new PropertyMetadata();
-            elementData.propertyMetadata.put(discriminator, propertyMetadata);
+        if (shouldIncludeMetadata(propertyMetadataColumnQualifier)) {
+            String discriminator = propertyMetadataColumnQualifier.getPropertyDiscriminator(timestamp);
+            PropertyMetadata propertyMetadata = elementData.propertyMetadata.get(discriminator);
+            if (propertyMetadata == null) {
+                propertyMetadata = new PropertyMetadata();
+                elementData.propertyMetadata.put(discriminator, propertyMetadata);
+            }
+            propertyMetadata.add(propertyMetadataColumnQualifier.getMetadataKey(), columnVisibility.toString(), value.get());
         }
-        propertyMetadata.add(propertyMetadataColumnQualifier.getMetadataKey(), columnVisibility.toString(), value.get());
     }
 
     private void extractPropertyHidden(Text columnQualifier, Text columnVisibility, Value value) {
@@ -213,10 +218,32 @@ public abstract class ElementIterator<T extends ElementData> extends RowEncoding
         PropertyColumnQualifier propertyColumnQualifier = new PropertyColumnQualifier(key.getColumnQualifier());
         String mapKey = propertyColumnQualifier.getDiscriminator(key.getColumnVisibility().toString(), key.getTimestamp());
         long timestamp = key.getTimestamp();
-        this.elementData.propertyColumnQualifiers.put(mapKey, propertyColumnQualifier);
-        this.elementData.propertyValues.put(mapKey, value.get());
-        this.elementData.propertyVisibilities.put(mapKey, key.getColumnVisibility());
-        this.elementData.propertyTimestamps.put(mapKey, timestamp);
+        if (shouldIncludeProperty(propertyColumnQualifier.getPropertyName())) {
+            this.elementData.propertyColumnQualifiers.put(mapKey, propertyColumnQualifier);
+            this.elementData.propertyValues.put(mapKey, value.get());
+            this.elementData.propertyVisibilities.put(mapKey, key.getColumnVisibility());
+            this.elementData.propertyTimestamps.put(mapKey, timestamp);
+        }
+    }
+
+    private boolean shouldIncludeProperty(String propertyName) {
+        if (fetchHints.isIncludeAllProperties()) {
+            return true;
+        }
+        return fetchHints.getPropertyNamesToInclude() != null
+                && fetchHints.getPropertyNamesToInclude().contains(propertyName);
+    }
+
+    private boolean shouldIncludeMetadata(PropertyMetadataColumnQualifier propertyMetadataColumnQualifier) {
+        if (!shouldIncludeProperty(propertyMetadataColumnQualifier.getPropertyName())) {
+            return false;
+        }
+        if (fetchHints.isIncludeAllPropertyMetadata()) {
+            return true;
+        }
+        String metadataKey = propertyMetadataColumnQualifier.getMetadataKey();
+        return fetchHints.getMetadataKeysToInclude() != null
+                && fetchHints.getMetadataKeysToInclude().contains(metadataKey);
     }
 
     @Override
@@ -225,20 +252,72 @@ public abstract class ElementIterator<T extends ElementData> extends RowEncoding
     @Override
     public void init(SortedKeyValueIterator<Key, Value> source, Map<String, String> options, IteratorEnvironment env) throws IOException {
         super.init(source, options, env);
-        if (options.get(SETTING_FETCH_HINTS) == null) {
-            throw new IOException(SETTING_FETCH_HINTS + " is required");
-        }
-        fetchHints = IteratorFetchHint.parse(options.get(SETTING_FETCH_HINTS));
+        fetchHints = new IteratorFetchHints(
+                Boolean.parseBoolean(options.get(SETTING_FETCH_HINTS_PREFIX + "includeAllProperties")),
+                parseSet(options.get(SETTING_FETCH_HINTS_PREFIX + "propertyNamesToInclude")),
+                Boolean.parseBoolean(options.get(SETTING_FETCH_HINTS_PREFIX + "includeAllPropertyMetadata")),
+                parseSet(options.get(SETTING_FETCH_HINTS_PREFIX + "metadataKeysToInclude")),
+                Boolean.parseBoolean(options.get(SETTING_FETCH_HINTS_PREFIX + "includeHidden")),
+                Boolean.parseBoolean(options.get(SETTING_FETCH_HINTS_PREFIX + "includeAllEdgeRefs")),
+                Boolean.parseBoolean(options.get(SETTING_FETCH_HINTS_PREFIX + "includeOutEdgeRefs")),
+                Boolean.parseBoolean(options.get(SETTING_FETCH_HINTS_PREFIX + "includeInEdgeRefs")),
+                parseSet(options.get(SETTING_FETCH_HINTS_PREFIX + "edgeLabelsOfEdgeRefsToInclude")),
+                Boolean.parseBoolean(options.get(SETTING_FETCH_HINTS_PREFIX + "includeEdgeLabelsAndCounts")),
+                Boolean.parseBoolean(options.get(SETTING_FETCH_HINTS_PREFIX + "includeExtendedDataTableNames"))
+        );
         elementData = createElementData();
     }
 
     protected abstract T createElementData();
 
-    public static void setFetchHints(IteratorSetting iteratorSettings, EnumSet<IteratorFetchHint> fetchHints) {
-        iteratorSettings.addOption(SETTING_FETCH_HINTS, IteratorFetchHint.toString(fetchHints));
+    public static void setFetchHints(IteratorSetting iteratorSettings, IteratorFetchHints fetchHints) {
+        addOption(iteratorSettings, SETTING_FETCH_HINTS_PREFIX + "includeAllProperties", Boolean.toString(fetchHints.isIncludeAllProperties()));
+        addOption(iteratorSettings, SETTING_FETCH_HINTS_PREFIX + "propertyNamesToInclude", setToString(fetchHints.getPropertyNamesToInclude()));
+        addOption(iteratorSettings, SETTING_FETCH_HINTS_PREFIX + "includeAllPropertyMetadata", Boolean.toString(fetchHints.isIncludeAllPropertyMetadata()));
+        addOption(iteratorSettings, SETTING_FETCH_HINTS_PREFIX + "metadataKeysToInclude", setToString(fetchHints.getMetadataKeysToInclude()));
+        addOption(iteratorSettings, SETTING_FETCH_HINTS_PREFIX + "includeHidden", Boolean.toString(fetchHints.isIncludeHidden()));
+        addOption(iteratorSettings, SETTING_FETCH_HINTS_PREFIX + "includeAllEdgeRefs", Boolean.toString(fetchHints.isIncludeAllEdgeRefs()));
+        addOption(iteratorSettings, SETTING_FETCH_HINTS_PREFIX + "includeOutEdgeRefs", Boolean.toString(fetchHints.isIncludeOutEdgeRefs()));
+        addOption(iteratorSettings, SETTING_FETCH_HINTS_PREFIX + "includeInEdgeRefs", Boolean.toString(fetchHints.isIncludeInEdgeRefs()));
+        addOption(iteratorSettings, SETTING_FETCH_HINTS_PREFIX + "edgeLabelsOfEdgeRefsToInclude", setToString(fetchHints.getEdgeLabelsOfEdgeRefsToInclude()));
+        addOption(iteratorSettings, SETTING_FETCH_HINTS_PREFIX + "includeEdgeLabelsAndCounts", Boolean.toString(fetchHints.isIncludeEdgeLabelsAndCounts()));
+        addOption(iteratorSettings, SETTING_FETCH_HINTS_PREFIX + "includeExtendedDataTableNames", Boolean.toString(fetchHints.isIncludeExtendedDataTableNames()));
     }
 
-    public EnumSet<IteratorFetchHint> getFetchHints() {
+    private static void addOption(IteratorSetting iteratorSettings, String key, String value) {
+        if (value == null) {
+            return;
+        }
+        iteratorSettings.addOption(key, value);
+    }
+
+    private Set<String> parseSet(String str) {
+        if (str == null) {
+            return null;
+        }
+        String[] parts = RECORD_SEPARATOR_PATTERN.split(str);
+        Set<String> results = new HashSet<>();
+        Collections.addAll(results, parts);
+        return results;
+    }
+
+    public static String setToString(Set<String> set) {
+        if (set == null) {
+            return null;
+        }
+        StringBuilder sb = new StringBuilder();
+        boolean first = true;
+        for (String s : set) {
+            if (!first) {
+                sb.append(RECORD_SEPARATOR);
+            }
+            sb.append(s);
+            first = false;
+        }
+        return sb.toString();
+    }
+
+    public IteratorFetchHints getFetchHints() {
         return fetchHints;
     }
 

@@ -44,7 +44,7 @@ public interface Edge extends Element {
      * @param fetchHints Hint on what should be fetched from the datastore.
      * @return The vertex.
      */
-    default Vertex getVertex(Direction direction, EnumSet<FetchHint> fetchHints, Authorizations authorizations) {
+    default Vertex getVertex(Direction direction, FetchHints fetchHints, Authorizations authorizations) {
         String vertexId = getVertexId(direction);
         return getGraph().getVertex(vertexId, fetchHints, authorizations);
     }
@@ -64,7 +64,7 @@ public interface Edge extends Element {
     /**
      * Given a vertexId that represents one side of a relationship, get me the vertex of the other side.
      */
-    default Vertex getOtherVertex(String myVertexId, EnumSet<FetchHint> fetchHints, Authorizations authorizations) {
+    default Vertex getOtherVertex(String myVertexId, FetchHints fetchHints, Authorizations authorizations) {
         String vertexId = getOtherVertexId(myVertexId);
         return getGraph().getVertex(vertexId, fetchHints, authorizations);
     }
@@ -79,7 +79,7 @@ public interface Edge extends Element {
     /**
      * Gets both in and out vertices of this edge.
      */
-    default EdgeVertices getVertices(EnumSet<FetchHint> fetchHints, Authorizations authorizations) {
+    default EdgeVertices getVertices(FetchHints fetchHints, Authorizations authorizations) {
         List<String> ids = new ArrayList<>();
         ids.add(getVertexId(Direction.OUT));
         ids.add(getVertexId(Direction.IN));

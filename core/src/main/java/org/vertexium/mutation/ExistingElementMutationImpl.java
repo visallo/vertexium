@@ -6,7 +6,6 @@ import org.vertexium.search.IndexHint;
 import org.vertexium.util.Preconditions;
 
 import java.util.ArrayList;
-import java.util.EnumSet;
 import java.util.List;
 
 public abstract class ExistingElementMutationImpl<T extends Element> implements ElementMutation<T>, ExistingElementMutation<T> {
@@ -51,7 +50,7 @@ public abstract class ExistingElementMutationImpl<T extends Element> implements 
     public ElementMutation<T> addPropertyValue(String key, String name, Object value, Metadata metadata, Long timestamp, Visibility visibility) {
         Preconditions.checkNotNull(name, "property name cannot be null for property: " + name + ":" + key);
         Preconditions.checkNotNull(value, "property value cannot be null for property: " + name + ":" + key);
-        properties.add(new MutablePropertyImpl(key, name, value, metadata, timestamp, null, visibility, FetchHint.ALL_INCLUDING_HIDDEN));
+        properties.add(new MutablePropertyImpl(key, name, value, metadata, timestamp, null, visibility, FetchHints.ALL_INCLUDING_HIDDEN));
         return this;
     }
 
@@ -76,7 +75,10 @@ public abstract class ExistingElementMutationImpl<T extends Element> implements 
 
     @Override
     public ElementMutation<T> deleteProperty(Property property) {
-        FetchHint.checkFetchHints(getElement().getFetchHints(), EnumSet.of(FetchHint.PROPERTIES, FetchHint.PROPERTY_METADATA));
+        if (!element.getFetchHints().isIncludePropertyAndMetadata(property.getName())) {
+            throw new VertexiumMissingFetchHintException(element.getFetchHints(), "Property " + property.getName() + " needs to be included with metadata");
+        }
+
         Preconditions.checkNotNull(property, "property cannot be null");
         propertyDeletes.add(new PropertyPropertyDeleteMutation(property));
         return this;
@@ -164,7 +166,10 @@ public abstract class ExistingElementMutationImpl<T extends Element> implements 
 
     @Override
     public ExistingElementMutation<T> alterPropertyVisibility(Property property, Visibility visibility) {
-        FetchHint.checkFetchHints(getElement().getFetchHints(), EnumSet.of(FetchHint.PROPERTIES, FetchHint.PROPERTY_METADATA));
+        if (!element.getFetchHints().isIncludePropertyAndMetadata(property.getName())) {
+            throw new VertexiumMissingFetchHintException(element.getFetchHints(), "Property " + property.getName() + " needs to be included with metadata");
+        }
+
         this.alterPropertyVisibilities.add(new AlterPropertyVisibility(property.getKey(), property.getName(), property.getVisibility(), visibility));
         return this;
     }
@@ -176,7 +181,10 @@ public abstract class ExistingElementMutationImpl<T extends Element> implements 
 
     @Override
     public ExistingElementMutation<T> alterPropertyVisibility(String key, String name, Visibility visibility) {
-        FetchHint.checkFetchHints(getElement().getFetchHints(), EnumSet.of(FetchHint.PROPERTIES, FetchHint.PROPERTY_METADATA));
+        if (!element.getFetchHints().isIncludePropertyAndMetadata(name)) {
+            throw new VertexiumMissingFetchHintException(element.getFetchHints(), "Property " + name + " needs to be included with metadata");
+        }
+
         this.alterPropertyVisibilities.add(new AlterPropertyVisibility(key, name, null, visibility));
         return this;
     }

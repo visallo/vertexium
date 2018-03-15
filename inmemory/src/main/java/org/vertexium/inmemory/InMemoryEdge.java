@@ -15,7 +15,7 @@ public class InMemoryEdge extends InMemoryElement<InMemoryEdge> implements Edge 
             InMemoryGraph graph,
             String id,
             InMemoryTableEdge inMemoryTableElement,
-            EnumSet<FetchHint> fetchHints,
+            FetchHints fetchHints,
             Long endTime,
             Authorizations authorizations
     ) {
@@ -41,7 +41,7 @@ public class InMemoryEdge extends InMemoryElement<InMemoryEdge> implements Edge 
     }
 
     @Override
-    public Vertex getVertex(Direction direction, EnumSet<FetchHint> fetchHints, Authorizations authorizations) {
+    public Vertex getVertex(Direction direction, FetchHints fetchHints, Authorizations authorizations) {
         return getGraph().getVertex(getVertexId(direction), fetchHints, authorizations);
     }
 
@@ -66,7 +66,7 @@ public class InMemoryEdge extends InMemoryElement<InMemoryEdge> implements Edge 
     }
 
     @Override
-    public Vertex getOtherVertex(String myVertexId, EnumSet<FetchHint> fetchHints, Authorizations authorizations) {
+    public Vertex getOtherVertex(String myVertexId, FetchHints fetchHints, Authorizations authorizations) {
         return getGraph().getVertex(getOtherVertexId(myVertexId), fetchHints, authorizations);
     }
 
@@ -76,7 +76,7 @@ public class InMemoryEdge extends InMemoryElement<InMemoryEdge> implements Edge 
     }
 
     @Override
-    public EdgeVertices getVertices(EnumSet<FetchHint> fetchHints, Authorizations authorizations) {
+    public EdgeVertices getVertices(FetchHints fetchHints, Authorizations authorizations) {
         return new EdgeVertices(
                 getVertex(Direction.OUT, authorizations),
                 getVertex(Direction.IN, authorizations)

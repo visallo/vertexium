@@ -3,16 +3,22 @@ package org.vertexium.accumulo;
 import org.vertexium.*;
 import org.vertexium.property.MutableProperty;
 import org.vertexium.property.StreamingPropertyValueRef;
+import org.vertexium.util.VertexiumLogger;
+import org.vertexium.util.VertexiumLoggerFactory;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 
 public class LazyMutableProperty extends MutableProperty {
+    private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(LazyMutableProperty.class);
     private final AccumuloGraph graph;
     private final VertexiumSerializer vertexiumSerializer;
     private final String propertyKey;
     private final String propertyName;
     private long timestamp;
-    private final EnumSet<FetchHint> fetchHints;
+    private final FetchHints fetchHints;
     private Set<Visibility> hiddenVisibilities;
     private byte[] propertyValue;
     private LazyPropertyMetadata metadata;
@@ -30,7 +36,7 @@ public class LazyMutableProperty extends MutableProperty {
             Set<Visibility> hiddenVisibilities,
             Visibility visibility,
             long timestamp,
-            EnumSet<FetchHint> fetchHints
+            FetchHints fetchHints
     ) {
         this.graph = graph;
         this.vertexiumSerializer = vertexiumSerializer;
@@ -108,6 +114,7 @@ public class LazyMutableProperty extends MutableProperty {
             }
             cachedPropertyValue = this.vertexiumSerializer.bytesToObject(propertyValue);
             if (cachedPropertyValue instanceof StreamingPropertyValueRef) {
+                //noinspection unchecked
                 cachedPropertyValue = ((StreamingPropertyValueRef) cachedPropertyValue).toStreamingPropertyValue(this.graph, getTimestamp());
             }
         }
@@ -121,7 +128,10 @@ public class LazyMutableProperty extends MutableProperty {
 
     @Override
     public Metadata getMetadata() {
-        FetchHint.checkFetchHints(fetchHints, FetchHint.PROPERTY_METADATA);
+        if (!fetchHints.isIncludePropertyMetadata()) {
+            LOGGER.warn("calling getMetadata without specifying fetch hints to get metadata");
+            return null;
+        }
         if (cachedMetadata == null) {
             if (metadata == null) {
                 cachedMetadata = new Metadata();

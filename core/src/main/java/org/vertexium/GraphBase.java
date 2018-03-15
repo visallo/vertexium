@@ -73,16 +73,16 @@ public abstract class GraphBase implements Graph {
 
     @Override
     public boolean doesVertexExist(String vertexId, Authorizations authorizations) {
-        return getVertex(vertexId, FetchHint.NONE, authorizations) != null;
+        return getVertex(vertexId, FetchHints.NONE, authorizations) != null;
     }
 
     @Override
-    public Vertex getVertex(String vertexId, EnumSet<FetchHint> fetchHints, Authorizations authorizations) {
+    public Vertex getVertex(String vertexId, FetchHints fetchHints, Authorizations authorizations) {
         return getVertex(vertexId, fetchHints, null, authorizations);
     }
 
     @Override
-    public Vertex getVertex(String vertexId, EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations) {
+    public Vertex getVertex(String vertexId, FetchHints fetchHints, Long endTime, Authorizations authorizations) {
         for (Vertex vertex : getVertices(fetchHints, endTime, authorizations)) {
             if (vertex.getId().equals(vertexId)) {
                 return vertex;
@@ -102,12 +102,12 @@ public abstract class GraphBase implements Graph {
     }
 
     @Override
-    public Iterable<Vertex> getVerticesWithPrefix(String vertexIdPrefix, EnumSet<FetchHint> fetchHints, Authorizations authorizations) {
+    public Iterable<Vertex> getVerticesWithPrefix(String vertexIdPrefix, FetchHints fetchHints, Authorizations authorizations) {
         return getVerticesWithPrefix(vertexIdPrefix, fetchHints, null, authorizations);
     }
 
     @Override
-    public Iterable<Vertex> getVerticesWithPrefix(final String vertexIdPrefix, EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations) {
+    public Iterable<Vertex> getVerticesWithPrefix(final String vertexIdPrefix, FetchHints fetchHints, Long endTime, Authorizations authorizations) {
         Iterable<Vertex> vertices = getVertices(fetchHints, endTime, authorizations);
         return new FilterIterable<Vertex>(vertices) {
             @Override
@@ -123,12 +123,12 @@ public abstract class GraphBase implements Graph {
     }
 
     @Override
-    public Iterable<Vertex> getVerticesInRange(Range idRange, EnumSet<FetchHint> fetchHints, Authorizations authorizations) {
+    public Iterable<Vertex> getVerticesInRange(Range idRange, FetchHints fetchHints, Authorizations authorizations) {
         return getVerticesInRange(idRange, fetchHints, null, authorizations);
     }
 
     @Override
-    public Iterable<Vertex> getVerticesInRange(final Range idRange, EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations) {
+    public Iterable<Vertex> getVerticesInRange(final Range idRange, FetchHints fetchHints, Long endTime, Authorizations authorizations) {
         Iterable<Vertex> vertices = getVertices(fetchHints, endTime, authorizations);
         return new FilterIterable<Vertex>(vertices) {
             @Override
@@ -139,12 +139,12 @@ public abstract class GraphBase implements Graph {
     }
 
     @Override
-    public Iterable<Vertex> getVertices(final Iterable<String> ids, EnumSet<FetchHint> fetchHints, final Authorizations authorizations) {
+    public Iterable<Vertex> getVertices(final Iterable<String> ids, FetchHints fetchHints, final Authorizations authorizations) {
         return getVertices(ids, fetchHints, null, authorizations);
     }
 
     @Override
-    public Iterable<Vertex> getVertices(final Iterable<String> ids, final EnumSet<FetchHint> fetchHints, final Long endTime, final Authorizations authorizations) {
+    public Iterable<Vertex> getVertices(final Iterable<String> ids, final FetchHints fetchHints, final Long endTime, final Authorizations authorizations) {
         return new LookAheadIterable<String, Vertex>() {
             @Override
             protected boolean isIncluded(String src, Vertex vertex) {
@@ -169,7 +169,7 @@ public abstract class GraphBase implements Graph {
         for (String id : ids) {
             results.put(id, false);
         }
-        for (Vertex vertex : getVertices(ids, FetchHint.NONE, authorizations)) {
+        for (Vertex vertex : getVertices(ids, FetchHints.NONE, authorizations)) {
             results.put(vertex.getId(), true);
         }
         return results;
@@ -181,7 +181,7 @@ public abstract class GraphBase implements Graph {
     }
 
     @Override
-    public List<Vertex> getVerticesInOrder(Iterable<String> ids, EnumSet<FetchHint> fetchHints, Authorizations authorizations) {
+    public List<Vertex> getVerticesInOrder(Iterable<String> ids, FetchHints fetchHints, Authorizations authorizations) {
         final List<String> vertexIds = IterableUtils.toList(ids);
         List<Vertex> vertices = IterableUtils.toList(getVertices(vertexIds, authorizations));
         vertices.sort((v1, v2) -> {
@@ -203,12 +203,12 @@ public abstract class GraphBase implements Graph {
     }
 
     @Override
-    public Iterable<Vertex> getVertices(EnumSet<FetchHint> fetchHints, Authorizations authorizations) {
+    public Iterable<Vertex> getVertices(FetchHints fetchHints, Authorizations authorizations) {
         return getVertices(fetchHints, null, authorizations);
     }
 
     @Override
-    public abstract Iterable<Vertex> getVertices(EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations);
+    public abstract Iterable<Vertex> getVertices(FetchHints fetchHints, Long endTime, Authorizations authorizations);
 
     @Override
     public Edge addEdge(Vertex outVertex, Vertex inVertex, String label, Visibility visibility, Authorizations authorizations) {
@@ -258,16 +258,16 @@ public abstract class GraphBase implements Graph {
 
     @Override
     public boolean doesEdgeExist(String edgeId, Authorizations authorizations) {
-        return getEdge(edgeId, FetchHint.NONE, authorizations) != null;
+        return getEdge(edgeId, FetchHints.NONE, authorizations) != null;
     }
 
     @Override
-    public Edge getEdge(String edgeId, EnumSet<FetchHint> fetchHints, Authorizations authorizations) {
+    public Edge getEdge(String edgeId, FetchHints fetchHints, Authorizations authorizations) {
         return getEdge(edgeId, fetchHints, null, authorizations);
     }
 
     @Override
-    public Edge getEdge(String edgeId, EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations) {
+    public Edge getEdge(String edgeId, FetchHints fetchHints, Long endTime, Authorizations authorizations) {
         for (Edge edge : getEdges(fetchHints, endTime, authorizations)) {
             if (edge.getId().equals(edgeId)) {
                 return edge;
@@ -292,7 +292,7 @@ public abstract class GraphBase implements Graph {
         for (String id : ids) {
             results.put(id, false);
         }
-        for (Edge edge : getEdges(ids, FetchHint.NONE, endTime, authorizations)) {
+        for (Edge edge : getEdges(ids, FetchHints.NONE, endTime, authorizations)) {
             results.put(edge.getId(), true);
         }
         return results;
@@ -363,7 +363,7 @@ public abstract class GraphBase implements Graph {
             final EnumSet<ElementFilter> filters,
             Authorizations authorizations
     ) {
-        FilterIterable<Edge> edges = new FilterIterable<Edge>(getEdges(edgeIds, FetchHint.ALL_INCLUDING_HIDDEN, authorizations)) {
+        FilterIterable<Edge> edges = new FilterIterable<Edge>(getEdges(edgeIds, FetchHints.ALL_INCLUDING_HIDDEN, authorizations)) {
             @Override
             protected boolean isIncluded(Edge edge) {
                 if (filters.contains(ElementFilter.ELEMENT)) {
@@ -409,7 +409,7 @@ public abstract class GraphBase implements Graph {
             final EnumSet<ElementFilter> filters,
             Authorizations authorizations
     ) {
-        FilterIterable<Vertex> vertices = new FilterIterable<Vertex>(getVertices(vertexIds, FetchHint.ALL_INCLUDING_HIDDEN, authorizations)) {
+        FilterIterable<Vertex> vertices = new FilterIterable<Vertex>(getVertices(vertexIds, FetchHints.ALL_INCLUDING_HIDDEN, authorizations)) {
             @Override
             protected boolean isIncluded(Vertex vertex) {
                 if (filters.contains(ElementFilter.ELEMENT)) {
@@ -429,12 +429,12 @@ public abstract class GraphBase implements Graph {
     }
 
     @Override
-    public Iterable<Edge> getEdges(final Iterable<String> ids, final EnumSet<FetchHint> fetchHints, final Authorizations authorizations) {
+    public Iterable<Edge> getEdges(final Iterable<String> ids, final FetchHints fetchHints, final Authorizations authorizations) {
         return getEdges(ids, fetchHints, null, authorizations);
     }
 
     @Override
-    public Iterable<Edge> getEdges(final Iterable<String> ids, final EnumSet<FetchHint> fetchHints, final Long endTime, final Authorizations authorizations) {
+    public Iterable<Edge> getEdges(final Iterable<String> ids, final FetchHints fetchHints, final Long endTime, final Authorizations authorizations) {
         return new LookAheadIterable<String, Edge>() {
             @Override
             protected boolean isIncluded(String src, Edge edge) {
@@ -464,12 +464,12 @@ public abstract class GraphBase implements Graph {
     }
 
     @Override
-    public Iterable<Edge> getEdges(EnumSet<FetchHint> fetchHints, Authorizations authorizations) {
+    public Iterable<Edge> getEdges(FetchHints fetchHints, Authorizations authorizations) {
         return getEdges(fetchHints, null, authorizations);
     }
 
     @Override
-    public abstract Iterable<Edge> getEdges(EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations);
+    public abstract Iterable<Edge> getEdges(FetchHints fetchHints, Long endTime, Authorizations authorizations);
 
     @Override
     public Iterable<Edge> getEdgesInRange(Range idRange, Authorizations authorizations) {
@@ -477,12 +477,12 @@ public abstract class GraphBase implements Graph {
     }
 
     @Override
-    public Iterable<Edge> getEdgesInRange(Range idRange, EnumSet<FetchHint> fetchHints, Authorizations authorizations) {
+    public Iterable<Edge> getEdgesInRange(Range idRange, FetchHints fetchHints, Authorizations authorizations) {
         return getEdgesInRange(idRange, fetchHints, null, authorizations);
     }
 
     @Override
-    public Iterable<Edge> getEdgesInRange(final Range idRange, EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations) {
+    public Iterable<Edge> getEdgesInRange(final Range idRange, FetchHints fetchHints, Long endTime, Authorizations authorizations) {
         Iterable<Edge> edges = getEdges(fetchHints, endTime, authorizations);
         return new FilterIterable<Edge>(edges) {
             @Override
@@ -531,7 +531,7 @@ public abstract class GraphBase implements Graph {
             };
         }
 
-        EnumSet<FetchHint> fetchHints = FetchHint.EDGE_REFS;
+        FetchHints fetchHints = FetchHints.EDGE_REFS;
         Vertex sourceVertex = getVertex(options.getSourceVertexId(), fetchHints, authorizations);
         if (sourceVertex == null) {
             throw new IllegalArgumentException("Could not find vertex with id: " + options.getSourceVertexId());
@@ -697,7 +697,10 @@ public abstract class GraphBase implements Graph {
 
     @Override
     public Iterable<String> findRelatedEdgeIds(Iterable<String> vertexIds, Long endTime, Authorizations authorizations) {
-        return findRelatedEdgeIdsForVertices(getVertices(vertexIds, EnumSet.of(FetchHint.OUT_EDGE_REFS), endTime, authorizations), authorizations);
+        FetchHints fetchHints = new FetchHintsBuilder()
+                .setIncludeOutEdgeRefs(true)
+                .build();
+        return findRelatedEdgeIdsForVertices(getVertices(vertexIds, fetchHints, endTime, authorizations), authorizations);
     }
 
     @Override
@@ -707,7 +710,10 @@ public abstract class GraphBase implements Graph {
 
     @Override
     public Iterable<RelatedEdge> findRelatedEdgeSummary(Iterable<String> vertexIds, Long endTime, Authorizations authorizations) {
-        return findRelatedEdgeSummaryForVertices(getVertices(vertexIds, EnumSet.of(FetchHint.OUT_EDGE_REFS), endTime, authorizations), authorizations);
+        FetchHints fetchHints = new FetchHintsBuilder()
+                .setIncludeOutEdgeRefs(true)
+                .build();
+        return findRelatedEdgeSummaryForVertices(getVertices(vertexIds, fetchHints, endTime, authorizations), authorizations);
     }
 
     @Override
