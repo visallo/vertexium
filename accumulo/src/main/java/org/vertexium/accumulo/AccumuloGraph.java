@@ -33,7 +33,7 @@ import org.vertexium.*;
 import org.vertexium.HistoricalPropertyValue.HistoricalPropertyValueBuilder;
 import org.vertexium.accumulo.iterator.*;
 import org.vertexium.accumulo.iterator.model.EdgeInfo;
-import org.vertexium.accumulo.iterator.model.IteratorFetchHint;
+import org.vertexium.accumulo.iterator.model.IteratorFetchHints;
 import org.vertexium.accumulo.iterator.model.PropertyColumnQualifier;
 import org.vertexium.accumulo.iterator.model.PropertyMetadataColumnQualifier;
 import org.vertexium.accumulo.iterator.util.ByteArrayWrapper;
@@ -375,7 +375,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                         hiddenVisibilities,
                         getExtendedDataTableNames(),
                         timestampLong,
-                        FetchHint.ALL_INCLUDING_HIDDEN,
+                        FetchHints.ALL_INCLUDING_HIDDEN,
                         authorizations
                 );
             }
@@ -477,7 +477,9 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
     }
 
     void deleteProperty(AccumuloElement element, Property property, Authorizations authorizations) {
-        FetchHint.checkFetchHints(element.getFetchHints(), EnumSet.of(FetchHint.PROPERTIES, FetchHint.PROPERTY_METADATA));
+        if (!element.getFetchHints().isIncludePropertyAndMetadata(property.getName())) {
+            throw new VertexiumMissingFetchHintException(element.getFetchHints(), "Property " + property.getName() + " needs to be included with metadata");
+        }
 
         Mutation m = new Mutation(element.getId());
         elementMutationBuilder.addPropertyDeleteToMutation(m, property);
@@ -597,7 +599,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
     }
 
     @Override
-    public Iterable<Vertex> getVertices(EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations) throws VertexiumException {
+    public Iterable<Vertex> getVertices(FetchHints fetchHints, Long endTime, Authorizations authorizations) throws VertexiumException {
         Span trace = Trace.start("getVertices");
         return getVerticesInRange(trace, null, null, fetchHints, endTime, authorizations);
     }
@@ -697,7 +699,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             ColumnVisibility columnVisibility = visibilityToAccumuloVisibility(visibility);
 
             // Delete all edges that this vertex participates.
-            for (Edge edge : vertex.getEdges(Direction.BOTH, FetchHint.ALL_INCLUDING_HIDDEN, authorizations)) {
+            for (Edge edge : vertex.getEdges(Direction.BOTH, FetchHints.ALL_INCLUDING_HIDDEN, authorizations)) {
                 markEdgeVisible(edge, visibility, authorizations);
             }
 
@@ -740,7 +742,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                             AccumuloGraph.this,
                             this,
                             timestampLong,
-                            FetchHint.ALL_INCLUDING_HIDDEN,
+                            FetchHints.ALL_INCLUDING_HIDDEN,
                             authorizations
                     );
                     return savePreparedEdge(this, edge, null, authorizations);
@@ -755,7 +757,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                         AccumuloGraph.this,
                         this,
                         timestampLong,
-                        FetchHint.ALL_INCLUDING_HIDDEN,
+                        FetchHints.ALL_INCLUDING_HIDDEN,
                         authorizations
                 );
             }
@@ -801,7 +803,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                             AccumuloGraph.this,
                             this,
                             timestampLong,
-                            FetchHint.ALL_INCLUDING_HIDDEN,
+                            FetchHints.ALL_INCLUDING_HIDDEN,
                             authorizations
                     );
                     return savePreparedEdge(this, edge, addEdgeToVertex, authorizations);
@@ -816,7 +818,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             AccumuloGraph accumuloGraph,
             EdgeBuilderBase edgeBuilder,
             long timestamp,
-            EnumSet<FetchHint> fetchHints,
+            FetchHints fetchHints,
             Authorizations authorizations
     ) {
         Iterable<Visibility> hiddenVisibilities = null;
@@ -901,7 +903,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         try {
             ElementType elementType = ElementType.getTypeFromElement(element);
 
-            EnumSet<FetchHint> fetchHints = EnumSet.of(FetchHint.PROPERTIES, FetchHint.PROPERTY_METADATA);
+            FetchHints fetchHints = FetchHints.PROPERTIES_AND_METADATA;
             traceDataFetchHints(trace, fetchHints);
             org.apache.accumulo.core.data.Range range = RangeUtils.createRangeFromString(element.getId());
             final ScannerBase scanner = createElementScanner(
@@ -941,6 +943,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                         Metadata metadata = new Metadata();
                         Set<Visibility> hiddenVisibilities = null; // TODO should we preserve these over time
                         if (value instanceof StreamingPropertyValueRef) {
+                            //noinspection unchecked
                             value = ((StreamingPropertyValueRef) value).toStreamingPropertyValue(this, timestamp);
                         }
                         String propertyKey = propertyColumnQualifier.getPropertyKey();
@@ -1139,7 +1142,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
     }
 
     @Override
-    public CloseableIterable<Edge> getEdges(EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations) {
+    public CloseableIterable<Edge> getEdges(FetchHints fetchHints, Long endTime, Authorizations authorizations) {
         Span trace = Trace.start("getEdges");
         return getEdgesInRange(trace, null, null, fetchHints, endTime, authorizations);
     }
@@ -1277,11 +1280,11 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         Span trace = Trace.start("markEdgeVisible");
         trace.data("edgeId", edge.getId());
         try {
-            Vertex out = edge.getVertex(Direction.OUT, FetchHint.ALL_INCLUDING_HIDDEN, authorizations);
+            Vertex out = edge.getVertex(Direction.OUT, FetchHints.ALL_INCLUDING_HIDDEN, authorizations);
             if (out == null) {
                 throw new VertexiumException(String.format("Unable to mark edge visible %s, can't find out vertex %s", edge.getId(), edge.getVertexId(Direction.OUT)));
             }
-            Vertex in = edge.getVertex(Direction.IN, FetchHint.ALL_INCLUDING_HIDDEN, authorizations);
+            Vertex in = edge.getVertex(Direction.IN, FetchHints.ALL_INCLUDING_HIDDEN, authorizations);
             if (in == null) {
                 throw new VertexiumException(String.format("Unable to mark edge visible %s, can't find in vertex %s", edge.getId(), edge.getVertexId(Direction.IN)));
             }
@@ -1491,7 +1494,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
     }
 
     @Override
-    public Vertex getVertex(String vertexId, EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations) throws VertexiumException {
+    public Vertex getVertex(String vertexId, FetchHints fetchHints, Long endTime, Authorizations authorizations) throws VertexiumException {
         try {
             if (vertexId == null) {
                 return null;
@@ -1512,7 +1515,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
     }
 
     @Override
-    public Iterable<Vertex> getVerticesWithPrefix(String vertexIdPrefix, EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations) {
+    public Iterable<Vertex> getVerticesWithPrefix(String vertexIdPrefix, FetchHints fetchHints, Long endTime, Authorizations authorizations) {
         Span trace = Trace.start("getVerticesWithPrefix");
         trace.data("vertexIdPrefix", vertexIdPrefix);
         traceDataFetchHints(trace, fetchHints);
@@ -1521,7 +1524,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
     }
 
     @Override
-    public Iterable<Vertex> getVerticesInRange(Range idRange, EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations) {
+    public Iterable<Vertex> getVerticesInRange(Range idRange, FetchHints fetchHints, Long endTime, Authorizations authorizations) {
         Span trace = Trace.start("getVerticesInRange");
         trace.data("rangeInclusiveStart", idRange.getInclusiveStart());
         trace.data("rangeExclusiveStart", idRange.getExclusiveEnd());
@@ -1534,7 +1537,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             Span trace,
             String startId,
             String endId,
-            EnumSet<FetchHint> fetchHints,
+            FetchHints fetchHints,
             Long timestamp,
             final Authorizations authorizations
     ) throws VertexiumException {
@@ -1564,7 +1567,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
     }
 
     protected ScannerBase createVertexScanner(
-            EnumSet<FetchHint> fetchHints,
+            FetchHints fetchHints,
             Integer maxVersions,
             Long startTime,
             Long endTime,
@@ -1575,7 +1578,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
     }
 
     protected ScannerBase createEdgeScanner(
-            EnumSet<FetchHint> fetchHints,
+            FetchHints fetchHints,
             Integer maxVersions,
             Long startTime,
             Long endTime,
@@ -1586,7 +1589,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
     }
 
     private ScannerBase createElementScanner(
-            EnumSet<FetchHint> fetchHints,
+            FetchHints fetchHints,
             ElementType elementType,
             Integer maxVersions,
             Long startTime,
@@ -1598,7 +1601,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
     }
 
     ScannerBase createElementScanner(
-            EnumSet<FetchHint> fetchHints,
+            FetchHints fetchHints,
             ElementType elementType,
             Integer maxVersions,
             Long startTime,
@@ -1677,20 +1680,24 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         }
     }
 
-    public static EnumSet<IteratorFetchHint> toIteratorFetchHints(EnumSet<FetchHint> fetchHints) {
-        List<IteratorFetchHint> results = new ArrayList<>();
-        for (FetchHint fetchHint : fetchHints) {
-            results.add(toIteratorFetchHint(fetchHint));
-        }
-        return IteratorFetchHint.create(results);
-    }
-
-    private static IteratorFetchHint toIteratorFetchHint(FetchHint fetchHint) {
-        return IteratorFetchHint.valueOf(fetchHint.name());
+    public static IteratorFetchHints toIteratorFetchHints(FetchHints fetchHints) {
+        return new IteratorFetchHints(
+                fetchHints.isIncludeAllProperties(),
+                fetchHints.getPropertyNamesToInclude(),
+                fetchHints.isIncludeAllPropertyMetadata(),
+                fetchHints.getMetadataKeysToInclude(),
+                fetchHints.isIncludeHidden(),
+                fetchHints.isIncludeAllEdgeRefs(),
+                fetchHints.isIncludeOutEdgeRefs(),
+                fetchHints.isIncludeInEdgeRefs(),
+                fetchHints.getEdgeLabelsOfEdgeRefsToInclude(),
+                fetchHints.isIncludeEdgeLabelsAndCounts(),
+                fetchHints.isIncludeExtendedDataTableNames()
+        );
     }
 
     protected ScannerBase createVertexScanner(
-            EnumSet<FetchHint> fetchHints,
+            FetchHints fetchHints,
             Integer maxVersions,
             Long startTime,
             Long endTime,
@@ -1709,7 +1716,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
     }
 
     protected ScannerBase createEdgeScanner(
-            EnumSet<FetchHint> fetchHints,
+            FetchHints fetchHints,
             Integer maxVersions,
             Long startTime,
             Long endTime,
@@ -1768,7 +1775,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         return scanner;
     }
 
-    private void applyFetchHints(ScannerBase scanner, EnumSet<FetchHint> fetchHints, ElementType elementType) {
+    private void applyFetchHints(ScannerBase scanner, FetchHints fetchHints, ElementType elementType) {
         scanner.clearColumns();
 
         Iterable<Text> columnFamiliesToFetch = getColumnFamiliesToFetch(elementType, fetchHints);
@@ -1777,7 +1784,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         }
     }
 
-    public static Iterable<Text> getColumnFamiliesToFetch(ElementType elementType, EnumSet<FetchHint> fetchHints) {
+    public static Iterable<Text> getColumnFamiliesToFetch(ElementType elementType, FetchHints fetchHints) {
         List<Text> columnFamiliesToFetch = new ArrayList<>();
 
         columnFamiliesToFetch.add(AccumuloElement.CF_HIDDEN);
@@ -1794,27 +1801,33 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             throw new VertexiumException("Unhandled element type: " + elementType);
         }
 
-        if (fetchHints.contains(FetchHint.IN_EDGE_REFS) || fetchHints.contains(FetchHint.IN_EDGE_LABELS)) {
+        if (fetchHints.isIncludeAllEdgeRefs()
+                || fetchHints.isIncludeInEdgeRefs()
+                || fetchHints.isIncludeEdgeLabelsAndCounts()
+                || fetchHints.hasEdgeLabelsOfEdgeRefsToInclude()) {
             columnFamiliesToFetch.add(AccumuloVertex.CF_IN_EDGE);
             columnFamiliesToFetch.add(AccumuloVertex.CF_IN_EDGE_HIDDEN);
             columnFamiliesToFetch.add(AccumuloVertex.CF_IN_EDGE_SOFT_DELETE);
         }
-        if (fetchHints.contains(FetchHint.OUT_EDGE_REFS) || fetchHints.contains(FetchHint.OUT_EDGE_LABELS)) {
+        if (fetchHints.isIncludeAllEdgeRefs()
+                || fetchHints.isIncludeOutEdgeRefs()
+                || fetchHints.isIncludeEdgeLabelsAndCounts()
+                || fetchHints.hasEdgeLabelsOfEdgeRefsToInclude()) {
             columnFamiliesToFetch.add(AccumuloVertex.CF_OUT_EDGE);
             columnFamiliesToFetch.add(AccumuloVertex.CF_OUT_EDGE_HIDDEN);
             columnFamiliesToFetch.add(AccumuloVertex.CF_OUT_EDGE_SOFT_DELETE);
         }
-        if (fetchHints.contains(FetchHint.PROPERTIES)) {
+        if (fetchHints.isIncludeProperties()) {
             columnFamiliesToFetch.add(AccumuloElement.CF_PROPERTY);
             columnFamiliesToFetch.add(AccumuloElement.CF_PROPERTY_HIDDEN);
             columnFamiliesToFetch.add(AccumuloElement.CF_PROPERTY_SOFT_DELETE);
         }
-        if (fetchHints.contains(FetchHint.PROPERTY_METADATA)) {
+        if (fetchHints.isIncludePropertyMetadata()) {
             columnFamiliesToFetch.add(AccumuloElement.CF_PROPERTY_METADATA);
             columnFamiliesToFetch.add(AccumuloElement.CF_PROPERTY_HIDDEN);
             columnFamiliesToFetch.add(AccumuloElement.CF_PROPERTY_SOFT_DELETE);
         }
-        if (fetchHints.contains(FetchHint.EXTENDED_DATA_TABLE_NAMES)) {
+        if (fetchHints.isIncludeExtendedDataTableNames()) {
             columnFamiliesToFetch.add(AccumuloElement.CF_EXTENDED_DATA);
         }
 
@@ -1851,7 +1864,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
     }
 
     @Override
-    public Edge getEdge(String edgeId, EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations) {
+    public Edge getEdge(String edgeId, FetchHints fetchHints, Long endTime, Authorizations authorizations) {
         Span trace = Trace.start("getEdge");
         trace.data("edgeId", edgeId);
         try {
@@ -2180,8 +2193,11 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
 
             Long startTime = null;
             int maxVersions = 1;
+            FetchHints fetchHints = FetchHints.builder()
+                    .setIncludeOutEdgeRefs(true)
+                    .build();
             ScannerBase scanner = createElementScanner(
-                    EnumSet.of(FetchHint.OUT_EDGE_REFS),
+                    fetchHints,
                     ElementType.VERTEX,
                     maxVersions,
                     startTime,
@@ -2246,8 +2262,11 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
 
             Long startTime = null;
             int maxVersions = 1;
+            FetchHints fetchHints = FetchHints.builder()
+                    .setIncludeOutEdgeRefs(true)
+                    .build();
             ScannerBase scanner = createElementScanner(
-                    EnumSet.of(FetchHint.OUT_EDGE_REFS),
+                    fetchHints,
                     ElementType.VERTEX,
                     maxVersions,
                     startTime,
@@ -2356,7 +2375,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             Long endTime = null;
             int maxVersions = 1;
             ScannerBase scanner = createElementScanner(
-                    FetchHint.ALL_INCLUDING_HIDDEN,
+                    FetchHints.ALL_INCLUDING_HIDDEN,
                     elementType,
                     maxVersions,
                     startTime,
@@ -2529,7 +2548,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
     protected CloseableIterable<Vertex> getVerticesInRange(
             final Span trace,
             final org.apache.accumulo.core.data.Range range,
-            final EnumSet<FetchHint> fetchHints,
+            final FetchHints fetchHints,
             final Long endTime,
             final Authorizations authorizations
     ) {
@@ -2573,16 +2592,16 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         };
     }
 
-    private Vertex createVertexFromVertexIteratorValue(Key key, Value value, EnumSet<FetchHint> fetchHints, Authorizations authorizations) {
+    private Vertex createVertexFromVertexIteratorValue(Key key, Value value, FetchHints fetchHints, Authorizations authorizations) {
         return AccumuloVertex.createFromIteratorValue(this, key, value, fetchHints, authorizations);
     }
 
-    private Edge createEdgeFromEdgeIteratorValue(Key key, Value value, EnumSet<FetchHint> fetchHints, Authorizations authorizations) {
+    private Edge createEdgeFromEdgeIteratorValue(Key key, Value value, FetchHints fetchHints, Authorizations authorizations) {
         return AccumuloEdge.createFromIteratorValue(this, key, value, fetchHints, authorizations);
     }
 
     @Override
-    public CloseableIterable<Vertex> getVertices(Iterable<String> ids, final EnumSet<FetchHint> fetchHints, final Long endTime, final Authorizations authorizations) {
+    public CloseableIterable<Vertex> getVertices(Iterable<String> ids, final FetchHints fetchHints, final Long endTime, final Authorizations authorizations) {
         final List<org.apache.accumulo.core.data.Range> ranges = new ArrayList<>();
         int idCount = 0;
         for (String id : ids) {
@@ -2629,7 +2648,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
     }
 
     @Override
-    public CloseableIterable<Edge> getEdges(Iterable<String> ids, EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations) {
+    public CloseableIterable<Edge> getEdges(Iterable<String> ids, FetchHints fetchHints, Long endTime, Authorizations authorizations) {
         final List<org.apache.accumulo.core.data.Range> ranges = new ArrayList<>();
         int idCount = 0;
         for (String id : ids) {
@@ -2676,7 +2695,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
     }
 
     @Override
-    public Iterable<Edge> getEdgesInRange(Range idRange, EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations) {
+    public Iterable<Edge> getEdgesInRange(Range idRange, FetchHints fetchHints, Long endTime, Authorizations authorizations) {
         Span trace = Trace.start("getEdgesInRange");
         trace.data("rangeInclusiveStart", idRange.getInclusiveStart());
         trace.data("rangeExclusiveStart", idRange.getExclusiveEnd());
@@ -2700,7 +2719,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             final Span trace,
             String startId,
             String endId,
-            final EnumSet<FetchHint> fetchHints,
+            final FetchHints fetchHints,
             final Long timestamp,
             final Authorizations authorizations
     ) throws VertexiumException {
@@ -2732,7 +2751,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
     protected CloseableIterable<Edge> getEdgesInRange(
             Span trace,
             org.apache.accumulo.core.data.Range range,
-            EnumSet<FetchHint> fetchHints,
+            FetchHints fetchHints,
             Long endTime,
             Authorizations authorizations
     ) throws VertexiumException {
@@ -2848,9 +2867,9 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         Trace.off();
     }
 
-    private void traceDataFetchHints(Span trace, EnumSet<FetchHint> fetchHints) {
+    private void traceDataFetchHints(Span trace, FetchHints fetchHints) {
         if (Trace.isTracing()) {
-            trace.data("fetchHints", FetchHint.toString(fetchHints));
+            trace.data("fetchHints", fetchHints.toString());
         }
     }
 

@@ -5,19 +5,27 @@ import org.apache.accumulo.core.data.Value;
 import org.apache.hadoop.io.Text;
 import org.vertexium.*;
 import org.vertexium.accumulo.iterator.ElementIterator;
-import org.vertexium.mutation.*;
+import org.vertexium.mutation.EdgeMutation;
+import org.vertexium.mutation.ExistingElementMutation;
+import org.vertexium.mutation.PropertyDeleteMutation;
+import org.vertexium.mutation.PropertySoftDeleteMutation;
 import org.vertexium.property.MutableProperty;
 import org.vertexium.property.PropertyValue;
 import org.vertexium.query.ExtendedDataQueryableIterable;
 import org.vertexium.query.QueryableIterable;
 import org.vertexium.search.IndexHint;
 import org.vertexium.util.PropertyCollection;
+import org.vertexium.util.VertexiumLogger;
+import org.vertexium.util.VertexiumLoggerFactory;
 
 import java.io.Serializable;
-import java.util.*;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListSet;
 
 public abstract class AccumuloElement extends ElementBase implements Serializable, HasTimestamp {
+    private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(AccumuloElement.class);
     private static final long serialVersionUID = 1L;
     public static final Text CF_PROPERTY = ElementIterator.CF_PROPERTY;
     public static final Text CF_PROPERTY_METADATA = ElementIterator.CF_PROPERTY_METADATA;
@@ -40,7 +48,7 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
     private final String id;
     private Visibility visibility;
     private final long timestamp;
-    private final EnumSet<FetchHint> fetchHints;
+    private final FetchHints fetchHints;
     private Set<Visibility> hiddenVisibilities = new HashSet<>();
 
     private final PropertyCollection properties;
@@ -59,7 +67,7 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
             Iterable<Visibility> hiddenVisibilities,
             ImmutableSet<String> extendedDataTableNames,
             long timestamp,
-            EnumSet<FetchHint> fetchHints,
+            FetchHints fetchHints,
             Authorizations authorizations
     ) {
         this.graph = graph;
@@ -242,6 +250,10 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
 
     @Override
     public Iterable<Property> getProperties() {
+        if (!getFetchHints().isIncludeProperties()) {
+            LOGGER.warn("calling getProperties without specifying fetch hints to get properties");
+            return null;
+        }
         return this.properties.getProperties();
     }
 
@@ -360,7 +372,7 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
     }
 
     @Override
-    public EnumSet<FetchHint> getFetchHints() {
+    public FetchHints getFetchHints() {
         return fetchHints;
     }
 

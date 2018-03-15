@@ -76,7 +76,7 @@ public abstract class InMemoryTableElement<TElement extends InMemoryElement> imp
         return deleteProperty(key, name, null, authorizations);
     }
 
-    public Property getProperty(String key, String name, Visibility visibility, EnumSet<FetchHint> fetchHints, Authorizations authorizations) {
+    public Property getProperty(String key, String name, Visibility visibility, FetchHints fetchHints, Authorizations authorizations) {
         List<PropertyMutation> propertyMutations = findPropertyMutations(key, name, visibility);
         if (propertyMutations == null || propertyMutations.size() == 0) {
             return null;
@@ -85,7 +85,7 @@ public abstract class InMemoryTableElement<TElement extends InMemoryElement> imp
     }
 
     public Property deleteProperty(String key, String name, Visibility visibility, Authorizations authorizations) {
-        Property p = getProperty(key, name, visibility, FetchHint.ALL_INCLUDING_HIDDEN, authorizations);
+        Property p = getProperty(key, name, visibility, FetchHints.ALL_INCLUDING_HIDDEN, authorizations);
         if (p != null) {
             deleteProperty(p);
         }
@@ -192,7 +192,7 @@ public abstract class InMemoryTableElement<TElement extends InMemoryElement> imp
         return historicalPropertyValues;
     }
 
-    public Iterable<Property> getProperties(final EnumSet<FetchHint> fetchHints, Long endTime, final Authorizations authorizations) {
+    public Iterable<Property> getProperties(final FetchHints fetchHints, Long endTime, final Authorizations authorizations) {
         final TreeMap<String, List<PropertyMutation>> propertiesMutations = new TreeMap<>();
         for (PropertyMutation m : findMutations(PropertyMutation.class)) {
             if (endTime != null && m.getTimestamp() > endTime) {
@@ -221,7 +221,7 @@ public abstract class InMemoryTableElement<TElement extends InMemoryElement> imp
         };
     }
 
-    private Property toProperty(List<PropertyMutation> propertyMutations, EnumSet<FetchHint> fetchHints, Authorizations authorizations) {
+    private Property toProperty(List<PropertyMutation> propertyMutations, FetchHints fetchHints, Authorizations authorizations) {
         String propertyKey = null;
         String propertyName = null;
         Object value = null;
@@ -265,7 +265,7 @@ public abstract class InMemoryTableElement<TElement extends InMemoryElement> imp
         if (softDeleted) {
             return null;
         }
-        if (!fetchHints.contains(FetchHint.INCLUDE_HIDDEN) && hidden) {
+        if (!fetchHints.isIncludeHidden() && hidden) {
             return null;
         }
         if (propertyKey == null) {
@@ -316,7 +316,7 @@ public abstract class InMemoryTableElement<TElement extends InMemoryElement> imp
             Visibility visibility,
             Authorizations authorizations
     ) {
-        Property prop = getProperty(key, name, propertyVisibility, FetchHint.ALL_INCLUDING_HIDDEN, authorizations);
+        Property prop = getProperty(key, name, propertyVisibility, FetchHints.ALL_INCLUDING_HIDDEN, authorizations);
         if (timestamp == null) {
             timestamp = IncreasingTime.currentTimeMillis();
         }
@@ -332,7 +332,7 @@ public abstract class InMemoryTableElement<TElement extends InMemoryElement> imp
             Visibility visibility,
             Authorizations authorizations
     ) {
-        Property prop = getProperty(key, name, propertyVisibility, FetchHint.ALL_INCLUDING_HIDDEN, authorizations);
+        Property prop = getProperty(key, name, propertyVisibility, FetchHints.ALL_INCLUDING_HIDDEN, authorizations);
         if (timestamp == null) {
             timestamp = IncreasingTime.currentTimeMillis();
         }
@@ -424,11 +424,11 @@ public abstract class InMemoryTableElement<TElement extends InMemoryElement> imp
         return false;
     }
 
-    public TElement createElement(InMemoryGraph graph, EnumSet<FetchHint> fetchHints, Authorizations authorizations) {
+    public TElement createElement(InMemoryGraph graph, FetchHints fetchHints, Authorizations authorizations) {
         return createElement(graph, fetchHints, null, authorizations);
     }
 
-    public final TElement createElement(InMemoryGraph graph, EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations) {
+    public final TElement createElement(InMemoryGraph graph, FetchHints fetchHints, Long endTime, Authorizations authorizations) {
         if (endTime != null && getFirstTimestamp() > endTime) {
             return null;
         }
@@ -447,7 +447,7 @@ public abstract class InMemoryTableElement<TElement extends InMemoryElement> imp
         return filteredMutations.isEmpty() || filteredMutations.get(filteredMutations.size() - 1) instanceof SoftDeleteMutation;
     }
 
-    protected abstract TElement createElementInternal(InMemoryGraph graph, EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations);
+    protected abstract TElement createElementInternal(InMemoryGraph graph, FetchHints fetchHints, Long endTime, Authorizations authorizations);
 
     private List<Mutation> getFilteredMutations(Predicate<Mutation> filter) {
         mutationLock.readLock().lock();

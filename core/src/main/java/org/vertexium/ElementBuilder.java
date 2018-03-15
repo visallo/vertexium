@@ -109,7 +109,7 @@ public abstract class ElementBuilder<T extends Element> implements ElementMutati
                 timestamp,
                 null,
                 visibility,
-                FetchHint.ALL_INCLUDING_HIDDEN
+                FetchHints.ALL_INCLUDING_HIDDEN
         ));
         return this;
     }

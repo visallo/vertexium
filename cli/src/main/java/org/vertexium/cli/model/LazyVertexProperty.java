@@ -1,6 +1,6 @@
 package org.vertexium.cli.model;
 
-import org.vertexium.FetchHint;
+import org.vertexium.FetchHints;
 import org.vertexium.Property;
 import org.vertexium.Vertex;
 import org.vertexium.Visibility;
@@ -20,7 +20,7 @@ public class LazyVertexProperty extends LazyProperty {
 
     @Override
     protected Vertex getE() {
-        return getGraph().getVertex(getVertexId(), FetchHint.ALL_INCLUDING_HIDDEN, getTime(), getAuthorizations());
+        return getGraph().getVertex(getVertexId(), FetchHints.ALL_INCLUDING_HIDDEN, getTime(), getAuthorizations());
     }
 
     @Override

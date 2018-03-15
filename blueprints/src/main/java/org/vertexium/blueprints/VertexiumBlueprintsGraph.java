@@ -5,7 +5,7 @@ import com.tinkerpop.blueprints.Features;
 import com.tinkerpop.blueprints.GraphQuery;
 import com.tinkerpop.blueprints.Vertex;
 import org.vertexium.Authorizations;
-import org.vertexium.FetchHint;
+import org.vertexium.FetchHints;
 import org.vertexium.Graph;
 import org.vertexium.Visibility;
 import org.vertexium.query.Compare;
@@ -96,8 +96,8 @@ public abstract class VertexiumBlueprintsGraph implements com.tinkerpop.blueprin
         return VertexiumBlueprintsEdge.create(this, getGraph().getEdge(VertexiumBlueprintsConvert.idToString(id), getFetchHints(), authorizations), authorizations);
     }
 
-    protected EnumSet<FetchHint> getFetchHints() {
-        return FetchHint.ALL;
+    protected FetchHints getFetchHints() {
+        return FetchHints.ALL;
     }
 
     @Override

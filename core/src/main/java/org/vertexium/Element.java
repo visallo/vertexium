@@ -382,7 +382,7 @@ public interface Element extends VertexiumObject {
     /**
      * Fetch hints used when fetching this element.
      */
-    EnumSet<FetchHint> getFetchHints();
+    FetchHints getFetchHints();
 
     @Override
     default int compareTo(Object o) {

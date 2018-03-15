@@ -18,21 +18,22 @@ import org.vertexium.mutation.ExistingElementMutationImpl;
 import org.vertexium.mutation.PropertyDeleteMutation;
 import org.vertexium.mutation.PropertySoftDeleteMutation;
 import org.vertexium.query.VertexQuery;
-import org.vertexium.util.ConvertingIterable;
-import org.vertexium.util.FilterIterable;
-import org.vertexium.util.JoinIterable;
-import org.vertexium.util.LookAheadIterable;
+import org.vertexium.util.*;
 
 import javax.annotation.Nullable;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
-import java.util.*;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
 
 import static org.vertexium.util.IterableUtils.count;
 import static org.vertexium.util.IterableUtils.toList;
 
 public class AccumuloVertex extends AccumuloElement implements Vertex {
+    private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(AccumuloVertex.class);
     public static final Text CF_SIGNAL = VertexIterator.CF_SIGNAL;
     public static final Text CF_OUT_EDGE = VertexIterator.CF_OUT_EDGE;
     public static final Text CF_IN_EDGE = VertexIterator.CF_IN_EDGE;
@@ -53,7 +54,7 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
             Iterable<Visibility> hiddenVisibilities,
             ImmutableSet<String> extendedDataTableNames,
             long timestamp,
-            EnumSet<FetchHint> fetchHints,
+            FetchHints fetchHints,
             Authorizations authorizations
     ) {
         this(
@@ -85,7 +86,7 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
             Edges inEdges,
             Edges outEdges,
             long timestamp,
-            EnumSet<FetchHint> fetchHints,
+            FetchHints fetchHints,
             Authorizations authorizations
     ) {
         super(
@@ -109,7 +110,7 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
             AccumuloGraph graph,
             Key key,
             Value value,
-            EnumSet<FetchHint> fetchHints,
+            FetchHints fetchHints,
             Authorizations authorizations
     ) {
         try {
@@ -165,17 +166,45 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
     }
 
     @Override
-    public Iterable<Edge> getEdges(Direction direction, EnumSet<FetchHint> fetchHints, Authorizations authorizations) {
+    public Iterable<Edge> getEdges(Direction direction, FetchHints fetchHints, Authorizations authorizations) {
         return getEdges(direction, fetchHints, null, authorizations);
     }
 
     @Override
-    public Iterable<Edge> getEdges(Direction direction, EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations) {
+    public Iterable<Edge> getEdges(Direction direction, FetchHints fetchHints, Long endTime, Authorizations authorizations) {
+        if (!validateFetchHints(direction)) {
+            return null;
+        }
         return getGraph().getEdges(getEdgeIds(direction, authorizations), fetchHints, endTime, authorizations);
+    }
+
+    private boolean validateFetchHints(Direction direction) {
+        if (!getFetchHints().isIncludeEdgeRefs()) {
+            LOGGER.warn("edges called without including any edge infos");
+            return false;
+        }
+        switch (direction) {
+            case OUT:
+                if (!getFetchHints().isIncludeOutEdgeRefs() && !getFetchHints().hasEdgeLabelsOfEdgeRefsToInclude()) {
+                    LOGGER.warn("edges called without including any edge infos");
+                    return false;
+                }
+                break;
+            case IN:
+                if (!getFetchHints().isIncludeInEdgeRefs() && !getFetchHints().hasEdgeLabelsOfEdgeRefsToInclude()) {
+                    LOGGER.warn("edges called without including any edge infos");
+                    return false;
+                }
+                break;
+        }
+        return true;
     }
 
     @Override
     public Iterable<String> getEdgeIds(Direction direction, Authorizations authorizations) {
+        if (!validateFetchHints(direction)) {
+            return null;
+        }
         return getEdgeIdsWithOtherVertexId(null, direction, null, authorizations);
     }
 
@@ -185,12 +214,18 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
     }
 
     @Override
-    public Iterable<Edge> getEdges(Direction direction, String label, EnumSet<FetchHint> fetchHints, Authorizations authorizations) {
+    public Iterable<Edge> getEdges(Direction direction, String label, FetchHints fetchHints, Authorizations authorizations) {
+        if (!validateFetchHints(direction)) {
+            return null;
+        }
         return getGraph().getEdges(getEdgeIds(direction, labelToArrayOrNull(label), authorizations), fetchHints, authorizations);
     }
 
     @Override
     public Iterable<String> getEdgeIds(Direction direction, String label, Authorizations authorizations) {
+        if (!validateFetchHints(direction)) {
+            return null;
+        }
         return getEdgeIdsWithOtherVertexId(null, direction, labelToArrayOrNull(label), authorizations);
     }
 
@@ -200,12 +235,18 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
     }
 
     @Override
-    public Iterable<Edge> getEdges(Direction direction, final String[] labels, EnumSet<FetchHint> fetchHints, Authorizations authorizations) {
+    public Iterable<Edge> getEdges(Direction direction, final String[] labels, FetchHints fetchHints, Authorizations authorizations) {
+        if (!validateFetchHints(direction)) {
+            return null;
+        }
         return getGraph().getEdges(getEdgeIdsWithOtherVertexId(null, direction, labels, authorizations), fetchHints, authorizations);
     }
 
     @Override
     public Iterable<String> getEdgeIds(final Direction direction, final String[] labels, final Authorizations authorizations) {
+        if (!validateFetchHints(direction)) {
+            return null;
+        }
         return getEdgeIdsWithOtherVertexId(null, direction, labels, authorizations);
     }
 
@@ -215,12 +256,18 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
     }
 
     @Override
-    public Iterable<Edge> getEdges(final Vertex otherVertex, Direction direction, EnumSet<FetchHint> fetchHints, Authorizations authorizations) {
+    public Iterable<Edge> getEdges(final Vertex otherVertex, Direction direction, FetchHints fetchHints, Authorizations authorizations) {
+        if (!validateFetchHints(direction)) {
+            return null;
+        }
         return getGraph().getEdges(getEdgeIdsWithOtherVertexId(otherVertex.getId(), direction, null, authorizations), fetchHints, authorizations);
     }
 
     @Override
     public Iterable<String> getEdgeIds(Vertex otherVertex, Direction direction, Authorizations authorizations) {
+        if (!validateFetchHints(direction)) {
+            return null;
+        }
         return getEdgeIdsWithOtherVertexId(otherVertex.getId(), direction, null, authorizations);
     }
 
@@ -230,12 +277,18 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
     }
 
     @Override
-    public Iterable<Edge> getEdges(final Vertex otherVertex, Direction direction, String label, EnumSet<FetchHint> fetchHints, Authorizations authorizations) {
+    public Iterable<Edge> getEdges(final Vertex otherVertex, Direction direction, String label, FetchHints fetchHints, Authorizations authorizations) {
+        if (!validateFetchHints(direction)) {
+            return null;
+        }
         return getGraph().getEdges(getEdgeIdsWithOtherVertexId(otherVertex.getId(), direction, labelToArrayOrNull(label), authorizations), fetchHints, authorizations);
     }
 
     @Override
     public Iterable<String> getEdgeIds(Vertex otherVertex, Direction direction, String label, Authorizations authorizations) {
+        if (!validateFetchHints(direction)) {
+            return null;
+        }
         return getEdgeIdsWithOtherVertexId(otherVertex.getId(), direction, labelToArrayOrNull(label), authorizations);
     }
 
@@ -245,17 +298,27 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
     }
 
     @Override
-    public Iterable<Edge> getEdges(final Vertex otherVertex, Direction direction, String[] labels, EnumSet<FetchHint> fetchHints, Authorizations authorizations) {
+    public Iterable<Edge> getEdges(final Vertex otherVertex, Direction direction, String[] labels, FetchHints fetchHints, Authorizations authorizations) {
+        if (!validateFetchHints(direction)) {
+            return null;
+        }
         return getGraph().getEdges(getEdgeIdsWithOtherVertexId(otherVertex.getId(), direction, labels, authorizations), fetchHints, authorizations);
     }
 
     @Override
     public Iterable<String> getEdgeIds(final Vertex otherVertex, final Direction direction, final String[] labels, final Authorizations authorizations) {
+        if (!validateFetchHints(direction)) {
+            return null;
+        }
         return getEdgeIdsWithOtherVertexId(otherVertex.getId(), direction, labels, authorizations);
     }
 
     @Override
     public int getEdgeCount(Direction direction, Authorizations authorizations) {
+        if (!getFetchHints().isIncludeEdgeRefs()) {
+            LOGGER.warn("getEdgeCount called without including any edge infos");
+            return 0;
+        }
         return count(getEdgeIds(direction, authorizations));
     }
 
@@ -298,7 +361,16 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
     }
 
     @SuppressWarnings("unused")
-    public Iterable<String> getEdgeIdsWithOtherVertexId(final String otherVertexId, final Direction direction, final String[] labels, final Authorizations authorizations) {
+    public Iterable<String> getEdgeIdsWithOtherVertexId(
+            String otherVertexId,
+            Direction direction,
+            String[] labels,
+            Authorizations authorizations
+    ) {
+        if (!getFetchHints().isIncludeEdgeRefs()) {
+            LOGGER.warn("getEdgeIdsWithOtherVertexId called without including any edge infos");
+            return null;
+        }
         return new LookAheadIterable<Map.Entry<Text, org.vertexium.accumulo.iterator.model.EdgeInfo>, String>() {
             @Override
             protected boolean isIncluded(Map.Entry<Text, org.vertexium.accumulo.iterator.model.EdgeInfo> edgeInfo, String edgeId) {
@@ -332,13 +404,23 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
     }
 
     private Iterable<Map.Entry<Text, org.vertexium.accumulo.iterator.model.EdgeInfo>> getEdgeInfos(Direction direction) {
+        if (!getFetchHints().isIncludeEdgeRefs()) {
+            LOGGER.warn("getEdgeInfos called without including any edge infos");
+            return null;
+        }
         switch (direction) {
             case IN:
+                if (!getFetchHints().isIncludeInEdgeRefs() && !getFetchHints().hasEdgeLabelsOfEdgeRefsToInclude()) {
+                    return null;
+                }
                 if (this.inEdges instanceof EdgesWithEdgeInfo) {
                     return ((EdgesWithEdgeInfo) this.inEdges).getEntries();
                 }
                 throw new VertexiumException("Cannot get edge info");
             case OUT:
+                if (!getFetchHints().isIncludeOutEdgeRefs() && !getFetchHints().hasEdgeLabelsOfEdgeRefsToInclude()) {
+                    return null;
+                }
                 if (this.outEdges instanceof EdgesWithEdgeInfo) {
                     return ((EdgesWithEdgeInfo) this.outEdges).getEntries();
                 }
@@ -363,6 +445,10 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
 
     @Override
     public Iterable<org.vertexium.EdgeInfo> getEdgeInfos(Direction direction, String[] labels, Authorizations authorizations) {
+        if (!getFetchHints().isIncludeEdgeRefs()) {
+            LOGGER.warn("getEdgeInfos called without including any edge infos");
+            return null;
+        }
         switch (direction) {
             case IN:
                 return filterEdgeInfosByLabel(accumuloEdgeInfosToEdgeInfos(getEdgeInfos(direction), Direction.IN), labels);
@@ -424,7 +510,7 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
     }
 
     @Override
-    public Iterable<Vertex> getVertices(Direction direction, EnumSet<FetchHint> fetchHints, final Authorizations authorizations) {
+    public Iterable<Vertex> getVertices(Direction direction, FetchHints fetchHints, final Authorizations authorizations) {
         return getGraph().getVertices(getVertexIds(direction, authorizations), fetchHints, authorizations);
     }
 
@@ -434,7 +520,7 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
     }
 
     @Override
-    public Iterable<Vertex> getVertices(Direction direction, String label, EnumSet<FetchHint> fetchHints, Authorizations authorizations) {
+    public Iterable<Vertex> getVertices(Direction direction, String label, FetchHints fetchHints, Authorizations authorizations) {
         return getVertices(direction, labelToArrayOrNull(label), fetchHints, authorizations);
     }
 
@@ -444,7 +530,7 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
     }
 
     @Override
-    public Iterable<Vertex> getVertices(Direction direction, String[] labels, EnumSet<FetchHint> fetchHints, final Authorizations authorizations) {
+    public Iterable<Vertex> getVertices(Direction direction, String[] labels, FetchHints fetchHints, final Authorizations authorizations) {
         return getGraph().getVertices(getVertexIds(direction, labels, authorizations), fetchHints, authorizations);
     }
 
@@ -544,12 +630,12 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
     }
 
     @Override
-    public Iterable<EdgeVertexPair> getEdgeVertexPairs(Direction direction, EnumSet<FetchHint> fetchHints, Authorizations authorizations) {
+    public Iterable<EdgeVertexPair> getEdgeVertexPairs(Direction direction, FetchHints fetchHints, Authorizations authorizations) {
         return getEdgeVertexPairs(getEdgeInfos(direction, authorizations), fetchHints, null, authorizations);
     }
 
     @Override
-    public Iterable<EdgeVertexPair> getEdgeVertexPairs(Direction direction, EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations) {
+    public Iterable<EdgeVertexPair> getEdgeVertexPairs(Direction direction, FetchHints fetchHints, Long endTime, Authorizations authorizations) {
         return getEdgeVertexPairs(getEdgeInfos(direction, authorizations), fetchHints, endTime, authorizations);
     }
 
@@ -559,7 +645,7 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
     }
 
     @Override
-    public Iterable<EdgeVertexPair> getEdgeVertexPairs(Direction direction, String label, EnumSet<FetchHint> fetchHints, Authorizations authorizations) {
+    public Iterable<EdgeVertexPair> getEdgeVertexPairs(Direction direction, String label, FetchHints fetchHints, Authorizations authorizations) {
         return getEdgeVertexPairs(getEdgeInfos(direction, label, authorizations), fetchHints, null, authorizations);
     }
 
@@ -569,11 +655,11 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
     }
 
     @Override
-    public Iterable<EdgeVertexPair> getEdgeVertexPairs(Direction direction, String[] labels, EnumSet<FetchHint> fetchHints, Authorizations authorizations) {
+    public Iterable<EdgeVertexPair> getEdgeVertexPairs(Direction direction, String[] labels, FetchHints fetchHints, Authorizations authorizations) {
         return getEdgeVertexPairs(getEdgeInfos(direction, labels, authorizations), fetchHints, null, authorizations);
     }
 
-    private Iterable<EdgeVertexPair> getEdgeVertexPairs(Iterable<EdgeInfo> edgeInfos, EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations) {
+    private Iterable<EdgeVertexPair> getEdgeVertexPairs(Iterable<EdgeInfo> edgeInfos, FetchHints fetchHints, Long endTime, Authorizations authorizations) {
         return EdgeVertexPair.getEdgeVertexPairs(getGraph(), getId(), edgeInfos, fetchHints, endTime, authorizations);
     }
 }

@@ -7,7 +7,7 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.vertexium.Authorizations;
 import org.vertexium.Element;
-import org.vertexium.FetchHint;
+import org.vertexium.FetchHints;
 import org.vertexium.Visibility;
 import org.vertexium.property.MutablePropertyImpl;
 
@@ -24,7 +24,7 @@ public class ExistingElementMutationImplTest {
 
     @Before
     public void before() {
-        when(element.getFetchHints()).thenReturn(FetchHint.ALL);
+        when(element.getFetchHints()).thenReturn(FetchHints.ALL);
         mutation = new TestExistingElementMutationImpl<>(element);
     }
 
@@ -49,7 +49,7 @@ public class ExistingElementMutationImplTest {
                 null,
                 null,
                 new Visibility(""),
-                FetchHint.ALL
+                FetchHints.ALL
         ));
         assertTrue("should have changes", mutation.hasChanges());
     }
@@ -64,7 +64,7 @@ public class ExistingElementMutationImplTest {
                 null,
                 null,
                 new Visibility(""),
-                FetchHint.ALL
+                FetchHints.ALL
         ));
         assertTrue("should have changes", mutation.hasChanges());
     }

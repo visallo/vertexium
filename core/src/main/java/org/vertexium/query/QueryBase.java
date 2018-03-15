@@ -36,7 +36,7 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
     }
 
     @Override
-    public QueryResultsIterable<Vertex> vertices(final EnumSet<FetchHint> fetchHints) {
+    public QueryResultsIterable<Vertex> vertices(FetchHints fetchHints) {
         //noinspection unchecked
         return (QueryResultsIterable<Vertex>) search(EnumSet.of(VertexiumObjectType.VERTEX), fetchHints);
     }
@@ -48,7 +48,7 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
 
     @Override
     public QueryResultsIterable<String> vertexIds(EnumSet<IdFetchHint> idFetchHints) {
-        EnumSet<FetchHint> fetchHints = idFetchHintsToElementFetchHints(idFetchHints);
+        FetchHints fetchHints = idFetchHintsToElementFetchHints(idFetchHints);
         return new DefaultGraphQueryIdIterable<>(vertices(fetchHints));
     }
 
@@ -58,7 +58,7 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
     }
 
     @Override
-    public QueryResultsIterable<Edge> edges(final EnumSet<FetchHint> fetchHints) {
+    public QueryResultsIterable<Edge> edges(FetchHints fetchHints) {
         //noinspection unchecked
         return (QueryResultsIterable<Edge>) search(EnumSet.of(VertexiumObjectType.EDGE), fetchHints);
     }
@@ -70,7 +70,7 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
 
     @Override
     public QueryResultsIterable<String> edgeIds(EnumSet<IdFetchHint> idFetchHints) {
-        EnumSet<FetchHint> fetchHints = idFetchHintsToElementFetchHints(idFetchHints);
+        FetchHints fetchHints = idFetchHintsToElementFetchHints(idFetchHints);
         return new DefaultGraphQueryIdIterable<>(edges(fetchHints));
     }
 
@@ -80,7 +80,7 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
     }
 
     @Override
-    public QueryResultsIterable<ExtendedDataRow> extendedDataRows(EnumSet<FetchHint> fetchHints) {
+    public QueryResultsIterable<ExtendedDataRow> extendedDataRows(FetchHints fetchHints) {
         //noinspection unchecked
         return (QueryResultsIterable<ExtendedDataRow>) search(EnumSet.of(VertexiumObjectType.EXTENDED_DATA), fetchHints);
     }
@@ -91,7 +91,7 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
     }
 
     @Override
-    public QueryResultsIterable<? extends VertexiumObject> search(EnumSet<VertexiumObjectType> objectTypes, EnumSet<FetchHint> fetchHints) {
+    public QueryResultsIterable<? extends VertexiumObject> search(EnumSet<VertexiumObjectType> objectTypes, FetchHints fetchHints) {
         List<QueryResultsIterable<? extends VertexiumObject>> items = new ArrayList<>();
         if (objectTypes.contains(VertexiumObjectType.VERTEX)) {
             items.add(vertices(fetchHints));
@@ -144,11 +144,11 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
     /**
      * This method should be overridden if {@link #search(EnumSet, EnumSet)} is not overridden.
      */
-    protected QueryResultsIterable<? extends VertexiumObject> extendedData(EnumSet<FetchHint> fetchHints) {
+    protected QueryResultsIterable<? extends VertexiumObject> extendedData(FetchHints fetchHints) {
         throw new VertexiumException("not implemented");
     }
 
-    protected QueryResultsIterable<? extends VertexiumObject> extendedData(EnumSet<FetchHint> fetchHints, Iterable<? extends Element> elements) {
+    protected QueryResultsIterable<? extends VertexiumObject> extendedData(FetchHints fetchHints, Iterable<? extends Element> elements) {
         Iterable<ExtendedDataRow> allExtendedData = new SelectManyIterable<Element, ExtendedDataRow>(elements) {
             @Override
             protected Iterable<? extends ExtendedDataRow> getIterable(Element element) {
@@ -170,7 +170,7 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
 
     @Override
     public QueryResultsIterable<ExtendedDataRowId> extendedDataRowIds(EnumSet<IdFetchHint> idFetchHints) {
-        EnumSet<FetchHint> fetchHints = idFetchHintsToElementFetchHints(idFetchHints);
+        FetchHints fetchHints = idFetchHintsToElementFetchHints(idFetchHints);
         QueryResultsIterable<? extends VertexiumObject> vertexiumObjects = search(EnumSet.of(VertexiumObjectType.EXTENDED_DATA), fetchHints);
         return new DefaultGraphQueryIdIterable<>(vertexiumObjects);
     }
@@ -243,7 +243,7 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
 
     @Override
     @Deprecated
-    public QueryResultsIterable<Edge> edges(final String label, EnumSet<FetchHint> fetchHints) {
+    public QueryResultsIterable<Edge> edges(final String label, FetchHints fetchHints) {
         hasEdgeLabel(label);
         return edges(fetchHints);
     }
@@ -261,7 +261,7 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
     }
 
     @Override
-    public QueryResultsIterable<Element> elements(EnumSet<FetchHint> fetchHints) {
+    public QueryResultsIterable<Element> elements(FetchHints fetchHints) {
         //noinspection unchecked
         return (QueryResultsIterable<Element>) search(VertexiumObjectType.ELEMENTS, fetchHints);
     }
@@ -273,7 +273,7 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
 
     @Override
     public QueryResultsIterable<String> elementIds(EnumSet<IdFetchHint> idFetchHints) {
-        EnumSet<FetchHint> fetchHints = idFetchHintsToElementFetchHints(idFetchHints);
+        FetchHints fetchHints = idFetchHintsToElementFetchHints(idFetchHints);
         return new DefaultGraphQueryIdIterable<>(elements(fetchHints));
     }
 
@@ -798,7 +798,7 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
         return null;
     }
 
-    protected EnumSet<FetchHint> idFetchHintsToElementFetchHints(EnumSet<IdFetchHint> idFetchHints) {
-        return idFetchHints.contains(IdFetchHint.INCLUDE_HIDDEN) ? FetchHint.ALL_INCLUDING_HIDDEN : FetchHint.ALL;
+    protected FetchHints idFetchHintsToElementFetchHints(EnumSet<IdFetchHint> idFetchHints) {
+        return idFetchHints.contains(IdFetchHint.INCLUDE_HIDDEN) ? FetchHints.ALL_INCLUDING_HIDDEN : FetchHints.ALL;
     }
 }

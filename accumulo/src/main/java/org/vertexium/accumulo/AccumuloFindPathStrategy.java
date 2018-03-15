@@ -200,7 +200,7 @@ public class AccumuloFindPathStrategy {
             Long startTime = null;
             Long endTime = null;
             ScannerBase scanner = graph.createElementScanner(
-                    FetchHint.EDGE_REFS,
+                    FetchHints.EDGE_REFS,
                     ElementType.VERTEX,
                     maxVersions,
                     startTime,

@@ -103,7 +103,7 @@ public class LazyEdge extends ModelBase {
     }
 
     private Edge getE() {
-        return getGraph().getEdge(getId(), FetchHint.ALL_INCLUDING_HIDDEN, getTime(), getAuthorizations());
+        return getGraph().getEdge(getId(), FetchHints.ALL_INCLUDING_HIDDEN, getTime(), getAuthorizations());
     }
 
     public String getId() {

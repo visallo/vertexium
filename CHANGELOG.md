@@ -1,3 +1,6 @@
+# v4.0.0
+* Changed: FetchHints to support more filtering
+
 # v3.2.2
 * Fixed: Improved support for multithreaded clients with InMemoryGraph
 

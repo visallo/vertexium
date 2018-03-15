@@ -4,7 +4,6 @@ import org.vertexium.*;
 import org.vertexium.util.FilterIterable;
 import org.vertexium.util.JoinIterable;
 
-import java.util.EnumSet;
 import java.util.List;
 
 public class DefaultVertexQuery extends VertexQueryBase implements VertexQuery {
@@ -13,12 +12,12 @@ public class DefaultVertexQuery extends VertexQueryBase implements VertexQuery {
     }
 
     @Override
-    public QueryResultsIterable<Vertex> vertices(EnumSet<FetchHint> fetchHints) {
+    public QueryResultsIterable<Vertex> vertices(FetchHints fetchHints) {
         Iterable<Vertex> vertices = allVertices(fetchHints);
         return new DefaultGraphQueryIterableWithAggregations<>(getParameters(), vertices, true, true, true, getAggregations());
     }
 
-    private Iterable<Vertex> allVertices(EnumSet<FetchHint> fetchHints) {
+    private Iterable<Vertex> allVertices(FetchHints fetchHints) {
         List<String> edgeLabels = getParameters().getEdgeLabels();
         String[] edgeLabelsArray = edgeLabels == null || edgeLabels.size() == 0
                 ? null
@@ -49,12 +48,12 @@ public class DefaultVertexQuery extends VertexQueryBase implements VertexQuery {
     }
 
     @Override
-    public QueryResultsIterable<Edge> edges(EnumSet<FetchHint> fetchHints) {
+    public QueryResultsIterable<Edge> edges(FetchHints fetchHints) {
         Iterable<Edge> edges = allEdges(fetchHints);
         return new DefaultGraphQueryIterableWithAggregations<>(getParameters(), edges, true, true, true, getAggregations());
     }
 
-    private Iterable<Edge> allEdges(EnumSet<FetchHint> fetchHints) {
+    private Iterable<Edge> allEdges(FetchHints fetchHints) {
         Iterable<Edge> results = getSourceVertex().getEdges(getDirection(), fetchHints, getParameters().getAuthorizations());
         if (getOtherVertexId() != null) {
             results = new FilterIterable<Edge>(results) {
@@ -68,8 +67,10 @@ public class DefaultVertexQuery extends VertexQueryBase implements VertexQuery {
     }
 
     @Override
-    protected QueryResultsIterable<? extends VertexiumObject> extendedData(EnumSet<FetchHint> extendedDataFetchHints) {
-        EnumSet<FetchHint> fetchHints = EnumSet.of(FetchHint.EXTENDED_DATA_TABLE_NAMES);
+    protected QueryResultsIterable<? extends VertexiumObject> extendedData(FetchHints extendedDataFetchHints) {
+        FetchHints fetchHints = FetchHints.builder()
+                .setIncludeExtendedDataTableNames(true)
+                .build();
         return extendedData(extendedDataFetchHints, new JoinIterable<>(
                 allVertices(fetchHints),
                 allEdges(fetchHints)

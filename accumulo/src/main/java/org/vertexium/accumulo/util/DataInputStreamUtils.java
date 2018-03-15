@@ -5,7 +5,8 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import org.apache.hadoop.io.Text;
-import org.vertexium.FetchHint;
+import org.vertexium.FetchHints;
+import org.vertexium.FetchHints;
 import org.vertexium.Property;
 import org.vertexium.Visibility;
 import org.vertexium.accumulo.AccumuloGraph;
@@ -57,7 +58,7 @@ public class DataInputStreamUtils {
     public static Iterable<Property> decodeProperties(
             AccumuloGraph graph,
             DataInputStream in,
-            EnumSet<FetchHint> fetchHints
+            FetchHints fetchHints
     ) throws IOException {
         List<Property> results = new ArrayList<>();
         while (true) {

@@ -109,7 +109,7 @@ public interface Graph {
      * @param authorizations The authorizations required to load the vertex.
      * @return The vertex if successful. null if the vertex is not found or the required authorizations were not provided.
      */
-    Vertex getVertex(String vertexId, EnumSet<FetchHint> fetchHints, Authorizations authorizations);
+    Vertex getVertex(String vertexId, FetchHints fetchHints, Authorizations authorizations);
 
     /**
      * Get a vertex from the graph.
@@ -120,7 +120,7 @@ public interface Graph {
      * @param authorizations The authorizations required to load the vertex.
      * @return The vertex if successful. null if the vertex is not found or the required authorizations were not provided.
      */
-    Vertex getVertex(String vertexId, EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations);
+    Vertex getVertex(String vertexId, FetchHints fetchHints, Long endTime, Authorizations authorizations);
 
     /**
      * Gets vertices from the graph given the prefix.
@@ -139,7 +139,7 @@ public interface Graph {
      * @param authorizations The authorizations required to load the vertex.
      * @return The vertex if successful. null if the vertex is not found or the required authorizations were not provided.
      */
-    Iterable<Vertex> getVerticesWithPrefix(String vertexIdPrefix, EnumSet<FetchHint> fetchHints, Authorizations authorizations);
+    Iterable<Vertex> getVerticesWithPrefix(String vertexIdPrefix, FetchHints fetchHints, Authorizations authorizations);
 
     /**
      * Gets vertices from the graph given the prefix.
@@ -150,7 +150,7 @@ public interface Graph {
      * @param authorizations The authorizations required to load the vertex.
      * @return The vertex if successful. null if the vertex is not found or the required authorizations were not provided.
      */
-    Iterable<Vertex> getVerticesWithPrefix(String vertexIdPrefix, EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations);
+    Iterable<Vertex> getVerticesWithPrefix(String vertexIdPrefix, FetchHints fetchHints, Long endTime, Authorizations authorizations);
 
     /**
      * Gets vertices from the graph in the given range.
@@ -169,7 +169,7 @@ public interface Graph {
      * @param authorizations The authorizations required to load the vertex.
      * @return The vertices in the range.
      */
-    Iterable<Vertex> getVerticesInRange(Range idRange, EnumSet<FetchHint> fetchHints, Authorizations authorizations);
+    Iterable<Vertex> getVerticesInRange(Range idRange, FetchHints fetchHints, Authorizations authorizations);
 
     /**
      * Gets vertices from the graph in the given range.
@@ -180,7 +180,7 @@ public interface Graph {
      * @param authorizations The authorizations required to load the vertex.
      * @return The vertices in the range.
      */
-    Iterable<Vertex> getVerticesInRange(Range idRange, EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations);
+    Iterable<Vertex> getVerticesInRange(Range idRange, FetchHints fetchHints, Long endTime, Authorizations authorizations);
 
     /**
      * Gets all vertices on the graph.
@@ -197,7 +197,7 @@ public interface Graph {
      * @param authorizations The authorizations required to load the vertex.
      * @return An iterable of all the vertices.
      */
-    Iterable<Vertex> getVertices(EnumSet<FetchHint> fetchHints, Authorizations authorizations);
+    Iterable<Vertex> getVertices(FetchHints fetchHints, Authorizations authorizations);
 
     /**
      * Gets all vertices on the graph.
@@ -207,7 +207,7 @@ public interface Graph {
      * @param authorizations The authorizations required to load the vertex.
      * @return An iterable of all the vertices.
      */
-    Iterable<Vertex> getVertices(EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations);
+    Iterable<Vertex> getVertices(FetchHints fetchHints, Long endTime, Authorizations authorizations);
 
     /**
      * Tests the existence of vertices with the given authorizations.
@@ -239,7 +239,7 @@ public interface Graph {
      * @param authorizations The authorizations required to load the vertex.
      * @return An iterable of all the vertices.
      */
-    Iterable<Vertex> getVertices(Iterable<String> ids, EnumSet<FetchHint> fetchHints, Authorizations authorizations);
+    Iterable<Vertex> getVertices(Iterable<String> ids, FetchHints fetchHints, Authorizations authorizations);
 
     /**
      * Gets all vertices matching the given ids on the graph. The order of
@@ -252,7 +252,7 @@ public interface Graph {
      * @param authorizations The authorizations required to load the vertex.
      * @return An iterable of all the vertices.
      */
-    Iterable<Vertex> getVertices(Iterable<String> ids, EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations);
+    Iterable<Vertex> getVertices(Iterable<String> ids, FetchHints fetchHints, Long endTime, Authorizations authorizations);
 
     /**
      * Gets all vertices matching the given ids on the graph. This method is similar to
@@ -277,7 +277,7 @@ public interface Graph {
      * @param authorizations The authorizations required to load the vertex.
      * @return An iterable of all the vertices.
      */
-    List<Vertex> getVerticesInOrder(Iterable<String> ids, EnumSet<FetchHint> fetchHints, Authorizations authorizations);
+    List<Vertex> getVerticesInOrder(Iterable<String> ids, FetchHints fetchHints, Authorizations authorizations);
 
     /**
      * Permanently deletes a vertex from the graph.
@@ -481,7 +481,7 @@ public interface Graph {
      * @param authorizations The authorizations required to load the edge.
      * @return The edge if successful. null if the edge is not found or the required authorizations were not provided.
      */
-    Edge getEdge(String edgeId, EnumSet<FetchHint> fetchHints, Authorizations authorizations);
+    Edge getEdge(String edgeId, FetchHints fetchHints, Authorizations authorizations);
 
     /**
      * Get an edge from the graph.
@@ -492,7 +492,7 @@ public interface Graph {
      * @param authorizations The authorizations required to load the edge.
      * @return The edge if successful. null if the edge is not found or the required authorizations were not provided.
      */
-    Edge getEdge(String edgeId, EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations);
+    Edge getEdge(String edgeId, FetchHints fetchHints, Long endTime, Authorizations authorizations);
 
     /**
      * Gets all edges on the graph.
@@ -509,7 +509,7 @@ public interface Graph {
      * @param authorizations The authorizations required to load the edge.
      * @return An iterable of all the edges.
      */
-    Iterable<Edge> getEdges(EnumSet<FetchHint> fetchHints, Authorizations authorizations);
+    Iterable<Edge> getEdges(FetchHints fetchHints, Authorizations authorizations);
 
     /**
      * Gets all edges on the graph.
@@ -519,7 +519,7 @@ public interface Graph {
      * @param authorizations The authorizations required to load the edge.
      * @return An iterable of all the edges.
      */
-    Iterable<Edge> getEdges(EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations);
+    Iterable<Edge> getEdges(FetchHints fetchHints, Long endTime, Authorizations authorizations);
 
     /**
      * Gets edges from the graph in the given range.
@@ -538,7 +538,7 @@ public interface Graph {
      * @param authorizations The authorizations required to load the vertex.
      * @return The edges in the range.
      */
-    Iterable<Edge> getEdgesInRange(Range idRange, EnumSet<FetchHint> fetchHints, Authorizations authorizations);
+    Iterable<Edge> getEdgesInRange(Range idRange, FetchHints fetchHints, Authorizations authorizations);
 
     /**
      * Gets edges from the graph in the given range.
@@ -549,7 +549,7 @@ public interface Graph {
      * @param authorizations The authorizations required to load the vertex.
      * @return The edges in the range.
      */
-    Iterable<Edge> getEdgesInRange(Range idRange, EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations);
+    Iterable<Edge> getEdgesInRange(Range idRange, FetchHints fetchHints, Long endTime, Authorizations authorizations);
 
     /**
      * Filters a collection of edge ids by the authorizations of that edge, properties, etc. If
@@ -611,7 +611,7 @@ public interface Graph {
      * @param authorizations The authorizations required to load the edge.
      * @return An iterable of all the edges.
      */
-    Iterable<Edge> getEdges(Iterable<String> ids, EnumSet<FetchHint> fetchHints, Authorizations authorizations);
+    Iterable<Edge> getEdges(Iterable<String> ids, FetchHints fetchHints, Authorizations authorizations);
 
     /**
      * Gets all edges on the graph matching the given ids.
@@ -622,7 +622,7 @@ public interface Graph {
      * @param authorizations The authorizations required to load the edge.
      * @return An iterable of all the edges.
      */
-    Iterable<Edge> getEdges(Iterable<String> ids, EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations);
+    Iterable<Edge> getEdges(Iterable<String> ids, FetchHints fetchHints, Long endTime, Authorizations authorizations);
 
     /**
      * Use {@link #findRelatedEdgeIds(Iterable, Authorizations)}
@@ -1135,7 +1135,7 @@ public interface Graph {
     /**
      * The default fetch hints to use if none are provided
      */
-    EnumSet<FetchHint> getDefaultFetchHints();
+    FetchHints getDefaultFetchHints();
 
     /**
      * Visits all elements on the graph

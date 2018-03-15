@@ -302,8 +302,8 @@ public abstract class VertexiumCypherQueryContext {
                 .collect(Collectors.toMap(Property::getName, Property::getValue));
     }
 
-    public EnumSet<FetchHint> getFetchHints() {
-        return FetchHint.ALL;
+    public FetchHints getFetchHints() {
+        return FetchHints.ALL;
     }
 
     public abstract int getMaxUnboundedRange();

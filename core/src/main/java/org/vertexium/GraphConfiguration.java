@@ -24,8 +24,6 @@ public class GraphConfiguration {
     public static final boolean DEFAULT_STRICT_TYPING = false;
     public static final String CREATE_TABLES = "createTables";
     public static final boolean DEFAULT_CREATE_TABLES = true;
-    public static final String DEFAULT_FETCH_HINTS = "defaultFetchHints";
-    public static final String DEFAULT_DEFAULT_FETCH_HINTS = "PROPERTIES,PROPERTY_METADATA,IN_EDGE_REFS,OUT_EDGE_REFS,EXTENDED_DATA_TABLE_NAMES";
 
     private final Map<String, Object> config;
 

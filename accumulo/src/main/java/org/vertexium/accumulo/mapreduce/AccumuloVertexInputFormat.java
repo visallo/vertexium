@@ -38,7 +38,7 @@ public class AccumuloVertexInputFormat extends AccumuloElementInputFormatBase<Ve
 
     public static Vertex createVertex(AccumuloGraph graph, Iterator<Map.Entry<Key, Value>> row, Authorizations authorizations) {
         try {
-            EnumSet<FetchHint> fetchHints = graph.getDefaultFetchHints();
+            FetchHints fetchHints = graph.getDefaultFetchHints();
             VertexElementData vertexElementData = getVertexIterator(graph).createElementDataFromRows(row);
             if (vertexElementData == null) {
                 return null;

@@ -143,7 +143,7 @@ public abstract class ExtendedDataRowBase implements ExtendedDataRow {
                     null,
                     null,
                     null,
-                    FetchHint.ALL
+                    FetchHints.ALL
             );
         }
         return rowIdProperty;
@@ -159,7 +159,7 @@ public abstract class ExtendedDataRowBase implements ExtendedDataRow {
                     null,
                     null,
                     null,
-                    FetchHint.ALL
+                    FetchHints.ALL
             );
         }
         return tableNameProperty;

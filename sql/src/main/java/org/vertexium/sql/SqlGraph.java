@@ -73,7 +73,7 @@ public class SqlGraph extends InMemoryGraph {
 
     @Override
     public Vertex getVertex(
-            String vertexId, EnumSet<FetchHint> fetchHints, Long endTime,
+            String vertexId, FetchHints fetchHints, Long endTime,
             Authorizations authorizations
     ) {
         validateAuthorizations(authorizations);
@@ -88,7 +88,7 @@ public class SqlGraph extends InMemoryGraph {
 
     @Override
     public Iterable<Vertex> getVerticesWithPrefix(
-            final String vertexIdPrefix, final EnumSet<FetchHint> fetchHints,
+            final String vertexIdPrefix, final FetchHints fetchHints,
             final Long endTime, final Authorizations authorizations
     ) {
         validateAuthorizations(authorizations);
@@ -122,7 +122,7 @@ public class SqlGraph extends InMemoryGraph {
     }
 
     @Override
-    public Edge getEdge(String edgeId, EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations) {
+    public Edge getEdge(String edgeId, FetchHints fetchHints, Long endTime, Authorizations authorizations) {
         InMemoryTableElement<InMemoryEdge> element = edgeMap.get(edgeId);
         if (element == null || !isIncluded(element, fetchHints, authorizations)) {
             return null;
@@ -134,7 +134,7 @@ public class SqlGraph extends InMemoryGraph {
     @SuppressWarnings("unchecked")
     @Override
     public Iterable<Vertex> getVertices(
-            final Iterable<String> ids, final EnumSet<FetchHint> fetchHints,
+            final Iterable<String> ids, final FetchHints fetchHints,
             final Long endTime, final Authorizations authorizations
     ) {
         return (Iterable<Vertex>) getElements(ids, fetchHints, endTime, authorizations, vertexMap);
@@ -144,7 +144,7 @@ public class SqlGraph extends InMemoryGraph {
     @Override
     public Iterable<Edge> getEdges(
             Iterable<String> ids,
-            EnumSet<FetchHint> fetchHints,
+            FetchHints fetchHints,
             Long endTime,
             Authorizations authorizations
     ) {
@@ -153,7 +153,7 @@ public class SqlGraph extends InMemoryGraph {
 
     private <T extends InMemoryElement> Iterable<?> getElements(
             Iterable<String> ids,
-            EnumSet<FetchHint> fetchHints,
+            FetchHints fetchHints,
             Long endTime,
             Authorizations authorizations,
             SqlMap<InMemoryTableElement<T>> sqlMap
@@ -206,7 +206,7 @@ public class SqlGraph extends InMemoryGraph {
     @Override
     public Iterable<Edge> getEdgesFromVertex(
             String vertexId,
-            EnumSet<FetchHint> fetchHints,
+            FetchHints fetchHints,
             Long endTime,
             Authorizations authorizations
     ) {

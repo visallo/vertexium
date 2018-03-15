@@ -41,7 +41,7 @@ public class GraphBackup extends GraphToolBase {
     }
 
     public void save(Graph graph, OutputStream out, Authorizations authorizations) throws IOException {
-        EnumSet<FetchHint> fetchHints = FetchHint.ALL;
+        FetchHints fetchHints = FetchHints.ALL;
         save(graph.getVertices(fetchHints, authorizations), graph.getEdges(fetchHints, authorizations), out);
     }
 

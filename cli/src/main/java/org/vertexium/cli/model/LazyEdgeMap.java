@@ -1,7 +1,7 @@
 package org.vertexium.cli.model;
 
 import org.vertexium.Edge;
-import org.vertexium.FetchHint;
+import org.vertexium.FetchHints;
 
 public class LazyEdgeMap extends ModelBase {
     public LazyEdge get(String edgeId) {

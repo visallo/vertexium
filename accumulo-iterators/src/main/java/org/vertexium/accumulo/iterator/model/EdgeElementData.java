@@ -5,7 +5,6 @@ import org.vertexium.accumulo.iterator.util.DataOutputStreamUtils;
 
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.util.EnumSet;
 
 public class EdgeElementData extends ElementData {
     public Text inVertexId;
@@ -21,7 +20,7 @@ public class EdgeElementData extends ElementData {
     }
 
     @Override
-    protected void encode(DataOutputStream out, EnumSet<IteratorFetchHint> fetchHints) throws IOException {
+    protected void encode(DataOutputStream out, IteratorFetchHints fetchHints) throws IOException {
         super.encode(out, fetchHints);
         DataOutputStreamUtils.encodeText(out, inVertexId);
         DataOutputStreamUtils.encodeText(out, outVertexId);

@@ -37,7 +37,7 @@ public class AccumuloEdgeInputFormat extends AccumuloElementInputFormatBase<Edge
             Authorizations authorizations
     ) {
         try {
-            EnumSet<FetchHint> fetchHints = graph.getDefaultFetchHints();
+            FetchHints fetchHints = graph.getDefaultFetchHints();
             EdgeElementData edgeElementData = getEdgeIterator(graph).createElementDataFromRows(row);
             if (edgeElementData == null) {
                 return null;

@@ -5,7 +5,10 @@ import org.vertexium.accumulo.iterator.util.DataOutputStreamUtils;
 
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 public class VertexElementData extends ElementData {
     public final EdgesWithEdgeInfo outEdges = new EdgesWithEdgeInfo();
@@ -25,10 +28,16 @@ public class VertexElementData extends ElementData {
     }
 
     @Override
-    protected void encode(DataOutputStream out, EnumSet<IteratorFetchHint> fetchHints) throws IOException {
+    protected void encode(DataOutputStream out, IteratorFetchHints fetchHints) throws IOException {
         super.encode(out, fetchHints);
-        DataOutputStreamUtils.encodeEdges(out, outEdges, fetchHints.contains(IteratorFetchHint.OUT_EDGE_LABELS) && !fetchHints.contains(IteratorFetchHint.OUT_EDGE_REFS));
-        DataOutputStreamUtils.encodeEdges(out, inEdges, fetchHints.contains(IteratorFetchHint.IN_EDGE_LABELS) && !fetchHints.contains(IteratorFetchHint.IN_EDGE_REFS));
+        DataOutputStreamUtils.encodeEdges(
+                out,
+                outEdges,
+                fetchHints.isIncludeEdgeLabelsAndCounts() && !(fetchHints.isIncludeAllEdgeRefs() || fetchHints.isIncludeOutEdgeRefs()));
+        DataOutputStreamUtils.encodeEdges(
+                out,
+                inEdges,
+                fetchHints.isIncludeEdgeLabelsAndCounts() && !(fetchHints.isIncludeAllEdgeRefs() || fetchHints.isIncludeInEdgeRefs()));
     }
 
     @Override

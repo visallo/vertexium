@@ -21,7 +21,7 @@ public class SqlTableEdge extends SqlTableElement<InMemoryEdge> {
     }
 
     @Override
-    public InMemoryEdge createElementInternal(InMemoryGraph graph, EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations) {
+    public InMemoryEdge createElementInternal(InMemoryGraph graph, FetchHints fetchHints, Long endTime, Authorizations authorizations) {
         return new InMemoryEdge(graph, getId(), asInMemoryTableElement(), fetchHints, endTime, authorizations);
     }
 
@@ -100,7 +100,7 @@ public class SqlTableEdge extends SqlTableElement<InMemoryEdge> {
         }
 
         @Override
-        public Property getProperty(String key, String name, Visibility visibility, EnumSet<FetchHint> fetchHints, Authorizations authorizations) {
+        public Property getProperty(String key, String name, Visibility visibility, FetchHints fetchHints, Authorizations authorizations) {
             return sqlTableEdge.getProperty(key, name, visibility, fetchHints, authorizations);
         }
 
@@ -120,7 +120,7 @@ public class SqlTableEdge extends SqlTableElement<InMemoryEdge> {
         }
 
         @Override
-        public Iterable<Property> getProperties(EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations) {
+        public Iterable<Property> getProperties(FetchHints fetchHints, Long endTime, Authorizations authorizations) {
             return sqlTableEdge.getProperties(fetchHints, endTime, authorizations);
         }
 
@@ -195,7 +195,7 @@ public class SqlTableEdge extends SqlTableElement<InMemoryEdge> {
         }
 
         @Override
-        public InMemoryEdge createElement(InMemoryGraph graph, EnumSet<FetchHint> fetchHints, Authorizations authorizations) {
+        public InMemoryEdge createElement(InMemoryGraph graph, FetchHints fetchHints, Authorizations authorizations) {
             return sqlTableEdge.createElement(graph, fetchHints, authorizations);
         }
 
@@ -205,7 +205,7 @@ public class SqlTableEdge extends SqlTableElement<InMemoryEdge> {
         }
 
         @Override
-        public InMemoryEdge createElementInternal(InMemoryGraph graph, EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations) {
+        public InMemoryEdge createElementInternal(InMemoryGraph graph, FetchHints fetchHints, Long endTime, Authorizations authorizations) {
             return sqlTableEdge.createElementInternal(graph, fetchHints, endTime, authorizations);
         }
     }

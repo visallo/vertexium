@@ -3,7 +3,6 @@ package org.vertexium;
 import org.vertexium.util.ConvertingIterable;
 import org.vertexium.util.IterableUtils;
 
-import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -61,7 +60,14 @@ public class EdgeVertexPair {
         return result;
     }
 
-    public static Iterable<EdgeVertexPair> getEdgeVertexPairs(Graph graph, final String sourceVertexId, Iterable<EdgeInfo> edgeInfos, EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations) {
+    public static Iterable<EdgeVertexPair> getEdgeVertexPairs(
+            Graph graph,
+            String sourceVertexId,
+            Iterable<EdgeInfo> edgeInfos,
+            FetchHints fetchHints,
+            Long endTime,
+            Authorizations authorizations
+    ) {
         Set<String> edgeIdsToFetch = new HashSet<>();
         Set<String> vertexIdsToFetch = new HashSet<>();
         for (EdgeInfo edgeInfo : edgeInfos) {

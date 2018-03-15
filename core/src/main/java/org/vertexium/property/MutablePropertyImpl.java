@@ -2,13 +2,19 @@ package org.vertexium.property;
 
 import org.vertexium.*;
 import org.vertexium.util.IncreasingTime;
+import org.vertexium.util.VertexiumLogger;
+import org.vertexium.util.VertexiumLoggerFactory;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 
 public class MutablePropertyImpl extends MutableProperty {
+    private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(MutablePropertyImpl.class);
     private final String key;
     private final String name;
-    private final EnumSet<FetchHint> fetchHints;
+    private final FetchHints fetchHints;
     private Set<Visibility> hiddenVisibilities;
     private Object value;
     private Visibility visibility;
@@ -23,9 +29,9 @@ public class MutablePropertyImpl extends MutableProperty {
             Long timestamp,
             Set<Visibility> hiddenVisibilities,
             Visibility visibility,
-            EnumSet<FetchHint> fetchHints
+            FetchHints fetchHints
     ) {
-        if (metadata == null && fetchHints.contains(FetchHint.PROPERTY_METADATA)) {
+        if (metadata == null && fetchHints.isIncludePropertyMetadata()) {
             metadata = new Metadata();
         }
 
@@ -61,7 +67,10 @@ public class MutablePropertyImpl extends MutableProperty {
     }
 
     public Metadata getMetadata() {
-        FetchHint.checkFetchHints(fetchHints, FetchHint.PROPERTY_METADATA);
+        if (!fetchHints.isIncludePropertyMetadata()) {
+            LOGGER.warn("calling getMetadata without specifying fetch hints to get metadata");
+            return null;
+        }
         return metadata;
     }
 

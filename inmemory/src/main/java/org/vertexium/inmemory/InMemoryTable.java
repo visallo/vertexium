@@ -1,12 +1,11 @@
 package org.vertexium.inmemory;
 
 import org.vertexium.Authorizations;
-import org.vertexium.FetchHint;
+import org.vertexium.FetchHints;
 import org.vertexium.inmemory.mutations.Mutation;
 import org.vertexium.util.StreamUtils;
 
 import java.util.ArrayList;
-import java.util.EnumSet;
 import java.util.Map;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -25,7 +24,7 @@ public abstract class InMemoryTable<TElement extends InMemoryElement> {
         this(new ConcurrentSkipListMap<>());
     }
 
-    public TElement get(InMemoryGraph graph, String id, EnumSet<FetchHint> fetchHints, Authorizations authorizations) {
+    public TElement get(InMemoryGraph graph, String id, FetchHints fetchHints, Authorizations authorizations) {
         InMemoryTableElement<TElement> inMemoryTableElement = getTableElement(id);
         if (inMemoryTableElement == null) {
             return null;
@@ -78,7 +77,7 @@ public abstract class InMemoryTable<TElement extends InMemoryElement> {
 
     public Iterable<TElement> getAll(
             InMemoryGraph graph,
-            EnumSet<FetchHint> fetchHints,
+            FetchHints fetchHints,
             Long endTime,
             Authorizations authorizations
     ) {
