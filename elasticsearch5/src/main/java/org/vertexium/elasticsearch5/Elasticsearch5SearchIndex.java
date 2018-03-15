@@ -1,6 +1,7 @@
 package org.vertexium.elasticsearch5;
 
 import com.carrotsearch.hppc.cursors.ObjectCursor;
+import com.google.common.base.Joiner;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
@@ -610,9 +611,18 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
             edgesById = new HashMap<>();
         }
 
+        Set<String> missingElements = new HashSet<>();
         rowsByElementTypeAndId.forEach((elementType, elements) -> {
             elements.forEach((elementId, rows) -> {
                 Element element = elementType == ElementType.VERTEX ? verticesById.get(elementId) : edgesById.get(elementId);
+                if (element == null) {
+                    missingElements.add(String.format(
+                            "%s:%s",
+                            elementType == ElementType.VERTEX ? "Vertex" : "Edge",
+                            elementId
+                    ));
+                    return;
+                }
                 bulkUpdate(graph, new ConvertingIterable<ExtendedDataRow, UpdateRequest>(rows) {
                     @Override
                     protected UpdateRequest convert(ExtendedDataRow row) {
@@ -633,6 +643,9 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
                 });
             });
         });
+        if (missingElements.size() > 0) {
+            throw new VertexiumException("Could not add all extended data, missing elements: " + Joiner.on(", ").join(missingElements));
+        }
     }
 
     private UpdateRequestBuilder prepareUpdate(
