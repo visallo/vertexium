@@ -116,7 +116,7 @@ public abstract class AccumuloElementInputFormatBase<TValue extends Element> ext
     }
 
     private static Property makePropertyFromIteratorProperty(AccumuloGraph graph, org.vertexium.accumulo.iterator.model.Property property) {
-        LazyPropertyMetadata metadata = new LazyPropertyMetadata();
+        LazyPropertyMetadata metadata = null;
         Set<Visibility> hiddenVisibilities = null;
         if (property.hiddenVisibilities != null) {
             hiddenVisibilities = Sets.newHashSet(Iterables.transform(property.hiddenVisibilities, new Function<Text, Visibility>() {

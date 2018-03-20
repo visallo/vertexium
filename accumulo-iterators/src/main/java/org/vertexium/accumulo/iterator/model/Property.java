@@ -2,6 +2,7 @@ package org.vertexium.accumulo.iterator.model;
 
 import org.apache.hadoop.io.Text;
 
+import java.util.List;
 import java.util.Set;
 
 public class Property {
@@ -11,7 +12,7 @@ public class Property {
     public final Set<Text> hiddenVisibilities;
     public final String visibility;
     public final long timestamp;
-    public final PropertyMetadata metadata;
+    public final List<Integer> metadata;
 
     public Property(
             String propertyKey,
@@ -20,7 +21,7 @@ public class Property {
             String propertyVisibility,
             long propertyTimestamp,
             Set<Text> propertyHiddenVisibilities,
-            PropertyMetadata metadata
+            List<Integer> metadata
     ) {
         this.key = propertyKey;
         this.name = propertyName;

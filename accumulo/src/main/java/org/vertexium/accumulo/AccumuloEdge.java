@@ -18,7 +18,7 @@ import javax.annotation.Nullable;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
-import java.util.EnumSet;
+import java.util.List;
 
 public class AccumuloEdge extends AccumuloElement implements Edge {
     public static final Text CF_SIGNAL = EdgeIterator.CF_SIGNAL;
@@ -92,7 +92,8 @@ public class AccumuloEdge extends AccumuloElement implements Edge {
                     return new Visibility(input);
                 }
             });
-            properties = DataInputStreamUtils.decodeProperties(graph, in, fetchHints);
+            List<MetadataEntry> metadataEntries = DataInputStreamUtils.decodeMetadataEntries(in);
+            properties = DataInputStreamUtils.decodeProperties(graph, in, metadataEntries, fetchHints);
             ImmutableSet<String> extendedDataTableNames = DataInputStreamUtils.decodeStringSet(in);
             String inVertexId = DataInputStreamUtils.decodeString(in);
             String outVertexId = DataInputStreamUtils.decodeString(in);

@@ -7,11 +7,10 @@ import org.apache.accumulo.core.data.Key;
 import org.apache.accumulo.core.data.Value;
 import org.apache.hadoop.io.Text;
 import org.vertexium.*;
+import org.vertexium.EdgeInfo;
+import org.vertexium.Property;
 import org.vertexium.accumulo.iterator.VertexIterator;
-import org.vertexium.accumulo.iterator.model.Edges;
-import org.vertexium.accumulo.iterator.model.EdgesWithCount;
-import org.vertexium.accumulo.iterator.model.EdgesWithEdgeInfo;
-import org.vertexium.accumulo.iterator.model.ElementData;
+import org.vertexium.accumulo.iterator.model.*;
 import org.vertexium.accumulo.util.DataInputStreamUtils;
 import org.vertexium.mutation.ExistingElementMutation;
 import org.vertexium.mutation.ExistingElementMutationImpl;
@@ -135,7 +134,8 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
                     return new Visibility(input);
                 }
             });
-            properties = DataInputStreamUtils.decodeProperties(graph, in, fetchHints);
+            List<MetadataEntry> metadataEntries = DataInputStreamUtils.decodeMetadataEntries(in);
+            properties = DataInputStreamUtils.decodeProperties(graph, in, metadataEntries, fetchHints);
             ImmutableSet<String> extendedDataTableNames = DataInputStreamUtils.decodeStringSet(in);
             outEdges = DataInputStreamUtils.decodeEdges(in, graph.getNameSubstitutionStrategy());
             inEdges = DataInputStreamUtils.decodeEdges(in, graph.getNameSubstitutionStrategy());
