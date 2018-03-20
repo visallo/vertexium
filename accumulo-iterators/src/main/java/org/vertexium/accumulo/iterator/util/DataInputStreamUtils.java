@@ -53,6 +53,18 @@ public class DataInputStreamUtils {
         return data;
     }
 
+    public static int[] decodeIntArray(DataInputStream in) throws IOException {
+        int len = in.readInt();
+        if (len == -1) {
+            return null;
+        }
+        int[] data = new int[len];
+        for (int i = 0; i < len; i++) {
+            data[i] = in.readInt();
+        }
+        return data;
+    }
+
     public static ByteArrayWrapper decodeByteArrayWrapper(DataInputStream in) throws IOException {
         byte[] result = decodeByteArray(in);
         if (result == null) {

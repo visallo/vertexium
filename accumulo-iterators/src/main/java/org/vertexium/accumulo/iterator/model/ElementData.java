@@ -15,14 +15,17 @@ public abstract class ElementData {
     public static final byte TYPE_ID_EDGE = 2;
     public static final int PROP_START = 1;
     public static final int PROP_END = 2;
+    public static final int METADATA_START = 3;
+    public static final int METADATA_END = 4;
     public Text id;
     public long timestamp;
     public Text visibility;
-    public List<Text> hiddenVisibilities = new ArrayList<>();
+    public final List<Text> hiddenVisibilities = new ArrayList<>();
     public long softDeleteTimestamp;
-    public List<SoftDeletedProperty> softDeletedProperties = new ArrayList<>();
-    public List<HiddenProperty> hiddenProperties = new ArrayList<>();
-    public Map<String, PropertyMetadata> propertyMetadata = new HashMap<>();
+    public final List<SoftDeletedProperty> softDeletedProperties = new ArrayList<>();
+    public final List<HiddenProperty> hiddenProperties = new ArrayList<>();
+    public final List<IteratorMetadataEntry> metadataEntries = new ArrayList<>();
+    public final Map<String, List<Integer>> propertyMetadata = new HashMap<>();
     public final Map<String, PropertyColumnQualifier> propertyColumnQualifiers = new HashMap<>();
     public final Map<String, byte[]> propertyValues = new HashMap<>();
     public final Map<String, Text> propertyVisibilities = new HashMap<>();
@@ -37,6 +40,7 @@ public abstract class ElementData {
         hiddenVisibilities.clear();
         softDeletedProperties.clear();
         hiddenProperties.clear();
+        metadataEntries.clear();
         propertyMetadata.clear();
         propertyColumnQualifiers.clear();
         propertyValues.clear();
@@ -58,6 +62,7 @@ public abstract class ElementData {
         out.writeLong(timestamp);
         DataOutputStreamUtils.encodeText(out, visibility);
         DataOutputStreamUtils.encodeTextList(out, hiddenVisibilities);
+        encodePropertyMetadataLookup(out);
         encodeProperties(out, fetchHints);
         DataOutputStreamUtils.encodeStringSet(out, extendedTableNames);
     }
@@ -69,28 +74,31 @@ public abstract class ElementData {
 
     protected abstract byte getTypeId();
 
+    private void encodePropertyMetadataLookup(DataOutputStream out) throws IOException {
+        out.write(METADATA_START);
+        DataOutputStreamUtils.encodePropertyMetadataEntry(out, metadataEntries);
+        out.write(METADATA_END);
+    }
+
     private void encodeProperties(final DataOutputStream out, IteratorFetchHints fetchHints) throws IOException {
-        iterateProperties(new PropertyDataHandler() {
-            @Override
-            public void handle(
-                    String propertyKey,
-                    String propertyName,
-                    byte[] propertyValue,
-                    Text propertyVisibility,
-                    long propertyTimestamp,
-                    Set<Text> propertyHiddenVisibilities,
-                    PropertyMetadata metadata
-            ) throws IOException {
-                out.write(PROP_START);
-                DataOutputStreamUtils.encodeString(out, propertyKey);
-                DataOutputStreamUtils.encodeString(out, propertyName);
-                DataOutputStreamUtils.encodeText(out, propertyVisibility);
-                out.writeLong(propertyTimestamp);
-                out.writeInt(propertyValue.length);
-                out.write(propertyValue);
-                DataOutputStreamUtils.encodeTextList(out, propertyHiddenVisibilities);
-                DataOutputStreamUtils.encodePropertyMetadata(out, metadata);
-            }
+        iterateProperties((
+                propertyKey,
+                propertyName,
+                propertyValue,
+                propertyVisibility,
+                propertyTimestamp,
+                propertyHiddenVisibilities,
+                metadata
+        ) -> {
+            out.write(PROP_START);
+            DataOutputStreamUtils.encodeString(out, propertyKey);
+            DataOutputStreamUtils.encodeString(out, propertyName);
+            DataOutputStreamUtils.encodeText(out, propertyVisibility);
+            out.writeLong(propertyTimestamp);
+            out.writeInt(propertyValue.length);
+            out.write(propertyValue);
+            DataOutputStreamUtils.encodeTextList(out, propertyHiddenVisibilities);
+            DataOutputStreamUtils.encodeIntArray(out, metadata);
         }, fetchHints);
         out.write(PROP_END);
     }
@@ -113,36 +121,39 @@ public abstract class ElementData {
             if (isPropertyDeleted(propertyKey, propertyName, propertyTimestamp, propertyVisibility)) {
                 continue;
             }
-            PropertyMetadata metadata = propertyMetadata.get(key);
-            propertyDataHandler.handle(propertyKey, propertyName, propertyValue, propertyVisibility, propertyTimestamp, propertyHiddenVisibilities, metadata);
+            List<Integer> metadata = propertyMetadata.get(key);
+            propertyDataHandler.handle(
+                    propertyKey,
+                    propertyName,
+                    propertyValue,
+                    propertyVisibility,
+                    propertyTimestamp,
+                    propertyHiddenVisibilities,
+                    metadata
+            );
         }
     }
 
     public Iterable<Property> getProperties(IteratorFetchHints fetchHints) {
         final List<Property> results = new ArrayList<>();
         try {
-            iterateProperties(new PropertyDataHandler() {
-                @Override
-                public void handle(
-                        String propertyKey,
-                        String propertyName,
-                        byte[] propertyValue,
-                        Text propertyVisibility,
-                        long propertyTimestamp,
-                        Set<Text> propertyHiddenVisibilities,
-                        PropertyMetadata metadata
-                ) throws IOException {
-                    results.add(new Property(
-                            propertyKey,
-                            propertyName,
-                            propertyValue,
-                            propertyVisibility.toString(),
-                            propertyTimestamp,
-                            propertyHiddenVisibilities,
-                            metadata
-                    ));
-                }
-            }, fetchHints);
+            iterateProperties((
+                    propertyKey,
+                    propertyName,
+                    propertyValue,
+                    propertyVisibility,
+                    propertyTimestamp,
+                    propertyHiddenVisibilities,
+                    metadata
+            ) -> results.add(new Property(
+                    propertyKey,
+                    propertyName,
+                    propertyValue,
+                    propertyVisibility.toString(),
+                    propertyTimestamp,
+                    propertyHiddenVisibilities,
+                    metadata
+            )), fetchHints);
         } catch (IOException ex) {
             throw new VertexiumAccumuloIteratorException("Could not get properties", ex);
         }
@@ -150,7 +161,15 @@ public abstract class ElementData {
     }
 
     private interface PropertyDataHandler {
-        void handle(String propertyKey, String propertyName, byte[] propertyValue, Text propertyVisibility, long propertyTimestamp, Set<Text> propertyHiddenVisibilities, PropertyMetadata metadata) throws IOException;
+        void handle(
+                String propertyKey,
+                String propertyName,
+                byte[] propertyValue,
+                Text propertyVisibility,
+                long propertyTimestamp,
+                Set<Text> propertyHiddenVisibilities,
+                List<Integer> metadata
+        ) throws IOException;
     }
 
     private Set<Text> getPropertyHiddenVisibilities(String propertyKey, String propertyName, String propertyVisibility) {

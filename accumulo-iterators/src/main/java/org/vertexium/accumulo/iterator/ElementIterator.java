@@ -191,12 +191,18 @@ public abstract class ElementIterator<T extends ElementData> extends RowEncoding
         }
         if (shouldIncludeMetadata(propertyMetadataColumnQualifier)) {
             String discriminator = propertyMetadataColumnQualifier.getPropertyDiscriminator(timestamp);
-            PropertyMetadata propertyMetadata = elementData.propertyMetadata.get(discriminator);
-            if (propertyMetadata == null) {
-                propertyMetadata = new PropertyMetadata();
-                elementData.propertyMetadata.put(discriminator, propertyMetadata);
+            List<Integer> propertyMetadata = elementData.propertyMetadata.computeIfAbsent(discriminator, k -> new ArrayList<>());
+            IteratorMetadataEntry pme = new IteratorMetadataEntry(
+                    propertyMetadataColumnQualifier.getMetadataKey(),
+                    columnVisibility.toString(),
+                    value.get()
+            );
+            int pos = elementData.metadataEntries.indexOf(pme);
+            if (pos < 0) {
+                pos = elementData.metadataEntries.size();
+                elementData.metadataEntries.add(pme);
             }
-            propertyMetadata.add(propertyMetadataColumnQualifier.getMetadataKey(), columnVisibility.toString(), value.get());
+            propertyMetadata.add(pos);
         }
     }
 

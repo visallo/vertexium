@@ -3,7 +3,7 @@ package org.vertexium.accumulo.iterator.util;
 import org.apache.hadoop.io.Text;
 import org.vertexium.accumulo.iterator.model.EdgeInfo;
 import org.vertexium.accumulo.iterator.model.EdgesWithEdgeInfo;
-import org.vertexium.accumulo.iterator.model.PropertyMetadata;
+import org.vertexium.accumulo.iterator.model.IteratorMetadataEntry;
 
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -55,6 +55,17 @@ public class DataOutputStreamUtils {
         out.write(bytes);
     }
 
+    public static void encodeIntArray(DataOutputStream out, Collection<Integer> integers) throws IOException {
+        if (integers == null) {
+            out.writeInt(-1);
+            return;
+        }
+        out.writeInt(integers.size());
+        for (Integer i : integers) {
+            out.writeInt(i);
+        }
+    }
+
     public static void encodeString(DataOutputStream out, String text) throws IOException {
         if (text == null) {
             out.writeInt(-1);
@@ -65,22 +76,18 @@ public class DataOutputStreamUtils {
         out.write(bytes, 0, bytes.length);
     }
 
-    public static void encodePropertyMetadata(DataOutputStream out, PropertyMetadata metadata) throws IOException {
-        if (metadata == null) {
+    public static void encodePropertyMetadataEntry(DataOutputStream out, List<IteratorMetadataEntry> metadataEntries) throws IOException {
+        if (metadataEntries == null) {
             out.writeInt(0);
             return;
         }
-        out.writeInt(metadata.entries.size());
-        for (Map.Entry<String, PropertyMetadata.Entry> propertyMetadata : metadata.entries.entrySet()) {
-            encodePropertyMetadataEntry(out, propertyMetadata.getValue());
+        out.writeInt(metadataEntries.size());
+        for (IteratorMetadataEntry metadataEntry : metadataEntries) {
+            encodeString(out, metadataEntry.metadataKey);
+            encodeString(out, metadataEntry.metadataVisibility);
+            out.writeInt(metadataEntry.value.length);
+            out.write(metadataEntry.value);
         }
-    }
-
-    public static void encodePropertyMetadataEntry(DataOutputStream out, PropertyMetadata.Entry metadataEntry) throws IOException {
-        encodeString(out, metadataEntry.metadataKey);
-        encodeString(out, metadataEntry.metadataVisibility);
-        out.writeInt(metadataEntry.value.length);
-        out.write(metadataEntry.value);
     }
 
     public static void encodeEdges(DataOutputStream out, EdgesWithEdgeInfo edges, boolean edgeLabelsOnly) throws IOException {
