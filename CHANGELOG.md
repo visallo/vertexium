@@ -1,3 +1,6 @@
+# v3.2.2
+* Fixed: Improved support for multithreaded clients with InMemoryGraph
+
 # v3.2.1
 * Changed: When saving an ExistingElementMutation, the Elastisearch5Index will now apply the mutations using a painless script rather than making multiple requests.
 * Changed: When using Accumulo, all threads now share a single batch writer rather than creating a new writer for every thread. This allows client programs to more effectively use multi-threading.
