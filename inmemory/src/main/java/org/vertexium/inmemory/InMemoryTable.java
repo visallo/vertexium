@@ -3,15 +3,18 @@ package org.vertexium.inmemory;
 import org.vertexium.Authorizations;
 import org.vertexium.FetchHint;
 import org.vertexium.inmemory.mutations.Mutation;
-import org.vertexium.util.LookAheadIterable;
+import org.vertexium.util.StreamUtils;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.stream.Collectors;
 
 public abstract class InMemoryTable<TElement extends InMemoryElement> {
+    private ReadWriteLock rowsLock = new ReentrantReadWriteLock();
     private Map<String, InMemoryTableElement<TElement>> rows;
 
     protected InMemoryTable(Map<String, InMemoryTableElement<TElement>> rows) {
@@ -19,7 +22,7 @@ public abstract class InMemoryTable<TElement extends InMemoryElement> {
     }
 
     protected InMemoryTable() {
-        this(new ConcurrentSkipListMap<String, InMemoryTableElement<TElement>>());
+        this(new ConcurrentSkipListMap<>());
     }
 
     public TElement get(InMemoryGraph graph, String id, EnumSet<FetchHint> fetchHints, Authorizations authorizations) {
@@ -30,27 +33,47 @@ public abstract class InMemoryTable<TElement extends InMemoryElement> {
         return inMemoryTableElement.createElement(graph, fetchHints, authorizations);
     }
 
-    public synchronized InMemoryTableElement<TElement> getTableElement(String id) {
-        return rows.get(id);
+    public InMemoryTableElement<TElement> getTableElement(String id) {
+        rowsLock.readLock().lock();
+        try {
+            return rows.get(id);
+        } finally {
+            rowsLock.readLock().unlock();
+        }
     }
 
-    public synchronized void append(String id, Mutation... newMutations) {
-        InMemoryTableElement<TElement> inMemoryTableElement = rows.get(id);
-        if (inMemoryTableElement == null) {
-            inMemoryTableElement = createInMemoryTableElement(id);
-            rows.put(id, inMemoryTableElement);
+    public void append(String id, Mutation... newMutations) {
+        rowsLock.writeLock().lock();
+        try {
+            InMemoryTableElement<TElement> inMemoryTableElement = rows.get(id);
+            if (inMemoryTableElement == null) {
+                inMemoryTableElement = createInMemoryTableElement(id);
+                rows.put(id, inMemoryTableElement);
+            }
+            inMemoryTableElement.addAll(newMutations);
+        } finally {
+            rowsLock.writeLock().unlock();
         }
-        inMemoryTableElement.addAll(newMutations);
     }
 
     protected abstract InMemoryTableElement<TElement> createInMemoryTableElement(String id);
 
-    public synchronized void remove(String id) {
-        rows.remove(id);
+    public void remove(String id) {
+        rowsLock.writeLock().lock();
+        try {
+            rows.remove(id);
+        } finally {
+            rowsLock.writeLock().unlock();
+        }
     }
 
-    public synchronized void clear() {
-        rows.clear();
+    public void clear() {
+        rowsLock.writeLock().lock();
+        try {
+            rows.clear();
+        } finally {
+            rowsLock.writeLock().unlock();
+        }
     }
 
     public Iterable<TElement> getAll(
@@ -59,25 +82,18 @@ public abstract class InMemoryTable<TElement extends InMemoryElement> {
             Long endTime,
             Authorizations authorizations
     ) {
-        return new LookAheadIterable<InMemoryTableElement<TElement>, TElement>() {
-            @Override
-            protected boolean isIncluded(InMemoryTableElement<TElement> src, TElement element) {
-                return graph.isIncludedInTimeSpan(src, fetchHints, endTime, authorizations);
-            }
-
-            @Override
-            protected TElement convert(InMemoryTableElement<TElement> element) {
-                return element.createElement(graph, fetchHints, endTime, authorizations);
-            }
-
-            @Override
-            protected Iterator<InMemoryTableElement<TElement>> createIterator() {
-                return getRowValues().iterator();
-            }
-        };
+        return StreamUtils.stream(getRowValues())
+                .filter(element -> graph.isIncludedInTimeSpan(element, fetchHints, endTime, authorizations))
+                .map(element -> element.createElement(graph, fetchHints, endTime, authorizations))
+                .collect(Collectors.toList());
     }
 
-    public synchronized Iterable<InMemoryTableElement<TElement>> getRowValues() {
-        return new ArrayList<>(this.rows.values());
+    public Iterable<InMemoryTableElement<TElement>> getRowValues() {
+        rowsLock.readLock().lock();
+        try {
+            return new ArrayList<>(this.rows.values());
+        } finally {
+            rowsLock.readLock().unlock();
+        }
     }
 }
