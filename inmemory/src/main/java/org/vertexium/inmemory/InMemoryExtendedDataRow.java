@@ -8,10 +8,13 @@ import org.vertexium.security.VisibilityParseException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
 
 public class InMemoryExtendedDataRow extends ExtendedDataRowBase {
     private final ExtendedDataRowId id;
+    private ReadWriteLock propertiesLock = new ReentrantReadWriteLock();
     private Set<InMemoryProperty> properties = new HashSet<>();
 
     public InMemoryExtendedDataRow(ExtendedDataRowId id) {
@@ -19,7 +22,12 @@ public class InMemoryExtendedDataRow extends ExtendedDataRowBase {
     }
 
     public boolean canRead(VisibilityEvaluator visibilityEvaluator) {
-        return properties.stream().anyMatch(e -> e.canRead(visibilityEvaluator));
+        propertiesLock.readLock().lock();
+        try {
+            return properties.stream().anyMatch(e -> e.canRead(visibilityEvaluator));
+        } finally {
+            propertiesLock.readLock().unlock();
+        }
     }
 
     @Override
@@ -28,32 +36,52 @@ public class InMemoryExtendedDataRow extends ExtendedDataRowBase {
     }
 
     public InMemoryExtendedDataRow toReadable(VisibilityEvaluator visibilityEvaluator) {
-        InMemoryExtendedDataRow row = new InMemoryExtendedDataRow(getId());
-        for (InMemoryProperty column : properties) {
-            if (column.canRead(visibilityEvaluator)) {
-                row.properties.add(column);
+        propertiesLock.readLock().lock();
+        try {
+            InMemoryExtendedDataRow row = new InMemoryExtendedDataRow(getId());
+            for (InMemoryProperty column : properties) {
+                if (column.canRead(visibilityEvaluator)) {
+                    row.properties.add(column);
+                }
             }
+            return row;
+        } finally {
+            propertiesLock.readLock().unlock();
         }
-        return row;
     }
 
     public void addColumn(String propertyName, String key, Object value, long timestamp, Visibility visibility) {
-        InMemoryProperty prop = new InMemoryProperty(propertyName, key, value, timestamp, visibility);
-        properties.remove(prop);
-        properties.add(prop);
+        propertiesLock.writeLock().lock();
+        try {
+            InMemoryProperty prop = new InMemoryProperty(propertyName, key, value, timestamp, visibility);
+            properties.remove(prop);
+            properties.add(prop);
+        } finally {
+            propertiesLock.writeLock().unlock();
+        }
     }
 
     public void removeColumn(String columnName, String key, Visibility visibility) {
-        properties.removeIf(p ->
-                p.getName().equals(columnName)
-                        && p.getVisibility().equals(visibility)
-                        && ((key == null && p.getKey() == null) || (key != null && key.equals(p.getKey())))
-        );
+        propertiesLock.writeLock().lock();
+        try {
+            properties.removeIf(p ->
+                    p.getName().equals(columnName)
+                            && p.getVisibility().equals(visibility)
+                            && ((key == null && p.getKey() == null) || (key != null && key.equals(p.getKey())))
+            );
+        } finally {
+            propertiesLock.writeLock().unlock();
+        }
     }
 
     @Override
     public Iterable<Property> getProperties() {
-        return this.properties.stream().map(p -> (Property) p).collect(Collectors.toList());
+        propertiesLock.readLock().lock();
+        try {
+            return this.properties.stream().map(p -> (Property) p).collect(Collectors.toList());
+        } finally {
+            propertiesLock.readLock().unlock();
+        }
     }
 
     private static class InMemoryProperty extends Property {

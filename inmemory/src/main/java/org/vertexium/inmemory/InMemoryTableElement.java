@@ -7,16 +7,19 @@ import org.vertexium.inmemory.mutations.*;
 import org.vertexium.property.MutablePropertyImpl;
 import org.vertexium.property.StreamingPropertyValue;
 import org.vertexium.property.StreamingPropertyValueRef;
-import org.vertexium.util.ConvertingIterable;
-import org.vertexium.util.FilterIterable;
 import org.vertexium.util.IncreasingTime;
 import org.vertexium.util.LookAheadIterable;
 
 import java.io.Serializable;
 import java.util.*;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 public abstract class InMemoryTableElement<TElement extends InMemoryElement> implements Serializable {
     private final String id;
+    private ReadWriteLock mutationLock= new ReentrantReadWriteLock();
     private TreeSet<Mutation> mutations = new TreeSet<>();
 
     protected InMemoryTableElement(String id) {
@@ -28,7 +31,12 @@ public abstract class InMemoryTableElement<TElement extends InMemoryElement> imp
     }
 
     public void addAll(Mutation... newMutations) {
-        Collections.addAll(mutations, newMutations);
+        mutationLock.writeLock().lock();
+        try {
+            Collections.addAll(mutations, newMutations);
+        } finally {
+            mutationLock.writeLock().unlock();
+        }
     }
 
     public long getFirstTimestamp() {
@@ -36,39 +44,20 @@ public abstract class InMemoryTableElement<TElement extends InMemoryElement> imp
     }
 
     protected <T extends Mutation> T findLastMutation(Class<T> clazz) {
-        T last = null;
-        for (Mutation m : this.mutations) {
-            if (clazz.isAssignableFrom(m.getClass())) {
-                //noinspection unchecked
-                last = (T) m;
-            }
-        }
-        return last;
+        List<Mutation> filteredMutations = getFilteredMutations(m -> clazz.isAssignableFrom(m.getClass()));
+        //noinspection unchecked
+        return filteredMutations.isEmpty() ? null : (T) filteredMutations.get(filteredMutations.size() - 1);
     }
 
     protected <T extends Mutation> T findFirstMutation(Class<T> clazz) {
-        for (Mutation m : this.mutations) {
-            if (clazz.isAssignableFrom(m.getClass())) {
-                //noinspection unchecked
-                return (T) m;
-            }
-        }
-        return null;
+        List<Mutation> filteredMutations = getFilteredMutations(m -> clazz.isAssignableFrom(m.getClass()));
+        //noinspection unchecked
+        return filteredMutations.isEmpty() ? null : (T) filteredMutations.get(0);
     }
 
-    protected <T extends Mutation> Iterable<T> findMutations(final Class<T> clazz) {
-        return new ConvertingIterable<Mutation, T>(new FilterIterable<Mutation>(this.mutations) {
-            @Override
-            protected boolean isIncluded(Mutation m) {
-                return clazz.isAssignableFrom(m.getClass());
-            }
-        }) {
-            @Override
-            protected T convert(Mutation o) {
-                //noinspection unchecked
-                return (T) o;
-            }
-        };
+    protected <T extends Mutation> Iterable<T> findMutations(Class<T> clazz) {
+        //noinspection unchecked
+        return (Iterable<T>) getFilteredMutations(m -> clazz.isAssignableFrom(m.getClass()));
     }
 
     public Visibility getVisibility() {
@@ -105,23 +94,21 @@ public abstract class InMemoryTableElement<TElement extends InMemoryElement> imp
 
     protected void deleteProperty(Property p) {
         List<PropertyMutation> propertyMutations = findPropertyMutations(p);
-        this.mutations.removeAll(propertyMutations);
+        mutationLock.writeLock().lock();
+        try {
+            this.mutations.removeAll(propertyMutations);
+        } finally {
+            mutationLock.writeLock().unlock();
+        }
     }
 
     private List<PropertyMutation> findPropertyMutations(String key, String name, Visibility visibility) {
-        List<PropertyMutation> results = new ArrayList<>();
-        for (Mutation m : this.mutations) {
-            if (!(m instanceof PropertyMutation)) {
-                continue;
-            }
-            PropertyMutation pm = (PropertyMutation) m;
-            if ((key == null || pm.getPropertyKey().equals(key))
-                    && (name == null || pm.getPropertyName().equals(name))
-                    && (visibility == null || pm.getPropertyVisibility().equals(visibility))) {
-                results.add(pm);
-            }
-        }
-        return results;
+        return getFilteredMutations(m ->
+            m instanceof PropertyMutation &&
+                    (key == null || ((PropertyMutation)m).getPropertyKey().equals(key))
+                    && (name == null || ((PropertyMutation)m).getPropertyName().equals(name))
+                    && (visibility == null || ((PropertyMutation)m).getPropertyVisibility().equals(visibility))
+        ).stream().map(m -> (PropertyMutation)m).collect(Collectors.toList());
     }
 
     public Iterable<HistoricalPropertyValue> getHistoricalPropertyValues(
@@ -308,17 +295,17 @@ public abstract class InMemoryTableElement<TElement extends InMemoryElement> imp
         if (timestamp == null) {
             timestamp = IncreasingTime.currentTimeMillis();
         }
-        this.mutations.add(new SoftDeleteMutation(timestamp));
+        addMutation(new SoftDeleteMutation(timestamp));
     }
 
     public void appendMarkHiddenMutation(Visibility visibility) {
         long timestamp = IncreasingTime.currentTimeMillis();
-        this.mutations.add(new MarkHiddenMutation(timestamp, visibility));
+        addMutation(new MarkHiddenMutation(timestamp, visibility));
     }
 
     public void appendMarkVisibleMutation(Visibility visibility) {
         long timestamp = IncreasingTime.currentTimeMillis();
-        this.mutations.add(new MarkVisibleMutation(timestamp, visibility));
+        addAll(new MarkVisibleMutation(timestamp, visibility));
     }
 
     public Property appendMarkPropertyHiddenMutation(
@@ -333,7 +320,7 @@ public abstract class InMemoryTableElement<TElement extends InMemoryElement> imp
         if (timestamp == null) {
             timestamp = IncreasingTime.currentTimeMillis();
         }
-        this.mutations.add(new MarkPropertyHiddenMutation(key, name, propertyVisibility, timestamp, visibility));
+        addMutation(new MarkPropertyHiddenMutation(key, name, propertyVisibility, timestamp, visibility));
         return prop;
     }
 
@@ -349,7 +336,7 @@ public abstract class InMemoryTableElement<TElement extends InMemoryElement> imp
         if (timestamp == null) {
             timestamp = IncreasingTime.currentTimeMillis();
         }
-        this.mutations.add(new MarkPropertyVisibleMutation(key, name, propertyVisibility, timestamp, visibility));
+        addMutation(new MarkPropertyVisibleMutation(key, name, propertyVisibility, timestamp, visibility));
         return prop;
     }
 
@@ -357,49 +344,38 @@ public abstract class InMemoryTableElement<TElement extends InMemoryElement> imp
         if (timestamp == null) {
             timestamp = IncreasingTime.currentTimeMillis();
         }
-        this.mutations.add(new SoftDeletePropertyMutation(timestamp, key, name, propertyVisibility));
+        addMutation(new SoftDeletePropertyMutation(timestamp, key, name, propertyVisibility));
     }
 
     public void appendAlterVisibilityMutation(Visibility newVisibility) {
         long timestamp = IncreasingTime.currentTimeMillis();
-        this.mutations.add(new AlterVisibilityMutation(timestamp, newVisibility));
+        addMutation(new AlterVisibilityMutation(timestamp, newVisibility));
     }
 
     public void appendAddPropertyValueMutation(String key, String name, Object value, Metadata metadata, Visibility visibility, Long timestamp) {
         if (timestamp == null) {
             timestamp = IncreasingTime.currentTimeMillis();
         }
-        this.mutations.add(new AddPropertyValueMutation(timestamp, key, name, value, metadata, visibility));
+        addMutation(new AddPropertyValueMutation(timestamp, key, name, value, metadata, visibility));
     }
 
     public void appendAddPropertyMetadataMutation(String key, String name, Metadata metadata, Visibility visibility, Long timestamp) {
         if (timestamp == null) {
             timestamp = IncreasingTime.currentTimeMillis();
         }
-        this.mutations.add(new AddPropertyMetadataMutation(timestamp, key, name, metadata, visibility));
+        addMutation(new AddPropertyMetadataMutation(timestamp, key, name, metadata, visibility));
     }
 
     public void appendAlterEdgeLabelMutation(long timestamp, String newEdgeLabel) {
-        this.mutations.add(new AlterEdgeLabelMutation(timestamp, newEdgeLabel));
+        addMutation(new AlterEdgeLabelMutation(timestamp, newEdgeLabel));
     }
 
     protected List<Mutation> getFilteredMutations(boolean includeHidden, Long endTime, Authorizations authorizations) {
-        List<Mutation> mutations = new ArrayList<>();
-        for (Mutation m : this.mutations) {
-            if (!canRead(m.getVisibility(), authorizations)) {
-                continue;
-            }
-            if (endTime != null && m.getTimestamp() > endTime) {
-                continue;
-            }
-            if (includeHidden) {
-                if (m instanceof MarkHiddenMutation || m instanceof MarkPropertyHiddenMutation) {
-                    continue;
-                }
-            }
-            mutations.add(m);
-        }
-        return mutations;
+        return getFilteredMutations(m ->
+                canRead(m.getVisibility(), authorizations) &&
+                        (endTime == null || m.getTimestamp() <= endTime) &&
+                        (includeHidden || !(m instanceof MarkHiddenMutation || m instanceof MarkPropertyHiddenMutation))
+        );
     }
 
     public boolean canRead(Authorizations authorizations) {
@@ -423,12 +399,18 @@ public abstract class InMemoryTableElement<TElement extends InMemoryElement> imp
 
     public Set<Visibility> getHiddenVisibilities() {
         Set<Visibility> results = new HashSet<>();
-        for (Mutation m : this.mutations) {
-            if (m instanceof MarkHiddenMutation) {
-                results.add(m.getVisibility());
-            } else if (m instanceof MarkVisibleMutation) {
-                results.remove(m.getVisibility());
+
+        mutationLock.readLock().lock();
+        try {
+            for (Mutation m : this.mutations) {
+                if (m instanceof MarkHiddenMutation) {
+                    results.add(m.getVisibility());
+                } else if (m instanceof MarkVisibleMutation) {
+                    results.remove(m.getVisibility());
+                }
             }
+        } finally {
+            mutationLock.readLock().unlock();
         }
         return results;
     }
@@ -457,22 +439,33 @@ public abstract class InMemoryTableElement<TElement extends InMemoryElement> imp
     }
 
     public boolean isDeleted(Long endTime, Authorizations authorizations) {
-        boolean deleted = false;
-        for (Mutation m : this.mutations) {
-            if (!canRead(m.getVisibility(), authorizations)) {
-                continue;
-            }
-            if (endTime != null && m.getTimestamp() > endTime) {
-                continue;
-            }
-            if (m instanceof SoftDeleteMutation) {
-                deleted = true;
-            } else if (m instanceof ElementTimestampMutation) {
-                deleted = false;
-            }
-        }
-        return deleted;
+        List<Mutation> filteredMutations = getFilteredMutations(m ->
+                canRead(m.getVisibility(), authorizations) &&
+                        (endTime == null || m.getTimestamp() <= endTime) &&
+                        (m instanceof SoftDeleteMutation || m instanceof ElementTimestampMutation)
+        );
+        return filteredMutations.isEmpty() || filteredMutations.get(filteredMutations.size() - 1) instanceof SoftDeleteMutation;
     }
 
     protected abstract TElement createElementInternal(InMemoryGraph graph, EnumSet<FetchHint> fetchHints, Long endTime, Authorizations authorizations);
+
+    private List<Mutation> getFilteredMutations(Predicate<Mutation> filter) {
+        mutationLock.readLock().lock();
+        try {
+            return this.mutations.stream()
+                    .filter(filter)
+                    .collect(Collectors.toList());
+        } finally {
+            mutationLock.readLock().unlock();
+        }
+    }
+
+    private void addMutation(Mutation mutation) {
+        mutationLock.writeLock().lock();
+        try {
+            this.mutations.add(mutation);
+        } finally {
+            mutationLock.writeLock().unlock();
+        }
+    }
 }
