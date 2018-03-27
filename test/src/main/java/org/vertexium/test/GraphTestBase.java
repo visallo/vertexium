@@ -7603,6 +7603,46 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    public void benchmarkLotsOfProperties() {
+        assumeTrue(benchmarkEnabled());
+
+        int vertexCount = 100;
+        int propertyNameCount = 10;
+        int propertiesPerName = 50;
+        int metadataPerProperty = 5;
+
+        System.out.println("Defining properties");
+        for (int i = 0; i < propertyNameCount; i++) {
+            graph.defineProperty("prop" + i)
+                    .textIndexHint(TextIndexHint.NONE)
+                    .dataType(String.class)
+                    .define();
+        }
+
+        System.out.println("Writing vertices");
+        for (int vertexIndex = 0; vertexIndex < vertexCount; vertexIndex++) {
+            String vertexId = "v" + vertexIndex;
+            VertexBuilder m = graph.prepareVertex(vertexId, VISIBILITY_A);
+            for (int propertyNameIndex = 0; propertyNameIndex < propertyNameCount; propertyNameIndex++) {
+                for (int propertyPerNameIndex = 0; propertyPerNameIndex < propertiesPerName; propertyPerNameIndex++) {
+                    Metadata metadata = new Metadata();
+                    for (int metadataIndex = 0; metadataIndex < metadataPerProperty; metadataIndex++) {
+                        metadata.add("m" + UUID.randomUUID().toString(), "value" + metadataIndex, VISIBILITY_A);
+                    }
+                    m.addPropertyValue("k" + UUID.randomUUID().toString(), "prop" + propertyNameIndex, "value" + propertyNameIndex, metadata, VISIBILITY_A);
+                }
+            }
+            m.save(AUTHORIZATIONS_ALL);
+        }
+        graph.flush();
+
+        System.out.println("Reading vertices");
+        for (Vertex vertex : graph.getVertices(FetchHints.ALL, AUTHORIZATIONS_A)) {
+            vertex.getId();
+        }
+    }
+
+    @Test
     public void benchmark() {
         assumeTrue(benchmarkEnabled());
         Random random = new Random(1);

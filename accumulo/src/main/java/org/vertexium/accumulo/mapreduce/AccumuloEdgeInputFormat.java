@@ -43,7 +43,7 @@ public class AccumuloEdgeInputFormat extends AccumuloElementInputFormatBase<Edge
                 return null;
             }
             Visibility visibility = AccumuloGraph.accumuloVisibilityToVisibility(AccumuloGraph.visibilityToAccumuloVisibility(edgeElementData.visibility.toString()));
-            Iterable<Property> properties = makePropertiesFromElementData(graph, edgeElementData, AccumuloGraph.toIteratorFetchHints(fetchHints));
+            Iterable<Property> properties = makePropertiesFromElementData(graph, edgeElementData, graph.toIteratorFetchHints(fetchHints));
             Iterable<PropertyDeleteMutation> propertyDeleteMutations = null;
             Iterable<PropertySoftDeleteMutation> propertySoftDeleteMutations = null;
             Iterable<Visibility> hiddenVisibilities = Iterables.transform(edgeElementData.hiddenVisibilities, new Function<Text, Visibility>() {
@@ -80,7 +80,7 @@ public class AccumuloEdgeInputFormat extends AccumuloElementInputFormatBase<Edge
 
     private EdgeIterator getEdgeIterator(AccumuloGraph graph) {
         if (edgeIterator == null) {
-            edgeIterator = new EdgeIterator(AccumuloGraph.toIteratorFetchHints(graph.getDefaultFetchHints()));
+            edgeIterator = new EdgeIterator(graph.toIteratorFetchHints(graph.getDefaultFetchHints()));
         }
         return edgeIterator;
     }

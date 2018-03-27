@@ -47,7 +47,6 @@ public abstract class ElementIterator<T extends ElementData> extends RowEncoding
     private static final Pattern RECORD_SEPARATOR_PATTERN = Pattern.compile(Pattern.quote(RECORD_SEPARATOR));
     private IteratorFetchHints fetchHints;
     private T elementData;
-    private static final Map<Text, PropertyMetadataColumnQualifier> stringToPropertyMetadataColumnQualifierCache = new HashMap<>();
 
     public ElementIterator(SortedKeyValueIterator<Key, Value> source, IteratorFetchHints fetchHints) {
         this.sourceIter = source;
@@ -184,11 +183,7 @@ public abstract class ElementIterator<T extends ElementData> extends RowEncoding
     }
 
     private void extractPropertyMetadata(Text columnQualifier, Text columnVisibility, long timestamp, Value value) {
-        PropertyMetadataColumnQualifier propertyMetadataColumnQualifier = stringToPropertyMetadataColumnQualifierCache.get(columnQualifier);
-        if (propertyMetadataColumnQualifier == null) {
-            propertyMetadataColumnQualifier = new PropertyMetadataColumnQualifier(columnQualifier);
-            stringToPropertyMetadataColumnQualifierCache.put(columnQualifier, propertyMetadataColumnQualifier);
-        }
+        PropertyMetadataColumnQualifier propertyMetadataColumnQualifier = new PropertyMetadataColumnQualifier(columnQualifier);
         if (shouldIncludeMetadata(propertyMetadataColumnQualifier)) {
             String discriminator = propertyMetadataColumnQualifier.getPropertyDiscriminator(timestamp);
             List<Integer> propertyMetadata = elementData.propertyMetadata.computeIfAbsent(discriminator, k -> new ArrayList<>());

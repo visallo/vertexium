@@ -22,10 +22,6 @@ public class PropertyMetadataColumnQualifier extends KeyBase {
         };
     }
 
-    public PropertyColumnQualifier getPropertyColumnQualifier() {
-        return new PropertyColumnQualifier(getPropertyName(), getPropertyKey());
-    }
-
     public String getPropertyName() {
         return parts[PART_INDEX_PROPERTY_NAME];
     }
@@ -43,6 +39,6 @@ public class PropertyMetadataColumnQualifier extends KeyBase {
     }
 
     public String getPropertyDiscriminator(long propertyTimestamp) {
-        return getPropertyColumnQualifier().getDiscriminator(getPropertyVisibilityString(), propertyTimestamp);
+        return PropertyColumnQualifier.getDiscriminator(getPropertyName(), getPropertyKey(), getPropertyVisibilityString(), propertyTimestamp);
     }
 }
