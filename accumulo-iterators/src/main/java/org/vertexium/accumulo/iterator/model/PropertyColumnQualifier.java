@@ -27,16 +27,20 @@ public class PropertyColumnQualifier extends KeyBase {
     }
 
     public String getDiscriminator(String visibilityString, long timestamp) {
-        assertNoValueSeparator(getPropertyName());
-        assertNoValueSeparator(getPropertyKey());
+        return getDiscriminator(getPropertyName(), getPropertyKey(), visibilityString, timestamp);
+    }
+
+    public static String getDiscriminator(String propertyName, String propertyKey, String visibilityString, long timestamp) {
+        assertNoValueSeparator(propertyName);
+        assertNoValueSeparator(propertyKey);
         assertNoValueSeparator(visibilityString);
         String timestampString = Long.toString(timestamp);
-        int length = getPropertyName().length() + 1 + getPropertyKey().length() + 1 + visibilityString.length() + 1 + timestampString.length();
+        int length = propertyName.length() + 1 + propertyKey.length() + 1 + visibilityString.length() + 1 + timestampString.length();
         //noinspection StringBufferReplaceableByString
         return new StringBuilder(length)
-                .append(getPropertyName())
+                .append(propertyName)
                 .append(VALUE_SEPARATOR)
-                .append(getPropertyKey())
+                .append(propertyKey)
                 .append(VALUE_SEPARATOR)
                 .append(visibilityString)
                 .append(VALUE_SEPARATOR)

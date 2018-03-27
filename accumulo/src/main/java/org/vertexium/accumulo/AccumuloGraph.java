@@ -1,6 +1,7 @@
 package org.vertexium.accumulo;
 
 import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.primitives.Longs;
@@ -1680,19 +1681,30 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         }
     }
 
-    public static IteratorFetchHints toIteratorFetchHints(FetchHints fetchHints) {
+    public IteratorFetchHints toIteratorFetchHints(FetchHints fetchHints) {
         return new IteratorFetchHints(
                 fetchHints.isIncludeAllProperties(),
-                fetchHints.getPropertyNamesToInclude(),
+                deflate(fetchHints.getPropertyNamesToInclude()),
                 fetchHints.isIncludeAllPropertyMetadata(),
-                fetchHints.getMetadataKeysToInclude(),
+                deflate(fetchHints.getMetadataKeysToInclude()),
                 fetchHints.isIncludeHidden(),
                 fetchHints.isIncludeAllEdgeRefs(),
                 fetchHints.isIncludeOutEdgeRefs(),
                 fetchHints.isIncludeInEdgeRefs(),
-                fetchHints.getEdgeLabelsOfEdgeRefsToInclude(),
+                deflate(fetchHints.getEdgeLabelsOfEdgeRefsToInclude()),
                 fetchHints.isIncludeEdgeLabelsAndCounts(),
                 fetchHints.isIncludeExtendedDataTableNames()
+        );
+    }
+
+    private ImmutableSet<String> deflate(ImmutableSet<String> strings) {
+        if (strings == null) {
+            return null;
+        }
+        return ImmutableSet.copyOf(
+                strings.stream()
+                        .map(s -> getNameSubstitutionStrategy().deflate(s))
+                        .collect(Collectors.toSet())
         );
     }
 

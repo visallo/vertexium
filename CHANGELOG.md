@@ -1,6 +1,7 @@
 # v4.0.0
 * Changed: FetchHints to support more filtering
 * Changed: Accumulo: Store metadata in an indexed list to prevent duplication in memory and over the wire 
+* Fixed: Accumulo Iterator memory leak 
 
 # v3.2.2
 * Fixed: Improved support for multithreaded clients with InMemoryGraph

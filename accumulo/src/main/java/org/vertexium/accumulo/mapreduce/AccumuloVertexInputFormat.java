@@ -44,7 +44,7 @@ public class AccumuloVertexInputFormat extends AccumuloElementInputFormatBase<Ve
                 return null;
             }
             Visibility visibility = AccumuloGraph.accumuloVisibilityToVisibility(AccumuloGraph.visibilityToAccumuloVisibility(vertexElementData.visibility.toString()));
-            Iterable<Property> properties = makePropertiesFromElementData(graph, vertexElementData, AccumuloGraph.toIteratorFetchHints(fetchHints));
+            Iterable<Property> properties = makePropertiesFromElementData(graph, vertexElementData, graph.toIteratorFetchHints(fetchHints));
             Iterable<PropertyDeleteMutation> propertyDeleteMutations = null;
             Iterable<PropertySoftDeleteMutation> propertySoftDeleteMutations = null;
             Iterable<Visibility> hiddenVisibilities = Iterables.transform(vertexElementData.hiddenVisibilities, new Function<Text, Visibility>() {
@@ -77,9 +77,9 @@ public class AccumuloVertexInputFormat extends AccumuloElementInputFormatBase<Ve
         }
     }
 
-    private static VertexIterator getVertexIterator(Graph graph) {
+    private static VertexIterator getVertexIterator(AccumuloGraph graph) {
         if (vertexIterator == null) {
-            vertexIterator = new VertexIterator(AccumuloGraph.toIteratorFetchHints(graph.getDefaultFetchHints()));
+            vertexIterator = new VertexIterator(graph.toIteratorFetchHints(graph.getDefaultFetchHints()));
         }
         return vertexIterator;
     }

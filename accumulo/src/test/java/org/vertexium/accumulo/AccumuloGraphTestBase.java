@@ -74,9 +74,9 @@ public abstract class AccumuloGraphTestBase extends GraphTestBase {
         Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
         v1.addPropertyValue("k1", "n1", "value1", VISIBILITY_A, AUTHORIZATIONS_A);
         Vertex v2 = graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_A);
-        Edge e1 = graph.addEdge("e1", v1, v2, "label1", VISIBILITY_A, AUTHORIZATIONS_A);
+        Edge e1 = graph.addEdge("e1", v1, v2, LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_A);
         e1.addPropertyValue("k1", "n1", "value1", VISIBILITY_A, AUTHORIZATIONS_A);
-        graph.addEdge("e2", v2, v1, "label1", VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.addEdge("e2", v2, v1, LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_A);
         graph.flush();
 
         v1 = graph.getVertex("v1", FetchHints.NONE, AUTHORIZATIONS_A);
@@ -213,14 +213,14 @@ public abstract class AccumuloGraphTestBase extends GraphTestBase {
     public void testFetchHintsEdges() {
         Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
         Vertex v2 = graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_A);
-        graph.addEdge("e1", v1, v2, "label1", VISIBILITY_A, AUTHORIZATIONS_A);
-        graph.addEdge("e2", v1, v2, "label2", VISIBILITY_A, AUTHORIZATIONS_A);
-        graph.addEdge("e3", v1, v2, "label3", VISIBILITY_A, AUTHORIZATIONS_A);
-        graph.addEdge("e4", v1, v2, "label3", VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.addEdge("e1", v1, v2, LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.addEdge("e2", v1, v2, LABEL_LABEL2, VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.addEdge("e3", v1, v2, LABEL_LABEL3, VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.addEdge("e4", v1, v2, LABEL_LABEL3, VISIBILITY_A, AUTHORIZATIONS_A);
         graph.flush();
 
         FetchHints specificEdgeLabelFetchHints = FetchHints.builder()
-                .setEdgeLabelsOfEdgeRefsToInclude("label1", "label3")
+                .setEdgeLabelsOfEdgeRefsToInclude(LABEL_LABEL1, LABEL_LABEL3)
                 .build();
         v1 = graph.getVertex("v1", specificEdgeLabelFetchHints, AUTHORIZATIONS_A);
         List<org.vertexium.EdgeInfo> edgeInfos = toList(v1.getEdgeInfos(Direction.BOTH, AUTHORIZATIONS_A));
@@ -240,7 +240,7 @@ public abstract class AccumuloGraphTestBase extends GraphTestBase {
         v1 = graph.getVertex("v1", edgeLabelsAndCountsFetchHints, AUTHORIZATIONS_A);
         assertNull(v1.getEdgeInfos(Direction.BOTH, AUTHORIZATIONS_A));
         assertEquals(
-                "label1,label2,label3",
+                LABEL_LABEL1 + "," + LABEL_LABEL2 + "," + LABEL_LABEL3,
                 stream(v1.getEdgeLabels(Direction.BOTH, AUTHORIZATIONS_A))
                         .sorted()
                         .collect(Collectors.joining(","))
@@ -375,7 +375,7 @@ public abstract class AccumuloGraphTestBase extends GraphTestBase {
     @SuppressWarnings("UnusedAssignment")
     @Test
     public void testGetKeyValuePairsForEdgeMutation() {
-        EdgeBuilderByVertexId m = graph.prepareEdge("e1", "v1", "v2", "label1", 100L, VISIBILITY_A);
+        EdgeBuilderByVertexId m = graph.prepareEdge("e1", "v1", "v2", LABEL_LABEL1, 100L, VISIBILITY_A);
 
         Metadata metadata = new Metadata();
         metadata.add("key1_prop2_m1", "m1_value", VISIBILITY_A);
@@ -402,7 +402,7 @@ public abstract class AccumuloGraphTestBase extends GraphTestBase {
         KeyValuePair pair;
 
         pair = keyValuePairs.get(i++);
-        assertEquals(new Key(new Text("e1"), AccumuloEdge.CF_SIGNAL, new Text("label1"), new Text("a"), 100L), pair.getKey());
+        assertEquals(new Key(new Text("e1"), AccumuloEdge.CF_SIGNAL, new Text(LABEL_LABEL1), new Text("a"), 100L), pair.getKey());
         assertEquals(ElementMutationBuilder.EMPTY_VALUE, pair.getValue());
 
         pair = keyValuePairs.get(i++);
@@ -452,12 +452,12 @@ public abstract class AccumuloGraphTestBase extends GraphTestBase {
         assertEquals(2, keyValuePairs.size());
 
         pair = keyValuePairs.get(i++);
-        org.vertexium.accumulo.iterator.model.EdgeInfo edgeInfo = new EdgeInfo(getGraph().getNameSubstitutionStrategy().deflate("label1"), "v2");
+        org.vertexium.accumulo.iterator.model.EdgeInfo edgeInfo = new EdgeInfo(getGraph().getNameSubstitutionStrategy().deflate(LABEL_LABEL1), "v2");
         assertEquals(new Key(new Text("v1"), AccumuloVertex.CF_OUT_EDGE, new Text("e1"), new Text("a"), 100L), pair.getKey());
         assertEquals(edgeInfo.toValue(), pair.getValue());
 
         pair = keyValuePairs.get(i++);
-        edgeInfo = new EdgeInfo(getGraph().getNameSubstitutionStrategy().deflate("label1"), "v1");
+        edgeInfo = new EdgeInfo(getGraph().getNameSubstitutionStrategy().deflate(LABEL_LABEL1), "v1");
         assertEquals(new Key(new Text("v2"), AccumuloVertex.CF_IN_EDGE, new Text("e1"), new Text("a"), 100L), pair.getKey());
         assertEquals(edgeInfo.toValue(), pair.getValue());
     }
