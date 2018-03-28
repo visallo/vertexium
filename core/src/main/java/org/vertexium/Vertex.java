@@ -210,7 +210,9 @@ public interface Vertex extends Element {
      * @param direction      The direction of the edges to get a count on.
      * @param authorizations The authorizations used to find the edges.
      * @return The count of edges.
+     * @deprecated Use {{@link #getEdgesSummary(Authorizations)}}
      */
+    @Deprecated
     int getEdgeCount(Direction direction, Authorizations authorizations);
 
     /**
@@ -219,8 +221,18 @@ public interface Vertex extends Element {
      * @param direction      The direction of the edge.
      * @param authorizations The authorizations used to find the edges.
      * @return An Iterable of edge labels.
+     * @deprecated Use {{@link #getEdgesSummary(Authorizations)}}
      */
+    @Deprecated
     Iterable<String> getEdgeLabels(Direction direction, Authorizations authorizations);
+
+    /**
+     * Gets edge summary information
+     *
+     * @param authorizations The authorizations used to get the edges summary
+     * @return The edges summary
+     */
+    EdgesSummary getEdgesSummary(Authorizations authorizations);
 
     /**
      * Get a list of EdgeInfo.

@@ -312,45 +312,45 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
     }
 
     @Override
+    @Deprecated
     public int getEdgeCount(Direction direction, Authorizations authorizations) {
-        if (!getFetchHints().isIncludeEdgeRefs()) {
-            LOGGER.warn("getEdgeCount called without including any edge infos");
-            return 0;
-        }
-        return count(getEdgeIds(direction, authorizations));
+        return getEdgesSummary(authorizations).getCountOfEdges(direction);
     }
 
     @Override
+    @Deprecated
     public Iterable<String> getEdgeLabels(Direction direction, Authorizations authorizations) {
-        Set<String> edgeLabels = new HashSet<>();
+        return getEdgesSummary(authorizations).getEdgeLabels(direction);
+    }
 
-        if (direction == Direction.IN || direction == Direction.BOTH) {
-            if (inEdges instanceof EdgesWithCount) {
-                edgeLabels.addAll(((EdgesWithCount) inEdges).getLabels());
-            } else {
-                edgeLabels.addAll(toList(new ConvertingIterable<Map.Entry<Text, org.vertexium.accumulo.iterator.model.EdgeInfo>, String>(getEdgeInfos(Direction.IN)) {
-                    @Override
-                    protected String convert(Map.Entry<Text, org.vertexium.accumulo.iterator.model.EdgeInfo> o) {
-                        return o.getValue().getLabel();
-                    }
-                }));
+    @Override
+    public EdgesSummary getEdgesSummary(Authorizations authorizations) {
+        Map<String, Integer> outEdgeCountsByLabels = new HashMap<>();
+        Map<String, Integer> inEdgeCountsByLabels = new HashMap<>();
+
+        if (inEdges instanceof EdgesWithCount) {
+            EdgesWithCount edgesWithCount = (EdgesWithCount) this.inEdges;
+            inEdgeCountsByLabels.putAll(edgesWithCount.getEdgeCountsByLabelName());
+        } else {
+            for (Map.Entry<Text, org.vertexium.accumulo.iterator.model.EdgeInfo> entry : getEdgeInfos(Direction.IN)) {
+                String label = entry.getValue().getLabel();
+                Integer c = inEdgeCountsByLabels.getOrDefault(label, 0);
+                inEdgeCountsByLabels.put(label, c + 1);
             }
         }
 
-        if (direction == Direction.OUT || direction == Direction.BOTH) {
-            if (outEdges instanceof EdgesWithCount) {
-                edgeLabels.addAll(((EdgesWithCount) outEdges).getLabels());
-            } else {
-                edgeLabels.addAll(toList(new ConvertingIterable<Map.Entry<Text, org.vertexium.accumulo.iterator.model.EdgeInfo>, String>(getEdgeInfos(Direction.OUT)) {
-                    @Override
-                    protected String convert(Map.Entry<Text, org.vertexium.accumulo.iterator.model.EdgeInfo> o) {
-                        return o.getValue().getLabel();
-                    }
-                }));
+        if (outEdges instanceof EdgesWithCount) {
+            EdgesWithCount edgesWithCount = (EdgesWithCount) this.outEdges;
+            outEdgeCountsByLabels.putAll(edgesWithCount.getEdgeCountsByLabelName());
+        } else {
+            for (Map.Entry<Text, org.vertexium.accumulo.iterator.model.EdgeInfo> entry : getEdgeInfos(Direction.OUT)) {
+                String label = entry.getValue().getLabel();
+                Integer c = outEdgeCountsByLabels.getOrDefault(label, 0);
+                outEdgeCountsByLabels.put(label, c + 1);
             }
         }
 
-        return edgeLabels;
+        return new EdgesSummary(outEdgeCountsByLabels, inEdgeCountsByLabels);
     }
 
     @Override

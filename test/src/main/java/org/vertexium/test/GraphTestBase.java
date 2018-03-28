@@ -797,7 +797,7 @@ public abstract class GraphTestBase {
         assertEquals(1, count(graph.query(AUTHORIZATIONS_A).has("name1", "value1").vertices()));
 
         Vertex v2 = graph.getVertex("v2", AUTHORIZATIONS_A);
-        assertEquals(1, v2.getEdgeCount(Direction.BOTH, AUTHORIZATIONS_A));
+        assertEquals(1, v2.getEdgesSummary(AUTHORIZATIONS_A).getCountOfEdges());
 
         graph.softDeleteVertex("v1", AUTHORIZATIONS_A);
         graph.flush();
@@ -805,7 +805,7 @@ public abstract class GraphTestBase {
         assertEquals(0, count(graph.query(AUTHORIZATIONS_A).has("name1", "value1").vertices()));
 
         v2 = graph.getVertex("v2", AUTHORIZATIONS_A);
-        assertEquals(0, v2.getEdgeCount(Direction.BOTH, AUTHORIZATIONS_A));
+        assertEquals(0, v2.getEdgesSummary(AUTHORIZATIONS_A).getCountOfEdges());
 
         graph.prepareVertex("v1", VISIBILITY_A)
                 .addPropertyValue("key1", "name1", "value1", VISIBILITY_A)
@@ -1889,9 +1889,9 @@ public abstract class GraphTestBase {
         Assert.assertEquals(2, count(v1.getEdges(v2, Direction.OUT, new String[]{LABEL_LABEL1, LABEL_LABEL2}, AUTHORIZATIONS_A)));
         Assert.assertEquals(1, count(v1.getEdges(v2, Direction.IN, new String[]{LABEL_LABEL1, LABEL_LABEL2}, AUTHORIZATIONS_A)));
 
-        Assert.assertArrayEquals(new String[]{LABEL_LABEL1, LABEL_LABEL2}, IterableUtils.toArray(v1.getEdgeLabels(Direction.OUT, AUTHORIZATIONS_A), String.class));
-        Assert.assertArrayEquals(new String[]{LABEL_LABEL1}, IterableUtils.toArray(v1.getEdgeLabels(Direction.IN, AUTHORIZATIONS_A), String.class));
-        Assert.assertArrayEquals(new String[]{LABEL_LABEL1, LABEL_LABEL2}, IterableUtils.toArray(v1.getEdgeLabels(Direction.BOTH, AUTHORIZATIONS_A), String.class));
+        Assert.assertArrayEquals(new String[]{LABEL_LABEL1, LABEL_LABEL2}, IterableUtils.toArray(v1.getEdgesSummary(AUTHORIZATIONS_A).getOutEdgeLabels(), String.class));
+        Assert.assertArrayEquals(new String[]{LABEL_LABEL1}, IterableUtils.toArray(v1.getEdgesSummary(AUTHORIZATIONS_A).getInEdgeLabels(), String.class));
+        Assert.assertArrayEquals(new String[]{LABEL_LABEL1, LABEL_LABEL2}, IterableUtils.toArray(v1.getEdgesSummary(AUTHORIZATIONS_A).getEdgeLabels(), String.class));
     }
 
     @Test
@@ -2052,9 +2052,9 @@ public abstract class GraphTestBase {
         Assert.assertEquals(1, count(e.getProperties()));
         assertEquals("valueA", e.getPropertyValues("propA").iterator().next());
         Assert.assertEquals(1, count(v1.getEdges(Direction.OUT, AUTHORIZATIONS_A)));
-        Assert.assertEquals(LABEL_LABEL1, IterableUtils.single(v1.getEdgeLabels(Direction.OUT, AUTHORIZATIONS_A)));
+        Assert.assertEquals(LABEL_LABEL1, IterableUtils.single(v1.getEdgesSummary(AUTHORIZATIONS_A).getOutEdgeLabels()));
         Assert.assertEquals(1, count(v2.getEdges(Direction.IN, AUTHORIZATIONS_A)));
-        Assert.assertEquals(LABEL_LABEL1, IterableUtils.single(v2.getEdgeLabels(Direction.IN, AUTHORIZATIONS_A)));
+        Assert.assertEquals(LABEL_LABEL1, IterableUtils.single(v2.getEdgesSummary(AUTHORIZATIONS_A).getInEdgeLabels()));
 
         e.prepareMutation()
                 .alterEdgeLabel(LABEL_LABEL2)
@@ -2066,10 +2066,10 @@ public abstract class GraphTestBase {
         assertEquals("valueA", e.getPropertyValues("propA").iterator().next());
         v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
         Assert.assertEquals(1, count(v1.getEdges(Direction.OUT, AUTHORIZATIONS_A)));
-        Assert.assertEquals(LABEL_LABEL2, IterableUtils.single(v1.getEdgeLabels(Direction.OUT, AUTHORIZATIONS_A)));
+        Assert.assertEquals(LABEL_LABEL2, IterableUtils.single(v1.getEdgesSummary(AUTHORIZATIONS_A).getOutEdgeLabels()));
         v2 = graph.getVertex("v2", AUTHORIZATIONS_A);
         Assert.assertEquals(1, count(v2.getEdges(Direction.IN, AUTHORIZATIONS_A)));
-        Assert.assertEquals(LABEL_LABEL2, IterableUtils.single(v2.getEdgeLabels(Direction.IN, AUTHORIZATIONS_A)));
+        Assert.assertEquals(LABEL_LABEL2, IterableUtils.single(v2.getEdgesSummary(AUTHORIZATIONS_A).getInEdgeLabels()));
 
         graph.prepareEdge(e.getId(), e.getVertexId(Direction.OUT), e.getVertexId(Direction.IN), e.getLabel(), e.getVisibility())
                 .alterEdgeLabel("label3")
@@ -2081,10 +2081,10 @@ public abstract class GraphTestBase {
         assertEquals("valueA", e.getPropertyValues("propA").iterator().next());
         v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
         Assert.assertEquals(1, count(v1.getEdges(Direction.OUT, AUTHORIZATIONS_A)));
-        Assert.assertEquals("label3", IterableUtils.single(v1.getEdgeLabels(Direction.OUT, AUTHORIZATIONS_A)));
+        Assert.assertEquals("label3", IterableUtils.single(v1.getEdgesSummary(AUTHORIZATIONS_A).getOutEdgeLabels()));
         v2 = graph.getVertex("v2", AUTHORIZATIONS_A);
         Assert.assertEquals(1, count(v2.getEdges(Direction.IN, AUTHORIZATIONS_A)));
-        Assert.assertEquals("label3", IterableUtils.single(v2.getEdgeLabels(Direction.IN, AUTHORIZATIONS_A)));
+        Assert.assertEquals("label3", IterableUtils.single(v2.getEdgesSummary(AUTHORIZATIONS_A).getInEdgeLabels()));
     }
 
     @Test
@@ -6993,10 +6993,32 @@ public abstract class GraphTestBase {
         graph.flush();
 
         v1 = graph.getVertex("v1", FetchHints.EDGE_LABELS, AUTHORIZATIONS_ALL);
-        List<String> edgeLabels = toList(v1.getEdgeLabels(Direction.BOTH, AUTHORIZATIONS_ALL));
+        List<String> edgeLabels = toList(v1.getEdgesSummary(AUTHORIZATIONS_ALL).getEdgeLabels());
         assertEquals(2, edgeLabels.size());
         assertTrue(LABEL_LABEL1 + " missing", edgeLabels.contains(LABEL_LABEL1));
         assertTrue(LABEL_LABEL2 + " missing", edgeLabels.contains(LABEL_LABEL2));
+    }
+
+    @Test
+    public void testFetchHintsEdgesSummary() {
+        Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_ALL);
+        Vertex v2 = graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_ALL);
+        Vertex v3 = graph.addVertex("v3", VISIBILITY_A, AUTHORIZATIONS_ALL);
+        graph.flush();
+
+        graph.addEdge("e v1->v2", v1, v2, LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_ALL);
+        graph.addEdge("e v1->v3", v1, v3, LABEL_LABEL2, VISIBILITY_A, AUTHORIZATIONS_ALL);
+        graph.flush();
+
+        v1 = graph.getVertex("v1", FetchHints.EDGE_LABELS, AUTHORIZATIONS_ALL);
+        EdgesSummary summary = v1.getEdgesSummary(AUTHORIZATIONS_ALL);
+        assertEquals(2, summary.getEdgeLabels().size());
+        assertTrue(LABEL_LABEL1 + " missing", summary.getEdgeLabels().contains(LABEL_LABEL1));
+        assertTrue(LABEL_LABEL2 + " missing", summary.getEdgeLabels().contains(LABEL_LABEL2));
+        assertEquals(2, summary.getOutEdgeLabels().size());
+        assertEquals(0, summary.getInEdgeLabels().size());
+        assertEquals(1, (int) summary.getOutEdgeCountsByLabels().get(LABEL_LABEL1));
+        assertEquals(1, (int) summary.getOutEdgeCountsByLabels().get(LABEL_LABEL2));
     }
 
     @Test

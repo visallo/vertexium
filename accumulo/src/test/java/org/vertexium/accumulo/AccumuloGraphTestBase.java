@@ -241,7 +241,7 @@ public abstract class AccumuloGraphTestBase extends GraphTestBase {
         assertNull(v1.getEdgeInfos(Direction.BOTH, AUTHORIZATIONS_A));
         assertEquals(
                 LABEL_LABEL1 + "," + LABEL_LABEL2 + "," + LABEL_LABEL3,
-                stream(v1.getEdgeLabels(Direction.BOTH, AUTHORIZATIONS_A))
+                stream(v1.getEdgesSummary(AUTHORIZATIONS_A).getEdgeLabels())
                         .sorted()
                         .collect(Collectors.joining(","))
         );
