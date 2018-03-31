@@ -863,8 +863,14 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
         return extendedDataTable.getTableNames(elementType, elementId, authorizations);
     }
 
-    public Iterable<? extends ExtendedDataRow> getExtendedDataTable(ElementType elementType, String elementId, String tableName, Authorizations authorizations) {
-        return extendedDataTable.getTable(elementType, elementId, tableName, authorizations);
+    public Iterable<? extends ExtendedDataRow> getExtendedDataTable(
+            ElementType elementType,
+            String elementId,
+            String tableName,
+            FetchHints fetchHints,
+            Authorizations authorizations
+    ) {
+        return extendedDataTable.getTable(elementType, elementId, tableName, fetchHints, authorizations);
     }
 
     public void extendedData(

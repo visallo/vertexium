@@ -1,9 +1,6 @@
 package org.vertexium.accumulo;
 
-import org.vertexium.Metadata;
-import org.vertexium.VertexiumException;
-import org.vertexium.VertexiumSerializer;
-import org.vertexium.Visibility;
+import org.vertexium.*;
 import org.vertexium.id.NameSubstitutionStrategy;
 
 import java.util.List;
@@ -19,9 +16,10 @@ public class IndexedLazyPropertyMetadata extends LazyPropertyMetadata {
 
     public Metadata toMetadata(
             VertexiumSerializer vertexiumSerializer,
-            NameSubstitutionStrategy nameSubstitutionStrategy
+            NameSubstitutionStrategy nameSubstitutionStrategy,
+            FetchHints fetchHints
     ) {
-        Metadata metadata = new Metadata();
+        Metadata metadata = new Metadata(fetchHints);
         if (metadataIndexes == null) {
             return metadata;
         }
