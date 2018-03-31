@@ -7625,18 +7625,225 @@ public abstract class GraphTestBase {
     public void testFetchHintsExceptions() {
         Metadata prop1Metadata = new Metadata();
         prop1Metadata.add("metadata1", "metadata1Value", VISIBILITY_A);
+        prop1Metadata.add("metadata2", "metadata2Value", VISIBILITY_A);
 
         graph.prepareVertex("v1", VISIBILITY_A)
                 .setProperty("prop1", "value1", prop1Metadata, VISIBILITY_A)
                 .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
+        FetchHints propertyFetchHints = FetchHints.builder()
+                .setPropertyNamesToInclude("prop2")
+                .build();
+        Vertex v1WithOnlyProp2 = graph.getVertex("v1", propertyFetchHints, AUTHORIZATIONS_A);
+        assertNotNull(v1WithOnlyProp2.getProperties());
+        assertThrowsException(() -> v1WithOnlyProp2.getProperty("prop1"));
+
         FetchHints propertiesFetchHints = FetchHints.builder()
                 .setIncludeAllProperties(true)
                 .build();
-        Vertex v1 = graph.getVertex("v1", propertiesFetchHints, AUTHORIZATIONS_A);
-        Property prop1 = v1.getProperty("prop1");
+        Vertex v1WithAllProperties = graph.getVertex("v1", propertiesFetchHints, AUTHORIZATIONS_A);
+        Property prop1 = v1WithAllProperties.getProperty("prop1");
         assertNull(prop1.getMetadata());
+
+        FetchHints metadataFetchHints = FetchHints.builder()
+                .setIncludeAllProperties(true)
+                .setMetadataKeysToInclude("metadata1")
+                .build();
+        Vertex v1WithOnlyMetadata1 = graph.getVertex("v1", metadataFetchHints, AUTHORIZATIONS_A);
+        prop1 = v1WithOnlyMetadata1.getProperty("prop1");
+        assertNotNull(prop1.getMetadata());
+        assertNotNull(v1WithOnlyMetadata1.getProperty("prop1").getMetadata().getEntry("metadata1"));
+        assertThrowsException(() -> v1WithOnlyMetadata1.getProperty("prop1").getMetadata().getEntry("metadata2"));
+    }
+
+    @Test
+    public void testFetchHints() {
+        Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
+        v1.addPropertyValue("k1", "n1", "value1", VISIBILITY_A, AUTHORIZATIONS_A);
+        Vertex v2 = graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_A);
+        Edge e1 = graph.addEdge("e1", v1, v2, LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_A);
+        e1.addPropertyValue("k1", "n1", "value1", VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.addEdge("e2", v2, v1, LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.flush();
+
+        v1 = graph.getVertex("v1", FetchHints.NONE, AUTHORIZATIONS_A);
+        assertNotNull(v1);
+        assertNull(v1.getProperties());
+        assertNull(v1.getEdges(Direction.IN, AUTHORIZATIONS_A));
+        assertNull(v1.getEdges(Direction.OUT, AUTHORIZATIONS_A));
+
+        v1 = graph.getVertex("v1", graph.getDefaultFetchHints(), AUTHORIZATIONS_A);
+        assertNotNull(v1);
+        assertEquals(1, IterableUtils.count(v1.getProperties()));
+        assertEquals(1, IterableUtils.count(v1.getEdges(Direction.IN, AUTHORIZATIONS_A)));
+        assertEquals(1, IterableUtils.count(v1.getEdges(Direction.OUT, AUTHORIZATIONS_A)));
+
+        FetchHints propertiesFetchHints = FetchHints.builder()
+                .setIncludeAllProperties(true)
+                .build();
+        v1 = graph.getVertex("v1", propertiesFetchHints, AUTHORIZATIONS_A);
+        assertNotNull(v1);
+        assertEquals(1, IterableUtils.count(v1.getProperties()));
+        assertNull(v1.getEdges(Direction.IN, AUTHORIZATIONS_A));
+        assertNull(v1.getEdges(Direction.OUT, AUTHORIZATIONS_A));
+
+        v1 = graph.getVertex("v1", FetchHints.EDGE_REFS, AUTHORIZATIONS_A);
+        assertNotNull(v1);
+        assertNull(v1.getProperties());
+        assertEquals(1, IterableUtils.count(v1.getEdges(Direction.IN, AUTHORIZATIONS_A)));
+        assertEquals(1, IterableUtils.count(v1.getEdges(Direction.OUT, AUTHORIZATIONS_A)));
+
+        FetchHints inEdgeRefFetchHints = FetchHints.builder()
+                .setIncludeInEdgeRefs(true)
+                .build();
+        v1 = graph.getVertex("v1", inEdgeRefFetchHints, AUTHORIZATIONS_A);
+        assertNotNull(v1);
+        assertNull(v1.getProperties());
+        assertEquals(1, IterableUtils.count(v1.getEdges(Direction.IN, AUTHORIZATIONS_A)));
+        assertNull(v1.getEdges(Direction.OUT, AUTHORIZATIONS_A));
+
+        FetchHints outEdgeRefFetchHints = FetchHints.builder()
+                .setIncludeOutEdgeRefs(true)
+                .build();
+        v1 = graph.getVertex("v1", outEdgeRefFetchHints, AUTHORIZATIONS_A);
+        assertNotNull(v1);
+        assertNull(v1.getProperties());
+        assertNull(v1.getEdges(Direction.IN, AUTHORIZATIONS_A));
+        assertEquals(1, IterableUtils.count(v1.getEdges(Direction.OUT, AUTHORIZATIONS_A)));
+
+        e1 = graph.getEdge("e1", FetchHints.NONE, AUTHORIZATIONS_A);
+        assertNotNull(e1);
+        assertNull(e1.getProperties());
+        assertEquals("v1", e1.getVertexId(Direction.OUT));
+        assertEquals("v2", e1.getVertexId(Direction.IN));
+
+        e1 = graph.getEdge("e1", graph.getDefaultFetchHints(), AUTHORIZATIONS_A);
+        assertEquals(1, IterableUtils.count(e1.getProperties()));
+        assertEquals("v1", e1.getVertexId(Direction.OUT));
+        assertEquals("v2", e1.getVertexId(Direction.IN));
+
+        e1 = graph.getEdge("e1", propertiesFetchHints, AUTHORIZATIONS_A);
+        assertEquals(1, IterableUtils.count(e1.getProperties()));
+        assertEquals("v1", e1.getVertexId(Direction.OUT));
+        assertEquals("v2", e1.getVertexId(Direction.IN));
+    }
+
+    @Test
+    public void testFetchHintsProperties() {
+        Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
+        v1.addPropertyValue("k1", "n1", "value1", VISIBILITY_A, AUTHORIZATIONS_A);
+        v1.addPropertyValue("k1", "n2", "value2", VISIBILITY_A, AUTHORIZATIONS_A);
+        v1.addPropertyValue("k1", "n3", "value3", VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.flush();
+
+        FetchHints specificPropertiesFetchHints = FetchHints.builder()
+                .setPropertyNamesToInclude("n1", "n3")
+                .build();
+        Vertex v1WithoutN2 = graph.getVertex("v1", specificPropertiesFetchHints, AUTHORIZATIONS_A);
+        assertEquals("value1", v1WithoutN2.getPropertyValue("n1"));
+        assertNull(v1WithoutN2.getProperty("n1").getMetadata());
+        assertThrowsException(() -> v1WithoutN2.getPropertyValue("n2"));
+        assertEquals("value3", v1WithoutN2.getPropertyValue("n3"));
+
+        FetchHints noPropertiesFetchHints = FetchHints.NONE;
+        Vertex v1WithNotProperties = graph.getVertex("v1", noPropertiesFetchHints, AUTHORIZATIONS_A);
+        assertNull(v1WithNotProperties.getProperties());
+        assertThrowsException(() -> v1WithNotProperties.getProperty("n1"));
+
+        FetchHints allPropertiesFetchHints = FetchHints.builder()
+                .setIncludeAllProperties(true)
+                .setPropertyNamesToInclude("n1", "n3")
+                .build();
+        v1 = graph.getVertex("v1", allPropertiesFetchHints, AUTHORIZATIONS_A);
+        assertEquals("value1", v1.getPropertyValue("n1"));
+        assertEquals("value2", v1.getPropertyValue("n2"));
+        assertEquals("value3", v1.getPropertyValue("n3"));
+    }
+
+    @Test
+    public void testFetchHintsPropertyMetadata() {
+        Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
+        Metadata metadata = new Metadata();
+        metadata.add("m1", "m1value", VISIBILITY_A);
+        metadata.add("m2", "m2value", VISIBILITY_A);
+        metadata.add("m3", "m3value", VISIBILITY_A);
+        v1.addPropertyValue("k1", "n1", "value1", metadata, VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.flush();
+
+        FetchHints specificPropertiesFetchHints = FetchHints.builder()
+                .setMetadataKeysToInclude("m1", "m3")
+                .build();
+        v1 = graph.getVertex("v1", specificPropertiesFetchHints, AUTHORIZATIONS_A);
+        Metadata n1WithoutM2 = v1.getProperty("n1").getMetadata();
+        assertEquals("m1value", n1WithoutM2.getValue("m1"));
+        assertThrowsException(() -> n1WithoutM2.getValue("m2"));
+        assertEquals("m3value", n1WithoutM2.getValue("m3"));
+
+        FetchHints noPropertiesFetchHints = FetchHints.builder()
+                .setIncludeAllProperties(true)
+                .build();
+        v1 = graph.getVertex("v1", noPropertiesFetchHints, AUTHORIZATIONS_A);
+        assertNull(v1.getProperty("n1").getMetadata());
+
+        FetchHints allPropertiesFetchHints = FetchHints.builder()
+                .setIncludeAllPropertyMetadata(true)
+                .setMetadataKeysToInclude("m1", "m3")
+                .build();
+        v1 = graph.getVertex("v1", allPropertiesFetchHints, AUTHORIZATIONS_A);
+        Metadata n1 = v1.getProperty("n1").getMetadata();
+        assertEquals("m1value", n1.getValue("m1"));
+        assertEquals("m2value", n1.getValue("m2"));
+        assertEquals("m3value", n1.getValue("m3"));
+    }
+
+    @Test
+    public void testFetchHintsEdges() {
+        Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
+        Vertex v2 = graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.addEdge("e1", v1, v2, LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.addEdge("e2", v1, v2, LABEL_LABEL2, VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.addEdge("e3", v1, v2, LABEL_LABEL3, VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.addEdge("e4", v1, v2, LABEL_LABEL3, VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.flush();
+
+        FetchHints specificEdgeLabelFetchHints = FetchHints.builder()
+                .setEdgeLabelsOfEdgeRefsToInclude(LABEL_LABEL1, LABEL_LABEL3)
+                .build();
+        v1 = graph.getVertex("v1", specificEdgeLabelFetchHints, AUTHORIZATIONS_A);
+        List<org.vertexium.EdgeInfo> edgeInfos = toList(v1.getEdgeInfos(Direction.BOTH, AUTHORIZATIONS_A));
+        assertTrue(edgeInfos.stream().anyMatch(e -> e.getEdgeId().equals("e1")));
+        assertFalse(edgeInfos.stream().anyMatch(e -> e.getEdgeId().equals("e2")));
+        assertTrue(edgeInfos.stream().anyMatch(e -> e.getEdgeId().equals("e3")));
+        assertTrue(edgeInfos.stream().anyMatch(e -> e.getEdgeId().equals("e4")));
+
+        FetchHints noEdgeLabelsFetchHints = FetchHints.NONE;
+        v1 = graph.getVertex("v1", noEdgeLabelsFetchHints, AUTHORIZATIONS_A);
+        assertNull(v1.getEdges(Direction.BOTH, AUTHORIZATIONS_A));
+        assertNull(v1.getEdgeInfos(Direction.BOTH, AUTHORIZATIONS_A));
+
+        FetchHints edgeLabelsAndCountsFetchHints = FetchHints.builder()
+                .setIncludeEdgeLabelsAndCounts(true)
+                .build();
+        v1 = graph.getVertex("v1", edgeLabelsAndCountsFetchHints, AUTHORIZATIONS_A);
+        assertNull(v1.getEdgeInfos(Direction.BOTH, AUTHORIZATIONS_A));
+        assertEquals(
+                LABEL_LABEL1 + "," + LABEL_LABEL2 + "," + LABEL_LABEL3,
+                v1.getEdgesSummary(AUTHORIZATIONS_A).getEdgeLabels().stream()
+                        .sorted()
+                        .collect(Collectors.joining(","))
+        );
+
+        FetchHints allEdgeInfoFetchHints = FetchHints.builder()
+                .setIncludeAllEdgeRefs(true)
+                .setEdgeLabelsOfEdgeRefsToInclude("m1", "m3")
+                .build();
+        v1 = graph.getVertex("v1", allEdgeInfoFetchHints, AUTHORIZATIONS_A);
+        edgeInfos = toList(v1.getEdgeInfos(Direction.BOTH, AUTHORIZATIONS_A));
+        assertTrue(edgeInfos.stream().anyMatch(e -> e.getEdgeId().equals("e1")));
+        assertTrue(edgeInfos.stream().anyMatch(e -> e.getEdgeId().equals("e2")));
+        assertTrue(edgeInfos.stream().anyMatch(e -> e.getEdgeId().equals("e3")));
+        assertTrue(edgeInfos.stream().anyMatch(e -> e.getEdgeId().equals("e4")));
     }
 
     @Test

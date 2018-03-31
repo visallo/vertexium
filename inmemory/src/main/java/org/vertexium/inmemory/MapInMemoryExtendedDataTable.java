@@ -25,7 +25,13 @@ public class MapInMemoryExtendedDataTable extends InMemoryExtendedDataTable {
     }
 
     @Override
-    public Iterable<ExtendedDataRow> getTable(ElementType elementType, String elementId, String tableName, Authorizations authorizations) {
+    public Iterable<ExtendedDataRow> getTable(
+            ElementType elementType,
+            String elementId,
+            String tableName,
+            FetchHints fetchHints,
+            Authorizations authorizations
+    ) {
         ElementTypeData data = elementTypeData.get(elementType);
         if (data == null) {
             return ImmutableList.of();
@@ -73,7 +79,11 @@ public class MapInMemoryExtendedDataTable extends InMemoryExtendedDataTable {
             return data.getTableNames(authorizations);
         }
 
-        public Iterable<ExtendedDataRow> getTable(String elementId, String tableName, Authorizations authorizations) {
+        public Iterable<ExtendedDataRow> getTable(
+                String elementId,
+                String tableName,
+                Authorizations authorizations
+        ) {
             ElementData data = elementData.get(elementId);
             if (data == null) {
                 return ImmutableList.of();
@@ -189,7 +199,7 @@ public class MapInMemoryExtendedDataTable extends InMemoryExtendedDataTable {
                 if (row != null) {
                     return row;
                 }
-                row = new InMemoryExtendedDataRow(rowId);
+                row = new InMemoryExtendedDataRow(rowId, FetchHints.ALL);
                 rows.add(row);
                 return row;
             }

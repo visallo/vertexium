@@ -155,7 +155,7 @@ public abstract class InMemoryTableElement<TElement extends InMemoryElement> imp
                 builder.timestamp(m.getTimestamp());
                 historicalPropertyValues.add(builder.build());
             } else if (m instanceof AddPropertyMetadataMutation) {
-                builder.metadata(((AddPropertyMetadataMutation) m).getMetadata());
+                builder.metadata(((AddPropertyMetadataMutation) m).getMetadata(FetchHints.ALL));
                 builder.timestamp(m.getTimestamp());
             } else if (m instanceof MarkPropertyHiddenMutation) {
                 // Ignore
@@ -169,7 +169,7 @@ public abstract class InMemoryTableElement<TElement extends InMemoryElement> imp
                 builder.propertyVisibility(m.getPropertyVisibility())
                         .timestamp(m.getTimestamp())
                         .value(value)
-                        .metadata(apvm.getMetadata())
+                        .metadata(apvm.getMetadata(FetchHints.ALL))
                         .hiddenVisibilities(hiddenVisibilities)
                         .isDeleted(false);
 
@@ -245,11 +245,11 @@ public abstract class InMemoryTableElement<TElement extends InMemoryElement> imp
             if (m instanceof AddPropertyValueMutation) {
                 AddPropertyValueMutation apvm = (AddPropertyValueMutation) m;
                 value = apvm.getValue();
-                metadata = apvm.getMetadata();
+                metadata = apvm.getMetadata(fetchHints);
                 softDeleted = false;
             } else if (m instanceof AddPropertyMetadataMutation) {
                 AddPropertyMetadataMutation apmm = (AddPropertyMetadataMutation) m;
-                metadata = apmm.getMetadata();
+                metadata = apmm.getMetadata(fetchHints);
             } else if (m instanceof SoftDeletePropertyMutation) {
                 softDeleted = true;
             } else if (m instanceof MarkPropertyHiddenMutation) {

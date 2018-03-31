@@ -52,6 +52,7 @@ public abstract class ElementBase implements Element {
     }
 
     protected Iterable<Property> internalGetProperties(String name) {
+        getFetchHints().assertPropertyIncluded(name);
         return new FilterIterable<Property>(getProperties()) {
             @Override
             protected boolean isIncluded(Property property) {
@@ -71,6 +72,7 @@ public abstract class ElementBase implements Element {
             result.add(getEdgeLabelProperty());
             return result;
         }
+        getFetchHints().assertPropertyIncluded(name);
         return new FilterIterable<Property>(getProperties()) {
             @Override
             protected boolean isIncluded(Property property) {

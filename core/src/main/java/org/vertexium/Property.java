@@ -14,6 +14,8 @@ public abstract class Property implements Comparable<Property> {
 
     public abstract Metadata getMetadata();
 
+    public abstract FetchHints getFetchHints();
+
     public abstract Iterable<Visibility> getHiddenVisibilities();
 
     public abstract boolean isHidden(Authorizations authorizations);

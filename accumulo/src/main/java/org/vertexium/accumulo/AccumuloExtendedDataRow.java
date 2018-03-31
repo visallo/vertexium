@@ -11,14 +11,21 @@ public class AccumuloExtendedDataRow extends ExtendedDataRowBase {
     private final ExtendedDataRowId rowId;
     private final Set<Property> properties;
 
-    public AccumuloExtendedDataRow(ExtendedDataRowId rowId, SortedMap<Key, Value> row, VertexiumSerializer vertexiumSerializer) {
+    public AccumuloExtendedDataRow(
+            ExtendedDataRowId rowId,
+            SortedMap<Key, Value> row,
+            FetchHints fetchHints,
+            VertexiumSerializer vertexiumSerializer
+    ) {
+        super(fetchHints);
         this.rowId = rowId;
-        this.properties = rowToProperties(rowId, row, vertexiumSerializer);
+        this.properties = rowToProperties(rowId, row, fetchHints, vertexiumSerializer);
     }
 
     private Set<Property> rowToProperties(
             ExtendedDataRowId rowId,
             SortedMap<Key, Value> row,
+            FetchHints fetchHints,
             VertexiumSerializer vertexiumSerializer
     ) {
         Set<Property> results = new HashSet<>();
@@ -36,6 +43,7 @@ public class AccumuloExtendedDataRow extends ExtendedDataRowBase {
                     propertyName,
                     propertyKey,
                     propertyValue,
+                    fetchHints,
                     timestamp,
                     visibility
             );
@@ -58,6 +66,7 @@ public class AccumuloExtendedDataRow extends ExtendedDataRowBase {
         private final String propertyName;
         private final String propertyKey;
         private final Object propertyValue;
+        private final FetchHints fetchHints;
         private final long timestamp;
         private final Visibility visibility;
 
@@ -65,12 +74,14 @@ public class AccumuloExtendedDataRow extends ExtendedDataRowBase {
                 String propertyName,
                 String propertyKey,
                 Object propertyValue,
+                FetchHints fetchHints,
                 long timestamp,
                 Visibility visibility
         ) {
             this.propertyName = propertyName;
             this.propertyKey = propertyKey;
             this.propertyValue = propertyValue;
+            this.fetchHints = fetchHints;
             this.timestamp = timestamp;
             this.visibility = visibility;
         }
@@ -102,7 +113,12 @@ public class AccumuloExtendedDataRow extends ExtendedDataRowBase {
 
         @Override
         public Metadata getMetadata() {
-            return new Metadata();
+            return new Metadata(fetchHints);
+        }
+
+        @Override
+        public FetchHints getFetchHints() {
+            return fetchHints;
         }
 
         @Override

@@ -170,37 +170,15 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
 
     @Override
     public Iterable<Edge> getEdges(Direction direction, FetchHints fetchHints, Long endTime, Authorizations authorizations) {
-        if (!validateFetchHints(direction)) {
+        if (!getFetchHints().validateHasEdgeFetchHints(direction)) {
             return null;
         }
         return getGraph().getEdges(getEdgeIds(direction, authorizations), fetchHints, endTime, authorizations);
     }
 
-    private boolean validateFetchHints(Direction direction) {
-        if (!getFetchHints().isIncludeEdgeRefs()) {
-            LOGGER.warn("edges called without including any edge infos");
-            return false;
-        }
-        switch (direction) {
-            case OUT:
-                if (!getFetchHints().isIncludeOutEdgeRefs() && !getFetchHints().hasEdgeLabelsOfEdgeRefsToInclude()) {
-                    LOGGER.warn("edges called without including any edge infos");
-                    return false;
-                }
-                break;
-            case IN:
-                if (!getFetchHints().isIncludeInEdgeRefs() && !getFetchHints().hasEdgeLabelsOfEdgeRefsToInclude()) {
-                    LOGGER.warn("edges called without including any edge infos");
-                    return false;
-                }
-                break;
-        }
-        return true;
-    }
-
     @Override
     public Iterable<String> getEdgeIds(Direction direction, Authorizations authorizations) {
-        if (!validateFetchHints(direction)) {
+        if (!getFetchHints().validateHasEdgeFetchHints(direction)) {
             return null;
         }
         return getEdgeIdsWithOtherVertexId(null, direction, null, authorizations);
@@ -213,7 +191,7 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
 
     @Override
     public Iterable<Edge> getEdges(Direction direction, String label, FetchHints fetchHints, Authorizations authorizations) {
-        if (!validateFetchHints(direction)) {
+        if (!getFetchHints().validateHasEdgeFetchHints(direction)) {
             return null;
         }
         return getGraph().getEdges(getEdgeIds(direction, labelToArrayOrNull(label), authorizations), fetchHints, authorizations);
@@ -221,7 +199,7 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
 
     @Override
     public Iterable<String> getEdgeIds(Direction direction, String label, Authorizations authorizations) {
-        if (!validateFetchHints(direction)) {
+        if (!getFetchHints().validateHasEdgeFetchHints(direction)) {
             return null;
         }
         return getEdgeIdsWithOtherVertexId(null, direction, labelToArrayOrNull(label), authorizations);
@@ -234,7 +212,7 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
 
     @Override
     public Iterable<Edge> getEdges(Direction direction, final String[] labels, FetchHints fetchHints, Authorizations authorizations) {
-        if (!validateFetchHints(direction)) {
+        if (!getFetchHints().validateHasEdgeFetchHints(direction)) {
             return null;
         }
         return getGraph().getEdges(getEdgeIdsWithOtherVertexId(null, direction, labels, authorizations), fetchHints, authorizations);
@@ -242,7 +220,7 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
 
     @Override
     public Iterable<String> getEdgeIds(final Direction direction, final String[] labels, final Authorizations authorizations) {
-        if (!validateFetchHints(direction)) {
+        if (!getFetchHints().validateHasEdgeFetchHints(direction)) {
             return null;
         }
         return getEdgeIdsWithOtherVertexId(null, direction, labels, authorizations);
@@ -255,7 +233,7 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
 
     @Override
     public Iterable<Edge> getEdges(final Vertex otherVertex, Direction direction, FetchHints fetchHints, Authorizations authorizations) {
-        if (!validateFetchHints(direction)) {
+        if (!getFetchHints().validateHasEdgeFetchHints(direction)) {
             return null;
         }
         return getGraph().getEdges(getEdgeIdsWithOtherVertexId(otherVertex.getId(), direction, null, authorizations), fetchHints, authorizations);
@@ -263,7 +241,7 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
 
     @Override
     public Iterable<String> getEdgeIds(Vertex otherVertex, Direction direction, Authorizations authorizations) {
-        if (!validateFetchHints(direction)) {
+        if (!getFetchHints().validateHasEdgeFetchHints(direction)) {
             return null;
         }
         return getEdgeIdsWithOtherVertexId(otherVertex.getId(), direction, null, authorizations);
@@ -276,7 +254,7 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
 
     @Override
     public Iterable<Edge> getEdges(final Vertex otherVertex, Direction direction, String label, FetchHints fetchHints, Authorizations authorizations) {
-        if (!validateFetchHints(direction)) {
+        if (!getFetchHints().validateHasEdgeFetchHints(direction)) {
             return null;
         }
         return getGraph().getEdges(getEdgeIdsWithOtherVertexId(otherVertex.getId(), direction, labelToArrayOrNull(label), authorizations), fetchHints, authorizations);
@@ -284,7 +262,7 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
 
     @Override
     public Iterable<String> getEdgeIds(Vertex otherVertex, Direction direction, String label, Authorizations authorizations) {
-        if (!validateFetchHints(direction)) {
+        if (!getFetchHints().validateHasEdgeFetchHints(direction)) {
             return null;
         }
         return getEdgeIdsWithOtherVertexId(otherVertex.getId(), direction, labelToArrayOrNull(label), authorizations);
@@ -297,7 +275,7 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
 
     @Override
     public Iterable<Edge> getEdges(final Vertex otherVertex, Direction direction, String[] labels, FetchHints fetchHints, Authorizations authorizations) {
-        if (!validateFetchHints(direction)) {
+        if (!getFetchHints().validateHasEdgeFetchHints(direction)) {
             return null;
         }
         return getGraph().getEdges(getEdgeIdsWithOtherVertexId(otherVertex.getId(), direction, labels, authorizations), fetchHints, authorizations);
@@ -305,7 +283,7 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
 
     @Override
     public Iterable<String> getEdgeIds(final Vertex otherVertex, final Direction direction, final String[] labels, final Authorizations authorizations) {
-        if (!validateFetchHints(direction)) {
+        if (!getFetchHints().validateHasEdgeFetchHints(direction)) {
             return null;
         }
         return getEdgeIdsWithOtherVertexId(otherVertex.getId(), direction, labels, authorizations);

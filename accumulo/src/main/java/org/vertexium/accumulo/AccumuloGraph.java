@@ -1031,7 +1031,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
     public Iterable<ExtendedDataRow> getExtendedData(Iterable<ExtendedDataRowId> ids, Authorizations authorizations) {
         List<org.apache.accumulo.core.data.Range> ranges = extendedDataRowIdToRange(ids);
         Span trace = Trace.start("getExtendedData");
-        return getExtendedDataRowsInRange(trace, ranges, authorizations);
+        return getExtendedDataRowsInRange(trace, ranges, FetchHints.ALL, authorizations);
     }
 
     @Override
@@ -1047,7 +1047,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             trace.data("elementId", elementId);
             trace.data("tableName", tableName);
             org.apache.accumulo.core.data.Range range = org.apache.accumulo.core.data.Range.prefix(KeyHelper.createExtendedDataRowKey(elementType, elementId, tableName, ""));
-            return getExtendedDataRowsInRange(trace, Lists.newArrayList(range), authorizations);
+            return getExtendedDataRowsInRange(trace, Lists.newArrayList(range), FetchHints.ALL, authorizations);
         } catch (IllegalStateException ex) {
             throw new VertexiumException("Failed to get extended data: " + elementType + ":" + elementId + ":" + tableName, ex);
         } catch (RuntimeException ex) {
@@ -1070,7 +1070,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         trace.data("rangeExclusiveStart", extendedDataRowKeyRange.getExclusiveEnd());
 
         org.apache.accumulo.core.data.Range range = vertexiumRangeToAccumuloRange(extendedDataRowKeyRange);
-        return getExtendedDataRowsInRange(trace, Collections.singletonList(range), authorizations);
+        return getExtendedDataRowsInRange(trace, Collections.singletonList(range), FetchHints.ALL, authorizations);
     }
 
     private List<org.apache.accumulo.core.data.Range> extendedDataRowIdToRange(Iterable<ExtendedDataRowId> ids) {
@@ -2476,6 +2476,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
     private CloseableIterable<ExtendedDataRow> getExtendedDataRowsInRange(
             Span trace,
             List<org.apache.accumulo.core.data.Range> ranges,
+            FetchHints fetchHints,
             Authorizations authorizations
     ) {
         final long timerStartTime = System.currentTimeMillis();
@@ -2493,7 +2494,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                 try {
                     SortedMap<Key, Value> row = WholeRowIterator.decodeRow(next.getKey(), next.getValue());
                     ExtendedDataRowId extendedDataRowId = KeyHelper.parseExtendedDataRowId(next.getKey().getRow());
-                    return new AccumuloExtendedDataRow(extendedDataRowId, row, vertexiumSerializer);
+                    return new AccumuloExtendedDataRow(extendedDataRowId, row, fetchHints, vertexiumSerializer);
                 } catch (IOException e) {
                     throw new VertexiumException("Could not decode row", e);
                 }

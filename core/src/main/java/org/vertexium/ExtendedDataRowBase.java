@@ -9,8 +9,13 @@ import org.vertexium.util.FilterIterable;
 import java.util.Iterator;
 
 public abstract class ExtendedDataRowBase implements ExtendedDataRow {
+    private final FetchHints fetchHints;
     private transient Property rowIdProperty;
     private transient Property tableNameProperty;
+
+    protected ExtendedDataRowBase(FetchHints fetchHints) {
+        this.fetchHints = fetchHints;
+    }
 
     @Override
     public abstract ExtendedDataRowId getId();
@@ -45,6 +50,7 @@ public abstract class ExtendedDataRowBase implements ExtendedDataRow {
         } else if (ExtendedDataRow.TABLE_NAME.equals(name)) {
             return getTableNameProperty();
         }
+        getFetchHints().assertPropertyIncluded(name);
         for (Property property : getProperties()) {
             if (isMatch(property, key, name, visibility)) {
                 return property;
@@ -84,6 +90,7 @@ public abstract class ExtendedDataRowBase implements ExtendedDataRow {
             return Lists.newArrayList(getTableNameProperty());
         }
 
+        getFetchHints().assertPropertyIncluded(name);
         return new FilterIterable<Property>(getProperties()) {
             @Override
             protected boolean isIncluded(Property prop) {
@@ -163,5 +170,10 @@ public abstract class ExtendedDataRowBase implements ExtendedDataRow {
             );
         }
         return tableNameProperty;
+    }
+
+    @Override
+    public FetchHints getFetchHints() {
+        return fetchHints;
     }
 }

@@ -208,6 +208,7 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
         } else if (Edge.LABEL_PROPERTY_NAME.equals(name) && this instanceof Edge) {
             return getEdgeLabelProperty();
         }
+        getFetchHints().assertPropertyIncluded(name);
         Property property = this.properties.getProperty(name, index);
         if (property == null) {
             return null;
@@ -378,6 +379,7 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
 
     @Override
     protected Iterable<Property> internalGetProperties(String name) {
+        getFetchHints().assertPropertyIncluded(name);
         return this.properties.getProperties(name);
     }
 }

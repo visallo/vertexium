@@ -17,7 +17,8 @@ public class InMemoryExtendedDataRow extends ExtendedDataRowBase {
     private ReadWriteLock propertiesLock = new ReentrantReadWriteLock();
     private Set<InMemoryProperty> properties = new HashSet<>();
 
-    public InMemoryExtendedDataRow(ExtendedDataRowId id) {
+    public InMemoryExtendedDataRow(ExtendedDataRowId id, FetchHints fetchHints) {
+        super(fetchHints);
         this.id = id;
     }
 
@@ -38,7 +39,7 @@ public class InMemoryExtendedDataRow extends ExtendedDataRowBase {
     public InMemoryExtendedDataRow toReadable(VisibilityEvaluator visibilityEvaluator) {
         propertiesLock.readLock().lock();
         try {
-            InMemoryExtendedDataRow row = new InMemoryExtendedDataRow(getId());
+            InMemoryExtendedDataRow row = new InMemoryExtendedDataRow(getId(), getFetchHints());
             for (InMemoryProperty column : properties) {
                 if (column.canRead(visibilityEvaluator)) {
                     row.properties.add(column);
@@ -50,10 +51,16 @@ public class InMemoryExtendedDataRow extends ExtendedDataRowBase {
         }
     }
 
-    public void addColumn(String propertyName, String key, Object value, long timestamp, Visibility visibility) {
+    public void addColumn(
+            String propertyName,
+            String key,
+            Object value,
+            long timestamp,
+            Visibility visibility
+    ) {
         propertiesLock.writeLock().lock();
         try {
-            InMemoryProperty prop = new InMemoryProperty(propertyName, key, value, timestamp, visibility);
+            InMemoryProperty prop = new InMemoryProperty(propertyName, key, value, FetchHints.ALL, timestamp, visibility);
             properties.remove(prop);
             properties.add(prop);
         } finally {
@@ -91,11 +98,20 @@ public class InMemoryExtendedDataRow extends ExtendedDataRowBase {
         private final Object value;
         private final Visibility visibility;
         private final ColumnVisibility columnVisibility;
+        private final FetchHints fetchHints;
 
-        public InMemoryProperty(String name, String key, Object value, long timestamp, Visibility visibility) {
+        public InMemoryProperty(
+                String name,
+                String key,
+                Object value,
+                FetchHints fetchHints,
+                long timestamp,
+                Visibility visibility
+        ) {
             this.name = name;
             this.key = key;
             this.value = value;
+            this.fetchHints = fetchHints;
             this.timestamp = timestamp;
             this.visibility = visibility;
             this.columnVisibility = new ColumnVisibility(visibility.getVisibilityString());
@@ -129,13 +145,18 @@ public class InMemoryExtendedDataRow extends ExtendedDataRowBase {
         }
 
         @Override
+        public FetchHints getFetchHints() {
+            return fetchHints;
+        }
+
+        @Override
         public Visibility getVisibility() {
             return visibility;
         }
 
         @Override
         public Metadata getMetadata() {
-            return new Metadata();
+            return new Metadata(getFetchHints());
         }
 
         @Override

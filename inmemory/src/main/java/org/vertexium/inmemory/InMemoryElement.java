@@ -7,11 +7,13 @@ import org.vertexium.mutation.*;
 import org.vertexium.query.ExtendedDataQueryableIterable;
 import org.vertexium.query.QueryableIterable;
 import org.vertexium.search.IndexHint;
+import org.vertexium.util.VertexiumLogger;
+import org.vertexium.util.VertexiumLoggerFactory;
 
-import java.util.EnumSet;
 import java.util.List;
 
 public abstract class InMemoryElement<TElement extends InMemoryElement> extends ElementBase {
+    private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(InMemoryElement.class);
     private final String id;
     private final FetchHints fetchHints;
     private Property idProperty;
@@ -149,6 +151,10 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> extends 
 
     @Override
     public Iterable<Property> getProperties() {
+        if (!getFetchHints().isIncludeProperties()) {
+            LOGGER.warn("calling getProperties without specifying fetch hints to get properties");
+            return null;
+        }
         return inMemoryTableElement.getProperties(fetchHints, endTime, authorizations);
     }
 
@@ -369,7 +375,7 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> extends 
                 getGraph(),
                 this,
                 tableName,
-                graph.getExtendedDataTable(ElementType.getTypeFromElement(this), id, tableName, authorizations)
+                graph.getExtendedDataTable(ElementType.getTypeFromElement(this), id, tableName, getFetchHints(), authorizations)
         );
     }
 }

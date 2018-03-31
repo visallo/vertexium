@@ -14,6 +14,7 @@ public abstract class InMemoryExtendedDataTable {
             ElementType elementType,
             String elementId,
             String tableName,
+            FetchHints fetchHints,
             Authorizations authorizations
     );
 

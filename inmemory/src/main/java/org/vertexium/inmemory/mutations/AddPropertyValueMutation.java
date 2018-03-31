@@ -1,5 +1,6 @@
 package org.vertexium.inmemory.mutations;
 
+import org.vertexium.FetchHints;
 import org.vertexium.Metadata;
 import org.vertexium.Visibility;
 
@@ -18,7 +19,7 @@ public class AddPropertyValueMutation extends PropertyMutation {
         return value;
     }
 
-    public Metadata getMetadata() {
-        return metadata;
+    public Metadata getMetadata(FetchHints fetchHints) {
+        return new Metadata(this.metadata, fetchHints);
     }
 }

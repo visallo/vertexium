@@ -32,7 +32,7 @@ public class MutablePropertyImpl extends MutableProperty {
             FetchHints fetchHints
     ) {
         if (metadata == null && fetchHints.isIncludePropertyMetadata()) {
-            metadata = new Metadata();
+            metadata = new Metadata(fetchHints);
         }
 
         this.key = key;
@@ -64,6 +64,11 @@ public class MutablePropertyImpl extends MutableProperty {
 
     public Visibility getVisibility() {
         return visibility;
+    }
+
+    @Override
+    public FetchHints getFetchHints() {
+        return fetchHints;
     }
 
     public Metadata getMetadata() {

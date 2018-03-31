@@ -8,19 +8,28 @@ import java.util.Map;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-public class Metadata implements Serializable {
-    static final long serialVersionUID = 42L;
+public class Metadata {
     public static final String KEY_SEPARATOR = "\u001f";
 
     private final Map<String, Entry> entries;
+    private final FetchHints fetchHints;
     private transient ReadWriteLock entriesLock = new ReentrantReadWriteLock();
 
     public Metadata() {
-        entries = new HashMap<>();
+        this(FetchHints.ALL);
+    }
+
+    public Metadata(FetchHints fetchHints) {
+        this.entries = new HashMap<>();
+        this.fetchHints = fetchHints;
     }
 
     public Metadata(Metadata copyFromMetadata) {
-        this();
+        this(copyFromMetadata, FetchHints.ALL);
+    }
+
+    public Metadata(Metadata copyFromMetadata, FetchHints fetchHints) {
+        this(fetchHints);
         if (copyFromMetadata != null) {
             entries.putAll(copyFromMetadata.entries);
         }
@@ -77,6 +86,7 @@ public class Metadata implements Serializable {
     }
 
     public Entry getEntry(String key, Visibility visibility) {
+        getFetchHints().assertMetadataIncluded(key);
         getEntriesLock().readLock().lock();
         try {
             return entries.get(toMapKey(key, visibility));
@@ -86,6 +96,7 @@ public class Metadata implements Serializable {
     }
 
     public Entry getEntry(String key) {
+        getFetchHints().assertMetadataIncluded(key);
         getEntriesLock().readLock().lock();
         try {
             Entry entry = null;
@@ -104,6 +115,7 @@ public class Metadata implements Serializable {
     }
 
     public Collection<Entry> getEntries(String key) {
+        getFetchHints().assertMetadataIncluded(key);
         getEntriesLock().readLock().lock();
         try {
             Collection<Entry> results = new ArrayList<>();
@@ -145,6 +157,7 @@ public class Metadata implements Serializable {
     }
 
     public boolean containsKey(String key) {
+        getFetchHints().assertMetadataIncluded(key);
         getEntriesLock().readLock().lock();
         try {
             for (Map.Entry<String, Entry> e : entries.entrySet()) {
@@ -172,6 +185,10 @@ public class Metadata implements Serializable {
             entriesLock = new ReentrantReadWriteLock();
         }
         return entriesLock;
+    }
+
+    public FetchHints getFetchHints() {
+        return fetchHints;
     }
 
     public static class Entry implements Serializable {

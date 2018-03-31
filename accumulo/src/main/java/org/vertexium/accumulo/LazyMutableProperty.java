@@ -134,12 +134,21 @@ public class LazyMutableProperty extends MutableProperty {
         }
         if (cachedMetadata == null) {
             if (metadata == null) {
-                cachedMetadata = new Metadata();
+                cachedMetadata = new Metadata(fetchHints);
             } else {
-                cachedMetadata = metadata.toMetadata(this.vertexiumSerializer, graph.getNameSubstitutionStrategy());
+                cachedMetadata = metadata.toMetadata(
+                        this.vertexiumSerializer,
+                        graph.getNameSubstitutionStrategy(),
+                        fetchHints
+                );
             }
         }
         return cachedMetadata;
+    }
+
+    @Override
+    public FetchHints getFetchHints() {
+        return fetchHints;
     }
 
     @Override

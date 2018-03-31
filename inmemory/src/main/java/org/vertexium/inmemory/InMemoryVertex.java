@@ -8,11 +8,15 @@ import org.vertexium.query.VertexQuery;
 import org.vertexium.search.IndexHint;
 import org.vertexium.util.ConvertingIterable;
 import org.vertexium.util.FilterIterable;
+import org.vertexium.util.VertexiumLogger;
+import org.vertexium.util.VertexiumLoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
 
 public class InMemoryVertex extends InMemoryElement<InMemoryVertex> implements Vertex {
+    private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(InMemoryVertex.class);
+
     public InMemoryVertex(
             InMemoryGraph graph,
             String id,
@@ -49,7 +53,34 @@ public class InMemoryVertex extends InMemoryElement<InMemoryVertex> implements V
 
     @Override
     public Iterable<EdgeInfo> getEdgeInfos(Direction direction, final String[] labels, Authorizations authorizations) {
-        Iterable<EdgeInfo> results = new ConvertingIterable<Edge, EdgeInfo>(getEdges(direction, getFetchHints(), authorizations)) {
+        if (!getFetchHints().isIncludeEdgeRefs()) {
+            LOGGER.warn("getEdgeInfos called without including any edge infos");
+            return null;
+        }
+        Iterable<EdgeInfo> results = internalGetEdgeInfo(direction, authorizations);
+        results = new FilterIterable<EdgeInfo>(results) {
+            @Override
+            protected boolean isIncluded(EdgeInfo o) {
+                if (!getFetchHints().isIncludeEdgeRefLabel(o.getLabel())) {
+                    return false;
+                }
+                if (labels == null) {
+                    return true;
+                } else {
+                    for (String label : labels) {
+                        if (o.getLabel().equals(label)) {
+                            return true;
+                        }
+                    }
+                    return false;
+                }
+            }
+        };
+        return results;
+    }
+
+    private Iterable<EdgeInfo> internalGetEdgeInfo(Direction direction, Authorizations authorizations) {
+        return new ConvertingIterable<Edge, EdgeInfo>(internalGetEdges(direction, getFetchHints(), null, authorizations)) {
             @Override
             protected EdgeInfo convert(Edge edge) {
                 return new EdgeInfo() {
@@ -77,20 +108,6 @@ public class InMemoryVertex extends InMemoryElement<InMemoryVertex> implements V
                 };
             }
         };
-        if (labels != null) {
-            results = new FilterIterable<EdgeInfo>(results) {
-                @Override
-                protected boolean isIncluded(EdgeInfo o) {
-                    for (String label : labels) {
-                        if (o.getLabel().equals(label)) {
-                            return true;
-                        }
-                    }
-                    return false;
-                }
-            };
-        }
-        return results;
     }
 
     @Override
@@ -100,6 +117,13 @@ public class InMemoryVertex extends InMemoryElement<InMemoryVertex> implements V
 
     @Override
     public Iterable<Edge> getEdges(final Direction direction, FetchHints fetchHints, Long endTime, Authorizations authorizations) {
+        if (!getFetchHints().validateHasEdgeFetchHints(direction)) {
+            return null;
+        }
+        return internalGetEdges(direction, fetchHints, endTime, authorizations);
+    }
+
+    private Iterable<Edge> internalGetEdges(Direction direction, FetchHints fetchHints, Long endTime, Authorizations authorizations) {
         return new FilterIterable<Edge>(getGraph().getEdgesFromVertex(getId(), fetchHints, endTime, authorizations)) {
             @Override
             protected boolean isIncluded(Edge edge) {
@@ -240,13 +264,13 @@ public class InMemoryVertex extends InMemoryElement<InMemoryVertex> implements V
         Map<String, Integer> outEdgeCountsByLabels = new HashMap<>();
         Map<String, Integer> inEdgeCountsByLabels = new HashMap<>();
 
-        for (EdgeInfo entry : getEdgeInfos(Direction.IN, authorizations)) {
+        for (EdgeInfo entry : internalGetEdgeInfo(Direction.IN, authorizations)) {
             String label = entry.getLabel();
             Integer c = inEdgeCountsByLabels.getOrDefault(label, 0);
             inEdgeCountsByLabels.put(label, c + 1);
         }
 
-        for (EdgeInfo entry : getEdgeInfos(Direction.OUT, authorizations)) {
+        for (EdgeInfo entry : internalGetEdgeInfo(Direction.OUT, authorizations)) {
             String label = entry.getLabel();
             Integer c = outEdgeCountsByLabels.getOrDefault(label, 0);
             outEdgeCountsByLabels.put(label, c + 1);
