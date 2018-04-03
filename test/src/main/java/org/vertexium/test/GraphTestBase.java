@@ -5029,6 +5029,46 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    public void testValueTypesUpdatingWithMutations() throws Exception {
+        Date date = createDate(2014, 2, 24, 13, 0, 5);
+
+        graph.prepareVertex("v1", VISIBILITY_A).save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        graph.getVertex("v1", AUTHORIZATIONS_A_AND_B)
+            .prepareMutation()
+            .addPropertyValue("", "int", 5, VISIBILITY_A)
+            .addPropertyValue("", "bigInteger", BigInteger.valueOf(10), VISIBILITY_A)
+            .addPropertyValue("", "bigDecimal", BigDecimal.valueOf(1.1), VISIBILITY_A)
+            .addPropertyValue("", "double", 5.6, VISIBILITY_A)
+            .addPropertyValue("", "float", 6.4f, VISIBILITY_A)
+            .addPropertyValue("", "string", "test", VISIBILITY_A)
+            .addPropertyValue("", "byte", (byte) 5, VISIBILITY_A)
+            .addPropertyValue("", "long", (long) 5, VISIBILITY_A)
+            .addPropertyValue("", "boolean", true, VISIBILITY_A)
+            .addPropertyValue("", "geopoint", new GeoPoint(77, -33), VISIBILITY_A)
+            .addPropertyValue("", "short", (short) 5, VISIBILITY_A)
+            .addPropertyValue("", "date", date, VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        Assert.assertEquals(1, count(graph.query(AUTHORIZATIONS_A).has("int", 5).vertices()));
+        Assert.assertEquals(1, count(graph.query(AUTHORIZATIONS_A).has("double", 5.6).vertices()));
+        Assert.assertEquals(1, count(graph.query(AUTHORIZATIONS_A).range("float", 6.3f, 6.5f).vertices())); // can't search for 6.4f her because of float precision
+        Assert.assertEquals(1, count(graph.query(AUTHORIZATIONS_A).has("string", "test").vertices()));
+        Assert.assertEquals(1, count(graph.query(AUTHORIZATIONS_A).has("byte", 5).vertices()));
+        Assert.assertEquals(1, count(graph.query(AUTHORIZATIONS_A).has("long", 5).vertices()));
+        Assert.assertEquals(1, count(graph.query(AUTHORIZATIONS_A).has("boolean", true).vertices()));
+        Assert.assertEquals(1, count(graph.query(AUTHORIZATIONS_A).has("short", 5).vertices()));
+        Assert.assertEquals(1, count(graph.query(AUTHORIZATIONS_A).has("date", date).vertices()));
+        Assert.assertEquals(1, count(graph.query(AUTHORIZATIONS_A).has("bigInteger", BigInteger.valueOf(10)).vertices()));
+        Assert.assertEquals(1, count(graph.query(AUTHORIZATIONS_A).has("bigInteger", 10).vertices()));
+        Assert.assertEquals(1, count(graph.query(AUTHORIZATIONS_A).has("bigDecimal", BigDecimal.valueOf(1.1)).vertices()));
+        Assert.assertEquals(1, count(graph.query(AUTHORIZATIONS_A).has("bigDecimal", 1.1).vertices()));
+        Assert.assertEquals(1, count(graph.query(AUTHORIZATIONS_A).has("geopoint", GeoCompare.WITHIN, new GeoCircle(77, -33, 1)).vertices()));
+    }
+
+    @Test
     public void testChangeVisibilityVertex() {
         graph.prepareVertex("v1", VISIBILITY_A)
                 .save(AUTHORIZATIONS_A_AND_B);
