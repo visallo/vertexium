@@ -3816,6 +3816,21 @@ public abstract class GraphTestBase {
         assertEquals(-77.2297, geoPoint.getLongitude(), 0.001);
         assertEquals("Reston, VA", geoPoint.getDescription());
 
+        Vertex v3 = graph.addVertex("v3", VISIBILITY_A, AUTHORIZATIONS_A_AND_B);
+        v3.prepareMutation()
+                .setProperty("location", new GeoPoint(39.0299, -77.5121, "Ashburn, VA"), VISIBILITY_A)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        vertices = toList(graph.query(AUTHORIZATIONS_A)
+                .has("location", GeoCompare.WITHIN, new GeoCircle(39.0299, -77.5121, 1))
+                .vertices());
+        Assert.assertEquals(1, count(vertices));
+        geoPoint = (GeoPoint) vertices.get(0).getPropertyValue("location");
+        assertEquals(39.0299, geoPoint.getLatitude(), 0.001);
+        assertEquals(-77.5121, geoPoint.getLongitude(), 0.001);
+        assertEquals("Ashburn, VA", geoPoint.getDescription());
+
         vertices = toList(graph.query(AUTHORIZATIONS_A)
                 .has("location", GeoCompare.WITHIN, new GeoCircle(38.9186, -77.2297, 25))
                 .vertices());
@@ -3829,7 +3844,7 @@ public abstract class GraphTestBase {
         vertices = toList(graph.query(AUTHORIZATIONS_A)
                 .has("location", GeoCompare.WITHIN, new GeoHash(38.9186, -77.2297, 2))
                 .vertices());
-        Assert.assertEquals(2, count(vertices));
+        Assert.assertEquals(3, count(vertices));
 
         vertices = toList(graph.query(AUTHORIZATIONS_A)
                 .has("location", GeoCompare.WITHIN, new GeoHash(38.9186, -77.2297, 3))
