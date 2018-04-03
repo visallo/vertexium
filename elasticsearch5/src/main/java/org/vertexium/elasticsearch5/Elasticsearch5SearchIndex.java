@@ -769,7 +769,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
                 List list = (List) property.getValue();
                 jsonBuilder.field(propertyKey, list.toArray(new Object[list.size()]));
             } else {
-                jsonBuilder.field(propertyKey, convertValueForIndexing(property.getValue()));
+                jsonBuilder.field(propertyKey, property.getValue());
             }
         }
     }
@@ -1983,21 +1983,22 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
     @SuppressWarnings("unchecked")
     protected void addPropertyValueToPropertiesMap(Map<String, Object> propertiesMap, String propertyName, Object propertyValue) {
         Object existingValue = propertiesMap.get(propertyName);
+        Object valueForIndex = convertValueForIndexing(propertyValue);
         if (existingValue == null) {
-            propertiesMap.put(propertyName, propertyValue);
+            propertiesMap.put(propertyName, valueForIndex);
             return;
         }
 
         if (existingValue instanceof List) {
             ArrayList newList = new ArrayList<>((List) existingValue);
-            newList.add(propertyValue);
+            newList.add(valueForIndex);
             propertiesMap.put(propertyName, newList);
             return;
         }
 
         List list = new ArrayList();
         list.add(existingValue);
-        list.add(propertyValue);
+        list.add(valueForIndex);
         propertiesMap.put(propertyName, list);
     }
 
