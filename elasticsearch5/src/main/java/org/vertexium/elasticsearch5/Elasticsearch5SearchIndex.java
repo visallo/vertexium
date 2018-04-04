@@ -456,11 +456,20 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
 
         Map<String, Object> remainingProperties = getPropertiesAsFields(graph, element.getProperties(propertyName));
         if (remainingProperties != null && remainingProperties.containsKey(fieldName)) {
-            Object remainingValue = remainingProperties.get(fieldName);
-            if (remainingValue instanceof List) {
-                ((List) remainingValue).forEach(v -> addPropertyValueToPropertiesMap(fieldsToSet, fieldName, v));
+            PropertyDefinition propertyDefinition = getPropertyDefinition(graph, propertyName);
+            if (GeoShape.class.isAssignableFrom(propertyDefinition.getDataType())) {
+                addPropertyValueToPropertiesMap(fieldsToSet, fieldName, remainingProperties.get(fieldName));
+                addPropertyValueToPropertiesMap(fieldsToSet, fieldName + GEO_PROPERTY_NAME_SUFFIX, remainingProperties.get(fieldName + GEO_PROPERTY_NAME_SUFFIX));
+                if (propertyDefinition.getDataType() == GeoPoint.class) {
+                    addPropertyValueToPropertiesMap(fieldsToSet, fieldName + GEO_POINT_PROPERTY_NAME_SUFFIX, remainingProperties.get(fieldName + GEO_POINT_PROPERTY_NAME_SUFFIX));
+                }
             } else {
-                addPropertyValueToPropertiesMap(fieldsToSet, fieldName, remainingValue);
+                Object remainingValue = remainingProperties.get(fieldName);
+                if (remainingValue instanceof List) {
+                    ((List) remainingValue).forEach(v -> addPropertyValueToPropertiesMap(fieldsToSet, fieldName, v));
+                } else {
+                    addPropertyValueToPropertiesMap(fieldsToSet, fieldName, remainingValue);
+                }
             }
         }
     }
