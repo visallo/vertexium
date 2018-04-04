@@ -3,6 +3,7 @@
 
 # v3.2.2
 * Fixed: Improved support for multithreaded clients with InMemoryGraph
+* Fixed: Fixed saving BigInteger and BigDecimal when using prepareMutation with existing element
 
 # v3.2.1
 * Changed: When saving an ExistingElementMutation, the Elastisearch5Index will now apply the mutations using a painless script rather than making multiple requests.
