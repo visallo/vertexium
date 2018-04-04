@@ -18,11 +18,11 @@ public class FetchHintsBuilder {
     private boolean includeEdgeLabelsAndCounts;
     private boolean includeExtendedDataTableNames;
 
-    FetchHintsBuilder() {
+    public FetchHintsBuilder() {
 
     }
 
-    FetchHintsBuilder(FetchHints fetchHints) {
+    public FetchHintsBuilder(FetchHints fetchHints) {
         includeAllProperties = fetchHints.isIncludeAllProperties();
         propertyNamesToInclude = fetchHints.getPropertyNamesToInclude();
         includeAllPropertyMetadata = fetchHints.isIncludeAllPropertyMetadata();
