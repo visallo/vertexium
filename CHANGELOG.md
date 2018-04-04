@@ -3,6 +3,7 @@
 * Changed: Accumulo: Store metadata in an indexed list to prevent duplication in memory and over the wire 
 * Fixed: Accumulo Iterator memory leak 
 * Added: Method to Vertex to get more detailed edge summary
+* Removed: SQL
 
 # v3.2.3
 * Fixed: Not adding all of the geoshape fields to index for existing elements

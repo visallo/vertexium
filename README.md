@@ -9,7 +9,6 @@ The Vertexium API was designed to be generic, allowing for multiple implementati
 
 * Data storage
   * [Accumulo](accumulo/README.md)
-  * [SQL](sql/README.md)
 
 * Search
   * [Elasticsearch](elasticsearch5/README.md)
