@@ -1,9 +1,9 @@
 Vertexium [![Build Status](https://travis-ci.org/visallo/vertexium.svg?branch=master)](https://travis-ci.org/visallo/vertexium)
 =========
 
-Vertexium is an API to manipulate graphs, similar to blueprints. Unlike
-blueprints, every Vertexium method requires authorizations and visibilities.
-Vertexium also supports multivalued properties as well as property metadata.
+Vertexium is an API to manipulate graphs. Every Vertexium method requires authorizations
+and visibilities. Vertexium also supports multivalued properties as well as property
+metadata.
 
 The Vertexium API was designed to be generic, allowing for multiple implementations.
 

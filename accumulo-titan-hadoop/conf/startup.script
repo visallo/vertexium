@@ -1,2 +1,0 @@
-import org.vertexium.*;
-g = HadoopFactory.open('conf/accumulo-titan-hadoop.conf');
