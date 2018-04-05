@@ -54,7 +54,10 @@ import org.vertexium.query.*;
 import org.vertexium.search.SearchIndex;
 import org.vertexium.search.SearchIndexWithVertexPropertyCountByValue;
 import org.vertexium.type.*;
-import org.vertexium.util.*;
+import org.vertexium.util.ConvertingIterable;
+import org.vertexium.util.IOUtils;
+import org.vertexium.util.VertexiumLogger;
+import org.vertexium.util.VertexiumLoggerFactory;
 
 import java.io.*;
 import java.math.BigDecimal;
@@ -72,6 +75,7 @@ import static org.elasticsearch.common.geo.builders.ShapeBuilder.*;
 import static org.vertexium.elasticsearch5.ElasticsearchPropertyNameInfo.PROPERTY_NAME_PATTERN;
 import static org.vertexium.elasticsearch5.utils.SearchResponseUtils.checkForFailures;
 import static org.vertexium.util.Preconditions.checkNotNull;
+import static org.vertexium.util.StreamUtils.stream;
 
 public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVertexPropertyCountByValue {
     private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(Elasticsearch5SearchIndex.class);
@@ -452,24 +456,17 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
     }
 
     private void addExistingValuesToFieldMap(Graph graph, Element element, String propertyName, Visibility propertyVisibility, Map<String, Object> fieldsToSet) {
-        String fieldName = addVisibilityToPropertyName(graph, propertyName, propertyVisibility);
-
-        Map<String, Object> remainingProperties = getPropertiesAsFields(graph, element.getProperties(propertyName));
-        if (remainingProperties != null && remainingProperties.containsKey(fieldName)) {
-            PropertyDefinition propertyDefinition = getPropertyDefinition(graph, propertyName);
-            if (GeoShape.class.isAssignableFrom(propertyDefinition.getDataType())) {
-                addPropertyValueToPropertiesMap(fieldsToSet, fieldName, remainingProperties.get(fieldName));
-                addPropertyValueToPropertiesMap(fieldsToSet, fieldName + GEO_PROPERTY_NAME_SUFFIX, remainingProperties.get(fieldName + GEO_PROPERTY_NAME_SUFFIX));
-                if (propertyDefinition.getDataType() == GeoPoint.class) {
-                    addPropertyValueToPropertiesMap(fieldsToSet, fieldName + GEO_POINT_PROPERTY_NAME_SUFFIX, remainingProperties.get(fieldName + GEO_POINT_PROPERTY_NAME_SUFFIX));
-                }
+        Iterable<Property> properties = stream(element.getProperties(propertyName))
+                .filter(p -> p.getVisibility().equals(propertyVisibility))
+                .collect(Collectors.toList());
+        Map<String, Object> remainingProperties = getPropertiesAsFields(graph, properties);
+        for (Map.Entry<String, Object> remainingPropertyEntry : remainingProperties.entrySet()) {
+            String remainingField = remainingPropertyEntry.getKey();
+            Object remainingValue = remainingPropertyEntry.getValue();
+            if (remainingValue instanceof List) {
+                ((List) remainingValue).forEach(v -> addPropertyValueToPropertiesMap(fieldsToSet, remainingField, v));
             } else {
-                Object remainingValue = remainingProperties.get(fieldName);
-                if (remainingValue instanceof List) {
-                    ((List) remainingValue).forEach(v -> addPropertyValueToPropertiesMap(fieldsToSet, fieldName, v));
-                } else {
-                    addPropertyValueToPropertiesMap(fieldsToSet, fieldName, remainingValue);
-                }
+                addPropertyValueToPropertiesMap(fieldsToSet, remainingField, remainingValue);
             }
         }
     }
@@ -603,13 +600,13 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
         Map<String, Vertex> verticesById;
         if (rowsByElementTypeAndId.containsKey(ElementType.VERTEX) && !rowsByElementTypeAndId.get(ElementType.VERTEX).isEmpty()) {
             Iterable<Vertex> vertices = graph.getVertices(rowsByElementTypeAndId.get(ElementType.VERTEX).keySet(), FetchHint.NONE, authorizations);
-            verticesById = StreamUtils.stream(vertices).collect(Collectors.toMap(Vertex::getId, Function.identity()));
+            verticesById = stream(vertices).collect(Collectors.toMap(Vertex::getId, Function.identity()));
         } else {
             verticesById = new HashMap<>();
         }
         Map<String, Edge> edgesById;
         if (rowsByElementTypeAndId.containsKey(ElementType.EDGE) && !rowsByElementTypeAndId.get(ElementType.EDGE).isEmpty()) {
-            edgesById = StreamUtils.stream(graph.getEdges(rowsByElementTypeAndId.get(ElementType.EDGE).keySet(), FetchHint.NONE, authorizations))
+            edgesById = stream(graph.getEdges(rowsByElementTypeAndId.get(ElementType.EDGE).keySet(), FetchHint.NONE, authorizations))
                     .collect(Collectors.toMap(Edge::getId, Function.identity()));
         } else {
             edgesById = new HashMap<>();
@@ -632,7 +629,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
                     protected UpdateRequest convert(ExtendedDataRow row) {
                         String tableName = (String) row.getPropertyValue(ExtendedDataRow.TABLE_NAME);
                         String rowId = (String) row.getPropertyValue(ExtendedDataRow.ROW_ID);
-                        List<ExtendedDataMutation> columns = StreamUtils.stream(row.getProperties())
+                        List<ExtendedDataMutation> columns = stream(row.getProperties())
                                 .map(property -> new ExtendedDataMutation(
                                         tableName,
                                         rowId,
