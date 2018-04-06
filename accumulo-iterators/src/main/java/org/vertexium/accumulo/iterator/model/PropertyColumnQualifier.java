@@ -34,7 +34,7 @@ public class PropertyColumnQualifier extends KeyBase {
         assertNoValueSeparator(propertyName);
         assertNoValueSeparator(propertyKey);
         assertNoValueSeparator(visibilityString);
-        String timestampString = Long.toString(timestamp);
+        String timestampString = Long.toHexString(timestamp);
         int length = propertyName.length() + 1 + propertyKey.length() + 1 + visibilityString.length() + 1 + timestampString.length();
         //noinspection StringBufferReplaceableByString
         return new StringBuilder(length)
