@@ -3395,6 +3395,47 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    public void testGraphQueryTextVertexDifferentAuths() {
+        graph.defineProperty("title").dataType(String.class).textIndexHint(TextIndexHint.ALL).define();
+        graph.defineProperty("fullText").dataType(String.class).textIndexHint(TextIndexHint.FULL_TEXT).define();
+
+        graph.prepareVertex("v1", VISIBILITY_A)
+                .setProperty("title", "hello", VISIBILITY_EMPTY)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.prepareVertex("v2", VISIBILITY_B)
+                .setProperty("fullText", StreamingPropertyValue.create("this is text with hello"), VISIBILITY_EMPTY)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        Iterable<Vertex> vertices = graph.query("hello", AUTHORIZATIONS_A).vertices();
+        assertResultsCount(1, 1, (QueryResultsIterable) vertices);
+
+        vertices = graph.query("hello", AUTHORIZATIONS_A_AND_B).vertices();
+        assertResultsCount(2, 2, (QueryResultsIterable) vertices);
+    }
+
+    @Test
+    public void testGraphQueryVertexDifferentAuths() {
+        graph.prepareVertex("v1", VISIBILITY_A)
+                .setProperty("age", 25, VISIBILITY_EMPTY)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.prepareVertex("v2", VISIBILITY_B)
+                .setProperty("age", 25, VISIBILITY_EMPTY)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        Iterable<Vertex> vertices = graph.query(AUTHORIZATIONS_A)
+                .has("age", Compare.EQUAL, 25)
+                .vertices();
+        assertResultsCount(1, 1, (QueryResultsIterable) vertices);
+
+        vertices = graph.query(AUTHORIZATIONS_A_AND_B)
+                .has("age", Compare.EQUAL, 25)
+                .vertices();
+        assertResultsCount(2, 2, (QueryResultsIterable) vertices);
+    }
+
+    @Test
     public void testGraphQueryHidden() {
         Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
         Vertex v2 = graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_A);
