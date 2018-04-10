@@ -58,6 +58,8 @@ public interface SearchIndex {
 
     void shutdown();
 
+    void clearCache();
+
     boolean isFieldBoostSupported();
 
     void truncate(Graph graph);
