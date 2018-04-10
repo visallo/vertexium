@@ -19,7 +19,6 @@ import org.vertexium.util.VertexiumLogger;
 import org.vertexium.util.VertexiumLoggerFactory;
 
 import java.io.Serializable;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListSet;
@@ -49,7 +48,7 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
     private Visibility visibility;
     private final long timestamp;
     private final FetchHints fetchHints;
-    private Set<Visibility> hiddenVisibilities = new HashSet<>();
+    private final Set<Visibility> hiddenVisibilities;
 
     private final PropertyCollection properties;
     private final ImmutableSet<String> extendedDataTableNames;
@@ -78,11 +77,14 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
         this.properties = new PropertyCollection();
         this.extendedDataTableNames = extendedDataTableNames;
         this.authorizations = authorizations;
+
+        ImmutableSet.Builder<Visibility> hiddenVisibilityBuilder = new ImmutableSet.Builder<>();
         if (hiddenVisibilities != null) {
             for (Visibility v : hiddenVisibilities) {
-                this.hiddenVisibilities.add(v);
+                hiddenVisibilityBuilder.add(v);
             }
         }
+        this.hiddenVisibilities = hiddenVisibilityBuilder.build();
         updatePropertiesInternal(properties, propertyDeleteMutations, propertySoftDeleteMutations);
     }
 

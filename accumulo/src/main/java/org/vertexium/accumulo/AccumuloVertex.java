@@ -1,8 +1,6 @@
 package org.vertexium.accumulo;
 
-import com.google.common.base.Function;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
 import org.apache.accumulo.core.data.Key;
 import org.apache.accumulo.core.data.Value;
 import org.apache.hadoop.io.Text;
@@ -20,14 +18,11 @@ import org.vertexium.mutation.PropertySoftDeleteMutation;
 import org.vertexium.query.VertexQuery;
 import org.vertexium.util.*;
 
-import javax.annotation.Nullable;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.util.*;
-
-import static org.vertexium.util.IterableUtils.count;
-import static org.vertexium.util.IterableUtils.toList;
+import java.util.stream.Collectors;
 
 public class AccumuloVertex extends AccumuloElement implements Vertex {
     private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(AccumuloVertex.class);
@@ -114,7 +109,7 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
             String vertexId;
             Visibility vertexVisibility;
             Iterable<Property> properties;
-            Iterable<Visibility> hiddenVisibilities;
+            Set<Visibility> hiddenVisibilities;
             Edges inEdges;
             Edges outEdges;
             long timestamp;
@@ -125,15 +120,15 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
             vertexId = DataInputStreamUtils.decodeString(in);
             timestamp = in.readLong();
             vertexVisibility = new Visibility(DataInputStreamUtils.decodeString(in));
-            hiddenVisibilities = Iterables.transform(DataInputStreamUtils.decodeStringSet(in), new Function<String, Visibility>() {
-                @Nullable
-                @Override
-                public Visibility apply(String input) {
-                    return new Visibility(input);
-                }
-            });
+
+            ImmutableSet<String> hiddenVisibilityStrings = DataInputStreamUtils.decodeStringSet(in);
+            hiddenVisibilities = hiddenVisibilityStrings != null ?
+                    hiddenVisibilityStrings.stream().map(Visibility::new).collect(Collectors.toSet()) :
+                    null;
+
             List<MetadataEntry> metadataEntries = DataInputStreamUtils.decodeMetadataEntries(in);
             properties = DataInputStreamUtils.decodeProperties(graph, in, metadataEntries, fetchHints);
+
             ImmutableSet<String> extendedDataTableNames = DataInputStreamUtils.decodeStringSet(in);
             outEdges = DataInputStreamUtils.decodeEdges(in, graph.getNameSubstitutionStrategy());
             inEdges = DataInputStreamUtils.decodeEdges(in, graph.getNameSubstitutionStrategy());

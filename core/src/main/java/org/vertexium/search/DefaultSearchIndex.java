@@ -93,6 +93,11 @@ public class DefaultSearchIndex implements SearchIndex {
     }
 
     @Override
+    public void clearCache() {
+
+    }
+
+    @Override
     public void shutdown() {
 
     }
