@@ -2881,6 +2881,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                 synchronized (entries) {
                     entries.clear();
                 }
+                getSearchIndex().clearCache();
             });
             try {
                 this.treeCache.start();

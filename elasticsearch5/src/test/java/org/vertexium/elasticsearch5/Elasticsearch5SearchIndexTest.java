@@ -78,7 +78,7 @@ public class Elasticsearch5SearchIndexTest extends GraphTestBase {
     public void testGraphQuerySortOnPropertyThatHasNoValuesInTheIndex() {
         super.testGraphQuerySortOnPropertyThatHasNoValuesInTheIndex();
 
-        getSearchIndex().clearIndexInfoCache();
+        getSearchIndex().clearCache();
 
         QueryResultsIterable<Vertex> vertices = graph.query(AUTHORIZATIONS_A).sort("age", SortDirection.ASCENDING).vertices();
         Assert.assertEquals(2, count(vertices));
