@@ -9,6 +9,10 @@
 
 # v3.2.3
 * Fixed: Not adding all of the geoshape fields to index for existing elements
+* Fixed: Expand SPVs when running in memory query strings
+* Fixed: Fix query search using different authorizations query string
+* Fixed: Fix indexing of geolocation properties
+* Fixed: notification to Elasticsearch when properties are added 
 
 # v3.2.2
 * Fixed: Improved support for multithreaded clients with InMemoryGraph
