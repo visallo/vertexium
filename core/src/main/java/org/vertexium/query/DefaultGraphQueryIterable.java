@@ -1,6 +1,7 @@
 package org.vertexium.query;
 
 import org.vertexium.*;
+import org.vertexium.property.StreamingPropertyValue;
 import org.vertexium.util.CloseableIterator;
 import org.vertexium.util.CloseableUtils;
 
@@ -187,6 +188,9 @@ public class DefaultGraphQueryIterable<T> implements
         }
         if (queryString.equals("*")) {
             return true;
+        }
+        if (value instanceof StreamingPropertyValue) {
+            value = ((StreamingPropertyValue) value).readToString();
         }
         String valueString = value.toString().toLowerCase();
         return valueString.contains(queryString.toLowerCase());
