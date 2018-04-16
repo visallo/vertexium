@@ -1,3 +1,6 @@
+# v4.0.1
+* Added: Edge query support for in and out vertex ids
+
 # v4.0.0
 * Changed: FetchHints to support more filtering
 * Changed: Throw errors when calling methods without the proper fetch hints

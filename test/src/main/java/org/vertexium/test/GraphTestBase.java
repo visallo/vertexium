@@ -2275,6 +2275,51 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    public void testGraphQueryForEdgesUsingInOutVertexIds() {
+        Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
+        Vertex v2 = graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_A);
+        Vertex v3 = graph.addVertex("v3", VISIBILITY_A, AUTHORIZATIONS_A);
+
+        graph.addEdge("e1", v1, v2, LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.addEdge("e2", v1, v3, LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.addEdge("e3", v3, v1, LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.flush();
+
+        QueryResultsIterable<Edge> edges = graph.query(AUTHORIZATIONS_A)
+                .has(Edge.OUT_VERTEX_ID_PROPERTY_NAME, "v1")
+                .has(Edge.IN_VERTEX_ID_PROPERTY_NAME, "v2")
+                .edges();
+        assertEdgeIdsAnyOrder(edges, "e1");
+
+        edges = graph.query(AUTHORIZATIONS_A)
+                .has(Edge.OUT_VERTEX_ID_PROPERTY_NAME, "v1")
+                .edges();
+        assertEdgeIdsAnyOrder(edges, "e1", "e2");
+    }
+
+    @Test
+    public void testGraphQueryForEdgesUsingEdgeLabel() {
+        Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
+        Vertex v2 = graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_A);
+        Vertex v3 = graph.addVertex("v3", VISIBILITY_A, AUTHORIZATIONS_A);
+
+        graph.addEdge("e1", v1, v2, LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.addEdge("e2", v1, v3, LABEL_LABEL2, VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.addEdge("e3", v3, v1, LABEL_LABEL2, VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.flush();
+
+        QueryResultsIterable<Edge> edges = graph.query(AUTHORIZATIONS_A)
+                .has(Edge.LABEL_PROPERTY_NAME, LABEL_LABEL1)
+                .edges();
+        assertEdgeIdsAnyOrder(edges, "e1");
+
+        edges = graph.query(AUTHORIZATIONS_A)
+                .has(Edge.LABEL_PROPERTY_NAME, LABEL_LABEL2)
+                .edges();
+        assertEdgeIdsAnyOrder(edges, "e2", "e3");
+    }
+
+    @Test
     public void testGraphQuery() {
         String namePropertyName = "first.name";
         Vertex v1 = graph.prepareVertex("v1", VISIBILITY_A)
@@ -3222,6 +3267,18 @@ public abstract class GraphTestBase {
                 .sort(Edge.LABEL_PROPERTY_NAME, SortDirection.DESCENDING)
                 .edges());
         assertEdgeIds(edges, "e3", "e1", "e2");
+
+        edges = toList(graph.query(AUTHORIZATIONS_A_AND_B)
+                .sort(Edge.OUT_VERTEX_ID_PROPERTY_NAME, SortDirection.ASCENDING)
+                .sort(Element.ID_PROPERTY_NAME, SortDirection.ASCENDING)
+                .edges());
+        assertEdgeIds(edges, "e1", "e2", "e3");
+
+        edges = toList(graph.query(AUTHORIZATIONS_A_AND_B)
+                .sort(Edge.IN_VERTEX_ID_PROPERTY_NAME, SortDirection.ASCENDING)
+                .sort(Element.ID_PROPERTY_NAME, SortDirection.ASCENDING)
+                .edges());
+        assertEdgeIds(edges, "e1", "e2", "e3");
 
         graph.prepareVertex("v5", VISIBILITY_A)
                 .setProperty(genderPropertyName, "female", VISIBILITY_A)
@@ -5077,20 +5134,20 @@ public abstract class GraphTestBase {
         graph.flush();
 
         graph.getVertex("v1", AUTHORIZATIONS_A_AND_B)
-            .prepareMutation()
-            .addPropertyValue("", "int", 5, VISIBILITY_A)
-            .addPropertyValue("", "bigInteger", BigInteger.valueOf(10), VISIBILITY_A)
-            .addPropertyValue("", "bigDecimal", BigDecimal.valueOf(1.1), VISIBILITY_A)
-            .addPropertyValue("", "double", 5.6, VISIBILITY_A)
-            .addPropertyValue("", "float", 6.4f, VISIBILITY_A)
-            .addPropertyValue("", "string", "test", VISIBILITY_A)
-            .addPropertyValue("", "byte", (byte) 5, VISIBILITY_A)
-            .addPropertyValue("", "long", (long) 5, VISIBILITY_A)
-            .addPropertyValue("", "boolean", true, VISIBILITY_A)
-            .addPropertyValue("", "geopoint", new GeoPoint(77, -33), VISIBILITY_A)
-            .addPropertyValue("", "short", (short) 5, VISIBILITY_A)
-            .addPropertyValue("", "date", date, VISIBILITY_A)
-            .save(AUTHORIZATIONS_A_AND_B);
+                .prepareMutation()
+                .addPropertyValue("", "int", 5, VISIBILITY_A)
+                .addPropertyValue("", "bigInteger", BigInteger.valueOf(10), VISIBILITY_A)
+                .addPropertyValue("", "bigDecimal", BigDecimal.valueOf(1.1), VISIBILITY_A)
+                .addPropertyValue("", "double", 5.6, VISIBILITY_A)
+                .addPropertyValue("", "float", 6.4f, VISIBILITY_A)
+                .addPropertyValue("", "string", "test", VISIBILITY_A)
+                .addPropertyValue("", "byte", (byte) 5, VISIBILITY_A)
+                .addPropertyValue("", "long", (long) 5, VISIBILITY_A)
+                .addPropertyValue("", "boolean", true, VISIBILITY_A)
+                .addPropertyValue("", "geopoint", new GeoPoint(77, -33), VISIBILITY_A)
+                .addPropertyValue("", "short", (short) 5, VISIBILITY_A)
+                .addPropertyValue("", "date", date, VISIBILITY_A)
+                .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         Assert.assertEquals(1, count(graph.query(AUTHORIZATIONS_A).has("int", 5).vertices()));
