@@ -4,7 +4,6 @@ import org.vertexium.mutation.ExistingEdgeMutation;
 import org.vertexium.util.IterableUtils;
 
 import java.util.ArrayList;
-import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 
@@ -13,6 +12,16 @@ public interface Edge extends Element {
      * Meta property name used for sorting and aggregations
      */
     String LABEL_PROPERTY_NAME = "__edgeLabel";
+
+    /**
+     * Meta property name used for sorting and aggregations
+     */
+    String OUT_VERTEX_ID_PROPERTY_NAME = "__outVertexId";
+
+    /**
+     * Meta property name used for sorting and aggregations
+     */
+    String IN_VERTEX_ID_PROPERTY_NAME = "__inVertexId";
 
     /**
      * The edge label.

@@ -267,6 +267,18 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
                                 .unmappedType(KEYWORD_UNMAPPED_TYPE)
                                 .order(esOrder)
                 );
+            } else if (Edge.OUT_VERTEX_ID_PROPERTY_NAME.equals(sortContainer.propertyName)) {
+                q.addSort(
+                        SortBuilders.fieldSort(Elasticsearch5SearchIndex.OUT_VERTEX_ID_FIELD_NAME)
+                                .unmappedType(KEYWORD_UNMAPPED_TYPE)
+                                .order(esOrder)
+                );
+            } else if (Edge.IN_VERTEX_ID_PROPERTY_NAME.equals(sortContainer.propertyName)) {
+                q.addSort(
+                        SortBuilders.fieldSort(Elasticsearch5SearchIndex.IN_VERTEX_ID_FIELD_NAME)
+                                .unmappedType(KEYWORD_UNMAPPED_TYPE)
+                                .order(esOrder)
+                );
             } else if (ExtendedDataRow.TABLE_NAME.equals(sortContainer.propertyName)) {
                 q.addSort(
                         SortBuilders.fieldSort(Elasticsearch5SearchIndex.ELEMENT_ID_FIELD_NAME)
@@ -906,7 +918,13 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
 
         List<QueryBuilder> filters = new ArrayList<>();
         for (String propertyName : propertyNames) {
-            if (value instanceof String
+            if (Edge.LABEL_PROPERTY_NAME.equals(propertyName)) {
+                propertyName = Elasticsearch5SearchIndex.EDGE_LABEL_FIELD_NAME;
+            } else if (Edge.OUT_VERTEX_ID_PROPERTY_NAME.equals(propertyName)) {
+                propertyName = Elasticsearch5SearchIndex.OUT_VERTEX_ID_FIELD_NAME;
+            } else if (Edge.IN_VERTEX_ID_PROPERTY_NAME.equals(propertyName)) {
+                propertyName = Elasticsearch5SearchIndex.IN_VERTEX_ID_FIELD_NAME;
+            } else if (value instanceof String
                     || value instanceof String[]
                     || (value instanceof Object[] && ((Object[]) value).length > 0 && ((Object[]) value)[0] instanceof String)
                     ) {
@@ -942,7 +960,13 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
 
         List<QueryBuilder> filters = new ArrayList<>();
         for (String propertyName : propertyNames) {
-            if (has.value instanceof IpV4Address) {
+            if (Edge.LABEL_PROPERTY_NAME.equals(propertyName)) {
+                propertyName = Elasticsearch5SearchIndex.EDGE_LABEL_FIELD_NAME;
+            } else if (Edge.OUT_VERTEX_ID_PROPERTY_NAME.equals(propertyName)) {
+                propertyName = Elasticsearch5SearchIndex.OUT_VERTEX_ID_FIELD_NAME;
+            } else if (Edge.IN_VERTEX_ID_PROPERTY_NAME.equals(propertyName)) {
+                propertyName = Elasticsearch5SearchIndex.IN_VERTEX_ID_FIELD_NAME;
+            } else if (has.value instanceof IpV4Address) {
                 // this value is converted to a string and should not use the exact match field
             } else if (value instanceof String || value instanceof String[]) {
                 propertyName = propertyName + Elasticsearch5SearchIndex.EXACT_MATCH_PROPERTY_NAME_SUFFIX;
@@ -1192,7 +1216,10 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
     protected List<AggregationBuilder> getElasticsearchTermsAggregations(TermsAggregation agg) {
         List<AggregationBuilder> termsAggs = new ArrayList<>();
         String fieldName = agg.getPropertyName();
-        if (Edge.LABEL_PROPERTY_NAME.equals(fieldName) || ExtendedDataRow.TABLE_NAME.equals(fieldName)) {
+        if (Edge.LABEL_PROPERTY_NAME.equals(fieldName)
+                || Edge.OUT_VERTEX_ID_PROPERTY_NAME.equals(fieldName)
+                || Edge.IN_VERTEX_ID_PROPERTY_NAME.equals(fieldName)
+                || ExtendedDataRow.TABLE_NAME.equals(fieldName)) {
             TermsAggregationBuilder termsAgg = AggregationBuilders.terms(createAggregationName(agg.getAggregationName(), "0"));
             termsAgg.field(fieldName);
             if (agg.getSize() != null) {

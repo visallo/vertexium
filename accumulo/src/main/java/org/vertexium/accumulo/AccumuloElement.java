@@ -195,6 +195,10 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
             return getIdProperty();
         } else if (Edge.LABEL_PROPERTY_NAME.equals(name) && this instanceof Edge) {
             return getEdgeLabelProperty();
+        } else if (Edge.OUT_VERTEX_ID_PROPERTY_NAME.equals(name) && this instanceof Edge) {
+            return getOutVertexIdProperty();
+        } else if (Edge.IN_VERTEX_ID_PROPERTY_NAME.equals(name) && this instanceof Edge) {
+            return getInVertexIdProperty();
         }
         Iterator<Property> propertiesWithName = getProperties(name).iterator();
         if (propertiesWithName.hasNext()) {
@@ -209,6 +213,10 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
             return getIdProperty();
         } else if (Edge.LABEL_PROPERTY_NAME.equals(name) && this instanceof Edge) {
             return getEdgeLabelProperty();
+        } else if (Edge.OUT_VERTEX_ID_PROPERTY_NAME.equals(name) && this instanceof Edge) {
+            return getOutVertexIdProperty();
+        } else if (Edge.IN_VERTEX_ID_PROPERTY_NAME.equals(name) && this instanceof Edge) {
+            return getInVertexIdProperty();
         }
         getFetchHints().assertPropertyIncluded(name);
         Property property = this.properties.getProperty(name, index);
@@ -224,6 +232,10 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
             return getIdProperty();
         } else if (Edge.LABEL_PROPERTY_NAME.equals(name) && this instanceof Edge) {
             return getEdgeLabelProperty();
+        } else if (Edge.OUT_VERTEX_ID_PROPERTY_NAME.equals(name) && this instanceof Edge) {
+            return getOutVertexIdProperty();
+        } else if (Edge.IN_VERTEX_ID_PROPERTY_NAME.equals(name) && this instanceof Edge) {
+            return getInVertexIdProperty();
         }
         Property property = this.properties.getProperty(key, name, index);
         if (property == null) {
@@ -270,7 +282,10 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
 
     @Override
     public Iterable<Property> getProperties(final String key, final String name) {
-        if (ID_PROPERTY_NAME.equals(name) || (Edge.LABEL_PROPERTY_NAME.equals(name) && this instanceof Edge)) {
+        if (ID_PROPERTY_NAME.equals(name)
+                || (Edge.LABEL_PROPERTY_NAME.equals(name) && this instanceof Edge)
+                || (Edge.OUT_VERTEX_ID_PROPERTY_NAME.equals(name) && this instanceof Edge)
+                || (Edge.IN_VERTEX_ID_PROPERTY_NAME.equals(name) && this instanceof Edge)) {
             return getProperties(name);
         }
         return this.properties.getProperties(key, name);
