@@ -12,9 +12,8 @@ import org.elasticsearch.action.admin.cluster.node.info.NodesInfoResponse;
 import org.elasticsearch.action.admin.indices.create.CreateIndexResponse;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.admin.indices.mapping.get.GetMappingsResponse;
-import org.elasticsearch.action.bulk.BulkItemResponse;
+import org.elasticsearch.action.bulk.BulkProcessor;
 import org.elasticsearch.action.bulk.BulkRequest;
-import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.update.UpdateRequest;
@@ -46,6 +45,7 @@ import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilde
 import org.elasticsearch.transport.client.PreBuiltTransportClient;
 import org.vertexium.*;
 import org.vertexium.Edge;
+import org.vertexium.elasticsearch5.utils.DefaultBulkProcessorListener;
 import org.vertexium.elasticsearch5.utils.FlushObjectQueue;
 import org.vertexium.mutation.ExistingElementMutation;
 import org.vertexium.mutation.ExtendedDataMutation;
@@ -66,6 +66,7 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.*;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Function;
@@ -97,8 +98,6 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
     public static final String GEO_PROPERTY_NAME_SUFFIX = "_g";
     public static final String GEO_POINT_PROPERTY_NAME_SUFFIX = "_gp"; // Used for geo hash aggregation of geo points
     public static final String LOWERCASER_NORMALIZER_NAME = "visallo_lowercaser";
-    public static final int MAX_BATCH_COUNT = 25000;
-    public static final long MAX_BATCH_SIZE = 15 * 1024 * 1024;
     public static final int EXACT_MATCH_IGNORE_ABOVE_LIMIT = 10000;
     public static final String FIELDNAME_DOT_REPLACEMENT = "-_-";
     private static final long IN_PROCESS_NODE_WAIT_TIME_MS = 10 * 60 * 1000;
@@ -1687,27 +1686,33 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
 
     private void bulkUpdate(Graph graph, Iterable<UpdateRequest> updateRequests) {
         int totalCount = 0;
-        Map<String, BulkRequest> bulkRequests = new HashMap<>();
+        List<Throwable> failures = new ArrayList<>();
+        BulkProcessor.Builder builder = BulkProcessor.builder(
+                getClient(),
+                new DefaultBulkProcessorListener() {
+                    @Override
+                    public void afterBulk(long executionId, BulkRequest request, Throwable failure) {
+                        LOGGER.error("Failed bulk request: %s", request.toString(), failure);
+                        failures.add(failure);
+                    }
+                }
+        );
+        BulkProcessor bulkProcessor = builder.build();
         for (UpdateRequest updateRequest : updateRequests) {
-            BulkRequest bulkRequest = bulkRequests.computeIfAbsent(updateRequest.index(), k -> new BulkRequest());
-            bulkRequest.add(updateRequest);
-
-            if (bulkRequest.numberOfActions() >= MAX_BATCH_COUNT || bulkRequest.estimatedSizeInBytes() > MAX_BATCH_SIZE) {
-                LOGGER.debug("adding elements... %d (est size %d)", bulkRequest.numberOfActions(), bulkRequest.estimatedSizeInBytes());
-                totalCount += bulkRequest.numberOfActions();
-                doBulkRequest(bulkRequest);
-                bulkRequest = new BulkRequest();
-                bulkRequests.put(updateRequest.index(), bulkRequest);
-            }
+            bulkProcessor.add(updateRequest);
+            totalCount++;
         }
-        for (BulkRequest bulkRequest : bulkRequests.values()) {
-            if (bulkRequest.numberOfActions() > 0) {
-                LOGGER.debug("adding elements... %d (est size %d)", bulkRequest.numberOfActions(), bulkRequest.estimatedSizeInBytes());
-                totalCount += bulkRequest.numberOfActions();
-                doBulkRequest(bulkRequest);
-            }
+        bulkProcessor.flush();
+        try {
+            // We should never wait this long, but setting it high just to be sure everything is finished
+            bulkProcessor.awaitClose(10, TimeUnit.MINUTES);
+        } catch (InterruptedException ex) {
+            throw new VertexiumException("Failed bulk update, waiting for close", ex);
         }
         LOGGER.debug("added %d elements", totalCount);
+        if (failures.size() > 0) {
+            throw new VertexiumException(String.format("Failed bulk update (failures: %s)", failures.size()));
+        }
 
         if (getConfig().isAutoFlush()) {
             flush(graph);
@@ -1981,18 +1986,6 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
             mapping.field("type", "double");
         } else {
             throw new VertexiumException("Unexpected value type for property \"" + propertyName + "\": " + dataType.getName());
-        }
-    }
-
-    protected void doBulkRequest(BulkRequest bulkRequest) {
-        BulkResponse response = getClient().bulk(bulkRequest).actionGet();
-        if (response.hasFailures()) {
-            for (BulkItemResponse bulkResponse : response) {
-                if (bulkResponse.isFailed()) {
-                    LOGGER.error("Failed to index %s (message: %s)", bulkResponse.getId(), bulkResponse.getFailureMessage());
-                }
-            }
-            throw new VertexiumException("Could not add element.");
         }
     }
 
