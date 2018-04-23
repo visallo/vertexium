@@ -1,4 +1,5 @@
 # v4.0.1
+* Changed: Elasticsearch to use BulkProcessor 
 * Added: Edge query support for in and out vertex ids
 
 # v4.0.0

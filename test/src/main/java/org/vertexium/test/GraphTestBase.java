@@ -1250,9 +1250,13 @@ public abstract class GraphTestBase {
 
             Iterable<ExtendedDataRow> extendedData = graph.getExtendedData(ElementType.VERTEX, "v1", "table1", AUTHORIZATIONS_A);
             searchIndex.addExtendedData(graph, extendedData, AUTHORIZATIONS_A);
+            graph.flush();
         }
 
-        QueryResultsIterable<ExtendedDataRow> rows = graph.query(AUTHORIZATIONS_A)
+        QueryResultsIterable<ExtendedDataRow> rows = graph.query(AUTHORIZATIONS_A).extendedDataRows();
+        assertResultsCount(2, 2, rows);
+
+        rows = graph.query(AUTHORIZATIONS_A)
                 .has("name", "value1")
                 .extendedDataRows();
         assertResultsCount(1, 1, rows);
