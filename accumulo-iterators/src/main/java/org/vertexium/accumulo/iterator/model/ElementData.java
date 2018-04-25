@@ -114,6 +114,9 @@ public abstract class ElementData {
             Text propertyVisibility = propertyVisibilities.get(key);
             String propertyVisibilityString = propertyVisibility.toString();
             long propertyTimestamp = propertyTimestamps.get(key);
+            if (propertyTimestamp < softDeleteTimestamp) {
+                continue;
+            }
             Set<Text> propertyHiddenVisibilities = getPropertyHiddenVisibilities(propertyKey, propertyName, propertyVisibilityString);
             if (!includeHidden && isHidden(propertyKey, propertyName, propertyVisibilityString)) {
                 continue;

@@ -829,6 +829,7 @@ public abstract class GraphTestBase {
     @Test
     public void testReAddingSoftDeletedVertex() {
         Vertex v1 = graph.prepareVertex("v1", VISIBILITY_A)
+                .addPropertyValue("k1", "p1", "value1", VISIBILITY_A)
                 .save(AUTHORIZATIONS_A);
         graph.flush();
 
@@ -844,6 +845,7 @@ public abstract class GraphTestBase {
         v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
         assertNotNull(v1);
         assertEquals(VISIBILITY_A.getVisibilityString(), v1.getVisibility().getVisibilityString());
+        assertEquals(0, count(v1.getProperties()));
 
         graph.softDeleteVertex(v1, AUTHORIZATIONS_A);
         graph.flush();
