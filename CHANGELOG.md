@@ -1,5 +1,6 @@
 # v4.0.1
 * Added: Edge query support for in and out vertex ids
+* Changed: Calling hasId multiple times on the same Query object will result in the intersection of the provided lists. Previously, the resulting list was a union of all provided inputs. This behavior is more consistent with the `AND` behavior of the other query methods.
 
 # v4.0.0
 * Changed: FetchHints to support more filtering
