@@ -232,12 +232,12 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
         }
         if ((elementTypes == null || elementTypes.contains(ElasticsearchDocumentType.EDGE))
                 && getParameters().getEdgeLabels().size() > 0) {
-            String[] edgeLabelsArray = getParameters().getEdgeLabels().toArray(new String[getParameters().getEdgeLabels().size()]);
+            String[] edgeLabelsArray = getParameters().getEdgeLabels().toArray(new String[0]);
             filters.add(QueryBuilders.termsQuery(Elasticsearch5SearchIndex.EDGE_LABEL_FIELD_NAME, edgeLabelsArray));
         }
 
-        if (getParameters().getIds().size() > 0) {
-            String[] idsArray = getParameters().getIds().toArray(new String[getParameters().getIds().size()]);
+        if (getParameters().getIds() != null) {
+            String[] idsArray = getParameters().getIds().toArray(new String[0]);
             filters.add(QueryBuilders.termsQuery(ELEMENT_ID_FIELD_NAME, idsArray));
         }
 

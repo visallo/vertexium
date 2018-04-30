@@ -2382,6 +2382,13 @@ public abstract class GraphTestBase {
         vertices = graph.query(AUTHORIZATIONS_A).hasId("v1", "v2").vertices();
         assertResultsCount(2, 2, vertices);
 
+        vertices = graph.query(AUTHORIZATIONS_A).hasId("v1", "v2").hasId("v1").vertices();
+        assertResultsCount(1, 1, vertices);
+        assertVertexIds(vertices, "v1");
+
+        vertices = graph.query(AUTHORIZATIONS_A).hasId("v1").hasId("v2").vertices();
+        assertResultsCount(0, 0, vertices);
+
         edges = graph.query(AUTHORIZATIONS_A).hasId("e1").edges();
         assertResultsCount(1, 1, edges);
 
