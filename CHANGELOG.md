@@ -1,6 +1,7 @@
-# v4.0.1
-* Changed: Elasticsearch to use BulkProcessor 
+# v4.1.0
 * Added: Edge query support for in and out vertex ids
+* Changed: If fetch hints were not provided throw an exception instead of returning null
+* Changed: Elasticsearch to use BulkProcessor 
 * Changed: Calling hasId multiple times on the same Query object will result in the intersection of the provided lists. Previously, the resulting list was a union of all provided inputs. This behavior is more consistent with the `AND` behavior of the other query methods.
 
 # v4.0.0

@@ -2,11 +2,8 @@ package org.vertexium;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableSet;
-import org.vertexium.util.VertexiumLogger;
-import org.vertexium.util.VertexiumLoggerFactory;
 
 public class FetchHints {
-    private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(FetchHints.class);
     private final boolean includeAllProperties;
     private final ImmutableSet<String> propertyNamesToInclude;
     private final boolean includeAllPropertyMetadata;
@@ -178,26 +175,35 @@ public class FetchHints {
         return getEdgeLabelsOfEdgeRefsToInclude() != null && getEdgeLabelsOfEdgeRefsToInclude().size() > 0;
     }
 
-    public boolean validateHasEdgeFetchHints(Direction direction) {
+    public void validateHasEdgeFetchHints(Direction direction, String... labels) {
         if (!isIncludeEdgeRefs()) {
-            LOGGER.warn("edges called without including any edge infos");
-            return false;
+            throw new VertexiumMissingFetchHintException(this, "edgeRefs");
         }
         switch (direction) {
             case OUT:
                 if (!isIncludeOutEdgeRefs() && !hasEdgeLabelsOfEdgeRefsToInclude()) {
-                    LOGGER.warn("edges called without including any edge infos");
-                    return false;
+                    throw new VertexiumMissingFetchHintException(this, "outEdgeRefs or edgeLabels");
                 }
                 break;
             case IN:
                 if (!isIncludeInEdgeRefs() && !hasEdgeLabelsOfEdgeRefsToInclude()) {
-                    LOGGER.warn("edges called without including any edge infos");
-                    return false;
+                    throw new VertexiumMissingFetchHintException(this, "inEdgeRefs or edgeLabels");
                 }
                 break;
         }
-        return true;
+
+        if (labels != null
+                && labels.length != 0
+                && !isIncludeAllEdgeRefs()
+                && !isIncludeInEdgeRefs()
+                && !isIncludeOutEdgeRefs()
+                && (getEdgeLabelsOfEdgeRefsToInclude() != null && getEdgeLabelsOfEdgeRefsToInclude().size() > 0)) {
+            for (String label : labels) {
+                if (!getEdgeLabelsOfEdgeRefsToInclude().contains(label)) {
+                    throw new VertexiumMissingFetchHintException(this, "edgeLabel:" + label);
+                }
+            }
+        }
     }
 
     @Override
@@ -231,13 +237,13 @@ public class FetchHints {
         if (isIncludeProperty(name)) {
             return;
         }
-        throw new VertexiumException("Property not included in fetch hints: " + name);
+        throw new VertexiumMissingFetchHintException(this, "property:" + name);
     }
 
     public void assertMetadataIncluded(String key) {
         if (isIncludeMetadata(key)) {
             return;
         }
-        throw new VertexiumException("Metadata not included in fetch hints: " + key);
+        throw new VertexiumMissingFetchHintException(this, "metadata:" + key);
     }
 }

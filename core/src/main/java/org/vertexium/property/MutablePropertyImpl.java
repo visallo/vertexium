@@ -2,8 +2,6 @@ package org.vertexium.property;
 
 import org.vertexium.*;
 import org.vertexium.util.IncreasingTime;
-import org.vertexium.util.VertexiumLogger;
-import org.vertexium.util.VertexiumLoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -11,7 +9,6 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class MutablePropertyImpl extends MutableProperty {
-    private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(MutablePropertyImpl.class);
     private final String key;
     private final String name;
     private final FetchHints fetchHints;
@@ -73,8 +70,7 @@ public class MutablePropertyImpl extends MutableProperty {
 
     public Metadata getMetadata() {
         if (!fetchHints.isIncludePropertyMetadata()) {
-            LOGGER.warn("calling getMetadata without specifying fetch hints to get metadata");
-            return null;
+            throw new VertexiumMissingFetchHintException(fetchHints, "includePropertyMetadata");
         }
         return metadata;
     }

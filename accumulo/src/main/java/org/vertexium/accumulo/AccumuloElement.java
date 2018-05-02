@@ -15,8 +15,6 @@ import org.vertexium.query.ExtendedDataQueryableIterable;
 import org.vertexium.query.QueryableIterable;
 import org.vertexium.search.IndexHint;
 import org.vertexium.util.PropertyCollection;
-import org.vertexium.util.VertexiumLogger;
-import org.vertexium.util.VertexiumLoggerFactory;
 
 import java.io.Serializable;
 import java.util.Iterator;
@@ -24,7 +22,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListSet;
 
 public abstract class AccumuloElement extends ElementBase implements Serializable, HasTimestamp {
-    private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(AccumuloElement.class);
     private static final long serialVersionUID = 1L;
     public static final Text CF_PROPERTY = ElementIterator.CF_PROPERTY;
     public static final Text CF_PROPERTY_METADATA = ElementIterator.CF_PROPERTY_METADATA;
@@ -266,8 +263,7 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
     @Override
     public Iterable<Property> getProperties() {
         if (!getFetchHints().isIncludeProperties()) {
-            LOGGER.warn("calling getProperties without specifying fetch hints to get properties");
-            return null;
+            throw new VertexiumMissingFetchHintException(getFetchHints(), "includeProperties");
         }
         return this.properties.getProperties();
     }
