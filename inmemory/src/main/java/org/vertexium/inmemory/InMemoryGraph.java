@@ -220,6 +220,10 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
             timestamp = IncreasingTime.currentTimeMillis();
         }
 
+        for (Property property : vertex.getProperties()) {
+            vertex.softDeleteProperty(property.getKey(), property.getName(), property.getVisibility(), authorizations);
+        }
+
         List<Edge> edgesToSoftDelete = IterableUtils.toList(vertex.getEdges(Direction.BOTH, authorizations));
         for (Edge edgeToSoftDelete : edgesToSoftDelete) {
             softDeleteEdge(edgeToSoftDelete, timestamp, authorizations);

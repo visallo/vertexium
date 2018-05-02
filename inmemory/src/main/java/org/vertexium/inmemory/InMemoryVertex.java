@@ -8,15 +8,11 @@ import org.vertexium.query.VertexQuery;
 import org.vertexium.search.IndexHint;
 import org.vertexium.util.ConvertingIterable;
 import org.vertexium.util.FilterIterable;
-import org.vertexium.util.VertexiumLogger;
-import org.vertexium.util.VertexiumLoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
 
 public class InMemoryVertex extends InMemoryElement<InMemoryVertex> implements Vertex {
-    private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(InMemoryVertex.class);
-
     public InMemoryVertex(
             InMemoryGraph graph,
             String id,
@@ -53,10 +49,7 @@ public class InMemoryVertex extends InMemoryElement<InMemoryVertex> implements V
 
     @Override
     public Iterable<EdgeInfo> getEdgeInfos(Direction direction, final String[] labels, Authorizations authorizations) {
-        if (!getFetchHints().isIncludeEdgeRefs()) {
-            LOGGER.warn("getEdgeInfos called without including any edge infos");
-            return null;
-        }
+        getFetchHints().validateHasEdgeFetchHints(direction, labels);
         Iterable<EdgeInfo> results = internalGetEdgeInfo(direction, authorizations);
         results = new FilterIterable<EdgeInfo>(results) {
             @Override
@@ -117,9 +110,7 @@ public class InMemoryVertex extends InMemoryElement<InMemoryVertex> implements V
 
     @Override
     public Iterable<Edge> getEdges(final Direction direction, FetchHints fetchHints, Long endTime, Authorizations authorizations) {
-        if (!getFetchHints().validateHasEdgeFetchHints(direction)) {
-            return null;
-        }
+        getFetchHints().validateHasEdgeFetchHints(direction);
         return internalGetEdges(direction, fetchHints, endTime, authorizations);
     }
 
