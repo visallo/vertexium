@@ -2116,22 +2116,25 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             return;
         }
 
-        List<Property> propertiesToSave = new ArrayList<>();
+        String elementRowKey = element.getId();
+        Mutation m = new Mutation(elementRowKey);
         for (SetPropertyMetadata apm : setPropertyMetadatas) {
             Property property = element.getProperty(apm.getPropertyKey(), apm.getPropertyName(), apm.getPropertyVisibility());
             if (property == null) {
                 throw new VertexiumException(String.format("Could not find property %s:%s(%s)", apm.getPropertyKey(), apm.getPropertyName(), apm.getPropertyVisibility()));
             }
-            property.getMetadata().add(apm.getMetadataName(), apm.getNewValue(), apm.getMetadataVisibility());
-            propertiesToSave.add(property);
+            if (property.getFetchHints().isIncludePropertyAndMetadata(property.getName())) {
+                property.getMetadata().add(apm.getMetadataName(), apm.getNewValue(), apm.getMetadataVisibility());
+            }
+            elementMutationBuilder.addPropertyMetadataItemToMutation(
+                    m,
+                    property,
+                    apm.getMetadataName(),
+                    apm.getNewValue(),
+                    apm.getMetadataVisibility()
+            );
         }
 
-        String elementRowKey = element.getId();
-
-        Mutation m = new Mutation(elementRowKey);
-        for (Property property : propertiesToSave) {
-            elementMutationBuilder.addPropertyMetadataToMutation(m, property);
-        }
         addMutations(element, m);
     }
 

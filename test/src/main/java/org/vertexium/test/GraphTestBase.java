@@ -4930,6 +4930,42 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    public void testMetadataUpdate() {
+        Metadata metadataPropB = new Metadata();
+        metadataPropB.add("meta1", "value1", VISIBILITY_A);
+        graph.prepareVertex("v1", VISIBILITY_A)
+                .setProperty("propBmeta", "propBmeta", metadataPropB, VISIBILITY_A)
+                .save(AUTHORIZATIONS_ALL);
+        graph.flush();
+
+        FetchHints fetchHints = new FetchHintsBuilder()
+                .setPropertyNamesToInclude("propBmeta")
+                .build();
+        Vertex vertex = graph.getVertex("v1", fetchHints, AUTHORIZATIONS_A);
+        ExistingElementMutation<Vertex> m = vertex.prepareMutation();
+        m.setPropertyMetadata("propBmeta", "meta1", "value2", VISIBILITY_A);
+        m.save(AUTHORIZATIONS_ALL);
+        graph.flush();
+
+        vertex = graph.getVertex("v1", AUTHORIZATIONS_A);
+        assertEquals("value2", vertex.getProperty("propBmeta").getMetadata().getEntry("meta1").getValue());
+
+        fetchHints = new FetchHintsBuilder()
+                .setPropertyNamesToInclude("propBmeta")
+                .build();
+        vertex = graph.getVertex("v1", fetchHints, AUTHORIZATIONS_A);
+        m = vertex.prepareMutation();
+        Metadata newMetadata = new Metadata();
+        newMetadata.add("meta1", "value3", VISIBILITY_A);
+        m.setProperty("propBmeta", "propBmeta", newMetadata, VISIBILITY_A);
+        m.save(AUTHORIZATIONS_ALL);
+        graph.flush();
+
+        vertex = graph.getVertex("v1", AUTHORIZATIONS_A);
+        assertEquals("value3", vertex.getProperty("propBmeta").getMetadata().getEntry("meta1").getValue());
+    }
+
+    @Test
     public void testEmptyPropertyMutation() {
         Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_ALL);
         v1.prepareMutation().save(AUTHORIZATIONS_ALL);
