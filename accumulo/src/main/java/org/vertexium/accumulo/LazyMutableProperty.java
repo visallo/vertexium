@@ -87,8 +87,10 @@ public class LazyMutableProperty extends MutableProperty {
         } else {
             Collection<Metadata.Entry> entries = new ArrayList<>(property.getMetadata().entrySet());
             this.metadata = null;
-            for (Metadata.Entry metadataEntry : entries) {
-                getMetadata().add(metadataEntry.getKey(), metadataEntry.getValue(), metadataEntry.getVisibility());
+            if (getFetchHints().isIncludePropertyAndMetadata(propertyName)) {
+                for (Metadata.Entry metadataEntry : entries) {
+                    getMetadata().add(metadataEntry.getKey(), metadataEntry.getValue(), metadataEntry.getVisibility());
+                }
             }
         }
     }

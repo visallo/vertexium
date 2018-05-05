@@ -3,6 +3,7 @@
 * Changed: If fetch hints were not provided throw an exception instead of returning null
 * Changed: Elasticsearch to use BulkProcessor 
 * Changed: Calling hasId multiple times on the same Query object will result in the intersection of the provided lists. Previously, the resulting list was a union of all provided inputs. This behavior is more consistent with the `AND` behavior of the other query methods.
+* Fixed: Updating metadata when metadata was not fetched in fetch hints
 
 # v4.0.0
 * Changed: FetchHints to support more filtering
