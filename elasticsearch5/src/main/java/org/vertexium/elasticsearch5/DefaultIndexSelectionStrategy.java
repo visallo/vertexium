@@ -1,9 +1,6 @@
 package org.vertexium.elasticsearch5;
 
-import org.vertexium.Element;
-import org.vertexium.ExtendedDataRowId;
-import org.vertexium.GraphConfiguration;
-import org.vertexium.PropertyDefinition;
+import org.vertexium.*;
 import org.vertexium.util.VertexiumLogger;
 import org.vertexium.util.VertexiumLoggerFactory;
 
@@ -21,17 +18,22 @@ public class DefaultIndexSelectionStrategy implements IndexSelectionStrategy {
     public static final String DEFAULT_INDEX_NAME = "vertexium";
     public static final String CONFIG_EXTENDED_DATA_INDEX_NAME_PREFIX = "extendedDataIndexNamePrefix";
     public static final String DEFAULT_EXTENDED_DATA_INDEX_NAME_PREFIX = "vertexium_extdata_";
+    public static final String CONFIG_SPLIT_EDGES_AND_VERTICES = "splitEdgesAndVertices";
+    public static final boolean DEFAULT_SPLIT_VERTICES_AND_EDGES = false;
     private static final long INDEX_UPDATE_MS = 5 * 60 * 1000;
+    public static final String VERTICES_INDEX_SUFFIX_NAME = "-vertices";
+    public static final String EDGES_INDEX_SUFFIX_NAME = "-edges";
     private final String defaultIndexName;
     private final String extendedDataIndexNamePrefix;
     private final ReadWriteLock indicesToQueryLock = new ReentrantReadWriteLock();
-    private Set<String> indicesToQuery;
+    private final boolean splitEdgesAndVertices;
     private String[] indicesToQueryArray;
     private long nextUpdateTime;
 
     public DefaultIndexSelectionStrategy(GraphConfiguration config) {
         defaultIndexName = getDefaultIndexName(config);
         extendedDataIndexNamePrefix = getExtendedDataIndexNamePrefix(config);
+        splitEdgesAndVertices = getSplitEdgesAndVertices(config);
     }
 
     private static String getDefaultIndexName(GraphConfiguration config) {
@@ -44,6 +46,12 @@ public class DefaultIndexSelectionStrategy implements IndexSelectionStrategy {
         String prefix = config.getString(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + CONFIG_EXTENDED_DATA_INDEX_NAME_PREFIX, DEFAULT_EXTENDED_DATA_INDEX_NAME_PREFIX);
         LOGGER.info("Extended data index name prefix: %s", prefix);
         return prefix;
+    }
+
+    private static boolean getSplitEdgesAndVertices(GraphConfiguration config) {
+        boolean splitEdgesAndVertices = config.getBoolean(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + CONFIG_SPLIT_EDGES_AND_VERTICES, DEFAULT_SPLIT_VERTICES_AND_EDGES);
+        LOGGER.info("Split edges and vertices: %s", splitEdgesAndVertices);
+        return splitEdgesAndVertices;
     }
 
     private void invalidateIndiciesToQueryCache() {
@@ -65,26 +73,17 @@ public class DefaultIndexSelectionStrategy implements IndexSelectionStrategy {
         return indicesToQueryArray;
     }
 
-    private Set<String> getIndicesToQuerySet(Elasticsearch5SearchIndex es) {
-        Lock readLock = indicesToQueryLock.readLock();
-        readLock.lock();
-        try {
-            if (indicesToQuery != null && new Date().getTime() <= nextUpdateTime) {
-                return indicesToQuery;
-            }
-        } finally {
-            readLock.unlock();
-        }
-        loadIndicesToQuery(es);
-        return indicesToQuery;
-    }
-
     private void loadIndicesToQuery(Elasticsearch5SearchIndex es) {
         Lock writeLock = indicesToQueryLock.writeLock();
         writeLock.lock();
         try {
             Set<String> newIndicesToQuery = new HashSet<>();
-            newIndicesToQuery.add(defaultIndexName);
+            if (splitEdgesAndVertices) {
+                newIndicesToQuery.add(defaultIndexName + VERTICES_INDEX_SUFFIX_NAME);
+                newIndicesToQuery.add(defaultIndexName + EDGES_INDEX_SUFFIX_NAME);
+            } else {
+                newIndicesToQuery.add(defaultIndexName);
+            }
             Set<String> indexNames = es.getIndexNamesFromElasticsearch();
             for (String indexName : indexNames) {
                 if (indexName.startsWith(extendedDataIndexNamePrefix)) {
@@ -92,8 +91,11 @@ public class DefaultIndexSelectionStrategy implements IndexSelectionStrategy {
                 }
             }
 
-            indicesToQuery = newIndicesToQuery;
-            indicesToQueryArray = newIndicesToQuery.toArray(new String[newIndicesToQuery.size()]);
+            for (String indexName : newIndicesToQuery) {
+                es.ensureIndexCreatedAndInitialized(indexName);
+            }
+
+            indicesToQueryArray = newIndicesToQuery.toArray(new String[0]);
             nextUpdateTime = new Date().getTime() + INDEX_UPDATE_MS;
         } finally {
             writeLock.unlock();
@@ -102,6 +104,15 @@ public class DefaultIndexSelectionStrategy implements IndexSelectionStrategy {
 
     @Override
     public String getIndexName(Elasticsearch5SearchIndex es, Element element) {
+        if (splitEdgesAndVertices) {
+            if (element instanceof Vertex) {
+                return defaultIndexName + VERTICES_INDEX_SUFFIX_NAME;
+            } else if (element instanceof Edge) {
+                return defaultIndexName + EDGES_INDEX_SUFFIX_NAME;
+            } else {
+                throw new VertexiumException("Unhandled element type: " + element.getClass().getName());
+            }
+        }
         return defaultIndexName;
     }
 
@@ -131,7 +142,12 @@ public class DefaultIndexSelectionStrategy implements IndexSelectionStrategy {
 
     @Override
     public boolean isIncluded(Elasticsearch5SearchIndex es, String indexName) {
-        return getIndicesToQuerySet(es).contains(indexName);
+        for (String i : getIndicesToQuery(es)) {
+            if (i.equals(indexName)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override

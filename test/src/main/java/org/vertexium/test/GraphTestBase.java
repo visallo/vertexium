@@ -6582,6 +6582,9 @@ public abstract class GraphTestBase {
                 .addPropertyValue("", "age", 20, VISIBILITY_A)
                 .addPropertyValue("", "birthDate", simpleDateFormat.parse("1995-03-02"), VISIBILITY_EMPTY)
                 .save(AUTHORIZATIONS_A_AND_B);
+        graph.prepareEdge("e1", "v1", "v2", "v1Tov2", VISIBILITY_EMPTY)
+                .addPropertyValue("", "birthDate", simpleDateFormat.parse("1995-03-02"), VISIBILITY_EMPTY)
+                .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         // numeric range

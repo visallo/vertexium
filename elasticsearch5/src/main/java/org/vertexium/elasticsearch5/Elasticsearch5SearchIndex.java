@@ -104,6 +104,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
     private static final int MAX_RETRIES = 10;
     private final Client client;
     private final ElasticsearchSearchIndexConfiguration config;
+    private final Graph graph;
     private Map<String, IndexInfo> indexInfos;
     private final ReadWriteLock indexInfosLock = new ReentrantReadWriteLock();
     private int indexInfosLastSize = -1; // Used to prevent creating a index name array each time
@@ -121,6 +122,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
     private final IndexRefreshTracker indexRefreshTracker = new IndexRefreshTracker();
 
     public Elasticsearch5SearchIndex(Graph graph, GraphConfiguration config) {
+        this.graph = graph;
         this.config = new ElasticsearchSearchIndexConfiguration(graph, config);
         this.indexSelectionStrategy = this.config.getIndexSelectionStrategy();
         this.allFieldEnabled = this.config.isAllFieldEnabled(false);
@@ -284,7 +286,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
         }
     }
 
-    private Map<String, IndexInfo> getIndexInfos(Graph graph) {
+    private Map<String, IndexInfo> getIndexInfos() {
         indexInfosLock.readLock().lock();
         try {
             if (this.indexInfos != null) {
@@ -293,10 +295,10 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
         } finally {
             indexInfosLock.readLock().unlock();
         }
-        return loadIndexInfos(graph);
+        return loadIndexInfos();
     }
 
-    private Map<String, IndexInfo> loadIndexInfos(Graph graph) {
+    private Map<String, IndexInfo> loadIndexInfos() {
         indexInfosLock.writeLock().lock();
         try {
             this.indexInfos = new HashMap<>();
@@ -423,7 +425,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
 
         String documentId = getIdStrategy().createElementDocId(element);
         String indexName = getIndexName(element);
-        IndexInfo indexInfo = ensureIndexCreatedAndInitialized(graph, indexName);
+        IndexInfo indexInfo = ensureIndexCreatedAndInitialized(indexName);
         return prepareUpdateFieldsOnDocument(indexInfo.getIndexName(), documentId, fieldsToSet, fieldsToRemove, fieldVisibilityChanges);
     }
 
@@ -779,7 +781,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
             String propertyKey = replaceFieldnameDots(property.getKey());
             if (property.getValue() instanceof List) {
                 List list = (List) property.getValue();
-                jsonBuilder.field(propertyKey, list.toArray(new Object[list.size()]));
+                jsonBuilder.field(propertyKey, list.toArray(new Object[0]));
             } else {
                 jsonBuilder.field(propertyKey, property.getValue());
             }
@@ -849,7 +851,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
             String hiddenVisibilityPropertyName = addVisibilityToPropertyName(graph, HIDDEN_VERTEX_FIELD_NAME, hiddenVisibility);
             if (!isPropertyInIndex(graph, HIDDEN_VERTEX_FIELD_NAME, hiddenVisibility)) {
                 String indexName = getIndexName(element);
-                IndexInfo indexInfo = ensureIndexCreatedAndInitialized(graph, indexName);
+                IndexInfo indexInfo = ensureIndexCreatedAndInitialized(indexName);
                 addPropertyToIndex(graph, indexInfo, hiddenVisibilityPropertyName, hiddenVisibility, Boolean.class, false, false, false);
             }
             jsonBuilder.field(hiddenVisibilityPropertyName, true);
@@ -868,7 +870,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
             String hiddenVisibilityPropertyName = addVisibilityToPropertyName(graph, HIDDEN_VERTEX_FIELD_NAME, visibility);
             String indexName = getIndexName(element);
             if (!isPropertyInIndex(graph, HIDDEN_VERTEX_FIELD_NAME, visibility)) {
-                IndexInfo indexInfo = ensureIndexCreatedAndInitialized(graph, indexName);
+                IndexInfo indexInfo = ensureIndexCreatedAndInitialized(indexName);
                 addPropertyToIndex(graph, indexInfo, hiddenVisibilityPropertyName, visibility, Boolean.class, false, false, false);
             }
 
@@ -901,7 +903,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
             String hiddenVisibilityPropertyName = addVisibilityToPropertyName(graph, HIDDEN_PROPERTY_FIELD_NAME, visibility);
             if (!isPropertyInIndex(graph, HIDDEN_PROPERTY_FIELD_NAME, visibility)) {
                 String indexName = getIndexName(element);
-                IndexInfo indexInfo = ensureIndexCreatedAndInitialized(graph, indexName);
+                IndexInfo indexInfo = ensureIndexCreatedAndInitialized(indexName);
                 addPropertyToIndex(graph, indexInfo, hiddenVisibilityPropertyName, visibility, Boolean.class, false, false, false);
             }
 
@@ -953,7 +955,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
     private String addElementTypeVisibilityPropertyToIndex(Graph graph, Element element) throws IOException {
         String elementTypeVisibilityPropertyName = addVisibilityToPropertyName(graph, ELEMENT_TYPE_FIELD_NAME, element.getVisibility());
         String indexName = getIndexName(element);
-        IndexInfo indexInfo = ensureIndexCreatedAndInitialized(graph, indexName);
+        IndexInfo indexInfo = ensureIndexCreatedAndInitialized(indexName);
         addPropertyToIndex(graph, indexInfo, elementTypeVisibilityPropertyName, element.getVisibility(), String.class, false, false, false);
         return elementTypeVisibilityPropertyName;
     }
@@ -1561,20 +1563,20 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
         return results;
     }
 
-    protected IndexInfo ensureIndexCreatedAndInitialized(Graph graph, String indexName) {
-        Map<String, IndexInfo> indexInfos = getIndexInfos(graph);
+    protected IndexInfo ensureIndexCreatedAndInitialized(String indexName) {
+        Map<String, IndexInfo> indexInfos = getIndexInfos();
         IndexInfo indexInfo = indexInfos.get(indexName);
         if (indexInfo != null && indexInfo.isElementTypeDefined()) {
             return indexInfo;
         }
-        return initializeIndex(graph, indexInfo, indexName);
+        return initializeIndex(indexInfo, indexName);
     }
 
-    private IndexInfo initializeIndex(Graph graph, String indexName) {
-        return initializeIndex(graph, null, indexName);
+    private IndexInfo initializeIndex(String indexName) {
+        return initializeIndex(null, indexName);
     }
 
-    private IndexInfo initializeIndex(Graph graph, IndexInfo indexInfo, String indexName) {
+    private IndexInfo initializeIndex(IndexInfo indexInfo, String indexName) {
         indexInfosLock.writeLock().lock();
         try {
             if (indexInfo == null) {
@@ -1589,7 +1591,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
                 indexInfo = createIndexInfo(indexName);
 
                 if (indexInfos == null) {
-                    loadIndexInfos(graph);
+                    loadIndexInfos();
                 }
                 indexInfos.put(indexName, indexInfo);
             }
@@ -1662,7 +1664,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
 
         String documentId = getIdStrategy().createElementDocId(element);
         String indexName = getIndexName(element);
-        IndexInfo indexInfo = ensureIndexCreatedAndInitialized(graph, indexName);
+        IndexInfo indexInfo = ensureIndexCreatedAndInitialized(indexName);
         UpdateRequestBuilder updateRequestBuilder = prepareUpdateFieldsOnDocument(indexInfo.getIndexName(), documentId, fieldsToSet, fieldsToRemove, Collections.emptyMap());
         if (updateRequestBuilder != null) {
             getIndexRefreshTracker().pushChange(indexInfo.getIndexName());
@@ -1827,13 +1829,13 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
     }
 
     protected String[] getIndexNamesAsArray(Graph graph) {
-        Map<String, IndexInfo> indexInfos = getIndexInfos(graph);
+        Map<String, IndexInfo> indexInfos = getIndexInfos();
         if (indexInfos.size() == indexInfosLastSize) {
             return indexNamesAsArray;
         }
         synchronized (this) {
             Set<String> keys = indexInfos.keySet();
-            indexNamesAsArray = keys.toArray(new String[keys.size()]);
+            indexNamesAsArray = keys.toArray(new String[0]);
             indexInfosLastSize = indexInfos.size();
             return indexNamesAsArray;
         }
@@ -1890,7 +1892,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
     private IndexInfo addExtendedDataColumnsToIndex(Graph graph, Element element, String tableName, String rowId, List<ExtendedDataMutation> columns) {
         try {
             String indexName = getExtendedDataIndexName(element, tableName, rowId);
-            IndexInfo indexInfo = ensureIndexCreatedAndInitialized(graph, indexName);
+            IndexInfo indexInfo = ensureIndexCreatedAndInitialized(indexName);
             for (ExtendedDataMutation column : columns) {
                 addPropertyToIndex(graph, indexInfo, column.getColumnName(), column.getValue(), column.getVisibility());
             }
@@ -1903,7 +1905,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
     public IndexInfo addPropertiesToIndex(Graph graph, Element element, Iterable<Property> properties) {
         try {
             String indexName = getIndexName(element);
-            IndexInfo indexInfo = ensureIndexCreatedAndInitialized(graph, indexName);
+            IndexInfo indexInfo = ensureIndexCreatedAndInitialized(indexName);
             for (Property property : properties) {
                 addPropertyToIndex(graph, indexInfo, property.getName(), property.getValue(), property.getVisibility());
             }
@@ -2000,7 +2002,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
         this.indexInfosLock.writeLock().lock();
         try {
             if (this.indexInfos == null) {
-                loadIndexInfos(graph);
+                loadIndexInfos();
             }
             Set<String> indexInfosSet = new HashSet<>(this.indexInfos.keySet());
             for (String indexName : indexInfosSet) {
@@ -2011,7 +2013,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
                     throw new VertexiumException("Could not delete index " + indexName, ex);
                 }
                 this.indexInfos.remove(indexName);
-                initializeIndex(graph, indexName);
+                initializeIndex(indexName);
             }
         } finally {
             this.indexInfosLock.writeLock().unlock();
@@ -2192,7 +2194,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
     }
 
     public boolean isPropertyInIndex(Graph graph, String propertyName, Visibility visibility) {
-        Map<String, IndexInfo> indexInfos = getIndexInfos(graph);
+        Map<String, IndexInfo> indexInfos = getIndexInfos();
         for (Map.Entry<String, IndexInfo> entry : indexInfos.entrySet()) {
             if (entry.getValue().isPropertyDefined(propertyName, visibility)) {
                 return true;
@@ -2202,7 +2204,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
     }
 
     public boolean isPropertyInIndex(Graph graph, String propertyName) {
-        Map<String, IndexInfo> indexInfos = getIndexInfos(graph);
+        Map<String, IndexInfo> indexInfos = getIndexInfos();
         for (Map.Entry<String, IndexInfo> entry : indexInfos.entrySet()) {
             if (entry.getValue().isPropertyDefined(propertyName)) {
                 return true;

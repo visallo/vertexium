@@ -29,14 +29,14 @@ public class VertexiumMapperQueryParser extends MapperQueryParser {
     protected Query newFieldQuery(Analyzer analyzer, String field, String queryText, boolean quoted) throws ParseException {
         field = field.replace(".", FIELDNAME_DOT_REPLACEMENT);
 
-        if (field == null || field.length() == 0) {
+        if (field.length() == 0) {
             return super.newFieldQuery(analyzer, field, queryText, quoted);
         }
 
         Matcher m = PROPERTY_NAME_PATTERN.matcher(field);
         if (m.matches() && m.group(2) != null) {
             String visibility = fieldNameToVisibilityMap.getFieldVisibility(field);
-            if (VisibilityUtils.canRead(visibility, authorizations)) {
+            if (visibility != null && VisibilityUtils.canRead(visibility, authorizations)) {
                 return super.newFieldQuery(analyzer, field, queryText, quoted);
             }
             return null;
@@ -47,7 +47,7 @@ public class VertexiumMapperQueryParser extends MapperQueryParser {
         for (String fieldName : fieldNameToVisibilityMap.getFieldNames()) {
             if (fieldName.startsWith(fieldPrefix)) {
                 String visibility = fieldNameToVisibilityMap.getFieldVisibility(fieldName);
-                if (VisibilityUtils.canRead(visibility, authorizations)) {
+                if (visibility != null && VisibilityUtils.canRead(visibility, authorizations)) {
                     Query termQuery = super.newFieldQuery(analyzer, fieldName, queryText, quoted);
                     disjucts.add(termQuery);
                 }
