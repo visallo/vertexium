@@ -2,7 +2,11 @@ package org.vertexium;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 
 public class FetchHintsBuilder {
@@ -53,6 +57,44 @@ public class FetchHintsBuilder {
                 includeEdgeLabelsAndCounts,
                 includeExtendedDataTableNames
         );
+    }
+
+    public FetchHintsBuilder parse(JSONObject fetchHintsJson) {
+        if (fetchHintsJson != null) {
+            this.includeAllProperties = fetchHintsJson.optBoolean("includeAllProperties", false);
+            this.includeAllPropertyMetadata = fetchHintsJson.optBoolean("includeAllPropertyMetadata", false);
+            this.includeHidden = fetchHintsJson.optBoolean("includeHidden", false);
+            this.includeAllEdgeRefs = fetchHintsJson.optBoolean("includeAllEdgeRefs", false);
+            this.includeOutEdgeRefs = fetchHintsJson.optBoolean("includeOutEdgeRefs", false);
+            this.includeInEdgeRefs = fetchHintsJson.optBoolean("includeInEdgeRefs", false);
+            this.includeEdgeLabelsAndCounts = fetchHintsJson.optBoolean("includeEdgeLabelsAndCounts", false);
+            this.includeExtendedDataTableNames = fetchHintsJson.optBoolean("includeExtendedDataTableNames", false);
+
+            if (fetchHintsJson.has("propertyNamesToInclude")) {
+                this.propertyNamesToInclude = jsonArrayToSet(fetchHintsJson.getJSONArray("propertyNamesToInclude"));
+            }
+            if (fetchHintsJson.has("metadataKeysToInclude")) {
+                this.metadataKeysToInclude = jsonArrayToSet(fetchHintsJson.getJSONArray("metadataKeysToInclude"));
+            }
+            if (fetchHintsJson.has("edgeLabelsOfEdgeRefsToInclude")) {
+                this.edgeLabelsOfEdgeRefsToInclude = jsonArrayToSet(fetchHintsJson.getJSONArray("edgeLabelsOfEdgeRefsToInclude"));
+            }
+        }
+
+        return this;
+    }
+
+    private Set<String> jsonArrayToSet(JSONArray jsonArray) {
+        if (jsonArray == null) {
+            return null;
+        }
+
+        List<String> list = new ArrayList<>();
+        for (int i = 0;i < jsonArray.length(); i++) {
+            list.add((String) jsonArray.get(i));
+        }
+
+        return ImmutableSet.<String>builder().addAll(list).build();
     }
 
     private boolean isIncludeProperties() {
