@@ -6,6 +6,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -59,42 +60,42 @@ public class FetchHintsBuilder {
         );
     }
 
-    public FetchHintsBuilder parse(JSONObject fetchHintsJson) {
-        if (fetchHintsJson != null) {
-            this.includeAllProperties = fetchHintsJson.optBoolean("includeAllProperties", false);
-            this.includeAllPropertyMetadata = fetchHintsJson.optBoolean("includeAllPropertyMetadata", false);
-            this.includeHidden = fetchHintsJson.optBoolean("includeHidden", false);
-            this.includeAllEdgeRefs = fetchHintsJson.optBoolean("includeAllEdgeRefs", false);
-            this.includeOutEdgeRefs = fetchHintsJson.optBoolean("includeOutEdgeRefs", false);
-            this.includeInEdgeRefs = fetchHintsJson.optBoolean("includeInEdgeRefs", false);
-            this.includeEdgeLabelsAndCounts = fetchHintsJson.optBoolean("includeEdgeLabelsAndCounts", false);
-            this.includeExtendedDataTableNames = fetchHintsJson.optBoolean("includeExtendedDataTableNames", false);
-
-            if (fetchHintsJson.has("propertyNamesToInclude")) {
-                this.propertyNamesToInclude = jsonArrayToSet(fetchHintsJson.getJSONArray("propertyNamesToInclude"));
-            }
-            if (fetchHintsJson.has("metadataKeysToInclude")) {
-                this.metadataKeysToInclude = jsonArrayToSet(fetchHintsJson.getJSONArray("metadataKeysToInclude"));
-            }
-            if (fetchHintsJson.has("edgeLabelsOfEdgeRefsToInclude")) {
-                this.edgeLabelsOfEdgeRefsToInclude = jsonArrayToSet(fetchHintsJson.getJSONArray("edgeLabelsOfEdgeRefsToInclude"));
-            }
+    public static FetchHintsBuilder parse(JSONObject fetchHintsJson) {
+        if (fetchHintsJson == null) {
+            fetchHintsJson = new JSONObject();
         }
 
-        return this;
+        return new FetchHintsBuilder()
+                .setIncludeAllProperties(fetchHintsJson.optBoolean("includeAllProperties", false))
+                .setIncludeAllPropertyMetadata(fetchHintsJson.optBoolean("includeAllPropertyMetadata", false))
+                .setIncludeHidden(fetchHintsJson.optBoolean("includeHidden", false))
+                .setIncludeAllEdgeRefs(fetchHintsJson.optBoolean("includeAllEdgeRefs", false))
+                .setIncludeOutEdgeRefs(fetchHintsJson.optBoolean("includeOutEdgeRefs", false))
+                .setIncludeInEdgeRefs(fetchHintsJson.optBoolean("includeInEdgeRefs", false))
+                .setIncludeEdgeLabelsAndCounts(fetchHintsJson.optBoolean("includeEdgeLabelsAndCounts", false))
+                .setIncludeExtendedDataTableNames(fetchHintsJson.optBoolean("includeExtendedDataTableNames", false))
+                .setPropertyNamesToInclude(fetchHintsJson.has("propertyNamesToInclude")
+                        ? jsonArrayToSet(fetchHintsJson.getJSONArray("propertyNamesToInclude"))
+                        : null)
+                .setMetadataKeysToInclude(fetchHintsJson.has("metadataKeysToInclude")
+                        ? jsonArrayToSet(fetchHintsJson.getJSONArray("metadataKeysToInclude"))
+                        : null)
+                .setEdgeLabelsOfEdgeRefsToInclude(fetchHintsJson.has("edgeLabelsOfEdgeRefsToInclude")
+                        ? jsonArrayToSet(fetchHintsJson.getJSONArray("edgeLabelsOfEdgeRefsToInclude"))
+                        : null);
     }
 
-    private Set<String> jsonArrayToSet(JSONArray jsonArray) {
+    private static Set<String> jsonArrayToSet(JSONArray jsonArray) {
         if (jsonArray == null) {
             return null;
         }
 
-        List<String> list = new ArrayList<>();
+        Set<String> set = new HashSet<>();
         for (int i = 0;i < jsonArray.length(); i++) {
-            list.add((String) jsonArray.get(i));
+            set.add((String) jsonArray.get(i));
         }
 
-        return ImmutableSet.<String>builder().addAll(list).build();
+        return set;
     }
 
     private boolean isIncludeProperties() {
