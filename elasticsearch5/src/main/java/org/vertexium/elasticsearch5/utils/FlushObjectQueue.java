@@ -26,7 +26,7 @@ public class FlushObjectQueue {
             while (!queue.isEmpty()) {
                 FlushObject flushObject = queue.remove();
                 try {
-                    flushObject.getFuture().get(30, TimeUnit.SECONDS);
+                    flushObject.getFuture().get(30, TimeUnit.MINUTES);
                     sleep = 0;
                 } catch (Exception ex) {
                     sleep += 10;
