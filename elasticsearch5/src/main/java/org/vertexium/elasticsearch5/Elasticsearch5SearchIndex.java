@@ -1563,7 +1563,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
         return results;
     }
 
-    protected IndexInfo ensureIndexCreatedAndInitialized(String indexName) {
+    public IndexInfo ensureIndexCreatedAndInitialized(String indexName) {
         Map<String, IndexInfo> indexInfos = getIndexInfos();
         IndexInfo indexInfo = indexInfos.get(indexName);
         if (indexInfo != null && indexInfo.isElementTypeDefined()) {

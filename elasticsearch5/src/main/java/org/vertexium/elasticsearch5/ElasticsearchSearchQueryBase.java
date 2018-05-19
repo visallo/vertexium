@@ -1043,7 +1043,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
                 .toArray(new String[allMatchingPropertyNames.length]);
     }
 
-    protected Elasticsearch5SearchIndex getSearchIndex() {
+    public Elasticsearch5SearchIndex getSearchIndex() {
         return (Elasticsearch5SearchIndex) ((GraphWithSearchIndex) getGraph()).getSearchIndex();
     }
 
