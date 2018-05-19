@@ -59,6 +59,8 @@ public class ElasticsearchSearchIndexConfiguration {
     public static final String GEOSHAPE_PRECISION_DEFAULT = "100m";
     public static final String GEOSHAPE_ERROR_PCT = "geoshapeErrorPct";
     public static final String GEOSHAPE_ERROR_PCT_DEFAULT = "0.001";
+    public static final String LOG_REQUEST_SIZE_LIMIT = "logRequestSizeLimit";
+    public static final Integer LOG_REQUEST_SIZE_LIMIT_DEFAULT = null;
 
     private GraphConfiguration graphConfiguration;
     private IndexSelectionStrategy indexSelectionStrategy;
@@ -231,5 +233,9 @@ public class ElasticsearchSearchIndexConfiguration {
             }
         }
         return results;
+    }
+
+    public Integer getLogRequestSizeLimit() {
+        return graphConfiguration.getInteger(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + LOG_REQUEST_SIZE_LIMIT, LOG_REQUEST_SIZE_LIMIT_DEFAULT);
     }
 }
