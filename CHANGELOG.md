@@ -1,5 +1,6 @@
 # v4.1.1
 * Added: Search configuration parameter `search.splitEdgesAndVertices`. The default value is `false`. If set to `true`, edges and vertices will be stored in separate search indices.
+* Changed: Elasticsearch: Timeout to flush documents from 30 seconds to 30 minutes 
 
 # v4.1.0
 * Added: Edge query support for in and out vertex ids
