@@ -120,6 +120,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
     private boolean serverPluginInstalled;
     private final IdStrategy idStrategy = new IdStrategy();
     private final IndexRefreshTracker indexRefreshTracker = new IndexRefreshTracker();
+    private Integer logRequestSizeLimit;
 
     public Elasticsearch5SearchIndex(Graph graph, GraphConfiguration config) {
         this.graph = graph;
@@ -131,6 +132,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
         this.serverPluginInstalled = checkPluginInstalled(this.client);
         this.geoShapePrecision = this.config.getGeoShapePrecision();
         this.geoShapeErrorPct = this.config.getGeoShapeErrorPct();
+        this.logRequestSizeLimit = this.config.getLogRequestSizeLimit();
     }
 
     public PropertyNameVisibilitiesStore getPropertyNameVisibilitiesStore() {
@@ -541,6 +543,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
     private void addActionRequestBuilderForFlush(String elementId, String rowId, UpdateRequestBuilder updateRequestBuilder) {
         Future future;
         try {
+            logRequestSize(elementId, updateRequestBuilder.request());
             future = updateRequestBuilder.execute();
         } catch (Exception ex) {
             LOGGER.debug("Could not execute update: %s", ex.getMessage());
@@ -1683,9 +1686,30 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
         bulkUpdate(graph, new ConvertingIterable<Element, UpdateRequest>(elements) {
             @Override
             protected UpdateRequest convert(Element element) {
-                return prepareUpdate(graph, element, authorizations).request();
+                UpdateRequest request = prepareUpdate(graph, element, authorizations).request();
+                logRequestSize(element.getId(), request);
+                return request;
             }
         });
+    }
+
+    private void logRequestSize(String elementId, UpdateRequest request) {
+        if (logRequestSizeLimit == null) {
+            return;
+        }
+        int sizeInBytes = 0;
+        if (request.doc() != null) {
+            sizeInBytes += request.doc().source().length();
+        }
+        if (request.upsertRequest() != null) {
+            sizeInBytes += request.upsertRequest().source().length();
+        }
+        if (request.script() != null) {
+            sizeInBytes += request.script().getIdOrCode().length() * 2;
+        }
+        if (sizeInBytes > logRequestSizeLimit) {
+            LOGGER.warn("Large document detected (id: %s). Size in bytes: %d", elementId, sizeInBytes);
+        }
     }
 
     private void bulkUpdate(Graph graph, Iterable<UpdateRequest> updateRequests) {

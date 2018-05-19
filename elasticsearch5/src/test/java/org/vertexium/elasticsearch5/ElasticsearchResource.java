@@ -59,10 +59,10 @@ public class ElasticsearchResource extends ExternalResource {
 
         runner = new ElasticsearchClusterRunner();
         runner.onBuild((i, builder) ->
-                               builder.put("script.inline", "true")
-                                       .put("cluster.name", clusterName)
-                                        .put("http.type", "netty3")
-                                        .put("transport.type", "netty3")
+                builder.put("script.inline", "true")
+                        .put("cluster.name", clusterName)
+                        .put("http.type", "netty3")
+                        .put("transport.type", "netty3")
         ).build(newConfigs().basePath(basePath.getAbsolutePath()).numOfNode(1));
 
         runner.ensureGreen();
@@ -120,6 +120,7 @@ public class ElasticsearchResource extends ExternalResource {
         configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + NUMBER_OF_REPLICAS, 0);
         configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + ERROR_ON_MISSING_VERTEXIUM_PLUGIN, true);
         configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + DefaultIndexSelectionStrategy.CONFIG_SPLIT_EDGES_AND_VERTICES, true);
+        configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + LOG_REQUEST_SIZE_LIMIT, 10000);
 
         // transport-5.3.3.jar!/org/elasticsearch/transport/client/PreBuiltTransportClient.class:61 likes to sleep on
         // connection close if default or netty4. This speeds up the test by skipping that
