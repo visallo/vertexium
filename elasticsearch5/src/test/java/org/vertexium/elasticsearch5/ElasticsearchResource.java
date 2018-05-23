@@ -100,7 +100,7 @@ public class ElasticsearchResource extends ExternalResource {
     public void dropIndices() throws Exception {
         String[] indices = runner.admin().indices().prepareGetIndex().execute().get().indices();
         for (String index : indices) {
-            if (index.equals(ES_INDEX_NAME) || index.startsWith(ES_EXTENDED_DATA_INDEX_NAME_PREFIX)) {
+            if (index.startsWith(ES_INDEX_NAME) || index.startsWith(ES_EXTENDED_DATA_INDEX_NAME_PREFIX)) {
                 LOGGER.info("deleting test index: %s", index);
                 runner.admin().indices().prepareDelete(index).execute().actionGet();
             }
@@ -119,6 +119,7 @@ public class ElasticsearchResource extends ExternalResource {
         configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + NUMBER_OF_SHARDS, 1);
         configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + NUMBER_OF_REPLICAS, 0);
         configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + ERROR_ON_MISSING_VERTEXIUM_PLUGIN, true);
+        configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + DefaultIndexSelectionStrategy.CONFIG_SPLIT_EDGES_AND_VERTICES, true);
 
         // transport-5.3.3.jar!/org/elasticsearch/transport/client/PreBuiltTransportClient.class:61 likes to sleep on
         // connection close if default or netty4. This speeds up the test by skipping that

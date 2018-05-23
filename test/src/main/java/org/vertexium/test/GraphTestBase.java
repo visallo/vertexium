@@ -6582,6 +6582,9 @@ public abstract class GraphTestBase {
                 .addPropertyValue("", "age", 20, VISIBILITY_A)
                 .addPropertyValue("", "birthDate", simpleDateFormat.parse("1995-03-02"), VISIBILITY_EMPTY)
                 .save(AUTHORIZATIONS_A_AND_B);
+        graph.prepareEdge("e1", "v1", "v2", "v1Tov2", VISIBILITY_EMPTY)
+                .addPropertyValue("", "birthDate", simpleDateFormat.parse("1995-03-02"), VISIBILITY_EMPTY)
+                .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         // numeric range
@@ -7760,6 +7763,24 @@ public abstract class GraphTestBase {
         ExtendedDataRow searchResult = (ExtendedDataRow) searchResultsList.get(0);
         assertEquals("e1", searchResult.getId().getElementId());
         assertEquals("row1", searchResult.getId().getRowId());
+
+        searchResults = graph.query(AUTHORIZATIONS_A)
+                .has("name", "value 1")
+                .search();
+        assertEquals(1, searchResults.getTotalHits());
+        searchResultsList = toList(searchResults);
+        assertEquals(1, searchResultsList.size());
+        searchResult = (ExtendedDataRow) searchResultsList.get(0);
+        assertEquals("e1", searchResult.getId().getElementId());
+        assertEquals("row1", searchResult.getId().getRowId());
+
+        searchResults = graph.query(AUTHORIZATIONS_A)
+                .has("name", TextPredicate.CONTAINS, "value")
+                .search();
+        assertEquals(2, searchResults.getTotalHits());
+        searchResultsList = toList(searchResults);
+        assertEquals(2, searchResultsList.size());
+        assertRowIdsAnyOrder(Lists.newArrayList("row1", "row2"), searchResultsList);
 
         searchResults = graph.query("value", AUTHORIZATIONS_A)
                 .search();

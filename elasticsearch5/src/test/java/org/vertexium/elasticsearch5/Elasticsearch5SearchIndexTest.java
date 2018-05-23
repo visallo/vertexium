@@ -2,9 +2,7 @@ package org.vertexium.elasticsearch5;
 
 import org.elasticsearch.action.admin.cluster.node.stats.NodeStats;
 import org.elasticsearch.action.admin.cluster.node.stats.NodesStatsAction;
-import org.elasticsearch.action.admin.cluster.node.stats.NodesStatsRequestBuilder;
 import org.elasticsearch.action.admin.cluster.node.stats.NodesStatsResponse;
-import org.elasticsearch.client.AdminClient;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.index.search.stats.SearchStats;
 import org.junit.Assert;
@@ -101,19 +99,19 @@ public class Elasticsearch5SearchIndexTest extends GraphTestBase {
         assertEquals(startingNumQueries, getNumQueries());
 
         assertResultsCount(2, 2, vertices);
-        assertEquals(startingNumQueries + 1, getNumQueries());
+        assertEquals(startingNumQueries + 2, getNumQueries());
 
         vertices = graph.query(AUTHORIZATIONS_A).limit(1).vertices();
-        assertEquals(startingNumQueries + 2, getNumQueries());
+        assertEquals(startingNumQueries + 4, getNumQueries());
 
         assertResultsCount(1, 2, vertices);
-        assertEquals(startingNumQueries + 2, getNumQueries());
+        assertEquals(startingNumQueries + 4, getNumQueries());
 
         vertices = graph.query(AUTHORIZATIONS_A).limit(10).vertices();
-        assertEquals(startingNumQueries + 3, getNumQueries());
+        assertEquals(startingNumQueries + 6, getNumQueries());
 
         assertResultsCount(2, 2, vertices);
-        assertEquals(startingNumQueries + 3, getNumQueries());
+        assertEquals(startingNumQueries + 6, getNumQueries());
     }
 
     @Test
@@ -129,7 +127,7 @@ public class Elasticsearch5SearchIndexTest extends GraphTestBase {
 
         QueryResultsIterable<Vertex> vertices = graph.query(AUTHORIZATIONS_A).vertices();
         assertResultsCount(2, vertices);
-        assertEquals(startingNumQueries + 2, getNumQueries());
+        assertEquals(startingNumQueries + 4, getNumQueries());
 
         searchIndex = (Elasticsearch5SearchIndex) ((GraphWithSearchIndex) graph).getSearchIndex();
         searchIndex.getConfig().getGraphConfiguration().set(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + ElasticsearchSearchIndexConfiguration.QUERY_PAGE_SIZE, 2);
@@ -139,7 +137,7 @@ public class Elasticsearch5SearchIndexTest extends GraphTestBase {
 
         vertices = graph.query(AUTHORIZATIONS_A).vertices();
         assertResultsCount(3, vertices);
-        assertEquals(startingNumQueries + 4, getNumQueries());
+        assertEquals(startingNumQueries + 8, getNumQueries());
     }
 
     private long getNumQueries() {

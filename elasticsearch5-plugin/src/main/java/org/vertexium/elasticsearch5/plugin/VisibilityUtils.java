@@ -7,6 +7,9 @@ import org.vertexium.security.VisibilityParseException;
 
 public class VisibilityUtils {
     public static boolean canRead(String visibility, String[] authorizations) {
+        if (visibility == null) {
+            throw new RuntimeException("visibility cannot be null");
+        }
         VisibilityEvaluator visibilityEvaluator = new VisibilityEvaluator(new Authorizations(authorizations));
         ColumnVisibility columnVisibility = new ColumnVisibility(visibility);
         try {

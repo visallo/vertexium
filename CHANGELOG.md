@@ -1,3 +1,6 @@
+# v4.1.1
+* Added: Search configuration parameter `search.splitEdgesAndVertices`. The default value is `false`. If set to `true`, edges and vertices will be stored in separate search indices.
+
 # v4.1.0
 * Added: Edge query support for in and out vertex ids
 * Changed: If fetch hints were not provided throw an exception instead of returning null
