@@ -1627,6 +1627,8 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
                         .execute()
                         .actionGet();
                 indexInfo.setElementTypeDefined(true);
+
+                updateMetadata(graph, indexInfo);
             } catch (Throwable e) {
                 throw new VertexiumException("Could not add mappings to index: " + indexInfo.getIndexName(), e);
             }
