@@ -4,6 +4,7 @@ import org.elasticsearch.action.admin.cluster.node.stats.NodeStats;
 import org.elasticsearch.action.admin.cluster.node.stats.NodesStatsAction;
 import org.elasticsearch.action.admin.cluster.node.stats.NodesStatsResponse;
 import org.elasticsearch.client.Client;
+import org.elasticsearch.common.io.stream.NotSerializableExceptionWrapper;
 import org.elasticsearch.index.search.stats.SearchStats;
 import org.junit.Assert;
 import org.junit.Before;
@@ -20,7 +21,9 @@ import org.vertexium.test.GraphTestBase;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 import static org.vertexium.test.util.VertexiumAssert.assertResultsCount;
+import static org.vertexium.test.util.VertexiumAssert.assertThrowsException;
 import static org.vertexium.util.IterableUtils.count;
 
 public class Elasticsearch5SearchIndexTest extends GraphTestBase {
@@ -140,6 +143,21 @@ public class Elasticsearch5SearchIndexTest extends GraphTestBase {
         assertEquals(startingNumQueries + 8, getNumQueries());
     }
 
+    @Test
+    public void testDisallowLeadingWildcardsInQueryString() {
+        graph.prepareVertex("v1", VISIBILITY_A).setProperty("prop1", "value1", VISIBILITY_A).save(AUTHORIZATIONS_A);
+        graph.flush();
+
+        try {
+            graph.query("*alue1", AUTHORIZATIONS_A).search().getTotalHits();
+            fail("Wildcard prefix of query string should have caused an exception");
+        } catch (Exception e) {
+            if (!(getRootCause(e) instanceof NotSerializableExceptionWrapper)) {
+                fail("Wildcard prefix of query string should have caused a NotSerializableExceptionWrapper exception");
+            }
+        }
+    }
+
     private long getNumQueries() {
         Client client = elasticsearchResource.getRunner().client();
         NodesStatsResponse nodeStats = NodesStatsAction.INSTANCE.newRequestBuilder(client).get();
@@ -149,5 +167,12 @@ public class Elasticsearch5SearchIndexTest extends GraphTestBase {
 
         SearchStats searchStats = nodes.get(0).getIndices().getSearch();
         return searchStats.getTotal().getQueryCount();
+    }
+
+    private Throwable getRootCause(Throwable e) {
+        if (e.getCause() == null) {
+            return e;
+        }
+        return getRootCause(e.getCause());
     }
 }

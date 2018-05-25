@@ -26,6 +26,7 @@ public class VertexiumQueryStringQueryBuilder extends QueryStringQueryBuilder {
     public VertexiumQueryStringQueryBuilder(StreamInput in) throws IOException {
         super(in);
         authorizations = in.readStringArray();
+        allowLeadingWildcard(false);
     }
 
     @Override
