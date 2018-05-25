@@ -19,6 +19,7 @@ public class VertexiumQueryStringQueryBuilder extends QueryStringQueryBuilder {
     private VertexiumQueryStringQueryBuilder(String queryString, Authorizations authorizations) {
         super(queryString);
         this.authorizations = authorizations;
+        allowLeadingWildcard(false);
     }
 
     public static VertexiumQueryStringQueryBuilder build(String queryString, Authorizations authorizations) {
