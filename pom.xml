@@ -100,9 +100,9 @@
 
         <!-- used by: accumulo* -->
         <accumulo.version>1.7.2</accumulo.version>
-        <zookeeper.version>3.4.9</zookeeper.version>
+        <zookeeper.version>3.4.12</zookeeper.version>
         <curator.version>2.12.0</curator.version>
-        <hadoop.version>2.7.3</hadoop.version>
+        <hadoop.version>2.9.0</hadoop.version>
 
         <!-- used by: examples-base -->
         <webster.version>1.0.0</webster.version>
