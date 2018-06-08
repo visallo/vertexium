@@ -1,7 +1,12 @@
 # v4.1.1
 * Added: Search configuration parameter `search.splitEdgesAndVertices`. The default value is `false`. If set to `true`, edges and vertices will be stored in separate search indices.
 * Added: Option to Elasticsearch index to log large document (search.logRequestSizeLimit)
-* Changed: Elasticsearch: Timeout to flush documents from 30 seconds to 30 minutes 
+* Added: Ability to parse from json to FetchHintsBuilder
+* Changed: Elasticsearch: Timeout to flush documents from 30 seconds to 30 minutes
+* Changed: Disable leading wildcard support
+* Changed: Update to curator 2.12.0
+* Changed: Update to Hadoop 2.9.0
+* Changed: Update to Zookeeper 3.4.12 
 
 # v4.1.0
 * Added: Edge query support for in and out vertex ids
