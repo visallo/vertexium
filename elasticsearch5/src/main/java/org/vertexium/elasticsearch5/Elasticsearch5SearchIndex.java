@@ -34,6 +34,7 @@ import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.node.Node;
 import org.elasticsearch.node.NodeValidationException;
+import org.elasticsearch.plugins.Plugin;
 import org.elasticsearch.plugins.PluginInfo;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
@@ -208,7 +209,8 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
             }
             settings = settingsBuilder.build();
         }
-        TransportClient transportClient = new PreBuiltTransportClient(settings);
+        Collection<Class<? extends Plugin>> plugins = loadTransportClientPlugins(config);
+        TransportClient transportClient = new PreBuiltTransportClient(settings, plugins);
         for (String esLocation : config.getEsLocations()) {
             String[] locationSocket = esLocation.split(":");
             String hostname;
@@ -231,6 +233,19 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
             transportClient.addTransportAddress(new InetSocketTransportAddress(host, port));
         }
         return transportClient;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Collection<Class<? extends Plugin>> loadTransportClientPlugins(ElasticsearchSearchIndexConfiguration config) {
+        return config.getEsPluginClassNames().stream()
+                .map(pluginClassName -> {
+                    try {
+                        return (Class<? extends Plugin>) Class.forName(pluginClassName);
+                    } catch (ClassNotFoundException ex) {
+                        throw new VertexiumException("Could not load transport client plugin: " + pluginClassName, ex);
+                    }
+                })
+                .collect(Collectors.toList());
     }
 
     private static Settings tryReadSettingsFromFile(ElasticsearchSearchIndexConfiguration config) {

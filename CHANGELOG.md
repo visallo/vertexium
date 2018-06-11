@@ -2,6 +2,7 @@
 * Added: Per query scoring strategy
 * Added: Hamming distance query scoring strategy
 * Added: Aggregating extended data by element id and element type
+* Added: Elasticsearch TransportClient plugins support (config parameter `search.esTransportClientPlugin.xxx=<plugin class name>`) 
 * Changed: Deprecated Elasticsearch global scoring strategy  
 
 # v4.1.1
