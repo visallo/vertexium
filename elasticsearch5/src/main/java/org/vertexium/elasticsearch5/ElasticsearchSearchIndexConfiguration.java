@@ -7,8 +7,7 @@ import org.vertexium.VertexiumException;
 import org.vertexium.util.ConfigurationUtils;
 
 import java.io.File;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 public class ElasticsearchSearchIndexConfiguration {
     public static final String ES_LOCATIONS = "locations";
@@ -35,6 +34,7 @@ public class ElasticsearchSearchIndexConfiguration {
     public static final String IN_PROCESS_NODE_HOME_PATH = "inProcessNode.homePath";
     public static final String IN_PROCESS_ADDITIONAL_CONFIG_PREFIX = GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + "inProcessNode.additionalConfig.";
     public static final String ES_SETTINGS_CONFIG_PREFIX = GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + "esSettings.";
+    public static final String ES_TRANSPORT_CLIENT_PLUGIN_CONFIG_PREFIX = GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + "esTransportClientPlugin.";
     public static final String QUERY_PAGE_SIZE = "queryPageSize";
     public static final int QUERY_PAGE_SIZE_DEFAULT = 500;
     public static final String QUERY_PAGING_LIMIT = "queryPagingLimit";
@@ -215,6 +215,21 @@ public class ElasticsearchSearchIndexConfiguration {
             if (key.startsWith(ES_SETTINGS_CONFIG_PREFIX)) {
                 String configName = key.substring(ES_SETTINGS_CONFIG_PREFIX.length());
                 results.put(configName, (String) mapEntry.getValue());
+            }
+        }
+        return results;
+    }
+
+    public Collection<String> getEsPluginClassNames() {
+        List<String> results = new ArrayList<>();
+        for (Object o : graphConfiguration.getConfig().entrySet()) {
+            Map.Entry mapEntry = (Map.Entry) o;
+            if (!(mapEntry.getKey() instanceof String) || !(mapEntry.getValue() instanceof String)) {
+                continue;
+            }
+            String key = (String) mapEntry.getKey();
+            if (key.startsWith(ES_TRANSPORT_CLIENT_PLUGIN_CONFIG_PREFIX)) {
+                results.add((String) mapEntry.getValue());
             }
         }
         return results;
