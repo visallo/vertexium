@@ -1,0 +1,22 @@
+def hash = params.hash;
+def fieldNames = params.fieldNames;
+
+def score = 0;
+
+for (def field : fieldNames) {
+  if (!doc.containsKey(field)) {
+    continue;
+  }
+
+  def values = doc[field].values;
+  for (def value : values) {
+    def valueScore = 0;
+    def maxLen = Math.min(value.length(), hash.length()) * 4;
+    score = Math.max(
+      score,
+      maxLen - new BigInteger(value, 16).xor(new BigInteger(hash, 16)).bitCount()
+    );
+  }
+}
+
+return score;
