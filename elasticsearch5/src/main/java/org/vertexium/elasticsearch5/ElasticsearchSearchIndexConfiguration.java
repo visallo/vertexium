@@ -4,8 +4,6 @@ import org.elasticsearch.common.unit.TimeValue;
 import org.vertexium.Graph;
 import org.vertexium.GraphConfiguration;
 import org.vertexium.VertexiumException;
-import org.vertexium.elasticsearch5.score.NopScoringStrategy;
-import org.vertexium.elasticsearch5.score.ScoringStrategy;
 import org.vertexium.util.ConfigurationUtils;
 
 import java.io.File;
@@ -27,10 +25,8 @@ public class ElasticsearchSearchIndexConfiguration {
     public static final String NUMBER_OF_REPLICAS = "replicas";
     public static final int NUMBER_OF_REPLICAS_DEFAULT = 1;
     public static final int NUMBER_OF_REPLICAS_IN_PROCESS_DEFAULT = 0;
-    public static final String SCORING_STRATEGY_CLASS_NAME = "scoringStrategy";
     public static final String TERM_AGGREGATION_SHARD_SIZE = "termAggregation.shardSize";
     public static final int TERM_AGGREGATION_SHARD_SIZE_DEFAULT = 10;
-    public static final Class<? extends ScoringStrategy> SCORING_STRATEGY_CLASS_NAME_DEFAULT = NopScoringStrategy.class;
     public static final String INDEX_SELECTION_STRATEGY_CLASS_NAME = "indexSelectionStrategy";
     public static final Class<? extends IndexSelectionStrategy> INDEX_SELECTION_STRATEGY_CLASS_NAME_DEFAULT = DefaultIndexSelectionStrategy.class;
     public static final String ALL_FIELD_ENABLED = "allFieldEnabled";
@@ -64,20 +60,14 @@ public class ElasticsearchSearchIndexConfiguration {
 
     private GraphConfiguration graphConfiguration;
     private IndexSelectionStrategy indexSelectionStrategy;
-    private ScoringStrategy scoringStrategy;
 
     public ElasticsearchSearchIndexConfiguration(Graph graph, GraphConfiguration graphConfiguration) {
         this.graphConfiguration = graphConfiguration;
-        this.scoringStrategy = getScoringStrategy(graph, graphConfiguration);
         this.indexSelectionStrategy = getIndexSelectionStrategy(graph, graphConfiguration);
     }
 
     public GraphConfiguration getGraphConfiguration() {
         return graphConfiguration;
-    }
-
-    public ScoringStrategy getScoringStrategy() {
-        return scoringStrategy;
     }
 
     public IndexSelectionStrategy getIndexSelectionStrategy() {
@@ -106,11 +96,6 @@ public class ElasticsearchSearchIndexConfiguration {
 
     public int getPort() {
         return graphConfiguration.getInt(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + PORT, PORT_DEFAULT);
-    }
-
-    private static ScoringStrategy getScoringStrategy(Graph graph, GraphConfiguration config) {
-        String className = config.getString(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + SCORING_STRATEGY_CLASS_NAME, SCORING_STRATEGY_CLASS_NAME_DEFAULT.getName());
-        return ConfigurationUtils.createProvider(className, graph, config);
     }
 
     public static IndexSelectionStrategy getIndexSelectionStrategy(Graph graph, GraphConfiguration config) {

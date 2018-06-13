@@ -524,7 +524,6 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
                 MUTATION_LOGGER.trace("addElement json: %s: %s", element.getId(), source.string());
             }
 
-            getConfig().getScoringStrategy().addElement(this, graph, element, authorizations);
             getIndexRefreshTracker().pushChange(indexInfo.getIndexName());
             return getClient()
                     .prepareUpdate(indexInfo.getIndexName(), getIdStrategy().getType(), getIdStrategy().createElementDocId(element))
@@ -685,8 +684,6 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
                 MUTATION_LOGGER.trace("addElementExtendedData json: %s:%s:%s: %s", element.getId(), tableName, rowId, source.string());
             }
 
-            getConfig().getScoringStrategy().addElementExtendedData(this, graph, element, tableName, rowId, columns, authorizations);
-
             String extendedDataDocId = getIdStrategy().createExtendedDataDocId(element, tableName, rowId);
             getIndexRefreshTracker().pushChange(indexInfo.getIndexName());
             return getClient()
@@ -716,7 +713,6 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
         jsonBuilder.field(ELEMENT_TYPE_FIELD_NAME, elementTypeString);
         String elementTypeVisibilityPropertyName = addElementTypeVisibilityPropertyToIndex(graph, element);
         jsonBuilder.field(elementTypeVisibilityPropertyName, elementTypeString);
-        getConfig().getScoringStrategy().addFieldsToExtendedDataDocument(this, jsonBuilder, element, null, tableName, rowId, columns, authorizations);
         jsonBuilder.field(EXTENDED_DATA_TABLE_NAME_FIELD_NAME, tableName);
         jsonBuilder.field(EXTENDED_DATA_TABLE_ROW_ID_FIELD_NAME, rowId);
         if (element instanceof Edge) {
@@ -838,11 +834,9 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
         jsonBuilder.field(ELEMENT_TYPE_FIELD_NAME, getElementTypeValueFromElement(element));
         if (element instanceof Vertex) {
             jsonBuilder.field(elementTypeVisibilityPropertyName, ElasticsearchDocumentType.VERTEX.getKey());
-            getConfig().getScoringStrategy().addFieldsToVertexDocument(this, jsonBuilder, (Vertex) element, null, authorizations);
         } else if (element instanceof Edge) {
             Edge edge = (Edge) element;
             jsonBuilder.field(elementTypeVisibilityPropertyName, ElasticsearchDocumentType.EDGE.getKey());
-            getConfig().getScoringStrategy().addFieldsToEdgeDocument(this, jsonBuilder, edge, null, authorizations);
             jsonBuilder.field(IN_VERTEX_ID_FIELD_NAME, edge.getVertexId(Direction.IN));
             jsonBuilder.field(OUT_VERTEX_ID_FIELD_NAME, edge.getVertexId(Direction.OUT));
             jsonBuilder.field(EDGE_LABEL_FIELD_NAME, edge.getLabel());
@@ -1263,7 +1257,6 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
                 graph,
                 queryString,
                 new ElasticsearchSearchQueryBase.Options()
-                        .setScoringStrategy(getConfig().getScoringStrategy())
                         .setIndexSelectionStrategy(getIndexSelectionStrategy())
                         .setPageSize(getConfig().getQueryPageSize())
                         .setPagingLimit(getConfig().getPagingLimit())
@@ -1281,7 +1274,6 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
                 vertex,
                 queryString,
                 new ElasticsearchSearchVertexQuery.Options()
-                        .setScoringStrategy(getConfig().getScoringStrategy())
                         .setIndexSelectionStrategy(getIndexSelectionStrategy())
                         .setPageSize(getConfig().getQueryPageSize())
                         .setPagingLimit(getConfig().getPagingLimit())
@@ -1300,7 +1292,6 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
                 tableName,
                 queryString,
                 new ElasticsearchSearchExtendedDataQuery.Options()
-                        .setScoringStrategy(getConfig().getScoringStrategy())
                         .setIndexSelectionStrategy(getIndexSelectionStrategy())
                         .setPageSize(getConfig().getQueryPageSize())
                         .setPagingLimit(getConfig().getPagingLimit())
@@ -1318,7 +1309,6 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
                 similarToFields,
                 similarToText,
                 new ElasticsearchSearchQueryBase.Options()
-                        .setScoringStrategy(getConfig().getScoringStrategy())
                         .setIndexSelectionStrategy(getIndexSelectionStrategy())
                         .setPageSize(getConfig().getQueryPageSize())
                         .setPagingLimit(getConfig().getPagingLimit())
@@ -1649,7 +1639,6 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
                 .startObject(OUT_VERTEX_ID_FIELD_NAME).field("type", "keyword").field("store", "true").endObject()
                 .startObject(EDGE_LABEL_FIELD_NAME).field("type", "keyword").field("store", "true").endObject()
         ;
-        getConfig().getScoringStrategy().addFieldsToElementType(builder);
     }
 
     @Override
@@ -1755,7 +1744,6 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
                 vertexIds,
                 queryString,
                 new ElasticsearchSearchQueryBase.Options()
-                        .setScoringStrategy(getConfig().getScoringStrategy())
                         .setIndexSelectionStrategy(getIndexSelectionStrategy())
                         .setPageSize(getConfig().getQueryPageSize())
                         .setPagingLimit(getConfig().getPagingLimit())
