@@ -5,6 +5,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import org.vertexium.*;
+import org.vertexium.scoring.ScoringStrategy;
 import org.vertexium.type.GeoShape;
 import org.vertexium.util.IterableUtils;
 import org.vertexium.util.SelectManyIterable;
@@ -376,6 +377,12 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
     @Override
     public Query limit(Long count) {
         this.parameters.setLimit(count);
+        return this;
+    }
+
+    @Override
+    public Query scoringStrategy(ScoringStrategy scoringStrategy) {
+        this.parameters.setScoringStrategy(scoringStrategy);
         return this;
     }
 

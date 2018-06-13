@@ -1,6 +1,7 @@
 package org.vertexium.query;
 
 import org.vertexium.*;
+import org.vertexium.scoring.ScoringStrategy;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -239,6 +240,11 @@ public class EmptyResultsGraphQuery implements Query {
 
     @Override
     public Query limit(Long count) {
+        return this;
+    }
+
+    @Override
+    public Query scoringStrategy(ScoringStrategy scoringStrategy) {
         return this;
     }
 

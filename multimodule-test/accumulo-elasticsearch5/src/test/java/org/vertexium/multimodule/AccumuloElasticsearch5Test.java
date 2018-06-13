@@ -12,7 +12,9 @@ import org.vertexium.accumulo.AccumuloGraphConfiguration;
 import org.vertexium.accumulo.AccumuloGraphTestBase;
 import org.vertexium.accumulo.AccumuloResource;
 import org.vertexium.elasticsearch5.ElasticsearchResource;
+import org.vertexium.elasticsearch5.scoring.ElasticsearchHammingDistanceScoringStrategy;
 import org.vertexium.id.SimpleNameSubstitutionStrategy;
+import org.vertexium.scoring.ScoringStrategy;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -102,5 +104,10 @@ public class AccumuloElasticsearch5Test extends AccumuloGraphTestBase {
             return SimpleNameSubstitutionStrategy.SUBS_DELIM + "a" + SimpleNameSubstitutionStrategy.SUBS_DELIM;
         }
         return str;
+    }
+
+    @Override
+    protected ScoringStrategy getHammingDistanceScoringStrategy(String field, String hash) {
+        return new ElasticsearchHammingDistanceScoringStrategy(field, hash);
     }
 }

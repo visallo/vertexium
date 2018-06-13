@@ -1,4 +1,6 @@
 # v4.1.2
+* Added: Per query scoring strategy
+* Added: Hamming distance query scoring strategy
 * Changed: Deprecated Elasticsearch global scoring strategy  
 
 # v4.1.1
