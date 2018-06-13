@@ -2,6 +2,7 @@ package org.vertexium.query;
 
 import com.google.common.base.Joiner;
 import org.vertexium.Authorizations;
+import org.vertexium.scoring.ScoringStrategy;
 import org.vertexium.util.VertexiumLogger;
 import org.vertexium.util.VertexiumLoggerFactory;
 
@@ -20,6 +21,7 @@ public abstract class QueryParameters {
     private final List<QueryBase.SortContainer> sortContainers = new ArrayList<>();
     private final List<String> edgeLabels = new ArrayList<>();
     private List<String> ids;
+    private ScoringStrategy scoringStrategy;
 
     public QueryParameters(Authorizations authorizations) {
         this.authorizations = authorizations;
@@ -77,6 +79,14 @@ public abstract class QueryParameters {
         this.edgeLabels.add(edgeLabel);
     }
 
+    public ScoringStrategy getScoringStrategy() {
+        return scoringStrategy;
+    }
+
+    public void setScoringStrategy(ScoringStrategy scoringStrategy) {
+        this.scoringStrategy = scoringStrategy;
+    }
+
     /**
      * Get the ids of the elements that should be searched in this query.
      *
@@ -108,6 +118,7 @@ public abstract class QueryParameters {
     protected QueryParameters cloneTo(QueryParameters result) {
         result.setSkip(this.getSkip());
         result.setLimit(this.getLimit());
+        result.setScoringStrategy(this.getScoringStrategy());
         result.hasContainers.addAll(this.getHasContainers());
         result.sortContainers.addAll(this.getSortContainers());
         result.edgeLabels.addAll(this.getEdgeLabels());
@@ -125,6 +136,7 @@ public abstract class QueryParameters {
                 ", sortContainers=" + Joiner.on(", ").join(sortContainers) +
                 ", edgeLabels=" + Joiner.on(", ").join(edgeLabels) +
                 ", ids=" + (ids == null ? null : Joiner.on(", ").join(ids)) +
+                ", scoring=" + (scoringStrategy == null ? "null" : scoringStrategy.getClass().getName()) +
                 '}';
     }
 }

@@ -35,9 +35,13 @@ public class ElasticsearchGraphQueryIdIterable<T>
         return iterable.getTotalHits();
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     protected T convert(SearchHit hit) {
+        return idFromSearchHit(hit, this.idStrategy);
+    }
+
+    @SuppressWarnings("unchecked")
+    public static <T> T idFromSearchHit(SearchHit hit, IdStrategy idStrategy) {
         ElasticsearchDocumentType dt = ElasticsearchDocumentType.fromSearchHit(hit);
         T convertedId = null;
         if (dt != null) {

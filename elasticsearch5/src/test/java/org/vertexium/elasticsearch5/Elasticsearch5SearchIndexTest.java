@@ -11,11 +11,13 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.vertexium.*;
+import org.vertexium.elasticsearch5.scoring.ElasticsearchHammingDistanceScoringStrategy;
 import org.vertexium.inmemory.InMemoryAuthorizations;
 import org.vertexium.inmemory.InMemoryGraph;
 import org.vertexium.inmemory.InMemoryGraphConfiguration;
 import org.vertexium.query.QueryResultsIterable;
 import org.vertexium.query.SortDirection;
+import org.vertexium.scoring.ScoringStrategy;
 import org.vertexium.test.GraphTestBase;
 
 import java.util.List;
@@ -23,7 +25,6 @@ import java.util.List;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.vertexium.test.util.VertexiumAssert.assertResultsCount;
-import static org.vertexium.test.util.VertexiumAssert.assertThrowsException;
 import static org.vertexium.util.IterableUtils.count;
 
 public class Elasticsearch5SearchIndexTest extends GraphTestBase {
@@ -174,5 +175,10 @@ public class Elasticsearch5SearchIndexTest extends GraphTestBase {
             return e;
         }
         return getRootCause(e.getCause());
+    }
+
+    @Override
+    protected ScoringStrategy getHammingDistanceScoringStrategy(String field, String hash) {
+        return new ElasticsearchHammingDistanceScoringStrategy(field, hash);
     }
 }

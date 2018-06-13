@@ -70,8 +70,8 @@ public class ElasticsearchGraphQueryIterable<T> extends DefaultGraphQueryIterabl
     }
 
     @Override
-    public Map<Object, Double> getScores() {
-        return this.scores;
+    public Double getScore(Object id) {
+        return this.scores.get(id);
     }
 
     @Override

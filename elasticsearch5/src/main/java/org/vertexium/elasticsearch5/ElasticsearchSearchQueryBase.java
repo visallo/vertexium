@@ -40,10 +40,12 @@ import org.elasticsearch.search.sort.SortMode;
 import org.elasticsearch.search.sort.SortOrder;
 import org.joda.time.DateTime;
 import org.vertexium.*;
+import org.vertexium.elasticsearch5.scoring.ElasticsearchScoringStrategy;
 import org.vertexium.elasticsearch5.utils.ElasticsearchTypes;
 import org.vertexium.elasticsearch5.utils.InfiniteScrollIterable;
 import org.vertexium.elasticsearch5.utils.PagingIterable;
 import org.vertexium.query.*;
+import org.vertexium.scoring.ScoringStrategy;
 import org.vertexium.type.*;
 import org.vertexium.util.*;
 
@@ -181,11 +183,10 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
         if (queryString == null || queryString.equals("*")) {
             return QueryBuilders.matchAllQuery();
         }
-        Elasticsearch5SearchIndex es = (Elasticsearch5SearchIndex) ((GraphWithSearchIndex) getGraph()).getSearchIndex();
-        if (es.isServerPluginInstalled()) {
+        if (getSearchIndex().isServerPluginInstalled()) {
             return VertexiumQueryStringQueryBuilder.build(queryString, getParameters().getAuthorizations());
         } else {
-            Collection<String> fields = es.getQueryablePropertyNames(getGraph(), getParameters().getAuthorizations());
+            Collection<String> fields = getSearchIndex().getQueryablePropertyNames(getGraph(), getParameters().getAuthorizations());
             QueryStringQueryBuilder qs = QueryBuilders.queryStringQuery(queryString);
             for (String field : fields) {
                 qs = qs.field(getSearchIndex().replaceFieldnameDots(field));
@@ -353,6 +354,11 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
             protected ElasticsearchGraphQueryIterable<VertexiumObject> searchResponseToIterable(SearchResponse searchResponse) {
                 return ElasticsearchSearchQueryBase.this.searchResponseToVertexiumObjectIterable(searchResponse, fetchHints);
             }
+
+            @Override
+            protected IdStrategy getIdStrategy() {
+                return getSearchIndex().getIdStrategy();
+            }
         };
     }
 
@@ -434,6 +440,11 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
             @Override
             protected ElasticsearchGraphQueryIterable<SearchHit> searchResponseToIterable(SearchResponse searchResponse) {
                 return ElasticsearchSearchQueryBase.this.searchResponseToSearchHitsIterable(searchResponse);
+            }
+
+            @Override
+            protected IdStrategy getIdStrategy() {
+                return getSearchIndex().getIdStrategy();
             }
         };
     }
@@ -1032,11 +1043,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
     }
 
     protected String[] getPropertyNames(String propertyName) {
-        String[] allMatchingPropertyNames = getSearchIndex().getAllMatchingPropertyNames(getGraph(), propertyName, getParameters().getAuthorizations());
-        return Arrays.stream(allMatchingPropertyNames)
-                .map(getSearchIndex()::replaceFieldnameDots)
-                .collect(Collectors.toList())
-                .toArray(new String[allMatchingPropertyNames.length]);
+        return getSearchIndex().getPropertyNames(getGraph(), propertyName, getParameters().getAuthorizations());
     }
 
     public Elasticsearch5SearchIndex getSearchIndex() {
@@ -1092,13 +1099,27 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
     }
 
     protected QueryBuilder createQuery(QueryParameters queryParameters) {
+        QueryBuilder query;
         if (queryParameters instanceof QueryStringQueryParameters) {
-            return createQueryStringQuery((QueryStringQueryParameters) queryParameters);
+            query = createQueryStringQuery((QueryStringQueryParameters) queryParameters);
         } else if (queryParameters instanceof SimilarToTextQueryParameters) {
-            return createSimilarToTextQuery((SimilarToTextQueryParameters) queryParameters);
+            query = createSimilarToTextQuery((SimilarToTextQueryParameters) queryParameters);
         } else {
             throw new VertexiumException("Query parameters not supported of type: " + queryParameters.getClass().getName());
         }
+        ScoringStrategy scoringStrategy = queryParameters.getScoringStrategy();
+        if (scoringStrategy != null) {
+            if (!(scoringStrategy instanceof ElasticsearchScoringStrategy)) {
+                throw new VertexiumException("scoring strategies must implement " + ElasticsearchScoringStrategy.class.getName() + " to work with Elasticsearch");
+            }
+            query = ((ElasticsearchScoringStrategy) scoringStrategy).updateElasticsearchQuery(
+                    getGraph(),
+                    getSearchIndex(),
+                    query,
+                    queryParameters
+            );
+        }
+        return query;
     }
 
     protected QueryBuilder createSimilarToTextQuery(SimilarToTextQueryParameters similarTo) {

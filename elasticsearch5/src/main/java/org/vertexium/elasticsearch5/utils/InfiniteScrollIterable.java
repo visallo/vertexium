@@ -1,7 +1,11 @@
 package org.vertexium.elasticsearch5.utils;
 
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.search.SearchHit;
+import org.vertexium.elasticsearch5.ElasticsearchGraphQueryIdIterable;
+import org.vertexium.elasticsearch5.IdStrategy;
 import org.vertexium.query.AggregationResult;
+import org.vertexium.query.IterableWithScores;
 import org.vertexium.query.QueryResultsIterable;
 import org.vertexium.util.CloseableIterator;
 import org.vertexium.util.CloseableUtils;
@@ -10,11 +14,11 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
-public abstract class InfiniteScrollIterable<T> implements QueryResultsIterable<T> {
-    private SearchResponse firstResponse;
+public abstract class InfiniteScrollIterable<T> implements QueryResultsIterable<T>, IterableWithScores<T> {
     private QueryResultsIterable<T> firstIterable;
     private boolean initCalled;
     private boolean firstCall;
+    private SearchResponse response;
 
     protected abstract SearchResponse getInitialSearchResponse();
 
@@ -24,6 +28,8 @@ public abstract class InfiniteScrollIterable<T> implements QueryResultsIterable<
 
     protected abstract void closeScroll(String scrollId);
 
+    protected abstract IdStrategy getIdStrategy();
+
     @Override
     public void close() {
     }
@@ -32,11 +38,11 @@ public abstract class InfiniteScrollIterable<T> implements QueryResultsIterable<
         if (initCalled) {
             return;
         }
-        firstResponse = getInitialSearchResponse();
-        if (firstResponse == null) {
+        response = getInitialSearchResponse();
+        if (response == null) {
             firstIterable = null;
         } else {
-            firstIterable = searchResponseToIterable(firstResponse);
+            firstIterable = searchResponseToIterable(response);
         }
         firstCall = true;
         initCalled = true;
@@ -58,16 +64,31 @@ public abstract class InfiniteScrollIterable<T> implements QueryResultsIterable<
     }
 
     @Override
+    public Double getScore(Object id) {
+        if (response == null) {
+            return null;
+        }
+        for (SearchHit hit : response.getHits()) {
+            Object hitId = ElasticsearchGraphQueryIdIterable.idFromSearchHit(hit, getIdStrategy());
+            if (hitId == null) {
+                continue;
+            }
+            if (id.equals(hitId)) {
+                return (double) hit.getScore();
+            }
+        }
+        return null;
+    }
+
+    @Override
     public Iterator<T> iterator() {
         init();
-        if (firstResponse == null) {
+        if (response == null) {
             return new ArrayList<T>().iterator();
         }
 
-        SearchResponse response;
         Iterator<T> it;
         if (firstCall) {
-            response = firstResponse;
             it = firstIterable.iterator();
             firstCall = false;
         } else {

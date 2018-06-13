@@ -1,6 +1,7 @@
 package org.vertexium.query;
 
 import org.vertexium.*;
+import org.vertexium.scoring.ScoringStrategy;
 
 import java.util.Collection;
 import java.util.EnumSet;
@@ -372,4 +373,9 @@ public interface Query {
      * Gets the added aggregations
      */
     Iterable<Aggregation> getAggregations();
+
+    /**
+     * Sets the scoring strategy for this query
+     */
+    Query scoringStrategy(ScoringStrategy scoringStrategy);
 }

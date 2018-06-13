@@ -17,6 +17,8 @@ import org.vertexium.mutation.ExistingElementMutation;
 import org.vertexium.property.PropertyValue;
 import org.vertexium.property.StreamingPropertyValue;
 import org.vertexium.query.*;
+import org.vertexium.scoring.HammingDistanceScoringStrategy;
+import org.vertexium.scoring.ScoringStrategy;
 import org.vertexium.search.DefaultSearchIndex;
 import org.vertexium.search.IndexHint;
 import org.vertexium.search.SearchIndex;
@@ -8476,5 +8478,48 @@ public abstract class GraphTestBase {
                 .limit((Integer) null)
                 .vertices());
         assertEquals(count, vertices.size());
+    }
+
+    @Test
+    public void testHammingDistanceScoringStrategy() {
+        graph.defineProperty("prop1")
+                .dataType(String.class)
+                .sortable(true)
+                .textIndexHint(TextIndexHint.EXACT_MATCH)
+                .define();
+
+        graph.prepareVertex("v1", VISIBILITY_A)
+                .setProperty("prop1", "0000000000000000", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.prepareVertex("v2", VISIBILITY_A)
+                .setProperty("prop1", "ffffffffffffffff", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.prepareVertex("v3", VISIBILITY_A)
+                .setProperty("prop1", "0000000000000001", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.prepareVertex("v4", VISIBILITY_A)
+                .setProperty("prop1", "3000000000000000", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        QueryResultsIterable<Vertex> vertices = graph.query(AUTHORIZATIONS_A)
+                .scoringStrategy(getHammingDistanceScoringStrategy("prop1", "0000000000000000"))
+                .vertices();
+        assumeTrue("IterableWithScores", vertices instanceof IterableWithScores);
+        IterableWithScores<Vertex> scores = (IterableWithScores<Vertex>) vertices;
+        List<Vertex> verticesList = toList(vertices);
+        assertEquals(4, verticesList.size());
+        assertEquals("v1", verticesList.get(0).getId());
+        assertEquals(64, scores.getScore("v1"), 0.0001);
+        assertEquals("v3", verticesList.get(1).getId());
+        assertEquals(63, scores.getScore("v3"), 0.0001);
+        assertEquals("v4", verticesList.get(2).getId());
+        assertEquals(62, scores.getScore("v4"), 0.0001);
+        assertEquals("v2", verticesList.get(3).getId());
+        assertEquals(0, scores.getScore("v2"), 0.0001);
+    }
+
+    protected ScoringStrategy getHammingDistanceScoringStrategy(String field, String hash) {
+        return new HammingDistanceScoringStrategy(field, hash);
     }
 }

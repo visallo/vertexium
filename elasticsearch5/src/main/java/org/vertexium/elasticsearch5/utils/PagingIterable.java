@@ -9,7 +9,6 @@ import org.vertexium.query.QueryResultsIterable;
 
 import java.io.IOException;
 import java.util.Iterator;
-import java.util.Map;
 import java.util.NoSuchElementException;
 
 public abstract class PagingIterable<T> implements
@@ -31,13 +30,13 @@ public abstract class PagingIterable<T> implements
         // This is a bit of a hack. Because the underlying iterable is the iterable with geohash results, histogram results, etc.
         //   we need to grab the first iterable to get the results out.
         long firstIterableLimit = Math.min(pageSize, this.limit);
-        this.firstIterable = getPageIterable((int) this.skip, (int)firstIterableLimit, true);
+        this.firstIterable = getPageIterable((int) this.skip, (int) firstIterableLimit, true);
         this.isFirstCallToIterator = true;
     }
 
     @Override
-    public Map<Object, Double> getScores() {
-        return this.firstIterable.getScores();
+    public Double getScore(Object id) {
+        return this.firstIterable.getScore(id);
     }
 
     @Override
@@ -113,7 +112,7 @@ public abstract class PagingIterable<T> implements
                 if (nextPageSize <= 0) {
                     return null;
                 }
-                firstIterable = getPageIterable((int)currentResultNumber, (int)nextPageSize, false);
+                firstIterable = getPageIterable((int) currentResultNumber, (int) nextPageSize, false);
             }
             Iterator<T> it = firstIterable.iterator();
             firstIterable = null;

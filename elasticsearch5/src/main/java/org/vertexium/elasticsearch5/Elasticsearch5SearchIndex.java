@@ -2226,4 +2226,12 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
         }
         return false;
     }
+
+    public String[] getPropertyNames(Graph graph, String propertyName, Authorizations authorizations) {
+        String[] allMatchingPropertyNames = getAllMatchingPropertyNames(graph, propertyName, authorizations);
+        return Arrays.stream(allMatchingPropertyNames)
+                .map(this::replaceFieldnameDots)
+                .collect(Collectors.toList())
+                .toArray(new String[allMatchingPropertyNames.length]);
+    }
 }
