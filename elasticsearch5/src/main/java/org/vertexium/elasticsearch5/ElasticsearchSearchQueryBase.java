@@ -40,7 +40,6 @@ import org.elasticsearch.search.sort.SortMode;
 import org.elasticsearch.search.sort.SortOrder;
 import org.joda.time.DateTime;
 import org.vertexium.*;
-import org.vertexium.elasticsearch5.score.ScoringStrategy;
 import org.vertexium.elasticsearch5.utils.ElasticsearchTypes;
 import org.vertexium.elasticsearch5.utils.InfiniteScrollIterable;
 import org.vertexium.elasticsearch5.utils.PagingIterable;
@@ -70,7 +69,6 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
     private final boolean evaluateQueryString;
     private final boolean evaluateSortContainers;
     private final StandardAnalyzer analyzer;
-    private final ScoringStrategy scoringStrategy;
     private final IndexSelectionStrategy indexSelectionStrategy;
     private final int pageSize;
     private final int pagingLimit;
@@ -90,7 +88,6 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
         this.evaluateHasContainers = true;
         this.evaluateSortContainers = false;
         this.pageSize = options.pageSize;
-        this.scoringStrategy = options.scoringStrategy;
         this.indexSelectionStrategy = options.indexSelectionStrategy;
         this.scrollKeepAlive = options.scrollKeepAlive;
         this.pagingLimit = options.pagingLimit;
@@ -112,7 +109,6 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
         this.evaluateHasContainers = true;
         this.evaluateSortContainers = false;
         this.pageSize = options.pageSize;
-        this.scoringStrategy = options.scoringStrategy;
         this.indexSelectionStrategy = options.indexSelectionStrategy;
         this.scrollKeepAlive = options.scrollKeepAlive;
         this.pagingLimit = options.pagingLimit;
@@ -152,7 +148,6 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
         }
         List<QueryBuilder> filters = getFilters(elementType, fetchHints);
         QueryBuilder query = createQuery(getParameters());
-        query = scoringStrategy.updateQuery(query);
 
         QueryBuilder filterBuilder = getFilterBuilder(filters);
         String[] indicesToQuery = getIndexSelectionStrategy().getIndicesToQuery(this, elementType);
@@ -1632,7 +1627,6 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
     @SuppressWarnings("unused")
     public static class Options {
         public int pageSize;
-        public ScoringStrategy scoringStrategy;
         public IndexSelectionStrategy indexSelectionStrategy;
         public TimeValue scrollKeepAlive;
         public StandardAnalyzer analyzer = new StandardAnalyzer();
@@ -1645,15 +1639,6 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
 
         public Options setPageSize(int pageSize) {
             this.pageSize = pageSize;
-            return this;
-        }
-
-        public ScoringStrategy getScoringStrategy() {
-            return scoringStrategy;
-        }
-
-        public Options setScoringStrategy(ScoringStrategy scoringStrategy) {
-            this.scoringStrategy = scoringStrategy;
             return this;
         }
 

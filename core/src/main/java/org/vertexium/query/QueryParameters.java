@@ -7,7 +7,6 @@ import org.vertexium.util.VertexiumLoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 
 public abstract class QueryParameters {
@@ -125,7 +124,7 @@ public abstract class QueryParameters {
                 ", hasContainers=" + Joiner.on(", ").join(hasContainers) +
                 ", sortContainers=" + Joiner.on(", ").join(sortContainers) +
                 ", edgeLabels=" + Joiner.on(", ").join(edgeLabels) +
-                ", ids=" + (ids == null  ? null : Joiner.on(", ").join(ids)) +
+                ", ids=" + (ids == null ? null : Joiner.on(", ").join(ids)) +
                 '}';
     }
 }
