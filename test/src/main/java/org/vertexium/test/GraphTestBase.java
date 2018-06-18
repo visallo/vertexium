@@ -7663,6 +7663,82 @@ public abstract class GraphTestBase {
                         .extendedDataRows()
         );
         assertRowIds(Lists.newArrayList("row5", "row6", "row3", "row4"), searchResultsList);
+
+        searchResultsList = toList(
+                graph.query(AUTHORIZATIONS_A)
+                        .sort(ExtendedDataRow.ELEMENT_ID, SortDirection.ASCENDING)
+                        .sort(ExtendedDataRow.ROW_ID, SortDirection.ASCENDING)
+                        .extendedDataRows()
+        );
+        assertRowIds(Lists.newArrayList("row5", "row6", "row1", "row2", "row3", "row4"), searchResultsList);
+
+        searchResultsList = toList(
+                graph.query(AUTHORIZATIONS_A)
+                        .sort(ExtendedDataRow.ELEMENT_TYPE, SortDirection.ASCENDING)
+                        .sort(ExtendedDataRow.ROW_ID, SortDirection.ASCENDING)
+                        .extendedDataRows()
+        );
+        assertRowIds(Lists.newArrayList("row5", "row6", "row1", "row2", "row3", "row4"), searchResultsList);
+    }
+
+    @Test
+    public void testExtendedDataVertexQueryAggregations() {
+        graph.prepareVertex("v1", VISIBILITY_A)
+                .addExtendedData("table1", "row1", "name", "value 1", VISIBILITY_A)
+                .addExtendedData("table1", "row2", "name", "value 2", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
+        graph.prepareVertex("v2", VISIBILITY_A)
+                .addExtendedData("table2", "row3", "name", "value 1", VISIBILITY_A)
+                .addExtendedData("table2", "row4", "name", "value 2", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
+        graph.prepareEdge("e1", "v1", "v2", LABEL_LABEL1, VISIBILITY_A)
+                .addExtendedData("table1", "row5", "name", "value 1", VISIBILITY_A)
+                .addExtendedData("table1", "row6", "name", "value 2", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
+        graph.flush();
+
+        Query q = graph.query(AUTHORIZATIONS_A)
+                .limit(0L);
+        TermsAggregation agg = new TermsAggregation("agg", ExtendedDataRow.TABLE_NAME);
+        assumeTrue("terms aggregation not supported", q.isAggregationSupported(agg));
+        q.addAggregation(agg);
+        QueryResultsIterable<ExtendedDataRow> rows = q.extendedDataRows();
+        Map<Object, Long> aggResult = termsBucketToMap(rows.getAggregationResult("agg", TermsResult.class).getBuckets());
+        assertEquals(2, aggResult.size());
+        assertEquals(4L, (long) aggResult.get("table1"));
+        assertEquals(2L, (long) aggResult.get("table2"));
+
+        q = graph.query(AUTHORIZATIONS_A)
+                .addAggregation(new TermsAggregation("agg", ExtendedDataRow.ELEMENT_ID))
+                .limit(0L);
+        rows = q.extendedDataRows();
+        aggResult = termsBucketToMap(rows.getAggregationResult("agg", TermsResult.class).getBuckets());
+        assertEquals(3, aggResult.size());
+        assertEquals(2L, (long) aggResult.get("v1"));
+        assertEquals(2L, (long) aggResult.get("v2"));
+        assertEquals(2L, (long) aggResult.get("e1"));
+
+        q = graph.query(AUTHORIZATIONS_A)
+                .addAggregation(new TermsAggregation("agg", ExtendedDataRow.ROW_ID))
+                .limit(0L);
+        rows = q.extendedDataRows();
+        aggResult = termsBucketToMap(rows.getAggregationResult("agg", TermsResult.class).getBuckets());
+        assertEquals(6, aggResult.size());
+        assertEquals(1L, (long) aggResult.get("row1"));
+        assertEquals(1L, (long) aggResult.get("row2"));
+        assertEquals(1L, (long) aggResult.get("row3"));
+        assertEquals(1L, (long) aggResult.get("row4"));
+        assertEquals(1L, (long) aggResult.get("row5"));
+        assertEquals(1L, (long) aggResult.get("row6"));
+
+        q = graph.query(AUTHORIZATIONS_A)
+                .addAggregation(new TermsAggregation("agg", ExtendedDataRow.ELEMENT_TYPE))
+                .limit(0L);
+        rows = q.extendedDataRows();
+        aggResult = termsBucketToMap(rows.getAggregationResult("agg", TermsResult.class).getBuckets());
+        assertEquals(2, aggResult.size());
+        assertEquals(4L, (long) aggResult.get(ElementType.VERTEX.name()));
+        assertEquals(2L, (long) aggResult.get(ElementType.EDGE.name()));
     }
 
     @Test

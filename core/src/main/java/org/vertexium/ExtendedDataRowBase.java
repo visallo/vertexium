@@ -12,6 +12,8 @@ public abstract class ExtendedDataRowBase implements ExtendedDataRow {
     private final FetchHints fetchHints;
     private transient Property rowIdProperty;
     private transient Property tableNameProperty;
+    private transient Property elementIdProperty;
+    private transient Property elementTypeProperty;
 
     protected ExtendedDataRowBase(FetchHints fetchHints) {
         this.fetchHints = fetchHints;
@@ -49,6 +51,10 @@ public abstract class ExtendedDataRowBase implements ExtendedDataRow {
             return getRowIdProperty();
         } else if (ExtendedDataRow.TABLE_NAME.equals(name)) {
             return getTableNameProperty();
+        } else if (ExtendedDataRow.ELEMENT_ID.equals(name)) {
+            return getElementIdProperty();
+        } else if (ExtendedDataRow.ELEMENT_TYPE.equals(name)) {
+            return getElementTypeProperty();
         }
         getFetchHints().assertPropertyIncluded(name);
         for (Property property : getProperties()) {
@@ -88,6 +94,10 @@ public abstract class ExtendedDataRowBase implements ExtendedDataRow {
             return Lists.newArrayList(getRowIdProperty());
         } else if (ExtendedDataRow.TABLE_NAME.equals(name)) {
             return Lists.newArrayList(getTableNameProperty());
+        } else if (ExtendedDataRow.ELEMENT_ID.equals(name)) {
+            return Lists.newArrayList(getElementIdProperty());
+        } else if (ExtendedDataRow.ELEMENT_TYPE.equals(name)) {
+            return Lists.newArrayList(getElementTypeProperty());
         }
 
         getFetchHints().assertPropertyIncluded(name);
@@ -119,6 +129,10 @@ public abstract class ExtendedDataRowBase implements ExtendedDataRow {
             return getRowIdProperty().getValue();
         } else if (ExtendedDataRow.TABLE_NAME.equals(name)) {
             return getTableNameProperty().getValue();
+        } else if (ExtendedDataRow.ELEMENT_ID.equals(name)) {
+            return getElementIdProperty().getValue();
+        } else if (ExtendedDataRow.ELEMENT_TYPE.equals(name)) {
+            return getElementTypeProperty().getValue();
         }
 
         Iterator<Object> values = getPropertyValues(key, name).iterator();
@@ -160,7 +174,7 @@ public abstract class ExtendedDataRowBase implements ExtendedDataRow {
         if (tableNameProperty == null) {
             tableNameProperty = new MutablePropertyImpl(
                     ElementMutation.DEFAULT_KEY,
-                    ExtendedDataRow.ROW_ID,
+                    ExtendedDataRow.TABLE_NAME,
                     getId().getTableName(),
                     null,
                     null,
@@ -170,6 +184,38 @@ public abstract class ExtendedDataRowBase implements ExtendedDataRow {
             );
         }
         return tableNameProperty;
+    }
+
+    protected Property getElementIdProperty() {
+        if (elementIdProperty == null) {
+            elementIdProperty = new MutablePropertyImpl(
+                    ElementMutation.DEFAULT_KEY,
+                    ExtendedDataRow.ELEMENT_ID,
+                    getId().getElementId(),
+                    null,
+                    null,
+                    null,
+                    null,
+                    FetchHints.ALL
+            );
+        }
+        return elementIdProperty;
+    }
+
+    protected Property getElementTypeProperty() {
+        if (elementTypeProperty == null) {
+            elementTypeProperty = new MutablePropertyImpl(
+                    ElementMutation.DEFAULT_KEY,
+                    ExtendedDataRow.ELEMENT_TYPE,
+                    getId().getElementType().name(),
+                    null,
+                    null,
+                    null,
+                    null,
+                    FetchHints.ALL
+            );
+        }
+        return elementTypeProperty;
     }
 
     @Override

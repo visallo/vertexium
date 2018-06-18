@@ -57,8 +57,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
-import static org.vertexium.elasticsearch5.Elasticsearch5SearchIndex.ELEMENT_ID_FIELD_NAME;
-import static org.vertexium.elasticsearch5.Elasticsearch5SearchIndex.HIDDEN_VERTEX_FIELD_NAME;
+import static org.vertexium.elasticsearch5.Elasticsearch5SearchIndex.*;
 import static org.vertexium.elasticsearch5.utils.SearchResponseUtils.checkForFailures;
 
 public class ElasticsearchSearchQueryBase extends QueryBase {
@@ -66,6 +65,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
     public static final VertexiumLogger QUERY_LOGGER = VertexiumLoggerFactory.getQueryLogger(Query.class);
     public static final String TOP_HITS_AGGREGATION_NAME = "__visallo_top_hits";
     public static final String KEYWORD_UNMAPPED_TYPE = "keyword";
+    public static final String AGGREGATION_METADATA_FIELD_NAME_KEY = "fieldName";
     private final Client client;
     private final boolean evaluateHasContainers;
     private final boolean evaluateQueryString;
@@ -278,13 +278,25 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
                 );
             } else if (ExtendedDataRow.TABLE_NAME.equals(sortContainer.propertyName)) {
                 q.addSort(
-                        SortBuilders.fieldSort(Elasticsearch5SearchIndex.ELEMENT_ID_FIELD_NAME)
+                        SortBuilders.fieldSort(Elasticsearch5SearchIndex.EXTENDED_DATA_TABLE_NAME_FIELD_NAME)
                                 .unmappedType(KEYWORD_UNMAPPED_TYPE)
                                 .order(esOrder)
                 );
             } else if (ExtendedDataRow.ROW_ID.equals(sortContainer.propertyName)) {
                 q.addSort(
                         SortBuilders.fieldSort(Elasticsearch5SearchIndex.EXTENDED_DATA_TABLE_ROW_ID_FIELD_NAME)
+                                .unmappedType(KEYWORD_UNMAPPED_TYPE)
+                                .order(esOrder)
+                );
+            } else if (ExtendedDataRow.ELEMENT_ID.equals(sortContainer.propertyName)) {
+                q.addSort(
+                        SortBuilders.fieldSort(Elasticsearch5SearchIndex.ELEMENT_ID_FIELD_NAME)
+                                .unmappedType(KEYWORD_UNMAPPED_TYPE)
+                                .order(esOrder)
+                );
+            } else if (ExtendedDataRow.ELEMENT_TYPE.equals(sortContainer.propertyName)) {
+                q.addSort(
+                        SortBuilders.fieldSort(Elasticsearch5SearchIndex.ELEMENT_TYPE_FIELD_NAME)
                                 .unmappedType(KEYWORD_UNMAPPED_TYPE)
                                 .order(esOrder)
                 );
@@ -1236,13 +1248,30 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
         if (Edge.LABEL_PROPERTY_NAME.equals(fieldName)
                 || Edge.OUT_VERTEX_ID_PROPERTY_NAME.equals(fieldName)
                 || Edge.IN_VERTEX_ID_PROPERTY_NAME.equals(fieldName)
-                || ExtendedDataRow.TABLE_NAME.equals(fieldName)) {
+                || ExtendedDataRow.TABLE_NAME.equals(fieldName)
+                || ExtendedDataRow.ROW_ID.equals(fieldName)
+                || ExtendedDataRow.ELEMENT_ID.equals(fieldName)
+                || ExtendedDataRow.ELEMENT_TYPE.equals(fieldName)) {
+            Map<String, Object> metadata = new HashMap<>();
+            metadata.put(AGGREGATION_METADATA_FIELD_NAME_KEY, fieldName);
+
+            if (ExtendedDataRow.ELEMENT_ID.equals(fieldName)) {
+                fieldName = ELEMENT_ID_FIELD_NAME;
+            } else if (ExtendedDataRow.ELEMENT_TYPE.equals(fieldName)) {
+                fieldName = ELEMENT_TYPE_FIELD_NAME;
+            }
             TermsAggregationBuilder termsAgg = AggregationBuilders.terms(createAggregationName(agg.getAggregationName(), "0"));
+            termsAgg.setMetaData(metadata);
             termsAgg.field(fieldName);
             if (agg.getSize() != null) {
                 termsAgg.size(agg.getSize());
             }
             termsAgg.shardSize(termAggregationShardSize);
+
+            for (AggregationBuilder subAgg : getElasticsearchAggregations(agg.getNestedAggregations())) {
+                termsAgg.subAggregation(subAgg);
+            }
+
             termsAggs.add(termsAgg);
         } else {
             PropertyDefinition propertyDefinition = getPropertyDefinition(fieldName);
