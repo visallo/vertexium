@@ -1,6 +1,7 @@
 # v4.1.2
 * Added: Per query scoring strategy
 * Added: Hamming distance query scoring strategy
+* Added: Aggregating extended data by element id and element type
 * Changed: Deprecated Elasticsearch global scoring strategy  
 
 # v4.1.1

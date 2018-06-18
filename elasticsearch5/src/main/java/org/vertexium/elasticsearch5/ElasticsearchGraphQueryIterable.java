@@ -18,6 +18,8 @@ import org.elasticsearch.search.aggregations.metrics.percentiles.Percentiles;
 import org.elasticsearch.search.aggregations.metrics.stats.extended.ExtendedStats;
 import org.elasticsearch.search.aggregations.metrics.stats.extended.InternalExtendedStats;
 import org.elasticsearch.search.aggregations.metrics.tophits.TopHits;
+import org.vertexium.ElementType;
+import org.vertexium.ExtendedDataRow;
 import org.vertexium.VertexiumException;
 import org.vertexium.query.*;
 import org.vertexium.type.GeoPoint;
@@ -231,6 +233,17 @@ public class ElasticsearchGraphQueryIterable<T> extends DefaultGraphQueryIterabl
                 for (Terms.Bucket b : h.getBuckets()) {
                     TopHits exactMatchTopHits = b.getAggregations().get(ElasticsearchSearchQueryBase.TOP_HITS_AGGREGATION_NAME);
                     String mapKey = bucketKeyToString(b.getKey(), exactMatchTopHits);
+                    Map<String, Object> metadata = agg.getMetaData();
+                    if (metadata != null) {
+                        Object fieldName = metadata.get(ElasticsearchSearchQueryBase.AGGREGATION_METADATA_FIELD_NAME_KEY);
+                        if (ExtendedDataRow.ELEMENT_TYPE.equals(fieldName)) {
+                            if (ElasticsearchDocumentType.VERTEX_EXTENDED_DATA.getKey().equals(mapKey)) {
+                                mapKey = ElementType.VERTEX.name();
+                            } else if (ElasticsearchDocumentType.EDGE_EXTENDED_DATA.getKey().equals(mapKey)) {
+                                mapKey = ElementType.EDGE.name();
+                            }
+                        }
+                    }
                     List<MultiBucketsAggregation.Bucket> existingBucketByName = bucketsByKey.computeIfAbsent(mapKey, k -> new ArrayList<>());
                     existingBucketByName.add(b);
                 }
