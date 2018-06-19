@@ -53,6 +53,7 @@ public class AccumuloGraphConfiguration extends GraphConfiguration {
     public static final String NUMBER_OF_QUERY_THREADS = "numberOfQueryThreads";
     public static final String HDFS_CONTEXT_CLASSPATH = "hdfsContextClasspath";
     public static final String STREAMING_PROPERTY_VALUE_STORAGE_STRATEGY_PREFIX = "streamingPropertyValueStorageStrategy";
+    public static final String CLIENT_CONFIGURATION_PROPERTY_CONFIG_PREFIX = "clientConfiguration.";
 
     public static final String DEFAULT_ACCUMULO_PASSWORD = "password";
     public static final String DEFAULT_ACCUMULO_USERNAME = "root";
@@ -115,10 +116,31 @@ public class AccumuloGraphConfiguration extends GraphConfiguration {
         }
     }
 
+    @SuppressWarnings("unchecked")
     public ClientConfiguration getClientConfiguration() {
-        return new ClientConfiguration(new ArrayList<>())
+        ClientConfiguration config = new ClientConfiguration(new ArrayList<>())
                 .withInstance(this.getAccumuloInstanceName())
                 .withZkHosts(this.getZookeeperServers());
+        for (Map.Entry<String, String> entry : getClientConfigurationProperties().entrySet()) {
+            config.setProperty(entry.getKey(), entry.getValue());
+        }
+        return config;
+    }
+
+    public Map<String, String> getClientConfigurationProperties() {
+        Map<String, String> results = new HashMap<>();
+        for (Object o : getConfig().entrySet()) {
+            Map.Entry mapEntry = (Map.Entry) o;
+            if (!(mapEntry.getKey() instanceof String) || !(mapEntry.getValue() instanceof String)) {
+                continue;
+            }
+            String key = (String) mapEntry.getKey();
+            if (key.startsWith(CLIENT_CONFIGURATION_PROPERTY_CONFIG_PREFIX)) {
+                String configName = key.substring(CLIENT_CONFIGURATION_PROPERTY_CONFIG_PREFIX.length());
+                results.put(configName, (String) mapEntry.getValue());
+            }
+        }
+        return results;
     }
 
     public FileSystem createFileSystem() throws URISyntaxException, IOException, InterruptedException {
