@@ -1,3 +1,6 @@
+# v4.1.3
+* Added: Query not equals element id
+
 # v4.1.2
 * Added: Per query scoring strategy
 * Added: Hamming distance query scoring strategy

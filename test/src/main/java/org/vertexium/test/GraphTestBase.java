@@ -2735,6 +2735,11 @@ public abstract class GraphTestBase {
         Assert.assertEquals(1, count(vertices));
 
         vertices = graph.query(AUTHORIZATIONS_A)
+                .has(Element.ID_PROPERTY_NAME, Compare.NOT_EQUAL, "v1")
+                .vertices();
+        assertElementIds(vertices, "v2");
+
+        vertices = graph.query(AUTHORIZATIONS_A)
                 .has("lastAccessed", Compare.EQUAL, new DateOnly(2014, 2, 24))
                 .vertices();
         Assert.assertEquals(1, count(vertices));
