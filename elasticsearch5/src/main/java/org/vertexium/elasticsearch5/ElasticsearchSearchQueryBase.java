@@ -937,7 +937,9 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
 
         List<QueryBuilder> filters = new ArrayList<>();
         for (String propertyName : propertyNames) {
-            if (Edge.LABEL_PROPERTY_NAME.equals(propertyName)) {
+            if (Element.ID_PROPERTY_NAME.equals(propertyName)) {
+                propertyName = Elasticsearch5SearchIndex.ELEMENT_ID_FIELD_NAME;
+            } else if (Edge.LABEL_PROPERTY_NAME.equals(propertyName)) {
                 propertyName = Elasticsearch5SearchIndex.EDGE_LABEL_FIELD_NAME;
             } else if (Edge.OUT_VERTEX_ID_PROPERTY_NAME.equals(propertyName)) {
                 propertyName = Elasticsearch5SearchIndex.OUT_VERTEX_ID_FIELD_NAME;
@@ -979,7 +981,9 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
 
         List<QueryBuilder> filters = new ArrayList<>();
         for (String propertyName : propertyNames) {
-            if (Edge.LABEL_PROPERTY_NAME.equals(propertyName)) {
+            if (Element.ID_PROPERTY_NAME.equals(propertyName)) {
+                propertyName = Elasticsearch5SearchIndex.ELEMENT_ID_FIELD_NAME;
+            } else if (Edge.LABEL_PROPERTY_NAME.equals(propertyName)) {
                 propertyName = Elasticsearch5SearchIndex.EDGE_LABEL_FIELD_NAME;
             } else if (Edge.OUT_VERTEX_ID_PROPERTY_NAME.equals(propertyName)) {
                 propertyName = Elasticsearch5SearchIndex.OUT_VERTEX_ID_FIELD_NAME;
