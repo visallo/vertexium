@@ -941,6 +941,37 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    public void testReAddingSoftDeletedEdge() {
+        Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
+        Vertex v2 = graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.addEdge("e1", v1, v2, LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.flush();
+
+        Edge e1 = graph.getEdge("e1", AUTHORIZATIONS_A);
+        graph.softDeleteEdge(e1, AUTHORIZATIONS_A);
+        graph.flush();
+
+
+        graph.prepareEdge("e1", v1, v2, LABEL_LABEL1, VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
+        graph.flush();
+
+        e1 = graph.getEdge("e1", AUTHORIZATIONS_A);
+        assertNotNull(e1);
+        assertEquals(VISIBILITY_A.getVisibilityString(), e1.getVisibility().getVisibilityString());
+
+        v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
+        assertEquals(1, count(v1.getEdgeIds(Direction.BOTH, AUTHORIZATIONS_A)));
+        assertEquals(1, count(v1.getEdges(Direction.BOTH, AUTHORIZATIONS_A)));
+        assertEquals(1, count(v1.getVertexIds(Direction.BOTH, AUTHORIZATIONS_A)));
+
+        v2 = graph.getVertex("v2", AUTHORIZATIONS_A);
+        assertEquals(1, count(v2.getEdgeIds(Direction.BOTH, AUTHORIZATIONS_A)));
+        assertEquals(1, count(v2.getEdges(Direction.BOTH, AUTHORIZATIONS_A)));
+        assertEquals(1, count(v2.getVertexIds(Direction.BOTH, AUTHORIZATIONS_A)));
+    }
+
+    @Test
     public void testSoftDeleteProperty() throws InterruptedException {
         graph.prepareVertex("v1", VISIBILITY_A)
                 .addPropertyValue("key1", "name1", "value1", VISIBILITY_A)
@@ -4744,6 +4775,32 @@ public abstract class GraphTestBase {
 
         relatedEdges = toList(graph.findRelatedEdgeSummary(vertexIds, AUTHORIZATIONS_A));
         assertEquals(0, relatedEdges.size());
+    }
+
+    @Test
+    public void testFindRelatedEdgeSummaryAfterSoftDeleteAndReAdd() {
+        Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
+        Vertex v2 = graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_A);
+        Edge e1 = graph.addEdge("e v1->v2", v1, v2, LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.flush();
+
+        List<String> vertexIds = new ArrayList<>();
+        vertexIds.add("v1");
+        vertexIds.add("v2");
+        List<RelatedEdge> relatedEdges = toList(graph.findRelatedEdgeSummary(vertexIds, AUTHORIZATIONS_A));
+        assertEquals(1, relatedEdges.size());
+        org.vertexium.test.util.IterableUtils.assertContains(new RelatedEdgeImpl("e v1->v2", LABEL_LABEL1, v1.getId(), v2.getId()), relatedEdges);
+
+        graph.softDeleteEdge(e1, AUTHORIZATIONS_A);
+        graph.flush();
+
+        graph.prepareEdge("e v1->v2", v1, v2, LABEL_LABEL1, VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
+        graph.flush();
+
+        relatedEdges = toList(graph.findRelatedEdgeSummary(vertexIds, AUTHORIZATIONS_A));
+        assertEquals(1, relatedEdges.size());
+        org.vertexium.test.util.IterableUtils.assertContains(new RelatedEdgeImpl("e v1->v2", LABEL_LABEL1, v1.getId(), v2.getId()), relatedEdges);
     }
 
     @Test

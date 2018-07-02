@@ -2302,27 +2302,35 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             final long timerStartTime = System.currentTimeMillis();
             try {
                 List<RelatedEdge> results = new ArrayList<>();
-                List<String> softDeletedEdgeIds = new ArrayList<>();
+                Map<String, Long> edgeAddTimestamps = new HashMap<>();
+                Map<String, Long> edgeHideOrDeleteTimestamps = new HashMap<>();
                 for (Map.Entry<Key, Value> row : scanner) {
                     Text columnFamily = row.getKey().getColumnFamily();
+                    Long timestamp = row.getKey().getTimestamp();
                     if (!columnFamily.equals(AccumuloVertex.CF_OUT_EDGE)) {
                         if (columnFamily.equals(AccumuloVertex.CF_OUT_EDGE_SOFT_DELETE) || columnFamily.equals(AccumuloVertex.CF_OUT_EDGE_HIDDEN)) {
-                            softDeletedEdgeIds.add(row.getKey().getColumnQualifier().toString());
-                            results.removeIf(relatedEdge -> softDeletedEdgeIds.contains(relatedEdge.getEdgeId()));
+                            String edgeId = row.getKey().getColumnQualifier().toString();
+                            edgeHideOrDeleteTimestamps.merge(edgeId, timestamp, Math::max);
                         }
                         continue;
                     }
+
                     org.vertexium.accumulo.iterator.model.EdgeInfo edgeInfo
                             = new EdgeInfo(row.getValue().get(), row.getKey().getTimestamp());
                     String edgeId = row.getKey().getColumnQualifier().toString();
                     String outVertexId = row.getKey().getRow().toString();
                     String inVertexId = edgeInfo.getVertexId();
                     String label = getNameSubstitutionStrategy().inflate(edgeInfo.getLabel());
-                    if (!softDeletedEdgeIds.contains(edgeId)) {
-                        results.add(new RelatedEdgeImpl(edgeId, label, outVertexId, inVertexId));
-                    }
+
+                    edgeAddTimestamps.merge(edgeId, timestamp, Math::max);
+
+                    results.add(new RelatedEdgeImpl(edgeId, label, outVertexId, inVertexId));
                 }
-                return results;
+                return results.stream().filter(relatedEdge -> {
+                    Long edgeAddedTime = edgeAddTimestamps.get(relatedEdge.getEdgeId());
+                    Long edgeDeletedOrHiddenTime = edgeHideOrDeleteTimestamps.get(relatedEdge.getEdgeId());
+                    return edgeDeletedOrHiddenTime == null || edgeAddedTime > edgeDeletedOrHiddenTime;
+                }).collect(Collectors.toList());
             } finally {
                 scanner.close();
                 GRAPH_LOGGER.logEndIterator(System.currentTimeMillis() - timerStartTime);
