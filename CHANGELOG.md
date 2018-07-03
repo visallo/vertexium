@@ -1,4 +1,5 @@
 # v4.1.1.1
+* Fixed: `graph.findRelatedEdgeSummary` filtering edges that were re-added after soft delete/hidden
 
 # v4.1.1
 * Added: Search configuration parameter `search.splitEdgesAndVertices`. The default value is `false`. If set to `true`, edges and vertices will be stored in separate search indices.
