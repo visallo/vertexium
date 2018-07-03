@@ -9,6 +9,9 @@
 * Added: Accumulo additional client configuration options (config parameter `clientConfiguration.xxx=<value>`)
 * Changed: Deprecated Elasticsearch global scoring strategy  
 
+# v4.1.1.1
+* Fixed: `graph.findRelatedEdgeSummary` filtering edges that were re-added after soft delete/hidden
+
 # v4.1.1
 * Added: Search configuration parameter `search.splitEdgesAndVertices`. The default value is `false`. If set to `true`, edges and vertices will be stored in separate search indices.
 * Added: Option to Elasticsearch index to log large document (search.logRequestSizeLimit)
