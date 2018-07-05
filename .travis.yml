@@ -12,6 +12,7 @@ branches:
   only:
     - master
     - 2.5.x
+    - 4.1.1.x
 addons:
   apt:
     packages:
