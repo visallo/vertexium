@@ -67,9 +67,6 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
     public static final String KEYWORD_UNMAPPED_TYPE = "keyword";
     public static final String AGGREGATION_METADATA_FIELD_NAME_KEY = "fieldName";
     private final Client client;
-    private final boolean evaluateHasContainers;
-    private final boolean evaluateQueryString;
-    private final boolean evaluateSortContainers;
     private final StandardAnalyzer analyzer;
     private final IndexSelectionStrategy indexSelectionStrategy;
     private final int pageSize;
@@ -88,9 +85,6 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
     ) {
         super(graph, queryString, authorizations);
         this.client = client;
-        this.evaluateQueryString = false;
-        this.evaluateHasContainers = true;
-        this.evaluateSortContainers = false;
         this.queryString = queryString;
         this.pageSize = options.pageSize;
         this.indexSelectionStrategy = options.indexSelectionStrategy;
@@ -111,9 +105,6 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
     ) {
         super(graph, similarToFields, similarToText, authorizations);
         this.client = client;
-        this.evaluateQueryString = false;
-        this.evaluateHasContainers = true;
-        this.evaluateSortContainers = false;
         this.queryString = null;
         this.pageSize = options.pageSize;
         this.indexSelectionStrategy = options.indexSelectionStrategy;
@@ -172,6 +163,9 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
                         Elasticsearch5SearchIndex.EXTENDED_DATA_TABLE_NAME_FIELD_NAME,
                         Elasticsearch5SearchIndex.EXTENDED_DATA_TABLE_ROW_ID_FIELD_NAME
                 );
+        if (getParameters().getMinScore() != null) {
+            searchRequestBuilder.setMinScore(getParameters().getMinScore().floatValue());
+        }
         if (includeAggregations) {
             List<AggregationBuilder> aggs = getElasticsearchAggregations(getAggregations());
             for (AggregationBuilder aggregationBuilder : aggs) {
@@ -463,10 +457,10 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
             items.add(extendedDataRows);
         }
         Iterable<VertexiumObject> vertexiumObjects = new JoinIterable<>(items);
-        vertexiumObjects = sortVertexiumObjectsByResultOrder(vertexiumObjects, ids.getIds());
+        List<VertexiumObject> sortedVertexiumObjects = sortVertexiumObjectsByResultOrder(vertexiumObjects, ids.getIds());
 
         // TODO instead of passing false here to not evaluate the query string it would be better to support the Lucene query
-        return createIterable(response, filterParameters, vertexiumObjects, evaluateQueryString, false, evaluateSortContainers, response.getTookInMillis(), hits);
+        return createIterable(response, filterParameters, sortedVertexiumObjects, response.getTookInMillis(), hits);
     }
 
     private QueryResultsIterable<SearchHit> searchHits(EnumSet<VertexiumObjectType> objectTypes, FetchHints fetchHints) {
@@ -514,7 +508,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
         SearchHits hits = response.getHits();
         QueryParameters filterParameters = getParameters().clone();
         Iterable<SearchHit> hitsIterable = IterableUtils.toIterable(hits.getHits());
-        return createIterable(response, filterParameters, hitsIterable, false, false, false, response.getTookInMillis(), hits);
+        return createIterable(response, filterParameters, hitsIterable, response.getTookInMillis(), hits);
     }
 
     @Override
@@ -541,7 +535,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
         return new ElasticsearchGraphQueryIdIterable<>(getIdStrategy(), searchHits(VertexiumObjectType.ELEMENTS, fetchHints));
     }
 
-    private <T extends VertexiumObject> Iterable<T> sortVertexiumObjectsByResultOrder(Iterable<T> vertexiumObjects, List<String> ids) {
+    private <T extends VertexiumObject> List<T> sortVertexiumObjectsByResultOrder(Iterable<T> vertexiumObjects, List<String> ids) {
         ImmutableMap<String, T> itemMap = Maps.uniqueIndex(vertexiumObjects, vertexiumObject -> {
             if (vertexiumObject instanceof Element) {
                 return ((Element) vertexiumObject).getId();
@@ -570,9 +564,6 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
             SearchResponse response,
             QueryParameters filterParameters,
             Iterable<T> vertexiumObjects,
-            boolean evaluateQueryString,
-            boolean evaluateHasContainers,
-            boolean evaluateSortContainers,
             long searchTimeInMillis,
             SearchHits hits
     ) {
@@ -581,9 +572,6 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
                 response,
                 filterParameters,
                 vertexiumObjects,
-                evaluateQueryString,
-                evaluateHasContainers,
-                evaluateSortContainers,
                 hits.getTotalHits(),
                 searchTimeInMillis * 1000000,
                 hits
@@ -1598,9 +1586,6 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
     public String toString() {
         return this.getClass().getName() + "{" +
                 "parameters=" + getParameters() +
-                ", evaluateHasContainers=" + evaluateHasContainers +
-                ", evaluateQueryString=" + evaluateQueryString +
-                ", evaluateSortContainers=" + evaluateSortContainers +
                 ", pageSize=" + pageSize +
                 '}';
     }

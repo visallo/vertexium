@@ -28,7 +28,6 @@ import org.vertexium.util.StreamUtils;
 
 import java.util.*;
 
-@SuppressWarnings("deprecation")
 public class ElasticsearchGraphQueryIterable<T> extends DefaultGraphQueryIterable<T> implements
         IterableWithTotalHits<T>,
         IterableWithSearchTime<T>,
@@ -43,14 +42,11 @@ public class ElasticsearchGraphQueryIterable<T> extends DefaultGraphQueryIterabl
             SearchResponse searchResponse,
             QueryParameters parameters,
             Iterable<T> iterable,
-            boolean evaluateQueryString,
-            boolean evaluateHasContainers,
-            boolean evaluateSortContainers,
             long totalHits,
             long searchTimeInNanoSeconds,
             SearchHits hits
     ) {
-        super(parameters, iterable, evaluateQueryString, evaluateHasContainers, evaluateSortContainers);
+        super(parameters, iterable, false, false, false);
         this.totalHits = totalHits;
         this.searchTimeInNanoSeconds = searchTimeInNanoSeconds;
         if (hits != null) {

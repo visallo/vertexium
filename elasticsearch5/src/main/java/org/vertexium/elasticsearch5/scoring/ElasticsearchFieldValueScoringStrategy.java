@@ -9,21 +9,21 @@ import org.vertexium.Graph;
 import org.vertexium.VertexiumException;
 import org.vertexium.elasticsearch5.Elasticsearch5SearchIndex;
 import org.vertexium.query.QueryParameters;
-import org.vertexium.scoring.HammingDistanceScoringStrategy;
+import org.vertexium.scoring.FieldValueScoringStrategy;
 import org.vertexium.util.IOUtils;
 
 import java.util.HashMap;
 import java.util.List;
 
-public class ElasticsearchHammingDistanceScoringStrategy
-        extends HammingDistanceScoringStrategy
+public class ElasticsearchFieldValueScoringStrategy
+        extends FieldValueScoringStrategy
         implements ElasticsearchScoringStrategy {
     private final String scriptSrc;
 
-    public ElasticsearchHammingDistanceScoringStrategy(String field, String hash) {
-        super(field, hash);
+    public ElasticsearchFieldValueScoringStrategy(String field) {
+        super(field);
         try {
-            scriptSrc = IOUtils.toString(getClass().getResourceAsStream("hamming-distance.painless"));
+            scriptSrc = IOUtils.toString(getClass().getResourceAsStream("field-value.painless"));
         } catch (Exception ex) {
             throw new VertexiumException("Could not load painless script", ex);
         }
@@ -42,7 +42,6 @@ public class ElasticsearchHammingDistanceScoringStrategy
         }
 
         HashMap<String, Object> scriptParams = new HashMap<>();
-        scriptParams.put("hash", getHash());
         scriptParams.put("fieldNames", fieldNames);
         Script script = new Script(ScriptType.INLINE, "painless", scriptSrc, scriptParams);
         return QueryBuilders.functionScoreQuery(query, new ScriptScoreFunctionBuilder(script));

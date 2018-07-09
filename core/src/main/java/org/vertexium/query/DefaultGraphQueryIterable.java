@@ -2,6 +2,7 @@ package org.vertexium.query;
 
 import org.vertexium.*;
 import org.vertexium.property.StreamingPropertyValue;
+import org.vertexium.scoring.ScoringStrategy;
 import org.vertexium.util.CloseableIterator;
 import org.vertexium.util.CloseableUtils;
 
@@ -15,7 +16,8 @@ import static org.vertexium.util.Preconditions.checkNotNull;
 
 public class DefaultGraphQueryIterable<T> implements
         Iterable<T>,
-        QueryResultsIterable<T> {
+        QueryResultsIterable<T>,
+        IterableWithScores<T> {
     private final QueryParameters parameters;
     private final Iterable<T> iterable;
     private final boolean evaluateQueryString;
@@ -33,13 +35,21 @@ public class DefaultGraphQueryIterable<T> implements
         this.evaluateQueryString = evaluateQueryString;
         this.evaluateHasContainers = evaluateHasContainers;
         if (evaluateSortContainers && this.parameters.getSortContainers().size() > 0) {
-            this.iterable = sort(iterable, parameters.getSortContainers());
+            this.iterable = sortUsingSortContainers(iterable, parameters.getSortContainers());
+        } else if (evaluateHasContainers && this.parameters.getScoringStrategy() != null) {
+            this.iterable = sortUsingScoringStrategy(iterable, parameters.getScoringStrategy());
         } else {
             this.iterable = iterable;
         }
     }
 
-    private Iterable<T> sort(Iterable<T> iterable, List<QueryBase.SortContainer> sortContainers) {
+    private Iterable<T> sortUsingScoringStrategy(Iterable<T> iterable, ScoringStrategy scoringStrategy) {
+        List<T> list = toList(iterable);
+        list.sort(new ScoringStrategyComparator<>(scoringStrategy));
+        return list;
+    }
+
+    private List<T> sortUsingSortContainers(Iterable<T> iterable, List<QueryBase.SortContainer> sortContainers) {
         List<T> list = toList(iterable);
         list.sort(new SortContainersComparator<>(sortContainers));
         return list;
@@ -129,6 +139,19 @@ public class DefaultGraphQueryIterable<T> implements
                                 throw new VertexiumException("Unhandled element type: " + vertexiumElem.getClass().getName());
                             }
                         }
+
+                        if (parameters.getMinScore() != null) {
+                            if (parameters.getScoringStrategy() == null) {
+                                match = false;
+                            } else {
+                                Double elementScore = parameters.getScoringStrategy().getScore(vertexiumElem);
+                                if (elementScore == null) {
+                                    match = false;
+                                } else {
+                                    match = elementScore >= parameters.getMinScore();
+                                }
+                            }
+                        }
                     }
                     if (!match) {
                         continue;
@@ -210,5 +233,30 @@ public class DefaultGraphQueryIterable<T> implements
     @Override
     public <TResult extends AggregationResult> TResult getAggregationResult(String name, Class<? extends TResult> resultType) {
         throw new VertexiumException("Could not find aggregation with name: " + name);
+    }
+
+    @Override
+    public Double getScore(Object id) {
+        if (parameters.getScoringStrategy() != null) {
+            VertexiumObject vertexiumObject = findVertexiumObjectById(id);
+            if (vertexiumObject != null) {
+                return parameters.getScoringStrategy().getScore(vertexiumObject);
+            }
+        }
+        return 0.0;
+    }
+
+    private VertexiumObject findVertexiumObjectById(Object id) {
+        Iterator<T> it = iterator(true);
+        while (it.hasNext()) {
+            T obj = it.next();
+            if (obj instanceof VertexiumObject) {
+                VertexiumObject vertexiumObject = (VertexiumObject) obj;
+                if (vertexiumObject.getId().equals(id)) {
+                    return vertexiumObject;
+                }
+            }
+        }
+        return null;
     }
 }

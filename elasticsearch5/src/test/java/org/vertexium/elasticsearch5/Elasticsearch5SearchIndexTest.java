@@ -11,6 +11,7 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.vertexium.*;
+import org.vertexium.elasticsearch5.scoring.ElasticsearchFieldValueScoringStrategy;
 import org.vertexium.elasticsearch5.scoring.ElasticsearchHammingDistanceScoringStrategy;
 import org.vertexium.inmemory.InMemoryAuthorizations;
 import org.vertexium.inmemory.InMemoryGraph;
@@ -202,5 +203,10 @@ public class Elasticsearch5SearchIndexTest extends GraphTestBase {
     @Override
     protected ScoringStrategy getHammingDistanceScoringStrategy(String field, String hash) {
         return new ElasticsearchHammingDistanceScoringStrategy(field, hash);
+    }
+
+    @Override
+    protected ScoringStrategy getFieldValueScoringStrategy(String field) {
+        return new ElasticsearchFieldValueScoringStrategy(field);
     }
 }

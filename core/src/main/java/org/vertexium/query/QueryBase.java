@@ -381,6 +381,12 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
     }
 
     @Override
+    public Query minScore(double score) {
+        this.parameters.setMinScore(score);
+        return this;
+    }
+
+    @Override
     public Query scoringStrategy(ScoringStrategy scoringStrategy) {
         this.parameters.setScoringStrategy(scoringStrategy);
         return this;

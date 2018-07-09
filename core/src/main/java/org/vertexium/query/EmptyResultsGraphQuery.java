@@ -244,6 +244,11 @@ public class EmptyResultsGraphQuery implements Query {
     }
 
     @Override
+    public Query minScore(double score) {
+        return this;
+    }
+
+    @Override
     public Query scoringStrategy(ScoringStrategy scoringStrategy) {
         return this;
     }
