@@ -159,6 +159,28 @@ public class Elasticsearch5SearchIndexTest extends GraphTestBase {
         }
     }
 
+    @Test
+    public void testLimitingNumberOfQueryStringTerms() {
+        graph.prepareVertex("v1", VISIBILITY_A).setProperty("prop1", "value1", VISIBILITY_A).save(AUTHORIZATIONS_A);
+        graph.flush();
+
+        StringBuilder q = new StringBuilder();
+        for (int i = 0; i < getSearchIndex().getConfig().getMaxQueryStringTerms(); i++) {
+            q.append("jeff").append(i).append(" ");
+        }
+
+        // should succeed
+        graph.query(q.toString(), AUTHORIZATIONS_A).search().getTotalHits();
+
+        try {
+            q.append("done");
+            graph.query(q.toString(), AUTHORIZATIONS_A).search().getTotalHits();
+            fail("Exceeding max query terms should have thrown an exception");
+        } catch (VertexiumException e) {
+            // expected
+        }
+    }
+
     private long getNumQueries() {
         Client client = elasticsearchResource.getRunner().client();
         NodesStatsResponse nodeStats = NodesStatsAction.INSTANCE.newRequestBuilder(client).get();
