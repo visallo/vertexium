@@ -371,13 +371,14 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
         if (queryString == null || queryString.length() <= maxQueryStringTerms) {
             return;
         }
-        
+
         try {
             try (TokenStream tokens = analyzer.tokenStream("", queryString)) {
                 tokens.reset();
                 int tokenCount = 0;
                 while (tokens.incrementToken()) {
                     if (++tokenCount > maxQueryStringTerms) {
+                        tokens.end();
                         throw new VertexiumException("Exceeded maximum query string terms of " + maxQueryStringTerms);
                     }
                 }
