@@ -57,6 +57,8 @@ public class ElasticsearchSearchIndexConfiguration {
     public static final String GEOSHAPE_ERROR_PCT_DEFAULT = "0.001";
     public static final String LOG_REQUEST_SIZE_LIMIT = "logRequestSizeLimit";
     public static final Integer LOG_REQUEST_SIZE_LIMIT_DEFAULT = null;
+    public static final String MAX_QUERY_STRING_TERMS = "maxQueryStringTerms";
+    public static final int MAX_QUERY_STRING_TERMS_DEFAULT = 100;
 
     private GraphConfiguration graphConfiguration;
     private IndexSelectionStrategy indexSelectionStrategy;
@@ -237,5 +239,9 @@ public class ElasticsearchSearchIndexConfiguration {
 
     public Integer getLogRequestSizeLimit() {
         return graphConfiguration.getInteger(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + LOG_REQUEST_SIZE_LIMIT, LOG_REQUEST_SIZE_LIMIT_DEFAULT);
+    }
+
+    public int getMaxQueryStringTerms() {
+        return graphConfiguration.getInt(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + MAX_QUERY_STRING_TERMS, MAX_QUERY_STRING_TERMS_DEFAULT);
     }
 }

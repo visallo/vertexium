@@ -76,6 +76,8 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
     private final int pagingLimit;
     private final TimeValue scrollKeepAlive;
     private final int termAggregationShardSize;
+    private final int maxQueryStringTerms;
+    private final String queryString;
 
     public ElasticsearchSearchQueryBase(
             Client client,
@@ -89,12 +91,14 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
         this.evaluateQueryString = false;
         this.evaluateHasContainers = true;
         this.evaluateSortContainers = false;
+        this.queryString = queryString;
         this.pageSize = options.pageSize;
         this.indexSelectionStrategy = options.indexSelectionStrategy;
         this.scrollKeepAlive = options.scrollKeepAlive;
         this.pagingLimit = options.pagingLimit;
         this.analyzer = options.analyzer;
         this.termAggregationShardSize = options.termAggregationShardSize;
+        this.maxQueryStringTerms = options.maxQueryStringTerms;
     }
 
     public ElasticsearchSearchQueryBase(
@@ -110,12 +114,14 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
         this.evaluateQueryString = false;
         this.evaluateHasContainers = true;
         this.evaluateSortContainers = false;
+        this.queryString = null;
         this.pageSize = options.pageSize;
         this.indexSelectionStrategy = options.indexSelectionStrategy;
         this.scrollKeepAlive = options.scrollKeepAlive;
         this.pagingLimit = options.pagingLimit;
         this.analyzer = options.analyzer;
         this.termAggregationShardSize = options.termAggregationShardSize;
+        this.maxQueryStringTerms = options.maxQueryStringTerms;
     }
 
     @Override
@@ -354,10 +360,32 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
 
     @Override
     public QueryResultsIterable<? extends VertexiumObject> search(EnumSet<VertexiumObjectType> objectTypes, FetchHints fetchHints) {
+        validateQueryString();
         if (shouldUseScrollApi()) {
             return searchScroll(objectTypes, fetchHints);
         }
         return searchPaged(objectTypes, fetchHints);
+    }
+
+    private void validateQueryString() {
+        if (queryString == null || queryString.length() <= maxQueryStringTerms) {
+            return;
+        }
+        
+        try {
+            try (TokenStream tokens = analyzer.tokenStream("", queryString)) {
+                tokens.reset();
+                int tokenCount = 0;
+                while (tokens.incrementToken()) {
+                    if (++tokenCount > maxQueryStringTerms) {
+                        throw new VertexiumException("Exceeded maximum query string terms of " + maxQueryStringTerms);
+                    }
+                }
+                tokens.end();
+            }
+        } catch (IOException e) {
+            throw new VertexiumException("Failed to count number of query string terms", e);
+        }
     }
 
     private QueryResultsIterable<? extends VertexiumObject> searchScroll(EnumSet<VertexiumObjectType> objectTypes, FetchHints fetchHints) {
@@ -1686,6 +1714,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
         public StandardAnalyzer analyzer = new StandardAnalyzer();
         public int pagingLimit;
         public int termAggregationShardSize;
+        public int maxQueryStringTerms;
 
         public int getPageSize() {
             return pageSize;
@@ -1738,6 +1767,15 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
 
         public Options setTermAggregationShardSize(int termAggregationShardSize) {
             this.termAggregationShardSize = termAggregationShardSize;
+            return this;
+        }
+
+        public int getMaxQueryStringTerms() {
+            return maxQueryStringTerms;
+        }
+
+        public Options setMaxQueryStringTerms(int maxQueryStringTerms) {
+            this.maxQueryStringTerms = maxQueryStringTerms;
             return this;
         }
     }

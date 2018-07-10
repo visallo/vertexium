@@ -1277,7 +1277,8 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
                         .setPageSize(getConfig().getQueryPageSize())
                         .setPagingLimit(getConfig().getPagingLimit())
                         .setScrollKeepAlive(getConfig().getScrollKeepAlive())
-                        .setTermAggregationShardSize(getConfig().getTermAggregationShardSize()),
+                        .setTermAggregationShardSize(getConfig().getTermAggregationShardSize())
+                        .setMaxQueryStringTerms(getConfig().getMaxQueryStringTerms()),
                 authorizations
         );
     }
@@ -1294,7 +1295,8 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
                         .setPageSize(getConfig().getQueryPageSize())
                         .setPagingLimit(getConfig().getPagingLimit())
                         .setScrollKeepAlive(getConfig().getScrollKeepAlive())
-                        .setTermAggregationShardSize(getConfig().getTermAggregationShardSize()),
+                        .setTermAggregationShardSize(getConfig().getTermAggregationShardSize())
+                        .setMaxQueryStringTerms(getConfig().getMaxQueryStringTerms()),
                 authorizations
         );
     }
@@ -1312,7 +1314,8 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
                         .setPageSize(getConfig().getQueryPageSize())
                         .setPagingLimit(getConfig().getPagingLimit())
                         .setScrollKeepAlive(getConfig().getScrollKeepAlive())
-                        .setTermAggregationShardSize(getConfig().getTermAggregationShardSize()),
+                        .setTermAggregationShardSize(getConfig().getTermAggregationShardSize())
+                        .setMaxQueryStringTerms(getConfig().getMaxQueryStringTerms()),
                 authorizations
         );
     }
@@ -1329,7 +1332,9 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
                         .setPageSize(getConfig().getQueryPageSize())
                         .setPagingLimit(getConfig().getPagingLimit())
                         .setScrollKeepAlive(getConfig().getScrollKeepAlive())
-                        .setTermAggregationShardSize(getConfig().getTermAggregationShardSize()),
+                        .setTermAggregationShardSize(getConfig().getTermAggregationShardSize())
+                        .setMaxQueryStringTerms(getConfig().getMaxQueryStringTerms())
+                        .setMaxQueryStringTerms(getConfig().getMaxQueryStringTerms()),
                 authorizations
         );
     }
@@ -1764,7 +1769,8 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
                         .setPageSize(getConfig().getQueryPageSize())
                         .setPagingLimit(getConfig().getPagingLimit())
                         .setScrollKeepAlive(getConfig().getScrollKeepAlive())
-                        .setTermAggregationShardSize(getConfig().getTermAggregationShardSize()),
+                        .setTermAggregationShardSize(getConfig().getTermAggregationShardSize())
+                        .setMaxQueryStringTerms(getConfig().getMaxQueryStringTerms()),
                 authorizations
         );
 
