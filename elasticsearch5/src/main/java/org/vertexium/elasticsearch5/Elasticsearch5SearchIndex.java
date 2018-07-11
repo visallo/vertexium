@@ -1333,7 +1333,6 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
                         .setPagingLimit(getConfig().getPagingLimit())
                         .setScrollKeepAlive(getConfig().getScrollKeepAlive())
                         .setTermAggregationShardSize(getConfig().getTermAggregationShardSize())
-                        .setMaxQueryStringTerms(getConfig().getMaxQueryStringTerms())
                         .setMaxQueryStringTerms(getConfig().getMaxQueryStringTerms()),
                 authorizations
         );
