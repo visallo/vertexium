@@ -1,5 +1,7 @@
 # v4.1.3
 * Added: Query not equals element id
+* Added: Query limit by minimum score
+* Added: Field value scoring strategy
 
 # v4.1.2
 * Added: Per query scoring strategy

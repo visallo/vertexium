@@ -17,6 +17,7 @@ public abstract class QueryParameters {
     private final Authorizations authorizations;
     private Long limit = null;
     private long skip = DEFAULT_SKIP;
+    private Double minScore = null;
     private final List<QueryBase.HasContainer> hasContainers = new ArrayList<>();
     private final List<QueryBase.SortContainer> sortContainers = new ArrayList<>();
     private final List<String> edgeLabels = new ArrayList<>();
@@ -53,6 +54,14 @@ public abstract class QueryParameters {
 
     public void setSkip(long skip) {
         this.skip = skip;
+    }
+
+    public Double getMinScore() {
+        return minScore;
+    }
+
+    public void setMinScore(Double minScore) {
+        this.minScore = minScore;
     }
 
     public Authorizations getAuthorizations() {
@@ -118,6 +127,7 @@ public abstract class QueryParameters {
     protected QueryParameters cloneTo(QueryParameters result) {
         result.setSkip(this.getSkip());
         result.setLimit(this.getLimit());
+        result.setMinScore(this.getMinScore());
         result.setScoringStrategy(this.getScoringStrategy());
         result.hasContainers.addAll(this.getHasContainers());
         result.sortContainers.addAll(this.getSortContainers());

@@ -345,6 +345,11 @@ public interface Query {
     Query limit(Long count);
 
     /**
+     * Minimum score to return
+     */
+    Query minScore(double score);
+
+    /**
      * Sort the results by the given property name.
      *
      * @param propertyName The property to sort by.

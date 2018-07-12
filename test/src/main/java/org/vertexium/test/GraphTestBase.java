@@ -17,6 +17,7 @@ import org.vertexium.mutation.ExistingElementMutation;
 import org.vertexium.property.PropertyValue;
 import org.vertexium.property.StreamingPropertyValue;
 import org.vertexium.query.*;
+import org.vertexium.scoring.FieldValueScoringStrategy;
 import org.vertexium.scoring.HammingDistanceScoringStrategy;
 import org.vertexium.scoring.ScoringStrategy;
 import org.vertexium.search.DefaultSearchIndex;
@@ -4795,7 +4796,7 @@ public abstract class GraphTestBase {
         graph.flush();
 
         graph.prepareEdge("e v1->v2", v1, v2, LABEL_LABEL1, VISIBILITY_A)
-            .save(AUTHORIZATIONS_A);
+                .save(AUTHORIZATIONS_A);
         graph.flush();
 
         relatedEdges = toList(graph.findRelatedEdgeSummary(vertexIds, AUTHORIZATIONS_A));
@@ -8659,5 +8660,39 @@ public abstract class GraphTestBase {
 
     protected ScoringStrategy getHammingDistanceScoringStrategy(String field, String hash) {
         return new HammingDistanceScoringStrategy(field, hash);
+    }
+
+    @Test
+    public void testMinimumScoreQueryParameter() {
+        graph.prepareVertex("v1", VISIBILITY_A)
+                .setProperty("prop1", 1, VISIBILITY_A)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.prepareVertex("v2", VISIBILITY_A)
+                .setProperty("prop1", 2, VISIBILITY_A)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.prepareVertex("v3", VISIBILITY_A)
+                .setProperty("prop1", 3, VISIBILITY_A)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        QueryResultsIterable<Vertex> vertices = graph.query(AUTHORIZATIONS_A)
+                .scoringStrategy(getFieldValueScoringStrategy("prop1"))
+                .minScore(2)
+                .vertices();
+        assumeTrue("IterableWithScores", vertices instanceof IterableWithScores);
+        assertEquals(2, Lists.newArrayList(vertices).size());
+        IterableWithScores<Vertex> scores = (IterableWithScores<Vertex>) vertices;
+        assertEquals(2, scores.getScore("v2"), 0.001);
+        assertEquals(3, scores.getScore("v3"), 0.001);
+
+        vertices = graph.query(AUTHORIZATIONS_A)
+                .scoringStrategy(getFieldValueScoringStrategy("prop1"))
+                .minScore(4)
+                .vertices();
+        assertEquals(0, Lists.newArrayList(vertices).size());
+    }
+
+    protected ScoringStrategy getFieldValueScoringStrategy(String field) {
+        return new FieldValueScoringStrategy(field);
     }
 }

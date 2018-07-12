@@ -1,0 +1,16 @@
+def fieldNames = params.fieldNames;
+
+def score = 0;
+
+for (def field : fieldNames) {
+  if (!doc.containsKey(field)) {
+    continue;
+  }
+
+  def values = doc[field].values;
+  for (def value : values) {
+    score = Math.max(score, value);
+  }
+}
+
+return score;

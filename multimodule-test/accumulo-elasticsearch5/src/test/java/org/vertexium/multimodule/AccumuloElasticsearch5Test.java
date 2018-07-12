@@ -12,6 +12,7 @@ import org.vertexium.accumulo.AccumuloGraphConfiguration;
 import org.vertexium.accumulo.AccumuloGraphTestBase;
 import org.vertexium.accumulo.AccumuloResource;
 import org.vertexium.elasticsearch5.ElasticsearchResource;
+import org.vertexium.elasticsearch5.scoring.ElasticsearchFieldValueScoringStrategy;
 import org.vertexium.elasticsearch5.scoring.ElasticsearchHammingDistanceScoringStrategy;
 import org.vertexium.id.SimpleNameSubstitutionStrategy;
 import org.vertexium.scoring.ScoringStrategy;
@@ -109,5 +110,10 @@ public class AccumuloElasticsearch5Test extends AccumuloGraphTestBase {
     @Override
     protected ScoringStrategy getHammingDistanceScoringStrategy(String field, String hash) {
         return new ElasticsearchHammingDistanceScoringStrategy(field, hash);
+    }
+
+    @Override
+    protected ScoringStrategy getFieldValueScoringStrategy(String field) {
+        return new ElasticsearchFieldValueScoringStrategy(field);
     }
 }
