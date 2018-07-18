@@ -1,3 +1,6 @@
+# v4.1.4
+* Added: Elasticsearch handler for missing documents
+
 # v4.1.3
 * Added: Query not equals element id
 * Added: Query limit by minimum score

@@ -115,13 +115,14 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
     private Node inProcessNode;
     public static final Pattern AGGREGATION_NAME_PATTERN = Pattern.compile("(.*?)_([0-9a-f]+)");
     private final PropertyNameVisibilitiesStore propertyNameVisibilitiesStore;
-    private final FlushObjectQueue flushObjectQueue = new FlushObjectQueue();
+    private final FlushObjectQueue flushObjectQueue;
     private final String geoShapePrecision;
     private final String geoShapeErrorPct;
     private boolean serverPluginInstalled;
     private final IdStrategy idStrategy = new IdStrategy();
     private final IndexRefreshTracker indexRefreshTracker = new IndexRefreshTracker();
     private Integer logRequestSizeLimit;
+    private final Elasticsearch5ExceptionHandler exceptionHandler;
 
     public Elasticsearch5SearchIndex(Graph graph, GraphConfiguration config) {
         this.graph = graph;
@@ -134,6 +135,8 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
         this.geoShapePrecision = this.config.getGeoShapePrecision();
         this.geoShapeErrorPct = this.config.getGeoShapeErrorPct();
         this.logRequestSizeLimit = this.config.getLogRequestSizeLimit();
+        this.exceptionHandler = this.config.getExceptionHandler(graph);
+        this.flushObjectQueue = new FlushObjectQueue(this);
     }
 
     public PropertyNameVisibilitiesStore getPropertyNameVisibilitiesStore() {
@@ -397,7 +400,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
         }
 
         UpdateRequestBuilder updateRequestBuilder = prepareUpdate(graph, element, authorizations);
-        addActionRequestBuilderForFlush(element.getId(), updateRequestBuilder);
+        addActionRequestBuilderForFlush(element, updateRequestBuilder);
 
         if (getConfig().isAutoFlush()) {
             flush(graph);
@@ -425,7 +428,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
         if (updateRequestBuilder != null) {
             IndexInfo indexInfo = addMutationPropertiesToIndex(graph, mutation);
             getIndexRefreshTracker().pushChange(indexInfo.getIndexName());
-            addActionRequestBuilderForFlush(element.getId(), updateRequestBuilder);
+            addActionRequestBuilderForFlush(element, updateRequestBuilder);
 
             if (getConfig().isAutoFlush()) {
                 flush(graph);
@@ -550,11 +553,36 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
         }
     }
 
-    private void addActionRequestBuilderForFlush(String elementId, UpdateRequestBuilder updateRequestBuilder) {
-        addActionRequestBuilderForFlush(elementId, null, updateRequestBuilder);
+    private void addActionRequestBuilderForFlush(Element element, UpdateRequestBuilder updateRequestBuilder) {
+        addActionRequestBuilderForFlush(element, null, null, updateRequestBuilder);
     }
 
-    private void addActionRequestBuilderForFlush(String elementId, String rowId, UpdateRequestBuilder updateRequestBuilder) {
+    private void addActionRequestBuilderForFlush(ElementType elementType, String elementId, UpdateRequestBuilder updateRequestBuilder) {
+        addActionRequestBuilderForFlush(elementType, elementId, null, null, updateRequestBuilder);
+    }
+
+    private void addActionRequestBuilderForFlush(
+            Element element,
+            String extendedDataTableName,
+            String rowId,
+            UpdateRequestBuilder updateRequestBuilder
+    ) {
+        addActionRequestBuilderForFlush(
+                ElementType.getTypeFromElement(element),
+                element.getId(),
+                extendedDataTableName,
+                rowId,
+                updateRequestBuilder
+        );
+    }
+
+    private void addActionRequestBuilderForFlush(
+            ElementType elementType,
+            String elementId,
+            String extendedDataTableName,
+            String rowId,
+            UpdateRequestBuilder updateRequestBuilder
+    ) {
         Future future;
         try {
             logRequestSize(elementId, updateRequestBuilder.request());
@@ -564,7 +592,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
             future = SettableFuture.create();
             ((SettableFuture) future).setException(ex);
         }
-        flushObjectQueue.add(elementId, rowId, updateRequestBuilder, future);
+        flushObjectQueue.add(elementType, elementId, extendedDataTableName, rowId, updateRequestBuilder, future);
     }
 
     @Override
@@ -603,7 +631,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
         String extendedDataDocId = getIdStrategy().createExtendedDataDocId(element, tableName, row);
         String fieldName = addVisibilityToPropertyName(graph, columnName, visibility);
         String indexName = getExtendedDataIndexName(element, tableName, row);
-        removeFieldsFromDocument(graph, indexName, extendedDataDocId, Lists.newArrayList(fieldName, fieldName + "_e"));
+        removeFieldsFromDocument(graph, indexName, element, extendedDataDocId, Lists.newArrayList(fieldName, fieldName + "_e"));
     }
 
     private void addElementExtendedData(
@@ -619,7 +647,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
         }
 
         UpdateRequestBuilder updateRequestBuilder = prepareUpdate(graph, element, tableName, rowId, columns, authorizations);
-        addActionRequestBuilderForFlush(element.getId(), rowId, updateRequestBuilder);
+        addActionRequestBuilderForFlush(element, tableName, rowId, updateRequestBuilder);
 
         if (getConfig().isAutoFlush()) {
             flush(graph);
@@ -1071,6 +1099,14 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
 
     public boolean isServerPluginInstalled() {
         return serverPluginInstalled;
+    }
+
+    public void handleDocumentMissingException(FlushObjectQueue.FlushObject flushObject, Exception ex) throws Exception {
+        if (exceptionHandler == null) {
+            LOGGER.error("document missing: " + flushObject, ex);
+            return;
+        }
+        exceptionHandler.handleDocumentMissingException(graph, this, flushObject, ex);
     }
 
     private static class StreamingPropertyString {
@@ -1682,7 +1718,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
         UpdateRequestBuilder updateRequestBuilder = prepareUpdateFieldsOnDocument(indexInfo.getIndexName(), documentId, fieldsToSet, fieldsToRemove, Collections.emptyMap());
         if (updateRequestBuilder != null) {
             getIndexRefreshTracker().pushChange(indexInfo.getIndexName());
-            addActionRequestBuilderForFlush(element.getId(), updateRequestBuilder);
+            addActionRequestBuilderForFlush(element, updateRequestBuilder);
 
             if (getConfig().isAutoFlush()) {
                 flush(graph);
@@ -1793,17 +1829,23 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
     private void removeFieldsFromDocument(Graph graph, Element element, Collection<String> fields) {
         String indexName = getIndexName(element);
         String documentId = getIdStrategy().createElementDocId(element);
-        removeFieldsFromDocument(graph, indexName, documentId, fields);
+        removeFieldsFromDocument(graph, indexName, element, documentId, fields);
     }
 
-    private void removeFieldsFromDocument(Graph graph, String indexName, String documentId, Collection<String> fields) {
+    private void removeFieldsFromDocument(
+            Graph graph,
+            String indexName,
+            Element element,
+            String documentId,
+            Collection<String> fields
+    ) {
         if (fields == null || fields.isEmpty()) {
             return;
         }
 
         getIndexRefreshTracker().pushChange(indexName);
         UpdateRequestBuilder updateRequestBuilder = prepareRemoveFieldsFromDocument(indexName, documentId, fields);
-        addActionRequestBuilderForFlush(documentId, updateRequestBuilder);
+        addActionRequestBuilderForFlush(element, updateRequestBuilder);
 
         if (getConfig().isAutoFlush()) {
             flush(graph);

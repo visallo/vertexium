@@ -5,6 +5,8 @@ import org.codelibs.elasticsearch.runner.ElasticsearchClusterRunner;
 import org.elasticsearch.action.admin.cluster.state.ClusterStateResponse;
 import org.elasticsearch.common.logging.LogConfigurator;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
+import org.elasticsearch.index.reindex.BulkByScrollResponse;
+import org.elasticsearch.index.reindex.DeleteByQueryAction;
 import org.junit.rules.ExternalResource;
 import org.vertexium.Graph;
 import org.vertexium.GraphWithSearchIndex;
@@ -107,6 +109,19 @@ public class ElasticsearchResource extends ExternalResource {
         }
     }
 
+    public void clearIndices(Elasticsearch5SearchIndex searchIndex) throws Exception {
+        String[] indices = runner.admin().indices().prepareGetIndex().execute().get().indices();
+        for (String index : indices) {
+            if (index.startsWith(ES_INDEX_NAME) || index.startsWith(ES_EXTENDED_DATA_INDEX_NAME_PREFIX)) {
+                LOGGER.info("clearing test index: %s", index);
+                BulkByScrollResponse response = DeleteByQueryAction.INSTANCE.newRequestBuilder(searchIndex.getClient())
+                        .source(index)
+                        .get();
+                LOGGER.info("removed %d documents", response.getDeleted());
+            }
+        }
+    }
+
     @SuppressWarnings("unchecked")
     public Map createConfig() {
         Map configMap = new HashMap();
@@ -122,6 +137,7 @@ public class ElasticsearchResource extends ExternalResource {
         configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + DefaultIndexSelectionStrategy.CONFIG_SPLIT_EDGES_AND_VERTICES, true);
         configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + LOG_REQUEST_SIZE_LIMIT, 10000);
         configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + MAX_QUERY_STRING_TERMS, 20);
+        configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + EXCEPTION_HANDLER, TestElasticsearch5ExceptionHandler.class.getName());
 
         // transport-5.3.3.jar!/org/elasticsearch/transport/client/PreBuiltTransportClient.class:61 likes to sleep on
         // connection close if default or netty4. This speeds up the test by skipping that
