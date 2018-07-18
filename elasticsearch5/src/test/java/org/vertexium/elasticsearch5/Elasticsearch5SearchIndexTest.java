@@ -16,6 +16,7 @@ import org.vertexium.elasticsearch5.scoring.ElasticsearchHammingDistanceScoringS
 import org.vertexium.inmemory.InMemoryAuthorizations;
 import org.vertexium.inmemory.InMemoryGraph;
 import org.vertexium.inmemory.InMemoryGraphConfiguration;
+import org.vertexium.mutation.ExistingElementMutation;
 import org.vertexium.query.QueryResultsIterable;
 import org.vertexium.query.SortDirection;
 import org.vertexium.scoring.ScoringStrategy;

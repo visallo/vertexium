@@ -51,6 +51,8 @@ public class ElasticsearchSearchIndexConfiguration {
     public static final int INDEX_MAPPING_TOTAL_FIELDS_LIMIT_DEFAULT = 100000;
     public static final String PROPERTY_NAME_VISIBILITIES_STORE = "propertyNameVisibilitiesStore";
     public static final Class<? extends PropertyNameVisibilitiesStore> PROPERTY_NAME_VISIBILITIES_STORE_DEFAULT = MetadataTablePropertyNameVisibilitiesStore.class;
+    public static final String EXCEPTION_HANDLER = "exceptionHandler";
+    public static final String EXCEPTION_HANDLER_DEFAULT = null;
     public static final String GEOSHAPE_PRECISION = "geoshapePrecision";
     public static final String GEOSHAPE_PRECISION_DEFAULT = "100m";
     public static final String GEOSHAPE_ERROR_PCT = "geoshapeErrorPct";
@@ -179,6 +181,14 @@ public class ElasticsearchSearchIndexConfiguration {
 
     public PropertyNameVisibilitiesStore createPropertyNameVisibilitiesStore(Graph graph) {
         String className = graphConfiguration.getString(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + PROPERTY_NAME_VISIBILITIES_STORE, PROPERTY_NAME_VISIBILITIES_STORE_DEFAULT.getName());
+        return ConfigurationUtils.createProvider(className, graph, graphConfiguration);
+    }
+
+    public Elasticsearch5ExceptionHandler getExceptionHandler(Graph graph) {
+        String className = graphConfiguration.getString(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + EXCEPTION_HANDLER, EXCEPTION_HANDLER_DEFAULT);
+        if (className == null) {
+            return null;
+        }
         return ConfigurationUtils.createProvider(className, graph, graphConfiguration);
     }
 

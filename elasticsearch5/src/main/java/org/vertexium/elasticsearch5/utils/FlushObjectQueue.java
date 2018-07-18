@@ -2,7 +2,10 @@ package org.vertexium.elasticsearch5.utils;
 
 import org.elasticsearch.action.ActionRequestBuilder;
 import org.elasticsearch.action.update.UpdateRequestBuilder;
+import org.elasticsearch.index.engine.DocumentMissingException;
+import org.vertexium.ElementType;
 import org.vertexium.VertexiumException;
+import org.vertexium.elasticsearch5.Elasticsearch5SearchIndex;
 import org.vertexium.util.VertexiumLogger;
 import org.vertexium.util.VertexiumLoggerFactory;
 
@@ -16,8 +19,13 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 public class FlushObjectQueue {
     private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(FlushObjectQueue.class);
     private static final int MAX_RETRIES = 10;
+    private final Elasticsearch5SearchIndex searchIndex;
     private ReadWriteLock flushLock = new ReentrantReadWriteLock();
     private Queue<FlushObject> queue = new ConcurrentLinkedQueue<>();
+
+    public FlushObjectQueue(Elasticsearch5SearchIndex searchIndex) {
+        this.searchIndex = searchIndex;
+    }
 
     public void flush() {
         flushLock.writeLock().lock();
@@ -29,6 +37,15 @@ public class FlushObjectQueue {
                     flushObject.getFuture().get(30, TimeUnit.MINUTES);
                     sleep = 0;
                 } catch (Exception ex) {
+                    if (isDocumentMissingException(ex)) {
+                        try {
+                            searchIndex.handleDocumentMissingException(flushObject, ex);
+                        } catch (Exception e) {
+                            throw new VertexiumException(ex);
+                        }
+                        return;
+                    }
+
                     sleep += 10;
                     String message = String.format("Could not write %s", flushObject);
                     if (flushObject.retryCount >= MAX_RETRIES) {
@@ -49,6 +66,16 @@ public class FlushObjectQueue {
         }
     }
 
+    private boolean isDocumentMissingException(Throwable ex) {
+        if (ex instanceof DocumentMissingException) {
+            return true;
+        }
+        if (ex.getCause() != null) {
+            return isDocumentMissingException(ex.getCause());
+        }
+        return false;
+    }
+
     private void requeueFlushObject(FlushObject flushObject, int additionalTimeToSleep) {
         try {
             Thread.sleep(Math.max(0, flushObject.getNextRetryTime() - System.currentTimeMillis()));
@@ -61,7 +88,9 @@ public class FlushObjectQueue {
         );
         long nextRetryTime = System.currentTimeMillis() + timeToWait;
         queue.add(new FlushObject(
+                flushObject.getElementType(),
                 flushObject.getElementId(),
+                flushObject.getExtendedDataTableName(),
                 flushObject.getExtendedDataRowId(),
                 flushObject.getActionRequestBuilder(),
                 flushObject.getActionRequestBuilder().execute(),
@@ -70,10 +99,17 @@ public class FlushObjectQueue {
         ));
     }
 
-    public void add(String elementId, String rowId, UpdateRequestBuilder updateRequestBuilder, Future future) {
+    public void add(
+            ElementType elementType,
+            String elementId,
+            String extendedDataTableName,
+            String rowId,
+            UpdateRequestBuilder updateRequestBuilder,
+            Future future
+    ) {
         flushLock.readLock().lock();
         try {
-            queue.add(new FlushObject(elementId, rowId, updateRequestBuilder, future));
+            queue.add(new FlushObject(elementType, elementId, extendedDataTableName, rowId, updateRequestBuilder, future));
         } finally {
             flushLock.readLock().unlock();
         }
@@ -89,7 +125,9 @@ public class FlushObjectQueue {
     }
 
     public static class FlushObject {
+        private final ElementType elementType;
         private final String elementId;
+        private final String extendedDataTableName;
         private final String extendedDataRowId;
         private final ActionRequestBuilder actionRequestBuilder;
         private final Future future;
@@ -97,23 +135,29 @@ public class FlushObjectQueue {
         private final long nextRetryTime;
 
         FlushObject(
+                ElementType elementType,
                 String elementId,
+                String extendedDataTableName,
                 String extendedDataRowId,
                 UpdateRequestBuilder updateRequestBuilder,
                 Future future
         ) {
-            this(elementId, extendedDataRowId, updateRequestBuilder, future, 0, 0);
+            this(elementType, elementId, extendedDataTableName, extendedDataRowId, updateRequestBuilder, future, 0, 0);
         }
 
         FlushObject(
+                ElementType elementType,
                 String elementId,
+                String extendedDataTableName,
                 String extendedDataRowId,
                 ActionRequestBuilder actionRequestBuilder,
                 Future future,
                 int retryCount,
                 long nextRetryTime
         ) {
+            this.elementType = elementType;
             this.elementId = elementId;
+            this.extendedDataTableName = extendedDataTableName;
             this.extendedDataRowId = extendedDataRowId;
             this.actionRequestBuilder = actionRequestBuilder;
             this.future = future;
@@ -126,12 +170,20 @@ public class FlushObjectQueue {
             if (extendedDataRowId == null) {
                 return String.format("Element \"%s\"", elementId);
             } else {
-                return String.format("Extended data row \"%s\":\"%s\"", elementId, extendedDataRowId);
+                return String.format("Extended data row \"%s\":\"%s\":\"%s\"", elementId, extendedDataTableName, extendedDataRowId);
             }
+        }
+
+        public ElementType getElementType() {
+            return elementType;
         }
 
         public String getElementId() {
             return elementId;
+        }
+
+        public String getExtendedDataTableName() {
+            return extendedDataTableName;
         }
 
         public String getExtendedDataRowId() {
