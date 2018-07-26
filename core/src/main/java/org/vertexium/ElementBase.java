@@ -11,6 +11,7 @@ public abstract class ElementBase implements Element {
     private transient Property edgeLabelProperty;
     private transient Property outVertexIdProperty;
     private transient Property inVertexIdProperty;
+    private transient Property inOrOutVertexIdProperty;
 
     @Override
     public Property getProperty(String key, String name, Visibility visibility) {
@@ -22,6 +23,8 @@ public abstract class ElementBase implements Element {
             return getOutVertexIdProperty();
         } else if (Edge.IN_VERTEX_ID_PROPERTY_NAME.equals(name) && this instanceof Edge) {
             return getInVertexIdProperty();
+        } else if (Edge.IN_OR_OUT_VERTEX_ID_PROPERTY_NAME.equals(name) && this instanceof Edge) {
+            return getInOrOutVertexIdProperty();
         }
         for (Property p : getProperties(name)) {
             if (!p.getKey().equals(key)) {
@@ -61,6 +64,10 @@ public abstract class ElementBase implements Element {
             ArrayList<Property> result = new ArrayList<>();
             result.add(getInVertexIdProperty());
             return result;
+        } else if (Edge.IN_OR_OUT_VERTEX_ID_PROPERTY_NAME.equals(name) && this instanceof Edge) {
+            ArrayList<Property> result = new ArrayList<>();
+            result.add(getInOrOutVertexIdProperty());
+            return result;
         }
         return internalGetProperties(name);
     }
@@ -92,6 +99,10 @@ public abstract class ElementBase implements Element {
         } else if (Edge.IN_VERTEX_ID_PROPERTY_NAME.equals(name) && this instanceof Edge) {
             ArrayList<Property> result = new ArrayList<>();
             result.add(getInVertexIdProperty());
+            return result;
+        } else if (Edge.IN_OR_OUT_VERTEX_ID_PROPERTY_NAME.equals(name) && this instanceof Edge) {
+            ArrayList<Property> result = new ArrayList<>();
+            result.add(getInOrOutVertexIdProperty());
             return result;
         }
         getFetchHints().assertPropertyIncluded(name);
@@ -167,5 +178,23 @@ public abstract class ElementBase implements Element {
             );
         }
         return inVertexIdProperty;
+    }
+
+    protected Property getInOrOutVertexIdProperty() {
+        if (inOrOutVertexIdProperty == null && this instanceof Edge) {
+            String inVertexId = ((Edge) this).getVertexId(Direction.IN);
+            String outVertexId = ((Edge) this).getVertexId(Direction.OUT);
+            inOrOutVertexIdProperty = new MutablePropertyImpl(
+                    ElementMutation.DEFAULT_KEY,
+                    Edge.IN_OR_OUT_VERTEX_ID_PROPERTY_NAME,
+                    new EdgeVertexIds(outVertexId, inVertexId),
+                    null,
+                    getTimestamp(),
+                    null,
+                    null,
+                    getFetchHints()
+            );
+        }
+        return inOrOutVertexIdProperty;
     }
 }

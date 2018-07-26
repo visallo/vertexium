@@ -196,6 +196,8 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
             return getOutVertexIdProperty();
         } else if (Edge.IN_VERTEX_ID_PROPERTY_NAME.equals(name) && this instanceof Edge) {
             return getInVertexIdProperty();
+        } else if (Edge.IN_OR_OUT_VERTEX_ID_PROPERTY_NAME.equals(name) && this instanceof Edge) {
+            return getInOrOutVertexIdProperty();
         }
         Iterator<Property> propertiesWithName = getProperties(name).iterator();
         if (propertiesWithName.hasNext()) {
@@ -214,6 +216,8 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
             return getOutVertexIdProperty();
         } else if (Edge.IN_VERTEX_ID_PROPERTY_NAME.equals(name) && this instanceof Edge) {
             return getInVertexIdProperty();
+        } else if (Edge.IN_OR_OUT_VERTEX_ID_PROPERTY_NAME.equals(name) && this instanceof Edge) {
+            return getInOrOutVertexIdProperty();
         }
         getFetchHints().assertPropertyIncluded(name);
         Property property = this.properties.getProperty(name, index);
@@ -233,6 +237,8 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
             return getOutVertexIdProperty();
         } else if (Edge.IN_VERTEX_ID_PROPERTY_NAME.equals(name) && this instanceof Edge) {
             return getInVertexIdProperty();
+        } else if (Edge.IN_OR_OUT_VERTEX_ID_PROPERTY_NAME.equals(name) && this instanceof Edge) {
+            return getInOrOutVertexIdProperty();
         }
         Property property = this.properties.getProperty(key, name, index);
         if (property == null) {
@@ -281,7 +287,8 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
         if (ID_PROPERTY_NAME.equals(name)
                 || (Edge.LABEL_PROPERTY_NAME.equals(name) && this instanceof Edge)
                 || (Edge.OUT_VERTEX_ID_PROPERTY_NAME.equals(name) && this instanceof Edge)
-                || (Edge.IN_VERTEX_ID_PROPERTY_NAME.equals(name) && this instanceof Edge)) {
+                || (Edge.IN_VERTEX_ID_PROPERTY_NAME.equals(name) && this instanceof Edge)
+                || (Edge.IN_OR_OUT_VERTEX_ID_PROPERTY_NAME.equals(name) && this instanceof Edge)) {
             return getProperties(name);
         }
         return this.properties.getProperties(key, name);

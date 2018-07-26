@@ -1,5 +1,6 @@
 # v4.1.4
 * Added: Elasticsearch handler for missing documents
+* Added: Query edges with a given in or out vertex
 
 # v4.1.3
 * Added: Query not equals element id
