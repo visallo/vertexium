@@ -9,19 +9,24 @@ import java.util.Map;
 
 public interface Edge extends Element {
     /**
-     * Meta property name used for sorting and aggregations
+     * Meta property name used for queries, sorting, and aggregations
      */
     String LABEL_PROPERTY_NAME = "__edgeLabel";
 
     /**
-     * Meta property name used for sorting and aggregations
+     * Meta property name used for queries, sorting, and aggregations
      */
     String OUT_VERTEX_ID_PROPERTY_NAME = "__outVertexId";
 
     /**
-     * Meta property name used for sorting and aggregations
+     * Meta property name used for queries, sorting, and aggregations
      */
     String IN_VERTEX_ID_PROPERTY_NAME = "__inVertexId";
+
+    /**
+     * Meta property name used for queries. The property represents either the in or the out vertex id.
+     */
+    String IN_OR_OUT_VERTEX_ID_PROPERTY_NAME = "__inOrOutVertexId";
 
     /**
      * The edge label.
