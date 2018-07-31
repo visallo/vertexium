@@ -37,7 +37,7 @@ public abstract class AccumuloElementInputFormatBase<TValue extends Element> ext
     public static void setInputInfo(Job job, String instanceName, String zooKeepers, String principal, AuthenticationToken token, String[] authorizations, String tableName) throws AccumuloSecurityException {
         AccumuloRowInputFormat.setInputTableName(job, tableName);
         AccumuloRowInputFormat.setConnectorInfo(job, principal, token);
-        ClientConfiguration clientConfig = new ClientConfiguration()
+        ClientConfiguration clientConfig = ClientConfiguration.create()
                 .withInstance(instanceName)
                 .withZkHosts(zooKeepers);
         AccumuloRowInputFormat.setZooKeeperInstance(job, clientConfig);

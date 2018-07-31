@@ -1,6 +1,8 @@
-# v4.1.4
+# v4.2.0
 * Added: Elasticsearch handler for missing documents
 * Added: Query edges with a given in or out vertex
+* Changed: Elasticsearch version to 5.6.10
+* Changed: Accumulo version to 1.9.2
 
 # v4.1.3
 * Added: Query not equals element id

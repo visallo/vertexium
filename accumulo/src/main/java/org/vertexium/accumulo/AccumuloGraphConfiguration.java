@@ -118,7 +118,7 @@ public class AccumuloGraphConfiguration extends GraphConfiguration {
 
     @SuppressWarnings("unchecked")
     public ClientConfiguration getClientConfiguration() {
-        ClientConfiguration config = new ClientConfiguration(new ArrayList<>())
+        ClientConfiguration config = ClientConfiguration.create()
                 .withInstance(this.getAccumuloInstanceName())
                 .withZkHosts(this.getZookeeperServers());
         for (Map.Entry<String, String> entry : getClientConfigurationProperties().entrySet()) {

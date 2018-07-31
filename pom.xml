@@ -90,16 +90,13 @@
         <jts.version>1.13</jts.version>
         <spatial4j.version>0.6</spatial4j.version>
 
-        <!-- used by: elasticsearch-* -->
-        <elasticsearch.version>1.7.5</elasticsearch.version>
-
         <!-- used by: elasticsearch5* -->
-        <elasticsearch5.version>5.5.3</elasticsearch5.version>
-        <elasticsearch-cluster-runner.version>5.5.3.0</elasticsearch-cluster-runner.version>
+        <elasticsearch5.version>5.6.10</elasticsearch5.version>
+        <elasticsearch-cluster-runner.version>5.6.9.0</elasticsearch-cluster-runner.version>
         <log4j2.version>2.9.0</log4j2.version> <!-- used during testing to run the embedded ES server -->
 
         <!-- used by: accumulo* -->
-        <accumulo.version>1.7.2</accumulo.version>
+        <accumulo.version>1.9.2</accumulo.version>
         <zookeeper.version>3.4.12</zookeeper.version>
         <curator.version>2.12.0</curator.version>
         <hadoop.version>2.9.0</hadoop.version>
