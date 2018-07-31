@@ -103,7 +103,7 @@ public class VertexiumQueryStringQueryBuilder extends QueryStringQueryBuilder {
             }
 
             return FieldNameToVisibilityMap.createFromVertexiumMetadata(results);
-        } catch (IOException ex) {
+        } catch (Exception ex) {
             throw new RuntimeException("Could not get mappings", ex);
         }
     }
