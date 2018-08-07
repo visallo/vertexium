@@ -64,7 +64,7 @@
         <json.version>20140107</json.version>
         <commons-codec.version>1.8</commons-codec.version>
         <jcommander.version>1.35</jcommander.version>
-        <cache2k.version>0.21.1</cache2k.version>
+        <cache2k.version>0.23.1</cache2k.version>
         <google-guava.version>18.0</google-guava.version>
         <commons-lang3.version>3.1</commons-lang3.version>
         <apache.curator.version>2.12.0</apache.curator.version>
