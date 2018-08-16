@@ -123,11 +123,6 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.json</groupId>
-            <artifactId>json</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
             <groupId>org.vertexium</groupId>
             <artifactId>vertexium-test</artifactId>
             <version>${project.version}</version>

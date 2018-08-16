@@ -2,12 +2,7 @@ package org.vertexium;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
-import org.json.JSONArray;
-import org.json.JSONObject;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 public class FetchHintsBuilder {
@@ -58,44 +53,6 @@ public class FetchHintsBuilder {
                 includeEdgeLabelsAndCounts,
                 includeExtendedDataTableNames
         );
-    }
-
-    public static FetchHintsBuilder parse(JSONObject fetchHintsJson) {
-        if (fetchHintsJson == null) {
-            fetchHintsJson = new JSONObject();
-        }
-
-        return new FetchHintsBuilder()
-                .setIncludeAllProperties(fetchHintsJson.optBoolean("includeAllProperties", false))
-                .setIncludeAllPropertyMetadata(fetchHintsJson.optBoolean("includeAllPropertyMetadata", false))
-                .setIncludeHidden(fetchHintsJson.optBoolean("includeHidden", false))
-                .setIncludeAllEdgeRefs(fetchHintsJson.optBoolean("includeAllEdgeRefs", false))
-                .setIncludeOutEdgeRefs(fetchHintsJson.optBoolean("includeOutEdgeRefs", false))
-                .setIncludeInEdgeRefs(fetchHintsJson.optBoolean("includeInEdgeRefs", false))
-                .setIncludeEdgeLabelsAndCounts(fetchHintsJson.optBoolean("includeEdgeLabelsAndCounts", false))
-                .setIncludeExtendedDataTableNames(fetchHintsJson.optBoolean("includeExtendedDataTableNames", false))
-                .setPropertyNamesToInclude(fetchHintsJson.has("propertyNamesToInclude")
-                        ? jsonArrayToSet(fetchHintsJson.getJSONArray("propertyNamesToInclude"))
-                        : null)
-                .setMetadataKeysToInclude(fetchHintsJson.has("metadataKeysToInclude")
-                        ? jsonArrayToSet(fetchHintsJson.getJSONArray("metadataKeysToInclude"))
-                        : null)
-                .setEdgeLabelsOfEdgeRefsToInclude(fetchHintsJson.has("edgeLabelsOfEdgeRefsToInclude")
-                        ? jsonArrayToSet(fetchHintsJson.getJSONArray("edgeLabelsOfEdgeRefsToInclude"))
-                        : null);
-    }
-
-    private static Set<String> jsonArrayToSet(JSONArray jsonArray) {
-        if (jsonArray == null) {
-            return null;
-        }
-
-        Set<String> set = new HashSet<>();
-        for (int i = 0;i < jsonArray.length(); i++) {
-            set.add((String) jsonArray.get(i));
-        }
-
-        return set;
     }
 
     private boolean isIncludeProperties() {
