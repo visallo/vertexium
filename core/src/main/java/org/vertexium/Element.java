@@ -5,8 +5,6 @@ import org.vertexium.mutation.ExistingElementMutation;
 import org.vertexium.query.QueryableIterable;
 import org.vertexium.util.FilterIterable;
 
-import java.util.EnumSet;
-
 /**
  * An element on the graph. This can be either a vertex or edge.
  * <p/>
@@ -97,6 +95,16 @@ public interface Element extends VertexiumObject {
      * @return The mutation builder.
      */
     <T extends Element> ExistingElementMutation<T> prepareMutation();
+
+    /**
+     * Permanently deletes a property from the element. Only properties which you have access to can be deleted using
+     * this method.
+     *
+     * @param property The property to delete.
+     */
+    default void deleteProperty(Property property, Authorizations authorizations) {
+        deleteProperty(property.getKey(), property.getName(), property.getVisibility(), authorizations);
+    }
 
     /**
      * Permanently deletes a property given it's key and name from the element. Only properties which you have access
