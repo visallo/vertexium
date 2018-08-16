@@ -11,10 +11,10 @@ import static org.vertexium.util.Preconditions.checkNotNull;
 
 public class GeoPoint extends GeoShapeBase implements Comparable<GeoPoint> {
     private static final long serialVersionUID = 1L;
-    private static final double COMPARE_TOLERANCE = 0.00001;
+    private static final double COMPARE_TOLERANCE = 0.0001;
     private static final Pattern HOUR_MIN_SECOND_PATTERN = Pattern.compile("\\s*(-)?([0-9\\.]+)°(\\s*([0-9\\.]+)'(\\s*([0-9\\.]+)\")?)?");
     private static final Pattern WITH_DESCRIPTION_PATTERN = Pattern.compile("(.*)\\[(.*)\\]");
-    public static final double EQUALS_TOLERANCE_KM = 0.0001;
+    public static final double EQUALS_TOLERANCE_KM = 0.001;
     private double latitude;
     private double longitude;
     private Double altitude;
@@ -104,10 +104,17 @@ public class GeoPoint extends GeoShapeBase implements Comparable<GeoPoint> {
             return false;
         }
         GeoPoint other = (GeoPoint) obj;
-        if (Math.abs(distanceBetween(this, other)) > EQUALS_TOLERANCE_KM) {
+        double distanceBetween = distanceBetween(this, other);
+        if (Double.isNaN(distanceBetween)) {
             return false;
         }
-        if (this.altitude != other.altitude && (this.altitude == null || !this.altitude.equals(other.altitude))) {
+        if (Math.abs(distanceBetween) > EQUALS_TOLERANCE_KM) {
+            return false;
+        }
+        if ((this.altitude != null && other.altitude == null) || (this.altitude == null && other.altitude != null)) {
+            return false;
+        }
+        if (this.altitude != null && other.altitude != null && Math.abs(this.altitude - other.altitude) > EQUALS_TOLERANCE_KM) {
             return false;
         }
         return true;
@@ -242,6 +249,9 @@ public class GeoPoint extends GeoShapeBase implements Comparable<GeoPoint> {
         return getLatitude() > pt.getLatitude();
     }
 
+    /**
+     * For large distances center point calculation has rounding errors
+     */
     public static GeoPoint calculateCenter(List<GeoPoint> geoPoints) {
         checkNotNull(geoPoints, "geoPoints cannot be null");
         checkArgument(geoPoints.size() > 0, "must have at least 1 geoPoints");
@@ -257,9 +267,9 @@ public class GeoPoint extends GeoShapeBase implements Comparable<GeoPoint> {
         for (GeoPoint geoPoint : geoPoints) {
             double latRad = Math.toRadians(geoPoint.getLatitude());
             double lonRad = Math.toRadians(geoPoint.getLongitude());
-            x += Math.sin(latRad) * Math.cos(lonRad);
-            y += Math.sin(latRad) * Math.sin(lonRad);
-            z += Math.cos(latRad);
+            x += Math.cos(latRad) * Math.cos(lonRad);
+            y += Math.cos(latRad) * Math.sin(lonRad);
+            z += Math.sin(latRad);
 
             if (geoPoint.getAltitude() != null) {
                 totalAlt += geoPoint.getAltitude();
@@ -268,11 +278,11 @@ public class GeoPoint extends GeoShapeBase implements Comparable<GeoPoint> {
         }
 
         x = x / (double) geoPoints.size();
-        y = z / (double) geoPoints.size();
-        y = z / (double) geoPoints.size();
+        y = y / (double) geoPoints.size();
+        z = z / (double) geoPoints.size();
 
         return new GeoPoint(
-                Math.toDegrees(Math.acos(z / Math.sqrt(x * x + y * y))),
+                Math.toDegrees(Math.atan2(z, Math.sqrt(x * x + y * y))),
                 Math.toDegrees(Math.atan2(y, x)),
                 altitudeCount == geoPoints.size() ? (totalAlt / (double) altitudeCount) : null
         );

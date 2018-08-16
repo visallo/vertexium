@@ -1,6 +1,7 @@
 # v4.3.0
 * Changed: Remove tools: Reindex, Backup, Restore
 * Changed: Remove FetchHintsBuilder.parse
+* Fixed: GeoPoint.calculateCenter
 
 # v4.2.0
 * Added: Elasticsearch handler for missing documents
