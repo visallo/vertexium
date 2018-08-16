@@ -74,9 +74,36 @@ public class GeoPointTest {
     @Test
     public void testCalculateCenter2Points() {
         GeoPoint pt1 = new GeoPoint(10.0, 20.0, 100.0);
-        GeoPoint pt2 = new GeoPoint(20.0, 30.0, 200.0);
+        GeoPoint pt2 = new GeoPoint(10.1, 20.1, 200.0);
         GeoPoint center = GeoPoint.calculateCenter(Lists.newArrayList(pt1, pt2));
-        GeoPoint expected = new GeoPoint(15.0, 25.0, 150.0);
+        GeoPoint expected = new GeoPoint(10.05, 20.05, 150.0);
+        assertEquals("distance " + expected.distanceFrom(center) + " > " + GeoPoint.EQUALS_TOLERANCE_KM, expected, center);
+    }
+
+    @Test
+    public void testCalculateCenter2PointsSameLongitude() {
+        GeoPoint pt1 = new GeoPoint(10.0, 20.0, 100.0);
+        GeoPoint pt2 = new GeoPoint(10.1, 20.0, 200.0);
+        GeoPoint center = GeoPoint.calculateCenter(Lists.newArrayList(pt1, pt2));
+        GeoPoint expected = new GeoPoint(10.05, 20.0, 150.0);
+        assertEquals("distance " + expected.distanceFrom(center) + " > " + GeoPoint.EQUALS_TOLERANCE_KM, expected, center);
+    }
+
+    @Test
+    public void testCalculateCenter2PointsSameLatitude() {
+        GeoPoint pt1 = new GeoPoint(10.0, 20.0, 100.0);
+        GeoPoint pt2 = new GeoPoint(10.0, 20.1, 200.0);
+        GeoPoint center = GeoPoint.calculateCenter(Lists.newArrayList(pt1, pt2));
+        GeoPoint expected = new GeoPoint(10.0, 20.05, 150.0);
+        assertEquals("distance " + expected.distanceFrom(center) + " > " + GeoPoint.EQUALS_TOLERANCE_KM, expected, center);
+    }
+
+    @Test
+    public void testCalculateCenter2PointsSamePoint() {
+        GeoPoint pt1 = new GeoPoint(10.0, 20.0);
+        GeoPoint pt2 = new GeoPoint(10.0, 20.0);
+        GeoPoint center = GeoPoint.calculateCenter(Lists.newArrayList(pt1, pt2));
+        GeoPoint expected = new GeoPoint(10.0, 20.0);
         assertEquals("distance " + expected.distanceFrom(center) + " > " + GeoPoint.EQUALS_TOLERANCE_KM, expected, center);
     }
 
@@ -87,7 +114,7 @@ public class GeoPointTest {
         GeoPoint pt3 = new GeoPoint(0.0, 40.0);
         GeoPoint pt4 = new GeoPoint(40.0, 10.0);
         GeoPoint center = GeoPoint.calculateCenter(Lists.newArrayList(pt1, pt2));
-        GeoPoint expected = new GeoPoint(15.0, 25.0);
+        GeoPoint expected = new GeoPoint(15.05467090, 24.88248913);
         assertEquals("distance " + expected.distanceFrom(center) + " > " + GeoPoint.EQUALS_TOLERANCE_KM, expected, center);
     }
 
@@ -118,9 +145,9 @@ public class GeoPointTest {
     @Test
     public void testCalculateCenterWithMissingAltitude() {
         GeoPoint pt1 = new GeoPoint(10.0, 20.0, 10.0);
-        GeoPoint pt2 = new GeoPoint(20.0, 30.0);
+        GeoPoint pt2 = new GeoPoint(10.1, 20.1);
         GeoPoint center = GeoPoint.calculateCenter(Lists.newArrayList(pt1, pt2));
-        GeoPoint expected = new GeoPoint(15.0, 25.0);
+        GeoPoint expected = new GeoPoint(10.05, 20.05);
         assertEquals("distance " + expected.distanceFrom(center) + " > " + GeoPoint.EQUALS_TOLERANCE_KM, expected, center);
     }
 
