@@ -3,6 +3,8 @@ package org.vertexium;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableSet;
 
+import java.util.Objects;
+
 public class FetchHints {
     private final boolean includeAllProperties;
     private final ImmutableSet<String> propertyNamesToInclude;
@@ -219,6 +221,45 @@ public class FetchHints {
                 ", includeEdgeLabelsAndCounts=" + includeEdgeLabelsAndCounts +
                 ", includeExtendedDataTableNames=" + includeExtendedDataTableNames +
                 '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        FetchHints that = (FetchHints) o;
+        return includeAllProperties == that.includeAllProperties
+                && includeAllPropertyMetadata == that.includeAllPropertyMetadata
+                && includeHidden == that.includeHidden
+                && includeAllEdgeRefs == that.includeAllEdgeRefs
+                && includeOutEdgeRefs == that.includeOutEdgeRefs
+                && includeInEdgeRefs == that.includeInEdgeRefs
+                && includeEdgeLabelsAndCounts == that.includeEdgeLabelsAndCounts
+                && includeExtendedDataTableNames == that.includeExtendedDataTableNames
+                && Objects.equals(propertyNamesToInclude, that.propertyNamesToInclude)
+                && Objects.equals(metadataKeysToInclude, that.metadataKeysToInclude)
+                && Objects.equals(edgeLabelsOfEdgeRefsToInclude, that.edgeLabelsOfEdgeRefsToInclude);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(
+                includeAllProperties,
+                propertyNamesToInclude,
+                includeAllPropertyMetadata,
+                metadataKeysToInclude,
+                includeHidden,
+                includeAllEdgeRefs,
+                includeOutEdgeRefs,
+                includeInEdgeRefs,
+                edgeLabelsOfEdgeRefsToInclude,
+                includeEdgeLabelsAndCounts,
+                includeExtendedDataTableNames
+        );
     }
 
     private String setToString(ImmutableSet<String> set) {

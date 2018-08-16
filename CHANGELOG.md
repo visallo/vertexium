@@ -1,3 +1,7 @@
+# v4.3.0
+* Changed: Remove tools: Reindex, Backup, Restore
+* Changed: Remove FetchHintsBuilder.parse
+
 # v4.2.0
 * Added: Elasticsearch handler for missing documents
 * Added: Query edges with a given in or out vertex
