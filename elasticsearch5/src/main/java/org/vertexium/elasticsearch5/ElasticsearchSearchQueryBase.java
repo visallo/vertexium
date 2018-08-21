@@ -280,6 +280,8 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
                                 .unmappedType(KEYWORD_UNMAPPED_TYPE)
                                 .order(esOrder)
                 );
+            } else if (Edge.IN_OR_OUT_VERTEX_ID_PROPERTY_NAME.equals(sortContainer.propertyName)) {
+                throw new VertexiumException("Cannot sort by " + Edge.IN_OR_OUT_VERTEX_ID_PROPERTY_NAME);
             } else if (ExtendedDataRow.TABLE_NAME.equals(sortContainer.propertyName)) {
                 q.addSort(
                         SortBuilders.fieldSort(Elasticsearch5SearchIndex.ELEMENT_ID_FIELD_NAME)
@@ -919,30 +921,39 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
 
         List<QueryBuilder> filters = new ArrayList<>();
         for (String propertyName : propertyNames) {
-            if (Edge.LABEL_PROPERTY_NAME.equals(propertyName)) {
-                propertyName = Elasticsearch5SearchIndex.EDGE_LABEL_FIELD_NAME;
-            } else if (Edge.OUT_VERTEX_ID_PROPERTY_NAME.equals(propertyName)) {
-                propertyName = Elasticsearch5SearchIndex.OUT_VERTEX_ID_FIELD_NAME;
-            } else if (Edge.IN_VERTEX_ID_PROPERTY_NAME.equals(propertyName)) {
-                propertyName = Elasticsearch5SearchIndex.IN_VERTEX_ID_FIELD_NAME;
-            } else if (value instanceof String
-                    || value instanceof String[]
-                    || (value instanceof Object[] && ((Object[]) value).length > 0 && ((Object[]) value)[0] instanceof String)
-                    ) {
-                propertyName = propertyName + Elasticsearch5SearchIndex.EXACT_MATCH_PROPERTY_NAME_SUFFIX;
-            }
-            switch (contains) {
-                case IN:
-                    filters.add(QueryBuilders.termsQuery(propertyName, (Object[]) value));
-                    break;
-                case NOT_IN:
-                    filters.add(QueryBuilders.boolQuery().mustNot(QueryBuilders.termsQuery(propertyName, (Object[]) value)));
-                    break;
-                default:
-                    throw new VertexiumException("Unexpected Contains predicate " + has.predicate);
-            }
+            filters.add(getFilterForProperty(contains, has, propertyName, value));
         }
         return getSingleFilterOrOrTheFilters(filters, has);
+    }
+
+    private QueryBuilder getFilterForProperty(Contains contains, HasValueContainer has, String propertyName, Object value) {
+        if (Element.ID_PROPERTY_NAME.equals(propertyName)) {
+            propertyName = Elasticsearch5SearchIndex.ELEMENT_ID_FIELD_NAME;
+        } else if (Edge.LABEL_PROPERTY_NAME.equals(propertyName)) {
+            propertyName = Elasticsearch5SearchIndex.EDGE_LABEL_FIELD_NAME;
+        } else if (Edge.OUT_VERTEX_ID_PROPERTY_NAME.equals(propertyName)) {
+            propertyName = Elasticsearch5SearchIndex.OUT_VERTEX_ID_FIELD_NAME;
+        } else if (Edge.IN_VERTEX_ID_PROPERTY_NAME.equals(propertyName)) {
+            propertyName = Elasticsearch5SearchIndex.IN_VERTEX_ID_FIELD_NAME;
+        } else if (Edge.IN_OR_OUT_VERTEX_ID_PROPERTY_NAME.equals(propertyName)) {
+            return QueryBuilders.boolQuery()
+                    .should(getFilterForProperty(contains, has, Edge.OUT_VERTEX_ID_PROPERTY_NAME, value))
+                    .should(getFilterForProperty(contains, has, Edge.IN_VERTEX_ID_PROPERTY_NAME, value))
+                    .minimumShouldMatch(1);
+        } else if (value instanceof String
+                || value instanceof String[]
+                || (value instanceof Object[] && ((Object[]) value).length > 0 && ((Object[]) value)[0] instanceof String)
+                ) {
+            propertyName = propertyName + Elasticsearch5SearchIndex.EXACT_MATCH_PROPERTY_NAME_SUFFIX;
+        }
+        switch (contains) {
+            case IN:
+                return QueryBuilders.termsQuery(propertyName, (Object[]) value);
+            case NOT_IN:
+                return QueryBuilders.boolQuery().mustNot(QueryBuilders.termsQuery(propertyName, (Object[]) value));
+            default:
+                throw new VertexiumException("Unexpected Contains predicate " + has.predicate);
+        }
     }
 
     protected QueryBuilder getFilterForComparePredicate(Compare compare, HasValueContainer has) {
@@ -961,60 +972,66 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
 
         List<QueryBuilder> filters = new ArrayList<>();
         for (String propertyName : propertyNames) {
-            if (Edge.LABEL_PROPERTY_NAME.equals(propertyName)) {
-                propertyName = Elasticsearch5SearchIndex.EDGE_LABEL_FIELD_NAME;
-            } else if (Edge.OUT_VERTEX_ID_PROPERTY_NAME.equals(propertyName)) {
-                propertyName = Elasticsearch5SearchIndex.OUT_VERTEX_ID_FIELD_NAME;
-            } else if (Edge.IN_VERTEX_ID_PROPERTY_NAME.equals(propertyName)) {
-                propertyName = Elasticsearch5SearchIndex.IN_VERTEX_ID_FIELD_NAME;
-            } else if (has.value instanceof IpV4Address) {
-                // this value is converted to a string and should not use the exact match field
-            } else if (value instanceof String || value instanceof String[]) {
-                propertyName = propertyName + Elasticsearch5SearchIndex.EXACT_MATCH_PROPERTY_NAME_SUFFIX;
-            }
-            switch (compare) {
-                case EQUAL:
-                    if (has.value instanceof DateOnly) {
-                        DateTime dateTimeValue = ((DateTime) value);
-                        DateTime lower = dateTimeValue.withTime(0, 0, 0, 0);
-                        DateTime upper = dateTimeValue.withTime(23, 59, 59, 999);
-                        filters.add(QueryBuilders.rangeQuery(propertyName).gte(lower).lte(upper));
-                    } else {
-                        filters.add(QueryBuilders.termQuery(propertyName, value));
-                    }
-                    break;
-                case GREATER_THAN_EQUAL:
-                    if (has.value instanceof DateOnly) {
-                        value = ((DateTime) value).withTime(0, 0, 0, 0);
-                    }
-                    filters.add(QueryBuilders.rangeQuery(propertyName).gte(value));
-                    break;
-                case GREATER_THAN:
-                    if (has.value instanceof DateOnly) {
-                        value = ((DateTime) value).withTime(23, 59, 59, 999);
-                    }
-                    filters.add(QueryBuilders.rangeQuery(propertyName).gt(value));
-                    break;
-                case LESS_THAN_EQUAL:
-                    if (has.value instanceof DateOnly) {
-                        value = ((DateTime) value).withTime(23, 59, 59, 999);
-                    }
-                    filters.add(QueryBuilders.rangeQuery(propertyName).lte(value));
-                    break;
-                case LESS_THAN:
-                    if (has.value instanceof DateOnly) {
-                        value = ((DateTime) value).withTime(0, 0, 0, 0);
-                    }
-                    filters.add(QueryBuilders.rangeQuery(propertyName).lt(value));
-                    break;
-                case NOT_EQUAL:
-                    addNotFilter(filters, propertyName, value);
-                    break;
-                default:
-                    throw new VertexiumException("Unexpected Compare predicate " + has.predicate);
-            }
+            filters.add(getFilterForProperty(compare, has, propertyName, value));
         }
         return getSingleFilterOrOrTheFilters(filters, has);
+    }
+
+    private QueryBuilder getFilterForProperty(Compare compare, HasValueContainer has, String propertyName, Object value) {
+        if (Element.ID_PROPERTY_NAME.equals(propertyName)) {
+            propertyName = Elasticsearch5SearchIndex.ELEMENT_ID_FIELD_NAME;
+        } else if (Edge.LABEL_PROPERTY_NAME.equals(propertyName)) {
+            propertyName = Elasticsearch5SearchIndex.EDGE_LABEL_FIELD_NAME;
+        } else if (Edge.OUT_VERTEX_ID_PROPERTY_NAME.equals(propertyName)) {
+            propertyName = Elasticsearch5SearchIndex.OUT_VERTEX_ID_FIELD_NAME;
+        } else if (Edge.IN_VERTEX_ID_PROPERTY_NAME.equals(propertyName)) {
+            propertyName = Elasticsearch5SearchIndex.IN_VERTEX_ID_FIELD_NAME;
+        } else if (Edge.IN_OR_OUT_VERTEX_ID_PROPERTY_NAME.equals(propertyName)) {
+            return QueryBuilders.boolQuery()
+                    .should(getFilterForProperty(compare, has, Edge.OUT_VERTEX_ID_PROPERTY_NAME, value))
+                    .should(getFilterForProperty(compare, has, Edge.IN_VERTEX_ID_PROPERTY_NAME, value))
+                    .minimumShouldMatch(1);
+        } else if (has.value instanceof IpV4Address) {
+            // this value is converted to a string and should not use the exact match field
+        } else if (value instanceof String || value instanceof String[]) {
+            propertyName = propertyName + Elasticsearch5SearchIndex.EXACT_MATCH_PROPERTY_NAME_SUFFIX;
+        }
+
+        switch (compare) {
+            case EQUAL:
+                if (has.value instanceof DateOnly) {
+                    DateTime dateTimeValue = ((DateTime) value);
+                    DateTime lower = dateTimeValue.withTime(0, 0, 0, 0);
+                    DateTime upper = dateTimeValue.withTime(23, 59, 59, 999);
+                    return QueryBuilders.rangeQuery(propertyName).gte(lower).lte(upper);
+                } else {
+                    return QueryBuilders.termQuery(propertyName, value);
+                }
+            case GREATER_THAN_EQUAL:
+                if (has.value instanceof DateOnly) {
+                    value = ((DateTime) value).withTime(0, 0, 0, 0);
+                }
+                return QueryBuilders.rangeQuery(propertyName).gte(value);
+            case GREATER_THAN:
+                if (has.value instanceof DateOnly) {
+                    value = ((DateTime) value).withTime(23, 59, 59, 999);
+                }
+                return QueryBuilders.rangeQuery(propertyName).gt(value);
+            case LESS_THAN_EQUAL:
+                if (has.value instanceof DateOnly) {
+                    value = ((DateTime) value).withTime(23, 59, 59, 999);
+                }
+                return QueryBuilders.rangeQuery(propertyName).lte(value);
+            case LESS_THAN:
+                if (has.value instanceof DateOnly) {
+                    value = ((DateTime) value).withTime(0, 0, 0, 0);
+                }
+                return QueryBuilders.rangeQuery(propertyName).lt(value);
+            case NOT_EQUAL:
+                return QueryBuilders.boolQuery().mustNot(QueryBuilders.termQuery(propertyName, value));
+            default:
+                throw new VertexiumException("Unexpected Compare predicate " + has.predicate);
+        }
     }
 
     private Object convertQueryValue(Object value) {
@@ -1063,10 +1080,6 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
                 Elasticsearch5SearchIndex.ELEMENT_TYPE_FIELD_NAME,
                 values.toArray(new String[values.size()])
         );
-    }
-
-    protected void addNotFilter(List<QueryBuilder> filters, String key, Object value) {
-        filters.add(QueryBuilders.boolQuery().mustNot(QueryBuilders.termQuery(key, value)));
     }
 
     protected QueryBuilder getFilterBuilder(List<QueryBuilder> filters) {
@@ -1217,6 +1230,10 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
     protected List<AggregationBuilder> getElasticsearchTermsAggregations(TermsAggregation agg) {
         List<AggregationBuilder> termsAggs = new ArrayList<>();
         String fieldName = agg.getPropertyName();
+        if (Edge.IN_OR_OUT_VERTEX_ID_PROPERTY_NAME.equals(fieldName)) {
+            throw new VertexiumException("Cannot aggregate by: " + fieldName);
+        }
+
         if (Edge.LABEL_PROPERTY_NAME.equals(fieldName)
                 || Edge.OUT_VERTEX_ID_PROPERTY_NAME.equals(fieldName)
                 || Edge.IN_VERTEX_ID_PROPERTY_NAME.equals(fieldName)

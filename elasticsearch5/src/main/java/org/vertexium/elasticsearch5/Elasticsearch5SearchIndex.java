@@ -1136,7 +1136,8 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
     public String[] getAllMatchingPropertyNames(Graph graph, String propertyName, Authorizations authorizations) {
         if (Edge.LABEL_PROPERTY_NAME.equals(propertyName)
                 || Edge.OUT_VERTEX_ID_PROPERTY_NAME.equals(propertyName)
-                || Edge.IN_VERTEX_ID_PROPERTY_NAME.equals(propertyName)) {
+                || Edge.IN_VERTEX_ID_PROPERTY_NAME.equals(propertyName)
+                || Edge.IN_OR_OUT_VERTEX_ID_PROPERTY_NAME.equals(propertyName)) {
             return new String[]{propertyName};
         }
         Collection<String> hashes = this.propertyNameVisibilitiesStore.getHashes(graph, propertyName, authorizations);

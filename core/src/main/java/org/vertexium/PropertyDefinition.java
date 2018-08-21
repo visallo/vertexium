@@ -28,6 +28,11 @@ public class PropertyDefinition implements Serializable {
             String.class,
             Sets.newHashSet(TextIndexHint.EXACT_MATCH)
     );
+    private static final PropertyDefinition IN_OR_OUT_VERTEX_ID_PROPERTY_DEFINITION = new PropertyDefinition(
+            Edge.IN_OR_OUT_VERTEX_ID_PROPERTY_NAME,
+            String.class,
+            Sets.newHashSet(TextIndexHint.EXACT_MATCH)
+    );
     private final String propertyName;
     private final Class dataType;
     private final Set<TextIndexHint> textIndexHints;
@@ -98,6 +103,9 @@ public class PropertyDefinition implements Serializable {
         }
         if (Edge.IN_VERTEX_ID_PROPERTY_NAME.equals(propertyName)) {
             return IN_VERTEX_ID_PROPERTY_DEFINITION;
+        }
+        if (Edge.IN_OR_OUT_VERTEX_ID_PROPERTY_NAME.equals(propertyName)) {
+            return IN_OR_OUT_VERTEX_ID_PROPERTY_DEFINITION;
         }
         for (PropertyDefinition propertyDefinition : propertyDefinitions) {
             if (propertyDefinition.getPropertyName().equals(propertyName)) {

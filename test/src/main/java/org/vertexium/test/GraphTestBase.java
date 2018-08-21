@@ -2357,6 +2357,23 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    public void testGraphQueryForEdgesUsingInOrOutVertexId() {
+        Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
+        Vertex v2 = graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_A);
+        Vertex v3 = graph.addVertex("v3", VISIBILITY_A, AUTHORIZATIONS_A);
+
+        graph.addEdge("e1", v1, v2, LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.addEdge("e2", v1, v3, LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.addEdge("e3", v2, v3, LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.flush();
+
+        QueryResultsIterable<Edge> edges = graph.query(AUTHORIZATIONS_A)
+                .has(Edge.IN_OR_OUT_VERTEX_ID_PROPERTY_NAME, "v1")
+                .edges();
+        assertEdgeIdsAnyOrder(edges, "e1", "e2");
+    }
+
+    @Test
     public void testGraphQuery() {
         String namePropertyName = "first.name";
         Vertex v1 = graph.prepareVertex("v1", VISIBILITY_A)
