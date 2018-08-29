@@ -160,6 +160,9 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
                 .storedFields(
                         Elasticsearch5SearchIndex.ELEMENT_ID_FIELD_NAME,
                         Elasticsearch5SearchIndex.ELEMENT_TYPE_FIELD_NAME,
+                        Elasticsearch5SearchIndex.OUT_VERTEX_ID_FIELD_NAME,
+                        Elasticsearch5SearchIndex.IN_VERTEX_ID_FIELD_NAME,
+                        Elasticsearch5SearchIndex.EDGE_LABEL_FIELD_NAME,
                         Elasticsearch5SearchIndex.EXTENDED_DATA_TABLE_NAME_FIELD_NAME,
                         Elasticsearch5SearchIndex.EXTENDED_DATA_TABLE_ROW_ID_FIELD_NAME
                 );
@@ -446,16 +449,25 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
         QueryParameters filterParameters = getParameters().clone();
         filterParameters.setSkip(0); // ES already did a skip
         List<Iterable<? extends VertexiumObject>> items = new ArrayList<>();
+        Authorizations authorizations = filterParameters.getAuthorizations();
         if (ids.getVertexIds().size() > 0) {
-            Iterable<? extends VertexiumObject> vertices = getGraph().getVertices(ids.getVertexIds(), fetchHints, filterParameters.getAuthorizations());
-            items.add(vertices);
+            if (fetchHints.equals(FetchHints.NONE)) {
+                items.add(getElasticsearchVertices(hits, fetchHints, authorizations));
+            } else {
+                Iterable<? extends VertexiumObject> vertices = getGraph().getVertices(ids.getVertexIds(), fetchHints, authorizations);
+                items.add(vertices);
+            }
         }
         if (ids.getEdgeIds().size() > 0) {
-            Iterable<? extends VertexiumObject> edges = getGraph().getEdges(ids.getEdgeIds(), fetchHints, filterParameters.getAuthorizations());
-            items.add(edges);
+            if (fetchHints.equals(FetchHints.EDGE_REFS) || fetchHints.equals(FetchHints.NONE)) {
+                items.add(getElasticsearchEdges(hits, fetchHints, authorizations));
+            } else {
+                Iterable<? extends VertexiumObject> edges = getGraph().getEdges(ids.getEdgeIds(), fetchHints, authorizations);
+                items.add(edges);
+            }
         }
         if (ids.getExtendedDataIds().size() > 0) {
-            Iterable<? extends VertexiumObject> extendedDataRows = getGraph().getExtendedData(ids.getExtendedDataIds(), filterParameters.getAuthorizations());
+            Iterable<? extends VertexiumObject> extendedDataRows = getGraph().getExtendedData(ids.getExtendedDataIds(), authorizations);
             items.add(extendedDataRows);
         }
         Iterable<VertexiumObject> vertexiumObjects = new JoinIterable<>(items);
@@ -511,6 +523,43 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
         QueryParameters filterParameters = getParameters().clone();
         Iterable<SearchHit> hitsIterable = IterableUtils.toIterable(hits.getHits());
         return createIterable(response, filterParameters, hitsIterable, response.getTookInMillis(), hits);
+    }
+
+    private List<ElasticsearchVertex> getElasticsearchVertices(SearchHits hits, FetchHints fetchHints, Authorizations authorizations) {
+        return StreamUtils.stream(hits)
+                .map(hit -> {
+                    String elementId = hit.getField(Elasticsearch5SearchIndex.ELEMENT_ID_FIELD_NAME).getValue();
+                    return new ElasticsearchVertex(
+                            getGraph(),
+                            elementId,
+                            fetchHints,
+                            authorizations
+                    );
+                }).collect(Collectors.toList());
+    }
+
+    private List<ElasticsearchEdge> getElasticsearchEdges(SearchHits hits, FetchHints fetchHints, Authorizations authorizations) {
+        return StreamUtils.stream(hits)
+                .map(hit -> {
+                    String inVertexId = null;
+                    String outVertexId = null;
+                    String label = null;
+                    if (fetchHints.equals(FetchHints.EDGE_REFS)) {
+                        inVertexId = hit.getField(Elasticsearch5SearchIndex.IN_VERTEX_ID_FIELD_NAME).getValue();
+                        outVertexId = hit.getField(Elasticsearch5SearchIndex.OUT_VERTEX_ID_FIELD_NAME).getValue();
+                        label = hit.getField(Elasticsearch5SearchIndex.EDGE_LABEL_FIELD_NAME).getValue();
+                    }
+                    String elementId = hit.getField(Elasticsearch5SearchIndex.ELEMENT_ID_FIELD_NAME).getValue();
+                    return new ElasticsearchEdge(
+                            getGraph(),
+                            elementId,
+                            label,
+                            inVertexId,
+                            outVertexId,
+                            fetchHints,
+                            authorizations
+                    );
+                }).collect(Collectors.toList());
     }
 
     @Override
@@ -978,7 +1027,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
         } else if (value instanceof String
                 || value instanceof String[]
                 || (value instanceof Object[] && ((Object[]) value).length > 0 && ((Object[]) value)[0] instanceof String)
-                ) {
+        ) {
             propertyName = propertyName + Elasticsearch5SearchIndex.EXACT_MATCH_PROPERTY_NAME_SUFFIX;
         }
         switch (contains) {
