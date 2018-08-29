@@ -1,5 +1,6 @@
 # v4.1.1.2
 * Added: Query edges with a given in or out vertex
+* Added: Elasticsearch: Return ElasticsearchEdge and ElasticsearchVertex when FetchHints.EDGE_REF and FetchHints.NONE is set for performance 
 
 # v4.1.1.1
 * Fixed: `graph.findRelatedEdgeSummary` filtering edges that were re-added after soft delete/hidden

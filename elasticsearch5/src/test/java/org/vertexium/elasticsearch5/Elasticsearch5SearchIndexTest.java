@@ -21,10 +21,11 @@ import org.vertexium.test.GraphTestBase;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 import static org.vertexium.test.util.VertexiumAssert.assertResultsCount;
-import static org.vertexium.test.util.VertexiumAssert.assertThrowsException;
 import static org.vertexium.util.IterableUtils.count;
+import static org.vertexium.util.IterableUtils.toList;
 
 public class Elasticsearch5SearchIndexTest extends GraphTestBase {
 
@@ -156,6 +157,69 @@ public class Elasticsearch5SearchIndexTest extends GraphTestBase {
                 fail("Wildcard prefix of query string should have caused a NotSerializableExceptionWrapper exception");
             }
         }
+    }
+
+    @Test
+    public void testQueryReturningElasticsearchEdge() {
+        graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.addEdge("e1", "v1", "v2", LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.flush();
+
+        QueryResultsIterable<Edge> edges = graph.query(AUTHORIZATIONS_A)
+                .edges(FetchHints.EDGE_REFS);
+
+        assertResultsCount(1, 1, edges);
+        Edge e1 = toList(edges).get(0);
+        assertEquals(LABEL_LABEL1, e1.getLabel());
+        assertEquals("v1", e1.getVertexId(Direction.OUT));
+        assertEquals("v2", e1.getVertexId(Direction.IN));
+        assertEquals("e1", e1.getId());
+
+        edges = graph.query(AUTHORIZATIONS_A)
+                .edges(FetchHints.NONE);
+
+        assertResultsCount(1, 1, edges);
+        e1 = toList(edges).get(0);
+        assertNull(e1.getLabel());
+        assertNull(e1.getVertexId(Direction.OUT));
+        assertNull( e1.getVertexId(Direction.IN));
+        assertNull("e1", e1.getId());
+    }
+
+    @Test
+    public void testQueryReturningElasticsearchVertex() {
+        graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.addVertex("v2", VISIBILITY_B, AUTHORIZATIONS_B);
+        graph.addEdge("e1", "v1", "v2", LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.flush();
+
+        QueryResultsIterable<Vertex> vertices = graph.query(AUTHORIZATIONS_B)
+                .vertices(FetchHints.NONE);
+
+        assertResultsCount(1, 1, vertices);
+        Vertex vertex = toList(vertices).get(0);
+        assertEquals("v2", vertex.getId());
+    }
+
+    @Test(expected = VertexiumNotSupportedException.class)
+    public void testRetrievingVerticesFromElasticsearchEdge() {
+        graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.addEdge("e1", "v1", "v2", LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.flush();
+
+        QueryResultsIterable<Edge> edges = graph.query(AUTHORIZATIONS_A)
+                .edges(FetchHints.EDGE_REFS);
+
+        assertResultsCount(1, 1, edges);
+        toList(edges).get(0).getVertices(AUTHORIZATIONS_A);
+
+        edges = graph.query(AUTHORIZATIONS_A)
+                .edges(FetchHints.NONE);
+
+        assertResultsCount(1, 1, edges);
+        toList(edges).get(0).getVertices(AUTHORIZATIONS_A);
     }
 
     private long getNumQueries() {
