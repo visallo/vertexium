@@ -14,6 +14,7 @@ import org.elasticsearch.search.aggregations.bucket.range.InternalRange;
 import org.elasticsearch.search.aggregations.bucket.range.Range;
 import org.elasticsearch.search.aggregations.bucket.terms.InternalTerms;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
+import org.elasticsearch.search.aggregations.metrics.cardinality.InternalCardinality;
 import org.elasticsearch.search.aggregations.metrics.percentiles.Percentiles;
 import org.elasticsearch.search.aggregations.metrics.stats.extended.ExtendedStats;
 import org.elasticsearch.search.aggregations.metrics.stats.extended.InternalExtendedStats;
@@ -144,6 +145,9 @@ public class ElasticsearchGraphQueryIterable<T> extends DefaultGraphQueryIterabl
         if (first instanceof StatisticsAggregation || first instanceof InternalExtendedStats) {
             return reduceStatisticsResults(aggs);
         }
+        if (first instanceof CardinalityAggregation || first instanceof InternalCardinality) {
+            return reduceCardinalityResults(query, aggs);
+        }
         throw new VertexiumException("Unhandled aggregation type: " + first.getClass().getName());
     }
 
@@ -219,6 +223,21 @@ public class ElasticsearchGraphQueryIterable<T> extends DefaultGraphQueryIterabl
             throw new VertexiumException("Aggregation is not a percentile: " + agg.getClass().getName());
         }
         return new PercentilesResult(results);
+    }
+
+    private static CardinalityResult reduceCardinalityResults(ElasticsearchSearchQueryBase query, List<Aggregation> aggs) {
+        if (aggs.size() == 0) {
+            return new CardinalityResult(0);
+        }
+        if (aggs.size() == 1) {
+            Aggregation agg = aggs.get(0);
+            if (agg instanceof InternalCardinality) {
+                return new CardinalityResult(((InternalCardinality) agg).getValue());
+            } else {
+                throw new VertexiumException("Unhandled aggregation result type: " + agg.getClass().getName());
+            }
+        }
+        throw new VertexiumException("Cannot reduce multiple " + CardinalityAggregation.class + "(count: " + aggs.size() + ")");
     }
 
     private static TermsResult reduceTermsResults(ElasticsearchSearchQueryBase query, List<Aggregation> aggs) {

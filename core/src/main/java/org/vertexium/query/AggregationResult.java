@@ -24,6 +24,9 @@ public abstract class AggregationResult {
         if (resultType.equals(GeohashResult.class)) {
             return resultType.cast(new GeohashResult(new ArrayList<>()));
         }
+        if (resultType.equals(CardinalityResult.class)) {
+            return resultType.cast(new CardinalityResult(0));
+        }
         throw new VertexiumException("Unhandled type to create empty results for: " + resultType.getName());
     }
 }

@@ -6906,6 +6906,51 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    public void testGraphQueryWithCardinalityAggregation() {
+        graph.defineProperty("emptyField").dataType(Integer.class).define();
+
+        graph.prepareVertex("v1", VISIBILITY_EMPTY)
+                .addPropertyValue("", "age", 25, VISIBILITY_EMPTY)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.prepareVertex("v2", VISIBILITY_EMPTY)
+                .addPropertyValue("", "age", 20, VISIBILITY_EMPTY)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.prepareVertex("v3", VISIBILITY_EMPTY)
+                .addPropertyValue("", "age", 20, VISIBILITY_EMPTY)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.prepareVertex("v4", VISIBILITY_A)
+                .addPropertyValue("", "age", 30, VISIBILITY_A)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        CardinalityResult stats = queryGraphQueryWithCardinalityAggregation(Element.ID_PROPERTY_NAME, AUTHORIZATIONS_EMPTY);
+        assumeTrue("Cardinality aggregation not supported", stats != null);
+        assertEquals(3, stats.getCount());
+
+        stats = queryGraphQueryWithCardinalityAggregation(Element.ID_PROPERTY_NAME, AUTHORIZATIONS_A_AND_B);
+        assumeTrue("Cardinality aggregation not supported", stats != null);
+        assertEquals(4, stats.getCount());
+
+        try {
+            queryGraphQueryWithCardinalityAggregation("age", AUTHORIZATIONS_A_AND_B);
+            fail("Should throw not supported exception");
+        } catch (Exception ex) {
+            // expected
+        }
+    }
+
+    private CardinalityResult queryGraphQueryWithCardinalityAggregation(String propertyName, Authorizations authorizations) {
+        Query q = graph.query(authorizations).limit(0);
+        CardinalityAggregation agg = new CardinalityAggregation("card", propertyName);
+        if (!q.isAggregationSupported(agg)) {
+            LOGGER.warn("%s unsupported", CardinalityAggregation.class.getName());
+            return null;
+        }
+        q.addAggregation(agg);
+        return q.vertices().getAggregationResult("card", CardinalityResult.class);
+    }
+
+    @Test
     public void testGraphQueryWithPercentilesAggregation() throws ParseException {
         graph.defineProperty("emptyField").dataType(Integer.class).define();
 
