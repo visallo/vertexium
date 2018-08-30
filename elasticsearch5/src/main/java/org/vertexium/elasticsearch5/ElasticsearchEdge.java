@@ -4,19 +4,19 @@ import org.vertexium.*;
 import org.vertexium.mutation.ExistingEdgeMutation;
 
 public class ElasticsearchEdge extends ElasticsearchElement implements Edge {
-    private String className = ElasticsearchEdge.class.getSimpleName();
     private String label;
     private String inVertexId;
     private String outVertexId;
 
-
-    public ElasticsearchEdge(Graph graph,
-                             String id,
-                             String label,
-                             String inVertexId,
-                             String outVertexId,
-                             FetchHints fetchHints,
-                             Authorizations authorizations) {
+    public ElasticsearchEdge(
+            Graph graph,
+            String id,
+            String label,
+            String inVertexId,
+            String outVertexId,
+            FetchHints fetchHints,
+            Authorizations authorizations
+    ) {
         super(graph, id, fetchHints, authorizations);
         this.label = label;
         this.inVertexId = inVertexId;
@@ -40,12 +40,12 @@ public class ElasticsearchEdge extends ElasticsearchElement implements Edge {
 
     @Override
     public Vertex getVertex(Direction direction, Authorizations authorizations) {
-        throw new VertexiumNotSupportedException("getVertex is not supported on " + className);
+        throw new VertexiumNotSupportedException("getVertex is not supported");
     }
 
     @Override
     public Vertex getVertex(Direction direction, FetchHints fetchHints, Authorizations authorizations) {
-        throw new VertexiumNotSupportedException("getVertex is not supported on " + className);
+        throw new VertexiumNotSupportedException("getVertex is not supported");
     }
 
     @Override
@@ -58,26 +58,26 @@ public class ElasticsearchEdge extends ElasticsearchElement implements Edge {
 
     @Override
     public Vertex getOtherVertex(String myVertexId, Authorizations authorizations) {
-        throw new VertexiumNotSupportedException("getOtherVertex is not supported on " + className);
+        throw new VertexiumNotSupportedException("getOtherVertex is not supported");
     }
 
     @Override
     public Vertex getOtherVertex(String myVertexId, FetchHints fetchHints, Authorizations authorizations) {
-        throw new VertexiumNotSupportedException("getOtherVertex is not supported on " + className);
+        throw new VertexiumNotSupportedException("getOtherVertex is not supported");
     }
 
     @Override
     public EdgeVertices getVertices(Authorizations authorizations) {
-        throw new VertexiumNotSupportedException("getVertices is not supported on " + className);
+        throw new VertexiumNotSupportedException("getVertices is not supported");
     }
 
     @Override
     public EdgeVertices getVertices(FetchHints fetchHints, Authorizations authorizations) {
-        throw new VertexiumNotSupportedException("getVertices is not supported on " + className);
+        throw new VertexiumNotSupportedException("getVertices is not supported");
     }
 
     @Override
     public ExistingEdgeMutation prepareMutation() {
-        throw new VertexiumNotSupportedException("prepareMutation is not supported on " + className);
+        throw new VertexiumNotSupportedException("prepareMutation is not supported");
     }
 }

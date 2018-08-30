@@ -47,7 +47,10 @@ import org.vertexium.elasticsearch5.utils.PagingIterable;
 import org.vertexium.query.*;
 import org.vertexium.scoring.ScoringStrategy;
 import org.vertexium.type.*;
-import org.vertexium.util.*;
+import org.vertexium.util.IterableUtils;
+import org.vertexium.util.JoinIterable;
+import org.vertexium.util.VertexiumLogger;
+import org.vertexium.util.VertexiumLoggerFactory;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -59,6 +62,7 @@ import java.util.stream.StreamSupport;
 
 import static org.vertexium.elasticsearch5.Elasticsearch5SearchIndex.*;
 import static org.vertexium.elasticsearch5.utils.SearchResponseUtils.checkForFailures;
+import static org.vertexium.util.StreamUtils.stream;
 
 public class ElasticsearchSearchQueryBase extends QueryBase {
     private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(ElasticsearchSearchQueryBase.class);
@@ -160,12 +164,16 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
                 .storedFields(
                         Elasticsearch5SearchIndex.ELEMENT_ID_FIELD_NAME,
                         Elasticsearch5SearchIndex.ELEMENT_TYPE_FIELD_NAME,
-                        Elasticsearch5SearchIndex.OUT_VERTEX_ID_FIELD_NAME,
-                        Elasticsearch5SearchIndex.IN_VERTEX_ID_FIELD_NAME,
-                        Elasticsearch5SearchIndex.EDGE_LABEL_FIELD_NAME,
                         Elasticsearch5SearchIndex.EXTENDED_DATA_TABLE_NAME_FIELD_NAME,
                         Elasticsearch5SearchIndex.EXTENDED_DATA_TABLE_ROW_ID_FIELD_NAME
                 );
+        if (fetchHints.equals(FetchHints.NONE)) {
+            searchRequestBuilder.storedFields(
+                    Elasticsearch5SearchIndex.OUT_VERTEX_ID_FIELD_NAME,
+                    Elasticsearch5SearchIndex.IN_VERTEX_ID_FIELD_NAME,
+                    Elasticsearch5SearchIndex.EDGE_LABEL_FIELD_NAME
+            );
+        }
         if (getParameters().getMinScore() != null) {
             searchRequestBuilder.setMinScore(getParameters().getMinScore().floatValue());
         }
@@ -459,7 +467,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
             }
         }
         if (ids.getEdgeIds().size() > 0) {
-            if (fetchHints.equals(FetchHints.EDGE_REFS) || fetchHints.equals(FetchHints.NONE)) {
+            if (fetchHints.equals(FetchHints.NONE)) {
                 items.add(getElasticsearchEdges(hits, fetchHints, authorizations));
             } else {
                 Iterable<? extends VertexiumObject> edges = getGraph().getEdges(ids.getEdgeIds(), fetchHints, authorizations);
@@ -526,7 +534,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
     }
 
     private List<ElasticsearchVertex> getElasticsearchVertices(SearchHits hits, FetchHints fetchHints, Authorizations authorizations) {
-        return StreamUtils.stream(hits)
+        return stream(hits)
                 .map(hit -> {
                     String elementId = hit.getField(Elasticsearch5SearchIndex.ELEMENT_ID_FIELD_NAME).getValue();
                     return new ElasticsearchVertex(
@@ -539,16 +547,11 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
     }
 
     private List<ElasticsearchEdge> getElasticsearchEdges(SearchHits hits, FetchHints fetchHints, Authorizations authorizations) {
-        return StreamUtils.stream(hits)
+        return stream(hits)
                 .map(hit -> {
-                    String inVertexId = null;
-                    String outVertexId = null;
-                    String label = null;
-                    if (fetchHints.equals(FetchHints.EDGE_REFS)) {
-                        inVertexId = hit.getField(Elasticsearch5SearchIndex.IN_VERTEX_ID_FIELD_NAME).getValue();
-                        outVertexId = hit.getField(Elasticsearch5SearchIndex.OUT_VERTEX_ID_FIELD_NAME).getValue();
-                        label = hit.getField(Elasticsearch5SearchIndex.EDGE_LABEL_FIELD_NAME).getValue();
-                    }
+                    String inVertexId = hit.getField(Elasticsearch5SearchIndex.IN_VERTEX_ID_FIELD_NAME).getValue();
+                    String outVertexId = hit.getField(Elasticsearch5SearchIndex.OUT_VERTEX_ID_FIELD_NAME).getValue();
+                    String label = hit.getField(Elasticsearch5SearchIndex.EDGE_LABEL_FIELD_NAME).getValue();
                     String elementId = hit.getField(Elasticsearch5SearchIndex.ELEMENT_ID_FIELD_NAME).getValue();
                     return new ElasticsearchEdge(
                             getGraph(),
@@ -721,7 +724,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
         Authorizations auths = getParameters().getAuthorizations();
         Graph graph = getGraph();
 
-        Set<String> hashes = StreamUtils.stream(hasAuthorization.getAuthorizations())
+        Set<String> hashes = stream(hasAuthorization.getAuthorizations())
                 .flatMap(authorization -> visibilitiesStore.getHashesWithAuthorization(graph, authorization, auths).stream())
                 .collect(Collectors.toSet());
 

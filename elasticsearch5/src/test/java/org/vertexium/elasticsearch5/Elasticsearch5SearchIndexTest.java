@@ -25,7 +25,6 @@ import org.vertexium.test.GraphTestBase;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 import static org.vertexium.test.util.VertexiumAssert.assertResultsCount;
 import static org.vertexium.util.IterableUtils.count;
@@ -193,7 +192,7 @@ public class Elasticsearch5SearchIndexTest extends GraphTestBase {
         graph.flush();
 
         QueryResultsIterable<Edge> edges = graph.query(AUTHORIZATIONS_A)
-                .edges(FetchHints.EDGE_REFS);
+                .edges(FetchHints.NONE);
 
         assertResultsCount(1, 1, edges);
         Edge e1 = toList(edges).get(0);
@@ -201,16 +200,6 @@ public class Elasticsearch5SearchIndexTest extends GraphTestBase {
         assertEquals("v1", e1.getVertexId(Direction.OUT));
         assertEquals("v2", e1.getVertexId(Direction.IN));
         assertEquals("e1", e1.getId());
-
-        edges = graph.query(AUTHORIZATIONS_A)
-                .edges(FetchHints.NONE);
-
-        assertResultsCount(1, 1, edges);
-        e1 = toList(edges).get(0);
-        assertNull(e1.getLabel());
-        assertNull(e1.getVertexId(Direction.OUT));
-        assertNull( e1.getVertexId(Direction.IN));
-        assertNull("e1", e1.getId());
     }
 
     @Test
@@ -236,12 +225,6 @@ public class Elasticsearch5SearchIndexTest extends GraphTestBase {
         graph.flush();
 
         QueryResultsIterable<Edge> edges = graph.query(AUTHORIZATIONS_A)
-                .edges(FetchHints.EDGE_REFS);
-
-        assertResultsCount(1, 1, edges);
-        toList(edges).get(0).getVertices(AUTHORIZATIONS_A);
-
-        edges = graph.query(AUTHORIZATIONS_A)
                 .edges(FetchHints.NONE);
 
         assertResultsCount(1, 1, edges);
