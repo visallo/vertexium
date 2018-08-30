@@ -32,6 +32,7 @@ import org.elasticsearch.search.aggregations.bucket.histogram.HistogramAggregati
 import org.elasticsearch.search.aggregations.bucket.range.RangeAggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.range.date.DateRangeAggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
+import org.elasticsearch.search.aggregations.metrics.cardinality.CardinalityAggregationBuilder;
 import org.elasticsearch.search.aggregations.metrics.percentiles.PercentilesAggregationBuilder;
 import org.elasticsearch.search.aggregations.metrics.stats.extended.ExtendedStatsAggregationBuilder;
 import org.elasticsearch.search.sort.ScriptSortBuilder;
@@ -140,6 +141,9 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
             return true;
         }
         if (agg instanceof CalendarFieldAggregation) {
+            return true;
+        }
+        if (agg instanceof CardinalityAggregation) {
             return true;
         }
         return false;
@@ -1266,6 +1270,8 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
                 aggs.addAll(getElasticsearchStatisticsAggregations((StatisticsAggregation) agg));
             } else if (agg instanceof CalendarFieldAggregation) {
                 aggs.addAll(getElasticsearchCalendarFieldAggregation((CalendarFieldAggregation) agg));
+            } else if (agg instanceof CardinalityAggregation) {
+                aggs.addAll(getElasticsearchCardinalityAggregations((CardinalityAggregation) agg));
             } else {
                 throw new VertexiumException("Could not add aggregation of type: " + agg.getClass().getName());
             }
@@ -1324,14 +1330,11 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
         return aggName;
     }
 
-    protected List<AggregationBuilder> getElasticsearchTermsAggregations(TermsAggregation agg) {
-        List<AggregationBuilder> termsAggs = new ArrayList<>();
+    protected List<AggregationBuilder> getElasticsearchCardinalityAggregations(CardinalityAggregation agg) {
+        List<AggregationBuilder> cardinalityAggs = new ArrayList<>();
         String fieldName = agg.getPropertyName();
-        if (Edge.IN_OR_OUT_VERTEX_ID_PROPERTY_NAME.equals(fieldName)) {
-            throw new VertexiumException("Cannot aggregate by: " + fieldName);
-        }
-
-        if (Edge.LABEL_PROPERTY_NAME.equals(fieldName)
+        if (Element.ID_PROPERTY_NAME.equals(fieldName)
+                || Edge.LABEL_PROPERTY_NAME.equals(fieldName)
                 || Edge.OUT_VERTEX_ID_PROPERTY_NAME.equals(fieldName)
                 || Edge.IN_VERTEX_ID_PROPERTY_NAME.equals(fieldName)
                 || ExtendedDataRow.TABLE_NAME.equals(fieldName)
@@ -1341,7 +1344,41 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
             Map<String, Object> metadata = new HashMap<>();
             metadata.put(AGGREGATION_METADATA_FIELD_NAME_KEY, fieldName);
 
-            if (ExtendedDataRow.ELEMENT_ID.equals(fieldName)) {
+            if (Element.ID_PROPERTY_NAME.equals(fieldName) || ExtendedDataRow.ELEMENT_ID.equals(fieldName)) {
+                fieldName = ELEMENT_ID_FIELD_NAME;
+            } else if (ExtendedDataRow.ELEMENT_TYPE.equals(fieldName)) {
+                fieldName = ELEMENT_TYPE_FIELD_NAME;
+            }
+            String aggregationName = createAggregationName(agg.getAggregationName(), "0");
+            CardinalityAggregationBuilder cardinalityAgg = AggregationBuilders.cardinality(aggregationName);
+            cardinalityAgg.setMetaData(metadata);
+            cardinalityAgg.field(fieldName);
+            cardinalityAggs.add(cardinalityAgg);
+        } else {
+            throw new VertexiumException("Cannot use cardinality aggregation on properties with visibility: " + fieldName);
+        }
+        return cardinalityAggs;
+    }
+
+    protected List<AggregationBuilder> getElasticsearchTermsAggregations(TermsAggregation agg) {
+        List<AggregationBuilder> termsAggs = new ArrayList<>();
+        String fieldName = agg.getPropertyName();
+        if (Edge.IN_OR_OUT_VERTEX_ID_PROPERTY_NAME.equals(fieldName)) {
+            throw new VertexiumException("Cannot aggregate by: " + fieldName);
+        }
+
+        if (Element.ID_PROPERTY_NAME.equals(fieldName)
+                || Edge.LABEL_PROPERTY_NAME.equals(fieldName)
+                || Edge.OUT_VERTEX_ID_PROPERTY_NAME.equals(fieldName)
+                || Edge.IN_VERTEX_ID_PROPERTY_NAME.equals(fieldName)
+                || ExtendedDataRow.TABLE_NAME.equals(fieldName)
+                || ExtendedDataRow.ROW_ID.equals(fieldName)
+                || ExtendedDataRow.ELEMENT_ID.equals(fieldName)
+                || ExtendedDataRow.ELEMENT_TYPE.equals(fieldName)) {
+            Map<String, Object> metadata = new HashMap<>();
+            metadata.put(AGGREGATION_METADATA_FIELD_NAME_KEY, fieldName);
+
+            if (Element.ID_PROPERTY_NAME.equals(fieldName) || ExtendedDataRow.ELEMENT_ID.equals(fieldName)) {
                 fieldName = ELEMENT_ID_FIELD_NAME;
             } else if (ExtendedDataRow.ELEMENT_TYPE.equals(fieldName)) {
                 fieldName = ELEMENT_TYPE_FIELD_NAME;

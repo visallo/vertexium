@@ -1,4 +1,5 @@
 # v4.3.0
+* Added: Cardinality aggregation
 * Changed: Remove tools: Reindex, Backup, Restore
 * Changed: Remove FetchHintsBuilder.parse
 * Fixed: GeoPoint.calculateCenter
