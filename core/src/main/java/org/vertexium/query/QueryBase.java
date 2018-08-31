@@ -810,4 +810,11 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
     protected FetchHints idFetchHintsToElementFetchHints(EnumSet<IdFetchHint> idFetchHints) {
         return idFetchHints.contains(IdFetchHint.INCLUDE_HIDDEN) ? FetchHints.ALL_INCLUDING_HIDDEN : FetchHints.ALL;
     }
+
+    @Override
+    public String toString() {
+        return this.getClass().getName() + "{" +
+                "parameters=" + getParameters() +
+                '}';
+    }
 }
