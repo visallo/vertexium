@@ -18,6 +18,10 @@ public class PropertyCollection {
     }
 
     public synchronized Iterable<Property> getProperties(String key, String name) {
+        if (key == null) {
+            return getProperties(name);
+        }
+
         Map<String, ConcurrentSkipListSet<Property>> propertiesByKey = propertiesByNameAndKey.get(name);
         if (propertiesByKey == null) {
             return new ArrayList<>();

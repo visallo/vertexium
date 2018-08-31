@@ -26,10 +26,7 @@ public abstract class ElementBase implements Element {
         } else if (Edge.IN_OR_OUT_VERTEX_ID_PROPERTY_NAME.equals(name) && this instanceof Edge) {
             return getInOrOutVertexIdProperty();
         }
-        for (Property p : getProperties(name)) {
-            if (!p.getKey().equals(key)) {
-                continue;
-            }
+        for (Property p : internalGetProperties(key, name)) {
             if (visibility == null) {
                 return p;
             }
@@ -69,14 +66,17 @@ public abstract class ElementBase implements Element {
             result.add(getInOrOutVertexIdProperty());
             return result;
         }
-        return internalGetProperties(name);
+        return internalGetProperties(null, name);
     }
 
-    protected Iterable<Property> internalGetProperties(String name) {
+    protected Iterable<Property> internalGetProperties(String key, String name) {
         getFetchHints().assertPropertyIncluded(name);
         return new FilterIterable<Property>(getProperties()) {
             @Override
             protected boolean isIncluded(Property property) {
+                if (key != null && !property.getKey().equals(key)) {
+                    return false;
+                }
                 return property.getName().equals(name);
             }
         };
@@ -106,12 +106,7 @@ public abstract class ElementBase implements Element {
             return result;
         }
         getFetchHints().assertPropertyIncluded(name);
-        return new FilterIterable<Property>(getProperties()) {
-            @Override
-            protected boolean isIncluded(Property property) {
-                return property.getName().equals(name) && property.getKey().equals(key);
-            }
-        };
+        return internalGetProperties(key, name);
     }
 
     protected Property getIdProperty() {

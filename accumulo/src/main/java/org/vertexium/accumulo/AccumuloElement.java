@@ -398,8 +398,8 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
     }
 
     @Override
-    protected Iterable<Property> internalGetProperties(String name) {
+    protected Iterable<Property> internalGetProperties(String key, String name) {
         getFetchHints().assertPropertyIncluded(name);
-        return this.properties.getProperties(name);
+        return this.properties.getProperties(key, name);
     }
 }
