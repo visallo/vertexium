@@ -35,7 +35,7 @@ public class ElasticsearchEdge extends ElasticsearchElement implements Edge {
         } else if (direction.equals(Direction.OUT)) {
             return outVertexId;
         }
-        return null;
+        throw new VertexiumNotSupportedException(direction.name() + " is not supported");
     }
 
     @Override
