@@ -1,5 +1,6 @@
 package org.vertexium.query;
 
+import com.google.common.base.Joiner;
 import org.vertexium.*;
 import org.vertexium.util.IterableUtils;
 import org.vertexium.util.JoinIterable;
@@ -39,5 +40,11 @@ public class DefaultMultiVertexQuery extends QueryBase implements MultiVertexQue
 
     public String[] getVertexIds() {
         return vertexIds;
+    }
+
+    @Override
+    public String toString() {
+        return super.toString() +
+                ", vertexIds=" + Joiner.on(", ").join(vertexIds);
     }
 }

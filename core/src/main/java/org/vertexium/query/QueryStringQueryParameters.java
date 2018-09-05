@@ -18,4 +18,10 @@ public class QueryStringQueryParameters extends QueryParameters {
         QueryParameters result = new QueryStringQueryParameters(this.getQueryString(), this.getAuthorizations());
         return super.cloneTo(result);
     }
+
+    @Override
+    public String toString() {
+        return super.toString() +
+                ", queryString=" + (queryString == null ? "" : "\"" + queryString + "\"");
+    }
 }

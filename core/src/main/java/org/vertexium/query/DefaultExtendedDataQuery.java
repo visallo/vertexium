@@ -2,8 +2,6 @@ package org.vertexium.query;
 
 import org.vertexium.*;
 
-import java.util.EnumSet;
-
 public class DefaultExtendedDataQuery extends QueryBase {
     private final Element element;
     private final String tableName;
@@ -46,5 +44,12 @@ public class DefaultExtendedDataQuery extends QueryBase {
                 true,
                 getAggregations()
         );
+    }
+
+    @Override
+    public String toString() {
+        return super.toString() +
+                ", element=" + element +
+                ", tableName=" + tableName;
     }
 }
