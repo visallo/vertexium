@@ -2,8 +2,6 @@ package org.vertexium.query;
 
 import org.vertexium.*;
 
-import java.util.EnumSet;
-
 public abstract class VertexQueryBase extends QueryBase implements VertexQuery {
     private final Vertex sourceVertex;
     private String otherVertexId;
@@ -42,5 +40,13 @@ public abstract class VertexQueryBase extends QueryBase implements VertexQuery {
 
     public Direction getDirection() {
         return direction;
+    }
+
+    @Override
+    public String toString() {
+        return super.toString() +
+                ", sourceVertex=" + sourceVertex +
+                ", otherVertexId=" + otherVertexId +
+                ", direction=" + direction;
     }
 }

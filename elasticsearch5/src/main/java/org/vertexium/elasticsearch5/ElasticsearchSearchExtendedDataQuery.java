@@ -44,4 +44,11 @@ public class ElasticsearchSearchExtendedDataQuery extends ElasticsearchSearchQue
         );
         return filters;
     }
+
+    @Override
+    public String toString() {
+        return super.toString() +
+                ", elementId=" + elementId +
+                ", tableName=" + tableName;
+    }
 }
