@@ -152,4 +152,12 @@ public class ElasticsearchSearchVertexQuery extends ElasticsearchSearchQueryBase
         this.otherVertexId = otherVertexId;
         return this;
     }
+
+    @Override
+    public String toString() {
+        return super.toString() +
+                ", sourceVertex=" + sourceVertex +
+                ", otherVertexId=" + otherVertexId +
+                ", direction=" + direction;
+    }
 }
