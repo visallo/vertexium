@@ -2489,6 +2489,8 @@ public abstract class GraphTestBase {
                 .addPropertyValue("k1", "name", "joe", VISIBILITY_A)
                 .save(AUTHORIZATIONS_A);
 
+        graph.addEdge("e1", "v1", "v2", LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_A);
+
         graph.flush();
 
         assertTrue(graph.getVertexCount(AUTHORIZATIONS_A) == 3);
@@ -2509,6 +2511,12 @@ public abstract class GraphTestBase {
                 .vertices(FetchHints.NONE);
 
         assertResultsCount(2, 2, vertices);
+
+        QueryResultsIterable<Edge> edges = graph.query(AUTHORIZATIONS_A)
+                .has(Edge.LABEL_PROPERTY_NAME, Compare.EQUAL, LABEL_LABEL1)
+                .edges(FetchHints.EDGE_REFS);
+
+        assertResultsCount(1, 1, edges);
     }
 
     protected boolean isFetchHintNoneVertexQuerySupported() {
