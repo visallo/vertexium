@@ -46,7 +46,10 @@ import org.vertexium.elasticsearch5.utils.InfiniteScrollIterable;
 import org.vertexium.elasticsearch5.utils.PagingIterable;
 import org.vertexium.query.*;
 import org.vertexium.type.*;
-import org.vertexium.util.*;
+import org.vertexium.util.IterableUtils;
+import org.vertexium.util.JoinIterable;
+import org.vertexium.util.VertexiumLogger;
+import org.vertexium.util.VertexiumLoggerFactory;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -59,6 +62,7 @@ import java.util.stream.StreamSupport;
 import static org.vertexium.elasticsearch5.Elasticsearch5SearchIndex.ELEMENT_ID_FIELD_NAME;
 import static org.vertexium.elasticsearch5.Elasticsearch5SearchIndex.HIDDEN_VERTEX_FIELD_NAME;
 import static org.vertexium.elasticsearch5.utils.SearchResponseUtils.checkForFailures;
+import static org.vertexium.util.StreamUtils.stream;
 
 public class ElasticsearchSearchQueryBase extends QueryBase {
     private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(ElasticsearchSearchQueryBase.class);
@@ -169,6 +173,13 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
                         Elasticsearch5SearchIndex.EXTENDED_DATA_TABLE_NAME_FIELD_NAME,
                         Elasticsearch5SearchIndex.EXTENDED_DATA_TABLE_ROW_ID_FIELD_NAME
                 );
+        if (fetchHints.equals(FetchHints.NONE)) {
+            searchRequestBuilder.storedFields(
+                    Elasticsearch5SearchIndex.OUT_VERTEX_ID_FIELD_NAME,
+                    Elasticsearch5SearchIndex.IN_VERTEX_ID_FIELD_NAME,
+                    Elasticsearch5SearchIndex.EDGE_LABEL_FIELD_NAME
+            );
+        }
         if (includeAggregations) {
             List<AggregationBuilder> aggs = getElasticsearchAggregations(getAggregations());
             for (AggregationBuilder aggregationBuilder : aggs) {
@@ -410,16 +421,25 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
         QueryParameters filterParameters = getParameters().clone();
         filterParameters.setSkip(0); // ES already did a skip
         List<Iterable<? extends VertexiumObject>> items = new ArrayList<>();
+        Authorizations authorizations = filterParameters.getAuthorizations();
         if (ids.getVertexIds().size() > 0) {
-            Iterable<? extends VertexiumObject> vertices = getGraph().getVertices(ids.getVertexIds(), fetchHints, filterParameters.getAuthorizations());
-            items.add(vertices);
+            if (fetchHints.equals(FetchHints.NONE)) {
+                items.add(getElasticsearchVertices(hits, fetchHints, authorizations));
+            } else {
+                Iterable<? extends VertexiumObject> vertices = getGraph().getVertices(ids.getVertexIds(), fetchHints, authorizations);
+                items.add(vertices);
+            }
         }
         if (ids.getEdgeIds().size() > 0) {
-            Iterable<? extends VertexiumObject> edges = getGraph().getEdges(ids.getEdgeIds(), fetchHints, filterParameters.getAuthorizations());
-            items.add(edges);
+            if (fetchHints.equals(FetchHints.NONE)) {
+                items.add(getElasticsearchEdges(hits, fetchHints, authorizations));
+            } else {
+                Iterable<? extends VertexiumObject> edges = getGraph().getEdges(ids.getEdgeIds(), fetchHints, authorizations);
+                items.add(edges);
+            }
         }
         if (ids.getExtendedDataIds().size() > 0) {
-            Iterable<? extends VertexiumObject> extendedDataRows = getGraph().getExtendedData(ids.getExtendedDataIds(), filterParameters.getAuthorizations());
+            Iterable<? extends VertexiumObject> extendedDataRows = getGraph().getExtendedData(ids.getExtendedDataIds(), authorizations);
             items.add(extendedDataRows);
         }
         Iterable<VertexiumObject> vertexiumObjects = new JoinIterable<>(items);
@@ -470,6 +490,38 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
         QueryParameters filterParameters = getParameters().clone();
         Iterable<SearchHit> hitsIterable = IterableUtils.toIterable(hits.getHits());
         return createIterable(response, filterParameters, hitsIterable, false, false, false, response.getTookInMillis(), hits);
+    }
+
+    private List<ElasticsearchVertex> getElasticsearchVertices(SearchHits hits, FetchHints fetchHints, Authorizations authorizations) {
+        return stream(hits)
+                .map(hit -> {
+                    String elementId = hit.getField(Elasticsearch5SearchIndex.ELEMENT_ID_FIELD_NAME).getValue();
+                    return new ElasticsearchVertex(
+                            getGraph(),
+                            elementId,
+                            fetchHints,
+                            authorizations
+                    );
+                }).collect(Collectors.toList());
+    }
+
+    private List<ElasticsearchEdge> getElasticsearchEdges(SearchHits hits, FetchHints fetchHints, Authorizations authorizations) {
+        return stream(hits)
+                .map(hit -> {
+                    String inVertexId = hit.getField(Elasticsearch5SearchIndex.IN_VERTEX_ID_FIELD_NAME).getValue();
+                    String outVertexId = hit.getField(Elasticsearch5SearchIndex.OUT_VERTEX_ID_FIELD_NAME).getValue();
+                    String label = hit.getField(Elasticsearch5SearchIndex.EDGE_LABEL_FIELD_NAME).getValue();
+                    String elementId = hit.getField(Elasticsearch5SearchIndex.ELEMENT_ID_FIELD_NAME).getValue();
+                    return new ElasticsearchEdge(
+                            getGraph(),
+                            elementId,
+                            label,
+                            inVertexId,
+                            outVertexId,
+                            fetchHints,
+                            authorizations
+                    );
+                }).collect(Collectors.toList());
     }
 
     @Override
@@ -637,7 +689,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
         Authorizations auths = getParameters().getAuthorizations();
         Graph graph = getGraph();
 
-        Set<String> hashes = StreamUtils.stream(hasAuthorization.getAuthorizations())
+        Set<String> hashes = stream(hasAuthorization.getAuthorizations())
                 .flatMap(authorization -> visibilitiesStore.getHashesWithAuthorization(graph, authorization, auths).stream())
                 .collect(Collectors.toSet());
 
@@ -943,7 +995,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
         } else if (value instanceof String
                 || value instanceof String[]
                 || (value instanceof Object[] && ((Object[]) value).length > 0 && ((Object[]) value)[0] instanceof String)
-                ) {
+        ) {
             propertyName = propertyName + Elasticsearch5SearchIndex.EXACT_MATCH_PROPERTY_NAME_SUFFIX;
         }
         switch (contains) {
