@@ -3,6 +3,7 @@
 * Changed: Remove tools: Reindex, Backup, Restore
 * Changed: Remove FetchHintsBuilder.parse
 * Fixed: GeoPoint.calculateCenter
+* Removed: PropertyValue.store (this include streaming property values), property values are not always stored
 
 # v4.2.0
 * Added: Elasticsearch handler for missing documents

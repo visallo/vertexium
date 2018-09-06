@@ -10,7 +10,6 @@ import org.vertexium.mutation.ExistingElementMutation;
 import org.vertexium.mutation.PropertyDeleteMutation;
 import org.vertexium.mutation.PropertySoftDeleteMutation;
 import org.vertexium.property.MutableProperty;
-import org.vertexium.property.PropertyValue;
 import org.vertexium.query.ExtendedDataQueryableIterable;
 import org.vertexium.query.QueryableIterable;
 import org.vertexium.search.IndexHint;
@@ -338,10 +337,6 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
     protected void addPropertyInternal(Property property) {
         if (property.getKey() == null) {
             throw new IllegalArgumentException("key is required for property");
-        }
-        Object propertyValue = property.getValue();
-        if (propertyValue instanceof PropertyValue && !((PropertyValue) propertyValue).isStore()) {
-            return;
         }
         Property existingProperty = getProperty(property.getKey(), property.getName(), property.getVisibility());
         if (existingProperty == null) {

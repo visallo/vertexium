@@ -22,7 +22,7 @@ class InMemoryStreamingPropertyValueRef extends StreamingPropertyValueRef<InMemo
     @Override
     public StreamingPropertyValue toStreamingPropertyValue(InMemoryGraph graph, long timestamp) {
         return new InMemoryStreamingPropertyValue(
-                valueData, getValueType()).store(isStore()).searchIndex(isSearchIndex());
+                valueData, getValueType()).searchIndex(isSearchIndex());
 
     }
 }

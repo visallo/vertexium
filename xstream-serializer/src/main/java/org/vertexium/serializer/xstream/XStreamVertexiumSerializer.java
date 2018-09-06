@@ -4,8 +4,13 @@ import com.thoughtworks.xstream.XStream;
 import org.vertexium.VertexiumSerializer;
 
 public class XStreamVertexiumSerializer implements VertexiumSerializer {
-    private static final XStream xstream = new XStream();
+    private static final XStream xstream;
     private static final byte[] EMPTY = new byte[0];
+
+    static {
+        xstream = new XStream();
+        xstream.ignoreUnknownElements();
+    }
 
     @Override
     public byte[] objectToBytes(final Object object) {

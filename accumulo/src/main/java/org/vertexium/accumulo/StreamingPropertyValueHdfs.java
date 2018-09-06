@@ -15,7 +15,6 @@ class StreamingPropertyValueHdfs extends StreamingPropertyValue {
 
     public StreamingPropertyValueHdfs(FileSystem fs, Path path, StreamingPropertyValueHdfsRef streamingPropertyValueRef) {
         super(streamingPropertyValueRef.getValueType());
-        this.store(streamingPropertyValueRef.isStore());
         this.searchIndex(streamingPropertyValueRef.isSearchIndex());
         this.fs = fs;
         this.path = path;

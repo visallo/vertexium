@@ -9,18 +9,15 @@ public abstract class StreamingPropertyValueRef<T extends Graph> implements Seri
     private static final long serialVersionUID = 1L;
     private String valueType;
     private boolean searchIndex;
-    private boolean store;
 
     protected StreamingPropertyValueRef() {
         this.valueType = null;
         this.searchIndex = false;
-        this.store = false;
     }
 
     protected StreamingPropertyValueRef(StreamingPropertyValue propertyValue) {
         this.valueType = propertyValue.getValueType().getName();
         this.searchIndex = propertyValue.isSearchIndex();
-        this.store = propertyValue.isStore();
     }
 
     public Class getValueType() {
@@ -33,10 +30,6 @@ public abstract class StreamingPropertyValueRef<T extends Graph> implements Seri
 
     public boolean isSearchIndex() {
         return searchIndex;
-    }
-
-    public boolean isStore() {
-        return store;
     }
 
     public abstract StreamingPropertyValue toStreamingPropertyValue(T graph, long timestamp);

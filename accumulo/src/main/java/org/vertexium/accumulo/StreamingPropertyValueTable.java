@@ -31,7 +31,6 @@ public class StreamingPropertyValueTable extends StreamingPropertyValue {
     StreamingPropertyValueTable(AccumuloGraph graph, String dataRowKey, StreamingPropertyValueTableRef valueRef, long timestamp) {
         super(valueRef.getValueType());
         this.timestamp = timestamp;
-        this.store(valueRef.isStore());
         this.searchIndex(valueRef.isSearchIndex());
         this.graph = graph;
         this.dataRowKey = dataRowKey;

@@ -6,6 +6,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.vertexium.GraphConfiguration;
 import org.vertexium.VertexiumSerializer;
+import org.vertexium.test.VertexiumSerializerTestBase;
 
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
@@ -17,11 +18,12 @@ import java.util.Map;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
-public class KryoVertexiumSerializerTest {
+public class KryoVertexiumSerializerTest extends VertexiumSerializerTestBase {
     private final boolean compress;
     private int iterations;
     private boolean shouldAssertTiming;
     private GraphConfiguration graphConfiguration;
+    private KryoVertexiumSerializer vertexiumSerializer;
 
     @Parameterized.Parameters(name = "compress={0}")
     public static Iterable<Object[]> initialVisibilitySources() {
@@ -43,6 +45,36 @@ public class KryoVertexiumSerializerTest {
         shouldAssertTiming = !compress;
         iterations = compress ? 100 : 100000;
         graphConfiguration = new GraphConfiguration(config);
+        vertexiumSerializer = new KryoVertexiumSerializer();
+    }
+
+    @Override
+    protected byte[] getSerializableObjectBytes() {
+        return new byte[]{
+                1, 0, -61, 1, 111, 114, 103, 46, 118, 101, 114, 116, 101, 120, 105, 117,
+                109, 46, 116, 101, 115, 116, 46, 86, 101, 114, 116, 101, 120, 105, 117, 109,
+                83, 101, 114, 105, 97, 108, 105, 122, 101, 114, 84, 101, 115, 116, 66, 97,
+                115, 101, 36, 83, 101, 114, 105, 97, 108, 105, 122, 97, 98, 108, 101, 79,
+                98, 106, 101, 99, 116, 115, 1, 69, 78, -60, 1, 1, 111, 114, 103, 46,
+                118, 101, 114, 116, 101, 120, 105, 117, 109, 46, 112, 114, 111, 112, 101, 114,
+                116, 121, 46, 80, 114, 111, 112, 101, 114, 116, 121, 86, 97, 108, 117, -27,
+                1, 1, 1, 83, 84, 65, 82, -44, 1, 2, 111, 114, 103, 46, 118, 101,
+                114, 116, 101, 120, 105, 117, 109, 46, 112, 114, 111, 112, 101, 114, 116, 121,
+                46, 68, 101, 102, 97, 117, 108, 116, 83, 116, 114, 101, 97, 109, 105, 110,
+                103, 80, 114, 111, 112, 101, 114, 116, 121, 86, 97, 108, 117, -27, 1, 1,
+                4, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 3, 91, -62, 0,
+                1, 4, -51, 1, 111, 114, 103, 46, 118, 101, 114, 116, 101, 120, 105, 117,
+                109, 46, 116, 101, 115, 116, 46, 86, 101, 114, 116, 101, 120, 105, 117, 109,
+                83, 101, 114, 105, 97, 108, 105, 122, 101, 114, 84, 101, 115, 116, 66, 97,
+                115, 101, 36, 84, 101, 115, 116, 83, 116, 114, 101, 97, 109, 105, 110, 103,
+                80, 114, 111, 112, 101, 114, 116, 121, 86, 97, 108, 117, 101, 82, 101, 102,
+                1, 1, 91, -62
+        };
+    }
+
+    @Override
+    protected KryoVertexiumSerializer getVertexiumSerializer() {
+        return vertexiumSerializer;
     }
 
     @Test
