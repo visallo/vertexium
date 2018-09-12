@@ -2607,7 +2607,9 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             @Override
             public void close() {
                 super.close();
-                scanner.close();
+                if (scanner != null) {
+                    scanner.close();
+                }
                 if (trace != null) {
                     trace.stop();
                 }

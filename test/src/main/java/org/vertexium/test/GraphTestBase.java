@@ -28,6 +28,7 @@ import org.vertexium.type.*;
 import org.vertexium.util.*;
 
 import java.io.ByteArrayInputStream;
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
@@ -2473,6 +2474,41 @@ public abstract class GraphTestBase {
 
         vertices = graph.query(AUTHORIZATIONS_A).has("boolean", false).vertices();
         assertResultsCount(0, 0, vertices);
+    }
+
+    @Test
+    public void testClosingIterables() throws IOException {
+        graph.prepareVertex("v1", VISIBILITY_A)
+                .addPropertyValue("k1", "name", "joe", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
+
+        graph.prepareVertex("v2", VISIBILITY_A)
+                .addPropertyValue("k1", "name", "matt", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
+
+        graph.flush();
+
+        // Ensure that closing doesn't cause an error if we haven't iterated yet
+        Iterable<Vertex> vertices1 = graph.getVertices(AUTHORIZATIONS_A);
+        if (vertices1 instanceof Closeable) {
+            ((Closeable) vertices1).close();
+        }
+
+        // Ensure that closing doesn't cause an error if the iterable was fully traversed
+        vertices1 = graph.getVertices(AUTHORIZATIONS_A);
+        toList(vertices1);
+        if (vertices1 instanceof Closeable) {
+            ((Closeable) vertices1).close();
+        }
+
+        // Ensure that closing query results doesn't cause an error if we haven't iterated yet
+        QueryResultsIterable<Vertex> queryResults = graph.query(AUTHORIZATIONS_A).hasId("v1").vertices();
+        queryResults.close();
+
+        // Ensure that closing query results doesn't cause an error if the iterable was fully traversed
+        queryResults = graph.query(AUTHORIZATIONS_A).hasId("v1").vertices();
+        toList(queryResults);
+        queryResults.close();
     }
 
     @Test
