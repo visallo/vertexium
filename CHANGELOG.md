@@ -1,3 +1,6 @@
+# v4.3.1
+* Fixed: Serialization of StreamingPropertyValueRef
+
 # v4.3.0
 * Added: Cardinality aggregation
 * Changed: Remove tools: Reindex, Backup, Restore

@@ -9,6 +9,7 @@ public abstract class StreamingPropertyValueRef<T extends Graph> implements Seri
     private static final long serialVersionUID = 1L;
     private String valueType;
     private boolean searchIndex;
+    private boolean store = true; // Need to keep for Kryo serialization
 
     protected StreamingPropertyValueRef() {
         this.valueType = null;
