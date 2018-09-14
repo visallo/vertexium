@@ -112,6 +112,11 @@ public class DefaultGraphQueryIterable<T extends Element> implements
                                 match = false;
                             }
                         }
+                        if (parameters.getIds() != null && elem instanceof Element) {
+                            if (!parameters.getIds().contains(elem.getId())) {
+                                match = false;
+                            }
+                        }
                     }
                     if (!match) {
                         continue;

@@ -220,6 +220,12 @@ public class ElasticSearchSingleDocumentSearchQueryBase extends QueryBase implem
             filters.add(FilterBuilders.inFilter(ElasticsearchSingleDocumentSearchIndex.EDGE_LABEL_FIELD_NAME, edgeLabelsArray));
         }
 
+        if ((elementType == null || elementType == ElasticSearchElementType.EDGE || elementType == ElasticSearchElementType.VERTEX)
+                && getParameters().getIds() != null) {
+            String[] idsArray = getParameters().getIds().toArray(new String[0]);
+            filters.add(FilterBuilders.idsFilter().addIds(idsArray));
+        }
+
         if (getParameters() instanceof QueryStringQueryParameters) {
             String queryString = ((QueryStringQueryParameters) getParameters()).getQueryString();
             if (queryString == null || queryString.equals("*")) {

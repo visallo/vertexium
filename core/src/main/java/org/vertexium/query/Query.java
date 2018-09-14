@@ -112,6 +112,22 @@ public interface Query {
     <T> Query has(String propertyName, Predicate predicate, T value);
 
     /**
+     * Adds an id filter to the query.
+     *
+     * @param ids The ids to filter on.
+     * @return The query object, allowing you to chain methods.
+     */
+    Query hasId(String... ids);
+
+    /**
+     * Adds an id filter to the query.
+     *
+     * @param ids The ids to filter on.
+     * @return The query object, allowing you to chain methods.
+     */
+    Query hasId(Iterable<String> ids);
+
+    /**
      * Skips the given number of items.
      */
     Query skip(int count);

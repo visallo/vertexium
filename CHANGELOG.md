@@ -1,3 +1,11 @@
+# v2.4.8
+
+* Added: Added a hasId method to the Query class to allow searches to be filtered by element ID.
+
+# v2.4.7
+
+* Elasticsearch: Fix does not contain returning the wrong Elasticsearch total hit count
+
 # v2.4.6
 
 * Changed: Delete events added to HistoricalPropertyValue reporting

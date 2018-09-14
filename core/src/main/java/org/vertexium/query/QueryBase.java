@@ -3,10 +3,7 @@ package org.vertexium.query;
 import org.vertexium.*;
 import org.vertexium.util.IterableUtils;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.EnumSet;
-import java.util.List;
+import java.util.*;
 
 public abstract class QueryBase implements Query, SimilarToGraphQuery {
     private final Graph graph;
@@ -52,6 +49,18 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
         for (String edgeLabel : edgeLabels) {
             getParameters().addEdgeLabel(edgeLabel);
         }
+        return this;
+    }
+
+    @Override
+    public Query hasId(String... ids) {
+        getParameters().addIds(Arrays.asList(ids));
+        return this;
+    }
+
+    @Override
+    public Query hasId(Iterable<String> ids) {
+        getParameters().addIds(IterableUtils.toList(ids));
         return this;
     }
 
