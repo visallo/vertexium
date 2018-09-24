@@ -2845,9 +2845,11 @@ public abstract class GraphTestBase {
 
     @Test
     public void testStartsWithQuery() {
+        graph.defineProperty("location").dataType(GeoPoint.class).textIndexHint(TextIndexHint.ALL).define();
         graph.defineProperty("text").dataType(String.class).textIndexHint(TextIndexHint.ALL).define();
         graph.prepareVertex("v1", VISIBILITY_A)
                 .setProperty("text", "hello world", VISIBILITY_A)
+                .setProperty("location", new GeoPoint(39.0, -77.5, "Ashburn, VA"), VISIBILITY_A)
                 .save(AUTHORIZATIONS_A_AND_B);
         graph.prepareVertex("v2", VISIBILITY_A)
                 .setProperty("text", "junit says hello", VISIBILITY_A)
@@ -2856,6 +2858,12 @@ public abstract class GraphTestBase {
 
         QueryResultsIterable<Vertex> vertices = graph.query(AUTHORIZATIONS_A)
                 .has("text", Compare.STARTS_WITH, "hel")
+                .vertices();
+        assertResultsCount(1, vertices);
+        assertVertexIdsAnyOrder(vertices, "v1");
+
+        vertices = graph.query(AUTHORIZATIONS_A)
+                .has("location", Compare.STARTS_WITH, "Ashb")
                 .vertices();
         assertResultsCount(1, vertices);
         assertVertexIdsAnyOrder(vertices, "v1");

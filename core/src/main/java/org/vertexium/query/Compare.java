@@ -2,6 +2,7 @@ package org.vertexium.query;
 
 import org.vertexium.*;
 import org.vertexium.property.StreamingPropertyValue;
+import org.vertexium.type.GeoShape;
 
 import java.util.Collection;
 import java.util.Date;
@@ -94,7 +95,7 @@ public enum Compare implements Predicate {
                 }
                 return compare(first, second) <= 0;
             case STARTS_WITH:
-                if (!(first instanceof String) || !(second instanceof String)) {
+                if (!(second instanceof String)) {
                     throw new VertexiumException("STARTS_WITH may only be used to query String values");
                 }
                 if (null == first) {
@@ -103,7 +104,10 @@ public enum Compare implements Predicate {
                 if (propertyDefinition != null && propertyDefinition.getTextIndexHints().size() > 0 && !propertyDefinition.getTextIndexHints().contains(TextIndexHint.EXACT_MATCH)) {
                     return false;
                 }
-                return ((String) first).startsWith((String) second);
+                if (first instanceof GeoShape) {
+                    return ((GeoShape) first).getDescription().startsWith((String) second);
+                }
+                return first.toString().startsWith((String) second);
             default:
                 throw new IllegalArgumentException("Invalid compare: " + comparePredicate);
         }
