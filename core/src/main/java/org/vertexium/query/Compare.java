@@ -1,16 +1,13 @@
 package org.vertexium.query;
 
-import org.vertexium.DateOnly;
-import org.vertexium.Property;
-import org.vertexium.PropertyDefinition;
-import org.vertexium.TextIndexHint;
+import org.vertexium.*;
 import org.vertexium.property.StreamingPropertyValue;
 
 import java.util.Collection;
 import java.util.Date;
 
 public enum Compare implements Predicate {
-    EQUAL, NOT_EQUAL, GREATER_THAN, GREATER_THAN_EQUAL, LESS_THAN, LESS_THAN_EQUAL;
+    EQUAL, NOT_EQUAL, GREATER_THAN, GREATER_THAN_EQUAL, LESS_THAN, LESS_THAN_EQUAL, STARTS_WITH;
 
     @Override
     public boolean evaluate(final Iterable<Property> properties, final Object second, Collection<PropertyDefinition> propertyDefinitions) {
@@ -96,6 +93,17 @@ public enum Compare implements Predicate {
                     return false;
                 }
                 return compare(first, second) <= 0;
+            case STARTS_WITH:
+                if (!(first instanceof String) || !(second instanceof String)) {
+                    throw new VertexiumException("STARTS_WITH may only be used to query String values");
+                }
+                if (null == first) {
+                    return second == null;
+                }
+                if (propertyDefinition != null && propertyDefinition.getTextIndexHints().size() > 0 && !propertyDefinition.getTextIndexHints().contains(TextIndexHint.EXACT_MATCH)) {
+                    return false;
+                }
+                return ((String) first).startsWith((String) second);
             default:
                 throw new IllegalArgumentException("Invalid compare: " + comparePredicate);
         }
