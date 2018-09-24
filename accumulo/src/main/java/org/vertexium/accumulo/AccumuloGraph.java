@@ -1674,7 +1674,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             }
 
             applyFetchHints(scanner, fetchHints, elementType);
-            GRAPH_LOGGER.logStartIterator(scanner);
+            GRAPH_LOGGER.logStartIterator(tableName, scanner);
             return scanner;
         } catch (TableNotFoundException e) {
             throw new VertexiumException(e);
@@ -2454,7 +2454,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             protected Iterator<Map.Entry<Key, Value>> createIterator() {
                 try {
                     scanner = createScanner(getMetadataTableName(), range, METADATA_AUTHORIZATIONS);
-                    GRAPH_LOGGER.logStartIterator(scanner);
+                    GRAPH_LOGGER.logStartIterator(getMetadataTableName(), scanner);
 
                     IteratorSetting versioningIteratorSettings = new IteratorSetting(
                             90,
@@ -2562,7 +2562,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             );
             scanner.addScanIterator(rowIteratorSettings);
 
-            GRAPH_LOGGER.logStartIterator(scanner);
+            GRAPH_LOGGER.logStartIterator(tableName, scanner);
             return scanner;
         } catch (TableNotFoundException e) {
             throw new VertexiumException(e);
@@ -2842,7 +2842,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                 );
                 scanner.addScanIterator(countingIterator);
 
-                GRAPH_LOGGER.logStartIterator(scanner);
+                GRAPH_LOGGER.logStartIterator(tableName, scanner);
 
                 long count = 0;
                 for (Map.Entry<Key, Value> entry : scanner) {

@@ -198,7 +198,7 @@ public class StreamingPropertyValueTableData extends StreamingPropertyValue {
             TimestampFilter.setEnd(iteratorSetting, timestamp, true);
             scanner.addScanIterator(iteratorSetting);
 
-            graph.getGraphLogger().logStartIterator(scanner);
+            graph.getGraphLogger().logStartIterator(graph.getDataTableName(), scanner);
             trace = Trace.start("streamingPropertyValueTableData");
             trace.data("dataRowKeyCount", Integer.toString(1));
             return scanner;

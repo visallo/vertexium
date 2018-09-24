@@ -86,7 +86,7 @@ public class StreamingPropertyValueTable extends StreamingPropertyValue {
                 scanner.addScanIterator(iteratorSetting);
             }
 
-            GRAPH_LOGGER.logStartIterator(scanner);
+            GRAPH_LOGGER.logStartIterator(graph.getDataTableName(), scanner);
             Span trace = Trace.start("streamingPropertyValueTableData");
             trace.data("dataRowKeyCount", Integer.toString(1));
             try {

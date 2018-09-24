@@ -127,7 +127,7 @@ public class OverflowIntoHdfsStreamingPropertyValueStorageStrategy implements St
             final long timerStartTime = System.currentTimeMillis();
             ScannerBase scanner = graph.createBatchScanner(graph.getDataTableName(), ranges, new org.apache.accumulo.core.security.Authorizations());
 
-            graph.getGraphLogger().logStartIterator(scanner);
+            graph.getGraphLogger().logStartIterator(graph.getDataTableName(), scanner);
             Span trace = Trace.start("streamingPropertyValueTableData");
             trace.data("dataRowKeyCount", Integer.toString(dataRowKeys.size()));
             try {

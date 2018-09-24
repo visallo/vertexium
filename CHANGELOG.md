@@ -1,5 +1,6 @@
 # v4.3.2
 * Added: The ability to perform a term query by prefix using a new Compare.STARTS_WITH predicate. 
+* Fixed: AccumuloGraphLogger was throwing an error when trying to log a field from a Scanner that was removed in Accumulo 1.8.0
 
 # v4.3.1
 * Fixed: Serialization of StreamingPropertyValueRef
