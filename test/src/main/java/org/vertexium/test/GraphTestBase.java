@@ -2844,6 +2844,30 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    public void testStartsWithQuery() {
+        graph.defineProperty("text").dataType(String.class).textIndexHint(TextIndexHint.ALL).define();
+        graph.prepareVertex("v1", VISIBILITY_A)
+                .setProperty("text", "hello world", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.prepareVertex("v2", VISIBILITY_A)
+                .setProperty("text", "junit says hello", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        QueryResultsIterable<Vertex> vertices = graph.query(AUTHORIZATIONS_A)
+                .has("text", Compare.STARTS_WITH, "hel")
+                .vertices();
+        assertResultsCount(1, vertices);
+        assertVertexIdsAnyOrder(vertices, "v1");
+
+        vertices = graph.query(AUTHORIZATIONS_A)
+                .has("text", Compare.STARTS_WITH, "foo")
+                .vertices();
+        assertResultsCount(0, vertices);
+    }
+
+
+    @Test
     public void testGraphQueryMultiPropertyHas() {
         graph.defineProperty("unusedFloatProp").dataType(Float.class).define();
         graph.defineProperty("unusedDateProp").dataType(Date.class).define();

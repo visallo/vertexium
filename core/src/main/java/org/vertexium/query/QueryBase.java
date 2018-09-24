@@ -554,6 +554,13 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
                     throw new VertexiumException("Check your TextIndexHint settings. Property " + propertyDefinition.getPropertyName() + " is not full text indexed.");
                 } else if (predicate instanceof GeoCompare && !isPropertyOfType(propertyDefinition, GeoShape.class)) {
                     throw new VertexiumException("GeoCompare query is only allowed for GeoShape types. Property " + propertyDefinition.getPropertyName() + " is not a GeoShape.");
+                } else if (Compare.STARTS_WITH.equals(predicate)) {
+                    if (!propertyDefinition.getTextIndexHints().contains(TextIndexHint.EXACT_MATCH)) {
+                        throw new VertexiumException("Check your TextIndexHint settings. Property " + propertyDefinition.getPropertyName() + " is not exact match indexed.");
+                    } else if (!propertyDefinition.getDataType().equals(String.class)) {
+                        throw new VertexiumException("STARTS_WITH queries may only be used with String values. Property " +
+                                propertyDefinition.getPropertyName() + " is defined as: " + propertyDefinition.getDataType().getName());
+                    }
                 }
             });
         }

@@ -1,3 +1,6 @@
+# v4.3.2
+* Added: The ability to perform a term query by prefix using a new Compare.STARTS_WITH predicate. 
+
 # v4.3.1
 * Fixed: Serialization of StreamingPropertyValueRef
 

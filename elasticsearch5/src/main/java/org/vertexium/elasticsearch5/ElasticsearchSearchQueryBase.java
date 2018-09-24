@@ -1120,6 +1120,11 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
                 return QueryBuilders.rangeQuery(propertyName).lt(value);
             case NOT_EQUAL:
                 return QueryBuilders.boolQuery().mustNot(QueryBuilders.termQuery(propertyName, value));
+            case STARTS_WITH:
+                if (!(value instanceof String)) {
+                    throw new VertexiumException("STARTS_WITH may only be used to query String values");
+                }
+                return QueryBuilders.prefixQuery(propertyName, (String) value);
             default:
                 throw new VertexiumException("Unexpected Compare predicate " + has.predicate);
         }
