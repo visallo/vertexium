@@ -21,7 +21,7 @@ public class AccumuloGraphLogger {
         this.queryLogger = queryLogger;
     }
 
-    public void logStartIterator(ScannerBase scanner) {
+    public void logStartIterator(String table, ScannerBase scanner) {
         if (!queryLogger.isTraceEnabled()) {
             return;
         }
@@ -29,20 +29,6 @@ public class AccumuloGraphLogger {
         SortedSet<Column> fetchedColumns = null;
         if (scanner instanceof ScannerOptions) {
             fetchedColumns = ((ScannerOptions) scanner).getFetchedColumns();
-        }
-
-        String table = null;
-        try {
-            Field tableField = scanner.getClass().getDeclaredField("table");
-            tableField.setAccessible(true);
-            Object tableObj = tableField.get(scanner);
-            if (tableObj instanceof String) {
-                table = (String) tableObj;
-            } else {
-                table = tableObj.toString();
-            }
-        } catch (Exception e) {
-            queryLogger.trace("Could not get table name from scanner", e);
         }
 
         if (scanner instanceof BatchScanner) {
