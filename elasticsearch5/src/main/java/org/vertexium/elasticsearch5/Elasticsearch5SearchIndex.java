@@ -1785,7 +1785,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
         }
         LOGGER.debug("added %d elements", totalCount);
         if (failures.size() > 0) {
-            throw new VertexiumException(String.format("Failed bulk update (failures: %s)", failures.size()));
+            throw new VertexiumException(String.format("Failed bulk update (failures: %d)", failures.size()));
         }
 
         if (getConfig().isAutoFlush()) {

@@ -13,8 +13,6 @@ import java.util.List;
 public abstract class InMemoryElement<TElement extends InMemoryElement> extends ElementBase {
     private final String id;
     private final FetchHints fetchHints;
-    private Property idProperty;
-    private Property edgeLabelProperty;
     private InMemoryGraph graph;
     private InMemoryTableElement<TElement> inMemoryTableElement;
     private final Long endTime;
