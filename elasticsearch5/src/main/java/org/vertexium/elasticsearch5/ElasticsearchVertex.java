@@ -112,11 +112,13 @@ public class ElasticsearchVertex extends ElasticsearchElement implements Vertex 
     }
 
     @Override
+    @Deprecated
     public int getEdgeCount(Direction direction, Authorizations authorizations) {
         throw new VertexiumNotSupportedException("getEdgeCount is not supported on " + className);
     }
 
     @Override
+    @Deprecated
     public Iterable<String> getEdgeLabels(Direction direction, Authorizations authorizations) {
         throw new VertexiumNotSupportedException("getEdgeLabels is not supported on " + className);
     }
@@ -188,12 +190,12 @@ public class ElasticsearchVertex extends ElasticsearchElement implements Vertex 
 
     @Override
     public VertexQuery query(Authorizations authorizations) {
-        throw new VertexiumNotSupportedException("query is not supported on " + className);
+        return query(null, authorizations);
     }
 
     @Override
     public VertexQuery query(String queryString, Authorizations authorizations) {
-        throw new VertexiumNotSupportedException("query is not supported on " + className);
+        return getGraph().getSearchIndex().queryVertex(getGraph(), this, queryString, authorizations);
     }
 
     @Override
