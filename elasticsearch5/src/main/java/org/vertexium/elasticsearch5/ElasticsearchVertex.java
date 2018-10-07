@@ -112,11 +112,13 @@ public class ElasticsearchVertex extends ElasticsearchElement implements Vertex 
     }
 
     @Override
+    @Deprecated
     public int getEdgeCount(Direction direction, Authorizations authorizations) {
         throw new VertexiumNotSupportedException("getEdgeCount is not supported on " + className);
     }
 
     @Override
+    @Deprecated
     public Iterable<String> getEdgeLabels(Direction direction, Authorizations authorizations) {
         throw new VertexiumNotSupportedException("getEdgeLabels is not supported on " + className);
     }

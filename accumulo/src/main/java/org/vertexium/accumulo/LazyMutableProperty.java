@@ -18,7 +18,7 @@ public class LazyMutableProperty extends MutableProperty {
     private final FetchHints fetchHints;
     private Set<Visibility> hiddenVisibilities;
     private byte[] propertyValue;
-    private LazyPropertyMetadata metadata;
+    private MetadataRef metadataRef;
     private Visibility visibility;
     private transient Object cachedPropertyValue;
     private transient Metadata cachedMetadata;
@@ -29,7 +29,7 @@ public class LazyMutableProperty extends MutableProperty {
             String propertyKey,
             String propertyName,
             byte[] propertyValue,
-            LazyPropertyMetadata metadata,
+            MetadataRef metadataRef,
             Set<Visibility> hiddenVisibilities,
             Visibility visibility,
             long timestamp,
@@ -40,7 +40,7 @@ public class LazyMutableProperty extends MutableProperty {
         this.propertyKey = propertyKey;
         this.propertyName = propertyName;
         this.propertyValue = propertyValue;
-        this.metadata = metadata;
+        this.metadataRef = metadataRef;
         this.visibility = visibility;
         this.hiddenVisibilities = hiddenVisibilities;
         this.timestamp = timestamp;
@@ -83,10 +83,10 @@ public class LazyMutableProperty extends MutableProperty {
     protected void updateMetadata(Property property) {
         this.cachedMetadata = null;
         if (property instanceof LazyMutableProperty) {
-            this.metadata = ((LazyMutableProperty) property).metadata;
+            this.metadataRef = ((LazyMutableProperty) property).metadataRef;
         } else {
             Collection<Metadata.Entry> entries = new ArrayList<>(property.getMetadata().entrySet());
-            this.metadata = null;
+            this.metadataRef = null;
             if (getFetchHints().isIncludePropertyAndMetadata(propertyName)) {
                 for (Metadata.Entry metadataEntry : entries) {
                     getMetadata().add(metadataEntry.getKey(), metadataEntry.getValue(), metadataEntry.getVisibility());
@@ -131,10 +131,12 @@ public class LazyMutableProperty extends MutableProperty {
             throw new VertexiumMissingFetchHintException(fetchHints, "includePropertyMetadata");
         }
         if (cachedMetadata == null) {
-            if (metadata == null) {
-                cachedMetadata = new Metadata(fetchHints);
+            if (metadataRef == null) {
+                cachedMetadata = Metadata.create(fetchHints);
             } else {
-                cachedMetadata = metadata.toMetadata(
+                cachedMetadata = new LazyPropertyMetadata(
+                        metadataRef.getMetadataEntries(),
+                        metadataRef.getMetadataIndexes(),
                         this.vertexiumSerializer,
                         graph.getNameSubstitutionStrategy(),
                         fetchHints

@@ -10,10 +10,10 @@ public class AddPropertyMetadataMutation extends PropertyMutation {
     public AddPropertyMetadataMutation(
             long timestamp, String key, String name, Metadata metadata, Visibility visibility) {
         super(timestamp, key, name, visibility, visibility);
-        this.metadata = new Metadata(metadata);
+        this.metadata = Metadata.create(metadata);
     }
 
     public Metadata getMetadata(FetchHints fetchHints) {
-        return new Metadata(metadata, fetchHints);
+        return Metadata.create(metadata, fetchHints);
     }
 }

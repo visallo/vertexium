@@ -18,7 +18,6 @@ import org.vertexium.*;
 import org.vertexium.accumulo.AccumuloAuthorizations;
 import org.vertexium.accumulo.AccumuloGraph;
 import org.vertexium.accumulo.LazyMutableProperty;
-import org.vertexium.accumulo.LazyPropertyMetadata;
 import org.vertexium.accumulo.iterator.model.ElementData;
 import org.vertexium.accumulo.iterator.model.IteratorFetchHints;
 import org.vertexium.util.MapUtils;
@@ -116,7 +115,6 @@ public abstract class AccumuloElementInputFormatBase<TValue extends Element> ext
     }
 
     private static Property makePropertyFromIteratorProperty(AccumuloGraph graph, org.vertexium.accumulo.iterator.model.Property property) {
-        LazyPropertyMetadata metadata = null;
         Set<Visibility> hiddenVisibilities = null;
         if (property.hiddenVisibilities != null) {
             hiddenVisibilities = Sets.newHashSet(Iterables.transform(property.hiddenVisibilities, new Function<Text, Visibility>() {
@@ -134,7 +132,7 @@ public abstract class AccumuloElementInputFormatBase<TValue extends Element> ext
                 graph.getNameSubstitutionStrategy().inflate(property.key),
                 graph.getNameSubstitutionStrategy().inflate(property.name),
                 property.value,
-                metadata,
+                null,
                 hiddenVisibilities,
                 visibility,
                 property.timestamp,

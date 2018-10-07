@@ -113,7 +113,7 @@ public class AccumuloExtendedDataRow extends ExtendedDataRowBase {
 
         @Override
         public Metadata getMetadata() {
-            return new Metadata(fetchHints);
+            return Metadata.create(fetchHints);
         }
 
         @Override

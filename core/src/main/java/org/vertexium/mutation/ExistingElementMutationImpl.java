@@ -31,7 +31,7 @@ public abstract class ExistingElementMutationImpl<T extends Element> implements 
     public abstract T save(Authorizations authorizations);
 
     public ElementMutation<T> setProperty(String name, Object value, Visibility visibility) {
-        return setProperty(name, value, new Metadata(FetchHints.ALL), visibility);
+        return setProperty(name, value, Metadata.create(FetchHints.ALL), visibility);
     }
 
     public ElementMutation<T> setProperty(String name, Object value, Metadata metadata, Visibility visibility) {
@@ -39,7 +39,7 @@ public abstract class ExistingElementMutationImpl<T extends Element> implements 
     }
 
     public ElementMutation<T> addPropertyValue(String key, String name, Object value, Visibility visibility) {
-        return addPropertyValue(key, name, value, new Metadata(FetchHints.ALL), visibility);
+        return addPropertyValue(key, name, value, Metadata.create(FetchHints.ALL), visibility);
     }
 
     public ElementMutation<T> addPropertyValue(String key, String name, Object value, Metadata metadata, Visibility visibility) {

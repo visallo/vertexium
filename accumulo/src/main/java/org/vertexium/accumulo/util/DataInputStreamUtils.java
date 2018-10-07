@@ -3,11 +3,12 @@ package org.vertexium.accumulo.util;
 import com.google.common.collect.ImmutableSet;
 import org.apache.hadoop.io.Text;
 import org.vertexium.FetchHints;
-import org.vertexium.FetchHints;
 import org.vertexium.Property;
 import org.vertexium.Visibility;
-import org.vertexium.accumulo.*;
+import org.vertexium.accumulo.AccumuloGraph;
+import org.vertexium.accumulo.LazyMutableProperty;
 import org.vertexium.accumulo.MetadataEntry;
+import org.vertexium.accumulo.MetadataRef;
 import org.vertexium.accumulo.iterator.model.*;
 import org.vertexium.accumulo.iterator.util.DataOutputStreamUtils;
 import org.vertexium.id.NameSubstitutionStrategy;
@@ -103,14 +104,14 @@ public class DataInputStreamUtils {
                         .map(Visibility::new)
                         .collect(Collectors.toSet());
             }
-            LazyPropertyMetadata metadata = decodePropertyMetadata(in, metadataEntries);
+            MetadataRef metadataRef = decodePropertyMetadata(in, metadataEntries);
             results.add(new LazyMutableProperty(
                     graph,
                     graph.getVertexiumSerializer(),
                     propertyKey,
                     propertyName,
                     propertyValue,
-                    metadata,
+                    metadataRef,
                     propertyHiddenVisibilities,
                     propertyVisibility,
                     propertyTimestamp,
@@ -120,12 +121,15 @@ public class DataInputStreamUtils {
         return results;
     }
 
-    private static LazyPropertyMetadata decodePropertyMetadata(
+    private static MetadataRef decodePropertyMetadata(
             DataInputStream in,
             List<MetadataEntry> metadataEntries
     ) throws IOException {
         int[] metadataIndexes = decodeIntArray(in);
-        return new IndexedLazyPropertyMetadata(metadataEntries, metadataIndexes);
+        return new MetadataRef(
+                metadataEntries,
+                metadataIndexes
+        );
     }
 
     public static Edges decodeEdges(DataInputStream in, NameSubstitutionStrategy nameSubstitutionStrategy) throws IOException {

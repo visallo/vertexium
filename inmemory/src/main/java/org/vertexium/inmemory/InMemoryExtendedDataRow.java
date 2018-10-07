@@ -156,7 +156,7 @@ public class InMemoryExtendedDataRow extends ExtendedDataRowBase {
 
         @Override
         public Metadata getMetadata() {
-            return new Metadata(getFetchHints());
+            return Metadata.create(getFetchHints());
         }
 
         @Override
