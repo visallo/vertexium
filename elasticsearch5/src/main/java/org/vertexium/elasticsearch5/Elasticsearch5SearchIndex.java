@@ -924,6 +924,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
                     .setDoc(jsonBuilder)
                     .setRetryOnConflict(MAX_RETRIES)
                     .get();
+            getIndexRefreshTracker().pushChange(indexName);
         } catch (IOException e) {
             throw new VertexiumException("Could not mark element hidden", e);
         }
@@ -941,8 +942,8 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
     public void markPropertyHidden(Graph graph, Element element, Property property, Visibility visibility, Authorizations authorizations) {
         try {
             String hiddenVisibilityPropertyName = addVisibilityToPropertyName(graph, HIDDEN_PROPERTY_FIELD_NAME, visibility);
+            String indexName = getIndexName(element);
             if (!isPropertyInIndex(graph, HIDDEN_PROPERTY_FIELD_NAME, visibility)) {
-                String indexName = getIndexName(element);
                 IndexInfo indexInfo = ensureIndexCreatedAndInitialized(indexName);
                 addPropertyToIndex(graph, indexInfo, hiddenVisibilityPropertyName, visibility, Boolean.class, false, false, false);
             }
@@ -952,10 +953,11 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
             jsonBuilder.endObject();
 
             getClient()
-                    .prepareUpdate(getIndexName(element), getIdStrategy().getType(), getIdStrategy().createElementDocId(element))
+                    .prepareUpdate(indexName, getIdStrategy().getType(), getIdStrategy().createElementDocId(element))
                     .setDoc(jsonBuilder)
                     .setRetryOnConflict(MAX_RETRIES)
                     .get();
+            getIndexRefreshTracker().pushChange(indexName);
         } catch (IOException e) {
             throw new VertexiumException("Could not mark element hidden", e);
         }
