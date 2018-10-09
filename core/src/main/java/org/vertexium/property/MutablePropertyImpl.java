@@ -29,7 +29,7 @@ public class MutablePropertyImpl extends MutableProperty {
             FetchHints fetchHints
     ) {
         if (metadata == null && fetchHints.isIncludePropertyMetadata()) {
-            metadata = new Metadata(fetchHints);
+            metadata = Metadata.create(fetchHints);
         }
 
         this.key = key;

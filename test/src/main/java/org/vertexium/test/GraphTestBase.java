@@ -280,7 +280,7 @@ public abstract class GraphTestBase {
 
     @Test
     public void testStreamingPropertyDecreasingSize() throws IOException {
-        Metadata metadata = new Metadata();
+        Metadata metadata = Metadata.create();
         Long timestamp = System.currentTimeMillis();
         String expectedValue = IOUtils.toString(new LargeStringInputStream(LARGE_PROPERTY_VALUE_SIZE));
         PropertyValue propLarge = StreamingPropertyValue.create(
@@ -437,7 +437,7 @@ public abstract class GraphTestBase {
 
     @Test
     public void testAddVertexPropertyWithMetadata() {
-        Metadata prop1Metadata = new Metadata();
+        Metadata prop1Metadata = Metadata.create();
         prop1Metadata.add("metadata1", "metadata1Value", VISIBILITY_A);
 
         graph.prepareVertex("v1", VISIBILITY_A)
@@ -492,7 +492,7 @@ public abstract class GraphTestBase {
         assertEquals("metadata2Value", prop1Metadata.getEntry("metadata2", VISIBILITY_A).getValue());
 
         // make sure that when we update the value the metadata is not carried over
-        prop1Metadata = new Metadata();
+        prop1Metadata = Metadata.create();
         v.setProperty("prop1", "value2", prop1Metadata, VISIBILITY_A, AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
@@ -4975,7 +4975,7 @@ public abstract class GraphTestBase {
     public void testFilterEdgeIdsByAuthorization() {
         Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
         Vertex v2 = graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_A);
-        Metadata metadataPropB = new Metadata();
+        Metadata metadataPropB = Metadata.create();
         metadataPropB.add("meta1", "meta1", VISIBILITY_A);
         graph.prepareEdge("e1", v1, v2, LABEL_LABEL1, VISIBILITY_A)
                 .setProperty("propA", "propA", VISIBILITY_A)
@@ -5016,7 +5016,7 @@ public abstract class GraphTestBase {
 
     @Test
     public void testFilterVertexIdsByAuthorization() {
-        Metadata metadataPropB = new Metadata();
+        Metadata metadataPropB = Metadata.create();
         metadataPropB.add("meta1", "meta1", VISIBILITY_A);
         graph.prepareVertex("v1", VISIBILITY_A)
                 .setProperty("propA", "propA", VISIBILITY_A)
@@ -5057,7 +5057,7 @@ public abstract class GraphTestBase {
 
     @Test
     public void testMetadataMutationsOnVertex() {
-        Metadata metadataPropB = new Metadata();
+        Metadata metadataPropB = Metadata.create();
         metadataPropB.add("meta1", "meta1", VISIBILITY_A);
         Vertex vertex = graph.prepareVertex("v1", VISIBILITY_A)
                 .setProperty("propBmeta", "propBmeta", metadataPropB, VISIBILITY_A)
@@ -5073,7 +5073,7 @@ public abstract class GraphTestBase {
 
     @Test
     public void testMetadataMutationsOnEdge() {
-        Metadata metadataPropB = new Metadata();
+        Metadata metadataPropB = Metadata.create();
         metadataPropB.add("meta1", "meta1", VISIBILITY_A);
         Edge edge = graph.prepareEdge("v1", "v2", LABEL_LABEL1, VISIBILITY_A)
                 .setProperty("propBmeta", "propBmeta", metadataPropB, VISIBILITY_A)
@@ -5089,7 +5089,7 @@ public abstract class GraphTestBase {
 
     @Test
     public void testMetadataUpdate() {
-        Metadata metadataPropB = new Metadata();
+        Metadata metadataPropB = Metadata.create();
         metadataPropB.add("meta1", "value1", VISIBILITY_A);
         graph.prepareVertex("v1", VISIBILITY_A)
                 .setProperty("propBmeta", "propBmeta", metadataPropB, VISIBILITY_A)
@@ -5113,7 +5113,7 @@ public abstract class GraphTestBase {
                 .build();
         vertex = graph.getVertex("v1", fetchHints, AUTHORIZATIONS_A);
         m = vertex.prepareMutation();
-        Metadata newMetadata = new Metadata();
+        Metadata newMetadata = Metadata.create();
         newMetadata.add("meta1", "value3", VISIBILITY_A);
         m.setProperty("propBmeta", "propBmeta", newMetadata, VISIBILITY_A);
         m.save(AUTHORIZATIONS_ALL);
@@ -5404,7 +5404,7 @@ public abstract class GraphTestBase {
 
     @Test
     public void testChangeVertexVisibilityAndAlterPropertyVisibilityAndChangePropertyAtTheSameTime() {
-        Metadata metadata = new Metadata();
+        Metadata metadata = Metadata.create();
         metadata.add("m1", "m1-value1", VISIBILITY_EMPTY);
         metadata.add("m2", "m2-value1", VISIBILITY_EMPTY);
         graph.prepareVertex("v1", VISIBILITY_A)
@@ -5519,10 +5519,10 @@ public abstract class GraphTestBase {
 
     @Test
     public void testChangeVisibilityVertexProperties() {
-        Metadata prop1Metadata = new Metadata();
+        Metadata prop1Metadata = Metadata.create();
         prop1Metadata.add("prop1_key1", "value1", VISIBILITY_EMPTY);
 
-        Metadata prop2Metadata = new Metadata();
+        Metadata prop2Metadata = Metadata.create();
         prop2Metadata.add("prop2_key1", "value1", VISIBILITY_EMPTY);
 
         graph.prepareVertex("v1", VISIBILITY_EMPTY)
@@ -5600,7 +5600,7 @@ public abstract class GraphTestBase {
 
     @Test
     public void testAlterVisibilityAndSetMetadataInOneMutation() {
-        Metadata prop1Metadata = new Metadata();
+        Metadata prop1Metadata = Metadata.create();
         prop1Metadata.add("prop1_key1", "metadata1", VISIBILITY_EMPTY);
 
         graph.prepareVertex("v1", VISIBILITY_EMPTY)
@@ -5751,7 +5751,7 @@ public abstract class GraphTestBase {
 
     @Test
     public void testChangePropertyMetadata() {
-        Metadata prop1Metadata = new Metadata();
+        Metadata prop1Metadata = Metadata.create();
         prop1Metadata.add("prop1_key1", "valueOld", VISIBILITY_EMPTY);
 
         graph.prepareVertex("v1", VISIBILITY_A)
@@ -5783,7 +5783,7 @@ public abstract class GraphTestBase {
 
     @Test
     public void testMutationChangePropertyVisibilityFollowedByMetadataUsingPropertyObject() {
-        Metadata prop1Metadata = new Metadata();
+        Metadata prop1Metadata = Metadata.create();
         prop1Metadata.add("prop1_key1", "valueOld", VISIBILITY_A);
 
         graph.prepareVertex("v1", VISIBILITY_A)
@@ -6140,7 +6140,7 @@ public abstract class GraphTestBase {
         Date time25 = createDate(2015, 4, 6, 16, 15, 0);
         Date time30 = createDate(2015, 4, 6, 16, 16, 0);
 
-        Metadata metadata = new Metadata();
+        Metadata metadata = Metadata.create();
         metadata.add("author", "author1", VISIBILITY_A);
         graph.prepareVertex("v1", VISIBILITY_A)
                 .addPropertyValue("", "age", 25, metadata, time25.getTime(), VISIBILITY_A)
@@ -6148,7 +6148,7 @@ public abstract class GraphTestBase {
                 .addPropertyValue("k2", "name", "k2Time25Value", metadata, time25.getTime(), VISIBILITY_A)
                 .save(AUTHORIZATIONS_A);
 
-        metadata = new Metadata();
+        metadata = Metadata.create();
         metadata.add("author", "author2", VISIBILITY_A);
         graph.prepareVertex("v1", VISIBILITY_A)
                 .addPropertyValue("", "age", 30, metadata, time30.getTime(), VISIBILITY_A)
@@ -6195,13 +6195,13 @@ public abstract class GraphTestBase {
         Date time25 = createDate(2015, 4, 6, 16, 15, 0);
         Date time30 = createDate(2015, 4, 6, 16, 16, 0);
 
-        Metadata metadata = new Metadata();
+        Metadata metadata = Metadata.create();
         metadata.add("author", "author1", VISIBILITY_A);
         graph.prepareVertex("v1", VISIBILITY_A)
                 .addPropertyValue("", "age", 25, metadata, time25.getTime(), VISIBILITY_A)
                 .save(AUTHORIZATIONS_A);
 
-        metadata = new Metadata();
+        metadata = Metadata.create();
         metadata.add("author", "author2", VISIBILITY_A);
         graph.prepareVertex("v1", VISIBILITY_A)
                 .addPropertyValue("", "age", 30, metadata, time30.getTime(), VISIBILITY_A)
@@ -6230,7 +6230,7 @@ public abstract class GraphTestBase {
         Date time25 = createDate(2015, 4, 6, 16, 15, 0);
         Date time30 = createDate(2015, 4, 6, 16, 16, 0);
 
-        Metadata metadata = new Metadata();
+        Metadata metadata = Metadata.create();
         StreamingPropertyValue value1 = StreamingPropertyValue.create("value1");
         graph.prepareVertex("v1", VISIBILITY_A)
                 .addPropertyValue("", "text", value1, metadata, time25.getTime(), VISIBILITY_A)
@@ -6261,7 +6261,7 @@ public abstract class GraphTestBase {
         Date time25 = createDate(2015, 4, 6, 16, 15, 0);
         Date time30 = createDate(2015, 4, 6, 16, 16, 0);
 
-        Metadata metadata = new Metadata();
+        Metadata metadata = Metadata.create();
         Vertex v1 = graph.prepareVertex("v1", time25.getTime(), VISIBILITY_A)
                 .addPropertyValue("", "age", 25, metadata, time25.getTime(), VISIBILITY_A)
                 .save(AUTHORIZATIONS_A);
@@ -6306,7 +6306,7 @@ public abstract class GraphTestBase {
 
         ElementMutation<Vertex> vertexMutation = graph.prepareVertex(vertexId, VISIBILITY_EMPTY);
         for (Map.Entry<String, Long> entry : values.entrySet()) {
-            vertexMutation.addPropertyValue(propertyKey, propertyName, entry.getKey(), new Metadata(), entry.getValue(), VISIBILITY_EMPTY);
+            vertexMutation.addPropertyValue(propertyKey, propertyName, entry.getKey(), Metadata.create(), entry.getValue(), VISIBILITY_EMPTY);
         }
         vertexMutation.save(AUTHORIZATIONS_EMPTY);
         graph.flush();
@@ -6334,7 +6334,7 @@ public abstract class GraphTestBase {
 
         ElementMutation<Edge> edgeMutation = graph.prepareEdge(edgeId, v1, v2, LABEL_LABEL1, VISIBILITY_EMPTY);
         for (Map.Entry<String, Long> entry : values.entrySet()) {
-            edgeMutation.addPropertyValue(propertyKey, propertyName, entry.getKey(), new Metadata(), entry.getValue(), VISIBILITY_EMPTY);
+            edgeMutation.addPropertyValue(propertyKey, propertyName, entry.getKey(), Metadata.create(), entry.getValue(), VISIBILITY_EMPTY);
         }
         edgeMutation.save(AUTHORIZATIONS_EMPTY);
         graph.flush();
@@ -6370,7 +6370,7 @@ public abstract class GraphTestBase {
         long t2 = createDate(2017, 1, 19, 9, 20, 0).getTime();
 
         graph.prepareVertex("v1", VISIBILITY_EMPTY)
-                .addPropertyValue("k1", "prop1", "test1", new Metadata(), t1, VISIBILITY_EMPTY)
+                .addPropertyValue("k1", "prop1", "test1", Metadata.create(), t1, VISIBILITY_EMPTY)
                 .save(AUTHORIZATIONS_ALL);
         graph.flush();
 
@@ -6379,7 +6379,7 @@ public abstract class GraphTestBase {
 
         graph.getVertex("v1", AUTHORIZATIONS_ALL)
                 .prepareMutation()
-                .addPropertyValue("k1", "prop1", "test2", new Metadata(), t2, VISIBILITY_EMPTY)
+                .addPropertyValue("k1", "prop1", "test2", Metadata.create(), t2, VISIBILITY_EMPTY)
                 .save(AUTHORIZATIONS_ALL);
         graph.flush();
 
@@ -8110,7 +8110,7 @@ public abstract class GraphTestBase {
 
     @Test
     public void testFetchHintsExceptions() {
-        Metadata prop1Metadata = new Metadata();
+        Metadata prop1Metadata = Metadata.create();
         prop1Metadata.add("metadata1", "metadata1Value", VISIBILITY_A);
         prop1Metadata.add("metadata2", "metadata2Value", VISIBILITY_A);
 
@@ -8250,7 +8250,7 @@ public abstract class GraphTestBase {
     @Test
     public void testFetchHintsPropertyMetadata() {
         Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
-        Metadata metadata = new Metadata();
+        Metadata metadata = Metadata.create();
         metadata.add("m1", "m1value", VISIBILITY_A);
         metadata.add("m2", "m2value", VISIBILITY_A);
         metadata.add("m3", "m3value", VISIBILITY_A);
@@ -8355,7 +8355,7 @@ public abstract class GraphTestBase {
             VertexBuilder m = graph.prepareVertex(vertexId, VISIBILITY_A);
             for (int propertyNameIndex = 0; propertyNameIndex < propertyNameCount; propertyNameIndex++) {
                 for (int propertyPerNameIndex = 0; propertyPerNameIndex < propertiesPerName; propertyPerNameIndex++) {
-                    Metadata metadata = new Metadata();
+                    Metadata metadata = Metadata.create();
                     for (int metadataIndex = 0; metadataIndex < metadataPerProperty; metadataIndex++) {
                         metadata.add("m" + UUID.randomUUID().toString(), "value" + metadataIndex, VISIBILITY_A);
                     }

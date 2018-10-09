@@ -1,5 +1,7 @@
 # v4.3.2
-* Added: The ability to perform a term query by prefix using a new Compare.STARTS_WITH predicate. 
+* Added: The ability to perform a term query by prefix using a new Compare.STARTS_WITH predicate.
+* Changed: Accumulo to lazily load metadata values
+* Changed: Metadata was changed to an interface. `new Metadata` needs to be changed to `Metadata.create` 
 * Fixed: AccumuloGraphLogger was throwing an error when trying to log a field from a Scanner that was removed in Accumulo 1.8.0
 
 # v4.3.1

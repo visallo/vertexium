@@ -801,7 +801,7 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
                 throw new VertexiumException("Could not find property " + spm.getPropertyKey() + ":" + spm.getPropertyName());
             }
 
-            Metadata metadata = new Metadata(property.getMetadata());
+            Metadata metadata = Metadata.create(property.getMetadata());
             metadata.add(spm.getMetadataName(), spm.getNewValue(), spm.getMetadataVisibility());
 
             long newTimestamp = IncreasingTime.currentTimeMillis();

@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
 
 public abstract class InMemoryTableElement<TElement extends InMemoryElement> implements Serializable {
     private final String id;
-    private ReadWriteLock mutationLock= new ReentrantReadWriteLock();
+    private ReadWriteLock mutationLock = new ReentrantReadWriteLock();
     private TreeSet<Mutation> mutations = new TreeSet<>();
 
     protected InMemoryTableElement(String id) {
@@ -104,11 +104,11 @@ public abstract class InMemoryTableElement<TElement extends InMemoryElement> imp
 
     private List<PropertyMutation> findPropertyMutations(String key, String name, Visibility visibility) {
         return getFilteredMutations(m ->
-            m instanceof PropertyMutation &&
-                    (key == null || ((PropertyMutation)m).getPropertyKey().equals(key))
-                    && (name == null || ((PropertyMutation)m).getPropertyName().equals(name))
-                    && (visibility == null || ((PropertyMutation)m).getPropertyVisibility().equals(visibility))
-        ).stream().map(m -> (PropertyMutation)m).collect(Collectors.toList());
+                m instanceof PropertyMutation &&
+                        (key == null || ((PropertyMutation) m).getPropertyKey().equals(key))
+                        && (name == null || ((PropertyMutation) m).getPropertyName().equals(name))
+                        && (visibility == null || ((PropertyMutation) m).getPropertyVisibility().equals(visibility))
+        ).stream().map(m -> (PropertyMutation) m).collect(Collectors.toList());
     }
 
     public Iterable<HistoricalPropertyValue> getHistoricalPropertyValues(

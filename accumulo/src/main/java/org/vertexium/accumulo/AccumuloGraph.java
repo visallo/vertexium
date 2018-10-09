@@ -941,7 +941,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                         String resultsKey = propertyColumnQualifier.getDiscriminator(columnVisibility, column.getKey().getTimestamp());
                         long timestamp = column.getKey().getTimestamp();
                         Object value = vertexiumSerializer.bytesToObject(column.getValue().get());
-                        Metadata metadata = new Metadata();
+                        Metadata metadata = Metadata.create();
                         Set<Visibility> hiddenVisibilities = null; // TODO should we preserve these over time
                         if (value instanceof StreamingPropertyValueRef) {
                             //noinspection unchecked

@@ -12,7 +12,7 @@ public class AddPropertyValueMutation extends PropertyMutation {
             long timestamp, String key, String name, Object value, Metadata metadata, Visibility visibility) {
         super(timestamp, key, name, visibility, visibility);
         this.value = value;
-        this.metadata = new Metadata(metadata);
+        this.metadata = Metadata.create(metadata);
     }
 
     public Object getValue() {
@@ -20,6 +20,6 @@ public class AddPropertyValueMutation extends PropertyMutation {
     }
 
     public Metadata getMetadata(FetchHints fetchHints) {
-        return new Metadata(this.metadata, fetchHints);
+        return Metadata.create(this.metadata, fetchHints);
     }
 }

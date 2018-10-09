@@ -69,11 +69,11 @@ public abstract class AccumuloGraphTestBase extends GraphTestBase {
     @Test
     public void testStoringEmptyMetadata() {
         Vertex v1 = graph.addVertex("v1", VISIBILITY_EMPTY, AUTHORIZATIONS_EMPTY);
-        Metadata metadata = new Metadata();
+        Metadata metadata = Metadata.create();
         v1.addPropertyValue("prop1", "prop1", "val1", metadata, VISIBILITY_EMPTY, AUTHORIZATIONS_A_AND_B);
 
         Vertex v2 = graph.addVertex("v2", VISIBILITY_EMPTY, AUTHORIZATIONS_EMPTY);
-        metadata = new Metadata();
+        metadata = Metadata.create();
         metadata.add("meta1", "metavalue1", VISIBILITY_EMPTY);
         v2.addPropertyValue("prop1", "prop1", "val1", metadata, VISIBILITY_EMPTY, AUTHORIZATIONS_A_AND_B);
         graph.flush();
@@ -118,17 +118,17 @@ public abstract class AccumuloGraphTestBase extends GraphTestBase {
     public void testGetKeyValuePairsForVertexMutation() {
         VertexBuilder m = graph.prepareVertex("v1", 100L, VISIBILITY_A);
 
-        Metadata metadata = new Metadata();
+        Metadata metadata = Metadata.create();
         metadata.add("key1_prop2_m1", "m1_value", VISIBILITY_A);
         metadata.add("key1_prop2_m2", "m2_value", VISIBILITY_A);
         m.addPropertyValue("key1", "author", "value_key1_author", metadata, 400L, VISIBILITY_A_AND_B);
 
-        metadata = new Metadata();
+        metadata = Metadata.create();
         metadata.add("key1_prop1_m1", "m1_value", VISIBILITY_A);
         metadata.add("key1_prop1_m2", "m2_value", VISIBILITY_A);
         m.addPropertyValue("key1", "prop1", "value_key1_prop1", metadata, 200L, VISIBILITY_A);
 
-        metadata = new Metadata();
+        metadata = Metadata.create();
         metadata.add("key2_prop1_m1", "m1_value", VISIBILITY_A);
         metadata.add("key2_prop1_m2", "m2_value", VISIBILITY_A);
         m.addPropertyValue("key2", "prop1", "value_key2_prop1", metadata, 300L, VISIBILITY_B);
@@ -185,17 +185,17 @@ public abstract class AccumuloGraphTestBase extends GraphTestBase {
     public void testGetKeyValuePairsForEdgeMutation() {
         EdgeBuilderByVertexId m = graph.prepareEdge("e1", "v1", "v2", LABEL_LABEL1, 100L, VISIBILITY_A);
 
-        Metadata metadata = new Metadata();
+        Metadata metadata = Metadata.create();
         metadata.add("key1_prop2_m1", "m1_value", VISIBILITY_A);
         metadata.add("key1_prop2_m2", "m2_value", VISIBILITY_A);
         m.addPropertyValue("key1", "author", "value_key1_author", metadata, 400L, VISIBILITY_A_AND_B);
 
-        metadata = new Metadata();
+        metadata = Metadata.create();
         metadata.add("key1_prop1_m1", "m1_value", VISIBILITY_A);
         metadata.add("key1_prop1_m2", "m2_value", VISIBILITY_A);
         m.addPropertyValue("key1", "prop1", "value_key1_prop1", metadata, 200L, VISIBILITY_A);
 
-        metadata = new Metadata();
+        metadata = Metadata.create();
         metadata.add("key2_prop1_m1", "m1_value", VISIBILITY_A);
         metadata.add("key2_prop1_m2", "m2_value", VISIBILITY_A);
         m.addPropertyValue("key2", "prop1", "value_key2_prop1", metadata, 300L, VISIBILITY_B);
@@ -432,7 +432,7 @@ public abstract class AccumuloGraphTestBase extends GraphTestBase {
         byte[] data = propertyValue.getBytes();
         StreamingPropertyValue spv = StreamingPropertyValue.create(propertyValue);
         StreamingPropertyValueTableRef spvValue = new StreamingPropertyValueTableRef(dataRowKey, spv, data);
-        Metadata metadata = new Metadata();
+        Metadata metadata = Metadata.create();
         Property property = new MutablePropertyImpl(propertyKey, propertyName, spvValue, metadata, timestamp, new HashSet<>(), new Visibility(""), FetchHints.ALL);
         Text columnQualifier = KeyHelper.getColumnQualifierFromPropertyColumnQualifier(property, getGraph().getNameSubstitutionStrategy());
         addPropertyMutation.put(AccumuloElement.CF_PROPERTY, columnQualifier, new Value(getGraph().getVertexiumSerializer().objectToBytes(spvValue)));
