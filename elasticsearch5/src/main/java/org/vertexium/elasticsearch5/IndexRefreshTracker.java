@@ -18,6 +18,9 @@ public class IndexRefreshTracker {
         long time = System.currentTimeMillis();
 
         String[] indexNamesNeedingRefresh = getIndexNamesNeedingRefresh(time);
+        if (indexNamesNeedingRefresh.length == 0) {
+            return;
+        }
         client.admin().indices().prepareRefresh(indexNamesNeedingRefresh).execute().actionGet();
         removeRefreshedIndexNames(indexNamesNeedingRefresh, time);
     }
