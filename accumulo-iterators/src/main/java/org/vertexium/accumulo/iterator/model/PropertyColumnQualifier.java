@@ -30,12 +30,27 @@ public class PropertyColumnQualifier extends KeyBase {
         return getDiscriminator(getPropertyName(), getPropertyKey(), visibilityString, timestamp);
     }
 
+    public String getDiscriminator(String visibilityString) {
+        return getDiscriminatorWithoutTimestamp(getPropertyName(), getPropertyKey(), visibilityString);
+    }
+
     public static String getDiscriminator(String propertyName, String propertyKey, String visibilityString, long timestamp) {
+        String discriminatorWithoutTimestamp = getDiscriminatorWithoutTimestamp(propertyName, propertyKey, visibilityString);
+        String timestampString = Long.toHexString(timestamp);
+        int length = discriminatorWithoutTimestamp.length() + 1 + timestampString.length();
+        //noinspection StringBufferReplaceableByString
+        return new StringBuilder(length)
+                .append(discriminatorWithoutTimestamp)
+                .append(VALUE_SEPARATOR)
+                .append(timestampString)
+                .toString();
+    }
+
+    public static String getDiscriminatorWithoutTimestamp(String propertyName, String propertyKey, String visibilityString) {
         assertNoValueSeparator(propertyName);
         assertNoValueSeparator(propertyKey);
         assertNoValueSeparator(visibilityString);
-        String timestampString = Long.toHexString(timestamp);
-        int length = propertyName.length() + 1 + propertyKey.length() + 1 + visibilityString.length() + 1 + timestampString.length();
+        int length = propertyName.length() + 1 + propertyKey.length() + 1 + visibilityString.length();
         //noinspection StringBufferReplaceableByString
         return new StringBuilder(length)
                 .append(propertyName)
@@ -43,8 +58,6 @@ public class PropertyColumnQualifier extends KeyBase {
                 .append(propertyKey)
                 .append(VALUE_SEPARATOR)
                 .append(visibilityString)
-                .append(VALUE_SEPARATOR)
-                .append(timestampString)
                 .toString();
     }
 }
