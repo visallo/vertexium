@@ -1,4 +1,4 @@
-# v4.4.0
+# v4.4.1
 * Fixed: Soft Deleted Historical Property Entries not containing metadata information.
 
 # v4.4.0
