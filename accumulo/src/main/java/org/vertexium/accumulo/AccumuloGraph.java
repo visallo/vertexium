@@ -923,6 +923,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
 
                 ArrayListMultimap<String, String> activeVisibilities = ArrayListMultimap.create();
                 Map<String, Key> softDeleteObserved = Maps.newHashMap();
+                Map<String, Long> lastPropertyEntryList = Maps.newHashMap();
 
                 for (Map.Entry<Key, Value> column : scanner) {
                     String cq = column.getKey().getColumnQualifier().toString();
@@ -964,6 +965,17 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
 
                         results.put(resultsKey, hpv);
 
+                        // Need to keep track on the last property entry to get the original property metadata on a
+                        // soft delete
+                        String lastPropKey = propertyColumnQualifier.getDiscriminator(columnVisibility);
+                        if (lastPropertyEntryList.containsKey(lastPropKey)) {
+                            long lastPropTimestamp = lastPropertyEntryList.get(lastPropKey);
+                            if (timestamp > lastPropTimestamp) {
+                                lastPropertyEntryList.put(lastPropKey, timestamp);
+                            }
+                        } else {
+                            lastPropertyEntryList.put(lastPropKey, timestamp);
+                        }
                     } else if (column.getKey().getColumnFamily().equals(AccumuloElement.CF_PROPERTY_SOFT_DELETE)) {
                         PropertyColumnQualifier propertyColumnQualifier = KeyHelper.createPropertyColumnQualifier(cq, getNameSubstitutionStrategy());
                         String propertyKey = propertyColumnQualifier.getPropertyKey();
@@ -999,9 +1011,22 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                         String columnVisibility = entry.getColumnVisibility().toString();
                         Visibility propertyVisibility = accumuloVisibilityToVisibility(columnVisibility);
 
+                        String lastPropertyEntryKey = propertyColumnQualifier.getDiscriminator(columnVisibility);
+                        Long propertyTimestamp = lastPropertyEntryList.get(lastPropertyEntryKey);
+                        if (propertyTimestamp == null) {
+                            throw new VertexiumException("Did not find last property entry timestamp: " + lastPropertyEntryKey);
+                        }
+
+                        String resultKey = propertyColumnQualifier.getDiscriminator(columnVisibility, propertyTimestamp);
+                        HistoricalPropertyValue property = results.get(resultKey);
+                        if (property == null) {
+                            throw new VertexiumException("Did not find a matching historical property value for the last property entry timestamp: " + resultKey);
+                        }
+
                         HistoricalPropertyValue hpv =
                                 new HistoricalPropertyValueBuilder(propertyKey, propertyName, timestamp)
                                         .propertyVisibility(propertyVisibility)
+                                        .metadata(property.getMetadata())
                                         .isDeleted(true)
                                         .build();
 

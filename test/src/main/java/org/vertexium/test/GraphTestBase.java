@@ -8570,8 +8570,7 @@ public abstract class GraphTestBase {
     // Historical Property Value tests
     @Test
     public void historicalPropertyValueAddProp() {
-
-        Vertex vertexAdded = graph.prepareVertex("v1", VISIBILITY_A)
+        graph.prepareVertex("v1", VISIBILITY_A)
                 .setProperty("prop1_A", "value1", VISIBILITY_A)
                 .setProperty("prop2_B", "value2", VISIBILITY_B)
                 .save(AUTHORIZATIONS_A_AND_B);
@@ -8579,11 +8578,12 @@ public abstract class GraphTestBase {
 
         // Add property
         Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B);
-        vertexAdded = v1.prepareMutation()
+        v1.prepareMutation()
                 .setProperty("prop3_A", "value3", VISIBILITY_A)
                 .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
+        v1 = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B);
         List<HistoricalPropertyValue> values = toList(v1.getHistoricalPropertyValues(AUTHORIZATIONS_A_AND_B));
         Collections.reverse(values);
 
@@ -8595,7 +8595,7 @@ public abstract class GraphTestBase {
 
     @Test
     public void historicalPropertyValueDeleteProp() {
-        Vertex vertexAdded = graph.prepareVertex("v1", VISIBILITY_A)
+        graph.prepareVertex("v1", VISIBILITY_A)
                 .setProperty("prop1_A", "value1", VISIBILITY_A)
                 .setProperty("prop2_B", "value2", VISIBILITY_B)
                 .setProperty("prop3_A", "value3", VISIBILITY_A)
@@ -8604,12 +8604,12 @@ public abstract class GraphTestBase {
 
         // remove property
         Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B);
-        vertexAdded = v1.prepareMutation()
+        v1.prepareMutation()
                 .softDeleteProperties("prop2_B")
                 .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
-
+        v1 = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B);
         List<HistoricalPropertyValue> values = toList(v1.getHistoricalPropertyValues(AUTHORIZATIONS_A_AND_B));
         Collections.reverse(values);
         assertEquals(4, values.size());
@@ -8619,24 +8619,68 @@ public abstract class GraphTestBase {
             HistoricalPropertyValue item = values.get(i);
             if (item.getPropertyName().equals("prop1_A")) {
                 assertEquals("prop1_A", values.get(i).getPropertyName());
-                assertEquals(false, values.get(i).isDeleted());
+                assertFalse(values.get(i).isDeleted());
             } else if (item.getPropertyName().equals("prop2_B")) {
                 assertEquals("prop2_B", values.get(i).getPropertyName());
                 assertEquals(isDeletedExpected, values.get(i).isDeleted());
                 isDeletedExpected = !isDeletedExpected;
             } else if (item.getPropertyName().equals("prop3_A")) {
                 assertEquals("prop3_A", values.get(i).getPropertyName());
-                assertEquals(false, values.get(i).isDeleted());
+                assertFalse(values.get(i).isDeleted());
             } else {
                 fail("Invalid " + item);
             }
         }
 
+        Metadata metadata =  Metadata.create();
+        metadata.add("metadata1", "metadata1Value", VISIBILITY_A);
+        Vertex v2 = graph.prepareVertex("v2", VISIBILITY_A)
+                .setProperty("prop1_A", "value1", metadata, VISIBILITY_A)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        metadata.add("metadata2", "metadata2Value", VISIBILITY_A);
+        v2.prepareMutation()
+                .setProperty("prop1_A", "value2", metadata, VISIBILITY_B)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        // remove property
+        v2 = graph.getVertex("v2", AUTHORIZATIONS_A_AND_B);
+        v2.prepareMutation()
+                .softDeleteProperties("prop1_A")
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        v2 = graph.getVertex("v2", AUTHORIZATIONS_A_AND_B);
+        values = toList(v2.getHistoricalPropertyValues(AUTHORIZATIONS_A_AND_B));
+        Collections.reverse(values);
+        assertEquals(3, values.size());
+
+        List<HistoricalPropertyValue> deletedHpv = values.stream()
+                .filter(HistoricalPropertyValue::isDeleted)
+                .collect(Collectors.toList());
+
+        assertEquals(1, deletedHpv.size());
+
+        for (int i = 0; i < 3; i++) {
+            HistoricalPropertyValue item = values.get(i);
+            if (item.getPropertyName().equals("prop1_A")) {
+                assertEquals("prop1_A", values.get(i).getPropertyName());
+                if (item.isDeleted()) {
+                    Metadata hpvMetadata = item.getMetadata();
+                    assertEquals(2, hpvMetadata.entrySet().size());
+                    assertEquals(VISIBILITY_B_STRING, item.getPropertyVisibility().getVisibilityString());
+                }
+            } else {
+                fail("Invalid " + item);
+            }
+        }
     }
 
     @Test
     public void historicalPropertyValueModifyPropValue() {
-        Vertex vertexAdded = graph.prepareVertex("v1", VISIBILITY_A)
+        graph.prepareVertex("v1", VISIBILITY_A)
                 .setProperty("prop1_A", "value1", VISIBILITY_A)
                 .setProperty("prop2_B", "value2", VISIBILITY_B)
                 .setProperty("prop3_A", "value3", VISIBILITY_A)
@@ -8645,41 +8689,42 @@ public abstract class GraphTestBase {
 
         // modify property value
         Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B);
-        vertexAdded = v1.prepareMutation()
+        v1.prepareMutation()
                 .setProperty("prop3_A", "value4", VISIBILITY_A)
                 .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         // Restore
         v1 = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B);
-        vertexAdded = v1.prepareMutation()
+        v1.prepareMutation()
                 .setProperty("prop3_A", "value3", VISIBILITY_A)
                 .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
+        v1 = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B);
         List<HistoricalPropertyValue> values = toList(v1.getHistoricalPropertyValues(AUTHORIZATIONS_A_AND_B));
         Collections.reverse(values);
         assertEquals(5, values.size());
         assertEquals("prop1_A", values.get(0).getPropertyName());
-        assertEquals(false, values.get(0).isDeleted());
+        assertFalse(values.get(0).isDeleted());
         assertEquals("value1", values.get(0).getValue());
         assertEquals("prop2_B", values.get(1).getPropertyName());
-        assertEquals(false, values.get(1).isDeleted());
+        assertFalse(values.get(1).isDeleted());
         assertEquals("value2", values.get(1).getValue());
         assertEquals("prop3_A", values.get(2).getPropertyName());
-        assertEquals(false, values.get(2).isDeleted());
+        assertFalse(values.get(2).isDeleted());
         assertEquals("value3", values.get(2).getValue());
         assertEquals("prop3_A", values.get(3).getPropertyName());
-        assertEquals(false, values.get(3).isDeleted());
+        assertFalse(values.get(3).isDeleted());
         assertEquals("value4", values.get(3).getValue());
         assertEquals("prop3_A", values.get(4).getPropertyName());
-        assertEquals(false, values.get(4).isDeleted());
+        assertFalse(values.get(4).isDeleted());
         assertEquals("value3", values.get(4).getValue());
     }
 
     @Test
     public void historicalPropertyValueModifyPropVisibility() {
-        Vertex vertexAdded = graph.prepareVertex("v1", VISIBILITY_A)
+        graph.prepareVertex("v1", VISIBILITY_A)
                 .setProperty("prop1_A", "value1", VISIBILITY_A)
                 .setProperty("prop2_B", "value2", VISIBILITY_B)
                 .setProperty("prop3_A", "value3", VISIBILITY_A)
@@ -8688,14 +8733,14 @@ public abstract class GraphTestBase {
 
         // modify property value
         Vertex v1 = graph.getVertex("v1", FetchHints.ALL, AUTHORIZATIONS_A_AND_B);
-        vertexAdded = v1.prepareMutation()
+        v1.prepareMutation()
                 .alterPropertyVisibility("prop1_A", VISIBILITY_B)
                 .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         // Restore
         v1 = graph.getVertex("v1", FetchHints.ALL, AUTHORIZATIONS_A_AND_B);
-        vertexAdded = v1.prepareMutation()
+        v1.prepareMutation()
                 .alterPropertyVisibility("prop1_A", VISIBILITY_A)
                 .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
@@ -8704,19 +8749,19 @@ public abstract class GraphTestBase {
         Collections.reverse(values);
         assertEquals(5, values.size());
         assertEquals("prop1_A", values.get(0).getPropertyName());
-        assertEquals(false, values.get(0).isDeleted());
+        assertFalse(values.get(0).isDeleted());
         assertEquals(VISIBILITY_A, values.get(0).getPropertyVisibility());
         assertEquals("prop2_B", values.get(1).getPropertyName());
-        assertEquals(false, values.get(1).isDeleted());
+        assertFalse(values.get(1).isDeleted());
         assertEquals(VISIBILITY_B, values.get(1).getPropertyVisibility());
         assertEquals("prop3_A", values.get(2).getPropertyName());
-        assertEquals(false, values.get(2).isDeleted());
+        assertFalse(values.get(2).isDeleted());
         assertEquals(VISIBILITY_A, values.get(2).getPropertyVisibility());
         assertEquals("prop1_A", values.get(3).getPropertyName());
-        assertEquals(false, values.get(3).isDeleted());
+        assertFalse(values.get(3).isDeleted());
         assertEquals(VISIBILITY_B, values.get(3).getPropertyVisibility());
         assertEquals("prop1_A", values.get(4).getPropertyName());
-        assertEquals(false, values.get(4).isDeleted());
+        assertFalse(values.get(4).isDeleted());
         assertEquals(VISIBILITY_A, values.get(4).getPropertyVisibility());
     }
 
