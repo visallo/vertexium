@@ -6,14 +6,17 @@ import org.elasticsearch.index.query.functionscore.ScriptScoreFunctionBuilder;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
 import org.vertexium.Graph;
+import org.vertexium.PropertyDefinition;
 import org.vertexium.VertexiumException;
 import org.vertexium.elasticsearch5.Elasticsearch5SearchIndex;
 import org.vertexium.query.QueryParameters;
 import org.vertexium.scoring.FieldValueScoringStrategy;
 import org.vertexium.util.IOUtils;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class ElasticsearchFieldValueScoringStrategy
         extends FieldValueScoringStrategy
@@ -45,5 +48,29 @@ public class ElasticsearchFieldValueScoringStrategy
         scriptParams.put("fieldNames", fieldNames);
         Script script = new Script(ScriptType.INLINE, "painless", scriptSrc, scriptParams);
         return QueryBuilders.functionScoreQuery(query, new ScriptScoreFunctionBuilder(script));
+    }
+
+    private List<String> getFieldNames(
+            Graph graph,
+            Elasticsearch5SearchIndex searchIndex,
+            QueryParameters queryParameters,
+            String field
+    ) {
+        PropertyDefinition propertyDefinition = graph.getPropertyDefinition(field);
+        if (propertyDefinition == null) {
+            return null;
+        }
+        if (!searchIndex.isPropertyInIndex(graph, field)) {
+            return null;
+        }
+
+        String[] propertyNames = searchIndex.getPropertyNames(
+                graph,
+                propertyDefinition.getPropertyName(),
+                queryParameters.getAuthorizations()
+        );
+        return Arrays.stream(propertyNames)
+                .filter(propertyName -> Number.class.isAssignableFrom(propertyDefinition.getDataType()))
+                .collect(Collectors.toList());
     }
 }

@@ -1,5 +1,6 @@
 # v4.4.1
 * Fixed: Soft Deleted Historical Property Entries not containing metadata information.
+* Fixed: Scoring strategies selecting the correct fields
 
 # v4.4.0
 * Added: The ability to perform a term query by prefix using a new Compare.STARTS_WITH predicate.
