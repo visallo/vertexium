@@ -1111,6 +1111,10 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
         exceptionHandler.handleDocumentMissingException(graph, this, flushObject, ex);
     }
 
+    public boolean supportsExactMatchSearch(PropertyDefinition propertyDefinition) {
+        return propertyDefinition.getTextIndexHints().contains(TextIndexHint.EXACT_MATCH) || propertyDefinition.isSortable();
+    }
+
     private static class StreamingPropertyString {
         private final String propertyValue;
 

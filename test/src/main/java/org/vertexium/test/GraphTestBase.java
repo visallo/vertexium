@@ -8807,7 +8807,7 @@ public abstract class GraphTestBase {
         graph.defineProperty("prop1")
                 .dataType(String.class)
                 .sortable(true)
-                .textIndexHint(TextIndexHint.EXACT_MATCH)
+                .textIndexHint(TextIndexHint.NONE)
                 .define();
 
         graph.prepareVertex("v1", VISIBILITY_A)
