@@ -1,7 +1,7 @@
 language: java
 script: travis_wait 60 mvn test -Pnolog,$TEST_EXECUTION_PROFILE
 jdk:
-  - oraclejdk8
+  - openjdk8
 env:
   - TEST_EXECUTION_PROFILE=test
   - TEST_EXECUTION_PROFILE=accumulo-test
