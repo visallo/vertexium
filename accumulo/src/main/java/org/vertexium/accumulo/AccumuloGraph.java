@@ -26,7 +26,9 @@ import org.apache.accumulo.core.trace.Trace;
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.framework.recipes.cache.ChildData;
 import org.apache.curator.framework.recipes.cache.TreeCache;
+import org.apache.curator.framework.recipes.cache.TreeCacheEvent;
 import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.hadoop.io.Text;
 import org.apache.zookeeper.CreateMode;
@@ -2907,7 +2909,9 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
 
     private class AccumuloGraphMetadataStore extends GraphMetadataStore {
         private final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(AccumuloGraphMetadataStore.class);
-        private final Pattern ZK_PATH_REPLACEMENT_PATTERN = Pattern.compile("[^a-zA-Z]+");
+        private final String ZK_PATH_REPLACEMENT = "[^a-zA-Z]+";
+        private final Pattern ZK_PATH_REPLACEMENT_PATTERN = Pattern.compile(ZK_PATH_REPLACEMENT);
+        private final String ZK_DEFINE_PROPERTY = METADATA_DEFINE_PROPERTY_PREFIX.replaceAll(ZK_PATH_REPLACEMENT, "");
         private final CuratorFramework curatorFramework;
         private final String zkPath;
         private final TreeCache treeCache;
@@ -2919,12 +2923,16 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             this.treeCache = new TreeCache(curatorFramework, zkPath);
             this.treeCache.getListenable().addListener((client, event) -> {
                 if (LOGGER.isTraceEnabled()) {
-                    LOGGER.trace("treeCache event, clearing cache");
+                    LOGGER.trace("treeCache event, clearing cache %s", event);
                 }
                 synchronized (entries) {
                     entries.clear();
                 }
                 getSearchIndex().clearCache();
+
+                if (isDefinePropertyChange(event)) {
+                    invalidatePropertyDefinitionCache();
+                }
             });
             try {
                 this.treeCache.start();
@@ -2987,6 +2995,21 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                     LOGGER.error("Could not notify other nodes via ZooKeeper", e);
                 }
             }
+        }
+
+        private boolean isDefinePropertyChange(TreeCacheEvent event) {
+            if (event == null) {
+                return false;
+            }
+            ChildData data = event.getData();
+            if (data == null) {
+                return false;
+            }
+            String path = data.getPath();
+            if (path == null) {
+                return false;
+            }
+            return path.startsWith(zkPath + "/" + ZK_DEFINE_PROPERTY);
         }
 
         private void signalMetadataChange(String key) throws Exception {
