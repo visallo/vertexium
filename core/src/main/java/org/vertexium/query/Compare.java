@@ -5,6 +5,7 @@ import org.vertexium.Property;
 import org.vertexium.PropertyDefinition;
 import org.vertexium.TextIndexHint;
 import org.vertexium.property.StreamingPropertyValue;
+import org.vertexium.type.GeoShape;
 
 import java.util.Collection;
 import java.util.Date;
@@ -148,6 +149,10 @@ public enum Compare implements Predicate {
             } catch (NumberFormatException ex) {
                 return 1;
             }
+        }
+        if (first instanceof GeoShape && second instanceof String) {
+            String description = ((GeoShape) first).getDescription();
+            return description == null ? -1 : description.toLowerCase().compareTo((String) second);
         }
         if (first instanceof Comparable) {
             return ((Comparable) first).compareTo(second);
