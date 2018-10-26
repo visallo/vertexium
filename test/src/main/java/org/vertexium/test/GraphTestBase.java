@@ -5657,6 +5657,121 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    public void testAlterPropertyVisibilityOfGeoLocation() {
+        graph.defineProperty("prop1").dataType(String.class).textIndexHint(TextIndexHint.ALL).define();
+        graph.defineProperty("prop2").dataType(GeoPoint.class).textIndexHint(TextIndexHint.ALL).define();
+
+        graph.prepareVertex("v1", VISIBILITY_EMPTY)
+                .addPropertyValue("key1", "prop1", "value1", VISIBILITY_A)
+                .addPropertyValue("key1", "prop2", new GeoPoint(38.9186, -77.2297, "Reston, VA"), VISIBILITY_A)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        Vertex v1 = graph.getVertex("v1", FetchHints.ALL, AUTHORIZATIONS_A);
+        v1.prepareMutation()
+                .alterPropertyVisibility(v1.getProperty("key1", "prop1", VISIBILITY_A), VISIBILITY_EMPTY)
+                .alterPropertyVisibility(v1.getProperty("key1", "prop2", VISIBILITY_A), VISIBILITY_EMPTY)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        QueryResultsIterable<Vertex> vertices = graph.query(AUTHORIZATIONS_EMPTY).has("prop1", "value1").vertices();
+        assertVertexIdsAnyOrder(vertices, "v1");
+        assertResultsCount(1, 1, vertices);
+
+        vertices = graph.query(AUTHORIZATIONS_EMPTY).has("prop2", "reston, va").vertices();
+        assertVertexIdsAnyOrder(vertices, "v1");
+        assertResultsCount(1, 1, vertices);
+
+        QueryResultsIterable<String> vertexIds = graph.query(AUTHORIZATIONS_EMPTY).has("prop2", GeoCompare.WITHIN, new GeoCircle(38.9186, -77.2297, 1)).vertexIds();
+        assertIdsAnyOrder(vertexIds, "v1");
+        assertResultsCount(1, 1, vertexIds);
+
+        vertices = graph.query(AUTHORIZATIONS_EMPTY).has("prop2", GeoCompare.WITHIN, new GeoCircle(38.9186, -77.2297, 1)).vertices();
+        assertVertexIdsAnyOrder(vertices, "v1");
+        assertResultsCount(1, 1, vertices);
+    }
+
+    @Test
+    public void testDeleteGeoLocationProperty() {
+        graph.defineProperty("prop1").dataType(String.class).textIndexHint(TextIndexHint.ALL).define();
+        graph.defineProperty("prop2").dataType(GeoPoint.class).textIndexHint(TextIndexHint.ALL).define();
+
+        graph.prepareVertex("v1", VISIBILITY_EMPTY)
+                .addPropertyValue("key1", "prop1", "value1", VISIBILITY_A)
+                .addPropertyValue("key1", "prop2", new GeoPoint(38.9186, -77.2297, "Reston, VA"), VISIBILITY_A)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        Vertex v1 = graph.getVertex("v1", FetchHints.ALL, AUTHORIZATIONS_A);
+        v1.prepareMutation()
+                .deleteProperties("key1", "prop1")
+                .deleteProperties("key1", "prop2")
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        QueryResultsIterable<Vertex> vertices = graph.query(AUTHORIZATIONS_A).has("prop1", "value1").vertices();
+        assertResultsCount(0, 0, vertices);
+
+        vertices = graph.query(AUTHORIZATIONS_A).has("prop2", "reston, va").vertices();
+        assertResultsCount(0, 0, vertices);
+
+        vertices = graph.query(AUTHORIZATIONS_A).has("prop2", GeoCompare.WITHIN, new GeoCircle(38.9186, -77.2297, 1)).vertices();
+        assertResultsCount(0, 0, vertices);
+
+        QueryResultsIterable<String> vertexIds = graph.query(AUTHORIZATIONS_A).has("prop2", GeoCompare.WITHIN, new GeoCircle(38.9186, -77.2297, 1)).vertexIds();
+        assertResultsCount(0, 0, vertexIds);
+    }
+
+
+    @Test
+    public void testGeoLocationsWithDifferentKeys() {
+        graph.defineProperty("prop1").dataType(GeoPoint.class).textIndexHint(TextIndexHint.ALL).define();
+
+        graph.prepareVertex("v1", VISIBILITY_EMPTY)
+                .addPropertyValue("key1", "prop1", new GeoPoint(38.9186, -77.2297, "Reston, VA"), VISIBILITY_A)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        QueryResultsIterable<Vertex> vertices = graph.query(AUTHORIZATIONS_A).has("prop1", GeoCompare.WITHIN, new GeoCircle(38.9186, -77.2297, 1)).vertices();
+        assertVertexIdsAnyOrder(vertices, "v1");
+        assertResultsCount(1, 1, vertices);
+
+        vertices = graph.query(AUTHORIZATIONS_A).has("prop1", "reston, va").vertices();
+        assertVertexIdsAnyOrder(vertices, "v1");
+        assertResultsCount(1, 1, vertices);
+
+        Vertex v1 = graph.getVertex("v1", FetchHints.ALL, AUTHORIZATIONS_A);
+        v1.prepareMutation()
+                .addPropertyValue("key2", "prop1", new GeoPoint(38.6270, -90.1994, "St Louis, MO"), VISIBILITY_A)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        // NOTE: Now that the field has multiple values, WITHIN really means that all values must be within the circle
+        vertices = graph.query(AUTHORIZATIONS_A).has("prop1", GeoCompare.WITHIN, new GeoCircle(38.9186, -77.2297, 1)).vertices();
+        assertResultsCount(0, 0, vertices);
+
+        vertices = graph.query(AUTHORIZATIONS_A).has("prop1", GeoCompare.INTERSECTS, new GeoCircle(38.9186, -77.2297, 1)).vertices();
+        assertVertexIdsAnyOrder(vertices, "v1");
+        assertResultsCount(1, 1, vertices);
+
+        vertices = graph.query(AUTHORIZATIONS_A).has("prop1", "reston, va").vertices();
+        assertVertexIdsAnyOrder(vertices, "v1");
+        assertResultsCount(1, 1, vertices);
+
+        // NOTE: Now that the field has multiple values, WITHIN really means that all values must be within the circle
+        vertices = graph.query(AUTHORIZATIONS_A).has("prop1", GeoCompare.WITHIN, new GeoCircle(38.6270, -90.1994, 1)).vertices();
+        assertResultsCount(0, 0, vertices);
+
+        vertices = graph.query(AUTHORIZATIONS_A).has("prop1", GeoCompare.INTERSECTS, new GeoCircle(38.6270, -90.1994, 1)).vertices();
+        assertVertexIdsAnyOrder(vertices, "v1");
+        assertResultsCount(1, 1, vertices);
+
+        vertices = graph.query(AUTHORIZATIONS_A).has("prop1", "st louis, mo").vertices();
+        assertVertexIdsAnyOrder(vertices, "v1");
+        assertResultsCount(1, 1, vertices);
+    }
+
+    @Test
     public void testChangeVisibilityEdge() {
         Vertex v1 = graph.prepareVertex("v1", VISIBILITY_EMPTY)
                 .save(AUTHORIZATIONS_A_AND_B);
@@ -7112,7 +7227,6 @@ public abstract class GraphTestBase {
         q.addAggregation(agg);
         return q.vertices().getAggregationResult("percentiles", PercentilesResult.class);
     }
-
 
     @Test
     public void testGraphQueryWithGeohashAggregation() {

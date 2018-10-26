@@ -161,6 +161,10 @@ public enum Compare implements Predicate {
                 return 1;
             }
         }
+        if (first instanceof GeoShape && second instanceof String) {
+            String description = ((GeoShape) first).getDescription();
+            return description == null ? -1 : description.toLowerCase().compareTo((String) second);
+        }
         if (first instanceof Comparable) {
             return ((Comparable) first).compareTo(second);
         }
