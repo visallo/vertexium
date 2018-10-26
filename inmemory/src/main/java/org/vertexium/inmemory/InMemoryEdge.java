@@ -6,8 +6,6 @@ import org.vertexium.inmemory.mutations.EdgeSetupMutation;
 import org.vertexium.mutation.ExistingEdgeMutation;
 import org.vertexium.search.IndexHint;
 
-import java.util.EnumSet;
-
 public class InMemoryEdge extends InMemoryElement<InMemoryEdge> implements Edge {
     private final EdgeSetupMutation edgeSetupMutation;
 
@@ -90,18 +88,10 @@ public class InMemoryEdge extends InMemoryElement<InMemoryEdge> implements Edge 
             @Override
             public Edge save(Authorizations authorizations) {
                 IndexHint indexHint = getIndexHint();
-                Visibility oldVisibility = InMemoryEdge.this.getVisibility();
                 saveExistingElementMutation(this, indexHint, authorizations);
                 Edge edge = getElement();
                 if (indexHint != IndexHint.DO_NOT_INDEX) {
-                    saveMutationToSearchIndex(
-                            edge,
-                            oldVisibility,
-                            getNewElementVisibility(),
-                            getAlterPropertyVisibilities(),
-                            getExtendedData(),
-                            authorizations
-                    );
+                    getGraph().getSearchIndex().updateElement(getGraph(), this, authorizations);
                 }
                 return edge;
             }

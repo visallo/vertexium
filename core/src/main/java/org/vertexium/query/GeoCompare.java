@@ -4,8 +4,10 @@ import org.vertexium.Property;
 import org.vertexium.PropertyDefinition;
 import org.vertexium.VertexiumNotSupportedException;
 import org.vertexium.type.GeoShape;
+import org.vertexium.util.StreamUtils;
 
 import java.util.Collection;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public enum GeoCompare implements Predicate {
     INTERSECTS("intersects"),
@@ -25,12 +27,21 @@ public enum GeoCompare implements Predicate {
 
     @Override
     public boolean evaluate(Iterable<Property> properties, Object second, Collection<PropertyDefinition> propertyDefinitions) {
-        for (Property property : properties) {
-            if (evaluate(property.getValue(), second)) {
-                return true;
-            }
+        switch (this) {
+            case WITHIN:
+                AtomicBoolean hasProperty = new AtomicBoolean(false);
+                boolean allMatch = StreamUtils.stream(properties).allMatch(property -> {
+                    hasProperty.set(true);
+                    return evaluate(property.getValue(), second);
+                });
+                return hasProperty.get() && allMatch;
+            case INTERSECTS:
+                return StreamUtils.stream(properties).anyMatch(property -> evaluate(property.getValue(), second));
+            case DISJOINT:
+                return StreamUtils.stream(properties).noneMatch(property -> evaluate(property.getValue(), second));
+            default:
+                throw new IllegalArgumentException("Invalid compare: " + this);
         }
-        return false;
     }
 
     @Override
@@ -50,6 +61,10 @@ public enum GeoCompare implements Predicate {
         switch (this) {
             case WITHIN:
                 return ((GeoShape) second).within((GeoShape) testValue);
+            case INTERSECTS:
+                return ((GeoShape) second).intersects((GeoShape) testValue);
+            case DISJOINT:
+                return !((GeoShape) second).intersects((GeoShape) testValue);
             default:
                 throw new IllegalArgumentException("Invalid compare: " + this);
         }

@@ -1,14 +1,11 @@
 package org.vertexium.inmemory;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
 import org.vertexium.*;
 import org.vertexium.mutation.*;
 import org.vertexium.query.ExtendedDataQueryableIterable;
 import org.vertexium.query.QueryableIterable;
 import org.vertexium.search.IndexHint;
-
-import java.util.List;
 
 public abstract class InMemoryElement<TElement extends InMemoryElement> extends ElementBase {
     private final String id;
@@ -305,36 +302,6 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> extends 
             return getId() + ":[" + edge.getVertexId(Direction.OUT) + "-" + edge.getLabel() + "->" + edge.getVertexId(Direction.IN) + "]";
         }
         return getId();
-    }
-
-
-    protected void saveMutationToSearchIndex(
-            Element element,
-            Visibility oldVisibility,
-            Visibility newVisibility,
-            List<AlterPropertyVisibility> alterPropertyVisibilities,
-            Iterable<ExtendedDataMutation> extendedDatas,
-            Authorizations authorizations
-    ) {
-        if (alterPropertyVisibilities != null && alterPropertyVisibilities.size() > 0) {
-            // Bulk delete
-            List<PropertyDescriptor> propertyList = Lists.newArrayList();
-            alterPropertyVisibilities.forEach(p -> propertyList.add(PropertyDescriptor.from(p.getKey(), p.getName(), p.getExistingVisibility())));
-            getGraph().getSearchIndex().deleteProperties(
-                    getGraph(),
-                    element,
-                    propertyList,
-                    authorizations
-            );
-
-            getGraph().getSearchIndex().flush(getGraph());
-        }
-        if (newVisibility != null) {
-            getGraph().getSearchIndex().alterElementVisibility(getGraph(), element, oldVisibility, newVisibility, authorizations);
-        } else {
-            getGraph().getSearchIndex().addElement(getGraph(), element, authorizations);
-            getGraph().getSearchIndex().addElementExtendedData(getGraph(), element, extendedDatas, authorizations);
-        }
     }
 
     public boolean canRead(Authorizations authorizations) {
