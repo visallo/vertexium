@@ -28,6 +28,7 @@ public abstract class GraphBase implements Graph {
     public static final String METADATA_DEFINE_PROPERTY_PREFIX = "defineProperty.";
     private final List<GraphEventListener> graphEventListeners = new ArrayList<>();
     private Map<String, PropertyDefinition> propertyDefinitionCache = new HashMap<>();
+    private boolean propertyDefinitionCacheInvalidated = false;
     private final boolean strictTyping;
 
     protected GraphBase(boolean strictTyping) {
@@ -933,6 +934,11 @@ public abstract class GraphBase implements Graph {
         propertyDefinitionCache.put(propertyDefinition.getPropertyName(), propertyDefinition);
     }
 
+    protected void invalidatePropertyDefinitionCache() {
+        propertyDefinitionCache.clear();
+        propertyDefinitionCacheInvalidated = true;
+    }
+
     public void savePropertyDefinition(PropertyDefinition propertyDefinition) {
         addToPropertyDefinitionCache(propertyDefinition);
         setMetadata(getPropertyDefinitionKey(propertyDefinition.getPropertyName()), propertyDefinition);
@@ -950,18 +956,27 @@ public abstract class GraphBase implements Graph {
         }
         propertyDefinition = (PropertyDefinition) getMetadata(getPropertyDefinitionKey(propertyName));
         if (propertyDefinition != null) {
-            propertyDefinitionCache.put(propertyName, propertyDefinition);
+            addToPropertyDefinitionCache(propertyDefinition);
         }
         return propertyDefinition;
     }
 
     @Override
     public Collection<PropertyDefinition> getPropertyDefinitions() {
+        if (propertyDefinitionCacheInvalidated) {
+            for (GraphMetadataEntry entry : getMetadataWithPrefix(METADATA_DEFINE_PROPERTY_PREFIX)) {
+                addToPropertyDefinitionCache((PropertyDefinition) entry.getValue());
+            }
+            propertyDefinitionCacheInvalidated = false;
+        }
         return propertyDefinitionCache.values();
     }
 
     @Override
     public boolean isPropertyDefined(String propertyName) {
+        if (propertyDefinitionCacheInvalidated) {
+            return getPropertyDefinition(propertyName) != null;
+        }
         return propertyDefinitionCache.containsKey(propertyName);
     }
 
