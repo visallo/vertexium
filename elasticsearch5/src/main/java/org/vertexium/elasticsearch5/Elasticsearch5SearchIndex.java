@@ -448,8 +448,19 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
 
     private <TElement extends Element> List<String> getFieldsToRemove(Graph graph, ExistingElementMutation<TElement> mutation) {
         List<String> fieldsToRemove = new ArrayList<>();
-        mutation.getPropertyDeletes().forEach(p ->
-                fieldsToRemove.add(addVisibilityToPropertyName(graph, p.getName(), p.getVisibility())));
+        mutation.getPropertyDeletes().forEach(p -> {
+            String propertyName = addVisibilityToPropertyName(graph, p.getName(), p.getVisibility());
+            fieldsToRemove.add(propertyName);
+
+            PropertyDefinition propertyDefinition = getPropertyDefinition(graph, p.getName());
+            if (GeoShape.class.isAssignableFrom(propertyDefinition.getDataType())) {
+                fieldsToRemove.add(propertyName + GEO_PROPERTY_NAME_SUFFIX);
+
+                if (GeoPoint.class.isAssignableFrom(propertyDefinition.getDataType())) {
+                    fieldsToRemove.add(propertyName + GEO_POINT_PROPERTY_NAME_SUFFIX);
+                }
+            }
+        });
         mutation.getPropertySoftDeletes().forEach(p ->
                 fieldsToRemove.add(addVisibilityToPropertyName(graph, p.getName(), p.getVisibility())));
         return fieldsToRemove;
@@ -464,6 +475,15 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
                     String oldFieldName = addVisibilityToPropertyName(graph, p.getName(), p.getExistingVisibility());
                     String newFieldName = addVisibilityToPropertyName(graph, p.getName(), p.getVisibility());
                     fieldVisibilityChanges.put(oldFieldName, newFieldName);
+
+                    PropertyDefinition propertyDefinition = getPropertyDefinition(graph, p.getName());
+                    if (GeoShape.class.isAssignableFrom(propertyDefinition.getDataType())) {
+                        fieldVisibilityChanges.put(oldFieldName + GEO_PROPERTY_NAME_SUFFIX, newFieldName + GEO_PROPERTY_NAME_SUFFIX);
+
+                        if (GeoPoint.class.isAssignableFrom(propertyDefinition.getDataType())) {
+                            fieldVisibilityChanges.put(oldFieldName + GEO_POINT_PROPERTY_NAME_SUFFIX, newFieldName + GEO_POINT_PROPERTY_NAME_SUFFIX);
+                        }
+                    }
                 });
 
         if (mutation.getNewElementVisibility() != null) {
@@ -995,7 +1015,9 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
             convertGeoShape(propertiesMap, propertyName, (GeoShape) propertyValue);
             if (propertyValue instanceof GeoPoint) {
                 GeoPoint geoPoint = (GeoPoint) propertyValue;
-                List<Double> coordinates = Arrays.asList(geoPoint.getLongitude(), geoPoint.getLatitude());
+                Map<String, Double> coordinates = new HashMap<>();
+                coordinates.put("lat", geoPoint.getLatitude());
+                coordinates.put("lon", geoPoint.getLongitude());
                 addPropertyValueToPropertiesMap(propertiesMap, propertyName + GEO_POINT_PROPERTY_NAME_SUFFIX, coordinates);
             }
             return;
