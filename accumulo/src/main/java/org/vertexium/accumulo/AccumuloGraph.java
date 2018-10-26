@@ -52,6 +52,8 @@ import org.vertexium.util.*;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
+import java.util.concurrent.locks.StampedLock;
+import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -2939,6 +2941,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         private final String zkPath;
         private final TreeCache treeCache;
         private final Map<String, GraphMetadataEntry> entries = new HashMap<>();
+        private final StampedLock stampedLock = new StampedLock();
 
         public AccumuloGraphMetadataStore(CuratorFramework curatorFramework, String zkPath) {
             this.zkPath = zkPath;
@@ -2948,9 +2951,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                 if (LOGGER.isTraceEnabled()) {
                     LOGGER.trace("treeCache event, clearing cache");
                 }
-                synchronized (entries) {
-                    entries.clear();
-                }
+                writeValues(entries::clear);
                 getSearchIndex().clearCache();
             });
             try {
@@ -2966,27 +2967,24 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
 
         @Override
         public Iterable<GraphMetadataEntry> getMetadata() {
-            synchronized (entries) {
-                if (LOGGER.isTraceEnabled()) {
-                    LOGGER.trace("getMetadata");
-                }
-                ensureMetadataLoaded();
-                return toList(entries.values());
+            if (LOGGER.isTraceEnabled()) {
+                LOGGER.trace("getMetadata");
             }
+            return readValues(() -> toList(entries.values()));
         }
 
         private void ensureMetadataLoaded() {
-            synchronized (entries) {
-                if (entries.size() > 0) {
-                    return;
-                }
-                if (LOGGER.isTraceEnabled()) {
-                    LOGGER.trace("metadata is stale... loading");
-                }
-                Iterable<GraphMetadataEntry> metadata = getMetadataInRange(null);
-                for (GraphMetadataEntry graphMetadataEntry : metadata) {
-                    entries.put(graphMetadataEntry.getKey(), graphMetadataEntry);
-                }
+            if (entries.size() > 0) {
+                return;
+            }
+
+            if (LOGGER.isTraceEnabled()) {
+                LOGGER.trace("metadata is stale... loading");
+            }
+
+            Iterable<GraphMetadataEntry> metadata = getMetadataInRange(null);
+            for (GraphMetadataEntry graphMetadataEntry : metadata) {
+                entries.put(graphMetadataEntry.getKey(), graphMetadataEntry);
             }
         }
 
@@ -3006,14 +3004,14 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                 throw new VertexiumException("Could not add metadata " + key, ex);
             }
 
-            synchronized (entries) {
+            writeValues(() -> {
                 entries.clear();
                 try {
                     signalMetadataChange(key);
                 } catch (Exception e) {
                     LOGGER.error("Could not notify other nodes via ZooKeeper", e);
                 }
-            }
+            });
         }
 
         private void signalMetadataChange(String key) throws Exception {
@@ -3028,14 +3026,38 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
 
         @Override
         public Object getMetadata(String key) {
-            GraphMetadataEntry e;
-            synchronized (entries) {
-                ensureMetadataLoaded();
-                e = entries.get(key);
-                if (e == null) {
-                    return null;
+            return readValues(() -> {
+                GraphMetadataEntry e = entries.get(key);
+                return e != null ? e.getValue() : null;
+            });
+        }
+
+        private <T> T readValues(Supplier<T> reader) {
+            T result = null;
+            long stamp = stampedLock.tryOptimisticRead();
+            if (entries.size() > 0) {
+                result = reader.get();
+            } else {
+                stamp = 0;
+            }
+            if (!stampedLock.validate(stamp)) {
+                stamp = stampedLock.writeLock();
+                try {
+                    ensureMetadataLoaded();
+                    result = reader.get();
+                } finally {
+                    stampedLock.unlockWrite(stamp);
                 }
-                return e.getValue();
+            }
+            return result;
+        }
+
+        private void writeValues(Runnable writer) {
+            long stamp = stampedLock.writeLock();
+            try {
+                writer.run();
+            } finally {
+                stampedLock.unlockWrite(stamp);
             }
         }
     }
