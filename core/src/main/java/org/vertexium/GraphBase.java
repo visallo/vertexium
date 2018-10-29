@@ -16,6 +16,7 @@ import org.vertexium.util.*;
 
 import java.io.InputStream;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import static org.vertexium.util.IterableUtils.count;
@@ -27,8 +28,7 @@ public abstract class GraphBase implements Graph {
     protected static final VertexiumLogger QUERY_LOGGER = VertexiumLoggerFactory.getQueryLogger(Graph.class);
     public static final String METADATA_DEFINE_PROPERTY_PREFIX = "defineProperty.";
     private final List<GraphEventListener> graphEventListeners = new ArrayList<>();
-    private Map<String, PropertyDefinition> propertyDefinitionCache = new HashMap<>();
-    private boolean propertyDefinitionCacheInvalidated = false;
+    private Map<String, PropertyDefinition> propertyDefinitionCache = new ConcurrentHashMap<>();
     private final boolean strictTyping;
 
     protected GraphBase(boolean strictTyping) {
@@ -934,9 +934,13 @@ public abstract class GraphBase implements Graph {
         propertyDefinitionCache.put(propertyDefinition.getPropertyName(), propertyDefinition);
     }
 
-    protected void invalidatePropertyDefinitionCache() {
-        propertyDefinitionCache.clear();
-        propertyDefinitionCacheInvalidated = true;
+    protected void invalidatePropertyDefinition(String propertyName) {
+        PropertyDefinition def = (PropertyDefinition) getMetadata(getPropertyDefinitionKey(propertyName));
+        if (def == null) {
+            propertyDefinitionCache.remove(propertyName);
+        } else if (def != null) {
+            addToPropertyDefinitionCache(def);
+        }
     }
 
     public void savePropertyDefinition(PropertyDefinition propertyDefinition) {
@@ -950,33 +954,16 @@ public abstract class GraphBase implements Graph {
 
     @Override
     public PropertyDefinition getPropertyDefinition(String propertyName) {
-        PropertyDefinition propertyDefinition = propertyDefinitionCache.get(propertyName);
-        if (propertyDefinition != null) {
-            return propertyDefinition;
-        }
-        propertyDefinition = (PropertyDefinition) getMetadata(getPropertyDefinitionKey(propertyName));
-        if (propertyDefinition != null) {
-            addToPropertyDefinitionCache(propertyDefinition);
-        }
-        return propertyDefinition;
+        return propertyDefinitionCache.getOrDefault(propertyName, null);
     }
 
     @Override
     public Collection<PropertyDefinition> getPropertyDefinitions() {
-        if (propertyDefinitionCacheInvalidated) {
-            for (GraphMetadataEntry entry : getMetadataWithPrefix(METADATA_DEFINE_PROPERTY_PREFIX)) {
-                addToPropertyDefinitionCache((PropertyDefinition) entry.getValue());
-            }
-            propertyDefinitionCacheInvalidated = false;
-        }
         return propertyDefinitionCache.values();
     }
 
     @Override
     public boolean isPropertyDefined(String propertyName) {
-        if (propertyDefinitionCacheInvalidated) {
-            return getPropertyDefinition(propertyName) != null;
-        }
         return propertyDefinitionCache.containsKey(propertyName);
     }
 

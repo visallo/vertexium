@@ -4,7 +4,6 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.primitives.Longs;
 import org.apache.accumulo.core.client.*;
 import org.apache.accumulo.core.client.Scanner;
 import org.apache.accumulo.core.client.admin.NewTableConfiguration;
@@ -26,7 +25,6 @@ import org.apache.accumulo.core.trace.Trace;
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
-import org.apache.curator.framework.recipes.cache.ChildData;
 import org.apache.curator.framework.recipes.cache.TreeCache;
 import org.apache.curator.framework.recipes.cache.TreeCacheEvent;
 import org.apache.curator.retry.ExponentialBackoffRetry;
@@ -53,6 +51,7 @@ import org.vertexium.util.*;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -2929,10 +2928,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                     entries.clear();
                 }
                 getSearchIndex().clearCache();
-
-                if (isDefinePropertyChange(event)) {
-                    invalidatePropertyDefinitionCache();
-                }
+                invalidatePropertyDefinitions(event);
             });
             try {
                 this.treeCache.start();
@@ -2997,25 +2993,35 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             }
         }
 
-        private boolean isDefinePropertyChange(TreeCacheEvent event) {
-            if (event == null) {
-                return false;
+        private void invalidatePropertyDefinitions(TreeCacheEvent event) {
+            if (event == null || event.getData() == null) {
+                return;
             }
-            ChildData data = event.getData();
-            if (data == null) {
-                return false;
+
+            String path = event.getData().getPath();
+            byte[] bytes = event.getData().getData();
+            if (path == null || bytes == null) {
+                return;
             }
-            String path = data.getPath();
-            if (path == null) {
-                return false;
+
+            if (!path.startsWith(zkPath + "/" + ZK_DEFINE_PROPERTY)) {
+                return;
             }
-            return path.startsWith(zkPath + "/" + ZK_DEFINE_PROPERTY);
+
+            String key = new String(bytes, StandardCharsets.UTF_8);
+            if (key == null) {
+                return;
+            }
+
+            String propertyName = key.substring(METADATA_DEFINE_PROPERTY_PREFIX.length());
+            LOGGER.debug("invalidating property definition: %s", propertyName);
+            invalidatePropertyDefinition(propertyName);
         }
 
         private void signalMetadataChange(String key) throws Exception {
             String path = zkPath + "/" + ZK_PATH_REPLACEMENT_PATTERN.matcher(key).replaceAll("_");
             LOGGER.debug("signaling change to metadata via path: %s", path);
-            byte[] data = Longs.toByteArray(IncreasingTime.currentTimeMillis());
+            byte[] data = key.getBytes(StandardCharsets.UTF_8);
             this.curatorFramework.create()
                     .creatingParentsIfNeeded()
                     .withMode(CreateMode.EPHEMERAL_SEQUENTIAL)
