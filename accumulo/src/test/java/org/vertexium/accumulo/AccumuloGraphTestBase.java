@@ -6,6 +6,7 @@ import org.apache.accumulo.core.data.Mutation;
 import org.apache.accumulo.core.data.Range;
 import org.apache.accumulo.core.data.Value;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang.time.StopWatch;
 import org.apache.hadoop.io.Text;
 import org.junit.Before;
 import org.junit.Test;
@@ -18,6 +19,8 @@ import org.vertexium.accumulo.tools.DeleteHistoricalLegacyStreamingPropertyValue
 import org.vertexium.property.MutablePropertyImpl;
 import org.vertexium.property.StreamingPropertyValue;
 import org.vertexium.test.GraphTestBase;
+import org.vertexium.util.VertexiumLogger;
+import org.vertexium.util.VertexiumLoggerFactory;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -30,6 +33,7 @@ import static org.vertexium.accumulo.iterator.model.KeyBase.VALUE_SEPARATOR;
 import static org.vertexium.util.IterableUtils.toList;
 
 public abstract class AccumuloGraphTestBase extends GraphTestBase {
+    private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(AccumuloGraphTestBase.class);
 
     @Before
     @Override
@@ -65,6 +69,45 @@ public abstract class AccumuloGraphTestBase extends GraphTestBase {
     protected boolean isAdvancedGeoQuerySupported() {
         return false;
     }
+
+    @Test
+    public void testDefinePropertiesMultipleGraphs() {
+        Graph graph1 = graph;
+        Graph graph2 = AccumuloGraph.create(new AccumuloGraphConfiguration(getAccumuloResource().createConfig()));
+
+        graph1.defineProperty("p1").dataType(String.class).sortable(true).textIndexHint(TextIndexHint.ALL).define();
+
+        StopWatch timeout = new StopWatch();
+        timeout.start();
+        while (timeout.getTime() < 5000) {
+            assertNotNull("Property definition cache shouldn't clear", graph1.getPropertyDefinition("p1"));
+
+            PropertyDefinition def = graph2.getPropertyDefinition("p1");
+            if (def != null) {
+                LOGGER.debug("Propagation to graph #2 took %d ms", timeout.getTime());
+                break;
+            }
+        }
+
+        assertNotNull("Property definition didn't propagate to graph #2", graph2.getPropertyDefinition("p1"));
+        assertTrue(graph1.getPropertyDefinition("p1").isSortable());
+        assertTrue(graph2.getPropertyDefinition("p1").isSortable());
+
+        graph2.defineProperty("p1").dataType(String.class).sortable(false).textIndexHint(TextIndexHint.ALL).define();
+        assertFalse(graph2.getPropertyDefinition("p1").isSortable());
+
+        timeout.reset();
+        timeout.start();
+        while (timeout.getTime() < 5000) {
+            PropertyDefinition def = graph1.getPropertyDefinition("p1");
+            if (def != null && !def.isSortable()) {
+                LOGGER.debug("Propagation to graph #1 took %d ms", timeout.getTime());
+                return;
+            }
+        }
+        throw new RuntimeException("Timeout waiting for sortable update to propagate");
+    }
+
 
     @Test
     public void testStoringEmptyMetadata() {
