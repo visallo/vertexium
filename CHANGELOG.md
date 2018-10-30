@@ -1,6 +1,7 @@
 # v4.1.1.2
 * Added: Query edges with a given in or out vertex
-* Added: Elasticsearch: Return ElasticsearchEdge and ElasticsearchVertex when FetchHints.EDGE_REF and FetchHints.NONE is set for performance 
+* Added: Elasticsearch: Return ElasticsearchEdge and ElasticsearchVertex when FetchHints.EDGE_REF and FetchHints.NONE is set for performance
+* Fixed: Indexing of GeoShape properties when the property is delete or the visibility is updated.
 
 # v4.1.1.1
 * Fixed: `graph.findRelatedEdgeSummary` filtering edges that were re-added after soft delete/hidden
@@ -13,20 +14,20 @@
 * Changed: Disable leading wildcard support
 * Changed: Update to curator 2.12.0
 * Changed: Update to Hadoop 2.9.0
-* Changed: Update to Zookeeper 3.4.12 
+* Changed: Update to Zookeeper 3.4.12
 
 # v4.1.0
 * Added: Edge query support for in and out vertex ids
 * Changed: If fetch hints were not provided throw an exception instead of returning null
-* Changed: Elasticsearch to use BulkProcessor 
+* Changed: Elasticsearch to use BulkProcessor
 * Changed: Calling hasId multiple times on the same Query object will result in the intersection of the provided lists. Previously, the resulting list was a union of all provided inputs. This behavior is more consistent with the `AND` behavior of the other query methods.
 * Fixed: Updating metadata when metadata was not fetched in fetch hints
 
 # v4.0.0
 * Changed: FetchHints to support more filtering
 * Changed: Throw errors when calling methods without the proper fetch hints
-* Changed: Accumulo: Store metadata in an indexed list to prevent duplication in memory and over the wire 
-* Fixed: Accumulo Iterator memory leak 
+* Changed: Accumulo: Store metadata in an indexed list to prevent duplication in memory and over the wire
+* Fixed: Accumulo Iterator memory leak
 * Added: Method to Vertex to get more detailed edge summary
 * Removed: SQL
 * Removed: Blueprints and Titan support
@@ -36,7 +37,7 @@
 * Fixed: Expand SPVs when running in memory query strings
 * Fixed: Fix query search using different authorizations query string
 * Fixed: Fix indexing of geolocation properties
-* Fixed: notification to Elasticsearch when properties are added 
+* Fixed: notification to Elasticsearch when properties are added
 
 # v3.2.2
 * Fixed: Improved support for multithreaded clients with InMemoryGraph
@@ -45,12 +46,12 @@
 # v3.2.1
 * Changed: When saving an ExistingElementMutation, the Elastisearch5Index will now apply the mutations using a painless script rather than making multiple requests.
 * Changed: When using Accumulo, all threads now share a single batch writer rather than creating a new writer for every thread. This allows client programs to more effectively use multi-threading.
-* Fixed: Prevent concurrent modification exceptions when using InMemoryGraph through synchronizing the methods and also returning Collection copies. 
+* Fixed: Prevent concurrent modification exceptions when using InMemoryGraph through synchronizing the methods and also returning Collection copies.
 * Fixed: The InputStream for a StreamingPropertyValue stored in Accumulo now supports mark/reset.
 * Fixed: Elasticsearch sort throwing errors for String properties while querying across indices
 
 # v3.2.0
-* Changed: Elasticsearch _id and _type fields to be much smaller to minimize the size of the _uid field data cache 
+* Changed: Elasticsearch _id and _type fields to be much smaller to minimize the size of the _uid field data cache
 * Changed: Elasticsearch to only refresh the indices that were changed
 * Fixed: InMemory and Accumulo fix wrong vertex being returned after re-adding the same vertex with a different visibility after soft delete
 * Fixed: Find path when edge labels are deflated
@@ -64,7 +65,7 @@
 * Added: Graph.getExtendedDataInRange in order to bulk load ranges of extended data rows
 * Added: SearchIndex.addExtendedData to allow for reindexing extended data
 * Added: Elasticsearch exception if any shard failures occur on queries
-* Added: Elasticsearch option to force disable the use of the server side plugin 
+* Added: Elasticsearch option to force disable the use of the server side plugin
 
 # v3.1.1
 * Added: Graph.getExtendedData to get a single extended data row
@@ -73,7 +74,7 @@
 # v3.1.0
 * Changed: Set Elasticsearch scroll api query to have a size that is the same as page size
 * Changed: Properly throw NoSuchElementException from Iterables when next is called with no more elements
-* Changed: If exact match is chosen for a property, full text is automatically enabled to support aggregation results 
+* Changed: If exact match is chosen for a property, full text is automatically enabled to support aggregation results
 * Added: Accumulo in table storage of streaming property value data
 * Added: Functions to delete extended data columns
 * Added: Multi-value extended data columns
@@ -92,7 +93,7 @@
 * Fixed: Fix Elasticsearch5 missing field exception when sorting on multiple indices
 
 # v3.0.3
-* Changed: Accumulo default data storage to use in table storage and not overflow to HDFS 
+* Changed: Accumulo default data storage to use in table storage and not overflow to HDFS
 * Added: Added a hasAuthorization method to the Query class to allow searches for any element that uses an authorization string or strings.
 * Added: Query extended data on an element
 * Added: EmptyResultsGraphQuery and EmptyResultsQueryResultsIterable
@@ -109,7 +110,7 @@
 * Added: Added a has method to the Query class to allow searches for a elements with a list of properties. The presence of any property in the list will cause the document to match.
 * Added: Added a has method to the Query class to allow searches for a elements without a list of properties. The absence of all properties in the list will cause the document to match.
 * Added: Implemented support all compare operators for DateOnly field types when using Elasticsearch 5.
-* Fixed: Queries with both a query string and aggregations were throwing a "not implemented" exception in the Elasticsearch 5 plugin. 
+* Fixed: Queries with both a query string and aggregations were throwing a "not implemented" exception in the Elasticsearch 5 plugin.
 
 # v3.0.1
 * Changed: Find Path to not return a path that contains one or more vertices that is can't be retrieved because of visibility restrictions
@@ -126,10 +127,10 @@
 * Changed: Removed ES 2 support and replaced it with ES 5 support
 * Changed: Removed support for NameSubstitutionStrategy from the Elasticsearch modules. NameSubstitutionStrategy is still available for Accumulo modules
 * Changed: Added property checking when using the `has` method to query the graph for a value. An exception will now be thrown if an attempt is made to either query a property that does not exist or to text query a property that isn't full text indexed
-* Note: Upgrading to this version will require re-indexing if you use NameSubstitutionStrategy or are switching to the ES 5 module. 
+* Note: Upgrading to this version will require re-indexing if you use NameSubstitutionStrategy or are switching to the ES 5 module.
 * Added: Support for extended GeoShape storage and search. Currently the new shapes are only supported by the ElasticSearch 5 module.
 * Added: GraphVisitor to visit elements, properties, extended data rows using a visitor pattern
- 
+
 # v2.6.2
 
 * Changed: remove deprecated interfaces, examples, and changed Elasticsearch deprecated methods
@@ -163,7 +164,7 @@
 
 # v2.5.5
 
-* Changed: Removed timestamp from streaming property value row key. 
+* Changed: Removed timestamp from streaming property value row key.
 
 # v2.5.4
 
@@ -253,7 +254,7 @@
 # v2.4.0
 
 * ACCUMULO: iterator locations in accumulo config are now stored per table name
-* Elasticsearch: fix: sort by strings with tokens should not effect sort order 
+* Elasticsearch: fix: sort by strings with tokens should not effect sort order
 * SQL: Switch to HikariCP connection pool
 
 # v2.3.1
