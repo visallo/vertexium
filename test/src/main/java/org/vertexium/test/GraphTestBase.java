@@ -4813,7 +4813,7 @@ public abstract class GraphTestBase {
         graph.flush();
 
         graph.prepareEdge("e v1->v2", v1, v2, LABEL_LABEL1, VISIBILITY_A)
-            .save(AUTHORIZATIONS_A);
+                .save(AUTHORIZATIONS_A);
         graph.flush();
 
         relatedEdges = toList(graph.findRelatedEdgeSummary(vertexIds, AUTHORIZATIONS_A));
@@ -6484,6 +6484,37 @@ public abstract class GraphTestBase {
         assertEquals(2, vertexPropertyCountByValue.size());
         assertEquals(2L, (long) vertexPropertyCountByValue.get("Joe"));
         assertEquals(searchIndexFieldLevelSecurity ? 1L : 2L, (long) vertexPropertyCountByValue.get("Joseph"));
+    }
+
+    @Test
+    public void testGraphQueryWithTermsAggregationAndPredicates() {
+        graph.defineProperty("name").dataType(String.class).textIndexHint(TextIndexHint.EXACT_MATCH, TextIndexHint.FULL_TEXT).define();
+        graph.defineProperty("gender").dataType(String.class).textIndexHint(TextIndexHint.EXACT_MATCH).define();
+
+        Query q = graph.query(AUTHORIZATIONS_EMPTY)
+                .has("name", Compare.EQUAL, "Susan");
+        TermsAggregation agg = new TermsAggregation("terms-count", "name");
+        assumeTrue("terms aggregation not supported", q.isAggregationSupported(agg));
+        q.addAggregation(agg);
+        TermsResult aggregationResult = q.vertices().getAggregationResult("terms-count", TermsResult.class);
+
+        Map<Object, Long> vertexPropertyCountByValue = termsBucketToMap(aggregationResult.getBuckets());
+        assertEquals(0, vertexPropertyCountByValue.size());
+
+        graph.prepareVertex("v1", VISIBILITY_EMPTY)
+                .addPropertyValue("k1", "gender", "female", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
+        getGraph().flush();
+
+        q = graph.query(AUTHORIZATIONS_A)
+                .has("gender", Compare.EQUAL, "female");
+        agg = new TermsAggregation("terms-count", "gender");
+        assumeTrue("terms aggregation not supported", q.isAggregationSupported(agg));
+        q.addAggregation(agg);
+        aggregationResult = q.vertices().getAggregationResult("terms-count", TermsResult.class);
+
+        vertexPropertyCountByValue = termsBucketToMap(aggregationResult.getBuckets());
+        assertEquals(1, vertexPropertyCountByValue.size());
     }
 
     private boolean isSearchIndexFieldLevelSecuritySupported() {
