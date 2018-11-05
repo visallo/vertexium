@@ -38,6 +38,12 @@
 * Added: Accumulo additional client configuration options (config parameter `clientConfiguration.xxx=<value>`)
 * Changed: Deprecated Elasticsearch global scoring strategy  
 
+# v4.1.1.4
+* Fixed: Elasticsearch: NPE in InfiniteScrollIterable if no matching property name has been found when applying filters
+
+# v4.1.1.3
+* Invalidate the define property cache
+
 # v4.1.1.2
 * Added: Query edges with a given in or out vertex
 * Added: Elasticsearch: Return ElasticsearchEdge and ElasticsearchVertex when FetchHints.EDGE_REF and FetchHints.NONE is set for performance
