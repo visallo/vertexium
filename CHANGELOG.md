@@ -1,3 +1,6 @@
+# v4.1.1.4
+* Fixed: Elasticsearch: NPE in InfiniteScrollIterable if no matching property name has been found when applying filters 
+
 # v4.1.1.3
 * Invalidate the define property cache
 

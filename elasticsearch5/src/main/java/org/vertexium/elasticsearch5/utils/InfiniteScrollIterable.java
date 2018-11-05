@@ -45,6 +45,9 @@ public abstract class InfiniteScrollIterable<T> implements QueryResultsIterable<
     @Override
     public <TResult extends AggregationResult> TResult getAggregationResult(String name, Class<? extends TResult> resultType) {
         init();
+        if (firstIterable == null) {
+            return AggregationResult.createEmptyResult(resultType);
+        }
         return firstIterable.getAggregationResult(name, resultType);
     }
 
