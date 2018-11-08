@@ -8815,6 +8815,7 @@ public abstract class GraphTestBase {
                 if (item.isDeleted()) {
                     Metadata hpvMetadata = item.getMetadata();
                     assertEquals(2, hpvMetadata.entrySet().size());
+                    assertEquals("value2", item.getValue());
                     assertEquals(VISIBILITY_B_STRING, item.getPropertyVisibility().getVisibilityString());
                 }
             } else {

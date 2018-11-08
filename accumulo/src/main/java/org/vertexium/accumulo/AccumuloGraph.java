@@ -1030,6 +1030,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                                 new HistoricalPropertyValueBuilder(propertyKey, propertyName, timestamp)
                                         .propertyVisibility(propertyVisibility)
                                         .metadata(property.getMetadata())
+                                        .value(property.getValue())
                                         .isDeleted(true)
                                         .build();
 
