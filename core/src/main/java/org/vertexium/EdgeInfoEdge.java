@@ -35,9 +35,9 @@ public class EdgeInfoEdge extends ElementBase implements Edge {
     @Override
     public String getVertexId(Direction direction) {
         if (direction == edgeInfo.getDirection()) {
-            return edgeInfo.getVertexId();
+            return sourceVertexId;
         }
-        return sourceVertexId;
+        return edgeInfo.getVertexId();
     }
 
     @Override
