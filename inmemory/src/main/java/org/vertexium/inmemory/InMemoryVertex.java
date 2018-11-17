@@ -95,8 +95,8 @@ public class InMemoryVertex extends InMemoryElement<InMemoryVertex> implements V
                     @Override
                     public Direction getDirection() {
                         return edge.getVertexId(Direction.OUT).equals(this.getVertexId())
-                                ? Direction.OUT
-                                : Direction.IN;
+                                ? Direction.IN
+                                : Direction.OUT;
                     }
                 };
             }

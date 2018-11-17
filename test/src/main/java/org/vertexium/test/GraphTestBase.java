@@ -8429,6 +8429,50 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    public void testGetEdgeInfo() {
+        Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
+        Vertex v2 = graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.addEdge("e1", v1, v2, LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.addEdge("e2", v1, v2, LABEL_LABEL2, VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.addEdge("e3", v2, v1, LABEL_LABEL3, VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.flush();
+
+        v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
+        List<EdgeInfo> edgeInfos = toList(v1.getEdgeInfos(Direction.BOTH, AUTHORIZATIONS_A));
+        edgeInfos.sort(Comparator.comparing(EdgeInfo::getEdgeId));
+        assertEquals(3, edgeInfos.size());
+        assertEquals(Arrays.asList("e1", "e2", "e3"), edgeInfos.stream().map(EdgeInfo::getEdgeId).collect(Collectors.toList()));
+        assertEquals(Arrays.asList("v2", "v2", "v2"), edgeInfos.stream().map(EdgeInfo::getVertexId).collect(Collectors.toList()));
+        assertEquals(Arrays.asList(LABEL_LABEL1, LABEL_LABEL2, LABEL_LABEL3), edgeInfos.stream().map(EdgeInfo::getLabel).collect(Collectors.toList()));
+        assertEquals(Arrays.asList(Direction.OUT, Direction.OUT, Direction.IN), edgeInfos.stream().map(EdgeInfo::getDirection).collect(Collectors.toList()));
+
+        v2 = graph.getVertex("v2", AUTHORIZATIONS_A);
+        edgeInfos = toList(v2.getEdgeInfos(Direction.BOTH, AUTHORIZATIONS_A));
+        edgeInfos.sort(Comparator.comparing(EdgeInfo::getEdgeId));
+        assertEquals(3, edgeInfos.size());
+        assertEquals(Arrays.asList("e1", "e2", "e3"), edgeInfos.stream().map(EdgeInfo::getEdgeId).collect(Collectors.toList()));
+        assertEquals(Arrays.asList("v1", "v1", "v1"), edgeInfos.stream().map(EdgeInfo::getVertexId).collect(Collectors.toList()));
+        assertEquals(Arrays.asList(LABEL_LABEL1, LABEL_LABEL2, LABEL_LABEL3), edgeInfos.stream().map(EdgeInfo::getLabel).collect(Collectors.toList()));
+        assertEquals(Arrays.asList(Direction.IN, Direction.IN, Direction.OUT), edgeInfos.stream().map(EdgeInfo::getDirection).collect(Collectors.toList()));
+
+        edgeInfos = toList(v1.getEdgeInfos(Direction.IN, AUTHORIZATIONS_A));
+        edgeInfos.sort(Comparator.comparing(EdgeInfo::getEdgeId));
+        assertEquals(1, edgeInfos.size());
+        assertEquals("e3", edgeInfos.stream().map(EdgeInfo::getEdgeId).findFirst().get());
+        assertEquals("v2", edgeInfos.stream().map(EdgeInfo::getVertexId).findFirst().get());
+        assertEquals(LABEL_LABEL3, edgeInfos.stream().map(EdgeInfo::getLabel).findFirst().get());
+        assertEquals(Direction.IN, edgeInfos.stream().map(EdgeInfo::getDirection).findFirst().get());
+
+        edgeInfos = toList(v1.getEdgeInfos(Direction.OUT, AUTHORIZATIONS_A));
+        edgeInfos.sort(Comparator.comparing(EdgeInfo::getEdgeId));
+        assertEquals(2, edgeInfos.size());
+        assertEquals(Arrays.asList("e1", "e2"), edgeInfos.stream().map(EdgeInfo::getEdgeId).collect(Collectors.toList()));
+        assertEquals(Arrays.asList("v2", "v2"), edgeInfos.stream().map(EdgeInfo::getVertexId).collect(Collectors.toList()));
+        assertEquals(Arrays.asList(LABEL_LABEL1, LABEL_LABEL2), edgeInfos.stream().map(EdgeInfo::getLabel).collect(Collectors.toList()));
+        assertEquals(Arrays.asList(Direction.OUT, Direction.OUT), edgeInfos.stream().map(EdgeInfo::getDirection).collect(Collectors.toList()));
+    }
+
+    @Test
     public void testFetchHintsEdges() {
         Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
         Vertex v2 = graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_A);
