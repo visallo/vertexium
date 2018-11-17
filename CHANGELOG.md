@@ -1,3 +1,6 @@
+# v4.4.2
+* Fixed: `EdgeInfo.getDirection` was reversed when loaded from InMemoryVertex.
+
 # v4.4.1
 * Fixed: Soft Deleted Historical Property Entries not containing metadata information.
 * Fixed: Scoring strategies selecting the correct fields
