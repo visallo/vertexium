@@ -350,6 +350,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
 
     private void loadExistingMappingIntoIndexInfo(Graph graph, IndexInfo indexInfo, String indexName) {
         try {
+            indexRefreshTracker.refresh(client, indexName);
             GetMappingsResponse mapping = client.admin().indices().prepareGetMappings(indexName).get();
             for (ObjectCursor<String> mappingIndexName : mapping.getMappings().keys()) {
                 ImmutableOpenMap<String, MappingMetaData> typeMappings = mapping.getMappings().get(mappingIndexName.value);
@@ -1545,6 +1546,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
 
     private void updateMetadata(Graph graph, IndexInfo indexInfo) {
         try {
+            indexRefreshTracker.refresh(client, indexInfo.getIndexName());
             XContentBuilder mapping = XContentFactory.jsonBuilder()
                     .startObject()
                     .startObject(getIdStrategy().getType());
@@ -1599,6 +1601,8 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
 
     @Override
     public Map<Object, Long> getVertexPropertyCountByValue(Graph graph, String propertyName, Authorizations authorizations) {
+        indexRefreshTracker.refresh(client);
+
         TermQueryBuilder elementTypeFilterBuilder = new TermQueryBuilder(ELEMENT_TYPE_FIELD_NAME, ElasticsearchDocumentType.VERTEX.getKey());
         BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery()
                 .must(QueryBuilders.matchAllQuery())
@@ -1848,7 +1852,6 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
     @Override
     public void flush(Graph graph) {
         flushObjectQueue.flush();
-        getIndexRefreshTracker().refresh(client);
     }
 
     private void removeFieldsFromDocument(Graph graph, Element element, String field) {
@@ -2270,6 +2273,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
                         .field("number_of_shards", getConfig().getNumberOfShards())
                         .field("number_of_replicas", getConfig().getNumberOfReplicas())
                         .field("index.mapping.total_fields.limit", getConfig().getIndexMappingTotalFieldsLimit())
+                        .field("refresh_interval", getConfig().getIndexRefreshInterval())
                         .endObject()
                 )
                 .execute().actionGet();

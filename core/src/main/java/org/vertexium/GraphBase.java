@@ -1043,13 +1043,18 @@ public abstract class GraphBase implements Graph {
             String tableName,
             Authorizations authorizations
     ) {
+        if ((elementType == null && (elementId != null || tableName != null))
+                || (elementType != null && elementId == null && tableName != null)) {
+            throw new VertexiumException("Cannot create partial key with missing inner value");
+        }
+
         return new FilterIterable<ExtendedDataRow>(getAllExtendedData(authorizations)) {
             @Override
             protected boolean isIncluded(ExtendedDataRow row) {
                 ExtendedDataRowId rowId = row.getId();
-                return (elementType != null && elementType.equals(rowId.getElementType()))
-                        && (elementId != null && elementId.equals(rowId.getElementId()))
-                        && (tableName != null && tableName.equals(rowId.getTableName()));
+                return (elementType == null || elementType.equals(rowId.getElementType()))
+                        && (elementId == null || elementId.equals(rowId.getElementId()))
+                        && (tableName == null || tableName.equals(rowId.getTableName()));
             }
         };
     }

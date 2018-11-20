@@ -106,8 +106,29 @@ public class KeyHelper {
     }
 
     public static Text createExtendedDataRowKey(ElementType elementType, String elementId, String tableName, String row) {
-        String elementTypePrefix = getExtendedDataRowKeyElementTypePrefix(elementType);
-        return new Text(elementTypePrefix + elementId + KeyBase.VALUE_SEPARATOR + tableName + KeyBase.VALUE_SEPARATOR + row);
+        StringBuilder sb = new StringBuilder();
+        if (elementType != null) {
+            String elementTypePrefix = getExtendedDataRowKeyElementTypePrefix(elementType);
+            sb.append(elementTypePrefix);
+            if (elementId != null) {
+                sb.append(elementId);
+                if (tableName != null) {
+                    sb.append(KeyBase.VALUE_SEPARATOR);
+                    sb.append(tableName);
+                    sb.append(KeyBase.VALUE_SEPARATOR);
+                    if (row != null) {
+                        sb.append(row);
+                    }
+                } else if (row != null) {
+                    throw new VertexiumException("Cannot create partial key with missing inner value");
+                }
+            } else if (tableName != null || row != null) {
+                throw new VertexiumException("Cannot create partial key with missing inner value");
+            }
+        } else if (elementId != null || tableName != null || row != null) {
+            throw new VertexiumException("Cannot create partial key with missing inner value");
+        }
+        return new Text(sb.toString());
     }
 
     public static Text createExtendedDataColumnQualifier(ExtendedDataMutationBase edm) {
