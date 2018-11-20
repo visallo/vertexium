@@ -2136,9 +2136,14 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
         }
 
         if (existingValue instanceof List) {
-            ArrayList newList = new ArrayList<>((List) existingValue);
-            newList.add(valueForIndex);
-            propertiesMap.put(propertyName, newList);
+            try {
+                ((List) existingValue).add(valueForIndex);
+            } catch (Exception ex) {
+                LOGGER.error("could not add to existing list, this could cause performance issues", ex);
+                ArrayList newList = new ArrayList<>((List) existingValue);
+                newList.add(valueForIndex);
+                propertiesMap.put(propertyName, newList);
+            }
             return;
         }
 
