@@ -43,6 +43,9 @@
 * Added: Accumulo additional client configuration options (config parameter `clientConfiguration.xxx=<value>`)
 * Changed: Deprecated Elasticsearch global scoring strategy  
 
+# v4.1.1.5
+* Changed: Elasticsearch: Parse histogram aggregation interval to Double since decimal intervals are supported 
+
 # v4.1.1.4
 * Fixed: Elasticsearch: NPE in InfiniteScrollIterable if no matching property name has been found when applying filters
 
