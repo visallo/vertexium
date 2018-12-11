@@ -1553,7 +1553,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
             } else {
                 HistogramAggregationBuilder histogramAgg = AggregationBuilders.histogram(aggName);
                 histogramAgg.field(propertyName);
-                histogramAgg.interval(Long.parseLong(agg.getInterval()));
+                histogramAgg.interval(Double.parseDouble(agg.getInterval()));
                 histogramAgg.minDocCount(1L);
                 if (agg.getMinDocumentCount() != null) {
                     histogramAgg.minDocCount(agg.getMinDocumentCount());
@@ -1562,8 +1562,10 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
                     HistogramAggregation.ExtendedBounds<?> bounds = agg.getExtendedBounds();
                     if (bounds.getMinMaxType().isAssignableFrom(Long.class)) {
                         histogramAgg.extendedBounds((Long) bounds.getMin(), (Long) bounds.getMax());
+                    } else if (bounds.getMinMaxType().isAssignableFrom(Double.class)) {
+                        histogramAgg.extendedBounds((Double) bounds.getMin(), (Double) bounds.getMax());
                     } else {
-                        throw new VertexiumException("Unhandled extended bounds type. Expected Long. Found: " + bounds.getMinMaxType().getName());
+                        throw new VertexiumException("Unhandled extended bounds type. Expected Double or Long. Found: " + bounds.getMinMaxType().getName());
                     }
                 }
 
