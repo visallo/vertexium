@@ -1,5 +1,6 @@
 # v4.4.2
 * Fixed: `EdgeInfo.getDirection` was reversed when loaded from InMemoryVertex.
+* Changed: Elasticsearch: index on reads instead of indexing on writes.
 * Changed: Elasticsearch: optimize adding properties to vertices/edges with lots of properties
 
 # v4.4.1

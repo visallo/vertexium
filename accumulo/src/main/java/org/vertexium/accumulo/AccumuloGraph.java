@@ -1072,10 +1072,10 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
     ) {
         try {
             Span trace = Trace.start("getExtendedData");
-            trace.data("elementType", elementType.name());
+            trace.data("elementType", elementType == null ? null : elementType.name());
             trace.data("elementId", elementId);
             trace.data("tableName", tableName);
-            org.apache.accumulo.core.data.Range range = org.apache.accumulo.core.data.Range.prefix(KeyHelper.createExtendedDataRowKey(elementType, elementId, tableName, ""));
+            org.apache.accumulo.core.data.Range range = org.apache.accumulo.core.data.Range.prefix(KeyHelper.createExtendedDataRowKey(elementType, elementId, tableName, null));
             return getExtendedDataRowsInRange(trace, Lists.newArrayList(range), FetchHints.ALL, authorizations);
         } catch (IllegalStateException ex) {
             throw new VertexiumException("Failed to get extended data: " + elementType + ":" + elementId + ":" + tableName, ex);

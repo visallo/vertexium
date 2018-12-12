@@ -7766,6 +7766,22 @@ public abstract class GraphTestBase {
         assertEquals(4, rowsList.size());
         rowsList = toList(v1.getExtendedData("table2"));
         assertEquals(1, rowsList.size());
+
+        assertEquals(5, count(graph.getExtendedData(ElementType.VERTEX, "v1", null, AUTHORIZATIONS_A)));
+        assertEquals(5, count(graph.getExtendedData(ElementType.VERTEX, null, null, AUTHORIZATIONS_A)));
+        assertEquals(5, count(graph.getExtendedData(null, null, null, AUTHORIZATIONS_A)));
+        try {
+            count(graph.getExtendedData(null, null, "table1", AUTHORIZATIONS_A));
+            fail("nulls to the left of a value is not allowed");
+        } catch (Exception ex) {
+            // expected
+        }
+        try {
+            count(graph.getExtendedData(null, "v1", null, AUTHORIZATIONS_A));
+            fail("nulls to the left of a value is not allowed");
+        } catch (Exception ex) {
+            // expected
+        }
     }
 
     @Test

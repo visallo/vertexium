@@ -161,6 +161,8 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
         if (QUERY_LOGGER.isTraceEnabled()) {
             QUERY_LOGGER.trace("indicesToQuery: %s", Joiner.on(", ").join(indicesToQuery));
         }
+        getSearchIndex().getIndexRefreshTracker().refresh(client, indicesToQuery);
+
         SearchRequestBuilder searchRequestBuilder = getClient()
                 .prepareSearch(indicesToQuery)
                 .setTypes(getSearchIndex().getIdStrategy().getType())
