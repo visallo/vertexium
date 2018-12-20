@@ -1,40 +1,40 @@
 package org.vertexium;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ElementBuilderTest {
     private TestElementBuilder mutation;
 
-    @Before
+    @BeforeEach
     public void before() {
         mutation = new TestElementBuilder();
     }
 
     @Test
     public void testEmptyMutationHasChanges() {
-        assertFalse("should not have changes", mutation.hasChanges());
+        assertFalse(mutation.hasChanges(), "should not have changes");
     }
 
     @Test
     public void testHasChangesProperties() {
         mutation.addPropertyValue("key1", "name1", "value1", new Visibility(""));
-        assertTrue("should have changes", mutation.hasChanges());
+        assertTrue(mutation.hasChanges(), "should have changes");
     }
 
     @Test
     public void testHasChangesDeleteProperty() {
         mutation.deleteProperty("key1", "name1", new Visibility(""));
-        assertTrue("should have changes", mutation.hasChanges());
+        assertTrue(mutation.hasChanges(), "should have changes");
     }
 
     @Test
     public void testHasChangesSoftDeleteProperty() {
         mutation.softDeleteProperty("key1", "name1", new Visibility(""));
-        assertTrue("should have changes", mutation.hasChanges());
+        assertTrue(mutation.hasChanges(), "should have changes");
     }
 
     private static class TestElementBuilder<T extends Element> extends ElementBuilder<T> {

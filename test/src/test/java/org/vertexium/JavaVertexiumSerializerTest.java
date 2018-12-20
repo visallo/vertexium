@@ -1,12 +1,12 @@
 package org.vertexium;
 
-import org.junit.Before;
+import org.junit.jupiter.api.BeforeEach;
 import org.vertexium.test.VertexiumSerializerTestBase;
 
 public class JavaVertexiumSerializerTest extends VertexiumSerializerTestBase {
     private JavaVertexiumSerializer vertexiumSerializer;
 
-    @Before
+    @BeforeEach
     public void before() {
         vertexiumSerializer = new JavaVertexiumSerializer();
     }

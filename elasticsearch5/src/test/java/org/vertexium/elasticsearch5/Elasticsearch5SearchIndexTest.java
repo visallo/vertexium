@@ -6,17 +6,15 @@ import org.elasticsearch.action.admin.cluster.node.stats.NodesStatsResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.io.stream.NotSerializableExceptionWrapper;
 import org.elasticsearch.index.search.stats.SearchStats;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.vertexium.*;
 import org.vertexium.elasticsearch5.scoring.ElasticsearchFieldValueScoringStrategy;
 import org.vertexium.elasticsearch5.scoring.ElasticsearchHammingDistanceScoringStrategy;
 import org.vertexium.inmemory.InMemoryAuthorizations;
 import org.vertexium.inmemory.InMemoryGraph;
 import org.vertexium.inmemory.InMemoryGraphConfiguration;
-import org.vertexium.mutation.ExistingElementMutation;
 import org.vertexium.query.QueryResultsIterable;
 import org.vertexium.query.SortDirection;
 import org.vertexium.scoring.ScoringStrategy;
@@ -24,16 +22,15 @@ import org.vertexium.test.GraphTestBase;
 
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.vertexium.test.util.VertexiumAssert.assertResultsCount;
 import static org.vertexium.util.IterableUtils.count;
 import static org.vertexium.util.IterableUtils.toList;
 
 public class Elasticsearch5SearchIndexTest extends GraphTestBase {
 
-    @ClassRule
-    public static ElasticsearchResource elasticsearchResource = new ElasticsearchResource(Elasticsearch5SearchIndexTest.class.getName());
+    @RegisterExtension
+    static final ElasticsearchResource elasticsearchResource = new ElasticsearchResource(Elasticsearch5SearchIndexTest.class.getName());
 
     @Override
     protected Authorizations createAuthorizations(String... auths) {
@@ -45,7 +42,7 @@ public class Elasticsearch5SearchIndexTest extends GraphTestBase {
         getGraph().createAuthorizations(authorizations);
     }
 
-    @Before
+    @BeforeEach
     @Override
     public void before() throws Exception {
         elasticsearchResource.dropIndices();
@@ -86,7 +83,7 @@ public class Elasticsearch5SearchIndexTest extends GraphTestBase {
         getSearchIndex().clearCache();
 
         QueryResultsIterable<Vertex> vertices = graph.query(AUTHORIZATIONS_A).sort("age", SortDirection.ASCENDING).vertices();
-        Assert.assertEquals(2, count(vertices));
+        assertEquals(2, count(vertices));
     }
 
     @Override
@@ -217,18 +214,20 @@ public class Elasticsearch5SearchIndexTest extends GraphTestBase {
         assertEquals("v2", vertex.getId());
     }
 
-    @Test(expected = VertexiumNotSupportedException.class)
+    @Test
     public void testRetrievingVerticesFromElasticsearchEdge() {
-        graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
-        graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_A);
-        graph.addEdge("e1", "v1", "v2", LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_A);
-        graph.flush();
+        assertThrows(VertexiumNotSupportedException.class, () -> {
+            graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
+            graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_A);
+            graph.addEdge("e1", "v1", "v2", LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_A);
+            graph.flush();
 
-        QueryResultsIterable<Edge> edges = graph.query(AUTHORIZATIONS_A)
-                .edges(FetchHints.NONE);
+            QueryResultsIterable<Edge> edges = graph.query(AUTHORIZATIONS_A)
+                    .edges(FetchHints.NONE);
 
-        assertResultsCount(1, 1, edges);
-        toList(edges).get(0).getVertices(AUTHORIZATIONS_A);
+            assertResultsCount(1, 1, edges);
+            toList(edges).get(0).getVertices(AUTHORIZATIONS_A);
+        });
     }
 
     private long getNumQueries() {

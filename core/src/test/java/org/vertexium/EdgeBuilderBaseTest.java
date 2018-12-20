@@ -1,28 +1,28 @@
 package org.vertexium;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class EdgeBuilderBaseTest {
     private TestEdgeBuilderBase mutation;
 
-    @Before
+    @BeforeEach
     public void before() {
         mutation = new TestEdgeBuilderBase("e1", "label", new Visibility(""));
     }
 
     @Test
     public void testEmptyMutationHasChanges() {
-        assertFalse("should not have changes", mutation.hasChanges());
+        assertFalse(mutation.hasChanges(), "should not have changes");
     }
 
     @Test
     public void testHasChangesAlterEdgeLabel() {
         mutation.alterEdgeLabel("newEdgeLabel");
-        assertTrue("should have changes", mutation.hasChanges());
+        assertTrue(mutation.hasChanges(), "should have changes");
     }
 
     private static class TestEdgeBuilderBase extends EdgeBuilderBase {

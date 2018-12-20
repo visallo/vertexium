@@ -6,7 +6,9 @@ import org.apache.accumulo.core.client.Connector;
 import org.apache.accumulo.core.security.Authorizations;
 import org.apache.accumulo.minicluster.MiniAccumuloCluster;
 import org.apache.accumulo.minicluster.MiniAccumuloConfig;
-import org.junit.rules.ExternalResource;
+import org.junit.jupiter.api.extension.AfterAllCallback;
+import org.junit.jupiter.api.extension.BeforeAllCallback;
+import org.junit.jupiter.api.extension.ExtensionContext;
 import org.vertexium.GraphConfiguration;
 import org.vertexium.VertexiumException;
 import org.vertexium.accumulo.util.DataInDataTableStreamingPropertyValueStorageStrategy;
@@ -24,7 +26,7 @@ import java.util.Map;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.vertexium.test.GraphTestBase.*;
 
-public class AccumuloResource extends ExternalResource {
+public class AccumuloResource implements BeforeAllCallback, AfterAllCallback {
     private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(AccumuloResource.class);
 
     private static final String ACCUMULO_USERNAME = "root";
@@ -43,19 +45,17 @@ public class AccumuloResource extends ExternalResource {
     }
 
     @Override
-    protected void before() throws Throwable {
+    public void beforeAll(ExtensionContext extensionContext) throws Exception {
         ensureAccumuloIsStarted();
-        super.before();
     }
 
     @Override
-    protected void after() {
+    public void afterAll(ExtensionContext extensionContext) throws Exception {
         try {
             stop();
         } catch (Exception e) {
             LOGGER.info("Unable to shut down mini accumulo cluster", e);
         }
-        super.after();
     }
 
     public void dropGraph() throws Exception {

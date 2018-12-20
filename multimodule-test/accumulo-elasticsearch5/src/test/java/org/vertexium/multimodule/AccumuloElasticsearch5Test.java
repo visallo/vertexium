@@ -3,9 +3,9 @@ package org.vertexium.multimodule;
 import com.google.common.base.Joiner;
 import org.apache.accumulo.core.client.AccumuloException;
 import org.apache.accumulo.core.client.AccumuloSecurityException;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.vertexium.Graph;
 import org.vertexium.GraphWithSearchIndex;
 import org.vertexium.Vertex;
@@ -31,7 +31,8 @@ import java.util.Map;
 import static org.vertexium.id.SimpleSubstitutionUtils.*;
 
 public class AccumuloElasticsearch5Test extends AccumuloGraphTestBase {
-    @ClassRule
+
+    @RegisterExtension
     public static final AccumuloResource accumuloResource = new AccumuloResource(new HashMap<String, String>() {{
         put(AccumuloGraphConfiguration.NAME_SUBSTITUTION_STRATEGY_PROP_PREFIX, SimpleNameSubstitutionStrategy.class.getName());
         put(Joiner.on('.').join(new String[]{SUBSTITUTION_MAP_PREFIX, "0", KEY_IDENTIFIER}), "k1");
@@ -44,10 +45,10 @@ public class AccumuloElasticsearch5Test extends AccumuloGraphTestBase {
         put(Joiner.on('.').join(new String[]{SUBSTITUTION_MAP_PREFIX, "3", VALUE_IDENTIFIER}), "hvo");
     }});
 
-    @ClassRule
-    public static final ElasticsearchResource elasticsearchResource = new ElasticsearchResource(AccumuloElasticsearch5Test.class.getName());
+    @RegisterExtension
+    static final ElasticsearchResource elasticsearchResource = new ElasticsearchResource(AccumuloElasticsearch5Test.class.getName());
 
-    @Before
+    @BeforeEach
     @Override
     public void before() throws Exception {
         elasticsearchResource.dropIndices();

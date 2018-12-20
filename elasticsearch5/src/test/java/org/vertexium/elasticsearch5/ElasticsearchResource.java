@@ -7,7 +7,9 @@ import org.elasticsearch.common.logging.LogConfigurator;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.index.reindex.BulkByScrollResponse;
 import org.elasticsearch.index.reindex.DeleteByQueryAction;
-import org.junit.rules.ExternalResource;
+import org.junit.jupiter.api.extension.AfterAllCallback;
+import org.junit.jupiter.api.extension.BeforeAllCallback;
+import org.junit.jupiter.api.extension.ExtensionContext;
 import org.vertexium.Graph;
 import org.vertexium.GraphWithSearchIndex;
 import org.vertexium.VertexiumException;
@@ -27,7 +29,7 @@ import static org.vertexium.elasticsearch5.DefaultIndexSelectionStrategy.CONFIG_
 import static org.vertexium.elasticsearch5.DefaultIndexSelectionStrategy.CONFIG_INDEX_NAME;
 import static org.vertexium.elasticsearch5.ElasticsearchSearchIndexConfiguration.*;
 
-public class ElasticsearchResource extends ExternalResource {
+public class ElasticsearchResource implements BeforeAllCallback, AfterAllCallback {
     private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(ElasticsearchResource.class);
 
     private static final String ES_INDEX_NAME = "vertexium-test";
@@ -42,13 +44,8 @@ public class ElasticsearchResource extends ExternalResource {
         this.clusterName = clusterName;
     }
 
-    public ElasticsearchResource(String clusterName, Map extraConfig) {
-        this.clusterName = clusterName;
-        this.extraConfig = extraConfig;
-    }
-
     @Override
-    protected void before() throws Throwable {
+    public void beforeAll(ExtensionContext extensionContext) throws Exception {
         File tempDir = new File(System.getProperty("java.io.tmpdir"));
         File basePath = new File(tempDir, "vertexium-test-" + UUID.randomUUID().toString());
         LOGGER.info("base path: %s", basePath);
@@ -88,7 +85,7 @@ public class ElasticsearchResource extends ExternalResource {
     }
 
     @Override
-    protected void after() {
+    public void afterAll(ExtensionContext extensionContext) throws Exception {
         if (runner != null) {
             try {
                 runner.close();

@@ -2,19 +2,14 @@ package org.vertexium.id;
 
 import com.google.common.collect.Lists;
 import org.apache.commons.lang3.tuple.Pair;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@RunWith(JUnit4.class)
 public class SimpleNameSubstitutionStrategyTest {
     private static List<Pair<String, String>> templatePashingTest;
     private SimpleNameSubstitutionStrategy testSubject;
@@ -24,14 +19,14 @@ public class SimpleNameSubstitutionStrategyTest {
     private static final String VALUE1 = "t";
     private static final String VALUE2 = "p";
 
-    @BeforeClass
+    @BeforeAll
     public static void beforeClass() {
         templatePashingTest = Lists.newArrayList();
         templatePashingTest.add(Pair.of(KEY1, VALUE1));
         templatePashingTest.add(Pair.of(KEY2, VALUE2));
     }
 
-    @Before
+    @BeforeEach
     public void before() {
         testSubject = new SimpleNameSubstitutionStrategy();
         testSubject.setSubstitutionList(templatePashingTest);
@@ -40,13 +35,13 @@ public class SimpleNameSubstitutionStrategyTest {
     @Test
     public void testDeflate() {
         String test = testSubject.deflate(KEY1);
-        assertThat(test, is(SimpleNameSubstitutionStrategy.wrap(VALUE1)));
+        assertEquals(SimpleNameSubstitutionStrategy.wrap(VALUE1), test);
     }
 
     @Test
     public void testDeflateMultiple() {
         String test = testSubject.deflate(KEY1 + KEY1);
-        assertThat(test, is(SimpleNameSubstitutionStrategy.wrap(VALUE1) + SimpleNameSubstitutionStrategy.wrap(VALUE1)));
+        assertEquals(SimpleNameSubstitutionStrategy.wrap(VALUE1) + SimpleNameSubstitutionStrategy.wrap(VALUE1), test);
     }
 
     @Test
@@ -66,13 +61,13 @@ public class SimpleNameSubstitutionStrategyTest {
     @Test
     public void testInflate() {
         String test = testSubject.inflate(SimpleNameSubstitutionStrategy.wrap(VALUE1));
-        assertThat(test, is(KEY1));
+        assertEquals(KEY1, test);
     }
 
     @Test
     public void testInflateMultiple() {
         String test = testSubject.inflate(SimpleNameSubstitutionStrategy.wrap(VALUE1) + SimpleNameSubstitutionStrategy.wrap(VALUE1));
-        assertThat(test, is(KEY1 + KEY1));
+        assertEquals(KEY1 + KEY1, test);
     }
 
     @Test
@@ -92,50 +87,50 @@ public class SimpleNameSubstitutionStrategyTest {
     @Test
     public void testSubstitutionIsInvertible() {
         String test = testSubject.inflate(testSubject.deflate(KEY1));
-        assertThat(test, is(KEY1));
+        assertEquals(KEY1, test);
     }
 
     @Test
     public void testNonSubstitutionReturnsOriginalInput() {
         String test = testSubject.deflate("misspelled tets");
-        assertThat(test, is("misspelled tets"));
+        assertEquals("misspelled tets", test);
     }
 
     @Test
     public void testNoSubstitutionsIsInvertable() {
         String test = testSubject.inflate(testSubject.deflate("misspelled tets"));
-        assertThat(test, is("misspelled tets"));
+        assertEquals("misspelled tets", test);
     }
 
     @Test
     public void testMultipleSubstitutionsGetSubstitutedMultipleTimes() {
         String test = testSubject.deflate(KEY1 + KEY1);
-        assertThat(test, is(SimpleNameSubstitutionStrategy.wrap(VALUE1) + SimpleNameSubstitutionStrategy.wrap(VALUE1)));
+        assertEquals(SimpleNameSubstitutionStrategy.wrap(VALUE1) + SimpleNameSubstitutionStrategy.wrap(VALUE1), test);
     }
 
     @Test
     public void testMultipleSameSubstitutionsAreCorrectlyReturned() {
         String multipleSubstitutionString = KEY1 + KEY1;
         String multipleSubstitutions = testSubject.inflate(testSubject.deflate(multipleSubstitutionString));
-        assertThat(multipleSubstitutions, is(multipleSubstitutionString));
+        assertEquals(multipleSubstitutionString, multipleSubstitutions);
     }
 
     @Test
     public void testMultipleDifferentSubstitutionsAreCorrectlyReturned() {
         String multipleSubstitutionString = KEY1 + KEY2;
         String multipleSubstitutions = testSubject.inflate(testSubject.deflate(multipleSubstitutionString));
-        assertThat(multipleSubstitutions, is(multipleSubstitutionString));
+        assertEquals(multipleSubstitutionString, multipleSubstitutions);
     }
 
     @Test
     public void testMultipleSubstitutionsWorkInOrder() {
         String test = testSubject.deflate("testint");
-        assertThat(test, is(SimpleNameSubstitutionStrategy.wrap(VALUE1) + "int"));
+        assertEquals(SimpleNameSubstitutionStrategy.wrap(VALUE1) + "int", test);
     }
 
     @Test
     public void testMultipleSubstitutionsWorkInOrder1() {
         String test = testSubject.deflate("tintest");
-        assertThat(test, is("tin" + SimpleNameSubstitutionStrategy.wrap(VALUE1)));
+        assertEquals("tin" + SimpleNameSubstitutionStrategy.wrap(VALUE1), test);
     }
 }

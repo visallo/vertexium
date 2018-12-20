@@ -8,7 +8,7 @@ import org.vertexium.test.VertexiumSerializerTestBase;
 
 import java.util.Arrays;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @RunWith(Parameterized.class)
 public class QuickKryoVertexiumSerializerTest extends VertexiumSerializerTestBase {
@@ -21,6 +21,7 @@ public class QuickKryoVertexiumSerializerTest extends VertexiumSerializerTestBas
                 {true}, {false}
         });
     }
+
 
     public QuickKryoVertexiumSerializerTest(boolean compress) {
         this.compress = compress;

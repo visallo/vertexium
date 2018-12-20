@@ -1,6 +1,6 @@
 package org.vertexium.test;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.vertexium.Graph;
 import org.vertexium.VertexiumSerializer;
 import org.vertexium.property.DefaultStreamingPropertyValue;
@@ -11,7 +11,7 @@ import org.vertexium.property.StreamingPropertyValueRef;
 import java.io.ByteArrayInputStream;
 import java.io.Serializable;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public abstract class VertexiumSerializerTestBase {
     /**

@@ -57,7 +57,7 @@
         <java.source.version>1.8</java.source.version>
         <java.target.version>1.8</java.target.version>
 
-        <junit.version>4.11</junit.version>
+        <junit.version>5.3.2</junit.version>
         <slf4j.version>1.7.5</slf4j.version>
         <log4j.version>1.2.17</log4j.version>
         <commons-io.version>2.4</commons-io.version>
@@ -68,7 +68,7 @@
         <commons-lang3.version>3.1</commons-lang3.version>
         <apache.curator.version>2.12.0</apache.curator.version>
         <recurrent.version>0.3.2</recurrent.version>
-        <mockito.version>1.9.5</mockito.version>
+        <mockito.version>2.23.4</mockito.version>
 
         <maven.plugin.gpg.version>1.6</maven.plugin.gpg.version>
         <maven.plugin.javadoc.version>2.10.4</maven.plugin.javadoc.version>
@@ -136,16 +136,33 @@
                 <artifactId>recurrent</artifactId>
                 <version>${recurrent.version}</version>
             </dependency>
-
             <dependency>
-                <groupId>junit</groupId>
-                <artifactId>junit</artifactId>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter-engine</artifactId>
+                <version>${junit.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.junit.vintage</groupId>
+                <artifactId>junit-vintage-engine</artifactId>
+                <version>${junit.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter-api</artifactId>
                 <version>${junit.version}</version>
                 <scope>test</scope>
             </dependency>
             <dependency>
                 <groupId>org.mockito</groupId>
                 <artifactId>mockito-core</artifactId>
+                <version>${mockito.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.mockito</groupId>
+                <artifactId>mockito-junit-jupiter</artifactId>
                 <version>${mockito.version}</version>
                 <scope>test</scope>
             </dependency>
@@ -293,6 +310,13 @@
                     <argLine>-Xmx2048m</argLine>
                     <argLine>-Dcucumber.options="--tags ~@todo"</argLine>
                 </configuration>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.junit.jupiter</groupId>
+                        <artifactId>junit-jupiter-engine</artifactId>
+                        <version>${junit.version}</version>
+                    </dependency>
+                </dependencies>
             </plugin>
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
@@ -421,6 +445,13 @@
                                 <log4j.configuration />
                             </systemProperties>
                         </configuration>
+                        <dependencies>
+                            <dependency>
+                                <groupId>org.junit.jupiter</groupId>
+                                <artifactId>junit-jupiter-engine</artifactId>
+                                <version>${junit.version}</version>
+                            </dependency>
+                        </dependencies>
                     </plugin>
                 </plugins>
             </build>
@@ -439,6 +470,13 @@
                                 <exclude>%regex[.*(multimodule|cypher|accumulo|elasticsearch).*]</exclude>
                             </excludes>
                         </configuration>
+                        <dependencies>
+                            <dependency>
+                                <groupId>org.junit.jupiter</groupId>
+                                <artifactId>junit-jupiter-engine</artifactId>
+                                <version>${junit.version}</version>
+                            </dependency>
+                        </dependencies>
                     </plugin>
                 </plugins>
             </build>
@@ -459,6 +497,13 @@
                                 <exclude>%regex[.*(multimodule|cypher|elasticsearch).*]</exclude>
                             </excludes>
                         </configuration>
+                        <dependencies>
+                            <dependency>
+                                <groupId>org.junit.jupiter</groupId>
+                                <artifactId>junit-jupiter-engine</artifactId>
+                                <version>${junit.version}</version>
+                            </dependency>
+                        </dependencies>
                     </plugin>
                 </plugins>
             </build>
@@ -479,6 +524,13 @@
                                 <exclude>%regex[.*(multimodule|elasticsearch|accumulo).*]</exclude>
                             </excludes>
                         </configuration>
+                        <dependencies>
+                            <dependency>
+                                <groupId>org.junit.jupiter</groupId>
+                                <artifactId>junit-jupiter-engine</artifactId>
+                                <version>${junit.version}</version>
+                            </dependency>
+                        </dependencies>
                     </plugin>
                 </plugins>
             </build>
@@ -499,6 +551,13 @@
                                 <exclude>%regex[.*(multimodule|cypher|accumulo).*]</exclude>
                             </excludes>
                         </configuration>
+                        <dependencies>
+                            <dependency>
+                                <groupId>org.junit.jupiter</groupId>
+                                <artifactId>junit-jupiter-engine</artifactId>
+                                <version>${junit.version}</version>
+                            </dependency>
+                        </dependencies>
                     </plugin>
                 </plugins>
             </build>
@@ -519,6 +578,13 @@
                                 <exclude>%regex[.*(elasticsearch|cypher|accumulo).*]</exclude>
                             </excludes>
                         </configuration>
+                        <dependencies>
+                            <dependency>
+                                <groupId>org.junit.jupiter</groupId>
+                                <artifactId>junit-jupiter-engine</artifactId>
+                                <version>${junit.version}</version>
+                            </dependency>
+                        </dependencies>
                     </plugin>
                 </plugins>
             </build>

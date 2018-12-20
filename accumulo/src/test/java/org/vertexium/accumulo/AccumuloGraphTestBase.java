@@ -8,8 +8,8 @@ import org.apache.accumulo.core.data.Value;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.time.StopWatch;
 import org.apache.hadoop.io.Text;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.vertexium.*;
 import org.vertexium.accumulo.iterator.model.EdgeInfo;
 import org.vertexium.accumulo.iterator.model.VertexiumInvalidKeyException;
@@ -26,8 +26,7 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.*;
 
-import static junit.framework.TestCase.fail;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.vertexium.accumulo.ElementMutationBuilder.EMPTY_TEXT;
 import static org.vertexium.accumulo.iterator.model.KeyBase.VALUE_SEPARATOR;
 import static org.vertexium.util.IterableUtils.toList;
@@ -35,7 +34,7 @@ import static org.vertexium.util.IterableUtils.toList;
 public abstract class AccumuloGraphTestBase extends GraphTestBase {
     private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(AccumuloGraphTestBase.class);
 
-    @Before
+    @BeforeEach
     @Override
     public void before() throws Exception {
         getAccumuloResource().dropGraph();
@@ -80,7 +79,7 @@ public abstract class AccumuloGraphTestBase extends GraphTestBase {
         StopWatch timeout = new StopWatch();
         timeout.start();
         while (timeout.getTime() < 5000) {
-            assertNotNull("Property definition cache shouldn't clear", graph1.getPropertyDefinition("p1"));
+            assertNotNull(graph1.getPropertyDefinition("p1"), "Property definition cache shouldn't clear");
 
             PropertyDefinition def = graph2.getPropertyDefinition("p1");
             if (def != null) {
@@ -89,7 +88,7 @@ public abstract class AccumuloGraphTestBase extends GraphTestBase {
             }
         }
 
-        assertNotNull("Property definition didn't propagate to graph #2", graph2.getPropertyDefinition("p1"));
+        assertNotNull(graph2.getPropertyDefinition("p1"), "Property definition didn't propagate to graph #2");
         assertTrue(graph1.getPropertyDefinition("p1").isSortable());
         assertTrue(graph2.getPropertyDefinition("p1").isSortable());
 
@@ -383,7 +382,7 @@ public abstract class AccumuloGraphTestBase extends GraphTestBase {
         // verify we can still retrieve it
         Vertex v1 = graph.getVertex(vertexId, AUTHORIZATIONS_EMPTY);
         StreamingPropertyValue spv = (StreamingPropertyValue) v1.getPropertyValue(propertyKey, propertyName);
-        assertNotNull("spv should not be null", spv);
+        assertNotNull(spv, "spv should not be null");
         assertEquals(propertyValue, IOUtils.toString(spv.getInputStream()));
     }
 
@@ -417,11 +416,11 @@ public abstract class AccumuloGraphTestBase extends GraphTestBase {
         // verify we can still retrieve it
         Vertex v1 = graph.getVertex(vertexId, AUTHORIZATIONS_EMPTY);
         StreamingPropertyValue spv = (StreamingPropertyValue) v1.getPropertyValue(propertyKey1, propertyName);
-        assertNotNull("spv should not be null", spv);
+        assertNotNull(spv, "spv should not be null");
         assertEquals(propertyValue, IOUtils.toString(spv.getInputStream()));
 
         spv = (StreamingPropertyValue) v1.getPropertyValue(propertyKey2, propertyName);
-        assertNotNull("spv should not be null", spv);
+        assertNotNull(spv, "spv should not be null");
         assertEquals(propertyValue, IOUtils.toString(spv.getInputStream()));
     }
 
@@ -457,7 +456,7 @@ public abstract class AccumuloGraphTestBase extends GraphTestBase {
         // verify we can still retrieve it
         Vertex v1 = graph.getVertex(vertexId, AUTHORIZATIONS_EMPTY);
         StreamingPropertyValue spv = (StreamingPropertyValue) v1.getPropertyValue(propertyKey, propertyName);
-        assertNotNull("spv should not be null", spv);
+        assertNotNull(spv, "spv should not be null");
         assertEquals(propertyValue2, IOUtils.toString(spv.getInputStream()));
     }
 

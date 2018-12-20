@@ -10,9 +10,7 @@ import org.vertexium.query.QueryResultsIterable;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static junit.framework.TestCase.fail;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.vertexium.util.IterableUtils.toList;
 import static org.vertexium.util.StreamUtils.stream;
 
@@ -25,9 +23,9 @@ public class VertexiumAssert {
 
         String idsString = idsToString(sortedIds.toArray(new String[sortedIds.size()]));
         String expectedIdsString = idsToString(expectedIds);
-        assertEquals("ids length mismatch found:[" + idsString + "] expected:[" + expectedIdsString + "]", expectedIds.length, sortedIds.size());
+        assertEquals(expectedIds.length, sortedIds.size(), "ids length mismatch found:[" + idsString + "] expected:[" + expectedIdsString + "]");
         for (int i = 0; i < expectedIds.length; i++) {
-            assertEquals("at offset: " + i + " found:[" + idsString + "] expected:[" + expectedIdsString + "]", expectedIds[i], sortedIds.get(i));
+            assertEquals(expectedIds[i], sortedIds.get(i), "at offset: " + i + " found:[" + idsString + "] expected:[" + expectedIdsString + "]");
         }
     }
 
@@ -50,7 +48,7 @@ public class VertexiumAssert {
     }
 
     public static void assertEvents(GraphEvent... expectedEvents) {
-        assertEquals("Different number of events occurred than were asserted", expectedEvents.length, graphEvents.size());
+        assertEquals(expectedEvents.length, graphEvents.size(), "Different number of events occurred than were asserted");
 
         for (int i = 0; i < expectedEvents.length; i++) {
             assertEquals(expectedEvents[i], graphEvents.get(i));
@@ -75,9 +73,9 @@ public class VertexiumAssert {
 
     public static void assertElementIds(Iterable<? extends Element> elements, String... ids) {
         List<Element> elementList = toList(elements);
-        assertEquals("ids length mismatch", ids.length, elementList.size());
+        assertEquals(ids.length, elementList.size(), "ids length mismatch");
         for (int i = 0; i < ids.length; i++) {
-            assertEquals("at offset: " + i, ids[i], elementList.get(i).getId());
+            assertEquals(ids[i], elementList.get(i).getId(), "at offset: " + i);
         }
     }
 

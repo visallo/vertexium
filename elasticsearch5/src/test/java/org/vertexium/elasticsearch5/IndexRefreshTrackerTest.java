@@ -3,23 +3,23 @@ package org.vertexium.elasticsearch5;
 import com.google.common.base.Joiner;
 import com.google.common.collect.Sets;
 import org.elasticsearch.client.Client;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class IndexRefreshTrackerTest {
     private IndexRefreshTracker indexRefreshTracker;
     private long time;
     private Set<String> lastIndexNamesNeedingRefresh;
 
-    @Before
+    @BeforeEach
     public void before() {
         this.indexRefreshTracker = new IndexRefreshTracker() {
             @Override

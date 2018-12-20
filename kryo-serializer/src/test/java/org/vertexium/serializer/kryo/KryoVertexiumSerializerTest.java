@@ -1,7 +1,7 @@
 package org.vertexium.serializer.kryo;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.vertexium.GraphConfiguration;
@@ -15,7 +15,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @RunWith(Parameterized.class)
 public class KryoVertexiumSerializerTest extends VertexiumSerializerTestBase {
@@ -36,7 +36,7 @@ public class KryoVertexiumSerializerTest extends VertexiumSerializerTestBase {
         this.compress = compress;
     }
 
-    @Before
+    @BeforeEach
     public void before() {
         System.gc();
 

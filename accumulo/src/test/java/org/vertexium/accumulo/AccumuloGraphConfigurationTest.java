@@ -3,17 +3,13 @@ package org.vertexium.accumulo;
 import com.google.common.collect.Maps;
 import org.apache.accumulo.core.client.BatchWriterConfig;
 import org.apache.commons.collections.MapUtils;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
+import org.junit.jupiter.api.Test;
 
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@RunWith(JUnit4.class)
 public class AccumuloGraphConfigurationTest {
 
     @Test
@@ -22,10 +18,10 @@ public class AccumuloGraphConfigurationTest {
         AccumuloGraphConfiguration accumuloGraphConfiguration = new AccumuloGraphConfiguration(configMap);
         BatchWriterConfig batchWriterConfig = accumuloGraphConfiguration.createBatchWriterConfig();
 
-        assertThat(batchWriterConfig.getMaxLatency(TimeUnit.MILLISECONDS), is(AccumuloGraphConfiguration.DEFAULT_BATCHWRITER_MAX_LATENCY));
-        assertThat(batchWriterConfig.getTimeout(TimeUnit.MILLISECONDS), is(AccumuloGraphConfiguration.DEFAULT_BATCHWRITER_TIMEOUT));
-        assertThat(batchWriterConfig.getMaxMemory(), is(AccumuloGraphConfiguration.DEFAULT_BATCHWRITER_MAX_MEMORY));
-        assertThat(batchWriterConfig.getMaxWriteThreads(), is(AccumuloGraphConfiguration.DEFAULT_BATCHWRITER_MAX_WRITE_THREADS));
+        assertEquals(batchWriterConfig.getMaxLatency(TimeUnit.MILLISECONDS), (long) AccumuloGraphConfiguration.DEFAULT_BATCHWRITER_MAX_LATENCY);
+        assertEquals(batchWriterConfig.getTimeout(TimeUnit.MILLISECONDS), (long) AccumuloGraphConfiguration.DEFAULT_BATCHWRITER_TIMEOUT);
+        assertEquals(batchWriterConfig.getMaxMemory(), (long) AccumuloGraphConfiguration.DEFAULT_BATCHWRITER_MAX_MEMORY);
+        assertEquals(batchWriterConfig.getMaxWriteThreads(), (long) AccumuloGraphConfiguration.DEFAULT_BATCHWRITER_MAX_WRITE_THREADS);
     }
 
     @Test
@@ -44,9 +40,9 @@ public class AccumuloGraphConfigurationTest {
         AccumuloGraphConfiguration accumuloGraphConfiguration = new AccumuloGraphConfiguration(configMap);
         BatchWriterConfig batchWriterConfig = accumuloGraphConfiguration.createBatchWriterConfig();
 
-        assertThat(batchWriterConfig.getMaxLatency(TimeUnit.MILLISECONDS), is(maxLatency));
-        assertThat(batchWriterConfig.getTimeout(TimeUnit.MILLISECONDS), is(timeout));
-        assertThat(batchWriterConfig.getMaxMemory(), is(maxMemory));
-        assertThat(batchWriterConfig.getMaxWriteThreads(), is(numThreads));
+        assertEquals(batchWriterConfig.getMaxLatency(TimeUnit.MILLISECONDS), maxLatency);
+        assertEquals(batchWriterConfig.getTimeout(TimeUnit.MILLISECONDS), timeout);
+        assertEquals(batchWriterConfig.getMaxMemory(), maxMemory);
+        assertEquals(batchWriterConfig.getMaxWriteThreads(), numThreads);
     }
 }

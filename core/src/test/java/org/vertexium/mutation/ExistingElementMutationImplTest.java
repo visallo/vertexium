@@ -1,28 +1,28 @@
 package org.vertexium.mutation;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.vertexium.Authorizations;
 import org.vertexium.Element;
 import org.vertexium.FetchHints;
 import org.vertexium.Visibility;
 import org.vertexium.property.MutablePropertyImpl;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class ExistingElementMutationImplTest {
     private TestExistingElementMutationImpl mutation;
 
     @Mock
     private Element element;
 
-    @Before
+    @BeforeEach
     public void before() {
         when(element.getFetchHints()).thenReturn(FetchHints.ALL);
         mutation = new TestExistingElementMutationImpl<>(element);
@@ -30,13 +30,13 @@ public class ExistingElementMutationImplTest {
 
     @Test
     public void testEmptyMutationHasChanges() {
-        assertFalse("should not have changes", mutation.hasChanges());
+        assertFalse(mutation.hasChanges(), "should not have changes");
     }
 
     @Test
     public void testHasChangesProperties() {
         mutation.addPropertyValue("key1", "name1", "Hello", new Visibility(""));
-        assertTrue("should have changes", mutation.hasChanges());
+        assertTrue(mutation.hasChanges(), "should have changes");
     }
 
     @Test
@@ -51,7 +51,7 @@ public class ExistingElementMutationImplTest {
                 new Visibility(""),
                 FetchHints.ALL
         ));
-        assertTrue("should have changes", mutation.hasChanges());
+        assertTrue(mutation.hasChanges(), "should have changes");
     }
 
     @Test
@@ -66,25 +66,25 @@ public class ExistingElementMutationImplTest {
                 new Visibility(""),
                 FetchHints.ALL
         ));
-        assertTrue("should have changes", mutation.hasChanges());
+        assertTrue(mutation.hasChanges(), "should have changes");
     }
 
     @Test
     public void testHasChangesNewElementVisibility() {
         mutation.alterElementVisibility(new Visibility(""));
-        assertTrue("should have changes", mutation.hasChanges());
+        assertTrue(mutation.hasChanges(), "should have changes");
     }
 
     @Test
     public void testHasChangesAlterPropertyVisibility() {
         mutation.alterPropertyVisibility("key1", "name1", new Visibility(""));
-        assertTrue("should have changes", mutation.hasChanges());
+        assertTrue(mutation.hasChanges(), "should have changes");
     }
 
     @Test
     public void testHasChangesSetPropertyMetadata() {
         mutation.setPropertyMetadata("key1", "name1", "value", new Visibility(""));
-        assertTrue("should have changes", mutation.hasChanges());
+        assertTrue(mutation.hasChanges(), "should have changes");
     }
 
     private static class TestExistingElementMutationImpl<T extends Element> extends ExistingElementMutationImpl<T> {

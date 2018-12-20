@@ -1,7 +1,7 @@
 package org.vertexium.accumulo;
 
 import com.google.common.base.Joiner;
-import org.junit.ClassRule;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.vertexium.id.SimpleNameSubstitutionStrategy;
 
 import java.util.HashMap;
@@ -10,8 +10,8 @@ import static org.vertexium.id.SimpleSubstitutionUtils.*;
 
 public class AccumuloSimpleSubstitutionGraphTest extends AccumuloGraphTestBase {
 
-    @ClassRule
-    public static final AccumuloResource accumuloResource = new AccumuloResource(new HashMap<String, String>() {{
+    @RegisterExtension
+    static final AccumuloResource accumuloResource = new AccumuloResource(new HashMap<String, String>() {{
         put(AccumuloGraphConfiguration.NAME_SUBSTITUTION_STRATEGY_PROP_PREFIX, SimpleNameSubstitutionStrategy.class.getName());
         put(Joiner.on('.').join(new String[]{SUBSTITUTION_MAP_PREFIX, "0", KEY_IDENTIFIER}), "k1");
         put(Joiner.on('.').join(new String[]{SUBSTITUTION_MAP_PREFIX, "0", VALUE_IDENTIFIER}), "k");

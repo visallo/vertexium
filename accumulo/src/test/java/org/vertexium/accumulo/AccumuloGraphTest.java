@@ -1,12 +1,12 @@
 package org.vertexium.accumulo;
 
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 public class AccumuloGraphTest extends AccumuloGraphTestBase {
 
-    @ClassRule
-    public static final AccumuloResource accumuloResource = new AccumuloResource();
+    @RegisterExtension
+    static final AccumuloResource accumuloResource = new AccumuloResource();
 
     @Override
     public AccumuloResource getAccumuloResource() {

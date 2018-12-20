@@ -4,7 +4,7 @@ import org.vertexium.util.CloseableUtils;
 
 import java.util.Iterator;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class IterableUtils {
     public static <T> void assertContains(Object expected, Iterable<T> iterable) {
@@ -27,6 +27,6 @@ public class IterableUtils {
             CloseableUtils.closeQuietly(iterator);
         }
 
-        assertTrue("Iterable does not contain [" + expected + "], found [" + found + "]", false);
+        assertTrue(false, "Iterable does not contain [" + expected + "], found [" + found + "]");
     }
 }

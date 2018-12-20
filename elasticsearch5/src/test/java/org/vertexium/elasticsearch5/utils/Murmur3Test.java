@@ -1,10 +1,10 @@
 package org.vertexium.elasticsearch5.utils;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import javax.xml.bind.DatatypeConverter;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class Murmur3Test {
     @Test

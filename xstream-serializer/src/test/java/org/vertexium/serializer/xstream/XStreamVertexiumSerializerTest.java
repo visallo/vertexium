@@ -1,12 +1,12 @@
 package org.vertexium.serializer.xstream;
 
-import org.junit.Before;
+import org.junit.jupiter.api.BeforeEach;
 import org.vertexium.test.VertexiumSerializerTestBase;
 
 public class XStreamVertexiumSerializerTest extends VertexiumSerializerTestBase {
     private XStreamVertexiumSerializer vertexiumSerializer;
 
-    @Before
+    @BeforeEach
     public void before() {
         vertexiumSerializer = new XStreamVertexiumSerializer();
     }

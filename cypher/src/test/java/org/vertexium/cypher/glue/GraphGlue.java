@@ -19,14 +19,17 @@ import org.vertexium.util.VertexiumLogger;
 import org.vertexium.util.VertexiumLoggerFactory;
 
 import java.io.InputStream;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static junit.framework.TestCase.fail;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class GraphGlue {
     private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(GraphGlue.class);
@@ -160,14 +163,14 @@ public class GraphGlue {
             }
 
             if (expectedRows.size() > 0) {
-                assertEquals("Header count", expected.raw().get(0).size(), lastResults.getColumnNames().size());
+                assertEquals(expected.raw().get(0).size(), lastResults.getColumnNames().size(), "Header count");
                 for (int colIdx = 0; colIdx < expected.raw().get(0).size(); colIdx++) {
                     String expectedColumnName = expected.raw().get(0).get(colIdx);
-                    assertTrue("Header mismatch", lastResults.getColumnNames().contains(expectedColumnName));
+                    assertTrue(lastResults.getColumnNames().contains(expectedColumnName), "Header mismatch");
                 }
             }
 
-            assertEquals("result count", expectedRows.size(), foundRows.size());
+            assertEquals(expectedRows.size(), foundRows.size(), "result count");
 
             if (expectedRows.size() > 0) {
                 for (int row = 0; row < expectedRows.size(); row++) {
@@ -226,7 +229,7 @@ public class GraphGlue {
         assertTrue(foundMatch.matches());
         String[] expectedLabels = expectedMatch.group(1).split(":");
         String[] foundLabels = foundMatch.group(1).split(":");
-        assertEquals(expectedMatch.group(1) + " does not equal length of " + foundMatch.group(1), expectedLabels.length, foundLabels.length);
+        assertEquals(expectedLabels.length, foundLabels.length, expectedMatch.group(1) + " does not equal length of " + foundMatch.group(1));
         Arrays.sort(expectedLabels);
         Arrays.sort(foundLabels);
         for (int i = 0; i < expectedLabels.length; i++) {
@@ -354,14 +357,14 @@ public class GraphGlue {
 
     @Then("^no side effects$")
     public void noSideEffects() {
-        assertEquals("+node", 0, ctx.getPlusNodeCount());
-        assertEquals("+relationship", 0, ctx.getPlusRelationshipCount());
-        assertEquals("+label", 0, ctx.getPlusLabelCount());
-        assertEquals("+property", 0, ctx.getPlusPropertyCount());
-        assertEquals("-node", 0, ctx.getMinusNodeCount());
-        assertEquals("-relationship", 0, ctx.getMinusRelationshipCount());
-        assertEquals("-label", 0, ctx.getMinusLabelCount());
-        assertEquals("-property", 0, ctx.getMinusPropertyCount());
+        assertEquals(0, ctx.getPlusNodeCount(), "+node");
+        assertEquals(0, ctx.getPlusRelationshipCount(), "+relationship");
+        assertEquals(0, ctx.getPlusLabelCount(), "+label");
+        assertEquals(0, ctx.getPlusPropertyCount(), "+property");
+        assertEquals(0, ctx.getMinusNodeCount(), "-node");
+        assertEquals(0, ctx.getMinusRelationshipCount(), "-relationship");
+        assertEquals(0, ctx.getMinusLabelCount(), "-label");
+        assertEquals(0, ctx.getMinusPropertyCount(), "-property");
     }
 
     @Then("^the side effects should be:$")
@@ -369,28 +372,28 @@ public class GraphGlue {
         for (List<String> tableRow : table.raw()) {
             if (tableRow.size() == 2 && tableRow.get(0).equals("+nodes")) {
                 int plusNodes = Integer.parseInt(tableRow.get(1));
-                assertEquals("+nodes", plusNodes, ctx.getPlusNodeCount());
+                assertEquals(plusNodes, ctx.getPlusNodeCount(), "+nodes");
             } else if (tableRow.size() == 2 && tableRow.get(0).equals("+relationships")) {
                 int plusRelationships = Integer.parseInt(tableRow.get(1));
-                assertEquals("+relationships", plusRelationships, ctx.getPlusRelationshipCount());
+                assertEquals(plusRelationships, ctx.getPlusRelationshipCount(), "+relationships");
             } else if (tableRow.size() == 2 && tableRow.get(0).equals("+labels")) {
                 int plusLabels = Integer.parseInt(tableRow.get(1));
-                assertEquals("+labels", plusLabels, ctx.getPlusLabelCount());
+                assertEquals(plusLabels, ctx.getPlusLabelCount(), "+labels");
             } else if (tableRow.size() == 2 && tableRow.get(0).equals("+properties")) {
                 int plusProperties = Integer.parseInt(tableRow.get(1));
-                assertEquals("+properties", plusProperties, ctx.getPlusPropertyCount());
+                assertEquals(plusProperties, ctx.getPlusPropertyCount(), "+properties");
             } else if (tableRow.size() == 2 && tableRow.get(0).equals("-nodes")) {
                 int minusNodes = Integer.parseInt(tableRow.get(1));
-                assertEquals("-nodes", minusNodes, ctx.getMinusNodeCount());
+                assertEquals(minusNodes, ctx.getMinusNodeCount(), "-nodes");
             } else if (tableRow.size() == 2 && tableRow.get(0).equals("-relationships")) {
                 int minusRelationships = Integer.parseInt(tableRow.get(1));
-                assertEquals("-relationships", minusRelationships, ctx.getMinusRelationshipCount());
+                assertEquals(minusRelationships, ctx.getMinusRelationshipCount(), "-relationships");
             } else if (tableRow.size() == 2 && tableRow.get(0).equals("-labels")) {
                 int minusLabels = Integer.parseInt(tableRow.get(1));
-                assertEquals("-labels", minusLabels, ctx.getMinusLabelCount());
+                assertEquals(minusLabels, ctx.getMinusLabelCount(), "-labels");
             } else if (tableRow.size() == 2 && tableRow.get(0).equals("-properties")) {
                 int minusProperties = Integer.parseInt(tableRow.get(1));
-                assertEquals("-properties", minusProperties, ctx.getMinusPropertyCount());
+                assertEquals(minusProperties, ctx.getMinusPropertyCount(), "-properties");
             } else {
                 fail("Unhandled side effect row: " + tableRow.stream().collect(Collectors.joining(",")));
             }
