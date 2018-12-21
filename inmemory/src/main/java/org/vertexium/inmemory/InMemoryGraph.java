@@ -11,6 +11,7 @@ import org.vertexium.inmemory.mutations.EdgeSetupMutation;
 import org.vertexium.inmemory.mutations.ElementTimestampMutation;
 import org.vertexium.mutation.AlterPropertyVisibility;
 import org.vertexium.mutation.ExtendedDataDeleteMutation;
+import org.vertexium.mutation.ExtendedDataMutation;
 import org.vertexium.mutation.SetPropertyMetadata;
 import org.vertexium.property.StreamingPropertyValue;
 import org.vertexium.property.StreamingPropertyValueRef;
@@ -880,24 +881,21 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
     public void extendedData(
             Element element,
             ExtendedDataRowId rowId,
-            String column,
-            String key,
-            Object value,
-            long timestamp,
-            Visibility visibility,
+            ExtendedDataMutation extendedData,
             Authorizations authorizations
     ) {
-        extendedDataTable.addData(rowId, column, key, value, timestamp, visibility);
+        extendedDataTable.addData(rowId, extendedData.getColumnName(), extendedData.getKey(), extendedData.getValue(), extendedData.getTimestamp(), extendedData.getVisibility());
+        getSearchIndex().addElementExtendedData(this, element, Collections.singleton(extendedData), authorizations);
         if (hasEventListeners()) {
             fireGraphEvent(new AddExtendedDataEvent(
                     this,
                     element,
                     rowId.getTableName(),
                     rowId.getRowId(),
-                    column,
-                    key,
-                    value,
-                    visibility
+                    extendedData.getColumnName(),
+                    extendedData.getKey(),
+                    extendedData.getValue(),
+                    extendedData.getVisibility()
             ));
         }
     }

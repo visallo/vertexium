@@ -1,0 +1,6 @@
+for (fieldToSet in params.fieldsToSet.entrySet()) {
+  ctx._source[fieldToSet.getKey()] = fieldToSet.getValue();
+}
+
+/* see helper-functions.painless for definition of getFieldVisibilities() */
+ctx._source['__extendedDataColumnVisibilities'] = getFieldVisibilities(ctx._source).toArray();

@@ -1,4 +1,7 @@
 # v4.4.2
+* Fixed: If you had access an element but none of the extended data columns you could still match on the extended data row using a query with no filters. This would result in the row being counted in `totalHits`, but it could not be retrieved from Accumulo.
+
+# v4.4.2
 * Fixed: `EdgeInfo.getDirection` was reversed when loaded from InMemoryVertex.
 * Changed: Elasticsearch: index on reads instead of indexing on writes.
 * Changed: Elasticsearch: optimize adding properties to vertices/edges with lots of properties
@@ -45,7 +48,7 @@
 * Changed: Deprecated Elasticsearch global scoring strategy  
 
 # v4.1.1.5
-* Changed: Elasticsearch: Parse histogram aggregation interval to Double since decimal intervals are supported 
+* Changed: Elasticsearch: Parse histogram aggregation interval to Double since decimal intervals are supported
 
 # v4.1.1.4
 * Fixed: Elasticsearch: NPE in InfiniteScrollIterable if no matching property name has been found when applying filters

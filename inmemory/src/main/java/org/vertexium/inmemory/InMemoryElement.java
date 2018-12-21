@@ -67,32 +67,14 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> extends 
         getGraph().deleteExtendedData(this, tableName, row, columnName, key, visibility, authorizations);
     }
 
-    protected void extendedData(
-            String tableName,
-            String rowId,
-            String column,
-            String key,
-            Object value,
-            long timestamp,
-            Visibility visibility,
-            Authorizations authorizations
-    ) {
+    protected void extendedData(ExtendedDataMutation extendedData, Authorizations authorizations) {
         ExtendedDataRowId extendedDataRowId = new ExtendedDataRowId(
                 ElementType.getTypeFromElement(this),
                 getId(),
-                tableName,
-                rowId
+                extendedData.getTableName(),
+                extendedData.getRow()
         );
-        getGraph().extendedData(
-                this,
-                extendedDataRowId,
-                column,
-                key,
-                value,
-                timestamp,
-                visibility,
-                authorizations
-        );
+        getGraph().extendedData(this, extendedDataRowId, extendedData, authorizations);
     }
 
     @Override
@@ -217,16 +199,7 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> extends 
         }
         for (ExtendedDataMutation extendedData : extendedDatas) {
             getGraph().ensurePropertyDefined(extendedData.getColumnName(), extendedData.getValue());
-            extendedData(
-                    extendedData.getTableName(),
-                    extendedData.getRow(),
-                    extendedData.getColumnName(),
-                    extendedData.getKey(),
-                    extendedData.getValue(),
-                    extendedData.getTimestamp(),
-                    extendedData.getVisibility(),
-                    authorizations
-            );
+            extendedData(extendedData, authorizations);
         }
         for (ExtendedDataDeleteMutation extendedDataDelete : extendedDataDeletes) {
             deleteExtendedData(

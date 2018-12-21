@@ -1,0 +1,9 @@
+for (def fieldName : params.fieldsToRemove) {
+    ctx._source.remove(fieldName);
+}
+for (fieldToRename in params.fieldsToRename.entrySet()) {
+    ctx._source[fieldToRename.getValue()] = ctx._source[fieldToRename.getKey()]; ctx._source.remove(fieldToRename.getKey());
+}
+for (fieldToSet in params.fieldsToSet.entrySet()) {
+    ctx._source[fieldToSet.getKey()] = fieldToSet.getValue();
+}

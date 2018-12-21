@@ -69,6 +69,7 @@ public abstract class GraphTestBase {
     public final Authorizations AUTHORIZATIONS_MIXED_CASE_a_AND_B;
     public final Authorizations AUTHORIZATIONS_A_AND_B;
     public final Authorizations AUTHORIZATIONS_B_AND_C;
+    public final Authorizations AUTHORIZATIONS_A_AND_B_AND_C;
     public final Authorizations AUTHORIZATIONS_EMPTY;
     public final Authorizations AUTHORIZATIONS_BAD;
     public final Authorizations AUTHORIZATIONS_ALL;
@@ -91,6 +92,7 @@ public abstract class GraphTestBase {
         AUTHORIZATIONS_MIXED_CASE_a_AND_B = createAuthorizations("MIXED_CASE_a", "b");
         AUTHORIZATIONS_EMPTY = createAuthorizations();
         AUTHORIZATIONS_BAD = createAuthorizations("bad");
+        AUTHORIZATIONS_A_AND_B_AND_C = createAuthorizations("a", "b", "c");
         AUTHORIZATIONS_ALL = createAuthorizations("a", "b", "c", "MIXED_CASE_a");
     }
 
@@ -8150,6 +8152,178 @@ public abstract class GraphTestBase {
 
         searchResultsList = toList(graph.query(AUTHORIZATIONS_A).extendedDataRows());
         assertRowIdsAnyOrder(Lists.newArrayList(), searchResultsList);
+    }
+
+    @Test
+    public void testAddExtendedData() {
+        graph.prepareVertex("v1", VISIBILITY_A)
+                .addExtendedData("table1", "row1", "color", "red", VISIBILITY_A)
+                .addExtendedData("table1", "row2", "color", "green", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
+        graph.flush();
+
+        QueryResultsIterable<ExtendedDataRow> results = graph.query(AUTHORIZATIONS_A).extendedDataRows();
+        assertResultsCount(2, 2, results);
+
+        results = graph.query("red", AUTHORIZATIONS_A).extendedDataRows();
+        assertResultsCount(1, 1, results);
+
+        results = graph.query("green", AUTHORIZATIONS_A).extendedDataRows();
+        assertResultsCount(1, 1, results);
+
+        results = graph.query("blue", AUTHORIZATIONS_A).extendedDataRows();
+        assertResultsCount(0, 0, results);
+
+        graph.getVertex("v1", AUTHORIZATIONS_A).prepareMutation()
+                .addExtendedData("table1", "row1", "othercolor", "blue", VISIBILITY_A)
+                .addExtendedData("table1", "row2", "othercolor", "purple", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
+        graph.flush();
+
+        results = graph.query(AUTHORIZATIONS_A).extendedDataRows();
+        assertResultsCount(2, 2, results);
+
+        results = graph.query("red", AUTHORIZATIONS_A).extendedDataRows();
+        assertResultsCount(1, 1, results);
+
+        results = graph.query("green", AUTHORIZATIONS_A).extendedDataRows();
+        assertResultsCount(1, 1, results);
+
+        results = graph.query("blue", AUTHORIZATIONS_A).extendedDataRows();
+        assertResultsCount(1, 1, results);
+
+        results = graph.query("purple", AUTHORIZATIONS_A).extendedDataRows();
+        assertResultsCount(1, 1, results);
+    }
+
+    @Test
+    public void testExtendedDataQueryAuthorizations() {
+        graph.prepareVertex("v1", VISIBILITY_A)
+                .addExtendedData("table1", "row1", "color", "junit", "red", VISIBILITY_B)
+                .addExtendedData("table1", "row2", "color", "junit", "green", VISIBILITY_B)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.createAuthorizations(AUTHORIZATIONS_A_AND_B_AND_C);
+        graph.flush();
+
+        QueryResultsIterable<ExtendedDataRow> results = graph.query("red", AUTHORIZATIONS_A).extendedDataRows();
+        assertResultsCount(0, 0, results);
+
+        QueryResultsIterable<? extends VertexiumObject> searchResults = graph.query("red", AUTHORIZATIONS_A).search();
+        assertResultsCount(0, 0, searchResults);
+
+        results = graph.query("red", AUTHORIZATIONS_B).extendedDataRows();
+        assertResultsCount(0, 0, results);
+
+        searchResults = graph.query("red", AUTHORIZATIONS_B).search();
+        assertResultsCount(0, 0, searchResults);
+
+        results = graph.query("red", AUTHORIZATIONS_A_AND_B).extendedDataRows();
+        assertResultsCount(1, 1, results);
+
+        searchResults = graph.query("red", AUTHORIZATIONS_A_AND_B).search();
+        assertResultsCount(1, 1, searchResults);
+
+        results = graph.query(AUTHORIZATIONS_A).hasExtendedData(ElementType.VERTEX, "v1").extendedDataRows();
+        assertResultsCount(0, 0, results);
+
+        searchResults = graph.query(AUTHORIZATIONS_A).hasExtendedData(ElementType.VERTEX, "v1").search();
+        assertResultsCount(0, 0, searchResults);
+
+        results = graph.query(AUTHORIZATIONS_B).hasExtendedData(ElementType.VERTEX, "v1").extendedDataRows();
+        assertResultsCount(0, 0, results);
+
+        searchResults = graph.query(AUTHORIZATIONS_B).hasExtendedData(ElementType.VERTEX, "v1").search();
+        assertResultsCount(0, 0, searchResults);
+
+        results = graph.query(AUTHORIZATIONS_A_AND_B).hasExtendedData(ElementType.VERTEX, "v1").extendedDataRows();
+        assertResultsCount(2, 2, results);
+
+        searchResults = graph.query(AUTHORIZATIONS_A_AND_B).hasExtendedData(ElementType.VERTEX, "v1").search();
+        assertResultsCount(2, 2, searchResults);
+
+        results = graph.query(AUTHORIZATIONS_A).extendedDataRows();
+        assertResultsCount(0, 0, results);
+
+        searchResults = graph.query(AUTHORIZATIONS_A).search();
+        assertResultsCount(1, 1, searchResults);
+
+        results = graph.query(AUTHORIZATIONS_B).extendedDataRows();
+        assertResultsCount(0, 0, results);
+
+        searchResults = graph.query(AUTHORIZATIONS_B).search();
+        assertResultsCount(0, 0, searchResults);
+
+        results = graph.query(AUTHORIZATIONS_A_AND_B).extendedDataRows();
+        assertResultsCount(2, 2, results);
+
+        searchResults = graph.query(AUTHORIZATIONS_A_AND_B).search();
+        assertResultsCount(3, 3, searchResults);
+
+        graph.getVertex("v1", AUTHORIZATIONS_A).prepareMutation()
+                .deleteExtendedData("table1", "row1", "color", "junit", VISIBILITY_B)
+                .deleteExtendedData("table1", "row2", "color", "junit", VISIBILITY_B)
+                .addExtendedData("table1", "row1", "color", "junit2", "blue", VISIBILITY_C)
+                .save(AUTHORIZATIONS_A_AND_B_AND_C);
+        graph.flush();
+
+        Authorizations authorizationsAandC = createAuthorizations("a", "c");
+
+        results = graph.query(AUTHORIZATIONS_A).extendedDataRows();
+        assertResultsCount(0, 0, results);
+
+        searchResults = graph.query(AUTHORIZATIONS_A).search();
+        assertResultsCount(1, 1, searchResults);
+
+        results = graph.query(AUTHORIZATIONS_B).extendedDataRows();
+        assertResultsCount(0, 0, results);
+
+        searchResults = graph.query(AUTHORIZATIONS_B).search();
+        assertResultsCount(0, 0, searchResults);
+
+        results = graph.query(AUTHORIZATIONS_C).extendedDataRows();
+        assertResultsCount(0, 0, results);
+
+        searchResults = graph.query(AUTHORIZATIONS_C).search();
+        assertResultsCount(0, 0, searchResults);
+
+        results = graph.query(authorizationsAandC).extendedDataRows();
+        assertResultsCount(1, 1, results);
+
+        searchResults = graph.query(authorizationsAandC).search();
+        assertResultsCount(2, 2, searchResults);
+
+        results = graph.query(AUTHORIZATIONS_A_AND_B_AND_C).extendedDataRows();
+        assertResultsCount(1, 1, results);
+
+        searchResults = graph.query(AUTHORIZATIONS_A_AND_B_AND_C).search();
+        assertResultsCount(2, 2, searchResults);
+
+        searchResults = graph.query("blue", AUTHORIZATIONS_A).search();
+        assertResultsCount(0, 0, searchResults);
+
+        results = graph.query("blue", AUTHORIZATIONS_B).extendedDataRows();
+        assertResultsCount(0, 0, results);
+
+        searchResults = graph.query("blue", AUTHORIZATIONS_B).search();
+        assertResultsCount(0, 0, searchResults);
+
+        results = graph.query("blue", AUTHORIZATIONS_C).extendedDataRows();
+        assertResultsCount(0, 0, results);
+
+        searchResults = graph.query("blue", AUTHORIZATIONS_C).search();
+        assertResultsCount(0, 0, searchResults);
+
+        results = graph.query("blue", AUTHORIZATIONS_A_AND_B).extendedDataRows();
+        assertResultsCount(0, 0, results);
+
+        searchResults = graph.query("blue", AUTHORIZATIONS_A_AND_B).search();
+        assertResultsCount(0, 0, searchResults);
+
+        results = graph.query("blue", authorizationsAandC).extendedDataRows();
+        assertResultsCount(1, 1, results);
+
+        searchResults = graph.query("blue", authorizationsAandC).search();
+        assertResultsCount(1, 1, searchResults);
     }
 
     @Test

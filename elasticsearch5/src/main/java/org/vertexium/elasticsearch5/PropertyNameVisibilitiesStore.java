@@ -7,6 +7,8 @@ import org.vertexium.Visibility;
 import java.util.Collection;
 
 public abstract class PropertyNameVisibilitiesStore {
+    public abstract Collection<String> getHashes(Graph graph, Authorizations authorizations);
+
     public abstract Collection<String> getHashes(Graph graph, String propertyName, Authorizations authorizations);
 
     public abstract String getHash(Graph graph, String propertyName, Visibility visibility);

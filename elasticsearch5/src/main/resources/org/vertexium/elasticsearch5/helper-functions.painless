@@ -1,0 +1,30 @@
+
+Set getFieldVisibilities(def source) {
+    Set visibilities = new HashSet();
+    for(String fn : source.keySet()) {
+        if (!fn.startsWith('__')) {
+            String key = fn;
+            int lastIndex = key.lastIndexOf('_');
+            while (lastIndex > 0) {
+                if ((key.length() - lastIndex - 1) == 32) {
+                    String hash = key.substring(lastIndex + 1);
+                    boolean validMd5 = true;
+
+                    for (int i; validMd5 && i < hash.length(); i++) {
+                        char hc = hash.charAt(i);
+                        if (!(hc >= ((char)'0') && hc <= ((char)'9')) && !(hc >= ((char)'a') && hc <= ((char)'z')) && !(hc >= ((char)'A') && hc <= ((char)'Z')) ) {
+                            validMd5 = false;
+                        }
+                    }
+                    if (validMd5) {
+                        visibilities.add(hash);
+                    }
+
+                }
+                key = key.substring(0, lastIndex);
+                lastIndex = key.lastIndexOf('_');
+            }
+        }
+    }
+    visibilities;
+}
