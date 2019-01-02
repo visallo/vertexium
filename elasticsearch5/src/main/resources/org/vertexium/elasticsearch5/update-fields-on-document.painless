@@ -7,3 +7,8 @@ for (fieldToRename in params.fieldsToRename.entrySet()) {
 for (fieldToSet in params.fieldsToSet.entrySet()) {
     ctx._source[fieldToSet.getKey()] = fieldToSet.getValue();
 }
+
+if (ctx._source['__elementType'] == 'vertexextdata' || ctx._source['__elementType'] == 'edgeextdata') {
+    /* see helper-functions.painless for definition of getFieldVisibilities() */
+    ctx._source['__extendedDataColumnVisibilities'] = getFieldVisibilities(ctx._source).toArray();
+}
