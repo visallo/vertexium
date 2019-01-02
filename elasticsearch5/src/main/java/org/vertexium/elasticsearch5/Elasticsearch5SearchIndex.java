@@ -141,18 +141,20 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
         this.exceptionHandler = this.config.getExceptionHandler(graph);
         this.flushObjectQueue = new FlushObjectQueue(this);
 
-        storePainlessScript("addFieldsToExtendedDataScript", getClass().getResourceAsStream("add-fields-to-extended-data.painless"), true);
-        storePainlessScript("deleteFieldsFromDocumentScript", getClass().getResourceAsStream("remove-fields-from-document.painless"), true);
-        storePainlessScript("updateFieldsOnDocumentScript", getClass().getResourceAsStream("update-fields-on-document.painless"), false);
+        storePainlessScript("addFieldsToExtendedDataScript", "add-fields-to-extended-data.painless", true);
+        storePainlessScript("deleteFieldsFromDocumentScript", "remove-fields-from-document.painless", true);
+        storePainlessScript("updateFieldsOnDocumentScript", "update-fields-on-document.painless", false);
     }
 
-    private void storePainlessScript(String scriptId, InputStream scriptSource, boolean includeHelpers) {
-        try {
+    private void storePainlessScript(String scriptId, String scriptSourceName, boolean includeHelpers) {
+        try (InputStream scriptSource = getClass().getResourceAsStream(scriptSourceName)) {
             String source = IOUtils.toString(scriptSource);
             if (includeHelpers) {
-                source = IOUtils.toString(getClass().getResourceAsStream("helper-functions.painless")) + " " + source;
+                try (InputStream helperSource = getClass().getResourceAsStream("helper-functions.painless")) {
+                    source = IOUtils.toString(helperSource) + " " + source;
+                }
             }
-            source = source.replaceAll("\\r?\\n", " ");
+            source = source.replaceAll("\\r?\\n", " ").replaceAll("\"", "\\\\\"");
             client.admin().cluster().preparePutStoredScript()
                     .setId(scriptId)
                     .setContent(new BytesArray("{\"script\": {\"lang\": \"painless\", \"source\": \"" + source + "\"}}"), XContentType.JSON)
