@@ -1,0 +1,7 @@
+for (def fieldName : params.fieldNames) {
+  ctx._source.remove(fieldName);
+}
+if (ctx._source.containsKey('__extendedDataColumnVisibilities')) {
+    /* see helper-functions.painless for definition of getFieldVisibilities() */
+    ctx._source['__extendedDataColumnVisibilities'] = getFieldVisibilities(ctx._source).toArray();
+}

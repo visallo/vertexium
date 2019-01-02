@@ -250,6 +250,31 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
             filters.add(QueryBuilders.termsQuery(Elasticsearch5SearchIndex.EDGE_LABEL_FIELD_NAME, edgeLabelsArray));
         }
 
+        if (elementTypes == null
+                || elementTypes.contains(ElasticsearchDocumentType.EDGE_EXTENDED_DATA)
+                || elementTypes.contains(ElasticsearchDocumentType.VERTEX_EXTENDED_DATA)
+        ) {
+            Elasticsearch5SearchIndex es = (Elasticsearch5SearchIndex) ((GraphWithSearchIndex) getGraph()).getSearchIndex();
+            Collection<String> queryableVisibilities = es.getQueryableExtendedDataVisibilities(getGraph(), getParameters().getAuthorizations());
+            TermsQueryBuilder extendedDataVisibilitiesTerms = QueryBuilders.termsQuery(EXTENDED_DATA_TABLE_COLUMN_VISIBILITIES_FIELD_NAME, queryableVisibilities);
+
+            if (elementTypes == null
+                    || elementTypes.contains(ElasticsearchDocumentType.EDGE)
+                    || elementTypes.contains(ElasticsearchDocumentType.VERTEX)
+            ) {
+                TermsQueryBuilder extendedDataTerms = QueryBuilders.termsQuery(ELEMENT_TYPE_FIELD_NAME,
+                        Arrays.asList(ElasticsearchDocumentType.EDGE_EXTENDED_DATA.getKey(), ElasticsearchDocumentType.VERTEX_EXTENDED_DATA.getKey()));
+
+                BoolQueryBuilder elementOrExtendedDataFilter = QueryBuilders.boolQuery();
+                elementOrExtendedDataFilter.should(QueryBuilders.boolQuery().mustNot(extendedDataTerms));
+                elementOrExtendedDataFilter.should(extendedDataVisibilitiesTerms);
+                elementOrExtendedDataFilter.minimumShouldMatch(1);
+                filters.add(elementOrExtendedDataFilter);
+            } else {
+                filters.add(extendedDataVisibilitiesTerms);
+            }
+        }
+
         if (getParameters().getIds() != null) {
             String[] idsArray = getParameters().getIds().toArray(new String[0]);
             filters.add(QueryBuilders.termsQuery(ELEMENT_ID_FIELD_NAME, idsArray));

@@ -30,6 +30,18 @@ public class MetadataTablePropertyNameVisibilitiesStore extends PropertyNameVisi
         return hashes;
     }
 
+    public Collection<String> getHashes(Graph graph, Authorizations authorizations) {
+        List<String> hashes = new ArrayList<>();
+        for (GraphMetadataEntry metadata : graph.getMetadataWithPrefix(HASH_TO_VISIBILITY)) {
+            Visibility visibility = getVisibility((String) metadata.getValue());
+            if (authorizations.canRead(visibility)) {
+                String hash = metadata.getKey().substring(HASH_TO_VISIBILITY.length());
+                hashes.add(hash);
+            }
+        }
+        return hashes;
+    }
+
     public Collection<String> getHashes(Graph graph, String propertyName, Authorizations authorizations) {
         List<String> results = new ArrayList<>();
         String prefix = getPropertyNameVisibilityToHashPrefix(propertyName);

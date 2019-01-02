@@ -22,12 +22,14 @@ import org.elasticsearch.client.Client;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.cluster.health.ClusterHealthStatus;
 import org.elasticsearch.cluster.metadata.MappingMetaData;
+import org.elasticsearch.common.bytes.BytesArray;
 import org.elasticsearch.common.collect.ImmutableOpenMap;
 import org.elasticsearch.common.geo.builders.CircleBuilder;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
+import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -94,6 +96,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
     public static final String EDGE_LABEL_FIELD_NAME = "__edgeLabel";
     public static final String EXTENDED_DATA_TABLE_NAME_FIELD_NAME = "__extendedDataTableName";
     public static final String EXTENDED_DATA_TABLE_ROW_ID_FIELD_NAME = "__extendedDataRowId";
+    public static final String EXTENDED_DATA_TABLE_COLUMN_VISIBILITIES_FIELD_NAME = "__extendedDataColumnVisibilities";
     public static final String EXACT_MATCH_FIELD_NAME = "exact";
     public static final String EXACT_MATCH_PROPERTY_NAME_SUFFIX = "." + EXACT_MATCH_FIELD_NAME;
     public static final String GEO_PROPERTY_NAME_SUFFIX = "_g";
@@ -137,6 +140,28 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
         this.logRequestSizeLimit = this.config.getLogRequestSizeLimit();
         this.exceptionHandler = this.config.getExceptionHandler(graph);
         this.flushObjectQueue = new FlushObjectQueue(this);
+
+        storePainlessScript("addFieldsToExtendedDataScript", "add-fields-to-extended-data.painless", true);
+        storePainlessScript("deleteFieldsFromDocumentScript", "remove-fields-from-document.painless", true);
+        storePainlessScript("updateFieldsOnDocumentScript", "update-fields-on-document.painless", false);
+    }
+
+    private void storePainlessScript(String scriptId, String scriptSourceName, boolean includeHelpers) {
+        try (InputStream scriptSource = getClass().getResourceAsStream(scriptSourceName)) {
+            String source = IOUtils.toString(scriptSource);
+            if (includeHelpers) {
+                try (InputStream helperSource = getClass().getResourceAsStream("helper-functions.painless")) {
+                    source = IOUtils.toString(helperSource) + " " + source;
+                }
+            }
+            source = source.replaceAll("\\r?\\n", " ").replaceAll("\"", "\\\\\"");
+            client.admin().cluster().preparePutStoredScript()
+                    .setId(scriptId)
+                    .setContent(new BytesArray("{\"script\": {\"lang\": \"painless\", \"source\": \"" + source + "\"}}"), XContentType.JSON)
+                    .get();
+        } catch (Exception ex) {
+            throw new VertexiumException("Could not load painless script: " + scriptId, ex);
+        }
     }
 
     public PropertyNameVisibilitiesStore getPropertyNameVisibilitiesStore() {
@@ -742,35 +767,42 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
     ) {
         try {
             IndexInfo indexInfo = addExtendedDataColumnsToIndex(graph, element, tableName, rowId, columns);
-            XContentBuilder source = buildJsonContentFromExtendedDataMutations(graph, element, tableName, rowId, columns, authorizations).endObject();
-
-            if (MUTATION_LOGGER.isTraceEnabled()) {
-                MUTATION_LOGGER.trace("addElementExtendedData json: %s:%s:%s: %s", element.getId(), tableName, rowId, source.string());
-            }
-
             String extendedDataDocId = getIdStrategy().createExtendedDataDocId(element, tableName, rowId);
             getIndexRefreshTracker().pushChange(indexInfo.getIndexName());
+
+            Map<String, Object> fieldsToSet =
+                    getExtendedDataColumnsAsFields(graph, columns).entrySet().stream()
+                            .collect(Collectors.toMap(e -> replaceFieldnameDots(e.getKey()), Map.Entry::getValue));
+
+            XContentBuilder source = buildJsonContentForExtendedDataUpsert(graph, element, tableName, rowId);
+            if (MUTATION_LOGGER.isTraceEnabled()) {
+                String fieldsDebug = Joiner.on(", ").withKeyValueSeparator(": ").join(fieldsToSet);
+                MUTATION_LOGGER.trace("addElementExtendedData json: %s:%s:%s: %s {%s}", element.getId(), tableName, rowId, source.string(), fieldsDebug);
+            }
+
             return getClient()
                     .prepareUpdate(indexInfo.getIndexName(), getIdStrategy().getType(), extendedDataDocId)
-                    .setDocAsUpsert(true)
-                    .setDoc(source)
+                    .setScriptedUpsert(true)
+                    .setUpsert(source)
+                    .setScript(new Script(
+                            ScriptType.STORED,
+                            "painless",
+                            "addFieldsToExtendedDataScript",
+                            ImmutableMap.of("fieldsToSet", fieldsToSet)))
                     .setRetryOnConflict(MAX_RETRIES);
         } catch (IOException e) {
             throw new VertexiumException("Could not add element extended data", e);
         }
     }
 
-    private XContentBuilder buildJsonContentFromExtendedDataMutations(
+    private XContentBuilder buildJsonContentForExtendedDataUpsert(
             Graph graph,
             Element element,
             String tableName,
-            String rowId,
-            List<ExtendedDataMutation> columns,
-            Authorizations authorizations
+            String rowId
     ) throws IOException {
         XContentBuilder jsonBuilder;
-        jsonBuilder = XContentFactory.jsonBuilder()
-                .startObject();
+        jsonBuilder = XContentFactory.jsonBuilder().startObject();
 
         String elementTypeString = ElasticsearchDocumentType.getExtendedDataDocumentTypeFromElement(element).getKey();
         jsonBuilder.field(ELEMENT_ID_FIELD_NAME, element.getId());
@@ -786,8 +818,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
             jsonBuilder.field(EDGE_LABEL_FIELD_NAME, edge.getLabel());
         }
 
-        Map<String, Object> fields = getExtendedDataColumnsAsFields(graph, columns);
-        addFieldsMap(jsonBuilder, fields);
+        jsonBuilder.endObject();
 
         return jsonBuilder;
     }
@@ -1229,6 +1260,10 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
             results[i++] = propertyName + "_" + hash;
         }
         return results;
+    }
+
+    public Collection<String> getQueryableExtendedDataVisibilities(Graph graph, Authorizations authorizations) {
+        return propertyNameVisibilitiesStore.getHashes(graph, authorizations);
     }
 
     public Collection<String> getQueryableElementTypeVisibilityPropertyNames(Graph graph, Authorizations authorizations) {
@@ -1895,9 +1930,9 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
                 .setId(documentId)
                 .setType(getIdStrategy().getType())
                 .setScript(new Script(
-                        ScriptType.INLINE,
+                        ScriptType.STORED,
                         "painless",
-                        "for (def fieldName : params.fieldNames) { ctx._source.remove(fieldName); }",
+                        "deleteFieldsFromDocumentScript",
                         ImmutableMap.of("fieldNames", fieldNames)
                 ))
                 .setRetryOnConflict(MAX_RETRIES);
@@ -1927,11 +1962,9 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
                 .setId(documentId)
                 .setType(getIdStrategy().getType())
                 .setScript(new Script(
-                        ScriptType.INLINE,
+                        ScriptType.STORED,
                         "painless",
-                        "for (def fieldName : params.fieldsToRemove) { ctx._source.remove(fieldName); } " +
-                                "for (fieldToRename in params.fieldsToRename.entrySet()) { ctx._source[fieldToRename.getValue()] = ctx._source[fieldToRename.getKey()]; ctx._source.remove(fieldToRename.getKey()); } " +
-                                "for (fieldToSet in params.fieldsToSet.entrySet()) { ctx._source[fieldToSet.getKey()] = fieldToSet.getValue(); }",
+                        "updateFieldsOnDocumentScript",
                         ImmutableMap.of("fieldsToSet", fieldsToSet, "fieldsToRemove", fieldsToRemove, "fieldsToRename", fieldsToRename)
                 ))
                 .setRetryOnConflict(MAX_RETRIES);
