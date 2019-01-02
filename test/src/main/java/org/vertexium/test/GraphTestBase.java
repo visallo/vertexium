@@ -7927,6 +7927,39 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    public void testExtendedDataQueryVerticesAfterVisibilityChange() {
+        String nameColumnName = "name.column";
+        String tableName = "table.one";
+        String rowOneName = "row.one";
+        String rowTwoName = "row.two";
+        graph.defineProperty(nameColumnName).sortable(true).textIndexHint(TextIndexHint.values()).dataType(String.class).define();
+
+        graph.prepareVertex("v1", VISIBILITY_A)
+                .addExtendedData(tableName, rowOneName, nameColumnName, "value 1", VISIBILITY_A)
+                .addExtendedData(tableName, rowTwoName, nameColumnName, "value 2", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
+        graph.prepareVertex("v2", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
+        graph.flush();
+
+        QueryResultsIterable<? extends VertexiumObject> searchResults = graph.query("value", AUTHORIZATIONS_A)
+                .search();
+        assertResultsCount(2, 2, searchResults);
+        assertRowIdsAnyOrder(Lists.newArrayList(rowOneName, rowTwoName), searchResults);
+
+        graph.createAuthorizations(AUTHORIZATIONS_A_AND_B);
+        graph.getVertex("v1", FetchHints.ALL, AUTHORIZATIONS_A)
+                .prepareMutation()
+                .alterElementVisibility(VISIBILITY_B)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        searchResults = graph.query("value", AUTHORIZATIONS_A)
+                .search();
+        assertResultsCount(0, 0, searchResults);
+    }
+
+    @Test
     public void testExtendedDataQueryVertices() {
         Date date1 = new Date(1487083490000L);
         Date date2 = new Date(1487083480000L);

@@ -4,7 +4,9 @@ import com.carrotsearch.hppc.cursors.ObjectCursor;
 import com.google.common.base.Joiner;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
+import com.google.common.util.concurrent.AbstractFuture;
 import com.google.common.util.concurrent.SettableFuture;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
 import org.elasticsearch.action.admin.cluster.node.info.NodeInfo;
@@ -141,19 +143,16 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
         this.exceptionHandler = this.config.getExceptionHandler(graph);
         this.flushObjectQueue = new FlushObjectQueue(this);
 
-        storePainlessScript("addFieldsToExtendedDataScript", "add-fields-to-extended-data.painless", true);
-        storePainlessScript("deleteFieldsFromDocumentScript", "remove-fields-from-document.painless", true);
-        storePainlessScript("updateFieldsOnDocumentScript", "update-fields-on-document.painless", false);
+        storePainlessScript("deleteFieldsFromDocumentScript", "remove-fields-from-document.painless");
+        storePainlessScript("updateFieldsOnDocumentScript", "update-fields-on-document.painless");
     }
 
-    private void storePainlessScript(String scriptId, String scriptSourceName, boolean includeHelpers) {
-        try (InputStream scriptSource = getClass().getResourceAsStream(scriptSourceName)) {
-            String source = IOUtils.toString(scriptSource);
-            if (includeHelpers) {
-                try (InputStream helperSource = getClass().getResourceAsStream("helper-functions.painless")) {
-                    source = IOUtils.toString(helperSource) + " " + source;
-                }
-            }
+    private void storePainlessScript(String scriptId, String scriptSourceName) {
+        try (
+                InputStream scriptSource = getClass().getResourceAsStream(scriptSourceName);
+                InputStream helperSource = getClass().getResourceAsStream("helper-functions.painless")
+        ) {
+            String source = IOUtils.toString(helperSource) + " " + IOUtils.toString(scriptSource);
             source = source.replaceAll("\\r?\\n", " ").replaceAll("\"", "\\\\\"");
             client.admin().cluster().preparePutStoredScript()
                     .setId(scriptId)
@@ -456,6 +455,21 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
             getIndexRefreshTracker().pushChange(indexInfo.getIndexName());
             addActionRequestBuilderForFlush(element, updateRequestBuilder);
 
+            ImmutableSet<String> extendedDataTableNames = mutation.getElement().getExtendedDataTableNames();
+            if (mutation.getNewElementVisibility() != null &&
+                    extendedDataTableNames != null &&
+                    !extendedDataTableNames.isEmpty()
+            ) {
+                extendedDataTableNames.forEach(tableName ->
+                        alterExtendedDataElementTypeVisibility(
+                                graph,
+                                element,
+                                element.getExtendedData(tableName),
+                                mutation.getOldElementVisibility(),
+                                mutation.getNewElementVisibility()
+                        ));
+            }
+
             if (getConfig().isAutoFlush()) {
                 flush(graph);
             }
@@ -700,6 +714,52 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
         }
     }
 
+    public void alterExtendedDataElementTypeVisibility(
+            Graph graph,
+            Element element,
+            Iterable<ExtendedDataRow> rows,
+            Visibility oldVisibility,
+            Visibility newVisibility
+    ) {
+        bulkUpdate(graph, new ConvertingIterable<ExtendedDataRow, UpdateRequest>(rows) {
+            @Override
+            protected UpdateRequest convert(ExtendedDataRow row) {
+                String tableName = (String) row.getPropertyValue(ExtendedDataRow.TABLE_NAME);
+                String rowId = (String) row.getPropertyValue(ExtendedDataRow.ROW_ID);
+                String extendedDataDocId = getIdStrategy().createExtendedDataDocId(element, tableName, rowId);
+
+                List<ExtendedDataMutation> columns = stream(row.getProperties())
+                        .map(property -> new ExtendedDataMutation(
+                                tableName,
+                                rowId,
+                                property.getName(),
+                                property.getKey(),
+                                property.getValue(),
+                                property.getTimestamp(),
+                                property.getVisibility()
+                        )).collect(Collectors.toList());
+
+                IndexInfo indexInfo = addExtendedDataColumnsToIndex(graph, element, tableName, rowId, columns);
+                getIndexRefreshTracker().pushChange(indexInfo.getIndexName());
+
+                String oldElementTypeVisibilityPropertyName = addVisibilityToPropertyName(graph, ELEMENT_TYPE_FIELD_NAME, oldVisibility);
+                String newElementTypeVisibilityPropertyName = addVisibilityToPropertyName(graph, ELEMENT_TYPE_FIELD_NAME, newVisibility);
+                Map<String, String> fieldsToRename = Collections.singletonMap(oldElementTypeVisibilityPropertyName, newElementTypeVisibilityPropertyName);
+
+                return getClient()
+                        .prepareUpdate(indexInfo.getIndexName(), getIdStrategy().getType(), extendedDataDocId)
+                        .setScript(new Script(
+                                ScriptType.STORED,
+                                "painless",
+                                "updateFieldsOnDocumentScript",
+                                ImmutableMap.of("fieldsToSet", Collections.emptyMap(), "fieldsToRemove", Collections.emptyList(), "fieldsToRename", fieldsToRename)
+                        ))
+                        .setRetryOnConflict(MAX_RETRIES)
+                        .request();
+            }
+        });
+    }
+
     @Override
     public void addExtendedData(Graph graph, Iterable<ExtendedDataRow> extendedDatas, Authorizations authorizations) {
         Map<ElementType, Map<String, List<ExtendedDataRow>>> rowsByElementTypeAndId = mapExtendedDatasByElementTypeByElementId(extendedDatas);
@@ -787,8 +847,8 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
                     .setScript(new Script(
                             ScriptType.STORED,
                             "painless",
-                            "addFieldsToExtendedDataScript",
-                            ImmutableMap.of("fieldsToSet", fieldsToSet)))
+                            "updateFieldsOnDocumentScript",
+                            ImmutableMap.of("fieldsToSet", fieldsToSet, "fieldsToRemove", Collections.emptyList(), "fieldsToRename", Collections.emptyMap())))
                     .setRetryOnConflict(MAX_RETRIES);
         } catch (IOException e) {
             throw new VertexiumException("Could not add element extended data", e);
