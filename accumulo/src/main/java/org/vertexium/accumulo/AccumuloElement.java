@@ -384,6 +384,10 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
 
     @Override
     public ImmutableSet<String> getExtendedDataTableNames() {
+        if (!getFetchHints().isIncludeExtendedDataTableNames()) {
+            throw new VertexiumMissingFetchHintException(getFetchHints(), "includeExtendedDataTableNames");
+        }
+
         return extendedDataTableNames;
     }
 

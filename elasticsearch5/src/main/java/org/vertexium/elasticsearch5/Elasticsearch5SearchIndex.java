@@ -455,19 +455,18 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
             getIndexRefreshTracker().pushChange(indexInfo.getIndexName());
             addActionRequestBuilderForFlush(element, updateRequestBuilder);
 
-            ImmutableSet<String> extendedDataTableNames = mutation.getElement().getExtendedDataTableNames();
-            if (mutation.getNewElementVisibility() != null &&
-                    extendedDataTableNames != null &&
-                    !extendedDataTableNames.isEmpty()
-            ) {
-                extendedDataTableNames.forEach(tableName ->
-                        alterExtendedDataElementTypeVisibility(
-                                graph,
-                                element,
-                                element.getExtendedData(tableName),
-                                mutation.getOldElementVisibility(),
-                                mutation.getNewElementVisibility()
-                        ));
+            if (mutation.getNewElementVisibility() != null && element.getFetchHints().isIncludeExtendedDataTableNames()) {
+                ImmutableSet<String> extendedDataTableNames = element.getExtendedDataTableNames();
+                if (extendedDataTableNames != null && !extendedDataTableNames.isEmpty()) {
+                    extendedDataTableNames.forEach(tableName ->
+                            alterExtendedDataElementTypeVisibility(
+                                    graph,
+                                    element,
+                                    element.getExtendedData(tableName),
+                                    mutation.getOldElementVisibility(),
+                                    mutation.getNewElementVisibility()
+                            ));
+                }
             }
 
             if (getConfig().isAutoFlush()) {
