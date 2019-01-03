@@ -300,6 +300,10 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> extends 
 
     @Override
     public ImmutableSet<String> getExtendedDataTableNames() {
+        if (!getFetchHints().isIncludeExtendedDataTableNames()) {
+            throw new VertexiumMissingFetchHintException(getFetchHints(), "includeExtendedDataTableNames");
+        }
+
         return graph.getExtendedDataTableNames(ElementType.getTypeFromElement(this), id, authorizations);
     }
 
