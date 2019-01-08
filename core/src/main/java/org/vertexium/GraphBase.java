@@ -1087,7 +1087,7 @@ public abstract class GraphBase implements Graph {
     }
 
     protected void deleteAllExtendedDataForElement(Element element, Authorizations authorizations) {
-        if (element.getExtendedDataTableNames().size() <= 0) {
+        if (!element.getFetchHints().isIncludeExtendedDataTableNames() || element.getExtendedDataTableNames().size() <= 0) {
             return;
         }
 
