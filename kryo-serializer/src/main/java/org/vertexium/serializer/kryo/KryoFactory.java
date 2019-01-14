@@ -1,6 +1,9 @@
 package org.vertexium.serializer.kryo;
 
 import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.Serializer;
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.util.DefaultClassResolver;
 import com.esotericsoftware.kryo.util.MapReferenceResolver;
 import org.objenesis.strategy.StdInstantiatorStrategy;
@@ -8,8 +11,10 @@ import org.vertexium.VertexiumException;
 import org.vertexium.property.StreamingPropertyValueRef;
 import org.vertexium.type.*;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 
 public class KryoFactory {
     public Kryo createKryo() {
@@ -32,7 +37,7 @@ public class KryoFactory {
     }
 
     private void registerClasses(Kryo kryo) {
-        kryo.register(GeoPoint.class, 1001);
+        kryo.register(OldGeoPoint.class, new OldGeoPointSerializer(kryo.getSerializer(OldGeoPoint.class)), 1001);
         kryo.register(HashMap.class, 1002);
         kryo.register(StreamingPropertyValueRef.class, 1003);
         kryo.register(GeoRect.class, 1006);
@@ -42,6 +47,7 @@ public class KryoFactory {
         kryo.register(GeoLine.class, 1010);
         kryo.register(GeoPolygon.class, 1011);
         kryo.register(GeoShape.class, 1012);
+        kryo.register(GeoPoint.class, 1013);
         registerAccumuloClasses(kryo);
     }
 
@@ -58,6 +64,32 @@ public class KryoFactory {
             kryo.register(Class.forName("org.vertexium.accumulo.StreamingPropertyValueHdfsRef"), 1005);
         } catch (ClassNotFoundException ex) {
             throw new VertexiumException("Could not find accumulo classes to serialize", ex);
+        }
+    }
+
+    private class OldGeoPoint {
+        public Double altitude;
+        public String description;
+        public double latitude;
+        public double longitude;
+    }
+
+    private class OldGeoPointSerializer extends Serializer<Object> {
+        private final Serializer defaultSerializer;
+
+        public OldGeoPointSerializer(Serializer defaultSerializer) {
+            this.defaultSerializer = defaultSerializer;
+        }
+
+        @Override
+        public void write(Kryo kryo, Output output, Object object) {
+            throw new VertexiumException("Should not write OldGeoPoint format");
+        }
+
+        @Override
+        public Object read(Kryo kryo, Input input, Class<Object> type) {
+            OldGeoPoint old = (OldGeoPoint) defaultSerializer.read(kryo, input, type);
+            return new GeoPoint(old.latitude, old.longitude, old.altitude, old.description);
         }
     }
 }
