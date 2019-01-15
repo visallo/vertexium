@@ -1,6 +1,8 @@
 package org.vertexium.type;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 
 public abstract class GeoShapeBase implements GeoShape, Serializable {
     private static final long serialVersionUID = 6993185229233913152L;
@@ -51,5 +53,31 @@ public abstract class GeoShapeBase implements GeoShape, Serializable {
         double rads = Math.atan2(Math.sqrt(a * a + b * b), c);
         double percent = rads / (2 * Math.PI);
         return percent * EARTH_CIRCUMFERENCE;
+    }
+
+    /**
+     * This is used to fix Kryo serialization issues with lists generated from methods such as
+     * {@link java.util.Arrays#asList(Object[])}
+     */
+    protected <T> List<? extends List<T>> toArrayLists(List<List<T>> lists) {
+        for (int i = 0; i < lists.size(); i++) {
+            List<T> list = lists.get(i);
+            lists.set(i, toArrayList(list));
+        }
+        return lists;
+    }
+
+    /**
+     * This is used to fix Kryo serialization issues with lists generated from methods such as
+     * {@link java.util.Arrays#asList(Object[])}
+     */
+    protected <T> List<T> toArrayList(List<T> list) {
+        if (list == null) {
+            return null;
+        }
+        if (!list.getClass().equals(ArrayList.class)) {
+            list = new ArrayList<>(list);
+        }
+        return list;
     }
 }

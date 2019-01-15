@@ -43,7 +43,7 @@ public class GeoPolygon extends GeoShapeBase {
      */
     public GeoPolygon(List<GeoPoint> outerBoundary, List<List<GeoPoint>> holeBoundaries) {
         this.outerBoundary.addAll(outerBoundary);
-        this.holeBoundaries.addAll(holeBoundaries);
+        this.holeBoundaries.addAll(toArrayLists(holeBoundaries));
         this.validate();
     }
 
@@ -59,7 +59,7 @@ public class GeoPolygon extends GeoShapeBase {
     public GeoPolygon(List<GeoPoint> outerBoundary, List<List<GeoPoint>> holeBoundaries, String description) {
         super(description);
         this.outerBoundary.addAll(outerBoundary);
-        this.holeBoundaries.addAll(holeBoundaries);
+        this.holeBoundaries.addAll(toArrayLists(holeBoundaries));
         this.validate();
     }
 
