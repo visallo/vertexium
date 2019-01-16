@@ -9,12 +9,9 @@ import org.vertexium.VertexiumSerializer;
 
 public class KryoVertexiumSerializer implements VertexiumSerializer {
     private static final byte[] EMPTY = new byte[0];
-    private final ThreadLocal<Kryo> kryo = new ThreadLocal<Kryo>() {
-        @Override
-        protected Kryo initialValue() {
-            return new KryoFactory().createKryo();
-        }
-    };
+    private final ThreadLocal<Kryo> kryo = ThreadLocal.withInitial(() -> {
+        return new KryoFactory().createKryo();
+    });
 
     @Override
     public byte[] objectToBytes(Object object) {

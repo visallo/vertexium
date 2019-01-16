@@ -94,6 +94,26 @@ public abstract class VertexiumSerializerTestBase {
     protected abstract byte[] getGeoPointBytes();
 
     @Test
+    public void testGeoPointWithAccuracy() {
+        GeoPoint geoPoint = new GeoPoint(12.123, 23.234, 34.345, 45.456, "Geo point with accuracy and description");
+
+        testValue(
+                geoPoint,
+                getGeoPointWithAccuracyBytes(),
+                (givenValue, deserializedValue) -> {
+                    assertNotNull(deserializedValue);
+                    assertEquals(givenValue.getLatitude(), deserializedValue.getLatitude(), 0.001);
+                    assertEquals(givenValue.getLongitude(), deserializedValue.getLongitude(), 0.001);
+                    assertEquals(givenValue.getAltitude(), deserializedValue.getAltitude(), 0.001);
+                    assertEquals(givenValue.getAccuracy(), deserializedValue.getAccuracy(), 0.001);
+                    assertEquals(givenValue.getDescription(), deserializedValue.getDescription());
+                }
+        );
+    }
+
+    protected abstract byte[] getGeoPointWithAccuracyBytes();
+
+    @Test
     public void testGeoCircle() {
         GeoCircle geoCircle = new GeoCircle(12.123, 23.234, 34.345, "Geo circle with description");
 

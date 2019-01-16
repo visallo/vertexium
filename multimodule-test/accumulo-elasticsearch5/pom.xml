@@ -48,6 +48,13 @@
 
         <dependency>
             <groupId>org.vertexium</groupId>
+            <artifactId>vertexium-kryo-serializer</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.vertexium</groupId>
             <artifactId>vertexium-elasticsearch5</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>

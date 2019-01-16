@@ -15,14 +15,30 @@ public class GeoPoint extends GeoShapeBase implements Comparable<GeoPoint> {
     private static final Pattern HOUR_MIN_SECOND_PATTERN = Pattern.compile("\\s*(-)?([0-9\\.]+)°(\\s*([0-9\\.]+)'(\\s*([0-9\\.]+)\")?)?");
     private static final Pattern WITH_DESCRIPTION_PATTERN = Pattern.compile("(.*)\\[(.*)\\]");
     public static final double EQUALS_TOLERANCE_KM = 0.001;
-    private double latitude;
-    private double longitude;
-    private Double altitude;
+    private final double latitude;
+    private final double longitude;
+    private final Double altitude;
+    private final Double accuracy;
 
     /**
      * Create a geopoint at 0, 0 with an altitude of 0
      */
     protected GeoPoint() {
+        this(0.0, 0.0, null, null, null);
+    }
+
+    /**
+     * @param latitude    latitude is specified in decimal degrees
+     * @param longitude   longitude is specified in decimal degrees
+     * @param altitude    altitude is specified in kilometers
+     * @param description name or description of this shape
+     */
+    public GeoPoint(double latitude, double longitude, Double altitude, Double accuracy, String description) {
+        super(description);
+        this.latitude = latitude;
+        this.longitude = longitude;
+        this.altitude = altitude;
+        this.accuracy = accuracy;
     }
 
     /**
@@ -32,22 +48,23 @@ public class GeoPoint extends GeoShapeBase implements Comparable<GeoPoint> {
      * @param description name or description of this shape
      */
     public GeoPoint(double latitude, double longitude, Double altitude, String description) {
-        super(description);
-        this.latitude = latitude;
-        this.longitude = longitude;
-        this.altitude = altitude;
+        this(latitude, longitude, altitude, null, description);
     }
 
     public GeoPoint(double latitude, double longitude, Double altitude) {
-        this(latitude, longitude, altitude, null);
+        this(latitude, longitude, altitude, null, null);
     }
 
     public GeoPoint(double latitude, double longitude) {
-        this(latitude, longitude, null, null);
+        this(latitude, longitude, null, null, null);
     }
 
     public GeoPoint(double latitude, double longitude, String description) {
         this(latitude, longitude, null, description);
+    }
+
+    public GeoPoint(double latitude, double longitude, Double altitude, Double accuracy) {
+        this(latitude, longitude, altitude, accuracy, null);
     }
 
     public double getLatitude() {
@@ -62,15 +79,24 @@ public class GeoPoint extends GeoShapeBase implements Comparable<GeoPoint> {
         return altitude;
     }
 
+    public Double getAccuracy() {
+        return accuracy;
+    }
+
     @Override
     public String toString() {
-        String coords;
+        StringBuilder sb = new StringBuilder();
+        sb.append("(");
+        sb.append(getLatitude()).append(", ").append(getLongitude());
         if (getAltitude() != null) {
-            coords = "(" + getLatitude() + ", " + getLongitude() + ", " + getAltitude() + ")";
-        } else {
-            coords = "(" + getLatitude() + ", " + getLongitude() + ")";
+            sb.append(", ").append(getAltitude());
         }
-        return coords + (getDescription() == null ? "" : ": " + getDescription());
+        if (getAccuracy() != null) {
+            sb.append(", ~").append(getAccuracy());
+        }
+        sb.append(")");
+        sb.append(getDescription() == null ? "" : ": " + getDescription());
+        return sb.toString();
     }
 
     @Override
@@ -92,6 +118,7 @@ public class GeoPoint extends GeoShapeBase implements Comparable<GeoPoint> {
         hash = 47 * hash + (int) (Double.doubleToLongBits(this.latitude) ^ (Double.doubleToLongBits(this.latitude) >>> 32));
         hash = 47 * hash + (int) (Double.doubleToLongBits(this.longitude) ^ (Double.doubleToLongBits(this.longitude) >>> 32));
         hash = 47 * hash + (this.altitude != null ? this.altitude.hashCode() : 0);
+        hash = 47 * hash + (this.accuracy != null ? this.accuracy.hashCode() : 0);
         return hash;
     }
 
@@ -111,10 +138,18 @@ public class GeoPoint extends GeoShapeBase implements Comparable<GeoPoint> {
         if (Math.abs(distanceBetween) > EQUALS_TOLERANCE_KM) {
             return false;
         }
+
         if ((this.altitude != null && other.altitude == null) || (this.altitude == null && other.altitude != null)) {
             return false;
         }
         if (this.altitude != null && other.altitude != null && Math.abs(this.altitude - other.altitude) > EQUALS_TOLERANCE_KM) {
+            return false;
+        }
+
+        if ((this.accuracy != null && other.accuracy == null) || (this.accuracy == null && other.accuracy != null)) {
+            return false;
+        }
+        if (this.accuracy != null && other.accuracy != null && Math.abs(this.accuracy - other.accuracy) > EQUALS_TOLERANCE_KM) {
             return false;
         }
         return true;
@@ -179,16 +214,30 @@ public class GeoPoint extends GeoShapeBase implements Comparable<GeoPoint> {
         if (parts.length < 2) {
             throw new VertexiumException("Too few parts to GeoPoint string. Expected at least 2 found " + parts.length + " for string: " + str);
         }
-        if (parts.length >= 4) {
-            throw new VertexiumException("Too many parts to GeoPoint string. Expected less than or equal to 3 found " + parts.length + " for string: " + str);
+        if (parts.length >= 5) {
+            throw new VertexiumException("Too many parts to GeoPoint string. Expected less than or equal to 4 found " + parts.length + " for string: " + str);
         }
-        double latitude = parsePart(parts[0]);
-        double longitude = parsePart(parts[1]);
+        int part = 0;
+        double latitude = parsePart(parts[part++]);
+        double longitude = parsePart(parts[part++]);
         Double altitude = null;
-        if (parts.length >= 3) {
-            altitude = Double.parseDouble(parts[2]);
+        Double accuracy = null;
+        while (part < parts.length) {
+            String p = parts[part].trim();
+            if (p.startsWith("~")) {
+                if (accuracy != null) {
+                    throw new VertexiumException("Cannot specify two accuracies (~) in GeoPoint string.");
+                }
+                accuracy = Double.parseDouble(p.substring(1));
+            } else {
+                if (altitude != null) {
+                    throw new VertexiumException("Cannot specify two altitudes in GeoPoint string.");
+                }
+                altitude = Double.parseDouble(p);
+            }
+            part++;
         }
-        return new GeoPoint(latitude, longitude, altitude, description);
+        return new GeoPoint(latitude, longitude, altitude, accuracy, description);
     }
 
     private static double parsePart(String part) {

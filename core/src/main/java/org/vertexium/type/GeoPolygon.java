@@ -96,7 +96,7 @@ public class GeoPolygon extends GeoShapeBase {
     }
 
     public GeoPolygon addHole(List<GeoPoint> geoPoints) {
-        holeBoundaries.add(geoPoints);
+        holeBoundaries.add(toArrayList(geoPoints));
         return this;
     }
 

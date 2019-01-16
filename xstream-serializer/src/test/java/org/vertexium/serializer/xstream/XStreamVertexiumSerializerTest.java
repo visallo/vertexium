@@ -70,6 +70,21 @@ public class XStreamVertexiumSerializerTest extends VertexiumSerializerTestBase 
     }
 
     @Override
+    protected byte[] getGeoPointWithAccuracyBytes() {
+        return ("<org.vertexium.test.VertexiumSerializerTestBase_-SerializableObject>\n" +
+                "  <a__start>START</a__start>\n" +
+                "  <b__value class=\"org.vertexium.type.GeoPoint\">\n" +
+                "    <description>Geo point with accuracy and description</description>\n" +
+                "    <latitude>12.123</latitude>\n" +
+                "    <longitude>23.234</longitude>\n" +
+                "    <altitude>34.345</altitude>\n" +
+                "    <accuracy>45.456</accuracy>\n" +
+                "  </b__value>\n" +
+                "  <z__end>END</z__end>\n" +
+                "</org.vertexium.test.VertexiumSerializerTestBase_-SerializableObject>").getBytes();
+    }
+
+    @Override
     protected byte[] getGeoCircleBytes() {
         return ("<org.vertexium.test.VertexiumSerializerTestBase_-SerializableObject>\n" +
                 "  <a__start>START</a__start>\n" +

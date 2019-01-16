@@ -22,6 +22,7 @@ import org.vertexium.elasticsearch5.scoring.ElasticsearchHammingDistanceScoringS
 import org.vertexium.id.SimpleNameSubstitutionStrategy;
 import org.vertexium.mutation.ExistingElementMutation;
 import org.vertexium.scoring.ScoringStrategy;
+import org.vertexium.serializer.kryo.QuickKryoVertexiumSerializer;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -34,6 +35,7 @@ public class AccumuloElasticsearch5Test extends AccumuloGraphTestBase {
     @ClassRule
     public static final AccumuloResource accumuloResource = new AccumuloResource(new HashMap<String, String>() {{
         put(AccumuloGraphConfiguration.NAME_SUBSTITUTION_STRATEGY_PROP_PREFIX, SimpleNameSubstitutionStrategy.class.getName());
+        put(AccumuloGraphConfiguration.SERIALIZER, QuickKryoVertexiumSerializer.class.getName());
         put(Joiner.on('.').join(new String[]{SUBSTITUTION_MAP_PREFIX, "0", KEY_IDENTIFIER}), "k1");
         put(Joiner.on('.').join(new String[]{SUBSTITUTION_MAP_PREFIX, "0", VALUE_IDENTIFIER}), "k");
         put(Joiner.on('.').join(new String[]{SUBSTITUTION_MAP_PREFIX, "1", KEY_IDENTIFIER}), "author");
