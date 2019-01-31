@@ -1,5 +1,6 @@
 package org.vertexium.accumulo.iterator.model;
 
+import org.apache.accumulo.core.data.ByteSequence;
 import org.apache.accumulo.core.data.Value;
 import org.apache.hadoop.io.Text;
 import org.vertexium.accumulo.iterator.util.DataOutputStreamUtils;
@@ -25,11 +26,11 @@ public abstract class ElementData {
     public final List<SoftDeletedProperty> softDeletedProperties = new ArrayList<>();
     public final List<HiddenProperty> hiddenProperties = new ArrayList<>();
     public final List<IteratorMetadataEntry> metadataEntries = new ArrayList<>();
-    public final Map<String, List<Integer>> propertyMetadata = new HashMap<>();
-    public final Map<String, PropertyColumnQualifier> propertyColumnQualifiers = new HashMap<>();
-    public final Map<String, byte[]> propertyValues = new HashMap<>();
-    public final Map<String, Text> propertyVisibilities = new HashMap<>();
-    public final Map<String, Long> propertyTimestamps = new HashMap<>();
+    public final Map<ByteSequence, List<Integer>> propertyMetadata = new HashMap<>();
+    public final Map<ByteSequence, PropertyColumnQualifierByteSequence> propertyColumnQualifiers = new HashMap<>();
+    public final Map<ByteSequence, byte[]> propertyValues = new HashMap<>();
+    public final Map<ByteSequence, ByteSequence> propertyVisibilities = new HashMap<>();
+    public final Map<ByteSequence, Long> propertyTimestamps = new HashMap<>();
     public final Set<String> extendedTableNames = new HashSet<>();
 
     public void clear() {
@@ -91,13 +92,13 @@ public abstract class ElementData {
                 metadata
         ) -> {
             out.write(PROP_START);
-            DataOutputStreamUtils.encodeString(out, propertyKey);
-            DataOutputStreamUtils.encodeString(out, propertyName);
-            DataOutputStreamUtils.encodeText(out, propertyVisibility);
+            DataOutputStreamUtils.encodeByteSequence(out, propertyKey);
+            DataOutputStreamUtils.encodeByteSequence(out, propertyName);
+            DataOutputStreamUtils.encodeByteSequence(out, propertyVisibility);
             out.writeLong(propertyTimestamp);
             out.writeInt(propertyValue.length);
             out.write(propertyValue);
-            DataOutputStreamUtils.encodeTextList(out, propertyHiddenVisibilities);
+            DataOutputStreamUtils.encodeByteSequenceList(out, propertyHiddenVisibilities);
             DataOutputStreamUtils.encodeIntArray(out, metadata);
         }, fetchHints);
         out.write(PROP_END);
@@ -105,20 +106,19 @@ public abstract class ElementData {
 
     private void iterateProperties(PropertyDataHandler propertyDataHandler, IteratorFetchHints fetchHints) throws IOException {
         boolean includeHidden = fetchHints.isIncludeHidden();
-        for (Map.Entry<String, byte[]> propertyValueEntry : propertyValues.entrySet()) {
-            String key = propertyValueEntry.getKey();
-            PropertyColumnQualifier propertyColumnQualifier = propertyColumnQualifiers.get(key);
-            String propertyKey = propertyColumnQualifier.getPropertyKey();
-            String propertyName = propertyColumnQualifier.getPropertyName();
+        for (Map.Entry<ByteSequence, byte[]> propertyValueEntry : propertyValues.entrySet()) {
+            ByteSequence key = propertyValueEntry.getKey();
+            PropertyColumnQualifierByteSequence propertyColumnQualifier = propertyColumnQualifiers.get(key);
+            ByteSequence propertyKey = propertyColumnQualifier.getPropertyKey();
+            ByteSequence propertyName = propertyColumnQualifier.getPropertyName();
             byte[] propertyValue = propertyValueEntry.getValue();
-            Text propertyVisibility = propertyVisibilities.get(key);
-            String propertyVisibilityString = propertyVisibility.toString();
+            ByteSequence propertyVisibility = propertyVisibilities.get(key);
             long propertyTimestamp = propertyTimestamps.get(key);
             if (propertyTimestamp < softDeleteTimestamp) {
                 continue;
             }
-            Set<Text> propertyHiddenVisibilities = getPropertyHiddenVisibilities(propertyKey, propertyName, propertyVisibilityString);
-            if (!includeHidden && isHidden(propertyKey, propertyName, propertyVisibilityString)) {
+            Set<ByteSequence> propertyHiddenVisibilities = getPropertyHiddenVisibilities(propertyKey, propertyName, propertyVisibility);
+            if (!includeHidden && isHidden(propertyKey, propertyName, propertyVisibility)) {
                 continue;
             }
             if (isPropertyDeleted(propertyKey, propertyName, propertyTimestamp, propertyVisibility)) {
@@ -152,7 +152,7 @@ public abstract class ElementData {
                     propertyKey,
                     propertyName,
                     propertyValue,
-                    propertyVisibility.toString(),
+                    propertyVisibility,
                     propertyTimestamp,
                     propertyHiddenVisibilities,
                     metadata
@@ -165,18 +165,22 @@ public abstract class ElementData {
 
     private interface PropertyDataHandler {
         void handle(
-                String propertyKey,
-                String propertyName,
+                ByteSequence propertyKey,
+                ByteSequence propertyName,
                 byte[] propertyValue,
-                Text propertyVisibility,
+                ByteSequence propertyVisibility,
                 long propertyTimestamp,
-                Set<Text> propertyHiddenVisibilities,
+                Set<ByteSequence> propertyHiddenVisibilities,
                 List<Integer> metadata
         ) throws IOException;
     }
 
-    private Set<Text> getPropertyHiddenVisibilities(String propertyKey, String propertyName, String propertyVisibility) {
-        Set<Text> hiddenVisibilities = null;
+    private Set<ByteSequence> getPropertyHiddenVisibilities(
+            ByteSequence propertyKey,
+            ByteSequence propertyName,
+            ByteSequence propertyVisibility
+    ) {
+        Set<ByteSequence> hiddenVisibilities = null;
         for (HiddenProperty hiddenProperty : hiddenProperties) {
             if (hiddenProperty.matches(propertyKey, propertyName, propertyVisibility)) {
                 if (hiddenVisibilities == null) {
@@ -188,7 +192,7 @@ public abstract class ElementData {
         return hiddenVisibilities;
     }
 
-    private boolean isHidden(String propertyKey, String propertyName, String propertyVisibility) {
+    private boolean isHidden(ByteSequence propertyKey, ByteSequence propertyName, ByteSequence propertyVisibility) {
         for (HiddenProperty hiddenProperty : hiddenProperties) {
             if (hiddenProperty.matches(propertyKey, propertyName, propertyVisibility)) {
                 return true;
@@ -197,7 +201,7 @@ public abstract class ElementData {
         return false;
     }
 
-    private boolean isPropertyDeleted(String propertyKey, String propertyName, long propertyTimestamp, Text propertyVisibility) {
+    private boolean isPropertyDeleted(ByteSequence propertyKey, ByteSequence propertyName, long propertyTimestamp, ByteSequence propertyVisibility) {
         for (SoftDeletedProperty softDeletedProperty : softDeletedProperties) {
             if (softDeletedProperty.matches(propertyKey, propertyName, propertyVisibility)) {
                 return softDeletedProperty.getTimestamp() >= propertyTimestamp;

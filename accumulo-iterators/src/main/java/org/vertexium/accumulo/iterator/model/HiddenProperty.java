@@ -1,27 +1,29 @@
 package org.vertexium.accumulo.iterator.model;
 
-import org.apache.hadoop.io.Text;
+import org.apache.accumulo.core.data.ByteSequence;
+
+import java.util.Objects;
 
 public class HiddenProperty {
-    private final String key;
-    private final String name;
-    private final String visibility;
-    private final Text hiddenVisibility;
+    private final ByteSequence key;
+    private final ByteSequence name;
+    private final ByteSequence visibility;
+    private final ByteSequence hiddenVisibility;
 
-    public HiddenProperty(String key, String name, String visibility, Text hiddenVisibility) {
+    public HiddenProperty(ByteSequence key, ByteSequence name, ByteSequence visibility, ByteSequence hiddenVisibility) {
         this.key = key;
         this.name = name;
         this.visibility = visibility;
         this.hiddenVisibility = hiddenVisibility;
     }
 
-    public boolean matches(String propertyKey, String propertyName, String visibility) {
+    public boolean matches(ByteSequence propertyKey, ByteSequence propertyName, ByteSequence visibility) {
         return propertyKey.equals(this.key)
                 && propertyName.equals(this.name)
                 && visibility.equals(this.visibility);
     }
 
-    public Text getHiddenVisibility() {
+    public ByteSequence getHiddenVisibility() {
         return hiddenVisibility;
     }
 
@@ -36,13 +38,13 @@ public class HiddenProperty {
 
         HiddenProperty that = (HiddenProperty) o;
 
-        if (key != null ? !key.equals(that.key) : that.key != null) {
+        if (!Objects.equals(key, that.key)) {
             return false;
         }
-        if (name != null ? !name.equals(that.name) : that.name != null) {
+        if (!Objects.equals(name, that.name)) {
             return false;
         }
-        if (visibility != null ? !visibility.equals(that.visibility) : that.visibility != null) {
+        if (!Objects.equals(visibility, that.visibility)) {
             return false;
         }
 

@@ -4,14 +4,11 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import org.apache.accumulo.core.client.*;
 import org.apache.accumulo.core.client.Scanner;
+import org.apache.accumulo.core.client.*;
 import org.apache.accumulo.core.client.admin.NewTableConfiguration;
 import org.apache.accumulo.core.client.admin.TimeType;
-import org.apache.accumulo.core.data.Key;
-import org.apache.accumulo.core.data.Mutation;
-import org.apache.accumulo.core.data.PartialKey;
-import org.apache.accumulo.core.data.Value;
+import org.apache.accumulo.core.data.*;
 import org.apache.accumulo.core.iterators.IteratorUtil;
 import org.apache.accumulo.core.iterators.LongCombiner;
 import org.apache.accumulo.core.iterators.user.RowDeletingIterator;
@@ -31,6 +28,7 @@ import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.hadoop.io.Text;
 import org.apache.zookeeper.CreateMode;
 import org.vertexium.*;
+import org.vertexium.Range;
 import org.vertexium.HistoricalPropertyValue.HistoricalPropertyValueBuilder;
 import org.vertexium.accumulo.iterator.*;
 import org.vertexium.accumulo.iterator.model.EdgeInfo;
@@ -38,6 +36,7 @@ import org.vertexium.accumulo.iterator.model.IteratorFetchHints;
 import org.vertexium.accumulo.iterator.model.PropertyColumnQualifier;
 import org.vertexium.accumulo.iterator.model.PropertyMetadataColumnQualifier;
 import org.vertexium.accumulo.iterator.util.ByteArrayWrapper;
+import org.vertexium.accumulo.iterator.util.ByteSequenceUtils;
 import org.vertexium.accumulo.keys.KeyHelper;
 import org.vertexium.accumulo.util.RangeUtils;
 import org.vertexium.accumulo.util.StreamingPropertyValueStorageStrategy;
@@ -1713,9 +1712,9 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
     public IteratorFetchHints toIteratorFetchHints(FetchHints fetchHints) {
         return new IteratorFetchHints(
                 fetchHints.isIncludeAllProperties(),
-                deflate(fetchHints.getPropertyNamesToInclude()),
+                deflateByteSequences(fetchHints.getPropertyNamesToInclude()),
                 fetchHints.isIncludeAllPropertyMetadata(),
-                deflate(fetchHints.getMetadataKeysToInclude()),
+                deflateByteSequences(fetchHints.getMetadataKeysToInclude()),
                 fetchHints.isIncludeHidden(),
                 fetchHints.isIncludeAllEdgeRefs(),
                 fetchHints.isIncludeOutEdgeRefs(),
@@ -1723,6 +1722,17 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                 deflate(fetchHints.getEdgeLabelsOfEdgeRefsToInclude()),
                 fetchHints.isIncludeEdgeLabelsAndCounts(),
                 fetchHints.isIncludeExtendedDataTableNames()
+        );
+    }
+
+    private ImmutableSet<ByteSequence> deflateByteSequences(ImmutableSet<String> strings) {
+        if (strings == null) {
+            return null;
+        }
+        return ImmutableSet.copyOf(
+                strings.stream()
+                        .map(s -> new ArrayByteSequence(getNameSubstitutionStrategy().deflate(s)))
+                        .collect(Collectors.toSet())
         );
     }
 
@@ -1926,6 +1936,10 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
 
     public static ColumnVisibility visibilityToAccumuloVisibility(String visibilityString) {
         return new ColumnVisibility(visibilityString);
+    }
+
+    public static ColumnVisibility visibilityToAccumuloVisibility(ByteSequence visibilityBytes) {
+        return new ColumnVisibility(ByteSequenceUtils.getBytes(visibilityBytes));
     }
 
     public static Visibility accumuloVisibilityToVisibility(ColumnVisibility columnVisibility) {

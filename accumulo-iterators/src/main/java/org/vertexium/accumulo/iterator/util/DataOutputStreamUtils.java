@@ -1,5 +1,6 @@
 package org.vertexium.accumulo.iterator.util;
 
+import org.apache.accumulo.core.data.ByteSequence;
 import org.apache.hadoop.io.Text;
 import org.vertexium.accumulo.iterator.model.EdgeInfo;
 import org.vertexium.accumulo.iterator.model.EdgesWithEdgeInfo;
@@ -26,6 +27,17 @@ public class DataOutputStreamUtils {
         }
     }
 
+    public static void encodeByteSequenceList(DataOutputStream out, Collection<ByteSequence> byteSequences) throws IOException {
+        if (byteSequences == null) {
+            out.writeInt(-1);
+            return;
+        }
+        out.writeInt(byteSequences.size());
+        for (ByteSequence byteSequence : byteSequences) {
+            encodeByteSequence(out, byteSequence);
+        }
+    }
+
     public static void encodeStringSet(DataOutputStream out, Set<String> set) throws IOException {
         if (set == null) {
             out.writeInt(-1);
@@ -44,6 +56,15 @@ public class DataOutputStreamUtils {
         }
         out.writeInt(text.getLength());
         out.write(text.getBytes(), 0, text.getLength());
+    }
+
+    public static void encodeByteSequence(DataOutputStream out, ByteSequence byteSequence) throws IOException {
+        if (byteSequence == null) {
+            out.writeInt(-1);
+            return;
+        }
+        out.writeInt(byteSequence.length());
+        out.write(byteSequence.getBackingArray(), byteSequence.offset(), byteSequence.length());
     }
 
     public static void encodeByteArray(DataOutputStream out, byte[] bytes) throws IOException {
@@ -83,8 +104,8 @@ public class DataOutputStreamUtils {
         }
         out.writeInt(metadataEntries.size());
         for (IteratorMetadataEntry metadataEntry : metadataEntries) {
-            encodeString(out, metadataEntry.metadataKey);
-            encodeString(out, metadataEntry.metadataVisibility);
+            encodeByteSequence(out, metadataEntry.metadataKey);
+            encodeByteSequence(out, metadataEntry.metadataVisibility);
             out.writeInt(metadataEntry.value.length);
             out.write(metadataEntry.value);
         }

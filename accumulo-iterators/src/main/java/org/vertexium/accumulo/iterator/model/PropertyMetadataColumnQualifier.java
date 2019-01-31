@@ -1,17 +1,11 @@
 package org.vertexium.accumulo.iterator.model;
 
-import org.apache.hadoop.io.Text;
-
 public class PropertyMetadataColumnQualifier extends KeyBase {
     public static final int PART_INDEX_PROPERTY_NAME = 0;
     public static final int PART_INDEX_PROPERTY_KEY = 1;
     public static final int PART_INDEX_PROPERTY_VISIBILITY = 2;
     public static final int PART_INDEX_METADATA_KEY = 3;
     private final String[] parts;
-
-    public PropertyMetadataColumnQualifier(Text columnQualifier) {
-        this.parts = splitOnValueSeparator(columnQualifier.toString(), 4);
-    }
 
     public PropertyMetadataColumnQualifier(String propertyName, String propertyKey, String visibilityString, String metadataKey) {
         parts = new String[]{

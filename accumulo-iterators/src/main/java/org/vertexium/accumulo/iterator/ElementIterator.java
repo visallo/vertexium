@@ -1,196 +1,286 @@
 package org.vertexium.accumulo.iterator;
 
 import org.apache.accumulo.core.client.IteratorSetting;
-import org.apache.accumulo.core.data.Key;
-import org.apache.accumulo.core.data.Value;
+import org.apache.accumulo.core.data.*;
 import org.apache.accumulo.core.iterators.IteratorEnvironment;
+import org.apache.accumulo.core.iterators.OptionDescriber;
 import org.apache.accumulo.core.iterators.SortedKeyValueIterator;
 import org.apache.accumulo.core.iterators.user.RowDeletingIterator;
-import org.apache.accumulo.core.iterators.user.RowEncodingIterator;
 import org.apache.hadoop.io.Text;
 import org.vertexium.accumulo.iterator.model.*;
+import org.vertexium.accumulo.iterator.util.ByteSequenceUtils;
 
 import java.io.IOException;
 import java.util.*;
 import java.util.regex.Pattern;
 
-public abstract class ElementIterator<T extends ElementData> extends RowEncodingIterator {
+public abstract class ElementIterator<T extends ElementData> implements SortedKeyValueIterator<Key, Value>, OptionDescriber {
     public static final String CF_PROPERTY_STRING = "PROP";
     public static final Text CF_PROPERTY = new Text(CF_PROPERTY_STRING);
+    private static final byte[] CF_PROPERTY_BYTES = CF_PROPERTY.getBytes();
+
     public static final String CF_PROPERTY_HIDDEN_STRING = "PROPH";
     public static final Text CF_PROPERTY_HIDDEN = new Text(CF_PROPERTY_HIDDEN_STRING);
+    private static final byte[] CF_PROPERTY_HIDDEN_BYTES = CF_PROPERTY_HIDDEN.getBytes();
+
     public static final String CF_PROPERTY_SOFT_DELETE_STRING = "PROPD";
     public static final Text CF_PROPERTY_SOFT_DELETE = new Text(CF_PROPERTY_SOFT_DELETE_STRING);
+    private static final byte[] CF_PROPERTY_SOFT_DELETE_BYTES = CF_PROPERTY_SOFT_DELETE.getBytes();
+
     public static final String CF_PROPERTY_METADATA_STRING = "PROPMETA";
     public static final Text CF_PROPERTY_METADATA = new Text(CF_PROPERTY_METADATA_STRING);
+    private static final byte[] CF_PROPERTY_METADATA_BYTES = CF_PROPERTY_METADATA.getBytes();
+
     public static final String CF_HIDDEN_STRING = "H";
     public static final Text CF_HIDDEN = new Text(CF_HIDDEN_STRING);
+    private static final byte[] CF_HIDDEN_BYTES = CF_HIDDEN.getBytes();
+
     public static final Text CQ_HIDDEN = new Text("H");
+    private static final byte[] CQ_HIDDEN_BYTES = CQ_HIDDEN.getBytes();
+
     public static final String CF_SOFT_DELETE_STRING = "D";
     public static final Text CF_SOFT_DELETE = new Text(CF_SOFT_DELETE_STRING);
+    private static final byte[] CF_SOFT_DELETE_BYTES = CF_SOFT_DELETE.getBytes();
+
     public static final Text CQ_SOFT_DELETE = new Text("D");
+    private static final byte[] CQ_SOFT_DELETE_BYTES = CQ_SOFT_DELETE.getBytes();
+
+    public static final Value SOFT_DELETE_VALUE = new Value("".getBytes());
+
     public static final String CF_EXTENDED_DATA_STRING = "EXTDATA";
     public static final Text CF_EXTENDED_DATA = new Text(CF_EXTENDED_DATA_STRING);
+    private static final byte[] CF_EXTENDED_DATA_BYTES = CF_EXTENDED_DATA.getBytes();
+
     public static final Value HIDDEN_VALUE = new Value("".getBytes());
     public static final Value HIDDEN_VALUE_DELETED = new Value("X".getBytes());
-    public static final Value SOFT_DELETE_VALUE = new Value("".getBytes());
+
     public static final String DELETE_ROW_COLUMN_FAMILY_STRING = "";
     public static final Text DELETE_ROW_COLUMN_FAMILY = new Text(DELETE_ROW_COLUMN_FAMILY_STRING);
+    private static final byte[] DELETE_ROW_COLUMN_FAMILY_BYTES = DELETE_ROW_COLUMN_FAMILY.getBytes();
+
     public static final String DELETE_ROW_COLUMN_QUALIFIER_STRING = "";
     public static final Text DELETE_ROW_COLUMN_QUALIFIER = new Text(DELETE_ROW_COLUMN_QUALIFIER_STRING);
+    private static final byte[] DELETE_ROW_COLUMN_QUALIFIER_BYTES = DELETE_ROW_COLUMN_QUALIFIER.getBytes();
+
     public static final String METADATA_COLUMN_FAMILY_STRING = "";
     public static final Text METADATA_COLUMN_FAMILY = new Text(METADATA_COLUMN_FAMILY_STRING);
+    private static final byte[] METADATA_COLUMN_FAMILY_BYTES = METADATA_COLUMN_FAMILY.getBytes();
+
     public static final String METADATA_COLUMN_QUALIFIER_STRING = "";
     public static final Text METADATA_COLUMN_QUALIFIER = new Text(METADATA_COLUMN_QUALIFIER_STRING);
+    private static final byte[] METADATA_COLUMN_QUALIFIER_BYTES = METADATA_COLUMN_QUALIFIER.getBytes();
+
     private static final String SETTING_FETCH_HINTS_PREFIX = "fetchHints.";
     private static final String RECORD_SEPARATOR = "\u001f";
     private static final Pattern RECORD_SEPARATOR_PATTERN = Pattern.compile(Pattern.quote(RECORD_SEPARATOR));
+    private SortedKeyValueIterator<Key, Value> sourceIterator;
     private IteratorFetchHints fetchHints;
     private T elementData;
+    private Key topKey;
+    private Value topValue;
 
     public ElementIterator(SortedKeyValueIterator<Key, Value> source, IteratorFetchHints fetchHints) {
-        this.sourceIter = source;
+        this.sourceIterator = source;
         this.fetchHints = fetchHints;
         this.elementData = createElementData();
     }
 
     @Override
-    public SortedMap<Key, Value> rowDecoder(Key rowKey, Value rowValue) throws IOException {
-        throw new IOException("Not implemented");
+    public boolean hasTop() {
+        return topKey != null;
     }
 
     @Override
-    protected final boolean filter(Text currentRow, List<Key> keys, List<Value> values) {
-        return populateElementData(keys, values);
+    public void next() throws IOException {
+        topKey = null;
+        topValue = null;
+        loadNext();
     }
 
-    protected boolean populateElementData(List<Key> keys, List<Value> values) {
+    @Override
+    public Key getTopKey() {
+        return topKey;
+    }
+
+    @Override
+    public Value getTopValue() {
+        return topValue;
+    }
+
+    /**
+     * Copied from {@link org.apache.accumulo.core.iterators.user.RowEncodingIterator}
+     */
+    @Override
+    public void seek(Range range, Collection<ByteSequence> columnFamilies, boolean inclusive) throws IOException {
+        topKey = null;
+        topValue = null;
+
+        Key sk = range.getStartKey();
+
+        if (sk != null
+                && sk.getColumnFamilyData().length() == 0
+                && sk.getColumnQualifierData().length() == 0
+                && sk.getColumnVisibilityData().length() == 0
+                && sk.getTimestamp() == Long.MAX_VALUE
+                && !range.isStartKeyInclusive()) {
+            // assuming that we are seeking using a key previously returned by this iterator therefore go the next row
+            Key followingRowKey = sk.followingKey(PartialKey.ROW);
+            if (range.getEndKey() != null && followingRowKey.compareTo(range.getEndKey()) > 0) {
+                return;
+            }
+
+            range = new Range(sk.followingKey(PartialKey.ROW), true, range.getEndKey(), range.isEndKeyInclusive());
+        }
+
+        sourceIterator.seek(range, columnFamilies, inclusive);
+        loadNext();
+    }
+
+    private void loadNext() throws IOException {
+        if (topKey != null) {
+            return;
+        }
+        while (sourceIterator.hasTop()) {
+            Text currentRow = loadElement();
+            if (currentRow != null) {
+                topKey = new Key(currentRow);
+                topValue = elementData.encode(fetchHints);
+                break;
+            }
+        }
+    }
+
+    protected Text loadElement() throws IOException {
         this.elementData.clear();
 
-        Text columnFamily = new Text();
-        for (int i = 0; i < keys.size(); i++) {
-            Key key = keys.get(i);
-            Value value = values.get(i);
-            key.getColumnFamily(columnFamily); // avoid Text allocation by reusing columnFamily
-            if (!processKeyValue(key, columnFamily, value)) {
-                return false;
+        boolean deletedOrHidden = false;
+        KeyValue keyValue = new KeyValue();
+        Text currentRow = new Text(sourceIterator.getTopKey().getRow());
+        Text row = new Text();
+        while (sourceIterator.hasTop() && sourceIterator.getTopKey().getRow(row).equals(currentRow)) {
+            if (!deletedOrHidden) {
+                keyValue.set(sourceIterator.getTopKey(), sourceIterator.getTopValue());
+                if (!processKeyValue(keyValue)) {
+                    deletedOrHidden = true;
+                }
             }
+            sourceIterator.next();
+        }
+
+        if (deletedOrHidden) {
+            return null;
         }
 
         if (this.elementData.visibility == null) {
-            return false;
+            return null;
         }
 
         if (this.elementData.softDeleteTimestamp >= this.elementData.timestamp) {
-            return false;
+            return null;
         }
 
-        return true;
+        return currentRow;
     }
 
-    @Override
-    public final Value rowEncoder(List<Key> keys, List<Value> values) throws IOException {
-        return elementData.encode(fetchHints);
-    }
-
-    private boolean processKeyValue(Key key, Text columnFamily, Value value) {
+    private boolean processKeyValue(KeyValue keyValue) {
         if (this.elementData.id == null) {
-            this.elementData.id = key.getRow();
+            this.elementData.id = keyValue.takeRow();
         }
 
-        if (CF_PROPERTY_METADATA.equals(columnFamily)) {
-            extractPropertyMetadata(key.getColumnQualifier(), key.getColumnVisibility(), key.getTimestamp(), value);
+        if (keyValue.columnFamilyEquals(CF_PROPERTY_METADATA_BYTES)) {
+            extractPropertyMetadata(keyValue);
             return true;
         }
 
-        if (CF_PROPERTY.equals(columnFamily)) {
-            extractPropertyData(key, value);
+        if (keyValue.columnFamilyEquals(CF_PROPERTY_BYTES)) {
+            extractPropertyData(keyValue);
             return true;
         }
 
-        if (CF_EXTENDED_DATA.equals(columnFamily)) {
-            this.elementData.extendedTableNames.add(value.toString());
+        if (keyValue.columnFamilyEquals(CF_EXTENDED_DATA_BYTES)) {
+            this.elementData.extendedTableNames.add(keyValue.peekValue().toString());
             return true;
         }
 
-        if (getVisibilitySignal().equals(columnFamily) && key.getTimestamp() > elementData.timestamp) {
-            elementData.visibility = key.getColumnVisibility();
-            elementData.timestamp = key.getTimestamp();
-            processSignalColumn(key.getColumnQualifier());
+        if (keyValue.columnFamilyEquals(getVisibilitySignal()) && keyValue.getTimestamp() > elementData.timestamp) {
+            elementData.visibility = keyValue.takeColumnVisibility();
+            elementData.timestamp = keyValue.getTimestamp();
+            processSignalColumn(keyValue);
             return true;
         }
 
-        if (processColumn(key, value, columnFamily, key.getColumnQualifier())) {
+        if (processColumn(keyValue)) {
             return true;
         }
 
-        if (DELETE_ROW_COLUMN_FAMILY.equals(columnFamily)
-                && DELETE_ROW_COLUMN_QUALIFIER.equals(key.getColumnQualifier())
-                && RowDeletingIterator.DELETE_ROW_VALUE.equals(value)) {
+        if (keyValue.columnFamilyEquals(DELETE_ROW_COLUMN_FAMILY_BYTES)
+                && keyValue.columnQualifierEquals(DELETE_ROW_COLUMN_QUALIFIER_BYTES)
+                && RowDeletingIterator.DELETE_ROW_VALUE.equals(keyValue.peekValue())) {
             return false;
         }
 
-        if (CF_SOFT_DELETE.equals(columnFamily)
-                && CQ_SOFT_DELETE.equals(key.getColumnQualifier())
-                && SOFT_DELETE_VALUE.equals(value)) {
-            elementData.softDeleteTimestamp = key.getTimestamp();
+        if (keyValue.columnFamilyEquals(CF_SOFT_DELETE_BYTES)
+                && keyValue.columnQualifierEquals(CQ_SOFT_DELETE_BYTES)
+                && SOFT_DELETE_VALUE.equals(keyValue.peekValue())) {
+            elementData.softDeleteTimestamp = keyValue.getTimestamp();
             return true;
         }
 
-        if (CF_PROPERTY_SOFT_DELETE.equals(columnFamily)) {
-            extractPropertySoftDelete(key.getColumnQualifier(), key.getTimestamp(), key.getColumnVisibility());
+        if (keyValue.columnFamilyEquals(CF_PROPERTY_SOFT_DELETE_BYTES)) {
+            extractPropertySoftDelete(keyValue);
             return true;
         }
 
-        if (CF_HIDDEN.equals(columnFamily)) {
+        if (keyValue.columnFamilyEquals(CF_HIDDEN_BYTES)) {
             if (fetchHints.isIncludeHidden()) {
-                this.elementData.hiddenVisibilities.add(key.getColumnVisibility());
+                this.elementData.hiddenVisibilities.add(keyValue.takeColumnVisibility());
                 return true;
             } else {
                 return false;
             }
         }
 
-        if (CF_PROPERTY_HIDDEN.equals(columnFamily)) {
-            extractPropertyHidden(key.getColumnQualifier(), key.getColumnVisibility(), value);
+        if (keyValue.columnFamilyEquals(CF_PROPERTY_HIDDEN_BYTES)) {
+            extractPropertyHidden(keyValue);
             return true;
         }
 
         return true;
     }
 
-    protected abstract boolean processColumn(Key key, Value value, Text columnFamily, Text columnQualifier);
+    protected abstract boolean processColumn(KeyValue keyValue);
 
-    protected void processSignalColumn(Text columnQualifier) {
-
+    protected void processSignalColumn(KeyValue keyValue) {
     }
 
     public T getElementData() {
         return elementData;
     }
 
-    protected abstract Text getVisibilitySignal();
+    protected abstract byte[] getVisibilitySignal();
 
-    private void extractPropertySoftDelete(Text columnQualifier, long timestamp, Text columnVisibility) {
-        PropertyColumnQualifier propertyColumnQualifier = new PropertyColumnQualifier(columnQualifier);
+    private void extractPropertySoftDelete(KeyValue keyValue) {
+        PropertyColumnQualifierByteSequence propertyColumnQualifier =
+                new PropertyColumnQualifierByteSequence(keyValue.takeColumnQualifierByteSequence());
         SoftDeletedProperty softDeletedProperty = new SoftDeletedProperty(
                 propertyColumnQualifier.getPropertyKey(),
                 propertyColumnQualifier.getPropertyName(),
-                timestamp,
-                columnVisibility
+                keyValue.getTimestamp(),
+                keyValue.takeColumnVisibilityByteSequence()
         );
         this.elementData.softDeletedProperties.add(softDeletedProperty);
     }
 
-    private void extractPropertyMetadata(Text columnQualifier, Text columnVisibility, long timestamp, Value value) {
-        PropertyMetadataColumnQualifier propertyMetadataColumnQualifier = new PropertyMetadataColumnQualifier(columnQualifier);
+    private void extractPropertyMetadata(KeyValue keyValue) {
+        PropertyMetadataColumnQualifierByteSequence propertyMetadataColumnQualifier =
+                new PropertyMetadataColumnQualifierByteSequence(keyValue.takeColumnQualifierByteSequence());
         if (shouldIncludeMetadata(propertyMetadataColumnQualifier)) {
-            String discriminator = propertyMetadataColumnQualifier.getPropertyDiscriminator(timestamp);
+            ByteSequence discriminator = propertyMetadataColumnQualifier.getPropertyDiscriminator(keyValue.getTimestamp());
             List<Integer> propertyMetadata = elementData.propertyMetadata.computeIfAbsent(discriminator, k -> new ArrayList<>());
             IteratorMetadataEntry pme = new IteratorMetadataEntry(
                     propertyMetadataColumnQualifier.getMetadataKey(),
-                    columnVisibility.toString(),
-                    value.get()
+                    keyValue.takeColumnVisibilityByteSequence(),
+                    keyValue.takeValue().get()
             );
             int pos = elementData.metadataEntries.indexOf(pme);
             if (pos < 0) {
@@ -201,33 +291,35 @@ public abstract class ElementIterator<T extends ElementData> extends RowEncoding
         }
     }
 
-    private void extractPropertyHidden(Text columnQualifier, Text columnVisibility, Value value) {
-        if (value.equals(HIDDEN_VALUE_DELETED)) {
+    private void extractPropertyHidden(KeyValue keyValue) {
+        if (keyValue.peekValue().equals(HIDDEN_VALUE_DELETED)) {
             return;
         }
-        PropertyHiddenColumnQualifier propertyHiddenColumnQualifier = new PropertyHiddenColumnQualifier(columnQualifier);
+        PropertyHiddenColumnQualifierByteSequence propertyHiddenColumnQualifier =
+                new PropertyHiddenColumnQualifierByteSequence(keyValue.takeColumnQualifierByteSequence());
         HiddenProperty hiddenProperty = new HiddenProperty(
                 propertyHiddenColumnQualifier.getPropertyKey(),
                 propertyHiddenColumnQualifier.getPropertyName(),
                 propertyHiddenColumnQualifier.getPropertyVisibilityString(),
-                columnVisibility
+                keyValue.takeColumnVisibilityByteSequence()
         );
         this.elementData.hiddenProperties.add(hiddenProperty);
     }
 
-    private void extractPropertyData(Key key, Value value) {
-        PropertyColumnQualifier propertyColumnQualifier = new PropertyColumnQualifier(key.getColumnQualifier());
-        String mapKey = propertyColumnQualifier.getDiscriminator(key.getColumnVisibility().toString(), key.getTimestamp());
-        long timestamp = key.getTimestamp();
+    private void extractPropertyData(KeyValue keyValue) {
+        PropertyColumnQualifierByteSequence propertyColumnQualifier =
+                new PropertyColumnQualifierByteSequence(keyValue.takeColumnQualifierByteSequence());
+        ByteSequence mapKey = propertyColumnQualifier.getDiscriminator(keyValue.peekColumnVisibilityByteSequence(), keyValue.getTimestamp());
+        long timestamp = keyValue.getTimestamp();
         if (shouldIncludeProperty(propertyColumnQualifier.getPropertyName())) {
             this.elementData.propertyColumnQualifiers.put(mapKey, propertyColumnQualifier);
-            this.elementData.propertyValues.put(mapKey, value.get());
-            this.elementData.propertyVisibilities.put(mapKey, key.getColumnVisibility());
+            this.elementData.propertyValues.put(mapKey, keyValue.takeValue().get());
+            this.elementData.propertyVisibilities.put(mapKey, keyValue.takeColumnVisibilityByteSequence());
             this.elementData.propertyTimestamps.put(mapKey, timestamp);
         }
     }
 
-    private boolean shouldIncludeProperty(String propertyName) {
+    private boolean shouldIncludeProperty(ByteSequence propertyName) {
         if (fetchHints.isIncludeAllProperties()) {
             return true;
         }
@@ -235,14 +327,14 @@ public abstract class ElementIterator<T extends ElementData> extends RowEncoding
                 && fetchHints.getPropertyNamesToInclude().contains(propertyName);
     }
 
-    private boolean shouldIncludeMetadata(PropertyMetadataColumnQualifier propertyMetadataColumnQualifier) {
+    private boolean shouldIncludeMetadata(PropertyMetadataColumnQualifierByteSequence propertyMetadataColumnQualifier) {
         if (!shouldIncludeProperty(propertyMetadataColumnQualifier.getPropertyName())) {
             return false;
         }
         if (fetchHints.isIncludeAllPropertyMetadata()) {
             return true;
         }
-        String metadataKey = propertyMetadataColumnQualifier.getMetadataKey();
+        ByteSequence metadataKey = propertyMetadataColumnQualifier.getMetadataKey();
         return fetchHints.getMetadataKeysToInclude() != null
                 && fetchHints.getMetadataKeysToInclude().contains(metadataKey);
     }
@@ -251,13 +343,37 @@ public abstract class ElementIterator<T extends ElementData> extends RowEncoding
     public abstract SortedKeyValueIterator<Key, Value> deepCopy(IteratorEnvironment env);
 
     @Override
-    public void init(SortedKeyValueIterator<Key, Value> source, Map<String, String> options, IteratorEnvironment env) throws IOException {
-        super.init(source, options, env);
+    public IteratorOptions describeOptions() {
+        Map<String, String> namedOptions = new HashMap<>();
+        namedOptions.put(SETTING_FETCH_HINTS_PREFIX + "includeAllProperties", "true to include all properties");
+        namedOptions.put(SETTING_FETCH_HINTS_PREFIX + "propertyNamesToInclude", "Set of property names to include separated by \\u001f");
+        namedOptions.put(SETTING_FETCH_HINTS_PREFIX + "includeAllPropertyMetadata", "true to include all property metadata");
+        namedOptions.put(SETTING_FETCH_HINTS_PREFIX + "metadataKeysToInclude", "Set of metadata keys to include separated by \\u001f");
+        namedOptions.put(SETTING_FETCH_HINTS_PREFIX + "includeHidden", "true to include hidden data");
+        namedOptions.put(SETTING_FETCH_HINTS_PREFIX + "includeAllEdgeRefs", "true to include all edge refs");
+        namedOptions.put(SETTING_FETCH_HINTS_PREFIX + "includeOutEdgeRefs", "true to include out edge refs");
+        namedOptions.put(SETTING_FETCH_HINTS_PREFIX + "includeInEdgeRefs", "true to include in edge refs");
+        namedOptions.put(SETTING_FETCH_HINTS_PREFIX + "edgeLabelsOfEdgeRefsToInclude", "Set of edge labels to include separated by \\u001f");
+        namedOptions.put(SETTING_FETCH_HINTS_PREFIX + "includeEdgeLabelsAndCounts", "true to include edge labels with counts");
+        namedOptions.put(SETTING_FETCH_HINTS_PREFIX + "includeExtendedDataTableNames", "true to include extended data table names");
+        return new IteratorOptions(getClass().getSimpleName(), getDescription(), namedOptions, null);
+    }
+
+    protected abstract String getDescription();
+
+    @Override
+    public boolean validateOptions(Map<String, String> options) {
+        return true;
+    }
+
+    @Override
+    public void init(SortedKeyValueIterator<Key, Value> source, Map<String, String> options, IteratorEnvironment env) {
+        this.sourceIterator = source;
         fetchHints = new IteratorFetchHints(
                 Boolean.parseBoolean(options.get(SETTING_FETCH_HINTS_PREFIX + "includeAllProperties")),
-                parseSet(options.get(SETTING_FETCH_HINTS_PREFIX + "propertyNamesToInclude")),
+                parseTextSet(options.get(SETTING_FETCH_HINTS_PREFIX + "propertyNamesToInclude")),
                 Boolean.parseBoolean(options.get(SETTING_FETCH_HINTS_PREFIX + "includeAllPropertyMetadata")),
-                parseSet(options.get(SETTING_FETCH_HINTS_PREFIX + "metadataKeysToInclude")),
+                parseTextSet(options.get(SETTING_FETCH_HINTS_PREFIX + "metadataKeysToInclude")),
                 Boolean.parseBoolean(options.get(SETTING_FETCH_HINTS_PREFIX + "includeHidden")),
                 Boolean.parseBoolean(options.get(SETTING_FETCH_HINTS_PREFIX + "includeAllEdgeRefs")),
                 Boolean.parseBoolean(options.get(SETTING_FETCH_HINTS_PREFIX + "includeOutEdgeRefs")),
@@ -269,13 +385,29 @@ public abstract class ElementIterator<T extends ElementData> extends RowEncoding
         elementData = createElementData();
     }
 
+    public SortedKeyValueIterator<Key, Value> getSourceIterator() {
+        return sourceIterator;
+    }
+
+    private Set<ByteSequence> parseTextSet(String str) {
+        if (str == null) {
+            return null;
+        }
+        String[] parts = RECORD_SEPARATOR_PATTERN.split(str);
+        Set<ByteSequence> results = new HashSet<>();
+        for (String part : parts) {
+            results.add(new ArrayByteSequence(part));
+        }
+        return results;
+    }
+
     protected abstract T createElementData();
 
     public static void setFetchHints(IteratorSetting iteratorSettings, IteratorFetchHints fetchHints) {
         addOption(iteratorSettings, SETTING_FETCH_HINTS_PREFIX + "includeAllProperties", Boolean.toString(fetchHints.isIncludeAllProperties()));
-        addOption(iteratorSettings, SETTING_FETCH_HINTS_PREFIX + "propertyNamesToInclude", setToString(fetchHints.getPropertyNamesToInclude()));
+        addOption(iteratorSettings, SETTING_FETCH_HINTS_PREFIX + "propertyNamesToInclude", textSetToString(fetchHints.getPropertyNamesToInclude()));
         addOption(iteratorSettings, SETTING_FETCH_HINTS_PREFIX + "includeAllPropertyMetadata", Boolean.toString(fetchHints.isIncludeAllPropertyMetadata()));
-        addOption(iteratorSettings, SETTING_FETCH_HINTS_PREFIX + "metadataKeysToInclude", setToString(fetchHints.getMetadataKeysToInclude()));
+        addOption(iteratorSettings, SETTING_FETCH_HINTS_PREFIX + "metadataKeysToInclude", textSetToString(fetchHints.getMetadataKeysToInclude()));
         addOption(iteratorSettings, SETTING_FETCH_HINTS_PREFIX + "includeHidden", Boolean.toString(fetchHints.isIncludeHidden()));
         addOption(iteratorSettings, SETTING_FETCH_HINTS_PREFIX + "includeAllEdgeRefs", Boolean.toString(fetchHints.isIncludeAllEdgeRefs()));
         addOption(iteratorSettings, SETTING_FETCH_HINTS_PREFIX + "includeOutEdgeRefs", Boolean.toString(fetchHints.isIncludeOutEdgeRefs()));
@@ -283,6 +415,22 @@ public abstract class ElementIterator<T extends ElementData> extends RowEncoding
         addOption(iteratorSettings, SETTING_FETCH_HINTS_PREFIX + "edgeLabelsOfEdgeRefsToInclude", setToString(fetchHints.getEdgeLabelsOfEdgeRefsToInclude()));
         addOption(iteratorSettings, SETTING_FETCH_HINTS_PREFIX + "includeEdgeLabelsAndCounts", Boolean.toString(fetchHints.isIncludeEdgeLabelsAndCounts()));
         addOption(iteratorSettings, SETTING_FETCH_HINTS_PREFIX + "includeExtendedDataTableNames", Boolean.toString(fetchHints.isIncludeExtendedDataTableNames()));
+    }
+
+    private static String textSetToString(Set<ByteSequence> set) {
+        if (set == null) {
+            return null;
+        }
+        StringBuilder sb = new StringBuilder();
+        boolean first = true;
+        for (ByteSequence s : set) {
+            if (!first) {
+                sb.append(RECORD_SEPARATOR);
+            }
+            sb.append(ByteSequenceUtils.toString(s));
+            first = false;
+        }
+        return sb.toString();
     }
 
     private static void addOption(IteratorSetting iteratorSettings, String key, String value) {
@@ -320,6 +468,30 @@ public abstract class ElementIterator<T extends ElementData> extends RowEncoding
 
     public IteratorFetchHints getFetchHints() {
         return fetchHints;
+    }
+
+    protected boolean populateElementData(List<Key> keys, List<Value> values) {
+        this.elementData.clear();
+
+        KeyValue keyValue = new KeyValue();
+        for (int i = 0; i < keys.size(); i++) {
+            Key key = keys.get(i);
+            Value value = values.get(i);
+            keyValue.set(key, value);
+            if (!processKeyValue(keyValue)) {
+                return false;
+            }
+        }
+
+        if (this.elementData.visibility == null) {
+            return false;
+        }
+
+        if (this.elementData.softDeleteTimestamp >= this.elementData.timestamp) {
+            return false;
+        }
+
+        return true;
     }
 
     public T createElementDataFromRows(Iterator<Map.Entry<Key, Value>> rows) {

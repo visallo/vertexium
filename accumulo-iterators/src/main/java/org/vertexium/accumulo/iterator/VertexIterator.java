@@ -10,24 +10,38 @@ import org.vertexium.accumulo.iterator.model.IteratorFetchHints;
 import org.vertexium.accumulo.iterator.model.SoftDeleteEdgeInfo;
 import org.vertexium.accumulo.iterator.model.VertexElementData;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Set;
 
 public class VertexIterator extends ElementIterator<VertexElementData> {
     public static final String CF_SIGNAL_STRING = "V";
     public static final Text CF_SIGNAL = new Text(CF_SIGNAL_STRING);
+    private static final byte[] CF_SIGNAL_BYTES = CF_SIGNAL.getBytes();
+
     public static final String CF_OUT_EDGE_STRING = "EOUT";
     public static final Text CF_OUT_EDGE = new Text(CF_OUT_EDGE_STRING);
+    private static final byte[] CF_OUT_EDGE_BYTES = CF_OUT_EDGE.getBytes();
+
     public static final String CF_OUT_EDGE_HIDDEN_STRING = "EOUTH";
     public static final Text CF_OUT_EDGE_HIDDEN = new Text(CF_OUT_EDGE_HIDDEN_STRING);
+    private static final byte[] CF_OUT_EDGE_HIDDEN_BYTES = CF_OUT_EDGE_HIDDEN.getBytes();
+
     public static final String CF_OUT_EDGE_SOFT_DELETE_STRING = "EOUTD";
     public static final Text CF_OUT_EDGE_SOFT_DELETE = new Text(CF_OUT_EDGE_SOFT_DELETE_STRING);
+    private static final byte[] CF_OUT_EDGE_SOFT_DELETE_BYTES = CF_OUT_EDGE_SOFT_DELETE.getBytes();
+
     public static final String CF_IN_EDGE_STRING = "EIN";
     public static final Text CF_IN_EDGE = new Text(CF_IN_EDGE_STRING);
+    private static final byte[] CF_IN_EDGE_BYTES = CF_IN_EDGE.getBytes();
+
     public static final String CF_IN_EDGE_HIDDEN_STRING = "EINH";
     public static final Text CF_IN_EDGE_HIDDEN = new Text(CF_IN_EDGE_HIDDEN_STRING);
+    private static final byte[] CF_IN_EDGE_HIDDEN_BYTES = CF_IN_EDGE_HIDDEN.getBytes();
+
     public static final String CF_IN_EDGE_SOFT_DELETE_STRING = "EIND";
     public static final Text CF_IN_EDGE_SOFT_DELETE = new Text(CF_IN_EDGE_SOFT_DELETE_STRING);
+    private static final byte[] CF_IN_EDGE_SOFT_DELETE_BYTES = CF_IN_EDGE_SOFT_DELETE.getBytes();
 
     public VertexIterator() {
         this(null);
@@ -39,6 +53,15 @@ public class VertexIterator extends ElementIterator<VertexElementData> {
 
     public VertexIterator(SortedKeyValueIterator<Key, Value> source, IteratorFetchHints fetchHints) {
         super(source, fetchHints);
+    }
+
+    @Override
+    protected Text loadElement() throws IOException {
+        Text ret = super.loadElement();
+        if (ret != null) {
+            removeHiddenAndSoftDeletes();
+        }
+        return ret;
     }
 
     @Override
@@ -74,48 +97,50 @@ public class VertexIterator extends ElementIterator<VertexElementData> {
     }
 
     @Override
-    protected boolean processColumn(Key key, Value value, Text columnFamily, Text columnQualifier) {
-        if (CF_OUT_EDGE.equals(columnFamily)) {
-            processOutEdge(key.getColumnQualifier(), key.getTimestamp(), value);
+    protected boolean processColumn(KeyValue keyValue) {
+        if (keyValue.columnFamilyEquals(CF_OUT_EDGE_BYTES)) {
+            processOutEdge(keyValue);
             return true;
         }
 
-        if (CF_IN_EDGE.equals(columnFamily)) {
-            processInEdge(key.getColumnQualifier(), key.getTimestamp(), value);
+        if (keyValue.columnFamilyEquals(CF_IN_EDGE_BYTES)) {
+            processInEdge(keyValue);
             return true;
         }
 
-        if (CF_OUT_EDGE_HIDDEN.equals(columnFamily) || CF_IN_EDGE_HIDDEN.equals(columnFamily)) {
-            Text edgeId = key.getColumnQualifier();
+        if (keyValue.columnFamilyEquals(CF_OUT_EDGE_HIDDEN_BYTES) || keyValue.columnFamilyEquals(CF_IN_EDGE_HIDDEN_BYTES)) {
+            Text edgeId = keyValue.takeColumnQualifier();
             getElementData().hiddenEdges.add(edgeId);
             return true;
         }
 
-        if (CF_IN_EDGE_SOFT_DELETE.equals(columnFamily)) {
-            Text edgeId = key.getColumnQualifier();
-            getElementData().inSoftDeletes.add(new SoftDeleteEdgeInfo(edgeId, key.getTimestamp()));
+        if (keyValue.columnFamilyEquals(CF_IN_EDGE_SOFT_DELETE_BYTES)) {
+            Text edgeId = keyValue.takeColumnQualifier();
+            getElementData().inSoftDeletes.add(new SoftDeleteEdgeInfo(edgeId, keyValue.getTimestamp()));
             return true;
         }
 
-        if (CF_OUT_EDGE_SOFT_DELETE.equals(columnFamily)) {
-            Text edgeId = key.getColumnQualifier();
-            getElementData().outSoftDeletes.add(new SoftDeleteEdgeInfo(edgeId, key.getTimestamp()));
+        if (keyValue.columnFamilyEquals(CF_OUT_EDGE_SOFT_DELETE_BYTES)) {
+            Text edgeId = keyValue.takeColumnQualifier();
+            getElementData().outSoftDeletes.add(new SoftDeleteEdgeInfo(edgeId, keyValue.getTimestamp()));
             return true;
         }
 
         return false;
     }
 
-    private void processOutEdge(Text edgeId, long timestamp, Value value) {
-        EdgeInfo edgeInfo = EdgeInfo.parse(value, timestamp);
+    private void processOutEdge(KeyValue keyValue) {
+        EdgeInfo edgeInfo = EdgeInfo.parse(keyValue.takeValue(), keyValue.getTimestamp());
         if (shouldIncludeOutEdge(edgeInfo)) {
+            Text edgeId = keyValue.takeColumnQualifier();
             getElementData().outEdges.add(edgeId, edgeInfo);
         }
     }
 
-    private void processInEdge(Text edgeId, long timestamp, Value value) {
-        EdgeInfo edgeInfo = EdgeInfo.parse(value, timestamp);
+    private void processInEdge(KeyValue keyValue) {
+        EdgeInfo edgeInfo = EdgeInfo.parse(keyValue.takeValue(), keyValue.getTimestamp());
         if (shouldIncludeInEdge(edgeInfo)) {
+            Text edgeId = keyValue.takeColumnQualifier();
             getElementData().inEdges.add(edgeId, edgeInfo);
         }
     }
@@ -143,16 +168,21 @@ public class VertexIterator extends ElementIterator<VertexElementData> {
     }
 
     @Override
-    protected Text getVisibilitySignal() {
-        return CF_SIGNAL;
+    protected byte[] getVisibilitySignal() {
+        return CF_SIGNAL_BYTES;
     }
 
     @Override
     public SortedKeyValueIterator<Key, Value> deepCopy(IteratorEnvironment env) {
-        if (sourceIter != null) {
-            return new VertexIterator(sourceIter.deepCopy(env), getFetchHints());
+        if (getSourceIterator() != null) {
+            return new VertexIterator(getSourceIterator().deepCopy(env), getFetchHints());
         }
         return new VertexIterator(getFetchHints());
+    }
+
+    @Override
+    protected String getDescription() {
+        return "This iterator encapsulates an entire Vertex into a single Key/Value pair.";
     }
 
     @Override

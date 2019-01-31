@@ -1,9 +1,9 @@
 package org.vertexium.accumulo;
 
-import org.apache.hadoop.io.Text;
+import org.apache.accumulo.core.data.ByteSequence;
 import org.cache2k.Cache;
 import org.cache2k.CacheBuilder;
-import org.cache2k.CacheSource;
+import org.vertexium.accumulo.iterator.util.ByteSequenceUtils;
 import org.vertexium.id.IdentityNameSubstitutionStrategy;
 import org.vertexium.id.NameSubstitutionStrategy;
 
@@ -11,20 +11,15 @@ import java.util.Map;
 
 public class AccumuloNameSubstitutionStrategy implements NameSubstitutionStrategy {
     private final NameSubstitutionStrategy nameSubstitutionStrategy;
-    private final Cache<Text, String> inflateTextCache;
+    private final Cache<ByteSequence, String> inflateTextCache;
 
     protected AccumuloNameSubstitutionStrategy(NameSubstitutionStrategy nameSubstitutionStrategy) {
         this.nameSubstitutionStrategy = nameSubstitutionStrategy;
         inflateTextCache = CacheBuilder
-                .newCache(Text.class, String.class)
+                .newCache(ByteSequence.class, String.class)
                 .name(AccumuloNameSubstitutionStrategy.class, "inflateTextCache-" + System.identityHashCode(this))
                 .maxSize(10000)
-                .source(new CacheSource<Text, String>() {
-                    @Override
-                    public String get(Text text) throws Throwable {
-                        return inflate(text.toString());
-                    }
-                })
+                .source(byteSequence -> inflate(ByteSequenceUtils.toString(byteSequence)))
                 .build();
     }
 
@@ -43,7 +38,7 @@ public class AccumuloNameSubstitutionStrategy implements NameSubstitutionStrateg
         return this.nameSubstitutionStrategy.inflate(value);
     }
 
-    public String inflate(Text text) {
+    public String inflate(ByteSequence text) {
         if (text == null) {
             return null;
         }

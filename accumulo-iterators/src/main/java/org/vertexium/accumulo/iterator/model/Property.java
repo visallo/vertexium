@@ -1,26 +1,26 @@
 package org.vertexium.accumulo.iterator.model;
 
-import org.apache.hadoop.io.Text;
+import org.apache.accumulo.core.data.ByteSequence;
 
 import java.util.List;
 import java.util.Set;
 
 public class Property {
-    public final String key;
-    public final String name;
+    public final ByteSequence key;
+    public final ByteSequence name;
     public final byte[] value;
-    public final Set<Text> hiddenVisibilities;
-    public final String visibility;
+    public final Set<ByteSequence> hiddenVisibilities;
+    public final ByteSequence visibility;
     public final long timestamp;
     public final List<Integer> metadata;
 
     public Property(
-            String propertyKey,
-            String propertyName,
+            ByteSequence propertyKey,
+            ByteSequence propertyName,
             byte[] propertyValue,
-            String propertyVisibility,
+            ByteSequence propertyVisibility,
             long propertyTimestamp,
-            Set<Text> propertyHiddenVisibilities,
+            Set<ByteSequence> propertyHiddenVisibilities,
             List<Integer> metadata
     ) {
         this.key = propertyKey;
