@@ -1,3 +1,6 @@
+# v4.5.1
+* Removed: Ability to run embedded Elasticsearch
+
 # v4.5.0
 * Added: Accuracy to GeoPoint object 
 * Fixed: If you had access an element but none of the extended data columns you could still match on the extended data row using a query with no filters. This would result in the row being counted in `totalHits`, but it could not be retrieved from Accumulo. NOTE: This change requires that all extended data values are re-indexed in ElasticSearch.
