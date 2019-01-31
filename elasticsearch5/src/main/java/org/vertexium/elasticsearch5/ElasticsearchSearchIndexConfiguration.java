@@ -20,19 +20,13 @@ public class ElasticsearchSearchIndexConfiguration {
     public static final int PORT_DEFAULT = 9300;
     public static final String NUMBER_OF_SHARDS = "shards";
     public static final int NUMBER_OF_SHARDS_DEFAULT = 5;
-    public static final int NUMBER_OF_SHARDS_IN_PROCESS_DEFAULT = 1;
     public static final String NUMBER_OF_REPLICAS = "replicas";
     public static final int NUMBER_OF_REPLICAS_DEFAULT = 1;
-    public static final int NUMBER_OF_REPLICAS_IN_PROCESS_DEFAULT = 0;
     public static final String TERM_AGGREGATION_SHARD_SIZE = "termAggregation.shardSize";
     public static final int TERM_AGGREGATION_SHARD_SIZE_DEFAULT = 10;
     public static final String INDEX_SELECTION_STRATEGY_CLASS_NAME = "indexSelectionStrategy";
     public static final Class<? extends IndexSelectionStrategy> INDEX_SELECTION_STRATEGY_CLASS_NAME_DEFAULT = DefaultIndexSelectionStrategy.class;
     public static final String ALL_FIELD_ENABLED = "allFieldEnabled";
-    public static final String IN_PROCESS_NODE = "inProcessNode";
-    public static final boolean IN_PROCESS_NODE_DEFAULT = false;
-    public static final String IN_PROCESS_NODE_HOME_PATH = "inProcessNode.homePath";
-    public static final String IN_PROCESS_ADDITIONAL_CONFIG_PREFIX = GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + "inProcessNode.additionalConfig.";
     public static final String ES_SETTINGS_CONFIG_PREFIX = GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + "esSettings.";
     public static final String ES_TRANSPORT_CLIENT_PLUGIN_CONFIG_PREFIX = GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + "esTransportClientPlugin.";
     public static final String QUERY_PAGE_SIZE = "queryPageSize";
@@ -115,7 +109,7 @@ public class ElasticsearchSearchIndexConfiguration {
     }
 
     public int getNumberOfShardsDefault() {
-        return isInProcessNode() ? NUMBER_OF_SHARDS_IN_PROCESS_DEFAULT : NUMBER_OF_SHARDS_DEFAULT;
+        return NUMBER_OF_SHARDS_DEFAULT;
     }
 
     public int getNumberOfReplicas() {
@@ -124,7 +118,7 @@ public class ElasticsearchSearchIndexConfiguration {
     }
 
     public int getNumberOfReplicasDefault() {
-        return isInProcessNode() ? NUMBER_OF_REPLICAS_IN_PROCESS_DEFAULT : NUMBER_OF_REPLICAS_DEFAULT;
+        return NUMBER_OF_REPLICAS_DEFAULT;
     }
 
     public int getIndexMappingTotalFieldsLimit() {
@@ -148,16 +142,8 @@ public class ElasticsearchSearchIndexConfiguration {
         return graphConfiguration.getBoolean(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + ALL_FIELD_ENABLED, defaultAllFieldEnabled);
     }
 
-    public boolean isInProcessNode() {
-        return graphConfiguration.getBoolean(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + IN_PROCESS_NODE, IN_PROCESS_NODE_DEFAULT);
-    }
-
     public boolean isErrorOnMissingVertexiumPlugin() {
         return graphConfiguration.getBoolean(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + ERROR_ON_MISSING_VERTEXIUM_PLUGIN, ERROR_ON_MISSING_VERTEXIUM_PLUGIN_DEFAULT);
-    }
-
-    public String getInProcessNodeHomePath() {
-        return graphConfiguration.getString(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + IN_PROCESS_NODE_HOME_PATH, null);
     }
 
     public int getQueryPageSize() {
@@ -204,22 +190,6 @@ public class ElasticsearchSearchIndexConfiguration {
             return null;
         }
         return new File(fileName);
-    }
-
-    public Map<String, String> getInProcessNodeAdditionalSettings() {
-        Map<String, String> results = new HashMap<>();
-        for (Object o : graphConfiguration.getConfig().entrySet()) {
-            Map.Entry mapEntry = (Map.Entry) o;
-            if (!(mapEntry.getKey() instanceof String) || !(mapEntry.getValue() instanceof String)) {
-                continue;
-            }
-            String key = (String) mapEntry.getKey();
-            if (key.startsWith(IN_PROCESS_ADDITIONAL_CONFIG_PREFIX)) {
-                String configName = key.substring(IN_PROCESS_ADDITIONAL_CONFIG_PREFIX.length());
-                results.put(configName, (String) mapEntry.getValue());
-            }
-        }
-        return results;
     }
 
     public Map<String, String> getEsSettings() {

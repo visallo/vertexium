@@ -6,7 +6,6 @@ import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
-import com.google.common.util.concurrent.AbstractFuture;
 import com.google.common.util.concurrent.SettableFuture;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
 import org.elasticsearch.action.admin.cluster.node.info.NodeInfo;
@@ -22,7 +21,6 @@ import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.action.update.UpdateRequestBuilder;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.client.transport.TransportClient;
-import org.elasticsearch.cluster.health.ClusterHealthStatus;
 import org.elasticsearch.cluster.metadata.MappingMetaData;
 import org.elasticsearch.common.bytes.BytesArray;
 import org.elasticsearch.common.collect.ImmutableOpenMap;
@@ -36,8 +34,6 @@ import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.TermQueryBuilder;
-import org.elasticsearch.node.Node;
-import org.elasticsearch.node.NodeValidationException;
 import org.elasticsearch.plugins.Plugin;
 import org.elasticsearch.plugins.PluginInfo;
 import org.elasticsearch.script.Script;
@@ -48,8 +44,8 @@ import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.elasticsearch.transport.client.PreBuiltTransportClient;
-import org.vertexium.*;
 import org.vertexium.Edge;
+import org.vertexium.*;
 import org.vertexium.elasticsearch5.utils.DefaultBulkProcessorListener;
 import org.vertexium.elasticsearch5.utils.FlushObjectQueue;
 import org.vertexium.mutation.ExistingElementMutation;
@@ -106,7 +102,6 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
     public static final String LOWERCASER_NORMALIZER_NAME = "visallo_lowercaser";
     public static final int EXACT_MATCH_IGNORE_ABOVE_LIMIT = 10000;
     public static final String FIELDNAME_DOT_REPLACEMENT = "-_-";
-    private static final long IN_PROCESS_NODE_WAIT_TIME_MS = 10 * 60 * 1000;
     private static final int MAX_RETRIES = 10;
     private final Client client;
     private final ElasticsearchSearchIndexConfiguration config;
@@ -117,7 +112,6 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
     private String[] indexNamesAsArray;
     private IndexSelectionStrategy indexSelectionStrategy;
     private boolean allFieldEnabled;
-    private Node inProcessNode;
     public static final Pattern AGGREGATION_NAME_PATTERN = Pattern.compile("(.*?)_([0-9a-f]+)");
     private final PropertyNameVisibilitiesStore propertyNameVisibilitiesStore;
     private final FlushObjectQueue flushObjectQueue;
@@ -168,60 +162,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
     }
 
     protected Client createClient(ElasticsearchSearchIndexConfiguration config) {
-        if (config.isInProcessNode()) {
-            return createInProcessNode(config);
-        } else {
-            return createTransportClient(config);
-        }
-    }
-
-    private Client createInProcessNode(ElasticsearchSearchIndexConfiguration config) {
-        Settings settings = tryReadSettingsFromFile(config);
-        if (settings == null) {
-            String homePath = config.getInProcessNodeHomePath();
-            checkNotNull(homePath, ElasticsearchSearchIndexConfiguration.IN_PROCESS_NODE_HOME_PATH + " is required for in process Elasticsearch node");
-
-            Map<String, String> mapSettings = new HashMap<>();
-            mapSettings.put("transport.type", "local");
-            mapSettings.put("path.home", homePath);
-            mapSettings.put("http.enabled", "false");
-            mapSettings.put("discovery.zen.ping.unicast.hosts", "localhost");
-            if (config.getClusterName() != null) {
-                mapSettings.put("cluster.name", config.getClusterName());
-            }
-
-            mapSettings.putAll(config.getInProcessNodeAdditionalSettings());
-
-            settings = Settings.builder()
-                    .put(mapSettings)
-                    .build();
-        }
-
-        this.inProcessNode = new Node(settings);
-        try {
-            inProcessNode.start();
-        } catch (NodeValidationException ex) {
-            throw new VertexiumException("Could not start in process node", ex);
-        }
-        Client client = inProcessNode.client();
-
-        long startTime = System.currentTimeMillis();
-        while (true) {
-            if (System.currentTimeMillis() > startTime + IN_PROCESS_NODE_WAIT_TIME_MS) {
-                throw new VertexiumException("Status failed to exit red status after waiting " + IN_PROCESS_NODE_WAIT_TIME_MS + "ms. Giving up.");
-            }
-            ClusterHealthResponse health = client.admin().cluster().prepareHealth().get();
-            if (health.getStatus() != ClusterHealthStatus.RED) {
-                break;
-            }
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                throw new VertexiumException("Could not sleep", e);
-            }
-            LOGGER.info("Status is %s, waiting...", health.getStatus());
-        }
-        return client;
+        return createTransportClient(config);
     }
 
     private static TransportClient createTransportClient(ElasticsearchSearchIndexConfiguration config) {
@@ -2045,15 +1986,6 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
     @Override
     public void shutdown() {
         client.close();
-
-        if (inProcessNode != null) {
-            try {
-                inProcessNode.close();
-            } catch (IOException ex) {
-                LOGGER.error("could not close in process node", ex);
-            }
-            inProcessNode = null;
-        }
 
         if (propertyNameVisibilitiesStore instanceof Closeable) {
             try {
