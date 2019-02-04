@@ -11,10 +11,15 @@ import org.vertexium.accumulo.iterator.model.IteratorFetchHints;
 public class EdgeIterator extends ElementIterator<EdgeElementData> {
     public static final String CF_SIGNAL_STRING = "E";
     public static final Text CF_SIGNAL = new Text(CF_SIGNAL_STRING);
+    private static final byte[] CF_SIGNAL_BYTES = CF_SIGNAL.getBytes();
+
     public static final String CF_OUT_VERTEX_STRING = "EOUT";
     public static final Text CF_OUT_VERTEX = new Text(CF_OUT_VERTEX_STRING);
+    private static final byte[] CF_OUT_VERTEX_BYTES = CF_OUT_VERTEX.getBytes();
+
     public static final String CF_IN_VERTEX_STRING = "EIN";
     public static final Text CF_IN_VERTEX = new Text(CF_IN_VERTEX_STRING);
+    private static final byte[] CF_IN_VERTEX_BYTES = CF_IN_VERTEX.getBytes();
 
     public EdgeIterator() {
         this(null);
@@ -29,14 +34,14 @@ public class EdgeIterator extends ElementIterator<EdgeElementData> {
     }
 
     @Override
-    protected boolean processColumn(Key key, Value value, Text columnFamily, Text columnQualifier) {
-        if (CF_IN_VERTEX.compareTo(columnFamily) == 0) {
-            getElementData().inVertexId = key.getColumnQualifier();
+    protected boolean processColumn(KeyValue keyValue) {
+        if (keyValue.columnFamilyEquals(CF_IN_VERTEX_BYTES)) {
+            getElementData().inVertexId = keyValue.takeColumnQualifier();
             return true;
         }
 
-        if (CF_OUT_VERTEX.compareTo(columnFamily) == 0) {
-            getElementData().outVertexId = key.getColumnQualifier();
+        if (keyValue.columnFamilyEquals(CF_OUT_VERTEX_BYTES)) {
+            getElementData().outVertexId = keyValue.takeColumnQualifier();
             return true;
         }
 
@@ -44,22 +49,27 @@ public class EdgeIterator extends ElementIterator<EdgeElementData> {
     }
 
     @Override
-    protected void processSignalColumn(Text columnQualifier) {
-        super.processSignalColumn(columnQualifier);
-        getElementData().label = columnQualifier;
+    protected void processSignalColumn(KeyValue keyValue) {
+        super.processSignalColumn(keyValue);
+        getElementData().label = keyValue.takeColumnQualifier();
     }
 
     @Override
-    protected Text getVisibilitySignal() {
-        return CF_SIGNAL;
+    protected byte[] getVisibilitySignal() {
+        return CF_SIGNAL_BYTES;
     }
 
     @Override
     public SortedKeyValueIterator<Key, Value> deepCopy(IteratorEnvironment env) {
-        if (sourceIter != null) {
-            return new EdgeIterator(sourceIter.deepCopy(env), getFetchHints());
+        if (getSourceIterator() != null) {
+            return new EdgeIterator(getSourceIterator().deepCopy(env), getFetchHints());
         }
         return new EdgeIterator(getFetchHints());
+    }
+
+    @Override
+    protected String getDescription() {
+        return "This iterator encapsulates an entire Edge into a single Key/Value pair.";
     }
 
     @Override

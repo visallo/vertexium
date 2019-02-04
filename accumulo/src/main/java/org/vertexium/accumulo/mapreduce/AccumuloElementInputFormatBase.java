@@ -8,6 +8,7 @@ import org.apache.accumulo.core.client.ClientConfiguration;
 import org.apache.accumulo.core.client.mapreduce.AccumuloInputFormat;
 import org.apache.accumulo.core.client.mapreduce.AccumuloRowInputFormat;
 import org.apache.accumulo.core.client.security.tokens.AuthenticationToken;
+import org.apache.accumulo.core.data.ByteSequence;
 import org.apache.accumulo.core.data.Key;
 import org.apache.accumulo.core.data.Value;
 import org.apache.accumulo.core.util.Pair;
@@ -20,6 +21,7 @@ import org.vertexium.accumulo.AccumuloGraph;
 import org.vertexium.accumulo.LazyMutableProperty;
 import org.vertexium.accumulo.iterator.model.ElementData;
 import org.vertexium.accumulo.iterator.model.IteratorFetchHints;
+import org.vertexium.accumulo.iterator.util.ByteSequenceUtils;
 import org.vertexium.util.MapUtils;
 
 import javax.annotation.Nullable;
@@ -117,15 +119,17 @@ public abstract class AccumuloElementInputFormatBase<TValue extends Element> ext
     private static Property makePropertyFromIteratorProperty(AccumuloGraph graph, org.vertexium.accumulo.iterator.model.Property property) {
         Set<Visibility> hiddenVisibilities = null;
         if (property.hiddenVisibilities != null) {
-            hiddenVisibilities = Sets.newHashSet(Iterables.transform(property.hiddenVisibilities, new Function<Text, Visibility>() {
+            hiddenVisibilities = Sets.newHashSet(Iterables.transform(property.hiddenVisibilities, new Function<ByteSequence, Visibility>() {
                 @Nullable
                 @Override
-                public Visibility apply(Text visibilityText) {
-                    return AccumuloGraph.accumuloVisibilityToVisibility(AccumuloGraph.visibilityToAccumuloVisibility(visibilityText.toString()));
+                public Visibility apply(ByteSequence visibilityText) {
+                    return AccumuloGraph.accumuloVisibilityToVisibility(AccumuloGraph.visibilityToAccumuloVisibility(ByteSequenceUtils.toString(visibilityText)));
                 }
             }));
         }
-        Visibility visibility = AccumuloGraph.accumuloVisibilityToVisibility(AccumuloGraph.visibilityToAccumuloVisibility(property.visibility));
+        Visibility visibility = AccumuloGraph.accumuloVisibilityToVisibility(
+                AccumuloGraph.visibilityToAccumuloVisibility(property.visibility)
+        );
         return new LazyMutableProperty(
                 graph,
                 graph.getVertexiumSerializer(),

@@ -7,10 +7,6 @@ public class PropertyColumnQualifier extends KeyBase {
     public static final int PART_INDEX_PROPERTY_KEY = 1;
     private final String[] parts;
 
-    public PropertyColumnQualifier(Text columnQualifier) {
-        this.parts = splitOnValueSeparator(columnQualifier.toString(), 2);
-    }
-
     public PropertyColumnQualifier(String propertyName, String propertyKey) {
         this.parts = new String[]{
                 propertyName,

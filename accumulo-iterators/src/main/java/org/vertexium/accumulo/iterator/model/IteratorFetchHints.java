@@ -1,5 +1,8 @@
 package org.vertexium.accumulo.iterator.model;
 
+import org.apache.accumulo.core.data.ByteSequence;
+import org.vertexium.accumulo.iterator.util.ByteSequenceUtils;
+
 import java.io.Serializable;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -7,9 +10,9 @@ import java.util.stream.Collectors;
 public class IteratorFetchHints implements Serializable {
     private static final long serialVersionUID = -6302969731435846529L;
     private final boolean includeAllProperties;
-    private final Set<String> propertyNamesToInclude;
+    private final Set<ByteSequence> propertyNamesToInclude;
     private final boolean includeAllPropertyMetadata;
-    private final Set<String> metadataKeysToInclude;
+    private final Set<ByteSequence> metadataKeysToInclude;
     private final boolean includeHidden;
     private final boolean includeAllEdgeRefs;
     private final boolean includeOutEdgeRefs;
@@ -34,9 +37,9 @@ public class IteratorFetchHints implements Serializable {
 
     public IteratorFetchHints(
             boolean includeAllProperties,
-            Set<String> propertyNamesToInclude,
+            Set<ByteSequence> propertyNamesToInclude,
             boolean includeAllPropertyMetadata,
-            Set<String> metadataKeysToInclude,
+            Set<ByteSequence> metadataKeysToInclude,
             boolean includeHidden,
             boolean includeAllEdgeRefs,
             boolean includeOutEdgeRefs,
@@ -62,7 +65,7 @@ public class IteratorFetchHints implements Serializable {
         return includeAllProperties;
     }
 
-    public Set<String> getPropertyNamesToInclude() {
+    public Set<ByteSequence> getPropertyNamesToInclude() {
         return propertyNamesToInclude;
     }
 
@@ -70,7 +73,7 @@ public class IteratorFetchHints implements Serializable {
         return includeAllPropertyMetadata;
     }
 
-    public Set<String> getMetadataKeysToInclude() {
+    public Set<ByteSequence> getMetadataKeysToInclude() {
         return metadataKeysToInclude;
     }
 
@@ -106,9 +109,9 @@ public class IteratorFetchHints implements Serializable {
     public String toString() {
         return "IteratorFetchHints{" +
                 "includeAllProperties=" + includeAllProperties +
-                ", propertyNamesToInclude=" + setToString(propertyNamesToInclude) +
+                ", propertyNamesToInclude=" + setOfByteSequencesToString(propertyNamesToInclude) +
                 ", includeAllPropertyMetadata=" + includeAllPropertyMetadata +
-                ", metadataKeysToInclude=" + setToString(metadataKeysToInclude) +
+                ", metadataKeysToInclude=" + setOfByteSequencesToString(metadataKeysToInclude) +
                 ", includeHidden=" + includeHidden +
                 ", includeAllEdgeRefs=" + includeAllEdgeRefs +
                 ", includeOutEdgeRefs=" + includeOutEdgeRefs +
@@ -119,10 +122,19 @@ public class IteratorFetchHints implements Serializable {
                 '}';
     }
 
+    private String setOfByteSequencesToString(Set<ByteSequence> set) {
+        if (set == null) {
+            return "";
+        }
+        return set.stream()
+                .map(ByteSequenceUtils::toString)
+                .collect(Collectors.joining(","));
+    }
+
     private String setToString(Set<String> set) {
         if (set == null) {
             return "";
         }
-        return set.stream().collect(Collectors.joining(","));
+        return String.join(",", set);
     }
 }

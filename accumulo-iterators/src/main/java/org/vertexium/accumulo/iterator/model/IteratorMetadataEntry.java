@@ -1,14 +1,16 @@
 package org.vertexium.accumulo.iterator.model;
 
+import org.apache.accumulo.core.data.ByteSequence;
+
 import java.util.Arrays;
 import java.util.Objects;
 
 public class IteratorMetadataEntry {
-    public final String metadataKey;
-    public final String metadataVisibility;
+    public final ByteSequence metadataKey;
+    public final ByteSequence metadataVisibility;
     public final byte[] value;
 
-    public IteratorMetadataEntry(String metadataKey, String metadataVisibility, byte[] value) {
+    public IteratorMetadataEntry(ByteSequence metadataKey, ByteSequence metadataVisibility, byte[] value) {
         this.metadataKey = metadataKey;
         this.metadataVisibility = metadataVisibility;
         this.value = value;

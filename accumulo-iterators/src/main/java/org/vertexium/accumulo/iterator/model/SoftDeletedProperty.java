@@ -1,14 +1,16 @@
 package org.vertexium.accumulo.iterator.model;
 
-import org.apache.hadoop.io.Text;
+import org.apache.accumulo.core.data.ByteSequence;
+
+import java.util.Objects;
 
 public class SoftDeletedProperty {
-    private final String propertyKey;
-    private final String propertyName;
+    private final ByteSequence propertyKey;
+    private final ByteSequence propertyName;
     private final long timestamp;
-    private final Text visibility;
+    private final ByteSequence visibility;
 
-    public SoftDeletedProperty(String propertyKey, String propertyName, long timestamp, Text visibility) {
+    public SoftDeletedProperty(ByteSequence propertyKey, ByteSequence propertyName, long timestamp, ByteSequence visibility) {
         this.propertyKey = propertyKey;
         this.propertyName = propertyName;
         this.timestamp = timestamp;
@@ -30,13 +32,13 @@ public class SoftDeletedProperty {
 
         SoftDeletedProperty that = (SoftDeletedProperty) o;
 
-        if (propertyKey != null ? !propertyKey.equals(that.propertyKey) : that.propertyKey != null) {
+        if (!Objects.equals(propertyKey, that.propertyKey)) {
             return false;
         }
-        if (propertyName != null ? !propertyName.equals(that.propertyName) : that.propertyName != null) {
+        if (!Objects.equals(propertyName, that.propertyName)) {
             return false;
         }
-        if (visibility != null ? !visibility.equals(that.visibility) : that.visibility != null) {
+        if (!Objects.equals(visibility, that.visibility)) {
             return false;
         }
 
@@ -51,7 +53,7 @@ public class SoftDeletedProperty {
         return result;
     }
 
-    public boolean matches(String propertyKey, String propertyName, Text visibility) {
+    public boolean matches(ByteSequence propertyKey, ByteSequence propertyName, ByteSequence visibility) {
         return propertyKey.equals(this.propertyKey)
                 && propertyName.equals(this.propertyName)
                 && visibility.equals(this.visibility);
