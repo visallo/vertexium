@@ -2,9 +2,12 @@ Feature: Vertexium
 
   Scenario: Support normalizing properties in create node
     Given an empty graph
-    When executing query:
+    And having executed:
       """
       CREATE (n {alternativePropertyName: 'a'})
+      """
+    When executing query:
+      """
       MATCH (n)
       RETURN n.propertyName
       """
@@ -14,9 +17,12 @@ Feature: Vertexium
 
   Scenario: Support normalizing properties in create relationship
     Given an empty graph
-    When executing query:
+    And having executed:
       """
       CREATE (:A)-[n {alternativePropertyName: 'a'}]->(:B)
+      """
+    When executing query:
+      """
       MATCH ()-[r]->()
       RETURN r.propertyName
       """
@@ -94,9 +100,12 @@ Feature: Vertexium
 
   Scenario: Support normalizing properties in return statement
     Given an empty graph
-    When executing query:
+    And having executed:
       """
       CREATE (n {propertyName : 'a'})
+      """
+    When executing query:
+      """
       MATCH (n)
       RETURN n.alternativePropertyName
       """

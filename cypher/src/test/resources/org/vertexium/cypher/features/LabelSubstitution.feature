@@ -2,9 +2,12 @@ Feature: Vertexium
 
   Scenario: Support normalizing labels in create node
     Given an empty graph
-    When executing query:
+    And having executed:
       """
       CREATE (n:alternativeLabelName)
+      """
+    When executing query:
+      """
       MATCH (n:labelName)
       RETURN n
       """
@@ -14,9 +17,12 @@ Feature: Vertexium
 
   Scenario: Support normalizing labels in create relationship
     Given an empty graph
-    When executing query:
+    And having executed:
       """
       CREATE (:A)-[n:alternativeLabelName]->(:B)
+      """
+    When executing query:
+      """
       MATCH ()-[r]->()
       RETURN r
       """

@@ -1,5 +1,6 @@
 # v4.5.1
 * Changed: Improve Accumulo iterator memory by not converting values to strings and then back again
+* Changed: Cypher: update to latest openCypher tck
 * Removed: Ability to run embedded Elasticsearch
 
 # v4.5.0

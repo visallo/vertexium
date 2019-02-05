@@ -4,12 +4,15 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 public class CypherLookup extends CypherAstBase {
     private final CypherAstBase atom;
     private final String property;
     private final List<CypherLabelName> labels;
 
     public CypherLookup(CypherAstBase atom, String property, List<CypherLabelName> labels) {
+        checkNotNull(labels, "labels cannot be null");
         this.atom = atom;
         this.property = property;
         this.labels = labels;

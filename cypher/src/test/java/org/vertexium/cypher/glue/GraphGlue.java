@@ -19,7 +19,10 @@ import org.vertexium.util.VertexiumLogger;
 import org.vertexium.util.VertexiumLoggerFactory;
 
 import java.io.InputStream;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -52,7 +55,7 @@ public class GraphGlue {
     @Given("^the binary-tree-(\\d+) graph$")
     public void givenTheBinaryTreeGraph(int number) throws Throwable {
         createGraph();
-        String resourceName = "/org/vertexium/cypher/tck/binary-tree-" + number + ".cyp";
+        String resourceName = String.format("/org/vertexium/cypher/tck/graphs/binary-tree-%d/binary-tree-%d.cypher", number, number);
         InputStream treeIn = this.getClass().getResourceAsStream(resourceName);
         if (treeIn == null) {
             throw new VertexiumException("Could not find '" + resourceName + "'");

@@ -1,6 +1,7 @@
 package org.vertexium.cypher.utils;
 
 import org.vertexium.VertexiumException;
+import org.vertexium.cypher.exceptions.VertexiumCypherException;
 import org.vertexium.cypher.exceptions.VertexiumCypherTypeErrorException;
 
 import java.util.Collection;
@@ -64,7 +65,11 @@ public class ObjectUtils {
                 return 1;
             }
 
-            return left.compareTo(rightObj);
+            try {
+                return left.compareTo(rightObj);
+            } catch (Exception ex) {
+                throw new VertexiumCypherException("Could not compare: " + left + " ?= " + rightObj, ex);
+            }
         } catch (Exception ex) {
             if (ex instanceof ClassCastException) {
                 throw ex;

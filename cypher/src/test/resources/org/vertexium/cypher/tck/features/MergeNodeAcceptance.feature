@@ -1,12 +1,12 @@
 #
-# Copyright 2017 "Neo Technology",
-# Network Engine for Objects in Lund AB (http://neotechnology.com)
+# Copyright (c) 2015-2018 "Neo Technology,"
+# Network Engine for Objects in Lund AB [http://neotechnology.com]
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
-# http://www.apache.org/licenses/LICENSE-2.0
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,6 +14,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+# Attribution Notice under the terms of the Apache License 2.0
+#
+# This work was created by the collective efforts of the openCypher community.
+# Without limiting the terms of Section 6, any Derivative Work that is not
+# approved by the public consensus process of the openCypher Implementers Group
+# should not be described as “Cypher” (and Cypher® is a registered trademark of
+# Neo4j Inc.) or as "openCypher". Extensions by implementers or prototypes or
+# proposals for change that have been documented or implemented should only be
+# described as "implementation extensions to Cypher" or as "proposed changes to
+# Cypher that are not yet approved by the openCypher community".
+#
+
+#encoding: utf-8
 
 Feature: MergeNodeAcceptance
 
@@ -125,7 +138,6 @@ Feature: MergeNodeAcceptance
       | 43     |
     And the side effects should be:
       | +nodes      | 1 |
-      | +labels     | 1 |
       | +properties | 1 |
 
   Scenario: Merge node with prop and label
@@ -208,7 +220,7 @@ Feature: MergeNodeAcceptance
     Then the result should be empty
     And the side effects should be:
       | +nodes  | 2 |
-      | +labels | 2 |
+      | +labels | 1 |
 
   Scenario: Should handle argument properly
     Given an empty graph
@@ -259,7 +271,7 @@ Feature: MergeNodeAcceptance
     Then the result should be empty
     And the side effects should be:
       | +nodes      | 3 |
-      | +labels     | 3 |
+      | +labels     | 1 |
       | +properties | 3 |
 
   Scenario: Should be able to use properties from match in ON CREATE
@@ -308,6 +320,7 @@ Feature: MergeNodeAcceptance
       | +labels     | 1 |
       | +properties | 1 |
 
+  @todo
   Scenario: Should be able to use properties from match in ON MATCH and ON CREATE
     Given an empty graph
     And having executed:
@@ -330,7 +343,7 @@ Feature: MergeNodeAcceptance
     And the side effects should be:
       | +nodes      | 1 |
       | +labels     | 1 |
-      | +properties | 2 |
+      | +properties | 1 |
 
   Scenario: Should be able to set labels on match
     Given an empty graph
@@ -395,7 +408,7 @@ Feature: MergeNodeAcceptance
       | 2 | 2 |
     And the side effects should be:
       | +nodes      | 15 |
-      | +labels     | 15 |
+      | +labels     | 1  |
       | +properties | 30 |
 
   Scenario: Merge must properly handle multiple labels
@@ -414,7 +427,7 @@ Feature: MergeNodeAcceptance
       | ['L', 'B'] |
     And the side effects should be:
       | +nodes      | 1 |
-      | +labels     | 2 |
+      | +labels     | 1 |
       | +properties | 1 |
 
   Scenario: Merge followed by multiple creates
@@ -466,9 +479,9 @@ Feature: MergeNodeAcceptance
       | null     |
       | null     |
     And the side effects should be:
-      | +nodes  | 1 |
-      | -nodes  | 2 |
-      | +labels | 1 |
+      | +nodes      | 1 |
+      | -nodes      | 2 |
+      | -properties | 2 |
 
   Scenario: ON CREATE on created nodes
     Given an empty graph
