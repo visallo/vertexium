@@ -19,19 +19,23 @@ public class CypherAstParser {
         CypherLexer lexer = new CypherLexer(input);
         CypherParser parser = new CypherParser(new CommonTokenStream(lexer));
         parser.setErrorHandler(new ParserErrorHandler(code));
-        CypherParser.CypherContext tree = parser.cypher();
-        if (!tree.getText().equals(code)) {
-            throw new VertexiumCypherSyntaxErrorException("Parsing error, \"" + code.substring(tree.getText().length()) + "\"");
+        CypherParser.OC_CypherContext tree = parser.oC_Cypher();
+        String treeText = tree.getText();
+        if (treeText.endsWith("<EOF>")) {
+            treeText = treeText.substring(0, treeText.length() - "<EOF>".length());
         }
-        return new CypherCstToAstVisitor(ctx).visitCypher(tree);
+        if (!treeText.equals(code)) {
+            throw new VertexiumCypherSyntaxErrorException("Parsing error, \"" + code.substring(treeText.length()) + "\"");
+        }
+        return new CypherCstToAstVisitor(ctx).visitOC_Cypher(tree);
     }
 
     public CypherAstBase parseExpression(String expressionString) {
         CypherLexer lexer = new CypherLexer(CharStreams.fromString(expressionString));
         CypherParser parser = new CypherParser(new CommonTokenStream(lexer));
         parser.setErrorHandler(new ParserErrorHandler(expressionString));
-        CypherParser.ExpressionContext expressionContext = parser.expression();
-        return new CypherCstToAstVisitor().visitExpression(expressionContext);
+        CypherParser.OC_ExpressionContext expressionContext = parser.oC_Expression();
+        return new CypherCstToAstVisitor().visitOC_Expression(expressionContext);
     }
 
     private static class ParserErrorHandler extends BailErrorStrategy {
@@ -44,10 +48,18 @@ public class CypherAstParser {
         @Override
         public void reportError(Parser recognizer, RecognitionException e) {
             String messagePrefix = "";
-            if (e.getCtx() instanceof CypherParser.RelationshipPatternContext) {
+            if (e.getCtx() instanceof CypherParser.OC_RelationshipPatternContext) {
                 messagePrefix = "InvalidRelationshipPattern: ";
             }
-            throw new VertexiumCypherSyntaxErrorException(messagePrefix + "Could not parse: " + code, e);
+            throw new VertexiumCypherSyntaxErrorException(
+                    String.format(
+                            "%sCould not parse (%d:%d): %s",
+                            messagePrefix,
+                            e.getOffendingToken().getLine(),
+                            e.getOffendingToken().getCharPositionInLine(),
+                            code
+                    ),
+                    e);
         }
     }
 }

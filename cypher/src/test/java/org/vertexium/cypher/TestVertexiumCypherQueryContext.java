@@ -5,6 +5,7 @@ import org.vertexium.cypher.ast.model.*;
 import org.vertexium.cypher.executor.ExpressionScope;
 import org.vertexium.mutation.ElementMutation;
 import org.vertexium.mutation.ExistingElementMutation;
+import org.vertexium.query.QueryResultsIterable;
 
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -28,6 +29,9 @@ public class TestVertexiumCypherQueryContext extends VertexiumCypherQueryContext
 
     public TestVertexiumCypherQueryContext(Graph graph, Authorizations authorizations) {
         super(graph, authorizations);
+        getGraph().defineProperty(getLabelPropertyName())
+                .dataType(String.class)
+                .define();
     }
 
     @Override
@@ -42,8 +46,14 @@ public class TestVertexiumCypherQueryContext extends VertexiumCypherQueryContext
 
     @Override
     public <T extends Element> void setLabelProperty(ElementMutation<T> m, String label) {
+        QueryResultsIterable<Element> elements = getGraph().query(getAuthorizations())
+                .has(getLabelPropertyName(), label)
+                .limit(0L)
+                .elements();
+        if (elements.getTotalHits() == 0) {
+            plusLabelCount++;
+        }
         m.addPropertyValue(label, getLabelPropertyName(), label, VISIBILITY);
-        plusLabelCount++;
     }
 
     @Override
@@ -129,21 +139,56 @@ public class TestVertexiumCypherQueryContext extends VertexiumCypherQueryContext
     @Override
     public void deleteEdge(Edge edge) {
         if (getGraph().doesEdgeExist(edge.getId(), getAuthorizations())) {
+            Set<String> labels = stream(edge.getPropertyValues(getLabelPropertyName()))
+                    .map(Object::toString)
+                    .collect(Collectors.toSet());
+            updateMinusPropertyCount(edge);
+
             super.deleteEdge(edge);
             minusRelationshipCount++;
             getGraph().flush();
+
+            updateMinusLabelCount(labels);
         }
     }
 
     @Override
     public void deleteVertex(Vertex vertex) {
         if (getGraph().doesVertexExist(vertex.getId(), getAuthorizations())) {
+            Set<String> labels = stream(vertex.getPropertyValues(getLabelPropertyName()))
+                    .map(Object::toString)
+                    .collect(Collectors.toSet());
+            updateMinusPropertyCount(vertex);
+
             for (Edge edge : vertex.getEdges(Direction.BOTH, getAuthorizations())) {
                 deleteEdge(edge);
             }
             super.deleteVertex(vertex);
             minusNodeCount++;
             getGraph().flush();
+
+            updateMinusLabelCount(labels);
+        }
+    }
+
+    private void updateMinusPropertyCount(Element element) {
+        for (Property property : element.getProperties()) {
+            if (property.getName().equalsIgnoreCase(getLabelPropertyName())) {
+                continue;
+            }
+            minusPropertyCount++;
+        }
+    }
+
+    private void updateMinusLabelCount(Set<String> labels) {
+        for (String label : labels) {
+            QueryResultsIterable<Element> elements = getGraph().query(getAuthorizations())
+                    .has(getLabelPropertyName(), label)
+                    .limit(0L)
+                    .elements();
+            if (elements.getTotalHits() == 0) {
+                minusLabelCount++;
+            }
         }
     }
 

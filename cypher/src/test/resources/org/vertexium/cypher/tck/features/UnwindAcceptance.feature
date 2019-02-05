@@ -1,12 +1,12 @@
 #
-# Copyright 2017 "Neo Technology",
-# Network Engine for Objects in Lund AB (http://neotechnology.com)
+# Copyright (c) 2015-2018 "Neo Technology,"
+# Network Engine for Objects in Lund AB [http://neotechnology.com]
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
-# http://www.apache.org/licenses/LICENSE-2.0
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,6 +14,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+# Attribution Notice under the terms of the Apache License 2.0
+#
+# This work was created by the collective efforts of the openCypher community.
+# Without limiting the terms of Section 6, any Derivative Work that is not
+# approved by the public consensus process of the openCypher Implementers Group
+# should not be described as “Cypher” (and Cypher® is a registered trademark of
+# Neo4j Inc.) or as "openCypher". Extensions by implementers or prototypes or
+# proposals for change that have been documented or implemented should only be
+# described as "implementation extensions to Cypher" or as "proposed changes to
+# Cypher that are not yet approved by the openCypher community".
+#
+
+#encoding: utf-8
 
 Feature: UnwindAcceptance
 
@@ -121,7 +134,7 @@ Feature: UnwindAcceptance
     And the side effects should be:
       | +nodes         | 2 |
       | +relationships | 2 |
-      | +labels        | 2 |
+      | +labels        | 1 |
       | +properties    | 2 |
 
   Scenario: Double unwinding a list of lists
@@ -150,7 +163,8 @@ Feature: UnwindAcceptance
       UNWIND [] AS empty
       RETURN empty
       """
-    Then the result should be empty
+    Then the result should be:
+      | empty |
     And no side effects
 
   Scenario: Unwinding null
@@ -160,7 +174,8 @@ Feature: UnwindAcceptance
       UNWIND null AS nil
       RETURN nil
       """
-    Then the result should be empty
+    Then the result should be:
+      | nil |
     And no side effects
 
   Scenario: Unwinding list with duplicates
@@ -234,15 +249,15 @@ Feature: UnwindAcceptance
       RETURN *
       """
     Then the result should be:
-      | x | y | z | zs     | ys     | xs     |
-      | 1 | 3 | 5 | [5, 6] | [3, 4] | [1, 2] |
-      | 1 | 3 | 6 | [5, 6] | [3, 4] | [1, 2] |
-      | 1 | 4 | 5 | [5, 6] | [3, 4] | [1, 2] |
-      | 1 | 4 | 6 | [5, 6] | [3, 4] | [1, 2] |
-      | 2 | 3 | 5 | [5, 6] | [3, 4] | [1, 2] |
-      | 2 | 3 | 6 | [5, 6] | [3, 4] | [1, 2] |
-      | 2 | 4 | 5 | [5, 6] | [3, 4] | [1, 2] |
-      | 2 | 4 | 6 | [5, 6] | [3, 4] | [1, 2] |
+      | x | xs     | y | ys     | z | zs     |
+      | 1 | [1, 2] | 3 | [3, 4] | 5 | [5, 6] |
+      | 1 | [1, 2] | 3 | [3, 4] | 6 | [5, 6] |
+      | 1 | [1, 2] | 4 | [3, 4] | 5 | [5, 6] |
+      | 1 | [1, 2] | 4 | [3, 4] | 6 | [5, 6] |
+      | 2 | [1, 2] | 3 | [3, 4] | 5 | [5, 6] |
+      | 2 | [1, 2] | 3 | [3, 4] | 6 | [5, 6] |
+      | 2 | [1, 2] | 4 | [3, 4] | 5 | [5, 6] |
+      | 2 | [1, 2] | 4 | [3, 4] | 6 | [5, 6] |
     And no side effects
 
   Scenario: Unwind with merge
@@ -262,5 +277,5 @@ Feature: UnwindAcceptance
       | 'name2' | 'login2' |
     And the side effects should be:
       | +nodes      | 2 |
-      | +labels     | 2 |
+      | +labels     | 1 |
       | +properties | 4 |

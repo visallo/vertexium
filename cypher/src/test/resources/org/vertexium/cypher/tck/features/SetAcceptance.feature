@@ -1,12 +1,12 @@
 #
-# Copyright 2017 "Neo Technology",
-# Network Engine for Objects in Lund AB (http://neotechnology.com)
+# Copyright (c) 2015-2018 "Neo Technology,"
+# Network Engine for Objects in Lund AB [http://neotechnology.com]
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
-# http://www.apache.org/licenses/LICENSE-2.0
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,6 +14,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+# Attribution Notice under the terms of the Apache License 2.0
+#
+# This work was created by the collective efforts of the openCypher community.
+# Without limiting the terms of Section 6, any Derivative Work that is not
+# approved by the public consensus process of the openCypher Implementers Group
+# should not be described as “Cypher” (and Cypher® is a registered trademark of
+# Neo4j Inc.) or as "openCypher". Extensions by implementers or prototypes or
+# proposals for change that have been documented or implemented should only be
+# described as "implementation extensions to Cypher" or as "proposed changes to
+# Cypher that are not yet approved by the openCypher community".
+#
+
+#encoding: utf-8
 
 Feature: SetAcceptance
 
@@ -53,6 +66,7 @@ Feature: SetAcceptance
     And the side effects should be:
       | -properties | 1 |
 
+  @todo
   Scenario: Set a property
     Given any graph
     And having executed:
@@ -71,7 +85,9 @@ Feature: SetAcceptance
       | (:A {name: 'Michael'}) |
     And the side effects should be:
       | +properties | 1 |
+      | -properties | 1 |
 
+  @todo
   Scenario: Set a property to an expression
     Given an empty graph
     And having executed:
@@ -90,6 +106,7 @@ Feature: SetAcceptance
       | (:A {name: 'Andres was here'}) |
     And the side effects should be:
       | +properties | 1 |
+      | -properties | 1 |
 
   Scenario: Set a property by selecting the node using a simple expression
     Given an empty graph
@@ -182,6 +199,7 @@ Feature: SetAcceptance
     And the side effects should be:
       | +properties | 1 |
 
+  @todo
   Scenario: Concatenate elements onto a list property
     Given any graph
     When executing query:
@@ -195,8 +213,9 @@ Feature: SetAcceptance
       | [1, 2, 3, 4, 5] |
     And the side effects should be:
       | +nodes      | 1 |
-      | +properties | 2 |
+      | +properties | 1 |
 
+  @todo
   Scenario: Concatenate elements in reverse onto a list property
     Given any graph
     When executing query:
@@ -210,8 +229,9 @@ Feature: SetAcceptance
       | [1, 2, 3, 4, 5] |
     And the side effects should be:
       | +nodes      | 1 |
-      | +properties | 2 |
+      | +properties | 1 |
 
+  @todo
   Scenario: Overwrite values when using +=
     Given an empty graph
     And having executed:
@@ -229,6 +249,7 @@ Feature: SetAcceptance
       | (:X {foo: 'A', bar: 'C'}) |
     And the side effects should be:
       | +properties | 1 |
+      | -properties | 1 |
 
   Scenario: Retain old values when using +=
     Given an empty graph
@@ -266,8 +287,9 @@ Feature: SetAcceptance
     And the side effects should be:
       | -properties | 1 |
 
+  @todo
   Scenario: Non-existent values in a property map are removed with SET =
-    Given any graph
+    Given an empty graph
     And having executed:
       """
       CREATE (:X {foo: 'A', bar: 'B'})
@@ -283,4 +305,4 @@ Feature: SetAcceptance
       | (:X {foo: 'B', baz: 'C'}) |
     And the side effects should be:
       | +properties | 2 |
-      | -properties | 1 |
+      | -properties | 2 |

@@ -1,12 +1,12 @@
 #
-# Copyright 2017 "Neo Technology",
-# Network Engine for Objects in Lund AB (http://neotechnology.com)
+# Copyright (c) 2015-2018 "Neo Technology,"
+# Network Engine for Objects in Lund AB [http://neotechnology.com]
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
-# http://www.apache.org/licenses/LICENSE-2.0
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,6 +14,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+# Attribution Notice under the terms of the Apache License 2.0
+#
+# This work was created by the collective efforts of the openCypher community.
+# Without limiting the terms of Section 6, any Derivative Work that is not
+# approved by the public consensus process of the openCypher Implementers Group
+# should not be described as “Cypher” (and Cypher® is a registered trademark of
+# Neo4j Inc.) or as "openCypher". Extensions by implementers or prototypes or
+# proposals for change that have been documented or implemented should only be
+# described as "implementation extensions to Cypher" or as "proposed changes to
+# Cypher that are not yet approved by the openCypher community".
+#
+
+#encoding: utf-8
 
 Feature: SemanticErrorAcceptance
 
@@ -141,7 +154,7 @@ Feature: SemanticErrorAcceptance
   Scenario: Failing when using parameter as node predicate in MATCH
     When executing query:
       """
-      MATCH (n {param})
+      MATCH (n $param)
       RETURN n
       """
     Then a SyntaxError should be raised at compile time: InvalidParameterUse
@@ -149,7 +162,7 @@ Feature: SemanticErrorAcceptance
   Scenario: Failing when using parameter as relationship predicate in MATCH
     When executing query:
       """
-      MATCH ()-[r:FOO {param}]->()
+      MATCH ()-[r:FOO $param]->()
       RETURN r
       """
     Then a SyntaxError should be raised at compile time: InvalidParameterUse
@@ -157,7 +170,7 @@ Feature: SemanticErrorAcceptance
   Scenario: Failing when using parameter as node predicate in MERGE
     When executing query:
       """
-      MERGE (n {param})
+      MERGE (n $param)
       RETURN n
       """
     Then a SyntaxError should be raised at compile time: InvalidParameterUse
@@ -167,7 +180,7 @@ Feature: SemanticErrorAcceptance
       """
       MERGE (a)
       MERGE (b)
-      MERGE (a)-[r:FOO {param}]->(b)
+      MERGE (a)-[r:FOO $param]->(b)
       RETURN r
       """
     Then a SyntaxError should be raised at compile time: InvalidParameterUse
@@ -192,7 +205,7 @@ Feature: SemanticErrorAcceptance
     When executing query:
       """
       MATCH (a)
-      CREATE (a)
+      MERGE (a)
       """
     Then a SyntaxError should be raised at compile time: VariableAlreadyBound
 
