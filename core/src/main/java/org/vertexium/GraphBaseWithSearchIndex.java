@@ -259,4 +259,26 @@ public abstract class GraphBaseWithSearchIndex extends GraphBase implements Grap
     public FetchHints getDefaultFetchHints() {
         return defaultFetchHints;
     }
+
+    @Override
+    public Iterable<Edge> addEdgesAsyncIndex(Iterable<ElementBuilder<Edge>> edges, Authorizations authorizations) {
+        List<Edge> addedEdges = new ArrayList<>();
+        for (ElementBuilder<Edge> edgeBuilder : edges) {
+            edgeBuilder.setIndexHint(IndexHint.DO_NOT_INDEX);
+            addedEdges.add(edgeBuilder.save(authorizations));
+        }
+        getSearchIndex().addElements(this,addedEdges,authorizations);
+        return addedEdges;
+    }
+
+    @Override
+    public Iterable<Vertex> addVerticesAsyncIndex(Iterable<ElementBuilder<Vertex>> vertices, Authorizations authorizations) {
+        List<Vertex> addedVertices = new ArrayList<>();
+        for (ElementBuilder<Vertex> vertexBuilder : vertices) {
+            vertexBuilder.setIndexHint(IndexHint.DO_NOT_INDEX);
+            addedVertices.add(vertexBuilder.save(authorizations));
+        }
+        getSearchIndex().addElements(this,addedVertices,authorizations);
+        return addedVertices;
+    }
 }
