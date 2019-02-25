@@ -35,8 +35,9 @@ public class VisibilityEvaluator {
     static Authorizations escape(Authorizations auths) {
         ArrayList<byte[]> retAuths = new ArrayList<byte[]>(auths.getAuthorizations().size());
 
-        for (byte[] auth : auths.getAuthorizations())
+        for (byte[] auth : auths.getAuthorizations()) {
             retAuths.add(escape(auth, false));
+        }
 
         return new Authorizations(retAuths);
     }
@@ -52,16 +53,19 @@ public class VisibilityEvaluator {
     public static byte[] escape(byte[] auth, boolean quote) {
         int escapeCount = 0;
 
-        for (int i = 0; i < auth.length; i++)
-            if (auth[i] == '"' || auth[i] == '\\')
+        for (int i = 0; i < auth.length; i++) {
+            if (auth[i] == '"' || auth[i] == '\\') {
                 escapeCount++;
+            }
+        }
 
         if (escapeCount > 0 || quote) {
             byte[] escapedAuth = new byte[auth.length + escapeCount + (quote ? 2 : 0)];
             int index = quote ? 1 : 0;
             for (int i = 0; i < auth.length; i++) {
-                if (auth[i] == '"' || auth[i] == '\\')
+                if (auth[i] == '"' || auth[i] == '\\') {
                     escapedAuth[index++] = '\\';
+                }
                 escapedAuth[index++] = auth[i];
             }
 
@@ -83,7 +87,7 @@ public class VisibilityEvaluator {
      * @param authorizations authorizations object
      */
     public VisibilityEvaluator(Authorizations authorizations) {
-        this.auths = escape((Authorizations) authorizations);
+        this.auths = escape(authorizations);
     }
 
     /**
@@ -101,25 +105,30 @@ public class VisibilityEvaluator {
     }
 
     private final boolean evaluate(final byte[] expression, final ColumnVisibility.Node root) throws VisibilityParseException {
-        if (expression.length == 0)
+        if (expression.length == 0) {
             return true;
+        }
         switch (root.type) {
             case TERM:
                 return auths.contains(root.getTerm(expression));
             case AND:
-                if (root.children == null || root.children.size() < 2)
+                if (root.children == null || root.children.size() < 2) {
                     throw new VisibilityParseException("AND has less than 2 children", expression, root.start);
+                }
                 for (ColumnVisibility.Node child : root.children) {
-                    if (!evaluate(expression, child))
+                    if (!evaluate(expression, child)) {
                         return false;
+                    }
                 }
                 return true;
             case OR:
-                if (root.children == null || root.children.size() < 2)
+                if (root.children == null || root.children.size() < 2) {
                     throw new VisibilityParseException("OR has less than 2 children", expression, root.start);
+                }
                 for (ColumnVisibility.Node child : root.children) {
-                    if (evaluate(expression, child))
+                    if (evaluate(expression, child)) {
                         return true;
+                    }
                 }
                 return false;
             default:

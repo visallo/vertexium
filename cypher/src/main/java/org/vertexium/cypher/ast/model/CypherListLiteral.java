@@ -25,13 +25,13 @@ public class CypherListLiteral<TItem> extends CypherLiteral<List<TItem>> impleme
 
     public static <T> Collector<T, ArrayList<T>, CypherListLiteral<T>> collect() {
         return Collector.of(
-                ArrayList::new,
-                ArrayList::add,
-                (list1, list2) -> {
-                    list1.addAll(list2);
-                    return list1;
-                },
-                CypherListLiteral::new
+            ArrayList::new,
+            ArrayList::add,
+            (list1, list2) -> {
+                list1.addAll(list2);
+                return list1;
+            },
+            CypherListLiteral::new
         );
     }
 

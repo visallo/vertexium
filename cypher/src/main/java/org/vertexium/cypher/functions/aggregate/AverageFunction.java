@@ -27,9 +27,9 @@ public class AverageFunction extends AggregationFunction {
         if (arg0 instanceof Stream) {
             Stream<?> list = (Stream<?>) arg0;
             return StreamUtils.ifEmpty(
-                    list,
-                    () -> null,
-                    ObjectUtils::averageNumbers
+                list,
+                () -> null,
+                ObjectUtils::averageNumbers
             );
         }
 

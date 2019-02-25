@@ -27,9 +27,9 @@ public class StreamUtils {
      */
     public static Stream<Element> stream(Query... queries) {
         return Arrays.stream(queries)
-                .map(query -> StreamSupport.stream(query.elements().spliterator(), false))
-                .reduce(Stream::concat)
-                .orElseGet(Stream::empty);
+            .map(query -> StreamSupport.stream(query.elements().spliterator(), false))
+            .reduce(Stream::concat)
+            .orElseGet(Stream::empty);
     }
 
     /**
@@ -41,8 +41,8 @@ public class StreamUtils {
     @SuppressWarnings("unchecked")
     public static <T> Stream<T> stream(Iterable<T>... iterables) {
         List<Iterator<T>> iterators = Arrays.stream(iterables)
-                .map(Iterable::iterator)
-                .collect(Collectors.toList());
+            .map(Iterable::iterator)
+            .collect(Collectors.toList());
 
         return stream(iterators.toArray(new Iterator[iterables.length]));
     }
@@ -54,11 +54,11 @@ public class StreamUtils {
     @SafeVarargs
     public static <T> Stream<T> stream(Iterator<T>... iterators) {
         return withCloseHandler(
-                Arrays.stream(iterators)
-                        .map(StreamUtils::streamForIterator)
-                        .reduce(Stream::concat)
-                        .orElseGet(Stream::empty),
-                iterators
+            Arrays.stream(iterators)
+                .map(StreamUtils::streamForIterator)
+                .reduce(Stream::concat)
+                .orElseGet(Stream::empty),
+            iterators
         );
     }
 
@@ -71,8 +71,8 @@ public class StreamUtils {
                         ((AutoCloseable) iterator).close();
                     } catch (Exception ex) {
                         throw new VertexiumException(
-                                String.format("exception occurred when closing %s", iterator.getClass().getName()),
-                                ex
+                            String.format("exception occurred when closing %s", iterator.getClass().getName()),
+                            ex
                         );
                     }
                 }
@@ -86,54 +86,54 @@ public class StreamUtils {
 
     public static <T> Collector<T, ImmutableList.Builder<T>, ImmutableList<T>> toImmutableList() {
         return Collector.of(
-                ImmutableList.Builder<T>::new,
-                ImmutableList.Builder<T>::add,
-                (l, r) -> l.addAll(r.build()),
-                ImmutableList.Builder<T>::build
+            ImmutableList.Builder<T>::new,
+            ImmutableList.Builder<T>::add,
+            (l, r) -> l.addAll(r.build()),
+            ImmutableList.Builder<T>::build
         );
     }
 
     public static <T> Collector<T, ImmutableSet.Builder<T>, ImmutableSet<T>> toImmutableSet() {
         return Collector.of(
-                ImmutableSet.Builder::new,
-                ImmutableSet.Builder::add,
-                (l, r) -> l.addAll(r.build()),
-                ImmutableSet.Builder<T>::build,
-                Collector.Characteristics.UNORDERED
+            ImmutableSet.Builder::new,
+            ImmutableSet.Builder::add,
+            (l, r) -> l.addAll(r.build()),
+            ImmutableSet.Builder<T>::build,
+            Collector.Characteristics.UNORDERED
         );
     }
 
     public static <T, K, V> Collector<T, ImmutableMap.Builder<K, V>, ImmutableMap<K, V>> toImmutableMap(
-            Function<? super T, ? extends K> keyMapper,
-            Function<? super T, ? extends V> valueMapper
+        Function<? super T, ? extends K> keyMapper,
+        Function<? super T, ? extends V> valueMapper
     ) {
         return Collector.of(
-                ImmutableMap.Builder<K, V>::new,
-                (r, t) -> r.put(keyMapper.apply(t), valueMapper.apply(t)),
-                (l, r) -> l.putAll(r.build()),
-                ImmutableMap.Builder::build,
-                Collector.Characteristics.UNORDERED
+            ImmutableMap.Builder<K, V>::new,
+            (r, t) -> r.put(keyMapper.apply(t), valueMapper.apply(t)),
+            (l, r) -> l.putAll(r.build()),
+            ImmutableMap.Builder::build,
+            Collector.Characteristics.UNORDERED
         );
     }
 
     public static <T> Collector<T, LinkedHashSet<T>, LinkedHashSet<T>> toLinkedHashSet() {
         return Collector.of(
-                LinkedHashSet::new,
-                HashSet::add,
-                (a1, a2) -> {
-                    LinkedHashSet<T> results = new LinkedHashSet<T>();
-                    results.addAll(a1);
-                    results.addAll(a2);
-                    return results;
-                },
-                ts -> ts
+            LinkedHashSet::new,
+            HashSet::add,
+            (a1, a2) -> {
+                LinkedHashSet<T> results = new LinkedHashSet<T>();
+                results.addAll(a1);
+                results.addAll(a2);
+                return results;
+            },
+            ts -> ts
         );
     }
 
     public static <TItem, TReturn> TReturn ifEmpty(
-            Stream<TItem> stream,
-            Supplier<TReturn> trueFunc,
-            Function<Stream<TItem>, TReturn> falseFunc
+        Stream<TItem> stream,
+        Supplier<TReturn> trueFunc,
+        Function<Stream<TItem>, TReturn> falseFunc
     ) {
         Spliterator<TItem> split = stream.spliterator();
         AtomicReference<TItem> firstItem = new AtomicReference<>();

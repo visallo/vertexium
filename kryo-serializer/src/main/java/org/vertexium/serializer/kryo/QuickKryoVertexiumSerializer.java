@@ -19,21 +19,8 @@ public class QuickKryoVertexiumSerializer implements VertexiumSerializer {
     public static final boolean CONFIG_COMPRESS_DEFAULT = false;
     private final boolean enableCompression;
     private QuickTypeSerializer defaultQuickTypeSerializer = new KryoQuickTypeSerializer();
-    private Map<Class, QuickTypeSerializer> quickTypeSerializersByClass = new HashMap<Class, QuickTypeSerializer>() {{
-        put(String.class, new StringQuickTypeSerializer());
-        put(Long.class, new LongQuickTypeSerializer());
-        put(Date.class, new DateQuickTypeSerializer());
-        put(Double.class, new DoubleQuickTypeSerializer());
-        put(BigDecimal.class, new BigDecimalQuickTypeSerializer());
-    }};
-    private Map<Byte, QuickTypeSerializer> quickTypeSerializersByMarker = new HashMap<Byte, QuickTypeSerializer>() {{
-        put(QuickTypeSerializer.MARKER_KRYO, new KryoQuickTypeSerializer());
-        put(QuickTypeSerializer.MARKER_STRING, new StringQuickTypeSerializer());
-        put(QuickTypeSerializer.MARKER_LONG, new LongQuickTypeSerializer());
-        put(QuickTypeSerializer.MARKER_DATE, new DateQuickTypeSerializer());
-        put(QuickTypeSerializer.MARKER_DOUBLE, new DoubleQuickTypeSerializer());
-        put(QuickTypeSerializer.MARKER_BIG_DECIMAL, new BigDecimalQuickTypeSerializer());
-    }};
+    private Map<Class, QuickTypeSerializer> quickTypeSerializersByClass = new HashMap<>();
+    private Map<Byte, QuickTypeSerializer> quickTypeSerializersByMarker = new HashMap<>();
 
     public QuickKryoVertexiumSerializer(GraphConfiguration config) {
         this(config.getBoolean(CONFIG_COMPRESS, CONFIG_COMPRESS_DEFAULT));
@@ -41,6 +28,19 @@ public class QuickKryoVertexiumSerializer implements VertexiumSerializer {
 
     public QuickKryoVertexiumSerializer(boolean enableCompression) {
         this.enableCompression = enableCompression;
+
+        quickTypeSerializersByClass.put(String.class, new StringQuickTypeSerializer());
+        quickTypeSerializersByClass.put(Long.class, new LongQuickTypeSerializer());
+        quickTypeSerializersByClass.put(Date.class, new DateQuickTypeSerializer());
+        quickTypeSerializersByClass.put(Double.class, new DoubleQuickTypeSerializer());
+        quickTypeSerializersByClass.put(BigDecimal.class, new BigDecimalQuickTypeSerializer());
+
+        quickTypeSerializersByMarker.put(QuickTypeSerializer.MARKER_KRYO, new KryoQuickTypeSerializer());
+        quickTypeSerializersByMarker.put(QuickTypeSerializer.MARKER_STRING, new StringQuickTypeSerializer());
+        quickTypeSerializersByMarker.put(QuickTypeSerializer.MARKER_LONG, new LongQuickTypeSerializer());
+        quickTypeSerializersByMarker.put(QuickTypeSerializer.MARKER_DATE, new DateQuickTypeSerializer());
+        quickTypeSerializersByMarker.put(QuickTypeSerializer.MARKER_DOUBLE, new DoubleQuickTypeSerializer());
+        quickTypeSerializersByMarker.put(QuickTypeSerializer.MARKER_BIG_DECIMAL, new BigDecimalQuickTypeSerializer());
     }
 
     @Override

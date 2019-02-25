@@ -1,6 +1,5 @@
 package org.vertexium.cli.model;
 
-import org.vertexium.FetchHints;
 import org.vertexium.Vertex;
 
 import java.util.ArrayList;

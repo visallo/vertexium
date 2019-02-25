@@ -21,7 +21,7 @@ public class MatchConstraintBuilder {
         }
 
         LinkedHashSet<PatternPartMatchConstraint> collapseConstraints = collapseConstraints(
-                new LinkedList<>(matchConstraints.getPatternPartMatchConstraints())
+            new LinkedList<>(matchConstraints.getPatternPartMatchConstraints())
         );
 
         return new MatchConstraints(collapseConstraints, matchConstraints.getWhereExpressions());
@@ -52,8 +52,8 @@ public class MatchConstraintBuilder {
         while (constraints.size() > 0) {
             PatternPartMatchConstraint constraint = constraints.removeFirst();
             Optional<PatternPartMatchConstraint> overlappingConstraint = constraints.stream()
-                    .filter(c -> patternPartMatchConstraintHasOverlap(constraint, c))
-                    .findFirst();
+                .filter(c -> patternPartMatchConstraintHasOverlap(constraint, c))
+                .findFirst();
             if (overlappingConstraint.isPresent()) {
                 constraints.remove(overlappingConstraint.get());
                 constraints.add(mergePatternPartMatchConstraint(constraint, overlappingConstraint.get()));
@@ -65,8 +65,8 @@ public class MatchConstraintBuilder {
     }
 
     private PatternPartMatchConstraint mergePatternPartMatchConstraint(
-            PatternPartMatchConstraint patternPartMatchConstraintA,
-            PatternPartMatchConstraint patternPartMatchConstraintB
+        PatternPartMatchConstraint patternPartMatchConstraintA,
+        PatternPartMatchConstraint patternPartMatchConstraintB
     ) {
         LinkedHashSet<MatchConstraint> matchConstraints = new LinkedHashSet<>();
         matchConstraints.addAll(patternPartMatchConstraintB.getMatchConstraints());
@@ -93,8 +93,8 @@ public class MatchConstraintBuilder {
     }
 
     private boolean patternPartMatchConstraintHasOverlap(
-            PatternPartMatchConstraint patternPartMatchConstraint,
-            PatternPartMatchConstraint newPatternPartMatchConstraint
+        PatternPartMatchConstraint patternPartMatchConstraint,
+        PatternPartMatchConstraint newPatternPartMatchConstraint
     ) {
         Set<String> partNames = patternPartMatchConstraint.getPartNames();
         Set<String> newPartNames = newPatternPartMatchConstraint.getPartNames();
@@ -108,20 +108,20 @@ public class MatchConstraintBuilder {
 
     private MatchConstraints matchClauseToConstraints(CypherMatchClause cypherMatchClause) {
         LinkedList<PatternPartMatchConstraint> ll = new LinkedList<>(
-                cypherMatchClause.getPatternParts().stream()
-                        .map(pp -> patternPartToConstraints(pp, cypherMatchClause.isOptional()))
-                        .collect(Collectors.toList())
+            cypherMatchClause.getPatternParts().stream()
+                .map(pp -> patternPartToConstraints(pp, cypherMatchClause.isOptional()))
+                .collect(Collectors.toList())
         );
         LinkedHashSet<PatternPartMatchConstraint> patternPartMatchConstraints = collapseConstraints(ll);
         ArrayList<CypherAstBase> whereExpressions = cypherMatchClause.getWhereExpression() == null
-                ? Lists.newArrayList()
-                : Lists.newArrayList(cypherMatchClause.getWhereExpression());
+            ? Lists.newArrayList()
+            : Lists.newArrayList(cypherMatchClause.getWhereExpression());
         return new MatchConstraints(patternPartMatchConstraints, whereExpressions);
     }
 
     public PatternPartMatchConstraint patternPartToConstraints(
-            CypherPatternPart patternPart,
-            boolean optional
+        CypherPatternPart patternPart,
+        boolean optional
     ) {
         String pathName = patternPart.getName();
         CypherListLiteral<CypherElementPattern> elementPatterns = patternPart.getElementPatterns();
@@ -132,15 +132,15 @@ public class MatchConstraintBuilder {
         for (CypherElementPattern elementPattern : elementPatterns) {
             if (elementPattern instanceof CypherNodePattern) {
                 Optional<NodeMatchConstraint> existingNodeMatchConstraint = allConstraints.stream()
-                        .filter(c -> c.getName() != null && c.getName().equals(elementPattern.getName()))
-                        .map(c -> (NodeMatchConstraint) c)
-                        .findFirst();
+                    .filter(c -> c.getName() != null && c.getName().equals(elementPattern.getName()))
+                    .map(c -> (NodeMatchConstraint) c)
+                    .findFirst();
                 NodeMatchConstraint nodeMatchConstraint = existingNodeMatchConstraint.orElseGet(
-                        () -> new NodeMatchConstraint(
-                                elementPattern.getName(),
-                                Lists.newArrayList(),
-                                optional
-                        )
+                    () -> new NodeMatchConstraint(
+                        elementPattern.getName(),
+                        Lists.newArrayList(),
+                        optional
+                    )
                 );
                 nodeMatchConstraint.getPatterns().add((CypherNodePattern) elementPattern);
                 allConstraints.add(nodeMatchConstraint);
@@ -156,9 +156,9 @@ public class MatchConstraintBuilder {
                 previousConstraint = nodeMatchConstraint;
             } else if (elementPattern instanceof CypherRelationshipPattern) {
                 RelationshipMatchConstraint relationshipMatchConstraint = new RelationshipMatchConstraint(
-                        elementPattern.getName(),
-                        Lists.newArrayList((CypherRelationshipPattern) elementPattern),
-                        optional
+                    elementPattern.getName(),
+                    Lists.newArrayList((CypherRelationshipPattern) elementPattern),
+                    optional
                 );
                 allConstraints.add(relationshipMatchConstraint);
                 if (previousConstraint != null) {

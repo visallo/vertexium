@@ -61,9 +61,9 @@ public class VertexiumCypherScope implements VertexiumCypherResult, ExpressionSc
     }
 
     public static VertexiumCypherScope newItemsScope(
-            List<Item> items,
-            LinkedHashSet<String> columnNames,
-            VertexiumCypherScope parentScope
+        List<Item> items,
+        LinkedHashSet<String> columnNames,
+        VertexiumCypherScope parentScope
     ) {
         return new VertexiumCypherScope(items, columnNames, parentScope);
     }
@@ -73,9 +73,9 @@ public class VertexiumCypherScope implements VertexiumCypherResult, ExpressionSc
     }
 
     public static VertexiumCypherScope newItemsScope(
-            Stream<Item> items,
-            LinkedHashSet<String> columnNames,
-            VertexiumCypherScope parentScope
+        Stream<Item> items,
+        LinkedHashSet<String> columnNames,
+        VertexiumCypherScope parentScope
     ) {
         return new VertexiumCypherScope(items, columnNames, parentScope);
     }
@@ -118,9 +118,9 @@ public class VertexiumCypherScope implements VertexiumCypherResult, ExpressionSc
 
     public List<Object> getByName(String name) {
         List<Object> results = getItemsCollection().stream()
-                .map(i -> i.getByName(name, false))
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
+            .map(i -> i.getByName(name, false))
+            .filter(Objects::nonNull)
+            .collect(Collectors.toList());
         if (results.size() == 0 && getParentScope() != null) {
             return getParentScope().getByName(name);
         }
@@ -130,7 +130,7 @@ public class VertexiumCypherScope implements VertexiumCypherResult, ExpressionSc
     @Override
     public boolean contains(String name) {
         boolean results = getItemsCollection().stream()
-                .anyMatch(i -> i.contains(name, false));
+            .anyMatch(i -> i.contains(name, false));
         if (results) {
             return true;
         }
@@ -157,10 +157,10 @@ public class VertexiumCypherScope implements VertexiumCypherResult, ExpressionSc
 
     public static Collector<VertexiumCypherScope, Builder, VertexiumCypherScope> concatStreams(VertexiumCypherScope parentScope) {
         return Collector.of(
-                () -> new Builder(parentScope),
-                Builder::add,
-                Builder::concat,
-                Builder::build
+            () -> new Builder(parentScope),
+            Builder::add,
+            Builder::concat,
+            Builder::build
         );
     }
 
@@ -338,14 +338,14 @@ public class VertexiumCypherScope implements VertexiumCypherResult, ExpressionSc
             List<Entry> allEntries = new ArrayList<>(this.items);
             allEntries.add(new Entry(name, element));
             return new PathItem(pathName, allEntries, getParentScope())
-                    .setPrintMode(getPrintMode());
+                .setPrintMode(getPrintMode());
         }
 
         public PathItem concat(PathItem pathItem) {
             List<Entry> entries = new ArrayList<>(this.items);
             int offset = 0;
             if (entries.size() > 0 && pathItem.items.size() > 0
-                    && entries.get(entries.size() - 1).element.equals(pathItem.items.get(0).element)) {
+                && entries.get(entries.size() - 1).element.equals(pathItem.items.get(0).element)) {
                 offset = 1;
             }
             entries.addAll(pathItem.items.subList(offset, pathItem.items.size()));
@@ -358,16 +358,16 @@ public class VertexiumCypherScope implements VertexiumCypherResult, ExpressionSc
 
         public List<Edge> getEdges() {
             return items.stream()
-                    .filter(e -> e.element instanceof Edge)
-                    .map(e -> (Edge) e.element)
-                    .collect(Collectors.toList());
+                .filter(e -> e.element instanceof Edge)
+                .map(e -> (Edge) e.element)
+                .collect(Collectors.toList());
         }
 
         public List<Vertex> getVertices() {
             return items.stream()
-                    .filter(e -> e.element instanceof Vertex)
-                    .map(e -> (Vertex) e.element)
-                    .collect(Collectors.toList());
+                .filter(e -> e.element instanceof Vertex)
+                .map(e -> (Vertex) e.element)
+                .collect(Collectors.toList());
         }
 
         public Element getElement(int index) {
@@ -404,9 +404,9 @@ public class VertexiumCypherScope implements VertexiumCypherResult, ExpressionSc
         public String toString(VertexiumCypherQueryContext ctx) {
             if (printMode == PrintMode.RELATIONSHIP_RANGE) {
                 return "[" + items.stream()
-                        .filter(item -> item.element instanceof Edge)
-                        .map(item -> item.toString(ctx))
-                        .collect(Collectors.joining(", ")) + "]";
+                    .filter(item -> item.element instanceof Edge)
+                    .map(item -> item.toString(ctx))
+                    .collect(Collectors.joining(", ")) + "]";
             }
 
             StringBuilder result = new StringBuilder();
@@ -463,9 +463,9 @@ public class VertexiumCypherScope implements VertexiumCypherResult, ExpressionSc
 
         public int getLength() {
             return (int) items.stream()
-                    .filter(e -> e.element instanceof Edge)
-                    .map(e -> (Edge) e.element)
-                    .count();
+                .filter(e -> e.element instanceof Edge)
+                .map(e -> (Edge) e.element)
+                .count();
         }
 
         @Override
@@ -477,13 +477,13 @@ public class VertexiumCypherScope implements VertexiumCypherResult, ExpressionSc
         public List<VertexiumCypherPath.Item> getItems() {
             ImmutableList.Builder<VertexiumCypherPath.Item> builder = ImmutableList.builder();
             return builder
-                    .addAll(items)
-                    .build();
+                .addAll(items)
+                .build();
         }
 
         public boolean canVertexConnectOrFoundAtStartOrEnd(Vertex vertex) {
             return canVertexConnectOrFound(getFirstElement(), vertex)
-                    || canVertexConnectOrFound(getLastElement(), vertex);
+                || canVertexConnectOrFound(getLastElement(), vertex);
         }
 
         private boolean canVertexConnectOrFound(Element element, Vertex vertex) {
@@ -492,7 +492,7 @@ public class VertexiumCypherScope implements VertexiumCypherResult, ExpressionSc
             } else if (element instanceof Edge) {
                 Edge edge = (Edge) element;
                 return edge.getVertexId(Direction.OUT).equals(vertex.getId())
-                        || edge.getVertexId(Direction.IN).equals(vertex.getId());
+                    || edge.getVertexId(Direction.IN).equals(vertex.getId());
             }
             return false;
         }
@@ -511,9 +511,9 @@ public class VertexiumCypherScope implements VertexiumCypherResult, ExpressionSc
             @Override
             public String toString() {
                 return "{" +
-                        "name='" + name + '\'' +
-                        ", " + (element instanceof Vertex ? "vertex" : "edge") + "Id=" + (element == null ? null : element.getId()) +
-                        '}';
+                    "name='" + name + '\'' +
+                    ", " + (element instanceof Vertex ? "vertex" : "edge") + "Id=" + (element == null ? null : element.getId()) +
+                    '}';
             }
 
             public String toString(VertexiumCypherQueryContext ctx) {

@@ -1,6 +1,5 @@
 package org.vertexium.cypher.functions;
 
-import org.vertexium.VertexiumException;
 import org.vertexium.cypher.VertexiumCypherQueryContext;
 import org.vertexium.cypher.ast.CypherCompilerContext;
 import org.vertexium.cypher.ast.model.CypherAstBase;
@@ -25,9 +24,9 @@ public abstract class CypherFunction {
         }
 
         throw new VertexiumCypherArgumentErrorException(String.format(
-                "Unexpected number of arguments. Expected %s, found %d",
-                Arrays.stream(expectedCounts).mapToObj(Integer::toString).collect(Collectors.joining(", ")),
-                arguments.length
+            "Unexpected number of arguments. Expected %s, found %d",
+            Arrays.stream(expectedCounts).mapToObj(Integer::toString).collect(Collectors.joining(", ")),
+            arguments.length
         ));
     }
 

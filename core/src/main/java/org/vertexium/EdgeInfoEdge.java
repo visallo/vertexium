@@ -4,8 +4,6 @@ import com.google.common.collect.ImmutableSet;
 import org.vertexium.mutation.ExistingEdgeMutation;
 import org.vertexium.query.QueryableIterable;
 
-import java.util.EnumSet;
-
 public class EdgeInfoEdge extends ElementBase implements Edge {
     private final Graph graph;
     private final String sourceVertexId;
@@ -14,11 +12,11 @@ public class EdgeInfoEdge extends ElementBase implements Edge {
     private final FetchHints fetchHints;
 
     public EdgeInfoEdge(
-            Graph graph,
-            String sourceVertexId,
-            EdgeInfo edgeInfo,
-            FetchHints fetchHints,
-            Authorizations authorizations
+        Graph graph,
+        String sourceVertexId,
+        EdgeInfo edgeInfo,
+        FetchHints fetchHints,
+        Authorizations authorizations
     ) {
         this.graph = graph;
         this.sourceVertexId = sourceVertexId;
@@ -146,7 +144,7 @@ public class EdgeInfoEdge extends ElementBase implements Edge {
     @Override
     public String toString() {
         return "EdgeInfoEdge{" +
-                "edgeInfo=" + edgeInfo +
-                '}';
+            "edgeInfo=" + edgeInfo +
+            '}';
     }
 }

@@ -6,8 +6,6 @@ import org.vertexium.util.IterableUtils;
 import org.vertexium.util.JoinIterable;
 import org.vertexium.util.VerticesToEdgeIdsIterable;
 
-import java.util.EnumSet;
-
 public class DefaultMultiVertexQuery extends QueryBase implements MultiVertexQuery {
     private final String[] vertexIds;
 
@@ -45,6 +43,6 @@ public class DefaultMultiVertexQuery extends QueryBase implements MultiVertexQue
     @Override
     public String toString() {
         return super.toString() +
-                ", vertexIds=" + Joiner.on(", ").join(vertexIds);
+            ", vertexIds=" + Joiner.on(", ").join(vertexIds);
     }
 }

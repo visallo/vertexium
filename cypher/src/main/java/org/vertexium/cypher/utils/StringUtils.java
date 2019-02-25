@@ -149,13 +149,13 @@ public class StringUtils {
                 case '8':
                 case '9':
                     die("illegal octal digit");
-                      /* NOTREACHED */
+                    /* NOTREACHED */
 
-                /*
-                 * may be 0 to 2 octal digits following this one
-                 * so back up one for fallthrough to next case;
-                 * unread this digit and fall through to next case.
-                 */
+                    /*
+                     * may be 0 to 2 octal digits following this one
+                     * so back up one for fallthrough to next case;
+                     * unread this digit and fall through to next case.
+                     */
                 case '1':
                 case '2':
                 case '3':
@@ -164,13 +164,13 @@ public class StringUtils {
                 case '6':
                 case '7':
                     --i;
-                      /* FALLTHROUGH */
+                    /* FALLTHROUGH */
 
-                /*
-                 * Can have 0, 1, or 2 octal digits following a 0
-                 * this permits larger values than octal 377, up to
-                 * octal 777.
-                 */
+                    /*
+                     * Can have 0, 1, or 2 octal digits following a 0
+                     * this permits larger values than octal 377, up to
+                     * octal 777.
+                     */
                 case '0': {
                     if (i + 1 == oldstr.length()) {
                         /* found \0 at end of string */
@@ -199,7 +199,7 @@ public class StringUtils {
                     int value = 0;
                     try {
                         value = Integer.parseInt(
-                                oldstr.substring(i, i + digits), 8);
+                            oldstr.substring(i, i + digits), 8);
                     } catch (NumberFormatException nfe) {
                         die("invalid octal value for \\0 escape");
                     }
@@ -223,7 +223,7 @@ public class StringUtils {
                     for (j = 0; j < 8; j++) {
 
                         if (!saw_brace && j == 2) {
-                            break;  /* for */
+                            break; // for
                         }
 
                         /*
@@ -239,14 +239,9 @@ public class StringUtils {
                         }
 
                         if (!((ch >= '0' && ch <= '9')
-                                ||
-                                (ch >= 'a' && ch <= 'f')
-                                ||
-                                (ch >= 'A' && ch <= 'F')
-                        )
-                                ) {
-                            die(String.format(
-                                    "illegal hex digit #%d '%c' in \\x", ch, ch));
+                            || (ch >= 'a' && ch <= 'f')
+                            || (ch >= 'A' && ch <= 'F'))) {
+                            die(String.format("illegal hex digit #%d '%c' in \\x", ch, ch));
                         }
 
                     }
@@ -274,7 +269,7 @@ public class StringUtils {
                     i++;
                     int j;
                     for (j = 0; j < 4; j++) {
-                    /* this also handles the surrogate issue */
+                        /* this also handles the surrogate issue */
                         if (oldstr.charAt(i + j) > 127) {
                             die("illegal non-ASCII hex digit in \\u escape");
                         }
@@ -297,7 +292,7 @@ public class StringUtils {
                     i++;
                     int j;
                     for (j = 0; j < 8; j++) {
-                    /* this also handles the surrogate issue */
+                        /* this also handles the surrogate issue */
                         if (oldstr.charAt(i + j) > 127) {
                             die("illegal non-ASCII hex digit in \\U escape");
                         }
@@ -316,11 +311,11 @@ public class StringUtils {
                 default:
                     newstr.append('\\');
                     newstr.append(Character.toChars(cp));
-                   /*
-                    * say(String.format(
-                    *       "DEFAULT unrecognized escape %c passed through",
-                    *       cp));
-                    */
+                    /*
+                     * say(String.format(
+                     *       "DEFAULT unrecognized escape %c passed through",
+                     *       cp));
+                     */
                     break; /* switch */
 
             }

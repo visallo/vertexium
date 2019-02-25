@@ -69,6 +69,8 @@
         <apache.curator.version>2.12.0</apache.curator.version>
         <recurrent.version>0.3.2</recurrent.version>
         <mockito.version>1.9.5</mockito.version>
+        <puppycrawl.checkstyle.version>8.17</puppycrawl.checkstyle.version>
+        <plugin.maven.checkstyle.version>3.0.0</plugin.maven.checkstyle.version>
 
         <maven.plugin.gpg.version>1.6</maven.plugin.gpg.version>
         <maven.plugin.javadoc.version>2.10.4</maven.plugin.javadoc.version>
@@ -337,6 +339,37 @@
                         </manifestEntries>
                     </archive>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-checkstyle-plugin</artifactId>
+                <version>${plugin.maven.checkstyle.version}</version>
+                <configuration>
+                    <configLocation>checkstyle.xml</configLocation>
+                    <suppressionsLocation>checkstyle-suppressions.xml</suppressionsLocation>
+                    <suppressionsFileExpression>checkstyle.suppressions.file</suppressionsFileExpression>
+                    <encoding>UTF-8</encoding>
+                    <consoleOutput>true</consoleOutput>
+                    <violationSeverity>warning</violationSeverity>
+                    <failsOnError>true</failsOnError>
+                    <failOnViolaton>true</failOnViolaton>
+                </configuration>
+                <dependencies>
+                    <dependency>
+                        <groupId>com.puppycrawl.tools</groupId>
+                        <artifactId>checkstyle</artifactId>
+                        <version>${puppycrawl.checkstyle.version}</version>
+                    </dependency>
+                </dependencies>
+                <executions>
+                    <execution>
+                        <id>checkstyle</id>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
 

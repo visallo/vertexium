@@ -19,7 +19,6 @@ import org.vertexium.mutation.PropertyDeleteMutation;
 import org.vertexium.mutation.PropertySoftDeleteMutation;
 
 import javax.annotation.Nullable;
-import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.Map;
 
@@ -55,22 +54,22 @@ public class AccumuloVertexInputFormat extends AccumuloElementInputFormatBase<Ve
                 }
             });
             ImmutableSet<String> extendedDataTableNames = vertexElementData.extendedTableNames.size() > 0
-                    ? ImmutableSet.copyOf(vertexElementData.extendedTableNames)
-                    : null;
+                ? ImmutableSet.copyOf(vertexElementData.extendedTableNames)
+                : null;
             return new AccumuloVertex(
-                    graph,
-                    vertexElementData.id.toString(),
-                    visibility,
-                    properties,
-                    propertyDeleteMutations,
-                    propertySoftDeleteMutations,
-                    hiddenVisibilities,
-                    extendedDataTableNames,
-                    vertexElementData.inEdges,
-                    vertexElementData.outEdges,
-                    vertexElementData.timestamp,
-                    fetchHints,
-                    authorizations
+                graph,
+                vertexElementData.id.toString(),
+                visibility,
+                properties,
+                propertyDeleteMutations,
+                propertySoftDeleteMutations,
+                hiddenVisibilities,
+                extendedDataTableNames,
+                vertexElementData.inEdges,
+                vertexElementData.outEdges,
+                vertexElementData.timestamp,
+                fetchHints,
+                authorizations
             );
         } catch (Throwable ex) {
             throw new VertexiumException("Failed to create vertex", ex);

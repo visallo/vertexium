@@ -31,20 +31,20 @@ public class ReturnClauseExecutor {
     }
 
     public VertexiumCypherScope execute(
-            VertexiumCypherQueryContext ctx,
-            boolean distinct,
-            CypherReturnBody returnBody,
-            VertexiumCypherScope scope
+        VertexiumCypherQueryContext ctx,
+        boolean distinct,
+        CypherReturnBody returnBody,
+        VertexiumCypherScope scope
     ) {
         List<CypherReturnItem> returnItems = returnBody.getReturnItems()
-                .stream()
-                .flatMap(ri -> {
-                    if (ri.getExpression() instanceof CypherAllLiteral) {
-                        return getAllFieldNamesAsReturnItems(scope);
-                    }
-                    return Stream.of(ri);
-                })
-                .collect(Collectors.toList());
+            .stream()
+            .flatMap(ri -> {
+                if (ri.getExpression() instanceof CypherAllLiteral) {
+                    return getAllFieldNamesAsReturnItems(scope);
+                }
+                return Stream.of(ri);
+            })
+            .collect(Collectors.toList());
         LinkedHashSet<String> columnNames = getColumnNames(returnItems);
 
         Stream<VertexiumCypherScope.Item> rows = scope.stream();
@@ -55,10 +55,10 @@ public class ReturnClauseExecutor {
         } else if (aggregationCount > 0 && isGroupable(returnItems.get(0))) {
             Map<Optional<?>, VertexiumCypherScope> groups = groupBy(ctx, returnItems.get(0), rows);
             rows = groups.entrySet().stream()
-                    .map(group -> getReturnRow(ctx, returnItems, group.getKey(), group.getValue()));
+                .map(group -> getReturnRow(ctx, returnItems, group.getKey(), group.getValue()));
         } else {
             rows = rows
-                    .map(row -> getReturnRow(ctx, returnItems, null, row));
+                .map(row -> getReturnRow(ctx, returnItems, null, row));
         }
 
         if (distinct) {
@@ -73,8 +73,8 @@ public class ReturnClauseExecutor {
     private boolean isGroupable(CypherReturnItem cypherReturnItem) {
         CypherAstBase expression = cypherReturnItem.getExpression();
         if (expression instanceof CypherVariable
-                || expression instanceof CypherLookup
-                || expression instanceof CypherPatternComprehension) {
+            || expression instanceof CypherLookup
+            || expression instanceof CypherPatternComprehension) {
             return true;
         }
         if (expression instanceof CypherFunctionInvocation) {
@@ -84,10 +84,10 @@ public class ReturnClauseExecutor {
     }
 
     private VertexiumCypherScope.Item getReturnRow(
-            VertexiumCypherQueryContext ctx,
-            List<CypherReturnItem> returnItems,
-            Optional<?> firstItemValue,
-            ExpressionScope scope
+        VertexiumCypherQueryContext ctx,
+        List<CypherReturnItem> returnItems,
+        Optional<?> firstItemValue,
+        ExpressionScope scope
     ) {
         LinkedHashMap<String, Object> values = new LinkedHashMap<>();
         for (int i = 0; i < returnItems.size(); i++) {
@@ -109,35 +109,35 @@ public class ReturnClauseExecutor {
 
     private LinkedHashSet<String> getColumnNames(Iterable<CypherReturnItem> returnItems) {
         return stream(returnItems)
-                .map(CypherReturnItem::getResultColumnName)
-                .collect(StreamUtils.toLinkedHashSet());
+            .map(CypherReturnItem::getResultColumnName)
+            .collect(StreamUtils.toLinkedHashSet());
     }
 
     private Map<Optional<?>, VertexiumCypherScope> groupBy(
-            VertexiumCypherQueryContext ctx,
-            CypherReturnItem returnItem,
-            Stream<VertexiumCypherScope.Item> rows
+        VertexiumCypherQueryContext ctx,
+        CypherReturnItem returnItem,
+        Stream<VertexiumCypherScope.Item> rows
     ) {
         Set<Map.Entry<Optional<Object>, List<VertexiumCypherScope.Item>>> results = rows
-                .collect(Collectors.groupingBy(row -> Optional.ofNullable(
-                        ctx.getExpressionExecutor().executeExpression(ctx, returnItem.getExpression(), row)
-                )))
-                .entrySet();
+            .collect(Collectors.groupingBy(row -> Optional.ofNullable(
+                ctx.getExpressionExecutor().executeExpression(ctx, returnItem.getExpression(), row)
+            )))
+            .entrySet();
         return results.stream()
-                .collect(Collectors.toMap(
-                        Map.Entry::getKey,
-                        o -> {
-                            List<VertexiumCypherScope.Item> items = o.getValue();
-                            VertexiumCypherScope parentScope = items.get(0).getParentCypherScope();
-                            return VertexiumCypherScope.newItemsScope(items.stream(), parentScope);
-                        }
-                ));
+            .collect(Collectors.toMap(
+                Map.Entry::getKey,
+                o -> {
+                    List<VertexiumCypherScope.Item> items = o.getValue();
+                    VertexiumCypherScope parentScope = items.get(0).getParentCypherScope();
+                    return VertexiumCypherScope.newItemsScope(items.stream(), parentScope);
+                }
+            ));
     }
 
     private long aggregationCount(VertexiumCypherQueryContext ctx, Iterable<CypherReturnItem> returnItems) {
         return stream(returnItems)
-                .filter(ri -> hasAggregations(ctx, ri))
-                .count();
+            .filter(ri -> hasAggregations(ctx, ri))
+            .count();
     }
 
     private boolean hasAggregations(VertexiumCypherQueryContext ctx, CypherAstBase ri) {
@@ -155,7 +155,7 @@ public class ReturnClauseExecutor {
 
     private Stream<CypherReturnItem> getAllFieldNamesAsReturnItems(VertexiumCypherScope scope) {
         return scope.getColumnNames().stream()
-                .map(n -> new CypherReturnItem(n, new CypherVariable(n), n));
+            .map(n -> new CypherReturnItem(n, new CypherVariable(n), n));
     }
 
     /*
@@ -187,9 +187,9 @@ public class ReturnClauseExecutor {
     }
 
     public VertexiumCypherScope applyReturnBody(
-            VertexiumCypherQueryContext ctx,
-            CypherReturnBody returnBody,
-            VertexiumCypherScope results
+        VertexiumCypherQueryContext ctx,
+        CypherReturnBody returnBody,
+        VertexiumCypherScope results
     ) {
         Stream<VertexiumCypherScope.Item> rows = results.stream();
         if (returnBody.getOrder() != null) {
@@ -205,9 +205,9 @@ public class ReturnClauseExecutor {
     }
 
     private Stream<VertexiumCypherScope.Item> applyOrderByToResults(
-            VertexiumCypherQueryContext ctx,
-            Stream<VertexiumCypherScope.Item> results,
-            CypherOrderBy orderByClause
+        VertexiumCypherQueryContext ctx,
+        Stream<VertexiumCypherScope.Item> results,
+        CypherOrderBy orderByClause
     ) {
         List<CypherSortItem> sortItems = orderByClause.getSortItems();
         return results.sorted((o1, o2) -> {
@@ -241,10 +241,10 @@ public class ReturnClauseExecutor {
     }
 
     private Stream<VertexiumCypherScope.Item> applyLimitToResults(
-            VertexiumCypherQueryContext ctx,
-            Stream<VertexiumCypherScope.Item> results,
-            CypherLimit limitClause,
-            VertexiumCypherScope scope
+        VertexiumCypherQueryContext ctx,
+        Stream<VertexiumCypherScope.Item> results,
+        CypherLimit limitClause,
+        VertexiumCypherScope scope
     ) {
         Object limitObj = ctx.getExpressionExecutor().executeExpression(ctx, limitClause.getExpression(), scope);
         int limit;
@@ -261,10 +261,10 @@ public class ReturnClauseExecutor {
     }
 
     private Stream<VertexiumCypherScope.Item> applySkipToResults(
-            VertexiumCypherQueryContext ctx,
-            Stream<VertexiumCypherScope.Item> results,
-            CypherSkip skipClause,
-            VertexiumCypherScope scope
+        VertexiumCypherQueryContext ctx,
+        Stream<VertexiumCypherScope.Item> results,
+        CypherSkip skipClause,
+        VertexiumCypherScope scope
     ) {
         Object skipObj = ctx.getExpressionExecutor().executeExpression(ctx, skipClause.getExpression(), scope);
         int skip;

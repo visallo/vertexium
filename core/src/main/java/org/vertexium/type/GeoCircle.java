@@ -86,11 +86,15 @@ public class GeoCircle extends GeoShapeBase {
         double minLon, maxLon;
         if (minLat > MIN_LAT && maxLat < MAX_LAT) {
             double deltaLon = Math.asin(Math.sin(radDist) /
-                                                Math.cos(radLat));
+                Math.cos(radLat));
             minLon = radLon - deltaLon;
-            if (minLon < MIN_LON) minLon += 2d * Math.PI;
+            if (minLon < MIN_LON) {
+                minLon += 2d * Math.PI;
+            }
             maxLon = radLon + deltaLon;
-            if (maxLon > MAX_LON) maxLon -= 2d * Math.PI;
+            if (maxLon > MAX_LON) {
+                maxLon -= 2d * Math.PI;
+            }
         } else {
             // a pole is within the distance
             minLat = Math.max(minLat, MIN_LAT);
@@ -100,8 +104,8 @@ public class GeoCircle extends GeoShapeBase {
         }
 
         return new GeoRect(
-                new GeoPoint(Math.toDegrees(maxLat), Math.toDegrees(minLon)),
-                new GeoPoint(Math.toDegrees(minLat), Math.toDegrees(maxLon))
+            new GeoPoint(Math.toDegrees(maxLat), Math.toDegrees(minLon)),
+            new GeoPoint(Math.toDegrees(minLat), Math.toDegrees(maxLon))
         );
     }
 

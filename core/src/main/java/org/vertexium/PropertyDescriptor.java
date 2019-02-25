@@ -48,21 +48,29 @@ public class PropertyDescriptor {
     @Override
     public String toString() {
         return "PropertyDescriptor{" +
-                "key='" + key + '\'' +
-                ", name='" + name + '\'' +
-                ", visibility=" + visibility +
-                '}';
+            "key='" + key + '\'' +
+            ", name='" + name + '\'' +
+            ", visibility=" + visibility +
+            '}';
     }
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
 
         PropertyDescriptor that = (PropertyDescriptor) o;
 
-        if (key != null ? !key.equals(that.key) : that.key != null) return false;
-        if (name != null ? !name.equals(that.name) : that.name != null) return false;
+        if (key != null ? !key.equals(that.key) : that.key != null) {
+            return false;
+        }
+        if (name != null ? !name.equals(that.name) : that.name != null) {
+            return false;
+        }
         return visibility != null ? visibility.equals(that.visibility) : that.visibility == null;
 
     }

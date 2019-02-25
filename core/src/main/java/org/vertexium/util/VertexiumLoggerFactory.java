@@ -1,7 +1,6 @@
 package org.vertexium.util;
 
 import org.slf4j.LoggerFactory;
-import org.vertexium.Graph;
 
 import java.util.HashMap;
 import java.util.Map;

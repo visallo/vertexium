@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -35,7 +35,7 @@ import java.util.concurrent.ConcurrentHashMap;
 class WritableComparator implements RawComparator {
 
     private static final ConcurrentHashMap<Class, WritableComparator> comparators
-            = new ConcurrentHashMap<Class, WritableComparator>(); // registry
+        = new ConcurrentHashMap<Class, WritableComparator>(); // registry
 
     /**
      * Get a comparator for a {@link WritableComparable} implementation.
@@ -134,17 +134,17 @@ class WritableComparator implements RawComparator {
     @Override
     public int compare(byte[] b1, int s1, int l1, byte[] b2, int s2, int l2) {
         try {
-            buffer.reset(b1, s1, l1);                   // parse key1
+            buffer.reset(b1, s1, l1); // parse key1
             key1.readFields(buffer);
 
-            buffer.reset(b2, s2, l2);                   // parse key2
+            buffer.reset(b2, s2, l2); // parse key2
             key2.readFields(buffer);
 
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
 
-        return compare(key1, key2);                   // compare them
+        return compare(key1, key2); // compare them
     }
 
     /**
@@ -176,8 +176,9 @@ class WritableComparator implements RawComparator {
      */
     public static int hashBytes(byte[] bytes, int offset, int length) {
         int hash = 1;
-        for (int i = offset; i < offset + length; i++)
+        for (int i = offset; i < offset + length; i++) {
             hash = (31 * hash) + (int) bytes[i];
+        }
         return hash;
     }
 
@@ -193,7 +194,7 @@ class WritableComparator implements RawComparator {
      */
     public static int readUnsignedShort(byte[] bytes, int start) {
         return (((bytes[start] & 0xff) << 8) +
-                ((bytes[start + 1] & 0xff)));
+            ((bytes[start + 1] & 0xff)));
     }
 
     /**
@@ -201,9 +202,9 @@ class WritableComparator implements RawComparator {
      */
     public static int readInt(byte[] bytes, int start) {
         return (((bytes[start] & 0xff) << 24) +
-                ((bytes[start + 1] & 0xff) << 16) +
-                ((bytes[start + 2] & 0xff) << 8) +
-                ((bytes[start + 3] & 0xff)));
+            ((bytes[start + 1] & 0xff) << 16) +
+            ((bytes[start + 2] & 0xff) << 8) +
+            ((bytes[start + 3] & 0xff)));
 
     }
 
@@ -219,7 +220,7 @@ class WritableComparator implements RawComparator {
      */
     public static long readLong(byte[] bytes, int start) {
         return ((long) (readInt(bytes, start)) << 32) +
-                (readInt(bytes, start + 4) & 0xFFFFFFFFL);
+            (readInt(bytes, start + 4) & 0xFFFFFFFFL);
     }
 
     /**
@@ -244,9 +245,9 @@ class WritableComparator implements RawComparator {
         }
         boolean isNegative = (len < -120);
         len = isNegative ? -(len + 120) : -(len + 112);
-        if (start + 1 + len > bytes.length)
-            throw new IOException(
-                    "Not enough number of bytes for a zero-compressed integer");
+        if (start + 1 + len > bytes.length) {
+            throw new IOException("Not enough number of bytes for a zero-compressed integer");
+        }
         long i = 0;
         for (int idx = 0; idx < len; idx++) {
             i = i << 8;
