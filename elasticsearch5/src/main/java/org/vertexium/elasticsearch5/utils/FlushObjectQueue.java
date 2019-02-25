@@ -13,56 +13,63 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class FlushObjectQueue {
     private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(FlushObjectQueue.class);
     private static final int MAX_RETRIES = 10;
     private final Elasticsearch5SearchIndex searchIndex;
-    private ReadWriteLock flushLock = new ReentrantReadWriteLock();
-    private Queue<FlushObject> queue = new ConcurrentLinkedQueue<>();
+    private final Queue<FlushObject> queue = new ConcurrentLinkedQueue<>();
 
     public FlushObjectQueue(Elasticsearch5SearchIndex searchIndex) {
         this.searchIndex = searchIndex;
     }
 
     public void flush() {
-        flushLock.writeLock().lock();
-        try {
-            int sleep = 0;
-            while (!queue.isEmpty()) {
-                FlushObject flushObject = queue.remove();
-                try {
-                    flushObject.getFuture().get(30, TimeUnit.MINUTES);
-                    sleep = 0;
-                } catch (Exception ex) {
-                    if (isDocumentMissingException(ex)) {
-                        try {
-                            searchIndex.handleDocumentMissingException(flushObject, ex);
-                        } catch (Exception e) {
-                            throw new VertexiumException(ex);
-                        }
-                        return;
-                    }
-
-                    sleep += 10;
-                    String message = String.format("Could not write %s", flushObject);
-                    if (flushObject.retryCount >= MAX_RETRIES) {
-                        throw new VertexiumException(message, ex);
-                    }
-                    String logMessage = String.format("%s: %s (retrying: %d/%d)", message, ex.getMessage(), flushObject.retryCount + 1, MAX_RETRIES);
-                    if (flushObject.retryCount > 0) { // don't log warn the first time
-                        LOGGER.warn("%s", logMessage);
-                    } else {
-                        LOGGER.debug("%s", logMessage);
-                    }
-
-                    requeueFlushObject(flushObject, sleep);
-                }
+        int sleep = 0;
+        int itemsToFlush = queue.size();
+        while (itemsToFlush > 0) {
+            FlushObject flushObject = removeNext();
+            if (flushObject == null) {
+                break;
             }
-        } finally {
-            flushLock.writeLock().unlock();
+            try {
+                flushObject.getFuture().get(30, TimeUnit.MINUTES);
+                itemsToFlush--;
+                sleep = 0;
+            } catch (Exception ex) {
+                if (isDocumentMissingException(ex)) {
+                    try {
+                        searchIndex.handleDocumentMissingException(flushObject, ex);
+                    } catch (Exception e) {
+                        throw new VertexiumException(ex);
+                    }
+                    return;
+                }
+
+                sleep += 10;
+                String message = String.format("Could not write %s", flushObject);
+                if (flushObject.retryCount >= MAX_RETRIES) {
+                    throw new VertexiumException(message, ex);
+                }
+                String logMessage = String.format("%s: %s (retrying: %d/%d)", message, ex.getMessage(), flushObject.retryCount + 1, MAX_RETRIES);
+                if (flushObject.retryCount > 0) { // don't log warn the first time
+                    LOGGER.warn("%s", logMessage);
+                } else {
+                    LOGGER.debug("%s", logMessage);
+                }
+
+                requeueFlushObject(flushObject, sleep);
+                itemsToFlush = queue.size();
+            }
+        }
+    }
+
+    private FlushObject removeNext() {
+        synchronized (queue) {
+            if (queue.isEmpty()) {
+                return null;
+            }
+            return queue.remove();
         }
     }
 
@@ -83,45 +90,40 @@ public class FlushObjectQueue {
             throw new VertexiumException("failed to sleep", ex);
         }
         long timeToWait = Math.min(
-                ((flushObject.getRetryCount() + 1) * 10) + additionalTimeToSleep,
-                1 * 60 * 1000
+            ((flushObject.getRetryCount() + 1) * 10) + additionalTimeToSleep,
+            1 * 60 * 1000
         );
         long nextRetryTime = System.currentTimeMillis() + timeToWait;
         queue.add(new FlushObject(
-                flushObject.getElementType(),
-                flushObject.getElementId(),
-                flushObject.getExtendedDataTableName(),
-                flushObject.getExtendedDataRowId(),
-                flushObject.getActionRequestBuilder(),
-                flushObject.getActionRequestBuilder().execute(),
-                flushObject.getRetryCount() + 1,
-                nextRetryTime
+            flushObject.getElementType(),
+            flushObject.getElementId(),
+            flushObject.getExtendedDataTableName(),
+            flushObject.getExtendedDataRowId(),
+            flushObject.getActionRequestBuilder(),
+            flushObject.getActionRequestBuilder().execute(),
+            flushObject.getRetryCount() + 1,
+            nextRetryTime
         ));
     }
 
     public void add(
-            ElementType elementType,
-            String elementId,
-            String extendedDataTableName,
-            String rowId,
-            UpdateRequestBuilder updateRequestBuilder,
-            Future future
+        ElementType elementType,
+        String elementId,
+        String extendedDataTableName,
+        String rowId,
+        UpdateRequestBuilder updateRequestBuilder,
+        Future future
     ) {
-        flushLock.readLock().lock();
-        try {
-            queue.add(new FlushObject(elementType, elementId, extendedDataTableName, rowId, updateRequestBuilder, future));
-        } finally {
-            flushLock.readLock().unlock();
-        }
+        queue.add(new FlushObject(elementType, elementId, extendedDataTableName, rowId, updateRequestBuilder, future));
     }
 
     public boolean containsElementId(String elementId) {
-        flushLock.readLock().lock();
-        try {
-            return queue.stream().anyMatch(flushObject -> flushObject.getElementId().equals(elementId));
-        } finally {
-            flushLock.readLock().unlock();
+        for (FlushObject flushObject : queue) {
+            if (flushObject.getElementId().equals(elementId)) {
+                return true;
+            }
         }
+        return false;
     }
 
     public static class FlushObject {
@@ -135,25 +137,25 @@ public class FlushObjectQueue {
         private final long nextRetryTime;
 
         FlushObject(
-                ElementType elementType,
-                String elementId,
-                String extendedDataTableName,
-                String extendedDataRowId,
-                UpdateRequestBuilder updateRequestBuilder,
-                Future future
+            ElementType elementType,
+            String elementId,
+            String extendedDataTableName,
+            String extendedDataRowId,
+            UpdateRequestBuilder updateRequestBuilder,
+            Future future
         ) {
             this(elementType, elementId, extendedDataTableName, extendedDataRowId, updateRequestBuilder, future, 0, 0);
         }
 
         FlushObject(
-                ElementType elementType,
-                String elementId,
-                String extendedDataTableName,
-                String extendedDataRowId,
-                ActionRequestBuilder actionRequestBuilder,
-                Future future,
-                int retryCount,
-                long nextRetryTime
+            ElementType elementType,
+            String elementId,
+            String extendedDataTableName,
+            String extendedDataRowId,
+            ActionRequestBuilder actionRequestBuilder,
+            Future future,
+            int retryCount,
+            long nextRetryTime
         ) {
             this.elementType = elementType;
             this.elementId = elementId;

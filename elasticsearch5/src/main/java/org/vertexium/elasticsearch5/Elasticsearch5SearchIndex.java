@@ -361,7 +361,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
             return;
         }
 
-        if (flushObjectQueue.containsElementId(element.getId())) {
+        while (flushObjectQueue.containsElementId(element.getId())) {
             flushObjectQueue.flush();
         }
 
@@ -385,7 +385,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
             return;
         }
 
-        if (flushObjectQueue.containsElementId(element.getId())) {
+        while (flushObjectQueue.containsElementId(element.getId())) {
             flushObjectQueue.flush();
         }
 

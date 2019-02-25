@@ -1,3 +1,6 @@
+# v4.5.2
+* Changed: Elasticsearch to not use locks when flushing it's internal queue
+
 # v4.5.1
 * Changed: Improve Accumulo iterator memory by not converting values to strings and then back again
 * Changed: Cypher: update to latest openCypher tck
