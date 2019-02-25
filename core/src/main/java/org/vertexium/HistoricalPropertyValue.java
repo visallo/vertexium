@@ -11,9 +11,9 @@ import java.util.Set;
  */
 public class HistoricalPropertyValue implements Serializable, Comparable<HistoricalPropertyValue> {
     static final long serialVersionUID = 42L;
-    private final String propertyKey;               // required
-    private final String propertyName;              // required
-    private final long timestamp;                   // required
+    private final String propertyKey; // required
+    private final String propertyName; // required
+    private final long timestamp; // required
     private final Visibility propertyVisibility;
     private final Object value;
     private final Metadata metadata;

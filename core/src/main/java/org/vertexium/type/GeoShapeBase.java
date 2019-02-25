@@ -8,10 +8,10 @@ public abstract class GeoShapeBase implements GeoShape, Serializable {
     private static final long serialVersionUID = 6993185229233913152L;
     public static double EARTH_RADIUS = 6371; // km
     public static double EARTH_CIRCUMFERENCE = 2 * Math.PI * EARTH_RADIUS;
-    public static final double MIN_LAT = Math.toRadians(-90d);  // -PI/2
-    public static final double MAX_LAT = Math.toRadians(90d);   //  PI/2
+    public static final double MIN_LAT = Math.toRadians(-90d); // -PI/2
+    public static final double MAX_LAT = Math.toRadians(90d); // PI/2
     public static final double MIN_LON = Math.toRadians(-180d); // -PI
-    public static final double MAX_LON = Math.toRadians(180d);  //  PI
+    public static final double MAX_LON = Math.toRadians(180d); // PI
 
     private final String description;
 

@@ -12,9 +12,9 @@ public class VertexiumElasticsearchPlugin extends Plugin implements SearchPlugin
     @Override
     public List<QuerySpec<?>> getQueries() {
         return singletonList(new QuerySpec<>(
-                VertexiumQueryStringQueryBuilder.NAME,
-                VertexiumQueryStringQueryBuilder::new,
-                parseContext -> (Optional<VertexiumQueryStringQueryBuilder>) (Optional) VertexiumQueryStringQueryBuilder.fromXContent(parseContext)
+            VertexiumQueryStringQueryBuilder.NAME,
+            VertexiumQueryStringQueryBuilder::new,
+            parseContext -> (Optional<VertexiumQueryStringQueryBuilder>) (Optional) VertexiumQueryStringQueryBuilder.fromXContent(parseContext)
         ));
     }
 }

@@ -19,7 +19,6 @@ import org.vertexium.mutation.PropertyDeleteMutation;
 import org.vertexium.mutation.PropertySoftDeleteMutation;
 
 import javax.annotation.Nullable;
-import java.util.EnumSet;
 import java.util.Map;
 
 public class AccumuloEdgeInputFormat extends AccumuloElementInputFormatBase<Edge> {
@@ -32,9 +31,9 @@ public class AccumuloEdgeInputFormat extends AccumuloElementInputFormatBase<Edge
 
     @Override
     protected Edge createElementFromRow(
-            AccumuloGraph graph,
-            PeekingIterator<Map.Entry<Key, Value>> row,
-            Authorizations authorizations
+        AccumuloGraph graph,
+        PeekingIterator<Map.Entry<Key, Value>> row,
+        Authorizations authorizations
     ) {
         try {
             FetchHints fetchHints = graph.getDefaultFetchHints();
@@ -54,24 +53,24 @@ public class AccumuloEdgeInputFormat extends AccumuloElementInputFormatBase<Edge
                 }
             });
             ImmutableSet<String> extendedDataTableNames = edgeElementData.extendedTableNames.size() > 0
-                    ? ImmutableSet.copyOf(edgeElementData.extendedTableNames)
-                    : null;
+                ? ImmutableSet.copyOf(edgeElementData.extendedTableNames)
+                : null;
             return new AccumuloEdge(
-                    graph,
-                    edgeElementData.id.toString(),
-                    edgeElementData.outVertexId.toString(),
-                    edgeElementData.inVertexId.toString(),
-                    edgeElementData.label.toString(),
-                    null,
-                    visibility,
-                    properties,
-                    propertyDeleteMutations,
-                    propertySoftDeleteMutations,
-                    hiddenVisibilities,
-                    extendedDataTableNames,
-                    edgeElementData.timestamp,
-                    fetchHints,
-                    authorizations
+                graph,
+                edgeElementData.id.toString(),
+                edgeElementData.outVertexId.toString(),
+                edgeElementData.inVertexId.toString(),
+                edgeElementData.label.toString(),
+                null,
+                visibility,
+                properties,
+                propertyDeleteMutations,
+                propertySoftDeleteMutations,
+                hiddenVisibilities,
+                extendedDataTableNames,
+                edgeElementData.timestamp,
+                fetchHints,
+                authorizations
             );
         } catch (Throwable ex) {
             throw new VertexiumException("Failed to create vertex", ex);

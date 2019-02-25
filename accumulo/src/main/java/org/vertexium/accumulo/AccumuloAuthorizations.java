@@ -12,8 +12,6 @@ import org.vertexium.util.Preconditions;
 import java.io.Serializable;
 import java.util.Arrays;
 
-import static org.vertexium.util.Preconditions.checkNotNull;
-
 public class AccumuloAuthorizations implements Authorizations, Serializable {
     private static final long serialVersionUID = 1L;
     private final String[] authorizations;

@@ -1,7 +1,5 @@
 package org.vertexium.cypher.ast.model;
 
-import org.vertexium.cypher.exceptions.VertexiumCypherNotImplemented;
-
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -25,8 +23,8 @@ public class CypherMergeClause extends CypherClause {
     @Override
     public Stream<? extends CypherAstBase> getChildren() {
         return Stream.concat(
-                Stream.of(getPatternPart()),
-                getMergeActions().stream()
+            Stream.of(getPatternPart()),
+            getMergeActions().stream()
         );
     }
 

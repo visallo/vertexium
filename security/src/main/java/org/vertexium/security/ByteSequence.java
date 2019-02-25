@@ -123,11 +123,13 @@ abstract class ByteSequence implements Comparable<ByteSequence> {
         if (o instanceof ByteSequence) {
             ByteSequence obs = (ByteSequence) o;
 
-            if (this == o)
+            if (this == o) {
                 return true;
+            }
 
-            if (length() != obs.length())
+            if (length() != obs.length()) {
                 return false;
+            }
 
             return compareTo(obs) == 0;
         }
@@ -142,11 +144,13 @@ abstract class ByteSequence implements Comparable<ByteSequence> {
         if (isBackedByArray()) {
             byte[] data = getBackingArray();
             int end = offset() + length();
-            for (int i = offset(); i < end; i++)
+            for (int i = offset(); i < end; i++) {
                 hash = (31 * hash) + data[i];
+            }
         } else {
-            for (int i = 0; i < length(); i++)
+            for (int i = 0; i < length(); i++) {
                 hash = (31 * hash) + byteAt(i);
+            }
         }
         return hash;
     }

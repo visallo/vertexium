@@ -24,14 +24,16 @@ import java.util.List;
 
 class ByteBufferUtil {
     public static byte[] toBytes(ByteBuffer buffer) {
-        if (buffer == null)
+        if (buffer == null) {
             return null;
+        }
         return Arrays.copyOfRange(buffer.array(), buffer.position(), buffer.limit());
     }
 
     public static List<ByteBuffer> toByteBuffers(Collection<byte[]> bytesList) {
-        if (bytesList == null)
+        if (bytesList == null) {
             return null;
+        }
         ArrayList<ByteBuffer> result = new ArrayList<ByteBuffer>();
         for (byte[] bytes : bytesList) {
             result.add(ByteBuffer.wrap(bytes));
@@ -40,8 +42,9 @@ class ByteBufferUtil {
     }
 
     public static List<byte[]> toBytesList(Collection<ByteBuffer> bytesList) {
-        if (bytesList == null)
+        if (bytesList == null) {
             return null;
+        }
         ArrayList<byte[]> result = new ArrayList<byte[]>();
         for (ByteBuffer bytes : bytesList) {
             result.add(toBytes(bytes));
@@ -54,8 +57,9 @@ class ByteBufferUtil {
     }
 
     public static ByteBuffer toByteBuffers(ByteSequence bs) {
-        if (bs == null)
+        if (bs == null) {
             return null;
+        }
 
         if (bs.isBackedByArray()) {
             return ByteBuffer.wrap(bs.getBackingArray(), bs.offset(), bs.length());

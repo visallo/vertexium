@@ -1,0 +1,59 @@
+<?xml version="1.0"?>
+<!DOCTYPE module PUBLIC
+        "-//Puppy Crawl//DTD Check Configuration 1.3//EN"
+        "https://www.puppycrawl.com/dtds/configuration_1_3.dtd">
+
+<!-- Full List of available checks: http://checkstyle.sourceforge.net/checks.html -->
+
+<module name="Checker">
+    <property name="charset" value="UTF-8"/>
+    <property name="severity" value="warning"/>
+
+    <!-- Files excluded from being processed -->
+    <module name="BeforeExecutionExclusionFileFilter">
+        <property name="fileNamePattern" value=".*archetype.*"/>
+    </module>
+
+    <module name="SuppressionFilter">
+        <property name="file" value="${checkstyle.suppressions.file}"/>
+        <property name="optional" value="false"/>
+    </module>
+
+    <module name="SuppressWarningsFilter"/>
+
+    <module name="TreeWalker">
+        <!-- Checkstyle only on files that end  with java -->
+        <property name="fileExtensions" value="java"/>
+
+        <!-- Allows annotations to be used for suppressing warnings -->
+        <module name="SuppressWarningsHolder"/>
+
+        <module name="SuppressionCommentFilter">
+            <property name="checkFormat" value="indentation"/>
+            <property name="messageFormat" value=".*method def.*"/>
+        </module>
+
+        <!-- Checks for redundant and unused imports -->
+        <!-- http://checkstyle.sourceforge.net/config_imports.html#RefundantImport -->
+        <!-- http://checkstyle.sourceforge.net/config_imports.html#UnusedImport -->
+        <module name="RedundantImport"/>
+        <module name="UnusedImports"/>
+
+        <!-- Check for braces -->
+        <!-- http://checkstyle.sourceforge.net/config_blocks.html#NeedBraces -->
+        <module name="NeedBraces"/>
+
+        <!-- Checks for correct indentation -->
+        <!-- http://checkstyle.sourceforge.net/config_misc.html#Indentation -->
+        <module name="Indentation">
+            <property name="arrayInitIndent" value="8"/>
+            <property name="caseIndent" value="4"/>
+        </module>
+
+        <!-- Checks that non-whitespace characters are separated by no more than one whitespace, including comments -->
+        <!-- http://checkstyle.sourceforge.net/config_whitespace.html#SingleSpaceSeparator -->
+        <module name="SingleSpaceSeparator">
+            <property name="validateComments" value="true"/>
+        </module>
+    </module>
+</module>

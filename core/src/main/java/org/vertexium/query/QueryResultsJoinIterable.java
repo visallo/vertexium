@@ -1,7 +1,6 @@
 package org.vertexium.query;
 
 import org.vertexium.Element;
-import org.vertexium.VertexiumException;
 import org.vertexium.util.CloseableIterable;
 import org.vertexium.util.JoinIterable;
 

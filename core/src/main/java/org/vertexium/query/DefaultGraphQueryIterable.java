@@ -15,20 +15,20 @@ import static org.vertexium.util.IterableUtils.toList;
 import static org.vertexium.util.Preconditions.checkNotNull;
 
 public class DefaultGraphQueryIterable<T> implements
-        Iterable<T>,
-        QueryResultsIterable<T>,
-        IterableWithScores<T> {
+    Iterable<T>,
+    QueryResultsIterable<T>,
+    IterableWithScores<T> {
     private final QueryParameters parameters;
     private final Iterable<T> iterable;
     private final boolean evaluateQueryString;
     private final boolean evaluateHasContainers;
 
     public DefaultGraphQueryIterable(
-            QueryParameters parameters,
-            Iterable<T> iterable,
-            boolean evaluateQueryString,
-            boolean evaluateHasContainers,
-            boolean evaluateSortContainers
+        QueryParameters parameters,
+        Iterable<T> iterable,
+        boolean evaluateQueryString,
+        boolean evaluateHasContainers,
+        boolean evaluateSortContainers
     ) {
         checkNotNull(iterable, "iterable cannot be null");
         this.parameters = parameters;
@@ -157,11 +157,11 @@ public class DefaultGraphQueryIterable<T> implements
                         continue;
                     }
                     if (evaluateQueryString
-                            && vertexiumElem != null
-                            && parameters instanceof QueryStringQueryParameters
-                            && ((QueryStringQueryParameters) parameters).getQueryString() != null
-                            && !evaluateQueryString(vertexiumElem, ((QueryStringQueryParameters) parameters).getQueryString())
-                            ) {
+                        && vertexiumElem != null
+                        && parameters instanceof QueryStringQueryParameters
+                        && ((QueryStringQueryParameters) parameters).getQueryString() != null
+                        && !evaluateQueryString(vertexiumElem, ((QueryStringQueryParameters) parameters).getQueryString())
+                    ) {
                         continue;
                     }
 

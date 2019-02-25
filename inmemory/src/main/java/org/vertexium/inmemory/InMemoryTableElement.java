@@ -104,20 +104,20 @@ public abstract class InMemoryTableElement<TElement extends InMemoryElement> imp
 
     private List<PropertyMutation> findPropertyMutations(String key, String name, Visibility visibility) {
         return getFilteredMutations(m ->
-                m instanceof PropertyMutation &&
-                        (key == null || ((PropertyMutation) m).getPropertyKey().equals(key))
-                        && (name == null || ((PropertyMutation) m).getPropertyName().equals(name))
-                        && (visibility == null || ((PropertyMutation) m).getPropertyVisibility().equals(visibility))
+            m instanceof PropertyMutation &&
+                (key == null || ((PropertyMutation) m).getPropertyKey().equals(key))
+                && (name == null || ((PropertyMutation) m).getPropertyName().equals(name))
+                && (visibility == null || ((PropertyMutation) m).getPropertyVisibility().equals(visibility))
         ).stream().map(m -> (PropertyMutation) m).collect(Collectors.toList());
     }
 
     public Iterable<HistoricalPropertyValue> getHistoricalPropertyValues(
-            String key,
-            String name,
-            Visibility visibility,
-            Long startTime,
-            Long endTime,
-            Authorizations authorizations
+        String key,
+        String name,
+        Visibility visibility,
+        Long startTime,
+        Long endTime,
+        Authorizations authorizations
     ) {
         List<PropertyMutation> propertyMutations = findPropertyMutations(key, name, visibility);
         List<HistoricalPropertyValue> historicalPropertyValues = new ArrayList<>();
@@ -132,8 +132,8 @@ public abstract class InMemoryTableElement<TElement extends InMemoryElement> imp
         for (PropertyMutation m : propertyMutations) {
             String propertyIdentifier = m.getPropertyKey() + m.getPropertyName();
             HistoricalPropertyValueBuilder builder = currentPropertyBuilders.computeIfAbsent(
-                    propertyIdentifier,
-                    k -> new HistoricalPropertyValueBuilder(m.getPropertyKey(), m.getPropertyName(), m.getTimestamp())
+                propertyIdentifier,
+                k -> new HistoricalPropertyValueBuilder(m.getPropertyKey(), m.getPropertyName(), m.getTimestamp())
             );
 
             if (startTime != null && m.getTimestamp() < startTime) {
@@ -167,11 +167,11 @@ public abstract class InMemoryTableElement<TElement extends InMemoryElement> imp
                 value = loadIfStreamingPropertyValue(value, m.getTimestamp());
 
                 builder.propertyVisibility(m.getPropertyVisibility())
-                        .timestamp(m.getTimestamp())
-                        .value(value)
-                        .metadata(apvm.getMetadata(FetchHints.ALL))
-                        .hiddenVisibilities(hiddenVisibilities)
-                        .isDeleted(false);
+                    .timestamp(m.getTimestamp())
+                    .value(value)
+                    .metadata(apvm.getMetadata(FetchHints.ALL))
+                    .hiddenVisibilities(hiddenVisibilities)
+                    .isDeleted(false);
 
                 // Property modifications use a soft delete immediately followed by an AddPropertyValueMutation.
                 // If the condition occurs, remove the delete event from the set.
@@ -309,12 +309,12 @@ public abstract class InMemoryTableElement<TElement extends InMemoryElement> imp
     }
 
     public Property appendMarkPropertyHiddenMutation(
-            String key,
-            String name,
-            Visibility propertyVisibility,
-            Long timestamp,
-            Visibility visibility,
-            Authorizations authorizations
+        String key,
+        String name,
+        Visibility propertyVisibility,
+        Long timestamp,
+        Visibility visibility,
+        Authorizations authorizations
     ) {
         Property prop = getProperty(key, name, propertyVisibility, FetchHints.ALL_INCLUDING_HIDDEN, authorizations);
         if (timestamp == null) {
@@ -325,12 +325,12 @@ public abstract class InMemoryTableElement<TElement extends InMemoryElement> imp
     }
 
     public Property appendMarkPropertyVisibleMutation(
-            String key,
-            String name,
-            Visibility propertyVisibility,
-            Long timestamp,
-            Visibility visibility,
-            Authorizations authorizations
+        String key,
+        String name,
+        Visibility propertyVisibility,
+        Long timestamp,
+        Visibility visibility,
+        Authorizations authorizations
     ) {
         Property prop = getProperty(key, name, propertyVisibility, FetchHints.ALL_INCLUDING_HIDDEN, authorizations);
         if (timestamp == null) {
@@ -372,9 +372,9 @@ public abstract class InMemoryTableElement<TElement extends InMemoryElement> imp
 
     protected List<Mutation> getFilteredMutations(boolean includeHidden, Long endTime, Authorizations authorizations) {
         return getFilteredMutations(m ->
-                canRead(m.getVisibility(), authorizations) &&
-                        (endTime == null || m.getTimestamp() <= endTime) &&
-                        (includeHidden || !(m instanceof MarkHiddenMutation || m instanceof MarkPropertyHiddenMutation))
+            canRead(m.getVisibility(), authorizations) &&
+                (endTime == null || m.getTimestamp() <= endTime) &&
+                (includeHidden || !(m instanceof MarkHiddenMutation || m instanceof MarkPropertyHiddenMutation))
         );
     }
 
@@ -440,9 +440,9 @@ public abstract class InMemoryTableElement<TElement extends InMemoryElement> imp
 
     public boolean isDeleted(Long endTime, Authorizations authorizations) {
         List<Mutation> filteredMutations = getFilteredMutations(m ->
-                canRead(m.getVisibility(), authorizations) &&
-                        (endTime == null || m.getTimestamp() <= endTime) &&
-                        (m instanceof SoftDeleteMutation || m instanceof ElementTimestampMutation)
+            canRead(m.getVisibility(), authorizations) &&
+                (endTime == null || m.getTimestamp() <= endTime) &&
+                (m instanceof SoftDeleteMutation || m instanceof ElementTimestampMutation)
         );
         return filteredMutations.isEmpty() || filteredMutations.get(filteredMutations.size() - 1) instanceof SoftDeleteMutation;
     }
@@ -453,8 +453,8 @@ public abstract class InMemoryTableElement<TElement extends InMemoryElement> imp
         mutationLock.readLock().lock();
         try {
             return this.mutations.stream()
-                    .filter(filter)
-                    .collect(Collectors.toList());
+                .filter(filter)
+                .collect(Collectors.toList());
         } finally {
             mutationLock.readLock().unlock();
         }

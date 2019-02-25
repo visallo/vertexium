@@ -1,7 +1,6 @@
 package org.vertexium.cli.model;
 
 import org.vertexium.Edge;
-import org.vertexium.FetchHints;
 import org.vertexium.Property;
 import org.vertexium.Visibility;
 

@@ -24,59 +24,59 @@ public class MergeClauseExecutor {
         Stream<VertexiumCypherScope> results = scope.stream().map(item -> {
             Stream<VertexiumCypherScope.Item> patternPartResults = ctx.getMatchClauseExecutor().executePatternPartConstraint(ctx, patternPartConstraint, item);
             return StreamUtils.ifEmpty(
-                    patternPartResults,
-                    () -> {
-                        Stream<VertexiumCypherScope.Item> createResults = executeCreate(ctx, clause, patternPartConstraint, item);
-                        return VertexiumCypherScope.newItemsScope(createResults, scope);
-                    },
-                    (stream) -> executeMatch(ctx, clause, stream, scope)
+                patternPartResults,
+                () -> {
+                    Stream<VertexiumCypherScope.Item> createResults = executeCreate(ctx, clause, patternPartConstraint, item);
+                    return VertexiumCypherScope.newItemsScope(createResults, scope);
+                },
+                (stream) -> executeMatch(ctx, clause, stream, scope)
             );
         });
         return results.collect(VertexiumCypherScope.concatStreams(scope));
     }
 
     private VertexiumCypherScope executeMatch(
-            VertexiumCypherQueryContext ctx,
-            CypherMergeClause clause,
-            Stream<VertexiumCypherScope.Item> results,
-            VertexiumCypherScope scope
+        VertexiumCypherQueryContext ctx,
+        CypherMergeClause clause,
+        Stream<VertexiumCypherScope.Item> results,
+        VertexiumCypherScope scope
     ) {
         results = results.map(result -> {
             clause.getMergeActions().stream()
-                    .filter(ma -> ma instanceof CypherMergeActionMatch)
-                    .forEach(ma -> executeMatchMergeAction(ctx, (CypherMergeActionMatch) ma, result));
+                .filter(ma -> ma instanceof CypherMergeActionMatch)
+                .forEach(ma -> executeMatchMergeAction(ctx, (CypherMergeActionMatch) ma, result));
             return result;
         });
         return VertexiumCypherScope.newItemsScope(results, scope);
     }
 
     private void executeMatchMergeAction(
-            VertexiumCypherQueryContext ctx,
-            CypherMergeActionMatch ma,
-            VertexiumCypherScope.Item existingObj
+        VertexiumCypherQueryContext ctx,
+        CypherMergeActionMatch ma,
+        VertexiumCypherScope.Item existingObj
     ) {
         ctx.getSetClauseExecutor().execute(ctx, ma.getSet(), existingObj);
     }
 
     private Stream<VertexiumCypherScope.Item> executeCreate(
-            VertexiumCypherQueryContext ctx,
-            CypherMergeClause clause,
-            PatternPartMatchConstraint patternPartConstraint,
-            VertexiumCypherScope.Item item
+        VertexiumCypherQueryContext ctx,
+        CypherMergeClause clause,
+        PatternPartMatchConstraint patternPartConstraint,
+        VertexiumCypherScope.Item item
     ) {
         LinkedHashMap<String, ?> map = ctx.getCreateClauseExecutor().executePatternPart(ctx, clause.getPatternPart(), item);
         VertexiumCypherScope.Item concatItem = item.concat(VertexiumCypherScope.newMapItem(map, item.getParentScope()));
         clause.getMergeActions().stream()
-                .filter(ma -> ma instanceof CypherMergeActionCreate)
-                .forEach(ma -> executeCreateMergeAction(ctx, (CypherMergeActionCreate) ma, concatItem));
+            .filter(ma -> ma instanceof CypherMergeActionCreate)
+            .forEach(ma -> executeCreateMergeAction(ctx, (CypherMergeActionCreate) ma, concatItem));
 
         return ctx.getMatchClauseExecutor().executePatternPartConstraint(ctx, patternPartConstraint, item);
     }
 
     private void executeCreateMergeAction(
-            VertexiumCypherQueryContext ctx,
-            CypherMergeActionCreate ma,
-            VertexiumCypherScope.Item newObj
+        VertexiumCypherQueryContext ctx,
+        CypherMergeActionCreate ma,
+        VertexiumCypherScope.Item newObj
     ) {
         ctx.getSetClauseExecutor().execute(ctx, ma.getSet(), newObj);
     }

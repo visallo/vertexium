@@ -25,12 +25,12 @@ public abstract class VertexiumSerializerTestBase {
         PropertyValue propertyValue = new PropertyValue().searchIndex(true);
 
         testValue(
-                propertyValue,
-                getPropertyValueBytes(),
-                (givenValue, deserializedValue) -> {
-                    assertNotNull(deserializedValue);
-                    assertTrue(deserializedValue.isSearchIndex());
-                }
+            propertyValue,
+            getPropertyValueBytes(),
+            (givenValue, deserializedValue) -> {
+                assertNotNull(deserializedValue);
+                assertTrue(deserializedValue.isSearchIndex());
+            }
         );
     }
 
@@ -39,17 +39,17 @@ public abstract class VertexiumSerializerTestBase {
     @Test
     public void testStreamingPropertyValue() {
         StreamingPropertyValue spv = new DefaultStreamingPropertyValue(new ByteArrayInputStream("test".getBytes()), byte[].class, 4L)
-                .searchIndex(true);
+            .searchIndex(true);
 
         testValue(
-                spv,
-                getStreamingPropertyValueBytes(),
-                (givenValue, deserializedValue) -> {
-                    assertNotNull(deserializedValue);
-                    assertTrue(deserializedValue.isSearchIndex());
-                    assertEquals(byte[].class, deserializedValue.getValueType());
-                    assertEquals(4L, (long) deserializedValue.getLength());
-                }
+            spv,
+            getStreamingPropertyValueBytes(),
+            (givenValue, deserializedValue) -> {
+                assertNotNull(deserializedValue);
+                assertTrue(deserializedValue.isSearchIndex());
+                assertEquals(byte[].class, deserializedValue.getValueType());
+                assertEquals(4L, (long) deserializedValue.getLength());
+            }
         );
     }
 
@@ -58,17 +58,17 @@ public abstract class VertexiumSerializerTestBase {
     @Test
     public void testStreamingPropertyValueRef() {
         StreamingPropertyValue spv = new DefaultStreamingPropertyValue(new ByteArrayInputStream("test".getBytes()), byte[].class, 4L)
-                .searchIndex(true);
+            .searchIndex(true);
         StreamingPropertyValueRef streamingPropertyValueRef = new TestStreamingPropertyValueRef(spv);
 
         testValue(
-                streamingPropertyValueRef,
-                getStreamingPropertyValueRefBytes(),
-                (givenValue, deserializedValue) -> {
-                    assertNotNull(deserializedValue);
-                    assertTrue(deserializedValue.isSearchIndex());
-                    assertEquals(byte[].class, deserializedValue.getValueType());
-                }
+            streamingPropertyValueRef,
+            getStreamingPropertyValueRefBytes(),
+            (givenValue, deserializedValue) -> {
+                assertNotNull(deserializedValue);
+                assertTrue(deserializedValue.isSearchIndex());
+                assertEquals(byte[].class, deserializedValue.getValueType());
+            }
         );
     }
 
@@ -79,15 +79,15 @@ public abstract class VertexiumSerializerTestBase {
         GeoPoint geoPoint = new GeoPoint(12.123, 23.234, 34.345, "Geo point with description");
 
         testValue(
-                geoPoint,
-                getGeoPointBytes(),
-                (givenValue, deserializedValue) -> {
-                    assertNotNull(deserializedValue);
-                    assertEquals(givenValue.getLatitude(), deserializedValue.getLatitude(), 0.001);
-                    assertEquals(givenValue.getLongitude(), deserializedValue.getLongitude(), 0.001);
-                    assertEquals(givenValue.getAltitude(), deserializedValue.getAltitude(), 0.001);
-                    assertEquals(givenValue.getDescription(), deserializedValue.getDescription());
-                }
+            geoPoint,
+            getGeoPointBytes(),
+            (givenValue, deserializedValue) -> {
+                assertNotNull(deserializedValue);
+                assertEquals(givenValue.getLatitude(), deserializedValue.getLatitude(), 0.001);
+                assertEquals(givenValue.getLongitude(), deserializedValue.getLongitude(), 0.001);
+                assertEquals(givenValue.getAltitude(), deserializedValue.getAltitude(), 0.001);
+                assertEquals(givenValue.getDescription(), deserializedValue.getDescription());
+            }
         );
     }
 
@@ -98,16 +98,16 @@ public abstract class VertexiumSerializerTestBase {
         GeoPoint geoPoint = new GeoPoint(12.123, 23.234, 34.345, 45.456, "Geo point with accuracy and description");
 
         testValue(
-                geoPoint,
-                getGeoPointWithAccuracyBytes(),
-                (givenValue, deserializedValue) -> {
-                    assertNotNull(deserializedValue);
-                    assertEquals(givenValue.getLatitude(), deserializedValue.getLatitude(), 0.001);
-                    assertEquals(givenValue.getLongitude(), deserializedValue.getLongitude(), 0.001);
-                    assertEquals(givenValue.getAltitude(), deserializedValue.getAltitude(), 0.001);
-                    assertEquals(givenValue.getAccuracy(), deserializedValue.getAccuracy(), 0.001);
-                    assertEquals(givenValue.getDescription(), deserializedValue.getDescription());
-                }
+            geoPoint,
+            getGeoPointWithAccuracyBytes(),
+            (givenValue, deserializedValue) -> {
+                assertNotNull(deserializedValue);
+                assertEquals(givenValue.getLatitude(), deserializedValue.getLatitude(), 0.001);
+                assertEquals(givenValue.getLongitude(), deserializedValue.getLongitude(), 0.001);
+                assertEquals(givenValue.getAltitude(), deserializedValue.getAltitude(), 0.001);
+                assertEquals(givenValue.getAccuracy(), deserializedValue.getAccuracy(), 0.001);
+                assertEquals(givenValue.getDescription(), deserializedValue.getDescription());
+            }
         );
     }
 
@@ -118,15 +118,15 @@ public abstract class VertexiumSerializerTestBase {
         GeoCircle geoCircle = new GeoCircle(12.123, 23.234, 34.345, "Geo circle with description");
 
         testValue(
-                geoCircle,
-                getGeoCircleBytes(),
-                (givenValue, deserializedValue) -> {
-                    assertNotNull(deserializedValue);
-                    assertEquals(givenValue.getLatitude(), deserializedValue.getLatitude(), 0.001);
-                    assertEquals(givenValue.getLongitude(), deserializedValue.getLongitude(), 0.001);
-                    assertEquals(givenValue.getRadius(), deserializedValue.getRadius(), 0.001);
-                    assertEquals(givenValue.getDescription(), deserializedValue.getDescription());
-                }
+            geoCircle,
+            getGeoCircleBytes(),
+            (givenValue, deserializedValue) -> {
+                assertNotNull(deserializedValue);
+                assertEquals(givenValue.getLatitude(), deserializedValue.getLatitude(), 0.001);
+                assertEquals(givenValue.getLongitude(), deserializedValue.getLongitude(), 0.001);
+                assertEquals(givenValue.getRadius(), deserializedValue.getRadius(), 0.001);
+                assertEquals(givenValue.getDescription(), deserializedValue.getDescription());
+            }
         );
     }
 
@@ -135,20 +135,20 @@ public abstract class VertexiumSerializerTestBase {
     @Test
     public void testGeoRect() {
         GeoRect geoRect = new GeoRect(
-                new GeoPoint(12.123, 23.234),
-                new GeoPoint(34.345, 45.456),
-                "Geo rect with description"
+            new GeoPoint(12.123, 23.234),
+            new GeoPoint(34.345, 45.456),
+            "Geo rect with description"
         );
 
         testValue(
-                geoRect,
-                getGeoRectBytes(),
-                (givenValue, deserializedValue) -> {
-                    assertNotNull(deserializedValue);
-                    assertEquals(givenValue.getNorthWest(), deserializedValue.getNorthWest());
-                    assertEquals(givenValue.getSouthEast(), deserializedValue.getSouthEast());
-                    assertEquals(givenValue.getDescription(), deserializedValue.getDescription());
-                }
+            geoRect,
+            getGeoRectBytes(),
+            (givenValue, deserializedValue) -> {
+                assertNotNull(deserializedValue);
+                assertEquals(givenValue.getNorthWest(), deserializedValue.getNorthWest());
+                assertEquals(givenValue.getSouthEast(), deserializedValue.getSouthEast());
+                assertEquals(givenValue.getDescription(), deserializedValue.getDescription());
+            }
         );
     }
 
@@ -157,21 +157,21 @@ public abstract class VertexiumSerializerTestBase {
     @Test
     public void testGeoLine() {
         GeoLine geoLine = new GeoLine(
-                new GeoPoint(12.123, 23.234),
-                new GeoPoint(34.345, 45.456),
-                "Geo line with description"
+            new GeoPoint(12.123, 23.234),
+            new GeoPoint(34.345, 45.456),
+            "Geo line with description"
         );
 
         testValue(
-                geoLine,
-                getGeoLineBytes(),
-                (givenValue, deserializedValue) -> {
-                    assertNotNull(deserializedValue);
-                    assertEquals(givenValue.getGeoPoints().size(), deserializedValue.getGeoPoints().size());
-                    assertEquals(givenValue.getGeoPoints().get(0), deserializedValue.getGeoPoints().get(0));
-                    assertEquals(givenValue.getGeoPoints().get(1), deserializedValue.getGeoPoints().get(1));
-                    assertEquals(givenValue.getDescription(), deserializedValue.getDescription());
-                }
+            geoLine,
+            getGeoLineBytes(),
+            (givenValue, deserializedValue) -> {
+                assertNotNull(deserializedValue);
+                assertEquals(givenValue.getGeoPoints().size(), deserializedValue.getGeoPoints().size());
+                assertEquals(givenValue.getGeoPoints().get(0), deserializedValue.getGeoPoints().get(0));
+                assertEquals(givenValue.getGeoPoints().get(1), deserializedValue.getGeoPoints().get(1));
+                assertEquals(givenValue.getDescription(), deserializedValue.getDescription());
+            }
         );
     }
 
@@ -180,20 +180,20 @@ public abstract class VertexiumSerializerTestBase {
     @Test
     public void testGeoHash() {
         GeoHash geoLine = new GeoHash(
-                12.123,
-                23.234,
-                12,
-                "Geo hash with description"
+            12.123,
+            23.234,
+            12,
+            "Geo hash with description"
         );
 
         testValue(
-                geoLine,
-                getGeoHashBytes(),
-                (givenValue, deserializedValue) -> {
-                    assertNotNull(deserializedValue);
-                    assertEquals(givenValue.getHash(), deserializedValue.getHash());
-                    assertEquals(givenValue.getDescription(), deserializedValue.getDescription());
-                }
+            geoLine,
+            getGeoHashBytes(),
+            (givenValue, deserializedValue) -> {
+                assertNotNull(deserializedValue);
+                assertEquals(givenValue.getHash(), deserializedValue.getHash());
+                assertEquals(givenValue.getDescription(), deserializedValue.getDescription());
+            }
         );
     }
 
@@ -202,23 +202,23 @@ public abstract class VertexiumSerializerTestBase {
     @Test
     public void testGeoCollection() {
         GeoCollection geoCollection = new GeoCollection(
-                Arrays.asList(
-                        new GeoPoint(12.123, 23.234),
-                        new GeoPoint(34.345, 45.456)
-                ),
-                "Geo collection with description"
+            Arrays.asList(
+                new GeoPoint(12.123, 23.234),
+                new GeoPoint(34.345, 45.456)
+            ),
+            "Geo collection with description"
         );
 
         testValue(
-                geoCollection,
-                getGeoCollectionBytes(),
-                (givenValue, deserializedValue) -> {
-                    assertNotNull(deserializedValue);
-                    assertEquals(givenValue.getGeoShapes().size(), deserializedValue.getGeoShapes().size());
-                    assertEquals(givenValue.getGeoShapes().get(0), deserializedValue.getGeoShapes().get(0));
-                    assertEquals(givenValue.getGeoShapes().get(1), deserializedValue.getGeoShapes().get(1));
-                    assertEquals(givenValue.getDescription(), deserializedValue.getDescription());
-                }
+            geoCollection,
+            getGeoCollectionBytes(),
+            (givenValue, deserializedValue) -> {
+                assertNotNull(deserializedValue);
+                assertEquals(givenValue.getGeoShapes().size(), deserializedValue.getGeoShapes().size());
+                assertEquals(givenValue.getGeoShapes().get(0), deserializedValue.getGeoShapes().get(0));
+                assertEquals(givenValue.getGeoShapes().get(1), deserializedValue.getGeoShapes().get(1));
+                assertEquals(givenValue.getDescription(), deserializedValue.getDescription());
+            }
         );
     }
 
@@ -227,51 +227,51 @@ public abstract class VertexiumSerializerTestBase {
     @Test
     public void testGeoPolygon() {
         GeoPolygon geoPolygon = new GeoPolygon(
+            Arrays.asList(
+                new GeoPoint(12.123, 23.234),
+                new GeoPoint(34.345, 45.456),
+                new GeoPoint(56.567, 67.678),
+                new GeoPoint(12.123, 23.234)
+            ),
+            Arrays.asList(
                 Arrays.asList(
-                        new GeoPoint(12.123, 23.234),
-                        new GeoPoint(34.345, 45.456),
-                        new GeoPoint(56.567, 67.678),
-                        new GeoPoint(12.123, 23.234)
+                    new GeoPoint(78.789, 89.890),
+                    new GeoPoint(65.654, 54.543),
+                    new GeoPoint(43.432, 32.321),
+                    new GeoPoint(78.789, 89.890)
                 ),
                 Arrays.asList(
-                        Arrays.asList(
-                                new GeoPoint(78.789, 89.890),
-                                new GeoPoint(65.654, 54.543),
-                                new GeoPoint(43.432, 32.321),
-                                new GeoPoint(78.789, 89.890)
-                        ),
-                        Arrays.asList(
-                                new GeoPoint(21.210, 10.109),
-                                new GeoPoint(87.876, 76.765),
-                                new GeoPoint(65.654, 54.543),
-                                new GeoPoint(21.210, 10.109)
-                        )
-                ),
-                "Geo collection with description"
+                    new GeoPoint(21.210, 10.109),
+                    new GeoPoint(87.876, 76.765),
+                    new GeoPoint(65.654, 54.543),
+                    new GeoPoint(21.210, 10.109)
+                )
+            ),
+            "Geo collection with description"
         );
 
         testValue(
-                geoPolygon,
-                getGeoPolygonBytes(),
-                (givenValue, deserializedValue) -> {
-                    assertNotNull(deserializedValue);
+            geoPolygon,
+            getGeoPolygonBytes(),
+            (givenValue, deserializedValue) -> {
+                assertNotNull(deserializedValue);
 
-                    assertEquals(givenValue.getOuterBoundary().size(), deserializedValue.getOuterBoundary().size());
-                    for (int i = 0; i < givenValue.getOuterBoundary().size(); i++) {
-                        assertEquals(givenValue.getOuterBoundary().get(i), deserializedValue.getOuterBoundary().get(i));
-                    }
-
-                    assertEquals(givenValue.getHoles().size(), deserializedValue.getHoles().size());
-                    for (int i = 0; i < givenValue.getHoles().size(); i++) {
-                        List<GeoPoint> givenHole = givenValue.getHoles().get(i);
-                        List<GeoPoint> deserializedHole = deserializedValue.getHoles().get(i);
-                        for (int j = 0; j < givenHole.size(); j++) {
-                            assertEquals(givenHole.get(j), deserializedHole.get(j));
-                        }
-                    }
-
-                    assertEquals(givenValue.getDescription(), deserializedValue.getDescription());
+                assertEquals(givenValue.getOuterBoundary().size(), deserializedValue.getOuterBoundary().size());
+                for (int i = 0; i < givenValue.getOuterBoundary().size(); i++) {
+                    assertEquals(givenValue.getOuterBoundary().get(i), deserializedValue.getOuterBoundary().get(i));
                 }
+
+                assertEquals(givenValue.getHoles().size(), deserializedValue.getHoles().size());
+                for (int i = 0; i < givenValue.getHoles().size(); i++) {
+                    List<GeoPoint> givenHole = givenValue.getHoles().get(i);
+                    List<GeoPoint> deserializedHole = deserializedValue.getHoles().get(i);
+                    for (int j = 0; j < givenHole.size(); j++) {
+                        assertEquals(givenHole.get(j), deserializedHole.get(j));
+                    }
+                }
+
+                assertEquals(givenValue.getDescription(), deserializedValue.getDescription());
+            }
         );
     }
 

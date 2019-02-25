@@ -143,8 +143,9 @@ class ArrayByteSequence extends ByteSequence implements Serializable {
 
     @Override
     public byte[] toArray() {
-        if (offset == 0 && length == data.length)
+        if (offset == 0 && length == data.length) {
             return data;
+        }
 
         byte[] copy = new byte[length];
         System.arraycopy(data, offset, copy, 0, length);

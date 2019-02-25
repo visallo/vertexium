@@ -86,8 +86,9 @@ public class Authorizations implements Iterable<byte[]>, Serializable, Authoriza
      * @see #Authorizations(String...)
      */
     public Authorizations(Collection<byte[]> authorizations) {
-        for (byte[] auth : authorizations)
+        for (byte[] auth : authorizations) {
             auths.add(new ArrayByteSequence(auth));
+        }
         checkAuths();
     }
 
@@ -227,8 +228,9 @@ public class Authorizations implements Iterable<byte[]>, Serializable, Authoriza
     @Override
     public int hashCode() {
         int result = 0;
-        for (ByteSequence b : auths)
+        for (ByteSequence b : auths) {
             result += b.hashCode();
+        }
         return result;
     }
 

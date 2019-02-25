@@ -11,10 +11,8 @@ import org.vertexium.VertexiumException;
 import org.vertexium.property.StreamingPropertyValueRef;
 import org.vertexium.type.*;
 
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.List;
 
 public class KryoFactory {
     public Kryo createKryo() {

@@ -75,8 +75,9 @@ public class ColumnVisibility {
         }
 
         public void add(Node child) {
-            if (children == EMPTY)
-                children = new ArrayList<Node>();
+            if (children == EMPTY) {
+                children = new ArrayList<>();
+            }
 
             children.add(child);
         }
@@ -98,8 +99,9 @@ public class ColumnVisibility {
         }
 
         public ByteSequence getTerm(byte expression[]) {
-            if (type != NodeType.TERM)
+            if (type != NodeType.TERM) {
                 throw new RuntimeException();
+            }
 
             if (expression[start] == '"') {
                 // its a quoted term
@@ -134,8 +136,9 @@ public class ColumnVisibility {
         @Override
         public int compare(Node a, Node b) {
             int diff = a.type.ordinal() - b.type.ordinal();
-            if (diff != 0)
+            if (diff != 0) {
                 return diff;
+            }
             switch (a.type) {
                 case EMPTY:
                     return 0; // All empty nodes are the same
@@ -144,12 +147,14 @@ public class ColumnVisibility {
                 case OR:
                 case AND:
                     diff = a.children.size() - b.children.size();
-                    if (diff != 0)
+                    if (diff != 0) {
                         return diff;
+                    }
                     for (int i = 0; i < a.children.size(); i++) {
                         diff = compare(a.children.get(i), b.children.get(i));
-                        if (diff != 0)
+                        if (diff != 0) {
                             return diff;
+                        }
                     }
             }
             return 0;
@@ -164,12 +169,12 @@ public class ColumnVisibility {
     }
 
     // @formatter:off
-  /*
-   * Walks an expression's AST in order to:
-   *  1) roll up expressions with the same operant (`a&(b&c) becomes a&b&c`)
-   *  2) sorts labels lexicographically (permutations of `a&b&c` are re-ordered to appear as `a&b&c`)
-   *  3) dedupes labels (`a&b&a` becomes `a&b`)
-   */
+    /*
+     * Walks an expression's AST in order to:
+     *  1) roll up expressions with the same operant (`a&(b&c) becomes a&b&c`)
+     *  2) sorts labels lexicographically (permutations of `a&b&c` are re-ordered to appear as `a&b&c`)
+     *  3) dedupes labels (`a&b&a` becomes `a&b`)
+     */
     // @formatter:on
     public static Node normalize(Node root, byte[] expression, NodeComparator comparator) {
         if (root.type != NodeType.TERM) {
@@ -206,11 +211,13 @@ public class ColumnVisibility {
             for (Node c : root.children) {
                 out.append(sep);
                 boolean parens = (c.type != NodeType.TERM && root.type != c.type);
-                if (parens)
+                if (parens) {
                     out.append("(");
+                }
                 stringify(c, expression, out);
-                if (parens)
+                if (parens) {
                     out.append(")");
+                }
                 sep = root.type == NodeType.AND ? "&" : "|";
             }
         }
@@ -251,12 +258,14 @@ public class ColumnVisibility {
 
         Node processTerm(int start, int end, Node expr, byte[] expression) {
             if (start != end) {
-                if (expr != null)
+                if (expr != null) {
                     throw new BadArgumentException("expression needs | or &", new String(expression, Constants.UTF8), start);
+                }
                 return new Node(start, end);
             }
-            if (expr == null)
+            if (expr == null) {
                 throw new BadArgumentException("empty term", new String(expression, Constants.UTF8), start);
+            }
             return expr;
         }
 
@@ -272,8 +281,9 @@ public class ColumnVisibility {
                     case '&': {
                         expr = processTerm(subtermStart, index - 1, expr, expression);
                         if (result != null) {
-                            if (!result.type.equals(NodeType.AND))
+                            if (!result.type.equals(NodeType.AND)) {
                                 throw new BadArgumentException("cannot mix & and |", new String(expression, Constants.UTF8), index - 1);
+                            }
                         } else {
                             result = new Node(NodeType.AND, wholeTermStart);
                         }
@@ -286,8 +296,9 @@ public class ColumnVisibility {
                     case '|': {
                         expr = processTerm(subtermStart, index - 1, expr, expression);
                         if (result != null) {
-                            if (!result.type.equals(NodeType.OR))
+                            if (!result.type.equals(NodeType.OR)) {
                                 throw new BadArgumentException("cannot mix | and &", new String(expression, Constants.UTF8), index - 1);
+                            }
                         } else {
                             result = new Node(NodeType.OR, wholeTermStart);
                         }
@@ -299,8 +310,9 @@ public class ColumnVisibility {
                     }
                     case '(': {
                         parens++;
-                        if (subtermStart != index - 1 || expr != null)
+                        if (subtermStart != index - 1 || expr != null) {
                             throw new BadArgumentException("expression needs & or |", new String(expression, Constants.UTF8), index - 1);
+                        }
                         expr = parse_(expression);
                         subtermStart = index;
                         subtermComplete = false;
@@ -309,36 +321,44 @@ public class ColumnVisibility {
                     case ')': {
                         parens--;
                         Node child = processTerm(subtermStart, index - 1, expr, expression);
-                        if (child == null && result == null)
+                        if (child == null && result == null) {
                             throw new BadArgumentException("empty expression not allowed", new String(expression, Constants.UTF8), index);
-                        if (result == null)
+                        }
+                        if (result == null) {
                             return child;
-                        if (result.type == child.type)
-                            for (Node c : child.children)
+                        }
+                        if (result.type == child.type) {
+                            for (Node c : child.children) {
                                 result.add(c);
-                        else
+                            }
+                        } else {
                             result.add(child);
+                        }
                         result.end = index - 1;
                         return result;
                     }
                     case '"': {
-                        if (subtermStart != index - 1)
+                        if (subtermStart != index - 1) {
                             throw new BadArgumentException("expression needs & or |", new String(expression, Constants.UTF8), index - 1);
+                        }
 
                         while (index < expression.length && expression[index] != '"') {
                             if (expression[index] == '\\') {
                                 index++;
-                                if (expression[index] != '\\' && expression[index] != '"')
+                                if (expression[index] != '\\' && expression[index] != '"') {
                                     throw new BadArgumentException("invalid escaping within quotes", new String(expression, Constants.UTF8), index - 1);
+                                }
                             }
                             index++;
                         }
 
-                        if (index == expression.length)
+                        if (index == expression.length) {
                             throw new BadArgumentException("unclosed quote", new String(expression, Constants.UTF8), subtermStart);
+                        }
 
-                        if (subtermStart + 1 == index)
+                        if (subtermStart + 1 == index) {
                             throw new BadArgumentException("empty term", new String(expression, Constants.UTF8), subtermStart);
+                        }
 
                         index++;
 
@@ -347,12 +367,14 @@ public class ColumnVisibility {
                         break;
                     }
                     default: {
-                        if (subtermComplete)
+                        if (subtermComplete) {
                             throw new BadArgumentException("expression needs & or |", new String(expression, Constants.UTF8), index - 1);
+                        }
 
                         byte c = expression[index - 1];
-                        if (!Authorizations.isValidAuthChar(c))
+                        if (!Authorizations.isValidAuthChar(c)) {
                             throw new BadArgumentException("bad character (" + c + ")", new String(expression, Constants.UTF8), index - 1);
+                        }
                     }
                 }
             }
@@ -360,11 +382,14 @@ public class ColumnVisibility {
             if (result != null) {
                 result.add(child);
                 result.end = index;
-            } else
+            } else {
                 result = child;
-            if (result.type != NodeType.TERM)
-                if (result.children.size() < 2)
+            }
+            if (result.type != NodeType.TERM) {
+                if (result.children.size() < 2) {
                     throw new BadArgumentException("missing term", new String(expression, Constants.UTF8), index);
+                }
+            }
             return result;
         }
     }
@@ -394,35 +419,35 @@ public class ColumnVisibility {
      * @param expression An expression of the rights needed to see this mutation. The expression is a sequence of characters from the set [A-Za-z0-9_-] along with the
      *                   binary operators "&amp;" and "|" indicating that both operands are necessary, or that either is necessary. The following are valid expressions for
      *                   visibility:
-     *                   
-     *                   <pre>
-     *                   A
-     *                   A|B
-     *                   (A|B)&amp;(C|D)
-     *                   orange|(red&amp;yellow)
      *
-     *                   </pre>
-     *                   
-     *                   
-     *                   The following are not valid expressions for visibility:
-     *                   
      *                   <pre>
-     *                   A|B&amp;C
-     *                   A=B
-     *                   A|B|
-     *                   A&amp;|B
-     *                   ()
-     *                   )
-     *                   dog|!cat
-     *                   </pre>
-     *                   
-     *                   
+     *                                                                                                                                                                                                                                                                                                                   A
+     *                                                                                                                                                                                                                                                                                                                   A|B
+     *                                                                                                                                                                                                                                                                                                                   (A|B)&amp;(C|D)
+     *                                                                                                                                                                                                                                                                                                                   orange|(red&amp;yellow)
+     *
+     *                                                                                                                                                                                                                                                                                                                   </pre>
+     *                   <p>
+     *                   <p>
+     *                   The following are not valid expressions for visibility:
+     *
+     *                   <pre>
+     *                                                                                                                                                                                                                                                                                                                   A|B&amp;C
+     *                                                                                                                                                                                                                                                                                                                   A=B
+     *                                                                                                                                                                                                                                                                                                                   A|B|
+     *                                                                                                                                                                                                                                                                                                                   A&amp;|B
+     *                                                                                                                                                                                                                                                                                                                   ()
+     *                                                                                                                                                                                                                                                                                                                   )
+     *                                                                                                                                                                                                                                                                                                                   dog|!cat
+     *                                                                                                                                                                                                                                                                                                                   </pre>
+     *                   <p>
+     *                   <p>
      *                   You can use any character you like in your column visibility expression with quoting. If your quoted term contains '&quot;' or '\' then escape
      *                   them with '\'. The {@link #quote(String)} method will properly quote and escape terms for you.
-     *                   
+     *
      *                   <pre>
-     *                   &quot;A#C&quot;&amp;B
-     *                   </pre>
+     *                                                                                                                                                                                                                                                                                                                   &quot;A#C&quot;&amp;B
+     *                                                                                                                                                                                                                                                                                                                   </pre>
      */
     public ColumnVisibility(String expression) {
         this(expression.getBytes(Constants.UTF8));
@@ -448,8 +473,9 @@ public class ColumnVisibility {
      */
     @Override
     public boolean equals(Object obj) {
-        if (obj instanceof ColumnVisibility)
+        if (obj instanceof ColumnVisibility) {
             return equals((ColumnVisibility) obj);
+        }
         return false;
     }
 
@@ -479,10 +505,10 @@ public class ColumnVisibility {
 
     /**
      * Properly quotes terms in a column visibility expression. If no quoting is needed, then nothing is done.
-     * 
-     * 
+     * <p>
+     * <p>
      * Examples of using quote :
-     * 
+     *
      * <pre>
      * import static org.apache.accumulo.core.security.ColumnVisibility.quote;
      *   .
@@ -515,8 +541,9 @@ public class ColumnVisibility {
             }
         }
 
-        if (!needsQuote)
+        if (!needsQuote) {
             return term;
+        }
 
         return VisibilityEvaluator.escape(term, true);
     }

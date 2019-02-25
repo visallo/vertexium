@@ -2,7 +2,6 @@ package org.vertexium.accumulo.mapreduce;
 
 import org.apache.accumulo.core.data.Mutation;
 import org.apache.hadoop.io.Text;
-import org.apache.hadoop.mapreduce.Mapper;
 
 import java.io.IOException;
 

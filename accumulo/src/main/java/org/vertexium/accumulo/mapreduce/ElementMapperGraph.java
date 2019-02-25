@@ -6,8 +6,6 @@ import org.vertexium.id.IdGenerator;
 import org.vertexium.query.GraphQuery;
 import org.vertexium.query.MultiVertexQuery;
 
-import java.util.EnumSet;
-
 public class ElementMapperGraph extends GraphBase {
     private static final boolean STRICT_TYPING = false;
     private ElementMapper elementMapper;
