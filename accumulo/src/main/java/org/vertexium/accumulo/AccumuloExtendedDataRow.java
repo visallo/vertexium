@@ -36,7 +36,7 @@ public class AccumuloExtendedDataRow extends ExtendedDataRowBase {
             }
             String propertyName = columnQualifierParts[0];
             String propertyKey = columnQualifierParts.length > 1 ? columnQualifierParts[1] : null;
-            Object propertyValue = vertexiumSerializer.bytesToObject(rowEntry.getValue().get());
+            Object propertyValue = vertexiumSerializer.bytesToObject(rowId, rowEntry.getValue().get());
             long timestamp = rowEntry.getKey().getTimestamp();
             Visibility visibility = AccumuloGraph.accumuloVisibilityToVisibility(rowEntry.getKey().getColumnVisibility());
             AccumuloExtendedDataRowProperty prop = new AccumuloExtendedDataRowProperty(
