@@ -9298,6 +9298,9 @@ public abstract class GraphTestBase {
         graph.prepareVertex("v4", VISIBILITY_A)
             .setProperty("prop1", "3000000000000000", VISIBILITY_A)
             .save(AUTHORIZATIONS_A_AND_B);
+        graph.prepareVertex("v5", VISIBILITY_A)
+            .setProperty("prop1", "0123456789abcdeF", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         QueryResultsIterable<Vertex> vertices = graph.query(AUTHORIZATIONS_A)
@@ -9306,14 +9309,16 @@ public abstract class GraphTestBase {
         assumeTrue("IterableWithScores", vertices instanceof IterableWithScores);
         IterableWithScores<Vertex> scores = (IterableWithScores<Vertex>) vertices;
         List<Vertex> verticesList = toList(vertices);
-        assertEquals(4, verticesList.size());
+        assertEquals(5, verticesList.size());
         assertEquals("v1", verticesList.get(0).getId());
         assertEquals(64, scores.getScore("v1"), 0.0001);
         assertEquals("v3", verticesList.get(1).getId());
         assertEquals(63, scores.getScore("v3"), 0.0001);
         assertEquals("v4", verticesList.get(2).getId());
         assertEquals(62, scores.getScore("v4"), 0.0001);
-        assertEquals("v2", verticesList.get(3).getId());
+        assertEquals("v5", verticesList.get(3).getId());
+        assertEquals(32, scores.getScore("v5"), 0.0001);
+        assertEquals("v2", verticesList.get(4).getId());
         assertEquals(0, scores.getScore("v2"), 0.0001);
     }
 
