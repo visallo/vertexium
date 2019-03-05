@@ -1,6 +1,7 @@
 # v4.5.2
 * Fixed: Accumulo delete extended data not removing rows 
 * Changed: Elasticsearch to not use locks when flushing it's internal queue
+* Changed: Elasticsearch performance improvements to Hamming Distance painless script
 
 # v4.5.1
 * Changed: Improve Accumulo iterator memory by not converting values to strings and then back again
