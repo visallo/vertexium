@@ -1307,6 +1307,14 @@ public abstract class GraphTestBase {
         assertEquals("v1", row.getId().getElementId());
         assertEquals("table1", row.getId().getTableName());
         assertEquals("row1", row.getId().getRowId());
+
+        for (ExtendedDataRow r : graph.getExtendedData(ElementType.VERTEX, "v1", "table1", AUTHORIZATIONS_A)) {
+            graph.deleteExtendedDataRow(r.getId(), AUTHORIZATIONS_A);
+        }
+        graph.flush();
+
+        List<ExtendedDataRow> rowsList = toList(graph.getExtendedData(ElementType.VERTEX, "v1", "table1", AUTHORIZATIONS_A));
+        assertEquals(0, rowsList.size());
     }
 
     @Test

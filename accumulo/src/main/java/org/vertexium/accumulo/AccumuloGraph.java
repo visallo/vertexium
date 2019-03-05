@@ -190,6 +190,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         ensureRowDeletingIteratorIsAttached(connector, getVerticesTableName(config.getTableNamePrefix()));
         ensureRowDeletingIteratorIsAttached(connector, getEdgesTableName(config.getTableNamePrefix()));
         ensureRowDeletingIteratorIsAttached(connector, getDataTableName(config.getTableNamePrefix()));
+        ensureRowDeletingIteratorIsAttached(connector, getExtendedDataTableName(config.getTableNamePrefix()));
         AccumuloGraph graph = new AccumuloGraph(config, connector);
         graph.setup();
         return graph;
