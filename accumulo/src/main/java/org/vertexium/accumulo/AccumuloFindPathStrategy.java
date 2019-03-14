@@ -22,8 +22,8 @@ public class AccumuloFindPathStrategy {
     private final FindPathOptions options;
     private final ProgressCallback progressCallback;
     private final Authorizations authorizations;
-    private final Set<String> deflatedLabels;
-    private final Set<String> deflatedExcludedLabels;
+    private final Set<String> includeLabels;
+    private final Set<String> excludeLabels;
 
     public AccumuloFindPathStrategy(
             AccumuloGraph graph,
@@ -35,18 +35,17 @@ public class AccumuloFindPathStrategy {
         this.options = options;
         this.progressCallback = progressCallback;
         this.authorizations = authorizations;
-        this.deflatedLabels = deflateLabels(graph.getNameSubstitutionStrategy(), options.getLabels());
-        this.deflatedExcludedLabels = deflateLabels(graph.getNameSubstitutionStrategy(), options.getExcludedLabels());
+        this.includeLabels = labelsToSet(graph.getNameSubstitutionStrategy(), options.getLabels());
+        this.excludeLabels = labelsToSet(graph.getNameSubstitutionStrategy(), options.getExcludedLabels());
     }
 
-    private static Set<String> deflateLabels(AccumuloNameSubstitutionStrategy nameSubstitutionStrategy, String[] labels) {
+    private static Set<String> labelsToSet(AccumuloNameSubstitutionStrategy nameSubstitutionStrategy, String[] labels) {
         if (labels == null) {
             return null;
         }
         Set<String> results = new HashSet<>();
         for (int i = 0; i < labels.length; i++) {
-            String label = labels[i];
-            results.add(nameSubstitutionStrategy.deflate(label));
+            results.add(labels[i]);
         }
         return results;
     }
@@ -212,10 +211,10 @@ public class AccumuloFindPathStrategy {
                     Vertex vertex = AccumuloVertex.createFromIteratorValue(graph, row.getKey(), row.getValue(), FetchHints.EDGE_REFS, authorizations);
                     Iterable<String> otherVertexIds = stream(vertex.getEdgeInfos(Direction.BOTH, authorizations))
                             .filter(edgeInfo -> {
-                                if (deflatedExcludedLabels != null && deflatedExcludedLabels.contains(edgeInfo.getLabel())) {
+                                if (excludeLabels != null && excludeLabels.contains(edgeInfo.getLabel())) {
                                     return false;
                                 }
-                                return deflatedLabels == null || deflatedLabels.contains(edgeInfo.getLabel());
+                                return includeLabels == null || includeLabels.contains(edgeInfo.getLabel());
 
                             })
                             .map(EdgeInfo::getVertexId)
