@@ -1,19 +1,16 @@
 package org.vertexium.accumulo;
 
-import org.apache.accumulo.core.client.IteratorSetting;
 import org.apache.accumulo.core.client.ScannerBase;
 import org.apache.accumulo.core.data.Key;
 import org.apache.accumulo.core.data.Value;
 import org.apache.accumulo.core.trace.Span;
 import org.apache.accumulo.core.trace.Trace;
 import org.vertexium.*;
-import org.vertexium.accumulo.iterator.ConnectedVertexIdsIterator;
 import org.vertexium.accumulo.util.RangeUtils;
 import org.vertexium.util.IterableUtils;
 import org.vertexium.util.VertexiumLogger;
 import org.vertexium.util.VertexiumLoggerFactory;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -25,8 +22,8 @@ public class AccumuloFindPathStrategy {
     private final FindPathOptions options;
     private final ProgressCallback progressCallback;
     private final Authorizations authorizations;
-    private final String[] deflatedLabels;
-    private final String[] deflatedExcludedLabels;
+    private final Set<String> deflatedLabels;
+    private final Set<String> deflatedExcludedLabels;
 
     public AccumuloFindPathStrategy(
             AccumuloGraph graph,
@@ -42,14 +39,14 @@ public class AccumuloFindPathStrategy {
         this.deflatedExcludedLabels = deflateLabels(graph.getNameSubstitutionStrategy(), options.getExcludedLabels());
     }
 
-    private static String[] deflateLabels(AccumuloNameSubstitutionStrategy nameSubstitutionStrategy, String[] labels) {
+    private static Set<String> deflateLabels(AccumuloNameSubstitutionStrategy nameSubstitutionStrategy, String[] labels) {
         if (labels == null) {
             return null;
         }
-        String[] results = new String[labels.length];
+        Set<String> results = new HashSet<>();
         for (int i = 0; i < labels.length; i++) {
             String label = labels[i];
-            results[i] = nameSubstitutionStrategy.deflate(label);
+            results.add(nameSubstitutionStrategy.deflate(label));
         }
         return results;
     }
@@ -196,42 +193,38 @@ public class AccumuloFindPathStrategy {
                 ranges.add(RangeUtils.createRangeFromString(vertexId));
             }
 
-            int maxVersions = 1;
-            Long startTime = null;
-            Long endTime = null;
             ScannerBase scanner = graph.createElementScanner(
                     FetchHints.EDGE_REFS,
                     ElementType.VERTEX,
-                    maxVersions,
-                    startTime,
-                    endTime,
+                    1,
+                    null,
+                    null,
                     ranges,
-                    false,
+                    true,
                     authorizations
             );
 
-            IteratorSetting connectedVertexIdsIteratorSettings = new IteratorSetting(
-                    1000,
-                    ConnectedVertexIdsIterator.class.getSimpleName(),
-                    ConnectedVertexIdsIterator.class
-            );
-            ConnectedVertexIdsIterator.setLabels(connectedVertexIdsIteratorSettings, deflatedLabels);
-            ConnectedVertexIdsIterator.setExcludedLabels(connectedVertexIdsIteratorSettings, deflatedExcludedLabels);
-            scanner.addScanIterator(connectedVertexIdsIteratorSettings);
 
             final long timerStartTime = System.currentTimeMillis();
             try {
                 Map<String, Set<String>> results = new HashMap<>();
                 for (Map.Entry<Key, Value> row : scanner) {
-                    try {
-                        Map<String, Boolean> verticesExist = graph.doVerticesExist(ConnectedVertexIdsIterator.decodeValue(row.getValue()), authorizations);
-                        Set<String> rowVertexIds = stream(verticesExist.keySet())
-                                .filter(key -> verticesExist.getOrDefault(key, false))
-                                .collect(Collectors.toSet());
-                        results.put(row.getKey().getRow().toString(), rowVertexIds);
-                    } catch (IOException e) {
-                        throw new VertexiumException("Could not decode vertex ids for row: " + row.getKey().toString(), e);
-                    }
+                    Vertex vertex = AccumuloVertex.createFromIteratorValue(graph, row.getKey(), row.getValue(), FetchHints.EDGE_REFS, authorizations);
+                    Iterable<String> otherVertexIds = stream(vertex.getEdgeInfos(Direction.BOTH, authorizations))
+                            .filter(edgeInfo -> {
+                                if (deflatedExcludedLabels != null && deflatedExcludedLabels.contains(edgeInfo.getLabel())) {
+                                    return false;
+                                }
+                                return deflatedLabels == null || deflatedLabels.contains(edgeInfo.getLabel());
+
+                            })
+                            .map(EdgeInfo::getVertexId)
+                            .collect(Collectors.toSet());
+                    Map<String, Boolean> verticesExist = graph.doVerticesExist(otherVertexIds, authorizations);
+                    Set<String> rowVertexIds = stream(verticesExist.keySet())
+                            .filter(key -> verticesExist.getOrDefault(key, false))
+                            .collect(Collectors.toSet());
+                    results.put(row.getKey().getRow().toString(), rowVertexIds);
                 }
                 return results;
             } finally {
