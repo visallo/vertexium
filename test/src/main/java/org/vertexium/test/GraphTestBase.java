@@ -4451,6 +4451,34 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    public void testFindPathsWithSoftDeletedEdgesReAdded() {
+        Vertex v1 = graph.addVertex("v1", VISIBILITY_EMPTY, AUTHORIZATIONS_A);
+        Vertex v2 = graph.addVertex("v2", VISIBILITY_EMPTY, AUTHORIZATIONS_A);
+        Vertex v3 = graph.addVertex("v3", VISIBILITY_EMPTY, AUTHORIZATIONS_A);
+        graph.addEdge(v1, v2, LABEL_LABEL1, VISIBILITY_EMPTY, AUTHORIZATIONS_A); // v1 -> v2
+        Edge v2ToV3 = graph.addEdge("v2tov3", v2, v3, LABEL_LABEL1, VISIBILITY_EMPTY, AUTHORIZATIONS_A); // v2 -> v3
+        graph.flush();
+
+        List<Path> paths = toList(graph.findPaths(new FindPathOptions("v1", "v3", 2), AUTHORIZATIONS_A));
+        assertPaths(
+                paths,
+                new Path("v1", "v2", "v3")
+        );
+
+        graph.softDeleteEdge(v2ToV3, AUTHORIZATIONS_A);
+        graph.flush();
+
+        graph.addEdge("v2tov3", v2, v3, LABEL_LABEL1, VISIBILITY_EMPTY, AUTHORIZATIONS_A); // v2 -> v3
+        graph.flush();
+
+        paths = toList(graph.findPaths(new FindPathOptions("v1", "v3", 2), AUTHORIZATIONS_A));
+        assertPaths(
+                paths,
+                new Path("v1", "v2", "v3")
+        );
+    }
+
+    @Test
     public void testFindPathsWithHiddenEdges() {
         Vertex v1 = graph.addVertex("v1", VISIBILITY_EMPTY, AUTHORIZATIONS_A_AND_B);
         Vertex v2 = graph.addVertex("v2", VISIBILITY_EMPTY, AUTHORIZATIONS_A_AND_B);
