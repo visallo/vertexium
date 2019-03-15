@@ -32,15 +32,15 @@
     </licenses>
 
     <scm>
-        <url>scm:git:git@github.com:v5analytics/vertexium.git</url>
-        <connection>scm:git:git@github.com:v5analytics/vertexium.git</connection>
-        <developerConnection>scm:git:git@github.com:v5analytics/vertexium.git</developerConnection>
+        <url>scm:git:git@github.com:visallo/vertexium.git</url>
+        <connection>scm:git:git@github.com:visallo/vertexium.git</connection>
+        <developerConnection>scm:git:git@github.com:visallo/vertexium.git</developerConnection>
         <tag>HEAD</tag>
     </scm>
 
     <issueManagement>
         <system>GitHub Issues</system>
-        <url>https://github.com/v5analytics/vertexium/issues</url>
+        <url>https://github.com/visallo/vertexium/issues</url>
     </issueManagement>
 
     <developers>
@@ -48,7 +48,7 @@
             <name>Joe Ferner</name>
             <url>https://github.com/joeferner</url>
             <timezone>-5</timezone>
-            <email>joe.ferner@v5analytics.com</email>
+            <email>joe.ferner@visallo.com</email>
         </developer>
     </developers>
 
