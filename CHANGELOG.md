@@ -1,3 +1,5 @@
+# v4.1.1.6
+* Fixed: Accumulo: Find path traversing edges that were soft deleted then re-added
 # v4.1.1.5
 * Changed: Elasticsearch: Parse histogram aggregation interval to Double since decimal intervals are supported 
 
