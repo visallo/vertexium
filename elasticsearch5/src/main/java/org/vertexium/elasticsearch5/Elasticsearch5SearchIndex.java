@@ -1058,6 +1058,11 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
         Map<String, Object> fieldsMap = new HashMap<>();
         List<Property> streamingProperties = new ArrayList<>();
         for (Property property : properties) {
+            PropertyDefinition propertyDefinition = getPropertyDefinition(graph, property.getName());
+            if(propertyDefinition!=null && propertyDefinition.getTextIndexHints().size()==0){
+                continue;
+            }
+
             if (property.getValue() != null && shouldIgnoreType(property.getValue().getClass())) {
                 continue;
             }
