@@ -54,6 +54,7 @@ public class AccumuloGraphConfiguration extends GraphConfiguration {
     public static final String HDFS_CONTEXT_CLASSPATH = "hdfsContextClasspath";
     public static final String STREAMING_PROPERTY_VALUE_STORAGE_STRATEGY_PREFIX = "streamingPropertyValueStorageStrategy";
     public static final String CLIENT_CONFIGURATION_PROPERTY_CONFIG_PREFIX = "clientConfiguration.";
+    public static final String USE_DEDUPLICATION_ITERATOR = "useDeduplicationIterator";
 
     public static final String DEFAULT_ACCUMULO_PASSWORD = "password";
     public static final String DEFAULT_ACCUMULO_USERNAME = "root";
@@ -75,6 +76,7 @@ public class AccumuloGraphConfiguration extends GraphConfiguration {
     public static final int DEFAULT_NUMBER_OF_QUERY_THREADS = 10;
     public static final String DEFAULT_HDFS_CONTEXT_CLASSPATH = null;
     public static final String DEFAULT_STREAMING_PROPERTY_VALUE_STORAGE_STRATEGY = OverflowIntoHdfsStreamingPropertyValueStorageStrategy.class.getName();
+    public static final Boolean DEFAULT_USE_DEDUPLICATION_ITERATOR = false;
 
     public static final String[] HADOOP_CONF_FILENAMES = new String[]{
             "core-site.xml",
@@ -273,5 +275,9 @@ public class AccumuloGraphConfiguration extends GraphConfiguration {
 
     public boolean isHistoryInSeparateTable() {
         return getBoolean(HISTORY_IN_SEPARATE_TABLE, DEFAULT_HISTORY_IN_SEPARATE_TABLE);
+    }
+
+    public boolean isUseDeduplicationIterator() {
+        return getBoolean(USE_DEDUPLICATION_ITERATOR, DEFAULT_USE_DEDUPLICATION_ITERATOR);
     }
 }

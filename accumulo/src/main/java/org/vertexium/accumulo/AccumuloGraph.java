@@ -67,6 +67,8 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
     static final AccumuloGraphLogger GRAPH_LOGGER = new AccumuloGraphLogger(QUERY_LOGGER);
     private static final String ROW_DELETING_ITERATOR_NAME = RowDeletingIterator.class.getSimpleName();
     private static final int ROW_DELETING_ITERATOR_PRIORITY = 7;
+    private static final String DEDUPLICATION_ITERATOR_NAME = DeduplicationIterator.class.getSimpleName();
+    private static final int DEDUPLICATION_ITERATOR_PRIORITY = 7;
     private static final Object addIteratorLock = new Object();
     private static final Integer METADATA_ACCUMULO_GRAPH_VERSION = 2;
     private static final String METADATA_ACCUMULO_GRAPH_VERSION_KEY = "accumulo.graph.version";
@@ -180,9 +182,17 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             ensureTableExists(connector, getHistoryEdgesTableName(config.getTableNamePrefix()), config.getMaxVersions(), config.getHdfsContextClasspath(), config.isCreateTables());
             ensureRowDeletingIteratorIsAttached(connector, getHistoryVerticesTableName(config.getTableNamePrefix()));
             ensureRowDeletingIteratorIsAttached(connector, getHistoryEdgesTableName(config.getTableNamePrefix()));
+            if (config.isUseDeduplicationIterator()) {
+                ensureDeduplicationIteratorIsAttached(connector, getHistoryVerticesTableName(config.getTableNamePrefix()));
+                ensureDeduplicationIteratorIsAttached(connector, getHistoryEdgesTableName(config.getTableNamePrefix()));
+            }
         } else {
             ensureTableExists(connector, getVerticesTableName(config.getTableNamePrefix()), config.getMaxVersions(), config.getHdfsContextClasspath(), config.isCreateTables());
             ensureTableExists(connector, getEdgesTableName(config.getTableNamePrefix()), config.getMaxVersions(), config.getHdfsContextClasspath(), config.isCreateTables());
+            if (config.isUseDeduplicationIterator()) {
+                ensureDeduplicationIteratorIsAttached(connector, getVerticesTableName(config.getTableNamePrefix()));
+                ensureDeduplicationIteratorIsAttached(connector, getEdgesTableName(config.getTableNamePrefix()));
+            }
         }
         ensureTableExists(connector, getExtendedDataTableName(config.getTableNamePrefix()), config.getExtendedDataMaxVersions(), config.getHdfsContextClasspath(), config.isCreateTables());
         ensureTableExists(connector, getDataTableName(config.getTableNamePrefix()), 1, config.getHdfsContextClasspath(), config.isCreateTables());
@@ -300,6 +310,29 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             }
         } catch (Exception e) {
             throw new VertexiumException("Could not attach RowDeletingIterator", e);
+        }
+    }
+
+    protected static void ensureDeduplicationIteratorIsAttached(Connector connector, String tableName) {
+        try {
+            synchronized (addIteratorLock) {
+                IteratorSetting is = new IteratorSetting(DEDUPLICATION_ITERATOR_PRIORITY, DEDUPLICATION_ITERATOR_NAME, DeduplicationIterator.class);
+                if (!connector.tableOperations().listIterators(tableName).containsKey(DEDUPLICATION_ITERATOR_NAME)) {
+                    try {
+                        connector.tableOperations().attachIterator(tableName, is);
+                    } catch (Exception ex) {
+                        // If many processes are starting up at the same time (see YARN). It's possible that there will be a collision.
+                        final int SLEEP_TIME = 5000;
+                        LOGGER.warn("Failed to attach DeduplicationIterator. Retrying in %dms.", SLEEP_TIME);
+                        Thread.sleep(SLEEP_TIME);
+                        if (!connector.tableOperations().listIterators(tableName).containsKey(DEDUPLICATION_ITERATOR_NAME)) {
+                            connector.tableOperations().attachIterator(tableName, is);
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            throw new VertexiumException("Could not attach DeduplicationIterator", e);
         }
     }
 
