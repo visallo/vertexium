@@ -67,8 +67,8 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
     static final AccumuloGraphLogger GRAPH_LOGGER = new AccumuloGraphLogger(QUERY_LOGGER);
     private static final String ROW_DELETING_ITERATOR_NAME = RowDeletingIterator.class.getSimpleName();
     private static final int ROW_DELETING_ITERATOR_PRIORITY = 7;
-    private static final String DEDUPLICATION_ITERATOR_NAME = DeduplicationIterator.class.getSimpleName();
-    private static final int DEDUPLICATION_ITERATOR_PRIORITY = 7;
+    private static final String ROW_DEDUPLICATION_ITERATOR_NAME = RowDeduplicationIterator.class.getSimpleName();
+    private static final int ROW_DEDUPLICATION_ITERATOR_PRIORITY = 5;
     private static final Object addIteratorLock = new Object();
     private static final Integer METADATA_ACCUMULO_GRAPH_VERSION = 2;
     private static final String METADATA_ACCUMULO_GRAPH_VERSION_KEY = "accumulo.graph.version";
@@ -182,16 +182,16 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             ensureTableExists(connector, getHistoryEdgesTableName(config.getTableNamePrefix()), config.getMaxVersions(), config.getHdfsContextClasspath(), config.isCreateTables());
             ensureRowDeletingIteratorIsAttached(connector, getHistoryVerticesTableName(config.getTableNamePrefix()));
             ensureRowDeletingIteratorIsAttached(connector, getHistoryEdgesTableName(config.getTableNamePrefix()));
-            if (config.isUseDeduplicationIterator()) {
-                ensureDeduplicationIteratorIsAttached(connector, getHistoryVerticesTableName(config.getTableNamePrefix()));
-                ensureDeduplicationIteratorIsAttached(connector, getHistoryEdgesTableName(config.getTableNamePrefix()));
+            if (config.useRowDeduplicationIterator()) {
+                ensureRowDeduplicationIteratorIsAttached(connector, getHistoryVerticesTableName(config.getTableNamePrefix()));
+                ensureRowDeduplicationIteratorIsAttached(connector, getHistoryEdgesTableName(config.getTableNamePrefix()));
             }
         } else {
             ensureTableExists(connector, getVerticesTableName(config.getTableNamePrefix()), config.getMaxVersions(), config.getHdfsContextClasspath(), config.isCreateTables());
             ensureTableExists(connector, getEdgesTableName(config.getTableNamePrefix()), config.getMaxVersions(), config.getHdfsContextClasspath(), config.isCreateTables());
-            if (config.isUseDeduplicationIterator()) {
-                ensureDeduplicationIteratorIsAttached(connector, getVerticesTableName(config.getTableNamePrefix()));
-                ensureDeduplicationIteratorIsAttached(connector, getEdgesTableName(config.getTableNamePrefix()));
+            if (config.useRowDeduplicationIterator()) {
+                ensureRowDeduplicationIteratorIsAttached(connector, getVerticesTableName(config.getTableNamePrefix()));
+                ensureRowDeduplicationIteratorIsAttached(connector, getEdgesTableName(config.getTableNamePrefix()));
             }
         }
         ensureTableExists(connector, getExtendedDataTableName(config.getTableNamePrefix()), config.getExtendedDataMaxVersions(), config.getHdfsContextClasspath(), config.isCreateTables());
@@ -313,11 +313,11 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         }
     }
 
-    protected static void ensureDeduplicationIteratorIsAttached(Connector connector, String tableName) {
+    protected static void ensureRowDeduplicationIteratorIsAttached(Connector connector, String tableName) {
         try {
             synchronized (addIteratorLock) {
-                IteratorSetting is = new IteratorSetting(DEDUPLICATION_ITERATOR_PRIORITY, DEDUPLICATION_ITERATOR_NAME, DeduplicationIterator.class);
-                if (!connector.tableOperations().listIterators(tableName).containsKey(DEDUPLICATION_ITERATOR_NAME)) {
+                IteratorSetting is = new IteratorSetting(ROW_DEDUPLICATION_ITERATOR_PRIORITY, ROW_DEDUPLICATION_ITERATOR_NAME, RowDeduplicationIterator.class);
+                if (!connector.tableOperations().listIterators(tableName).containsKey(ROW_DEDUPLICATION_ITERATOR_NAME)) {
                     try {
                         connector.tableOperations().attachIterator(tableName, is);
                     } catch (Exception ex) {
@@ -325,7 +325,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                         final int SLEEP_TIME = 5000;
                         LOGGER.warn("Failed to attach DeduplicationIterator. Retrying in %dms.", SLEEP_TIME);
                         Thread.sleep(SLEEP_TIME);
-                        if (!connector.tableOperations().listIterators(tableName).containsKey(DEDUPLICATION_ITERATOR_NAME)) {
+                        if (!connector.tableOperations().listIterators(tableName).containsKey(ROW_DEDUPLICATION_ITERATOR_NAME)) {
                             connector.tableOperations().attachIterator(tableName, is);
                         }
                     }
@@ -1476,6 +1476,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         if (hasEventListeners()) {
             synchronized (this.graphEventQueue) {
                 flushWritersAndSuper();
+                queueEvent(new FlushEvent(this));
                 flushGraphEventQueue();
             }
         } else {

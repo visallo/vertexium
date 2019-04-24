@@ -944,4 +944,10 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
     public void flushGraph() {
         // no need to do anything here
     }
+
+    @Override
+    public void flush() {
+        super.flush();
+        fireGraphEvent(new FlushEvent(this));
+    }
 }
