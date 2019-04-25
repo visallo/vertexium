@@ -141,7 +141,7 @@ public abstract class GraphTestBase {
         assertNull(v);
 
         assertEvents(
-                new AddVertexEvent(graph, vertexAdded)
+            new AddVertexEvent(graph, vertexAdded)
         );
     }
 
@@ -158,7 +158,7 @@ public abstract class GraphTestBase {
         assertNotNull(vertexId);
 
         assertEvents(
-                new AddVertexEvent(graph, vertexAdded)
+            new AddVertexEvent(graph, vertexAdded)
         );
     }
 
@@ -178,8 +178,8 @@ public abstract class GraphTestBase {
     @Test
     public void testStreamingPropertyValueReadAsString() {
         graph.prepareVertex("v1", VISIBILITY_EMPTY)
-                .setProperty("spv", StreamingPropertyValue.create("Hello World"), VISIBILITY_EMPTY)
-                .save(AUTHORIZATIONS_EMPTY);
+            .setProperty("spv", StreamingPropertyValue.create("Hello World"), VISIBILITY_EMPTY)
+            .save(AUTHORIZATIONS_EMPTY);
         graph.flush();
 
         Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_EMPTY);
@@ -195,15 +195,15 @@ public abstract class GraphTestBase {
         String expectedLargeValue = IOUtils.toString(new LargeStringInputStream(LARGE_PROPERTY_VALUE_SIZE));
         PropertyValue propSmall = StreamingPropertyValue.create(new ByteArrayInputStream("value1".getBytes()), String.class, 6L);
         PropertyValue propLarge = StreamingPropertyValue.create(
-                new ByteArrayInputStream(expectedLargeValue.getBytes()),
-                String.class,
-                null
+            new ByteArrayInputStream(expectedLargeValue.getBytes()),
+            String.class,
+            null
         );
         String largePropertyName = "propLarge/\\*!@#$%^&*()[]{}|";
         Vertex v1 = graph.prepareVertex("v1", VISIBILITY_A)
-                .setProperty("propSmall", propSmall, VISIBILITY_A)
-                .setProperty(largePropertyName, propLarge, VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("propSmall", propSmall, VISIBILITY_A)
+            .setProperty(largePropertyName, propLarge, VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         Iterable<Object> propSmallValues = v1.getPropertyValues("propSmall");
@@ -255,8 +255,8 @@ public abstract class GraphTestBase {
         byte[] expectedLargeValueBytes = expectedLargeValue.getBytes();
         PropertyValue propLarge = StreamingPropertyValue.create(new ByteArrayInputStream(expectedLargeValue.getBytes()), String.class);
         graph.prepareVertex("v1", VISIBILITY_A)
-                .setProperty("propLarge", propLarge, VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("propLarge", propLarge, VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
@@ -280,13 +280,13 @@ public abstract class GraphTestBase {
         Long timestamp = System.currentTimeMillis();
         String expectedValue = IOUtils.toString(new LargeStringInputStream(LARGE_PROPERTY_VALUE_SIZE));
         PropertyValue propLarge = StreamingPropertyValue.create(
-                new ByteArrayInputStream(expectedValue.getBytes()),
-                String.class,
-                (long) expectedValue.length()
+            new ByteArrayInputStream(expectedValue.getBytes()),
+            String.class,
+            (long) expectedValue.length()
         );
         graph.prepareVertex("v1", VISIBILITY_A)
-                .addPropertyValue("key1", "largeProp", propLarge, metadata, timestamp, VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .addPropertyValue("key1", "largeProp", propLarge, metadata, timestamp, VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B);
@@ -296,13 +296,13 @@ public abstract class GraphTestBase {
         // now save a smaller value, making sure it gets truncated
         expectedValue = "small";
         propLarge = StreamingPropertyValue.create(
-                new ByteArrayInputStream(expectedValue.getBytes()),
-                String.class,
-                (long) expectedValue.length()
+            new ByteArrayInputStream(expectedValue.getBytes()),
+            String.class,
+            (long) expectedValue.length()
         );
         graph.prepareVertex("v1", VISIBILITY_A)
-                .addPropertyValue("key1", "largeProp", propLarge, metadata, timestamp + 1, VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .addPropertyValue("key1", "largeProp", propLarge, metadata, timestamp + 1, VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         v1 = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B);
@@ -321,8 +321,8 @@ public abstract class GraphTestBase {
         String expectedLargeValue = "abcdefghijk";
         PropertyValue propLarge = StreamingPropertyValue.create(new ByteArrayInputStream(expectedLargeValue.getBytes()), String.class);
         graph.prepareVertex("v1", VISIBILITY_A)
-                .setProperty("propLarge", propLarge, VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("propLarge", propLarge, VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
@@ -372,8 +372,8 @@ public abstract class GraphTestBase {
         byte[] expectedLargeValueBytes = expectedLargeValue.getBytes();
         PropertyValue propLarge = StreamingPropertyValue.create(new ByteArrayInputStream(expectedLargeValue.getBytes()), String.class);
         graph.prepareVertex("v1", VISIBILITY_A)
-                .setProperty("propLarge", propLarge, VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("propLarge", propLarge, VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
@@ -410,8 +410,8 @@ public abstract class GraphTestBase {
         byte[] expectedLargeValueBytes = expectedLargeValue.getBytes();
         PropertyValue propLarge = StreamingPropertyValue.create(new ByteArrayInputStream(expectedLargeValue.getBytes()), String.class);
         graph.prepareVertex("v1", VISIBILITY_A)
-                .setProperty("propLarge", propLarge, VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("propLarge", propLarge, VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
@@ -437,8 +437,8 @@ public abstract class GraphTestBase {
         prop1Metadata.add("metadata1", "metadata1Value", VISIBILITY_A);
 
         graph.prepareVertex("v1", VISIBILITY_A)
-                .setProperty("prop1", "value1", prop1Metadata, VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("prop1", "value1", prop1Metadata, VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         AtomicInteger vertexCount = new AtomicInteger();
@@ -475,8 +475,8 @@ public abstract class GraphTestBase {
 
         prop1Metadata.add("metadata2", "metadata2Value", VISIBILITY_A);
         v.prepareMutation()
-                .setProperty("prop1", "value1", prop1Metadata, VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("prop1", "value1", prop1Metadata, VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         v = graph.getVertex("v1", FetchHints.ALL, AUTHORIZATIONS_A);
@@ -503,9 +503,9 @@ public abstract class GraphTestBase {
     @Test
     public void testAddVertexWithProperties() {
         Vertex vertexAdded = graph.prepareVertex("v1", VISIBILITY_A)
-                .setProperty("prop1", "value1", VISIBILITY_A)
-                .setProperty("prop2", "value2", VISIBILITY_B)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("prop1", "value1", VISIBILITY_A)
+            .setProperty("prop2", "value2", VISIBILITY_B)
+            .save(AUTHORIZATIONS_A_AND_B);
         Assert.assertEquals(1, count(vertexAdded.getProperties("prop1")));
         assertEquals("value1", vertexAdded.getPropertyValues("prop1").iterator().next());
         Assert.assertEquals(1, count(vertexAdded.getProperties("prop2")));
@@ -519,22 +519,22 @@ public abstract class GraphTestBase {
         assertEquals("value2", v.getPropertyValues("prop2").iterator().next());
 
         assertEvents(
-                new AddVertexEvent(graph, vertexAdded),
-                new AddPropertyEvent(graph, vertexAdded, vertexAdded.getProperty("prop1")),
-                new AddPropertyEvent(graph, vertexAdded, vertexAdded.getProperty("prop2"))
+            new AddVertexEvent(graph, vertexAdded),
+            new AddPropertyEvent(graph, vertexAdded, vertexAdded.getProperty("prop1")),
+            new AddPropertyEvent(graph, vertexAdded, vertexAdded.getProperty("prop2"))
         );
         clearGraphEvents();
 
         v = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B);
         vertexAdded = v.prepareMutation()
-                .addPropertyValue("key1", "prop1Mutation", "value1Mutation", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .addPropertyValue("key1", "prop1Mutation", "value1Mutation", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
         v = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B);
         Assert.assertEquals(1, count(v.getProperties("prop1Mutation")));
         assertEquals("value1Mutation", v.getPropertyValues("prop1Mutation").iterator().next());
         assertEvents(
-                new AddPropertyEvent(graph, vertexAdded, vertexAdded.getProperty("prop1Mutation"))
+            new AddPropertyEvent(graph, vertexAdded, vertexAdded.getProperty("prop1Mutation"))
         );
     }
 
@@ -542,8 +542,8 @@ public abstract class GraphTestBase {
     public void testNullPropertyValue() {
         try {
             graph.prepareVertex("v1", VISIBILITY_EMPTY)
-                    .setProperty("prop1", null, VISIBILITY_A)
-                    .save(AUTHORIZATIONS_A_AND_B);
+                .setProperty("prop1", null, VISIBILITY_A)
+                .save(AUTHORIZATIONS_A_AND_B);
             throw new VertexiumException("expected null check");
         } catch (NullPointerException ex) {
             assertTrue(ex.getMessage().contains("prop1"));
@@ -553,9 +553,9 @@ public abstract class GraphTestBase {
     @Test
     public void testConcurrentModificationOfProperties() {
         Vertex v = graph.prepareVertex("v1", VISIBILITY_EMPTY)
-                .setProperty("prop1", "value1", VISIBILITY_A)
-                .setProperty("prop2", "value2", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("prop1", "value1", VISIBILITY_A)
+            .setProperty("prop2", "value2", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
 
         int i = 0;
         for (Property p : v.getProperties()) {
@@ -570,9 +570,9 @@ public abstract class GraphTestBase {
     @Test
     public void testAddVertexWithPropertiesWithTwoDifferentVisibilities() {
         Vertex v = graph.prepareVertex("v1", VISIBILITY_EMPTY)
-                .setProperty("prop1", "value1a", VISIBILITY_A)
-                .setProperty("prop1", "value1b", VISIBILITY_B)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("prop1", "value1a", VISIBILITY_A)
+            .setProperty("prop1", "value1b", VISIBILITY_B)
+            .save(AUTHORIZATIONS_A_AND_B);
         Assert.assertEquals(2, count(v.getProperties("prop1")));
         graph.flush();
 
@@ -593,10 +593,10 @@ public abstract class GraphTestBase {
         Vertex v = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_ALL);
 
         v.prepareMutation()
-                .addPropertyValue("propid1a", "prop1", "value1a", VISIBILITY_A)
-                .addPropertyValue("propid2a", "prop2", "value2a", VISIBILITY_A)
-                .addPropertyValue("propid3a", "prop3", "value3a", VISIBILITY_A)
-                .save(AUTHORIZATIONS_ALL);
+            .addPropertyValue("propid1a", "prop1", "value1a", VISIBILITY_A)
+            .addPropertyValue("propid2a", "prop2", "value2a", VISIBILITY_A)
+            .addPropertyValue("propid3a", "prop3", "value3a", VISIBILITY_A)
+            .save(AUTHORIZATIONS_ALL);
         graph.flush();
         v = graph.getVertex("v1", AUTHORIZATIONS_A);
         assertEquals("value1a", v.getPropertyValues("prop1").iterator().next());
@@ -605,9 +605,9 @@ public abstract class GraphTestBase {
         Assert.assertEquals(3, count(v.getProperties()));
 
         v.prepareMutation()
-                .addPropertyValue("propid1a", "prop1", "value1b", VISIBILITY_A)
-                .addPropertyValue("propid2a", "prop2", "value2b", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .addPropertyValue("propid1a", "prop1", "value1b", VISIBILITY_A)
+            .addPropertyValue("propid2a", "prop2", "value2b", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
         v = graph.getVertex("v1", AUTHORIZATIONS_A);
         Assert.assertEquals(1, count(v.getPropertyValues("prop1")));
@@ -629,13 +629,13 @@ public abstract class GraphTestBase {
     @Test
     public void testMultivaluedPropertyOrder() {
         graph.prepareVertex("v1", VISIBILITY_A)
-                .addPropertyValue("a", "prop", "a", VISIBILITY_A)
-                .addPropertyValue("aa", "prop", "aa", VISIBILITY_A)
-                .addPropertyValue("b", "prop", "b", VISIBILITY_A)
-                .addPropertyValue("0", "prop", "0", VISIBILITY_A)
-                .addPropertyValue("A", "prop", "A", VISIBILITY_A)
-                .addPropertyValue("Z", "prop", "Z", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .addPropertyValue("a", "prop", "a", VISIBILITY_A)
+            .addPropertyValue("aa", "prop", "aa", VISIBILITY_A)
+            .addPropertyValue("b", "prop", "b", VISIBILITY_A)
+            .addPropertyValue("0", "prop", "0", VISIBILITY_A)
+            .addPropertyValue("A", "prop", "A", VISIBILITY_A)
+            .addPropertyValue("Z", "prop", "Z", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
@@ -652,10 +652,10 @@ public abstract class GraphTestBase {
         Vertex v = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_ALL);
 
         v.prepareMutation()
-                .addPropertyValue("propid1a", "prop1", "value1a", VISIBILITY_A)
-                .addPropertyValue("propid1b", "prop1", "value1b", VISIBILITY_A)
-                .addPropertyValue("propid2a", "prop2", "value2a", VISIBILITY_A)
-                .save(AUTHORIZATIONS_ALL);
+            .addPropertyValue("propid1a", "prop1", "value1a", VISIBILITY_A)
+            .addPropertyValue("propid1b", "prop1", "value1b", VISIBILITY_A)
+            .addPropertyValue("propid2a", "prop2", "value2a", VISIBILITY_A)
+            .save(AUTHORIZATIONS_ALL);
         graph.flush();
         clearGraphEvents();
 
@@ -671,8 +671,8 @@ public abstract class GraphTestBase {
         Assert.assertEquals(1, count(graph.query(AUTHORIZATIONS_A_AND_B).has("prop2", "value2a").vertices()));
         Assert.assertEquals(0, count(graph.query(AUTHORIZATIONS_A_AND_B).has("prop1", "value1a").vertices()));
         assertEvents(
-                new DeletePropertyEvent(graph, v, prop1_propid1a),
-                new DeletePropertyEvent(graph, v, prop1_propid1b)
+            new DeletePropertyEvent(graph, v, prop1_propid1a),
+            new DeletePropertyEvent(graph, v, prop1_propid1b)
         );
         clearGraphEvents();
 
@@ -684,21 +684,21 @@ public abstract class GraphTestBase {
         Assert.assertEquals(0, count(v.getProperties()));
 
         assertEvents(
-                new DeletePropertyEvent(graph, v, prop2_propid2a)
+            new DeletePropertyEvent(graph, v, prop2_propid2a)
         );
     }
 
     @Test
     public void testDeletePropertyWithMutation() {
         Vertex v1 = graph.prepareVertex("v1", VISIBILITY_A)
-                .addPropertyValue("propid1a", "prop1", "value1a", VISIBILITY_A)
-                .addPropertyValue("propid1b", "prop1", "value1b", VISIBILITY_A)
-                .addPropertyValue("propid2a", "prop2", "value2a", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .addPropertyValue("propid1a", "prop1", "value1a", VISIBILITY_A)
+            .addPropertyValue("propid1b", "prop1", "value1b", VISIBILITY_A)
+            .addPropertyValue("propid2a", "prop2", "value2a", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         Vertex v2 = graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_A);
         graph.prepareEdge("e1", v1, v2, LABEL_LABEL1, VISIBILITY_A)
-                .addPropertyValue("key1", "prop1", "value1", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
+            .addPropertyValue("key1", "prop1", "value1", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
         graph.flush();
         clearGraphEvents();
 
@@ -707,8 +707,8 @@ public abstract class GraphTestBase {
         Property prop1_propid1a = v1.getProperty("propid1a", "prop1");
         Property prop1_propid1b = v1.getProperty("propid1b", "prop1");
         v1.prepareMutation()
-                .deleteProperties("prop1")
-                .save(AUTHORIZATIONS_A_AND_B);
+            .deleteProperties("prop1")
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
         Assert.assertEquals(1, count(v1.getProperties()));
         v1 = graph.getVertex("v1", FetchHints.ALL, AUTHORIZATIONS_A);
@@ -717,22 +717,22 @@ public abstract class GraphTestBase {
         Assert.assertEquals(1, count(graph.query(AUTHORIZATIONS_A_AND_B).has("prop2", "value2a").vertices()));
         Assert.assertEquals(0, count(graph.query(AUTHORIZATIONS_A_AND_B).has("prop1", "value1a").vertices()));
         assertEvents(
-                new DeletePropertyEvent(graph, v1, prop1_propid1a),
-                new DeletePropertyEvent(graph, v1, prop1_propid1b)
+            new DeletePropertyEvent(graph, v1, prop1_propid1a),
+            new DeletePropertyEvent(graph, v1, prop1_propid1b)
         );
         clearGraphEvents();
 
         // delete property with key and name
         Property prop2_propid2a = v1.getProperty("propid2a", "prop2");
         v1.prepareMutation()
-                .deleteProperties("propid2a", "prop2")
-                .save(AUTHORIZATIONS_A_AND_B);
+            .deleteProperties("propid2a", "prop2")
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
         Assert.assertEquals(0, count(v1.getProperties()));
         v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
         Assert.assertEquals(0, count(v1.getProperties()));
         assertEvents(
-                new DeletePropertyEvent(graph, v1, prop2_propid2a)
+            new DeletePropertyEvent(graph, v1, prop2_propid2a)
         );
         clearGraphEvents();
 
@@ -740,14 +740,14 @@ public abstract class GraphTestBase {
         Edge e1 = graph.getEdge("e1", FetchHints.ALL, AUTHORIZATIONS_A);
         Property edgeProperty = e1.getProperty("key1", "prop1");
         e1.prepareMutation()
-                .deleteProperties("key1", "prop1")
-                .save(AUTHORIZATIONS_A_AND_B);
+            .deleteProperties("key1", "prop1")
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
         Assert.assertEquals(0, count(e1.getProperties()));
         e1 = graph.getEdge("e1", AUTHORIZATIONS_A);
         Assert.assertEquals(0, count(e1.getProperties()));
         assertEvents(
-                new DeletePropertyEvent(graph, e1, edgeProperty)
+            new DeletePropertyEvent(graph, e1, edgeProperty)
         );
     }
 
@@ -756,8 +756,8 @@ public abstract class GraphTestBase {
         Vertex v = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_ALL);
 
         v.prepareMutation()
-                .setProperty("prop1", "value1", VISIBILITY_A)
-                .save(AUTHORIZATIONS_ALL);
+            .setProperty("prop1", "value1", VISIBILITY_A)
+            .save(AUTHORIZATIONS_ALL);
         graph.flush();
 
         v = graph.getVertex("v1", AUTHORIZATIONS_A);
@@ -786,12 +786,12 @@ public abstract class GraphTestBase {
     @Test
     public void testSoftDeleteVertex() {
         graph.prepareVertex("v1", VISIBILITY_A)
-                .addPropertyValue("key1", "name1", "value1", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
+            .addPropertyValue("key1", "name1", "value1", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
         graph.prepareVertex("v2", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
+            .save(AUTHORIZATIONS_A);
         graph.prepareEdge("e1", "v1", "v2", LABEL_LABEL1, VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
+            .save(AUTHORIZATIONS_A);
         graph.flush();
         assertEquals(2, count(graph.getVertices(AUTHORIZATIONS_A)));
         assertEquals(1, count(graph.query(AUTHORIZATIONS_A).has("name1", "value1").vertices()));
@@ -808,14 +808,14 @@ public abstract class GraphTestBase {
         assertEquals(0, v2.getEdgesSummary(AUTHORIZATIONS_A).getCountOfEdges());
 
         graph.prepareVertex("v1", VISIBILITY_A)
-                .addPropertyValue("key1", "name1", "value1", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
+            .addPropertyValue("key1", "name1", "value1", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
         graph.prepareVertex("v3", VISIBILITY_A)
-                .addPropertyValue("key1", "name1", "value1", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
+            .addPropertyValue("key1", "name1", "value1", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
         graph.prepareVertex("v4", VISIBILITY_A)
-                .addPropertyValue("key1", "name1", "value1", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
+            .addPropertyValue("key1", "name1", "value1", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
         graph.flush();
         assertEquals(4, count(graph.getVertices(AUTHORIZATIONS_A)));
         assertResultsCount(3, graph.query(AUTHORIZATIONS_A).has("name1", "value1").vertices());
@@ -829,8 +829,8 @@ public abstract class GraphTestBase {
     @Test
     public void testReAddingSoftDeletedVertex() {
         Vertex v1 = graph.prepareVertex("v1", VISIBILITY_A)
-                .addPropertyValue("k1", "p1", "value1", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
+            .addPropertyValue("k1", "p1", "value1", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
         graph.flush();
 
         assertEquals(VISIBILITY_A.getVisibilityString(), v1.getVisibility().getVisibilityString());
@@ -839,7 +839,7 @@ public abstract class GraphTestBase {
         graph.flush();
 
         graph.prepareVertex("v1", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
+            .save(AUTHORIZATIONS_A);
         graph.flush();
 
         v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
@@ -851,7 +851,7 @@ public abstract class GraphTestBase {
         graph.flush();
 
         graph.prepareVertex("v1", VISIBILITY_A_AND_B)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         v1 = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B);
@@ -951,7 +951,7 @@ public abstract class GraphTestBase {
 
 
         graph.prepareEdge("e1", v1, v2, LABEL_LABEL1, VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
+            .save(AUTHORIZATIONS_A);
         graph.flush();
 
         e1 = graph.getEdge("e1", AUTHORIZATIONS_A);
@@ -972,8 +972,8 @@ public abstract class GraphTestBase {
     @Test
     public void testSoftDeleteProperty() throws InterruptedException {
         graph.prepareVertex("v1", VISIBILITY_A)
-                .addPropertyValue("key1", "name1", "value1", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
+            .addPropertyValue("key1", "name1", "value1", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
         graph.flush();
         assertEquals(1, count(graph.getVertex("v1", AUTHORIZATIONS_A).getProperties()));
         assertResultsCount(1, graph.query(AUTHORIZATIONS_A).has("name1", "value1").vertices());
@@ -984,8 +984,8 @@ public abstract class GraphTestBase {
         assertResultsCount(0, graph.query(AUTHORIZATIONS_A).has("name1", "value1").vertices());
 
         graph.prepareVertex("v1", VISIBILITY_A)
-                .addPropertyValue("key1", "name1", "value1", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
+            .addPropertyValue("key1", "name1", "value1", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
         graph.flush();
         assertEquals(1, count(graph.getVertex("v1", AUTHORIZATIONS_A).getProperties()));
         assertResultsCount(1, graph.query(AUTHORIZATIONS_A).has("name1", "value1").vertices());
@@ -999,31 +999,31 @@ public abstract class GraphTestBase {
     @Test
     public void testSoftDeletePropertyThroughMutation() {
         graph.prepareVertex("v1", VISIBILITY_A)
-                .addPropertyValue("key1", "name1", "value1", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
+            .addPropertyValue("key1", "name1", "value1", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
         graph.flush();
         assertEquals(1, count(graph.getVertex("v1", AUTHORIZATIONS_A).getProperties()));
         assertEquals(1, count(graph.query(AUTHORIZATIONS_A).has("name1", "value1").vertices()));
 
         graph.getVertex("v1", AUTHORIZATIONS_A)
-                .prepareMutation()
-                .softDeleteProperties("name1")
-                .save(AUTHORIZATIONS_A);
+            .prepareMutation()
+            .softDeleteProperties("name1")
+            .save(AUTHORIZATIONS_A);
         graph.flush();
         assertEquals(0, count(graph.getVertex("v1", AUTHORIZATIONS_A).getProperties()));
         assertEquals(0, count(graph.query(AUTHORIZATIONS_A).has("name1", "value1").vertices()));
 
         graph.prepareVertex("v1", VISIBILITY_A)
-                .addPropertyValue("key1", "name1", "value1", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
+            .addPropertyValue("key1", "name1", "value1", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
         graph.flush();
         assertEquals(1, count(graph.getVertex("v1", AUTHORIZATIONS_A).getProperties()));
         assertResultsCount(1, graph.query(AUTHORIZATIONS_A).has("name1", "value1").vertices());
 
         graph.getVertex("v1", AUTHORIZATIONS_A)
-                .prepareMutation()
-                .softDeleteProperties("name1")
-                .save(AUTHORIZATIONS_A);
+            .prepareMutation()
+            .softDeleteProperties("name1")
+            .save(AUTHORIZATIONS_A);
         graph.flush();
         assertEquals(0, count(graph.getVertex("v1", AUTHORIZATIONS_A).getProperties()));
         assertResultsCount(0, graph.query(AUTHORIZATIONS_A).has("name1", "value1").vertices());
@@ -1034,7 +1034,7 @@ public abstract class GraphTestBase {
         Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A_AND_B);
         Vertex v2 = graph.addVertex("v2", VISIBILITY_B, AUTHORIZATIONS_A_AND_B);
         ElementBuilder<Edge> elementBuilder = graph.prepareEdge("e1", v1, v2, LABEL_LABEL1, VISIBILITY_B)
-                .setProperty("prop1", "value1", VISIBILITY_B);
+            .setProperty("prop1", "value1", VISIBILITY_B);
         elementBuilder.setIndexHint(IndexHint.DO_NOT_INDEX);
         Edge e1 = elementBuilder.save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
@@ -1052,9 +1052,9 @@ public abstract class GraphTestBase {
     @Test
     public void testSoftDeletePropertyWithVisibility() {
         Vertex v1 = graph.prepareVertex("v1", VISIBILITY_A)
-                .addPropertyValue("key1", "name1", "value1", VISIBILITY_A)
-                .addPropertyValue("key1", "name1", "value2", VISIBILITY_B)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .addPropertyValue("key1", "name1", "value1", VISIBILITY_A)
+            .addPropertyValue("key1", "name1", "value2", VISIBILITY_B)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
         assertEquals(2, count(graph.getVertex("v1", AUTHORIZATIONS_A_AND_B).getProperties()));
         org.vertexium.test.util.IterableUtils.assertContains("value1", v1.getPropertyValues("name1"));
@@ -1070,18 +1070,18 @@ public abstract class GraphTestBase {
     @Test
     public void testSoftDeletePropertyThroughMutationWithVisibility() {
         Vertex v1 = graph.prepareVertex("v1", VISIBILITY_A)
-                .addPropertyValue("key1", "name1", "value1", VISIBILITY_A)
-                .addPropertyValue("key1", "name1", "value2", VISIBILITY_B)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .addPropertyValue("key1", "name1", "value1", VISIBILITY_A)
+            .addPropertyValue("key1", "name1", "value2", VISIBILITY_B)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
         assertEquals(2, count(graph.getVertex("v1", AUTHORIZATIONS_A_AND_B).getProperties()));
         org.vertexium.test.util.IterableUtils.assertContains("value1", v1.getPropertyValues("name1"));
         org.vertexium.test.util.IterableUtils.assertContains("value2", v1.getPropertyValues("name1"));
 
         v1 = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B)
-                .prepareMutation()
-                .softDeleteProperty("key1", "name1", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .prepareMutation()
+            .softDeleteProperty("key1", "name1", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
         assertEquals(1, count(v1.getProperties()));
         assertEquals(1, count(v1.getPropertyValues("key1", "name1")));
@@ -1091,8 +1091,8 @@ public abstract class GraphTestBase {
     @Test
     public void testSoftDeletePropertyOnAHiddenVertex() {
         Vertex v1 = graph.prepareVertex("v1", VISIBILITY_EMPTY)
-                .addPropertyValue("key1", "name1", "value1", VISIBILITY_EMPTY)
-                .save(AUTHORIZATIONS_A);
+            .addPropertyValue("key1", "name1", "value1", VISIBILITY_EMPTY)
+            .save(AUTHORIZATIONS_A);
         graph.flush();
 
         graph.markVertexHidden(v1, VISIBILITY_A, AUTHORIZATIONS_A);
@@ -1109,8 +1109,8 @@ public abstract class GraphTestBase {
     @Test
     public void testMarkHiddenWithVisibilityChange() {
         Vertex v1 = graph.prepareVertex("v1", VISIBILITY_A)
-                .addPropertyValue("key1", "firstName", "Joe", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .addPropertyValue("key1", "firstName", "Joe", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
         assertEquals(1, count(v1.getProperties()));
         org.vertexium.test.util.IterableUtils.assertContains("Joe", v1.getPropertyValues("firstName"));
@@ -1153,8 +1153,8 @@ public abstract class GraphTestBase {
     @Test
     public void testSoftDeleteWithVisibilityChanges() {
         Vertex v1 = graph.prepareVertex("v1", VISIBILITY_A)
-                .addPropertyValue("key1", "firstName", "Joe", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .addPropertyValue("key1", "firstName", "Joe", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
         assertEquals(1, count(v1.getProperties()));
         org.vertexium.test.util.IterableUtils.assertContains("Joe", v1.getPropertyValues("firstName"));
@@ -1176,8 +1176,8 @@ public abstract class GraphTestBase {
         assertEquals("Joseph", property.getValue());
 
         Vertex v2 = graph.prepareVertex("v2", VISIBILITY_A)
-                .addPropertyValue("key1", "firstName", "Joe", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .addPropertyValue("key1", "firstName", "Joe", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
         assertEquals(1, count(v2.getProperties()));
         org.vertexium.test.util.IterableUtils.assertContains("Joe", v2.getPropertyValues("firstName"));
@@ -1202,8 +1202,8 @@ public abstract class GraphTestBase {
     @Test
     public void testMarkPropertyVisible() {
         Vertex v1 = graph.prepareVertex("v1", VISIBILITY_A)
-                .addPropertyValue("key1", "firstName", "Joe", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .addPropertyValue("key1", "firstName", "Joe", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
         assertEquals(1, count(v1.getProperties()));
         org.vertexium.test.util.IterableUtils.assertContains("Joe", v1.getPropertyValues("firstName"));
@@ -1254,9 +1254,9 @@ public abstract class GraphTestBase {
     public void testAddMultipleVertices() {
         List<ElementBuilder<Vertex>> elements = new ArrayList<>();
         elements.add(graph.prepareVertex("v1", VISIBILITY_A)
-                .setProperty("prop1", "v1", VISIBILITY_A));
+            .setProperty("prop1", "v1", VISIBILITY_A));
         elements.add(graph.prepareVertex("v2", VISIBILITY_A)
-                .setProperty("prop1", "v2", VISIBILITY_A));
+            .setProperty("prop1", "v2", VISIBILITY_A));
         Iterable<Vertex> vertices = graph.addVertices(elements, AUTHORIZATIONS_A_AND_B);
         assertVertexIds(vertices, "v1", "v2");
         graph.flush();
@@ -1271,9 +1271,9 @@ public abstract class GraphTestBase {
     @Test
     public void testAddExtendedDataRows() {
         graph.prepareVertex("v1", VISIBILITY_A)
-                .addExtendedData("table1", "row1", "name", "value1", VISIBILITY_A)
-                .addExtendedData("table1", "row2", "name", "value2", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
+            .addExtendedData("table1", "row1", "name", "value1", VISIBILITY_A)
+            .addExtendedData("table1", "row2", "name", "value2", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
         graph.flush();
 
         if (graph instanceof GraphWithSearchIndex) {
@@ -1290,8 +1290,8 @@ public abstract class GraphTestBase {
         assertResultsCount(2, 2, rows);
 
         rows = graph.query(AUTHORIZATIONS_A)
-                .has("name", "value1")
-                .extendedDataRows();
+            .has("name", "value1")
+            .extendedDataRows();
         assertResultsCount(1, 1, rows);
 
         ExtendedDataRow row = IterableUtils.single(rows);
@@ -1303,17 +1303,17 @@ public abstract class GraphTestBase {
     @Test
     public void testGetVerticesWithIds() {
         graph.prepareVertex("v1", VISIBILITY_A)
-                .setProperty("prop1", "v1", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("prop1", "v1", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.prepareVertex("v1b", VISIBILITY_A)
-                .setProperty("prop1", "v1b", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("prop1", "v1b", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.prepareVertex("v2", VISIBILITY_A)
-                .setProperty("prop1", "v2", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("prop1", "v2", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.prepareVertex("v3", VISIBILITY_A)
-                .setProperty("prop1", "v3", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("prop1", "v3", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         List<String> ids = new ArrayList<>();
@@ -1410,17 +1410,17 @@ public abstract class GraphTestBase {
         Vertex v2 = graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_A);
         Vertex v3 = graph.addVertex("v3", VISIBILITY_A, AUTHORIZATIONS_A);
         graph.prepareEdge("e1", v1, v2, LABEL_LABEL1, VISIBILITY_A)
-                .setProperty("prop1", "e1", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("prop1", "e1", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.prepareEdge("e1a", v1, v2, LABEL_LABEL1, VISIBILITY_A)
-                .setProperty("prop1", "e1a", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("prop1", "e1a", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.prepareEdge("e2", v1, v3, LABEL_LABEL1, VISIBILITY_A)
-                .setProperty("prop1", "e2", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("prop1", "e2", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.prepareEdge("e3", v2, v3, LABEL_LABEL1, VISIBILITY_A)
-                .setProperty("prop1", "e3", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("prop1", "e3", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         List<String> ids = new ArrayList<>();
@@ -1446,9 +1446,9 @@ public abstract class GraphTestBase {
     @Test
     public void testMarkVertexAndPropertiesHidden() {
         graph.prepareVertex("v1", VISIBILITY_EMPTY)
-                .addPropertyValue("k1", "age", 25, VISIBILITY_EMPTY)
-                .addPropertyValue("k2", "age", 30, VISIBILITY_EMPTY)
-                .save(AUTHORIZATIONS_ALL);
+            .addPropertyValue("k1", "age", 25, VISIBILITY_EMPTY)
+            .addPropertyValue("k2", "age", 30, VISIBILITY_EMPTY)
+            .save(AUTHORIZATIONS_ALL);
         graph.flush();
 
         Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_ALL);
@@ -1637,15 +1637,15 @@ public abstract class GraphTestBase {
         graph.flush();
 
         FetchHints propertiesFetchHints = FetchHints.builder()
-                .setIncludeAllProperties(true)
-                .build();
+            .setIncludeAllProperties(true)
+            .build();
         QueryResultsIterable<Edge> edges = graph.query(AUTHORIZATIONS_A)
-                .edges(propertiesFetchHints);
+            .edges(propertiesFetchHints);
         assertResultsCount(2, edges);
         assertEdgeIdsAnyOrder(edges, e1.getId(), e2.getId());
 
         edges = graph.query(AUTHORIZATIONS_A_AND_B)
-                .edges(propertiesFetchHints);
+            .edges(propertiesFetchHints);
         assertResultsCount(1, edges);
         assertEdgeIdsAnyOrder(edges, e2.getId());
 
@@ -1653,7 +1653,7 @@ public abstract class GraphTestBase {
         graph.flush();
 
         edges = graph.query(AUTHORIZATIONS_A_AND_B)
-                .edges(propertiesFetchHints);
+            .edges(propertiesFetchHints);
         assertResultsCount(2, edges);
         assertEdgeIdsAnyOrder(edges, e1.getId(), e2.getId());
     }
@@ -1661,10 +1661,10 @@ public abstract class GraphTestBase {
     @Test
     public void testMarkPropertyHidden() {
         Vertex v1 = graph.prepareVertex("v1", VISIBILITY_A)
-                .addPropertyValue("key1", "prop1", "value1", VISIBILITY_A)
-                .addPropertyValue("key1", "prop1", "value1", VISIBILITY_B)
-                .addPropertyValue("key2", "prop1", "value1", VISIBILITY_A)
-                .save(AUTHORIZATIONS_ALL);
+            .addPropertyValue("key1", "prop1", "value1", VISIBILITY_A)
+            .addPropertyValue("key1", "prop1", "value1", VISIBILITY_B)
+            .addPropertyValue("key2", "prop1", "value1", VISIBILITY_A)
+            .save(AUTHORIZATIONS_ALL);
         graph.flush();
 
         Assert.assertEquals(3, count(graph.getVertex("v1", AUTHORIZATIONS_A_AND_B).getProperties("prop1")));
@@ -1737,28 +1737,28 @@ public abstract class GraphTestBase {
     @Test
     public void testSearchingForHiddenVertices() {
         Vertex v1 = graph.prepareVertex("v1", VISIBILITY_A)
-                .addPropertyValue("key1", "prop1", "value1", VISIBILITY_A)
-                .save(AUTHORIZATIONS_ALL);
+            .addPropertyValue("key1", "prop1", "value1", VISIBILITY_A)
+            .save(AUTHORIZATIONS_ALL);
         Vertex v2 = graph.prepareVertex("v2", VISIBILITY_A)
-                .addPropertyValue("key1", "prop1", "value1", VISIBILITY_A)
-                .save(AUTHORIZATIONS_ALL);
+            .addPropertyValue("key1", "prop1", "value1", VISIBILITY_A)
+            .save(AUTHORIZATIONS_ALL);
         graph.flush();
 
         graph.markVertexHidden(v1, VISIBILITY_B, AUTHORIZATIONS_ALL);
         graph.flush();
 
         FetchHints propertiesFetchHints = FetchHints.builder()
-                .setIncludeAllProperties(true)
-                .build();
+            .setIncludeAllProperties(true)
+            .build();
         QueryResultsIterable<Vertex> vertices = graph.query(AUTHORIZATIONS_A)
-                .has("prop1", "value1")
-                .vertices(propertiesFetchHints);
+            .has("prop1", "value1")
+            .vertices(propertiesFetchHints);
         assertResultsCount(2, vertices);
         assertVertexIdsAnyOrder(vertices, v1.getId(), v2.getId());
 
         vertices = graph.query(AUTHORIZATIONS_A_AND_B)
-                .has("prop1", "value1")
-                .vertices(propertiesFetchHints);
+            .has("prop1", "value1")
+            .vertices(propertiesFetchHints);
         assertResultsCount(1, vertices);
         assertVertexIdsAnyOrder(vertices, v2.getId());
 
@@ -1766,8 +1766,8 @@ public abstract class GraphTestBase {
         graph.flush();
 
         vertices = graph.query(AUTHORIZATIONS_A_AND_B)
-                .has("prop1", "value1")
-                .vertices(propertiesFetchHints);
+            .has("prop1", "value1")
+            .vertices(propertiesFetchHints);
         assertResultsCount(2, vertices);
         assertVertexIdsAnyOrder(vertices, v1.getId(), v2.getId());
     }
@@ -1823,8 +1823,8 @@ public abstract class GraphTestBase {
     @Test
     public void testDeleteVertexWithProperties() {
         Vertex v1 = graph.prepareVertex("v1", VISIBILITY_A)
-                .setProperty("prop1", "value1", VISIBILITY_B)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("prop1", "value1", VISIBILITY_B)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
         Property prop1 = v1.getProperty("prop1");
 
@@ -1835,9 +1835,9 @@ public abstract class GraphTestBase {
         Assert.assertEquals(0, count(graph.getVertices(AUTHORIZATIONS_A_AND_B)));
 
         assertEvents(
-                new AddVertexEvent(graph, v1),
-                new AddPropertyEvent(graph, v1, prop1),
-                new DeleteVertexEvent(graph, v1)
+            new AddVertexEvent(graph, v1),
+            new AddPropertyEvent(graph, v1, prop1),
+            new DeleteVertexEvent(graph, v1)
         );
     }
 
@@ -1861,14 +1861,14 @@ public abstract class GraphTestBase {
         assertEquals(v2, addedEdgeVertices.getInVertex());
 
         FetchHints propertiesFetchHints = FetchHints.builder()
-                .setIncludeAllProperties(true)
-                .build();
+            .setIncludeAllProperties(true)
+            .build();
         FetchHints inEdgeRefsFetchHints = FetchHints.builder()
-                .setIncludeInEdgeRefs(true)
-                .build();
+            .setIncludeInEdgeRefs(true)
+            .build();
         FetchHints outEdgeRefsFetchHints = FetchHints.builder()
-                .setIncludeOutEdgeRefs(true)
-                .build();
+            .setIncludeOutEdgeRefs(true)
+            .build();
 
         graph.getVertex("v1", FetchHints.NONE, AUTHORIZATIONS_A);
         graph.getVertex("v1", graph.getDefaultFetchHints(), AUTHORIZATIONS_A);
@@ -1896,9 +1896,9 @@ public abstract class GraphTestBase {
 
         graph.flush();
         assertEvents(
-                new AddVertexEvent(graph, v1),
-                new AddVertexEvent(graph, v2),
-                new AddEdgeEvent(graph, addedEdge)
+            new AddVertexEvent(graph, v1),
+            new AddVertexEvent(graph, v2),
+            new AddEdgeEvent(graph, addedEdge)
         );
     }
 
@@ -1960,9 +1960,9 @@ public abstract class GraphTestBase {
         Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
         Vertex v2 = graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_A);
         Edge addedEdge = graph.prepareEdge("e1", v1, v2, LABEL_LABEL1, VISIBILITY_A)
-                .setProperty("propA", "valueA", VISIBILITY_A)
-                .setProperty("propB", "valueB", VISIBILITY_B)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("propA", "valueA", VISIBILITY_A)
+            .setProperty("propB", "valueB", VISIBILITY_B)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         Edge e = graph.getEdge("e1", AUTHORIZATIONS_A);
@@ -1979,11 +1979,11 @@ public abstract class GraphTestBase {
 
         graph.flush();
         assertEvents(
-                new AddVertexEvent(graph, v1),
-                new AddVertexEvent(graph, v2),
-                new AddEdgeEvent(graph, addedEdge),
-                new AddPropertyEvent(graph, addedEdge, addedEdge.getProperty("propA")),
-                new AddPropertyEvent(graph, addedEdge, addedEdge.getProperty("propB"))
+            new AddVertexEvent(graph, v1),
+            new AddVertexEvent(graph, v2),
+            new AddEdgeEvent(graph, addedEdge),
+            new AddPropertyEvent(graph, addedEdge, addedEdge.getProperty("propA")),
+            new AddPropertyEvent(graph, addedEdge, addedEdge.getProperty("propB"))
         );
     }
 
@@ -1993,7 +1993,7 @@ public abstract class GraphTestBase {
             String outVertexId = null;
             String inVertexId = null;
             getGraph().prepareEdge("e1", outVertexId, inVertexId, LABEL_LABEL1, VISIBILITY_EMPTY)
-                    .save(AUTHORIZATIONS_ALL);
+                .save(AUTHORIZATIONS_ALL);
             fail("should throw an exception");
         } catch (Exception ex) {
             assertNotNull(ex);
@@ -2003,7 +2003,7 @@ public abstract class GraphTestBase {
             Vertex outVertex = null;
             Vertex inVertex = null;
             getGraph().prepareEdge("e1", outVertex, inVertex, LABEL_LABEL1, VISIBILITY_EMPTY)
-                    .save(AUTHORIZATIONS_ALL);
+                .save(AUTHORIZATIONS_ALL);
             fail("should throw an exception");
         } catch (Exception ex) {
             assertNotNull(ex);
@@ -2015,7 +2015,7 @@ public abstract class GraphTestBase {
         try {
             String label = null;
             getGraph().prepareEdge("e1", "v1", "v2", label, VISIBILITY_EMPTY)
-                    .save(AUTHORIZATIONS_ALL);
+                .save(AUTHORIZATIONS_ALL);
             fail("should throw an exception");
         } catch (Exception ex) {
             assertNotNull(ex);
@@ -2026,7 +2026,7 @@ public abstract class GraphTestBase {
             Vertex outVertex = getGraph().addVertex("v1", VISIBILITY_EMPTY, AUTHORIZATIONS_ALL);
             Vertex inVertex = getGraph().addVertex("v2", VISIBILITY_EMPTY, AUTHORIZATIONS_ALL);
             getGraph().prepareEdge("e1", outVertex, inVertex, label, VISIBILITY_EMPTY)
-                    .save(AUTHORIZATIONS_ALL);
+                .save(AUTHORIZATIONS_ALL);
             fail("should throw an exception");
         } catch (Exception ex) {
             assertNotNull(ex);
@@ -2038,8 +2038,8 @@ public abstract class GraphTestBase {
         Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
         Vertex v2 = graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_A);
         graph.prepareEdge("e1", v1, v2, LABEL_LABEL1, VISIBILITY_A)
-                .setProperty("propA", "valueA", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("propA", "valueA", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         Edge e = graph.getEdge("e1", AUTHORIZATIONS_A_AND_B);
@@ -2080,8 +2080,8 @@ public abstract class GraphTestBase {
         Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
         Vertex v2 = graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_A);
         graph.prepareEdge("e1", v1, v2, LABEL_LABEL1, VISIBILITY_A)
-                .setProperty("propA", "valueA", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
+            .setProperty("propA", "valueA", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
         graph.flush();
 
         Edge e = graph.getEdge("e1", AUTHORIZATIONS_A);
@@ -2094,8 +2094,8 @@ public abstract class GraphTestBase {
         Assert.assertEquals(LABEL_LABEL1, IterableUtils.single(v2.getEdgesSummary(AUTHORIZATIONS_A).getInEdgeLabels()));
 
         e.prepareMutation()
-                .alterEdgeLabel(LABEL_LABEL2)
-                .save(AUTHORIZATIONS_A);
+            .alterEdgeLabel(LABEL_LABEL2)
+            .save(AUTHORIZATIONS_A);
         graph.flush();
         e = graph.getEdge("e1", AUTHORIZATIONS_A);
         assertEquals(LABEL_LABEL2, e.getLabel());
@@ -2109,8 +2109,8 @@ public abstract class GraphTestBase {
         Assert.assertEquals(LABEL_LABEL2, IterableUtils.single(v2.getEdgesSummary(AUTHORIZATIONS_A).getInEdgeLabels()));
 
         graph.prepareEdge(e.getId(), e.getVertexId(Direction.OUT), e.getVertexId(Direction.IN), e.getLabel(), e.getVisibility())
-                .alterEdgeLabel("label3")
-                .save(AUTHORIZATIONS_A);
+            .alterEdgeLabel("label3")
+            .save(AUTHORIZATIONS_A);
         graph.flush();
         e = graph.getEdge("e1", AUTHORIZATIONS_A);
         assertEquals("label3", e.getLabel());
@@ -2151,10 +2151,10 @@ public abstract class GraphTestBase {
 
         graph.flush();
         assertEvents(
-                new AddVertexEvent(graph, v1),
-                new AddVertexEvent(graph, v2),
-                new AddEdgeEvent(graph, addedEdge),
-                new DeleteEdgeEvent(graph, addedEdge)
+            new AddVertexEvent(graph, v1),
+            new AddVertexEvent(graph, v2),
+            new AddEdgeEvent(graph, addedEdge),
+            new DeleteEdgeEvent(graph, addedEdge)
         );
     }
 
@@ -2184,36 +2184,36 @@ public abstract class GraphTestBase {
         graph.defineProperty(namePropertyName).dataType(String.class).sortable(true).textIndexHint(TextIndexHint.ALL).define();
 
         graph.prepareVertex("v1", VISIBILITY_A)
-                .addPropertyValue("k1", namePropertyName, "B", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
+            .addPropertyValue("k1", namePropertyName, "B", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
         graph.prepareVertex("v2", VISIBILITY_A)
-                .addPropertyValue("k1", namePropertyName, "A", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
+            .addPropertyValue("k1", namePropertyName, "A", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
         graph.prepareVertex("v3", VISIBILITY_A)
-                .addPropertyValue("k1", namePropertyName, "C", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
+            .addPropertyValue("k1", namePropertyName, "C", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
         graph.flush();
 
         QueryResultsIterable<String> idsIterable = graph.query(AUTHORIZATIONS_A)
-                .sort(Element.ID_PROPERTY_NAME, SortDirection.ASCENDING)
-                .skip(0)
-                .limit(1)
-                .vertexIds();
+            .sort(Element.ID_PROPERTY_NAME, SortDirection.ASCENDING)
+            .skip(0)
+            .limit(1)
+            .vertexIds();
         assertIdsAnyOrder(idsIterable, "v1");
         assertResultsCount(1, 3, idsIterable);
 
         idsIterable = graph.query(AUTHORIZATIONS_A)
-                .sort(Element.ID_PROPERTY_NAME, SortDirection.ASCENDING)
-                .skip(1)
-                .limit(1)
-                .vertexIds();
+            .sort(Element.ID_PROPERTY_NAME, SortDirection.ASCENDING)
+            .skip(1)
+            .limit(1)
+            .vertexIds();
         assertIdsAnyOrder(idsIterable, "v2");
 
         idsIterable = graph.query(AUTHORIZATIONS_A)
-                .sort(Element.ID_PROPERTY_NAME, SortDirection.ASCENDING)
-                .skip(2)
-                .limit(1)
-                .vertexIds();
+            .sort(Element.ID_PROPERTY_NAME, SortDirection.ASCENDING)
+            .skip(2)
+            .limit(1)
+            .vertexIds();
         assertIdsAnyOrder(idsIterable, "v3");
 
         idsIterable = graph.query(AUTHORIZATIONS_A).sort(namePropertyName, SortDirection.ASCENDING).vertexIds();
@@ -2223,10 +2223,10 @@ public abstract class GraphTestBase {
         assertResultsCount(3, 3, idsIterable);
 
         List<Vertex> vertices = toList(graph.query(AUTHORIZATIONS_A)
-                .sort(namePropertyName, SortDirection.ASCENDING)
-                .skip(0)
-                .limit(1)
-                .vertices());
+            .sort(namePropertyName, SortDirection.ASCENDING)
+            .skip(0)
+            .limit(1)
+            .vertices());
         assertEquals(1, vertices.size());
         assertEquals("v2", vertices.get(0).getId());
     }
@@ -2235,13 +2235,13 @@ public abstract class GraphTestBase {
     public void testGraphQueryForIds() {
         String namePropertyName = "first.name";
         Vertex v1 = graph.prepareVertex("v1", VISIBILITY_A)
-                .addPropertyValue("k1", namePropertyName, "joe", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
+            .addPropertyValue("k1", namePropertyName, "joe", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
         Vertex v2 = graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_A);
         graph.prepareVertex("v3", VISIBILITY_A)
-                .addExtendedData("table1", "row1", namePropertyName, "value 1", VISIBILITY_A)
-                .addExtendedData("table1", "row2", namePropertyName, "value 2", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
+            .addExtendedData("table1", "row1", namePropertyName, "value 1", VISIBILITY_A)
+            .addExtendedData("table1", "row2", namePropertyName, "value 2", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
 
         graph.addEdge("e1", v1, v2, LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_A);
         graph.addEdge("e2", v1, v2, LABEL_LABEL2, VISIBILITY_A, AUTHORIZATIONS_A);
@@ -2323,14 +2323,14 @@ public abstract class GraphTestBase {
         graph.flush();
 
         QueryResultsIterable<Edge> edges = graph.query(AUTHORIZATIONS_A)
-                .has(Edge.OUT_VERTEX_ID_PROPERTY_NAME, "v1")
-                .has(Edge.IN_VERTEX_ID_PROPERTY_NAME, "v2")
-                .edges();
+            .has(Edge.OUT_VERTEX_ID_PROPERTY_NAME, "v1")
+            .has(Edge.IN_VERTEX_ID_PROPERTY_NAME, "v2")
+            .edges();
         assertEdgeIdsAnyOrder(edges, "e1");
 
         edges = graph.query(AUTHORIZATIONS_A)
-                .has(Edge.OUT_VERTEX_ID_PROPERTY_NAME, "v1")
-                .edges();
+            .has(Edge.OUT_VERTEX_ID_PROPERTY_NAME, "v1")
+            .edges();
         assertEdgeIdsAnyOrder(edges, "e1", "e2");
     }
 
@@ -2346,13 +2346,13 @@ public abstract class GraphTestBase {
         graph.flush();
 
         QueryResultsIterable<Edge> edges = graph.query(AUTHORIZATIONS_A)
-                .has(Edge.LABEL_PROPERTY_NAME, LABEL_LABEL1)
-                .edges();
+            .has(Edge.LABEL_PROPERTY_NAME, LABEL_LABEL1)
+            .edges();
         assertEdgeIdsAnyOrder(edges, "e1");
 
         edges = graph.query(AUTHORIZATIONS_A)
-                .has(Edge.LABEL_PROPERTY_NAME, LABEL_LABEL2)
-                .edges();
+            .has(Edge.LABEL_PROPERTY_NAME, LABEL_LABEL2)
+            .edges();
         assertEdgeIdsAnyOrder(edges, "e2", "e3");
     }
 
@@ -2368,8 +2368,8 @@ public abstract class GraphTestBase {
         graph.flush();
 
         QueryResultsIterable<Edge> edges = graph.query(AUTHORIZATIONS_A)
-                .has(Edge.IN_OR_OUT_VERTEX_ID_PROPERTY_NAME, "v1")
-                .edges();
+            .has(Edge.IN_OR_OUT_VERTEX_ID_PROPERTY_NAME, "v1")
+            .edges();
         assertEdgeIdsAnyOrder(edges, "e1", "e2");
     }
 
@@ -2377,8 +2377,8 @@ public abstract class GraphTestBase {
     public void testGraphQuery() {
         String namePropertyName = "first.name";
         Vertex v1 = graph.prepareVertex("v1", VISIBILITY_A)
-                .addPropertyValue("k1", namePropertyName, "joe", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
+            .addPropertyValue("k1", namePropertyName, "joe", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
         Vertex v2 = graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_A);
         graph.addEdge("e1", v1, v2, LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_A);
         graph.addEdge("e2", v1, v2, LABEL_LABEL2, VISIBILITY_A, AUTHORIZATIONS_A);
@@ -2458,8 +2458,8 @@ public abstract class GraphTestBase {
         graph.defineProperty("boolean").dataType(Boolean.class).define();
 
         graph.prepareVertex("v1", VISIBILITY_A)
-                .addPropertyValue("k1", "boolean", true, VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
+            .addPropertyValue("k1", "boolean", true, VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
         graph.flush();
 
         QueryResultsIterable<Vertex> vertices = graph.query("zzzzz", AUTHORIZATIONS_A).vertices();
@@ -2475,16 +2475,16 @@ public abstract class GraphTestBase {
     @Test
     public void testGraphQueryWithFetchHints() {
         graph.prepareVertex("v1", VISIBILITY_A)
-                .addPropertyValue("k1", "name", "joe", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
+            .addPropertyValue("k1", "name", "joe", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
 
         graph.prepareVertex("v2", VISIBILITY_A)
-                .addPropertyValue("k1", "name", "matt", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
+            .addPropertyValue("k1", "name", "matt", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
 
         graph.prepareVertex("v3", VISIBILITY_A)
-                .addPropertyValue("k1", "name", "joe", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
+            .addPropertyValue("k1", "name", "joe", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
 
         graph.addEdge("e1", "v1", "v2", LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_A);
 
@@ -2493,25 +2493,25 @@ public abstract class GraphTestBase {
         assertTrue(graph.getVertexCount(AUTHORIZATIONS_A) == 3);
 
         FetchHints propertiesFetchHints = FetchHints.builder()
-                .setIncludeAllProperties(true)
-                .build();
+            .setIncludeAllProperties(true)
+            .build();
         QueryResultsIterable<Vertex> vertices = graph.query(AUTHORIZATIONS_A)
-                .has("name", "joe")
-                .vertices(propertiesFetchHints);
+            .has("name", "joe")
+            .vertices(propertiesFetchHints);
 
         assertResultsCount(2, 2, vertices);
 
         assumeTrue("FetchHints.NONE vertex queries are not supported", isFetchHintNoneVertexQuerySupported());
 
         vertices = graph.query(AUTHORIZATIONS_A)
-                .has("name", "joe")
-                .vertices(FetchHints.NONE);
+            .has("name", "joe")
+            .vertices(FetchHints.NONE);
 
         assertResultsCount(2, 2, vertices);
 
         QueryResultsIterable<Edge> edges = graph.query(AUTHORIZATIONS_A)
-                .has(Edge.LABEL_PROPERTY_NAME, Compare.EQUAL, LABEL_LABEL1)
-                .edges(FetchHints.EDGE_REFS);
+            .has(Edge.LABEL_PROPERTY_NAME, Compare.EQUAL, LABEL_LABEL1)
+            .edges(FetchHints.EDGE_REFS);
 
         assertResultsCount(1, 1, edges);
     }
@@ -2525,20 +2525,20 @@ public abstract class GraphTestBase {
         List<ElementMutation> mutations = new ArrayList<>();
         for (int i = 0; i < 2; i++) {
             ElementBuilder<Vertex> m = graph.prepareVertex("v" + i, VISIBILITY_A)
-                    .addPropertyValue("k1", "name", "joe", VISIBILITY_A)
-                    .addExtendedData("table1", "row1", "col1", "extended", VISIBILITY_A);
+                .addPropertyValue("k1", "name", "joe", VISIBILITY_A)
+                .addExtendedData("table1", "row1", "col1", "extended", VISIBILITY_A);
             mutations.add(m);
         }
         List<Element> saveVertices = toList(graph.saveElementMutations(mutations, AUTHORIZATIONS_ALL));
         graph.flush();
 
         assertEvents(
-                new AddVertexEvent(graph, (Vertex) saveVertices.get(0)),
-                new AddPropertyEvent(graph, saveVertices.get(0), saveVertices.get(0).getProperty("k1", "name")),
-                new AddExtendedDataEvent(graph, saveVertices.get(0), "table1", "row1", "col1", null, "extended", VISIBILITY_A),
-                new AddVertexEvent(graph, (Vertex) saveVertices.get(1)),
-                new AddPropertyEvent(graph, saveVertices.get(1), saveVertices.get(1).getProperty("k1", "name")),
-                new AddExtendedDataEvent(graph, saveVertices.get(1), "table1", "row1", "col1", null, "extended", VISIBILITY_A)
+            new AddVertexEvent(graph, (Vertex) saveVertices.get(0)),
+            new AddPropertyEvent(graph, saveVertices.get(0), saveVertices.get(0).getProperty("k1", "name")),
+            new AddExtendedDataEvent(graph, saveVertices.get(0), "table1", "row1", "col1", null, "extended", VISIBILITY_A),
+            new AddVertexEvent(graph, (Vertex) saveVertices.get(1)),
+            new AddPropertyEvent(graph, saveVertices.get(1), saveVertices.get(1).getProperty("k1", "name")),
+            new AddExtendedDataEvent(graph, saveVertices.get(1), "table1", "row1", "col1", null, "extended", VISIBILITY_A)
         );
         clearGraphEvents();
 
@@ -2546,8 +2546,8 @@ public abstract class GraphTestBase {
         assertResultsCount(2, 2, vertices);
 
         QueryResultsIterable<? extends VertexiumObject> items = graph.query(AUTHORIZATIONS_ALL)
-                .has("col1", "extended")
-                .search();
+            .has("col1", "extended")
+            .search();
         assertResultsCount(2, 2, items);
 
         mutations.clear();
@@ -2590,9 +2590,9 @@ public abstract class GraphTestBase {
         graph.defineProperty("p1").dataType(String.class).sortable(true).textIndexHint(TextIndexHint.ALL).define();
 
         Vertex v1 = graph.prepareVertex("v1", VISIBILITY_A)
-                .addPropertyValue("k1", "p1", "v1", VISIBILITY_A)
-                .addPropertyValue("k2", "p1", "v2", VISIBILITY_A)
-                .save(AUTHORIZATIONS_ALL);
+            .addPropertyValue("k1", "p1", "v1", VISIBILITY_A)
+            .addPropertyValue("k2", "p1", "v2", VISIBILITY_A)
+            .save(AUTHORIZATIONS_ALL);
         getGraph().flush();
 
         assertIdsAnyOrder(getGraph().query(AUTHORIZATIONS_ALL).has("p1", "v1").vertexIds(), "v1");
@@ -2600,9 +2600,9 @@ public abstract class GraphTestBase {
         assertResultsCount(0, 0, getGraph().query(AUTHORIZATIONS_ALL).has("p1", "v3").vertexIds());
 
         v1.prepareMutation()
-                .addPropertyValue("k3", "p1", "v3", VISIBILITY_A)
-                .deleteProperty("k1", "p1", VISIBILITY_A)
-                .save(AUTHORIZATIONS_ALL);
+            .addPropertyValue("k3", "p1", "v3", VISIBILITY_A)
+            .deleteProperty("k1", "p1", VISIBILITY_A)
+            .save(AUTHORIZATIONS_ALL);
         getGraph().flush();
 
         assertIdsAnyOrder(getGraph().query(AUTHORIZATIONS_ALL).has("p1", "v2").vertexIds(), "v1");
@@ -2672,70 +2672,70 @@ public abstract class GraphTestBase {
     public void testGraphQueryHas() {
         String agePropertyName = "age.property";
         graph.prepareVertex("v1", VISIBILITY_A)
-                .setProperty("text", "hello", VISIBILITY_A)
-                .setProperty(agePropertyName, 25, VISIBILITY_A)
-                .setProperty("birthDate", new DateOnly(1989, 1, 5), VISIBILITY_A)
-                .setProperty("lastAccessed", createDate(2014, 2, 24, 13, 0, 5), VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("text", "hello", VISIBILITY_A)
+            .setProperty(agePropertyName, 25, VISIBILITY_A)
+            .setProperty("birthDate", new DateOnly(1989, 1, 5), VISIBILITY_A)
+            .setProperty("lastAccessed", createDate(2014, 2, 24, 13, 0, 5), VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.prepareVertex("v2", VISIBILITY_A)
-                .setProperty("text", "world", VISIBILITY_A)
-                .setProperty(agePropertyName, 30, VISIBILITY_A)
-                .setProperty("birthDate", new DateOnly(1984, 1, 5), VISIBILITY_A)
-                .setProperty("lastAccessed", createDate(2014, 2, 25, 13, 0, 5), VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("text", "world", VISIBILITY_A)
+            .setProperty(agePropertyName, 30, VISIBILITY_A)
+            .setProperty("birthDate", new DateOnly(1984, 1, 5), VISIBILITY_A)
+            .setProperty("lastAccessed", createDate(2014, 2, 25, 13, 0, 5), VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         Iterable<Vertex> vertices = graph.query(AUTHORIZATIONS_A)
-                .has(agePropertyName)
-                .vertices();
+            .has(agePropertyName)
+            .vertices();
         Assert.assertEquals(2, count(vertices));
 
         try {
             vertices = graph.query(AUTHORIZATIONS_A)
-                    .hasNot(agePropertyName)
-                    .vertices();
+                .hasNot(agePropertyName)
+                .vertices();
             Assert.assertEquals(0, count(vertices));
         } catch (VertexiumNotSupportedException ex) {
             LOGGER.warn("skipping. Not supported", ex);
         }
 
         vertices = graph.query(AUTHORIZATIONS_A)
-                .has(agePropertyName, Compare.EQUAL, 25)
-                .vertices();
+            .has(agePropertyName, Compare.EQUAL, 25)
+            .vertices();
         Assert.assertEquals(1, count(vertices));
 
         vertices = graph.query(AUTHORIZATIONS_A)
-                .has(agePropertyName, Compare.EQUAL, 25)
-                .has("birthDate", Compare.EQUAL, createDate(1989, 1, 5))
-                .vertices();
+            .has(agePropertyName, Compare.EQUAL, 25)
+            .has("birthDate", Compare.EQUAL, createDate(1989, 1, 5))
+            .vertices();
         Assert.assertEquals(1, count(vertices));
 
         vertices = graph.query("hello", AUTHORIZATIONS_A)
-                .has(agePropertyName, Compare.EQUAL, 25)
-                .has("birthDate", Compare.EQUAL, createDate(1989, 1, 5))
-                .vertices();
+            .has(agePropertyName, Compare.EQUAL, 25)
+            .has("birthDate", Compare.EQUAL, createDate(1989, 1, 5))
+            .vertices();
         Assert.assertEquals(1, count(vertices));
 
         vertices = graph.query(AUTHORIZATIONS_A)
-                .has("birthDate", Compare.EQUAL, createDate(1989, 1, 5))
-                .vertices();
+            .has("birthDate", Compare.EQUAL, createDate(1989, 1, 5))
+            .vertices();
         Assert.assertEquals(1, count(vertices));
 
         vertices = graph.query(AUTHORIZATIONS_A)
-                .has("lastAccessed", Compare.EQUAL, createDate(2014, 2, 24, 13, 0, 5))
-                .vertices();
+            .has("lastAccessed", Compare.EQUAL, createDate(2014, 2, 24, 13, 0, 5))
+            .vertices();
         Assert.assertEquals(1, count(vertices));
 
         vertices = graph.query(AUTHORIZATIONS_A)
-                .has(agePropertyName, 25)
-                .vertices();
+            .has(agePropertyName, 25)
+            .vertices();
         Assert.assertEquals(1, count(vertices));
         Assert.assertEquals(25, (int) toList(vertices).get(0).getPropertyValue(agePropertyName));
 
         try {
             vertices = graph.query(AUTHORIZATIONS_A)
-                    .hasNot(agePropertyName, 25)
-                    .vertices();
+                .hasNot(agePropertyName, 25)
+                .vertices();
             Assert.assertEquals(1, count(vertices));
             Assert.assertEquals(30, (int) toList(vertices).get(0).getPropertyValue(agePropertyName));
         } catch (VertexiumNotSupportedException ex) {
@@ -2743,20 +2743,20 @@ public abstract class GraphTestBase {
         }
 
         vertices = graph.query(AUTHORIZATIONS_A)
-                .has(agePropertyName, Compare.GREATER_THAN_EQUAL, 25)
-                .vertices();
+            .has(agePropertyName, Compare.GREATER_THAN_EQUAL, 25)
+            .vertices();
         Assert.assertEquals(2, count(vertices));
 
         vertices = graph.query(AUTHORIZATIONS_A)
-                .has(agePropertyName, Contains.IN, new Integer[]{25})
-                .vertices();
+            .has(agePropertyName, Contains.IN, new Integer[]{25})
+            .vertices();
         Assert.assertEquals(1, count(vertices));
         Assert.assertEquals(25, (int) toList(vertices).get(0).getPropertyValue(agePropertyName));
 
         try {
             vertices = graph.query(AUTHORIZATIONS_A)
-                    .has(agePropertyName, Contains.NOT_IN, new Integer[]{25})
-                    .vertices();
+                .has(agePropertyName, Contains.NOT_IN, new Integer[]{25})
+                .vertices();
             Assert.assertEquals(1, count(vertices));
             Assert.assertEquals(30, (int) toList(vertices).get(0).getPropertyValue(agePropertyName));
         } catch (VertexiumNotSupportedException ex) {
@@ -2764,38 +2764,38 @@ public abstract class GraphTestBase {
         }
 
         vertices = graph.query(AUTHORIZATIONS_A)
-                .has(agePropertyName, Contains.IN, new Integer[]{25, 30})
-                .vertices();
+            .has(agePropertyName, Contains.IN, new Integer[]{25, 30})
+            .vertices();
         Assert.assertEquals(2, count(vertices));
 
         vertices = graph.query(AUTHORIZATIONS_A)
-                .has(agePropertyName, Compare.GREATER_THAN, 25)
-                .vertices();
+            .has(agePropertyName, Compare.GREATER_THAN, 25)
+            .vertices();
         Assert.assertEquals(1, count(vertices));
 
         vertices = graph.query(AUTHORIZATIONS_A)
-                .has(agePropertyName, Compare.LESS_THAN, 26)
-                .vertices();
+            .has(agePropertyName, Compare.LESS_THAN, 26)
+            .vertices();
         Assert.assertEquals(1, count(vertices));
 
         vertices = graph.query(AUTHORIZATIONS_A)
-                .has(agePropertyName, Compare.LESS_THAN_EQUAL, 25)
-                .vertices();
+            .has(agePropertyName, Compare.LESS_THAN_EQUAL, 25)
+            .vertices();
         Assert.assertEquals(1, count(vertices));
 
         vertices = graph.query(AUTHORIZATIONS_A)
-                .has(agePropertyName, Compare.NOT_EQUAL, 25)
-                .vertices();
+            .has(agePropertyName, Compare.NOT_EQUAL, 25)
+            .vertices();
         Assert.assertEquals(1, count(vertices));
 
         vertices = graph.query(AUTHORIZATIONS_A)
-                .has("lastAccessed", Compare.EQUAL, new DateOnly(2014, 2, 24))
-                .vertices();
+            .has("lastAccessed", Compare.EQUAL, new DateOnly(2014, 2, 24))
+            .vertices();
         Assert.assertEquals(1, count(vertices));
 
         vertices = graph.query("*", AUTHORIZATIONS_A)
-                .has(agePropertyName, Contains.IN, new Integer[]{25, 30})
-                .vertices();
+            .has(agePropertyName, Contains.IN, new Integer[]{25, 30})
+            .vertices();
         Assert.assertEquals(2, count(vertices));
     }
 
@@ -2807,150 +2807,150 @@ public abstract class GraphTestBase {
 
         String agePropertyName = "age.property";
         graph.prepareVertex("v1", VISIBILITY_A)
-                .setProperty("text", "hello", VISIBILITY_A)
-                .setProperty("text2", "foo", VISIBILITY_A)
-                .setProperty("text3", "bar", VISIBILITY_A)
-                .setProperty(agePropertyName, 25, VISIBILITY_A)
-                .setProperty("birthDate", new DateOnly(1989, 1, 5), VISIBILITY_A)
-                .setProperty("lastAccessed", createDate(2014, 2, 24, 13, 0, 5), VISIBILITY_A)
-                .setProperty("location", new GeoPoint(38.9544, -77.3464, "Reston, VA"), VISIBILITY_A)
-                .addExtendedData("table1", "row1", "column1", "value1", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("text", "hello", VISIBILITY_A)
+            .setProperty("text2", "foo", VISIBILITY_A)
+            .setProperty("text3", "bar", VISIBILITY_A)
+            .setProperty(agePropertyName, 25, VISIBILITY_A)
+            .setProperty("birthDate", new DateOnly(1989, 1, 5), VISIBILITY_A)
+            .setProperty("lastAccessed", createDate(2014, 2, 24, 13, 0, 5), VISIBILITY_A)
+            .setProperty("location", new GeoPoint(38.9544, -77.3464, "Reston, VA"), VISIBILITY_A)
+            .addExtendedData("table1", "row1", "column1", "value1", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.prepareVertex("v2", VISIBILITY_A)
-                .setProperty("text", "world", VISIBILITY_A)
-                .setProperty("text2", "foo", VISIBILITY_A)
-                .setProperty(agePropertyName, 30, VISIBILITY_A)
-                .setProperty("birthDate", new DateOnly(1984, 1, 5), VISIBILITY_A)
-                .setProperty("lastAccessed", createDate(2014, 2, 25, 13, 0, 5), VISIBILITY_A)
-                .setProperty("location", new GeoPoint(38.9186, -77.2297, "Reston, VA"), VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("text", "world", VISIBILITY_A)
+            .setProperty("text2", "foo", VISIBILITY_A)
+            .setProperty(agePropertyName, 30, VISIBILITY_A)
+            .setProperty("birthDate", new DateOnly(1984, 1, 5), VISIBILITY_A)
+            .setProperty("lastAccessed", createDate(2014, 2, 25, 13, 0, 5), VISIBILITY_A)
+            .setProperty("location", new GeoPoint(38.9186, -77.2297, "Reston, VA"), VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         QueryResultsIterable<Vertex> vertices = graph.query(AUTHORIZATIONS_A)
-                .has(String.class)
-                .vertices();
+            .has(String.class)
+            .vertices();
         assertResultsCount(2, vertices);
         assertVertexIdsAnyOrder(vertices, "v1", "v2");
 
         vertices = graph.query(AUTHORIZATIONS_A)
-                .hasNot(String.class)
-                .vertices();
+            .hasNot(String.class)
+            .vertices();
         assertResultsCount(0, vertices);
 
         try {
             graph.query(AUTHORIZATIONS_A)
-                    .has(Double.class)
-                    .vertices();
+                .has(Double.class)
+                .vertices();
             fail("Should not allow searching for a dataType that there are no mappings for");
         } catch (VertexiumException ve) {
             // expected
         }
 
         vertices = graph.query(AUTHORIZATIONS_A)
-                .has(Float.class)
-                .vertices();
+            .has(Float.class)
+            .vertices();
         assertResultsCount(0, vertices);
 
         vertices = graph.query(AUTHORIZATIONS_A)
-                .hasNot(Float.class)
-                .vertices();
+            .hasNot(Float.class)
+            .vertices();
         assertResultsCount(2, vertices);
         assertVertexIdsAnyOrder(vertices, "v1", "v2");
 
         vertices = graph.query(AUTHORIZATIONS_A)
-                .has(Arrays.asList("text3", "unusedStringProp"))
-                .vertices();
+            .has(Arrays.asList("text3", "unusedStringProp"))
+            .vertices();
         assertResultsCount(1, vertices);
         assertVertexIds(vertices, "v1");
 
         vertices = graph.query(AUTHORIZATIONS_A)
-                .hasNot(Arrays.asList("text3", "unusedStringProp"))
-                .vertices();
+            .hasNot(Arrays.asList("text3", "unusedStringProp"))
+            .vertices();
         assertResultsCount(1, vertices);
         assertVertexIds(vertices, "v2");
 
         vertices = graph.query(AUTHORIZATIONS_A)
-                .has(String.class, Compare.EQUAL, "hello")
-                .vertices();
+            .has(String.class, Compare.EQUAL, "hello")
+            .vertices();
         assertResultsCount(1, vertices);
         assertVertexIds(vertices, "v1");
 
         vertices = graph.query(AUTHORIZATIONS_A)
-                .has(String.class, Compare.EQUAL, "foo")
-                .vertices();
+            .has(String.class, Compare.EQUAL, "foo")
+            .vertices();
         assertResultsCount(2, vertices);
         assertVertexIdsAnyOrder(vertices, "v1", "v2");
 
         vertices = graph.query(AUTHORIZATIONS_A)
-                .has(Arrays.asList("text", "text2"), Compare.EQUAL, "hello")
-                .vertices();
+            .has(Arrays.asList("text", "text2"), Compare.EQUAL, "hello")
+            .vertices();
         assertResultsCount(1, vertices);
         assertVertexIds(vertices, "v1");
 
         vertices = graph.query(AUTHORIZATIONS_A)
-                .has(Arrays.asList("text", "text2"), Compare.EQUAL, "foo")
-                .vertices();
+            .has(Arrays.asList("text", "text2"), Compare.EQUAL, "foo")
+            .vertices();
         assertResultsCount(2, vertices);
         assertVertexIdsAnyOrder(vertices, "v1", "v2");
 
         vertices = graph.query(AUTHORIZATIONS_A)
-                .has(Arrays.asList("text"), Compare.EQUAL, "foo")
-                .vertices();
+            .has(Arrays.asList("text"), Compare.EQUAL, "foo")
+            .vertices();
         assertResultsCount(0, vertices);
 
         vertices = graph.query(AUTHORIZATIONS_A)
-                .has(Number.class, Compare.EQUAL, 25)
-                .vertices();
+            .has(Number.class, Compare.EQUAL, 25)
+            .vertices();
         assertResultsCount(1, vertices);
         assertVertexIds(vertices, "v1");
 
         vertices = graph.query(AUTHORIZATIONS_A)
-                .has(Date.class, Compare.GREATER_THAN, createDate(2014, 2, 25, 0, 0, 0))
-                .vertices();
+            .has(Date.class, Compare.GREATER_THAN, createDate(2014, 2, 25, 0, 0, 0))
+            .vertices();
         assertResultsCount(1, vertices);
         assertVertexIds(vertices, "v2");
 
         vertices = graph.query(AUTHORIZATIONS_A)
-                .has(Date.class, Compare.LESS_THAN, createDate(2014, 2, 25, 0, 0, 0))
-                .vertices();
+            .has(Date.class, Compare.LESS_THAN, createDate(2014, 2, 25, 0, 0, 0))
+            .vertices();
         assertResultsCount(2, vertices);
         assertVertexIdsAnyOrder(vertices, "v1", "v2");
 
         vertices = graph.query(AUTHORIZATIONS_A)
-                .has(Date.class, Compare.LESS_THAN, new DateOnly(1985, 1, 5))
-                .vertices();
+            .has(Date.class, Compare.LESS_THAN, new DateOnly(1985, 1, 5))
+            .vertices();
         assertResultsCount(1, vertices);
         assertVertexIds(vertices, "v2");
 
         vertices = graph.query(AUTHORIZATIONS_A)
-                .has(Date.class, Compare.GREATER_THAN, new DateOnly(2000, 1, 1))
-                .vertices();
+            .has(Date.class, Compare.GREATER_THAN, new DateOnly(2000, 1, 1))
+            .vertices();
         assertResultsCount(2, vertices);
         assertVertexIdsAnyOrder(vertices, "v1", "v2");
 
         vertices = graph.query(AUTHORIZATIONS_A)
-                .has(GeoShape.class, GeoCompare.WITHIN, new GeoCircle(38.9186, -77.2297, 1))
-                .vertices();
+            .has(GeoShape.class, GeoCompare.WITHIN, new GeoCircle(38.9186, -77.2297, 1))
+            .vertices();
         assertResultsCount(1, vertices);
         assertVertexIds(vertices, "v2");
 
         vertices = graph.query(AUTHORIZATIONS_A)
-                .has(GeoPoint.class, GeoCompare.WITHIN, new GeoCircle(38.9186, -77.2297, 1))
-                .vertices();
+            .has(GeoPoint.class, GeoCompare.WITHIN, new GeoCircle(38.9186, -77.2297, 1))
+            .vertices();
         assertResultsCount(1, vertices);
         assertVertexIds(vertices, "v2");
 
         vertices = graph.query(AUTHORIZATIONS_A)
-                .has(GeoPoint.class, GeoCompare.WITHIN, new GeoCircle(38.9186, -77.2297, 25))
-                .vertices();
+            .has(GeoPoint.class, GeoCompare.WITHIN, new GeoCircle(38.9186, -77.2297, 25))
+            .vertices();
         assertResultsCount(2, vertices);
         assertVertexIdsAnyOrder(vertices, "v1", "v2");
 
         try {
             graph.query(AUTHORIZATIONS_A)
-                    .has(Date.class, GeoCompare.WITHIN, new GeoCircle(38.9186, -77.2297, 1))
-                    .vertices()
-                    .getTotalHits();
+                .has(Date.class, GeoCompare.WITHIN, new GeoCircle(38.9186, -77.2297, 1))
+                .vertices()
+                .getTotalHits();
             fail("GeoCompare searches should not be allowed for date fields");
         } catch (VertexiumException e) {
             // expected
@@ -2958,8 +2958,8 @@ public abstract class GraphTestBase {
 
         try {
             graph.query(AUTHORIZATIONS_A)
-                    .has(Double.class, Compare.EQUAL, 25)
-                    .vertices();
+                .has(Double.class, Compare.EQUAL, 25)
+                .vertices();
             fail("Should not allow searching for a dataType that there are no mappings for");
         } catch (VertexiumException e) {
             // expected
@@ -2967,39 +2967,39 @@ public abstract class GraphTestBase {
 
         // If given a property that is defined in the graph but never used, return no results
         vertices = graph.query(AUTHORIZATIONS_A)
-                .has(Float.class, Compare.EQUAL, 25)
-                .vertices();
+            .has(Float.class, Compare.EQUAL, 25)
+            .vertices();
         assertResultsCount(0, vertices);
     }
 
     @Test
     public void testGraphQueryHasAuthorization() {
         graph.prepareVertex("v1", VISIBILITY_A)
-                .setProperty("text", "hello", VISIBILITY_A)
-                .save(AUTHORIZATIONS_ALL);
+            .setProperty("text", "hello", VISIBILITY_A)
+            .save(AUTHORIZATIONS_ALL);
         graph.prepareVertex("v2", VISIBILITY_A)
-                .setProperty("text.with.dots", "world", VISIBILITY_B)
-                .save(AUTHORIZATIONS_ALL);
+            .setProperty("text.with.dots", "world", VISIBILITY_B)
+            .save(AUTHORIZATIONS_ALL);
         graph.prepareVertex("v3", VISIBILITY_C)
-                .setProperty("text", "world", VISIBILITY_A)
-                .save(AUTHORIZATIONS_ALL);
+            .setProperty("text", "world", VISIBILITY_A)
+            .save(AUTHORIZATIONS_ALL);
         graph.flush();
 
         QueryResultsIterable<Vertex> vertices = graph.query(AUTHORIZATIONS_ALL)
-                .hasAuthorization(VISIBILITY_A_STRING)
-                .vertices();
+            .hasAuthorization(VISIBILITY_A_STRING)
+            .vertices();
         assertResultsCount(3, 3, vertices);
         assertVertexIdsAnyOrder(vertices, "v1", "v2", "v3");
 
         vertices = graph.query(AUTHORIZATIONS_ALL)
-                .hasAuthorization(VISIBILITY_B_STRING)
-                .vertices();
+            .hasAuthorization(VISIBILITY_B_STRING)
+            .vertices();
         assertResultsCount(1, 1, vertices);
         assertVertexIdsAnyOrder(vertices, "v2");
 
         vertices = graph.query(AUTHORIZATIONS_ALL)
-                .hasAuthorization(VISIBILITY_C_STRING)
-                .vertices();
+            .hasAuthorization(VISIBILITY_C_STRING)
+            .vertices();
         assertResultsCount(1, 1, vertices);
         assertVertexIdsAnyOrder(vertices, "v3");
     }
@@ -3009,8 +3009,8 @@ public abstract class GraphTestBase {
         Vertex v1 = graph.addVertex("v1", Visibility.EMPTY, AUTHORIZATIONS_A);
         Vertex v2 = graph.addVertex("v2", Visibility.EMPTY, AUTHORIZATIONS_A);
         Vertex v3 = graph.prepareVertex("v3", VISIBILITY_EMPTY)
-                .addPropertyValue("junit", "name", "value", VISIBILITY_B)
-                .save(AUTHORIZATIONS_B_AND_C);
+            .addPropertyValue("junit", "name", "value", VISIBILITY_B)
+            .save(AUTHORIZATIONS_B_AND_C);
         Edge e1 = graph.addEdge("e1", v1.getId(), v2.getId(), "junit edge", Visibility.EMPTY, AUTHORIZATIONS_A);
         graph.flush();
 
@@ -3082,38 +3082,38 @@ public abstract class GraphTestBase {
     @Test
     public void testGraphQueryContainsNotIn() {
         graph.prepareVertex("v1", VISIBILITY_A)
-                .setProperty("status", "0", VISIBILITY_A)
-                .setProperty("name", "susan", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("status", "0", VISIBILITY_A)
+            .setProperty("name", "susan", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
 
         graph.prepareVertex("v2", VISIBILITY_A)
-                .setProperty("status", "1", VISIBILITY_A)
-                .setProperty("name", "joe", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("status", "1", VISIBILITY_A)
+            .setProperty("name", "joe", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
 
         graph.prepareVertex("v3", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .save(AUTHORIZATIONS_A_AND_B);
 
         graph.prepareVertex("v4", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .save(AUTHORIZATIONS_A_AND_B);
 
         graph.prepareVertex("v5", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .save(AUTHORIZATIONS_A_AND_B);
 
         graph.prepareVertex("v6", VISIBILITY_A)
-                .setProperty("status", "0", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("status", "0", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         try {
             Iterable<Vertex> vertices = graph.query(AUTHORIZATIONS_A)
-                    .has("status", Contains.NOT_IN, new String[]{"0"})
-                    .vertices();
+                .has("status", Contains.NOT_IN, new String[]{"0"})
+                .vertices();
             Assert.assertEquals(4, count(vertices));
 
             vertices = graph.query(AUTHORIZATIONS_A)
-                    .has("status", Contains.NOT_IN, new String[]{"0", "1"})
-                    .vertices();
+                .has("status", Contains.NOT_IN, new String[]{"0", "1"})
+                .vertices();
             Assert.assertEquals(3, count(vertices));
         } catch (VertexiumNotSupportedException ex) {
             LOGGER.warn("skipping. Not supported", ex);
@@ -3126,13 +3126,13 @@ public abstract class GraphTestBase {
         graph.defineProperty("exact").dataType(String.class).textIndexHint(TextIndexHint.EXACT_MATCH).define();
 
         graph.prepareVertex("v1", VISIBILITY_A)
-                .setProperty("prop1", "val1", VISIBILITY_A)
-                .setProperty("exact", "val1", VISIBILITY_A)
-                .setProperty("location", new GeoPoint(38.9186, -77.2297), VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("prop1", "val1", VISIBILITY_A)
+            .setProperty("exact", "val1", VISIBILITY_A)
+            .setProperty("location", new GeoPoint(38.9186, -77.2297), VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.prepareVertex("v2", VISIBILITY_A)
-                .setProperty("prop2", "val2", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("prop2", "val2", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         Iterable<Element> results = graph.query("*", AUTHORIZATIONS_A_AND_B).has("prop1").elements();
@@ -3157,13 +3157,13 @@ public abstract class GraphTestBase {
         graph.defineProperty("exact").dataType(String.class).textIndexHint(TextIndexHint.EXACT_MATCH).define();
 
         graph.prepareVertex("v1", VISIBILITY_A)
-                .setProperty("prop1", "val1", VISIBILITY_A)
-                .setProperty("exact", "val1", VISIBILITY_A)
-                .setProperty("location", new GeoPoint(38.9186, -77.2297), VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("prop1", "val1", VISIBILITY_A)
+            .setProperty("exact", "val1", VISIBILITY_A)
+            .setProperty("location", new GeoPoint(38.9186, -77.2297), VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.prepareVertex("v2", VISIBILITY_A)
-                .setProperty("prop2", "val2", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("prop2", "val2", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         Iterable<Element> results = graph.query("*", AUTHORIZATIONS_A_AND_B).hasNot("prop1").elements();
@@ -3192,27 +3192,27 @@ public abstract class GraphTestBase {
     public void testGraphQueryHasTwoVisibilities() {
         String agePropertyName = "age.property";
         graph.prepareVertex("v1", VISIBILITY_A)
-                .setProperty("name", "v1", VISIBILITY_A)
-                .setProperty(agePropertyName, 25, VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("name", "v1", VISIBILITY_A)
+            .setProperty(agePropertyName, 25, VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.prepareVertex("v2", VISIBILITY_A)
-                .setProperty("name", "v2", VISIBILITY_A)
-                .addPropertyValue("k1", agePropertyName, 30, VISIBILITY_A)
-                .addPropertyValue("k2", agePropertyName, 35, VISIBILITY_B)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("name", "v2", VISIBILITY_A)
+            .addPropertyValue("k1", agePropertyName, 30, VISIBILITY_A)
+            .addPropertyValue("k2", agePropertyName, 35, VISIBILITY_B)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.prepareVertex("v3", VISIBILITY_A)
-                .setProperty("name", "v3", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("name", "v3", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         Iterable<Vertex> vertices = graph.query(AUTHORIZATIONS_A_AND_B)
-                .has(agePropertyName)
-                .vertices();
+            .has(agePropertyName)
+            .vertices();
         Assert.assertEquals(2, count(vertices));
 
         vertices = graph.query(AUTHORIZATIONS_A_AND_B)
-                .hasNot(agePropertyName)
-                .vertices();
+            .hasNot(agePropertyName)
+            .vertices();
         Assert.assertEquals(1, count(vertices));
     }
 
@@ -3223,16 +3223,16 @@ public abstract class GraphTestBase {
         graph.defineProperty(namePropertyName).dataType(String.class).sortable(true).textIndexHint(TextIndexHint.ALL).define();
 
         graph.prepareVertex("v1", VISIBILITY_A)
-                .setProperty(namePropertyName, "joe ferner", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty(namePropertyName, "joe ferner", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.prepareVertex("v2", VISIBILITY_A)
-                .setProperty(namePropertyName, "bob smith", VISIBILITY_B)
-                .setProperty("age", 25, VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty(namePropertyName, "bob smith", VISIBILITY_B)
+            .setProperty("age", 25, VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.prepareVertex("v3", VISIBILITY_A)
-                .setProperty(namePropertyName, "tom thumb", VISIBILITY_A)
-                .setProperty("age", 30, VISIBILITY_B)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty(namePropertyName, "tom thumb", VISIBILITY_A)
+            .setProperty("age", 30, VISIBILITY_B)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         List<String> strings = new ArrayList<>();
@@ -3253,38 +3253,38 @@ public abstract class GraphTestBase {
         graph.defineProperty(genderPropertyName).dataType(String.class).sortable(true).textIndexHint(TextIndexHint.FULL_TEXT, TextIndexHint.EXACT_MATCH).define();
 
         graph.prepareVertex("v1", VISIBILITY_A)
-                .setProperty(namePropertyName, "joe", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty(namePropertyName, "joe", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.prepareVertex("v2", VISIBILITY_A)
-                .setProperty(namePropertyName, "bob", VISIBILITY_B)
-                .setProperty(agePropertyName, 25, VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty(namePropertyName, "bob", VISIBILITY_B)
+            .setProperty(agePropertyName, 25, VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.prepareVertex("v3", VISIBILITY_A)
-                .setProperty(namePropertyName, "tom", VISIBILITY_A)
-                .setProperty(agePropertyName, 30, VISIBILITY_B)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty(namePropertyName, "tom", VISIBILITY_A)
+            .setProperty(agePropertyName, 30, VISIBILITY_B)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.prepareVertex("v4", VISIBILITY_A)
-                .setProperty(namePropertyName, "tom", VISIBILITY_A)
-                .setProperty(agePropertyName, 35, VISIBILITY_B)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty(namePropertyName, "tom", VISIBILITY_A)
+            .setProperty(agePropertyName, 35, VISIBILITY_B)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.prepareEdge("e1", "v1", "v2", LABEL_LABEL2, VISIBILITY_A).save(AUTHORIZATIONS_A_AND_B);
         graph.prepareEdge("e2", "v1", "v2", LABEL_LABEL1, VISIBILITY_A).save(AUTHORIZATIONS_A_AND_B);
         graph.prepareEdge("e3", "v1", "v2", LABEL_LABEL3, VISIBILITY_A).save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         List<Vertex> vertices = toList(graph.query(AUTHORIZATIONS_A_AND_B)
-                .sort(agePropertyName, SortDirection.ASCENDING)
-                .vertices());
+            .sort(agePropertyName, SortDirection.ASCENDING)
+            .vertices());
         assertVertexIds(vertices, "v2", "v3", "v4", "v1");
 
         vertices = toList(graph.query(AUTHORIZATIONS_A_AND_B)
-                .sort(agePropertyName, SortDirection.DESCENDING)
-                .vertices());
+            .sort(agePropertyName, SortDirection.DESCENDING)
+            .vertices());
         assertVertexIds(vertices, "v4", "v3", "v2", "v1");
 
         vertices = toList(graph.query(AUTHORIZATIONS_A_AND_B)
-                .sort(namePropertyName, SortDirection.ASCENDING)
-                .vertices());
+            .sort(namePropertyName, SortDirection.ASCENDING)
+            .vertices());
         Assert.assertEquals(4, count(vertices));
         assertEquals("v2", vertices.get(0).getId());
         assertEquals("v1", vertices.get(1).getId());
@@ -3292,8 +3292,8 @@ public abstract class GraphTestBase {
         assertTrue(vertices.get(3).getId().equals("v3") || vertices.get(3).getId().equals("v4"));
 
         vertices = toList(graph.query(AUTHORIZATIONS_A_AND_B)
-                .sort(namePropertyName, SortDirection.DESCENDING)
-                .vertices());
+            .sort(namePropertyName, SortDirection.DESCENDING)
+            .vertices());
         Assert.assertEquals(4, count(vertices));
         assertTrue(vertices.get(0).getId().equals("v3") || vertices.get(0).getId().equals("v4"));
         assertTrue(vertices.get(1).getId().equals("v3") || vertices.get(1).getId().equals("v4"));
@@ -3301,66 +3301,66 @@ public abstract class GraphTestBase {
         assertEquals("v2", vertices.get(3).getId());
 
         vertices = toList(graph.query(AUTHORIZATIONS_A_AND_B)
-                .sort(namePropertyName, SortDirection.ASCENDING)
-                .sort(agePropertyName, SortDirection.ASCENDING)
-                .vertices());
+            .sort(namePropertyName, SortDirection.ASCENDING)
+            .sort(agePropertyName, SortDirection.ASCENDING)
+            .vertices());
         assertVertexIds(vertices, "v2", "v1", "v3", "v4");
 
         vertices = toList(graph.query(AUTHORIZATIONS_A_AND_B)
-                .sort(namePropertyName, SortDirection.ASCENDING)
-                .sort(agePropertyName, SortDirection.DESCENDING)
-                .vertices());
+            .sort(namePropertyName, SortDirection.ASCENDING)
+            .sort(agePropertyName, SortDirection.DESCENDING)
+            .vertices());
         assertVertexIds(vertices, "v2", "v1", "v4", "v3");
 
         vertices = toList(graph.query(AUTHORIZATIONS_A_AND_B)
-                .sort(Element.ID_PROPERTY_NAME, SortDirection.ASCENDING)
-                .vertices());
+            .sort(Element.ID_PROPERTY_NAME, SortDirection.ASCENDING)
+            .vertices());
         assertVertexIds(vertices, "v1", "v2", "v3", "v4");
 
         vertices = toList(graph.query(AUTHORIZATIONS_A_AND_B)
-                .sort(Element.ID_PROPERTY_NAME, SortDirection.DESCENDING)
-                .vertices());
+            .sort(Element.ID_PROPERTY_NAME, SortDirection.DESCENDING)
+            .vertices());
         assertVertexIds(vertices, "v4", "v3", "v2", "v1");
 
         vertices = toList(graph.query(AUTHORIZATIONS_A_AND_B)
-                .sort("otherfield", SortDirection.ASCENDING)
-                .vertices());
+            .sort("otherfield", SortDirection.ASCENDING)
+            .vertices());
         Assert.assertEquals(4, count(vertices));
 
         List<Edge> edges = toList(graph.query(AUTHORIZATIONS_A_AND_B)
-                .sort(Edge.LABEL_PROPERTY_NAME, SortDirection.ASCENDING)
-                .edges());
+            .sort(Edge.LABEL_PROPERTY_NAME, SortDirection.ASCENDING)
+            .edges());
         assertEdgeIds(edges, "e2", "e1", "e3");
 
         edges = toList(graph.query(AUTHORIZATIONS_A_AND_B)
-                .sort(Edge.LABEL_PROPERTY_NAME, SortDirection.DESCENDING)
-                .edges());
+            .sort(Edge.LABEL_PROPERTY_NAME, SortDirection.DESCENDING)
+            .edges());
         assertEdgeIds(edges, "e3", "e1", "e2");
 
         edges = toList(graph.query(AUTHORIZATIONS_A_AND_B)
-                .sort(Edge.OUT_VERTEX_ID_PROPERTY_NAME, SortDirection.ASCENDING)
-                .sort(Element.ID_PROPERTY_NAME, SortDirection.ASCENDING)
-                .edges());
+            .sort(Edge.OUT_VERTEX_ID_PROPERTY_NAME, SortDirection.ASCENDING)
+            .sort(Element.ID_PROPERTY_NAME, SortDirection.ASCENDING)
+            .edges());
         assertEdgeIds(edges, "e1", "e2", "e3");
 
         edges = toList(graph.query(AUTHORIZATIONS_A_AND_B)
-                .sort(Edge.IN_VERTEX_ID_PROPERTY_NAME, SortDirection.ASCENDING)
-                .sort(Element.ID_PROPERTY_NAME, SortDirection.ASCENDING)
-                .edges());
+            .sort(Edge.IN_VERTEX_ID_PROPERTY_NAME, SortDirection.ASCENDING)
+            .sort(Element.ID_PROPERTY_NAME, SortDirection.ASCENDING)
+            .edges());
         assertEdgeIds(edges, "e1", "e2", "e3");
 
         graph.prepareVertex("v5", VISIBILITY_A)
-                .setProperty(genderPropertyName, "female", VISIBILITY_A)
-                .addExtendedData("table1", "row1", "column1", "value1", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty(genderPropertyName, "female", VISIBILITY_A)
+            .addExtendedData("table1", "row1", "column1", "value1", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.prepareVertex("v6", VISIBILITY_A)
-                .setProperty(genderPropertyName, "male", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty(genderPropertyName, "male", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         vertices = toList(graph.query(AUTHORIZATIONS_A_AND_B)
-                .sort(genderPropertyName, SortDirection.ASCENDING)
-                .vertices());
+            .sort(genderPropertyName, SortDirection.ASCENDING)
+            .vertices());
         Assert.assertEquals(6, count(vertices));
         assertEquals("v5", vertices.get(0).getId());
         assertEquals("v6", vertices.get(1).getId());
@@ -3375,79 +3375,79 @@ public abstract class GraphTestBase {
         graph.defineProperty("age").dataType(Integer.class).sortable(true).define();
 
         graph.prepareVertex("v1", VISIBILITY_A)
-                .setProperty("name", "joe", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("name", "joe", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.prepareVertex("v2", VISIBILITY_A)
-                .setProperty("name", "bob", VISIBILITY_B)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("name", "bob", VISIBILITY_B)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         QueryResultsIterable<Vertex> vertices
-                = graph.query(AUTHORIZATIONS_A).sort("age", SortDirection.ASCENDING).vertices();
+            = graph.query(AUTHORIZATIONS_A).sort("age", SortDirection.ASCENDING).vertices();
         Assert.assertEquals(2, count(vertices));
     }
 
     @Test
     public void testGraphQuerySortOnPropertyWhichIsFullTextAndExactMatchIndexed() {
         graph.defineProperty("name")
-                .dataType(String.class)
-                .sortable(true)
-                .textIndexHint(TextIndexHint.EXACT_MATCH, TextIndexHint.FULL_TEXT)
-                .define();
+            .dataType(String.class)
+            .sortable(true)
+            .textIndexHint(TextIndexHint.EXACT_MATCH, TextIndexHint.FULL_TEXT)
+            .define();
 
         graph.prepareVertex("v1", VISIBILITY_A)
-                .setProperty("name", "1-2", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("name", "1-2", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.prepareVertex("v2", VISIBILITY_A)
-                .setProperty("name", "1-1", VISIBILITY_B)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("name", "1-1", VISIBILITY_B)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.prepareVertex("v3", VISIBILITY_A)
-                .setProperty("name", "3-1", VISIBILITY_B)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("name", "3-1", VISIBILITY_B)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         QueryResultsIterable<Vertex> vertices
-                = graph.query(AUTHORIZATIONS_A_AND_B).sort("name", SortDirection.ASCENDING).vertices();
+            = graph.query(AUTHORIZATIONS_A_AND_B).sort("name", SortDirection.ASCENDING).vertices();
         assertVertexIds(vertices, "v2", "v1", "v3");
 
         vertices = graph.query("3", AUTHORIZATIONS_A_AND_B).vertices();
         assertVertexIds(vertices, "v3");
 
         vertices = graph.query("*", AUTHORIZATIONS_A_AND_B)
-                .has("name", Compare.EQUAL, "3-1")
-                .vertices();
+            .has("name", Compare.EQUAL, "3-1")
+            .vertices();
         assertVertexIds(vertices, "v3");
     }
 
     @Test
     public void testGraphQueryVertexHasWithSecurity() {
         graph.prepareVertex("v1", VISIBILITY_A)
-                .setProperty("age", 25, VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("age", 25, VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.prepareVertex("v2", VISIBILITY_A)
-                .setProperty("age", 25, VISIBILITY_B)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("age", 25, VISIBILITY_B)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         Iterable<Vertex> vertices = graph.query(AUTHORIZATIONS_A)
-                .has("age", Compare.EQUAL, 25)
-                .vertices();
+            .has("age", Compare.EQUAL, 25)
+            .vertices();
         Assert.assertEquals(1, count(vertices));
         if (vertices instanceof IterableWithTotalHits) {
             Assert.assertEquals(1, ((IterableWithTotalHits) vertices).getTotalHits());
         }
 
         vertices = graph.query(AUTHORIZATIONS_B)
-                .has("age", Compare.EQUAL, 25)
-                .vertices();
+            .has("age", Compare.EQUAL, 25)
+            .vertices();
         Assert.assertEquals(0, count(vertices)); // need auth A to see the v2 node itself
         if (vertices instanceof IterableWithTotalHits) {
             Assert.assertEquals(0, ((IterableWithTotalHits) vertices).getTotalHits());
         }
 
         vertices = graph.query(AUTHORIZATIONS_A_AND_B)
-                .has("age", Compare.EQUAL, 25)
-                .vertices();
+            .has("age", Compare.EQUAL, 25)
+            .vertices();
         Assert.assertEquals(2, count(vertices));
         if (vertices instanceof IterableWithTotalHits) {
             Assert.assertEquals(2, ((IterableWithTotalHits) vertices).getTotalHits());
@@ -3457,17 +3457,17 @@ public abstract class GraphTestBase {
     @Test
     public void testGraphQueryVertexHasWithSecurityGranularity() {
         graph.prepareVertex("v1", VISIBILITY_A)
-                .setProperty("description", "v1", VISIBILITY_A)
-                .setProperty("age", 25, VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("description", "v1", VISIBILITY_A)
+            .setProperty("age", 25, VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.prepareVertex("v2", VISIBILITY_A)
-                .setProperty("description", "v2", VISIBILITY_A)
-                .setProperty("age", 25, VISIBILITY_B)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("description", "v2", VISIBILITY_A)
+            .setProperty("age", 25, VISIBILITY_B)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         Iterable<Vertex> vertices = graph.query(AUTHORIZATIONS_A)
-                .vertices();
+            .vertices();
         boolean hasAgeVisA = false;
         boolean hasAgeVisB = false;
         for (Vertex v : vertices) {
@@ -3488,23 +3488,23 @@ public abstract class GraphTestBase {
         assertFalse("has b", hasAgeVisB);
 
         vertices = graph.query(AUTHORIZATIONS_A_AND_B)
-                .vertices();
+            .vertices();
         assertEquals(2, count(vertices));
     }
 
     @Test
     public void testGraphQueryVertexHasWithSecurityComplexFormula() {
         graph.prepareVertex("v1", VISIBILITY_MIXED_CASE_a)
-                .setProperty("age", 25, VISIBILITY_MIXED_CASE_a)
-                .save(AUTHORIZATIONS_ALL);
+            .setProperty("age", 25, VISIBILITY_MIXED_CASE_a)
+            .save(AUTHORIZATIONS_ALL);
         graph.prepareVertex("v2", VISIBILITY_A)
-                .setProperty("age", 25, VISIBILITY_B)
-                .save(AUTHORIZATIONS_ALL);
+            .setProperty("age", 25, VISIBILITY_B)
+            .save(AUTHORIZATIONS_ALL);
         graph.flush();
 
         Iterable<Vertex> vertices = graph.query(AUTHORIZATIONS_MIXED_CASE_a_AND_B)
-                .has("age", Compare.EQUAL, 25)
-                .vertices();
+            .has("age", Compare.EQUAL, 25)
+            .vertices();
         Assert.assertEquals(1, count(vertices));
     }
 
@@ -3524,18 +3524,18 @@ public abstract class GraphTestBase {
     @Test
     public void testGraphQueryVertexNoVisibility() {
         graph.prepareVertex("v1", VISIBILITY_EMPTY)
-                .setProperty("text", "hello", VISIBILITY_EMPTY)
-                .setProperty("age", 25, VISIBILITY_EMPTY)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("text", "hello", VISIBILITY_EMPTY)
+            .setProperty("age", 25, VISIBILITY_EMPTY)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         Iterable<Vertex> vertices = graph.query("hello", AUTHORIZATIONS_A_AND_B)
-                .has("age", Compare.EQUAL, 25)
-                .vertices();
+            .has("age", Compare.EQUAL, 25)
+            .vertices();
         Assert.assertEquals(1, count(vertices));
 
         vertices = graph.query("hello", AUTHORIZATIONS_A_AND_B)
-                .vertices();
+            .vertices();
         Assert.assertEquals(1, count(vertices));
     }
 
@@ -3545,11 +3545,11 @@ public abstract class GraphTestBase {
         graph.defineProperty("fullText").dataType(String.class).textIndexHint(TextIndexHint.FULL_TEXT).define();
 
         graph.prepareVertex("v1", VISIBILITY_A)
-                .setProperty("title", "hello", VISIBILITY_EMPTY)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("title", "hello", VISIBILITY_EMPTY)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.prepareVertex("v2", VISIBILITY_B)
-                .setProperty("fullText", StreamingPropertyValue.create("this is text with hello"), VISIBILITY_EMPTY)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("fullText", StreamingPropertyValue.create("this is text with hello"), VISIBILITY_EMPTY)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         Iterable<Vertex> vertices = graph.query("hello", AUTHORIZATIONS_A).vertices();
@@ -3562,21 +3562,21 @@ public abstract class GraphTestBase {
     @Test
     public void testGraphQueryVertexDifferentAuths() {
         graph.prepareVertex("v1", VISIBILITY_A)
-                .setProperty("age", 25, VISIBILITY_EMPTY)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("age", 25, VISIBILITY_EMPTY)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.prepareVertex("v2", VISIBILITY_B)
-                .setProperty("age", 25, VISIBILITY_EMPTY)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("age", 25, VISIBILITY_EMPTY)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         Iterable<Vertex> vertices = graph.query(AUTHORIZATIONS_A)
-                .has("age", Compare.EQUAL, 25)
-                .vertices();
+            .has("age", Compare.EQUAL, 25)
+            .vertices();
         assertResultsCount(1, 1, (QueryResultsIterable) vertices);
 
         vertices = graph.query(AUTHORIZATIONS_A_AND_B)
-                .has("age", Compare.EQUAL, 25)
-                .vertices();
+            .has("age", Compare.EQUAL, 25)
+            .vertices();
         assertResultsCount(2, 2, (QueryResultsIterable) vertices);
     }
 
@@ -3657,7 +3657,7 @@ public abstract class GraphTestBase {
     @Test
     public void testGraphQueryVertexWithVisibilityChange() {
         Vertex v1 = graph.prepareVertex("v1", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
+            .save(AUTHORIZATIONS_A);
         graph.flush();
 
         QueryResultsIterable<Vertex> vertices = graph.query(AUTHORIZATIONS_A).vertices();
@@ -3667,8 +3667,8 @@ public abstract class GraphTestBase {
         // change to same visibility
         v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
         v1 = v1.prepareMutation()
-                .alterElementVisibility(VISIBILITY_EMPTY)
-                .save(AUTHORIZATIONS_A);
+            .alterElementVisibility(VISIBILITY_EMPTY)
+            .save(AUTHORIZATIONS_A);
         graph.flush();
         Assert.assertEquals(VISIBILITY_EMPTY, v1.getVisibility());
 
@@ -3679,8 +3679,8 @@ public abstract class GraphTestBase {
         // change to new visibility
         v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
         v1.prepareMutation()
-                .alterElementVisibility(VISIBILITY_B)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .alterElementVisibility(VISIBILITY_B)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         vertices = graph.query(AUTHORIZATIONS_A).vertices();
@@ -3691,30 +3691,30 @@ public abstract class GraphTestBase {
     @Test
     public void testGraphQueryVertexHasWithSecurityCantSeeVertex() {
         graph.prepareVertex("v1", VISIBILITY_B)
-                .setProperty("age", 25, VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("age", 25, VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         Iterable<Vertex> vertices = graph.query(AUTHORIZATIONS_A)
-                .has("age", Compare.EQUAL, 25)
-                .vertices();
+            .has("age", Compare.EQUAL, 25)
+            .vertices();
         Assert.assertEquals(0, count(vertices));
 
         vertices = graph.query(AUTHORIZATIONS_A_AND_B)
-                .has("age", Compare.EQUAL, 25)
-                .vertices();
+            .has("age", Compare.EQUAL, 25)
+            .vertices();
         Assert.assertEquals(1, count(vertices));
     }
 
     @Test
     public void testGraphQueryVertexHasWithSecurityCantSeeProperty() {
         graph.prepareVertex("v1", VISIBILITY_A)
-                .setProperty("age", 25, VISIBILITY_B)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("age", 25, VISIBILITY_B)
+            .save(AUTHORIZATIONS_A_AND_B);
 
         Iterable<Vertex> vertices = graph.query(AUTHORIZATIONS_A)
-                .has("age", Compare.EQUAL, 25)
-                .vertices();
+            .has("age", Compare.EQUAL, 25)
+            .vertices();
         Assert.assertEquals(0, count(vertices));
     }
 
@@ -3725,84 +3725,84 @@ public abstract class GraphTestBase {
         Vertex v3 = graph.prepareVertex("v3", VISIBILITY_A).save(AUTHORIZATIONS_A_AND_B);
 
         graph.prepareEdge("e1", v1, v2, LABEL_LABEL1, VISIBILITY_A)
-                .setProperty("age", 25, VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("age", 25, VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.prepareEdge("e2", v1, v3, LABEL_LABEL1, VISIBILITY_A)
-                .setProperty("age", 25, VISIBILITY_B)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("age", 25, VISIBILITY_B)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         Iterable<Edge> edges = graph.query(AUTHORIZATIONS_A)
-                .has("age", Compare.EQUAL, 25)
-                .edges();
+            .has("age", Compare.EQUAL, 25)
+            .edges();
         Assert.assertEquals(1, count(edges));
     }
 
     @Test
     public void testGraphQueryUpdateVertex() throws NoSuchFieldException, IllegalAccessException {
         graph.prepareVertex("v1", VISIBILITY_EMPTY)
-                .setProperty("age", 25, VISIBILITY_EMPTY)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("age", 25, VISIBILITY_EMPTY)
+            .save(AUTHORIZATIONS_A_AND_B);
         Vertex v2 = graph.prepareVertex("v2", VISIBILITY_EMPTY)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .save(AUTHORIZATIONS_A_AND_B);
         Vertex v3 = graph.prepareVertex("v3", VISIBILITY_EMPTY)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.addEdge("v2tov3", v2, v3, LABEL_LABEL1, VISIBILITY_EMPTY, AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         graph.prepareVertex("v1", VISIBILITY_EMPTY)
-                .setProperty("name", "Joe", VISIBILITY_EMPTY)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("name", "Joe", VISIBILITY_EMPTY)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.prepareVertex("v2", VISIBILITY_EMPTY)
-                .setProperty("name", "Bob", VISIBILITY_EMPTY)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("name", "Bob", VISIBILITY_EMPTY)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.prepareVertex("v3", VISIBILITY_EMPTY)
-                .setProperty("name", "Same", VISIBILITY_EMPTY)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("name", "Same", VISIBILITY_EMPTY)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         List<Vertex> allVertices = toList(graph.query(AUTHORIZATIONS_A_AND_B).vertices());
         Assert.assertEquals(3, count(allVertices));
 
         Iterable<Vertex> vertices = graph.query(AUTHORIZATIONS_A_AND_B)
-                .has("age", Compare.EQUAL, 25)
-                .vertices();
+            .has("age", Compare.EQUAL, 25)
+            .vertices();
         Assert.assertEquals(1, count(vertices));
 
         vertices = graph.query(AUTHORIZATIONS_A_AND_B)
-                .has("name", Compare.EQUAL, "Joe")
-                .vertices();
+            .has("name", Compare.EQUAL, "Joe")
+            .vertices();
         Assert.assertEquals(1, count(vertices));
 
         vertices = graph.query(AUTHORIZATIONS_A_AND_B)
-                .has("age", Compare.EQUAL, 25)
-                .has("name", Compare.EQUAL, "Joe")
-                .vertices();
+            .has("age", Compare.EQUAL, 25)
+            .has("name", Compare.EQUAL, "Joe")
+            .vertices();
         Assert.assertEquals(1, count(vertices));
     }
 
     @Test
     public void testQueryWithVertexIds() {
         graph.prepareVertex("v1", VISIBILITY_A)
-                .setProperty("age", 25, VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
+            .setProperty("age", 25, VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
         graph.prepareVertex("v2", VISIBILITY_A)
-                .setProperty("age", 30, VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
+            .setProperty("age", 30, VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
         graph.prepareVertex("v3", VISIBILITY_A)
-                .setProperty("age", 35, VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
+            .setProperty("age", 35, VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
         graph.flush();
 
         List<Vertex> vertices = toList(graph.query(new String[]{"v1", "v2"}, AUTHORIZATIONS_A)
-                .has("age", Compare.GREATER_THAN, 27)
-                .vertices());
+            .has("age", Compare.GREATER_THAN, 27)
+            .vertices());
         Assert.assertEquals(1, vertices.size());
         assertEquals("v2", vertices.get(0).getId());
 
         vertices = toList(graph.query(new String[]{"v1", "v2", "v3"}, AUTHORIZATIONS_A)
-                .has("age", Compare.GREATER_THAN, 27)
-                .vertices());
+            .has("age", Compare.GREATER_THAN, 27)
+            .vertices());
         Assert.assertEquals(2, vertices.size());
         List<String> vertexIds = toList(new ConvertingIterable<Vertex, String>(vertices) {
             @Override
@@ -3822,47 +3822,47 @@ public abstract class GraphTestBase {
         Vertex v2 = graph.prepareVertex("v2", VISIBILITY_A).save(AUTHORIZATIONS_A_AND_B);
 
         graph.prepareEdge("e1", v1, v2, LABEL_LABEL1, VISIBILITY_A)
-                .setProperty("prop1", "value1", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("prop1", "value1", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         Iterable<Edge> edges = graph.query(AUTHORIZATIONS_A)
-                .has("prop1", "value1")
-                .edges();
+            .has("prop1", "value1")
+            .edges();
         Assert.assertEquals(0, count(edges));
     }
 
     @Test
     public void testGraphQueryHasWithSpaces() {
         graph.prepareVertex("v1", VISIBILITY_A)
-                .setProperty("name", "Joe Ferner", VISIBILITY_A)
-                .setProperty("propWithNonAlphaCharacters", "hyphen-word, etc.", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("name", "Joe Ferner", VISIBILITY_A)
+            .setProperty("propWithNonAlphaCharacters", "hyphen-word, etc.", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.prepareVertex("v2", VISIBILITY_A)
-                .setProperty("name", "Joe Smith", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("name", "Joe Smith", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         QueryResultsIterable<Vertex> vertices = graph.query("Ferner", AUTHORIZATIONS_A)
-                .vertices();
+            .vertices();
         Assert.assertEquals(1, vertices.getTotalHits());
         Assert.assertEquals(1, count(vertices));
 
         vertices = graph.query("joe", AUTHORIZATIONS_A)
-                .vertices();
+            .vertices();
         Assert.assertEquals(2, vertices.getTotalHits());
         Assert.assertEquals(2, count(vertices));
 
         if (isLuceneQueriesSupported()) {
             vertices = graph.query("joe AND ferner", AUTHORIZATIONS_A)
-                    .vertices();
+                .vertices();
             Assert.assertEquals(1, vertices.getTotalHits());
             Assert.assertEquals(1, count(vertices));
         }
 
         if (isLuceneQueriesSupported()) {
             vertices = graph.query("joe smith", AUTHORIZATIONS_A)
-                    .vertices();
+                .vertices();
             List<Vertex> verticesList = toList(vertices);
             assertEquals(2, verticesList.size());
             boolean foundV1 = false;
@@ -3881,27 +3881,27 @@ public abstract class GraphTestBase {
         }
 
         vertices = graph.query(AUTHORIZATIONS_A)
-                .has("name", TextPredicate.CONTAINS, "Ferner")
-                .vertices();
+            .has("name", TextPredicate.CONTAINS, "Ferner")
+            .vertices();
         Assert.assertEquals(1, vertices.getTotalHits());
         Assert.assertEquals(1, count(vertices));
 
         vertices = graph.query(AUTHORIZATIONS_A)
-                .has("name", TextPredicate.CONTAINS, "Joe")
-                .has("name", TextPredicate.CONTAINS, "Ferner")
-                .vertices();
+            .has("name", TextPredicate.CONTAINS, "Joe")
+            .has("name", TextPredicate.CONTAINS, "Ferner")
+            .vertices();
         Assert.assertEquals(1, vertices.getTotalHits());
         Assert.assertEquals(1, count(vertices));
 
         vertices = graph.query(AUTHORIZATIONS_A)
-                .has("name", TextPredicate.CONTAINS, "Joe Ferner")
-                .vertices();
+            .has("name", TextPredicate.CONTAINS, "Joe Ferner")
+            .vertices();
         Assert.assertEquals(1, vertices.getTotalHits());
         Assert.assertEquals(1, count(vertices));
 
         vertices = graph.query(AUTHORIZATIONS_A)
-                .has("propWithNonAlphaCharacters", TextPredicate.CONTAINS, "hyphen-word, etc.")
-                .vertices();
+            .has("propWithNonAlphaCharacters", TextPredicate.CONTAINS, "hyphen-word, etc.")
+            .vertices();
         Assert.assertEquals(1, vertices.getTotalHits());
         Assert.assertEquals(1, count(vertices));
     }
@@ -3911,19 +3911,19 @@ public abstract class GraphTestBase {
         graph.defineProperty("firstName").dataType(String.class).textIndexHint(TextIndexHint.EXACT_MATCH).define();
 
         graph.prepareVertex("v1", VISIBILITY_A)
-                .setProperty("firstName", "Joe", VISIBILITY_A)
-                .setProperty("lastName", "Ferner", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("firstName", "Joe", VISIBILITY_A)
+            .setProperty("lastName", "Ferner", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.prepareVertex("v2", VISIBILITY_A)
-                .setProperty("firstName", "Joe", VISIBILITY_A)
-                .setProperty("lastName", "Smith", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("firstName", "Joe", VISIBILITY_A)
+            .setProperty("lastName", "Smith", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         assumeTrue("lucene and queries not supported", isLuceneQueriesSupported() && isLuceneAndQueriesSupported());
 
         Iterable<Vertex> vertices = graph.query("Joe AND ferner", AUTHORIZATIONS_A)
-                .vertices();
+            .vertices();
         Assert.assertEquals(1, count(vertices));
     }
 
@@ -3934,21 +3934,21 @@ public abstract class GraphTestBase {
         graph.defineProperty("http://vertexium.org#name").dataType(String.class).textIndexHint(TextIndexHint.ALL).define();
 
         graph.prepareVertex("v1", VISIBILITY_A)
-                .setProperty("http://vertexium.org#name", "Joe Ferner", VISIBILITY_A)
-                .setProperty("propWithHyphen", "hyphen-word", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("http://vertexium.org#name", "Joe Ferner", VISIBILITY_A)
+            .setProperty("propWithHyphen", "hyphen-word", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.prepareVertex("v2", VISIBILITY_A)
-                .setProperty("http://vertexium.org#name", "Joe Smith", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("http://vertexium.org#name", "Joe Smith", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
 
         assumeTrue("lucene queries", isLuceneQueriesSupported());
 
         Iterable<Vertex> vertices = graph.query("http\\:\\/\\/vertexium.org#name:Joe", AUTHORIZATIONS_A)
-                .vertices();
+            .vertices();
         Assert.assertEquals(2, count(vertices));
 
         vertices = graph.query("http\\:\\/\\/vertexium.org#name:\"Joe Ferner\"", AUTHORIZATIONS_A)
-                .vertices();
+            .vertices();
         Assert.assertEquals(1, count(vertices));
     }
 
@@ -3967,16 +3967,16 @@ public abstract class GraphTestBase {
     @Test
     public void testStoreGeoPoint() {
         graph.prepareVertex("v1", VISIBILITY_A)
-                .setProperty("location", new GeoPoint(38.9186, -77.2297, "Reston, VA"), VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("location", new GeoPoint(38.9186, -77.2297, "Reston, VA"), VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.prepareVertex("v2", VISIBILITY_A)
-                .setProperty("location", new GeoPoint(38.9544, -77.3464, "Reston, VA"), VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("location", new GeoPoint(38.9544, -77.3464, "Reston, VA"), VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         List<Vertex> vertices = toList(graph.query(AUTHORIZATIONS_A)
-                .has("location", GeoCompare.WITHIN, new GeoCircle(38.9186, -77.2297, 1))
-                .vertices());
+            .has("location", GeoCompare.WITHIN, new GeoCircle(38.9186, -77.2297, 1))
+            .vertices());
         Assert.assertEquals(1, count(vertices));
         GeoPoint geoPoint = (GeoPoint) vertices.get(0).getPropertyValue("location");
         assertEquals(38.9186, geoPoint.getLatitude(), 0.001);
@@ -3985,13 +3985,13 @@ public abstract class GraphTestBase {
 
         Vertex v3 = graph.addVertex("v3", VISIBILITY_A, AUTHORIZATIONS_A_AND_B);
         v3.prepareMutation()
-                .setProperty("location", new GeoPoint(39.0299, -77.5121, "Ashburn, VA"), VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("location", new GeoPoint(39.0299, -77.5121, "Ashburn, VA"), VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         vertices = toList(graph.query(AUTHORIZATIONS_A)
-                .has("location", GeoCompare.WITHIN, new GeoCircle(39.0299, -77.5121, 1))
-                .vertices());
+            .has("location", GeoCompare.WITHIN, new GeoCircle(39.0299, -77.5121, 1))
+            .vertices());
         Assert.assertEquals(1, count(vertices));
         geoPoint = (GeoPoint) vertices.get(0).getPropertyValue("location");
         assertEquals(39.0299, geoPoint.getLatitude(), 0.001);
@@ -3999,28 +3999,28 @@ public abstract class GraphTestBase {
         assertEquals("Ashburn, VA", geoPoint.getDescription());
 
         vertices = toList(graph.query(AUTHORIZATIONS_A)
-                .has("location", GeoCompare.WITHIN, new GeoCircle(38.9186, -77.2297, 25))
-                .vertices());
+            .has("location", GeoCompare.WITHIN, new GeoCircle(38.9186, -77.2297, 25))
+            .vertices());
         Assert.assertEquals(2, count(vertices));
 
         vertices = toList(graph.query(AUTHORIZATIONS_A)
-                .has("location", GeoCompare.WITHIN, new GeoRect(new GeoPoint(39, -78), new GeoPoint(38, -77)))
-                .vertices());
+            .has("location", GeoCompare.WITHIN, new GeoRect(new GeoPoint(39, -78), new GeoPoint(38, -77)))
+            .vertices());
         Assert.assertEquals(2, count(vertices));
 
         vertices = toList(graph.query(AUTHORIZATIONS_A)
-                .has("location", GeoCompare.WITHIN, new GeoHash(38.9186, -77.2297, 2))
-                .vertices());
+            .has("location", GeoCompare.WITHIN, new GeoHash(38.9186, -77.2297, 2))
+            .vertices());
         Assert.assertEquals(3, count(vertices));
 
         vertices = toList(graph.query(AUTHORIZATIONS_A)
-                .has("location", GeoCompare.WITHIN, new GeoHash(38.9186, -77.2297, 3))
-                .vertices());
+            .has("location", GeoCompare.WITHIN, new GeoHash(38.9186, -77.2297, 3))
+            .vertices());
         Assert.assertEquals(1, count(vertices));
 
         vertices = toList(graph.query(AUTHORIZATIONS_A)
-                .has("location", TextPredicate.CONTAINS, "Reston")
-                .vertices());
+            .has("location", TextPredicate.CONTAINS, "Reston")
+            .vertices());
         Assert.assertEquals(2, count(vertices));
     }
 
@@ -4149,8 +4149,8 @@ public abstract class GraphTestBase {
         GeoPolygon triangle = new GeoPolygon(Arrays.asList(new GeoPoint(43.1236, -95.9590), new GeoPoint(34.1303, -95.9590), new GeoPoint(38.6270, -84.4397), new GeoPoint(43.1236, -95.9590)), "Triangle");
         GeoLine line = new GeoLine(Arrays.asList(new GeoPoint(34.1303, -95.9590), new GeoPoint(43.1236, -84.4397), new GeoPoint(38.6270, -84.4397)), "Line");
         GeoCollection collection = new GeoCollection("Collection")
-                .addShape(new GeoCircle(38.6270, -90.1994, 250))
-                .addShape(new GeoLine(new GeoPoint(39.5, -84.0), new GeoPoint(38.5, -84.0)));
+            .addShape(new GeoCircle(38.6270, -90.1994, 250))
+            .addShape(new GeoLine(new GeoPoint(39.5, -84.0), new GeoPoint(38.5, -84.0)));
 
         Arrays.asList(circle, rect, triangle, line, collection).forEach(searchArea -> {
             QueryResultsIterable<Vertex> vertices = graph.query(AUTHORIZATIONS_A_AND_B).has("location", GeoCompare.INTERSECTS, searchArea).vertices();
@@ -4209,48 +4209,48 @@ public abstract class GraphTestBase {
     @Test
     public void testGraphQueryRange() {
         graph.prepareVertex("v1", VISIBILITY_A)
-                .setProperty("age", 25, VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("age", 25, VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.prepareVertex("v2", VISIBILITY_A)
-                .setProperty("age", 30, VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("age", 30, VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         Iterable<Vertex> vertices = graph.query(AUTHORIZATIONS_A)
-                .range("age", 25, 25)
-                .vertices();
+            .range("age", 25, 25)
+            .vertices();
         Assert.assertEquals(1, count(vertices));
 
         vertices = graph.query(AUTHORIZATIONS_A)
-                .range("age", 20, 29)
-                .vertices();
+            .range("age", 20, 29)
+            .vertices();
         Assert.assertEquals(1, count(vertices));
 
         vertices = graph.query(AUTHORIZATIONS_A)
-                .range("age", 25, 30)
-                .vertices();
+            .range("age", 25, 30)
+            .vertices();
         Assert.assertEquals(2, count(vertices));
 
         vertices = graph.query(AUTHORIZATIONS_A)
-                .range("age", 25, true, 30, false)
-                .vertices();
+            .range("age", 25, true, 30, false)
+            .vertices();
         Assert.assertEquals(1, count(vertices));
         Assert.assertEquals(25, toList(vertices).get(0).getPropertyValue("age"));
 
         vertices = graph.query(AUTHORIZATIONS_A)
-                .range("age", 25, false, 30, true)
-                .vertices();
+            .range("age", 25, false, 30, true)
+            .vertices();
         Assert.assertEquals(1, count(vertices));
         Assert.assertEquals(30, toList(vertices).get(0).getPropertyValue("age"));
 
         vertices = graph.query(AUTHORIZATIONS_A)
-                .range("age", 25, true, 30, true)
-                .vertices();
+            .range("age", 25, true, 30, true)
+            .vertices();
         Assert.assertEquals(2, count(vertices));
 
         vertices = graph.query(AUTHORIZATIONS_A)
-                .range("age", 25, false, 30, false)
-                .vertices();
+            .range("age", 25, false, 30, false)
+            .vertices();
         Assert.assertEquals(0, count(vertices));
     }
 
@@ -4267,14 +4267,14 @@ public abstract class GraphTestBase {
         v3.setProperty(propertyName, "value3", VISIBILITY_A, AUTHORIZATIONS_ALL);
 
         Edge ev1v2 = graph.prepareEdge("e v1->v2", v1, v2, LABEL_LABEL1, VISIBILITY_A)
-                .setProperty(propertyName, "value1", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
+            .setProperty(propertyName, "value1", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
         Edge ev1v3 = graph.prepareEdge("e v1->v3", v1, v3, LABEL_LABEL2, VISIBILITY_A)
-                .setProperty(propertyName, "value2", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
+            .setProperty(propertyName, "value2", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
         graph.prepareEdge("e v2->v3", v2, v3, LABEL_LABEL2, VISIBILITY_A)
-                .setProperty(propertyName, "value2", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
+            .setProperty(propertyName, "value2", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
         graph.flush();
 
         v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
@@ -4291,8 +4291,8 @@ public abstract class GraphTestBase {
         }
 
         vertices = v1.query(AUTHORIZATIONS_A)
-                .has(propertyName, "value2")
-                .vertices();
+            .has(propertyName, "value2")
+            .vertices();
         Assert.assertEquals(1, count(vertices));
         org.vertexium.test.util.IterableUtils.assertContains(v2, vertices);
 
@@ -4345,8 +4345,8 @@ public abstract class GraphTestBase {
         List<Path> pathsByBadLabel = toList(graph.findPaths(new FindPathOptions("v1", "v2", 2).setLabels(LABEL_BAD), AUTHORIZATIONS_A));
         assertEquals(0, pathsByBadLabel.size());
         assertPaths(
-                paths,
-                new Path("v1", "v2")
+            paths,
+            new Path("v1", "v2")
         );
 
         paths = toList(graph.findPaths(new FindPathOptions("v1", "v4", 2), AUTHORIZATIONS_A));
@@ -4355,9 +4355,9 @@ public abstract class GraphTestBase {
         pathsByBadLabel = toList(graph.findPaths(new FindPathOptions("v1", "v4", 2).setLabels(LABEL_BAD), AUTHORIZATIONS_A));
         assertEquals(0, pathsByBadLabel.size());
         assertPaths(
-                paths,
-                new Path("v1", "v2", "v4"),
-                new Path("v1", "v3", "v4")
+            paths,
+            new Path("v1", "v2", "v4"),
+            new Path("v1", "v3", "v4")
         );
 
         paths = toList(graph.findPaths(new FindPathOptions("v4", "v1", 2), AUTHORIZATIONS_A));
@@ -4366,9 +4366,9 @@ public abstract class GraphTestBase {
         pathsByBadLabel = toList(graph.findPaths(new FindPathOptions("v4", "v1", 2).setLabels(LABEL_BAD), AUTHORIZATIONS_A));
         assertEquals(0, pathsByBadLabel.size());
         assertPaths(
-                paths,
-                new Path("v4", "v2", "v1"),
-                new Path("v4", "v3", "v1")
+            paths,
+            new Path("v4", "v2", "v1"),
+            new Path("v4", "v3", "v1")
         );
 
         paths = toList(graph.findPaths(new FindPathOptions("v1", "v6", 3), AUTHORIZATIONS_A));
@@ -4377,9 +4377,9 @@ public abstract class GraphTestBase {
         pathsByBadLabel = toList(graph.findPaths(new FindPathOptions("v1", "v6", 3).setLabels(LABEL_BAD), AUTHORIZATIONS_A));
         assertEquals(0, pathsByBadLabel.size());
         assertPaths(
-                paths,
-                new Path("v1", "v2", "v4", "v6"),
-                new Path("v1", "v3", "v4", "v6")
+            paths,
+            new Path("v1", "v2", "v4", "v6"),
+            new Path("v1", "v3", "v4", "v6")
         );
     }
 
@@ -4399,18 +4399,18 @@ public abstract class GraphTestBase {
         graph.flush();
 
         assertPaths(
-                graph.findPaths(new FindPathOptions("v1", "v4", 2), AUTHORIZATIONS_A),
-                new Path("v1", "v2", "v4"),
-                new Path("v1", "v3", "v4")
+            graph.findPaths(new FindPathOptions("v1", "v4", 2), AUTHORIZATIONS_A),
+            new Path("v1", "v2", "v4"),
+            new Path("v1", "v3", "v4")
         );
 
         assertPaths(
-                graph.findPaths(new FindPathOptions("v1", "v4", 2).setExcludedLabels(LABEL_LABEL2), AUTHORIZATIONS_A),
-                new Path("v1", "v2", "v4")
+            graph.findPaths(new FindPathOptions("v1", "v4", 2).setExcludedLabels(LABEL_LABEL2), AUTHORIZATIONS_A),
+            new Path("v1", "v2", "v4")
         );
         assertPaths(
-                graph.findPaths(new FindPathOptions("v1", "v4", 3).setExcludedLabels(LABEL_LABEL2), AUTHORIZATIONS_A),
-                new Path("v1", "v2", "v4")
+            graph.findPaths(new FindPathOptions("v1", "v4", 3).setExcludedLabels(LABEL_LABEL2), AUTHORIZATIONS_A),
+            new Path("v1", "v2", "v4")
         );
     }
 
@@ -4438,8 +4438,8 @@ public abstract class GraphTestBase {
 
         List<Path> paths = toList(graph.findPaths(new FindPathOptions("v1", "v3", 2), AUTHORIZATIONS_A));
         assertPaths(
-                paths,
-                new Path("v1", "v2", "v3")
+            paths,
+            new Path("v1", "v2", "v3")
         );
 
         graph.softDeleteEdge(v2ToV3, AUTHORIZATIONS_A);
@@ -4461,8 +4461,8 @@ public abstract class GraphTestBase {
 
         List<Path> paths = toList(graph.findPaths(new FindPathOptions("v1", "v3", 2), AUTHORIZATIONS_A));
         assertPaths(
-                paths,
-                new Path("v1", "v2", "v3")
+            paths,
+            new Path("v1", "v2", "v3")
         );
 
         graph.softDeleteEdge(v2ToV3, AUTHORIZATIONS_A);
@@ -4473,8 +4473,8 @@ public abstract class GraphTestBase {
 
         paths = toList(graph.findPaths(new FindPathOptions("v1", "v3", 2), AUTHORIZATIONS_A));
         assertPaths(
-                paths,
-                new Path("v1", "v2", "v3")
+            paths,
+            new Path("v1", "v2", "v3")
         );
     }
 
@@ -4489,8 +4489,8 @@ public abstract class GraphTestBase {
 
         List<Path> paths = toList(graph.findPaths(new FindPathOptions("v1", "v3", 2), AUTHORIZATIONS_A_AND_B));
         assertPaths(
-                paths,
-                new Path("v1", "v2", "v3")
+            paths,
+            new Path("v1", "v2", "v3")
         );
 
         graph.markEdgeHidden(v2ToV3, VISIBILITY_A, AUTHORIZATIONS_A_AND_B);
@@ -4522,18 +4522,18 @@ public abstract class GraphTestBase {
 
         List<Path> paths = toList(graph.findPaths(new FindPathOptions("v1", "v2", 2), AUTHORIZATIONS_A));
         assertPaths(
-                paths,
-                new Path("v1", "v4", "v2"),
-                new Path("v1", "v3", "v2")
+            paths,
+            new Path("v1", "v4", "v2"),
+            new Path("v1", "v3", "v2")
         );
 
         paths = toList(graph.findPaths(new FindPathOptions("v1", "v2", 3), AUTHORIZATIONS_A));
         assertPaths(
-                paths,
-                new Path("v1", "v4", "v2"),
-                new Path("v1", "v3", "v2"),
-                new Path("v1", "v3", "v4", "v2"),
-                new Path("v1", "v4", "v3", "v2")
+            paths,
+            new Path("v1", "v4", "v2"),
+            new Path("v1", "v3", "v2"),
+            new Path("v1", "v3", "v4", "v2"),
+            new Path("v1", "v4", "v3", "v2")
         );
 
         paths = toList(graph.findPaths(new FindPathOptions("v1", "v5", 2), AUTHORIZATIONS_A));
@@ -4541,9 +4541,9 @@ public abstract class GraphTestBase {
 
         paths = toList(graph.findPaths(new FindPathOptions("v1", "v5", 3), AUTHORIZATIONS_A));
         assertPaths(
-                paths,
-                new Path("v1", "v4", "v2", "v5"),
-                new Path("v1", "v3", "v2", "v5")
+            paths,
+            new Path("v1", "v4", "v2", "v5"),
+            new Path("v1", "v3", "v2", "v5")
         );
     }
 
@@ -4560,20 +4560,20 @@ public abstract class GraphTestBase {
 
         List<Path> paths = toList(graph.findPaths(new FindPathOptions("v1", "v3", 2), AUTHORIZATIONS_A));
         assertPaths(
-                paths,
-                new Path("v1", "v2", "v3"),
-                new Path("v1", "v3")
+            paths,
+            new Path("v1", "v2", "v3"),
+            new Path("v1", "v3")
         );
 
         graph.getEdge("v3v1", AUTHORIZATIONS_A)
-                .prepareMutation()
-                .alterElementVisibility(VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
+            .prepareMutation()
+            .alterElementVisibility(VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
 
         graph.getVertex("v2", AUTHORIZATIONS_A)
-                .prepareMutation()
-                .alterElementVisibility(VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
+            .prepareMutation()
+            .alterElementVisibility(VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
         graph.flush();
 
         paths = toList(graph.findPaths(new FindPathOptions("v1", "v3", 2), AUTHORIZATIONS_EMPTY));
@@ -4584,21 +4584,21 @@ public abstract class GraphTestBase {
 
         paths = toList(graph.findPaths(new FindPathOptions("v1", "v3", 2), AUTHORIZATIONS_A));
         assertPaths(
-                paths,
-                new Path("v1", "v2", "v3"),
-                new Path("v1", "v3")
+            paths,
+            new Path("v1", "v2", "v3"),
+            new Path("v1", "v3")
         );
 
         graph.getVertex("v2", AUTHORIZATIONS_A)
-                .prepareMutation()
-                .alterElementVisibility(Visibility.EMPTY)
-                .save(AUTHORIZATIONS_A);
+            .prepareMutation()
+            .alterElementVisibility(Visibility.EMPTY)
+            .save(AUTHORIZATIONS_A);
         graph.flush();
 
         paths = toList(graph.findPaths(new FindPathOptions("v1", "v2", 4), AUTHORIZATIONS_EMPTY));
         assertPaths(
-                paths,
-                new Path("v1", "v2")
+            paths,
+            new Path("v1", "v2")
         );
     }
 
@@ -4717,8 +4717,8 @@ public abstract class GraphTestBase {
         graph.flush();
 
         ElementMutation<Vertex> m = v.prepareMutation()
-                .setProperty("prop1", "value1-2", VISIBILITY_A)
-                .setProperty("prop2", "value2-2", VISIBILITY_A);
+            .setProperty("prop1", "value1-2", VISIBILITY_A)
+            .setProperty("prop2", "value2-2", VISIBILITY_A);
         Assert.assertEquals(1, count(v.getProperties()));
         assertEquals("value1-1", v.getPropertyValue("prop1"));
 
@@ -4841,7 +4841,7 @@ public abstract class GraphTestBase {
         graph.flush();
 
         graph.prepareEdge("e v1->v2", v1, v2, LABEL_LABEL1, VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
+            .save(AUTHORIZATIONS_A);
         graph.flush();
 
         relatedEdges = toList(graph.findRelatedEdgeSummary(vertexIds, AUTHORIZATIONS_A));
@@ -4913,13 +4913,13 @@ public abstract class GraphTestBase {
         long findRelatedEdgesTime = endTime.getTime() - startTime.getTime();
 
         LOGGER.info(
-                "RESULTS\ntotalNumberOfVertices,totalNumberOfEdges,totalVerticesToCheck,insertVerticesTime,insertEdgesTime,findRelatedEdgesTime\n%d,%d,%d,%d,%d,%d",
-                totalNumberOfVertices,
-                totalNumberOfEdges,
-                totalVerticesToCheck,
-                insertVerticesTime,
-                insertEdgesTime,
-                findRelatedEdgesTime
+            "RESULTS\ntotalNumberOfVertices,totalNumberOfEdges,totalVerticesToCheck,insertVerticesTime,insertEdgesTime,findRelatedEdgesTime\n%d,%d,%d,%d,%d,%d",
+            totalNumberOfVertices,
+            totalNumberOfEdges,
+            totalVerticesToCheck,
+            insertVerticesTime,
+            insertEdgesTime,
+            findRelatedEdgesTime
         );
     }
 
@@ -4930,10 +4930,10 @@ public abstract class GraphTestBase {
         Metadata metadataPropB = new Metadata();
         metadataPropB.add("meta1", "meta1", VISIBILITY_A);
         graph.prepareEdge("e1", v1, v2, LABEL_LABEL1, VISIBILITY_A)
-                .setProperty("propA", "propA", VISIBILITY_A)
-                .setProperty("propB", "propB", VISIBILITY_A_AND_B)
-                .setProperty("propBmeta", "propBmeta", metadataPropB, VISIBILITY_A)
-                .save(AUTHORIZATIONS_ALL);
+            .setProperty("propA", "propA", VISIBILITY_A)
+            .setProperty("propB", "propB", VISIBILITY_A_AND_B)
+            .setProperty("propBmeta", "propBmeta", metadataPropB, VISIBILITY_A)
+            .save(AUTHORIZATIONS_ALL);
         graph.flush();
 
         List<String> edgeIds = new ArrayList<>();
@@ -4971,10 +4971,10 @@ public abstract class GraphTestBase {
         Metadata metadataPropB = new Metadata();
         metadataPropB.add("meta1", "meta1", VISIBILITY_A);
         graph.prepareVertex("v1", VISIBILITY_A)
-                .setProperty("propA", "propA", VISIBILITY_A)
-                .setProperty("propB", "propB", VISIBILITY_A_AND_B)
-                .setProperty("propBmeta", "propBmeta", metadataPropB, VISIBILITY_A)
-                .save(AUTHORIZATIONS_ALL);
+            .setProperty("propA", "propA", VISIBILITY_A)
+            .setProperty("propB", "propB", VISIBILITY_A_AND_B)
+            .setProperty("propBmeta", "propBmeta", metadataPropB, VISIBILITY_A)
+            .save(AUTHORIZATIONS_ALL);
         graph.flush();
 
         List<String> vertexIds = new ArrayList<>();
@@ -5012,8 +5012,8 @@ public abstract class GraphTestBase {
         Metadata metadataPropB = new Metadata();
         metadataPropB.add("meta1", "meta1", VISIBILITY_A);
         Vertex vertex = graph.prepareVertex("v1", VISIBILITY_A)
-                .setProperty("propBmeta", "propBmeta", metadataPropB, VISIBILITY_A)
-                .save(AUTHORIZATIONS_ALL);
+            .setProperty("propBmeta", "propBmeta", metadataPropB, VISIBILITY_A)
+            .save(AUTHORIZATIONS_ALL);
         graph.flush();
 
         ExistingElementMutation<Vertex> m = vertex.prepareMutation();
@@ -5028,8 +5028,8 @@ public abstract class GraphTestBase {
         Metadata metadataPropB = new Metadata();
         metadataPropB.add("meta1", "meta1", VISIBILITY_A);
         Edge edge = graph.prepareEdge("v1", "v2", LABEL_LABEL1, VISIBILITY_A)
-                .setProperty("propBmeta", "propBmeta", metadataPropB, VISIBILITY_A)
-                .save(AUTHORIZATIONS_ALL);
+            .setProperty("propBmeta", "propBmeta", metadataPropB, VISIBILITY_A)
+            .save(AUTHORIZATIONS_ALL);
         graph.flush();
 
         ExistingElementMutation<Edge> m = edge.prepareMutation();
@@ -5044,13 +5044,13 @@ public abstract class GraphTestBase {
         Metadata metadataPropB = new Metadata();
         metadataPropB.add("meta1", "value1", VISIBILITY_A);
         graph.prepareVertex("v1", VISIBILITY_A)
-                .setProperty("propBmeta", "propBmeta", metadataPropB, VISIBILITY_A)
-                .save(AUTHORIZATIONS_ALL);
+            .setProperty("propBmeta", "propBmeta", metadataPropB, VISIBILITY_A)
+            .save(AUTHORIZATIONS_ALL);
         graph.flush();
 
         FetchHints fetchHints = new FetchHintsBuilder()
-                .setPropertyNamesToInclude("propBmeta")
-                .build();
+            .setPropertyNamesToInclude("propBmeta")
+            .build();
         Vertex vertex = graph.getVertex("v1", fetchHints, AUTHORIZATIONS_A);
         ExistingElementMutation<Vertex> m = vertex.prepareMutation();
         m.setPropertyMetadata("propBmeta", "meta1", "value2", VISIBILITY_A);
@@ -5061,8 +5061,8 @@ public abstract class GraphTestBase {
         assertEquals("value2", vertex.getProperty("propBmeta").getMetadata().getEntry("meta1").getValue());
 
         fetchHints = new FetchHintsBuilder()
-                .setPropertyNamesToInclude("propBmeta")
-                .build();
+            .setPropertyNamesToInclude("propBmeta")
+            .build();
         vertex = graph.getVertex("v1", fetchHints, AUTHORIZATIONS_A);
         m = vertex.prepareMutation();
         Metadata newMetadata = new Metadata();
@@ -5090,11 +5090,11 @@ public abstract class GraphTestBase {
         graph.defineProperty("exactMatch").dataType(String.class).textIndexHint(TextIndexHint.EXACT_MATCH).define();
 
         graph.prepareVertex("v1", VISIBILITY_A)
-                .setProperty("none", "Test Value", VISIBILITY_A)
-                .setProperty("both", "Test Value", VISIBILITY_A)
-                .setProperty("fullText", "Test Value", VISIBILITY_A)
-                .setProperty("exactMatch", "Test Value", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("none", "Test Value", VISIBILITY_A)
+            .setProperty("both", "Test Value", VISIBILITY_A)
+            .setProperty("fullText", "Test Value", VISIBILITY_A)
+            .setProperty("exactMatch", "Test Value", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
@@ -5123,52 +5123,52 @@ public abstract class GraphTestBase {
         graph.defineProperty("exactMatch").dataType(String.class).textIndexHint(TextIndexHint.EXACT_MATCH).define();
 
         graph.prepareVertex("v1", VISIBILITY_A)
-                .setProperty("exactMatch", "Test Value", VISIBILITY_A)
-                .setProperty("both", "Test123", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("exactMatch", "Test Value", VISIBILITY_A)
+            .setProperty("both", "Test123", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
 
         graph.prepareVertex("v2", VISIBILITY_A)
-                .setProperty("both", "Test Value", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("both", "Test Value", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
 
         graph.prepareVertex("v3", VISIBILITY_A)
-                .setProperty("both", "Temp", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("both", "Temp", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
 
         graph.prepareVertex("v4", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .save(AUTHORIZATIONS_A_AND_B);
 
         graph.prepareVertex("v5", VISIBILITY_A)
-                .setProperty("both", "Test123 test", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("both", "Test123 test", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         QueryResultsIterable<Vertex> vertices = graph.query(AUTHORIZATIONS_A)
-                .has("both", TextPredicate.DOES_NOT_CONTAIN, "Test")
-                .vertices();
+            .has("both", TextPredicate.DOES_NOT_CONTAIN, "Test")
+            .vertices();
         assertVertexIdsAnyOrder(vertices, "v1", "v3", "v4");
 
         vertices = graph.query(AUTHORIZATIONS_A)
-                .has("exactMatch", "Test Value")
-                .vertices();
+            .has("exactMatch", "Test Value")
+            .vertices();
         assertVertexIds(vertices, "v1");
 
         graph.query(AUTHORIZATIONS_A)
-                .has("exactMatch", TextPredicate.DOES_NOT_CONTAIN, "Test")
-                .vertices();
+            .has("exactMatch", TextPredicate.DOES_NOT_CONTAIN, "Test")
+            .vertices();
 
         graph.prepareVertex("v6", VISIBILITY_A)
-                .setProperty("both", "susan-test", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("both", "susan-test", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
 
         graph.prepareVertex("v7", VISIBILITY_A)
-                .setProperty("both", "susan-test", Visibility.EMPTY)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("both", "susan-test", Visibility.EMPTY)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         vertices = graph.query(AUTHORIZATIONS_A)
-                .has("both", TextPredicate.DOES_NOT_CONTAIN, "susan")
-                .vertices();
+            .has("both", TextPredicate.DOES_NOT_CONTAIN, "susan")
+            .vertices();
         assertVertexIdsAnyOrder(vertices, "v1", "v2", "v3", "v4", "v5");
     }
 
@@ -5179,10 +5179,10 @@ public abstract class GraphTestBase {
         graph.defineProperty("fullText").dataType(String.class).textIndexHint(TextIndexHint.FULL_TEXT).define();
 
         graph.prepareVertex("v1", VISIBILITY_A)
-                .setProperty("none", StreamingPropertyValue.create("Test Value"), VISIBILITY_A)
-                .setProperty("both", StreamingPropertyValue.create("Test Value"), VISIBILITY_A)
-                .setProperty("fullText", StreamingPropertyValue.create("Test Value"), VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("none", StreamingPropertyValue.create("Test Value"), VISIBILITY_A)
+            .setProperty("both", StreamingPropertyValue.create("Test Value"), VISIBILITY_A)
+            .setProperty("fullText", StreamingPropertyValue.create("Test Value"), VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         Assert.assertEquals(1, count(graph.query(AUTHORIZATIONS_A).has("both", TextPredicate.CONTAINS, "Test").vertices()));
@@ -5203,10 +5203,10 @@ public abstract class GraphTestBase {
         graph.defineProperty("c").dataType(String.class).textIndexHint(TextIndexHint.FULL_TEXT).define();
 
         graph.prepareVertex("v1", VISIBILITY_A)
-                .setProperty("a", StreamingPropertyValue.create("Test Value A"), VISIBILITY_A)
-                .setProperty("b", StreamingPropertyValue.create("Test Value B"), VISIBILITY_A)
-                .setProperty("c", StreamingPropertyValue.create("Test Value C"), VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("a", StreamingPropertyValue.create("Test Value A"), VISIBILITY_A)
+            .setProperty("b", StreamingPropertyValue.create("Test Value B"), VISIBILITY_A)
+            .setProperty("c", StreamingPropertyValue.create("Test Value C"), VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B);
@@ -5228,23 +5228,23 @@ public abstract class GraphTestBase {
         assumeTrue("Boost not supported", graph.isFieldBoostSupported());
 
         graph.defineProperty("a")
-                .dataType(String.class)
-                .textIndexHint(TextIndexHint.ALL)
-                .boost(1)
-                .define();
+            .dataType(String.class)
+            .textIndexHint(TextIndexHint.ALL)
+            .boost(1)
+            .define();
         graph.defineProperty("b")
-                .dataType(String.class)
-                .textIndexHint(TextIndexHint.ALL)
-                .boost(2)
-                .define();
+            .dataType(String.class)
+            .textIndexHint(TextIndexHint.ALL)
+            .boost(2)
+            .define();
 
         graph.prepareVertex("v1", VISIBILITY_A)
-                .setProperty("a", "Test Value", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("a", "Test Value", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
 
         graph.prepareVertex("v2", VISIBILITY_A)
-                .setProperty("b", "Test Value", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("b", "Test Value", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
 
         assertVertexIds(graph.query("Test", AUTHORIZATIONS_A).vertices(), "v2", "v1");
     }
@@ -5254,19 +5254,19 @@ public abstract class GraphTestBase {
         Date date = createDate(2014, 2, 24, 13, 0, 5);
 
         graph.prepareVertex("v1", VISIBILITY_A)
-                .setProperty("int", 5, VISIBILITY_A)
-                .setProperty("bigInteger", BigInteger.valueOf(10), VISIBILITY_A)
-                .setProperty("bigDecimal", BigDecimal.valueOf(1.1), VISIBILITY_A)
-                .setProperty("double", 5.6, VISIBILITY_A)
-                .setProperty("float", 6.4f, VISIBILITY_A)
-                .setProperty("string", "test", VISIBILITY_A)
-                .setProperty("byte", (byte) 5, VISIBILITY_A)
-                .setProperty("long", (long) 5, VISIBILITY_A)
-                .setProperty("boolean", true, VISIBILITY_A)
-                .setProperty("geopoint", new GeoPoint(77, -33), VISIBILITY_A)
-                .setProperty("short", (short) 5, VISIBILITY_A)
-                .setProperty("date", date, VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("int", 5, VISIBILITY_A)
+            .setProperty("bigInteger", BigInteger.valueOf(10), VISIBILITY_A)
+            .setProperty("bigDecimal", BigDecimal.valueOf(1.1), VISIBILITY_A)
+            .setProperty("double", 5.6, VISIBILITY_A)
+            .setProperty("float", 6.4f, VISIBILITY_A)
+            .setProperty("string", "test", VISIBILITY_A)
+            .setProperty("byte", (byte) 5, VISIBILITY_A)
+            .setProperty("long", (long) 5, VISIBILITY_A)
+            .setProperty("boolean", true, VISIBILITY_A)
+            .setProperty("geopoint", new GeoPoint(77, -33), VISIBILITY_A)
+            .setProperty("short", (short) 5, VISIBILITY_A)
+            .setProperty("date", date, VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         Assert.assertEquals(1, count(graph.query(AUTHORIZATIONS_A).has("int", 5).vertices()));
@@ -5293,20 +5293,20 @@ public abstract class GraphTestBase {
         graph.flush();
 
         graph.getVertex("v1", AUTHORIZATIONS_A_AND_B)
-                .prepareMutation()
-                .addPropertyValue("", "int", 5, VISIBILITY_A)
-                .addPropertyValue("", "bigInteger", BigInteger.valueOf(10), VISIBILITY_A)
-                .addPropertyValue("", "bigDecimal", BigDecimal.valueOf(1.1), VISIBILITY_A)
-                .addPropertyValue("", "double", 5.6, VISIBILITY_A)
-                .addPropertyValue("", "float", 6.4f, VISIBILITY_A)
-                .addPropertyValue("", "string", "test", VISIBILITY_A)
-                .addPropertyValue("", "byte", (byte) 5, VISIBILITY_A)
-                .addPropertyValue("", "long", (long) 5, VISIBILITY_A)
-                .addPropertyValue("", "boolean", true, VISIBILITY_A)
-                .addPropertyValue("", "geopoint", new GeoPoint(77, -33), VISIBILITY_A)
-                .addPropertyValue("", "short", (short) 5, VISIBILITY_A)
-                .addPropertyValue("", "date", date, VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .prepareMutation()
+            .addPropertyValue("", "int", 5, VISIBILITY_A)
+            .addPropertyValue("", "bigInteger", BigInteger.valueOf(10), VISIBILITY_A)
+            .addPropertyValue("", "bigDecimal", BigDecimal.valueOf(1.1), VISIBILITY_A)
+            .addPropertyValue("", "double", 5.6, VISIBILITY_A)
+            .addPropertyValue("", "float", 6.4f, VISIBILITY_A)
+            .addPropertyValue("", "string", "test", VISIBILITY_A)
+            .addPropertyValue("", "byte", (byte) 5, VISIBILITY_A)
+            .addPropertyValue("", "long", (long) 5, VISIBILITY_A)
+            .addPropertyValue("", "boolean", true, VISIBILITY_A)
+            .addPropertyValue("", "geopoint", new GeoPoint(77, -33), VISIBILITY_A)
+            .addPropertyValue("", "short", (short) 5, VISIBILITY_A)
+            .addPropertyValue("", "date", date, VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         Assert.assertEquals(1, count(graph.query(AUTHORIZATIONS_A).has("int", 5).vertices()));
@@ -5328,13 +5328,13 @@ public abstract class GraphTestBase {
     @Test
     public void testChangeVisibilityVertex() {
         graph.prepareVertex("v1", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
         v1.prepareMutation()
-                .alterElementVisibility(VISIBILITY_B)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .alterElementVisibility(VISIBILITY_B)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
@@ -5345,8 +5345,8 @@ public abstract class GraphTestBase {
         // change to same visibility
         v1 = graph.getVertex("v1", AUTHORIZATIONS_B);
         v1.prepareMutation()
-                .alterElementVisibility(VISIBILITY_B)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .alterElementVisibility(VISIBILITY_B)
+            .save(AUTHORIZATIONS_A_AND_B);
 
         v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
         assertNull(v1);
@@ -5360,8 +5360,8 @@ public abstract class GraphTestBase {
         metadata.add("m1", "m1-value1", VISIBILITY_EMPTY);
         metadata.add("m2", "m2-value1", VISIBILITY_EMPTY);
         graph.prepareVertex("v1", VISIBILITY_A)
-                .addPropertyValue("k1", "age", 25, metadata, VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .addPropertyValue("k1", "age", 25, metadata, VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.createAuthorizations(AUTHORIZATIONS_ALL);
         graph.flush();
 
@@ -5401,14 +5401,14 @@ public abstract class GraphTestBase {
     @Test
     public void testChangeVisibilityPropertiesWithPropertyKey() {
         graph.prepareVertex("v1", VISIBILITY_EMPTY)
-                .addPropertyValue("k1", "prop1", "value1", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .addPropertyValue("k1", "prop1", "value1", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B);
         v1.prepareMutation()
-                .alterPropertyVisibility("k1", "prop1", VISIBILITY_B)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .alterPropertyVisibility("k1", "prop1", VISIBILITY_B)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
@@ -5433,18 +5433,18 @@ public abstract class GraphTestBase {
         assertEquals(VISIBILITY_B, v1Prop1.getVisibility());
 
         graph.prepareVertex("v2", VISIBILITY_EMPTY)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         graph.prepareEdge("e1", "v1", "v2", LABEL_LABEL1, VISIBILITY_EMPTY)
-                .addPropertyValue("k2", "prop2", "value2", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .addPropertyValue("k2", "prop2", "value2", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         Edge e1 = graph.getEdge("e1", AUTHORIZATIONS_A_AND_B);
         e1.prepareMutation()
-                .alterPropertyVisibility("k2", "prop2", VISIBILITY_B)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .alterPropertyVisibility("k2", "prop2", VISIBILITY_B)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         e1 = graph.getEdge("e1", AUTHORIZATIONS_A);
@@ -5478,15 +5478,15 @@ public abstract class GraphTestBase {
         prop2Metadata.add("prop2_key1", "value1", VISIBILITY_EMPTY);
 
         graph.prepareVertex("v1", VISIBILITY_EMPTY)
-                .setProperty("prop1", "value1", prop1Metadata, VISIBILITY_A)
-                .setProperty("prop2", "value2", prop2Metadata, VISIBILITY_EMPTY)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("prop1", "value1", prop1Metadata, VISIBILITY_A)
+            .setProperty("prop2", "value2", prop2Metadata, VISIBILITY_EMPTY)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         Vertex v1 = graph.getVertex("v1", FetchHints.ALL, AUTHORIZATIONS_A_AND_B);
         v1.prepareMutation()
-                .alterPropertyVisibility("prop1", VISIBILITY_B)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .alterPropertyVisibility("prop1", VISIBILITY_B)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
@@ -5516,9 +5516,9 @@ public abstract class GraphTestBase {
         // alter and set property in one mutation
         v1 = graph.getVertex("v1", FetchHints.ALL, AUTHORIZATIONS_A_AND_B);
         v1.prepareMutation()
-                .alterPropertyVisibility("prop1", VISIBILITY_A)
-                .setProperty("prop1", "value1New", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .alterPropertyVisibility("prop1", VISIBILITY_A)
+            .setProperty("prop1", "value1New", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         assertResultsCount(0, 0, graph.query(AUTHORIZATIONS_B).has("prop1", "value1").vertices());
@@ -5533,9 +5533,9 @@ public abstract class GraphTestBase {
         // alter visibility to the same visibility
         v1 = graph.getVertex("v1", FetchHints.ALL, AUTHORIZATIONS_A_AND_B);
         v1.prepareMutation()
-                .alterPropertyVisibility("prop1", VISIBILITY_A)
-                .setProperty("prop1", "value1New2", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .alterPropertyVisibility("prop1", VISIBILITY_A)
+            .setProperty("prop1", "value1New2", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         v1 = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B);
@@ -5556,15 +5556,15 @@ public abstract class GraphTestBase {
         prop1Metadata.add("prop1_key1", "metadata1", VISIBILITY_EMPTY);
 
         graph.prepareVertex("v1", VISIBILITY_EMPTY)
-                .setProperty("prop1", "value1", prop1Metadata, VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("prop1", "value1", prop1Metadata, VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         Vertex v1 = graph.getVertex("v1", FetchHints.ALL, AUTHORIZATIONS_A_AND_B);
         v1.prepareMutation()
-                .alterPropertyVisibility("prop1", VISIBILITY_B)
-                .setPropertyMetadata("prop1", "prop1_key1", "metadata1New", VISIBILITY_EMPTY)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .alterPropertyVisibility("prop1", VISIBILITY_B)
+            .setPropertyMetadata("prop1", "prop1_key1", "metadata1New", VISIBILITY_EMPTY)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         v1 = graph.getVertex("v1", FetchHints.ALL, AUTHORIZATIONS_A_AND_B);
@@ -5581,17 +5581,17 @@ public abstract class GraphTestBase {
     @Test
     public void testAlterPropertyVisibilityOverwritingProperty() {
         graph.prepareVertex("v1", VISIBILITY_EMPTY)
-                .addPropertyValue("", "prop1", "value1", VISIBILITY_EMPTY)
-                .addPropertyValue("", "prop1", "value2", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .addPropertyValue("", "prop1", "value1", VISIBILITY_EMPTY)
+            .addPropertyValue("", "prop1", "value2", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         long beforeAlterTimestamp = IncreasingTime.currentTimeMillis();
 
         Vertex v1 = graph.getVertex("v1", FetchHints.ALL, AUTHORIZATIONS_A);
         v1.prepareMutation()
-                .alterPropertyVisibility(v1.getProperty("", "prop1", VISIBILITY_A), VISIBILITY_EMPTY)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .alterPropertyVisibility(v1.getProperty("", "prop1", VISIBILITY_A), VISIBILITY_EMPTY)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
@@ -5614,16 +5614,16 @@ public abstract class GraphTestBase {
         graph.defineProperty("prop2").dataType(GeoPoint.class).textIndexHint(TextIndexHint.ALL).define();
 
         graph.prepareVertex("v1", VISIBILITY_EMPTY)
-                .addPropertyValue("key1", "prop1", "value1", VISIBILITY_A)
-                .addPropertyValue("key1", "prop2", new GeoPoint(38.9186, -77.2297, "Reston, VA"), VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .addPropertyValue("key1", "prop1", "value1", VISIBILITY_A)
+            .addPropertyValue("key1", "prop2", new GeoPoint(38.9186, -77.2297, "Reston, VA"), VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         Vertex v1 = graph.getVertex("v1", FetchHints.ALL, AUTHORIZATIONS_A);
         v1.prepareMutation()
-                .alterPropertyVisibility(v1.getProperty("key1", "prop1", VISIBILITY_A), VISIBILITY_EMPTY)
-                .alterPropertyVisibility(v1.getProperty("key1", "prop2", VISIBILITY_A), VISIBILITY_EMPTY)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .alterPropertyVisibility(v1.getProperty("key1", "prop1", VISIBILITY_A), VISIBILITY_EMPTY)
+            .alterPropertyVisibility(v1.getProperty("key1", "prop2", VISIBILITY_A), VISIBILITY_EMPTY)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         QueryResultsIterable<Vertex> vertices = graph.query(AUTHORIZATIONS_EMPTY).has("prop1", "value1").vertices();
@@ -5649,16 +5649,16 @@ public abstract class GraphTestBase {
         graph.defineProperty("prop2").dataType(GeoPoint.class).textIndexHint(TextIndexHint.ALL).define();
 
         graph.prepareVertex("v1", VISIBILITY_EMPTY)
-                .addPropertyValue("key1", "prop1", "value1", VISIBILITY_A)
-                .addPropertyValue("key1", "prop2", new GeoPoint(38.9186, -77.2297, "Reston, VA"), VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .addPropertyValue("key1", "prop1", "value1", VISIBILITY_A)
+            .addPropertyValue("key1", "prop2", new GeoPoint(38.9186, -77.2297, "Reston, VA"), VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         Vertex v1 = graph.getVertex("v1", FetchHints.ALL, AUTHORIZATIONS_A);
         v1.prepareMutation()
-                .deleteProperties("key1", "prop1")
-                .deleteProperties("key1", "prop2")
-                .save(AUTHORIZATIONS_A_AND_B);
+            .deleteProperties("key1", "prop1")
+            .deleteProperties("key1", "prop2")
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         QueryResultsIterable<Vertex> vertices = graph.query(AUTHORIZATIONS_A).has("prop1", "value1").vertices();
@@ -5680,8 +5680,8 @@ public abstract class GraphTestBase {
         graph.defineProperty("prop1").dataType(GeoPoint.class).textIndexHint(TextIndexHint.ALL).define();
 
         graph.prepareVertex("v1", VISIBILITY_EMPTY)
-                .addPropertyValue("key1", "prop1", new GeoPoint(38.9186, -77.2297, "Reston, VA"), VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .addPropertyValue("key1", "prop1", new GeoPoint(38.9186, -77.2297, "Reston, VA"), VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         QueryResultsIterable<Vertex> vertices = graph.query(AUTHORIZATIONS_A).has("prop1", GeoCompare.WITHIN, new GeoCircle(38.9186, -77.2297, 1)).vertices();
@@ -5694,8 +5694,8 @@ public abstract class GraphTestBase {
 
         Vertex v1 = graph.getVertex("v1", FetchHints.ALL, AUTHORIZATIONS_A);
         v1.prepareMutation()
-                .addPropertyValue("key2", "prop1", new GeoPoint(38.6270, -90.1994, "St Louis, MO"), VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .addPropertyValue("key2", "prop1", new GeoPoint(38.6270, -90.1994, "St Louis, MO"), VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         // NOTE: Now that the field has multiple values, WITHIN really means that all values must be within the circle
@@ -5726,13 +5726,13 @@ public abstract class GraphTestBase {
     @Test
     public void testChangeVisibilityEdge() {
         Vertex v1 = graph.prepareVertex("v1", VISIBILITY_EMPTY)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .save(AUTHORIZATIONS_A_AND_B);
 
         Vertex v2 = graph.prepareVertex("v2", VISIBILITY_EMPTY)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .save(AUTHORIZATIONS_A_AND_B);
 
         graph.prepareEdge("e1", v1, v2, LABEL_LABEL1, VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         // test that we can see the edge with A and not B
@@ -5744,8 +5744,8 @@ public abstract class GraphTestBase {
         // change the edge
         Edge e1 = graph.getEdge("e1", AUTHORIZATIONS_A);
         e1.prepareMutation()
-                .alterElementVisibility(VISIBILITY_B)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .alterElementVisibility(VISIBILITY_B)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         // test that we can see the edge with B and not A
@@ -5757,8 +5757,8 @@ public abstract class GraphTestBase {
         // change the edge visibility to same
         e1 = graph.getEdge("e1", AUTHORIZATIONS_B);
         e1.prepareMutation()
-                .alterElementVisibility(VISIBILITY_B)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .alterElementVisibility(VISIBILITY_B)
+            .save(AUTHORIZATIONS_A_AND_B);
 
         // test that we can see the edge with B and not A
         v1 = graph.getVertex("v1", AUTHORIZATIONS_B);
@@ -5770,16 +5770,16 @@ public abstract class GraphTestBase {
     @Test
     public void testChangeVisibilityOnBadPropertyName() {
         graph.prepareVertex("v1", VISIBILITY_A)
-                .setProperty("prop1", "value1", VISIBILITY_EMPTY)
-                .setProperty("prop2", "value2", VISIBILITY_B)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("prop1", "value1", VISIBILITY_EMPTY)
+            .setProperty("prop2", "value2", VISIBILITY_B)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         try {
             graph.getVertex("v1", AUTHORIZATIONS_A)
-                    .prepareMutation()
-                    .alterPropertyVisibility("propBad", VISIBILITY_B)
-                    .save(AUTHORIZATIONS_A_AND_B);
+                .prepareMutation()
+                .alterPropertyVisibility("propBad", VISIBILITY_B)
+                .save(AUTHORIZATIONS_A_AND_B);
             fail("show throw");
         } catch (VertexiumException ex) {
             assertNotNull(ex);
@@ -5793,23 +5793,23 @@ public abstract class GraphTestBase {
         PropertyValue propLarge = StreamingPropertyValue.create(new ByteArrayInputStream(expectedLargeValue.getBytes()), String.class);
         String largePropertyName = "propLarge/\\*!@#$%^&*()[]{}|";
         graph.prepareVertex("v1", VISIBILITY_A)
-                .setProperty("propSmall", propSmall, VISIBILITY_A)
-                .setProperty(largePropertyName, propLarge, VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("propSmall", propSmall, VISIBILITY_A)
+            .setProperty(largePropertyName, propLarge, VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
         Assert.assertEquals(2, count(graph.getVertex("v1", AUTHORIZATIONS_A).getProperties()));
 
         graph.getVertex("v1", FetchHints.ALL, AUTHORIZATIONS_A)
-                .prepareMutation()
-                .alterPropertyVisibility("propSmall", VISIBILITY_B)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .prepareMutation()
+            .alterPropertyVisibility("propSmall", VISIBILITY_B)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
         Assert.assertEquals(1, count(graph.getVertex("v1", AUTHORIZATIONS_A).getProperties()));
 
         graph.getVertex("v1", FetchHints.ALL, AUTHORIZATIONS_A)
-                .prepareMutation()
-                .alterPropertyVisibility(largePropertyName, VISIBILITY_B)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .prepareMutation()
+            .alterPropertyVisibility(largePropertyName, VISIBILITY_B)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
         Assert.assertEquals(0, count(graph.getVertex("v1", AUTHORIZATIONS_A).getProperties()));
 
@@ -5822,15 +5822,15 @@ public abstract class GraphTestBase {
         prop1Metadata.add("prop1_key1", "valueOld", VISIBILITY_EMPTY);
 
         graph.prepareVertex("v1", VISIBILITY_A)
-                .setProperty("prop1", "value1", prop1Metadata, VISIBILITY_EMPTY)
-                .setProperty("prop2", "value2", null, VISIBILITY_EMPTY)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("prop1", "value1", prop1Metadata, VISIBILITY_EMPTY)
+            .setProperty("prop2", "value2", null, VISIBILITY_EMPTY)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         Vertex v1 = graph.getVertex("v1", FetchHints.ALL, AUTHORIZATIONS_A);
         v1.prepareMutation()
-                .setPropertyMetadata("prop1", "prop1_key1", "valueNew", VISIBILITY_EMPTY)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setPropertyMetadata("prop1", "prop1_key1", "valueNew", VISIBILITY_EMPTY)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
         assertEquals("valueNew", v1.getProperty("prop1").getMetadata().getEntry("prop1_key1", VISIBILITY_EMPTY).getValue());
 
@@ -5839,8 +5839,8 @@ public abstract class GraphTestBase {
 
         v1 = graph.getVertex("v1", FetchHints.ALL, AUTHORIZATIONS_A);
         v1.prepareMutation()
-                .setPropertyMetadata("prop2", "prop2_key1", "valueNew", VISIBILITY_EMPTY)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setPropertyMetadata("prop2", "prop2_key1", "valueNew", VISIBILITY_EMPTY)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
         assertEquals("valueNew", v1.getProperty("prop2").getMetadata().getEntry("prop2_key1", VISIBILITY_EMPTY).getValue());
 
@@ -5854,16 +5854,16 @@ public abstract class GraphTestBase {
         prop1Metadata.add("prop1_key1", "valueOld", VISIBILITY_A);
 
         graph.prepareVertex("v1", VISIBILITY_A)
-                .setProperty("prop1", "value1", prop1Metadata, VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("prop1", "value1", prop1Metadata, VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         Vertex v1 = graph.getVertex("v1", FetchHints.ALL, AUTHORIZATIONS_A_AND_B);
         Property p1 = v1.getProperty("prop1", VISIBILITY_A);
         v1.prepareMutation()
-                .alterPropertyVisibility(p1, VISIBILITY_B)
-                .setPropertyMetadata(p1, "prop1_key1", "valueNew", VISIBILITY_B)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .alterPropertyVisibility(p1, VISIBILITY_B)
+            .setPropertyMetadata(p1, "prop1_key1", "valueNew", VISIBILITY_B)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         v1 = graph.getVertex("v1", FetchHints.ALL, AUTHORIZATIONS_A_AND_B);
@@ -5873,9 +5873,9 @@ public abstract class GraphTestBase {
     @Test
     public void testMetadata() {
         Vertex v1 = graph.prepareVertex("v1", VISIBILITY_A)
-                .setProperty("prop1", "value1", VISIBILITY_A)
-                .setProperty("prop1", "value1", VISIBILITY_B)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("prop1", "value1", VISIBILITY_A)
+            .setProperty("prop1", "value1", VISIBILITY_B)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         ExistingElementMutation<Vertex> m = graph.getVertex("v1", FetchHints.ALL, AUTHORIZATIONS_A_AND_B).prepareMutation();
@@ -5908,9 +5908,9 @@ public abstract class GraphTestBase {
     @Test
     public void testModifyVertexWithLowerAuthorizationThenOtherProperties() {
         graph.prepareVertex("v1", VISIBILITY_A)
-                .setProperty("prop1", "value1", VISIBILITY_A)
-                .setProperty("prop2", "value2", VISIBILITY_B)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("prop1", "value1", VISIBILITY_A)
+            .setProperty("prop2", "value2", VISIBILITY_B)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
@@ -5918,27 +5918,27 @@ public abstract class GraphTestBase {
         graph.flush();
 
         Iterable<Vertex> vertices = graph.query(AUTHORIZATIONS_A_AND_B)
-                .has("prop2", "value2")
-                .vertices();
+            .has("prop2", "value2")
+            .vertices();
         assertVertexIds(vertices, "v1");
     }
 
     @Test
     public void testPartialUpdateOfVertex() {
         graph.prepareVertex("v1", VISIBILITY_A)
-                .setProperty("prop1", "value1", VISIBILITY_A)
-                .setProperty("prop2", "value2", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("prop1", "value1", VISIBILITY_A)
+            .setProperty("prop2", "value2", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         graph.prepareVertex("v1", VISIBILITY_A)
-                .setProperty("prop1", "value1New", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("prop1", "value1New", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         Iterable<Vertex> vertices = graph.query(AUTHORIZATIONS_A_AND_B)
-                .has("prop2", "value2")
-                .vertices();
+            .has("prop2", "value2")
+            .vertices();
         assertVertexIds(vertices, "v1");
     }
 
@@ -5948,39 +5948,39 @@ public abstract class GraphTestBase {
         assumeTrue("Known bug in partial updates", isParitalUpdateOfVertexPropertyKeySupported());
 
         graph.prepareVertex("v1", VISIBILITY_A)
-                .addPropertyValue("key1", "prop", "value1", VISIBILITY_A)
-                .addPropertyValue("key2", "prop", "value2", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .addPropertyValue("key1", "prop", "value1", VISIBILITY_A)
+            .addPropertyValue("key2", "prop", "value2", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         Iterable<Vertex> vertices = graph.query(AUTHORIZATIONS_A_AND_B)
-                .has("prop", "value1")
-                .vertices();
+            .has("prop", "value1")
+            .vertices();
         assertVertexIds(vertices, "v1");
 
         vertices = graph.query(AUTHORIZATIONS_A_AND_B)
-                .has("prop", "value2")
-                .vertices();
+            .has("prop", "value2")
+            .vertices();
         assertVertexIds(vertices, "v1");
 
         graph.prepareVertex("v1", VISIBILITY_A)
-                .addPropertyValue("key1", "prop", "value1New", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .addPropertyValue("key1", "prop", "value1New", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         vertices = graph.query(AUTHORIZATIONS_A_AND_B)
-                .has("prop", "value1New")
-                .vertices();
+            .has("prop", "value1New")
+            .vertices();
         assertVertexIds(vertices, "v1");
 
         vertices = graph.query(AUTHORIZATIONS_A_AND_B)
-                .has("prop", "value2")
-                .vertices();
+            .has("prop", "value2")
+            .vertices();
         assertVertexIds(vertices, "v1");
 
         vertices = graph.query(AUTHORIZATIONS_A_AND_B)
-                .has("prop", "value1")
-                .vertices();
+            .has("prop", "value1")
+            .vertices();
         assertVertexIds(vertices);
     }
 
@@ -5993,14 +5993,14 @@ public abstract class GraphTestBase {
         assumeTrue("add vertex without indexing not supported", !isDefaultSearchIndex());
 
         graph.prepareVertex("v1", VISIBILITY_A)
-                .setProperty("prop1", "value1", VISIBILITY_A)
-                .setIndexHint(IndexHint.DO_NOT_INDEX)
-                .save(AUTHORIZATIONS_A);
+            .setProperty("prop1", "value1", VISIBILITY_A)
+            .setIndexHint(IndexHint.DO_NOT_INDEX)
+            .save(AUTHORIZATIONS_A);
         graph.flush();
 
         Iterable<Vertex> vertices = graph.query(AUTHORIZATIONS_A_AND_B)
-                .has("prop1", "value1")
-                .vertices();
+            .has("prop1", "value1")
+            .vertices();
         assertVertexIds(vertices);
     }
 
@@ -6009,20 +6009,20 @@ public abstract class GraphTestBase {
         assumeTrue("alter vertex without indexing not supported", !isDefaultSearchIndex());
 
         graph.prepareVertex("v1", VISIBILITY_A)
-                .setIndexHint(IndexHint.DO_NOT_INDEX)
-                .save(AUTHORIZATIONS_A);
+            .setIndexHint(IndexHint.DO_NOT_INDEX)
+            .save(AUTHORIZATIONS_A);
         graph.flush();
 
         Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
         v1.prepareMutation()
-                .setProperty("prop1", "value1", VISIBILITY_A)
-                .setIndexHint(IndexHint.DO_NOT_INDEX)
-                .save(AUTHORIZATIONS_A);
+            .setProperty("prop1", "value1", VISIBILITY_A)
+            .setIndexHint(IndexHint.DO_NOT_INDEX)
+            .save(AUTHORIZATIONS_A);
         graph.flush();
 
         Iterable<Vertex> vertices = graph.query(AUTHORIZATIONS_A)
-                .has("prop1", "value1")
-                .vertices();
+            .has("prop1", "value1")
+            .vertices();
         assertVertexIds(vertices);
     }
 
@@ -6033,14 +6033,14 @@ public abstract class GraphTestBase {
         Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
         Vertex v2 = graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_A);
         graph.prepareEdge("e1", v1, v2, LABEL_LABEL1, VISIBILITY_A)
-                .setProperty("prop1", "value1", VISIBILITY_A)
-                .setIndexHint(IndexHint.DO_NOT_INDEX)
-                .save(AUTHORIZATIONS_A);
+            .setProperty("prop1", "value1", VISIBILITY_A)
+            .setIndexHint(IndexHint.DO_NOT_INDEX)
+            .save(AUTHORIZATIONS_A);
         graph.flush();
 
         Iterable<Edge> edges = graph.query(AUTHORIZATIONS_A_AND_B)
-                .has("prop1", "value1")
-                .edges();
+            .has("prop1", "value1")
+            .edges();
         assertEdgeIds(edges);
     }
 
@@ -6160,44 +6160,44 @@ public abstract class GraphTestBase {
         assumeTrue("query similar", graph.isQuerySimilarToTextSupported());
 
         graph.prepareVertex("v1", VISIBILITY_A)
-                .setProperty("text", "Mary had a little lamb, His fleece was white as snow.", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
+            .setProperty("text", "Mary had a little lamb, His fleece was white as snow.", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
         graph.prepareVertex("v2", VISIBILITY_A)
-                .setProperty("text", "Mary had a little tiger, His fleece was white as snow.", VISIBILITY_B)
-                .save(AUTHORIZATIONS_B);
+            .setProperty("text", "Mary had a little tiger, His fleece was white as snow.", VISIBILITY_B)
+            .save(AUTHORIZATIONS_B);
         graph.prepareVertex("v3", VISIBILITY_A)
-                .setProperty("text", "Mary had a little lamb.", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
+            .setProperty("text", "Mary had a little lamb.", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
         graph.prepareVertex("v4", VISIBILITY_A)
-                .setProperty("text", "His fleece was white as snow.", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
+            .setProperty("text", "His fleece was white as snow.", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
         graph.prepareVertex("v5", VISIBILITY_A)
-                .setProperty("text", "Mary had a little lamb, His fleece was black as snow.", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
+            .setProperty("text", "Mary had a little lamb, His fleece was black as snow.", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
         graph.prepareVertex("v5", VISIBILITY_A)
-                .setProperty("text", "Jack and Jill went up the hill to fetch a pail of water.", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
+            .setProperty("text", "Jack and Jill went up the hill to fetch a pail of water.", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
         graph.flush();
 
         List<Vertex> vertices = toList(
-                graph.querySimilarTo(new String[]{"text"}, "Mary had a little lamb, His fleece was white as snow", AUTHORIZATIONS_A_AND_B)
-                        .minTermFrequency(1)
-                        .maxQueryTerms(25)
-                        .minDocFrequency(1)
-                        .maxDocFrequency(10)
-                        .boost(2.0f)
-                        .vertices()
+            graph.querySimilarTo(new String[]{"text"}, "Mary had a little lamb, His fleece was white as snow", AUTHORIZATIONS_A_AND_B)
+                .minTermFrequency(1)
+                .maxQueryTerms(25)
+                .minDocFrequency(1)
+                .maxDocFrequency(10)
+                .boost(2.0f)
+                .vertices()
         );
         assertTrue(vertices.size() > 0);
 
         vertices = toList(
-                graph.querySimilarTo(new String[]{"text"}, "Mary had a little lamb, His fleece was white as snow", AUTHORIZATIONS_A)
-                        .minTermFrequency(1)
-                        .maxQueryTerms(25)
-                        .minDocFrequency(1)
-                        .maxDocFrequency(10)
-                        .boost(2.0f)
-                        .vertices()
+            graph.querySimilarTo(new String[]{"text"}, "Mary had a little lamb, His fleece was white as snow", AUTHORIZATIONS_A)
+                .minTermFrequency(1)
+                .maxQueryTerms(25)
+                .minDocFrequency(1)
+                .maxDocFrequency(10)
+                .boost(2.0f)
+                .vertices()
         );
         assertTrue(vertices.size() > 0);
     }
@@ -6210,18 +6210,18 @@ public abstract class GraphTestBase {
         Metadata metadata = new Metadata();
         metadata.add("author", "author1", VISIBILITY_A);
         graph.prepareVertex("v1", VISIBILITY_A)
-                .addPropertyValue("", "age", 25, metadata, time25.getTime(), VISIBILITY_A)
-                .addPropertyValue("k1", "name", "k1Time25Value", metadata, time25.getTime(), VISIBILITY_A)
-                .addPropertyValue("k2", "name", "k2Time25Value", metadata, time25.getTime(), VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
+            .addPropertyValue("", "age", 25, metadata, time25.getTime(), VISIBILITY_A)
+            .addPropertyValue("k1", "name", "k1Time25Value", metadata, time25.getTime(), VISIBILITY_A)
+            .addPropertyValue("k2", "name", "k2Time25Value", metadata, time25.getTime(), VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
 
         metadata = new Metadata();
         metadata.add("author", "author2", VISIBILITY_A);
         graph.prepareVertex("v1", VISIBILITY_A)
-                .addPropertyValue("", "age", 30, metadata, time30.getTime(), VISIBILITY_A)
-                .addPropertyValue("k1", "name", "k1Time30Value", metadata, time30.getTime(), VISIBILITY_A)
-                .addPropertyValue("k2", "name", "k2Time30Value", metadata, time30.getTime(), VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
+            .addPropertyValue("", "age", 30, metadata, time30.getTime(), VISIBILITY_A)
+            .addPropertyValue("k1", "name", "k1Time30Value", metadata, time30.getTime(), VISIBILITY_A)
+            .addPropertyValue("k2", "name", "k2Time30Value", metadata, time30.getTime(), VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
         graph.flush();
 
         Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
@@ -6265,14 +6265,14 @@ public abstract class GraphTestBase {
         Metadata metadata = new Metadata();
         metadata.add("author", "author1", VISIBILITY_A);
         graph.prepareVertex("v1", VISIBILITY_A)
-                .addPropertyValue("", "age", 25, metadata, time25.getTime(), VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
+            .addPropertyValue("", "age", 25, metadata, time25.getTime(), VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
 
         metadata = new Metadata();
         metadata.add("author", "author2", VISIBILITY_A);
         graph.prepareVertex("v1", VISIBILITY_A)
-                .addPropertyValue("", "age", 30, metadata, time30.getTime(), VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
+            .addPropertyValue("", "age", 30, metadata, time30.getTime(), VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
         graph.flush();
 
         Vertex v1 = graph.getVertex("v1", FetchHints.ALL, AUTHORIZATIONS_A);
@@ -6300,13 +6300,13 @@ public abstract class GraphTestBase {
         Metadata metadata = new Metadata();
         StreamingPropertyValue value1 = StreamingPropertyValue.create("value1");
         graph.prepareVertex("v1", VISIBILITY_A)
-                .addPropertyValue("", "text", value1, metadata, time25.getTime(), VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
+            .addPropertyValue("", "text", value1, metadata, time25.getTime(), VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
 
         StreamingPropertyValue value2 = StreamingPropertyValue.create("value2");
         graph.prepareVertex("v1", VISIBILITY_A)
-                .addPropertyValue("", "text", value2, metadata, time30.getTime(), VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
+            .addPropertyValue("", "text", value2, metadata, time30.getTime(), VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
         graph.flush();
 
         Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
@@ -6330,20 +6330,20 @@ public abstract class GraphTestBase {
 
         Metadata metadata = new Metadata();
         Vertex v1 = graph.prepareVertex("v1", time25.getTime(), VISIBILITY_A)
-                .addPropertyValue("", "age", 25, metadata, time25.getTime(), VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
+            .addPropertyValue("", "age", 25, metadata, time25.getTime(), VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
         Vertex v2 = graph.prepareVertex("v2", time25.getTime(), VISIBILITY_A)
-                .addPropertyValue("", "age", 20, metadata, time25.getTime(), VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
+            .addPropertyValue("", "age", 20, metadata, time25.getTime(), VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
         graph.prepareEdge("e1", v1, v2, LABEL_LABEL1, time30.getTime(), VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
+            .save(AUTHORIZATIONS_A);
 
         graph.prepareVertex("v1", time30.getTime(), VISIBILITY_A)
-                .addPropertyValue("", "age", 30, metadata, time30.getTime(), VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
+            .addPropertyValue("", "age", 30, metadata, time30.getTime(), VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
         graph.prepareVertex("v3", time30.getTime(), VISIBILITY_A)
-                .addPropertyValue("", "age", 35, metadata, time30.getTime(), VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
+            .addPropertyValue("", "age", 35, metadata, time30.getTime(), VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
         graph.flush();
 
         // verify current versions
@@ -6364,11 +6364,11 @@ public abstract class GraphTestBase {
         String propertyKey = "k1";
         String propertyName = "p1";
         Map<String, Long> values = ImmutableMap.of(
-                "value1", createDate(2016, 4, 6, 9, 20, 0).getTime(),
-                "value2", createDate(2016, 5, 6, 9, 20, 0).getTime(),
-                "value3", createDate(2016, 6, 6, 9, 20, 0).getTime(),
-                "value4", createDate(2016, 7, 6, 9, 20, 0).getTime(),
-                "value5", createDate(2016, 8, 6, 9, 20, 0).getTime()
+            "value1", createDate(2016, 4, 6, 9, 20, 0).getTime(),
+            "value2", createDate(2016, 5, 6, 9, 20, 0).getTime(),
+            "value3", createDate(2016, 6, 6, 9, 20, 0).getTime(),
+            "value4", createDate(2016, 7, 6, 9, 20, 0).getTime(),
+            "value5", createDate(2016, 8, 6, 9, 20, 0).getTime()
         );
 
         ElementMutation<Vertex> vertexMutation = graph.prepareVertex(vertexId, VISIBILITY_EMPTY);
@@ -6392,11 +6392,11 @@ public abstract class GraphTestBase {
         String propertyKey = "k1";
         String propertyName = "p1";
         Map<String, Long> values = ImmutableMap.of(
-                "value1", createDate(2016, 4, 6, 9, 20, 0).getTime(),
-                "value2", createDate(2016, 5, 6, 9, 20, 0).getTime(),
-                "value3", createDate(2016, 6, 6, 9, 20, 0).getTime(),
-                "value4", createDate(2016, 7, 6, 9, 20, 0).getTime(),
-                "value5", createDate(2016, 8, 6, 9, 20, 0).getTime()
+            "value1", createDate(2016, 4, 6, 9, 20, 0).getTime(),
+            "value2", createDate(2016, 5, 6, 9, 20, 0).getTime(),
+            "value3", createDate(2016, 6, 6, 9, 20, 0).getTime(),
+            "value4", createDate(2016, 7, 6, 9, 20, 0).getTime(),
+            "value5", createDate(2016, 8, 6, 9, 20, 0).getTime()
         );
 
         ElementMutation<Edge> edgeMutation = graph.prepareEdge(edgeId, v1, v2, LABEL_LABEL1, VISIBILITY_EMPTY);
@@ -6437,17 +6437,17 @@ public abstract class GraphTestBase {
         long t2 = createDate(2017, 1, 19, 9, 20, 0).getTime();
 
         graph.prepareVertex("v1", VISIBILITY_EMPTY)
-                .addPropertyValue("k1", "prop1", "test1", new Metadata(), t1, VISIBILITY_EMPTY)
-                .save(AUTHORIZATIONS_ALL);
+            .addPropertyValue("k1", "prop1", "test1", new Metadata(), t1, VISIBILITY_EMPTY)
+            .save(AUTHORIZATIONS_ALL);
         graph.flush();
 
         Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_ALL);
         assertEquals(t1, v1.getProperty("k1", "prop1").getTimestamp());
 
         graph.getVertex("v1", AUTHORIZATIONS_ALL)
-                .prepareMutation()
-                .addPropertyValue("k1", "prop1", "test2", new Metadata(), t2, VISIBILITY_EMPTY)
-                .save(AUTHORIZATIONS_ALL);
+            .prepareMutation()
+            .addPropertyValue("k1", "prop1", "test2", new Metadata(), t2, VISIBILITY_EMPTY)
+            .save(AUTHORIZATIONS_ALL);
         graph.flush();
 
         v1 = graph.getVertex("v1", AUTHORIZATIONS_ALL);
@@ -6467,22 +6467,22 @@ public abstract class GraphTestBase {
         graph.defineProperty("emptyField").dataType(Integer.class).define();
 
         graph.prepareVertex("v1", VISIBILITY_EMPTY)
-                .addPropertyValue("k1", "name", "Joe", VISIBILITY_EMPTY)
-                .addPropertyValue("k2", "name", "Joseph", VISIBILITY_EMPTY)
-                .addPropertyValue("", "age", 25, VISIBILITY_EMPTY)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .addPropertyValue("k1", "name", "Joe", VISIBILITY_EMPTY)
+            .addPropertyValue("k2", "name", "Joseph", VISIBILITY_EMPTY)
+            .addPropertyValue("", "age", 25, VISIBILITY_EMPTY)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.prepareVertex("v2", VISIBILITY_EMPTY)
-                .addPropertyValue("k1", "name", "Joe", VISIBILITY_EMPTY)
-                .addPropertyValue("k2", "name", "Joseph", VISIBILITY_B)
-                .addPropertyValue("", "age", 20, VISIBILITY_EMPTY)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .addPropertyValue("k1", "name", "Joe", VISIBILITY_EMPTY)
+            .addPropertyValue("k2", "name", "Joseph", VISIBILITY_B)
+            .addPropertyValue("", "age", 20, VISIBILITY_EMPTY)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.prepareEdge("e1", "v1", "v2", LABEL_LABEL1, VISIBILITY_EMPTY)
-                .addPropertyValue("k1", "name", "Joe", VISIBILITY_EMPTY)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .addPropertyValue("k1", "name", "Joe", VISIBILITY_EMPTY)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.prepareEdge("e2", "v1", "v2", LABEL_LABEL1, VISIBILITY_EMPTY)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.prepareEdge("e3", "v1", "v2", LABEL_LABEL2, VISIBILITY_EMPTY)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         Map<Object, Long> vertexPropertyCountByValue = queryGraphQueryWithTermsAggregation("name", ElementType.VERTEX, AUTHORIZATIONS_EMPTY);
@@ -6520,7 +6520,7 @@ public abstract class GraphTestBase {
         graph.defineProperty("gender").dataType(String.class).textIndexHint(TextIndexHint.EXACT_MATCH).define();
 
         Query q = graph.query(AUTHORIZATIONS_EMPTY)
-                .has("name", Compare.EQUAL, "Susan");
+            .has("name", Compare.EQUAL, "Susan");
         TermsAggregation agg = new TermsAggregation("terms-count", "name");
         assumeTrue("terms aggregation not supported", q.isAggregationSupported(agg));
         q.addAggregation(agg);
@@ -6530,12 +6530,12 @@ public abstract class GraphTestBase {
         assertEquals(0, vertexPropertyCountByValue.size());
 
         graph.prepareVertex("v1", VISIBILITY_EMPTY)
-                .addPropertyValue("k1", "gender", "female", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
+            .addPropertyValue("k1", "gender", "female", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
         getGraph().flush();
 
         q = graph.query(AUTHORIZATIONS_A)
-                .has("gender", Compare.EQUAL, "female");
+            .has("gender", Compare.EQUAL, "female");
         agg = new TermsAggregation("terms-count", "gender");
         assumeTrue("terms aggregation not supported", q.isAggregationSupported(agg));
         q.addAggregation(agg);
@@ -6555,14 +6555,14 @@ public abstract class GraphTestBase {
     @Test
     public void testGraphQueryVertexWithTermsAggregationAlterElementVisibility() {
         graph.prepareVertex("v1", VISIBILITY_A)
-                .addPropertyValue("k1", "age", 25, VISIBILITY_EMPTY)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .addPropertyValue("k1", "age", 25, VISIBILITY_EMPTY)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B);
         v1.prepareMutation()
-                .alterElementVisibility(VISIBILITY_B)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .alterElementVisibility(VISIBILITY_B)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         Map<Object, Long> propertyCountByValue = queryGraphQueryWithTermsAggregation("age", ElementType.VERTEX, AUTHORIZATIONS_A_AND_B);
@@ -6581,18 +6581,18 @@ public abstract class GraphTestBase {
     @Test
     public void testGraphQueryEdgeWithTermsAggregationAlterElementVisibility() {
         graph.prepareVertex("v1", VISIBILITY_EMPTY)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.prepareVertex("v2", VISIBILITY_EMPTY)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.prepareEdge("e1", "v1", "v2", LABEL_LABEL1, VISIBILITY_A)
-                .addPropertyValue("k1", "age", 25, VISIBILITY_EMPTY)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .addPropertyValue("k1", "age", 25, VISIBILITY_EMPTY)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         Edge e1 = graph.getEdge("e1", AUTHORIZATIONS_A_AND_B);
         e1.prepareMutation()
-                .alterElementVisibility(VISIBILITY_B)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .alterElementVisibility(VISIBILITY_B)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         Map<Object, Long> propertyCountByValue = queryGraphQueryWithTermsAggregation("age", ElementType.EDGE, AUTHORIZATIONS_A_AND_B);
@@ -6631,21 +6631,21 @@ public abstract class GraphTestBase {
         graph.defineProperty("gender").dataType(String.class).textIndexHint(TextIndexHint.EXACT_MATCH).define();
 
         graph.prepareVertex("v1", VISIBILITY_EMPTY)
-                .addPropertyValue("k1", "name", "Joe", VISIBILITY_EMPTY)
-                .addPropertyValue("k1", "gender", "male", VISIBILITY_EMPTY)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .addPropertyValue("k1", "name", "Joe", VISIBILITY_EMPTY)
+            .addPropertyValue("k1", "gender", "male", VISIBILITY_EMPTY)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.prepareVertex("v2", VISIBILITY_EMPTY)
-                .addPropertyValue("k1", "name", "Sam", VISIBILITY_EMPTY)
-                .addPropertyValue("k1", "gender", "male", VISIBILITY_EMPTY)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .addPropertyValue("k1", "name", "Sam", VISIBILITY_EMPTY)
+            .addPropertyValue("k1", "gender", "male", VISIBILITY_EMPTY)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.prepareVertex("v3", VISIBILITY_EMPTY)
-                .addPropertyValue("k1", "name", "Sam", VISIBILITY_EMPTY)
-                .addPropertyValue("k1", "gender", "female", VISIBILITY_EMPTY)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .addPropertyValue("k1", "name", "Sam", VISIBILITY_EMPTY)
+            .addPropertyValue("k1", "gender", "female", VISIBILITY_EMPTY)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.prepareVertex("v4", VISIBILITY_EMPTY)
-                .addPropertyValue("k1", "name", "Sam", VISIBILITY_EMPTY)
-                .addPropertyValue("k1", "gender", "female", VISIBILITY_EMPTY)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .addPropertyValue("k1", "name", "Sam", VISIBILITY_EMPTY)
+            .addPropertyValue("k1", "gender", "female", VISIBILITY_EMPTY)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         Query q = graph.query(AUTHORIZATIONS_A_AND_B).limit(0);
@@ -6670,23 +6670,23 @@ public abstract class GraphTestBase {
         graph.defineProperty("gender").dataType(String.class).textIndexHint(TextIndexHint.EXACT_MATCH).define();
 
         graph.prepareVertex("v1", VISIBILITY_EMPTY)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.prepareVertex("v2", VISIBILITY_EMPTY)
-                .addPropertyValue("k1", "name", "Joe", VISIBILITY_EMPTY)
-                .addPropertyValue("k1", "gender", "male", VISIBILITY_EMPTY)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .addPropertyValue("k1", "name", "Joe", VISIBILITY_EMPTY)
+            .addPropertyValue("k1", "gender", "male", VISIBILITY_EMPTY)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.prepareVertex("v3", VISIBILITY_EMPTY)
-                .addPropertyValue("k1", "name", "Sam", VISIBILITY_EMPTY)
-                .addPropertyValue("k1", "gender", "male", VISIBILITY_EMPTY)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .addPropertyValue("k1", "name", "Sam", VISIBILITY_EMPTY)
+            .addPropertyValue("k1", "gender", "male", VISIBILITY_EMPTY)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.prepareVertex("v4", VISIBILITY_EMPTY)
-                .addPropertyValue("k1", "name", "Sam", VISIBILITY_EMPTY)
-                .addPropertyValue("k1", "gender", "female", VISIBILITY_EMPTY)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .addPropertyValue("k1", "name", "Sam", VISIBILITY_EMPTY)
+            .addPropertyValue("k1", "gender", "female", VISIBILITY_EMPTY)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.prepareVertex("v5", VISIBILITY_EMPTY)
-                .addPropertyValue("k1", "name", "Sam", VISIBILITY_EMPTY)
-                .addPropertyValue("k1", "gender", "female", VISIBILITY_EMPTY)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .addPropertyValue("k1", "name", "Sam", VISIBILITY_EMPTY)
+            .addPropertyValue("k1", "gender", "female", VISIBILITY_EMPTY)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.addEdge("v1", "v2", LABEL_LABEL1, VISIBILITY_EMPTY, AUTHORIZATIONS_A_AND_B);
         graph.addEdge("v1", "v3", LABEL_LABEL1, VISIBILITY_EMPTY, AUTHORIZATIONS_A_AND_B);
         graph.addEdge("v1", "v4", LABEL_LABEL1, VISIBILITY_EMPTY, AUTHORIZATIONS_A_AND_B);
@@ -6715,15 +6715,15 @@ public abstract class GraphTestBase {
         graph.defineProperty("gender").dataType(String.class).textIndexHint(TextIndexHint.EXACT_MATCH).define();
 
         graph.prepareVertex("v1", VISIBILITY_EMPTY)
-                .addExtendedData("t1", "r1", "name", "Joe", VISIBILITY_EMPTY)
-                .addExtendedData("t1", "r1", "gender", "male", VISIBILITY_EMPTY)
-                .addExtendedData("t1", "r2", "name", "Sam", VISIBILITY_EMPTY)
-                .addExtendedData("t1", "r2", "gender", "male", VISIBILITY_EMPTY)
-                .addExtendedData("t1", "r3", "name", "Sam", VISIBILITY_EMPTY)
-                .addExtendedData("t1", "r3", "gender", "female", VISIBILITY_EMPTY)
-                .addExtendedData("t1", "r4", "name", "Sam", VISIBILITY_EMPTY)
-                .addExtendedData("t1", "r4", "gender", "female", VISIBILITY_EMPTY)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .addExtendedData("t1", "r1", "name", "Joe", VISIBILITY_EMPTY)
+            .addExtendedData("t1", "r1", "gender", "male", VISIBILITY_EMPTY)
+            .addExtendedData("t1", "r2", "name", "Sam", VISIBILITY_EMPTY)
+            .addExtendedData("t1", "r2", "gender", "male", VISIBILITY_EMPTY)
+            .addExtendedData("t1", "r3", "name", "Sam", VISIBILITY_EMPTY)
+            .addExtendedData("t1", "r3", "gender", "female", VISIBILITY_EMPTY)
+            .addExtendedData("t1", "r4", "name", "Sam", VISIBILITY_EMPTY)
+            .addExtendedData("t1", "r4", "gender", "female", VISIBILITY_EMPTY)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B);
@@ -6752,21 +6752,21 @@ public abstract class GraphTestBase {
 
         String agePropertyName = "age.property";
         graph.prepareVertex("v1", VISIBILITY_EMPTY)
-                .addPropertyValue("", agePropertyName, 25, VISIBILITY_EMPTY)
-                .addPropertyValue("", "birthDate", simpleDateFormat.parse("1990-09-04"), VISIBILITY_EMPTY)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .addPropertyValue("", agePropertyName, 25, VISIBILITY_EMPTY)
+            .addPropertyValue("", "birthDate", simpleDateFormat.parse("1990-09-04"), VISIBILITY_EMPTY)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.prepareVertex("v2", VISIBILITY_EMPTY)
-                .addPropertyValue("", agePropertyName, 20, VISIBILITY_EMPTY)
-                .addPropertyValue("", "birthDate", simpleDateFormat.parse("1995-09-04"), VISIBILITY_EMPTY)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .addPropertyValue("", agePropertyName, 20, VISIBILITY_EMPTY)
+            .addPropertyValue("", "birthDate", simpleDateFormat.parse("1995-09-04"), VISIBILITY_EMPTY)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.prepareVertex("v3", VISIBILITY_EMPTY)
-                .addPropertyValue("", agePropertyName, 20, VISIBILITY_EMPTY)
-                .addPropertyValue("", "birthDate", simpleDateFormat.parse("1995-08-15"), VISIBILITY_EMPTY)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .addPropertyValue("", agePropertyName, 20, VISIBILITY_EMPTY)
+            .addPropertyValue("", "birthDate", simpleDateFormat.parse("1995-08-15"), VISIBILITY_EMPTY)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.prepareVertex("v4", VISIBILITY_EMPTY)
-                .addPropertyValue("", agePropertyName, 20, VISIBILITY_A)
-                .addPropertyValue("", "birthDate", simpleDateFormat.parse("1995-03-02"), VISIBILITY_EMPTY)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .addPropertyValue("", agePropertyName, 20, VISIBILITY_A)
+            .addPropertyValue("", "birthDate", simpleDateFormat.parse("1995-03-02"), VISIBILITY_EMPTY)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         Map<Object, Long> histogram = queryGraphQueryWithHistogramAggregation(agePropertyName, "1", 0L, new HistogramAggregation.ExtendedBounds<>(20L, 25L), AUTHORIZATIONS_EMPTY);
@@ -6798,11 +6798,11 @@ public abstract class GraphTestBase {
     }
 
     private Map<Object, Long> queryGraphQueryWithHistogramAggregation(
-            String propertyName,
-            String interval,
-            Long minDocCount,
-            HistogramAggregation.ExtendedBounds extendedBounds,
-            Authorizations authorizations
+        String propertyName,
+        String interval,
+        Long minDocCount,
+        HistogramAggregation.ExtendedBounds extendedBounds,
+        Authorizations authorizations
     ) {
         Query q = graph.query(authorizations).limit(0);
         HistogramAggregation agg = new HistogramAggregation("hist-count", propertyName, interval, minDocCount);
@@ -6823,36 +6823,36 @@ public abstract class GraphTestBase {
         graph.defineProperty("emptyField").dataType(Integer.class).define();
 
         graph.prepareVertex("v1", VISIBILITY_EMPTY)
-                .addPropertyValue("", "age", 25, VISIBILITY_EMPTY)
-                .addPropertyValue("", "birthDate", simpleDateFormat.parse("1990-09-04"), VISIBILITY_EMPTY)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .addPropertyValue("", "age", 25, VISIBILITY_EMPTY)
+            .addPropertyValue("", "birthDate", simpleDateFormat.parse("1990-09-04"), VISIBILITY_EMPTY)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.prepareVertex("v2", VISIBILITY_EMPTY)
-                .addPropertyValue("", "age", 20, VISIBILITY_EMPTY)
-                .addPropertyValue("", "birthDate", simpleDateFormat.parse("1995-09-04"), VISIBILITY_EMPTY)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .addPropertyValue("", "age", 20, VISIBILITY_EMPTY)
+            .addPropertyValue("", "birthDate", simpleDateFormat.parse("1995-09-04"), VISIBILITY_EMPTY)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.prepareVertex("v3", VISIBILITY_EMPTY)
-                .addPropertyValue("", "age", 20, VISIBILITY_EMPTY)
-                .addPropertyValue("", "birthDate", simpleDateFormat.parse("1995-08-15"), VISIBILITY_EMPTY)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .addPropertyValue("", "age", 20, VISIBILITY_EMPTY)
+            .addPropertyValue("", "birthDate", simpleDateFormat.parse("1995-08-15"), VISIBILITY_EMPTY)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.prepareVertex("v4", VISIBILITY_EMPTY)
-                .addPropertyValue("", "age", 20, VISIBILITY_A)
-                .addPropertyValue("", "birthDate", simpleDateFormat.parse("1995-03-02"), VISIBILITY_EMPTY)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .addPropertyValue("", "age", 20, VISIBILITY_A)
+            .addPropertyValue("", "birthDate", simpleDateFormat.parse("1995-03-02"), VISIBILITY_EMPTY)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.prepareEdge("e1", "v1", "v2", "v1Tov2", VISIBILITY_EMPTY)
-                .addPropertyValue("", "birthDate", simpleDateFormat.parse("1995-03-02"), VISIBILITY_EMPTY)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .addPropertyValue("", "birthDate", simpleDateFormat.parse("1995-03-02"), VISIBILITY_EMPTY)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         // numeric range
         RangeResult aggregationResult = queryGraphQueryWithRangeAggregation(
-                "age",
-                null,
-                "lower",
-                21,
-                "middle",
-                23,
-                "upper",
-                AUTHORIZATIONS_EMPTY
+            "age",
+            null,
+            "lower",
+            21,
+            "middle",
+            23,
+            "upper",
+            AUTHORIZATIONS_EMPTY
         );
         assumeTrue("range aggregation not supported", aggregationResult != null);
         assertEquals(searchIndexFieldLevelSecurity ? 2 : 3, aggregationResult.getBucketByKey("lower").getCount());
@@ -6861,14 +6861,14 @@ public abstract class GraphTestBase {
 
         // numeric range with permission to see more data
         aggregationResult = queryGraphQueryWithRangeAggregation(
-                "age",
-                null,
-                "lower",
-                21,
-                "middle",
-                23,
-                "upper",
-                AUTHORIZATIONS_A_AND_B
+            "age",
+            null,
+            "lower",
+            21,
+            "middle",
+            23,
+            "upper",
+            AUTHORIZATIONS_A_AND_B
         );
         assumeTrue("range aggregation not supported", aggregationResult != null);
         assertEquals(3, aggregationResult.getBucketByKey("lower").getCount());
@@ -6877,28 +6877,28 @@ public abstract class GraphTestBase {
 
         // range for a field with no values
         aggregationResult = queryGraphQueryWithRangeAggregation(
-                "emptyField",
-                null,
-                "lower",
-                21,
-                "middle",
-                23,
-                "upper",
-                AUTHORIZATIONS_EMPTY
+            "emptyField",
+            null,
+            "lower",
+            21,
+            "middle",
+            23,
+            "upper",
+            AUTHORIZATIONS_EMPTY
         );
         assumeTrue("range aggregation not supported", aggregationResult != null);
         assertEquals(0, IterableUtils.count(aggregationResult.getBuckets()));
 
         // date range with dates specified as strings
         aggregationResult = queryGraphQueryWithRangeAggregation(
-                "birthDate",
-                null,
-                "lower",
-                "1991-01-01",
-                "middle",
-                "1995-08-30",
-                "upper",
-                AUTHORIZATIONS_EMPTY
+            "birthDate",
+            null,
+            "lower",
+            "1991-01-01",
+            "middle",
+            "1995-08-30",
+            "upper",
+            AUTHORIZATIONS_EMPTY
         );
         assumeTrue("range aggregation not supported", aggregationResult != null);
         assertEquals(1, aggregationResult.getBucketByKey("lower").getCount());
@@ -6907,14 +6907,14 @@ public abstract class GraphTestBase {
 
         // date range without user specified keys
         aggregationResult = queryGraphQueryWithRangeAggregation(
-                "birthDate",
-                "yyyy-MM-dd",
-                null,
-                "1991-01-01",
-                null,
-                "1995-08-30",
-                null,
-                AUTHORIZATIONS_EMPTY
+            "birthDate",
+            "yyyy-MM-dd",
+            null,
+            "1991-01-01",
+            null,
+            "1995-08-30",
+            null,
+            AUTHORIZATIONS_EMPTY
         );
         assumeTrue("range aggregation not supported", aggregationResult != null);
         assertEquals(1, aggregationResult.getBucketByKey("*-1991-01-01").getCount());
@@ -6923,14 +6923,14 @@ public abstract class GraphTestBase {
 
         // date range with dates specified as date objects
         aggregationResult = queryGraphQueryWithRangeAggregation(
-                "birthDate",
-                null,
-                "lower",
-                simpleDateFormat.parse("1991-01-01"),
-                "middle",
-                simpleDateFormat.parse("1995-08-30"),
-                "upper",
-                AUTHORIZATIONS_EMPTY
+            "birthDate",
+            null,
+            "lower",
+            simpleDateFormat.parse("1991-01-01"),
+            "middle",
+            simpleDateFormat.parse("1995-08-30"),
+            "upper",
+            AUTHORIZATIONS_EMPTY
         );
         assumeTrue("range aggregation not supported", aggregationResult != null);
         assertEquals(1, aggregationResult.getBucketByKey("lower").getCount());
@@ -6939,14 +6939,14 @@ public abstract class GraphTestBase {
     }
 
     private RangeResult queryGraphQueryWithRangeAggregation(
-            String propertyName,
-            String format,
-            String keyOne,
-            Object boundaryOne,
-            String keyTwo,
-            Object boundaryTwo,
-            String keyThree,
-            Authorizations authorizations
+        String propertyName,
+        String format,
+        String keyOne,
+        Object boundaryOne,
+        String keyTwo,
+        Object boundaryTwo,
+        String keyThree,
+        Authorizations authorizations
     ) {
         Query q = graph.query(authorizations).limit(0);
         RangeAggregation agg = new RangeAggregation("range-count", propertyName, format);
@@ -6966,21 +6966,21 @@ public abstract class GraphTestBase {
     public void testGraphQueryWithRangeAggregationAndNestedTerms() throws ParseException {
         String agePropertyName = "age.property";
         graph.prepareVertex("v1", VISIBILITY_EMPTY)
-                .addPropertyValue("", agePropertyName, 25, VISIBILITY_EMPTY)
-                .addPropertyValue("", "name", "Alice", VISIBILITY_EMPTY)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .addPropertyValue("", agePropertyName, 25, VISIBILITY_EMPTY)
+            .addPropertyValue("", "name", "Alice", VISIBILITY_EMPTY)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.prepareVertex("v2", VISIBILITY_EMPTY)
-                .addPropertyValue("", agePropertyName, 20, VISIBILITY_EMPTY)
-                .addPropertyValue("", "name", "Alice", VISIBILITY_EMPTY)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .addPropertyValue("", agePropertyName, 20, VISIBILITY_EMPTY)
+            .addPropertyValue("", "name", "Alice", VISIBILITY_EMPTY)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.prepareVertex("v3", VISIBILITY_EMPTY)
-                .addPropertyValue("", agePropertyName, 21, VISIBILITY_EMPTY)
-                .addPropertyValue("", "name", "Alice", VISIBILITY_EMPTY)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .addPropertyValue("", agePropertyName, 21, VISIBILITY_EMPTY)
+            .addPropertyValue("", "name", "Alice", VISIBILITY_EMPTY)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.prepareVertex("v4", VISIBILITY_EMPTY)
-                .addPropertyValue("", agePropertyName, 22, VISIBILITY_EMPTY)
-                .addPropertyValue("", "name", "Bob", VISIBILITY_EMPTY)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .addPropertyValue("", agePropertyName, 22, VISIBILITY_EMPTY)
+            .addPropertyValue("", "name", "Bob", VISIBILITY_EMPTY)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         Query q = graph.query(AUTHORIZATIONS_A_AND_B).limit(0);
@@ -7027,17 +7027,17 @@ public abstract class GraphTestBase {
         graph.defineProperty("emptyField").dataType(Integer.class).define();
 
         graph.prepareVertex("v1", VISIBILITY_EMPTY)
-                .addPropertyValue("", "age", 25, VISIBILITY_EMPTY)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .addPropertyValue("", "age", 25, VISIBILITY_EMPTY)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.prepareVertex("v2", VISIBILITY_EMPTY)
-                .addPropertyValue("", "age", 20, VISIBILITY_EMPTY)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .addPropertyValue("", "age", 20, VISIBILITY_EMPTY)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.prepareVertex("v3", VISIBILITY_EMPTY)
-                .addPropertyValue("", "age", 20, VISIBILITY_EMPTY)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .addPropertyValue("", "age", 20, VISIBILITY_EMPTY)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.prepareVertex("v4", VISIBILITY_EMPTY)
-                .addPropertyValue("", "age", 30, VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .addPropertyValue("", "age", 30, VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         StatisticsResult stats = queryGraphQueryWithStatisticsAggregation("age", AUTHORIZATIONS_EMPTY);
@@ -7085,12 +7085,12 @@ public abstract class GraphTestBase {
 
         for (int i = 0; i <= 100; i++) {
             graph.prepareVertex("v" + i, VISIBILITY_EMPTY)
-                    .addPropertyValue("", "age", i, VISIBILITY_EMPTY)
-                    .save(AUTHORIZATIONS_A_AND_B);
+                .addPropertyValue("", "age", i, VISIBILITY_EMPTY)
+                .save(AUTHORIZATIONS_A_AND_B);
         }
         graph.prepareVertex("v200", VISIBILITY_EMPTY)
-                .addPropertyValue("", "age", 30, VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .addPropertyValue("", "age", 30, VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         PercentilesResult percentilesResult = queryGraphQueryWithPercentilesAggregation("age", VISIBILITY_EMPTY, AUTHORIZATIONS_EMPTY);
@@ -7150,10 +7150,10 @@ public abstract class GraphTestBase {
     }
 
     private PercentilesResult queryGraphQueryWithPercentilesAggregation(
-            String propertyName,
-            Visibility visibility,
-            Authorizations authorizations,
-            double... percents
+        String propertyName,
+        Visibility visibility,
+        Authorizations authorizations,
+        double... percents
     ) {
         Query q = graph.query(authorizations).limit(0);
         PercentilesAggregation agg = new PercentilesAggregation("percentiles", propertyName, visibility);
@@ -7174,17 +7174,17 @@ public abstract class GraphTestBase {
         graph.defineProperty("location").dataType(GeoPoint.class).define();
 
         graph.prepareVertex("v1", VISIBILITY_EMPTY)
-                .addPropertyValue("", "location", new GeoPoint(50, -10, "pt1"), VISIBILITY_EMPTY)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .addPropertyValue("", "location", new GeoPoint(50, -10, "pt1"), VISIBILITY_EMPTY)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.prepareVertex("v2", VISIBILITY_EMPTY)
-                .addPropertyValue("", "location", new GeoPoint(39, -77, "pt2"), VISIBILITY_EMPTY)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .addPropertyValue("", "location", new GeoPoint(39, -77, "pt2"), VISIBILITY_EMPTY)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.prepareVertex("v3", VISIBILITY_EMPTY)
-                .addPropertyValue("", "location", new GeoPoint(39.1, -77.1, "pt3"), VISIBILITY_EMPTY)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .addPropertyValue("", "location", new GeoPoint(39.1, -77.1, "pt3"), VISIBILITY_EMPTY)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.prepareVertex("v4", VISIBILITY_EMPTY)
-                .addPropertyValue("", "location", new GeoPoint(39.2, -77.2, "pt4"), VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .addPropertyValue("", "location", new GeoPoint(39.2, -77.2, "pt4"), VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         Map<String, Long> histogram = queryGraphQueryWithGeohashAggregation("location", 2, AUTHORIZATIONS_EMPTY);
@@ -7208,33 +7208,33 @@ public abstract class GraphTestBase {
     public void testGraphQueryWithCalendarFieldAggregation() {
         String dateFieldName = "agg_date_field";
         graph.prepareVertex("v0", VISIBILITY_EMPTY)
-                .addPropertyValue("", "other_field", createDate(2016, Calendar.APRIL, 27, 10, 18, 56), VISIBILITY_A)
-                .save(AUTHORIZATIONS_ALL);
+            .addPropertyValue("", "other_field", createDate(2016, Calendar.APRIL, 27, 10, 18, 56), VISIBILITY_A)
+            .save(AUTHORIZATIONS_ALL);
         graph.prepareVertex("v1", VISIBILITY_EMPTY)
-                .addPropertyValue("", dateFieldName, createDate(2016, Calendar.APRIL, 27, 10, 18, 56), VISIBILITY_A)
-                .save(AUTHORIZATIONS_ALL);
+            .addPropertyValue("", dateFieldName, createDate(2016, Calendar.APRIL, 27, 10, 18, 56), VISIBILITY_A)
+            .save(AUTHORIZATIONS_ALL);
         graph.prepareVertex("v2", VISIBILITY_EMPTY)
-                .addPropertyValue("", dateFieldName, createDate(2017, Calendar.MAY, 26, 10, 18, 56), VISIBILITY_EMPTY)
-                .save(AUTHORIZATIONS_ALL);
+            .addPropertyValue("", dateFieldName, createDate(2017, Calendar.MAY, 26, 10, 18, 56), VISIBILITY_EMPTY)
+            .save(AUTHORIZATIONS_ALL);
         graph.prepareVertex("v3", VISIBILITY_A_AND_B)
-                .addPropertyValue("", dateFieldName, createDate(2016, Calendar.APRIL, 27, 12, 18, 56), VISIBILITY_EMPTY)
-                .save(AUTHORIZATIONS_ALL);
+            .addPropertyValue("", dateFieldName, createDate(2016, Calendar.APRIL, 27, 12, 18, 56), VISIBILITY_EMPTY)
+            .save(AUTHORIZATIONS_ALL);
         graph.prepareVertex("v4", VISIBILITY_A_AND_B)
-                .addPropertyValue("", dateFieldName, createDate(2016, Calendar.APRIL, 24, 12, 18, 56), VISIBILITY_EMPTY)
-                .save(AUTHORIZATIONS_ALL);
+            .addPropertyValue("", dateFieldName, createDate(2016, Calendar.APRIL, 24, 12, 18, 56), VISIBILITY_EMPTY)
+            .save(AUTHORIZATIONS_ALL);
         graph.prepareVertex("v5", VISIBILITY_A_AND_B)
-                .addPropertyValue("", dateFieldName, createDate(2016, Calendar.APRIL, 25, 12, 18, 56), VISIBILITY_EMPTY)
-                .save(AUTHORIZATIONS_ALL);
+            .addPropertyValue("", dateFieldName, createDate(2016, Calendar.APRIL, 25, 12, 18, 56), VISIBILITY_EMPTY)
+            .save(AUTHORIZATIONS_ALL);
         graph.prepareVertex("v6", VISIBILITY_A_AND_B)
-                .addPropertyValue("", dateFieldName, createDate(2016, Calendar.APRIL, 30, 12, 18, 56), VISIBILITY_EMPTY)
-                .save(AUTHORIZATIONS_ALL);
+            .addPropertyValue("", dateFieldName, createDate(2016, Calendar.APRIL, 30, 12, 18, 56), VISIBILITY_EMPTY)
+            .save(AUTHORIZATIONS_ALL);
         graph.flush();
 
         // hour of day
         QueryResultsIterable<Vertex> results = graph.query(AUTHORIZATIONS_ALL)
-                .addAggregation(new CalendarFieldAggregation("agg1", dateFieldName, null, TimeZone.getDefault(), Calendar.HOUR_OF_DAY))
-                .limit(0)
-                .vertices();
+            .addAggregation(new CalendarFieldAggregation("agg1", dateFieldName, null, TimeZone.getDefault(), Calendar.HOUR_OF_DAY))
+            .limit(0)
+            .vertices();
 
         HistogramResult aggResult = results.getAggregationResult("agg1", CalendarFieldAggregation.RESULT_CLASS);
         assertEquals(2, count(aggResult.getBuckets()));
@@ -7243,9 +7243,9 @@ public abstract class GraphTestBase {
 
         // day of week
         results = graph.query(AUTHORIZATIONS_ALL)
-                .addAggregation(new CalendarFieldAggregation("agg1", dateFieldName, null, TimeZone.getDefault(), Calendar.DAY_OF_WEEK))
-                .limit(0)
-                .vertices();
+            .addAggregation(new CalendarFieldAggregation("agg1", dateFieldName, null, TimeZone.getDefault(), Calendar.DAY_OF_WEEK))
+            .limit(0)
+            .vertices();
 
         aggResult = results.getAggregationResult("agg1", CalendarFieldAggregation.RESULT_CLASS);
         assertEquals(5, count(aggResult.getBuckets()));
@@ -7257,9 +7257,9 @@ public abstract class GraphTestBase {
 
         // day of month
         results = graph.query(AUTHORIZATIONS_ALL)
-                .addAggregation(new CalendarFieldAggregation("agg1", dateFieldName, null, TimeZone.getDefault(), Calendar.DAY_OF_MONTH))
-                .limit(0)
-                .vertices();
+            .addAggregation(new CalendarFieldAggregation("agg1", dateFieldName, null, TimeZone.getDefault(), Calendar.DAY_OF_MONTH))
+            .limit(0)
+            .vertices();
 
         aggResult = results.getAggregationResult("agg1", CalendarFieldAggregation.RESULT_CLASS);
         assertEquals(5, count(aggResult.getBuckets()));
@@ -7271,9 +7271,9 @@ public abstract class GraphTestBase {
 
         // month
         results = graph.query(AUTHORIZATIONS_ALL)
-                .addAggregation(new CalendarFieldAggregation("agg1", dateFieldName, null, TimeZone.getDefault(), Calendar.MONTH))
-                .limit(0)
-                .vertices();
+            .addAggregation(new CalendarFieldAggregation("agg1", dateFieldName, null, TimeZone.getDefault(), Calendar.MONTH))
+            .limit(0)
+            .vertices();
 
         aggResult = results.getAggregationResult("agg1", CalendarFieldAggregation.RESULT_CLASS);
         assertEquals(2, count(aggResult.getBuckets()));
@@ -7282,9 +7282,9 @@ public abstract class GraphTestBase {
 
         // year
         results = graph.query(AUTHORIZATIONS_ALL)
-                .addAggregation(new CalendarFieldAggregation("agg1", dateFieldName, null, TimeZone.getDefault(), Calendar.YEAR))
-                .limit(0)
-                .vertices();
+            .addAggregation(new CalendarFieldAggregation("agg1", dateFieldName, null, TimeZone.getDefault(), Calendar.YEAR))
+            .limit(0)
+            .vertices();
 
         aggResult = results.getAggregationResult("agg1", CalendarFieldAggregation.RESULT_CLASS);
         assertEquals(2, count(aggResult.getBuckets()));
@@ -7293,9 +7293,9 @@ public abstract class GraphTestBase {
 
         // week of year
         results = graph.query(AUTHORIZATIONS_ALL)
-                .addAggregation(new CalendarFieldAggregation("agg1", dateFieldName, null, TimeZone.getDefault(), Calendar.WEEK_OF_YEAR))
-                .limit(0)
-                .vertices();
+            .addAggregation(new CalendarFieldAggregation("agg1", dateFieldName, null, TimeZone.getDefault(), Calendar.WEEK_OF_YEAR))
+            .limit(0)
+            .vertices();
 
         aggResult = results.getAggregationResult("agg1", CalendarFieldAggregation.RESULT_CLASS);
         if (isPainlessDateMath()) {
@@ -7324,25 +7324,25 @@ public abstract class GraphTestBase {
     @Test
     public void testGraphQueryWithCalendarFieldAggregationNested() {
         graph.prepareVertex("v1", VISIBILITY_EMPTY)
-                .addPropertyValue("", "date", createDate(2016, Calendar.APRIL, 27, 10, 18, 56), VISIBILITY_EMPTY)
-                .save(AUTHORIZATIONS_ALL);
+            .addPropertyValue("", "date", createDate(2016, Calendar.APRIL, 27, 10, 18, 56), VISIBILITY_EMPTY)
+            .save(AUTHORIZATIONS_ALL);
         graph.prepareVertex("v2", VISIBILITY_EMPTY)
-                .addPropertyValue("", "date", createDate(2016, Calendar.APRIL, 27, 10, 18, 56), VISIBILITY_EMPTY)
-                .save(AUTHORIZATIONS_ALL);
+            .addPropertyValue("", "date", createDate(2016, Calendar.APRIL, 27, 10, 18, 56), VISIBILITY_EMPTY)
+            .save(AUTHORIZATIONS_ALL);
         graph.prepareVertex("v3", VISIBILITY_EMPTY)
-                .addPropertyValue("", "date", createDate(2016, Calendar.APRIL, 27, 12, 18, 56), VISIBILITY_EMPTY)
-                .save(AUTHORIZATIONS_A);
+            .addPropertyValue("", "date", createDate(2016, Calendar.APRIL, 27, 12, 18, 56), VISIBILITY_EMPTY)
+            .save(AUTHORIZATIONS_A);
         graph.prepareVertex("v4", VISIBILITY_EMPTY)
-                .addPropertyValue("", "date", createDate(2016, Calendar.APRIL, 28, 10, 18, 56), VISIBILITY_EMPTY)
-                .save(AUTHORIZATIONS_A);
+            .addPropertyValue("", "date", createDate(2016, Calendar.APRIL, 28, 10, 18, 56), VISIBILITY_EMPTY)
+            .save(AUTHORIZATIONS_A);
         graph.flush();
 
         CalendarFieldAggregation agg = new CalendarFieldAggregation("agg1", "date", null, TimeZone.getDefault(), Calendar.DAY_OF_WEEK);
         agg.addNestedAggregation(new CalendarFieldAggregation("aggNested", "date", null, TimeZone.getDefault(), Calendar.HOUR_OF_DAY));
         QueryResultsIterable<Vertex> results = graph.query(AUTHORIZATIONS_ALL)
-                .addAggregation(agg)
-                .limit(0)
-                .vertices();
+            .addAggregation(agg)
+            .limit(0)
+            .vertices();
 
         HistogramResult aggResult = results.getAggregationResult("agg1", CalendarFieldAggregation.RESULT_CLASS);
 
@@ -7368,8 +7368,8 @@ public abstract class GraphTestBase {
         }
 
         graph.prepareVertex("v1", VISIBILITY_EMPTY)
-                .addPropertyValue("", "field1", largeText.toString(), VISIBILITY_EMPTY)
-                .save(AUTHORIZATIONS_EMPTY);
+            .addPropertyValue("", "field1", largeText.toString(), VISIBILITY_EMPTY)
+            .save(AUTHORIZATIONS_EMPTY);
         graph.flush();
     }
 
@@ -7390,18 +7390,18 @@ public abstract class GraphTestBase {
         graph.defineProperty("name").dataType(String.class).textIndexHint(TextIndexHint.EXACT_MATCH).define();
 
         graph.prepareVertex("v1", VISIBILITY_EMPTY)
-                .addPropertyValue("k1", "name", "Joe", VISIBILITY_EMPTY)
-                .addPropertyValue("k2", "name", "Joseph", VISIBILITY_EMPTY)
-                .addPropertyValue("", "age", 25, VISIBILITY_EMPTY)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .addPropertyValue("k1", "name", "Joe", VISIBILITY_EMPTY)
+            .addPropertyValue("k2", "name", "Joseph", VISIBILITY_EMPTY)
+            .addPropertyValue("", "age", 25, VISIBILITY_EMPTY)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.prepareVertex("v2", VISIBILITY_EMPTY)
-                .addPropertyValue("k1", "name", "Joe", VISIBILITY_EMPTY)
-                .addPropertyValue("k2", "name", "Joseph", VISIBILITY_B)
-                .addPropertyValue("", "age", 20, VISIBILITY_EMPTY)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .addPropertyValue("k1", "name", "Joe", VISIBILITY_EMPTY)
+            .addPropertyValue("k2", "name", "Joseph", VISIBILITY_B)
+            .addPropertyValue("", "age", 20, VISIBILITY_EMPTY)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.prepareEdge("e1", "v1", LABEL_LABEL1, VISIBILITY_EMPTY)
-                .addPropertyValue("k1", "name", "Joe", VISIBILITY_EMPTY)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .addPropertyValue("k1", "name", "Joe", VISIBILITY_EMPTY)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         Map<Object, Long> vertexPropertyCountByValue = graph.getVertexPropertyCountByValue("name", AUTHORIZATIONS_EMPTY);
@@ -7471,15 +7471,15 @@ public abstract class GraphTestBase {
         graph.defineProperty("ipAddress2").dataType(IpV4Address.class).define();
 
         graph.prepareVertex("v1", VISIBILITY_A)
-                .addPropertyValue("k1", "ipAddress1", new IpV4Address("192.168.0.1"), VISIBILITY_A)
-                .addPropertyValue("k1", "ipAddress2", new IpV4Address("192.168.0.2"), VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
+            .addPropertyValue("k1", "ipAddress1", new IpV4Address("192.168.0.1"), VISIBILITY_A)
+            .addPropertyValue("k1", "ipAddress2", new IpV4Address("192.168.0.2"), VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
         graph.prepareVertex("v2", VISIBILITY_A)
-                .addPropertyValue("k1", "ipAddress1", new IpV4Address("192.168.0.5"), VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
+            .addPropertyValue("k1", "ipAddress1", new IpV4Address("192.168.0.5"), VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
         graph.prepareVertex("v3", VISIBILITY_A)
-                .addPropertyValue("k1", "ipAddress1", new IpV4Address("192.168.1.1"), VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
+            .addPropertyValue("k1", "ipAddress1", new IpV4Address("192.168.1.1"), VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
         graph.flush();
 
         Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
@@ -7491,9 +7491,9 @@ public abstract class GraphTestBase {
         assertEquals("v1", vertices.get(0).getId());
 
         vertices = sortById(toList(
-                graph.query(AUTHORIZATIONS_A)
-                        .range("ipAddress1", new IpV4Address("192.168.0.0"), new IpV4Address("192.168.0.255"))
-                        .vertices()
+            graph.query(AUTHORIZATIONS_A)
+                .range("ipAddress1", new IpV4Address("192.168.0.0"), new IpV4Address("192.168.0.255"))
+                .vertices()
         ));
         assertEquals(2, vertices.size());
         assertEquals("v1", vertices.get(0).getId());
@@ -7503,11 +7503,11 @@ public abstract class GraphTestBase {
     @Test
     public void testVertexHashCodeAndEquals() {
         Vertex v1 = graph.prepareVertex("v1", VISIBILITY_A)
-                .setProperty("prop1", "value1", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
+            .setProperty("prop1", "value1", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
         Vertex v2 = graph.prepareVertex("v2", VISIBILITY_A)
-                .setProperty("prop1", "value1", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
+            .setProperty("prop1", "value1", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
         graph.flush();
 
         Vertex v1Loaded = graph.getVertex("v1", AUTHORIZATIONS_A);
@@ -7524,11 +7524,11 @@ public abstract class GraphTestBase {
         Vertex v1 = graph.prepareVertex("v1", VISIBILITY_A).save(AUTHORIZATIONS_A);
         Vertex v2 = graph.prepareVertex("v2", VISIBILITY_A).save(AUTHORIZATIONS_A);
         Edge e1 = graph.prepareEdge("e1", v1, v2, LABEL_LABEL1, VISIBILITY_A)
-                .setProperty("prop1", "value1", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
+            .setProperty("prop1", "value1", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
         Edge e2 = graph.prepareEdge("e2", v1, v2, LABEL_LABEL1, VISIBILITY_A)
-                .setProperty("prop1", "value1", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
+            .setProperty("prop1", "value1", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
         graph.flush();
 
         Edge e1Loaded = graph.getEdge("e1", AUTHORIZATIONS_A);
@@ -7544,23 +7544,23 @@ public abstract class GraphTestBase {
     public void testCaseSensitivityOfExactMatch() {
         graph.defineProperty("text").dataType(String.class).textIndexHint(TextIndexHint.EXACT_MATCH).define();
         graph.prepareVertex("v1", VISIBILITY_A)
-                .setProperty("text", "Joe", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
+            .setProperty("text", "Joe", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
         graph.prepareVertex("v2", VISIBILITY_A)
-                .setProperty("text", "joe", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
+            .setProperty("text", "joe", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
         graph.prepareVertex("v3", VISIBILITY_A)
-                .setProperty("text", "JOE", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
+            .setProperty("text", "JOE", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
         graph.prepareVertex("v4", VISIBILITY_A)
-                .setProperty("text", "Joe", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
+            .setProperty("text", "Joe", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
         graph.flush();
 
         QueryResultsIterable<Vertex> vertices = graph.query(AUTHORIZATIONS_A)
-                .has("text", Compare.EQUAL, "Joe")
-                .addAggregation(new TermsAggregation("agg1", "text"))
-                .vertices();
+            .has("text", Compare.EQUAL, "Joe")
+            .addAggregation(new TermsAggregation("agg1", "text"))
+            .vertices();
         assertVertexIdsAnyOrder(vertices, "v1", "v2", "v3", "v4");
 
         TermsResult agg = vertices.getAggregationResult("agg1", TermsResult.class);
@@ -7576,13 +7576,13 @@ public abstract class GraphTestBase {
         Date date2 = new Date(1487083480000L);
         Date date3 = new Date(1487083470000L);
         graph.prepareVertex("v1", VISIBILITY_A)
-                .addExtendedData("table1", "row1", "date", date1, VISIBILITY_A)
-                .addExtendedData("table1", "row1", "name", "value1", VISIBILITY_A)
-                .addExtendedData("table1", "row2", "date", date2, VISIBILITY_A)
-                .addExtendedData("table1", "row2", "name", "value2", VISIBILITY_A)
-                .addExtendedData("table1", "row3", "date", date3, VISIBILITY_A)
-                .addExtendedData("table1", "row3", "name", "value3", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
+            .addExtendedData("table1", "row1", "date", date1, VISIBILITY_A)
+            .addExtendedData("table1", "row1", "name", "value1", VISIBILITY_A)
+            .addExtendedData("table1", "row2", "date", date2, VISIBILITY_A)
+            .addExtendedData("table1", "row2", "name", "value2", VISIBILITY_A)
+            .addExtendedData("table1", "row3", "date", date3, VISIBILITY_A)
+            .addExtendedData("table1", "row3", "name", "value3", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
         graph.flush();
 
         AtomicInteger rowCount = new AtomicInteger();
@@ -7625,11 +7625,11 @@ public abstract class GraphTestBase {
         assertEquals("value1", row.getPropertyValue("name"));
 
         rows = graph.getExtendedData(
-                Lists.newArrayList(
-                        new ExtendedDataRowId(ElementType.VERTEX, "v1", "table1", "row1"),
-                        new ExtendedDataRowId(ElementType.VERTEX, "v1", "table1", "row2")
-                ),
-                AUTHORIZATIONS_A
+            Lists.newArrayList(
+                new ExtendedDataRowId(ElementType.VERTEX, "v1", "table1", "row1"),
+                new ExtendedDataRowId(ElementType.VERTEX, "v1", "table1", "row2")
+            ),
+            AUTHORIZATIONS_A
         ).iterator();
 
         row = rows.next();
@@ -7660,9 +7660,9 @@ public abstract class GraphTestBase {
 
         v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
         v1.prepareMutation()
-                .addExtendedData("table1", "row4", "name", "value4", VISIBILITY_A)
-                .addExtendedData("table2", "row1", "name", "value1", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
+            .addExtendedData("table1", "row4", "name", "value4", VISIBILITY_A)
+            .addExtendedData("table2", "row1", "name", "value1", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
         graph.flush();
 
         v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
@@ -7678,20 +7678,20 @@ public abstract class GraphTestBase {
     @Test
     public void testExtendedDataInRange() {
         graph.prepareVertex("a", VISIBILITY_A)
-                .addExtendedData("table1", "row1", "name", "value1", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
+            .addExtendedData("table1", "row1", "name", "value1", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
         graph.prepareVertex("aa", VISIBILITY_A)
-                .addExtendedData("table1", "row1", "name", "value2", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
+            .addExtendedData("table1", "row1", "name", "value2", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
         graph.prepareVertex("az", VISIBILITY_A)
-                .addExtendedData("table1", "row1", "name", "value3", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
+            .addExtendedData("table1", "row1", "name", "value3", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
         graph.prepareVertex("b", VISIBILITY_A)
-                .addExtendedData("table1", "row1", "name", "value4", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
+            .addExtendedData("table1", "row1", "name", "value4", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
         graph.prepareEdge("aa", "a", "aa", "edge1", VISIBILITY_A)
-                .addExtendedData("table1", "row1", "name", "value5", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
+            .addExtendedData("table1", "row1", "name", "value5", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
         graph.flush();
 
         List<ExtendedDataRow> rows = toList(graph.getExtendedDataInRange(ElementType.VERTEX, new Range(null, "a"), AUTHORIZATIONS_A));
@@ -7739,8 +7739,8 @@ public abstract class GraphTestBase {
     @Test
     public void testExtendedDataDifferentValue() {
         graph.prepareVertex("v1", VISIBILITY_A)
-                .addExtendedData("table1", "row1", "name", "value1", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
+            .addExtendedData("table1", "row1", "name", "value1", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
         graph.flush();
 
         Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
@@ -7748,8 +7748,8 @@ public abstract class GraphTestBase {
         assertEquals("value1", rows.get(0).getPropertyValue("name"));
 
         graph.prepareVertex("v1", VISIBILITY_A)
-                .addExtendedData("table1", "row1", "name", "value2", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
+            .addExtendedData("table1", "row1", "name", "value2", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
         graph.flush();
 
         v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
@@ -7760,32 +7760,32 @@ public abstract class GraphTestBase {
     @Test
     public void testExtendedDataDeleteColumn() {
         graph.prepareVertex("v1", VISIBILITY_A)
-                .addExtendedData("table1", "row1", "name", "value", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
+            .addExtendedData("table1", "row1", "name", "value", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
         graph.flush();
 
         // delete with wrong visibility
         graph.prepareVertex("v1", VISIBILITY_A)
-                .deleteExtendedData("table1", "row1", "name", VISIBILITY_B)
-                .save(AUTHORIZATIONS_A);
+            .deleteExtendedData("table1", "row1", "name", VISIBILITY_B)
+            .save(AUTHORIZATIONS_A);
         graph.flush();
 
         List<ExtendedDataRow> rows = Lists.newArrayList(graph.getVertex("v1", AUTHORIZATIONS_A).getExtendedData("table1"));
         assertEquals(1, rows.size());
         QueryResultsIterable<? extends VertexiumObject> searchResults = graph.query("value", AUTHORIZATIONS_A)
-                .search();
+            .search();
         assertEquals(1, searchResults.getTotalHits());
 
         // delete with correct visibility
         clearGraphEvents();
         graph.getVertex("v1", AUTHORIZATIONS_A).prepareMutation()
-                .deleteExtendedData("table1", "row1", "name", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
+            .deleteExtendedData("table1", "row1", "name", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
         graph.flush();
 
         Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
         assertEvents(
-                new DeleteExtendedDataEvent(graph, v1, "table1", "row1", "name", null)
+            new DeleteExtendedDataEvent(graph, v1, "table1", "row1", "name", null)
         );
 
         if (v1.getExtendedDataTableNames().size() == 0) {
@@ -7794,7 +7794,7 @@ public abstract class GraphTestBase {
             assertEquals("extended data rows", 0, Lists.newArrayList(v1.getExtendedData("table1")).size());
         }
         searchResults = graph.query("value", AUTHORIZATIONS_A)
-                .search();
+            .search();
         List<VertexiumObject> searchResultsList = toList(searchResults);
         assertEquals("search result items", 0, searchResultsList.size());
         assertEquals("total hits", 0, searchResults.getTotalHits());
@@ -7803,15 +7803,15 @@ public abstract class GraphTestBase {
     @Test
     public void testExtendedDataDelete() {
         graph.prepareVertex("v1", VISIBILITY_A)
-                .addExtendedData("table1", "row1", "name", "value", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
+            .addExtendedData("table1", "row1", "name", "value", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
         graph.flush();
 
         graph.deleteVertex("v1", AUTHORIZATIONS_A);
         graph.flush();
 
         QueryResultsIterable<? extends VertexiumObject> searchResults = graph.query("value", AUTHORIZATIONS_A)
-                .search();
+            .search();
         assertEquals(0, searchResults.getTotalHits());
     }
 
@@ -7829,26 +7829,26 @@ public abstract class GraphTestBase {
         graph.defineProperty(nameColumnName).sortable(true).textIndexHint(TextIndexHint.values()).dataType(String.class).define();
 
         graph.prepareVertex("v1", VISIBILITY_A)
-                .addExtendedData(tableName, rowOneName, dateColumnName, date1, VISIBILITY_A)
-                .addExtendedData(tableName, rowOneName, nameColumnName, "value 1", VISIBILITY_A)
-                .addExtendedData(tableName, rowTwoName, dateColumnName, date2, VISIBILITY_A)
-                .addExtendedData(tableName, rowTwoName, nameColumnName, "value 2", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
+            .addExtendedData(tableName, rowOneName, dateColumnName, date1, VISIBILITY_A)
+            .addExtendedData(tableName, rowOneName, nameColumnName, "value 1", VISIBILITY_A)
+            .addExtendedData(tableName, rowTwoName, dateColumnName, date2, VISIBILITY_A)
+            .addExtendedData(tableName, rowTwoName, nameColumnName, "value 2", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
         graph.prepareVertex("v2", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
+            .save(AUTHORIZATIONS_A);
         graph.flush();
 
         // Should not come back when finding vertices
         QueryResultsIterable<Vertex> queryResults = graph.query(AUTHORIZATIONS_A)
-                .has(dateColumnName, date1)
-                .sort(dateColumnName, SortDirection.ASCENDING)
-                .vertices();
+            .has(dateColumnName, date1)
+            .sort(dateColumnName, SortDirection.ASCENDING)
+            .vertices();
         assertEquals(0, queryResults.getTotalHits());
 
         QueryResultsIterable<? extends VertexiumObject> searchResults = graph.query(AUTHORIZATIONS_A)
-                .has(dateColumnName, date1)
-                .sort(dateColumnName, SortDirection.ASCENDING)
-                .search();
+            .has(dateColumnName, date1)
+            .sort(dateColumnName, SortDirection.ASCENDING)
+            .search();
         assertEquals(1, searchResults.getTotalHits());
         List<? extends VertexiumObject> searchResultsList = toList(searchResults);
         assertEquals(1, searchResultsList.size());
@@ -7857,23 +7857,23 @@ public abstract class GraphTestBase {
         assertEquals(rowOneName, searchResult.getId().getRowId());
 
         searchResults = graph.query("value", AUTHORIZATIONS_A)
-                .search();
+            .search();
         assertEquals(2, searchResults.getTotalHits());
         searchResultsList = toList(searchResults);
         assertEquals(2, searchResultsList.size());
         assertRowIdsAnyOrder(Lists.newArrayList(rowOneName, rowTwoName), searchResultsList);
 
         searchResults = graph.query("value", AUTHORIZATIONS_A)
-                .hasExtendedData(ElementType.VERTEX, "v1", tableName)
-                .search();
+            .hasExtendedData(ElementType.VERTEX, "v1", tableName)
+            .search();
         assertEquals(2, searchResults.getTotalHits());
         searchResultsList = toList(searchResults);
         assertEquals(2, searchResultsList.size());
         assertRowIdsAnyOrder(Lists.newArrayList(rowOneName, rowTwoName), searchResultsList);
 
         searchResults = graph.query("value", AUTHORIZATIONS_A)
-                .hasExtendedData(tableName)
-                .search();
+            .hasExtendedData(tableName)
+            .search();
         assertEquals(2, searchResults.getTotalHits());
         searchResultsList = toList(searchResults);
         assertEquals(2, searchResultsList.size());
@@ -7883,23 +7883,23 @@ public abstract class GraphTestBase {
     @Test
     public void testExtendedDataVertexQuery() {
         graph.prepareVertex("v1", VISIBILITY_A)
-                .addExtendedData("table1", "row1", "name", "value 1", VISIBILITY_A)
-                .addExtendedData("table1", "row2", "name", "value 2", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
+            .addExtendedData("table1", "row1", "name", "value 1", VISIBILITY_A)
+            .addExtendedData("table1", "row2", "name", "value 2", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
         graph.prepareVertex("v2", VISIBILITY_A)
-                .addExtendedData("table2", "row3", "name", "value 1", VISIBILITY_A)
-                .addExtendedData("table2", "row4", "name", "value 2", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
+            .addExtendedData("table2", "row3", "name", "value 1", VISIBILITY_A)
+            .addExtendedData("table2", "row4", "name", "value 2", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
         graph.prepareEdge("e1", "v1", "v2", LABEL_LABEL1, VISIBILITY_A)
-                .addExtendedData("table1", "row5", "name", "value 1", VISIBILITY_A)
-                .addExtendedData("table1", "row6", "name", "value 2", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
+            .addExtendedData("table1", "row5", "name", "value 1", VISIBILITY_A)
+            .addExtendedData("table1", "row6", "name", "value 2", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
         graph.flush();
 
         Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
         List<ExtendedDataRow> searchResultsList = toList(
-                v1.query(AUTHORIZATIONS_A)
-                        .extendedDataRows()
+            v1.query(AUTHORIZATIONS_A)
+                .extendedDataRows()
         );
         assertRowIdsAnyOrder(Lists.newArrayList("row3", "row4", "row5", "row6"), searchResultsList);
 
@@ -7910,10 +7910,10 @@ public abstract class GraphTestBase {
         assertResultsCount(4, 4, rows);
 
         searchResultsList = toList(
-                v1.query(AUTHORIZATIONS_A)
-                        .sort(ExtendedDataRow.TABLE_NAME, SortDirection.ASCENDING)
-                        .sort(ExtendedDataRow.ROW_ID, SortDirection.ASCENDING)
-                        .extendedDataRows()
+            v1.query(AUTHORIZATIONS_A)
+                .sort(ExtendedDataRow.TABLE_NAME, SortDirection.ASCENDING)
+                .sort(ExtendedDataRow.ROW_ID, SortDirection.ASCENDING)
+                .extendedDataRows()
         );
         assertRowIds(Lists.newArrayList("row5", "row6", "row3", "row4"), searchResultsList);
     }
@@ -7921,24 +7921,24 @@ public abstract class GraphTestBase {
     @Test
     public void testExtendedDataEdgeQuery() {
         graph.prepareVertex("v1", VISIBILITY_A)
-                .addExtendedData("table1", "row1", "name", "value 1", VISIBILITY_A)
-                .addExtendedData("table1", "row2", "name", "value 2", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
+            .addExtendedData("table1", "row1", "name", "value 1", VISIBILITY_A)
+            .addExtendedData("table1", "row2", "name", "value 2", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
         graph.prepareVertex("v2", VISIBILITY_A)
-                .addExtendedData("table1", "row3", "name", "value 1", VISIBILITY_A)
-                .addExtendedData("table1", "row4", "name", "value 2", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
+            .addExtendedData("table1", "row3", "name", "value 1", VISIBILITY_A)
+            .addExtendedData("table1", "row4", "name", "value 2", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
         graph.prepareEdge("e1", "v1", "v2", LABEL_LABEL1, VISIBILITY_A)
-                .addExtendedData("table1", "row5", "name", "value 1", VISIBILITY_A)
-                .addExtendedData("table1", "row6", "name", "value 2", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
+            .addExtendedData("table1", "row5", "name", "value 1", VISIBILITY_A)
+            .addExtendedData("table1", "row6", "name", "value 2", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
         graph.flush();
 
         Edge e1 = graph.getEdge("e1", AUTHORIZATIONS_A);
         List<ExtendedDataRow> searchResultsList = toList(
-                getGraph().query("*", AUTHORIZATIONS_A)
-                        .hasExtendedData(ElementType.EDGE, e1.getId(), "table1")
-                        .extendedDataRows()
+            getGraph().query("*", AUTHORIZATIONS_A)
+                .hasExtendedData(ElementType.EDGE, e1.getId(), "table1")
+                .extendedDataRows()
         );
         assertRowIdsAnyOrder(Lists.newArrayList("row5", "row6"), searchResultsList);
 
@@ -7952,9 +7952,9 @@ public abstract class GraphTestBase {
     @Test
     public void testExtendedDataQueryAfterDeleteForVertex() {
         graph.prepareVertex("v1", VISIBILITY_A)
-                .addExtendedData("table1", "row1", "name", "value 1", VISIBILITY_A)
-                .addExtendedData("table1", "row2", "name", "value 2", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
+            .addExtendedData("table1", "row1", "name", "value 1", VISIBILITY_A)
+            .addExtendedData("table1", "row2", "name", "value 2", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
         graph.flush();
 
         List<ExtendedDataRow> searchResultsList = toList(graph.query(AUTHORIZATIONS_A).extendedDataRows());
@@ -7972,9 +7972,9 @@ public abstract class GraphTestBase {
         graph.prepareVertex("v1", VISIBILITY_A).save(AUTHORIZATIONS_A);
         graph.prepareVertex("v2", VISIBILITY_A).save(AUTHORIZATIONS_A);
         graph.prepareEdge("e1", "v1", "v2", LABEL_LABEL1, VISIBILITY_A)
-                .addExtendedData("table1", "row1", "name", "value 1", VISIBILITY_A)
-                .addExtendedData("table1", "row2", "name", "value 2", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
+            .addExtendedData("table1", "row1", "name", "value 1", VISIBILITY_A)
+            .addExtendedData("table1", "row2", "name", "value 2", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
         graph.flush();
 
         List<ExtendedDataRow> searchResultsList = toList(graph.query(AUTHORIZATIONS_A).extendedDataRows());
@@ -7994,24 +7994,24 @@ public abstract class GraphTestBase {
         graph.prepareVertex("v1", VISIBILITY_A).save(AUTHORIZATIONS_A);
         graph.prepareVertex("v2", VISIBILITY_A).save(AUTHORIZATIONS_A);
         graph.prepareEdge("e1", "v1", "v2", LABEL_LABEL1, VISIBILITY_A)
-                .addExtendedData("table1", "row1", "date", date1, VISIBILITY_A)
-                .addExtendedData("table1", "row1", "name", "value 1", VISIBILITY_A)
-                .addExtendedData("table1", "row2", "date", date2, VISIBILITY_A)
-                .addExtendedData("table1", "row2", "name", "value 2", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
+            .addExtendedData("table1", "row1", "date", date1, VISIBILITY_A)
+            .addExtendedData("table1", "row1", "name", "value 1", VISIBILITY_A)
+            .addExtendedData("table1", "row2", "date", date2, VISIBILITY_A)
+            .addExtendedData("table1", "row2", "name", "value 2", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
         graph.prepareEdge("e2", "v1", "v2", LABEL_LABEL1, VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
+            .save(AUTHORIZATIONS_A);
         graph.flush();
 
         // Should not come back when finding edges
         QueryResultsIterable<Edge> queryResults = graph.query(AUTHORIZATIONS_A)
-                .has("date", date1)
-                .edges();
+            .has("date", date1)
+            .edges();
         assertEquals(0, queryResults.getTotalHits());
 
         QueryResultsIterable<? extends VertexiumObject> searchResults = graph.query(AUTHORIZATIONS_A)
-                .has("date", date1)
-                .search();
+            .has("date", date1)
+            .search();
         assertEquals(1, searchResults.getTotalHits());
         List<? extends VertexiumObject> searchResultsList = toList(searchResults);
         assertEquals(1, searchResultsList.size());
@@ -8020,8 +8020,8 @@ public abstract class GraphTestBase {
         assertEquals("row1", searchResult.getId().getRowId());
 
         searchResults = graph.query(AUTHORIZATIONS_A)
-                .has("name", "value 1")
-                .search();
+            .has("name", "value 1")
+            .search();
         assertEquals(1, searchResults.getTotalHits());
         searchResultsList = toList(searchResults);
         assertEquals(1, searchResultsList.size());
@@ -8030,15 +8030,15 @@ public abstract class GraphTestBase {
         assertEquals("row1", searchResult.getId().getRowId());
 
         searchResults = graph.query(AUTHORIZATIONS_A)
-                .has("name", TextPredicate.CONTAINS, "value")
-                .search();
+            .has("name", TextPredicate.CONTAINS, "value")
+            .search();
         assertEquals(2, searchResults.getTotalHits());
         searchResultsList = toList(searchResults);
         assertEquals(2, searchResultsList.size());
         assertRowIdsAnyOrder(Lists.newArrayList("row1", "row2"), searchResultsList);
 
         searchResults = graph.query("value", AUTHORIZATIONS_A)
-                .search();
+            .search();
         assertEquals(2, searchResults.getTotalHits());
         searchResultsList = toList(searchResults);
         assertEquals(2, searchResultsList.size());
@@ -8048,11 +8048,11 @@ public abstract class GraphTestBase {
     @Test
     public void testExtendedDataQueryWithMultiValue() {
         graph.prepareVertex("v1", VISIBILITY_A)
-                .addExtendedData("table1", "row1", "col1", "key1", "joe", VISIBILITY_A)
-                .addExtendedData("table1", "row1", "col1", "key2", "bob", VISIBILITY_A)
-                .addExtendedData("table1", "row2", "col1", "key1", "joe", VISIBILITY_A)
-                .addExtendedData("table1", "row2", "col1", "key2", "jane", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A);
+            .addExtendedData("table1", "row1", "col1", "key1", "joe", VISIBILITY_A)
+            .addExtendedData("table1", "row1", "col1", "key2", "bob", VISIBILITY_A)
+            .addExtendedData("table1", "row2", "col1", "key1", "joe", VISIBILITY_A)
+            .addExtendedData("table1", "row2", "col1", "key2", "jane", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
         graph.flush();
 
         Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
@@ -8070,14 +8070,14 @@ public abstract class GraphTestBase {
         }
 
         QueryResultsIterable<? extends VertexiumObject> searchResults = graph.query("joe", AUTHORIZATIONS_A)
-                .search();
+            .search();
         assertEquals(2, searchResults.getTotalHits());
         List<? extends VertexiumObject> searchResultsList = toList(searchResults);
         assertEquals(2, searchResultsList.size());
         assertRowIdsAnyOrder(Lists.newArrayList("row1", "row2"), searchResultsList);
 
         searchResults = graph.query("bob", AUTHORIZATIONS_A)
-                .search();
+            .search();
         assertEquals(1, searchResults.getTotalHits());
         searchResultsList = toList(searchResults);
         assertEquals(1, searchResultsList.size());
@@ -8091,27 +8091,27 @@ public abstract class GraphTestBase {
         prop1Metadata.add("metadata2", "metadata2Value", VISIBILITY_A);
 
         graph.prepareVertex("v1", VISIBILITY_A)
-                .setProperty("prop1", "value1", prop1Metadata, VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("prop1", "value1", prop1Metadata, VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         FetchHints propertyFetchHints = FetchHints.builder()
-                .setPropertyNamesToInclude("prop2")
-                .build();
+            .setPropertyNamesToInclude("prop2")
+            .build();
         Vertex v1WithOnlyProp2 = graph.getVertex("v1", propertyFetchHints, AUTHORIZATIONS_A);
         assertNotNull(v1WithOnlyProp2.getProperties());
         assertThrowsException(() -> v1WithOnlyProp2.getProperty("prop1"));
 
         FetchHints propertiesFetchHints = FetchHints.builder()
-                .setIncludeAllProperties(true)
-                .build();
+            .setIncludeAllProperties(true)
+            .build();
         Vertex v1WithAllProperties = graph.getVertex("v1", propertiesFetchHints, AUTHORIZATIONS_A);
         assertThrowsException(v1WithAllProperties.getProperty("prop1")::getMetadata);
 
         FetchHints metadataFetchHints = FetchHints.builder()
-                .setIncludeAllProperties(true)
-                .setMetadataKeysToInclude("metadata1")
-                .build();
+            .setIncludeAllProperties(true)
+            .setMetadataKeysToInclude("metadata1")
+            .build();
         Vertex v1WithOnlyMetadata1 = graph.getVertex("v1", metadataFetchHints, AUTHORIZATIONS_A);
         Property prop1 = v1WithOnlyMetadata1.getProperty("prop1");
         assertNotNull(prop1.getMetadata());
@@ -8142,8 +8142,8 @@ public abstract class GraphTestBase {
         assertEquals(1, IterableUtils.count(v1.getEdges(Direction.OUT, AUTHORIZATIONS_A)));
 
         FetchHints propertiesFetchHints = FetchHints.builder()
-                .setIncludeAllProperties(true)
-                .build();
+            .setIncludeAllProperties(true)
+            .build();
         Vertex v1_withProperties = graph.getVertex("v1", propertiesFetchHints, AUTHORIZATIONS_A);
         assertNotNull(v1_withProperties);
         assertEquals(1, IterableUtils.count(v1_withProperties.getProperties()));
@@ -8157,8 +8157,8 @@ public abstract class GraphTestBase {
         assertEquals(1, IterableUtils.count(v1_withEdgeRegs.getEdges(Direction.OUT, AUTHORIZATIONS_A)));
 
         FetchHints inEdgeRefFetchHints = FetchHints.builder()
-                .setIncludeInEdgeRefs(true)
-                .build();
+            .setIncludeInEdgeRefs(true)
+            .build();
         Vertex v1_withInEdgeRegs = graph.getVertex("v1", inEdgeRefFetchHints, AUTHORIZATIONS_A);
         assertNotNull(v1_withInEdgeRegs);
         assertThrowsException(v1_withInEdgeRegs::getProperties);
@@ -8166,8 +8166,8 @@ public abstract class GraphTestBase {
         assertThrowsException(() -> v1_withInEdgeRegs.getEdges(Direction.OUT, AUTHORIZATIONS_A));
 
         FetchHints outEdgeRefFetchHints = FetchHints.builder()
-                .setIncludeOutEdgeRefs(true)
-                .build();
+            .setIncludeOutEdgeRefs(true)
+            .build();
         Vertex v1_withOutEdgeRegs = graph.getVertex("v1", outEdgeRefFetchHints, AUTHORIZATIONS_A);
         assertNotNull(v1_withOutEdgeRegs);
         assertThrowsException(v1_withOutEdgeRegs::getProperties);
@@ -8200,8 +8200,8 @@ public abstract class GraphTestBase {
         graph.flush();
 
         FetchHints specificPropertiesFetchHints = FetchHints.builder()
-                .setPropertyNamesToInclude("n1", "n3")
-                .build();
+            .setPropertyNamesToInclude("n1", "n3")
+            .build();
         Vertex v1WithoutN2 = graph.getVertex("v1", specificPropertiesFetchHints, AUTHORIZATIONS_A);
         assertEquals("value1", v1WithoutN2.getPropertyValue("n1"));
         assertThrowsException(() -> v1WithoutN2.getProperty("n1").getMetadata());
@@ -8214,9 +8214,9 @@ public abstract class GraphTestBase {
         assertThrowsException(() -> v1WithNotProperties.getProperty("n1"));
 
         FetchHints allPropertiesFetchHints = FetchHints.builder()
-                .setIncludeAllProperties(true)
-                .setPropertyNamesToInclude("n1", "n3")
-                .build();
+            .setIncludeAllProperties(true)
+            .setPropertyNamesToInclude("n1", "n3")
+            .build();
         v1 = graph.getVertex("v1", allPropertiesFetchHints, AUTHORIZATIONS_A);
         assertEquals("value1", v1.getPropertyValue("n1"));
         assertEquals("value2", v1.getPropertyValue("n2"));
@@ -8234,8 +8234,8 @@ public abstract class GraphTestBase {
         graph.flush();
 
         FetchHints specificPropertiesFetchHints = FetchHints.builder()
-                .setMetadataKeysToInclude("m1", "m3")
-                .build();
+            .setMetadataKeysToInclude("m1", "m3")
+            .build();
         v1 = graph.getVertex("v1", specificPropertiesFetchHints, AUTHORIZATIONS_A);
         Metadata n1WithoutM2 = v1.getProperty("n1").getMetadata();
         assertEquals("m1value", n1WithoutM2.getValue("m1"));
@@ -8243,15 +8243,15 @@ public abstract class GraphTestBase {
         assertEquals("m3value", n1WithoutM2.getValue("m3"));
 
         FetchHints noPropertiesFetchHints = FetchHints.builder()
-                .setIncludeAllProperties(true)
-                .build();
+            .setIncludeAllProperties(true)
+            .build();
         Vertex v1_noMetadata = graph.getVertex("v1", noPropertiesFetchHints, AUTHORIZATIONS_A);
         assertThrowsException(() -> v1_noMetadata.getProperty("n1").getMetadata());
 
         FetchHints allPropertiesFetchHints = FetchHints.builder()
-                .setIncludeAllPropertyMetadata(true)
-                .setMetadataKeysToInclude("m1", "m3")
-                .build();
+            .setIncludeAllPropertyMetadata(true)
+            .setMetadataKeysToInclude("m1", "m3")
+            .build();
         Vertex v1_withMetadata = graph.getVertex("v1", allPropertiesFetchHints, AUTHORIZATIONS_A);
         Metadata n1 = v1_withMetadata.getProperty("n1").getMetadata();
         assertEquals("m1value", n1.getValue("m1"));
@@ -8270,8 +8270,8 @@ public abstract class GraphTestBase {
         graph.flush();
 
         FetchHints specificEdgeLabelFetchHints = FetchHints.builder()
-                .setEdgeLabelsOfEdgeRefsToInclude(LABEL_LABEL1, LABEL_LABEL3)
-                .build();
+            .setEdgeLabelsOfEdgeRefsToInclude(LABEL_LABEL1, LABEL_LABEL3)
+            .build();
         v1 = graph.getVertex("v1", specificEdgeLabelFetchHints, AUTHORIZATIONS_A);
         List<org.vertexium.EdgeInfo> edgeInfos = toList(v1.getEdgeInfos(Direction.BOTH, AUTHORIZATIONS_A));
         assertTrue(edgeInfos.stream().anyMatch(e -> e.getEdgeId().equals("e1")));
@@ -8285,21 +8285,21 @@ public abstract class GraphTestBase {
         assertThrowsException(() -> v1_noEdges.getEdgeInfos(Direction.BOTH, AUTHORIZATIONS_A));
 
         FetchHints edgeLabelsAndCountsFetchHints = FetchHints.builder()
-                .setIncludeEdgeLabelsAndCounts(true)
-                .build();
+            .setIncludeEdgeLabelsAndCounts(true)
+            .build();
         Vertex v1_withEdgeLabelsAndCounts = graph.getVertex("v1", edgeLabelsAndCountsFetchHints, AUTHORIZATIONS_A);
         assertThrowsException(() -> v1_withEdgeLabelsAndCounts.getEdgeInfos(Direction.BOTH, AUTHORIZATIONS_A));
         assertEquals(
-                LABEL_LABEL1 + "," + LABEL_LABEL2 + "," + LABEL_LABEL3,
-                v1_withEdgeLabelsAndCounts.getEdgesSummary(AUTHORIZATIONS_A).getEdgeLabels().stream()
-                        .sorted()
-                        .collect(Collectors.joining(","))
+            LABEL_LABEL1 + "," + LABEL_LABEL2 + "," + LABEL_LABEL3,
+            v1_withEdgeLabelsAndCounts.getEdgesSummary(AUTHORIZATIONS_A).getEdgeLabels().stream()
+                .sorted()
+                .collect(Collectors.joining(","))
         );
 
         FetchHints allEdgeInfoFetchHints = FetchHints.builder()
-                .setIncludeAllEdgeRefs(true)
-                .setEdgeLabelsOfEdgeRefsToInclude("m1", "m3")
-                .build();
+            .setIncludeAllEdgeRefs(true)
+            .setEdgeLabelsOfEdgeRefsToInclude("m1", "m3")
+            .build();
         Vertex v1_withEdgeRefs = graph.getVertex("v1", allEdgeInfoFetchHints, AUTHORIZATIONS_A);
         edgeInfos = toList(v1_withEdgeRefs.getEdgeInfos(Direction.BOTH, AUTHORIZATIONS_A));
         assertTrue(edgeInfos.stream().anyMatch(e -> e.getEdgeId().equals("e1")));
@@ -8320,9 +8320,9 @@ public abstract class GraphTestBase {
         System.out.println("Defining properties");
         for (int i = 0; i < propertyNameCount; i++) {
             graph.defineProperty("prop" + i)
-                    .textIndexHint(TextIndexHint.NONE)
-                    .dataType(String.class)
-                    .define();
+                .textIndexHint(TextIndexHint.NONE)
+                .dataType(String.class)
+                .define();
         }
 
         System.out.println("Writing vertices");
@@ -8415,12 +8415,12 @@ public abstract class GraphTestBase {
         for (int i = 0; i < vertexCount; i++) {
             String vertexId = "v" + i;
             graph.prepareVertex(vertexId, VISIBILITY_A)
-                    .addPropertyValue("k1", "prop1", "value1 " + i, VISIBILITY_A)
-                    .addPropertyValue("k1", "prop2", "value2 " + i, VISIBILITY_A)
-                    .addPropertyValue("k1", "prop3", "value3 " + i, VISIBILITY_A)
-                    .addPropertyValue("k1", "prop4", "value4 " + i, VISIBILITY_A)
-                    .addPropertyValue("k1", "prop5", "value5 " + i, VISIBILITY_A)
-                    .save(AUTHORIZATIONS_ALL);
+                .addPropertyValue("k1", "prop1", "value1 " + i, VISIBILITY_A)
+                .addPropertyValue("k1", "prop2", "value2 " + i, VISIBILITY_A)
+                .addPropertyValue("k1", "prop3", "value3 " + i, VISIBILITY_A)
+                .addPropertyValue("k1", "prop4", "value4 " + i, VISIBILITY_A)
+                .addPropertyValue("k1", "prop5", "value5 " + i, VISIBILITY_A)
+                .save(AUTHORIZATIONS_ALL);
         }
         graph.flush();
         double endTime = System.currentTimeMillis();
@@ -8433,11 +8433,11 @@ public abstract class GraphTestBase {
         for (int i = 0; i < vertexCount; i++) {
             String vertexId = "v" + i;
             ElementBuilder<Vertex> m = graph.prepareVertex(vertexId, VISIBILITY_A)
-                    .addPropertyValue("k1", "prop1", "value1 " + i, VISIBILITY_A)
-                    .addPropertyValue("k1", "prop2", "value2 " + i, VISIBILITY_A)
-                    .addPropertyValue("k1", "prop3", "value3 " + i, VISIBILITY_A)
-                    .addPropertyValue("k1", "prop4", "value4 " + i, VISIBILITY_A)
-                    .addPropertyValue("k1", "prop5", "value5 " + i, VISIBILITY_A);
+                .addPropertyValue("k1", "prop1", "value1 " + i, VISIBILITY_A)
+                .addPropertyValue("k1", "prop2", "value2 " + i, VISIBILITY_A)
+                .addPropertyValue("k1", "prop3", "value3 " + i, VISIBILITY_A)
+                .addPropertyValue("k1", "prop4", "value4 " + i, VISIBILITY_A)
+                .addPropertyValue("k1", "prop5", "value5 " + i, VISIBILITY_A);
             mutations.add(m);
         }
         graph.saveElementMutations(mutations, AUTHORIZATIONS_ALL);
@@ -8453,12 +8453,12 @@ public abstract class GraphTestBase {
             String outVertexId = "v" + random.nextInt(vertexCount);
             String inVertexId = "v" + random.nextInt(vertexCount);
             graph.prepareEdge(edgeId, outVertexId, inVertexId, LABEL_LABEL1, VISIBILITY_A)
-                    .addPropertyValue("k1", "prop1", "value1 " + i, VISIBILITY_A)
-                    .addPropertyValue("k1", "prop2", "value2 " + i, VISIBILITY_A)
-                    .addPropertyValue("k1", "prop3", "value3 " + i, VISIBILITY_A)
-                    .addPropertyValue("k1", "prop4", "value4 " + i, VISIBILITY_A)
-                    .addPropertyValue("k1", "prop5", "value5 " + i, VISIBILITY_A)
-                    .save(AUTHORIZATIONS_ALL);
+                .addPropertyValue("k1", "prop1", "value1 " + i, VISIBILITY_A)
+                .addPropertyValue("k1", "prop2", "value2 " + i, VISIBILITY_A)
+                .addPropertyValue("k1", "prop3", "value3 " + i, VISIBILITY_A)
+                .addPropertyValue("k1", "prop4", "value4 " + i, VISIBILITY_A)
+                .addPropertyValue("k1", "prop5", "value5 " + i, VISIBILITY_A)
+                .save(AUTHORIZATIONS_ALL);
         }
         graph.flush();
         double endTime = System.currentTimeMillis();
@@ -8548,16 +8548,16 @@ public abstract class GraphTestBase {
     public void historicalPropertyValueAddProp() {
 
         Vertex vertexAdded = graph.prepareVertex("v1", VISIBILITY_A)
-                .setProperty("prop1_A", "value1", VISIBILITY_A)
-                .setProperty("prop2_B", "value2", VISIBILITY_B)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("prop1_A", "value1", VISIBILITY_A)
+            .setProperty("prop2_B", "value2", VISIBILITY_B)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         // Add property
         Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B);
         vertexAdded = v1.prepareMutation()
-                .setProperty("prop3_A", "value3", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("prop3_A", "value3", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         List<HistoricalPropertyValue> values = toList(v1.getHistoricalPropertyValues(AUTHORIZATIONS_A_AND_B));
@@ -8572,17 +8572,17 @@ public abstract class GraphTestBase {
     @Test
     public void historicalPropertyValueDeleteProp() {
         Vertex vertexAdded = graph.prepareVertex("v1", VISIBILITY_A)
-                .setProperty("prop1_A", "value1", VISIBILITY_A)
-                .setProperty("prop2_B", "value2", VISIBILITY_B)
-                .setProperty("prop3_A", "value3", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("prop1_A", "value1", VISIBILITY_A)
+            .setProperty("prop2_B", "value2", VISIBILITY_B)
+            .setProperty("prop3_A", "value3", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         // remove property
         Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B);
         vertexAdded = v1.prepareMutation()
-                .softDeleteProperties("prop2_B")
-                .save(AUTHORIZATIONS_A_AND_B);
+            .softDeleteProperties("prop2_B")
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
 
@@ -8613,24 +8613,24 @@ public abstract class GraphTestBase {
     @Test
     public void historicalPropertyValueModifyPropValue() {
         Vertex vertexAdded = graph.prepareVertex("v1", VISIBILITY_A)
-                .setProperty("prop1_A", "value1", VISIBILITY_A)
-                .setProperty("prop2_B", "value2", VISIBILITY_B)
-                .setProperty("prop3_A", "value3", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("prop1_A", "value1", VISIBILITY_A)
+            .setProperty("prop2_B", "value2", VISIBILITY_B)
+            .setProperty("prop3_A", "value3", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         // modify property value
         Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B);
         vertexAdded = v1.prepareMutation()
-                .setProperty("prop3_A", "value4", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("prop3_A", "value4", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         // Restore
         v1 = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B);
         vertexAdded = v1.prepareMutation()
-                .setProperty("prop3_A", "value3", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("prop3_A", "value3", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         List<HistoricalPropertyValue> values = toList(v1.getHistoricalPropertyValues(AUTHORIZATIONS_A_AND_B));
@@ -8656,24 +8656,24 @@ public abstract class GraphTestBase {
     @Test
     public void historicalPropertyValueModifyPropVisibility() {
         Vertex vertexAdded = graph.prepareVertex("v1", VISIBILITY_A)
-                .setProperty("prop1_A", "value1", VISIBILITY_A)
-                .setProperty("prop2_B", "value2", VISIBILITY_B)
-                .setProperty("prop3_A", "value3", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .setProperty("prop1_A", "value1", VISIBILITY_A)
+            .setProperty("prop2_B", "value2", VISIBILITY_B)
+            .setProperty("prop3_A", "value3", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         // modify property value
         Vertex v1 = graph.getVertex("v1", FetchHints.ALL, AUTHORIZATIONS_A_AND_B);
         vertexAdded = v1.prepareMutation()
-                .alterPropertyVisibility("prop1_A", VISIBILITY_B)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .alterPropertyVisibility("prop1_A", VISIBILITY_B)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         // Restore
         v1 = graph.getVertex("v1", FetchHints.ALL, AUTHORIZATIONS_A_AND_B);
         vertexAdded = v1.prepareMutation()
-                .alterPropertyVisibility("prop1_A", VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
+            .alterPropertyVisibility("prop1_A", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         List<HistoricalPropertyValue> values = toList(v1.getHistoricalPropertyValues(AUTHORIZATIONS_A_AND_B));
@@ -8716,8 +8716,8 @@ public abstract class GraphTestBase {
             Visibility visibility = new Visibility(String.format("v%d|all", i));
             Authorizations authorizations = createAuthorizations("all", itemVisibilityString);
             graph.prepareVertex(visibility)
-                    .addPropertyValue("key1", "name1", itemVisibilityString, visibility)
-                    .save(authorizations);
+                .addPropertyValue("key1", "name1", itemVisibilityString, visibility)
+                .save(authorizations);
         }
         graph.flush();
 
@@ -8728,8 +8728,36 @@ public abstract class GraphTestBase {
 
         System.out.println("Query vertices");
         vertices = Lists.newArrayList(graph.query(authorizations)
-                .limit((Integer) null)
-                .vertices());
+            .limit((Integer) null)
+            .vertices());
         assertEquals(count, vertices.size());
+    }
+
+    @Test
+    public void testGetVertices() {
+        Long timestamp = System.currentTimeMillis();
+        Vertex v1 = graph.prepareVertex("v1", timestamp, VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
+        Vertex v2 = graph.prepareVertex("v2", timestamp, VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
+        Vertex v3 = graph.prepareVertex("v3", timestamp + 5, VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
+        graph.prepareEdge("e1", v1, v2, "test_label", timestamp, VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
+        graph.prepareEdge("e2", v1, v3, "test_label", timestamp + 5, VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        List<Vertex> inVertices = IterableUtils.toList(v1.getVertices(Direction.OUT, "test_label", timestamp, AUTHORIZATIONS_A_AND_B));
+        assertEquals(1, IterableUtils.count(inVertices));
+        assertEquals("v2", inVertices.get(0).getId());
+
+        inVertices = IterableUtils.toList(v1.getVertices(Direction.OUT, "test_label", AUTHORIZATIONS_A_AND_B));
+        assertEquals(2, IterableUtils.count(inVertices));
+        assertEquals(0, inVertices.stream()
+            .map(Vertex::getId)
+            .filter(id -> !(id.equals("v2") || id.equals("v3")))
+            .count()
+        );
     }
 }

@@ -157,7 +157,17 @@ public class ElasticsearchVertex extends ElasticsearchElement implements Vertex 
     }
 
     @Override
+    public Iterable<Vertex> getVertices(Direction direction, String label, Long endTime, Authorizations authorizations) {
+        throw new VertexiumNotSupportedException("getVertices is not supported on " + className);
+    }
+
+    @Override
     public Iterable<Vertex> getVertices(Direction direction, String label, FetchHints fetchHints, Authorizations authorizations) {
+        throw new VertexiumNotSupportedException("getVertices is not supported on " + className);
+    }
+
+    @Override
+    public Iterable<Vertex> getVertices(Direction direction, String label, FetchHints fetchHints, Long endTime, Authorizations authorizations) {
         throw new VertexiumNotSupportedException("getVertices is not supported on " + className);
     }
 
@@ -168,6 +178,11 @@ public class ElasticsearchVertex extends ElasticsearchElement implements Vertex 
 
     @Override
     public Iterable<Vertex> getVertices(Direction direction, String[] labels, FetchHints fetchHints, Authorizations authorizations) {
+        throw new VertexiumNotSupportedException("getVertices is not supported on " + className);
+    }
+
+    @Override
+    public Iterable<Vertex> getVertices(Direction direction, String[] labels, FetchHints fetchHints, Long endTime, Authorizations authorizations) {
         throw new VertexiumNotSupportedException("getVertices is not supported on " + className);
     }
 
