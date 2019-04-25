@@ -93,7 +93,6 @@ Feature: DurationBetweenAcceptance
       | datetime('2014-07-21T21:40:36.143+0200') | localtime('16:30')                       | 'PT-5H-10M-36.143S'       |
       | datetime('2014-07-21T21:40:36.143+0200') | time('16:30+0100')                       | 'PT-4H-10M-36.143S'       |
 
-  @todo
   Scenario Outline: Should compute duration between two temporals in months
     When executing query:
       """
@@ -202,7 +201,6 @@ Feature: DurationBetweenAcceptance
       | datetime('2014-07-21T21:40:36.143+0200') | localtime('16:30')                       | 'PT-5H-10M-36.143S'   |
       | datetime('2014-07-21T21:40:36.143+0200') | time('16:30+0100')                       | 'PT-4H-10M-36.143S'   |
 
-  @todo
   Scenario: Should compute duration between if they differ only by a fraction of a second and the first comes after the second.
     When executing query:
       """
@@ -274,7 +272,6 @@ Feature: DurationBetweenAcceptance
       | 'PT17531639991215H59M59S' |
     And no side effects
 
-  @todo
   Scenario Outline: Should handle when seconds and subseconds have different signs
     When executing query:
       """
@@ -298,7 +295,6 @@ Feature: DurationBetweenAcceptance
       | '12:34:56.3' | '12:34:54.7' | 'PT-1.6S'     |
       | '12:34:54.7' | '12:34:56.3' | 'PT1.6S'      |
 
-  @todo
   Scenario Outline: Should compute durations with no difference
     When executing query:
       """
@@ -317,7 +313,6 @@ Feature: DurationBetweenAcceptance
       | localdatetime() |
       | datetime()      |
 
-  @todo
   Scenario Outline: Should propagate null
     When executing query:
       """

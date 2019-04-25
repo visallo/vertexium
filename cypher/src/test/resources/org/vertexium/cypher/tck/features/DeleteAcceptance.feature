@@ -132,6 +132,7 @@ Feature: DeleteAcceptance
       | -relationships | 3 |
       | -labels        | 1 |
 
+  @todo
   Scenario: Undirected expand followed by delete and count
     Given an empty graph
     And having executed:
@@ -151,6 +152,7 @@ Feature: DeleteAcceptance
       | -nodes         | 2 |
       | -relationships | 1 |
 
+  @todo
   Scenario: Undirected variable length expand followed by delete and count
     Given an empty graph
     And having executed:

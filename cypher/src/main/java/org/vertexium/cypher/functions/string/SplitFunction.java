@@ -3,16 +3,16 @@ package org.vertexium.cypher.functions.string;
 import com.google.common.collect.Lists;
 import org.vertexium.VertexiumException;
 import org.vertexium.cypher.VertexiumCypherQueryContext;
-import org.vertexium.cypher.ast.model.CypherAstBase;
-import org.vertexium.cypher.executor.ExpressionScope;
-import org.vertexium.cypher.functions.CypherFunction;
+import org.vertexium.cypher.functions.SimpleCypherFunction;
 
-public class SplitFunction extends CypherFunction {
+import static org.vertexium.cypher.functions.FunctionUtils.assertArgumentCount;
+
+public class SplitFunction extends SimpleCypherFunction {
     @Override
-    public Object invoke(VertexiumCypherQueryContext ctx, CypherAstBase[] arguments, ExpressionScope scope) {
+    protected Object executeFunction(VertexiumCypherQueryContext ctx, Object[] arguments) {
         assertArgumentCount(arguments, 2);
-        Object stringArgObj = ctx.getExpressionExecutor().executeExpression(ctx, arguments[0], scope);
-        Object delimiterArgObj = ctx.getExpressionExecutor().executeExpression(ctx, arguments[1], scope);
+        Object stringArgObj = arguments[0];
+        Object delimiterArgObj = arguments[1];
 
         if (!(stringArgObj instanceof String)) {
             throw new VertexiumException("Expected a string as the first argument, found " + stringArgObj.getClass().getName());

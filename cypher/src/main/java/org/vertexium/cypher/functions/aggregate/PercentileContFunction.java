@@ -1,13 +1,12 @@
 package org.vertexium.cypher.functions.aggregate;
 
 import org.vertexium.cypher.VertexiumCypherQueryContext;
-import org.vertexium.cypher.executor.ExpressionScope;
 
 import java.util.List;
 
 public class PercentileContFunction extends PercentileFunction {
     @Override
-    protected Object invoke(VertexiumCypherQueryContext ctx, List<Double> values, double percentile, ExpressionScope scope) {
+    protected Object invoke(VertexiumCypherQueryContext ctx, List<Double> values, double percentile) {
         int count = values.size();
         values.sort(Double::compare);
 

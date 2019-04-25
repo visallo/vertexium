@@ -1,21 +1,22 @@
 package org.vertexium.cypher.functions.scalar;
 
+import org.vertexium.cypher.PathResultBase;
 import org.vertexium.cypher.VertexiumCypherQueryContext;
-import org.vertexium.cypher.VertexiumCypherScope;
-import org.vertexium.cypher.ast.model.CypherAstBase;
 import org.vertexium.cypher.exceptions.VertexiumCypherTypeErrorException;
-import org.vertexium.cypher.executor.ExpressionScope;
-import org.vertexium.cypher.functions.CypherFunction;
+import org.vertexium.cypher.functions.SimpleCypherFunction;
 
+import java.lang.reflect.Array;
 import java.util.Collection;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class LengthFunction extends CypherFunction {
+import static org.vertexium.cypher.functions.FunctionUtils.assertArgumentCount;
+
+public class LengthFunction extends SimpleCypherFunction {
     @Override
-    public Object invoke(VertexiumCypherQueryContext ctx, CypherAstBase[] arguments, ExpressionScope scope) {
+    protected Object executeFunction(VertexiumCypherQueryContext ctx, Object[] arguments) {
         assertArgumentCount(arguments, 1);
-        Object arg0 = ctx.getExpressionExecutor().executeExpression(ctx, arguments[0], scope);
+        Object arg0 = arguments[0];
 
         if (arg0 instanceof Collection) {
             arg0 = ((Collection) arg0).stream();
@@ -35,14 +36,18 @@ public class LengthFunction extends CypherFunction {
             return null;
         }
 
-        if (arg0 instanceof VertexiumCypherScope.PathItem) {
-            return ((VertexiumCypherScope.PathItem) arg0).getLength();
+        if (arg0 instanceof PathResultBase) {
+            return ((PathResultBase) arg0).getLength();
         }
 
         if (arg0 instanceof String) {
             return ((String) arg0).length();
         }
 
-        throw new VertexiumCypherTypeErrorException(arg0, VertexiumCypherScope.PathItem.class, String.class, null);
+        if (arg0.getClass().isArray()) {
+            return Array.getLength(arg0);
+        }
+
+        throw new VertexiumCypherTypeErrorException(arg0, PathResultBase.class, String.class, Object[].class, null);
     }
 }

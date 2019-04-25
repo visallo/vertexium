@@ -273,6 +273,7 @@ Feature: MatchingSelfRelationships
       | 1        |
     And no side effects
 
+  @todo
   Scenario: Mixing directed and undirected pattern parts with self-relationship, simple
     Given an empty graph
     And having executed:
@@ -292,6 +293,7 @@ Feature: MatchingSelfRelationships
       | (:A) | [:T1] | (:Looper) | [:T2]   | (:B)      |
     And no side effects
 
+  @todo
   Scenario: Mixing directed and undirected pattern parts with self-relationship, count
     Given an empty graph
     And having executed:
@@ -310,6 +312,7 @@ Feature: MatchingSelfRelationships
       | 2        |
     And no side effects
 
+  @todo
   Scenario: Mixing directed and undirected pattern parts with self-relationship, undirected
     Given an empty graph
     And having executed:
@@ -333,6 +336,7 @@ Feature: MatchingSelfRelationships
       | (:B)      | [:T2]   | (:Looper) | [:T1]   | (:A)      |
     And no side effects
 
+  @todo
   Scenario: Mixing directed and undirected pattern parts with self-relationship, undirected count
     Given an empty graph
     And having executed:

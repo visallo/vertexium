@@ -95,6 +95,7 @@ Feature: MatchAcceptance2
       | (:IntNode {id: 0})       |
     And no side effects
 
+  @todo
   Scenario: Aggregation with named paths
     Given an empty graph
     And having executed:
@@ -117,6 +118,7 @@ Feature: MatchAcceptance2
       | [({num: 3}), ({num: 4})] |
     And no side effects
 
+  @todo
   Scenario: Zero-length variable length pattern in the middle of the pattern
     Given an empty graph
     And having executed:
@@ -220,6 +222,7 @@ Feature: MatchAcceptance2
       | ({name: 'A'}) | ({name: 'B'}) | ({name: 'C'}) |
     And no side effects
 
+  @todo
   Scenario: Two bound nodes pointing to the same node
     Given an empty graph
     And having executed:
@@ -243,6 +246,7 @@ Feature: MatchAcceptance2
       | ({name: 'x2'}) |
     And no side effects
 
+  @todo
   Scenario: Three bound nodes pointing to the same node
     Given an empty graph
     And having executed:
@@ -268,6 +272,7 @@ Feature: MatchAcceptance2
       | ({name: 'x2'}) |
     And no side effects
 
+  @todo
   Scenario: Three bound nodes pointing to the same node with extra connections
     Given an empty graph
     And having executed:
@@ -344,6 +349,7 @@ Feature: MatchAcceptance2
       | ({name: 'C'}) | null                                |
     And no side effects
 
+  @todo
   Scenario: Optionally matching named paths with single and variable length patterns
     Given an empty graph
     And having executed:
@@ -515,6 +521,7 @@ Feature: MatchAcceptance2
       | (:B) | (:A) |
     And no side effects
 
+  @todo
   Scenario: Matching using self-referencing pattern returns no result
     Given an empty graph
     And having executed:
@@ -742,6 +749,7 @@ Feature: MatchAcceptance2
       | (:A:B:C) |
     And no side effects
 
+  @todo
   Scenario: Returning label predicate expression
     Given an empty graph
     And having executed:
@@ -759,6 +767,7 @@ Feature: MatchAcceptance2
       | false   |
     And no side effects
 
+  @todo
   Scenario: Matching with many predicates and larger pattern
     Given an empty graph
     And having executed:
@@ -811,6 +820,7 @@ Feature: MatchAcceptance2
       | (:Person {name: 'Bob'}) |
     And no side effects
 
+  @todo
   Scenario: Matching disconnected patterns
     Given an empty graph
     And having executed:
@@ -833,6 +843,7 @@ Feature: MatchAcceptance2
       | (:A) | (:C) | (:A) | (:C) |
     And no side effects
 
+  @todo
   Scenario: Non-optional matches should not return nulls
     Given an empty graph
     And having executed:
@@ -858,6 +869,7 @@ Feature: MatchAcceptance2
       | (:D) |
     And no side effects
 
+  @todo
   Scenario: Handling cyclic patterns
     Given an empty graph
     And having executed:
@@ -877,6 +889,7 @@ Feature: MatchAcceptance2
       | 'a'    |
     And no side effects
 
+  @todo
   Scenario: Handling cyclic patterns when separated into two parts
     Given an empty graph
     And having executed:
@@ -913,6 +926,7 @@ Feature: MatchAcceptance2
       | [[:T]] |
     And no side effects
 
+  @todo
   Scenario: Matching from null nodes should return no results owing to finding no matches
     Given an empty graph
     When executing query:
@@ -926,6 +940,7 @@ Feature: MatchAcceptance2
       | b |
     And no side effects
 
+  @todo
   Scenario: Matching from null nodes should return no results owing to matches being filtered out
     Given an empty graph
     And having executed:
@@ -985,6 +1000,7 @@ Feature: MatchAcceptance2
       | <()> |
     And no side effects
 
+  @todo
   Scenario: Variable-length named path
     Given an empty graph
     And having executed:
@@ -1017,6 +1033,7 @@ Feature: MatchAcceptance2
       | 42 | 1     |
     And no side effects
 
+  @todo
   Scenario: Matching using a relationship that is already bound
     Given an empty graph
     And having executed:
@@ -1037,6 +1054,7 @@ Feature: MatchAcceptance2
       | [:T2] |
     And no side effects
 
+  @todo
   Scenario: Matching using a relationship that is already bound, in conjunction with aggregation
     Given an empty graph
     And having executed:
@@ -1080,6 +1098,7 @@ Feature: MatchAcceptance2
       | [:T2 {id: 1}] |
     And no side effects
 
+  @todo
   Scenario: Matching with LIMIT and optionally matching using a relationship that is already bound
     Given an empty graph
     And having executed:
@@ -1438,6 +1457,7 @@ Feature: MatchAcceptance2
       | <()> |
     And no side effects
 
+  @todo
   Scenario: Named path with alternating directed/undirected relationships
     Given an empty graph
     And having executed:
@@ -1456,6 +1476,7 @@ Feature: MatchAcceptance2
       | <(:C)-[:T]->(:B)-[:T]->(:A)> |
     And no side effects
 
+  @todo
   Scenario: Named path with multiple alternating directed/undirected relationships
     Given an empty graph
     And having executed:
@@ -1475,6 +1496,7 @@ Feature: MatchAcceptance2
       | <(:D)-[:T]->(:C)-[:T]->(:B)-[:T]->(:A)> |
     And no side effects
 
+  @todo
   Scenario: Named path with undirected fixed variable length pattern
     Given an empty graph
     And having executed:
@@ -1628,6 +1650,7 @@ Feature: MatchAcceptance2
       | [4, 5, 1, 2, 3] |
     And no side effects
 
+  @todo
   Scenario: Variable length relationship variables are lists of relationships
     Given an empty graph
     And having executed:
@@ -1735,6 +1758,7 @@ Feature: MatchAcceptance2
       | p |
     And no side effects
 
+  @todo
   Scenario: Respecting direction when matching non-existent path with multiple directions
     Given an empty graph
     And having executed:
@@ -1836,6 +1860,7 @@ Feature: MatchAcceptance2
       | ({prop: 'end'}) |
     And no side effects
 
+  @todo
   Scenario: Counting rows after MATCH, MERGE, OPTIONAL MATCH
     Given an empty graph
     And having executed:

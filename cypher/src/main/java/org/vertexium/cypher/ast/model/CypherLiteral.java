@@ -2,7 +2,10 @@ package org.vertexium.cypher.ast.model;
 
 import org.vertexium.VertexiumException;
 
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static org.vertexium.util.StreamUtils.stream;
 
 public class CypherLiteral<T> extends CypherAstBase implements Comparable {
     private final T value;
@@ -64,5 +67,19 @@ public class CypherLiteral<T> extends CypherAstBase implements Comparable {
             return Stream.of((CypherAstBase) value);
         }
         return Stream.of();
+    }
+
+    public static Object toJava(Object value) {
+        if (value instanceof Iterable) {
+            value = stream((Iterable<Object>) value)
+                .map(CypherLiteral::toJava)
+                .collect(Collectors.toList());
+        }
+
+        if (value instanceof CypherLiteral) {
+            value = ((CypherLiteral) value).getValue();
+        }
+
+        return value;
     }
 }

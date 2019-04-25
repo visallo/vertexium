@@ -1,15 +1,16 @@
 package org.vertexium.cypher;
 
 import org.vertexium.*;
-import org.vertexium.cypher.ast.model.CypherNodePattern;
-import org.vertexium.cypher.ast.model.CypherRelationshipPattern;
-import org.vertexium.cypher.executor.*;
-import org.vertexium.cypher.executor.models.match.MatchConstraint;
+import org.vertexium.cypher.exceptions.VertexiumCypherException;
+import org.vertexium.cypher.exceptions.VertexiumCypherNotImplemented;
+import org.vertexium.cypher.executionPlan.*;
 import org.vertexium.cypher.functions.CypherFunction;
 import org.vertexium.cypher.functions.aggregate.*;
-import org.vertexium.cypher.functions.date.DayFunction;
-import org.vertexium.cypher.functions.date.MonthFunction;
-import org.vertexium.cypher.functions.date.YearFunction;
+import org.vertexium.cypher.functions.date.*;
+import org.vertexium.cypher.functions.date.duration.DurationBetweenFunction;
+import org.vertexium.cypher.functions.date.duration.DurationInDaysFunction;
+import org.vertexium.cypher.functions.date.duration.DurationInMonthsFunction;
+import org.vertexium.cypher.functions.date.duration.DurationInSecondsFunction;
 import org.vertexium.cypher.functions.list.*;
 import org.vertexium.cypher.functions.math.*;
 import org.vertexium.cypher.functions.predicate.*;
@@ -20,11 +21,12 @@ import org.vertexium.cypher.functions.string.*;
 import org.vertexium.mutation.ElementMutation;
 import org.vertexium.mutation.ExistingElementMutation;
 
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.vertexium.util.StreamUtils.stream;
@@ -34,18 +36,9 @@ public abstract class VertexiumCypherQueryContext {
     private final Map<String, Object> parameters = new HashMap<>();
     private final Map<String, CypherFunction> functions = new HashMap<>();
     private final Authorizations authorizations;
-    private final ExpressionExecutor expressionExecutor;
-    private final CreateClauseExecutor createClauseExecutor;
-    private final ReturnClauseExecutor returnClauseExecutor;
-    private final MatchClauseExecutor matchClauseExecutor;
-    private final UnwindClauseExecutor unwindClauseExecutor;
-    private final WithClauseExecutor withClauseExecutor;
-    private final MergeClauseExecutor mergeClauseExecutor;
-    private final DeleteClauseExecutor deleteClauseExecutor;
-    private final SetClauseExecutor setClauseExecutor;
-    private final RemoveClauseExecutor removeClauseExecutor;
     private final CypherResultWriter resultWriter;
-    private final Map<MatchConstraint<?, ?>, Long> totalHitsByMatchConstraint = new HashMap<>();
+    private ExecutionPlanBuilder executionPlanBuilder = new ExecutionPlanBuilder();
+    private ExecutionPlan currentlyExecutingPlan;
 
     public VertexiumCypherQueryContext(Graph graph, Authorizations authorizations) {
         this.graph = graph;
@@ -99,6 +92,8 @@ public abstract class VertexiumCypherQueryContext {
         addFunction("sin", new SinFunction());
         addFunction("tan", new TanFunction());
 
+        addFunction("negate", new NegateFunction());
+
         // predicate
         addFunction("all", new AllFunction());
         addFunction("any", new AnyFunction());
@@ -122,6 +117,9 @@ public abstract class VertexiumCypherQueryContext {
         addFunction("toInteger", new ToIntegerFunction());
         addFunction("type", new TypeFunction());
 
+        addFunction("isNull", new IsNullFunction());
+        addFunction("isNotNull", new IsNotNullFunction());
+
         // spatial
         addFunction("distance", new DistanceFunction());
         addFunction("point", new PointFunction());
@@ -142,29 +140,32 @@ public abstract class VertexiumCypherQueryContext {
         addFunction("upper", new ToUpperFunction());
         addFunction("trim", new TrimFunction());
 
+        addFunction("startsWith", new StartsWithFunction());
+        addFunction("endsWith", new EndsWithFunction());
+        addFunction("contains", new ContainsFunction());
+
         // date
         addFunction("year", new YearFunction());
         addFunction("month", new MonthFunction());
         addFunction("day", new DayFunction());
+        addFunction("localdatetime", new LocalDateTimeFunction());
+        addFunction("datetime", new DateTimeFunction());
+        addFunction("date", new DateFunction());
+        addFunction("localtime", new LocalTimeFunction());
+        addFunction("time", new TimeFunction());
+        addFunction("duration.between", new DurationBetweenFunction());
+        addFunction("duration.inMonths", new DurationInMonthsFunction());
+        addFunction("duration.inDays", new DurationInDaysFunction());
+        addFunction("duration.inSeconds", new DurationInSecondsFunction());
 
         this.resultWriter = new CypherResultWriter();
-        this.expressionExecutor = new ExpressionExecutor();
-        this.createClauseExecutor = new CreateClauseExecutor(expressionExecutor);
-        this.returnClauseExecutor = new ReturnClauseExecutor(expressionExecutor);
-        this.matchClauseExecutor = new MatchClauseExecutor();
-        this.unwindClauseExecutor = new UnwindClauseExecutor(expressionExecutor);
-        this.withClauseExecutor = new WithClauseExecutor();
-        this.mergeClauseExecutor = new MergeClauseExecutor();
-        this.deleteClauseExecutor = new DeleteClauseExecutor(expressionExecutor);
-        this.setClauseExecutor = new SetClauseExecutor();
-        this.removeClauseExecutor = new RemoveClauseExecutor();
     }
 
     public Graph getGraph() {
         return graph;
     }
 
-    public abstract Visibility calculateVertexVisibility(CypherNodePattern nodePattern, ExpressionScope scope);
+    public abstract Visibility calculateVertexVisibility(CreateNodePatternExecutionStep nodePattern, CypherResultRow row);
 
     public Authorizations getAuthorizations() {
         return authorizations;
@@ -178,21 +179,23 @@ public abstract class VertexiumCypherQueryContext {
 
     public abstract <T extends Element> void setProperty(ElementMutation<T> m, String propertyName, Object value);
 
-    public abstract void removeProperty(ElementMutation<Element> m, String propertyName);
+    public abstract void setProperty(Element element, String propertyName, Object value);
+
+    public abstract void removeProperty(Element element, Property prop);
+
+    public abstract void removeProperty(Element element, String propName);
 
     public abstract String calculateEdgeLabel(
-        CypherRelationshipPattern relationshipPattern,
+        CreateRelationshipPatternExecutionStep relationshipPattern,
         Vertex outVertex,
         Vertex inVertex,
-        ExpressionScope scope
-    );
+        CypherResultRow row);
 
     public abstract Visibility calculateEdgeVisibility(
-        CypherRelationshipPattern relationshipPattern,
+        CreateRelationshipPatternExecutionStep relationshipPattern,
         Vertex outVertex,
         Vertex inVertex,
-        ExpressionScope scope
-    );
+        CypherResultRow row);
 
     public abstract boolean isLabelProperty(Property property);
 
@@ -200,10 +203,6 @@ public abstract class VertexiumCypherQueryContext {
 
     public void setParameter(String name, Object value) {
         parameters.put(name, value);
-    }
-
-    public CypherFunction getFunction(String functionName) {
-        return functions.get(functionName.toLowerCase());
     }
 
     public void deleteEdge(Edge edge) {
@@ -223,54 +222,26 @@ public abstract class VertexiumCypherQueryContext {
     }
 
     @SuppressWarnings("unchecked")
-    public <T extends Element> void saveElement(ExistingElementMutation<T> m) {
-        if (m.getElement() instanceof Edge) {
-            saveEdge((ElementMutation<Edge>) m);
-        } else if (m.getElement() instanceof Vertex) {
-            saveVertex((ElementMutation<Vertex>) m);
+    public <T extends Element> T saveElement(ExistingElementMutation<T> m) {
+        if (m.getElement() instanceof Vertex) {
+            return (T) saveVertex((ElementMutation<Vertex>) m);
+        } else if (m.getElement() instanceof Edge) {
+            return (T) saveEdge((ElementMutation<Edge>) m);
         } else {
-            throw new VertexiumException("unexpected element type: " + m.getElement().getClass().getName());
+            throw new VertexiumCypherNotImplemented("Cannot save: " + m.getElement().getClass().getName());
         }
     }
 
-    public ExpressionExecutor getExpressionExecutor() {
-        return expressionExecutor;
-    }
-
-    public CreateClauseExecutor getCreateClauseExecutor() {
-        return createClauseExecutor;
-    }
-
-    public ReturnClauseExecutor getReturnClauseExecutor() {
-        return returnClauseExecutor;
-    }
-
-    public MatchClauseExecutor getMatchClauseExecutor() {
-        return matchClauseExecutor;
-    }
-
-    public UnwindClauseExecutor getUnwindClauseExecutor() {
-        return unwindClauseExecutor;
-    }
-
-    public WithClauseExecutor getWithClauseExecutor() {
-        return withClauseExecutor;
-    }
-
-    public MergeClauseExecutor getMergeClauseExecutor() {
-        return mergeClauseExecutor;
-    }
-
-    public DeleteClauseExecutor getDeleteClauseExecutor() {
-        return deleteClauseExecutor;
-    }
-
-    public SetClauseExecutor getSetClauseExecutor() {
-        return setClauseExecutor;
-    }
-
-    public RemoveClauseExecutor getRemoveClauseExecutor() {
-        return removeClauseExecutor;
+    @SuppressWarnings("unchecked")
+    public <T extends Element> T saveElement(ElementType type, ElementMutation<T> m) {
+        switch (type) {
+            case VERTEX:
+                return (T) saveVertex((ElementMutation<Vertex>) m);
+            case EDGE:
+                return (T) saveEdge((ElementMutation<Edge>) m);
+            default:
+                throw new VertexiumCypherNotImplemented("Cannot save: " + type);
+        }
     }
 
     public CypherResultWriter getResultWriter() {
@@ -309,13 +280,11 @@ public abstract class VertexiumCypherQueryContext {
         return FetchHints.ALL;
     }
 
-    public abstract int getMaxUnboundedRange();
-
-    public String calculateVertexId(CypherNodePattern nodePattern, ExpressionScope scope) {
+    public String calculateVertexId(CreateNodePatternExecutionStep nodePattern, CypherResultRow row) {
         return null;
     }
 
-    public String calculateEdgeId(CypherRelationshipPattern relationshipPattern, ExpressionScope scope) {
+    public String calculateEdgeId(CreateRelationshipPatternExecutionStep relationshipPattern, CypherResultRow row) {
         return null;
     }
 
@@ -327,10 +296,42 @@ public abstract class VertexiumCypherQueryContext {
         return propertyName;
     }
 
-    public Long getTotalHitsForMatchConstraint(
-        MatchConstraint<?, ?> matchConstraint,
-        Function<MatchConstraint<?, ?>, Long> computeFn
+    public ExecutionStepWithResultName createFunctionExecutionStep(
+        String functionName,
+        String resultName,
+        boolean distinct,
+        ExecutionStepWithResultName[] argumentsExecutionStep
     ) {
-        return totalHitsByMatchConstraint.computeIfAbsent(matchConstraint, computeFn);
+        CypherFunction fn = functions.get(functionName.toLowerCase());
+        if (fn == null) {
+            throw new VertexiumCypherException(String.format("Function \"%s\" not found", functionName));
+        }
+        return fn.create(resultName, distinct, argumentsExecutionStep);
+    }
+
+    public ExecutionPlanBuilder getExecutionPlanBuilder() {
+        return executionPlanBuilder;
+    }
+
+    public Object getParameter(String parameterName) {
+        return getParameters().get(parameterName);
+    }
+
+    public abstract void defineProperty(String propertyName, Object value);
+
+    public void setCurrentlyExecutingPlan(ExecutionPlan currentlyExecutingPlan) {
+        this.currentlyExecutingPlan = currentlyExecutingPlan;
+    }
+
+    public ExecutionPlan getCurrentlyExecutingPlan() {
+        return currentlyExecutingPlan;
+    }
+
+    public ZoneId getZoneId() {
+        return ZoneId.of("UTC");
+    }
+
+    public ZonedDateTime getNow() {
+        return ZonedDateTime.now(getZoneId());
     }
 }

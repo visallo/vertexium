@@ -50,9 +50,9 @@ public class ExecuteCypherQuery {
         String queryString = params.query.stream().collect(Collectors.joining(" "));
         VertexiumCypherQuery query = VertexiumCypherQuery.parse(compilerContext, queryString);
         VertexiumCypherResult results = query.execute(ctx);
-        results.stream().forEach(row -> {
+        results.forEach(row -> {
             results.getColumnNames().forEach(column -> {
-                System.out.println(row.getByName(column));
+                System.out.println(row.get(column));
             });
         });
         long endTime = System.currentTimeMillis();

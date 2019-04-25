@@ -46,6 +46,7 @@ Feature: MatchAcceptance
       | <(:Label1)<-[:TYPE]-(:Label2)> |
     And no side effects
 
+  @todo
   Scenario: Longer path query should return results in written order
     Given an empty graph
     And having executed:
@@ -270,6 +271,7 @@ Feature: MatchAcceptance
       | (:A {value: 1}) | (:B {value: 2}) |
     And no side effects
 
+  @todo
   Scenario: Return two subgraphs with bound undirected relationship and optional relationship
     Given an empty graph
     And having executed:
@@ -466,6 +468,7 @@ Feature: MatchAcceptance
       | [[:REL {value: 1}], [:REL {value: 2}]] |
     And no side effects
 
+  @todo
   Scenario: Return relationships by collecting them as a list - undirected, starting from two extremes
     Given an empty graph
     And having executed:
@@ -483,6 +486,7 @@ Feature: MatchAcceptance
       | [[:REL {value:2}], [:REL {value:1}]] |
     And no side effects
 
+  @todo
   Scenario: Return relationships by collecting them as a list - undirected, starting from one extreme
     Given an empty graph
     And having executed:
@@ -516,6 +520,7 @@ Feature: MatchAcceptance
       | <(:A {name: 'A'})-[:KNOWS {value: 1}]->(:B {name: 'B'})-[:KNOWS {value: 2}]->(:C {name: 'C'})> |
     And no side effects
 
+  @todo
   Scenario: Return a var length path of length zero
     Given an empty graph
     And having executed:
@@ -534,6 +539,7 @@ Feature: MatchAcceptance
       | (:A) | (:B) | 1 |
     And no side effects
 
+  @todo
   Scenario: Return a named var length path of length zero
     Given an empty graph
     And having executed:

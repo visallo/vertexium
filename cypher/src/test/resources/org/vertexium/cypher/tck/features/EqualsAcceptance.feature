@@ -104,6 +104,7 @@ Feature: EqualsAcceptance
       | 1        |
     And no side effects
 
+  @todo
   Scenario: Comparing relationships to relationships
     Given an empty graph
     And having executed:

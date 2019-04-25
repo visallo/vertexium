@@ -5,19 +5,18 @@ import org.vertexium.Edge;
 import org.vertexium.Vertex;
 import org.vertexium.VertexiumException;
 import org.vertexium.cypher.VertexiumCypherQueryContext;
-import org.vertexium.cypher.ast.model.CypherAstBase;
 import org.vertexium.cypher.exceptions.VertexiumCypherTypeErrorException;
-import org.vertexium.cypher.executor.ExpressionScope;
-import org.vertexium.cypher.functions.CypherFunction;
+import org.vertexium.cypher.functions.SimpleCypherFunction;
 
-public class LabelsFunction extends CypherFunction {
+import static org.vertexium.cypher.functions.FunctionUtils.assertArgumentCount;
+
+public class LabelsFunction extends SimpleCypherFunction {
     @Override
-    public Object invoke(VertexiumCypherQueryContext ctx, CypherAstBase[] arguments, ExpressionScope scope) {
-        CypherAstBase lookup = arguments[0];
-
-        Object item = ctx.getExpressionExecutor().executeExpression(ctx, lookup, scope);
+    protected Object executeFunction(VertexiumCypherQueryContext ctx, Object[] arguments) {
+        assertArgumentCount(arguments, 1);
+        Object item = arguments[0];
         if (item == null) {
-            throw new VertexiumException("Could not find Vertex using " + lookup);
+            throw new VertexiumException("Could not find Vertex using");
         }
 
         if (item instanceof Vertex) {

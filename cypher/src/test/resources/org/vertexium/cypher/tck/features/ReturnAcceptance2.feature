@@ -168,6 +168,7 @@ Feature: ReturnAcceptance2
       | null       |
     And no side effects
 
+  @todo
   Scenario: Return all variables
     Given an empty graph
     And having executed:
@@ -229,6 +230,7 @@ Feature: ReturnAcceptance2
       | ({name: 'Michael'}) | ({name: 'Peter'})  | 0   |
     And no side effects
 
+  @todo
   Scenario: Matching and disregarding output, then matching again
     Given an empty graph
     And having executed:
@@ -408,6 +410,7 @@ Feature: ReturnAcceptance2
       | null |
     And no side effects
 
+  @todo
   Scenario: Aliasing expressions
     Given an empty graph
     And having executed:

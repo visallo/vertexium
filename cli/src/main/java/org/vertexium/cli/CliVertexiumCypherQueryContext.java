@@ -2,10 +2,10 @@ package org.vertexium.cli;
 
 import com.google.common.collect.Sets;
 import org.vertexium.*;
+import org.vertexium.cypher.CypherResultRow;
 import org.vertexium.cypher.VertexiumCypherQueryContext;
-import org.vertexium.cypher.ast.model.CypherNodePattern;
-import org.vertexium.cypher.ast.model.CypherRelationshipPattern;
-import org.vertexium.cypher.executor.ExpressionScope;
+import org.vertexium.cypher.executionPlan.CreateNodePatternExecutionStep;
+import org.vertexium.cypher.executionPlan.CreateRelationshipPatternExecutionStep;
 import org.vertexium.mutation.ElementMutation;
 import org.vertexium.mutation.ExistingElementMutation;
 
@@ -23,7 +23,7 @@ public class CliVertexiumCypherQueryContext extends VertexiumCypherQueryContext 
     }
 
     @Override
-    public Visibility calculateVertexVisibility(CypherNodePattern nodePattern, ExpressionScope scope) {
+    public Visibility calculateVertexVisibility(CreateNodePatternExecutionStep nodePattern, CypherResultRow row) {
         throw new VertexiumException("not implemented");
     }
 
@@ -48,17 +48,12 @@ public class CliVertexiumCypherQueryContext extends VertexiumCypherQueryContext 
     }
 
     @Override
-    public void removeProperty(ElementMutation<Element> m, String propertyName) {
+    public String calculateEdgeLabel(CreateRelationshipPatternExecutionStep relationshipPattern, Vertex outVertex, Vertex inVertex, CypherResultRow row) {
         throw new VertexiumException("not implemented");
     }
 
     @Override
-    public String calculateEdgeLabel(CypherRelationshipPattern relationshipPattern, Vertex outVertex, Vertex inVertex, ExpressionScope scope) {
-        throw new VertexiumException("not implemented");
-    }
-
-    @Override
-    public Visibility calculateEdgeVisibility(CypherRelationshipPattern relationshipPattern, Vertex outVertex, Vertex inVertex, ExpressionScope scope) {
+    public Visibility calculateEdgeVisibility(CreateRelationshipPatternExecutionStep relationshipPattern, Vertex outVertex, Vertex inVertex, CypherResultRow row) {
         throw new VertexiumException("not implemented");
     }
 
@@ -73,7 +68,22 @@ public class CliVertexiumCypherQueryContext extends VertexiumCypherQueryContext 
     }
 
     @Override
-    public int getMaxUnboundedRange() {
-        return 100;
+    public void setProperty(Element element, String propertyName, Object value) {
+        throw new VertexiumException("not implemented");
+    }
+
+    @Override
+    public void removeProperty(Element element, Property prop) {
+        throw new VertexiumException("not implemented");
+    }
+
+    @Override
+    public void removeProperty(Element element, String propName) {
+        throw new VertexiumException("not implemented");
+    }
+
+    @Override
+    public void defineProperty(String propertyName, Object value) {
+        throw new VertexiumException("not implemented");
     }
 }

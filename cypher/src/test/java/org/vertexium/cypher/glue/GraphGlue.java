@@ -7,22 +7,20 @@ import cucumber.api.java.en.When;
 import org.junit.Assume;
 import org.vertexium.Authorizations;
 import org.vertexium.VertexiumException;
-import org.vertexium.cypher.TestVertexiumCypherQueryContext;
-import org.vertexium.cypher.VertexiumCypherQuery;
-import org.vertexium.cypher.VertexiumCypherResult;
+import org.vertexium.cypher.*;
 import org.vertexium.cypher.ast.CypherAstParser;
 import org.vertexium.cypher.ast.CypherCompilerContext;
 import org.vertexium.cypher.ast.model.CypherAstBase;
+import org.vertexium.cypher.exceptions.VertexiumCypherException;
+import org.vertexium.cypher.executionPlan.ExecutionPlanBuilder;
+import org.vertexium.cypher.executionPlan.ExecutionStepWithResultName;
 import org.vertexium.inmemory.InMemoryGraph;
 import org.vertexium.util.IOUtils;
 import org.vertexium.util.VertexiumLogger;
 import org.vertexium.util.VertexiumLoggerFactory;
 
 import java.io.InputStream;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -37,7 +35,8 @@ public class GraphGlue {
     public static final Pattern RELATIONSHIP_REGEX = Pattern.compile("^\\[(.*?)(\\{.*\\})\\]$");
     public static final Pattern NODE_REGEX = Pattern.compile("^\\((.*?)(\\{.*\\})?\\)$");
     private VertexiumCypherQuery query;
-    private VertexiumCypherResult lastResults;
+    private List<CypherResultRow> lastResultRows;
+    private LinkedHashSet<String> lastResultColumnNames;
     private TestVertexiumCypherQueryContext ctx;
     private Exception lastCompileTimeException;
     private Exception lastRuntimeException;
@@ -83,35 +82,57 @@ public class GraphGlue {
 
     private Object parseParameterValue(String valueString) {
         valueString = valueString.trim();
+        return executeExpression(valueString);
+    }
 
+    private Object executeExpression(String valueString) {
         CypherAstBase expression = CypherAstParser.getInstance().parseExpression(valueString);
-        return ctx.getExpressionExecutor().executeExpression(ctx, expression, null);
+        return executeExpression(expression);
+    }
+
+    private Object executeExpression(CypherAstBase expression) {
+        ExecutionStepWithResultName plan = new ExecutionPlanBuilder().visitExpression(ctx, "value", expression);
+        VertexiumCypherResult result = plan.execute(ctx, new SingleRowVertexiumCypherResult());
+        return result.findFirst().orElse(null).get("value");
     }
 
     @When("^executing(.*)query:$")
     public void whenExecutingQuery(String queryName, String queryString) {
         ctx.clearCounts();
-        lastResults = null;
+        lastResultRows = null;
+        lastResultColumnNames = null;
         lastCompileTimeException = null;
         lastRuntimeException = null;
         try {
             CypherCompilerContext compilerContext = new CypherCompilerContext(ctx.getFunctions());
             query = VertexiumCypherQuery.parse(compilerContext, queryString);
+            try {
+                VertexiumCypherResult results = query.execute(ctx);
+                lastResultRows = results
+                    .peek(row -> {
+                        try {
+                            Map<String, Object> scope = row.popScope();
+                            throw new VertexiumCypherException("Scope should be empty:\n"
+                                + scope.entrySet().stream().map(e -> e.getKey() + ": " + e.getValue()).collect(Collectors.joining("\n"))
+                            );
+                        } catch (Exception ex) {
+                            // OK
+                        }
+                    })
+                    .collect(Collectors.toList());
+                lastResultColumnNames = results.getColumnNames();
+            } catch (Exception ex) {
+                lastRuntimeException = ex;
+            }
         } catch (Exception ex) {
             lastCompileTimeException = ex;
-        }
-        try {
-            lastResults = query.execute(ctx);
-            lastResults.size();
-        } catch (Exception ex) {
-            lastRuntimeException = ex;
         }
     }
 
     @Given("^having executed:$")
     public void givenHavingExecuted(String queryString) {
         CypherCompilerContext compilerContext = new CypherCompilerContext(ctx.getFunctions());
-        VertexiumCypherQuery.parse(compilerContext, queryString).execute(ctx);
+        VertexiumCypherQuery.parse(compilerContext, queryString).execute(ctx).count();
     }
 
     @Then("^the result should be, in order:$")
@@ -137,9 +158,9 @@ public class GraphGlue {
             List<List<String>> expectedRows = expected.raw().stream()
                 .skip(1)
                 .collect(Collectors.toList());
-            List<List<String>> foundRows = lastResults.stream()
-                .map(row -> columnNames.stream()
-                    .map(columnName -> row.getByName(columnName))
+            List<List<String>> foundRows = lastResultRows.stream()
+                .map(row -> lastResultColumnNames.stream()
+                    .map(row::get)
                     .map(obj -> ctx.getResultWriter().columnValueToString(ctx, obj))
                     .collect(Collectors.toList())
                 )
@@ -150,23 +171,38 @@ public class GraphGlue {
 
             if (expectedRows.size() > 0) {
                 System.out.println("Expected");
-                System.out.println(expected.raw().get(0).stream().collect(Collectors.joining(", ")));
+                System.out.println(String.join(", ", expected.raw().get(0)));
                 for (List<String> expectedRow : expectedRows) {
-                    System.out.println(expectedRow.stream().collect(Collectors.joining(", ")));
+                    System.out.println(String.join(", ", expectedRow));
                 }
             }
 
             System.out.println("Found");
-            System.out.println(columnNames.stream().collect(Collectors.joining(", ")));
+            System.out.println(String.join(", ", lastResultColumnNames));
             for (List<String> foundRow : foundRows) {
-                System.out.println(foundRow.stream().collect(Collectors.joining(", ")));
+                System.out.println(String.join(", ", foundRow));
             }
 
             if (expectedRows.size() > 0) {
-                assertEquals("Header count", expected.raw().get(0).size(), lastResults.getColumnNames().size());
+                assertEquals(
+                    String.format(
+                        "Header count, expected (%s), found (%s)",
+                        String.join(", ", expected.raw().get(0)),
+                        String.join(", ", lastResultColumnNames)
+                    ),
+                    expected.raw().get(0).size(),
+                    lastResultColumnNames.size()
+                );
                 for (int colIdx = 0; colIdx < expected.raw().get(0).size(); colIdx++) {
                     String expectedColumnName = expected.raw().get(0).get(colIdx);
-                    assertTrue("Header mismatch", lastResults.getColumnNames().contains(expectedColumnName));
+                    assertTrue(
+                        String.format(
+                            "Header mismatch (expected: %s, columnNames: %s)",
+                            expectedColumnName,
+                            String.join(", ", lastResultColumnNames)
+                        ),
+                        lastResultColumnNames.contains(expectedColumnName)
+                    );
                 }
             }
 
@@ -263,16 +299,25 @@ public class GraphGlue {
             for (Object key : expectedMap.keySet()) {
                 Object expectedValue = expectedMap.get(key);
                 Object foundValue = foundMap.get(key);
-                assertEquals(expectedValue, foundValue);
+                if (expectedValue instanceof Object[] && foundValue instanceof Object[]) {
+                    Object[] expectedArr = (Object[]) expectedValue;
+                    Object[] foundArr = (Object[]) foundValue;
+                    assertEquals(expectedArr.length, foundArr.length);
+                    for (int i = 0; i < expectedArr.length; i++) {
+                        assertEquals(expectedArr[i], foundArr[i]);
+                    }
+                } else {
+                    assertEquals(expectedValue, foundValue);
+                }
             }
         } catch (Exception ex) {
+            LOGGER.warn("Could not convert to maps", ex);
             assertEquals(expected, found);
         }
     }
 
     private Map<?, ?> columnValueToMap(String columnValue) {
-        CypherAstBase expression = CypherAstParser.getInstance().parseExpression(columnValue);
-        return (Map) ctx.getExpressionExecutor().executeExpression(ctx, expression, null);
+        return (Map) executeExpression(columnValue);
     }
 
     private boolean rowStringIsList(String columnString) {
@@ -327,6 +372,7 @@ public class GraphGlue {
     public void thenATypeErrorShouldBeRaisedAtRuntime(String errorType, String error) {
         if (lastRuntimeException == null) {
             if (lastCompileTimeException != null) {
+                LOGGER.error("compile time exception", lastCompileTimeException);
                 fail("statement should have resulted in a runtime exception, but resulted in a compile time exception");
             } else {
                 fail("statement should have resulted in a runtime exception");
@@ -352,7 +398,7 @@ public class GraphGlue {
         if (lastRuntimeException != null) {
             throw lastRuntimeException;
         }
-        assertEquals(0, lastResults.size());
+        assertEquals("number of rows", 0, lastResultRows.size());
     }
 
     @Then("^no side effects$")

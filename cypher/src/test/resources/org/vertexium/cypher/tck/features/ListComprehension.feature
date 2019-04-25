@@ -48,6 +48,7 @@ Feature: ListComprehension
       | [(:A), (:A)] |
     And no side effects
 
+  @todo
   Scenario: Using a list comprehension in a WITH
     Given an empty graph
     And having executed:

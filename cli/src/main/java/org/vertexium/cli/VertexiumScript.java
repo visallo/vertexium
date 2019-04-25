@@ -243,9 +243,9 @@ public class VertexiumScript extends Script {
         List<List<String>> table = new ArrayList<>();
         table.add(new ArrayList<>(columnNames));
         table.addAll(
-            cypherResult.stream()
+            cypherResult
                 .map(row -> columnNames.stream()
-                    .map(columnName -> row.getByName(columnName))
+                    .map(columnName -> row.get(columnName))
                     .map(o -> {
                         if (o instanceof Vertex) {
                             String vertexIndexString = "v" + vertexIndex.get();
