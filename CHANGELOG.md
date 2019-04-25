@@ -57,7 +57,10 @@
 * Added: Aggregating extended data by element id and element type
 * Added: Elasticsearch TransportClient plugins support (config parameter `search.esTransportClientPlugin.xxx=<plugin class name>`)
 * Added: Accumulo additional client configuration options (config parameter `clientConfiguration.xxx=<value>`)
-* Changed: Deprecated Elasticsearch global scoring strategy  
+* Changed: Deprecated Elasticsearch global scoring strategy
+
+# v4.1.1.7
+* Added: Ability to pass in a timestamp when calling getVertices
 
 # v4.1.1.6
 * Fixed: Accumulo: Find path traversing edges that were soft deleted then re-added

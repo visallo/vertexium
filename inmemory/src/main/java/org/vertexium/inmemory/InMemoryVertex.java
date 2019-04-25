@@ -14,20 +14,20 @@ import java.util.Map;
 
 public class InMemoryVertex extends InMemoryElement<InMemoryVertex> implements Vertex {
     public InMemoryVertex(
-            InMemoryGraph graph,
-            String id,
-            InMemoryTableVertex inMemoryTableElement,
-            FetchHints fetchHints,
-            Long endTime,
-            Authorizations authorizations
+        InMemoryGraph graph,
+        String id,
+        InMemoryTableVertex inMemoryTableElement,
+        FetchHints fetchHints,
+        Long endTime,
+        Authorizations authorizations
     ) {
         super(
-                graph,
-                id,
-                inMemoryTableElement,
-                fetchHints,
-                endTime,
-                authorizations
+            graph,
+            id,
+            inMemoryTableElement,
+            fetchHints,
+            endTime,
+            authorizations
         );
     }
 
@@ -95,8 +95,8 @@ public class InMemoryVertex extends InMemoryElement<InMemoryVertex> implements V
                     @Override
                     public Direction getDirection() {
                         return edge.getVertexId(Direction.OUT).equals(this.getVertexId())
-                                ? Direction.IN
-                                : Direction.OUT;
+                            ? Direction.IN
+                            : Direction.OUT;
                     }
                 };
             }
@@ -282,12 +282,22 @@ public class InMemoryVertex extends InMemoryElement<InMemoryVertex> implements V
 
     @Override
     public Iterable<Vertex> getVertices(Direction direction, String label, Authorizations authorizations) {
-        return getVertices(direction, label, getGraph().getDefaultFetchHints(), authorizations);
+        return getVertices(direction, label, getGraph().getDefaultFetchHints(), null, authorizations);
+    }
+
+    @Override
+    public Iterable<Vertex> getVertices(Direction direction, String label, Long endTime, Authorizations authorizations) {
+        return getVertices(direction, label, getGraph().getDefaultFetchHints(), endTime, authorizations);
     }
 
     @Override
     public Iterable<Vertex> getVertices(Direction direction, String label, FetchHints fetchHints, Authorizations authorizations) {
-        return getVertices(direction, labelToArrayOrNull(label), fetchHints, authorizations);
+        return getVertices(direction, label, fetchHints, null, authorizations);
+    }
+
+    @Override
+    public Iterable<Vertex> getVertices(Direction direction, String label, FetchHints fetchHints, Long endTime, Authorizations authorizations) {
+        return getVertices(direction, labelToArrayOrNull(label), fetchHints, endTime, authorizations);
     }
 
     @Override
@@ -297,8 +307,13 @@ public class InMemoryVertex extends InMemoryElement<InMemoryVertex> implements V
 
     @Override
     public Iterable<Vertex> getVertices(final Direction direction, final String[] labels, final FetchHints fetchHints, final Authorizations authorizations) {
+        return getVertices(direction, labels, fetchHints, null, authorizations);
+    }
+
+    @Override
+    public Iterable<Vertex> getVertices(final Direction direction, final String[] labels, final FetchHints fetchHints, final Long endTime, final Authorizations authorizations) {
         Iterable<String> vertexIds = getVertexIds(direction, labels, authorizations);
-        return getGraph().getVertices(vertexIds, fetchHints, authorizations);
+        return getGraph().getVertices(vertexIds, fetchHints, endTime, authorizations);
     }
 
     @Override

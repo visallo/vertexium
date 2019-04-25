@@ -297,11 +297,34 @@ public interface Vertex extends Element {
      *
      * @param direction      The direction relative to this vertex.
      * @param label          The label of edges to traverse to find the vertices.
+     * @param endTime        Include all changes made up until the point in time.
+     * @param authorizations The authorizations used to find the vertices.
+     * @return An Iterable of vertices.
+     */
+    Iterable<Vertex> getVertices(Direction direction, String label, Long endTime, Authorizations authorizations);
+
+    /**
+     * Similar to getEdges but gets the vertices on the other side of the edges attached to this vertex that have the given label.
+     *
+     * @param direction      The direction relative to this vertex.
+     * @param label          The label of edges to traverse to find the vertices.
      * @param fetchHints     Hint on what should be fetched from the datastore.
      * @param authorizations The authorizations used to find the vertices.
      * @return An Iterable of vertices.
      */
     Iterable<Vertex> getVertices(Direction direction, String label, FetchHints fetchHints, Authorizations authorizations);
+
+    /**
+     * Similar to getEdges but gets the vertices on the other side of the edges attached to this vertex that have the given label.
+     *
+     * @param direction      The direction relative to this vertex.
+     * @param label          The label of edges to traverse to find the vertices.
+     * @param fetchHints     Hint on what should be fetched from the datastore.
+     * @param endTime        Include all changes made up until the point in time.
+     * @param authorizations The authorizations used to find the vertices.
+     * @return An Iterable of vertices.
+     */
+    Iterable<Vertex> getVertices(Direction direction, String label, FetchHints fetchHints, Long endTime, Authorizations authorizations);
 
     /**
      * Similar to getEdges but gets the vertices on the other side of the edges attached to this vertex that have any of the given labels.
@@ -323,6 +346,18 @@ public interface Vertex extends Element {
      * @return An Iterable of vertices.
      */
     Iterable<Vertex> getVertices(Direction direction, String[] labels, FetchHints fetchHints, Authorizations authorizations);
+
+    /**
+     * Similar to getEdges but gets the vertices on the other side of the edges attached to this vertex that have any of the given labels.
+     *
+     * @param direction      The direction relative to this vertex.
+     * @param labels         The labels of edges to traverse to find the vertices.
+     * @param fetchHints     Hint on what should be fetched from the datastore.
+     * @param endTime        Include all changes made up until the point in time.
+     * @param authorizations The authorizations used to find the vertices.
+     * @return An Iterable of vertices.
+     */
+    Iterable<Vertex> getVertices(Direction direction, String[] labels, FetchHints fetchHints, Long endTime, Authorizations authorizations);
 
     /**
      * Gets vertex ids of connected vertices.
