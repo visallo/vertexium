@@ -2,6 +2,7 @@ package org.vertexium.accumulo.iterator.model;
 
 import org.apache.accumulo.core.data.ArrayByteSequence;
 import org.apache.accumulo.core.data.ByteSequence;
+import org.apache.hadoop.io.Text;
 import org.vertexium.accumulo.iterator.util.ByteSequenceUtils;
 
 import java.nio.ByteBuffer;
@@ -11,6 +12,10 @@ import static org.vertexium.accumulo.iterator.util.ByteSequenceUtils.subSequence
 
 public abstract class KeyBaseByteSequence {
     public static final byte VALUE_SEPARATOR = 0x1f;
+
+    public static ByteSequence[] splitOnValueSeparator(Text text, int partCount) {
+        return splitOnValueSeparator(new ArrayByteSequence(text.getBytes()), partCount);
+    }
 
     public static ByteSequence[] splitOnValueSeparator(ByteSequence bytes, int partCount) {
         ByteSequence[] results = new ByteSequence[partCount];

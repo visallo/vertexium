@@ -2,8 +2,10 @@ package org.vertexium.accumulo.keys;
 
 import org.apache.hadoop.io.Text;
 import org.vertexium.*;
+import org.vertexium.accumulo.AccumuloNameSubstitutionStrategy;
 import org.vertexium.accumulo.iterator.model.KeyBase;
 import org.vertexium.accumulo.iterator.model.PropertyColumnQualifier;
+import org.vertexium.accumulo.iterator.model.PropertyHiddenColumnQualifier;
 import org.vertexium.accumulo.iterator.model.PropertyMetadataColumnQualifier;
 import org.vertexium.id.NameSubstitutionStrategy;
 import org.vertexium.mutation.ExtendedDataMutationBase;
@@ -32,6 +34,14 @@ public class KeyHelper {
         String propertyName = nameSubstitutionStrategy.inflate(parts[PropertyColumnQualifier.PART_INDEX_PROPERTY_NAME]);
         String propertyKey = nameSubstitutionStrategy.inflate(parts[PropertyColumnQualifier.PART_INDEX_PROPERTY_KEY]);
         return new PropertyColumnQualifier(propertyName, propertyKey);
+    }
+
+    public static PropertyHiddenColumnQualifier createPropertyHiddenColumnQualifier(String columnQualifier, AccumuloNameSubstitutionStrategy nameSubstitutionStrategy) {
+        String[] parts = KeyBase.splitOnValueSeparator(columnQualifier, 3);
+        String propertyName = nameSubstitutionStrategy.inflate(parts[PropertyHiddenColumnQualifier.PART_INDEX_PROPERTY_NAME]);
+        String propertyKey = nameSubstitutionStrategy.inflate(parts[PropertyHiddenColumnQualifier.PART_INDEX_PROPERTY_KEY]);
+        String visibilityString = parts[PropertyHiddenColumnQualifier.PART_INDEX_PROPERTY_VISIBILITY];
+        return new PropertyHiddenColumnQualifier(propertyName, propertyKey, visibilityString);
     }
 
     public static Text getColumnQualifierFromPropertyColumnQualifier(Property property, NameSubstitutionStrategy nameSubstitutionStrategy) {

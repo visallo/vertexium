@@ -115,6 +115,13 @@ public class HistoricalPropertyValue implements Serializable, Comparable<Histori
             return result;
         }
 
+        if (isDeleted() != o.isDeleted()) {
+            if (isDeleted()) {
+                return 1;
+            }
+            return -1;
+        }
+
         result = getPropertyVisibility().compareTo(o.getPropertyVisibility());
         if (result != 0) {
             return result;

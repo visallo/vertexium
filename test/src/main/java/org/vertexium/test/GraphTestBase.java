@@ -12,6 +12,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.vertexium.*;
 import org.vertexium.event.*;
+import org.vertexium.historicalEvent.*;
 import org.vertexium.mutation.ElementMutation;
 import org.vertexium.mutation.ExistingElementMutation;
 import org.vertexium.property.PropertyValue;
@@ -5640,6 +5641,7 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     public void testAlterVisibilityAndSetMetadataInOneMutation() {
         Metadata prop1Metadata = Metadata.create();
         prop1Metadata.add("prop1_key1", "metadata1", VISIBILITY_EMPTY);
@@ -5662,9 +5664,10 @@ public abstract class GraphTestBase {
         assertEquals("metadata1New", v1.getProperty("prop1").getMetadata().getValue("prop1_key1"));
 
         List<HistoricalPropertyValue> historicalPropertyValues = toList(v1.getHistoricalPropertyValues(AUTHORIZATIONS_A_AND_B));
-        assertEquals(2, historicalPropertyValues.size());
+        assertEquals(3, historicalPropertyValues.size());
         assertEquals("metadata1New", historicalPropertyValues.get(0).getMetadata().getValue("prop1_key1"));
-        assertEquals("metadata1", historicalPropertyValues.get(1).getMetadata().getValue("prop1_key1"));
+        assumeTrue(historicalPropertyValues.get(1).isDeleted());
+        assertEquals("metadata1", historicalPropertyValues.get(2).getMetadata().getValue("prop1_key1"));
     }
 
     @Test
@@ -6292,6 +6295,7 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     public void testAllPropertyHistoricalVersions() {
         Date time25 = createDate(2015, 4, 6, 16, 15, 0);
         Date time30 = createDate(2015, 4, 6, 16, 16, 0);
@@ -6347,6 +6351,7 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     public void testPropertyHistoricalVersions() {
         Date time25 = createDate(2015, 4, 6, 16, 15, 0);
         Date time30 = createDate(2015, 4, 6, 16, 16, 0);
@@ -6382,6 +6387,7 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     public void testStreamingPropertyHistoricalVersions() {
         Date time25 = createDate(2015, 4, 6, 16, 15, 0);
         Date time30 = createDate(2015, 4, 6, 16, 16, 0);
@@ -6448,6 +6454,7 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     public void testSaveMultipleTimestampedValuesInSameMutationVertex() {
         String vertexId = "v1";
         String propertyKey = "k1";
@@ -6473,6 +6480,7 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     public void testSaveMultipleTimestampedValuesInSameMutationEdge() {
         Vertex v1 = graph.addVertex("v1", VISIBILITY_EMPTY, AUTHORIZATIONS_EMPTY);
         Vertex v2 = graph.addVertex("v2", VISIBILITY_EMPTY, AUTHORIZATIONS_EMPTY);
@@ -6500,6 +6508,7 @@ public abstract class GraphTestBase {
         compareHistoricalValues(values, historicalPropertyValues);
     }
 
+    @SuppressWarnings("deprecation")
     private void compareHistoricalValues(Map<String, Long> expectedValues, Iterable<HistoricalPropertyValue> historicalPropertyValues) {
         Map<String, Long> expectedValuesCopy = new HashMap<>(expectedValues);
         for (HistoricalPropertyValue historicalPropertyValue : historicalPropertyValues) {
@@ -6521,6 +6530,7 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     public void testTimestampsInExistingElementMutation() {
         long t1 = createDate(2017, 1, 18, 9, 20, 0).getTime();
         long t2 = createDate(2017, 1, 19, 9, 20, 0).getTime();
@@ -9090,8 +9100,370 @@ public abstract class GraphTestBase {
         return results;
     }
 
+    @Test
+    public void historicalEventsVertex() {
+        long ts = IncreasingTime.currentTimeMillis();
+        Metadata prop1Metadata = Metadata.create();
+        prop1Metadata.add("m1", "value_m1", VISIBILITY_A);
+        Metadata prop2Metadata = Metadata.create();
+        prop2Metadata.add("m2", "value_m2", VISIBILITY_A);
+        graph.prepareVertex("v1", ts, VISIBILITY_A)
+            .addPropertyValue("k1", "prop1", "value1a", prop1Metadata, ts, VISIBILITY_A)
+            .addPropertyValue("k1", "prop2", "value2a", prop2Metadata, ts, VISIBILITY_A)
+            .save(AUTHORIZATIONS_ALL);
+        graph.flush();
+
+        graph.prepareVertex("v1", VISIBILITY_A)
+            .addPropertyValue("k1", "prop1", "value1b", VISIBILITY_A)
+            .save(AUTHORIZATIONS_ALL);
+        graph.flush();
+
+        Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_ALL);
+        v1.markPropertyHidden("k1", "prop1", VISIBILITY_A, VISIBILITY_C, "mark property hidden", AUTHORIZATIONS_ALL);
+        graph.flush();
+
+        v1 = graph.getVertex("v1", FetchHints.ALL_INCLUDING_HIDDEN, AUTHORIZATIONS_ALL);
+        v1.markPropertyVisible("k1", "prop1", VISIBILITY_A, VISIBILITY_C, "mark property visible", AUTHORIZATIONS_ALL);
+        graph.flush();
+
+        v1 = graph.getVertex("v1", AUTHORIZATIONS_ALL);
+        v1.prepareMutation()
+            .setPropertyMetadata("k1", "prop1", "meta1", "meta1value", VISIBILITY_A)
+            .save(AUTHORIZATIONS_ALL);
+        graph.flush();
+
+        v1 = graph.getVertex("v1", FetchHints.ALL_INCLUDING_HIDDEN, AUTHORIZATIONS_ALL);
+        v1.prepareMutation()
+            .alterPropertyVisibility("k1", "prop1", VISIBILITY_B, "alter property visibility")
+            .save(AUTHORIZATIONS_ALL);
+        graph.flush();
+
+        v1 = graph.getVertex("v1", FetchHints.ALL_INCLUDING_HIDDEN, AUTHORIZATIONS_ALL);
+        v1.softDeleteProperty("k1", "prop1", VISIBILITY_B, "soft delete property data", AUTHORIZATIONS_ALL);
+        v1.softDeleteProperty("k1", "prop2", VISIBILITY_A, AUTHORIZATIONS_ALL);
+        graph.flush();
+
+        graph.softDeleteVertex("v1", "soft delete vertex data", AUTHORIZATIONS_ALL);
+        graph.flush();
+
+        graph.prepareVertex("v1", VISIBILITY_A)
+            .save(AUTHORIZATIONS_ALL);
+        graph.flush();
+
+        v1 = graph.getVertex("v1", AUTHORIZATIONS_ALL);
+        graph.markVertexHidden(v1, VISIBILITY_C, "mark vertex hidden", AUTHORIZATIONS_ALL);
+        graph.flush();
+
+        v1 = graph.getVertex("v1", FetchHints.ALL_INCLUDING_HIDDEN, AUTHORIZATIONS_ALL);
+        graph.markVertexVisible(v1, VISIBILITY_C, "mark vertex visible", AUTHORIZATIONS_ALL);
+        graph.flush();
+
+        v1 = graph.getVertex("v1", FetchHints.ALL_INCLUDING_HIDDEN, AUTHORIZATIONS_ALL);
+        v1.prepareMutation()
+            .alterElementVisibility(VISIBILITY_B, "alter element visibility")
+            .save(AUTHORIZATIONS_ALL);
+        graph.flush();
+
+        List<HistoricalEvent> events;
+        HistoricalEventsFetchHints fetchHints = new HistoricalEventsFetchHintsBuilder()
+            .limit(8L)
+            .build();
+        ArrayList<ElementId> ids = Lists.newArrayList(ElementId.vertex("v1"));
+        events = graph.getHistoricalEvents(ids, fetchHints, AUTHORIZATIONS_ALL)
+            .collect(Collectors.toList());
+        events.addAll(
+            graph.getHistoricalEvents(ids, events.get(events.size() - 1).getHistoricalEventId(), fetchHints, AUTHORIZATIONS_ALL)
+                .collect(Collectors.toList())
+        );
+        assertEquals(15, events.size());
+
+        assertTrue(events.get(0) instanceof HistoricalAddVertexEvent);
+        HistoricalAddVertexEvent addVertexEvent = (HistoricalAddVertexEvent) events.get(0);
+        assertEquals("v1", addVertexEvent.getElementId());
+        assertEquals(VISIBILITY_A, addVertexEvent.getVisibility());
+
+        assertTrue(events.get(1) instanceof HistoricalAddPropertyEvent);
+        HistoricalAddPropertyEvent addPropertyEvent = (HistoricalAddPropertyEvent) events.get(1);
+        assertEquals("v1", addPropertyEvent.getElementId());
+        assertEquals("k1", addPropertyEvent.getPropertyKey());
+        assertEquals("prop1", addPropertyEvent.getPropertyName());
+        assertEquals(null, addPropertyEvent.getPreviousValue());
+        assertEquals("value1a", addPropertyEvent.getValue());
+        assertEquals(1, addPropertyEvent.getMetadata().entrySet().size());
+        assertEquals("value_m1", addPropertyEvent.getMetadata().getValue("m1", VISIBILITY_A));
+
+        assertTrue(events.get(2) instanceof HistoricalAddPropertyEvent);
+        addPropertyEvent = (HistoricalAddPropertyEvent) events.get(2);
+        assertEquals("v1", addPropertyEvent.getElementId());
+        assertEquals("k1", addPropertyEvent.getPropertyKey());
+        assertEquals("prop2", addPropertyEvent.getPropertyName());
+        assertEquals(null, addPropertyEvent.getPreviousValue());
+        assertEquals("value2a", addPropertyEvent.getValue());
+        assertEquals(1, addPropertyEvent.getMetadata().entrySet().size());
+        assertEquals("value_m2", addPropertyEvent.getMetadata().getValue("m2", VISIBILITY_A));
+
+        assertTrue(events.get(3) instanceof HistoricalAddPropertyEvent);
+        addPropertyEvent = (HistoricalAddPropertyEvent) events.get(3);
+        assertEquals("v1", addPropertyEvent.getElementId());
+        assertEquals("k1", addPropertyEvent.getPropertyKey());
+        assertEquals("prop1", addPropertyEvent.getPropertyName());
+        assertEquals("value1a", addPropertyEvent.getPreviousValue());
+        assertEquals("value1b", addPropertyEvent.getValue());
+        assertEquals(1, addPropertyEvent.getMetadata().entrySet().size());
+
+        assertTrue(events.get(4) instanceof HistoricalMarkPropertyHiddenEvent);
+        HistoricalMarkPropertyHiddenEvent markPropertyHiddenEvent = (HistoricalMarkPropertyHiddenEvent) events.get(4);
+        assertEquals("v1", markPropertyHiddenEvent.getElementId());
+        assertEquals("k1", markPropertyHiddenEvent.getPropertyKey());
+        assertEquals("prop1", markPropertyHiddenEvent.getPropertyName());
+        assertEquals(VISIBILITY_A, markPropertyHiddenEvent.getPropertyVisibility());
+        assertEquals(VISIBILITY_C, markPropertyHiddenEvent.getHiddenVisibility());
+        assertEquals("mark property hidden", markPropertyHiddenEvent.getData());
+
+        assertTrue(events.get(5) instanceof HistoricalMarkPropertyVisibleEvent);
+        HistoricalMarkPropertyVisibleEvent markPropertyVisibleEvent = (HistoricalMarkPropertyVisibleEvent) events.get(5);
+        assertEquals("v1", markPropertyVisibleEvent.getElementId());
+        assertEquals("k1", markPropertyVisibleEvent.getPropertyKey());
+        assertEquals("prop1", markPropertyVisibleEvent.getPropertyName());
+        assertEquals(VISIBILITY_A, markPropertyVisibleEvent.getPropertyVisibility());
+        assertEquals(VISIBILITY_C, markPropertyVisibleEvent.getHiddenVisibility());
+        assertEquals("mark property visible", markPropertyVisibleEvent.getData());
+
+        assertTrue(events.get(6) instanceof HistoricalSoftDeletePropertyEvent);
+        HistoricalSoftDeletePropertyEvent softDeletePropertyEvent = (HistoricalSoftDeletePropertyEvent) events.get(6);
+        assertEquals("v1", softDeletePropertyEvent.getElementId());
+        assertEquals("k1", softDeletePropertyEvent.getPropertyKey());
+        assertEquals("prop1", softDeletePropertyEvent.getPropertyName());
+        assertEquals(VISIBILITY_A, softDeletePropertyEvent.getPropertyVisibility());
+        assertEquals("alter property visibility", softDeletePropertyEvent.getData());
+
+        assertTrue(events.get(7) instanceof HistoricalAddPropertyEvent);
+        addPropertyEvent = (HistoricalAddPropertyEvent) events.get(7);
+        assertEquals("v1", addPropertyEvent.getElementId());
+        assertEquals("k1", addPropertyEvent.getPropertyKey());
+        assertEquals("prop1", addPropertyEvent.getPropertyName());
+        assertEquals("value1b", addPropertyEvent.getPreviousValue());
+        assertEquals("value1b", addPropertyEvent.getValue());
+        assertEquals(1, addPropertyEvent.getMetadata().entrySet().size());
+
+        assertTrue(events.get(8) instanceof HistoricalSoftDeletePropertyEvent);
+        softDeletePropertyEvent = (HistoricalSoftDeletePropertyEvent) events.get(8);
+        assertEquals("v1", softDeletePropertyEvent.getElementId());
+        assertEquals("k1", softDeletePropertyEvent.getPropertyKey());
+        assertEquals("prop1", softDeletePropertyEvent.getPropertyName());
+        assertEquals(VISIBILITY_B, softDeletePropertyEvent.getPropertyVisibility());
+        assertEquals("soft delete property data", softDeletePropertyEvent.getData());
+
+        assertTrue(events.get(9) instanceof HistoricalSoftDeletePropertyEvent);
+        softDeletePropertyEvent = (HistoricalSoftDeletePropertyEvent) events.get(9);
+        assertEquals("v1", softDeletePropertyEvent.getElementId());
+        assertEquals("k1", softDeletePropertyEvent.getPropertyKey());
+        assertEquals("prop2", softDeletePropertyEvent.getPropertyName());
+        assertEquals(VISIBILITY_A, softDeletePropertyEvent.getPropertyVisibility());
+
+        assertTrue(events.get(10) instanceof HistoricalSoftDeleteVertexEvent);
+        HistoricalSoftDeleteVertexEvent softDeleteVertexEvent = (HistoricalSoftDeleteVertexEvent) events.get(10);
+        assertEquals("v1", softDeleteVertexEvent.getElementId());
+        assertEquals("soft delete vertex data", softDeleteVertexEvent.getData());
+
+        assertTrue(events.get(11) instanceof HistoricalAddVertexEvent);
+        addVertexEvent = (HistoricalAddVertexEvent) events.get(11);
+        assertEquals("v1", addVertexEvent.getElementId());
+        assertEquals(VISIBILITY_A, addVertexEvent.getVisibility());
+
+        assertTrue(events.get(12) instanceof HistoricalMarkHiddenEvent);
+        HistoricalMarkHiddenEvent markHiddenEvent = (HistoricalMarkHiddenEvent) events.get(12);
+        assertEquals("v1", markHiddenEvent.getElementId());
+        assertEquals(VISIBILITY_C, markHiddenEvent.getHiddenVisibility());
+        assertEquals("mark vertex hidden", markHiddenEvent.getData());
+
+        assertTrue(events.get(13) instanceof HistoricalMarkVisibleEvent);
+        HistoricalMarkVisibleEvent markVisibleEvent = (HistoricalMarkVisibleEvent) events.get(13);
+        assertEquals("v1", markVisibleEvent.getElementId());
+        assertEquals(VISIBILITY_C, markVisibleEvent.getHiddenVisibility());
+        assertEquals("mark vertex visible", markVisibleEvent.getData());
+
+        assertTrue(events.get(14) instanceof HistoricalAlterElementVisibilityEvent);
+        HistoricalAlterElementVisibilityEvent alterElementVisibilityEvent = (HistoricalAlterElementVisibilityEvent) events.get(14);
+        assertEquals("v1", alterElementVisibilityEvent.getElementId());
+        assertEquals(VISIBILITY_A, alterElementVisibilityEvent.getOldVisibility());
+        assertEquals(VISIBILITY_B, alterElementVisibilityEvent.getNewVisibility());
+        assertEquals("alter element visibility", alterElementVisibilityEvent.getData());
+
+        fetchHints = new HistoricalEventsFetchHintsBuilder()
+            .startTime(events.get(3).getTimestamp())
+            .endTime(events.get(4).getTimestamp())
+            .build();
+        events = graph.getHistoricalEvents(ids, fetchHints, AUTHORIZATIONS_ALL).collect(Collectors.toList());
+        assertEquals(2, events.size());
+
+        assertTrue(events.get(0) instanceof HistoricalAddPropertyEvent);
+        addPropertyEvent = (HistoricalAddPropertyEvent) events.get(0);
+        assertEquals("v1", addPropertyEvent.getElementId());
+        assertEquals("k1", addPropertyEvent.getPropertyKey());
+        assertEquals("prop1", addPropertyEvent.getPropertyName());
+        assertEquals("value1a", addPropertyEvent.getPreviousValue());
+        assertEquals("value1b", addPropertyEvent.getValue());
+
+        fetchHints = new HistoricalEventsFetchHintsBuilder()
+            .includePreviousPropertyValues(false)
+            .includePropertyValues(false)
+            .build();
+        graph.getHistoricalEvents(ids, fetchHints, AUTHORIZATIONS_ALL).collect(Collectors.toList());
+    }
+
+    @Test
+    public void historicalEventsVertexStreamingPropertyValue() {
+        graph.prepareVertex("v1", VISIBILITY_A)
+            .addPropertyValue("k1", "prop1", StreamingPropertyValue.create("value1a"), VISIBILITY_A)
+            .save(AUTHORIZATIONS_ALL);
+        graph.flush();
+
+        graph.prepareVertex("v1", VISIBILITY_A)
+            .addPropertyValue("k1", "prop1", StreamingPropertyValue.create("value1b"), VISIBILITY_A)
+            .save(AUTHORIZATIONS_ALL);
+        graph.flush();
+
+        ArrayList<ElementId> ids = Lists.newArrayList(ElementId.vertex("v1"));
+        List<HistoricalEvent> events = graph.getHistoricalEvents(ids, AUTHORIZATIONS_ALL)
+            .collect(Collectors.toList());
+        assertEquals(3, events.size());
+
+        assertTrue(events.get(0) instanceof HistoricalAddVertexEvent);
+        HistoricalAddVertexEvent addVertexEvent = (HistoricalAddVertexEvent) events.get(0);
+        assertEquals("v1", addVertexEvent.getElementId());
+        assertEquals(VISIBILITY_A, addVertexEvent.getVisibility());
+
+        assertTrue(events.get(1) instanceof HistoricalAddPropertyEvent);
+        HistoricalAddPropertyEvent addPropertyEvent = (HistoricalAddPropertyEvent) events.get(1);
+        assertEquals("v1", addPropertyEvent.getElementId());
+        assertEquals("k1", addPropertyEvent.getPropertyKey());
+        assertEquals("prop1", addPropertyEvent.getPropertyName());
+        assertEquals(null, addPropertyEvent.getPreviousValue());
+        assertEquals("value1a", ((StreamingPropertyValue) addPropertyEvent.getValue()).readToString());
+        assertEquals(0, addPropertyEvent.getMetadata().entrySet().size());
+
+        assertTrue(events.get(2) instanceof HistoricalAddPropertyEvent);
+        addPropertyEvent = (HistoricalAddPropertyEvent) events.get(2);
+        assertEquals("v1", addPropertyEvent.getElementId());
+        assertEquals("k1", addPropertyEvent.getPropertyKey());
+        assertEquals("prop1", addPropertyEvent.getPropertyName());
+        assertEquals("value1a", ((StreamingPropertyValue) addPropertyEvent.getPreviousValue()).readToString());
+        assertEquals("value1b", ((StreamingPropertyValue) addPropertyEvent.getValue()).readToString());
+        assertEquals(0, addPropertyEvent.getMetadata().entrySet().size());
+    }
+
+    @Test
+    public void historicalEventsEdge() {
+        graph.prepareVertex("v1", VISIBILITY_A)
+            .save(AUTHORIZATIONS_ALL);
+        graph.prepareVertex("v2", VISIBILITY_A)
+            .save(AUTHORIZATIONS_ALL);
+        graph.flush();
+
+        graph.prepareEdge("e1", "v1", "v2", "label1", VISIBILITY_A)
+            .save(AUTHORIZATIONS_ALL);
+        graph.flush();
+
+        Edge e = graph.getEdge("e1", AUTHORIZATIONS_ALL);
+        e.prepareMutation()
+            .addPropertyValue("k1", "prop1", "value1", VISIBILITY_A)
+            .save(AUTHORIZATIONS_ALL);
+        graph.flush();
+
+        e = graph.getEdge("e1", AUTHORIZATIONS_ALL);
+        e.prepareMutation()
+            .alterEdgeLabel("label2")
+            .save(AUTHORIZATIONS_ALL);
+        graph.flush();
+
+        graph.softDeleteEdge("e1", AUTHORIZATIONS_ALL);
+        graph.flush();
+
+        graph.prepareEdge("e1", "v1", "v2", "label1", VISIBILITY_A)
+            .save(AUTHORIZATIONS_ALL);
+        graph.flush();
+
+        List<HistoricalEvent> events = graph.getHistoricalEvents(Lists.newArrayList(ElementId.edge("e1")), AUTHORIZATIONS_ALL)
+            .collect(Collectors.toList());
+        assertEquals(5, events.size());
+
+        assertTrue(events.get(0) instanceof HistoricalAddEdgeEvent);
+        HistoricalAddEdgeEvent addEdgeEvent = (HistoricalAddEdgeEvent) events.get(0);
+        assertEquals("e1", addEdgeEvent.getElementId());
+        assertEquals("label1", addEdgeEvent.getEdgeLabel());
+        assertEquals("v1", addEdgeEvent.getOutVertexId());
+        assertEquals("v2", addEdgeEvent.getInVertexId());
+        assertEquals(VISIBILITY_A, addEdgeEvent.getVisibility());
+
+        assertTrue(events.get(1) instanceof HistoricalAddPropertyEvent);
+        HistoricalAddPropertyEvent addPropertyEvent = (HistoricalAddPropertyEvent) events.get(1);
+        assertEquals("e1", addPropertyEvent.getElementId());
+        assertEquals("k1", addPropertyEvent.getPropertyKey());
+        assertEquals("prop1", addPropertyEvent.getPropertyName());
+        assertEquals("value1", addPropertyEvent.getValue());
+
+        assertTrue(events.get(2) instanceof HistoricalAlterEdgeLabelEvent);
+        HistoricalAlterEdgeLabelEvent alterEdgeLabelEvent = (HistoricalAlterEdgeLabelEvent) events.get(2);
+        assertEquals("e1", alterEdgeLabelEvent.getElementId());
+        assertEquals("label2", alterEdgeLabelEvent.getNewEdgeLabel());
+
+        assertTrue(events.get(3) instanceof HistoricalSoftDeleteEdgeEvent);
+        HistoricalSoftDeleteEdgeEvent softDeleteEvent = (HistoricalSoftDeleteEdgeEvent) events.get(3);
+        assertEquals("e1", softDeleteEvent.getElementId());
+        assertEquals("label2", softDeleteEvent.getEdgeLabel());
+        assertEquals("v1", softDeleteEvent.getOutVertexId());
+        assertEquals("v2", softDeleteEvent.getInVertexId());
+
+        assertTrue(events.get(4) instanceof HistoricalAddEdgeEvent);
+        addEdgeEvent = (HistoricalAddEdgeEvent) events.get(4);
+        assertEquals("e1", addEdgeEvent.getElementId());
+
+        events = graph.getHistoricalEvents(Lists.newArrayList(ElementId.vertex("v1")), AUTHORIZATIONS_ALL)
+            .collect(Collectors.toList());
+        assertEquals(5, events.size());
+
+        assertTrue(events.get(0) instanceof HistoricalAddVertexEvent);
+        HistoricalAddVertexEvent addVertexEvent = (HistoricalAddVertexEvent) events.get(0);
+        assertEquals("v1", addVertexEvent.getElementId());
+        assertEquals(VISIBILITY_A, addVertexEvent.getVisibility());
+
+        assertTrue(events.get(1) instanceof HistoricalAddEdgeToVertexEvent);
+        HistoricalAddEdgeToVertexEvent addEdgeToVertexEvent = (HistoricalAddEdgeToVertexEvent) events.get(1);
+        assertEquals("e1", addEdgeToVertexEvent.getEdgeId());
+        assertEquals(Direction.OUT, addEdgeToVertexEvent.getEdgeDirection());
+        assertEquals("label1", addEdgeToVertexEvent.getEdgeLabel());
+        assertEquals("v2", addEdgeToVertexEvent.getOtherVertexId());
+        assertEquals(VISIBILITY_A, addEdgeToVertexEvent.getEdgeVisibility());
+
+        assertTrue(events.get(2) instanceof HistoricalAddEdgeToVertexEvent);
+        addEdgeToVertexEvent = (HistoricalAddEdgeToVertexEvent) events.get(2);
+        assertEquals("e1", addEdgeToVertexEvent.getEdgeId());
+        assertEquals(Direction.OUT, addEdgeToVertexEvent.getEdgeDirection());
+        assertEquals("label2", addEdgeToVertexEvent.getEdgeLabel());
+        assertEquals("v2", addEdgeToVertexEvent.getOtherVertexId());
+        assertEquals(VISIBILITY_A, addEdgeToVertexEvent.getEdgeVisibility());
+
+        assertTrue(events.get(3) instanceof HistoricalSoftDeleteEdgeToVertexEvent);
+        HistoricalSoftDeleteEdgeToVertexEvent softDeleteEdgeToVertexEvent = (HistoricalSoftDeleteEdgeToVertexEvent) events.get(3);
+        assertEquals("e1", softDeleteEdgeToVertexEvent.getEdgeId());
+        assertEquals(Direction.OUT, softDeleteEdgeToVertexEvent.getEdgeDirection());
+        assertEquals("label2", softDeleteEdgeToVertexEvent.getEdgeLabel());
+        assertEquals("v2", softDeleteEdgeToVertexEvent.getOtherVertexId());
+        assertEquals(VISIBILITY_A, softDeleteEdgeToVertexEvent.getEdgeVisibility());
+
+        assertTrue(events.get(4) instanceof HistoricalAddEdgeToVertexEvent);
+        addEdgeToVertexEvent = (HistoricalAddEdgeToVertexEvent) events.get(4);
+        assertEquals("e1", addEdgeToVertexEvent.getEdgeId());
+        assertEquals(Direction.OUT, addEdgeToVertexEvent.getEdgeDirection());
+        assertEquals("label1", addEdgeToVertexEvent.getEdgeLabel());
+        assertEquals("v2", addEdgeToVertexEvent.getOtherVertexId());
+        assertEquals(VISIBILITY_A, addEdgeToVertexEvent.getEdgeVisibility());
+    }
+
     // Historical Property Value tests
     @Test
+    @SuppressWarnings("deprecation")
     public void historicalPropertyValueAddProp() {
         graph.prepareVertex("v1", VISIBILITY_A)
             .setProperty("prop1_A", "value1", VISIBILITY_A)
@@ -9117,6 +9489,7 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     public void historicalPropertyValueDeleteProp() {
         graph.prepareVertex("v1", VISIBILITY_A)
             .setProperty("prop1_A", "value1", VISIBILITY_A)
@@ -9158,13 +9531,15 @@ public abstract class GraphTestBase {
         Metadata metadata = Metadata.create();
         metadata.add("metadata1", "metadata1Value", VISIBILITY_A);
         Vertex v2 = graph.prepareVertex("v2", VISIBILITY_A)
-            .setProperty("prop1_A", "value1", metadata, VISIBILITY_A)
+            .setProperty("prop1_A", "value2", metadata, VISIBILITY_A)
             .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
+        metadata = Metadata.create();
+        metadata.add("metadata1", "metadata1Value", VISIBILITY_A);
         metadata.add("metadata2", "metadata2Value", VISIBILITY_A);
         v2.prepareMutation()
-            .setProperty("prop1_A", "value2", metadata, VISIBILITY_B)
+            .setProperty("prop1_A", "value3", metadata, VISIBILITY_B)
             .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
@@ -9178,23 +9553,31 @@ public abstract class GraphTestBase {
         v2 = graph.getVertex("v2", AUTHORIZATIONS_A_AND_B);
         values = toList(v2.getHistoricalPropertyValues(AUTHORIZATIONS_A_AND_B));
         Collections.reverse(values);
-        assertEquals(3, values.size());
+        assertEquals(4, values.size());
 
         List<HistoricalPropertyValue> deletedHpv = values.stream()
             .filter(HistoricalPropertyValue::isDeleted)
             .collect(Collectors.toList());
 
-        assertEquals(1, deletedHpv.size());
+        assertEquals(2, deletedHpv.size());
 
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < values.size(); i++) {
             HistoricalPropertyValue item = values.get(i);
             if (item.getPropertyName().equals("prop1_A")) {
                 assertEquals("prop1_A", values.get(i).getPropertyName());
                 if (item.isDeleted()) {
                     Metadata hpvMetadata = item.getMetadata();
-                    assertEquals(2, hpvMetadata.entrySet().size());
-                    assertEquals("value2", item.getValue());
-                    assertEquals(VISIBILITY_B_STRING, item.getPropertyVisibility().getVisibilityString());
+                    if (item.getPropertyVisibility().equals(VISIBILITY_A)) {
+                        assertEquals(1, hpvMetadata.entrySet().size());
+                        assertEquals("value2", item.getValue());
+                        assertEquals(VISIBILITY_A_STRING, item.getPropertyVisibility().getVisibilityString());
+                    } else if (item.getPropertyVisibility().equals(VISIBILITY_B)) {
+                        assertEquals(2, hpvMetadata.entrySet().size());
+                        assertEquals("value3", item.getValue());
+                        assertEquals(VISIBILITY_B_STRING, item.getPropertyVisibility().getVisibilityString());
+                    } else {
+                        fail("Invalid " + item);
+                    }
                 }
             } else {
                 fail("Invalid " + item);
@@ -9203,6 +9586,7 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     public void historicalPropertyValueModifyPropValue() {
         graph.prepareVertex("v1", VISIBILITY_A)
             .setProperty("prop1_A", "value1", VISIBILITY_A)
@@ -9247,6 +9631,7 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     public void historicalPropertyValueModifyPropVisibility() {
         graph.prepareVertex("v1", VISIBILITY_A)
             .setProperty("prop1_A", "value1", VISIBILITY_A)
@@ -9271,22 +9656,35 @@ public abstract class GraphTestBase {
 
         List<HistoricalPropertyValue> values = toList(v1.getHistoricalPropertyValues(AUTHORIZATIONS_A_AND_B));
         Collections.reverse(values);
-        assertEquals(5, values.size());
+        assertEquals(7, values.size());
+
         assertEquals("prop1_A", values.get(0).getPropertyName());
         assertFalse(values.get(0).isDeleted());
         assertEquals(VISIBILITY_A, values.get(0).getPropertyVisibility());
+
         assertEquals("prop2_B", values.get(1).getPropertyName());
         assertFalse(values.get(1).isDeleted());
         assertEquals(VISIBILITY_B, values.get(1).getPropertyVisibility());
+
         assertEquals("prop3_A", values.get(2).getPropertyName());
         assertFalse(values.get(2).isDeleted());
         assertEquals(VISIBILITY_A, values.get(2).getPropertyVisibility());
+
         assertEquals("prop1_A", values.get(3).getPropertyName());
-        assertFalse(values.get(3).isDeleted());
-        assertEquals(VISIBILITY_B, values.get(3).getPropertyVisibility());
+        assertTrue(values.get(3).isDeleted());
+        assertEquals(VISIBILITY_A, values.get(3).getPropertyVisibility());
+
         assertEquals("prop1_A", values.get(4).getPropertyName());
         assertFalse(values.get(4).isDeleted());
-        assertEquals(VISIBILITY_A, values.get(4).getPropertyVisibility());
+        assertEquals(VISIBILITY_B, values.get(4).getPropertyVisibility());
+
+        assertEquals("prop1_A", values.get(5).getPropertyName());
+        assertTrue(values.get(5).isDeleted());
+        assertEquals(VISIBILITY_B, values.get(5).getPropertyVisibility());
+
+        assertEquals("prop1_A", values.get(6).getPropertyName());
+        assertFalse(values.get(6).isDeleted());
+        assertEquals(VISIBILITY_A, values.get(6).getPropertyVisibility());
     }
 
     @Test

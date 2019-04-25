@@ -67,6 +67,7 @@ public abstract class LazyProperty extends ModelBase {
         return out.toString();
     }
 
+    @SuppressWarnings("deprecation")
     public String getHistory() {
         Element e = getE();
         if (e == null) {

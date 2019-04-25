@@ -31,22 +31,22 @@ public class ElementMapperGraph extends GraphBase {
     }
 
     @Override
-    public void softDeleteVertex(Vertex vertex, Authorizations authorizations) {
+    public void softDeleteVertex(Vertex vertex, Object eventData, Authorizations authorizations) {
         throw new VertexiumException("Not supported");
     }
 
     @Override
-    public void softDeleteVertex(Vertex vertex, Long timestamp, Authorizations authorizations) {
+    public void softDeleteVertex(Vertex vertex, Long timestamp, Object eventData, Authorizations authorizations) {
         throw new VertexiumException("Not supported");
     }
 
     @Override
-    public void softDeleteEdge(Edge edge, Long timestamp, Authorizations authorizations) {
+    public void softDeleteEdge(Edge edge, Long timestamp, Object eventData, Authorizations authorizations) {
         throw new VertexiumException("Not supported");
     }
 
     @Override
-    public void softDeleteEdge(Edge edge, Authorizations authorizations) {
+    public void softDeleteEdge(Edge edge, Object eventData, Authorizations authorizations) {
         throw new VertexiumException("Not supported");
     }
 
@@ -161,22 +161,22 @@ public class ElementMapperGraph extends GraphBase {
     }
 
     @Override
-    public void markVertexHidden(Vertex vertex, Visibility visibility, Authorizations authorizations) {
+    public void markVertexHidden(Vertex vertex, Visibility visibility, Object eventData, Authorizations authorizations) {
         throw new VertexiumException("Not supported");
     }
 
     @Override
-    public void markVertexVisible(Vertex vertex, Visibility visibility, Authorizations authorizations) {
+    public void markVertexVisible(Vertex vertex, Visibility visibility, Object eventData, Authorizations authorizations) {
         throw new VertexiumException("Not supported");
     }
 
     @Override
-    public void markEdgeHidden(Edge edge, Visibility visibility, Authorizations authorizations) {
+    public void markEdgeHidden(Edge edge, Visibility visibility, Object eventData, Authorizations authorizations) {
         throw new VertexiumException("Not supported");
     }
 
     @Override
-    public void markEdgeVisible(Edge edge, Visibility visibility, Authorizations authorizations) {
+    public void markEdgeVisible(Edge edge, Visibility visibility, Object eventData, Authorizations authorizations) {
         throw new VertexiumException("Not supported");
     }
 

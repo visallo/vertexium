@@ -32,12 +32,16 @@ public abstract class ElementData {
     public final Map<ByteSequence, ByteSequence> propertyVisibilities = new HashMap<>();
     public final Map<ByteSequence, Long> propertyTimestamps = new HashMap<>();
     public final Set<String> extendedTableNames = new HashSet<>();
+    public boolean deleted;
+    public boolean hidden;
 
     public void clear() {
         id = null;
         visibility = null;
         timestamp = 0;
         softDeleteTimestamp = 0;
+        deleted = false;
+        hidden = false;
         hiddenVisibilities.clear();
         softDeletedProperties.clear();
         hiddenProperties.clear();
@@ -161,6 +165,10 @@ public abstract class ElementData {
             throw new VertexiumAccumuloIteratorException("Could not get properties", ex);
         }
         return results;
+    }
+
+    public boolean isDeletedOrHidden() {
+        return deleted || hidden;
     }
 
     private interface PropertyDataHandler {

@@ -18,6 +18,7 @@ public abstract class ExistingElementMutationImpl<T extends Element> implements 
     private final List<ExtendedDataDeleteMutation> extendedDataDeletes = new ArrayList<>();
     private final T element;
     private Visibility newElementVisibility;
+    private Object newElementVisibilityData;
     private Visibility oldElementVisibility;
     private IndexHint indexHint = IndexHint.INDEX;
 
@@ -124,74 +125,75 @@ public abstract class ExistingElementMutationImpl<T extends Element> implements 
     }
 
     @Override
-    public ElementMutation<T> softDeleteProperty(Property property) {
+    public ElementMutation<T> softDeleteProperty(Property property, Object eventData) {
         Preconditions.checkNotNull(property, "property cannot be null");
-        propertySoftDeletes.add(new PropertyPropertySoftDeleteMutation(property));
+        propertySoftDeletes.add(new PropertyPropertySoftDeleteMutation(property, eventData));
         return this;
     }
 
     @Override
-    public ExistingElementMutation<T> softDeleteProperties(String name) {
+    public ExistingElementMutation<T> softDeleteProperties(String name, Object eventData) {
         for (Property prop : this.element.getProperties(name)) {
-            softDeleteProperty(prop);
+            softDeleteProperty(prop, eventData);
         }
         return this;
     }
 
     @Override
-    public ExistingElementMutation<T> softDeleteProperties(String key, String name) {
+    public ExistingElementMutation<T> softDeleteProperties(String key, String name, Object eventData) {
         for (Property prop : this.element.getProperties(key, name)) {
-            softDeleteProperty(prop);
+            softDeleteProperty(prop, eventData);
         }
         return this;
     }
 
     @Override
-    public ElementMutation<T> softDeleteProperty(String name, Visibility visibility) {
+    public ElementMutation<T> softDeleteProperty(String name, Visibility visibility, Object eventData) {
         Property property = this.element.getProperty(name, visibility);
         if (property != null) {
-            softDeleteProperty(property);
+            softDeleteProperty(property, eventData);
         }
         return this;
     }
 
     @Override
-    public ElementMutation<T> softDeleteProperty(String key, String name, Visibility visibility) {
+    public ElementMutation<T> softDeleteProperty(String key, String name, Visibility visibility, Object eventData) {
         Property property = this.element.getProperty(key, name, visibility);
         if (property != null) {
-            softDeleteProperty(property);
+            softDeleteProperty(property, eventData);
         }
         return this;
     }
 
     @Override
-    public ExistingElementMutation<T> alterPropertyVisibility(Property property, Visibility visibility) {
+    public ExistingElementMutation<T> alterPropertyVisibility(Property property, Visibility visibility, Object eventData) {
         if (!element.getFetchHints().isIncludePropertyAndMetadata(property.getName())) {
             throw new VertexiumMissingFetchHintException(element.getFetchHints(), "Property " + property.getName() + " needs to be included with metadata");
         }
 
-        this.alterPropertyVisibilities.add(new AlterPropertyVisibility(property.getKey(), property.getName(), property.getVisibility(), visibility));
+        this.alterPropertyVisibilities.add(new AlterPropertyVisibility(property.getKey(), property.getName(), property.getVisibility(), visibility, eventData));
         return this;
     }
 
     @Override
-    public ExistingElementMutation<T> alterPropertyVisibility(String name, Visibility visibility) {
-        return alterPropertyVisibility(DEFAULT_KEY, name, visibility);
+    public ExistingElementMutation<T> alterPropertyVisibility(String name, Visibility visibility, Object eventData) {
+        return alterPropertyVisibility(DEFAULT_KEY, name, visibility, eventData);
     }
 
     @Override
-    public ExistingElementMutation<T> alterPropertyVisibility(String key, String name, Visibility visibility) {
+    public ExistingElementMutation<T> alterPropertyVisibility(String key, String name, Visibility visibility, Object eventData) {
         if (!element.getFetchHints().isIncludePropertyAndMetadata(name)) {
             throw new VertexiumMissingFetchHintException(element.getFetchHints(), "Property " + name + " needs to be included with metadata");
         }
 
-        this.alterPropertyVisibilities.add(new AlterPropertyVisibility(key, name, null, visibility));
+        this.alterPropertyVisibilities.add(new AlterPropertyVisibility(key, name, null, visibility, eventData));
         return this;
     }
 
     @Override
-    public ExistingElementMutation<T> alterElementVisibility(Visibility visibility) {
+    public ExistingElementMutation<T> alterElementVisibility(Visibility visibility, Object eventData) {
         this.newElementVisibility = visibility;
+        this.newElementVisibilityData = eventData;
         return this;
     }
 
@@ -248,8 +250,14 @@ public abstract class ExistingElementMutationImpl<T extends Element> implements 
         return element;
     }
 
+    @Override
     public Visibility getNewElementVisibility() {
         return newElementVisibility;
+    }
+
+    @Override
+    public Object getNewElementVisibilityData() {
+        return newElementVisibilityData;
     }
 
     @Override

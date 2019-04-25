@@ -9,12 +9,14 @@ public class AlterPropertyVisibility {
     private final long timestamp;
     private Visibility existingVisibility;
     private final Visibility visibility;
+    private final Object data;
 
-    public AlterPropertyVisibility(String key, String name, Visibility existingVisibility, Visibility visibility) {
+    public AlterPropertyVisibility(String key, String name, Visibility existingVisibility, Visibility visibility, Object data) {
         this.key = key;
         this.name = name;
         this.existingVisibility = existingVisibility;
         this.visibility = visibility;
+        this.data = data;
         this.timestamp = IncreasingTime.currentTimeMillis();
 
         // org.vertexium.inmemory.InMemoryGraph.alterElementPropertyVisibilities() requires an additional timestamp
@@ -44,5 +46,9 @@ public class AlterPropertyVisibility {
 
     public Visibility getVisibility() {
         return visibility;
+    }
+
+    public Object getData() {
+        return data;
     }
 }

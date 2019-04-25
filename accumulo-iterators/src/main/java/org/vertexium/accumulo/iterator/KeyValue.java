@@ -5,6 +5,7 @@ import org.apache.accumulo.core.data.ByteSequence;
 import org.apache.accumulo.core.data.Key;
 import org.apache.accumulo.core.data.Value;
 import org.apache.hadoop.io.Text;
+import org.vertexium.accumulo.iterator.util.ArrayUtils;
 import org.vertexium.accumulo.iterator.util.ByteSequenceUtils;
 
 public class KeyValue {
@@ -62,5 +63,25 @@ public class KeyValue {
 
     public ByteSequence peekColumnVisibilityByteSequence() {
         return key.getColumnVisibilityData();
+    }
+
+    public ByteSequence peekColumnQualifierByteSequence() {
+        return this.columnQualifierData;
+    }
+
+    public boolean isHidden() {
+        return !ArrayUtils.startsWith(peekValue().get(), ElementIterator.HIDDEN_VALUE_DELETED.get());
+    }
+
+    public boolean isSignalValueDeleted() {
+        return ArrayUtils.startsWith(peekValue().get(), ElementIterator.SIGNAL_VALUE_DELETED.get());
+    }
+
+    @Override
+    public String toString() {
+        return "KeyValue{" +
+            "key=" + key +
+            ", value=" + value +
+            '}';
     }
 }

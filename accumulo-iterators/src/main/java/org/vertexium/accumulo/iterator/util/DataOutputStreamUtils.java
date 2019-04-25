@@ -1,10 +1,9 @@
 package org.vertexium.accumulo.iterator.util;
 
 import org.apache.accumulo.core.data.ByteSequence;
+import org.apache.accumulo.core.data.Value;
 import org.apache.hadoop.io.Text;
-import org.vertexium.accumulo.iterator.model.EdgeInfo;
-import org.vertexium.accumulo.iterator.model.EdgesWithEdgeInfo;
-import org.vertexium.accumulo.iterator.model.IteratorMetadataEntry;
+import org.vertexium.accumulo.iterator.model.*;
 
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -76,6 +75,10 @@ public class DataOutputStreamUtils {
         out.write(bytes);
     }
 
+    public static void encodeValue(DataOutputStream out, Value value) throws IOException {
+        encodeByteArray(out, value == null ? null : value.get());
+    }
+
     public static void encodeIntArray(DataOutputStream out, Collection<Integer> integers) throws IOException {
         if (integers == null) {
             out.writeInt(-1);
@@ -95,6 +98,15 @@ public class DataOutputStreamUtils {
         byte[] bytes = text.getBytes(CHARSET);
         out.writeInt(bytes.length);
         out.write(bytes, 0, bytes.length);
+    }
+
+    public static void encodeLong(DataOutputStream out, Long value) throws IOException {
+        if (value == null) {
+            out.writeByte(0x00);
+            return;
+        }
+        out.writeByte(0x01);
+        out.writeLong(value);
     }
 
     public static void encodePropertyMetadataEntry(DataOutputStream out, List<IteratorMetadataEntry> metadataEntries) throws IOException {
@@ -147,6 +159,32 @@ public class DataOutputStreamUtils {
         out.writeInt(strings.size());
         for (String string : strings) {
             encodeString(out, string);
+        }
+    }
+
+    public static void encodeDirection(DataOutputStream out, Direction direction) throws IOException {
+        switch (direction) {
+            case IN:
+                out.writeByte('I');
+                break;
+            case OUT:
+                out.writeByte('O');
+                break;
+            default:
+                throw new VertexiumAccumuloIteratorException("Unhandled direction: " + direction);
+        }
+    }
+
+    public static void encodeElementType(DataOutputStream out, ElementType elementType) throws IOException {
+        switch (elementType) {
+            case VERTEX:
+                out.writeByte('V');
+                break;
+            case EDGE:
+                out.writeByte('E');
+                break;
+            default:
+                throw new VertexiumAccumuloIteratorException("Unhandled elementType: " + elementType);
         }
     }
 }

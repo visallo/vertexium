@@ -2,6 +2,7 @@ package org.vertexium.mutation;
 
 import com.google.common.collect.Ordering;
 import org.vertexium.Visibility;
+import org.vertexium.util.KeyUtils;
 
 public class ExtendedDataMutationBase<T extends ExtendedDataMutationBase> implements Comparable<T> {
     private final String tableName;
@@ -11,6 +12,10 @@ public class ExtendedDataMutationBase<T extends ExtendedDataMutationBase> implem
     private final Visibility visibility;
 
     public ExtendedDataMutationBase(String tableName, String row, String columnName, String key, Visibility visibility) {
+        KeyUtils.checkKey(tableName, "Invalid tableName");
+        KeyUtils.checkKey(row, "Invalid row");
+        KeyUtils.checkKey(columnName, "Invalid columnName");
+        KeyUtils.checkKey(key, "Invalid key");
         this.tableName = tableName;
         this.row = row;
         this.columnName = columnName;

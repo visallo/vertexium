@@ -217,10 +217,10 @@ public abstract class GraphBaseWithSearchIndex extends GraphBase implements Grap
     public abstract EdgeBuilderByVertexId prepareEdge(String edgeId, String outVertexId, String inVertexId, String label, Long timestamp, Visibility visibility);
 
     @Override
-    public abstract void softDeleteVertex(Vertex vertex, Long timestamp, Authorizations authorizations);
+    public abstract void softDeleteVertex(Vertex vertex, Long timestamp, Object eventData, Authorizations authorizations);
 
     @Override
-    public abstract void softDeleteEdge(Edge edge, Long timestamp, Authorizations authorizations);
+    public abstract void softDeleteEdge(Edge edge, Long timestamp, Object eventData, Authorizations authorizations);
 
     @Override
     public abstract Iterable<Edge> getEdges(FetchHints fetchHints, Long endTime, Authorizations authorizations);
@@ -241,16 +241,16 @@ public abstract class GraphBaseWithSearchIndex extends GraphBase implements Grap
     public abstract void truncate();
 
     @Override
-    public abstract void markVertexHidden(Vertex vertex, Visibility visibility, Authorizations authorizations);
+    public abstract void markVertexHidden(Vertex vertex, Visibility visibility, Object eventData, Authorizations authorizations);
 
     @Override
-    public abstract void markVertexVisible(Vertex vertex, Visibility visibility, Authorizations authorizations);
+    public abstract void markVertexVisible(Vertex vertex, Visibility visibility, Object eventData, Authorizations authorizations);
 
     @Override
-    public abstract void markEdgeHidden(Edge edge, Visibility visibility, Authorizations authorizations);
+    public abstract void markEdgeHidden(Edge edge, Visibility visibility, Object eventData, Authorizations authorizations);
 
     @Override
-    public abstract void markEdgeVisible(Edge edge, Visibility visibility, Authorizations authorizations);
+    public abstract void markEdgeVisible(Edge edge, Visibility visibility, Object eventData, Authorizations authorizations);
 
     @Override
     public abstract Authorizations createAuthorizations(String... auths);

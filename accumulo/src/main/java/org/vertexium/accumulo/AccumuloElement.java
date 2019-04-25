@@ -1,10 +1,13 @@
 package org.vertexium.accumulo;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
 import org.apache.accumulo.core.data.Value;
 import org.apache.hadoop.io.Text;
 import org.vertexium.*;
 import org.vertexium.accumulo.iterator.ElementIterator;
+import org.vertexium.historicalEvent.HistoricalEvent;
+import org.vertexium.historicalEvent.HistoricalEventId;
 import org.vertexium.mutation.EdgeMutation;
 import org.vertexium.mutation.ExistingElementMutation;
 import org.vertexium.mutation.PropertyDeleteMutation;
@@ -19,6 +22,7 @@ import java.io.Serializable;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.stream.Stream;
 
 public abstract class AccumuloElement extends ElementBase implements Serializable, HasTimestamp {
     private static final long serialVersionUID = 1L;
@@ -27,9 +31,11 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
     public static final Text CF_PROPERTY_SOFT_DELETE = ElementIterator.CF_PROPERTY_SOFT_DELETE;
     public static final Text CF_EXTENDED_DATA = ElementIterator.CF_EXTENDED_DATA;
     public static final Value SOFT_DELETE_VALUE = ElementIterator.SOFT_DELETE_VALUE;
+    public static final Value SOFT_DELETE_VALUE_DELETED = ElementIterator.SOFT_DELETE_VALUE_DELETED;
     public static final Value HIDDEN_VALUE = ElementIterator.HIDDEN_VALUE;
     public static final Text CF_PROPERTY_HIDDEN = ElementIterator.CF_PROPERTY_HIDDEN;
     public static final Value HIDDEN_VALUE_DELETED = ElementIterator.HIDDEN_VALUE_DELETED;
+    public static final Value SIGNAL_VALUE_DELETED = ElementIterator.SIGNAL_VALUE_DELETED;
     public static final Text DELETE_ROW_COLUMN_FAMILY = ElementIterator.DELETE_ROW_COLUMN_FAMILY;
     public static final Text DELETE_ROW_COLUMN_QUALIFIER = ElementIterator.DELETE_ROW_COLUMN_QUALIFIER;
     public static final Text CF_SOFT_DELETE = ElementIterator.CF_SOFT_DELETE;
@@ -94,22 +100,22 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
     }
 
     @Override
-    public void softDeleteProperty(String key, String name, Visibility visibility, Authorizations authorizations) {
+    public void softDeleteProperty(String key, String name, Visibility visibility, Object eventData, Authorizations authorizations) {
         Property property = getProperty(key, name, visibility);
         if (property != null) {
             this.properties.removeProperty(property);
-            getGraph().softDeleteProperty(this, property, authorizations);
+            getGraph().softDeleteProperty(this, property, eventData, authorizations);
         }
     }
 
     @Override
-    public void markPropertyHidden(Property property, Long timestamp, Visibility visibility, Authorizations authorizations) {
-        getGraph().markPropertyHidden(this, property, timestamp, visibility, authorizations);
+    public void markPropertyHidden(Property property, Long timestamp, Visibility visibility, Object data, Authorizations authorizations) {
+        getGraph().markPropertyHidden(this, property, timestamp, visibility, data, authorizations);
     }
 
     @Override
-    public void markPropertyVisible(Property property, Long timestamp, Visibility visibility, Authorizations authorizations) {
-        getGraph().markPropertyVisible(this, property, timestamp, visibility, authorizations);
+    public void markPropertyVisible(Property property, Long timestamp, Visibility visibility, Object eventData, Authorizations authorizations) {
+        getGraph().markPropertyVisible(this, property, timestamp, visibility, eventData, authorizations);
     }
 
     @Override
@@ -135,7 +141,7 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
         getGraph().saveProperties(element, properties, propertyDeletes, propertySoftDeletes);
 
         if (mutation.getNewElementVisibility() != null) {
-            getGraph().alterElementVisibility(element, mutation.getNewElementVisibility());
+            getGraph().alterElementVisibility(element, mutation.getNewElementVisibility(), mutation.getNewElementVisibilityData());
         }
 
         if (mutation instanceof EdgeMutation) {
@@ -163,8 +169,23 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
     }
 
     @Override
+    @SuppressWarnings("deprecation")
     public Iterable<HistoricalPropertyValue> getHistoricalPropertyValues(String key, String name, Visibility visibility, Long startTime, Long endTime, Authorizations authorizations) {
         return getGraph().getHistoricalPropertyValues(this, key, name, visibility, startTime, endTime, authorizations);
+    }
+
+    @Override
+    public Stream<HistoricalEvent> getHistoricalEvents(
+        HistoricalEventId after,
+        HistoricalEventsFetchHints fetchHints,
+        Authorizations authorizations
+    ) {
+        return getGraph().getHistoricalEvents(
+            Lists.newArrayList(new ElementId(ElementType.getTypeFromElement(this), getId())),
+            after,
+            fetchHints,
+            authorizations
+        );
     }
 
     @Override

@@ -5,14 +5,20 @@ import org.vertexium.Vertex;
 
 public class MarkHiddenVertexEvent extends GraphEvent {
     private final Vertex vertex;
+    private final Object data;
 
-    public MarkHiddenVertexEvent(Graph graph, Vertex vertex) {
+    public MarkHiddenVertexEvent(Graph graph, Vertex vertex, Object data) {
         super(graph);
         this.vertex = vertex;
+        this.data = data;
     }
 
     public Vertex getVertex() {
         return vertex;
+    }
+
+    public Object getData() {
+        return data;
     }
 
     @Override

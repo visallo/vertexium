@@ -17,31 +17,31 @@ import java.util.Set;
 public class VertexIterator extends ElementIterator<VertexElementData> {
     public static final String CF_SIGNAL_STRING = "V";
     public static final Text CF_SIGNAL = new Text(CF_SIGNAL_STRING);
-    private static final byte[] CF_SIGNAL_BYTES = CF_SIGNAL.getBytes();
+    public static final byte[] CF_SIGNAL_BYTES = CF_SIGNAL.getBytes();
 
     public static final String CF_OUT_EDGE_STRING = "EOUT";
     public static final Text CF_OUT_EDGE = new Text(CF_OUT_EDGE_STRING);
-    private static final byte[] CF_OUT_EDGE_BYTES = CF_OUT_EDGE.getBytes();
+    public static final byte[] CF_OUT_EDGE_BYTES = CF_OUT_EDGE.getBytes();
 
     public static final String CF_OUT_EDGE_HIDDEN_STRING = "EOUTH";
     public static final Text CF_OUT_EDGE_HIDDEN = new Text(CF_OUT_EDGE_HIDDEN_STRING);
-    private static final byte[] CF_OUT_EDGE_HIDDEN_BYTES = CF_OUT_EDGE_HIDDEN.getBytes();
+    public static final byte[] CF_OUT_EDGE_HIDDEN_BYTES = CF_OUT_EDGE_HIDDEN.getBytes();
 
     public static final String CF_OUT_EDGE_SOFT_DELETE_STRING = "EOUTD";
     public static final Text CF_OUT_EDGE_SOFT_DELETE = new Text(CF_OUT_EDGE_SOFT_DELETE_STRING);
-    private static final byte[] CF_OUT_EDGE_SOFT_DELETE_BYTES = CF_OUT_EDGE_SOFT_DELETE.getBytes();
+    public static final byte[] CF_OUT_EDGE_SOFT_DELETE_BYTES = CF_OUT_EDGE_SOFT_DELETE.getBytes();
 
     public static final String CF_IN_EDGE_STRING = "EIN";
     public static final Text CF_IN_EDGE = new Text(CF_IN_EDGE_STRING);
-    private static final byte[] CF_IN_EDGE_BYTES = CF_IN_EDGE.getBytes();
+    public static final byte[] CF_IN_EDGE_BYTES = CF_IN_EDGE.getBytes();
 
     public static final String CF_IN_EDGE_HIDDEN_STRING = "EINH";
     public static final Text CF_IN_EDGE_HIDDEN = new Text(CF_IN_EDGE_HIDDEN_STRING);
-    private static final byte[] CF_IN_EDGE_HIDDEN_BYTES = CF_IN_EDGE_HIDDEN.getBytes();
+    public static final byte[] CF_IN_EDGE_HIDDEN_BYTES = CF_IN_EDGE_HIDDEN.getBytes();
 
     public static final String CF_IN_EDGE_SOFT_DELETE_STRING = "EIND";
     public static final Text CF_IN_EDGE_SOFT_DELETE = new Text(CF_IN_EDGE_SOFT_DELETE_STRING);
-    private static final byte[] CF_IN_EDGE_SOFT_DELETE_BYTES = CF_IN_EDGE_SOFT_DELETE.getBytes();
+    public static final byte[] CF_IN_EDGE_SOFT_DELETE_BYTES = CF_IN_EDGE_SOFT_DELETE.getBytes();
 
     public VertexIterator() {
         this(null);
@@ -110,7 +110,11 @@ public class VertexIterator extends ElementIterator<VertexElementData> {
 
         if (keyValue.columnFamilyEquals(CF_OUT_EDGE_HIDDEN_BYTES) || keyValue.columnFamilyEquals(CF_IN_EDGE_HIDDEN_BYTES)) {
             Text edgeId = keyValue.takeColumnQualifier();
-            getElementData().hiddenEdges.add(edgeId);
+            if (keyValue.isHidden()) {
+                getElementData().hiddenEdges.add(edgeId);
+            } else {
+                getElementData().hiddenEdges.remove(edgeId);
+            }
             return true;
         }
 
