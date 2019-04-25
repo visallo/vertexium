@@ -30,8 +30,8 @@ public class HammingDistanceScoringStrategy implements ScoringStrategy {
                 String valueStr = (String) value;
                 int maxLen = Math.min(valueStr.length(), hash.length()) * 4;
                 score = Math.max(
-                        score,
-                        maxLen - new BigInteger(valueStr, 16).xor(new BigInteger(hash, 16)).bitCount()
+                    score,
+                    maxLen - new BigInteger(valueStr, 16).xor(new BigInteger(hash, 16)).bitCount()
                 );
             }
         }

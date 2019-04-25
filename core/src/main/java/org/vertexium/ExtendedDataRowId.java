@@ -91,10 +91,10 @@ public class ExtendedDataRowId implements Serializable, Comparable<ExtendedDataR
     @Override
     public String toString() {
         return "ExtendedDataRowId{" +
-                "elementType=" + elementType +
-                ", elementId='" + elementId + '\'' +
-                ", tableName='" + tableName + '\'' +
-                ", rowId='" + rowId + '\'' +
-                '}';
+            "elementType=" + elementType +
+            ", elementId='" + elementId + '\'' +
+            ", tableName='" + tableName + '\'' +
+            ", rowId='" + rowId + '\'' +
+            '}';
     }
 }

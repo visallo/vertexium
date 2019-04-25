@@ -20,8 +20,8 @@ public class InMemoryGraphMetadataStore extends GraphMetadataStore implements Se
         metadataLock.readLock().lock();
         try {
             return this.metadata.entrySet().stream()
-                    .map(o -> new GraphMetadataEntry(o.getKey(), o.getValue()))
-                    .collect(Collectors.toList());
+                .map(o -> new GraphMetadataEntry(o.getKey(), o.getValue()))
+                .collect(Collectors.toList());
         } finally {
             metadataLock.readLock().unlock();
         }

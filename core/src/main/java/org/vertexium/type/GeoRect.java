@@ -31,7 +31,7 @@ public class GeoRect extends GeoShapeBase {
         } else if (geoShape instanceof GeoRect) {
             GeoRect rect = (GeoRect) geoShape;
             return getNorthWest().isNorthWestOf(rect.getSouthEast())
-                    && getSouthEast().isSouthEastOf(rect.getNorthWest());
+                && getSouthEast().isSouthEastOf(rect.getNorthWest());
         } else if (geoShape instanceof GeoHash) {
             return intersects(((GeoHash) geoShape).toGeoRect());
         }
@@ -43,11 +43,11 @@ public class GeoRect extends GeoShapeBase {
         if (geoShape instanceof GeoPoint) {
             GeoPoint pt = (GeoPoint) geoShape;
             return pt.isSouthEastOf(getNorthWest())
-                    && pt.isNorthWestOf(getSouthEast());
+                && pt.isNorthWestOf(getSouthEast());
         } else if (geoShape instanceof GeoRect) {
             GeoRect rect = (GeoRect) geoShape;
             return getNorthWest().isNorthWestOf(rect.getNorthWest())
-                    && getSouthEast().isSouthEastOf(rect.getSouthEast());
+                && getSouthEast().isSouthEastOf(rect.getSouthEast());
         } else if (geoShape instanceof GeoHash) {
             return within(((GeoHash) geoShape).toGeoRect());
         } else if (geoShape instanceof GeoCircle) {

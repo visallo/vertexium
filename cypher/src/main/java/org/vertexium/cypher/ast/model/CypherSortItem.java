@@ -22,9 +22,9 @@ public class CypherSortItem extends CypherAstBase {
     @Override
     public String toString() {
         return String.format(
-                "%s %s",
-                getExpression(),
-                getDirection().name()
+            "%s %s",
+            getExpression(),
+            getDirection().name()
         );
     }
 

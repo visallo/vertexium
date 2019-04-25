@@ -37,10 +37,10 @@ public class AccumuloGraphConfigurationTest {
 
         Map configMap = Maps.newHashMap();
         MapUtils.putAll(configMap, new String[]{
-                AccumuloGraphConfiguration.BATCHWRITER_MAX_LATENCY, "" + maxLatency,
-                AccumuloGraphConfiguration.BATCHWRITER_MAX_MEMORY, "" + maxMemory,
-                AccumuloGraphConfiguration.BATCHWRITER_MAX_WRITE_THREADS, "" + numThreads,
-                AccumuloGraphConfiguration.BATCHWRITER_TIMEOUT, "" + timeout});
+            AccumuloGraphConfiguration.BATCHWRITER_MAX_LATENCY, "" + maxLatency,
+            AccumuloGraphConfiguration.BATCHWRITER_MAX_MEMORY, "" + maxMemory,
+            AccumuloGraphConfiguration.BATCHWRITER_MAX_WRITE_THREADS, "" + numThreads,
+            AccumuloGraphConfiguration.BATCHWRITER_TIMEOUT, "" + timeout});
         AccumuloGraphConfiguration accumuloGraphConfiguration = new AccumuloGraphConfiguration(configMap);
         BatchWriterConfig batchWriterConfig = accumuloGraphConfiguration.createBatchWriterConfig();
 

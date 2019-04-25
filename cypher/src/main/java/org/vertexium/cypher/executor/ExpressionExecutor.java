@@ -109,15 +109,15 @@ public class ExpressionExecutor {
         if (expression instanceof CypherPatternComprehension) {
             CypherPatternComprehension patternComprehension = (CypherPatternComprehension) expression;
             VertexiumCypherScope matchScope = scope instanceof VertexiumCypherScope
-                    ? (VertexiumCypherScope) scope
-                    : VertexiumCypherScope.newSingleItemScope((VertexiumCypherScope.Item) scope);
+                ? (VertexiumCypherScope) scope
+                : VertexiumCypherScope.newSingleItemScope((VertexiumCypherScope.Item) scope);
             VertexiumCypherScope results = ctx.getMatchClauseExecutor().execute(
-                    ctx,
-                    Lists.newArrayList(patternComprehension.getMatchClause()),
-                    matchScope
+                ctx,
+                Lists.newArrayList(patternComprehension.getMatchClause()),
+                matchScope
             );
             return results.stream()
-                    .map(item -> executeExpression(ctx, patternComprehension.getExpression(), item));
+                .map(item -> executeExpression(ctx, patternComprehension.getExpression(), item));
         }
 
         throw new VertexiumException("not implemented \"" + expression.getClass().getName() + "\": " + expression);
@@ -171,18 +171,18 @@ public class ExpressionExecutor {
             return itemScopes;
         }
         return itemScopes
-                .map(itemScope -> executeExpression(ctx, listComprehension.getExpression(), itemScope));
+            .map(itemScope -> executeExpression(ctx, listComprehension.getExpression(), itemScope));
     }
 
     private Stream<ExpressionScope> executeFilterExpression(
-            VertexiumCypherQueryContext ctx,
-            CypherFilterExpression filterExpression,
-            ExpressionScope scope
+        VertexiumCypherQueryContext ctx,
+        CypherFilterExpression filterExpression,
+        ExpressionScope scope
     ) {
         String name = filterExpression.getIdInCol().getVariable().getName();
         Object values = executeExpression(ctx, filterExpression.getIdInCol().getExpression(), scope);
         Stream<ExpressionScope> results = toStream(values)
-                .map(value -> VertexiumCypherScope.newMapItem(name, value, scope));
+            .map(value -> VertexiumCypherScope.newMapItem(name, value, scope));
 
         if (filterExpression.getWhere() != null) {
             throw new VertexiumCypherNotImplemented("where");
@@ -236,8 +236,8 @@ public class ExpressionExecutor {
 
         Iterable<?> it = toIterable(array);
         return stream(it)
-                .skip(sliceFrom)
-                .limit(sliceTo - sliceFrom);
+            .skip(sliceFrom)
+            .limit(sliceTo - sliceFrom);
     }
 
     private Object executeArrayAccess(VertexiumCypherQueryContext ctx, CypherArrayAccess arrayAccess, ExpressionScope scope) {
@@ -355,9 +355,9 @@ public class ExpressionExecutor {
     }
 
     private Object executeUnaryExpression(
-            VertexiumCypherQueryContext ctx,
-            CypherUnaryExpression expression,
-            ExpressionScope scope
+        VertexiumCypherQueryContext ctx,
+        CypherUnaryExpression expression,
+        ExpressionScope scope
     ) {
         Object value = ctx.getExpressionExecutor().executeExpression(ctx, expression.getExpression(), scope);
         switch (expression.getOp()) {
@@ -379,9 +379,9 @@ public class ExpressionExecutor {
     }
 
     private Object executeFunctionInvocation(
-            VertexiumCypherQueryContext ctx,
-            CypherFunctionInvocation functionInvocation,
-            ExpressionScope scope
+        VertexiumCypherQueryContext ctx,
+        CypherFunctionInvocation functionInvocation,
+        ExpressionScope scope
     ) {
         CypherFunction fn = ctx.getFunction(functionInvocation.getFunctionName());
         return fn.invoke(ctx, functionInvocation.getArguments(), scope);
@@ -389,7 +389,7 @@ public class ExpressionExecutor {
 
     private Stream<Object> executeList(VertexiumCypherQueryContext context, CypherListLiteral<? extends CypherAstBase> list, ExpressionScope scope) {
         return list.stream()
-                .map(i -> executeExpression(context, i, scope));
+            .map(i -> executeExpression(context, i, scope));
     }
 
     private Object executeLookup(VertexiumCypherQueryContext ctx, CypherLookup expression, ExpressionScope scope) {
@@ -428,9 +428,9 @@ public class ExpressionExecutor {
                         throw new VertexiumException("cannot have labels and properties");
                     }
                     return expression.getLabels().stream()
-                            .anyMatch(l -> ctx.getVertexLabels((Vertex) element)
-                                    .contains(ctx.normalizeLabelName(l.getValue()))
-                            );
+                        .anyMatch(l -> ctx.getVertexLabels((Vertex) element)
+                            .contains(ctx.normalizeLabelName(l.getValue()))
+                        );
                 }
                 throw new VertexiumCypherNotImplemented("label lookup");
             }
@@ -456,9 +456,9 @@ public class ExpressionExecutor {
     }
 
     private Object executeComparisonExpression(
-            VertexiumCypherQueryContext context,
-            CypherComparisonExpression expression,
-            ExpressionScope scope
+        VertexiumCypherQueryContext context,
+        CypherComparisonExpression expression,
+        ExpressionScope scope
     ) {
         Object left = executeExpression(context, expression.getLeft(), scope);
         Object right = executeExpression(context, expression.getRight(), scope);
@@ -520,9 +520,9 @@ public class ExpressionExecutor {
     }
 
     private Object executeBinaryExpression(
-            VertexiumCypherQueryContext ctx,
-            CypherBinaryExpression expression,
-            ExpressionScope scope
+        VertexiumCypherQueryContext ctx,
+        CypherBinaryExpression expression,
+        ExpressionScope scope
     ) {
         Object left = executeExpression(ctx, expression.getLeft(), scope);
         switch (expression.getOp()) {
@@ -565,7 +565,7 @@ public class ExpressionExecutor {
         Number leftNumber = (Number) left;
         Number rightNumber = (Number) right;
         if (leftNumber instanceof Double || leftNumber instanceof Float
-                || rightNumber instanceof Double || rightNumber instanceof Float) {
+            || rightNumber instanceof Double || rightNumber instanceof Float) {
             return leftNumber.doubleValue() * rightNumber.doubleValue();
         }
         if (leftNumber instanceof Long || rightNumber instanceof Long) {
@@ -590,7 +590,7 @@ public class ExpressionExecutor {
         Number leftNumber = (Number) left;
         Number rightNumber = (Number) right;
         if (leftNumber instanceof Double || leftNumber instanceof Float
-                || rightNumber instanceof Double || rightNumber instanceof Float) {
+            || rightNumber instanceof Double || rightNumber instanceof Float) {
             return leftNumber.doubleValue() - rightNumber.doubleValue();
         }
         if (leftNumber instanceof Long || rightNumber instanceof Long) {
@@ -615,7 +615,7 @@ public class ExpressionExecutor {
         Number leftNumber = (Number) left;
         Number rightNumber = (Number) right;
         if (leftNumber instanceof Double || leftNumber instanceof Float
-                || rightNumber instanceof Double || rightNumber instanceof Float) {
+            || rightNumber instanceof Double || rightNumber instanceof Float) {
             return leftNumber.doubleValue() / rightNumber.doubleValue();
         }
         if (leftNumber instanceof Long || rightNumber instanceof Long) {
@@ -640,7 +640,7 @@ public class ExpressionExecutor {
         Number leftNumber = (Number) left;
         Number rightNumber = (Number) right;
         if (leftNumber instanceof Double || leftNumber instanceof Float
-                || rightNumber instanceof Double || rightNumber instanceof Float) {
+            || rightNumber instanceof Double || rightNumber instanceof Float) {
             return leftNumber.doubleValue() % rightNumber.doubleValue();
         }
         if (leftNumber instanceof Long || rightNumber instanceof Long) {
@@ -665,7 +665,7 @@ public class ExpressionExecutor {
         Number leftNumber = (Number) left;
         Number rightNumber = (Number) right;
         if (leftNumber instanceof Double || leftNumber instanceof Float
-                || rightNumber instanceof Double || rightNumber instanceof Float) {
+            || rightNumber instanceof Double || rightNumber instanceof Float) {
             return Math.pow(leftNumber.doubleValue(), rightNumber.doubleValue());
         }
         if (leftNumber instanceof Long || rightNumber instanceof Long) {
@@ -803,14 +803,14 @@ public class ExpressionExecutor {
     }
 
     Stream<VertexiumCypherScope.Item> applyWhereToResults(
-            VertexiumCypherQueryContext ctx,
-            Stream<VertexiumCypherScope.Item> rows,
-            CypherAstBase whereExpression
+        VertexiumCypherQueryContext ctx,
+        Stream<VertexiumCypherScope.Item> rows,
+        CypherAstBase whereExpression
     ) {
         return rows
-                .filter(row -> {
-                    Object result = executeExpression(ctx, whereExpression, row);
-                    return ObjectUtils.compare(true, result) == 0;
-                });
+            .filter(row -> {
+                Object result = executeExpression(ctx, whereExpression, row);
+                return ObjectUtils.compare(true, result) == 0;
+            });
     }
 }

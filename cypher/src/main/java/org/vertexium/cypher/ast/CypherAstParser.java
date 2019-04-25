@@ -52,14 +52,14 @@ public class CypherAstParser {
                 messagePrefix = "InvalidRelationshipPattern: ";
             }
             throw new VertexiumCypherSyntaxErrorException(
-                    String.format(
-                            "%sCould not parse (%d:%d): %s",
-                            messagePrefix,
-                            e.getOffendingToken().getLine(),
-                            e.getOffendingToken().getCharPositionInLine(),
-                            code
-                    ),
-                    e);
+                String.format(
+                    "%sCould not parse (%d:%d): %s",
+                    messagePrefix,
+                    e.getOffendingToken().getLine(),
+                    e.getOffendingToken().getCharPositionInLine(),
+                    code
+                ),
+                e);
         }
     }
 }

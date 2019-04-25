@@ -26,8 +26,8 @@ public class IteratorMetadataEntry {
         }
         IteratorMetadataEntry that = (IteratorMetadataEntry) o;
         return Objects.equals(metadataKey, that.metadataKey)
-                && Objects.equals(metadataVisibility, that.metadataVisibility)
-                && Arrays.equals(value, that.value);
+            && Objects.equals(metadataVisibility, that.metadataVisibility)
+            && Arrays.equals(value, that.value);
     }
 
     @Override

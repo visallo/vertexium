@@ -76,15 +76,15 @@ public abstract class InMemoryTable<TElement extends InMemoryElement> {
     }
 
     public Iterable<TElement> getAll(
-            InMemoryGraph graph,
-            FetchHints fetchHints,
-            Long endTime,
-            Authorizations authorizations
+        InMemoryGraph graph,
+        FetchHints fetchHints,
+        Long endTime,
+        Authorizations authorizations
     ) {
         return StreamUtils.stream(getRowValues())
-                .filter(element -> graph.isIncludedInTimeSpan(element, fetchHints, endTime, authorizations))
-                .map(element -> element.createElement(graph, fetchHints, endTime, authorizations))
-                .collect(Collectors.toList());
+            .filter(element -> graph.isIncludedInTimeSpan(element, fetchHints, endTime, authorizations))
+            .map(element -> element.createElement(graph, fetchHints, endTime, authorizations))
+            .collect(Collectors.toList());
     }
 
     public Iterable<InMemoryTableElement<TElement>> getRowValues() {

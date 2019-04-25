@@ -150,14 +150,14 @@ public class DefaultSearchIndex implements SearchIndex {
 
     @Override
     public void deleteExtendedData(
-            Graph graph,
-            Element element,
-            String tableName,
-            String row,
-            String columnName,
-            String key,
-            Visibility visibility,
-            Authorizations authorizations
+        Graph graph,
+        Element element,
+        String tableName,
+        String row,
+        String columnName,
+        String key,
+        Visibility visibility,
+        Authorizations authorizations
     ) {
         checkNotNull(element, "element cannot be null");
         checkNotNull(tableName, "tableName cannot be null");

@@ -52,6 +52,6 @@ public class UnwindClauseExecutor {
             throw new VertexiumException("unhandled data type: " + exprResult.getClass().getName());
         }
         return stream
-                .map(o -> VertexiumCypherScope.newMapItem(clause.getName(), o, scope));
+            .map(o -> VertexiumCypherScope.newMapItem(clause.getName(), o, scope));
     }
 }

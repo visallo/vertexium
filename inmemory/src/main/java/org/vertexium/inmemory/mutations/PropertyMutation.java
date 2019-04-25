@@ -34,11 +34,11 @@ public class PropertyMutation extends Mutation {
     @Override
     public String toString() {
         return this.getClass().getName() + "{" +
-                "propertyKey='" + propertyKey + '\'' +
-                ", propertyName='" + propertyName + '\'' +
-                ", propertyVisibility=" + propertyVisibility +
-                ", timestamp=" + getTimestamp() +
-                ", visibility=" + getVisibility() +
-                '}';
+            "propertyKey='" + propertyKey + '\'' +
+            ", propertyName='" + propertyName + '\'' +
+            ", propertyVisibility=" + propertyVisibility +
+            ", timestamp=" + getTimestamp() +
+            ", visibility=" + getVisibility() +
+            '}';
     }
 }

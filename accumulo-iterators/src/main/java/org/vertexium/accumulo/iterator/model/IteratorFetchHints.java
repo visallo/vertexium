@@ -36,17 +36,17 @@ public class IteratorFetchHints implements Serializable {
     }
 
     public IteratorFetchHints(
-            boolean includeAllProperties,
-            Set<ByteSequence> propertyNamesToInclude,
-            boolean includeAllPropertyMetadata,
-            Set<ByteSequence> metadataKeysToInclude,
-            boolean includeHidden,
-            boolean includeAllEdgeRefs,
-            boolean includeOutEdgeRefs,
-            boolean includeInEdgeRefs,
-            Set<String> edgeLabelsOfEdgeRefsToInclude,
-            boolean includeEdgeLabelsAndCounts,
-            boolean includeExtendedDataTableNames
+        boolean includeAllProperties,
+        Set<ByteSequence> propertyNamesToInclude,
+        boolean includeAllPropertyMetadata,
+        Set<ByteSequence> metadataKeysToInclude,
+        boolean includeHidden,
+        boolean includeAllEdgeRefs,
+        boolean includeOutEdgeRefs,
+        boolean includeInEdgeRefs,
+        Set<String> edgeLabelsOfEdgeRefsToInclude,
+        boolean includeEdgeLabelsAndCounts,
+        boolean includeExtendedDataTableNames
     ) {
         this.includeAllProperties = includeAllProperties;
         this.propertyNamesToInclude = propertyNamesToInclude;
@@ -108,18 +108,18 @@ public class IteratorFetchHints implements Serializable {
     @Override
     public String toString() {
         return "IteratorFetchHints{" +
-                "includeAllProperties=" + includeAllProperties +
-                ", propertyNamesToInclude=" + setOfByteSequencesToString(propertyNamesToInclude) +
-                ", includeAllPropertyMetadata=" + includeAllPropertyMetadata +
-                ", metadataKeysToInclude=" + setOfByteSequencesToString(metadataKeysToInclude) +
-                ", includeHidden=" + includeHidden +
-                ", includeAllEdgeRefs=" + includeAllEdgeRefs +
-                ", includeOutEdgeRefs=" + includeOutEdgeRefs +
-                ", includeInEdgeRefs=" + includeInEdgeRefs +
-                ", edgeLabelsOfEdgeRefsToInclude=" + setToString(edgeLabelsOfEdgeRefsToInclude) +
-                ", includeEdgeLabelsAndCounts=" + includeEdgeLabelsAndCounts +
-                ", includeExtendedDataTableNames=" + includeExtendedDataTableNames +
-                '}';
+            "includeAllProperties=" + includeAllProperties +
+            ", propertyNamesToInclude=" + setOfByteSequencesToString(propertyNamesToInclude) +
+            ", includeAllPropertyMetadata=" + includeAllPropertyMetadata +
+            ", metadataKeysToInclude=" + setOfByteSequencesToString(metadataKeysToInclude) +
+            ", includeHidden=" + includeHidden +
+            ", includeAllEdgeRefs=" + includeAllEdgeRefs +
+            ", includeOutEdgeRefs=" + includeOutEdgeRefs +
+            ", includeInEdgeRefs=" + includeInEdgeRefs +
+            ", edgeLabelsOfEdgeRefsToInclude=" + setToString(edgeLabelsOfEdgeRefsToInclude) +
+            ", includeEdgeLabelsAndCounts=" + includeEdgeLabelsAndCounts +
+            ", includeExtendedDataTableNames=" + includeExtendedDataTableNames +
+            '}';
     }
 
     private String setOfByteSequencesToString(Set<ByteSequence> set) {
@@ -127,8 +127,8 @@ public class IteratorFetchHints implements Serializable {
             return "";
         }
         return set.stream()
-                .map(ByteSequenceUtils::toString)
-                .collect(Collectors.joining(","));
+            .map(ByteSequenceUtils::toString)
+            .collect(Collectors.joining(","));
     }
 
     private String setToString(Set<String> set) {

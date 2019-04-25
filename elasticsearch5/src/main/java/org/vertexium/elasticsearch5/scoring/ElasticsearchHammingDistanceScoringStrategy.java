@@ -19,8 +19,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class ElasticsearchHammingDistanceScoringStrategy
-        extends HammingDistanceScoringStrategy
-        implements ElasticsearchScoringStrategy {
+    extends HammingDistanceScoringStrategy
+    implements ElasticsearchScoringStrategy {
     private final String scriptSrc;
 
     public ElasticsearchHammingDistanceScoringStrategy(String field, String hash) {
@@ -34,10 +34,10 @@ public class ElasticsearchHammingDistanceScoringStrategy
 
     @Override
     public QueryBuilder updateElasticsearchQuery(
-            Graph graph,
-            Elasticsearch5SearchIndex searchIndex,
-            QueryBuilder query,
-            QueryParameters queryParameters
+        Graph graph,
+        Elasticsearch5SearchIndex searchIndex,
+        QueryBuilder query,
+        QueryParameters queryParameters
     ) {
         List<String> fieldNames = getFieldNames(graph, searchIndex, queryParameters, getField());
         if (fieldNames == null) {
@@ -52,10 +52,10 @@ public class ElasticsearchHammingDistanceScoringStrategy
     }
 
     private List<String> getFieldNames(
-            Graph graph,
-            Elasticsearch5SearchIndex searchIndex,
-            QueryParameters queryParameters,
-            String field
+        Graph graph,
+        Elasticsearch5SearchIndex searchIndex,
+        QueryParameters queryParameters,
+        String field
     ) {
         PropertyDefinition propertyDefinition = graph.getPropertyDefinition(field);
         if (propertyDefinition == null) {
@@ -69,13 +69,13 @@ public class ElasticsearchHammingDistanceScoringStrategy
         }
 
         String[] propertyNames = searchIndex.getPropertyNames(
-                graph,
-                propertyDefinition.getPropertyName(),
-                queryParameters.getAuthorizations()
+            graph,
+            propertyDefinition.getPropertyName(),
+            queryParameters.getAuthorizations()
         );
         return Arrays.stream(propertyNames)
-                .filter(propertyName -> String.class.isAssignableFrom(propertyDefinition.getDataType()))
-                .map(propertyName -> propertyName + Elasticsearch5SearchIndex.EXACT_MATCH_PROPERTY_NAME_SUFFIX)
-                .collect(Collectors.toList());
+            .filter(propertyName -> String.class.isAssignableFrom(propertyDefinition.getDataType()))
+            .map(propertyName -> propertyName + Elasticsearch5SearchIndex.EXACT_MATCH_PROPERTY_NAME_SUFFIX)
+            .collect(Collectors.toList());
     }
 }

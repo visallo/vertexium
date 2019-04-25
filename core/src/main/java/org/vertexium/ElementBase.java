@@ -112,13 +112,13 @@ public abstract class ElementBase implements Element {
     protected Property getIdProperty() {
         if (idProperty == null) {
             idProperty = new MutablePropertyImpl(
-                    ElementMutation.DEFAULT_KEY,
-                    ID_PROPERTY_NAME, getId(),
-                    null,
-                    getTimestamp(),
-                    null,
-                    null,
-                    getFetchHints()
+                ElementMutation.DEFAULT_KEY,
+                ID_PROPERTY_NAME, getId(),
+                null,
+                getTimestamp(),
+                null,
+                null,
+                getFetchHints()
             );
         }
         return idProperty;
@@ -128,14 +128,14 @@ public abstract class ElementBase implements Element {
         if (edgeLabelProperty == null && this instanceof Edge) {
             String edgeLabel = ((Edge) this).getLabel();
             edgeLabelProperty = new MutablePropertyImpl(
-                    ElementMutation.DEFAULT_KEY,
-                    Edge.LABEL_PROPERTY_NAME,
-                    edgeLabel,
-                    null,
-                    getTimestamp(),
-                    null,
-                    null,
-                    getFetchHints()
+                ElementMutation.DEFAULT_KEY,
+                Edge.LABEL_PROPERTY_NAME,
+                edgeLabel,
+                null,
+                getTimestamp(),
+                null,
+                null,
+                getFetchHints()
             );
         }
         return edgeLabelProperty;
@@ -145,14 +145,14 @@ public abstract class ElementBase implements Element {
         if (outVertexIdProperty == null && this instanceof Edge) {
             String outVertexId = ((Edge) this).getVertexId(Direction.OUT);
             outVertexIdProperty = new MutablePropertyImpl(
-                    ElementMutation.DEFAULT_KEY,
-                    Edge.OUT_VERTEX_ID_PROPERTY_NAME,
-                    outVertexId,
-                    null,
-                    getTimestamp(),
-                    null,
-                    null,
-                    getFetchHints()
+                ElementMutation.DEFAULT_KEY,
+                Edge.OUT_VERTEX_ID_PROPERTY_NAME,
+                outVertexId,
+                null,
+                getTimestamp(),
+                null,
+                null,
+                getFetchHints()
             );
         }
         return outVertexIdProperty;
@@ -162,14 +162,14 @@ public abstract class ElementBase implements Element {
         if (inVertexIdProperty == null && this instanceof Edge) {
             String inVertexId = ((Edge) this).getVertexId(Direction.IN);
             inVertexIdProperty = new MutablePropertyImpl(
-                    ElementMutation.DEFAULT_KEY,
-                    Edge.IN_VERTEX_ID_PROPERTY_NAME,
-                    inVertexId,
-                    null,
-                    getTimestamp(),
-                    null,
-                    null,
-                    getFetchHints()
+                ElementMutation.DEFAULT_KEY,
+                Edge.IN_VERTEX_ID_PROPERTY_NAME,
+                inVertexId,
+                null,
+                getTimestamp(),
+                null,
+                null,
+                getFetchHints()
             );
         }
         return inVertexIdProperty;
@@ -180,14 +180,14 @@ public abstract class ElementBase implements Element {
             String inVertexId = ((Edge) this).getVertexId(Direction.IN);
             String outVertexId = ((Edge) this).getVertexId(Direction.OUT);
             inOrOutVertexIdProperty = new MutablePropertyImpl(
-                    ElementMutation.DEFAULT_KEY,
-                    Edge.IN_OR_OUT_VERTEX_ID_PROPERTY_NAME,
-                    new EdgeVertexIds(outVertexId, inVertexId),
-                    null,
-                    getTimestamp(),
-                    null,
-                    null,
-                    getFetchHints()
+                ElementMutation.DEFAULT_KEY,
+                Edge.IN_OR_OUT_VERTEX_ID_PROPERTY_NAME,
+                new EdgeVertexIds(outVertexId, inVertexId),
+                null,
+                getTimestamp(),
+                null,
+                null,
+                getFetchHints()
             );
         }
         return inOrOutVertexIdProperty;

@@ -22,9 +22,9 @@ public class CypherFilterExpression extends CypherAstBase {
     @Override
     public String toString() {
         return String.format(
-                "%s%s",
-                getIdInCol(),
-                getWhere() == null ? "" : " " + getWhere()
+            "%s%s",
+            getIdInCol(),
+            getWhere() == null ? "" : " " + getWhere()
         );
     }
 

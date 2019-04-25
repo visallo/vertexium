@@ -59,9 +59,9 @@ public class IndexRefreshTracker {
         readLock.lock();
         try {
             return indexToMaxRefreshTime.entrySet().stream()
-                    .filter(e -> e.getValue() <= time)
-                    .map(Map.Entry::getKey)
-                    .collect(Collectors.toSet());
+                .filter(e -> e.getValue() <= time)
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toSet());
         } finally {
             readLock.unlock();
         }

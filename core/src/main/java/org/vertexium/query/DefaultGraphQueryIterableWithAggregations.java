@@ -9,12 +9,12 @@ public class DefaultGraphQueryIterableWithAggregations<T extends VertexiumObject
     private final Collection<Aggregation> aggregations;
 
     public DefaultGraphQueryIterableWithAggregations(
-            QueryParameters parameters,
-            Iterable<T> iterable,
-            boolean evaluateQueryString,
-            boolean evaluateHasContainers,
-            boolean evaluateSortContainers,
-            Collection<Aggregation> aggregations
+        QueryParameters parameters,
+        Iterable<T> iterable,
+        boolean evaluateQueryString,
+        boolean evaluateHasContainers,
+        boolean evaluateSortContainers,
+        Collection<Aggregation> aggregations
     ) {
         super(parameters, iterable, evaluateQueryString, evaluateHasContainers, evaluateSortContainers);
         this.aggregations = aggregations;
@@ -61,13 +61,13 @@ public class DefaultGraphQueryIterableWithAggregations<T extends VertexiumObject
         String fieldName = agg.getPropertyName();
 
         if (Element.ID_PROPERTY_NAME.equals(fieldName)
-                || Edge.LABEL_PROPERTY_NAME.equals(fieldName)
-                || Edge.OUT_VERTEX_ID_PROPERTY_NAME.equals(fieldName)
-                || Edge.IN_VERTEX_ID_PROPERTY_NAME.equals(fieldName)
-                || ExtendedDataRow.TABLE_NAME.equals(fieldName)
-                || ExtendedDataRow.ROW_ID.equals(fieldName)
-                || ExtendedDataRow.ELEMENT_ID.equals(fieldName)
-                || ExtendedDataRow.ELEMENT_TYPE.equals(fieldName)) {
+            || Edge.LABEL_PROPERTY_NAME.equals(fieldName)
+            || Edge.OUT_VERTEX_ID_PROPERTY_NAME.equals(fieldName)
+            || Edge.IN_VERTEX_ID_PROPERTY_NAME.equals(fieldName)
+            || ExtendedDataRow.TABLE_NAME.equals(fieldName)
+            || ExtendedDataRow.ROW_ID.equals(fieldName)
+            || ExtendedDataRow.ELEMENT_ID.equals(fieldName)
+            || ExtendedDataRow.ELEMENT_TYPE.equals(fieldName)) {
             Set<Object> values = new HashSet<>();
             while (it.hasNext()) {
                 T vertexiumObject = it.next();
@@ -115,10 +115,10 @@ public class DefaultGraphQueryIterableWithAggregations<T extends VertexiumObject
         // for strings find the best key (the one with the most entries) and use that as the bucket name
         for (Map.Entry<String, List<Map.Entry<Object, List<T>>>> entry : stringEntries.entrySet()) {
             results.put(
-                    findBestKey(entry.getValue()),
-                    entry.getValue().stream()
-                            .flatMap(l -> l.getValue().stream())
-                            .collect(Collectors.toList())
+                findBestKey(entry.getValue()),
+                entry.getValue().stream()
+                    .flatMap(l -> l.getValue().stream())
+                    .collect(Collectors.toList())
             );
         }
         return results;
@@ -175,7 +175,7 @@ public class DefaultGraphQueryIterableWithAggregations<T extends VertexiumObject
             for (Object value : values) {
                 TKey convertedValue = valueConverter.convert(value);
                 elementsByProperty.computeIfAbsent(convertedValue, k -> new ArrayList<>())
-                        .add(vertexiumObject);
+                    .add(vertexiumObject);
             }
         }
         return elementsByProperty;

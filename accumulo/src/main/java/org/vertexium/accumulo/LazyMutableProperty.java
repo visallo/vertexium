@@ -24,16 +24,16 @@ public class LazyMutableProperty extends MutableProperty {
     private transient Metadata cachedMetadata;
 
     public LazyMutableProperty(
-            AccumuloGraph graph,
-            VertexiumSerializer vertexiumSerializer,
-            String propertyKey,
-            String propertyName,
-            byte[] propertyValue,
-            MetadataRef metadataRef,
-            Set<Visibility> hiddenVisibilities,
-            Visibility visibility,
-            long timestamp,
-            FetchHints fetchHints
+        AccumuloGraph graph,
+        VertexiumSerializer vertexiumSerializer,
+        String propertyKey,
+        String propertyName,
+        byte[] propertyValue,
+        MetadataRef metadataRef,
+        Set<Visibility> hiddenVisibilities,
+        Visibility visibility,
+        long timestamp,
+        FetchHints fetchHints
     ) {
         this.graph = graph;
         this.vertexiumSerializer = vertexiumSerializer;
@@ -135,11 +135,11 @@ public class LazyMutableProperty extends MutableProperty {
                 cachedMetadata = Metadata.create(fetchHints);
             } else {
                 cachedMetadata = new LazyPropertyMetadata(
-                        metadataRef.getMetadataEntries(),
-                        metadataRef.getMetadataIndexes(),
-                        this.vertexiumSerializer,
-                        graph.getNameSubstitutionStrategy(),
-                        fetchHints
+                    metadataRef.getMetadataEntries(),
+                    metadataRef.getMetadataIndexes(),
+                    this.vertexiumSerializer,
+                    graph.getNameSubstitutionStrategy(),
+                    fetchHints
                 );
             }
         }

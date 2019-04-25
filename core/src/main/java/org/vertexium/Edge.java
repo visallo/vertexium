@@ -99,8 +99,8 @@ public interface Edge extends Element {
         ids.add(getVertexId(Direction.IN));
         Map<String, Vertex> vertices = IterableUtils.toMapById(getGraph().getVertices(ids, fetchHints, authorizations));
         return new EdgeVertices(
-                vertices.get(getVertexId(Direction.OUT)),
-                vertices.get(getVertexId(Direction.IN))
+            vertices.get(getVertexId(Direction.OUT)),
+            vertices.get(getVertexId(Direction.IN))
         );
     }
 

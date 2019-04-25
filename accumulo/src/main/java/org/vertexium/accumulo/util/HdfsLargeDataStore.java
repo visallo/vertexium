@@ -57,8 +57,8 @@ public class HdfsLargeDataStore extends LimitOutputStream.LargeDataStore {
         StringBuilder result = new StringBuilder();
         for (char ch : fileName.toCharArray()) {
             if ((ch >= '0' && ch <= '9')
-                    || (ch >= 'A' && ch <= 'Z')
-                    || (ch >= 'a' && ch <= 'z')) {
+                || (ch >= 'A' && ch <= 'Z')
+                || (ch >= 'a' && ch <= 'z')) {
                 result.append(ch);
             } else if (ch == ' ') {
                 result.append('_');

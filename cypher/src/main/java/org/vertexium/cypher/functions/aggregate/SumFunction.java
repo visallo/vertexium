@@ -17,7 +17,7 @@ public class SumFunction extends AggregationFunction {
 
         if (scope instanceof VertexiumCypherScope) {
             return ObjectUtils.sumNumbers(((VertexiumCypherScope) scope).stream()
-                    .map(item -> ctx.getExpressionExecutor().executeExpression(ctx, arguments[0], item)));
+                .map(item -> ctx.getExpressionExecutor().executeExpression(ctx, arguments[0], item)));
         }
 
         Object arg0 = ctx.getExpressionExecutor().executeExpression(ctx, arguments[0], scope);

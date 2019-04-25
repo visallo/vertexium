@@ -10,8 +10,8 @@ public class PatternPartMatchConstraint {
     private final LinkedHashSet<MatchConstraint> matchConstraints;
 
     public PatternPartMatchConstraint(
-            Map<String, List<MatchConstraint>> namedMatchConstraints,
-            LinkedHashSet<MatchConstraint> matchConstraints
+        Map<String, List<MatchConstraint>> namedMatchConstraints,
+        LinkedHashSet<MatchConstraint> matchConstraints
     ) {
         this.namedPaths = namedMatchConstraints;
         this.matchConstraints = matchConstraints;
@@ -35,9 +35,9 @@ public class PatternPartMatchConstraint {
 
     public Set<String> getPartNames() {
         return getMatchConstraints().stream()
-                .map(MatchConstraint::getName)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toSet());
+            .map(MatchConstraint::getName)
+            .filter(Objects::nonNull)
+            .collect(Collectors.toSet());
     }
 
     @Override

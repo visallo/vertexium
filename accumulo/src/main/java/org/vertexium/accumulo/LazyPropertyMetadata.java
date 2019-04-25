@@ -18,11 +18,11 @@ public class LazyPropertyMetadata implements Metadata {
     private final FetchHints fetchHints;
 
     public LazyPropertyMetadata(
-            List<MetadataEntry> metadataEntries,
-            int[] metadataIndexes,
-            VertexiumSerializer vertexiumSerializer,
-            AccumuloNameSubstitutionStrategy nameSubstitutionStrategy,
-            FetchHints fetchHints
+        List<MetadataEntry> metadataEntries,
+        int[] metadataIndexes,
+        VertexiumSerializer vertexiumSerializer,
+        AccumuloNameSubstitutionStrategy nameSubstitutionStrategy,
+        FetchHints fetchHints
     ) {
         this.metadataEntries = metadataEntries;
         this.metadataIndexes = metadataIndexes;

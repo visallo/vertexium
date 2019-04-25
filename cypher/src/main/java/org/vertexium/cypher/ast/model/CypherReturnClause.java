@@ -22,9 +22,9 @@ public class CypherReturnClause extends CypherClause {
     @Override
     public String toString() {
         return String.format(
-                "RETURN %s%s",
-                isDistinct() ? "DISTINCT " : "",
-                getReturnBody().toString()
+            "RETURN %s%s",
+            isDistinct() ? "DISTINCT " : "",
+            getReturnBody().toString()
         );
     }
 

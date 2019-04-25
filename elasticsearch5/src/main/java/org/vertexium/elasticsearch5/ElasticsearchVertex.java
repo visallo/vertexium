@@ -8,10 +8,10 @@ public class ElasticsearchVertex extends ElasticsearchElement implements Vertex 
     private String className = ElasticsearchElement.class.getSimpleName();
 
     public ElasticsearchVertex(
-            Graph graph,
-            String id,
-            FetchHints fetchHints,
-            Authorizations authorizations
+        Graph graph,
+        String id,
+        FetchHints fetchHints,
+        Authorizations authorizations
     ) {
         super(graph, id, fetchHints, authorizations);
     }

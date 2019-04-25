@@ -54,8 +54,8 @@ public class VertexiumQueryStringQueryBuilder extends QueryStringQueryBuilder {
     @Override
     protected boolean doEquals(QueryStringQueryBuilder other) {
         return other instanceof VertexiumQueryStringQueryBuilder &&
-                super.doEquals(other) &&
-                Objects.deepEquals(this.authorizations, ((VertexiumQueryStringQueryBuilder)other).authorizations);
+            super.doEquals(other) &&
+            Objects.deepEquals(this.authorizations, ((VertexiumQueryStringQueryBuilder) other).authorizations);
     }
 
     @Override

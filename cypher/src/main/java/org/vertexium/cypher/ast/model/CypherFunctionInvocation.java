@@ -28,10 +28,10 @@ public class CypherFunctionInvocation extends CypherAstBase {
     @Override
     public String toString() {
         return String.format(
-                "%s(%s%s)",
-                getFunctionName(),
-                isDistinct() ? "DISTINCT " : "",
-                CypherExpression.toString(getArguments())
+            "%s(%s%s)",
+            getFunctionName(),
+            isDistinct() ? "DISTINCT " : "",
+            CypherExpression.toString(getArguments())
         );
     }
 

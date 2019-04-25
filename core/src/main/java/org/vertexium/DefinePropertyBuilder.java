@@ -33,11 +33,11 @@ public class DefinePropertyBuilder {
 
     public PropertyDefinition define() {
         return new PropertyDefinition(
-                propertyName,
-                dataType,
-                textIndexHints,
-                boost,
-                sortable
+            propertyName,
+            dataType,
+            textIndexHints,
+            boost,
+            sortable
         );
     }
 

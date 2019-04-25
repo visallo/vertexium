@@ -16,8 +16,8 @@ public class AccumuloElementOutputFormat extends OutputFormat<Text, Mutation> {
     public static void setOutputInfo(Job job, String instanceName, String zooKeepers, String principal, AuthenticationToken token) throws AccumuloSecurityException {
         AccumuloOutputFormat.setConnectorInfo(job, principal, token);
         ClientConfiguration clientConfig = ClientConfiguration.create()
-                .withInstance(instanceName)
-                .withZkHosts(zooKeepers);
+            .withInstance(instanceName)
+            .withZkHosts(zooKeepers);
         AccumuloOutputFormat.setZooKeeperInstance(job, clientConfig);
         job.setMapOutputKeyClass(Text.class);
         job.setMapOutputValueClass(Mutation.class);

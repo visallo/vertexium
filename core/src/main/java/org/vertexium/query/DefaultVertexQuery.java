@@ -20,13 +20,13 @@ public class DefaultVertexQuery extends VertexQueryBase implements VertexQuery {
     private Iterable<Vertex> allVertices(FetchHints fetchHints) {
         List<String> edgeLabels = getParameters().getEdgeLabels();
         String[] edgeLabelsArray = edgeLabels == null || edgeLabels.size() == 0
-                ? null
-                : edgeLabels.toArray(new String[edgeLabels.size()]);
+            ? null
+            : edgeLabels.toArray(new String[edgeLabels.size()]);
         Iterable<Vertex> results = getSourceVertex().getVertices(
-                getDirection(),
-                edgeLabelsArray,
-                fetchHints,
-                getParameters().getAuthorizations()
+            getDirection(),
+            edgeLabelsArray,
+            fetchHints,
+            getParameters().getAuthorizations()
         );
         if (getOtherVertexId() != null) {
             results = new FilterIterable<Vertex>(results) {
@@ -69,11 +69,11 @@ public class DefaultVertexQuery extends VertexQueryBase implements VertexQuery {
     @Override
     protected QueryResultsIterable<? extends VertexiumObject> extendedData(FetchHints extendedDataFetchHints) {
         FetchHints fetchHints = FetchHints.builder()
-                .setIncludeExtendedDataTableNames(true)
-                .build();
+            .setIncludeExtendedDataTableNames(true)
+            .build();
         return extendedData(extendedDataFetchHints, new JoinIterable<>(
-                allVertices(fetchHints),
-                allEdges(fetchHints)
+            allVertices(fetchHints),
+            allEdges(fetchHints)
         ));
     }
 

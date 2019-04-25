@@ -74,10 +74,10 @@ public class DataInputStreamUtils {
     }
 
     public static Iterable<Property> decodeProperties(
-            AccumuloGraph graph,
-            DataInputStream in,
-            List<MetadataEntry> metadataEntries,
-            FetchHints fetchHints
+        AccumuloGraph graph,
+        DataInputStream in,
+        List<MetadataEntry> metadataEntries,
+        FetchHints fetchHints
     ) throws IOException {
         List<Property> results = new ArrayList<>();
         while (true) {
@@ -101,34 +101,34 @@ public class DataInputStreamUtils {
             Set<Visibility> propertyHiddenVisibilities = null;
             if (propertyHiddenVisibilitiesStringSet != null) {
                 propertyHiddenVisibilities = propertyHiddenVisibilitiesStringSet.stream()
-                        .map(Visibility::new)
-                        .collect(Collectors.toSet());
+                    .map(Visibility::new)
+                    .collect(Collectors.toSet());
             }
             MetadataRef metadataRef = decodePropertyMetadata(in, metadataEntries);
             results.add(new LazyMutableProperty(
-                    graph,
-                    graph.getVertexiumSerializer(),
-                    propertyKey,
-                    propertyName,
-                    propertyValue,
-                    metadataRef,
-                    propertyHiddenVisibilities,
-                    propertyVisibility,
-                    propertyTimestamp,
-                    fetchHints
+                graph,
+                graph.getVertexiumSerializer(),
+                propertyKey,
+                propertyName,
+                propertyValue,
+                metadataRef,
+                propertyHiddenVisibilities,
+                propertyVisibility,
+                propertyTimestamp,
+                fetchHints
             ));
         }
         return results;
     }
 
     private static MetadataRef decodePropertyMetadata(
-            DataInputStream in,
-            List<MetadataEntry> metadataEntries
+        DataInputStream in,
+        List<MetadataEntry> metadataEntries
     ) throws IOException {
         int[] metadataIndexes = decodeIntArray(in);
         return new MetadataRef(
-                metadataEntries,
-                metadataIndexes
+            metadataEntries,
+            metadataIndexes
         );
     }
 

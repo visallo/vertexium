@@ -39,73 +39,73 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
     private final Edges outEdges;
 
     public AccumuloVertex(
-            AccumuloGraph graph,
-            String vertexId,
-            Visibility vertexVisibility,
-            Iterable<Property> properties,
-            Iterable<PropertyDeleteMutation> propertyDeleteMutations,
-            Iterable<PropertySoftDeleteMutation> propertySoftDeleteMutations,
-            Iterable<Visibility> hiddenVisibilities,
-            ImmutableSet<String> extendedDataTableNames,
-            long timestamp,
-            FetchHints fetchHints,
-            Authorizations authorizations
+        AccumuloGraph graph,
+        String vertexId,
+        Visibility vertexVisibility,
+        Iterable<Property> properties,
+        Iterable<PropertyDeleteMutation> propertyDeleteMutations,
+        Iterable<PropertySoftDeleteMutation> propertySoftDeleteMutations,
+        Iterable<Visibility> hiddenVisibilities,
+        ImmutableSet<String> extendedDataTableNames,
+        long timestamp,
+        FetchHints fetchHints,
+        Authorizations authorizations
     ) {
         this(
-                graph,
-                vertexId,
-                vertexVisibility,
-                properties,
-                propertyDeleteMutations,
-                propertySoftDeleteMutations,
-                hiddenVisibilities,
-                extendedDataTableNames,
-                new EdgesWithEdgeInfo(),
-                new EdgesWithEdgeInfo(),
-                timestamp,
-                fetchHints,
-                authorizations
+            graph,
+            vertexId,
+            vertexVisibility,
+            properties,
+            propertyDeleteMutations,
+            propertySoftDeleteMutations,
+            hiddenVisibilities,
+            extendedDataTableNames,
+            new EdgesWithEdgeInfo(),
+            new EdgesWithEdgeInfo(),
+            timestamp,
+            fetchHints,
+            authorizations
         );
     }
 
     public AccumuloVertex(
-            AccumuloGraph graph,
-            String vertexId,
-            Visibility vertexVisibility,
-            Iterable<Property> properties,
-            Iterable<PropertyDeleteMutation> propertyDeleteMutations,
-            Iterable<PropertySoftDeleteMutation> propertySoftDeleteMutations,
-            Iterable<Visibility> hiddenVisibilities,
-            ImmutableSet<String> extendedDataTableNames,
-            Edges inEdges,
-            Edges outEdges,
-            long timestamp,
-            FetchHints fetchHints,
-            Authorizations authorizations
+        AccumuloGraph graph,
+        String vertexId,
+        Visibility vertexVisibility,
+        Iterable<Property> properties,
+        Iterable<PropertyDeleteMutation> propertyDeleteMutations,
+        Iterable<PropertySoftDeleteMutation> propertySoftDeleteMutations,
+        Iterable<Visibility> hiddenVisibilities,
+        ImmutableSet<String> extendedDataTableNames,
+        Edges inEdges,
+        Edges outEdges,
+        long timestamp,
+        FetchHints fetchHints,
+        Authorizations authorizations
     ) {
         super(
-                graph,
-                vertexId,
-                vertexVisibility,
-                properties,
-                propertyDeleteMutations,
-                propertySoftDeleteMutations,
-                hiddenVisibilities,
-                extendedDataTableNames,
-                timestamp,
-                fetchHints,
-                authorizations
+            graph,
+            vertexId,
+            vertexVisibility,
+            properties,
+            propertyDeleteMutations,
+            propertySoftDeleteMutations,
+            hiddenVisibilities,
+            extendedDataTableNames,
+            timestamp,
+            fetchHints,
+            authorizations
         );
         this.inEdges = inEdges;
         this.outEdges = outEdges;
     }
 
     public static Vertex createFromIteratorValue(
-            AccumuloGraph graph,
-            Key key,
-            Value value,
-            FetchHints fetchHints,
-            Authorizations authorizations
+        AccumuloGraph graph,
+        Key key,
+        Value value,
+        FetchHints fetchHints,
+        Authorizations authorizations
     ) {
         try {
             String vertexId;
@@ -125,8 +125,8 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
 
             ImmutableSet<String> hiddenVisibilityStrings = DataInputStreamUtils.decodeStringSet(in);
             hiddenVisibilities = hiddenVisibilityStrings != null ?
-                    hiddenVisibilityStrings.stream().map(Visibility::new).collect(Collectors.toSet()) :
-                    null;
+                hiddenVisibilityStrings.stream().map(Visibility::new).collect(Collectors.toSet()) :
+                null;
 
             List<MetadataEntry> metadataEntries = DataInputStreamUtils.decodeMetadataEntries(in);
             properties = DataInputStreamUtils.decodeProperties(graph, in, metadataEntries, fetchHints);
@@ -136,19 +136,19 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
             inEdges = DataInputStreamUtils.decodeEdges(in, graph.getNameSubstitutionStrategy());
 
             return new AccumuloVertex(
-                    graph,
-                    vertexId,
-                    vertexVisibility,
-                    properties,
-                    null,
-                    null,
-                    hiddenVisibilities,
-                    extendedDataTableNames,
-                    inEdges,
-                    outEdges,
-                    timestamp,
-                    fetchHints,
-                    authorizations
+                graph,
+                vertexId,
+                vertexVisibility,
+                properties,
+                null,
+                null,
+                hiddenVisibilities,
+                extendedDataTableNames,
+                inEdges,
+                outEdges,
+                timestamp,
+                fetchHints,
+                authorizations
             );
         } catch (IOException ex) {
             throw new VertexiumException("Could not read vertex", ex);
@@ -311,10 +311,10 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
 
     @SuppressWarnings("unused")
     public Iterable<String> getEdgeIdsWithOtherVertexId(
-            String otherVertexId,
-            Direction direction,
-            String[] labels,
-            Authorizations authorizations
+        String otherVertexId,
+        Direction direction,
+        String[] labels,
+        Authorizations authorizations
     ) {
         if (!getFetchHints().isIncludeEdgeRefs()) {
             throw new VertexiumException("getEdgeIdsWithOtherVertexId called without including any edge infos");

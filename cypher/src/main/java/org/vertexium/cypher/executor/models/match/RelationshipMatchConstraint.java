@@ -8,9 +8,9 @@ import java.util.List;
 
 public class RelationshipMatchConstraint extends MatchConstraint<CypherRelationshipPattern, NodeMatchConstraint> {
     public RelationshipMatchConstraint(
-            String name,
-            List<CypherRelationshipPattern> relationshipPatterns,
-            boolean optional
+        String name,
+        List<CypherRelationshipPattern> relationshipPatterns,
+        boolean optional
     ) {
         super(name, relationshipPatterns, optional);
     }
@@ -41,19 +41,19 @@ public class RelationshipMatchConstraint extends MatchConstraint<CypherRelations
 
     public boolean isFoundInPrevious(NodeMatchConstraint constraint) {
         return getPatterns().stream()
-                .anyMatch(relationshipPattern -> {
-                    CypherNodePattern previousNodePattern = relationshipPattern.getPreviousNodePattern();
-                    return constraint.getPatterns().stream()
-                            .anyMatch(o -> o == previousNodePattern);
-                });
+            .anyMatch(relationshipPattern -> {
+                CypherNodePattern previousNodePattern = relationshipPattern.getPreviousNodePattern();
+                return constraint.getPatterns().stream()
+                    .anyMatch(o -> o == previousNodePattern);
+            });
     }
 
     public boolean isFoundInNext(NodeMatchConstraint constraint) {
         return getPatterns().stream()
-                .anyMatch(relationshipPattern -> {
-                    CypherNodePattern nextNodePattern = relationshipPattern.getNextNodePattern();
-                    return constraint.getPatterns().stream()
-                            .anyMatch(o -> o == nextNodePattern);
-                });
+            .anyMatch(relationshipPattern -> {
+                CypherNodePattern nextNodePattern = relationshipPattern.getNextNodePattern();
+                return constraint.getPatterns().stream()
+                    .anyMatch(o -> o == nextNodePattern);
+            });
     }
 }

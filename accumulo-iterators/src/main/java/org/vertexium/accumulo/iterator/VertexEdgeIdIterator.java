@@ -28,7 +28,7 @@ public class VertexEdgeIdIterator extends RowEncodingIterator {
         DataOutputStream out = new DataOutputStream(baos);
         for (Key key : keys) {
             if (!key.getColumnFamily().equals(VertexIterator.CF_OUT_EDGE)
-                    && !key.getColumnFamily().equals(VertexIterator.CF_IN_EDGE)) {
+                && !key.getColumnFamily().equals(VertexIterator.CF_IN_EDGE)) {
                 continue;
             }
             Text edgeId = key.getColumnQualifier();

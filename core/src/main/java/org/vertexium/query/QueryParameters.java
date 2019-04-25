@@ -139,14 +139,14 @@ public abstract class QueryParameters {
     @Override
     public String toString() {
         return this.getClass().getName() + "{" +
-                "authorizations=" + authorizations +
-                ", limit=" + limit +
-                ", skip=" + skip +
-                ", hasContainers=" + Joiner.on(", ").join(hasContainers) +
-                ", sortContainers=" + Joiner.on(", ").join(sortContainers) +
-                ", edgeLabels=" + Joiner.on(", ").join(edgeLabels) +
-                ", ids=" + (ids == null ? null : Joiner.on(", ").join(ids)) +
-                ", scoring=" + (scoringStrategy == null ? "null" : scoringStrategy.getClass().getName()) +
-                '}';
+            "authorizations=" + authorizations +
+            ", limit=" + limit +
+            ", skip=" + skip +
+            ", hasContainers=" + Joiner.on(", ").join(hasContainers) +
+            ", sortContainers=" + Joiner.on(", ").join(sortContainers) +
+            ", edgeLabels=" + Joiner.on(", ").join(edgeLabels) +
+            ", ids=" + (ids == null ? null : Joiner.on(", ").join(ids)) +
+            ", scoring=" + (scoringStrategy == null ? "null" : scoringStrategy.getClass().getName()) +
+            '}';
     }
 }

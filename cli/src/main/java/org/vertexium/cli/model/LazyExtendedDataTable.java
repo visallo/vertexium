@@ -28,8 +28,8 @@ public class LazyExtendedDataTable extends ModelBase {
             for (Property property : row.getProperties()) {
                 Object value = property.getValue();
                 writer.println("    @|bold " + property.getName() + ":"
-                        + (property.getKey() == null ? "" : property.getKey()) + "|@ "
-                        + VertexiumScript.valueToString(value, true));
+                    + (property.getKey() == null ? "" : property.getKey()) + "|@ "
+                    + VertexiumScript.valueToString(value, true));
             }
         }
 

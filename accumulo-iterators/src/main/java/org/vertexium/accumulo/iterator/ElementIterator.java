@@ -118,11 +118,11 @@ public abstract class ElementIterator<T extends ElementData> implements SortedKe
         Key sk = range.getStartKey();
 
         if (sk != null
-                && sk.getColumnFamilyData().length() == 0
-                && sk.getColumnQualifierData().length() == 0
-                && sk.getColumnVisibilityData().length() == 0
-                && sk.getTimestamp() == Long.MAX_VALUE
-                && !range.isStartKeyInclusive()) {
+            && sk.getColumnFamilyData().length() == 0
+            && sk.getColumnQualifierData().length() == 0
+            && sk.getColumnVisibilityData().length() == 0
+            && sk.getTimestamp() == Long.MAX_VALUE
+            && !range.isStartKeyInclusive()) {
             // assuming that we are seeking using a key previously returned by this iterator therefore go the next row
             Key followingRowKey = sk.followingKey(PartialKey.ROW);
             if (range.getEndKey() != null && followingRowKey.compareTo(range.getEndKey()) > 0) {
@@ -214,14 +214,14 @@ public abstract class ElementIterator<T extends ElementData> implements SortedKe
         }
 
         if (keyValue.columnFamilyEquals(DELETE_ROW_COLUMN_FAMILY_BYTES)
-                && keyValue.columnQualifierEquals(DELETE_ROW_COLUMN_QUALIFIER_BYTES)
-                && RowDeletingIterator.DELETE_ROW_VALUE.equals(keyValue.peekValue())) {
+            && keyValue.columnQualifierEquals(DELETE_ROW_COLUMN_QUALIFIER_BYTES)
+            && RowDeletingIterator.DELETE_ROW_VALUE.equals(keyValue.peekValue())) {
             return false;
         }
 
         if (keyValue.columnFamilyEquals(CF_SOFT_DELETE_BYTES)
-                && keyValue.columnQualifierEquals(CQ_SOFT_DELETE_BYTES)
-                && SOFT_DELETE_VALUE.equals(keyValue.peekValue())) {
+            && keyValue.columnQualifierEquals(CQ_SOFT_DELETE_BYTES)
+            && SOFT_DELETE_VALUE.equals(keyValue.peekValue())) {
             elementData.softDeleteTimestamp = keyValue.getTimestamp();
             return true;
         }
@@ -261,26 +261,26 @@ public abstract class ElementIterator<T extends ElementData> implements SortedKe
 
     private void extractPropertySoftDelete(KeyValue keyValue) {
         PropertyColumnQualifierByteSequence propertyColumnQualifier =
-                new PropertyColumnQualifierByteSequence(keyValue.takeColumnQualifierByteSequence());
+            new PropertyColumnQualifierByteSequence(keyValue.takeColumnQualifierByteSequence());
         SoftDeletedProperty softDeletedProperty = new SoftDeletedProperty(
-                propertyColumnQualifier.getPropertyKey(),
-                propertyColumnQualifier.getPropertyName(),
-                keyValue.getTimestamp(),
-                keyValue.takeColumnVisibilityByteSequence()
+            propertyColumnQualifier.getPropertyKey(),
+            propertyColumnQualifier.getPropertyName(),
+            keyValue.getTimestamp(),
+            keyValue.takeColumnVisibilityByteSequence()
         );
         this.elementData.softDeletedProperties.add(softDeletedProperty);
     }
 
     private void extractPropertyMetadata(KeyValue keyValue) {
         PropertyMetadataColumnQualifierByteSequence propertyMetadataColumnQualifier =
-                new PropertyMetadataColumnQualifierByteSequence(keyValue.takeColumnQualifierByteSequence());
+            new PropertyMetadataColumnQualifierByteSequence(keyValue.takeColumnQualifierByteSequence());
         if (shouldIncludeMetadata(propertyMetadataColumnQualifier)) {
             ByteSequence discriminator = propertyMetadataColumnQualifier.getPropertyDiscriminator(keyValue.getTimestamp());
             List<Integer> propertyMetadata = elementData.propertyMetadata.computeIfAbsent(discriminator, k -> new ArrayList<>());
             IteratorMetadataEntry pme = new IteratorMetadataEntry(
-                    propertyMetadataColumnQualifier.getMetadataKey(),
-                    keyValue.takeColumnVisibilityByteSequence(),
-                    keyValue.takeValue().get()
+                propertyMetadataColumnQualifier.getMetadataKey(),
+                keyValue.takeColumnVisibilityByteSequence(),
+                keyValue.takeValue().get()
             );
             int pos = elementData.metadataEntries.indexOf(pme);
             if (pos < 0) {
@@ -296,19 +296,19 @@ public abstract class ElementIterator<T extends ElementData> implements SortedKe
             return;
         }
         PropertyHiddenColumnQualifierByteSequence propertyHiddenColumnQualifier =
-                new PropertyHiddenColumnQualifierByteSequence(keyValue.takeColumnQualifierByteSequence());
+            new PropertyHiddenColumnQualifierByteSequence(keyValue.takeColumnQualifierByteSequence());
         HiddenProperty hiddenProperty = new HiddenProperty(
-                propertyHiddenColumnQualifier.getPropertyKey(),
-                propertyHiddenColumnQualifier.getPropertyName(),
-                propertyHiddenColumnQualifier.getPropertyVisibilityString(),
-                keyValue.takeColumnVisibilityByteSequence()
+            propertyHiddenColumnQualifier.getPropertyKey(),
+            propertyHiddenColumnQualifier.getPropertyName(),
+            propertyHiddenColumnQualifier.getPropertyVisibilityString(),
+            keyValue.takeColumnVisibilityByteSequence()
         );
         this.elementData.hiddenProperties.add(hiddenProperty);
     }
 
     private void extractPropertyData(KeyValue keyValue) {
         PropertyColumnQualifierByteSequence propertyColumnQualifier =
-                new PropertyColumnQualifierByteSequence(keyValue.takeColumnQualifierByteSequence());
+            new PropertyColumnQualifierByteSequence(keyValue.takeColumnQualifierByteSequence());
         ByteSequence mapKey = propertyColumnQualifier.getDiscriminator(keyValue.peekColumnVisibilityByteSequence(), keyValue.getTimestamp());
         long timestamp = keyValue.getTimestamp();
         if (shouldIncludeProperty(propertyColumnQualifier.getPropertyName())) {
@@ -324,7 +324,7 @@ public abstract class ElementIterator<T extends ElementData> implements SortedKe
             return true;
         }
         return fetchHints.getPropertyNamesToInclude() != null
-                && fetchHints.getPropertyNamesToInclude().contains(propertyName);
+            && fetchHints.getPropertyNamesToInclude().contains(propertyName);
     }
 
     private boolean shouldIncludeMetadata(PropertyMetadataColumnQualifierByteSequence propertyMetadataColumnQualifier) {
@@ -336,7 +336,7 @@ public abstract class ElementIterator<T extends ElementData> implements SortedKe
         }
         ByteSequence metadataKey = propertyMetadataColumnQualifier.getMetadataKey();
         return fetchHints.getMetadataKeysToInclude() != null
-                && fetchHints.getMetadataKeysToInclude().contains(metadataKey);
+            && fetchHints.getMetadataKeysToInclude().contains(metadataKey);
     }
 
     @Override
@@ -370,17 +370,17 @@ public abstract class ElementIterator<T extends ElementData> implements SortedKe
     public void init(SortedKeyValueIterator<Key, Value> source, Map<String, String> options, IteratorEnvironment env) {
         this.sourceIterator = source;
         fetchHints = new IteratorFetchHints(
-                Boolean.parseBoolean(options.get(SETTING_FETCH_HINTS_PREFIX + "includeAllProperties")),
-                parseTextSet(options.get(SETTING_FETCH_HINTS_PREFIX + "propertyNamesToInclude")),
-                Boolean.parseBoolean(options.get(SETTING_FETCH_HINTS_PREFIX + "includeAllPropertyMetadata")),
-                parseTextSet(options.get(SETTING_FETCH_HINTS_PREFIX + "metadataKeysToInclude")),
-                Boolean.parseBoolean(options.get(SETTING_FETCH_HINTS_PREFIX + "includeHidden")),
-                Boolean.parseBoolean(options.get(SETTING_FETCH_HINTS_PREFIX + "includeAllEdgeRefs")),
-                Boolean.parseBoolean(options.get(SETTING_FETCH_HINTS_PREFIX + "includeOutEdgeRefs")),
-                Boolean.parseBoolean(options.get(SETTING_FETCH_HINTS_PREFIX + "includeInEdgeRefs")),
-                parseSet(options.get(SETTING_FETCH_HINTS_PREFIX + "edgeLabelsOfEdgeRefsToInclude")),
-                Boolean.parseBoolean(options.get(SETTING_FETCH_HINTS_PREFIX + "includeEdgeLabelsAndCounts")),
-                Boolean.parseBoolean(options.get(SETTING_FETCH_HINTS_PREFIX + "includeExtendedDataTableNames"))
+            Boolean.parseBoolean(options.get(SETTING_FETCH_HINTS_PREFIX + "includeAllProperties")),
+            parseTextSet(options.get(SETTING_FETCH_HINTS_PREFIX + "propertyNamesToInclude")),
+            Boolean.parseBoolean(options.get(SETTING_FETCH_HINTS_PREFIX + "includeAllPropertyMetadata")),
+            parseTextSet(options.get(SETTING_FETCH_HINTS_PREFIX + "metadataKeysToInclude")),
+            Boolean.parseBoolean(options.get(SETTING_FETCH_HINTS_PREFIX + "includeHidden")),
+            Boolean.parseBoolean(options.get(SETTING_FETCH_HINTS_PREFIX + "includeAllEdgeRefs")),
+            Boolean.parseBoolean(options.get(SETTING_FETCH_HINTS_PREFIX + "includeOutEdgeRefs")),
+            Boolean.parseBoolean(options.get(SETTING_FETCH_HINTS_PREFIX + "includeInEdgeRefs")),
+            parseSet(options.get(SETTING_FETCH_HINTS_PREFIX + "edgeLabelsOfEdgeRefsToInclude")),
+            Boolean.parseBoolean(options.get(SETTING_FETCH_HINTS_PREFIX + "includeEdgeLabelsAndCounts")),
+            Boolean.parseBoolean(options.get(SETTING_FETCH_HINTS_PREFIX + "includeExtendedDataTableNames"))
         );
         elementData = createElementData();
     }

@@ -42,14 +42,14 @@ public class ExistingElementMutationImplTest {
     @Test
     public void testHasChangesDeleteProperty() {
         mutation.deleteProperty(new MutablePropertyImpl(
-                "key1",
-                "name1",
-                "value",
-                null,
-                null,
-                null,
-                new Visibility(""),
-                FetchHints.ALL
+            "key1",
+            "name1",
+            "value",
+            null,
+            null,
+            null,
+            new Visibility(""),
+            FetchHints.ALL
         ));
         assertTrue("should have changes", mutation.hasChanges());
     }
@@ -57,14 +57,14 @@ public class ExistingElementMutationImplTest {
     @Test
     public void testHasChangesSoftDeleteProperty() {
         mutation.softDeleteProperty(new MutablePropertyImpl(
-                "key1",
-                "name1",
-                "value",
-                null,
-                null,
-                null,
-                new Visibility(""),
-                FetchHints.ALL
+            "key1",
+            "name1",
+            "value",
+            null,
+            null,
+            null,
+            new Visibility(""),
+            FetchHints.ALL
         ));
         assertTrue("should have changes", mutation.hasChanges());
     }

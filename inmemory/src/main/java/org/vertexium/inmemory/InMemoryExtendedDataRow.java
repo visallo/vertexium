@@ -52,11 +52,11 @@ public class InMemoryExtendedDataRow extends ExtendedDataRowBase {
     }
 
     public void addColumn(
-            String propertyName,
-            String key,
-            Object value,
-            long timestamp,
-            Visibility visibility
+        String propertyName,
+        String key,
+        Object value,
+        long timestamp,
+        Visibility visibility
     ) {
         propertiesLock.writeLock().lock();
         try {
@@ -72,9 +72,9 @@ public class InMemoryExtendedDataRow extends ExtendedDataRowBase {
         propertiesLock.writeLock().lock();
         try {
             properties.removeIf(p ->
-                    p.getName().equals(columnName)
-                            && p.getVisibility().equals(visibility)
-                            && ((key == null && p.getKey() == null) || (key != null && key.equals(p.getKey())))
+                p.getName().equals(columnName)
+                    && p.getVisibility().equals(visibility)
+                    && ((key == null && p.getKey() == null) || (key != null && key.equals(p.getKey())))
             );
         } finally {
             propertiesLock.writeLock().unlock();
@@ -101,12 +101,12 @@ public class InMemoryExtendedDataRow extends ExtendedDataRowBase {
         private final FetchHints fetchHints;
 
         public InMemoryProperty(
-                String name,
-                String key,
-                Object value,
-                FetchHints fetchHints,
-                long timestamp,
-                Visibility visibility
+            String name,
+            String key,
+            Object value,
+            FetchHints fetchHints,
+            long timestamp,
+            Visibility visibility
         ) {
             this.name = name;
             this.key = key;

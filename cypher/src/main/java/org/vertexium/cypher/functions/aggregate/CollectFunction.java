@@ -28,8 +28,8 @@ public class CollectFunction extends AggregationFunction {
 
         if (arg0 instanceof Stream) {
             return ((Stream<?>) arg0)
-                    .filter(Objects::nonNull)
-                    .collect(Collectors.toList());
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
         }
 
         throw new VertexiumCypherTypeErrorException(arg0, Collection.class, Stream.class);

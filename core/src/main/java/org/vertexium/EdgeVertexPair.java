@@ -27,9 +27,9 @@ public class EdgeVertexPair {
     @Override
     public String toString() {
         return "EdgeVertexPair{" +
-                "edge=" + edge +
-                ", vertex=" + vertex +
-                '}';
+            "edge=" + edge +
+            ", vertex=" + vertex +
+            '}';
     }
 
     @Override
@@ -61,12 +61,12 @@ public class EdgeVertexPair {
     }
 
     public static Iterable<EdgeVertexPair> getEdgeVertexPairs(
-            Graph graph,
-            String sourceVertexId,
-            Iterable<EdgeInfo> edgeInfos,
-            FetchHints fetchHints,
-            Long endTime,
-            Authorizations authorizations
+        Graph graph,
+        String sourceVertexId,
+        Iterable<EdgeInfo> edgeInfos,
+        FetchHints fetchHints,
+        Long endTime,
+        Authorizations authorizations
     ) {
         Set<String> edgeIdsToFetch = new HashSet<>();
         Set<String> vertexIdsToFetch = new HashSet<>();

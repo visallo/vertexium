@@ -16,12 +16,12 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> extends 
     private final Authorizations authorizations;
 
     protected InMemoryElement(
-            InMemoryGraph graph,
-            String id,
-            InMemoryTableElement<TElement> inMemoryTableElement,
-            FetchHints fetchHints,
-            Long endTime,
-            Authorizations authorizations
+        InMemoryGraph graph,
+        String id,
+        InMemoryTableElement<TElement> inMemoryTableElement,
+        FetchHints fetchHints,
+        Long endTime,
+        Authorizations authorizations
     ) {
         this.graph = graph;
         this.id = id;
@@ -69,10 +69,10 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> extends 
 
     protected void extendedData(ExtendedDataMutation extendedData, Authorizations authorizations) {
         ExtendedDataRowId extendedDataRowId = new ExtendedDataRowId(
-                ElementType.getTypeFromElement(this),
-                getId(),
-                extendedData.getTableName(),
-                extendedData.getRow()
+            ElementType.getTypeFromElement(this),
+            getId(),
+            extendedData.getTableName(),
+            extendedData.getRow()
         );
         getGraph().extendedData(this, extendedDataRowId, extendedData, authorizations);
     }
@@ -80,12 +80,12 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> extends 
     @Override
     public void markPropertyHidden(Property property, Long timestamp, Visibility visibility, Authorizations authorizations) {
         getGraph().markPropertyHidden(
-                this,
-                inMemoryTableElement,
-                property,
-                null,
-                visibility,
-                authorizations
+            this,
+            inMemoryTableElement,
+            property,
+            null,
+            visibility,
+            authorizations
         );
     }
 
@@ -151,44 +151,44 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> extends 
 
     void updatePropertiesInternal(VertexBuilder vertexBuilder) {
         updatePropertiesInternal(
-                vertexBuilder.getProperties(),
-                vertexBuilder.getPropertyDeletes(),
-                vertexBuilder.getPropertySoftDeletes(),
-                vertexBuilder.getExtendedData(),
-                vertexBuilder.getExtendedDataDeletes(),
-                vertexBuilder.getIndexHint()
+            vertexBuilder.getProperties(),
+            vertexBuilder.getPropertyDeletes(),
+            vertexBuilder.getPropertySoftDeletes(),
+            vertexBuilder.getExtendedData(),
+            vertexBuilder.getExtendedDataDeletes(),
+            vertexBuilder.getIndexHint()
         );
     }
 
     void updatePropertiesInternal(EdgeBuilderBase edgeBuilder) {
         updatePropertiesInternal(
-                edgeBuilder.getProperties(),
-                edgeBuilder.getPropertyDeletes(),
-                edgeBuilder.getPropertySoftDeletes(),
-                edgeBuilder.getExtendedData(),
-                edgeBuilder.getExtendedDataDeletes(),
-                edgeBuilder.getIndexHint()
+            edgeBuilder.getProperties(),
+            edgeBuilder.getPropertyDeletes(),
+            edgeBuilder.getPropertySoftDeletes(),
+            edgeBuilder.getExtendedData(),
+            edgeBuilder.getExtendedDataDeletes(),
+            edgeBuilder.getIndexHint()
         );
     }
 
     protected void updatePropertiesInternal(
-            Iterable<Property> properties,
-            Iterable<PropertyDeleteMutation> propertyDeleteMutations,
-            Iterable<PropertySoftDeleteMutation> propertySoftDeleteMutations,
-            Iterable<ExtendedDataMutation> extendedDatas,
-            Iterable<ExtendedDataDeleteMutation> extendedDataDeletes,
-            IndexHint indexHint
+        Iterable<Property> properties,
+        Iterable<PropertyDeleteMutation> propertyDeleteMutations,
+        Iterable<PropertySoftDeleteMutation> propertySoftDeleteMutations,
+        Iterable<ExtendedDataMutation> extendedDatas,
+        Iterable<ExtendedDataDeleteMutation> extendedDataDeletes,
+        IndexHint indexHint
     ) {
         for (Property property : properties) {
             addPropertyValue(
-                    property.getKey(),
-                    property.getName(),
-                    property.getValue(),
-                    property.getMetadata(),
-                    property.getVisibility(),
-                    property.getTimestamp(),
-                    false,
-                    authorizations
+                property.getKey(),
+                property.getName(),
+                property.getValue(),
+                property.getMetadata(),
+                property.getVisibility(),
+                property.getTimestamp(),
+                false,
+                authorizations
             );
         }
         for (PropertyDeleteMutation propertyDeleteMutation : propertyDeleteMutations) {
@@ -203,11 +203,11 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> extends 
         }
         for (ExtendedDataDeleteMutation extendedDataDelete : extendedDataDeletes) {
             deleteExtendedData(
-                    extendedDataDelete.getTableName(),
-                    extendedDataDelete.getRow(),
-                    extendedDataDelete.getColumnName(),
-                    extendedDataDelete.getKey(),
-                    extendedDataDelete.getVisibility()
+                extendedDataDelete.getTableName(),
+                extendedDataDelete.getRow(),
+                extendedDataDelete.getColumnName(),
+                extendedDataDelete.getKey(),
+                extendedDataDelete.getVisibility()
             );
         }
     }
@@ -225,19 +225,19 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> extends 
 
         // Altering properties comes next because alterElementVisibility may alter the vertex and we won't find it
         graph.alterElementPropertyVisibilities(
-                inMemoryTableElement, mutation.getAlterPropertyVisibilities(), authorizations);
+            inMemoryTableElement, mutation.getAlterPropertyVisibilities(), authorizations);
 
         Iterable<Property> properties = mutation.getProperties();
         Iterable<PropertyDeleteMutation> propertyDeleteMutations = mutation.getPropertyDeletes();
         Iterable<PropertySoftDeleteMutation> propertySoftDeleteMutations = mutation.getPropertySoftDeletes();
 
         updatePropertiesInternal(
-                properties,
-                propertyDeleteMutations,
-                propertySoftDeleteMutations,
-                mutation.getExtendedData(),
-                mutation.getExtendedDataDeletes(),
-                indexHint
+            properties,
+            propertyDeleteMutations,
+            propertySoftDeleteMutations,
+            mutation.getExtendedData(),
+            mutation.getExtendedDataDeletes(),
+            indexHint
         );
 
         InMemoryGraph graph = getGraph();
@@ -310,10 +310,10 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> extends 
     @Override
     public QueryableIterable<ExtendedDataRow> getExtendedData(String tableName) {
         return new ExtendedDataQueryableIterable(
-                getGraph(),
-                this,
-                tableName,
-                graph.getExtendedDataTable(ElementType.getTypeFromElement(this), id, tableName, getFetchHints(), authorizations)
+            getGraph(),
+            this,
+            tableName,
+            graph.getExtendedDataTable(ElementType.getTypeFromElement(this), id, tableName, getFetchHints(), authorizations)
         );
     }
 }

@@ -19,11 +19,11 @@ public class Ascii85 {
     private final static int ASCII_SHIFT = 33;
 
     private static int[] BASE85_POW = {
-            1,
-            85,
-            85 * 85,
-            85 * 85 * 85,
-            85 * 85 * 85 * 85
+        1,
+        85,
+        85 * 85,
+        85 * 85 * 85,
+        85 * 85 * 85 * 85
     };
 
     private static Pattern REMOVE_WHITESPACE = Pattern.compile("\\s+");
@@ -97,7 +97,7 @@ public class Ascii85 {
         }
         //By using five ASCII characters to represent four bytes of binary data the encoded size ¹⁄₄ is larger than the original
         BigDecimal decodedLength = BigDecimal.valueOf(chars.length()).multiply(BigDecimal.valueOf(4))
-                .divide(BigDecimal.valueOf(5));
+            .divide(BigDecimal.valueOf(5));
         ByteBuffer bytebuff = ByteBuffer.allocate(decodedLength.intValue());
         //1. Whitespace characters may occur anywhere to accommodate line length limitations. So lets strip it.
         chars = REMOVE_WHITESPACE.matcher(chars).replaceAll("");
@@ -166,10 +166,10 @@ public class Ascii85 {
 
     private static byte[] intToByte(int value) {
         return new byte[]{
-                (byte) (value >>> 24),
-                (byte) (value >>> 16),
-                (byte) (value >>> 8),
-                (byte) (value)
+            (byte) (value >>> 24),
+            (byte) (value >>> 16),
+            (byte) (value >>> 8),
+            (byte) (value)
         };
     }
 }

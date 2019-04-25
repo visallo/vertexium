@@ -30,8 +30,8 @@ public class TestVertexiumCypherQueryContext extends VertexiumCypherQueryContext
     public TestVertexiumCypherQueryContext(Graph graph, Authorizations authorizations) {
         super(graph, authorizations);
         getGraph().defineProperty(getLabelPropertyName())
-                .dataType(String.class)
-                .define();
+            .dataType(String.class)
+            .define();
     }
 
     @Override
@@ -47,9 +47,9 @@ public class TestVertexiumCypherQueryContext extends VertexiumCypherQueryContext
     @Override
     public <T extends Element> void setLabelProperty(ElementMutation<T> m, String label) {
         QueryResultsIterable<Element> elements = getGraph().query(getAuthorizations())
-                .has(getLabelPropertyName(), label)
-                .limit(0L)
-                .elements();
+            .has(getLabelPropertyName(), label)
+            .limit(0L)
+            .elements();
         if (elements.getTotalHits() == 0) {
             plusLabelCount++;
         }
@@ -109,8 +109,8 @@ public class TestVertexiumCypherQueryContext extends VertexiumCypherQueryContext
     @Override
     public Set<String> getVertexLabels(Vertex vertex) {
         return stream(vertex.getPropertyValues(LABEL_PROPERTY_NAME))
-                .map(Object::toString)
-                .collect(Collectors.toSet());
+            .map(Object::toString)
+            .collect(Collectors.toSet());
     }
 
     @Override
@@ -140,8 +140,8 @@ public class TestVertexiumCypherQueryContext extends VertexiumCypherQueryContext
     public void deleteEdge(Edge edge) {
         if (getGraph().doesEdgeExist(edge.getId(), getAuthorizations())) {
             Set<String> labels = stream(edge.getPropertyValues(getLabelPropertyName()))
-                    .map(Object::toString)
-                    .collect(Collectors.toSet());
+                .map(Object::toString)
+                .collect(Collectors.toSet());
             updateMinusPropertyCount(edge);
 
             super.deleteEdge(edge);
@@ -156,8 +156,8 @@ public class TestVertexiumCypherQueryContext extends VertexiumCypherQueryContext
     public void deleteVertex(Vertex vertex) {
         if (getGraph().doesVertexExist(vertex.getId(), getAuthorizations())) {
             Set<String> labels = stream(vertex.getPropertyValues(getLabelPropertyName()))
-                    .map(Object::toString)
-                    .collect(Collectors.toSet());
+                .map(Object::toString)
+                .collect(Collectors.toSet());
             updateMinusPropertyCount(vertex);
 
             for (Edge edge : vertex.getEdges(Direction.BOTH, getAuthorizations())) {
@@ -183,9 +183,9 @@ public class TestVertexiumCypherQueryContext extends VertexiumCypherQueryContext
     private void updateMinusLabelCount(Set<String> labels) {
         for (String label : labels) {
             QueryResultsIterable<Element> elements = getGraph().query(getAuthorizations())
-                    .has(getLabelPropertyName(), label)
-                    .limit(0L)
-                    .elements();
+                .has(getLabelPropertyName(), label)
+                .limit(0L)
+                .elements();
             if (elements.getTotalHits() == 0) {
                 minusLabelCount++;
             }

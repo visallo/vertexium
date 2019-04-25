@@ -45,10 +45,10 @@ public class KeyHelper {
         KeyBase.assertNoValueSeparator(key);
         //noinspection StringBufferReplaceableByString
         return new Text(new StringBuilder(name.length() + 1 + key.length())
-                .append(name)
-                .append(KeyBase.VALUE_SEPARATOR)
-                .append(key)
-                .toString()
+            .append(name)
+            .append(KeyBase.VALUE_SEPARATOR)
+            .append(key)
+            .toString()
         );
     }
 
@@ -63,12 +63,12 @@ public class KeyHelper {
         KeyBase.assertNoValueSeparator(key);
         //noinspection StringBufferReplaceableByString
         return new Text(new StringBuilder(name.length() + 1 + key.length() + 1 + visibilityString.length())
-                .append(name)
-                .append(KeyBase.VALUE_SEPARATOR)
-                .append(key)
-                .append(KeyBase.VALUE_SEPARATOR)
-                .append(visibilityString)
-                .toString()
+            .append(name)
+            .append(KeyBase.VALUE_SEPARATOR)
+            .append(key)
+            .append(KeyBase.VALUE_SEPARATOR)
+            .append(visibilityString)
+            .toString()
         );
     }
 
@@ -83,10 +83,10 @@ public class KeyHelper {
 
         int charCount = name.length() + key.length() + visibilityString.length() + metadataKey.length() + 3;
         CharBuffer qualifierChars = (CharBuffer) CharBuffer.allocate(charCount)
-                .put(name).put(KeyBase.VALUE_SEPARATOR)
-                .put(key).put(KeyBase.VALUE_SEPARATOR)
-                .put(visibilityString).put(KeyBase.VALUE_SEPARATOR)
-                .put(metadataKey).flip();
+            .put(name).put(KeyBase.VALUE_SEPARATOR)
+            .put(key).put(KeyBase.VALUE_SEPARATOR)
+            .put(visibilityString).put(KeyBase.VALUE_SEPARATOR)
+            .put(metadataKey).flip();
 
         CharsetEncoder encoder = ENCODER_FACTORY.get();
         encoder.reset();

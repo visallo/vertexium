@@ -30,12 +30,12 @@ public abstract class PercentileFunction extends AggregationFunction {
 
         if (arg0 instanceof Stream) {
             Stream<Double> values = ((Stream<?>) arg0)
-                    .map(v -> {
-                        if (v instanceof Number) {
-                            return ((Number) v).doubleValue();
-                        }
-                        throw new VertexiumCypherTypeErrorException(v, Number.class);
-                    });
+                .map(v -> {
+                    if (v instanceof Number) {
+                        return ((Number) v).doubleValue();
+                    }
+                    throw new VertexiumCypherTypeErrorException(v, Number.class);
+                });
             return invoke(ctx, values.collect(Collectors.toList()), percentile, scope);
         }
 

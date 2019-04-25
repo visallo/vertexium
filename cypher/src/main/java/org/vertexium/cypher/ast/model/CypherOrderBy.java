@@ -18,8 +18,8 @@ public class CypherOrderBy extends CypherAstBase {
     @Override
     public String toString() {
         return String.format(
-                "ORDER BY %s",
-                getSortItems().stream().map(CypherSortItem::toString).collect(Collectors.joining(", "))
+            "ORDER BY %s",
+            getSortItems().stream().map(CypherSortItem::toString).collect(Collectors.joining(", "))
         );
     }
 

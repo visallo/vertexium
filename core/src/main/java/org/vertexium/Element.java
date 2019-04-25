@@ -66,12 +66,12 @@ public interface Element extends VertexiumObject {
      * @param visibility The visibility of the property to get.
      */
     default Iterable<HistoricalPropertyValue> getHistoricalPropertyValues(
-            String key,
-            String name,
-            Visibility visibility,
-            Long startTime,
-            Long endTime,
-            Authorizations authorizations
+        String key,
+        String name,
+        Visibility visibility,
+        Long startTime,
+        Long endTime,
+        Authorizations authorizations
     ) {
         return new FilterIterable<HistoricalPropertyValue>(getHistoricalPropertyValues(key, name, visibility, authorizations)) {
             @Override

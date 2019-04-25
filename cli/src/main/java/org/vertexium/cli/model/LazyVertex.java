@@ -69,12 +69,12 @@ public class LazyVertex extends ModelBase {
             String valueString = VertexiumScript.valueToString(prop.getValue(), false);
             boolean isHidden = prop.isHidden(getAuthorizations());
             writer.println(
-                    "    @|bold " + propertyIndexString + ":|@ "
-                            + prop.getName() + ":"
-                            + prop.getKey()
-                            + "[" + prop.getVisibility().getVisibilityString() + "] "
-                            + "= " + valueString
-                            + (isHidden ? " @|red (hidden)|@" : "")
+                "    @|bold " + propertyIndexString + ":|@ "
+                    + prop.getName() + ":"
+                    + prop.getKey()
+                    + "[" + prop.getVisibility().getVisibilityString() + "] "
+                    + "= " + valueString
+                    + (isHidden ? " @|red (hidden)|@" : "")
             );
             LazyProperty lazyProperty = new LazyVertexProperty(v.getId(), prop.getKey(), prop.getName(), prop.getVisibility());
             VertexiumScript.getContextProperties().put(propertyIndexString, lazyProperty);
@@ -91,19 +91,19 @@ public class LazyVertex extends ModelBase {
             try {
                 String otherVertexId = edge.getOtherVertexId(v.getId());
                 writer.println(
-                        "    @|bold " + edgeIndexString + ":|@ "
-                                + edge.getId() + ": "
-                                + edge.getLabel()
-                                + " -> " + otherVertexId
-                                + (isHidden ? " @|red (hidden)|@" : "")
+                    "    @|bold " + edgeIndexString + ":|@ "
+                        + edge.getId() + ": "
+                        + edge.getLabel()
+                        + " -> " + otherVertexId
+                        + (isHidden ? " @|red (hidden)|@" : "")
                 );
             } catch (Exception ex) {
                 writer.println(
-                        "    @|bold " + edgeIndexString + ":|@ "
-                                + edge.getId() + ": "
-                                + edge.getLabel()
-                                + " -> @|red " + ex.getMessage() + "|@"
-                                + (isHidden ? " @|red (hidden)|@" : "")
+                    "    @|bold " + edgeIndexString + ":|@ "
+                        + edge.getId() + ": "
+                        + edge.getLabel()
+                        + " -> @|red " + ex.getMessage() + "|@"
+                        + (isHidden ? " @|red (hidden)|@" : "")
                 );
             }
             LazyEdge lazyEdge = new LazyEdge(edge.getId());
@@ -118,19 +118,19 @@ public class LazyVertex extends ModelBase {
             try {
                 String otherVertexId = edge.getOtherVertexId(v.getId());
                 writer.println(
-                        "    @|bold " + edgeIndexString + ":|@ "
-                                + edge.getId() + ": "
-                                + edge.getLabel()
-                                + " -> " + otherVertexId
-                                + (isHidden ? " @|red (hidden)|@" : "")
+                    "    @|bold " + edgeIndexString + ":|@ "
+                        + edge.getId() + ": "
+                        + edge.getLabel()
+                        + " -> " + otherVertexId
+                        + (isHidden ? " @|red (hidden)|@" : "")
                 );
             } catch (Exception ex) {
                 writer.println(
-                        "    @|bold " + edgeIndexString + ":|@ "
-                                + edge.getId() + ": "
-                                + edge.getLabel()
-                                + " -> @|red " + ex.getMessage() + "|@"
-                                + (isHidden ? " @|red (hidden)|@" : "")
+                    "    @|bold " + edgeIndexString + ":|@ "
+                        + edge.getId() + ": "
+                        + edge.getLabel()
+                        + " -> @|red " + ex.getMessage() + "|@"
+                        + (isHidden ? " @|red (hidden)|@" : "")
                 );
             }
             LazyEdge lazyEdge = new LazyEdge(edge.getId());

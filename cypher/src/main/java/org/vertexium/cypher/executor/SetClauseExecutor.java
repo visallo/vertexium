@@ -24,7 +24,7 @@ public class SetClauseExecutor {
         LOGGER.debug("execute: %s", clause);
         scope.run(); // TODO change the execute to peek and set the values instead of consuming the stream
         scope.stream()
-                .forEach(item -> execute(ctx, clause, item));
+            .forEach(item -> execute(ctx, clause, item));
         return scope;
     }
 
@@ -38,19 +38,19 @@ public class SetClauseExecutor {
                 executeSetVariable(ctx, (CypherSetVariable) setItem, item);
             } else {
                 throw new VertexiumCypherTypeErrorException(
-                        setItem,
-                        CypherSetNodeLabels.class,
-                        CypherSetProperty.class,
-                        CypherSetVariable.class
+                    setItem,
+                    CypherSetNodeLabels.class,
+                    CypherSetProperty.class,
+                    CypherSetVariable.class
                 );
             }
         });
     }
 
     private void executeSetVariable(
-            VertexiumCypherQueryContext ctx,
-            CypherSetVariable setItem,
-            VertexiumCypherScope.Item item
+        VertexiumCypherQueryContext ctx,
+        CypherSetVariable setItem,
+        VertexiumCypherScope.Item item
     ) {
         Object left = ctx.getExpressionExecutor().executeExpression(ctx, setItem.getLeft(), item);
         VertexiumCypherTypeErrorException.assertType(left, Element.class, null);
@@ -107,9 +107,9 @@ public class SetClauseExecutor {
     }
 
     private void executeSetProperty(
-            VertexiumCypherQueryContext ctx,
-            CypherSetProperty setItem,
-            VertexiumCypherScope.Item item
+        VertexiumCypherQueryContext ctx,
+        CypherSetProperty setItem,
+        VertexiumCypherScope.Item item
     ) {
         Object left = ctx.getExpressionExecutor().executeExpression(ctx, setItem.getLeft().getAtom(), item);
         VertexiumCypherTypeErrorException.assertType(left, Element.class, null);
@@ -137,9 +137,9 @@ public class SetClauseExecutor {
     }
 
     private void executeSetNodeLabels(
-            VertexiumCypherQueryContext ctx,
-            CypherSetNodeLabels setItem,
-            VertexiumCypherScope.Item item
+        VertexiumCypherQueryContext ctx,
+        CypherSetNodeLabels setItem,
+        VertexiumCypherScope.Item item
     ) {
         Object left = ctx.getExpressionExecutor().executeExpression(ctx, setItem.getLeft(), item);
         VertexiumCypherTypeErrorException.assertType(left, Vertex.class, null);

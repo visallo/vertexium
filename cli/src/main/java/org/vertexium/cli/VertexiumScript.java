@@ -243,28 +243,28 @@ public class VertexiumScript extends Script {
         List<List<String>> table = new ArrayList<>();
         table.add(new ArrayList<>(columnNames));
         table.addAll(
-                cypherResult.stream()
-                        .map(row -> columnNames.stream()
-                                .map(columnName -> row.getByName(columnName))
-                                .map(o -> {
-                                    if (o instanceof Vertex) {
-                                        String vertexIndexString = "v" + vertexIndex.get();
-                                        LazyVertex lazyVertex = new LazyVertex(((Vertex) o).getId());
-                                        VertexiumScript.getContextVertices().put(vertexIndexString, lazyVertex);
-                                        vertexIndex.incrementAndGet();
-                                        return "@|bold " + vertexIndexString + ":|@ " + ((Vertex) o).getId();
-                                    }
-                                    if (o instanceof Edge) {
-                                        String edgeIndexString = "e" + edgeIndex.get();
-                                        LazyEdge lazyEdge = new LazyEdge(((Edge) o).getId());
-                                        VertexiumScript.getContextEdges().put(edgeIndexString, lazyEdge);
-                                        edgeIndex.incrementAndGet();
-                                        return "@|bold " + edgeIndexString + ":|@ " + ((Edge) o).getId();
-                                    }
-                                    return ctx.getResultWriter().columnValueToString(ctx, o);
-                                })
-                                .collect(Collectors.toList()))
-                        .collect(Collectors.toList())
+            cypherResult.stream()
+                .map(row -> columnNames.stream()
+                    .map(columnName -> row.getByName(columnName))
+                    .map(o -> {
+                        if (o instanceof Vertex) {
+                            String vertexIndexString = "v" + vertexIndex.get();
+                            LazyVertex lazyVertex = new LazyVertex(((Vertex) o).getId());
+                            VertexiumScript.getContextVertices().put(vertexIndexString, lazyVertex);
+                            vertexIndex.incrementAndGet();
+                            return "@|bold " + vertexIndexString + ":|@ " + ((Vertex) o).getId();
+                        }
+                        if (o instanceof Edge) {
+                            String edgeIndexString = "e" + edgeIndex.get();
+                            LazyEdge lazyEdge = new LazyEdge(((Edge) o).getId());
+                            VertexiumScript.getContextEdges().put(edgeIndexString, lazyEdge);
+                            edgeIndex.incrementAndGet();
+                            return "@|bold " + edgeIndexString + ":|@ " + ((Edge) o).getId();
+                        }
+                        return ctx.getResultWriter().columnValueToString(ctx, o);
+                    })
+                    .collect(Collectors.toList()))
+                .collect(Collectors.toList())
         );
 
         return "\n" + ShellTableWriter.tableToString(table);

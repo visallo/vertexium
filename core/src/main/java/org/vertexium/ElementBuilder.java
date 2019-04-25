@@ -102,14 +102,14 @@ public abstract class ElementBuilder<T extends Element> implements ElementMutati
             throw new NullPointerException("property value cannot be null for property: " + name + ":" + key);
         }
         this.properties.add(new MutablePropertyImpl(
-                key,
-                name,
-                value,
-                metadata,
-                timestamp,
-                null,
-                visibility,
-                FetchHints.ALL_INCLUDING_HIDDEN
+            key,
+            name,
+            value,
+            metadata,
+            timestamp,
+            null,
+            visibility,
+            FetchHints.ALL_INCLUDING_HIDDEN
         ));
         return this;
     }
@@ -215,8 +215,8 @@ public abstract class ElementBuilder<T extends Element> implements ElementMutati
 
     public ImmutableSet<String> getExtendedDataTableNames() {
         return extendedDatas.stream()
-                .map(ExtendedDataMutation::getTableName)
-                .collect(StreamUtils.toImmutableSet());
+            .map(ExtendedDataMutation::getTableName)
+            .collect(StreamUtils.toImmutableSet());
     }
 
     @Override

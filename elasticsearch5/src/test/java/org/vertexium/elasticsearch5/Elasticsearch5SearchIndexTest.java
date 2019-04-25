@@ -16,7 +16,6 @@ import org.vertexium.elasticsearch5.scoring.ElasticsearchHammingDistanceScoringS
 import org.vertexium.inmemory.InMemoryAuthorizations;
 import org.vertexium.inmemory.InMemoryGraph;
 import org.vertexium.inmemory.InMemoryGraphConfiguration;
-import org.vertexium.mutation.ExistingElementMutation;
 import org.vertexium.query.QueryResultsIterable;
 import org.vertexium.query.SortDirection;
 import org.vertexium.scoring.ScoringStrategy;
@@ -192,7 +191,7 @@ public class Elasticsearch5SearchIndexTest extends GraphTestBase {
         graph.flush();
 
         QueryResultsIterable<Edge> edges = graph.query(AUTHORIZATIONS_A)
-                .edges(FetchHints.NONE);
+            .edges(FetchHints.NONE);
 
         assertResultsCount(1, 1, edges);
         Edge e1 = toList(edges).get(0);
@@ -210,7 +209,7 @@ public class Elasticsearch5SearchIndexTest extends GraphTestBase {
         graph.flush();
 
         QueryResultsIterable<Vertex> vertices = graph.query(AUTHORIZATIONS_B)
-                .vertices(FetchHints.NONE);
+            .vertices(FetchHints.NONE);
 
         assertResultsCount(1, 1, vertices);
         Vertex vertex = toList(vertices).get(0);
@@ -225,7 +224,7 @@ public class Elasticsearch5SearchIndexTest extends GraphTestBase {
         graph.flush();
 
         QueryResultsIterable<Edge> edges = graph.query(AUTHORIZATIONS_A)
-                .edges(FetchHints.NONE);
+            .edges(FetchHints.NONE);
 
         assertResultsCount(1, 1, edges);
         toList(edges).get(0).getVertices(AUTHORIZATIONS_A);

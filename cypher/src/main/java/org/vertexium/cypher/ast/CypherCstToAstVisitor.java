@@ -74,29 +74,29 @@ public class CypherCstToAstVisitor extends CypherBaseVisitor<CypherAstBase> {
 
     private CypherQuery queryChildrenToCypherQuery(List<ParseTree> children) {
         return new CypherQuery(
-                children.stream()
-                        .flatMap(c -> {
-                            if (c instanceof CypherParser.OC_SinglePartQueryContext) {
-                                return ((CypherParser.OC_SinglePartQueryContext) c).children.stream();
-                            } else {
-                                return Stream.of(c);
-                            }
-                        })
-                        .filter(c -> c.getText().trim().length() > 0)
-                        .map(c -> {
-                            if (c instanceof CypherParser.OC_ReadingClauseContext) {
-                                return visitOC_ReadingClause((CypherParser.OC_ReadingClauseContext) c);
-                            } else if (c instanceof CypherParser.OC_UpdatingClauseContext) {
-                                return visitOC_UpdatingClause((CypherParser.OC_UpdatingClauseContext) c);
-                            } else if (c instanceof CypherParser.OC_ReturnContext) {
-                                return visitOC_Return((CypherParser.OC_ReturnContext) c);
-                            } else if (c instanceof CypherParser.OC_WithContext) {
-                                return visitOC_With((CypherParser.OC_WithContext) c);
-                            } else {
-                                throw new VertexiumCypherNotImplemented("Unhandled child (" + c.getText() + "): " + c.getClass().getName());
-                            }
-                        })
-                        .collect(StreamUtils.toImmutableList())
+            children.stream()
+                .flatMap(c -> {
+                    if (c instanceof CypherParser.OC_SinglePartQueryContext) {
+                        return ((CypherParser.OC_SinglePartQueryContext) c).children.stream();
+                    } else {
+                        return Stream.of(c);
+                    }
+                })
+                .filter(c -> c.getText().trim().length() > 0)
+                .map(c -> {
+                    if (c instanceof CypherParser.OC_ReadingClauseContext) {
+                        return visitOC_ReadingClause((CypherParser.OC_ReadingClauseContext) c);
+                    } else if (c instanceof CypherParser.OC_UpdatingClauseContext) {
+                        return visitOC_UpdatingClause((CypherParser.OC_UpdatingClauseContext) c);
+                    } else if (c instanceof CypherParser.OC_ReturnContext) {
+                        return visitOC_Return((CypherParser.OC_ReturnContext) c);
+                    } else if (c instanceof CypherParser.OC_WithContext) {
+                        return visitOC_With((CypherParser.OC_WithContext) c);
+                    } else {
+                        throw new VertexiumCypherNotImplemented("Unhandled child (" + c.getText() + "): " + c.getClass().getName());
+                    }
+                })
+                .collect(StreamUtils.toImmutableList())
         );
     }
 
@@ -138,8 +138,8 @@ public class CypherCstToAstVisitor extends CypherBaseVisitor<CypherAstBase> {
     @Override
     public CypherCreateClause visitOC_Create(CypherParser.OC_CreateContext ctx) {
         ImmutableList<CypherPatternPart> patternParts = ctx.oC_Pattern().oC_PatternPart().stream()
-                .map(this::visitOC_PatternPart)
-                .collect(StreamUtils.toImmutableList());
+            .map(this::visitOC_PatternPart)
+            .collect(StreamUtils.toImmutableList());
         return new CypherCreateClause(patternParts);
     }
 
@@ -155,10 +155,10 @@ public class CypherCstToAstVisitor extends CypherBaseVisitor<CypherAstBase> {
         CypherParser.OC_LimitContext limit = ctx.oC_Limit();
         CypherParser.OC_SkipContext skip = ctx.oC_Skip();
         return new CypherReturnBody(
-                visitOC_ReturnItems(ctx.oC_ReturnItems()),
-                (order == null) ? null : visitOC_Order(order),
-                (limit == null) ? null : visitOC_Limit(limit),
-                (skip == null) ? null : visitOC_Skip(skip)
+            visitOC_ReturnItems(ctx.oC_ReturnItems()),
+            (order == null) ? null : visitOC_Order(order),
+            (limit == null) ? null : visitOC_Limit(limit),
+            (skip == null) ? null : visitOC_Skip(skip)
         );
     }
 
@@ -173,8 +173,8 @@ public class CypherCstToAstVisitor extends CypherBaseVisitor<CypherAstBase> {
     @Override
     public CypherListLiteral<CypherPatternPart> visitOC_Pattern(CypherParser.OC_PatternContext ctx) {
         return ctx.oC_PatternPart().stream()
-                .map(this::visitOC_PatternPart)
-                .collect(CypherListLiteral.collect());
+            .map(this::visitOC_PatternPart)
+            .collect(CypherListLiteral.collect());
     }
 
     @Override
@@ -204,8 +204,8 @@ public class CypherCstToAstVisitor extends CypherBaseVisitor<CypherAstBase> {
     }
 
     private List<CypherElementPattern> visitPatternElementChainList(
-            CypherNodePattern previousNodePattern,
-            List<CypherParser.OC_PatternElementChainContext> patternElementChainList
+        CypherNodePattern previousNodePattern,
+        List<CypherParser.OC_PatternElementChainContext> patternElementChainList
     ) {
         List<CypherElementPattern> list = new ArrayList<>();
         for (CypherParser.OC_PatternElementChainContext chainContext : patternElementChainList) {
@@ -225,9 +225,9 @@ public class CypherCstToAstVisitor extends CypherBaseVisitor<CypherAstBase> {
     @Override
     public CypherNodePattern visitOC_NodePattern(CypherParser.OC_NodePatternContext ctx) {
         return new CypherNodePattern(
-                visitVariableString(ctx.oC_Variable()),
-                visitOC_Properties(ctx.oC_Properties()),
-                visitOC_NodeLabels(ctx.oC_NodeLabels())
+            visitVariableString(ctx.oC_Variable()),
+            visitOC_Properties(ctx.oC_Properties()),
+            visitOC_NodeLabels(ctx.oC_NodeLabels())
         );
     }
 
@@ -309,8 +309,8 @@ public class CypherCstToAstVisitor extends CypherBaseVisitor<CypherAstBase> {
             return new CypherListLiteral<>();
         }
         return ctx.oC_NodeLabel().stream()
-                .map(nl -> visitOC_LabelName(nl.oC_LabelName()))
-                .collect(CypherListLiteral.collect());
+            .map(nl -> visitOC_LabelName(nl.oC_LabelName()))
+            .collect(CypherListLiteral.collect());
     }
 
     @Override
@@ -342,11 +342,11 @@ public class CypherCstToAstVisitor extends CypherBaseVisitor<CypherAstBase> {
     public CypherMergeClause visitOC_Merge(CypherParser.OC_MergeContext ctx) {
         CypherPatternPart patternPart = visitOC_PatternPart(ctx.oC_PatternPart());
         List<CypherMergeAction> mergeActions = ctx.oC_MergeAction().stream()
-                .map(this::visitOC_MergeAction)
-                .collect(Collectors.toList());
+            .map(this::visitOC_MergeAction)
+            .collect(Collectors.toList());
         return new CypherMergeClause(
-                patternPart,
-                mergeActions
+            patternPart,
+            mergeActions
         );
     }
 
@@ -360,8 +360,8 @@ public class CypherCstToAstVisitor extends CypherBaseVisitor<CypherAstBase> {
 
     public CypherListLiteral<CypherAstBase> visitExpressions(Iterable<CypherParser.OC_ExpressionContext> expressionContexts) {
         return stream(expressionContexts)
-                .map(this::visitOC_Expression)
-                .collect(CypherListLiteral.collect());
+            .map(this::visitOC_Expression)
+            .collect(CypherListLiteral.collect());
     }
 
     @Override
@@ -447,16 +447,16 @@ public class CypherCstToAstVisitor extends CypherBaseVisitor<CypherAstBase> {
         String op = partialComparisonExpressions.get(0).children.get(0).getText();
         CypherAstBase right = visitOC_AddOrSubtractExpression(partialComparisonExpressions.get(0).oC_AddOrSubtractExpression());
         return new CypherBinaryExpression(
-                new CypherComparisonExpression(left, op, right),
-                CypherBinaryExpression.Op.AND,
-                visitOC_PartialComparisonExpression(right, 1, partialComparisonExpressions)
+            new CypherComparisonExpression(left, op, right),
+            CypherBinaryExpression.Op.AND,
+            visitOC_PartialComparisonExpression(right, 1, partialComparisonExpressions)
         );
     }
 
     private CypherExpression visitOC_PartialComparisonExpression(
-            CypherAstBase left,
-            int partialComparisonExpressionIndex,
-            List<CypherParser.OC_PartialComparisonExpressionContext> partialComparisonExpressions
+        CypherAstBase left,
+        int partialComparisonExpressionIndex,
+        List<CypherParser.OC_PartialComparisonExpressionContext> partialComparisonExpressions
     ) {
         if (partialComparisonExpressionIndex >= partialComparisonExpressions.size()) {
             return new CypherTrueExpression();
@@ -524,7 +524,7 @@ public class CypherCstToAstVisitor extends CypherBaseVisitor<CypherAstBase> {
 
     private Stream<ParseTree> filterSpaces(List<ParseTree> items) {
         return items.stream()
-                .filter(item -> item.getText().trim().length() > 0);
+            .filter(item -> item.getText().trim().length() > 0);
     }
 
     private CypherAstBase visitOC_StringListNullOperatorExpression(List<ParseTree> children) {
@@ -603,7 +603,7 @@ public class CypherCstToAstVisitor extends CypherBaseVisitor<CypherAstBase> {
         List<CypherParser.OC_PropertyLookupContext> propertyLookups = ctx.oC_PropertyLookup();
         CypherParser.OC_NodeLabelsContext nodeLabels = ctx.oC_NodeLabels();
         if ((propertyLookups == null || propertyLookups.size() == 0)
-                && (nodeLabels == null || nodeLabels.oC_NodeLabel() == null || nodeLabels.oC_NodeLabel().size() == 0)) {
+            && (nodeLabels == null || nodeLabels.oC_NodeLabel() == null || nodeLabels.oC_NodeLabel().size() == 0)) {
             if (ctx.children.size() != 1) {
                 throw new VertexiumCypherSyntaxErrorException("invalid expression \"" + ctx.getText() + "\"");
             }
@@ -613,17 +613,17 @@ public class CypherCstToAstVisitor extends CypherBaseVisitor<CypherAstBase> {
     }
 
     private CypherLookup createLookup(
-            CypherParser.OC_AtomContext atomCtx,
-            List<CypherParser.OC_PropertyLookupContext> propertyLookups,
-            CypherParser.OC_NodeLabelsContext nodeLabels
+        CypherParser.OC_AtomContext atomCtx,
+        List<CypherParser.OC_PropertyLookupContext> propertyLookups,
+        CypherParser.OC_NodeLabelsContext nodeLabels
     ) {
         CypherAstBase atom = visitOC_Atom(atomCtx);
         if (propertyLookups.size() == 0 && (nodeLabels == null || nodeLabels.oC_NodeLabel().size() == 0)) {
             return new CypherLookup(atom, null, null);
         } else {
             String property = propertyLookups.stream()
-                    .map(pl -> visitOC_PropertyLookup(pl).getValue())
-                    .collect(Collectors.joining("."));
+                .map(pl -> visitOC_PropertyLookup(pl).getValue())
+                .collect(Collectors.joining("."));
             if (property.length() == 0) {
                 property = null;
             }
@@ -632,8 +632,8 @@ public class CypherCstToAstVisitor extends CypherBaseVisitor<CypherAstBase> {
                 labels = new ArrayList<>();
             } else {
                 labels = nodeLabels.oC_NodeLabel().stream()
-                        .map(this::visitOC_NodeLabel)
-                        .collect(Collectors.toList());
+                    .map(this::visitOC_NodeLabel)
+                    .collect(Collectors.toList());
             }
             return new CypherLookup(atom, property, labels);
         }
@@ -711,16 +711,16 @@ public class CypherCstToAstVisitor extends CypherBaseVisitor<CypherAstBase> {
             return CypherListLiteral.of(new CypherReturnItem("*", new CypherAllLiteral(), null));
         }
         return ctx.oC_ReturnItem().stream()
-                .map(this::visitOC_ReturnItem)
-                .collect(CypherListLiteral.collect());
+            .map(this::visitOC_ReturnItem)
+            .collect(CypherListLiteral.collect());
     }
 
     @Override
     public CypherReturnItem visitOC_ReturnItem(CypherParser.OC_ReturnItemContext ctx) {
         return new CypherReturnItem(
-                ctx.getText(),
-                visitOC_Expression(ctx.oC_Expression()),
-                visitVariableString(ctx.oC_Variable())
+            ctx.getText(),
+            visitOC_Expression(ctx.oC_Expression()),
+            visitVariableString(ctx.oC_Variable())
         );
     }
 
@@ -785,8 +785,8 @@ public class CypherCstToAstVisitor extends CypherBaseVisitor<CypherAstBase> {
     @Override
     public CypherOrderBy visitOC_Order(CypherParser.OC_OrderContext ctx) {
         List<CypherSortItem> sortItems = ctx.oC_SortItem().stream()
-                .map(this::visitOC_SortItem)
-                .collect(Collectors.toList());
+            .map(this::visitOC_SortItem)
+            .collect(Collectors.toList());
         return new CypherOrderBy(sortItems);
     }
 
@@ -836,8 +836,8 @@ public class CypherCstToAstVisitor extends CypherBaseVisitor<CypherAstBase> {
             return new CypherRemovePropertyExpressionItem(visitOC_PropertyExpression(ctx.oC_PropertyExpression()));
         } else {
             return new CypherRemoveLabelItem(
-                    visitOC_Variable(ctx.oC_Variable()),
-                    visitOC_NodeLabels(ctx.oC_NodeLabels())
+                visitOC_Variable(ctx.oC_Variable()),
+                visitOC_NodeLabels(ctx.oC_NodeLabels())
             );
         }
     }
@@ -868,8 +868,8 @@ public class CypherCstToAstVisitor extends CypherBaseVisitor<CypherAstBase> {
     @Override
     public CypherRemoveClause visitOC_Remove(CypherParser.OC_RemoveContext ctx) {
         List<CypherRemoveItem> removeItems = ctx.oC_RemoveItem().stream()
-                .map(this::visitOC_RemoveItem)
-                .collect(Collectors.toList());
+            .map(this::visitOC_RemoveItem)
+            .collect(Collectors.toList());
         return new CypherRemoveClause(removeItems);
     }
 
@@ -943,23 +943,23 @@ public class CypherCstToAstVisitor extends CypherBaseVisitor<CypherAstBase> {
                 throw new VertexiumException("expected " + CypherLookup.class.getName() + " found " + lookup.getClass().getName());
             }
             return new CypherSetProperty(
-                    (CypherLookup) lookup,
-                    visitOC_Expression(ctx.oC_Expression())
+                (CypherLookup) lookup,
+                visitOC_Expression(ctx.oC_Expression())
             );
         }
 
         if (ctx.oC_NodeLabels() != null) {
             return new CypherSetNodeLabels(
-                    visitOC_Variable(ctx.oC_Variable()),
-                    visitOC_NodeLabels(ctx.oC_NodeLabels())
+                visitOC_Variable(ctx.oC_Variable()),
+                visitOC_NodeLabels(ctx.oC_NodeLabels())
             );
         }
 
         CypherSetItem.Op op = getSetItemOp(ctx);
         return new CypherSetVariable(
-                visitOC_Variable(ctx.oC_Variable()),
-                op,
-                visitOC_Expression(ctx.oC_Expression())
+            visitOC_Variable(ctx.oC_Variable()),
+            op,
+            visitOC_Expression(ctx.oC_Expression())
         );
     }
 
@@ -1083,8 +1083,8 @@ public class CypherCstToAstVisitor extends CypherBaseVisitor<CypherAstBase> {
     @Override
     public CypherListLiteral<CypherRelTypeName> visitOC_RelationshipTypes(CypherParser.OC_RelationshipTypesContext ctx) {
         return ctx.oC_RelTypeName().stream()
-                .map(this::visitOC_RelTypeName)
-                .collect(CypherListLiteral.collect());
+            .map(this::visitOC_RelTypeName)
+            .collect(CypherListLiteral.collect());
     }
 
     @Override
@@ -1095,10 +1095,10 @@ public class CypherCstToAstVisitor extends CypherBaseVisitor<CypherAstBase> {
     @Override
     public CypherAstBase visitErrorNode(ErrorNode node) {
         throw new VertexiumException(String.format(
-                "Could not parse: invalid value \"%s\" (line: %d, pos: %d)",
-                node.getText(),
-                node.getSymbol().getLine(),
-                node.getSymbol().getCharPositionInLine()
+            "Could not parse: invalid value \"%s\" (line: %d, pos: %d)",
+            node.getText(),
+            node.getSymbol().getLine(),
+            node.getSymbol().getCharPositionInLine()
         ));
     }
 }

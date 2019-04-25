@@ -83,13 +83,13 @@ public abstract class ElementData {
 
     private void encodeProperties(final DataOutputStream out, IteratorFetchHints fetchHints) throws IOException {
         iterateProperties((
-                propertyKey,
-                propertyName,
-                propertyValue,
-                propertyVisibility,
-                propertyTimestamp,
-                propertyHiddenVisibilities,
-                metadata
+            propertyKey,
+            propertyName,
+            propertyValue,
+            propertyVisibility,
+            propertyTimestamp,
+            propertyHiddenVisibilities,
+            metadata
         ) -> {
             out.write(PROP_START);
             DataOutputStreamUtils.encodeByteSequence(out, propertyKey);
@@ -126,13 +126,13 @@ public abstract class ElementData {
             }
             List<Integer> metadata = propertyMetadata.get(key);
             propertyDataHandler.handle(
-                    propertyKey,
-                    propertyName,
-                    propertyValue,
-                    propertyVisibility,
-                    propertyTimestamp,
-                    propertyHiddenVisibilities,
-                    metadata
+                propertyKey,
+                propertyName,
+                propertyValue,
+                propertyVisibility,
+                propertyTimestamp,
+                propertyHiddenVisibilities,
+                metadata
             );
         }
     }
@@ -141,21 +141,21 @@ public abstract class ElementData {
         final List<Property> results = new ArrayList<>();
         try {
             iterateProperties((
-                    propertyKey,
-                    propertyName,
-                    propertyValue,
-                    propertyVisibility,
-                    propertyTimestamp,
-                    propertyHiddenVisibilities,
-                    metadata
+                propertyKey,
+                propertyName,
+                propertyValue,
+                propertyVisibility,
+                propertyTimestamp,
+                propertyHiddenVisibilities,
+                metadata
             ) -> results.add(new Property(
-                    propertyKey,
-                    propertyName,
-                    propertyValue,
-                    propertyVisibility,
-                    propertyTimestamp,
-                    propertyHiddenVisibilities,
-                    metadata
+                propertyKey,
+                propertyName,
+                propertyValue,
+                propertyVisibility,
+                propertyTimestamp,
+                propertyHiddenVisibilities,
+                metadata
             )), fetchHints);
         } catch (IOException ex) {
             throw new VertexiumAccumuloIteratorException("Could not get properties", ex);
@@ -165,20 +165,20 @@ public abstract class ElementData {
 
     private interface PropertyDataHandler {
         void handle(
-                ByteSequence propertyKey,
-                ByteSequence propertyName,
-                byte[] propertyValue,
-                ByteSequence propertyVisibility,
-                long propertyTimestamp,
-                Set<ByteSequence> propertyHiddenVisibilities,
-                List<Integer> metadata
+            ByteSequence propertyKey,
+            ByteSequence propertyName,
+            byte[] propertyValue,
+            ByteSequence propertyVisibility,
+            long propertyTimestamp,
+            Set<ByteSequence> propertyHiddenVisibilities,
+            List<Integer> metadata
         ) throws IOException;
     }
 
     private Set<ByteSequence> getPropertyHiddenVisibilities(
-            ByteSequence propertyKey,
-            ByteSequence propertyName,
-            ByteSequence propertyVisibility
+        ByteSequence propertyKey,
+        ByteSequence propertyName,
+        ByteSequence propertyVisibility
     ) {
         Set<ByteSequence> hiddenVisibilities = null;
         for (HiddenProperty hiddenProperty : hiddenProperties) {

@@ -77,9 +77,9 @@ public class StreamingPropertyValueTable extends StreamingPropertyValue {
             ScannerBase scanner = graph.createBatchScanner(graph.getDataTableName(), ranges, new org.apache.accumulo.core.security.Authorizations());
             if (timestamp != null && !DataTableRowKey.isLegacy(dataRowKey)) {
                 IteratorSetting iteratorSetting = new IteratorSetting(
-                        80,
-                        TimestampFilter.class.getSimpleName(),
-                        TimestampFilter.class
+                    80,
+                    TimestampFilter.class.getSimpleName(),
+                    TimestampFilter.class
                 );
                 TimestampFilter.setStart(iteratorSetting, timestamp, true);
                 TimestampFilter.setEnd(iteratorSetting, timestamp, true);

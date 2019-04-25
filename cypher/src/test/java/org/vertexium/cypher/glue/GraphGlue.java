@@ -135,15 +135,15 @@ public class GraphGlue {
         List<String> columnNames = expected.raw().get(0);
         if (expected.raw().size() > 0) {
             List<List<String>> expectedRows = expected.raw().stream()
-                    .skip(1)
-                    .collect(Collectors.toList());
+                .skip(1)
+                .collect(Collectors.toList());
             List<List<String>> foundRows = lastResults.stream()
-                    .map(row -> columnNames.stream()
-                            .map(columnName -> row.getByName(columnName))
-                            .map(obj -> ctx.getResultWriter().columnValueToString(ctx, obj))
-                            .collect(Collectors.toList())
-                    )
-                    .collect(Collectors.toList());
+                .map(row -> columnNames.stream()
+                    .map(columnName -> row.getByName(columnName))
+                    .map(obj -> ctx.getResultWriter().columnValueToString(ctx, obj))
+                    .collect(Collectors.toList())
+                )
+                .collect(Collectors.toList());
 
             expectedRows.sort(new RowComparator());
             foundRows.sort(new RowComparator());
@@ -293,9 +293,9 @@ public class GraphGlue {
     private List<String> columnValueToList(String columnValue) {
         columnValue = columnValue.substring(1, columnValue.length() - 1);
         return Arrays.stream(columnValue.split(","))
-                .map(String::trim)
-                .sorted()
-                .collect(Collectors.toList());
+            .map(String::trim)
+            .sorted()
+            .collect(Collectors.toList());
     }
 
     @Then("^a (.*) should be raised at compile time: (.*)$")

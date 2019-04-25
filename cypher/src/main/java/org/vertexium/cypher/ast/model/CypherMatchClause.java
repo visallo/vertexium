@@ -9,9 +9,9 @@ public class CypherMatchClause extends CypherClause {
     private final boolean optional;
 
     public CypherMatchClause(
-            boolean optional,
-            CypherListLiteral<CypherPatternPart> patternParts,
-            CypherAstBase whereExpression
+        boolean optional,
+        CypherListLiteral<CypherPatternPart> patternParts,
+        CypherAstBase whereExpression
     ) {
         this.optional = optional;
         this.patternParts = patternParts;
@@ -33,10 +33,10 @@ public class CypherMatchClause extends CypherClause {
     @Override
     public String toString() {
         return String.format(
-                "%sMATCH %s%s",
-                isOptional() ? "OPTIONAL " : "",
-                getPatternParts().stream().map(CypherPatternPart::toString).collect(Collectors.joining(", ")),
-                getWhereExpression() == null ? "" : " " + getWhereExpression()
+            "%sMATCH %s%s",
+            isOptional() ? "OPTIONAL " : "",
+            getPatternParts().stream().map(CypherPatternPart::toString).collect(Collectors.joining(", ")),
+            getWhereExpression() == null ? "" : " " + getWhereExpression()
         );
     }
 
@@ -44,8 +44,8 @@ public class CypherMatchClause extends CypherClause {
     public Stream<? extends CypherAstBase> getChildren() {
         if (whereExpression != null) {
             return Stream.concat(
-                    patternParts.stream(),
-                    Stream.of(whereExpression)
+                patternParts.stream(),
+                Stream.of(whereExpression)
             );
         } else {
             return patternParts.stream();

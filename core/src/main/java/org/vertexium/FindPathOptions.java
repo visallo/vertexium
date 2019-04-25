@@ -86,9 +86,9 @@ public class FindPathOptions {
     @Override
     public String toString() {
         return "FindPathOptions{" +
-                "sourceVertexId='" + sourceVertexId + '\'' +
-                ", destVertexId='" + destVertexId + '\'' +
-                ", maxHops=" + maxHops +
-                '}';
+            "sourceVertexId='" + sourceVertexId + '\'' +
+            ", destVertexId='" + destVertexId + '\'' +
+            ", maxHops=" + maxHops +
+            '}';
     }
 }

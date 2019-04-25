@@ -33,14 +33,14 @@ public abstract class ElementMutationBuilder {
     private final StreamingPropertyValueStorageStrategy streamingPropertyValueStorageStrategy;
     private final VertexiumSerializer vertexiumSerializer;
     private static final Cache<String, Text> propertyMetadataColumnQualifierTextCache = CacheBuilder
-            .newCache(String.class, Text.class)
-            .name(ElementMutationBuilder.class, "propertyMetadataColumnQualifierTextCache")
-            .maxSize(10000)
-            .build();
+        .newCache(String.class, Text.class)
+        .name(ElementMutationBuilder.class, "propertyMetadataColumnQualifierTextCache")
+        .maxSize(10000)
+        .build();
 
     protected ElementMutationBuilder(
-            StreamingPropertyValueStorageStrategy streamingPropertyValueStorageStrategy,
-            VertexiumSerializer vertexiumSerializer
+        StreamingPropertyValueStorageStrategy streamingPropertyValueStorageStrategy,
+        VertexiumSerializer vertexiumSerializer
     ) {
         this.streamingPropertyValueStorageStrategy = streamingPropertyValueStorageStrategy;
         this.vertexiumSerializer = vertexiumSerializer;
@@ -64,7 +64,7 @@ public abstract class ElementMutationBuilder {
 
     void saveExtendedData(AccumuloGraph graph, String elementId, ElementType elementType, Iterable<ExtendedDataMutation> extendedData) {
         Map<String, List<ExtendedDataMutation>> extendedDatasByTableName = stream(extendedData)
-                .collect(Collectors.groupingBy(edm -> edm.getTableName() + edm.getRow()));
+            .collect(Collectors.groupingBy(edm -> edm.getTableName() + edm.getRow()));
         for (Map.Entry<String, List<ExtendedDataMutation>> entry : extendedDatasByTableName.entrySet()) {
             List<ExtendedDataMutation> mutationsForTableAndRow = entry.getValue();
             String tableName = mutationsForTableAndRow.get(0).getTableName();
@@ -80,10 +80,10 @@ public abstract class ElementMutationBuilder {
                 }
 
                 m.put(
-                        AccumuloElement.CF_EXTENDED_DATA,
-                        KeyHelper.createExtendedDataColumnQualifier(edm),
-                        visibilityToAccumuloVisibility(edm.getVisibility()),
-                        new Value(vertexiumSerializer.objectToBytes(value))
+                    AccumuloElement.CF_EXTENDED_DATA,
+                    KeyHelper.createExtendedDataColumnQualifier(edm),
+                    visibilityToAccumuloVisibility(edm.getVisibility()),
+                    new Value(vertexiumSerializer.objectToBytes(value))
                 );
             }
             saveExtendedDataMutation(elementType, m);
@@ -91,13 +91,13 @@ public abstract class ElementMutationBuilder {
     }
 
     public void saveExtendedDataDeletes(
-            AccumuloGraph graph,
-            String elementId,
-            ElementType elementType,
-            Iterable<ExtendedDataDeleteMutation> extendedDataDeletes
+        AccumuloGraph graph,
+        String elementId,
+        ElementType elementType,
+        Iterable<ExtendedDataDeleteMutation> extendedDataDeletes
     ) {
         Map<String, List<ExtendedDataDeleteMutation>> extendedDataDeletesByTableName = stream(extendedDataDeletes)
-                .collect(Collectors.groupingBy(edm -> edm.getTableName() + edm.getRow()));
+            .collect(Collectors.groupingBy(edm -> edm.getTableName() + edm.getRow()));
         for (Map.Entry<String, List<ExtendedDataDeleteMutation>> entry : extendedDataDeletesByTableName.entrySet()) {
             List<ExtendedDataDeleteMutation> mutationsForTableAndRow = entry.getValue();
             String tableName = mutationsForTableAndRow.get(0).getTableName();
@@ -106,9 +106,9 @@ public abstract class ElementMutationBuilder {
             Mutation m = new Mutation(KeyHelper.createExtendedDataRowKey(elementType, elementId, tableName, row));
             for (ExtendedDataDeleteMutation edm : mutationsForTableAndRow) {
                 m.putDelete(
-                        AccumuloElement.CF_EXTENDED_DATA,
-                        KeyHelper.createExtendedDataColumnQualifier(edm),
-                        visibilityToAccumuloVisibility(edm.getVisibility())
+                    AccumuloElement.CF_EXTENDED_DATA,
+                    KeyHelper.createExtendedDataColumnQualifier(edm),
+                    visibilityToAccumuloVisibility(edm.getVisibility())
                 );
             }
             saveExtendedDataMutation(elementType, m);
@@ -142,9 +142,9 @@ public abstract class ElementMutationBuilder {
     }
 
     public void saveExtendedDataMarkers(
-            String elementId,
-            ElementType elementType,
-            Iterable<ExtendedDataMutation> extendedData
+        String elementId,
+        ElementType elementType,
+        Iterable<ExtendedDataMutation> extendedData
     ) {
         Set<TableNameVisibilityPair> uniquePairs = TableNameVisibilityPair.getUniquePairs(extendedData);
         if (uniquePairs.size() == 0) {
@@ -178,10 +178,10 @@ public abstract class ElementMutationBuilder {
 
     private void addExtendedDataMarkerToElementMutation(Mutation m, TableNameVisibilityPair pair) {
         m.put(
-                AccumuloElement.CF_EXTENDED_DATA,
-                new Text(pair.getTableName()),
-                visibilityToAccumuloVisibility(pair.getVisibility()),
-                new Value(pair.getTableName().getBytes())
+            AccumuloElement.CF_EXTENDED_DATA,
+            new Text(pair.getTableName()),
+            visibilityToAccumuloVisibility(pair.getVisibility()),
+            new Value(pair.getTableName().getBytes())
         );
     }
 
@@ -303,11 +303,11 @@ public abstract class ElementMutationBuilder {
 
         String edgeLabel = edgeBuilder.getNewEdgeLabel() != null ? edgeBuilder.getNewEdgeLabel() : edgeBuilder.getLabel();
         saveEdgeInfoOnVertex(
-                edgeBuilder.getElementId(),
-                edgeBuilder.getOutVertexId(),
-                edgeBuilder.getInVertexId(),
-                edgeLabel,
-                edgeColumnVisibility
+            edgeBuilder.getElementId(),
+            edgeBuilder.getOutVertexId(),
+            edgeBuilder.getInVertexId(),
+            edgeLabel,
+            edgeColumnVisibility
         );
 
         saveExtendedDataMutations(graph, ElementType.EDGE, edgeBuilder);
@@ -336,11 +336,11 @@ public abstract class ElementMutationBuilder {
         saveEdgeMutation(m);
 
         saveEdgeInfoOnVertex(
-                edge.getId(),
-                edge.getVertexId(Direction.OUT),
-                edge.getVertexId(Direction.IN),
-                newEdgeLabel,
-                edgeColumnVisibility
+            edge.getId(),
+            edge.getVertexId(Direction.OUT),
+            edge.getVertexId(Direction.IN),
+            newEdgeLabel,
+            edgeColumnVisibility
         );
     }
 
@@ -451,21 +451,21 @@ public abstract class ElementMutationBuilder {
         Metadata metadata = property.getMetadata();
         for (Metadata.Entry metadataItem : metadata.entrySet()) {
             addPropertyMetadataItemToMutation(
-                    m,
-                    property,
-                    metadataItem.getKey(),
-                    metadataItem.getValue(),
-                    metadataItem.getVisibility()
+                m,
+                property,
+                metadataItem.getKey(),
+                metadataItem.getValue(),
+                metadataItem.getVisibility()
             );
         }
     }
 
     public void addPropertyMetadataItemToMutation(
-            Mutation m,
-            Property property,
-            String metadataKey,
-            Object metadataValue,
-            Visibility visibility
+        Mutation m,
+        Property property,
+        String metadataKey,
+        Object metadataValue,
+        Visibility visibility
     ) {
         Text columnQualifier = getPropertyMetadataColumnQualifierText(property, metadataKey);
         ColumnVisibility metadataVisibility = visibilityToAccumuloVisibility(visibility);

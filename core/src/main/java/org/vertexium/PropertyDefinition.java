@@ -9,29 +9,29 @@ import java.util.Set;
 public class PropertyDefinition implements Serializable {
     private static final long serialVersionUID = 42L;
     private static final PropertyDefinition ID_PROPERTY_DEFINITION = new PropertyDefinition(
-            Element.ID_PROPERTY_NAME,
-            String.class,
-            Sets.newHashSet(TextIndexHint.EXACT_MATCH)
+        Element.ID_PROPERTY_NAME,
+        String.class,
+        Sets.newHashSet(TextIndexHint.EXACT_MATCH)
     );
     private static final PropertyDefinition LABEL_PROPERTY_DEFINITION = new PropertyDefinition(
-            Edge.LABEL_PROPERTY_NAME,
-            String.class,
-            Sets.newHashSet(TextIndexHint.EXACT_MATCH)
+        Edge.LABEL_PROPERTY_NAME,
+        String.class,
+        Sets.newHashSet(TextIndexHint.EXACT_MATCH)
     );
     private static final PropertyDefinition OUT_VERTEX_ID_PROPERTY_DEFINITION = new PropertyDefinition(
-            Edge.OUT_VERTEX_ID_PROPERTY_NAME,
-            String.class,
-            Sets.newHashSet(TextIndexHint.EXACT_MATCH)
+        Edge.OUT_VERTEX_ID_PROPERTY_NAME,
+        String.class,
+        Sets.newHashSet(TextIndexHint.EXACT_MATCH)
     );
     private static final PropertyDefinition IN_VERTEX_ID_PROPERTY_DEFINITION = new PropertyDefinition(
-            Edge.IN_VERTEX_ID_PROPERTY_NAME,
-            String.class,
-            Sets.newHashSet(TextIndexHint.EXACT_MATCH)
+        Edge.IN_VERTEX_ID_PROPERTY_NAME,
+        String.class,
+        Sets.newHashSet(TextIndexHint.EXACT_MATCH)
     );
     private static final PropertyDefinition IN_OR_OUT_VERTEX_ID_PROPERTY_DEFINITION = new PropertyDefinition(
-            Edge.IN_OR_OUT_VERTEX_ID_PROPERTY_NAME,
-            String.class,
-            Sets.newHashSet(TextIndexHint.EXACT_MATCH)
+        Edge.IN_OR_OUT_VERTEX_ID_PROPERTY_NAME,
+        String.class,
+        Sets.newHashSet(TextIndexHint.EXACT_MATCH)
     );
     private final String propertyName;
     private final Class dataType;
@@ -40,24 +40,24 @@ public class PropertyDefinition implements Serializable {
     private final boolean sortable;
 
     public PropertyDefinition(
-            String propertyName,
-            Class dataType,
-            Set<TextIndexHint> textIndexHints) {
+        String propertyName,
+        Class dataType,
+        Set<TextIndexHint> textIndexHints) {
         this(
-                propertyName,
-                dataType,
-                textIndexHints,
-                null,
-                false
+            propertyName,
+            dataType,
+            textIndexHints,
+            null,
+            false
         );
     }
 
     public PropertyDefinition(
-            String propertyName,
-            Class dataType,
-            Set<TextIndexHint> textIndexHints,
-            Double boost,
-            boolean sortable
+        String propertyName,
+        Class dataType,
+        Set<TextIndexHint> textIndexHints,
+        Double boost,
+        boolean sortable
     ) {
         this.propertyName = propertyName;
         this.dataType = dataType;
@@ -118,11 +118,11 @@ public class PropertyDefinition implements Serializable {
     @Override
     public String toString() {
         return "PropertyDefinition{" +
-                "propertyName='" + propertyName + '\'' +
-                ", dataType=" + dataType +
-                ", textIndexHints=" + textIndexHints +
-                ", boost=" + boost +
-                ", sortable=" + sortable +
-                '}';
+            "propertyName='" + propertyName + '\'' +
+            ", dataType=" + dataType +
+            ", textIndexHints=" + textIndexHints +
+            ", boost=" + boost +
+            ", sortable=" + sortable +
+            '}';
     }
 }

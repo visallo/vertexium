@@ -56,10 +56,10 @@ public class QueryExecutor {
     }
 
     private VertexiumCypherScope execute(
-            VertexiumCypherQueryContext ctx,
-            ImmutableList<CypherClause> clauses,
-            AtomicInteger clauseIndex,
-            VertexiumCypherScope previousScope
+        VertexiumCypherQueryContext ctx,
+        ImmutableList<CypherClause> clauses,
+        AtomicInteger clauseIndex,
+        VertexiumCypherScope previousScope
     ) {
         VertexiumCypherScope results;
         CypherClause clause = clauses.get(clauseIndex.get());

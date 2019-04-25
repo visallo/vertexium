@@ -62,8 +62,8 @@ public class DeletePropertyEvent extends GraphEvent {
 
         DeletePropertyEvent other = (DeletePropertyEvent) obj;
         return getElement().equals(other.getElement())
-                && getKey().equals(other.getKey())
-                && getName().equals(other.getName())
-                && getVisibility().equals(other.getVisibility());
+            && getKey().equals(other.getKey())
+            && getName().equals(other.getName())
+            && getVisibility().equals(other.getVisibility());
     }
 }

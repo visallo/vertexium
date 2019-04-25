@@ -41,17 +41,17 @@ public class FetchHintsBuilder {
             includeAllProperties = true;
         }
         return new FetchHints(
-                includeAllProperties,
-                propertyNamesToInclude == null ? null : ImmutableSet.copyOf(propertyNamesToInclude),
-                includeAllPropertyMetadata,
-                metadataKeysToInclude == null ? null : ImmutableSet.copyOf(metadataKeysToInclude),
-                includeHidden,
-                includeAllEdgeRefs,
-                includeOutEdgeRefs || includeAllEdgeRefs,
-                includeInEdgeRefs || includeAllEdgeRefs,
-                edgeLabelsOfEdgeRefsToInclude == null ? null : ImmutableSet.copyOf(edgeLabelsOfEdgeRefsToInclude),
-                includeEdgeLabelsAndCounts,
-                includeExtendedDataTableNames
+            includeAllProperties,
+            propertyNamesToInclude == null ? null : ImmutableSet.copyOf(propertyNamesToInclude),
+            includeAllPropertyMetadata,
+            metadataKeysToInclude == null ? null : ImmutableSet.copyOf(metadataKeysToInclude),
+            includeHidden,
+            includeAllEdgeRefs,
+            includeOutEdgeRefs || includeAllEdgeRefs,
+            includeInEdgeRefs || includeAllEdgeRefs,
+            edgeLabelsOfEdgeRefsToInclude == null ? null : ImmutableSet.copyOf(edgeLabelsOfEdgeRefsToInclude),
+            includeEdgeLabelsAndCounts,
+            includeExtendedDataTableNames
         );
     }
 

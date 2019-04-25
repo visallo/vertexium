@@ -42,8 +42,8 @@ public abstract class MRMigrationBase extends Configured implements Tool {
 
     protected abstract static class Opts extends ClientOpts {
         @Parameter(
-                names = {"-cp", "--configprefix"},
-                description = "Configuration prefix"
+            names = {"-cp", "--configprefix"},
+            description = "Configuration prefix"
         )
         public String configPrefix = "graph";
 
@@ -65,8 +65,8 @@ public abstract class MRMigrationBase extends Configured implements Tool {
 
     protected static class OptsWithTableName extends Opts {
         @Parameter(
-                names = {"-t", "--table"},
-                description = "Name of table to migrate"
+            names = {"-t", "--table"},
+            description = "Name of table to migrate"
         )
         public String tableName = System.getProperty("table.name");
 

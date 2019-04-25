@@ -82,11 +82,11 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
     private final String queryString;
 
     public ElasticsearchSearchQueryBase(
-            Client client,
-            Graph graph,
-            String queryString,
-            Options options,
-            Authorizations authorizations
+        Client client,
+        Graph graph,
+        String queryString,
+        Options options,
+        Authorizations authorizations
     ) {
         super(graph, queryString, authorizations);
         this.client = client;
@@ -101,12 +101,12 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
     }
 
     public ElasticsearchSearchQueryBase(
-            Client client,
-            Graph graph,
-            String[] similarToFields,
-            String similarToText,
-            Options options,
-            Authorizations authorizations
+        Client client,
+        Graph graph,
+        String[] similarToFields,
+        String similarToText,
+        Options options,
+        Authorizations authorizations
     ) {
         super(graph, similarToFields, similarToText, authorizations);
         this.client = client;
@@ -164,20 +164,20 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
         getSearchIndex().getIndexRefreshTracker().refresh(client, indicesToQuery);
 
         SearchRequestBuilder searchRequestBuilder = getClient()
-                .prepareSearch(indicesToQuery)
-                .setTypes(getSearchIndex().getIdStrategy().getType())
-                .setQuery(QueryBuilders.boolQuery().must(query).filter(filterBuilder))
-                .storedFields(
-                        Elasticsearch5SearchIndex.ELEMENT_ID_FIELD_NAME,
-                        Elasticsearch5SearchIndex.ELEMENT_TYPE_FIELD_NAME,
-                        Elasticsearch5SearchIndex.EXTENDED_DATA_TABLE_NAME_FIELD_NAME,
-                        Elasticsearch5SearchIndex.EXTENDED_DATA_TABLE_ROW_ID_FIELD_NAME
-                );
+            .prepareSearch(indicesToQuery)
+            .setTypes(getSearchIndex().getIdStrategy().getType())
+            .setQuery(QueryBuilders.boolQuery().must(query).filter(filterBuilder))
+            .storedFields(
+                Elasticsearch5SearchIndex.ELEMENT_ID_FIELD_NAME,
+                Elasticsearch5SearchIndex.ELEMENT_TYPE_FIELD_NAME,
+                Elasticsearch5SearchIndex.EXTENDED_DATA_TABLE_NAME_FIELD_NAME,
+                Elasticsearch5SearchIndex.EXTENDED_DATA_TABLE_ROW_ID_FIELD_NAME
+            );
         if (fetchHints.equals(FetchHints.NONE)) {
             searchRequestBuilder.storedFields(
-                    Elasticsearch5SearchIndex.OUT_VERTEX_ID_FIELD_NAME,
-                    Elasticsearch5SearchIndex.IN_VERTEX_ID_FIELD_NAME,
-                    Elasticsearch5SearchIndex.EDGE_LABEL_FIELD_NAME
+                Elasticsearch5SearchIndex.OUT_VERTEX_ID_FIELD_NAME,
+                Elasticsearch5SearchIndex.IN_VERTEX_ID_FIELD_NAME,
+                Elasticsearch5SearchIndex.EDGE_LABEL_FIELD_NAME
             );
         }
         if (getParameters().getMinScore() != null) {
@@ -245,25 +245,25 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
             }
         }
         if ((elementTypes == null || elementTypes.contains(ElasticsearchDocumentType.EDGE))
-                && getParameters().getEdgeLabels().size() > 0) {
+            && getParameters().getEdgeLabels().size() > 0) {
             String[] edgeLabelsArray = getParameters().getEdgeLabels().toArray(new String[0]);
             filters.add(QueryBuilders.termsQuery(Elasticsearch5SearchIndex.EDGE_LABEL_FIELD_NAME, edgeLabelsArray));
         }
 
         if (elementTypes == null
-                || elementTypes.contains(ElasticsearchDocumentType.EDGE_EXTENDED_DATA)
-                || elementTypes.contains(ElasticsearchDocumentType.VERTEX_EXTENDED_DATA)
+            || elementTypes.contains(ElasticsearchDocumentType.EDGE_EXTENDED_DATA)
+            || elementTypes.contains(ElasticsearchDocumentType.VERTEX_EXTENDED_DATA)
         ) {
             Elasticsearch5SearchIndex es = (Elasticsearch5SearchIndex) ((GraphWithSearchIndex) getGraph()).getSearchIndex();
             Collection<String> queryableVisibilities = es.getQueryableExtendedDataVisibilities(getGraph(), getParameters().getAuthorizations());
             TermsQueryBuilder extendedDataVisibilitiesTerms = QueryBuilders.termsQuery(EXTENDED_DATA_TABLE_COLUMN_VISIBILITIES_FIELD_NAME, queryableVisibilities);
 
             if (elementTypes == null
-                    || elementTypes.contains(ElasticsearchDocumentType.EDGE)
-                    || elementTypes.contains(ElasticsearchDocumentType.VERTEX)
+                || elementTypes.contains(ElasticsearchDocumentType.EDGE)
+                || elementTypes.contains(ElasticsearchDocumentType.VERTEX)
             ) {
                 TermsQueryBuilder extendedDataTerms = QueryBuilders.termsQuery(ELEMENT_TYPE_FIELD_NAME,
-                        Arrays.asList(ElasticsearchDocumentType.EDGE_EXTENDED_DATA.getKey(), ElasticsearchDocumentType.VERTEX_EXTENDED_DATA.getKey()));
+                    Arrays.asList(ElasticsearchDocumentType.EDGE_EXTENDED_DATA.getKey(), ElasticsearchDocumentType.VERTEX_EXTENDED_DATA.getKey()));
 
                 BoolQueryBuilder elementOrExtendedDataFilter = QueryBuilders.boolQuery();
                 elementOrExtendedDataFilter.should(QueryBuilders.boolQuery().mustNot(extendedDataTerms));
@@ -302,47 +302,47 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
                 sortedById = true;
             } else if (Edge.LABEL_PROPERTY_NAME.equals(sortContainer.propertyName)) {
                 q.addSort(
-                        SortBuilders.fieldSort(Elasticsearch5SearchIndex.EDGE_LABEL_FIELD_NAME)
-                                .unmappedType(KEYWORD_UNMAPPED_TYPE)
-                                .order(esOrder)
+                    SortBuilders.fieldSort(Elasticsearch5SearchIndex.EDGE_LABEL_FIELD_NAME)
+                        .unmappedType(KEYWORD_UNMAPPED_TYPE)
+                        .order(esOrder)
                 );
             } else if (Edge.OUT_VERTEX_ID_PROPERTY_NAME.equals(sortContainer.propertyName)) {
                 q.addSort(
-                        SortBuilders.fieldSort(Elasticsearch5SearchIndex.OUT_VERTEX_ID_FIELD_NAME)
-                                .unmappedType(KEYWORD_UNMAPPED_TYPE)
-                                .order(esOrder)
+                    SortBuilders.fieldSort(Elasticsearch5SearchIndex.OUT_VERTEX_ID_FIELD_NAME)
+                        .unmappedType(KEYWORD_UNMAPPED_TYPE)
+                        .order(esOrder)
                 );
             } else if (Edge.IN_VERTEX_ID_PROPERTY_NAME.equals(sortContainer.propertyName)) {
                 q.addSort(
-                        SortBuilders.fieldSort(Elasticsearch5SearchIndex.IN_VERTEX_ID_FIELD_NAME)
-                                .unmappedType(KEYWORD_UNMAPPED_TYPE)
-                                .order(esOrder)
+                    SortBuilders.fieldSort(Elasticsearch5SearchIndex.IN_VERTEX_ID_FIELD_NAME)
+                        .unmappedType(KEYWORD_UNMAPPED_TYPE)
+                        .order(esOrder)
                 );
             } else if (Edge.IN_OR_OUT_VERTEX_ID_PROPERTY_NAME.equals(sortContainer.propertyName)) {
                 throw new VertexiumException("Cannot sort by " + Edge.IN_OR_OUT_VERTEX_ID_PROPERTY_NAME);
             } else if (ExtendedDataRow.TABLE_NAME.equals(sortContainer.propertyName)) {
                 q.addSort(
-                        SortBuilders.fieldSort(Elasticsearch5SearchIndex.EXTENDED_DATA_TABLE_NAME_FIELD_NAME)
-                                .unmappedType(KEYWORD_UNMAPPED_TYPE)
-                                .order(esOrder)
+                    SortBuilders.fieldSort(Elasticsearch5SearchIndex.EXTENDED_DATA_TABLE_NAME_FIELD_NAME)
+                        .unmappedType(KEYWORD_UNMAPPED_TYPE)
+                        .order(esOrder)
                 );
             } else if (ExtendedDataRow.ROW_ID.equals(sortContainer.propertyName)) {
                 q.addSort(
-                        SortBuilders.fieldSort(Elasticsearch5SearchIndex.EXTENDED_DATA_TABLE_ROW_ID_FIELD_NAME)
-                                .unmappedType(KEYWORD_UNMAPPED_TYPE)
-                                .order(esOrder)
+                    SortBuilders.fieldSort(Elasticsearch5SearchIndex.EXTENDED_DATA_TABLE_ROW_ID_FIELD_NAME)
+                        .unmappedType(KEYWORD_UNMAPPED_TYPE)
+                        .order(esOrder)
                 );
             } else if (ExtendedDataRow.ELEMENT_ID.equals(sortContainer.propertyName)) {
                 q.addSort(
-                        SortBuilders.fieldSort(Elasticsearch5SearchIndex.ELEMENT_ID_FIELD_NAME)
-                                .unmappedType(KEYWORD_UNMAPPED_TYPE)
-                                .order(esOrder)
+                    SortBuilders.fieldSort(Elasticsearch5SearchIndex.ELEMENT_ID_FIELD_NAME)
+                        .unmappedType(KEYWORD_UNMAPPED_TYPE)
+                        .order(esOrder)
                 );
             } else if (ExtendedDataRow.ELEMENT_TYPE.equals(sortContainer.propertyName)) {
                 q.addSort(
-                        SortBuilders.fieldSort(Elasticsearch5SearchIndex.ELEMENT_TYPE_FIELD_NAME)
-                                .unmappedType(KEYWORD_UNMAPPED_TYPE)
-                                .order(esOrder)
+                    SortBuilders.fieldSort(Elasticsearch5SearchIndex.ELEMENT_TYPE_FIELD_NAME)
+                        .unmappedType(KEYWORD_UNMAPPED_TYPE)
+                        .order(esOrder)
                 );
             } else {
                 PropertyDefinition propertyDefinition = getGraph().getPropertyDefinition(sortContainer.propertyName);
@@ -359,11 +359,11 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
                 String[] propertyNames = getPropertyNames(propertyDefinition.getPropertyName());
                 if (propertyNames.length > 1) {
                     String scriptSrc = "def fieldValues = []; for (def fieldName : params.fieldNames) { fieldValues.addAll(doc[fieldName].values); } " +
-                            "if (params.esOrder == 'asc') { Collections.sort(fieldValues); } else { Collections.sort(fieldValues, Collections.reverseOrder()); }" +
-                            "if (params.dataType == 'String') { return fieldValues; } else { return fieldValues.length > 0 ? fieldValues[0] : (params.esOrder == 'asc' ? Integer.MAX_VALUE : Integer.MIN_VALUE); }";
+                        "if (params.esOrder == 'asc') { Collections.sort(fieldValues); } else { Collections.sort(fieldValues, Collections.reverseOrder()); }" +
+                        "if (params.dataType == 'String') { return fieldValues; } else { return fieldValues.length > 0 ? fieldValues[0] : (params.esOrder == 'asc' ? Integer.MAX_VALUE : Integer.MIN_VALUE); }";
 
                     List<String> fieldNames = Arrays.stream(propertyNames).map(propertyName ->
-                            propertyName + (propertyDefinition.getDataType() == String.class ? Elasticsearch5SearchIndex.EXACT_MATCH_PROPERTY_NAME_SUFFIX : "")
+                        propertyName + (propertyDefinition.getDataType() == String.class ? Elasticsearch5SearchIndex.EXACT_MATCH_PROPERTY_NAME_SUFFIX : "")
                     ).collect(Collectors.toList());
                     HashMap<String, Object> scriptParams = new HashMap<>();
                     scriptParams.put("fieldNames", fieldNames);
@@ -372,8 +372,8 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
                     Script script = new Script(ScriptType.INLINE, "painless", scriptSrc, scriptParams);
                     ScriptSortBuilder.ScriptSortType sortType = propertyDefinition.getDataType() == String.class ? ScriptSortBuilder.ScriptSortType.STRING : ScriptSortBuilder.ScriptSortType.NUMBER;
                     q.addSort(SortBuilders.scriptSort(script, sortType)
-                            .order(esOrder)
-                            .sortMode(esOrder == SortOrder.DESC ? SortMode.MAX : SortMode.MIN));
+                        .order(esOrder)
+                        .sortMode(esOrder == SortOrder.DESC ? SortMode.MAX : SortMode.MIN));
                 } else {
                     String sortField = propertyNames[0];
                     String unmappedType = ElasticsearchTypes.fromJavaClass(propertyDefinition.getDataType());
@@ -382,9 +382,9 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
                         unmappedType = KEYWORD_UNMAPPED_TYPE;
                     }
                     q.addSort(
-                            SortBuilders.fieldSort(sortField)
-                                    .unmappedType(unmappedType)
-                                    .order(esOrder)
+                        SortBuilders.fieldSort(sortField)
+                            .unmappedType(unmappedType)
+                            .order(esOrder)
                     );
                 }
             }
@@ -444,8 +444,8 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
     private void closeScroll(String scrollId) {
         try {
             client.prepareClearScroll()
-                    .addScrollId(scrollId)
-                    .execute().actionGet();
+                .addScrollId(scrollId)
+                .execute().actionGet();
         } catch (Exception ex) {
             throw new VertexiumException("Could not close iterator " + scrollId, ex);
         }
@@ -475,11 +475,11 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
         Ids ids = new Ids(getIdStrategy(), hits);
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug(
-                    "elasticsearch results (vertices: %d + edges: %d + extended data: %d = %d)",
-                    ids.getVertexIds().size(),
-                    ids.getEdgeIds().size(),
-                    ids.getExtendedDataIds().size(),
-                    ids.getVertexIds().size() + ids.getEdgeIds().size() + ids.getExtendedDataIds().size()
+                "elasticsearch results (vertices: %d + edges: %d + extended data: %d = %d)",
+                ids.getVertexIds().size(),
+                ids.getEdgeIds().size(),
+                ids.getExtendedDataIds().size(),
+                ids.getVertexIds().size() + ids.getEdgeIds().size() + ids.getExtendedDataIds().size()
             );
         }
 
@@ -566,34 +566,34 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
 
     private List<ElasticsearchVertex> getElasticsearchVertices(SearchHits hits, FetchHints fetchHints, Authorizations authorizations) {
         return stream(hits)
-                .map(hit -> {
-                    String elementId = hit.getField(Elasticsearch5SearchIndex.ELEMENT_ID_FIELD_NAME).getValue();
-                    return new ElasticsearchVertex(
-                            getGraph(),
-                            elementId,
-                            fetchHints,
-                            authorizations
-                    );
-                }).collect(Collectors.toList());
+            .map(hit -> {
+                String elementId = hit.getField(Elasticsearch5SearchIndex.ELEMENT_ID_FIELD_NAME).getValue();
+                return new ElasticsearchVertex(
+                    getGraph(),
+                    elementId,
+                    fetchHints,
+                    authorizations
+                );
+            }).collect(Collectors.toList());
     }
 
     private List<ElasticsearchEdge> getElasticsearchEdges(SearchHits hits, FetchHints fetchHints, Authorizations authorizations) {
         return stream(hits)
-                .map(hit -> {
-                    String inVertexId = hit.getField(Elasticsearch5SearchIndex.IN_VERTEX_ID_FIELD_NAME).getValue();
-                    String outVertexId = hit.getField(Elasticsearch5SearchIndex.OUT_VERTEX_ID_FIELD_NAME).getValue();
-                    String label = hit.getField(Elasticsearch5SearchIndex.EDGE_LABEL_FIELD_NAME).getValue();
-                    String elementId = hit.getField(Elasticsearch5SearchIndex.ELEMENT_ID_FIELD_NAME).getValue();
-                    return new ElasticsearchEdge(
-                            getGraph(),
-                            elementId,
-                            label,
-                            inVertexId,
-                            outVertexId,
-                            fetchHints,
-                            authorizations
-                    );
-                }).collect(Collectors.toList());
+            .map(hit -> {
+                String inVertexId = hit.getField(Elasticsearch5SearchIndex.IN_VERTEX_ID_FIELD_NAME).getValue();
+                String outVertexId = hit.getField(Elasticsearch5SearchIndex.OUT_VERTEX_ID_FIELD_NAME).getValue();
+                String label = hit.getField(Elasticsearch5SearchIndex.EDGE_LABEL_FIELD_NAME).getValue();
+                String elementId = hit.getField(Elasticsearch5SearchIndex.ELEMENT_ID_FIELD_NAME).getValue();
+                return new ElasticsearchEdge(
+                    getGraph(),
+                    elementId,
+                    label,
+                    inVertexId,
+                    outVertexId,
+                    fetchHints,
+                    authorizations
+                );
+            }).collect(Collectors.toList());
     }
 
     @Override
@@ -646,27 +646,27 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
     }
 
     protected <T> ElasticsearchGraphQueryIterable<T> createIterable(
-            SearchResponse response,
-            QueryParameters filterParameters,
-            Iterable<T> vertexiumObjects,
-            long searchTimeInMillis,
-            SearchHits hits
+        SearchResponse response,
+        QueryParameters filterParameters,
+        Iterable<T> vertexiumObjects,
+        long searchTimeInMillis,
+        SearchHits hits
     ) {
         return new ElasticsearchGraphQueryIterable<>(
-                this,
-                response,
-                filterParameters,
-                vertexiumObjects,
-                hits.getTotalHits(),
-                searchTimeInMillis * 1000000,
-                hits
+            this,
+            response,
+            filterParameters,
+            vertexiumObjects,
+            hits.getTotalHits(),
+            searchTimeInMillis * 1000000,
+            hits
         );
     }
 
     private SearchResponse getSearchResponse(EnumSet<ElasticsearchDocumentType> elementType, FetchHints fetchHints, int skip, int limit, boolean includeAggregations) {
         SearchRequestBuilder q = buildQuery(elementType, fetchHints, includeAggregations)
-                .setFrom(skip)
-                .setSize(limit);
+            .setFrom(skip)
+            .setSize(limit);
         if (QUERY_LOGGER.isTraceEnabled()) {
             QUERY_LOGGER.trace("query: %s", q);
         }
@@ -675,10 +675,10 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
         SearchHits hits = searchResponse.getHits();
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug(
-                    "elasticsearch results %d of %d (time: %dms)",
-                    hits.getHits().length,
-                    hits.getTotalHits(),
-                    searchResponse.getTookInMillis()
+                "elasticsearch results %d of %d (time: %dms)",
+                hits.getHits().length,
+                hits.getTotalHits(),
+                searchResponse.getTookInMillis()
             );
         }
         return searchResponse;
@@ -686,9 +686,9 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
 
     protected QueryBuilder getFilterForHasNotPropertyContainer(HasNotPropertyContainer hasNotProperty) {
         PropertyDefinition[] propertyDefinitions = StreamSupport.stream(hasNotProperty.getKeys().spliterator(), false)
-                .map(this::getPropertyDefinition)
-                .filter(Objects::nonNull)
-                .toArray(PropertyDefinition[]::new);
+            .map(this::getPropertyDefinition)
+            .filter(Objects::nonNull)
+            .toArray(PropertyDefinition[]::new);
 
         if (propertyDefinitions.length == 0) {
             // If we can't find a property this means none of them are defined on the graph
@@ -729,10 +729,10 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
         boolean hasQuery = false;
         if (has.getElementType() != null) {
             boolQuery.must(
-                    QueryBuilders.termQuery(
-                            Elasticsearch5SearchIndex.ELEMENT_TYPE_FIELD_NAME,
-                            ElasticsearchDocumentType.getExtendedDataDocumentTypeFromElementType(has.getElementType()).getKey()
-                    )
+                QueryBuilders.termQuery(
+                    Elasticsearch5SearchIndex.ELEMENT_TYPE_FIELD_NAME,
+                    ElasticsearchDocumentType.getExtendedDataDocumentTypeFromElementType(has.getElementType()).getKey()
+                )
             );
             hasQuery = true;
         }
@@ -756,25 +756,25 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
         Graph graph = getGraph();
 
         Set<String> hashes = stream(hasAuthorization.getAuthorizations())
-                .flatMap(authorization -> visibilitiesStore.getHashesWithAuthorization(graph, authorization, auths).stream())
-                .collect(Collectors.toSet());
+            .flatMap(authorization -> visibilitiesStore.getHashesWithAuthorization(graph, authorization, auths).stream())
+            .collect(Collectors.toSet());
 
         List<QueryBuilder> filters = new ArrayList<>();
         for (PropertyDefinition propertyDefinition : graph.getPropertyDefinitions()) {
             String propertyName = propertyDefinition.getPropertyName();
 
             Set<String> matchingPropertyHashes = visibilitiesStore.getHashes(graph, propertyName, auths).stream()
-                    .filter(hashes::contains)
-                    .collect(Collectors.toSet());
+                .filter(hashes::contains)
+                .collect(Collectors.toSet());
             for (String fieldName : getSearchIndex().addHashesToPropertyName(propertyName, matchingPropertyHashes)) {
                 filters.add(QueryBuilders.existsQuery(getSearchIndex().replaceFieldnameDots(fieldName)));
             }
         }
 
         List<String> internalFields = Arrays.asList(
-                Elasticsearch5SearchIndex.ELEMENT_TYPE_FIELD_NAME,
-                Elasticsearch5SearchIndex.HIDDEN_VERTEX_FIELD_NAME,
-                Elasticsearch5SearchIndex.HIDDEN_PROPERTY_FIELD_NAME
+            Elasticsearch5SearchIndex.ELEMENT_TYPE_FIELD_NAME,
+            Elasticsearch5SearchIndex.HIDDEN_VERTEX_FIELD_NAME,
+            Elasticsearch5SearchIndex.HIDDEN_PROPERTY_FIELD_NAME
         );
         internalFields.forEach(fieldName -> {
             Collection<String> fieldHashes = visibilitiesStore.getHashes(graph, fieldName, auths);
@@ -793,9 +793,9 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
 
     protected QueryBuilder getFilterForHasPropertyContainer(HasPropertyContainer hasProperty) {
         PropertyDefinition[] propertyDefinitions = StreamSupport.stream(hasProperty.getKeys().spliterator(), false)
-                .map(this::getPropertyDefinition)
-                .filter(Objects::nonNull)
-                .toArray(PropertyDefinition[]::new);
+            .map(this::getPropertyDefinition)
+            .filter(Objects::nonNull)
+            .toArray(PropertyDefinition[]::new);
 
         if (propertyDefinitions.length == 0) {
             // If we didn't find any property definitions, this means none of them are defined on the graph
@@ -839,9 +839,9 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
 
     protected QueryBuilder getFilterForGeoComparePredicate(GeoCompare compare, HasValueContainer has) {
         PropertyDefinition[] propertyDefinitions = StreamSupport.stream(has.getKeys().spliterator(), false)
-                .map(this::getPropertyDefinition)
-                .filter(Objects::nonNull)
-                .toArray(PropertyDefinition[]::new);
+            .map(this::getPropertyDefinition)
+            .filter(Objects::nonNull)
+            .toArray(PropertyDefinition[]::new);
 
         if (propertyDefinitions.length == 0) {
             // If we didn't find any property definitions, this means none of them are defined on the graph
@@ -864,14 +864,14 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
             }
 
             String[] propertyNames = Arrays.stream(getPropertyNames(propertyDefinition.getPropertyName()))
-                    .map(propertyName -> propertyName + Elasticsearch5SearchIndex.GEO_PROPERTY_NAME_SUFFIX)
-                    .toArray(String[]::new);
+                .map(propertyName -> propertyName + Elasticsearch5SearchIndex.GEO_PROPERTY_NAME_SUFFIX)
+                .toArray(String[]::new);
             for (String propertyName : propertyNames) {
                 ShapeBuilder shapeBuilder = getShapeBuilder(value);
                 ShapeRelation relation = ShapeRelation.getRelationByName(compare.getCompareName());
                 filters.add(new GeoShapeQueryBuilder(propertyName, shapeBuilder)
-                        .ignoreUnmapped(true)
-                        .relation(relation)
+                    .ignoreUnmapped(true)
+                    .relation(relation)
                 );
             }
         }
@@ -914,8 +914,8 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
 
     private CircleBuilder getCircleBuilder(GeoCircle geoCircle) {
         return ShapeBuilders.newCircleBuilder()
-                .center(geoCircle.getLongitude(), geoCircle.getLatitude())
-                .radius(geoCircle.getRadius(), DistanceUnit.KILOMETERS);
+            .center(geoCircle.getLongitude(), geoCircle.getLatitude())
+            .radius(geoCircle.getRadius(), DistanceUnit.KILOMETERS);
     }
 
     private EnvelopeBuilder getEnvelopeBuilder(GeoRect geoRect) {
@@ -926,20 +926,20 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
 
     private LineStringBuilder getLineStringBuilder(GeoLine geoLine) {
         List<Coordinate> coordinates = geoLine.getGeoPoints().stream()
-                .map(geoPoint -> new Coordinate(geoPoint.getLongitude(), geoPoint.getLatitude()))
-                .collect(Collectors.toList());
+            .map(geoPoint -> new Coordinate(geoPoint.getLongitude(), geoPoint.getLatitude()))
+            .collect(Collectors.toList());
         return ShapeBuilders.newLineString(coordinates);
     }
 
     private PolygonBuilder getPolygonBuilder(GeoPolygon geoPolygon) {
         List<Coordinate> shell = geoPolygon.getOuterBoundary().stream()
-                .map(geoPoint -> new Coordinate(geoPoint.getLongitude(), geoPoint.getLatitude()))
-                .collect(Collectors.toList());
+            .map(geoPoint -> new Coordinate(geoPoint.getLongitude(), geoPoint.getLatitude()))
+            .collect(Collectors.toList());
         PolygonBuilder polygonBuilder = ShapeBuilders.newPolygon(shell);
         geoPolygon.getHoles().forEach(hole -> {
             List<Coordinate> coordinates = hole.stream()
-                    .map(geoPoint -> new Coordinate(geoPoint.getLongitude(), geoPoint.getLatitude()))
-                    .collect(Collectors.toList());
+                .map(geoPoint -> new Coordinate(geoPoint.getLongitude(), geoPoint.getLatitude()))
+                .collect(Collectors.toList());
             polygonBuilder.hole(ShapeBuilders.newLineString(coordinates));
         });
         return polygonBuilder;
@@ -976,8 +976,8 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
 
     protected QueryBuilder getFilterForTextPredicate(TextPredicate compare, HasValueContainer has) {
         String[] propertyNames = StreamSupport.stream(has.getKeys().spliterator(), false)
-                .flatMap(key -> Arrays.stream(getPropertyNames(key)))
-                .toArray(String[]::new);
+            .flatMap(key -> Arrays.stream(getPropertyNames(key)))
+            .toArray(String[]::new);
         if (propertyNames.length == 0) {
             throw new VertexiumNoMatchingPropertiesException(Joiner.on(", ").join(has.getKeys()));
         }
@@ -1023,8 +1023,8 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
 
     protected QueryBuilder getFilterForContainsPredicate(Contains contains, HasValueContainer has) {
         String[] propertyNames = StreamSupport.stream(has.getKeys().spliterator(), false)
-                .flatMap(key -> Arrays.stream(getPropertyNames(key)))
-                .toArray(String[]::new);
+            .flatMap(key -> Arrays.stream(getPropertyNames(key)))
+            .toArray(String[]::new);
         if (propertyNames.length == 0) {
             if (contains.equals(Contains.NOT_IN)) {
                 return QueryBuilders.matchAllQuery();
@@ -1055,12 +1055,12 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
             propertyName = Elasticsearch5SearchIndex.IN_VERTEX_ID_FIELD_NAME;
         } else if (Edge.IN_OR_OUT_VERTEX_ID_PROPERTY_NAME.equals(propertyName)) {
             return QueryBuilders.boolQuery()
-                    .should(getFilterForProperty(contains, has, Edge.OUT_VERTEX_ID_PROPERTY_NAME, value))
-                    .should(getFilterForProperty(contains, has, Edge.IN_VERTEX_ID_PROPERTY_NAME, value))
-                    .minimumShouldMatch(1);
+                .should(getFilterForProperty(contains, has, Edge.OUT_VERTEX_ID_PROPERTY_NAME, value))
+                .should(getFilterForProperty(contains, has, Edge.IN_VERTEX_ID_PROPERTY_NAME, value))
+                .minimumShouldMatch(1);
         } else if (value instanceof String
-                || value instanceof String[]
-                || (value instanceof Object[] && ((Object[]) value).length > 0 && ((Object[]) value)[0] instanceof String)
+            || value instanceof String[]
+            || (value instanceof Object[] && ((Object[]) value).length > 0 && ((Object[]) value)[0] instanceof String)
         ) {
             propertyName = propertyName + Elasticsearch5SearchIndex.EXACT_MATCH_PROPERTY_NAME_SUFFIX;
         }
@@ -1076,8 +1076,8 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
 
     protected QueryBuilder getFilterForComparePredicate(Compare compare, HasValueContainer has) {
         String[] propertyNames = StreamSupport.stream(has.getKeys().spliterator(), false)
-                .flatMap(key -> Arrays.stream(getPropertyNames(key)))
-                .toArray(String[]::new);
+            .flatMap(key -> Arrays.stream(getPropertyNames(key)))
+            .toArray(String[]::new);
 
         if (propertyNames.length == 0) {
             if (compare.equals(Compare.NOT_EQUAL)) {
@@ -1106,9 +1106,9 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
             propertyName = Elasticsearch5SearchIndex.IN_VERTEX_ID_FIELD_NAME;
         } else if (Edge.IN_OR_OUT_VERTEX_ID_PROPERTY_NAME.equals(propertyName)) {
             return QueryBuilders.boolQuery()
-                    .should(getFilterForProperty(compare, has, Edge.OUT_VERTEX_ID_PROPERTY_NAME, value))
-                    .should(getFilterForProperty(compare, has, Edge.IN_VERTEX_ID_PROPERTY_NAME, value))
-                    .minimumShouldMatch(1);
+                .should(getFilterForProperty(compare, has, Edge.OUT_VERTEX_ID_PROPERTY_NAME, value))
+                .should(getFilterForProperty(compare, has, Edge.IN_VERTEX_ID_PROPERTY_NAME, value))
+                .minimumShouldMatch(1);
         } else if (has.value instanceof IpV4Address) {
             // this value is converted to a string and should not use the exact match field
         } else if (value instanceof String || value instanceof String[]) {
@@ -1196,8 +1196,8 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
             values.add(et.getKey());
         }
         return QueryBuilders.termsQuery(
-                Elasticsearch5SearchIndex.ELEMENT_TYPE_FIELD_NAME,
-                values.toArray(new String[values.size()])
+            Elasticsearch5SearchIndex.ELEMENT_TYPE_FIELD_NAME,
+            values.toArray(new String[values.size()])
         );
     }
 
@@ -1243,10 +1243,10 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
                 throw new VertexiumException("scoring strategies must implement " + ElasticsearchScoringStrategy.class.getName() + " to work with Elasticsearch");
             }
             query = ((ElasticsearchScoringStrategy) scoringStrategy).updateElasticsearchQuery(
-                    getGraph(),
-                    getSearchIndex(),
-                    query,
-                    queryParameters
+                getGraph(),
+                getSearchIndex(),
+                query,
+                queryParameters
             );
         }
         return query;
@@ -1259,9 +1259,9 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
             Collections.addAll(allFields, getPropertyNames(field));
         }
         MoreLikeThisQueryBuilder q = QueryBuilders.moreLikeThisQuery(
-                allFields.toArray(new String[allFields.size()]),
-                new String[]{similarTo.getText()},
-                null
+            allFields.toArray(new String[allFields.size()]),
+            new String[]{similarTo.getText()},
+            null
         );
         if (similarTo.getMinTermFrequency() != null) {
             q.minTermFreq(similarTo.getMinTermFrequency());
@@ -1366,13 +1366,13 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
         List<AggregationBuilder> cardinalityAggs = new ArrayList<>();
         String fieldName = agg.getPropertyName();
         if (Element.ID_PROPERTY_NAME.equals(fieldName)
-                || Edge.LABEL_PROPERTY_NAME.equals(fieldName)
-                || Edge.OUT_VERTEX_ID_PROPERTY_NAME.equals(fieldName)
-                || Edge.IN_VERTEX_ID_PROPERTY_NAME.equals(fieldName)
-                || ExtendedDataRow.TABLE_NAME.equals(fieldName)
-                || ExtendedDataRow.ROW_ID.equals(fieldName)
-                || ExtendedDataRow.ELEMENT_ID.equals(fieldName)
-                || ExtendedDataRow.ELEMENT_TYPE.equals(fieldName)) {
+            || Edge.LABEL_PROPERTY_NAME.equals(fieldName)
+            || Edge.OUT_VERTEX_ID_PROPERTY_NAME.equals(fieldName)
+            || Edge.IN_VERTEX_ID_PROPERTY_NAME.equals(fieldName)
+            || ExtendedDataRow.TABLE_NAME.equals(fieldName)
+            || ExtendedDataRow.ROW_ID.equals(fieldName)
+            || ExtendedDataRow.ELEMENT_ID.equals(fieldName)
+            || ExtendedDataRow.ELEMENT_TYPE.equals(fieldName)) {
             Map<String, Object> metadata = new HashMap<>();
             metadata.put(AGGREGATION_METADATA_FIELD_NAME_KEY, fieldName);
 
@@ -1400,13 +1400,13 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
         }
 
         if (Element.ID_PROPERTY_NAME.equals(fieldName)
-                || Edge.LABEL_PROPERTY_NAME.equals(fieldName)
-                || Edge.OUT_VERTEX_ID_PROPERTY_NAME.equals(fieldName)
-                || Edge.IN_VERTEX_ID_PROPERTY_NAME.equals(fieldName)
-                || ExtendedDataRow.TABLE_NAME.equals(fieldName)
-                || ExtendedDataRow.ROW_ID.equals(fieldName)
-                || ExtendedDataRow.ELEMENT_ID.equals(fieldName)
-                || ExtendedDataRow.ELEMENT_TYPE.equals(fieldName)) {
+            || Edge.LABEL_PROPERTY_NAME.equals(fieldName)
+            || Edge.OUT_VERTEX_ID_PROPERTY_NAME.equals(fieldName)
+            || Edge.IN_VERTEX_ID_PROPERTY_NAME.equals(fieldName)
+            || ExtendedDataRow.TABLE_NAME.equals(fieldName)
+            || ExtendedDataRow.ROW_ID.equals(fieldName)
+            || ExtendedDataRow.ELEMENT_ID.equals(fieldName)
+            || ExtendedDataRow.ELEMENT_TYPE.equals(fieldName)) {
             Map<String, Object> metadata = new HashMap<>();
             metadata.put(AGGREGATION_METADATA_FIELD_NAME_KEY, fieldName);
 
@@ -1450,9 +1450,9 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
 
                 if (exactMatchProperty && propertyDefinition.getTextIndexHints().contains(TextIndexHint.FULL_TEXT)) {
                     termsAgg.subAggregation(
-                            AggregationBuilders.topHits(TOP_HITS_AGGREGATION_NAME)
-                                    .fetchSource(new String[]{propertyName}, new String[0])
-                                    .size(1)
+                        AggregationBuilders.topHits(TOP_HITS_AGGREGATION_NAME)
+                            .fetchSource(new String[]{propertyName}, new String[0])
+                            .size(1)
                     );
                 }
 
@@ -1468,8 +1468,8 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
 
     private boolean isExactMatchPropertyDefinition(PropertyDefinition propertyDefinition) {
         return propertyDefinition != null
-                && propertyDefinition.getDataType().equals(String.class)
-                && propertyDefinition.getTextIndexHints().contains(TextIndexHint.EXACT_MATCH);
+            && propertyDefinition.getDataType().equals(String.class)
+            && propertyDefinition.getTextIndexHints().contains(TextIndexHint.EXACT_MATCH);
     }
 
     private Collection<? extends AggregationBuilder> getElasticsearchCalendarFieldAggregation(CalendarFieldAggregation agg) {
@@ -1491,13 +1491,13 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
                     histAgg.minDocCount(1L);
                 }
                 Script script = new Script(
-                        ScriptType.INLINE,
-                        "painless",
-                        getCalendarFieldAggregationScript(agg, propertyName),
-                        ImmutableMap.of(
-                                "tzId", agg.getTimeZone().getID(),
-                                "fieldName", propertyName,
-                                "calendarField", agg.getCalendarField())
+                    ScriptType.INLINE,
+                    "painless",
+                    getCalendarFieldAggregationScript(agg, propertyName),
+                    ImmutableMap.of(
+                        "tzId", agg.getTimeZone().getID(),
+                        "fieldName", propertyName,
+                        "calendarField", agg.getCalendarField())
                 );
                 histAgg.script(script);
 
@@ -1515,8 +1515,8 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
 
     private String getCalendarFieldAggregationScript(CalendarFieldAggregation agg, String propertyName) {
         String prefix = "def d = doc[params.fieldName]; ZoneId zone = ZoneId.of(params.tzId); " +
-                "if (d == null || d.size() == 0) { return -1; }" +
-                "d = Instant.ofEpochMilli(d.date.millis).atZone(zone);";
+            "if (d == null || d.size() == 0) { return -1; }" +
+            "d = Instant.ofEpochMilli(d.date.millis).atZone(zone);";
         switch (agg.getCalendarField()) {
             case Calendar.DAY_OF_MONTH:
                 return prefix + "return d.getDayOfMonth();";
@@ -1562,8 +1562,8 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
                         dateAgg.extendedBounds(new ExtendedBounds((Long) bounds.getMin(), (Long) bounds.getMax()));
                     } else if (bounds.getMinMaxType().isAssignableFrom(Date.class)) {
                         dateAgg.extendedBounds(new ExtendedBounds(
-                                new DateTime(bounds.getMin()).toString(),
-                                new DateTime(bounds.getMax()).toString()
+                            new DateTime(bounds.getMin()).toString(),
+                            new DateTime(bounds.getMax()).toString()
                         ));
                     } else if (bounds.getMinMaxType().isAssignableFrom(String.class)) {
                         dateAgg.extendedBounds(new ExtendedBounds((String) bounds.getMin(), (String) bounds.getMax()));
@@ -1639,7 +1639,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
 
                 if (!Strings.isNullOrEmpty(agg.getFormat())) {
                     throw new VertexiumException("Invalid use of format for property: " + agg.getFieldName() +
-                            ". Format is only valid for date properties");
+                        ". Format is only valid for date properties");
                 }
 
                 for (RangeAggregation.Range range : agg.getRanges()) {
@@ -1647,12 +1647,12 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
                     Object to = range.getTo();
                     if ((from != null && !(from instanceof Number)) || (to != null && !(to instanceof Number))) {
                         throw new VertexiumException("Invalid range for property: " + agg.getFieldName() +
-                                ". Both to and from must be Numeric.");
+                            ". Both to and from must be Numeric.");
                     }
                     rangeBuilder.addRange(
-                            range.getKey(),
-                            from == null ? Double.MIN_VALUE : ((Number) from).doubleValue(),
-                            to == null ? Double.MAX_VALUE : ((Number) to).doubleValue()
+                        range.getKey(),
+                        from == null ? Double.MIN_VALUE : ((Number) from).doubleValue(),
+                        to == null ? Double.MAX_VALUE : ((Number) to).doubleValue()
                     );
                 }
 
@@ -1714,16 +1714,16 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
 
     protected FetchHints idFetchHintsToElementFetchHints(EnumSet<IdFetchHint> idFetchHints) {
         return idFetchHints.contains(IdFetchHint.INCLUDE_HIDDEN)
-                ? FetchHints.builder().setIncludeHidden(true).build()
-                : FetchHints.NONE;
+            ? FetchHints.builder().setIncludeHidden(true).build()
+            : FetchHints.NONE;
     }
 
     @Override
     public String toString() {
         return this.getClass().getName() + "{" +
-                "parameters=" + getParameters() +
-                ", pageSize=" + pageSize +
-                '}';
+            "parameters=" + getParameters() +
+            ", pageSize=" + pageSize +
+            '}';
     }
 
     private abstract class QueryInfiniteScrollIterable<T> extends InfiniteScrollIterable<T> {
@@ -1739,8 +1739,8 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
         protected SearchResponse getInitialSearchResponse() {
             try {
                 SearchRequestBuilder q = buildQuery(ElasticsearchDocumentType.fromVertexiumObjectTypes(objectTypes), fetchHints, true)
-                        .setSize(pageSize)
-                        .setScroll(scrollKeepAlive);
+                    .setSize(pageSize)
+                    .setScroll(scrollKeepAlive);
                 if (QUERY_LOGGER.isTraceEnabled()) {
                     QUERY_LOGGER.trace("query: %s", q);
                 }
@@ -1758,8 +1758,8 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
         protected SearchResponse getNextSearchResponse(String scrollId) {
             try {
                 return client.prepareSearchScroll(scrollId)
-                        .setScroll(scrollKeepAlive)
-                        .execute().actionGet();
+                    .setScroll(scrollKeepAlive)
+                    .execute().actionGet();
             } catch (Exception ex) {
                 throw new VertexiumException("Failed to request more items from scroll " + scrollId, ex);
             }

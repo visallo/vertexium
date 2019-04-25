@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -38,7 +38,7 @@ abstract class FastByteComparisons {
     public static int compareTo(byte[] b1, int s1, int l1, byte[] b2, int s2,
                                 int l2) {
         return LexicographicalComparerHolder.BEST_COMPARER.compareTo(
-                b1, s1, l1, b2, s2, l2);
+            b1, s1, l1, b2, s2, l2);
     }
 
 
@@ -61,7 +61,7 @@ abstract class FastByteComparisons {
      */
     private static class LexicographicalComparerHolder {
         static final String UNSAFE_COMPARER_NAME =
-                LexicographicalComparerHolder.class.getName() + "$UnsafeComparer";
+            LexicographicalComparerHolder.class.getName() + "$UnsafeComparer";
 
         static final Comparer<byte[]> BEST_COMPARER = getBestComparer();
 
@@ -76,7 +76,7 @@ abstract class FastByteComparisons {
                 // yes, UnsafeComparer does implement Comparer<byte[]>
                 @SuppressWarnings("unchecked")
                 Comparer<byte[]> comparer =
-                        (Comparer<byte[]>) theClass.getEnumConstants()[0];
+                    (Comparer<byte[]>) theClass.getEnumConstants()[0];
                 return comparer;
             } catch (Throwable t) { // ensure we really catch *everything*
                 return lexicographicalComparerJavaImpl();
@@ -91,8 +91,8 @@ abstract class FastByteComparisons {
                                  byte[] buffer2, int offset2, int length2) {
                 // Short circuit equal case
                 if (buffer1 == buffer2 &&
-                        offset1 == offset2 &&
-                        length1 == length2) {
+                    offset1 == offset2 &&
+                    length1 == length2) {
                     return 0;
                 }
                 // Bring WritableComparator code local
@@ -122,22 +122,22 @@ abstract class FastByteComparisons {
 
             static {
                 theUnsafe = (Unsafe) AccessController.doPrivileged(
-                        new PrivilegedAction<Object>() {
-                            @Override
-                            public Object run() {
-                                try {
-                                    Field f = Unsafe.class.getDeclaredField("theUnsafe");
-                                    f.setAccessible(true);
-                                    return f.get(null);
-                                } catch (NoSuchFieldException e) {
-                                    // It doesn't matter what we throw;
-                                    // it's swallowed in getBestComparer().
-                                    throw new Error();
-                                } catch (IllegalAccessException e) {
-                                    throw new Error();
-                                }
+                    new PrivilegedAction<Object>() {
+                        @Override
+                        public Object run() {
+                            try {
+                                Field f = Unsafe.class.getDeclaredField("theUnsafe");
+                                f.setAccessible(true);
+                                return f.get(null);
+                            } catch (NoSuchFieldException e) {
+                                // It doesn't matter what we throw;
+                                // it's swallowed in getBestComparer().
+                                throw new Error();
+                            } catch (IllegalAccessException e) {
+                                throw new Error();
                             }
-                        });
+                        }
+                    });
 
                 BYTE_ARRAY_BASE_OFFSET = theUnsafe.arrayBaseOffset(byte[].class);
 
@@ -148,7 +148,7 @@ abstract class FastByteComparisons {
             }
 
             static final boolean littleEndian =
-                    ByteOrder.nativeOrder().equals(ByteOrder.LITTLE_ENDIAN);
+                ByteOrder.nativeOrder().equals(ByteOrder.LITTLE_ENDIAN);
 
             /**
              * Returns true if x1 is less than x2, when both values are treated as
@@ -174,8 +174,8 @@ abstract class FastByteComparisons {
                                  byte[] buffer2, int offset2, int length2) {
                 // Short circuit equal case
                 if (buffer1 == buffer2 &&
-                        offset1 == offset2 &&
-                        length1 == length2) {
+                    offset1 == offset2 &&
+                    length1 == length2) {
                     return 0;
                 }
                 int minLength = Math.min(length1, length2);
@@ -183,11 +183,11 @@ abstract class FastByteComparisons {
                 int offset1Adj = offset1 + BYTE_ARRAY_BASE_OFFSET;
                 int offset2Adj = offset2 + BYTE_ARRAY_BASE_OFFSET;
 
-        /*
-         * Compare 8 bytes at a time. Benchmarking shows comparing 8 bytes at a
-         * time is no slower than comparing 4 bytes at a time even on 32-bit.
-         * On the other hand, it is substantially faster on 64-bit.
-         */
+                /*
+                 * Compare 8 bytes at a time. Benchmarking shows comparing 8 bytes at a
+                 * time is no slower than comparing 4 bytes at a time even on 32-bit.
+                 * On the other hand, it is substantially faster on 64-bit.
+                 */
                 for (int i = 0; i < minWords * Longs_BYTES; i += Longs_BYTES) {
                     long lw = theUnsafe.getLong(buffer1, offset1Adj + (long) i);
                     long rw = theUnsafe.getLong(buffer2, offset2Adj + (long) i);
@@ -225,8 +225,8 @@ abstract class FastByteComparisons {
                 // The epilogue to cover the last (minLength % 8) elements.
                 for (int i = minWords * Longs_BYTES; i < minLength; i++) {
                     int result = UnsignedBytesCompare(
-                            buffer1[offset1 + i],
-                            buffer2[offset2 + i]);
+                        buffer1[offset1 + i],
+                        buffer2[offset2 + i]);
                     if (result != 0) {
                         return result;
                     }

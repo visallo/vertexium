@@ -42,8 +42,8 @@ public class DeleteHistoricalLegacyStreamingPropertyValueData {
             org.apache.accumulo.core.security.Authorizations accumuloAuthorizations = graph.toAccumuloAuthorizations(authorizations);
             Scanner scanner = graph.getConnector().createScanner(graph.getDataTableName(), accumuloAuthorizations);
             BatchWriter writer = graph.getConnector().createBatchWriter(
-                    graph.getDataTableName(),
-                    graph.getConfiguration().createBatchWriterConfig()
+                graph.getDataTableName(),
+                graph.getConfiguration().createBatchWriterConfig()
             );
             String lastRowIdPrefix = null;
             List<Key> rowsToDelete = new ArrayList<>();
@@ -72,10 +72,10 @@ public class DeleteHistoricalLegacyStreamingPropertyValueData {
                         deleteRows(writer, rowsToDelete, options);
                         rowsToDelete.clear();
                         lastRowIdPrefix = rowIdParts[0]
-                                + DataTableRowKey.VALUE_SEPARATOR
-                                + rowIdParts[1]
-                                + DataTableRowKey.VALUE_SEPARATOR
-                                + rowIdParts[2];
+                            + DataTableRowKey.VALUE_SEPARATOR
+                            + rowIdParts[1]
+                            + DataTableRowKey.VALUE_SEPARATOR
+                            + rowIdParts[2];
                     }
                     rowsToDelete.add(row.getKey());
                 }
@@ -91,7 +91,7 @@ public class DeleteHistoricalLegacyStreamingPropertyValueData {
 
     private boolean isSameProperty(String lastRowIdPrefix, String rowId) {
         return rowId.startsWith(lastRowIdPrefix + DataTableRowKey.VALUE_SEPARATOR)
-                || lastRowIdPrefix.equals(rowId);
+            || lastRowIdPrefix.equals(rowId);
     }
 
     private void deleteRows(BatchWriter writer, List<Key> rowsToDelete, Options options) throws MutationsRejectedException {
@@ -103,10 +103,10 @@ public class DeleteHistoricalLegacyStreamingPropertyValueData {
                 if (!options.isDryRun()) {
                     Mutation mutation = new Mutation(key.getRow());
                     mutation.putDelete(
-                            key.getColumnFamily(),
-                            key.getColumnQualifier(),
-                            key.getColumnVisibilityParsed(),
-                            key.getTimestamp()
+                        key.getColumnFamily(),
+                        key.getColumnQualifier(),
+                        key.getColumnVisibilityParsed(),
+                        key.getTimestamp()
                     );
                     writer.addMutation(mutation);
                 }

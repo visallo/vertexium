@@ -41,12 +41,12 @@ public class ExtendedDataMutationBase<T extends ExtendedDataMutationBase> implem
     @Override
     public String toString() {
         return getClass().getSimpleName() + "{" +
-                "tableName='" + tableName + '\'' +
-                ", row='" + row + '\'' +
-                ", columnName='" + columnName + '\'' +
-                ", key='" + key + '\'' +
-                ", visibility=" + visibility +
-                '}';
+            "tableName='" + tableName + '\'' +
+            ", row='" + row + '\'' +
+            ", columnName='" + columnName + '\'' +
+            ", key='" + key + '\'' +
+            ", visibility=" + visibility +
+            '}';
     }
 
     @Override

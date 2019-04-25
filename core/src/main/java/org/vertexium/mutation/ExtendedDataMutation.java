@@ -8,13 +8,13 @@ public class ExtendedDataMutation extends ExtendedDataMutationBase<ExtendedDataM
     private final long timestamp;
 
     public ExtendedDataMutation(
-            String tableName,
-            String row,
-            String columnName,
-            String key,
-            Object value,
-            Long timestamp,
-            Visibility visibility
+        String tableName,
+        String row,
+        String columnName,
+        String key,
+        Object value,
+        Long timestamp,
+        Visibility visibility
     ) {
         super(tableName, row, columnName, key, visibility);
         this.value = value;

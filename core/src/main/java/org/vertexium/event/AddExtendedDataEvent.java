@@ -16,14 +16,14 @@ public class AddExtendedDataEvent extends GraphEvent {
     private final Visibility visibility;
 
     public AddExtendedDataEvent(
-            Graph graph,
-            Element element,
-            String tableName,
-            String row,
-            String columnName,
-            String key,
-            Object value,
-            Visibility visibility
+        Graph graph,
+        Element element,
+        String tableName,
+        String row,
+        String columnName,
+        String key,
+        Object value,
+        Visibility visibility
     ) {
         super(graph);
         this.element = element;
@@ -66,14 +66,14 @@ public class AddExtendedDataEvent extends GraphEvent {
     @Override
     public String toString() {
         return "AddExtendedDataEvent{" +
-                "element=" + element +
-                ", tableName='" + tableName + '\'' +
-                ", row='" + row + '\'' +
-                ", columnName='" + columnName + '\'' +
-                ", key='" + key + '\'' +
-                ", value=" + value +
-                ", visibility=" + visibility +
-                '}';
+            "element=" + element +
+            ", tableName='" + tableName + '\'' +
+            ", row='" + row + '\'' +
+            ", columnName='" + columnName + '\'' +
+            ", key='" + key + '\'' +
+            ", value=" + value +
+            ", visibility=" + visibility +
+            '}';
     }
 
     @Override
@@ -86,12 +86,12 @@ public class AddExtendedDataEvent extends GraphEvent {
         }
         AddExtendedDataEvent that = (AddExtendedDataEvent) o;
         return Objects.equals(element, that.element) &&
-                Objects.equals(tableName, that.tableName) &&
-                Objects.equals(row, that.row) &&
-                Objects.equals(columnName, that.columnName) &&
-                Objects.equals(key, that.key) &&
-                Objects.equals(value, that.value) &&
-                Objects.equals(visibility, that.visibility);
+            Objects.equals(tableName, that.tableName) &&
+            Objects.equals(row, that.row) &&
+            Objects.equals(columnName, that.columnName) &&
+            Objects.equals(key, that.key) &&
+            Objects.equals(value, that.value) &&
+            Objects.equals(visibility, that.visibility);
     }
 
     @Override

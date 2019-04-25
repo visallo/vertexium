@@ -10,10 +10,10 @@ import java.util.List;
 
 public interface StreamingPropertyValueStorageStrategy {
     StreamingPropertyValueRef saveStreamingPropertyValue(
-            ElementMutationBuilder elementMutationBuilder,
-            String rowKey,
-            Property property,
-            StreamingPropertyValue streamingPropertyValue
+        ElementMutationBuilder elementMutationBuilder,
+        String rowKey,
+        Property property,
+        StreamingPropertyValue streamingPropertyValue
     );
 
     void close();

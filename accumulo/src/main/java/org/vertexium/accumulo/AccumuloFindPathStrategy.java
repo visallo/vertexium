@@ -26,10 +26,10 @@ public class AccumuloFindPathStrategy {
     private final Set<String> excludeLabels;
 
     public AccumuloFindPathStrategy(
-            AccumuloGraph graph,
-            FindPathOptions options,
-            ProgressCallback progressCallback,
-            Authorizations authorizations
+        AccumuloGraph graph,
+        FindPathOptions options,
+        ProgressCallback progressCallback,
+        Authorizations authorizations
     ) {
         this.graph = graph;
         this.options = options;
@@ -104,9 +104,9 @@ public class AccumuloFindPathStrategy {
 
         progressCallback.progress(0.9, ProgressCallback.Step.ADDING_PATHS);
         foundPaths.addAll(
-                sourceVertexConnectedVertexIds.stream()
-                        .map(connectedVertexId -> new Path(sourceVertexId, connectedVertexId, destVertexId))
-                        .collect(Collectors.toList())
+            sourceVertexConnectedVertexIds.stream()
+                .map(connectedVertexId -> new Path(sourceVertexId, connectedVertexId, destVertexId))
+                .collect(Collectors.toList())
         );
     }
 
@@ -130,14 +130,14 @@ public class AccumuloFindPathStrategy {
     }
 
     private void findPathsRecursive(
-            Map<String, Set<String>> connectedVertexIds,
-            List<Path> foundPaths,
-            final String sourceVertexId,
-            String destVertexId,
-            int hops,
-            Set<String> seenVertices,
-            Path currentPath,
-            @SuppressWarnings("UnusedParameters") ProgressCallback progressCallback
+        Map<String, Set<String>> connectedVertexIds,
+        List<Path> foundPaths,
+        final String sourceVertexId,
+        String destVertexId,
+        int hops,
+        Set<String> seenVertices,
+        Path currentPath,
+        @SuppressWarnings("UnusedParameters") ProgressCallback progressCallback
     ) {
         if (options.isGetAnyPath() && foundPaths.size() == 1) {
             return;
@@ -193,14 +193,14 @@ public class AccumuloFindPathStrategy {
             }
 
             ScannerBase scanner = graph.createElementScanner(
-                    FetchHints.EDGE_REFS,
-                    ElementType.VERTEX,
-                    1,
-                    null,
-                    null,
-                    ranges,
-                    true,
-                    authorizations
+                FetchHints.EDGE_REFS,
+                ElementType.VERTEX,
+                1,
+                null,
+                null,
+                ranges,
+                true,
+                authorizations
             );
 
 
@@ -210,19 +210,19 @@ public class AccumuloFindPathStrategy {
                 for (Map.Entry<Key, Value> row : scanner) {
                     Vertex vertex = AccumuloVertex.createFromIteratorValue(graph, row.getKey(), row.getValue(), FetchHints.EDGE_REFS, authorizations);
                     Iterable<String> otherVertexIds = stream(vertex.getEdgeInfos(Direction.BOTH, authorizations))
-                            .filter(edgeInfo -> {
-                                if (excludeLabels != null && excludeLabels.contains(edgeInfo.getLabel())) {
-                                    return false;
-                                }
-                                return includeLabels == null || includeLabels.contains(edgeInfo.getLabel());
+                        .filter(edgeInfo -> {
+                            if (excludeLabels != null && excludeLabels.contains(edgeInfo.getLabel())) {
+                                return false;
+                            }
+                            return includeLabels == null || includeLabels.contains(edgeInfo.getLabel());
 
-                            })
-                            .map(EdgeInfo::getVertexId)
-                            .collect(Collectors.toSet());
+                        })
+                        .map(EdgeInfo::getVertexId)
+                        .collect(Collectors.toSet());
                     Map<String, Boolean> verticesExist = graph.doVerticesExist(otherVertexIds, authorizations);
                     Set<String> rowVertexIds = stream(verticesExist.keySet())
-                            .filter(key -> verticesExist.getOrDefault(key, false))
-                            .collect(Collectors.toSet());
+                        .filter(key -> verticesExist.getOrDefault(key, false))
+                        .collect(Collectors.toSet());
                     results.put(row.getKey().getRow().toString(), rowVertexIds);
                 }
                 return results;

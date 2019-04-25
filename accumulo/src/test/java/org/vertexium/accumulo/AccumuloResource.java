@@ -69,13 +69,13 @@ public class AccumuloResource extends ExternalResource {
         AccumuloGraphTestUtils.dropGraph(connector, AccumuloGraph.getHistoryEdgesTableName(GraphConfiguration.DEFAULT_TABLE_NAME_PREFIX));
         AccumuloGraphTestUtils.dropGraph(connector, AccumuloGraph.getMetadataTableName(GraphConfiguration.DEFAULT_TABLE_NAME_PREFIX));
         connector.securityOperations().changeUserAuthorizations(
-                AccumuloGraphConfiguration.DEFAULT_ACCUMULO_USERNAME,
-                new org.apache.accumulo.core.security.Authorizations(
-                        VISIBILITY_A_STRING,
-                        VISIBILITY_B_STRING,
-                        VISIBILITY_C_STRING,
-                        VISIBILITY_MIXED_CASE_STRING
-                )
+            AccumuloGraphConfiguration.DEFAULT_ACCUMULO_USERNAME,
+            new org.apache.accumulo.core.security.Authorizations(
+                VISIBILITY_A_STRING,
+                VISIBILITY_B_STRING,
+                VISIBILITY_C_STRING,
+                VISIBILITY_MIXED_CASE_STRING
+            )
         );
     }
 

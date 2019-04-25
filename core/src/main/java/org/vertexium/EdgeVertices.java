@@ -20,8 +20,8 @@ public class EdgeVertices {
     @Override
     public String toString() {
         return "EdgeVertices{" +
-                "outVertex=" + outVertex +
-                ", inVertex=" + inVertex +
-                '}';
+            "outVertex=" + outVertex +
+            ", inVertex=" + inVertex +
+            '}';
     }
 }

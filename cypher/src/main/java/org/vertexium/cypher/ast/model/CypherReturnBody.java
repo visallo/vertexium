@@ -9,10 +9,10 @@ public class CypherReturnBody extends CypherAstBase {
     private final CypherSkip skip;
 
     public CypherReturnBody(
-            CypherListLiteral<CypherReturnItem> returnItems,
-            CypherOrderBy order,
-            CypherLimit limit,
-            CypherSkip skip
+        CypherListLiteral<CypherReturnItem> returnItems,
+        CypherOrderBy order,
+        CypherLimit limit,
+        CypherSkip skip
     ) {
         this.returnItems = returnItems;
         this.order = order;
@@ -39,19 +39,19 @@ public class CypherReturnBody extends CypherAstBase {
     @Override
     public String toString() {
         return String.format(
-                "%s%s%s%s",
-                getReturnItems(),
-                getOrder() == null ? "" : " " + getOrder(),
-                getLimit() == null ? "" : " " + getLimit(),
-                getSkip() == null ? "" : " " + getSkip()
+            "%s%s%s%s",
+            getReturnItems(),
+            getOrder() == null ? "" : " " + getOrder(),
+            getLimit() == null ? "" : " " + getLimit(),
+            getSkip() == null ? "" : " " + getSkip()
         );
     }
 
     @Override
     public Stream<? extends CypherAstBase> getChildren() {
         return Stream.concat(
-                returnItems.stream(),
-                Stream.of(order, limit, skip)
+            returnItems.stream(),
+            Stream.of(order, limit, skip)
         );
     }
 }

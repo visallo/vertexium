@@ -14,11 +14,11 @@ public class CalendarFieldAggregation extends Aggregation implements SupportsNes
     private final int calendarField;
 
     public CalendarFieldAggregation(
-            String aggregationName,
-            String propertyName,
-            Long minDocumentCount,
-            TimeZone timeZone,
-            int calendarField
+        String aggregationName,
+        String propertyName,
+        Long minDocumentCount,
+        TimeZone timeZone,
+        int calendarField
     ) {
         this.aggregationName = aggregationName;
         this.propertyName = propertyName;

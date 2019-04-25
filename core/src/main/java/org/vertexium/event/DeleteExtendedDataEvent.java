@@ -13,12 +13,12 @@ public class DeleteExtendedDataEvent extends GraphEvent {
     private final String key;
 
     public DeleteExtendedDataEvent(
-            Graph graph,
-            Element element,
-            String tableName,
-            String row,
-            String columnName,
-            String key
+        Graph graph,
+        Element element,
+        String tableName,
+        String row,
+        String columnName,
+        String key
     ) {
         super(graph);
         this.element = element;
@@ -51,12 +51,12 @@ public class DeleteExtendedDataEvent extends GraphEvent {
     @Override
     public String toString() {
         return "DeleteExtendedDataEvent{" +
-                "element=" + element +
-                ", tableName='" + tableName + '\'' +
-                ", row='" + row + '\'' +
-                ", columnName='" + columnName + '\'' +
-                ", key='" + key + '\'' +
-                '}';
+            "element=" + element +
+            ", tableName='" + tableName + '\'' +
+            ", row='" + row + '\'' +
+            ", columnName='" + columnName + '\'' +
+            ", key='" + key + '\'' +
+            '}';
     }
 
     @Override
@@ -69,10 +69,10 @@ public class DeleteExtendedDataEvent extends GraphEvent {
         }
         DeleteExtendedDataEvent that = (DeleteExtendedDataEvent) o;
         return Objects.equals(element, that.element) &&
-                Objects.equals(tableName, that.tableName) &&
-                Objects.equals(row, that.row) &&
-                Objects.equals(columnName, that.columnName) &&
-                Objects.equals(key, that.key);
+            Objects.equals(tableName, that.tableName) &&
+            Objects.equals(row, that.row) &&
+            Objects.equals(columnName, that.columnName) &&
+            Objects.equals(key, that.key);
     }
 
     @Override

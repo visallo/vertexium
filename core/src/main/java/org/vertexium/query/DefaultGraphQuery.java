@@ -11,24 +11,24 @@ public class DefaultGraphQuery extends GraphQueryBase {
     @Override
     public QueryResultsIterable<Vertex> vertices(FetchHints fetchHints) {
         return new DefaultGraphQueryIterableWithAggregations<>(
-                getParameters(),
-                this.<Vertex>getIterableFromElementType(ElementType.VERTEX, fetchHints),
-                true,
-                true,
-                true,
-                getAggregations()
+            getParameters(),
+            this.<Vertex>getIterableFromElementType(ElementType.VERTEX, fetchHints),
+            true,
+            true,
+            true,
+            getAggregations()
         );
     }
 
     @Override
     public QueryResultsIterable<Edge> edges(FetchHints fetchHints) {
         return new DefaultGraphQueryIterableWithAggregations<>(
-                getParameters(),
-                this.<Edge>getIterableFromElementType(ElementType.EDGE, fetchHints),
-                true,
-                true,
-                true,
-                getAggregations()
+            getParameters(),
+            this.<Edge>getIterableFromElementType(ElementType.EDGE, fetchHints),
+            true,
+            true,
+            true,
+            getAggregations()
         );
     }
 
@@ -47,11 +47,11 @@ public class DefaultGraphQuery extends GraphQueryBase {
     @Override
     protected QueryResultsIterable<? extends VertexiumObject> extendedData(FetchHints extendedDataFetchHints) {
         FetchHints extendedDataTableNamesFetchHints = FetchHints.builder()
-                .setIncludeExtendedDataTableNames(true)
-                .build();
+            .setIncludeExtendedDataTableNames(true)
+            .build();
         return extendedData(extendedDataFetchHints, new JoinIterable<>(
-                getIterableFromElementType(ElementType.VERTEX, extendedDataTableNamesFetchHints),
-                getIterableFromElementType(ElementType.EDGE, extendedDataTableNamesFetchHints)
+            getIterableFromElementType(ElementType.VERTEX, extendedDataTableNamesFetchHints),
+            getIterableFromElementType(ElementType.EDGE, extendedDataTableNamesFetchHints)
         ));
     }
 

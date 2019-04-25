@@ -26,10 +26,10 @@ public class ShellTableWriter {
         results.append(rowToString(table.get(0), columnWidths)).append("\n");
         results.append(seperatorRow(columnWidths)).append("\n");
         results.append(
-                table.stream()
-                        .skip(1)
-                        .map(row -> rowToString(row, columnWidths))
-                        .collect(Collectors.joining("\n"))
+            table.stream()
+                .skip(1)
+                .map(row -> rowToString(row, columnWidths))
+                .collect(Collectors.joining("\n"))
         ).append("\n");
         results.append(seperatorRow(columnWidths)).append("\n");
         return results.toString();

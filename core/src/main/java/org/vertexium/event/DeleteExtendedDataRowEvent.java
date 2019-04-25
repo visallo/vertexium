@@ -18,8 +18,8 @@ public class DeleteExtendedDataRowEvent extends GraphEvent {
     @Override
     public String toString() {
         return "DeleteExtendedDataRowEvent{" +
-                "id=" + id +
-                '}';
+            "id=" + id +
+            '}';
     }
 
     @Override

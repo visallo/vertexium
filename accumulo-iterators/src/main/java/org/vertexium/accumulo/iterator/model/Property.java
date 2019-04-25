@@ -15,13 +15,13 @@ public class Property {
     public final List<Integer> metadata;
 
     public Property(
-            ByteSequence propertyKey,
-            ByteSequence propertyName,
-            byte[] propertyValue,
-            ByteSequence propertyVisibility,
-            long propertyTimestamp,
-            Set<ByteSequence> propertyHiddenVisibilities,
-            List<Integer> metadata
+        ByteSequence propertyKey,
+        ByteSequence propertyName,
+        byte[] propertyValue,
+        ByteSequence propertyVisibility,
+        long propertyTimestamp,
+        Set<ByteSequence> propertyHiddenVisibilities,
+        List<Integer> metadata
     ) {
         this.key = propertyKey;
         this.name = propertyName;

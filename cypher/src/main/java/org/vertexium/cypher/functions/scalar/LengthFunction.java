@@ -23,8 +23,8 @@ public class LengthFunction extends CypherFunction {
 
         if (arg0 instanceof Stream) {
             return ((Stream<?>) arg0)
-                    .map(this::getLength)
-                    .collect(Collectors.toList());
+                .map(this::getLength)
+                .collect(Collectors.toList());
         }
 
         return getLength(arg0);

@@ -20,8 +20,8 @@ public class CardinalityAggregation extends Aggregation {
     @Override
     public String toString() {
         return "CardinalityAggregation{" +
-                "aggregationName='" + aggregationName + '\'' +
-                ", propertyName='" + propertyName + '\'' +
-                '}';
+            "aggregationName='" + aggregationName + '\'' +
+            ", propertyName='" + propertyName + '\'' +
+            '}';
     }
 }

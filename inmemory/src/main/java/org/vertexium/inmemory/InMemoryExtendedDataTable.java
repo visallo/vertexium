@@ -5,26 +5,26 @@ import org.vertexium.*;
 
 public abstract class InMemoryExtendedDataTable {
     public abstract ImmutableSet<String> getTableNames(
-            ElementType elementType,
-            String elementId,
-            Authorizations authorizations
+        ElementType elementType,
+        String elementId,
+        Authorizations authorizations
     );
 
     public abstract Iterable<? extends ExtendedDataRow> getTable(
-            ElementType elementType,
-            String elementId,
-            String tableName,
-            FetchHints fetchHints,
-            Authorizations authorizations
+        ElementType elementType,
+        String elementId,
+        String tableName,
+        FetchHints fetchHints,
+        Authorizations authorizations
     );
 
     public abstract void addData(
-            ExtendedDataRowId rowId,
-            String column,
-            String key,
-            Object value,
-            long timestamp,
-            Visibility visibility
+        ExtendedDataRowId rowId,
+        String column,
+        String key,
+        Object value,
+        long timestamp,
+        Visibility visibility
     );
 
     public abstract void remove(ExtendedDataRowId id);

@@ -12,10 +12,10 @@ public class AccumuloExtendedDataRow extends ExtendedDataRowBase {
     private final Set<Property> properties;
 
     public AccumuloExtendedDataRow(
-            ExtendedDataRowId rowId,
-            SortedMap<Key, Value> row,
-            FetchHints fetchHints,
-            VertexiumSerializer vertexiumSerializer
+        ExtendedDataRowId rowId,
+        SortedMap<Key, Value> row,
+        FetchHints fetchHints,
+        VertexiumSerializer vertexiumSerializer
     ) {
         super(fetchHints);
         this.rowId = rowId;
@@ -23,10 +23,10 @@ public class AccumuloExtendedDataRow extends ExtendedDataRowBase {
     }
 
     private Set<Property> rowToProperties(
-            ExtendedDataRowId rowId,
-            SortedMap<Key, Value> row,
-            FetchHints fetchHints,
-            VertexiumSerializer vertexiumSerializer
+        ExtendedDataRowId rowId,
+        SortedMap<Key, Value> row,
+        FetchHints fetchHints,
+        VertexiumSerializer vertexiumSerializer
     ) {
         Set<Property> results = new HashSet<>();
         for (Map.Entry<Key, Value> rowEntry : row.entrySet()) {
@@ -40,12 +40,12 @@ public class AccumuloExtendedDataRow extends ExtendedDataRowBase {
             long timestamp = rowEntry.getKey().getTimestamp();
             Visibility visibility = AccumuloGraph.accumuloVisibilityToVisibility(rowEntry.getKey().getColumnVisibility());
             AccumuloExtendedDataRowProperty prop = new AccumuloExtendedDataRowProperty(
-                    propertyName,
-                    propertyKey,
-                    propertyValue,
-                    fetchHints,
-                    timestamp,
-                    visibility
+                propertyName,
+                propertyKey,
+                propertyValue,
+                fetchHints,
+                timestamp,
+                visibility
             );
             results.add(prop);
         }
@@ -71,12 +71,12 @@ public class AccumuloExtendedDataRow extends ExtendedDataRowBase {
         private final Visibility visibility;
 
         public AccumuloExtendedDataRowProperty(
-                String propertyName,
-                String propertyKey,
-                Object propertyValue,
-                FetchHints fetchHints,
-                long timestamp,
-                Visibility visibility
+            String propertyName,
+            String propertyKey,
+            Object propertyValue,
+            FetchHints fetchHints,
+            long timestamp,
+            Visibility visibility
         ) {
             this.propertyName = propertyName;
             this.propertyKey = propertyKey;

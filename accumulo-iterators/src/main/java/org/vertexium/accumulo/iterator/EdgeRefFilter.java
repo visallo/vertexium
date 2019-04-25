@@ -17,10 +17,10 @@ public class EdgeRefFilter extends Filter {
     private static final String SETTING_VERTEX_IDS = "vertexId";
     private Set<String> vertexIdsSet;
     private List<Text> nonVisibleEdges = Arrays.asList(
-            VertexIterator.CF_IN_EDGE_HIDDEN,
-            VertexIterator.CF_IN_EDGE_SOFT_DELETE,
-            VertexIterator.CF_OUT_EDGE_HIDDEN,
-            VertexIterator.CF_OUT_EDGE_SOFT_DELETE);
+        VertexIterator.CF_IN_EDGE_HIDDEN,
+        VertexIterator.CF_IN_EDGE_SOFT_DELETE,
+        VertexIterator.CF_OUT_EDGE_HIDDEN,
+        VertexIterator.CF_OUT_EDGE_SOFT_DELETE);
 
     public static void setVertexIds(IteratorSetting settings, Set<String> vertexIdsSet) {
         settings.addOption(SETTING_VERTEX_IDS, SetOfStringsEncoder.encodeToString(vertexIdsSet));
