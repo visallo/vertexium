@@ -4550,8 +4550,8 @@ public abstract class GraphTestBase {
 
         List<Path> paths = toList(graph.findPaths(new FindPathOptions("v1", "v3", 2), AUTHORIZATIONS_A));
         assertPaths(
-                paths,
-                new Path("v1", "v2", "v3")
+            paths,
+            new Path("v1", "v2", "v3")
         );
 
         graph.softDeleteEdge(v2ToV3, AUTHORIZATIONS_A);
@@ -4562,8 +4562,8 @@ public abstract class GraphTestBase {
 
         paths = toList(graph.findPaths(new FindPathOptions("v1", "v3", 2), AUTHORIZATIONS_A));
         assertPaths(
-                paths,
-                new Path("v1", "v2", "v3")
+            paths,
+            new Path("v1", "v2", "v3")
         );
     }
 
@@ -9394,5 +9394,33 @@ public abstract class GraphTestBase {
 
     protected ScoringStrategy getFieldValueScoringStrategy(String field) {
         return new FieldValueScoringStrategy(field);
+    }
+
+    @Test
+    public void testGetVertices() {
+        Long timestamp = System.currentTimeMillis();
+        Vertex v1 = graph.prepareVertex("v1", timestamp, VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
+        Vertex v2 = graph.prepareVertex("v2", timestamp, VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
+        Vertex v3 = graph.prepareVertex("v3", timestamp + 5, VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
+        graph.prepareEdge("e1", v1, v2, "test_label", timestamp, VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
+        graph.prepareEdge("e2", v1, v3, "test_label", timestamp + 5, VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        List<Vertex> inVertices = IterableUtils.toList(v1.getVertices(Direction.OUT, "test_label", timestamp, AUTHORIZATIONS_A_AND_B));
+        assertEquals(1, IterableUtils.count(inVertices));
+        assertEquals("v2", inVertices.get(0).getId());
+
+        inVertices = IterableUtils.toList(v1.getVertices(Direction.OUT, "test_label", AUTHORIZATIONS_A_AND_B));
+        assertEquals(2, IterableUtils.count(inVertices));
+        assertEquals(0, inVertices.stream()
+            .map(Vertex::getId)
+            .filter(id -> !(id.equals("v2") || id.equals("v3")))
+            .count()
+        );
     }
 }

@@ -462,12 +462,22 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
 
     @Override
     public Iterable<Vertex> getVertices(Direction direction, String label, Authorizations authorizations) {
-        return getVertices(direction, label, getGraph().getDefaultFetchHints(), authorizations);
+        return getVertices(direction, label, getGraph().getDefaultFetchHints(), null, authorizations);
+    }
+
+    @Override
+    public Iterable<Vertex> getVertices(Direction direction, String label, Long endTime, Authorizations authorizations) {
+        return getVertices(direction, label, getGraph().getDefaultFetchHints(), endTime, authorizations);
     }
 
     @Override
     public Iterable<Vertex> getVertices(Direction direction, String label, FetchHints fetchHints, Authorizations authorizations) {
-        return getVertices(direction, labelToArrayOrNull(label), fetchHints, authorizations);
+        return getVertices(direction, labelToArrayOrNull(label), fetchHints, null, authorizations);
+    }
+
+    @Override
+    public Iterable<Vertex> getVertices(Direction direction, String label, FetchHints fetchHints, Long endTime, Authorizations authorizations) {
+        return getVertices(direction, labelToArrayOrNull(label), fetchHints, endTime, authorizations);
     }
 
     @Override
@@ -477,7 +487,12 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
 
     @Override
     public Iterable<Vertex> getVertices(Direction direction, String[] labels, FetchHints fetchHints, final Authorizations authorizations) {
-        return getGraph().getVertices(getVertexIds(direction, labels, authorizations), fetchHints, authorizations);
+        return getVertices(direction, labels, fetchHints, null, authorizations);
+    }
+
+    @Override
+    public Iterable<Vertex> getVertices(Direction direction, String[] labels, FetchHints fetchHints, Long endTime, final Authorizations authorizations) {
+        return getGraph().getVertices(getVertexIds(direction, labels, authorizations), fetchHints, endTime, authorizations);
     }
 
     @Override
