@@ -5,10 +5,12 @@ import java.util.stream.Stream;
 public class CypherSortItem extends CypherAstBase {
     private final CypherAstBase expression;
     private final Direction direction;
+    private final String expressionText;
 
-    public CypherSortItem(CypherAstBase expression, Direction direction) {
+    public CypherSortItem(CypherAstBase expression, Direction direction, String expressionText) {
         this.expression = expression;
         this.direction = direction;
+        this.expressionText = expressionText;
     }
 
     public CypherAstBase getExpression() {
@@ -17,6 +19,10 @@ public class CypherSortItem extends CypherAstBase {
 
     public Direction getDirection() {
         return direction;
+    }
+
+    public String getExpressionText() {
+        return expressionText;
     }
 
     @Override

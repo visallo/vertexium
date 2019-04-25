@@ -30,6 +30,7 @@
 
 Feature: OptionalMatch
 
+  @todo
   Scenario: Satisfies the open world assumption, relationships between same nodes
     Given an empty graph
     And having executed:
@@ -67,6 +68,7 @@ Feature: OptionalMatch
       | 1       | true     |
     And no side effects
 
+  @todo
   Scenario: Satisfies the open world assumption, relationships between different nodes
     Given an empty graph
     And having executed:

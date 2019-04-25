@@ -110,6 +110,7 @@ Feature: UnwindAcceptance
       | 2       |
     And no side effects
 
+  @todo
   Scenario: Creating nodes from an unwound parameter list
     Given an empty graph
     And having executed:
@@ -167,6 +168,7 @@ Feature: UnwindAcceptance
       | empty |
     And no side effects
 
+  @todo
   Scenario: Unwinding null
     Given any graph
     When executing query:
@@ -199,6 +201,7 @@ Feature: UnwindAcceptance
       | 5         |
     And no side effects
 
+  @todo
   Scenario: Unwind does not prune context
     Given any graph
     When executing query:
@@ -214,6 +217,7 @@ Feature: UnwindAcceptance
       | [1, 2, 3] | 3 |
     And no side effects
 
+  @todo
   Scenario: Unwind does not remove variables from scope
     Given an empty graph
     And having executed:
@@ -238,6 +242,7 @@ Feature: UnwindAcceptance
       | (:S) | (:E) |
     And no side effects
 
+  @todo
   Scenario: Multiple unwinds after each other
     Given any graph
     When executing query:

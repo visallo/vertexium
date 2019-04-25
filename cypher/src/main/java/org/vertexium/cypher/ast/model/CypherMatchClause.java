@@ -36,7 +36,7 @@ public class CypherMatchClause extends CypherClause {
             "%sMATCH %s%s",
             isOptional() ? "OPTIONAL " : "",
             getPatternParts().stream().map(CypherPatternPart::toString).collect(Collectors.joining(", ")),
-            getWhereExpression() == null ? "" : " " + getWhereExpression()
+            getWhereExpression() == null ? "" : " WHERE " + getWhereExpression()
         );
     }
 

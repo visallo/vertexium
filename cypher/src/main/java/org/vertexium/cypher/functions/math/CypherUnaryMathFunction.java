@@ -1,31 +1,31 @@
 package org.vertexium.cypher.functions.math;
 
 import org.vertexium.cypher.VertexiumCypherQueryContext;
-import org.vertexium.cypher.ast.model.CypherAstBase;
 import org.vertexium.cypher.exceptions.VertexiumCypherTypeErrorException;
-import org.vertexium.cypher.executor.ExpressionScope;
-import org.vertexium.cypher.functions.CypherFunction;
+import org.vertexium.cypher.functions.SimpleCypherFunction;
 
-public abstract class CypherUnaryMathFunction extends CypherFunction {
+import static org.vertexium.cypher.functions.FunctionUtils.assertArgumentCount;
+
+public abstract class CypherUnaryMathFunction extends SimpleCypherFunction {
     @Override
-    public Object invoke(VertexiumCypherQueryContext ctx, CypherAstBase[] arguments, ExpressionScope scope) {
+    protected Object executeFunction(VertexiumCypherQueryContext ctx, Object[] arguments) {
         assertArgumentCount(arguments, 1);
-        Object arg0 = ctx.getExpressionExecutor().executeExpression(ctx, arguments[0], scope);
+        Object arg0 = arguments[0];
 
         if (arg0 instanceof Double || arg0 instanceof Float) {
-            return invokeDouble(ctx, ((Number) arg0).doubleValue(), scope);
+            return invokeDouble(ctx, ((Number) arg0).doubleValue());
         }
 
         if (arg0 instanceof Integer || arg0 instanceof Long) {
-            return invokeLong(ctx, ((Number) arg0).longValue(), scope);
+            return invokeLong(ctx, ((Number) arg0).longValue());
         }
 
         throw new VertexiumCypherTypeErrorException(arg0, Double.class, Float.class, Integer.class, Long.class);
     }
 
-    protected Object invokeLong(VertexiumCypherQueryContext ctx, long value, ExpressionScope scope) {
-        return invokeDouble(ctx, (double) value, scope);
+    protected Object invokeLong(VertexiumCypherQueryContext ctx, long value) {
+        return invokeDouble(ctx, (double) value);
     }
 
-    protected abstract Object invokeDouble(VertexiumCypherQueryContext ctx, double value, ExpressionScope scope);
+    protected abstract Object invokeDouble(VertexiumCypherQueryContext ctx, double value);
 }

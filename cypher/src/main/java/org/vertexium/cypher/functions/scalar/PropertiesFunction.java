@@ -3,33 +3,35 @@ package org.vertexium.cypher.functions.scalar;
 import org.vertexium.Element;
 import org.vertexium.VertexiumException;
 import org.vertexium.cypher.VertexiumCypherQueryContext;
-import org.vertexium.cypher.ast.CypherCompilerContext;
-import org.vertexium.cypher.ast.model.CypherAstBase;
-import org.vertexium.cypher.ast.model.CypherMapLiteral;
-import org.vertexium.cypher.ast.model.CypherVariable;
 import org.vertexium.cypher.exceptions.VertexiumCypherSyntaxErrorException;
-import org.vertexium.cypher.executor.ExpressionScope;
-import org.vertexium.cypher.functions.CypherFunction;
+import org.vertexium.cypher.executionPlan.ExecutionStepWithResultName;
+import org.vertexium.cypher.executionPlan.GetVariableExecutionStep;
+import org.vertexium.cypher.executionPlan.LiteralExecutionStep;
+import org.vertexium.cypher.executionPlan.MapLiteralExecutionStep;
+import org.vertexium.cypher.functions.SimpleCypherFunction;
 
 import java.util.Map;
 
-public class PropertiesFunction extends CypherFunction {
+import static org.vertexium.cypher.functions.FunctionUtils.assertArgumentCount;
+
+public class PropertiesFunction extends SimpleCypherFunction {
     @Override
-    public void compile(CypherCompilerContext compilerContext, CypherAstBase[] arguments) {
-        CypherAstBase arg0 = arguments[0];
+    public ExecutionStepWithResultName create(String resultName, boolean distinct, ExecutionStepWithResultName[] argumentsExecutionStep) {
+        ExecutionStepWithResultName arg0 = argumentsExecutionStep[0];
         if (arg0 == null
-            || arg0 instanceof CypherVariable
-            || arg0 instanceof CypherMapLiteral) {
-            return;
+            || arg0 instanceof GetVariableExecutionStep
+            || arg0 instanceof MapLiteralExecutionStep
+            || (arg0 instanceof LiteralExecutionStep && ((LiteralExecutionStep) arg0).getValue() == null)) {
+            return super.create(resultName, distinct, argumentsExecutionStep);
         }
 
         throw new VertexiumCypherSyntaxErrorException("InvalidArgumentType: properties(): expected variable or map, found " + arg0.getClass().getName());
     }
 
     @Override
-    public Map<String, Object> invoke(VertexiumCypherQueryContext ctx, CypherAstBase[] arguments, ExpressionScope scope) {
+    protected Object executeFunction(VertexiumCypherQueryContext ctx, Object[] arguments) {
         assertArgumentCount(arguments, 1);
-        Object arg0 = ctx.getExpressionExecutor().executeExpression(ctx, arguments[0], scope);
+        Object arg0 = arguments[0];
 
         if (arg0 == null) {
             return null;

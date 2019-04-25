@@ -30,6 +30,7 @@
 
 Feature: PatternComprehension
 
+  @todo
   Scenario: Pattern comprehension and ORDER BY
     Given an empty graph
     And having executed:
@@ -49,6 +50,7 @@ Feature: PatternComprehension
       | [<({time: 20})<-[:T]-({time: 10})>] |
     And no side effects
 
+  @todo
   Scenario: Returning a pattern comprehension
     Given an empty graph
     And having executed:
@@ -69,6 +71,7 @@ Feature: PatternComprehension
       | []                                     |
     And no side effects
 
+  @todo
   Scenario: Returning a pattern comprehension with label predicate
     Given an empty graph
     And having executed:
@@ -88,6 +91,7 @@ Feature: PatternComprehension
       | [<(:A)-[:T]->(:B)>] |
     And no side effects
 
+  @todo
   Scenario: Returning a pattern comprehension with bound nodes
     Given an empty graph
     And having executed:
@@ -125,6 +129,7 @@ Feature: PatternComprehension
       | [<(:A)-[:T]->(:C)>, <(:A)-[:T]->(:B)>] | 2 |
     And no side effects
 
+  @todo
   Scenario: Using a variable-length pattern comprehension in a WITH
     Given an empty graph
     And having executed:
@@ -142,6 +147,7 @@ Feature: PatternComprehension
       | [<(:A)-[:T]->(:B)>] | 1 |
     And no side effects
 
+  @todo
   Scenario: Using pattern comprehension in RETURN
     Given an empty graph
     And having executed:
@@ -179,6 +185,7 @@ Feature: PatternComprehension
       | 3 |
     And no side effects
 
+  @todo
   Scenario: Using pattern comprehension to test existence
     Given an empty graph
     And having executed:
@@ -197,6 +204,7 @@ Feature: PatternComprehension
       | (:X {prop: 43}) | false |
     And no side effects
 
+  @todo
   Scenario: Pattern comprehension inside list comprehension
     Given an empty graph
     And having executed:
@@ -221,6 +229,7 @@ Feature: PatternComprehension
       | (:X {n: 2}) | [0, 1] |
     And no side effects
 
+  @todo
   Scenario: Get node degree via size of pattern comprehension
     Given an empty graph
     And having executed:
@@ -240,6 +249,7 @@ Feature: PatternComprehension
       | 3      |
     And no side effects
 
+  @todo
   Scenario: Get node degree via size of pattern comprehension that specifies a relationship type
     Given an empty graph
     And having executed:
@@ -260,6 +270,7 @@ Feature: PatternComprehension
       | 3      |
     And no side effects
 
+  @todo
   Scenario: Get node degree via size of pattern comprehension that specifies multiple relationship types
     Given an empty graph
     And having executed:
@@ -280,6 +291,7 @@ Feature: PatternComprehension
       | 4      |
     And no side effects
 
+  @todo
   Scenario: Introducing new node variable in pattern comprehension
     Given an empty graph
     And having executed:
@@ -298,6 +310,7 @@ Feature: PatternComprehension
       | []      |
     And no side effects
 
+  @todo
   Scenario: Introducing new relationship variable in pattern comprehension
     Given an empty graph
     And having executed:

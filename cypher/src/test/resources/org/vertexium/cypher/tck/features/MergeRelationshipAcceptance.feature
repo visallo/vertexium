@@ -231,6 +231,7 @@ Feature: MergeRelationshipAcceptance
     And the side effects should be:
       | +relationships | 1 |
 
+  @todo
   Scenario: Using ON MATCH on a relationship
     Given an empty graph
     And having executed:
@@ -251,6 +252,7 @@ Feature: MergeRelationshipAcceptance
     And the side effects should be:
       | +properties | 1 |
 
+  @todo
   Scenario: Using ON CREATE and ON MATCH
     Given an empty graph
     And having executed:
@@ -307,6 +309,7 @@ Feature: MergeRelationshipAcceptance
       | +relationships | 2 |
       | +labels        | 3 |
 
+  @todo
   Scenario: Introduce named paths 1
     Given an empty graph
     When executing query:
@@ -324,6 +327,7 @@ Feature: MergeRelationshipAcceptance
       | +relationships | 1 |
       | +properties    | 2 |
 
+  @todo
   Scenario: Introduce named paths 2
     Given an empty graph
     When executing query:
@@ -422,6 +426,7 @@ Feature: MergeRelationshipAcceptance
       | +labels        | 2 |
       | +properties    | 1 |
 
+  @todo
   Scenario: Matching using list property
     Given an empty graph
     And having executed:
@@ -455,6 +460,7 @@ Feature: MergeRelationshipAcceptance
       | +nodes         | 2 |
       | +relationships | 1 |
 
+  @todo
   Scenario: UNWIND with multiple merges
     Given an empty graph
     When executing query:

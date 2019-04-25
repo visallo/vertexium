@@ -31,4 +31,10 @@ public class CypherRangeLiteral extends CypherAstBase {
     public Stream<? extends CypherAstBase> getChildren() {
         return Stream.empty();
     }
+
+    public boolean isInRange(int length) {
+        boolean fromMatch = getFrom() == null || length >= getFrom();
+        boolean toMatch = getTo() == null || length <= getTo();
+        return fromMatch && toMatch;
+    }
 }

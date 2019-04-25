@@ -8,8 +8,10 @@ import org.vertexium.VertexiumException;
 import org.vertexium.query.Query;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
@@ -142,6 +144,21 @@ public class StreamUtils {
             return falseFunc.apply(newStream);
         } else {
             return trueFunc.get();
+        }
+    }
+
+    public static <T> Predicate<T> distinctBy(Function<? super T, ?> fn) {
+        Set<Object> seen = ConcurrentHashMap.newKeySet();
+        return t -> seen.add(fn.apply(t));
+    }
+
+    public static <T, R> Stream<R> mapOptional(Stream<T> stream, Function<T, R> transform) {
+        // TODO is there a better way to check the size without getting all the results first
+        List<T> l = stream.collect(Collectors.toList());
+        if (l.size() == 0) {
+            return Stream.of((T) null).map(transform);
+        } else {
+            return l.stream().map(transform);
         }
     }
 

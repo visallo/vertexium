@@ -1,33 +1,32 @@
 package org.vertexium.cypher.functions.aggregate;
 
+import org.vertexium.cypher.CypherResultRow;
 import org.vertexium.cypher.VertexiumCypherQueryContext;
-import org.vertexium.cypher.ast.model.CypherAstBase;
-import org.vertexium.cypher.exceptions.VertexiumCypherTypeErrorException;
-import org.vertexium.cypher.executor.ExpressionScope;
+import org.vertexium.cypher.executionPlan.AggregationFunctionInvocationExecutionStep;
+import org.vertexium.cypher.executionPlan.ExecutionStepWithResultName;
 import org.vertexium.cypher.utils.ObjectUtils;
 
-import java.util.Collection;
-import java.util.Objects;
 import java.util.stream.Stream;
 
-public class MaxFunction extends AggregationFunction {
+public class MaxFunction implements AggregationFunction {
     @Override
-    public Object invoke(VertexiumCypherQueryContext ctx, CypherAstBase[] arguments, ExpressionScope scope) {
-        assertArgumentCount(arguments, 1);
-        Object arg0 = ctx.getExpressionExecutor().executeExpression(ctx, arguments[0], scope);
+    public ExecutionStepWithResultName create(String resultName, boolean distinct, ExecutionStepWithResultName[] argumentsExecutionStep) {
+        return new AggregationFunctionInvocationExecutionStep(getClass().getSimpleName(), resultName, distinct, argumentsExecutionStep) {
+            @Override
+            protected CypherResultRow executeAggregation(VertexiumCypherQueryContext ctx, CypherResultRow group, Stream<RowWithArguments> rows) {
+                if (rows == null) {
+                    return group.clone()
+                        .pushScope(getResultName(), null);
+                }
 
-        if (arg0 instanceof Collection) {
-            arg0 = ((Collection) arg0).stream();
-        }
-
-        if (arg0 instanceof Stream) {
-            Stream<?> list = (Stream<?>) arg0;
-            return list
-                .filter(Objects::nonNull)
-                .max(ObjectUtils::compare)
-                .orElse(null);
-        }
-
-        throw new VertexiumCypherTypeErrorException(arg0, Collection.class, Stream.class);
+                Object maxValue = rows
+                    .filter(r -> r.arguments[0] != null)
+                    .max((row1, row2) -> ObjectUtils.compare(row1.arguments[0], row2.arguments[0]))
+                    .map(r -> r.arguments[0])
+                    .orElse(null);
+                return group.clone()
+                    .pushScope(resultName, maxValue);
+            }
+        };
     }
 }

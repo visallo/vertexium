@@ -1,27 +1,26 @@
 package org.vertexium.cypher.functions.list;
 
+import org.vertexium.cypher.PathResultBase;
 import org.vertexium.cypher.VertexiumCypherQueryContext;
-import org.vertexium.cypher.VertexiumCypherScope;
-import org.vertexium.cypher.ast.model.CypherAstBase;
 import org.vertexium.cypher.exceptions.VertexiumCypherTypeErrorException;
-import org.vertexium.cypher.executor.ExpressionScope;
-import org.vertexium.cypher.functions.CypherFunction;
+import org.vertexium.cypher.functions.SimpleCypherFunction;
 
-public class NodesFunction extends CypherFunction {
+import static org.vertexium.cypher.functions.FunctionUtils.assertArgumentCount;
+
+public class NodesFunction extends SimpleCypherFunction {
     @Override
-    public Object invoke(VertexiumCypherQueryContext ctx, CypherAstBase[] arguments, ExpressionScope scope) {
+    protected Object executeFunction(VertexiumCypherQueryContext ctx, Object[] arguments) {
         assertArgumentCount(arguments, 1);
-        Object arg0 = ctx.getExpressionExecutor().executeExpression(ctx, arguments[0], scope);
+        Object arg0 = arguments[0];
 
         if (arg0 == null) {
             return null;
         }
 
-        if (arg0 instanceof VertexiumCypherScope.PathItem) {
-            VertexiumCypherScope.PathItem pathResult = (VertexiumCypherScope.PathItem) arg0;
-            return pathResult.getVertices();
+        if (arg0 instanceof PathResultBase) {
+            return ((PathResultBase) arg0).getElements().toArray(Object[]::new);
         }
 
-        throw new VertexiumCypherTypeErrorException(arg0, VertexiumCypherScope.PathItem.class, null);
+        throw new VertexiumCypherTypeErrorException(arg0, PathResultBase.class, null);
     }
 }

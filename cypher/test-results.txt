@@ -145,8 +145,8 @@ AggregationAcceptanceTest
    passed - Scenario: Sort on aggregate function and normal property.Given an empty graph
    passed - Scenario: Sort on aggregate function and normal property.And having executed:
    passed - Scenario: Sort on aggregate function and normal property.When executing query:
-   passed - Scenario: Sort on aggregate function and normal property.Then the result should be, in order:
-   passed - Scenario: Sort on aggregate function and normal property.And no side effects
+   failed - Scenario: Sort on aggregate function and normal property.Then the result should be, in order:
+   ignored - Scenario: Sort on aggregate function and normal property.And no side effects
   Scenario: Aggregate on property
    passed - Scenario: Aggregate on property.Given an empty graph
    passed - Scenario: Aggregate on property.And having executed:
@@ -163,14 +163,14 @@ AggregationAcceptanceTest
    passed - Scenario: Sum non-null values.Given an empty graph
    passed - Scenario: Sum non-null values.And having executed:
    passed - Scenario: Sum non-null values.When executing query:
-   passed - Scenario: Sum non-null values.Then the result should be:
-   passed - Scenario: Sum non-null values.And no side effects
+   error - Scenario: Sum non-null values.Then the result should be:
+   ignored - Scenario: Sum non-null values.And no side effects
   Scenario: Handle aggregation on functions
    passed - Scenario: Handle aggregation on functions.Given an empty graph
    passed - Scenario: Handle aggregation on functions.And having executed:
    passed - Scenario: Handle aggregation on functions.When executing query:
-   passed - Scenario: Handle aggregation on functions.Then the result should be:
-   passed - Scenario: Handle aggregation on functions.And no side effects
+   error - Scenario: Handle aggregation on functions.Then the result should be:
+   ignored - Scenario: Handle aggregation on functions.And no side effects
   Scenario: Distinct on unbound node
    passed - Scenario: Distinct on unbound node.Given an empty graph
    passed - Scenario: Distinct on unbound node.When executing query:
@@ -185,17 +185,17 @@ AggregationAcceptanceTest
   Scenario: Collect distinct nulls
    passed - Scenario: Collect distinct nulls.Given any graph
    passed - Scenario: Collect distinct nulls.When executing query:
-   passed - Scenario: Collect distinct nulls.Then the result should be:
-   passed - Scenario: Collect distinct nulls.And no side effects
+   failed - Scenario: Collect distinct nulls.Then the result should be:
+   ignored - Scenario: Collect distinct nulls.And no side effects
   Scenario: Collect distinct values mixed with nulls
    passed - Scenario: Collect distinct values mixed with nulls.Given any graph
    passed - Scenario: Collect distinct values mixed with nulls.When executing query:
-   passed - Scenario: Collect distinct values mixed with nulls.Then the result should be:
-   passed - Scenario: Collect distinct values mixed with nulls.And no side effects
+   failed - Scenario: Collect distinct values mixed with nulls.Then the result should be:
+   ignored - Scenario: Collect distinct values mixed with nulls.And no side effects
   Scenario: Aggregates in aggregates
    passed - Scenario: Aggregates in aggregates.Given any graph
    passed - Scenario: Aggregates in aggregates.When executing query:
-   passed - Scenario: Aggregates in aggregates.Then a SyntaxError should be raised at compile time: NestedAggregation
+   ignored - Scenario: Aggregates in aggregates.Then a SyntaxError should be raised at compile time: NestedAggregation
   Scenario: Aggregates with arithmetics
    passed - Scenario: Aggregates with arithmetics.Given an empty graph
    passed - Scenario: Aggregates with arithmetics.And having executed:
@@ -206,14 +206,14 @@ AggregationAcceptanceTest
    passed - Scenario: Aggregates ordered by arithmetics.Given an empty graph
    passed - Scenario: Aggregates ordered by arithmetics.And having executed:
    passed - Scenario: Aggregates ordered by arithmetics.When executing query:
-   passed - Scenario: Aggregates ordered by arithmetics.Then the result should be, in order:
-   passed - Scenario: Aggregates ordered by arithmetics.And no side effects
+   error - Scenario: Aggregates ordered by arithmetics.Then the result should be, in order:
+   ignored - Scenario: Aggregates ordered by arithmetics.And no side effects
   Scenario: Multiple aggregates on same variable
    passed - Scenario: Multiple aggregates on same variable.Given an empty graph
    passed - Scenario: Multiple aggregates on same variable.And having executed:
    passed - Scenario: Multiple aggregates on same variable.When executing query:
-   passed - Scenario: Multiple aggregates on same variable.Then the result should be:
-   passed - Scenario: Multiple aggregates on same variable.And no side effects
+   failed - Scenario: Multiple aggregates on same variable.Then the result should be:
+   ignored - Scenario: Multiple aggregates on same variable.And no side effects
   Scenario: Simple counting of nodes
    passed - Scenario: Simple counting of nodes.Given an empty graph
    passed - Scenario: Simple counting of nodes.And having executed:
@@ -235,8 +235,8 @@ AggregationAcceptanceTest
   Scenario: No overflow during summation
    passed - Scenario: No overflow during summation.Given any graph
    passed - Scenario: No overflow during summation.When executing query:
-   passed - Scenario: No overflow during summation.Then the result should be:
-   passed - Scenario: No overflow during summation.And no side effects
+   error - Scenario: No overflow during summation.Then the result should be:
+   ignored - Scenario: No overflow during summation.And no side effects
   Scenario: Counting with loops
    passed - Scenario: Counting with loops.Given an empty graph
    passed - Scenario: Counting with loops.And having executed:
@@ -415,7 +415,7 @@ CreateAcceptanceTest
    passed - Scenario: Combine MATCH, WITH and CREATE.And having executed:
    passed - Scenario: Combine MATCH, WITH and CREATE.When executing query:
    passed - Scenario: Combine MATCH, WITH and CREATE.Then the result should be empty
-   passed - Scenario: Combine MATCH, WITH and CREATE.And the side effects should be:
+   failed - Scenario: Combine MATCH, WITH and CREATE.And the side effects should be:
   Scenario: Newly-created nodes not visible to preceding MATCH
    passed - Scenario: Newly-created nodes not visible to preceding MATCH.Given an empty graph
    passed - Scenario: Newly-created nodes not visible to preceding MATCH.And having executed:
@@ -512,7 +512,7 @@ CreateAcceptanceTest
    passed - Scenario: Create a pattern with multiple hops in varying directions.Then the result should be empty
    passed - Scenario: Create a pattern with multiple hops in varying directions.And the side effects should be:
    passed - Scenario: Create a pattern with multiple hops in varying directions.When executing control query:
-   passed - Scenario: Create a pattern with multiple hops in varying directions.Then the result should be:
+   failed - Scenario: Create a pattern with multiple hops in varying directions.Then the result should be:
   Scenario: Create a pattern with multiple hops with multiple types and varying directions
    passed - Scenario: Create a pattern with multiple hops with multiple types and varying directions.Given any graph
    passed - Scenario: Create a pattern with multiple hops with multiple types and varying directions.When executing query:
@@ -574,7 +574,7 @@ CreateAcceptanceTest
    passed - Scenario: Creating a pattern with multiple hops and changing directions.Then the result should be empty
    passed - Scenario: Creating a pattern with multiple hops and changing directions.And the side effects should be:
    passed - Scenario: Creating a pattern with multiple hops and changing directions.When executing control query:
-   passed - Scenario: Creating a pattern with multiple hops and changing directions.Then the result should be:
+   failed - Scenario: Creating a pattern with multiple hops and changing directions.Then the result should be:
 CreateTest
  Feature: Create
   Scenario: Creating a node
@@ -643,14 +643,14 @@ DeleteAcceptanceTest
    passed - Scenario: Undirected expand followed by delete and count.Given an empty graph
    passed - Scenario: Undirected expand followed by delete and count.And having executed:
    passed - Scenario: Undirected expand followed by delete and count.When executing query:
-   passed - Scenario: Undirected expand followed by delete and count.Then the result should be:
-   passed - Scenario: Undirected expand followed by delete and count.And the side effects should be:
+   failed - Scenario: Undirected expand followed by delete and count.Then the result should be:
+   ignored - Scenario: Undirected expand followed by delete and count.And the side effects should be:
   Scenario: Undirected variable length expand followed by delete and count
    passed - Scenario: Undirected variable length expand followed by delete and count.Given an empty graph
    passed - Scenario: Undirected variable length expand followed by delete and count.And having executed:
    passed - Scenario: Undirected variable length expand followed by delete and count.When executing query:
-   passed - Scenario: Undirected variable length expand followed by delete and count.Then the result should be:
-   passed - Scenario: Undirected variable length expand followed by delete and count.And the side effects should be:
+   error - Scenario: Undirected variable length expand followed by delete and count.Then the result should be:
+   ignored - Scenario: Undirected variable length expand followed by delete and count.And the side effects should be:
   Scenario: Delete optionally matched relationship
    passed - Scenario: Delete optionally matched relationship.Given an empty graph
    passed - Scenario: Delete optionally matched relationship.And having executed:
@@ -670,8 +670,8 @@ DeleteAcceptanceTest
   Scenario: Delete on null path
    passed - Scenario: Delete on null path.Given an empty graph
    passed - Scenario: Delete on null path.When executing query:
-   passed - Scenario: Delete on null path.Then the result should be empty
-   passed - Scenario: Delete on null path.And no side effects
+   error - Scenario: Delete on null path.Then the result should be empty
+   ignored - Scenario: Delete on null path.And no side effects
   Scenario: Delete node from a list
    passed - Scenario: Delete node from a list.Given an empty graph
    passed - Scenario: Delete node from a list.And having executed:
@@ -752,8 +752,8 @@ EqualsAcceptanceTest
    passed - Scenario: Comparing relationships to relationships.Given an empty graph
    passed - Scenario: Comparing relationships to relationships.And having executed:
    passed - Scenario: Comparing relationships to relationships.When executing query:
-   passed - Scenario: Comparing relationships to relationships.Then the result should be:
-   passed - Scenario: Comparing relationships to relationships.And no side effects
+   error - Scenario: Comparing relationships to relationships.Then the result should be:
+   ignored - Scenario: Comparing relationships to relationships.And no side effects
 ExpressionAcceptanceTest
  Feature: ExpressionAcceptance
   Scenario: Execute n['name'] in read queries
@@ -811,8 +811,8 @@ FunctionsAcceptanceTest
   Scenario: Functions should return null if they get path containing unbound
    passed - Scenario: Functions should return null if they get path containing unbound.Given any graph
    passed - Scenario: Functions should return null if they get path containing unbound.When executing query:
-   passed - Scenario: Functions should return null if they get path containing unbound.Then the result should be:
-   passed - Scenario: Functions should return null if they get path containing unbound.And no side effects
+   error - Scenario: Functions should return null if they get path containing unbound.Then the result should be:
+   ignored - Scenario: Functions should return null if they get path containing unbound.And no side effects
   Scenario: `split()`
    passed - )`.Given any graph(Scenario: `split
    passed - )`.When executing query:(Scenario: `split
@@ -906,7 +906,12 @@ FunctionsAcceptanceTest
    passed - 0 |.When executing query:
    passed - 0 |.Then the result should be:
    passed - 0 |.And no side effects
-    0 |
+   passed - 0 |.Given an empty graph
+   passed - 0 |.And having executed:
+   passed - 0 |.And parameters are:
+   passed - 0 |.When executing query:
+   passed - 0 |.Then the result should be:
+   passed - 0 |.And no side effects
    passed - 0 |.Given an empty graph
    passed - 0 |.And having executed:
    passed - 0 |.And parameters are:
@@ -914,12 +919,19 @@ FunctionsAcceptanceTest
    passed - 0 |.Then the result should be:
    passed - 0 |.And no side effects
     0 |
-   passed - 0 |.Given an empty graph
-   passed - 0 |.And having executed:
-   passed - 0 |.And parameters are:
-   passed - 0 |.When executing query:
-   passed - 0 |.Then the result should be:
-   passed - 0 |.And no side effects
+   skipped - 0 |.Given an empty graph
+   skipped - 0 |.And having executed:
+   skipped - 0 |.And parameters are:
+   skipped - 0 |.When executing query:
+   skipped - 0 |.Then the result should be:
+   skipped - 0 |.And no side effects
+    0 |
+   skipped - 0 |.Given an empty graph
+   skipped - 0 |.And having executed:
+   skipped - 0 |.And parameters are:
+   skipped - 0 |.When executing query:
+   skipped - 0 |.Then the result should be:
+   skipped - 0 |.And no side effects
   Scenario Outline: `percentileCont()`
    Examples: 
     0 |
@@ -929,7 +941,12 @@ FunctionsAcceptanceTest
    passed - 0 |.When executing query:
    passed - 0 |.Then the result should be:
    passed - 0 |.And no side effects
-    0 |
+   passed - 0 |.Given an empty graph
+   passed - 0 |.And having executed:
+   passed - 0 |.And parameters are:
+   passed - 0 |.When executing query:
+   passed - 0 |.Then the result should be:
+   passed - 0 |.And no side effects
    passed - 0 |.Given an empty graph
    passed - 0 |.And having executed:
    passed - 0 |.And parameters are:
@@ -937,12 +954,19 @@ FunctionsAcceptanceTest
    passed - 0 |.Then the result should be:
    passed - 0 |.And no side effects
     0 |
-   passed - 0 |.Given an empty graph
-   passed - 0 |.And having executed:
-   passed - 0 |.And parameters are:
-   passed - 0 |.When executing query:
-   passed - 0 |.Then the result should be:
-   passed - 0 |.And no side effects
+   skipped - 0 |.Given an empty graph
+   skipped - 0 |.And having executed:
+   skipped - 0 |.And parameters are:
+   skipped - 0 |.When executing query:
+   skipped - 0 |.Then the result should be:
+   skipped - 0 |.And no side effects
+    0 |
+   skipped - 0 |.Given an empty graph
+   skipped - 0 |.And having executed:
+   skipped - 0 |.And parameters are:
+   skipped - 0 |.When executing query:
+   skipped - 0 |.Then the result should be:
+   skipped - 0 |.And no side effects
   Scenario Outline: `percentileCont()` failing on bad arguments
    Examples: 
     | 1000 |
@@ -1077,10 +1101,10 @@ JoinAcceptanceTest
    passed - Scenario: Find friends of others.And no side effects
   Scenario: Should only join when matching
    passed - Scenario: Should only join when matching.Given an empty graph
-   passed - Scenario: Should only join when matching.And having executed:
-   passed - Scenario: Should only join when matching.When executing query:
-   passed - Scenario: Should only join when matching.Then the result should be:
-   passed - Scenario: Should only join when matching.And no side effects
+   error - Scenario: Should only join when matching.And having executed:
+   ignored - Scenario: Should only join when matching.When executing query:
+   ignored - Scenario: Should only join when matching.Then the result should be:
+   ignored - Scenario: Should only join when matching.And no side effects
 KeysAcceptanceTest
  Feature: KeysAcceptance
   Scenario: Using `keys()` on a single node, non-empty result
@@ -1282,8 +1306,8 @@ ListComprehensionTest
    passed - Scenario: Using a list comprehension in a WITH.Given an empty graph
    passed - Scenario: Using a list comprehension in a WITH.And having executed:
    passed - Scenario: Using a list comprehension in a WITH.When executing query:
-   passed - Scenario: Using a list comprehension in a WITH.Then the result should be:
-   passed - Scenario: Using a list comprehension in a WITH.And no side effects
+   failed - Scenario: Using a list comprehension in a WITH.Then the result should be:
+   ignored - Scenario: Using a list comprehension in a WITH.And no side effects
   Scenario: Using a list comprehension in a WHERE
    passed - Scenario: Using a list comprehension in a WHERE.Given an empty graph
    passed - Scenario: Using a list comprehension in a WHERE.And having executed:
@@ -1375,32 +1399,32 @@ MatchAcceptance2Test
    passed - Scenario: Aggregation with named paths.Given an empty graph
    passed - Scenario: Aggregation with named paths.And having executed:
    passed - Scenario: Aggregation with named paths.When executing query:
-   passed - Scenario: Aggregation with named paths.Then the result should be:
-   passed - Scenario: Aggregation with named paths.And no side effects
+   error - Scenario: Aggregation with named paths.Then the result should be:
+   ignored - Scenario: Aggregation with named paths.And no side effects
   Scenario: Zero-length variable length pattern in the middle of the pattern
    passed - Scenario: Zero-length variable length pattern in the middle of the pattern.Given an empty graph
    passed - Scenario: Zero-length variable length pattern in the middle of the pattern.And having executed:
    passed - Scenario: Zero-length variable length pattern in the middle of the pattern.When executing query:
-   passed - Scenario: Zero-length variable length pattern in the middle of the pattern.Then the result should be:
-   passed - Scenario: Zero-length variable length pattern in the middle of the pattern.And no side effects
+   error - Scenario: Zero-length variable length pattern in the middle of the pattern.Then the result should be:
+   ignored - Scenario: Zero-length variable length pattern in the middle of the pattern.And no side effects
   Scenario: Simple variable length pattern
    passed - Scenario: Simple variable length pattern.Given an empty graph
    passed - Scenario: Simple variable length pattern.And having executed:
    passed - Scenario: Simple variable length pattern.When executing query:
-   passed - Scenario: Simple variable length pattern.Then the result should be:
-   passed - Scenario: Simple variable length pattern.And no side effects
+   error - Scenario: Simple variable length pattern.Then the result should be:
+   ignored - Scenario: Simple variable length pattern.And no side effects
   Scenario: Variable length relationship without lower bound
    passed - Scenario: Variable length relationship without lower bound.Given an empty graph
    passed - Scenario: Variable length relationship without lower bound.And having executed:
    passed - Scenario: Variable length relationship without lower bound.When executing query:
-   passed - Scenario: Variable length relationship without lower bound.Then the result should be:
-   passed - Scenario: Variable length relationship without lower bound.And no side effects
+   error - Scenario: Variable length relationship without lower bound.Then the result should be:
+   ignored - Scenario: Variable length relationship without lower bound.And no side effects
   Scenario: Variable length relationship without bounds
    passed - Scenario: Variable length relationship without bounds.Given an empty graph
    passed - Scenario: Variable length relationship without bounds.And having executed:
    passed - Scenario: Variable length relationship without bounds.When executing query:
-   passed - Scenario: Variable length relationship without bounds.Then the result should be:
-   passed - Scenario: Variable length relationship without bounds.And no side effects
+   error - Scenario: Variable length relationship without bounds.Then the result should be:
+   ignored - Scenario: Variable length relationship without bounds.And no side effects
   Scenario: Returning bound nodes that are not part of the pattern
    passed - Scenario: Returning bound nodes that are not part of the pattern.Given an empty graph
    passed - Scenario: Returning bound nodes that are not part of the pattern.And having executed:
@@ -1411,20 +1435,20 @@ MatchAcceptance2Test
    passed - Scenario: Two bound nodes pointing to the same node.Given an empty graph
    passed - Scenario: Two bound nodes pointing to the same node.And having executed:
    passed - Scenario: Two bound nodes pointing to the same node.When executing query:
-   passed - Scenario: Two bound nodes pointing to the same node.Then the result should be:
-   passed - Scenario: Two bound nodes pointing to the same node.And no side effects
+   error - Scenario: Two bound nodes pointing to the same node.Then the result should be:
+   ignored - Scenario: Two bound nodes pointing to the same node.And no side effects
   Scenario: Three bound nodes pointing to the same node
    passed - Scenario: Three bound nodes pointing to the same node.Given an empty graph
    passed - Scenario: Three bound nodes pointing to the same node.And having executed:
    passed - Scenario: Three bound nodes pointing to the same node.When executing query:
-   passed - Scenario: Three bound nodes pointing to the same node.Then the result should be:
-   passed - Scenario: Three bound nodes pointing to the same node.And no side effects
+   failed - Scenario: Three bound nodes pointing to the same node.Then the result should be:
+   ignored - Scenario: Three bound nodes pointing to the same node.And no side effects
   Scenario: Three bound nodes pointing to the same node with extra connections
    passed - Scenario: Three bound nodes pointing to the same node with extra connections.Given an empty graph
    passed - Scenario: Three bound nodes pointing to the same node with extra connections.And having executed:
    passed - Scenario: Three bound nodes pointing to the same node with extra connections.When executing query:
-   passed - Scenario: Three bound nodes pointing to the same node with extra connections.Then the result should be:
-   passed - Scenario: Three bound nodes pointing to the same node with extra connections.And no side effects
+   failed - Scenario: Three bound nodes pointing to the same node with extra connections.Then the result should be:
+   ignored - Scenario: Three bound nodes pointing to the same node with extra connections.And no side effects
   Scenario: MATCH with OPTIONAL MATCH in longer pattern
    passed - Scenario: MATCH with OPTIONAL MATCH in longer pattern.Given an empty graph
    passed - Scenario: MATCH with OPTIONAL MATCH in longer pattern.And having executed:
@@ -1435,26 +1459,26 @@ MatchAcceptance2Test
    passed - Scenario: Optionally matching named paths with single and variable length patterns.Given an empty graph
    passed - Scenario: Optionally matching named paths with single and variable length patterns.And having executed:
    passed - Scenario: Optionally matching named paths with single and variable length patterns.When executing query:
-   passed - Scenario: Optionally matching named paths with single and variable length patterns.Then the result should be:
-   passed - Scenario: Optionally matching named paths with single and variable length patterns.And no side effects
+   failed - Scenario: Optionally matching named paths with single and variable length patterns.Then the result should be:
+   ignored - Scenario: Optionally matching named paths with single and variable length patterns.And no side effects
   Scenario: Matching variable length patterns from a bound node
    passed - Scenario: Matching variable length patterns from a bound node.Given an empty graph
    passed - Scenario: Matching variable length patterns from a bound node.And having executed:
    passed - Scenario: Matching variable length patterns from a bound node.When executing query:
-   passed - Scenario: Matching variable length patterns from a bound node.Then the result should be (ignoring element order for lists):
-   passed - Scenario: Matching variable length patterns from a bound node.And no side effects
+   error - Scenario: Matching variable length patterns from a bound node.Then the result should be (ignoring element order for lists):
+   ignored - Scenario: Matching variable length patterns from a bound node.And no side effects
   Scenario: MATCH and OPTIONAL MATCH on same pattern
    passed - Scenario: MATCH and OPTIONAL MATCH on same pattern.Given an empty graph
    passed - Scenario: MATCH and OPTIONAL MATCH on same pattern.And having executed:
    passed - Scenario: MATCH and OPTIONAL MATCH on same pattern.When executing query:
-   passed - Scenario: MATCH and OPTIONAL MATCH on same pattern.Then the result should be:
-   passed - Scenario: MATCH and OPTIONAL MATCH on same pattern.And no side effects
+   error - Scenario: MATCH and OPTIONAL MATCH on same pattern.Then the result should be:
+   ignored - Scenario: MATCH and OPTIONAL MATCH on same pattern.And no side effects
   Scenario: Matching using an undirected pattern
    passed - Scenario: Matching using an undirected pattern.Given an empty graph
    passed - Scenario: Matching using an undirected pattern.And having executed:
    passed - Scenario: Matching using an undirected pattern.When executing query:
-   passed - Scenario: Matching using an undirected pattern.Then the result should be:
-   passed - Scenario: Matching using an undirected pattern.And no side effects
+   error - Scenario: Matching using an undirected pattern.Then the result should be:
+   ignored - Scenario: Matching using an undirected pattern.And no side effects
   Scenario: Matching all nodes
    passed - Scenario: Matching all nodes.Given an empty graph
    passed - Scenario: Matching all nodes.And having executed:
@@ -1471,8 +1495,8 @@ MatchAcceptance2Test
    passed - Scenario: Matching using self-referencing pattern returns no result.Given an empty graph
    passed - Scenario: Matching using self-referencing pattern returns no result.And having executed:
    passed - Scenario: Matching using self-referencing pattern returns no result.When executing query:
-   passed - Scenario: Matching using self-referencing pattern returns no result.Then the result should be:
-   passed - Scenario: Matching using self-referencing pattern returns no result.And no side effects
+   failed - Scenario: Matching using self-referencing pattern returns no result.Then the result should be:
+   ignored - Scenario: Matching using self-referencing pattern returns no result.And no side effects
   Scenario: Matching using relationship predicate with multiples of the same type
    passed - Scenario: Matching using relationship predicate with multiples of the same type.Given an empty graph
    passed - Scenario: Matching using relationship predicate with multiples of the same type.And having executed:
@@ -1512,8 +1536,8 @@ MatchAcceptance2Test
    passed - )` filtering nulls.Given an empty graph(Scenario: `collect
    passed - )` filtering nulls.And having executed:(Scenario: `collect
    passed - )` filtering nulls.When executing query:(Scenario: `collect
-   passed - )` filtering nulls.Then the result should be:(Scenario: `collect
-   passed - )` filtering nulls.And no side effects(Scenario: `collect
+   failed - )` filtering nulls.Then the result should be:(Scenario: `collect
+   ignored - )` filtering nulls.And no side effects(Scenario: `collect
   Scenario: Multiple anonymous nodes in a pattern
    passed - Scenario: Multiple anonymous nodes in a pattern.Given an empty graph
    passed - Scenario: Multiple anonymous nodes in a pattern.And having executed:
@@ -1524,14 +1548,14 @@ MatchAcceptance2Test
    passed - Scenario: Matching a relationship pattern using a label predicate.Given an empty graph
    passed - Scenario: Matching a relationship pattern using a label predicate.And having executed:
    passed - Scenario: Matching a relationship pattern using a label predicate.When executing query:
-   passed - Scenario: Matching a relationship pattern using a label predicate.Then the result should be:
-   passed - Scenario: Matching a relationship pattern using a label predicate.And no side effects
+   failed - Scenario: Matching a relationship pattern using a label predicate.Then the result should be:
+   ignored - Scenario: Matching a relationship pattern using a label predicate.And no side effects
   Scenario: Matching a relationship pattern using a label predicate on both sides
    passed - Scenario: Matching a relationship pattern using a label predicate on both sides.Given an empty graph
    passed - Scenario: Matching a relationship pattern using a label predicate on both sides.And having executed:
    passed - Scenario: Matching a relationship pattern using a label predicate on both sides.When executing query:
-   passed - Scenario: Matching a relationship pattern using a label predicate on both sides.Then the result should be:
-   passed - Scenario: Matching a relationship pattern using a label predicate on both sides.And no side effects
+   failed - Scenario: Matching a relationship pattern using a label predicate on both sides.Then the result should be:
+   ignored - Scenario: Matching a relationship pattern using a label predicate on both sides.And no side effects
   Scenario: Matching nodes using multiple labels
    passed - Scenario: Matching nodes using multiple labels.Given an empty graph
    passed - Scenario: Matching nodes using multiple labels.And having executed:
@@ -1542,15 +1566,15 @@ MatchAcceptance2Test
    passed - Scenario: Returning label predicate expression.Given an empty graph
    passed - Scenario: Returning label predicate expression.And having executed:
    passed - Scenario: Returning label predicate expression.When executing query:
-   passed - Scenario: Returning label predicate expression.Then the result should be:
-   passed - Scenario: Returning label predicate expression.And no side effects
+   error - Scenario: Returning label predicate expression.Then the result should be:
+   ignored - Scenario: Returning label predicate expression.And no side effects
   Scenario: Matching with many predicates and larger pattern
    passed - Scenario: Matching with many predicates and larger pattern.Given an empty graph
    passed - Scenario: Matching with many predicates and larger pattern.And having executed:
    passed - Scenario: Matching with many predicates and larger pattern.And parameters are:
    passed - Scenario: Matching with many predicates and larger pattern.When executing query:
-   passed - Scenario: Matching with many predicates and larger pattern.Then the result should be:
-   passed - Scenario: Matching with many predicates and larger pattern.And no side effects
+   error - Scenario: Matching with many predicates and larger pattern.Then the result should be:
+   ignored - Scenario: Matching with many predicates and larger pattern.And no side effects
   Scenario: Matching using a simple pattern with label predicate
    passed - Scenario: Matching using a simple pattern with label predicate.Given an empty graph
    passed - Scenario: Matching using a simple pattern with label predicate.And having executed:
@@ -1561,37 +1585,37 @@ MatchAcceptance2Test
    passed - Scenario: Matching disconnected patterns.Given an empty graph
    passed - Scenario: Matching disconnected patterns.And having executed:
    passed - Scenario: Matching disconnected patterns.When executing query:
-   passed - Scenario: Matching disconnected patterns.Then the result should be:
-   passed - Scenario: Matching disconnected patterns.And no side effects
+   error - Scenario: Matching disconnected patterns.Then the result should be:
+   ignored - Scenario: Matching disconnected patterns.And no side effects
   Scenario: Non-optional matches should not return nulls
    passed - Scenario: Non-optional matches should not return nulls.Given an empty graph
    passed - Scenario: Non-optional matches should not return nulls.And having executed:
    passed - Scenario: Non-optional matches should not return nulls.When executing query:
-   passed - Scenario: Non-optional matches should not return nulls.Then the result should be:
-   passed - Scenario: Non-optional matches should not return nulls.And no side effects
+   error - Scenario: Non-optional matches should not return nulls.Then the result should be:
+   ignored - Scenario: Non-optional matches should not return nulls.And no side effects
   Scenario: Handling cyclic patterns
    passed - Scenario: Handling cyclic patterns.Given an empty graph
    passed - Scenario: Handling cyclic patterns.And having executed:
    passed - Scenario: Handling cyclic patterns.When executing query:
-   passed - Scenario: Handling cyclic patterns.Then the result should be:
-   passed - Scenario: Handling cyclic patterns.And no side effects
+   error - Scenario: Handling cyclic patterns.Then the result should be:
+   ignored - Scenario: Handling cyclic patterns.And no side effects
   Scenario: Handling cyclic patterns when separated into two parts
    passed - Scenario: Handling cyclic patterns when separated into two parts.Given an empty graph
    passed - Scenario: Handling cyclic patterns when separated into two parts.And having executed:
    passed - Scenario: Handling cyclic patterns when separated into two parts.When executing query:
-   passed - Scenario: Handling cyclic patterns when separated into two parts.Then the result should be:
-   passed - Scenario: Handling cyclic patterns when separated into two parts.And no side effects
+   failed - Scenario: Handling cyclic patterns when separated into two parts.Then the result should be:
+   ignored - Scenario: Handling cyclic patterns when separated into two parts.And no side effects
   Scenario: Matching from null nodes should return no results owing to finding no matches
    passed - Scenario: Matching from null nodes should return no results owing to finding no matches.Given an empty graph
    passed - Scenario: Matching from null nodes should return no results owing to finding no matches.When executing query:
-   passed - Scenario: Matching from null nodes should return no results owing to finding no matches.Then the result should be:
-   passed - Scenario: Matching from null nodes should return no results owing to finding no matches.And no side effects
+   error - Scenario: Matching from null nodes should return no results owing to finding no matches.Then the result should be:
+   ignored - Scenario: Matching from null nodes should return no results owing to finding no matches.And no side effects
   Scenario: Matching from null nodes should return no results owing to matches being filtered out
    passed - Scenario: Matching from null nodes should return no results owing to matches being filtered out.Given an empty graph
    passed - Scenario: Matching from null nodes should return no results owing to matches being filtered out.And having executed:
    passed - Scenario: Matching from null nodes should return no results owing to matches being filtered out.When executing query:
-   passed - Scenario: Matching from null nodes should return no results owing to matches being filtered out.Then the result should be:
-   passed - Scenario: Matching from null nodes should return no results owing to matches being filtered out.And no side effects
+   error - Scenario: Matching from null nodes should return no results owing to matches being filtered out.Then the result should be:
+   ignored - Scenario: Matching from null nodes should return no results owing to matches being filtered out.And no side effects
   Scenario: Optionally matching from null nodes should return null
    passed - Scenario: Optionally matching from null nodes should return null.Given an empty graph
    passed - Scenario: Optionally matching from null nodes should return null.When executing query:
@@ -1612,8 +1636,8 @@ MatchAcceptance2Test
    passed - Scenario: Variable-length named path.Given an empty graph
    passed - Scenario: Variable-length named path.And having executed:
    passed - Scenario: Variable-length named path.When executing query:
-   passed - Scenario: Variable-length named path.Then the result should be:
-   passed - Scenario: Variable-length named path.And no side effects
+   failed - Scenario: Variable-length named path.Then the result should be:
+   ignored - Scenario: Variable-length named path.And no side effects
   Scenario: Matching with aggregation
    passed - Scenario: Matching with aggregation.Given an empty graph
    passed - Scenario: Matching with aggregation.And having executed:
@@ -1624,14 +1648,14 @@ MatchAcceptance2Test
    passed - Scenario: Matching using a relationship that is already bound.Given an empty graph
    passed - Scenario: Matching using a relationship that is already bound.And having executed:
    passed - Scenario: Matching using a relationship that is already bound.When executing query:
-   passed - Scenario: Matching using a relationship that is already bound.Then the result should be:
-   passed - Scenario: Matching using a relationship that is already bound.And no side effects
+   error - Scenario: Matching using a relationship that is already bound.Then the result should be:
+   ignored - Scenario: Matching using a relationship that is already bound.And no side effects
   Scenario: Matching using a relationship that is already bound, in conjunction with aggregation
    passed - Scenario: Matching using a relationship that is already bound, in conjunction with aggregation.Given an empty graph
    passed - Scenario: Matching using a relationship that is already bound, in conjunction with aggregation.And having executed:
    passed - Scenario: Matching using a relationship that is already bound, in conjunction with aggregation.When executing query:
-   passed - Scenario: Matching using a relationship that is already bound, in conjunction with aggregation.Then the result should be:
-   passed - Scenario: Matching using a relationship that is already bound, in conjunction with aggregation.And no side effects
+   error - Scenario: Matching using a relationship that is already bound, in conjunction with aggregation.Then the result should be:
+   ignored - Scenario: Matching using a relationship that is already bound, in conjunction with aggregation.And no side effects
   Scenario: Matching using a relationship that is already bound, in conjunction with aggregation and ORDER BY
    passed - Scenario: Matching using a relationship that is already bound, in conjunction with aggregation and ORDER BY.Given an empty graph
    passed - Scenario: Matching using a relationship that is already bound, in conjunction with aggregation and ORDER BY.And having executed:
@@ -1642,8 +1666,8 @@ MatchAcceptance2Test
    passed - Scenario: Matching with LIMIT and optionally matching using a relationship that is already bound.Given an empty graph
    passed - Scenario: Matching with LIMIT and optionally matching using a relationship that is already bound.And having executed:
    passed - Scenario: Matching with LIMIT and optionally matching using a relationship that is already bound.When executing query:
-   passed - Scenario: Matching with LIMIT and optionally matching using a relationship that is already bound.Then the result should be:
-   passed - Scenario: Matching with LIMIT and optionally matching using a relationship that is already bound.And no side effects
+   error - Scenario: Matching with LIMIT and optionally matching using a relationship that is already bound.Then the result should be:
+   ignored - Scenario: Matching with LIMIT and optionally matching using a relationship that is already bound.And no side effects
   Scenario: Matching with LIMIT and optionally matching using a relationship and node that are both already bound
    passed - Scenario: Matching with LIMIT and optionally matching using a relationship and node that are both already bound.Given an empty graph
    passed - Scenario: Matching with LIMIT and optionally matching using a relationship and node that are both already bound.And having executed:
@@ -1688,14 +1712,14 @@ MatchAcceptance2Test
    passed - Scenario: Matching variable length pattern with property predicate.Given an empty graph
    passed - Scenario: Matching variable length pattern with property predicate.And having executed:
    passed - Scenario: Matching variable length pattern with property predicate.When executing query:
-   passed - Scenario: Matching variable length pattern with property predicate.Then the result should be:
-   passed - Scenario: Matching variable length pattern with property predicate.And no side effects
+   error - Scenario: Matching variable length pattern with property predicate.Then the result should be:
+   ignored - Scenario: Matching variable length pattern with property predicate.And no side effects
   Scenario: Variable length pattern with label predicate on both sides
    passed - Scenario: Variable length pattern with label predicate on both sides.Given an empty graph
    passed - Scenario: Variable length pattern with label predicate on both sides.And having executed:
    passed - Scenario: Variable length pattern with label predicate on both sides.When executing query:
-   passed - Scenario: Variable length pattern with label predicate on both sides.Then the result should be:
-   passed - Scenario: Variable length pattern with label predicate on both sides.And no side effects
+   error - Scenario: Variable length pattern with label predicate on both sides.Then the result should be:
+   ignored - Scenario: Variable length pattern with label predicate on both sides.And no side effects
   Scenario: Undirected named path
    passed - Scenario: Undirected named path.Given an empty graph
    passed - Scenario: Undirected named path.And having executed:
@@ -1712,20 +1736,20 @@ MatchAcceptance2Test
    passed - Scenario: Named path with alternating directed.undirected relationships/Given an empty graph
    passed - Scenario: Named path with alternating directed.undirected relationships/And having executed:
    passed - Scenario: Named path with alternating directed.undirected relationships/When executing query:
-   passed - Scenario: Named path with alternating directed.undirected relationships/Then the result should be:
-   passed - Scenario: Named path with alternating directed.undirected relationships/And no side effects
+   failed - Scenario: Named path with alternating directed.undirected relationships/Then the result should be:
+   ignored - Scenario: Named path with alternating directed.undirected relationships/And no side effects
   Scenario: Named path with multiple alternating directed/undirected relationships
    passed - Scenario: Named path with multiple alternating directed.undirected relationships/Given an empty graph
    passed - Scenario: Named path with multiple alternating directed.undirected relationships/And having executed:
    passed - Scenario: Named path with multiple alternating directed.undirected relationships/When executing query:
-   passed - Scenario: Named path with multiple alternating directed.undirected relationships/Then the result should be:
-   passed - Scenario: Named path with multiple alternating directed.undirected relationships/And no side effects
+   failed - Scenario: Named path with multiple alternating directed.undirected relationships/Then the result should be:
+   ignored - Scenario: Named path with multiple alternating directed.undirected relationships/And no side effects
   Scenario: Named path with undirected fixed variable length pattern
    passed - Scenario: Named path with undirected fixed variable length pattern.Given an empty graph
    passed - Scenario: Named path with undirected fixed variable length pattern.And having executed:
    passed - Scenario: Named path with undirected fixed variable length pattern.When executing query:
-   passed - Scenario: Named path with undirected fixed variable length pattern.Then the result should be:
-   passed - Scenario: Named path with undirected fixed variable length pattern.And no side effects
+   error - Scenario: Named path with undirected fixed variable length pattern.Then the result should be:
+   ignored - Scenario: Named path with undirected fixed variable length pattern.And no side effects
   Scenario: Returning a node property value
    passed - Scenario: Returning a node property value.Given an empty graph
    passed - Scenario: Returning a node property value.And having executed:
@@ -1778,8 +1802,8 @@ MatchAcceptance2Test
    passed - Scenario: Variable length relationship variables are lists of relationships.Given an empty graph
    passed - Scenario: Variable length relationship variables are lists of relationships.And having executed:
    passed - Scenario: Variable length relationship variables are lists of relationships.When executing query:
-   passed - Scenario: Variable length relationship variables are lists of relationships.Then the result should be:
-   passed - Scenario: Variable length relationship variables are lists of relationships.And no side effects
+   error - Scenario: Variable length relationship variables are lists of relationships.Then the result should be:
+   ignored - Scenario: Variable length relationship variables are lists of relationships.And no side effects
   Scenario: Variable length patterns and nulls
    passed - Scenario: Variable length patterns and nulls.Given an empty graph
    passed - Scenario: Variable length patterns and nulls.And having executed:
@@ -1808,8 +1832,8 @@ MatchAcceptance2Test
    passed - Scenario: Respecting direction when matching non-existent path with multiple directions.Given an empty graph
    passed - Scenario: Respecting direction when matching non-existent path with multiple directions.And having executed:
    passed - Scenario: Respecting direction when matching non-existent path with multiple directions.When executing query:
-   passed - Scenario: Respecting direction when matching non-existent path with multiple directions.Then the result should be:
-   passed - Scenario: Respecting direction when matching non-existent path with multiple directions.And no side effects
+   error - Scenario: Respecting direction when matching non-existent path with multiple directions.Then the result should be:
+   ignored - Scenario: Respecting direction when matching non-existent path with multiple directions.And no side effects
   Scenario: Matching nodes with many labels
    passed - Scenario: Matching nodes with many labels.Given an empty graph
    passed - Scenario: Matching nodes with many labels.And having executed:
@@ -1820,8 +1844,8 @@ MatchAcceptance2Test
    passed - Scenario: Counting rows after MATCH, MERGE, OPTIONAL MATCH.Given an empty graph
    passed - Scenario: Counting rows after MATCH, MERGE, OPTIONAL MATCH.And having executed:
    passed - Scenario: Counting rows after MATCH, MERGE, OPTIONAL MATCH.When executing query:
-   passed - Scenario: Counting rows after MATCH, MERGE, OPTIONAL MATCH.Then the result should be:
-   passed - Scenario: Counting rows after MATCH, MERGE, OPTIONAL MATCH.And no side effects
+   failed - Scenario: Counting rows after MATCH, MERGE, OPTIONAL MATCH.Then the result should be:
+   ignored - Scenario: Counting rows after MATCH, MERGE, OPTIONAL MATCH.And no side effects
   Scenario: Matching a self-loop
    passed - Scenario: Matching a self-loop.Given an empty graph
    passed - Scenario: Matching a self-loop.And having executed:
@@ -1840,8 +1864,8 @@ MatchAcceptanceTest
    passed - Scenario: Longer path query should return results in written order.Given an empty graph
    passed - Scenario: Longer path query should return results in written order.And having executed:
    passed - Scenario: Longer path query should return results in written order.When executing query:
-   passed - Scenario: Longer path query should return results in written order.Then the result should be:
-   passed - Scenario: Longer path query should return results in written order.And no side effects
+   failed - Scenario: Longer path query should return results in written order.Then the result should be:
+   ignored - Scenario: Longer path query should return results in written order.And no side effects
   Scenario: Use multiple MATCH clauses to do a Cartesian product
    passed - Scenario: Use multiple MATCH clauses to do a Cartesian product.Given an empty graph
    passed - Scenario: Use multiple MATCH clauses to do a Cartesian product.And having executed:
@@ -1913,8 +1937,8 @@ MatchAcceptanceTest
    passed - Scenario: Return two subgraphs with bound undirected relationship and optional relationship.Given an empty graph
    passed - Scenario: Return two subgraphs with bound undirected relationship and optional relationship.And having executed:
    passed - Scenario: Return two subgraphs with bound undirected relationship and optional relationship.When executing query:
-   passed - Scenario: Return two subgraphs with bound undirected relationship and optional relationship.Then the result should be:
-   passed - Scenario: Return two subgraphs with bound undirected relationship and optional relationship.And no side effects
+   failed - Scenario: Return two subgraphs with bound undirected relationship and optional relationship.Then the result should be:
+   ignored - Scenario: Return two subgraphs with bound undirected relationship and optional relationship.And no side effects
   Scenario: Rel type function works as expected
    passed - Scenario: Rel type function works as expected.Given an empty graph
    passed - Scenario: Rel type function works as expected.And having executed:
@@ -1961,50 +1985,50 @@ MatchAcceptanceTest
    passed - Scenario: Return relationships by fetching them from the path - starting from the end.Given an empty graph
    passed - Scenario: Return relationships by fetching them from the path - starting from the end.And having executed:
    passed - Scenario: Return relationships by fetching them from the path - starting from the end.When executing query:
-   passed - Scenario: Return relationships by fetching them from the path - starting from the end.Then the result should be:
-   passed - Scenario: Return relationships by fetching them from the path - starting from the end.And no side effects
+   error - Scenario: Return relationships by fetching them from the path - starting from the end.Then the result should be:
+   ignored - Scenario: Return relationships by fetching them from the path - starting from the end.And no side effects
   Scenario: Return relationships by fetching them from the path
    passed - Scenario: Return relationships by fetching them from the path.Given an empty graph
    passed - Scenario: Return relationships by fetching them from the path.And having executed:
    passed - Scenario: Return relationships by fetching them from the path.When executing query:
-   passed - Scenario: Return relationships by fetching them from the path.Then the result should be:
-   passed - Scenario: Return relationships by fetching them from the path.And no side effects
+   error - Scenario: Return relationships by fetching them from the path.Then the result should be:
+   ignored - Scenario: Return relationships by fetching them from the path.And no side effects
   Scenario: Return relationships by collecting them as a list - directed, one way
    passed - Scenario: Return relationships by collecting them as a list - directed, one way.Given an empty graph
    passed - Scenario: Return relationships by collecting them as a list - directed, one way.And having executed:
    passed - Scenario: Return relationships by collecting them as a list - directed, one way.When executing query:
-   passed - Scenario: Return relationships by collecting them as a list - directed, one way.Then the result should be:
-   passed - Scenario: Return relationships by collecting them as a list - directed, one way.And no side effects
+   error - Scenario: Return relationships by collecting them as a list - directed, one way.Then the result should be:
+   ignored - Scenario: Return relationships by collecting them as a list - directed, one way.And no side effects
   Scenario: Return relationships by collecting them as a list - undirected, starting from two extremes
    passed - Scenario: Return relationships by collecting them as a list - undirected, starting from two extremes.Given an empty graph
    passed - Scenario: Return relationships by collecting them as a list - undirected, starting from two extremes.And having executed:
    passed - Scenario: Return relationships by collecting them as a list - undirected, starting from two extremes.When executing query:
-   passed - Scenario: Return relationships by collecting them as a list - undirected, starting from two extremes.Then the result should be:
-   passed - Scenario: Return relationships by collecting them as a list - undirected, starting from two extremes.And no side effects
+   error - Scenario: Return relationships by collecting them as a list - undirected, starting from two extremes.Then the result should be:
+   ignored - Scenario: Return relationships by collecting them as a list - undirected, starting from two extremes.And no side effects
   Scenario: Return relationships by collecting them as a list - undirected, starting from one extreme
    passed - Scenario: Return relationships by collecting them as a list - undirected, starting from one extreme.Given an empty graph
    passed - Scenario: Return relationships by collecting them as a list - undirected, starting from one extreme.And having executed:
    passed - Scenario: Return relationships by collecting them as a list - undirected, starting from one extreme.When executing query:
-   passed - Scenario: Return relationships by collecting them as a list - undirected, starting from one extreme.Then the result should be:
-   passed - Scenario: Return relationships by collecting them as a list - undirected, starting from one extreme.And no side effects
+   error - Scenario: Return relationships by collecting them as a list - undirected, starting from one extreme.Then the result should be:
+   ignored - Scenario: Return relationships by collecting them as a list - undirected, starting from one extreme.And no side effects
   Scenario: Return a var length path
    passed - Scenario: Return a var length path.Given an empty graph
    passed - Scenario: Return a var length path.And having executed:
    passed - Scenario: Return a var length path.When executing query:
-   passed - Scenario: Return a var length path.Then the result should be:
-   passed - Scenario: Return a var length path.And no side effects
+   error - Scenario: Return a var length path.Then the result should be:
+   ignored - Scenario: Return a var length path.And no side effects
   Scenario: Return a var length path of length zero
    passed - Scenario: Return a var length path of length zero.Given an empty graph
    passed - Scenario: Return a var length path of length zero.And having executed:
    passed - Scenario: Return a var length path of length zero.When executing query:
-   passed - Scenario: Return a var length path of length zero.Then the result should be:
-   passed - Scenario: Return a var length path of length zero.And no side effects
+   error - Scenario: Return a var length path of length zero.Then the result should be:
+   ignored - Scenario: Return a var length path of length zero.And no side effects
   Scenario: Return a named var length path of length zero
    passed - Scenario: Return a named var length path of length zero.Given an empty graph
    passed - Scenario: Return a named var length path of length zero.And having executed:
    passed - Scenario: Return a named var length path of length zero.When executing query:
-   passed - Scenario: Return a named var length path of length zero.Then the result should be:
-   passed - Scenario: Return a named var length path of length zero.And no side effects
+   error - Scenario: Return a named var length path of length zero.Then the result should be:
+   ignored - Scenario: Return a named var length path of length zero.And no side effects
   Scenario: Accept skip zero
    passed - Scenario: Accept skip zero.Given any graph
    passed - Scenario: Accept skip zero.When executing query:
@@ -2100,26 +2124,26 @@ MatchingSelfRelationshipsTest
    passed - Scenario: Mixing directed and undirected pattern parts with self-relationship, simple.Given an empty graph
    passed - Scenario: Mixing directed and undirected pattern parts with self-relationship, simple.And having executed:
    passed - Scenario: Mixing directed and undirected pattern parts with self-relationship, simple.When executing query:
-   passed - Scenario: Mixing directed and undirected pattern parts with self-relationship, simple.Then the result should be:
-   passed - Scenario: Mixing directed and undirected pattern parts with self-relationship, simple.And no side effects
+   failed - Scenario: Mixing directed and undirected pattern parts with self-relationship, simple.Then the result should be:
+   ignored - Scenario: Mixing directed and undirected pattern parts with self-relationship, simple.And no side effects
   Scenario: Mixing directed and undirected pattern parts with self-relationship, count
    passed - Scenario: Mixing directed and undirected pattern parts with self-relationship, count.Given an empty graph
    passed - Scenario: Mixing directed and undirected pattern parts with self-relationship, count.And having executed:
    passed - Scenario: Mixing directed and undirected pattern parts with self-relationship, count.When executing query:
-   passed - Scenario: Mixing directed and undirected pattern parts with self-relationship, count.Then the result should be:
-   passed - Scenario: Mixing directed and undirected pattern parts with self-relationship, count.And no side effects
+   failed - Scenario: Mixing directed and undirected pattern parts with self-relationship, count.Then the result should be:
+   ignored - Scenario: Mixing directed and undirected pattern parts with self-relationship, count.And no side effects
   Scenario: Mixing directed and undirected pattern parts with self-relationship, undirected
    passed - Scenario: Mixing directed and undirected pattern parts with self-relationship, undirected.Given an empty graph
    passed - Scenario: Mixing directed and undirected pattern parts with self-relationship, undirected.And having executed:
    passed - Scenario: Mixing directed and undirected pattern parts with self-relationship, undirected.When executing query:
-   passed - Scenario: Mixing directed and undirected pattern parts with self-relationship, undirected.Then the result should be:
-   passed - Scenario: Mixing directed and undirected pattern parts with self-relationship, undirected.And no side effects
+   failed - Scenario: Mixing directed and undirected pattern parts with self-relationship, undirected.Then the result should be:
+   ignored - Scenario: Mixing directed and undirected pattern parts with self-relationship, undirected.And no side effects
   Scenario: Mixing directed and undirected pattern parts with self-relationship, undirected count
    passed - Scenario: Mixing directed and undirected pattern parts with self-relationship, undirected count.Given an empty graph
    passed - Scenario: Mixing directed and undirected pattern parts with self-relationship, undirected count.And having executed:
    passed - Scenario: Mixing directed and undirected pattern parts with self-relationship, undirected count.When executing query:
-   passed - Scenario: Mixing directed and undirected pattern parts with self-relationship, undirected count.Then the result should be:
-   passed - Scenario: Mixing directed and undirected pattern parts with self-relationship, undirected count.And no side effects
+   failed - Scenario: Mixing directed and undirected pattern parts with self-relationship, undirected count.Then the result should be:
+   ignored - Scenario: Mixing directed and undirected pattern parts with self-relationship, undirected count.And no side effects
 MergeIntoAcceptanceTest
  Feature: MergeIntoAcceptance
   Scenario: Updating one property with ON CREATE
@@ -2142,19 +2166,19 @@ MergeIntoAcceptanceTest
    passed - Scenario: Copying properties from node with ON CREATE.Given an empty graph
    passed - Scenario: Copying properties from node with ON CREATE.And having executed:
    passed - Scenario: Copying properties from node with ON CREATE.When executing query:
-   passed - Scenario: Copying properties from node with ON CREATE.Then the result should be empty
-   passed - Scenario: Copying properties from node with ON CREATE.And the side effects should be:
-   passed - Scenario: Copying properties from node with ON CREATE.When executing control query:
-   passed - Scenario: Copying properties from node with ON CREATE.Then the result should be:
+   error - Scenario: Copying properties from node with ON CREATE.Then the result should be empty
+   ignored - Scenario: Copying properties from node with ON CREATE.And the side effects should be:
+   ignored - Scenario: Copying properties from node with ON CREATE.When executing control query:
+   ignored - Scenario: Copying properties from node with ON CREATE.Then the result should be:
   Scenario: Copying properties from node with ON MATCH
    passed - Scenario: Copying properties from node with ON MATCH.Given an empty graph
    passed - Scenario: Copying properties from node with ON MATCH.And having executed:
    passed - Scenario: Copying properties from node with ON MATCH.And having executed:
    passed - Scenario: Copying properties from node with ON MATCH.When executing query:
-   passed - Scenario: Copying properties from node with ON MATCH.Then the result should be empty
-   passed - Scenario: Copying properties from node with ON MATCH.And the side effects should be:
-   passed - Scenario: Copying properties from node with ON MATCH.When executing control query:
-   passed - Scenario: Copying properties from node with ON MATCH.Then the result should be:
+   error - Scenario: Copying properties from node with ON MATCH.Then the result should be empty
+   ignored - Scenario: Copying properties from node with ON MATCH.And the side effects should be:
+   ignored - Scenario: Copying properties from node with ON MATCH.When executing control query:
+   ignored - Scenario: Copying properties from node with ON MATCH.Then the result should be:
   Scenario: Copying properties from literal map with ON CREATE
    passed - Scenario: Copying properties from literal map with ON CREATE.Given an empty graph
    passed - Scenario: Copying properties from literal map with ON CREATE.And having executed:
@@ -2277,8 +2301,8 @@ MergeNodeAcceptanceTest
    passed - Scenario: Should support updates while merging.Given an empty graph
    passed - Scenario: Should support updates while merging.And having executed:
    passed - Scenario: Should support updates while merging.When executing query:
-   passed - Scenario: Should support updates while merging.Then the result should be:
-   passed - Scenario: Should support updates while merging.And the side effects should be:
+   failed - Scenario: Should support updates while merging.Then the result should be:
+   ignored - Scenario: Should support updates while merging.And the side effects should be:
   Scenario: Merge must properly handle multiple labels
    passed - Scenario: Merge must properly handle multiple labels.Given an empty graph
    passed - Scenario: Merge must properly handle multiple labels.And having executed:
@@ -2299,8 +2323,8 @@ MergeNodeAcceptanceTest
    passed - Scenario: Merges should not be able to match on deleted nodes.Given an empty graph
    passed - Scenario: Merges should not be able to match on deleted nodes.And having executed:
    passed - Scenario: Merges should not be able to match on deleted nodes.When executing query:
-   passed - Scenario: Merges should not be able to match on deleted nodes.Then the result should be:
-   passed - Scenario: Merges should not be able to match on deleted nodes.And the side effects should be:
+   failed - Scenario: Merges should not be able to match on deleted nodes.Then the result should be:
+   ignored - Scenario: Merges should not be able to match on deleted nodes.And the side effects should be:
   Scenario: ON CREATE on created nodes
    passed - Scenario: ON CREATE on created nodes.Given an empty graph
    passed - Scenario: ON CREATE on created nodes.When executing query:
@@ -2379,13 +2403,13 @@ MergeRelationshipAcceptanceTest
    passed - Scenario: Using ON MATCH on a relationship.And having executed:
    passed - Scenario: Using ON MATCH on a relationship.When executing query:
    passed - Scenario: Using ON MATCH on a relationship.Then the result should be:
-   passed - Scenario: Using ON MATCH on a relationship.And the side effects should be:
+   failed - Scenario: Using ON MATCH on a relationship.And the side effects should be:
   Scenario: Using ON CREATE and ON MATCH
    passed - Scenario: Using ON CREATE and ON MATCH.Given an empty graph
    passed - Scenario: Using ON CREATE and ON MATCH.And having executed:
    passed - Scenario: Using ON CREATE and ON MATCH.When executing query:
    passed - Scenario: Using ON CREATE and ON MATCH.Then the result should be:
-   passed - Scenario: Using ON CREATE and ON MATCH.And the side effects should be:
+   failed - Scenario: Using ON CREATE and ON MATCH.And the side effects should be:
   Scenario: Creating relationship using merged nodes
    passed - Scenario: Creating relationship using merged nodes.Given an empty graph
    passed - Scenario: Creating relationship using merged nodes.And having executed:
@@ -2400,13 +2424,13 @@ MergeRelationshipAcceptanceTest
   Scenario: Introduce named paths 1
    passed - Scenario: Introduce named paths 1.Given an empty graph
    passed - Scenario: Introduce named paths 1.When executing query:
-   passed - Scenario: Introduce named paths 1.Then the result should be:
-   passed - Scenario: Introduce named paths 1.And the side effects should be:
+   error - Scenario: Introduce named paths 1.Then the result should be:
+   ignored - Scenario: Introduce named paths 1.And the side effects should be:
   Scenario: Introduce named paths 2
    passed - Scenario: Introduce named paths 2.Given an empty graph
    passed - Scenario: Introduce named paths 2.When executing query:
-   passed - Scenario: Introduce named paths 2.Then the result should be:
-   passed - Scenario: Introduce named paths 2.And the side effects should be:
+   error - Scenario: Introduce named paths 2.Then the result should be:
+   ignored - Scenario: Introduce named paths 2.And the side effects should be:
   Scenario: Match outgoing relationship when direction unspecified
    passed - Scenario: Match outgoing relationship when direction unspecified.Given an empty graph
    passed - Scenario: Match outgoing relationship when direction unspecified.And having executed:
@@ -2433,7 +2457,7 @@ MergeRelationshipAcceptanceTest
    passed - Scenario: Matching using list property.And having executed:
    passed - Scenario: Matching using list property.When executing query:
    passed - Scenario: Matching using list property.Then the result should be:
-   passed - Scenario: Matching using list property.And no side effects
+   failed - Scenario: Matching using list property.And no side effects
   Scenario: Using bound variables from other updating clause
    passed - Scenario: Using bound variables from other updating clause.Given an empty graph
    passed - Scenario: Using bound variables from other updating clause.When executing query:
@@ -2443,7 +2467,7 @@ MergeRelationshipAcceptanceTest
    passed - Scenario: UNWIND with multiple merges.Given an empty graph
    passed - Scenario: UNWIND with multiple merges.When executing query:
    passed - Scenario: UNWIND with multiple merges.Then the result should be empty
-   passed - Scenario: UNWIND with multiple merges.And the side effects should be:
+   failed - Scenario: UNWIND with multiple merges.And the side effects should be:
   Scenario: Do not match on deleted entities
    passed - Scenario: Do not match on deleted entities.Given an empty graph
    passed - Scenario: Do not match on deleted entities.And having executed:
@@ -2493,7 +2517,7 @@ MiscellaneousErrorAcceptanceTest
   Scenario: Failing on merging node with null property
    passed - Scenario: Failing on merging node with null property.Given any graph
    passed - Scenario: Failing on merging node with null property.When executing query:
-   ignored - Scenario: Failing on merging node with null property.Then a SemanticError should be raised at compile time: MergeReadOwnWrites
+   passed - Scenario: Failing on merging node with null property.Then a SemanticError should be raised at compile time: MergeReadOwnWrites
   Scenario: Failing on aggregation in WHERE
    passed - Scenario: Failing on aggregation in WHERE.Given any graph
    passed - Scenario: Failing on aggregation in WHERE.When executing query:
@@ -2592,13 +2616,13 @@ NullAcceptanceTest
   Scenario: Ignore null when removing property
    passed - Scenario: Ignore null when removing property.Given an empty graph
    passed - Scenario: Ignore null when removing property.When executing query:
-   passed - Scenario: Ignore null when removing property.Then the result should be:
-   passed - Scenario: Ignore null when removing property.And no side effects
+   error - Scenario: Ignore null when removing property.Then the result should be:
+   ignored - Scenario: Ignore null when removing property.And no side effects
   Scenario: Ignore null when setting properties using an appending map
    passed - Scenario: Ignore null when setting properties using an appending map.Given an empty graph
    passed - Scenario: Ignore null when setting properties using an appending map.When executing query:
-   passed - Scenario: Ignore null when setting properties using an appending map.Then the result should be:
-   passed - Scenario: Ignore null when setting properties using an appending map.And no side effects
+   error - Scenario: Ignore null when setting properties using an appending map.Then the result should be:
+   ignored - Scenario: Ignore null when setting properties using an appending map.And no side effects
   Scenario: Ignore null when setting properties using an overriding map
    passed - Scenario: Ignore null when setting properties using an overriding map.Given an empty graph
    passed - Scenario: Ignore null when setting properties using an overriding map.When executing query:
@@ -2607,13 +2631,13 @@ NullAcceptanceTest
   Scenario: Ignore null when setting label
    passed - Scenario: Ignore null when setting label.Given an empty graph
    passed - Scenario: Ignore null when setting label.When executing query:
-   passed - Scenario: Ignore null when setting label.Then the result should be:
-   passed - Scenario: Ignore null when setting label.And no side effects
+   error - Scenario: Ignore null when setting label.Then the result should be:
+   ignored - Scenario: Ignore null when setting label.And no side effects
   Scenario: Ignore null when removing label
    passed - Scenario: Ignore null when removing label.Given an empty graph
    passed - Scenario: Ignore null when removing label.When executing query:
-   passed - Scenario: Ignore null when removing label.Then the result should be:
-   passed - Scenario: Ignore null when removing label.And no side effects
+   error - Scenario: Ignore null when removing label.Then the result should be:
+   ignored - Scenario: Ignore null when removing label.And no side effects
   Scenario: Ignore null when deleting node
    passed - Scenario: Ignore null when deleting node.Given an empty graph
    passed - Scenario: Ignore null when deleting node.When executing query:
@@ -2672,14 +2696,14 @@ OptionalMatchAcceptanceTest
    passed - Scenario: Returning label predicate on null node.Given an empty graph
    passed - Scenario: Returning label predicate on null node.And having executed:
    passed - Scenario: Returning label predicate on null node.When executing query:
-   passed - Scenario: Returning label predicate on null node.Then the result should be:
-   passed - Scenario: Returning label predicate on null node.And no side effects
+   error - Scenario: Returning label predicate on null node.Then the result should be:
+   ignored - Scenario: Returning label predicate on null node.And no side effects
   Scenario: MATCH after OPTIONAL MATCH
    passed - Scenario: MATCH after OPTIONAL MATCH.Given an empty graph
    passed - Scenario: MATCH after OPTIONAL MATCH.And having executed:
    passed - Scenario: MATCH after OPTIONAL MATCH.When executing query:
-   passed - Scenario: MATCH after OPTIONAL MATCH.Then the result should be:
-   passed - Scenario: MATCH after OPTIONAL MATCH.And no side effects
+   failed - Scenario: MATCH after OPTIONAL MATCH.Then the result should be:
+   ignored - Scenario: MATCH after OPTIONAL MATCH.And no side effects
   Scenario: WITH after OPTIONAL MATCH
    passed - Scenario: WITH after OPTIONAL MATCH.Given an empty graph
    passed - Scenario: WITH after OPTIONAL MATCH.And having executed:
@@ -2690,14 +2714,14 @@ OptionalMatchAcceptanceTest
    passed - Scenario: Named paths in optional matches.Given an empty graph
    passed - Scenario: Named paths in optional matches.And having executed:
    passed - Scenario: Named paths in optional matches.When executing query:
-   passed - Scenario: Named paths in optional matches.Then the result should be:
-   passed - Scenario: Named paths in optional matches.And no side effects
+   failed - Scenario: Named paths in optional matches.Then the result should be:
+   ignored - Scenario: Named paths in optional matches.And no side effects
   Scenario: OPTIONAL MATCH and bound nodes
    passed - Scenario: OPTIONAL MATCH and bound nodes.Given an empty graph
    passed - Scenario: OPTIONAL MATCH and bound nodes.And having executed:
    passed - Scenario: OPTIONAL MATCH and bound nodes.When executing query:
-   passed - Scenario: OPTIONAL MATCH and bound nodes.Then the result should be:
-   passed - Scenario: OPTIONAL MATCH and bound nodes.And no side effects
+   failed - Scenario: OPTIONAL MATCH and bound nodes.Then the result should be:
+   ignored - Scenario: OPTIONAL MATCH and bound nodes.And no side effects
   Scenario: OPTIONAL MATCH with labels on the optional end node
    passed - Scenario: OPTIONAL MATCH with labels on the optional end node.Given an empty graph
    passed - Scenario: OPTIONAL MATCH with labels on the optional end node.And having executed:
@@ -2709,26 +2733,26 @@ OptionalMatchAcceptanceTest
    passed - Scenario: Optionally matching self-loops.Given an empty graph
    passed - Scenario: Optionally matching self-loops.And having executed:
    passed - Scenario: Optionally matching self-loops.When executing query:
-   passed - Scenario: Optionally matching self-loops.Then the result should be:
-   passed - Scenario: Optionally matching self-loops.And no side effects
+   failed - Scenario: Optionally matching self-loops.Then the result should be:
+   ignored - Scenario: Optionally matching self-loops.And no side effects
   Scenario: Optionally matching self-loops without matches
    passed - Scenario: Optionally matching self-loops without matches.Given an empty graph
    passed - Scenario: Optionally matching self-loops without matches.And having executed:
    passed - Scenario: Optionally matching self-loops without matches.When executing query:
-   passed - Scenario: Optionally matching self-loops without matches.Then the result should be:
-   passed - Scenario: Optionally matching self-loops without matches.And no side effects
+   error - Scenario: Optionally matching self-loops without matches.Then the result should be:
+   ignored - Scenario: Optionally matching self-loops without matches.And no side effects
   Scenario: Variable length optional relationships with bound nodes
    passed - Scenario: Variable length optional relationships with bound nodes.Given an empty graph
    passed - Scenario: Variable length optional relationships with bound nodes.And having executed:
    passed - Scenario: Variable length optional relationships with bound nodes.When executing query:
-   passed - Scenario: Variable length optional relationships with bound nodes.Then the result should be:
-   passed - Scenario: Variable length optional relationships with bound nodes.And no side effects
+   error - Scenario: Variable length optional relationships with bound nodes.Then the result should be:
+   ignored - Scenario: Variable length optional relationships with bound nodes.And no side effects
   Scenario: Longer pattern with bound nodes
    passed - Scenario: Longer pattern with bound nodes.Given an empty graph
    passed - Scenario: Longer pattern with bound nodes.And having executed:
    passed - Scenario: Longer pattern with bound nodes.When executing query:
-   passed - Scenario: Longer pattern with bound nodes.Then the result should be:
-   passed - Scenario: Longer pattern with bound nodes.And no side effects
+   error - Scenario: Longer pattern with bound nodes.Then the result should be:
+   ignored - Scenario: Longer pattern with bound nodes.And no side effects
   Scenario: Handling optional matches between optionally matched entities
    passed - Scenario: Handling optional matches between optionally matched entities.Given an empty graph
    passed - Scenario: Handling optional matches between optionally matched entities.And having executed:
@@ -2746,16 +2770,16 @@ OptionalMatchAcceptanceTest
    passed - )`.And having executed:(Scenario: OPTIONAL MATCH and `collect
    passed - )`.And having executed:(Scenario: OPTIONAL MATCH and `collect
    passed - )`.When executing query:(Scenario: OPTIONAL MATCH and `collect
-   passed - )`.Then the result should be:(Scenario: OPTIONAL MATCH and `collect
-   passed - )`.And no side effects(Scenario: OPTIONAL MATCH and `collect
+   failed - )`.Then the result should be:(Scenario: OPTIONAL MATCH and `collect
+   ignored - )`.And no side effects(Scenario: OPTIONAL MATCH and `collect
 OptionalMatchTest
  Feature: OptionalMatch
   Scenario: Satisfies the open world assumption, relationships between same nodes
    passed - Scenario: Satisfies the open world assumption, relationships between same nodes.Given an empty graph
    passed - Scenario: Satisfies the open world assumption, relationships between same nodes.And having executed:
    passed - Scenario: Satisfies the open world assumption, relationships between same nodes.When executing query:
-   passed - Scenario: Satisfies the open world assumption, relationships between same nodes.Then the result should be:
-   passed - Scenario: Satisfies the open world assumption, relationships between same nodes.And no side effects
+   failed - Scenario: Satisfies the open world assumption, relationships between same nodes.Then the result should be:
+   ignored - Scenario: Satisfies the open world assumption, relationships between same nodes.And no side effects
   Scenario: Satisfies the open world assumption, single relationship
    passed - Scenario: Satisfies the open world assumption, single relationship.Given an empty graph
    passed - Scenario: Satisfies the open world assumption, single relationship.And having executed:
@@ -2867,80 +2891,80 @@ PatternComprehensionTest
    passed - Scenario: Pattern comprehension and ORDER BY.Given an empty graph
    passed - Scenario: Pattern comprehension and ORDER BY.And having executed:
    passed - Scenario: Pattern comprehension and ORDER BY.When executing query:
-   passed - Scenario: Pattern comprehension and ORDER BY.Then the result should be:
-   passed - Scenario: Pattern comprehension and ORDER BY.And no side effects
+   error - Scenario: Pattern comprehension and ORDER BY.Then the result should be:
+   ignored - Scenario: Pattern comprehension and ORDER BY.And no side effects
   Scenario: Returning a pattern comprehension
    passed - Scenario: Returning a pattern comprehension.Given an empty graph
    passed - Scenario: Returning a pattern comprehension.And having executed:
    passed - Scenario: Returning a pattern comprehension.When executing query:
-   passed - Scenario: Returning a pattern comprehension.Then the result should be:
-   passed - Scenario: Returning a pattern comprehension.And no side effects
+   error - Scenario: Returning a pattern comprehension.Then the result should be:
+   ignored - Scenario: Returning a pattern comprehension.And no side effects
   Scenario: Returning a pattern comprehension with label predicate
    passed - Scenario: Returning a pattern comprehension with label predicate.Given an empty graph
    passed - Scenario: Returning a pattern comprehension with label predicate.And having executed:
    passed - Scenario: Returning a pattern comprehension with label predicate.When executing query:
-   passed - Scenario: Returning a pattern comprehension with label predicate.Then the result should be:
-   passed - Scenario: Returning a pattern comprehension with label predicate.And no side effects
+   error - Scenario: Returning a pattern comprehension with label predicate.Then the result should be:
+   ignored - Scenario: Returning a pattern comprehension with label predicate.And no side effects
   Scenario: Returning a pattern comprehension with bound nodes
    passed - Scenario: Returning a pattern comprehension with bound nodes.Given an empty graph
    passed - Scenario: Returning a pattern comprehension with bound nodes.And having executed:
    passed - Scenario: Returning a pattern comprehension with bound nodes.When executing query:
-   passed - Scenario: Returning a pattern comprehension with bound nodes.Then the result should be:
-   passed - Scenario: Returning a pattern comprehension with bound nodes.And no side effects
+   error - Scenario: Returning a pattern comprehension with bound nodes.Then the result should be:
+   ignored - Scenario: Returning a pattern comprehension with bound nodes.And no side effects
   Scenario: Using a variable-length pattern comprehension in a WITH
    passed - Scenario: Using a variable-length pattern comprehension in a WITH.Given an empty graph
    passed - Scenario: Using a variable-length pattern comprehension in a WITH.And having executed:
    passed - Scenario: Using a variable-length pattern comprehension in a WITH.When executing query:
-   passed - Scenario: Using a variable-length pattern comprehension in a WITH.Then the result should be:
-   passed - Scenario: Using a variable-length pattern comprehension in a WITH.And no side effects
+   error - Scenario: Using a variable-length pattern comprehension in a WITH.Then the result should be:
+   ignored - Scenario: Using a variable-length pattern comprehension in a WITH.And no side effects
   Scenario: Using pattern comprehension in RETURN
    passed - Scenario: Using pattern comprehension in RETURN.Given an empty graph
    passed - Scenario: Using pattern comprehension in RETURN.And having executed:
    passed - Scenario: Using pattern comprehension in RETURN.When executing query:
-   passed - Scenario: Using pattern comprehension in RETURN.Then the result should be:
-   passed - Scenario: Using pattern comprehension in RETURN.And no side effects
+   error - Scenario: Using pattern comprehension in RETURN.Then the result should be:
+   ignored - Scenario: Using pattern comprehension in RETURN.And no side effects
   Scenario: Using pattern comprehension to test existence
    passed - Scenario: Using pattern comprehension to test existence.Given an empty graph
    passed - Scenario: Using pattern comprehension to test existence.And having executed:
    passed - Scenario: Using pattern comprehension to test existence.When executing query:
-   passed - Scenario: Using pattern comprehension to test existence.Then the result should be:
-   passed - Scenario: Using pattern comprehension to test existence.And no side effects
+   error - Scenario: Using pattern comprehension to test existence.Then the result should be:
+   ignored - Scenario: Using pattern comprehension to test existence.And no side effects
   Scenario: Pattern comprehension inside list comprehension
    passed - Scenario: Pattern comprehension inside list comprehension.Given an empty graph
    passed - Scenario: Pattern comprehension inside list comprehension.And having executed:
    passed - Scenario: Pattern comprehension inside list comprehension.When executing query:
-   passed - Scenario: Pattern comprehension inside list comprehension.Then the result should be:
-   passed - Scenario: Pattern comprehension inside list comprehension.And no side effects
+   error - Scenario: Pattern comprehension inside list comprehension.Then the result should be:
+   ignored - Scenario: Pattern comprehension inside list comprehension.And no side effects
   Scenario: Get node degree via size of pattern comprehension
    passed - Scenario: Get node degree via size of pattern comprehension.Given an empty graph
    passed - Scenario: Get node degree via size of pattern comprehension.And having executed:
    passed - Scenario: Get node degree via size of pattern comprehension.When executing query:
-   passed - Scenario: Get node degree via size of pattern comprehension.Then the result should be:
-   passed - Scenario: Get node degree via size of pattern comprehension.And no side effects
+   error - Scenario: Get node degree via size of pattern comprehension.Then the result should be:
+   ignored - Scenario: Get node degree via size of pattern comprehension.And no side effects
   Scenario: Get node degree via size of pattern comprehension that specifies a relationship type
    passed - Scenario: Get node degree via size of pattern comprehension that specifies a relationship type.Given an empty graph
    passed - Scenario: Get node degree via size of pattern comprehension that specifies a relationship type.And having executed:
    passed - Scenario: Get node degree via size of pattern comprehension that specifies a relationship type.When executing query:
-   passed - Scenario: Get node degree via size of pattern comprehension that specifies a relationship type.Then the result should be:
-   passed - Scenario: Get node degree via size of pattern comprehension that specifies a relationship type.And no side effects
+   error - Scenario: Get node degree via size of pattern comprehension that specifies a relationship type.Then the result should be:
+   ignored - Scenario: Get node degree via size of pattern comprehension that specifies a relationship type.And no side effects
   Scenario: Get node degree via size of pattern comprehension that specifies multiple relationship types
    passed - Scenario: Get node degree via size of pattern comprehension that specifies multiple relationship types.Given an empty graph
    passed - Scenario: Get node degree via size of pattern comprehension that specifies multiple relationship types.And having executed:
    passed - Scenario: Get node degree via size of pattern comprehension that specifies multiple relationship types.When executing query:
-   passed - Scenario: Get node degree via size of pattern comprehension that specifies multiple relationship types.Then the result should be:
-   passed - Scenario: Get node degree via size of pattern comprehension that specifies multiple relationship types.And no side effects
+   error - Scenario: Get node degree via size of pattern comprehension that specifies multiple relationship types.Then the result should be:
+   ignored - Scenario: Get node degree via size of pattern comprehension that specifies multiple relationship types.And no side effects
   Scenario: Introducing new node variable in pattern comprehension
    passed - Scenario: Introducing new node variable in pattern comprehension.Given an empty graph
    passed - Scenario: Introducing new node variable in pattern comprehension.And having executed:
    passed - Scenario: Introducing new node variable in pattern comprehension.When executing query:
-   passed - Scenario: Introducing new node variable in pattern comprehension.Then the result should be:
-   passed - Scenario: Introducing new node variable in pattern comprehension.And no side effects
+   error - Scenario: Introducing new node variable in pattern comprehension.Then the result should be:
+   ignored - Scenario: Introducing new node variable in pattern comprehension.And no side effects
   Scenario: Introducing new relationship variable in pattern comprehension
    passed - Scenario: Introducing new relationship variable in pattern comprehension.Given an empty graph
    passed - Scenario: Introducing new relationship variable in pattern comprehension.And having executed:
    passed - Scenario: Introducing new relationship variable in pattern comprehension.When executing query:
-   passed - Scenario: Introducing new relationship variable in pattern comprehension.Then the result should be:
-   passed - Scenario: Introducing new relationship variable in pattern comprehension.And no side effects
+   error - Scenario: Introducing new relationship variable in pattern comprehension.Then the result should be:
+   ignored - Scenario: Introducing new relationship variable in pattern comprehension.And no side effects
 ProcedureCallAcceptanceTest
  Feature: ProcedureCallAcceptance
   Scenario: In-query call to procedure that takes arguments fails when trying to pass them implicitly
@@ -3164,8 +3188,8 @@ RemoveAcceptanceTest
    passed - Scenario: Should ignore nulls.Given an empty graph
    passed - Scenario: Should ignore nulls.And having executed:
    passed - Scenario: Should ignore nulls.When executing query:
-   passed - Scenario: Should ignore nulls.Then the result should be:
-   passed - Scenario: Should ignore nulls.And no side effects
+   error - Scenario: Should ignore nulls.Then the result should be:
+   ignored - Scenario: Should ignore nulls.And no side effects
   Scenario: Remove a single label
    passed - Scenario: Remove a single label.Given an empty graph
    passed - Scenario: Remove a single label.And having executed:
@@ -3182,32 +3206,32 @@ RemoveAcceptanceTest
    passed - Scenario: Remove a single node property.Given an empty graph
    passed - Scenario: Remove a single node property.And having executed:
    passed - Scenario: Remove a single node property.When executing query:
-   passed - Scenario: Remove a single node property.Then the result should be:
-   passed - Scenario: Remove a single node property.And the side effects should be:
+   error - Scenario: Remove a single node property.Then the result should be:
+   ignored - Scenario: Remove a single node property.And the side effects should be:
   Scenario: Remove multiple node properties
    passed - Scenario: Remove multiple node properties.Given an empty graph
    passed - Scenario: Remove multiple node properties.And having executed:
    passed - Scenario: Remove multiple node properties.When executing query:
-   passed - Scenario: Remove multiple node properties.Then the result should be:
-   passed - Scenario: Remove multiple node properties.And the side effects should be:
+   error - Scenario: Remove multiple node properties.Then the result should be:
+   ignored - Scenario: Remove multiple node properties.And the side effects should be:
   Scenario: Remove a single relationship property
    passed - Scenario: Remove a single relationship property.Given an empty graph
    passed - Scenario: Remove a single relationship property.And having executed:
    passed - Scenario: Remove a single relationship property.When executing query:
-   passed - Scenario: Remove a single relationship property.Then the result should be:
-   passed - Scenario: Remove a single relationship property.And the side effects should be:
+   error - Scenario: Remove a single relationship property.Then the result should be:
+   ignored - Scenario: Remove a single relationship property.And the side effects should be:
   Scenario: Remove multiple relationship properties
    passed - Scenario: Remove multiple relationship properties.Given an empty graph
-   passed - Scenario: Remove multiple relationship properties.And having executed:
-   passed - Scenario: Remove multiple relationship properties.When executing query:
-   passed - Scenario: Remove multiple relationship properties.Then the result should be:
-   passed - Scenario: Remove multiple relationship properties.And the side effects should be:
+   error - Scenario: Remove multiple relationship properties.And having executed:
+   ignored - Scenario: Remove multiple relationship properties.When executing query:
+   ignored - Scenario: Remove multiple relationship properties.Then the result should be:
+   ignored - Scenario: Remove multiple relationship properties.And the side effects should be:
   Scenario: Remove a missing property should be a valid operation
    passed - Scenario: Remove a missing property should be a valid operation.Given an empty graph
    passed - Scenario: Remove a missing property should be a valid operation.And having executed:
    passed - Scenario: Remove a missing property should be a valid operation.When executing query:
-   passed - Scenario: Remove a missing property should be a valid operation.Then the result should be:
-   passed - Scenario: Remove a missing property should be a valid operation.And no side effects
+   error - Scenario: Remove a missing property should be a valid operation.Then the result should be:
+   ignored - Scenario: Remove a missing property should be a valid operation.And no side effects
 ReturnAcceptance2Test
  Feature: ReturnAcceptance2
   Scenario: Do not fail when returning type of deleted relationships
@@ -3242,14 +3266,14 @@ ReturnAcceptance2Test
    passed - Scenario: DISTINCT on nullable values.Given an empty graph
    passed - Scenario: DISTINCT on nullable values.And having executed:
    passed - Scenario: DISTINCT on nullable values.When executing query:
-   passed - Scenario: DISTINCT on nullable values.Then the result should be:
-   passed - Scenario: DISTINCT on nullable values.And no side effects
+   failed - Scenario: DISTINCT on nullable values.Then the result should be:
+   ignored - Scenario: DISTINCT on nullable values.And no side effects
   Scenario: Return all variables
    passed - Scenario: Return all variables.Given an empty graph
    passed - Scenario: Return all variables.And having executed:
    passed - Scenario: Return all variables.When executing query:
-   passed - Scenario: Return all variables.Then the result should be:
-   passed - Scenario: Return all variables.And no side effects
+   failed - Scenario: Return all variables.Then the result should be:
+   ignored - Scenario: Return all variables.And no side effects
   Scenario: `sqrt()` returning float values
    passed - )` returning float values.Given any graph(Scenario: `sqrt
    passed - )` returning float values.When executing query:(Scenario: `sqrt
@@ -3259,14 +3283,14 @@ ReturnAcceptance2Test
    passed - Scenario: Matching and disregarding output, then matching again.Given an empty graph
    passed - Scenario: Matching and disregarding output, then matching again.And having executed:
    passed - Scenario: Matching and disregarding output, then matching again.When executing query:
-   passed - Scenario: Matching and disregarding output, then matching again.Then the result should be:
-   passed - Scenario: Matching and disregarding output, then matching again.And no side effects
+   error - Scenario: Matching and disregarding output, then matching again.Then the result should be:
+   ignored - Scenario: Matching and disregarding output, then matching again.And no side effects
   Scenario: Returning a list property
    passed - Scenario: Returning a list property.Given an empty graph
    passed - Scenario: Returning a list property.And having executed:
    passed - Scenario: Returning a list property.When executing query:
-   passed - Scenario: Returning a list property.Then the result should be:
-   passed - Scenario: Returning a list property.And no side effects
+   failed - Scenario: Returning a list property.Then the result should be:
+   ignored - Scenario: Returning a list property.And no side effects
   Scenario: Returning a projected map
    passed - Scenario: Returning a projected map.Given an empty graph
    passed - Scenario: Returning a projected map.And having executed:
@@ -3283,19 +3307,19 @@ ReturnAcceptance2Test
    passed - Scenario: Limiting amount of rows when there are fewer left than the LIMIT argument.Given an empty graph
    passed - Scenario: Limiting amount of rows when there are fewer left than the LIMIT argument.And having executed:
    passed - Scenario: Limiting amount of rows when there are fewer left than the LIMIT argument.When executing query:
-   passed - Scenario: Limiting amount of rows when there are fewer left than the LIMIT argument.Then the result should be, in order:
-   passed - Scenario: Limiting amount of rows when there are fewer left than the LIMIT argument.And no side effects
+   failed - Scenario: Limiting amount of rows when there are fewer left than the LIMIT argument.Then the result should be, in order:
+   ignored - Scenario: Limiting amount of rows when there are fewer left than the LIMIT argument.And no side effects
   Scenario: `substring()` with default second argument
    passed - )` with default second argument.Given any graph(Scenario: `substring
    passed - )` with default second argument.When executing query:(Scenario: `substring
-   passed - )` with default second argument.Then the result should be:(Scenario: `substring
-   passed - )` with default second argument.And no side effects(Scenario: `substring
+   error - )` with default second argument.Then the result should be:(Scenario: `substring
+   ignored - )` with default second argument.And no side effects(Scenario: `substring
   Scenario: Returning all variables with ordering
    passed - Scenario: Returning all variables with ordering.Given an empty graph
    passed - Scenario: Returning all variables with ordering.And having executed:
    passed - Scenario: Returning all variables with ordering.When executing query:
-   passed - Scenario: Returning all variables with ordering.Then the result should be, in order:
-   passed - Scenario: Returning all variables with ordering.And no side effects
+   failed - Scenario: Returning all variables with ordering.Then the result should be, in order:
+   ignored - Scenario: Returning all variables with ordering.And no side effects
   Scenario: Using aliased DISTINCT expression in ORDER BY
    passed - Scenario: Using aliased DISTINCT expression in ORDER BY.Given an empty graph
    passed - Scenario: Using aliased DISTINCT expression in ORDER BY.And having executed:
@@ -3311,14 +3335,14 @@ ReturnAcceptance2Test
   Scenario: Arithmetic expressions should propagate null values
    passed - Scenario: Arithmetic expressions should propagate null values.Given any graph
    passed - Scenario: Arithmetic expressions should propagate null values.When executing query:
-   passed - Scenario: Arithmetic expressions should propagate null values.Then the result should be:
-   passed - Scenario: Arithmetic expressions should propagate null values.And no side effects
+   error - Scenario: Arithmetic expressions should propagate null values.Then the result should be:
+   ignored - Scenario: Arithmetic expressions should propagate null values.And no side effects
   Scenario: Aliasing expressions
    passed - Scenario: Aliasing expressions.Given an empty graph
    passed - Scenario: Aliasing expressions.And having executed:
    passed - Scenario: Aliasing expressions.When executing query:
-   passed - Scenario: Aliasing expressions.Then the result should be:
-   passed - Scenario: Aliasing expressions.And no side effects
+   error - Scenario: Aliasing expressions.Then the result should be:
+   ignored - Scenario: Aliasing expressions.And no side effects
   Scenario: Projecting an arithmetic expression with aggregation
    passed - Scenario: Projecting an arithmetic expression with aggregation.Given an empty graph
    passed - Scenario: Projecting an arithmetic expression with aggregation.And having executed:
@@ -3340,20 +3364,20 @@ ReturnAcceptance2Test
    passed - Scenario: DISTINCT inside aggregation should work with lists in maps.Given an empty graph
    passed - Scenario: DISTINCT inside aggregation should work with lists in maps.And having executed:
    passed - Scenario: DISTINCT inside aggregation should work with lists in maps.When executing query:
-   passed - Scenario: DISTINCT inside aggregation should work with lists in maps.Then the result should be:
-   passed - Scenario: DISTINCT inside aggregation should work with lists in maps.And no side effects
+   failed - Scenario: DISTINCT inside aggregation should work with lists in maps.Then the result should be:
+   ignored - Scenario: DISTINCT inside aggregation should work with lists in maps.And no side effects
   Scenario: DISTINCT inside aggregation should work with nested lists in maps
    passed - Scenario: DISTINCT inside aggregation should work with nested lists in maps.Given an empty graph
    passed - Scenario: DISTINCT inside aggregation should work with nested lists in maps.And having executed:
    passed - Scenario: DISTINCT inside aggregation should work with nested lists in maps.When executing query:
-   passed - Scenario: DISTINCT inside aggregation should work with nested lists in maps.Then the result should be:
-   passed - Scenario: DISTINCT inside aggregation should work with nested lists in maps.And no side effects
+   failed - Scenario: DISTINCT inside aggregation should work with nested lists in maps.Then the result should be:
+   ignored - Scenario: DISTINCT inside aggregation should work with nested lists in maps.And no side effects
   Scenario: DISTINCT inside aggregation should work with nested lists of maps in maps
    passed - Scenario: DISTINCT inside aggregation should work with nested lists of maps in maps.Given an empty graph
    passed - Scenario: DISTINCT inside aggregation should work with nested lists of maps in maps.And having executed:
    passed - Scenario: DISTINCT inside aggregation should work with nested lists of maps in maps.When executing query:
-   passed - Scenario: DISTINCT inside aggregation should work with nested lists of maps in maps.Then the result should be:
-   passed - Scenario: DISTINCT inside aggregation should work with nested lists of maps in maps.And no side effects
+   failed - Scenario: DISTINCT inside aggregation should work with nested lists of maps in maps.Then the result should be:
+   ignored - Scenario: DISTINCT inside aggregation should work with nested lists of maps in maps.And no side effects
 ReturnAcceptanceTest
  Feature: ReturnAcceptanceTest
   Scenario: Allow addition
@@ -3377,34 +3401,34 @@ ReturnAcceptanceTest
    passed - Scenario: Start the result from the second row.Given an empty graph
    passed - Scenario: Start the result from the second row.And having executed:
    passed - Scenario: Start the result from the second row.When executing query:
-   passed - Scenario: Start the result from the second row.Then the result should be, in order:
-   passed - Scenario: Start the result from the second row.And no side effects
+   failed - Scenario: Start the result from the second row.Then the result should be, in order:
+   ignored - Scenario: Start the result from the second row.And no side effects
   Scenario: Start the result from the second row by param
    passed - Scenario: Start the result from the second row by param.Given an empty graph
    passed - Scenario: Start the result from the second row by param.And having executed:
    passed - Scenario: Start the result from the second row by param.And parameters are:
    passed - Scenario: Start the result from the second row by param.When executing query:
-   passed - Scenario: Start the result from the second row by param.Then the result should be, in order:
-   passed - Scenario: Start the result from the second row by param.And no side effects
+   failed - Scenario: Start the result from the second row by param.Then the result should be, in order:
+   ignored - Scenario: Start the result from the second row by param.And no side effects
   Scenario: Get rows in the middle
    passed - Scenario: Get rows in the middle.Given an empty graph
    passed - Scenario: Get rows in the middle.And having executed:
    passed - Scenario: Get rows in the middle.When executing query:
-   passed - Scenario: Get rows in the middle.Then the result should be, in order:
-   passed - Scenario: Get rows in the middle.And no side effects
+   failed - Scenario: Get rows in the middle.Then the result should be, in order:
+   ignored - Scenario: Get rows in the middle.And no side effects
   Scenario: Get rows in the middle by param
    passed - Scenario: Get rows in the middle by param.Given an empty graph
    passed - Scenario: Get rows in the middle by param.And having executed:
    passed - Scenario: Get rows in the middle by param.And parameters are:
    passed - Scenario: Get rows in the middle by param.When executing query:
-   passed - Scenario: Get rows in the middle by param.Then the result should be, in order:
-   passed - Scenario: Get rows in the middle by param.And no side effects
+   failed - Scenario: Get rows in the middle by param.Then the result should be, in order:
+   ignored - Scenario: Get rows in the middle by param.And no side effects
   Scenario: Sort on aggregated function
    passed - Scenario: Sort on aggregated function.Given an empty graph
    passed - Scenario: Sort on aggregated function.And having executed:
    passed - Scenario: Sort on aggregated function.When executing query:
-   passed - Scenario: Sort on aggregated function.Then the result should be, in order:
-   passed - Scenario: Sort on aggregated function.And no side effects
+   failed - Scenario: Sort on aggregated function.Then the result should be, in order:
+   ignored - Scenario: Sort on aggregated function.And no side effects
   Scenario: Support sort and distinct
    passed - Scenario: Support sort and distinct.Given an empty graph
    passed - Scenario: Support sort and distinct.And having executed:
@@ -3437,8 +3461,8 @@ ReturnAcceptanceTest
    passed - Scenario: Count star should count everything in scope.Given an empty graph
    passed - Scenario: Count star should count everything in scope.And having executed:
    passed - Scenario: Count star should count everything in scope.When executing query:
-   passed - Scenario: Count star should count everything in scope.Then the result should be:
-   passed - Scenario: Count star should count everything in scope.And no side effects
+   failed - Scenario: Count star should count everything in scope.Then the result should be:
+   ignored - Scenario: Count star should count everything in scope.And no side effects
   Scenario: Absolute function
    passed - Scenario: Absolute function.Given any graph
    passed - Scenario: Absolute function.When executing query:
@@ -3473,11 +3497,11 @@ SemanticErrorAcceptanceTest
   Scenario: Failing when a node is used as a relationship
    passed - Scenario: Failing when a node is used as a relationship.Given any graph
    passed - Scenario: Failing when a node is used as a relationship.When executing query:
-   passed - Scenario: Failing when a node is used as a relationship.Then a SyntaxError should be raised at compile time: VariableTypeConflict
+   ignored - Scenario: Failing when a node is used as a relationship.Then a SyntaxError should be raised at compile time: VariableTypeConflict
   Scenario: Failing when a relationship is used as a node
    passed - Scenario: Failing when a relationship is used as a node.Given any graph
    passed - Scenario: Failing when a relationship is used as a node.When executing query:
-   passed - Scenario: Failing when a relationship is used as a node.Then a SyntaxError should be raised at compile time: VariableTypeConflict
+   ignored - Scenario: Failing when a relationship is used as a node.Then a SyntaxError should be raised at compile time: VariableTypeConflict
   Scenario: Failing when using `type()` on a node
    passed - )` on a node.Given any graph(Scenario: Failing when using `type
    passed - )` on a node.When executing query:(Scenario: Failing when using `type
@@ -3541,7 +3565,7 @@ SemanticErrorAcceptanceTest
   Scenario: Failing when using undefined variable in ON CREATE
    passed - Scenario: Failing when using undefined variable in ON CREATE.Given any graph
    passed - Scenario: Failing when using undefined variable in ON CREATE.When executing query:
-   passed - Scenario: Failing when using undefined variable in ON CREATE.Then a SyntaxError should be raised at compile time: UndefinedVariable
+   ignored - Scenario: Failing when using undefined variable in ON CREATE.Then a SyntaxError should be raised at compile time: UndefinedVariable
   Scenario: Failing when using undefined variable in ON MATCH
    passed - Scenario: Failing when using undefined variable in ON MATCH.Given any graph
    passed - Scenario: Failing when using undefined variable in ON MATCH.When executing query:
@@ -3549,7 +3573,7 @@ SemanticErrorAcceptanceTest
   Scenario: Failing when using MATCH after OPTIONAL MATCH
    passed - Scenario: Failing when using MATCH after OPTIONAL MATCH.Given any graph
    passed - Scenario: Failing when using MATCH after OPTIONAL MATCH.When executing query:
-   ignored - Scenario: Failing when using MATCH after OPTIONAL MATCH.Then a SyntaxError should be raised at compile time: InvalidClauseComposition
+   passed - Scenario: Failing when using MATCH after OPTIONAL MATCH.Then a SyntaxError should be raised at compile time: InvalidClauseComposition
   Scenario: Failing when float value is too large
    passed - Scenario: Failing when float value is too large.Given any graph
    passed - Scenario: Failing when float value is too large.When executing query:
@@ -3590,15 +3614,15 @@ SemanticErrorAcceptanceTest
   Scenario: Failing when using non-constants in SKIP
    passed - Scenario: Failing when using non-constants in SKIP.Given any graph
    passed - Scenario: Failing when using non-constants in SKIP.When executing query:
-   passed - Scenario: Failing when using non-constants in SKIP.Then a SyntaxError should be raised at compile time: NonConstantExpression
+   ignored - Scenario: Failing when using non-constants in SKIP.Then a SyntaxError should be raised at compile time: NonConstantExpression
   Scenario: Failing when using negative value in SKIP
    passed - Scenario: Failing when using negative value in SKIP.Given any graph
    passed - Scenario: Failing when using negative value in SKIP.When executing query:
-   passed - Scenario: Failing when using negative value in SKIP.Then a SyntaxError should be raised at compile time: NegativeIntegerArgument
+   ignored - Scenario: Failing when using negative value in SKIP.Then a SyntaxError should be raised at compile time: NegativeIntegerArgument
   Scenario: Failing when using non-constants in LIMIT
    passed - Scenario: Failing when using non-constants in LIMIT.Given any graph
    passed - Scenario: Failing when using non-constants in LIMIT.When executing query:
-   passed - Scenario: Failing when using non-constants in LIMIT.Then a SyntaxError should be raised at compile time: NonConstantExpression
+   ignored - Scenario: Failing when using non-constants in LIMIT.Then a SyntaxError should be raised at compile time: NonConstantExpression
   Scenario: Failing when using negative value in LIMIT
    passed - Scenario: Failing when using negative value in LIMIT.Given any graph
    passed - Scenario: Failing when using negative value in LIMIT.When executing query:
@@ -3606,7 +3630,7 @@ SemanticErrorAcceptanceTest
   Scenario: Failing when using floating point in LIMIT
    passed - Scenario: Failing when using floating point in LIMIT.Given any graph
    passed - Scenario: Failing when using floating point in LIMIT.When executing query:
-   passed - Scenario: Failing when using floating point in LIMIT.Then a SyntaxError should be raised at compile time: InvalidArgumentType
+   ignored - Scenario: Failing when using floating point in LIMIT.Then a SyntaxError should be raised at compile time: InvalidArgumentType
   Scenario: Failing when creating relationship without type
    passed - Scenario: Failing when creating relationship without type.Given any graph
    passed - Scenario: Failing when creating relationship without type.When executing query:
@@ -3688,11 +3712,11 @@ SkipLimitAcceptanceTest
   Scenario: SKIP with an expression that depends on variables should fail
    passed - Scenario: SKIP with an expression that depends on variables should fail.Given any graph
    passed - Scenario: SKIP with an expression that depends on variables should fail.When executing query:
-   passed - Scenario: SKIP with an expression that depends on variables should fail.Then a SyntaxError should be raised at compile time: NonConstantExpression
+   ignored - Scenario: SKIP with an expression that depends on variables should fail.Then a SyntaxError should be raised at compile time: NonConstantExpression
   Scenario: LIMIT with an expression that depends on variables should fail
    passed - Scenario: LIMIT with an expression that depends on variables should fail.Given any graph
    passed - Scenario: LIMIT with an expression that depends on variables should fail.When executing query:
-   passed - Scenario: LIMIT with an expression that depends on variables should fail.Then a SyntaxError should be raised at compile time: NonConstantExpression
+   ignored - Scenario: LIMIT with an expression that depends on variables should fail.Then a SyntaxError should be raised at compile time: NonConstantExpression
   Scenario: SKIP with an expression that does not depend on variables
    passed - Scenario: SKIP with an expression that does not depend on variables.Given any graph
    passed - Scenario: SKIP with an expression that does not depend on variables.And having executed:
@@ -3886,7 +3910,7 @@ SyntaxErrorAcceptanceTest
   Scenario: Using `rand()` in aggregations
    passed - )` in aggregations.Given any graph(Scenario: Using `rand
    passed - )` in aggregations.When executing query:(Scenario: Using `rand
-   passed - )` in aggregations.Then a SyntaxError should be raised at compile time: NonConstantExpression(Scenario: Using `rand
+   ignored - )` in aggregations.Then a SyntaxError should be raised at compile time: NonConstantExpression(Scenario: Using `rand
   Scenario: Supplying invalid hexadecimal literal 1
    passed - Scenario: Supplying invalid hexadecimal literal 1.Given any graph
    passed - Scenario: Supplying invalid hexadecimal literal 1.When executing query:
@@ -4072,93 +4096,93 @@ TriadicSelectionTest
   Scenario: Handling triadic friend of a friend that is not a friend
    passed - Scenario: Handling triadic friend of a friend that is not a friend.Given the binary-tree-1 graph
    passed - Scenario: Handling triadic friend of a friend that is not a friend.When executing query:
-   passed - Scenario: Handling triadic friend of a friend that is not a friend.Then the result should be:
-   passed - Scenario: Handling triadic friend of a friend that is not a friend.And no side effects
+   failed - Scenario: Handling triadic friend of a friend that is not a friend.Then the result should be:
+   ignored - Scenario: Handling triadic friend of a friend that is not a friend.And no side effects
   Scenario: Handling triadic friend of a friend that is not a friend with different relationship type
    passed - Scenario: Handling triadic friend of a friend that is not a friend with different relationship type.Given the binary-tree-1 graph
    passed - Scenario: Handling triadic friend of a friend that is not a friend with different relationship type.When executing query:
-   passed - Scenario: Handling triadic friend of a friend that is not a friend with different relationship type.Then the result should be:
-   passed - Scenario: Handling triadic friend of a friend that is not a friend with different relationship type.And no side effects
+   failed - Scenario: Handling triadic friend of a friend that is not a friend with different relationship type.Then the result should be:
+   ignored - Scenario: Handling triadic friend of a friend that is not a friend with different relationship type.And no side effects
   Scenario: Handling triadic friend of a friend that is not a friend with superset of relationship type
    passed - Scenario: Handling triadic friend of a friend that is not a friend with superset of relationship type.Given the binary-tree-1 graph
    passed - Scenario: Handling triadic friend of a friend that is not a friend with superset of relationship type.When executing query:
-   passed - Scenario: Handling triadic friend of a friend that is not a friend with superset of relationship type.Then the result should be:
-   passed - Scenario: Handling triadic friend of a friend that is not a friend with superset of relationship type.And no side effects
+   failed - Scenario: Handling triadic friend of a friend that is not a friend with superset of relationship type.Then the result should be:
+   ignored - Scenario: Handling triadic friend of a friend that is not a friend with superset of relationship type.And no side effects
   Scenario: Handling triadic friend of a friend that is not a friend with implicit subset of relationship type
    passed - Scenario: Handling triadic friend of a friend that is not a friend with implicit subset of relationship type.Given the binary-tree-1 graph
    passed - Scenario: Handling triadic friend of a friend that is not a friend with implicit subset of relationship type.When executing query:
-   passed - Scenario: Handling triadic friend of a friend that is not a friend with implicit subset of relationship type.Then the result should be:
-   passed - Scenario: Handling triadic friend of a friend that is not a friend with implicit subset of relationship type.And no side effects
+   failed - Scenario: Handling triadic friend of a friend that is not a friend with implicit subset of relationship type.Then the result should be:
+   ignored - Scenario: Handling triadic friend of a friend that is not a friend with implicit subset of relationship type.And no side effects
   Scenario: Handling triadic friend of a friend that is not a friend with explicit subset of relationship type
    passed - Scenario: Handling triadic friend of a friend that is not a friend with explicit subset of relationship type.Given the binary-tree-1 graph
    passed - Scenario: Handling triadic friend of a friend that is not a friend with explicit subset of relationship type.When executing query:
-   passed - Scenario: Handling triadic friend of a friend that is not a friend with explicit subset of relationship type.Then the result should be:
-   passed - Scenario: Handling triadic friend of a friend that is not a friend with explicit subset of relationship type.And no side effects
+   failed - Scenario: Handling triadic friend of a friend that is not a friend with explicit subset of relationship type.Then the result should be:
+   ignored - Scenario: Handling triadic friend of a friend that is not a friend with explicit subset of relationship type.And no side effects
   Scenario: Handling triadic friend of a friend that is not a friend with same labels
    passed - Scenario: Handling triadic friend of a friend that is not a friend with same labels.Given the binary-tree-2 graph
    passed - Scenario: Handling triadic friend of a friend that is not a friend with same labels.When executing query:
-   passed - Scenario: Handling triadic friend of a friend that is not a friend with same labels.Then the result should be:
-   passed - Scenario: Handling triadic friend of a friend that is not a friend with same labels.And no side effects
+   failed - Scenario: Handling triadic friend of a friend that is not a friend with same labels.Then the result should be:
+   ignored - Scenario: Handling triadic friend of a friend that is not a friend with same labels.And no side effects
   Scenario: Handling triadic friend of a friend that is not a friend with different labels
    passed - Scenario: Handling triadic friend of a friend that is not a friend with different labels.Given the binary-tree-2 graph
    passed - Scenario: Handling triadic friend of a friend that is not a friend with different labels.When executing query:
-   passed - Scenario: Handling triadic friend of a friend that is not a friend with different labels.Then the result should be:
-   passed - Scenario: Handling triadic friend of a friend that is not a friend with different labels.And no side effects
+   failed - Scenario: Handling triadic friend of a friend that is not a friend with different labels.Then the result should be:
+   ignored - Scenario: Handling triadic friend of a friend that is not a friend with different labels.And no side effects
   Scenario: Handling triadic friend of a friend that is not a friend with implicit subset of labels
    passed - Scenario: Handling triadic friend of a friend that is not a friend with implicit subset of labels.Given the binary-tree-2 graph
    passed - Scenario: Handling triadic friend of a friend that is not a friend with implicit subset of labels.When executing query:
-   passed - Scenario: Handling triadic friend of a friend that is not a friend with implicit subset of labels.Then the result should be:
-   passed - Scenario: Handling triadic friend of a friend that is not a friend with implicit subset of labels.And no side effects
+   failed - Scenario: Handling triadic friend of a friend that is not a friend with implicit subset of labels.Then the result should be:
+   ignored - Scenario: Handling triadic friend of a friend that is not a friend with implicit subset of labels.And no side effects
   Scenario: Handling triadic friend of a friend that is not a friend with implicit superset of labels
    passed - Scenario: Handling triadic friend of a friend that is not a friend with implicit superset of labels.Given the binary-tree-2 graph
    passed - Scenario: Handling triadic friend of a friend that is not a friend with implicit superset of labels.When executing query:
-   passed - Scenario: Handling triadic friend of a friend that is not a friend with implicit superset of labels.Then the result should be:
-   passed - Scenario: Handling triadic friend of a friend that is not a friend with implicit superset of labels.And no side effects
+   failed - Scenario: Handling triadic friend of a friend that is not a friend with implicit superset of labels.Then the result should be:
+   ignored - Scenario: Handling triadic friend of a friend that is not a friend with implicit superset of labels.And no side effects
   Scenario: Handling triadic friend of a friend that is a friend
    passed - Scenario: Handling triadic friend of a friend that is a friend.Given the binary-tree-2 graph
    passed - Scenario: Handling triadic friend of a friend that is a friend.When executing query:
-   passed - Scenario: Handling triadic friend of a friend that is a friend.Then the result should be:
-   passed - Scenario: Handling triadic friend of a friend that is a friend.And no side effects
+   failed - Scenario: Handling triadic friend of a friend that is a friend.Then the result should be:
+   ignored - Scenario: Handling triadic friend of a friend that is a friend.And no side effects
   Scenario: Handling triadic friend of a friend that is a friend with different relationship type
    passed - Scenario: Handling triadic friend of a friend that is a friend with different relationship type.Given the binary-tree-1 graph
    passed - Scenario: Handling triadic friend of a friend that is a friend with different relationship type.When executing query:
-   passed - Scenario: Handling triadic friend of a friend that is a friend with different relationship type.Then the result should be:
-   passed - Scenario: Handling triadic friend of a friend that is a friend with different relationship type.And no side effects
+   failed - Scenario: Handling triadic friend of a friend that is a friend with different relationship type.Then the result should be:
+   ignored - Scenario: Handling triadic friend of a friend that is a friend with different relationship type.And no side effects
   Scenario: Handling triadic friend of a friend that is a friend with superset of relationship type
    passed - Scenario: Handling triadic friend of a friend that is a friend with superset of relationship type.Given the binary-tree-1 graph
    passed - Scenario: Handling triadic friend of a friend that is a friend with superset of relationship type.When executing query:
-   passed - Scenario: Handling triadic friend of a friend that is a friend with superset of relationship type.Then the result should be:
-   passed - Scenario: Handling triadic friend of a friend that is a friend with superset of relationship type.And no side effects
+   failed - Scenario: Handling triadic friend of a friend that is a friend with superset of relationship type.Then the result should be:
+   ignored - Scenario: Handling triadic friend of a friend that is a friend with superset of relationship type.And no side effects
   Scenario: Handling triadic friend of a friend that is a friend with implicit subset of relationship type
    passed - Scenario: Handling triadic friend of a friend that is a friend with implicit subset of relationship type.Given the binary-tree-1 graph
    passed - Scenario: Handling triadic friend of a friend that is a friend with implicit subset of relationship type.When executing query:
-   passed - Scenario: Handling triadic friend of a friend that is a friend with implicit subset of relationship type.Then the result should be:
-   passed - Scenario: Handling triadic friend of a friend that is a friend with implicit subset of relationship type.And no side effects
+   failed - Scenario: Handling triadic friend of a friend that is a friend with implicit subset of relationship type.Then the result should be:
+   ignored - Scenario: Handling triadic friend of a friend that is a friend with implicit subset of relationship type.And no side effects
   Scenario: Handling triadic friend of a friend that is a friend with explicit subset of relationship type
    passed - Scenario: Handling triadic friend of a friend that is a friend with explicit subset of relationship type.Given the binary-tree-1 graph
    passed - Scenario: Handling triadic friend of a friend that is a friend with explicit subset of relationship type.When executing query:
-   passed - Scenario: Handling triadic friend of a friend that is a friend with explicit subset of relationship type.Then the result should be:
-   passed - Scenario: Handling triadic friend of a friend that is a friend with explicit subset of relationship type.And no side effects
+   failed - Scenario: Handling triadic friend of a friend that is a friend with explicit subset of relationship type.Then the result should be:
+   ignored - Scenario: Handling triadic friend of a friend that is a friend with explicit subset of relationship type.And no side effects
   Scenario: Handling triadic friend of a friend that is a friend with same labels
    passed - Scenario: Handling triadic friend of a friend that is a friend with same labels.Given the binary-tree-2 graph
    passed - Scenario: Handling triadic friend of a friend that is a friend with same labels.When executing query:
-   passed - Scenario: Handling triadic friend of a friend that is a friend with same labels.Then the result should be:
-   passed - Scenario: Handling triadic friend of a friend that is a friend with same labels.And no side effects
+   failed - Scenario: Handling triadic friend of a friend that is a friend with same labels.Then the result should be:
+   ignored - Scenario: Handling triadic friend of a friend that is a friend with same labels.And no side effects
   Scenario: Handling triadic friend of a friend that is a friend with different labels
    passed - Scenario: Handling triadic friend of a friend that is a friend with different labels.Given the binary-tree-2 graph
    passed - Scenario: Handling triadic friend of a friend that is a friend with different labels.When executing query:
-   passed - Scenario: Handling triadic friend of a friend that is a friend with different labels.Then the result should be:
-   passed - Scenario: Handling triadic friend of a friend that is a friend with different labels.And no side effects
+   failed - Scenario: Handling triadic friend of a friend that is a friend with different labels.Then the result should be:
+   ignored - Scenario: Handling triadic friend of a friend that is a friend with different labels.And no side effects
   Scenario: Handling triadic friend of a friend that is a friend with implicit subset of labels
    passed - Scenario: Handling triadic friend of a friend that is a friend with implicit subset of labels.Given the binary-tree-2 graph
    passed - Scenario: Handling triadic friend of a friend that is a friend with implicit subset of labels.When executing query:
-   passed - Scenario: Handling triadic friend of a friend that is a friend with implicit subset of labels.Then the result should be:
-   passed - Scenario: Handling triadic friend of a friend that is a friend with implicit subset of labels.And no side effects
+   failed - Scenario: Handling triadic friend of a friend that is a friend with implicit subset of labels.Then the result should be:
+   ignored - Scenario: Handling triadic friend of a friend that is a friend with implicit subset of labels.And no side effects
   Scenario: Handling triadic friend of a friend that is a friend with implicit superset of labels
    passed - Scenario: Handling triadic friend of a friend that is a friend with implicit superset of labels.Given the binary-tree-2 graph
    passed - Scenario: Handling triadic friend of a friend that is a friend with implicit superset of labels.When executing query:
-   passed - Scenario: Handling triadic friend of a friend that is a friend with implicit superset of labels.Then the result should be:
-   passed - Scenario: Handling triadic friend of a friend that is a friend with implicit superset of labels.And no side effects
+   failed - Scenario: Handling triadic friend of a friend that is a friend with implicit superset of labels.Then the result should be:
+   ignored - Scenario: Handling triadic friend of a friend that is a friend with implicit superset of labels.And no side effects
 TypeConversionFunctionsTest
  Feature: TypeConversionFunctions
   Scenario: `toBoolean()` on valid literal string
@@ -4457,7 +4481,7 @@ UnwindAcceptanceTest
    passed - Scenario: Creating nodes from an unwound parameter list.And parameters are:
    passed - Scenario: Creating nodes from an unwound parameter list.When executing query:
    passed - Scenario: Creating nodes from an unwound parameter list.Then the result should be, in order:
-   passed - Scenario: Creating nodes from an unwound parameter list.And the side effects should be:
+   failed - Scenario: Creating nodes from an unwound parameter list.And the side effects should be:
   Scenario: Double unwinding a list of lists
    passed - Scenario: Double unwinding a list of lists.Given any graph
    passed - Scenario: Double unwinding a list of lists.When executing query:
@@ -4471,8 +4495,8 @@ UnwindAcceptanceTest
   Scenario: Unwinding null
    passed - Scenario: Unwinding null.Given any graph
    passed - Scenario: Unwinding null.When executing query:
-   passed - Scenario: Unwinding null.Then the result should be:
-   passed - Scenario: Unwinding null.And no side effects
+   error - Scenario: Unwinding null.Then the result should be:
+   ignored - Scenario: Unwinding null.And no side effects
   Scenario: Unwinding list with duplicates
    passed - Scenario: Unwinding list with duplicates.Given any graph
    passed - Scenario: Unwinding list with duplicates.When executing query:
@@ -4481,19 +4505,19 @@ UnwindAcceptanceTest
   Scenario: Unwind does not prune context
    passed - Scenario: Unwind does not prune context.Given any graph
    passed - Scenario: Unwind does not prune context.When executing query:
-   passed - Scenario: Unwind does not prune context.Then the result should be:
-   passed - Scenario: Unwind does not prune context.And no side effects
+   failed - Scenario: Unwind does not prune context.Then the result should be:
+   ignored - Scenario: Unwind does not prune context.And no side effects
   Scenario: Unwind does not remove variables from scope
    passed - Scenario: Unwind does not remove variables from scope.Given an empty graph
    passed - Scenario: Unwind does not remove variables from scope.And having executed:
    passed - Scenario: Unwind does not remove variables from scope.When executing query:
-   passed - Scenario: Unwind does not remove variables from scope.Then the result should be:
-   passed - Scenario: Unwind does not remove variables from scope.And no side effects
+   failed - Scenario: Unwind does not remove variables from scope.Then the result should be:
+   ignored - Scenario: Unwind does not remove variables from scope.And no side effects
   Scenario: Multiple unwinds after each other
    passed - Scenario: Multiple unwinds after each other.Given any graph
    passed - Scenario: Multiple unwinds after each other.When executing query:
-   passed - Scenario: Multiple unwinds after each other.Then the result should be:
-   passed - Scenario: Multiple unwinds after each other.And no side effects
+   failed - Scenario: Multiple unwinds after each other.Then the result should be:
+   ignored - Scenario: Multiple unwinds after each other.And no side effects
   Scenario: Unwind with merge
    passed - Scenario: Unwind with merge.Given an empty graph
    passed - Scenario: Unwind with merge.And parameters are:
@@ -4506,14 +4530,14 @@ VarLengthAcceptanceTest
    passed - Scenario: Handling unbounded variable length match.Given an empty graph
    passed - Scenario: Handling unbounded variable length match.And having executed:
    passed - Scenario: Handling unbounded variable length match.When executing query:
-   passed - Scenario: Handling unbounded variable length match.Then the result should be:
-   passed - Scenario: Handling unbounded variable length match.And no side effects
+   error - Scenario: Handling unbounded variable length match.Then the result should be:
+   ignored - Scenario: Handling unbounded variable length match.And no side effects
   Scenario: Handling explicitly unbounded variable length match
    passed - Scenario: Handling explicitly unbounded variable length match.Given an empty graph
    passed - Scenario: Handling explicitly unbounded variable length match.And having executed:
    passed - Scenario: Handling explicitly unbounded variable length match.When executing query:
-   passed - Scenario: Handling explicitly unbounded variable length match.Then the result should be:
-   passed - Scenario: Handling explicitly unbounded variable length match.And no side effects
+   error - Scenario: Handling explicitly unbounded variable length match.Then the result should be:
+   ignored - Scenario: Handling explicitly unbounded variable length match.And no side effects
   Scenario: Fail when asterisk operator is missing
    passed - Scenario: Fail when asterisk operator is missing.Given an empty graph
    passed - Scenario: Fail when asterisk operator is missing.And having executed:
@@ -4523,50 +4547,50 @@ VarLengthAcceptanceTest
    passed - Scenario: Handling single bounded variable length match 1.Given an empty graph
    passed - Scenario: Handling single bounded variable length match 1.And having executed:
    passed - Scenario: Handling single bounded variable length match 1.When executing query:
-   passed - Scenario: Handling single bounded variable length match 1.Then the result should be:
-   passed - Scenario: Handling single bounded variable length match 1.And no side effects
+   error - Scenario: Handling single bounded variable length match 1.Then the result should be:
+   ignored - Scenario: Handling single bounded variable length match 1.And no side effects
   Scenario: Handling single bounded variable length match 2
    passed - Scenario: Handling single bounded variable length match 2.Given an empty graph
    passed - Scenario: Handling single bounded variable length match 2.And having executed:
    passed - Scenario: Handling single bounded variable length match 2.When executing query:
-   passed - Scenario: Handling single bounded variable length match 2.Then the result should be:
-   passed - Scenario: Handling single bounded variable length match 2.And no side effects
+   error - Scenario: Handling single bounded variable length match 2.Then the result should be:
+   ignored - Scenario: Handling single bounded variable length match 2.And no side effects
   Scenario: Handling single bounded variable length match 3
    passed - Scenario: Handling single bounded variable length match 3.Given an empty graph
    passed - Scenario: Handling single bounded variable length match 3.And having executed:
    passed - Scenario: Handling single bounded variable length match 3.When executing query:
-   passed - Scenario: Handling single bounded variable length match 3.Then the result should be:
-   passed - Scenario: Handling single bounded variable length match 3.And no side effects
+   error - Scenario: Handling single bounded variable length match 3.Then the result should be:
+   ignored - Scenario: Handling single bounded variable length match 3.And no side effects
   Scenario: Handling upper and lower bounded variable length match 1
    passed - Scenario: Handling upper and lower bounded variable length match 1.Given an empty graph
    passed - Scenario: Handling upper and lower bounded variable length match 1.And having executed:
    passed - Scenario: Handling upper and lower bounded variable length match 1.When executing query:
-   passed - Scenario: Handling upper and lower bounded variable length match 1.Then the result should be:
-   passed - Scenario: Handling upper and lower bounded variable length match 1.And no side effects
+   error - Scenario: Handling upper and lower bounded variable length match 1.Then the result should be:
+   ignored - Scenario: Handling upper and lower bounded variable length match 1.And no side effects
   Scenario: Handling upper and lower bounded variable length match 2
    passed - Scenario: Handling upper and lower bounded variable length match 2.Given an empty graph
    passed - Scenario: Handling upper and lower bounded variable length match 2.And having executed:
    passed - Scenario: Handling upper and lower bounded variable length match 2.When executing query:
-   passed - Scenario: Handling upper and lower bounded variable length match 2.Then the result should be:
-   passed - Scenario: Handling upper and lower bounded variable length match 2.And no side effects
+   error - Scenario: Handling upper and lower bounded variable length match 2.Then the result should be:
+   ignored - Scenario: Handling upper and lower bounded variable length match 2.And no side effects
   Scenario: Handling symmetrically bounded variable length match, bounds are zero
    passed - Scenario: Handling symmetrically bounded variable length match, bounds are zero.Given an empty graph
    passed - Scenario: Handling symmetrically bounded variable length match, bounds are zero.And having executed:
    passed - Scenario: Handling symmetrically bounded variable length match, bounds are zero.When executing query:
-   passed - Scenario: Handling symmetrically bounded variable length match, bounds are zero.Then the result should be:
-   passed - Scenario: Handling symmetrically bounded variable length match, bounds are zero.And no side effects
+   error - Scenario: Handling symmetrically bounded variable length match, bounds are zero.Then the result should be:
+   ignored - Scenario: Handling symmetrically bounded variable length match, bounds are zero.And no side effects
   Scenario: Handling symmetrically bounded variable length match, bounds are one
    passed - Scenario: Handling symmetrically bounded variable length match, bounds are one.Given an empty graph
    passed - Scenario: Handling symmetrically bounded variable length match, bounds are one.And having executed:
    passed - Scenario: Handling symmetrically bounded variable length match, bounds are one.When executing query:
-   passed - Scenario: Handling symmetrically bounded variable length match, bounds are one.Then the result should be:
-   passed - Scenario: Handling symmetrically bounded variable length match, bounds are one.And no side effects
+   error - Scenario: Handling symmetrically bounded variable length match, bounds are one.Then the result should be:
+   ignored - Scenario: Handling symmetrically bounded variable length match, bounds are one.And no side effects
   Scenario: Handling symmetrically bounded variable length match, bounds are two
    passed - Scenario: Handling symmetrically bounded variable length match, bounds are two.Given an empty graph
    passed - Scenario: Handling symmetrically bounded variable length match, bounds are two.And having executed:
    passed - Scenario: Handling symmetrically bounded variable length match, bounds are two.When executing query:
-   passed - Scenario: Handling symmetrically bounded variable length match, bounds are two.Then the result should be:
-   passed - Scenario: Handling symmetrically bounded variable length match, bounds are two.And no side effects
+   error - Scenario: Handling symmetrically bounded variable length match, bounds are two.Then the result should be:
+   ignored - Scenario: Handling symmetrically bounded variable length match, bounds are two.And no side effects
   Scenario: Fail on negative bound
    passed - Scenario: Fail on negative bound.Given an empty graph
    passed - Scenario: Fail on negative bound.And having executed:
@@ -4576,123 +4600,123 @@ VarLengthAcceptanceTest
    passed - Scenario: Handling upper and lower bounded variable length match, empty interval 1.Given an empty graph
    passed - Scenario: Handling upper and lower bounded variable length match, empty interval 1.And having executed:
    passed - Scenario: Handling upper and lower bounded variable length match, empty interval 1.When executing query:
-   passed - Scenario: Handling upper and lower bounded variable length match, empty interval 1.Then the result should be:
-   passed - Scenario: Handling upper and lower bounded variable length match, empty interval 1.And no side effects
+   error - Scenario: Handling upper and lower bounded variable length match, empty interval 1.Then the result should be:
+   ignored - Scenario: Handling upper and lower bounded variable length match, empty interval 1.And no side effects
   Scenario: Handling upper and lower bounded variable length match, empty interval 2
    passed - Scenario: Handling upper and lower bounded variable length match, empty interval 2.Given an empty graph
    passed - Scenario: Handling upper and lower bounded variable length match, empty interval 2.And having executed:
    passed - Scenario: Handling upper and lower bounded variable length match, empty interval 2.When executing query:
-   passed - Scenario: Handling upper and lower bounded variable length match, empty interval 2.Then the result should be:
-   passed - Scenario: Handling upper and lower bounded variable length match, empty interval 2.And no side effects
+   error - Scenario: Handling upper and lower bounded variable length match, empty interval 2.Then the result should be:
+   ignored - Scenario: Handling upper and lower bounded variable length match, empty interval 2.And no side effects
   Scenario: Handling upper bounded variable length match, empty interval
    passed - Scenario: Handling upper bounded variable length match, empty interval.Given an empty graph
    passed - Scenario: Handling upper bounded variable length match, empty interval.And having executed:
    passed - Scenario: Handling upper bounded variable length match, empty interval.When executing query:
-   passed - Scenario: Handling upper bounded variable length match, empty interval.Then the result should be:
-   passed - Scenario: Handling upper bounded variable length match, empty interval.And no side effects
+   error - Scenario: Handling upper bounded variable length match, empty interval.Then the result should be:
+   ignored - Scenario: Handling upper bounded variable length match, empty interval.And no side effects
   Scenario: Handling upper bounded variable length match 1
    passed - Scenario: Handling upper bounded variable length match 1.Given an empty graph
    passed - Scenario: Handling upper bounded variable length match 1.And having executed:
    passed - Scenario: Handling upper bounded variable length match 1.When executing query:
-   passed - Scenario: Handling upper bounded variable length match 1.Then the result should be:
-   passed - Scenario: Handling upper bounded variable length match 1.And no side effects
+   error - Scenario: Handling upper bounded variable length match 1.Then the result should be:
+   ignored - Scenario: Handling upper bounded variable length match 1.And no side effects
   Scenario: Handling upper bounded variable length match 2
    passed - Scenario: Handling upper bounded variable length match 2.Given an empty graph
    passed - Scenario: Handling upper bounded variable length match 2.And having executed:
    passed - Scenario: Handling upper bounded variable length match 2.When executing query:
-   passed - Scenario: Handling upper bounded variable length match 2.Then the result should be:
-   passed - Scenario: Handling upper bounded variable length match 2.And no side effects
+   error - Scenario: Handling upper bounded variable length match 2.Then the result should be:
+   ignored - Scenario: Handling upper bounded variable length match 2.And no side effects
   Scenario: Handling lower bounded variable length match 1
    passed - Scenario: Handling lower bounded variable length match 1.Given an empty graph
    passed - Scenario: Handling lower bounded variable length match 1.And having executed:
    passed - Scenario: Handling lower bounded variable length match 1.When executing query:
-   passed - Scenario: Handling lower bounded variable length match 1.Then the result should be:
-   passed - Scenario: Handling lower bounded variable length match 1.And no side effects
+   error - Scenario: Handling lower bounded variable length match 1.Then the result should be:
+   ignored - Scenario: Handling lower bounded variable length match 1.And no side effects
   Scenario: Handling lower bounded variable length match 2
    passed - Scenario: Handling lower bounded variable length match 2.Given an empty graph
    passed - Scenario: Handling lower bounded variable length match 2.And having executed:
    passed - Scenario: Handling lower bounded variable length match 2.When executing query:
-   passed - Scenario: Handling lower bounded variable length match 2.Then the result should be:
-   passed - Scenario: Handling lower bounded variable length match 2.And no side effects
+   error - Scenario: Handling lower bounded variable length match 2.Then the result should be:
+   ignored - Scenario: Handling lower bounded variable length match 2.And no side effects
   Scenario: Handling lower bounded variable length match 3
    passed - Scenario: Handling lower bounded variable length match 3.Given an empty graph
    passed - Scenario: Handling lower bounded variable length match 3.And having executed:
    passed - Scenario: Handling lower bounded variable length match 3.When executing query:
-   passed - Scenario: Handling lower bounded variable length match 3.Then the result should be:
-   passed - Scenario: Handling lower bounded variable length match 3.And no side effects
+   error - Scenario: Handling lower bounded variable length match 3.Then the result should be:
+   ignored - Scenario: Handling lower bounded variable length match 3.And no side effects
   Scenario: Handling a variable length relationship and a standard relationship in chain, zero length 1
    passed - Scenario: Handling a variable length relationship and a standard relationship in chain, zero length 1.Given an empty graph
    passed - Scenario: Handling a variable length relationship and a standard relationship in chain, zero length 1.And having executed:
    passed - Scenario: Handling a variable length relationship and a standard relationship in chain, zero length 1.When executing query:
-   passed - Scenario: Handling a variable length relationship and a standard relationship in chain, zero length 1.Then the result should be:
-   passed - Scenario: Handling a variable length relationship and a standard relationship in chain, zero length 1.And no side effects
+   error - Scenario: Handling a variable length relationship and a standard relationship in chain, zero length 1.Then the result should be:
+   ignored - Scenario: Handling a variable length relationship and a standard relationship in chain, zero length 1.And no side effects
   Scenario: Handling a variable length relationship and a standard relationship in chain, zero length 2
    passed - Scenario: Handling a variable length relationship and a standard relationship in chain, zero length 2.Given an empty graph
    passed - Scenario: Handling a variable length relationship and a standard relationship in chain, zero length 2.And having executed:
    passed - Scenario: Handling a variable length relationship and a standard relationship in chain, zero length 2.When executing query:
-   passed - Scenario: Handling a variable length relationship and a standard relationship in chain, zero length 2.Then the result should be:
-   passed - Scenario: Handling a variable length relationship and a standard relationship in chain, zero length 2.And no side effects
+   error - Scenario: Handling a variable length relationship and a standard relationship in chain, zero length 2.Then the result should be:
+   ignored - Scenario: Handling a variable length relationship and a standard relationship in chain, zero length 2.And no side effects
   Scenario: Handling a variable length relationship and a standard relationship in chain, single length 1
    passed - Scenario: Handling a variable length relationship and a standard relationship in chain, single length 1.Given an empty graph
    passed - Scenario: Handling a variable length relationship and a standard relationship in chain, single length 1.And having executed:
    passed - Scenario: Handling a variable length relationship and a standard relationship in chain, single length 1.When executing query:
-   passed - Scenario: Handling a variable length relationship and a standard relationship in chain, single length 1.Then the result should be:
-   passed - Scenario: Handling a variable length relationship and a standard relationship in chain, single length 1.And no side effects
+   error - Scenario: Handling a variable length relationship and a standard relationship in chain, single length 1.Then the result should be:
+   ignored - Scenario: Handling a variable length relationship and a standard relationship in chain, single length 1.And no side effects
   Scenario: Handling a variable length relationship and a standard relationship in chain, single length 2
    passed - Scenario: Handling a variable length relationship and a standard relationship in chain, single length 2.Given an empty graph
    passed - Scenario: Handling a variable length relationship and a standard relationship in chain, single length 2.And having executed:
    passed - Scenario: Handling a variable length relationship and a standard relationship in chain, single length 2.When executing query:
-   passed - Scenario: Handling a variable length relationship and a standard relationship in chain, single length 2.Then the result should be:
-   passed - Scenario: Handling a variable length relationship and a standard relationship in chain, single length 2.And no side effects
+   error - Scenario: Handling a variable length relationship and a standard relationship in chain, single length 2.Then the result should be:
+   ignored - Scenario: Handling a variable length relationship and a standard relationship in chain, single length 2.And no side effects
   Scenario: Handling a variable length relationship and a standard relationship in chain, longer 1
    passed - Scenario: Handling a variable length relationship and a standard relationship in chain, longer 1.Given an empty graph
    passed - Scenario: Handling a variable length relationship and a standard relationship in chain, longer 1.And having executed:
    passed - Scenario: Handling a variable length relationship and a standard relationship in chain, longer 1.When executing query:
-   passed - Scenario: Handling a variable length relationship and a standard relationship in chain, longer 1.Then the result should be:
-   passed - Scenario: Handling a variable length relationship and a standard relationship in chain, longer 1.And no side effects
+   error - Scenario: Handling a variable length relationship and a standard relationship in chain, longer 1.Then the result should be:
+   ignored - Scenario: Handling a variable length relationship and a standard relationship in chain, longer 1.And no side effects
   Scenario: Handling a variable length relationship and a standard relationship in chain, longer 2
    passed - Scenario: Handling a variable length relationship and a standard relationship in chain, longer 2.Given an empty graph
    passed - Scenario: Handling a variable length relationship and a standard relationship in chain, longer 2.And having executed:
    passed - Scenario: Handling a variable length relationship and a standard relationship in chain, longer 2.When executing query:
-   passed - Scenario: Handling a variable length relationship and a standard relationship in chain, longer 2.Then the result should be:
-   passed - Scenario: Handling a variable length relationship and a standard relationship in chain, longer 2.And no side effects
+   error - Scenario: Handling a variable length relationship and a standard relationship in chain, longer 2.Then the result should be:
+   ignored - Scenario: Handling a variable length relationship and a standard relationship in chain, longer 2.And no side effects
   Scenario: Handling a variable length relationship and a standard relationship in chain, longer 3
    passed - Scenario: Handling a variable length relationship and a standard relationship in chain, longer 3.Given an empty graph
    passed - Scenario: Handling a variable length relationship and a standard relationship in chain, longer 3.And having executed:
    passed - Scenario: Handling a variable length relationship and a standard relationship in chain, longer 3.And having executed:
    passed - Scenario: Handling a variable length relationship and a standard relationship in chain, longer 3.When executing query:
-   passed - Scenario: Handling a variable length relationship and a standard relationship in chain, longer 3.Then the result should be:
-   passed - Scenario: Handling a variable length relationship and a standard relationship in chain, longer 3.And no side effects
+   error - Scenario: Handling a variable length relationship and a standard relationship in chain, longer 3.Then the result should be:
+   ignored - Scenario: Handling a variable length relationship and a standard relationship in chain, longer 3.And no side effects
   Scenario: Handling mixed relationship patterns and directions 1
    passed - Scenario: Handling mixed relationship patterns and directions 1.Given an empty graph
    passed - Scenario: Handling mixed relationship patterns and directions 1.And having executed:
    passed - Scenario: Handling mixed relationship patterns and directions 1.And having executed:
    passed - Scenario: Handling mixed relationship patterns and directions 1.And having executed:
    passed - Scenario: Handling mixed relationship patterns and directions 1.When executing query:
-   passed - Scenario: Handling mixed relationship patterns and directions 1.Then the result should be:
-   passed - Scenario: Handling mixed relationship patterns and directions 1.And no side effects
+   error - Scenario: Handling mixed relationship patterns and directions 1.Then the result should be:
+   ignored - Scenario: Handling mixed relationship patterns and directions 1.And no side effects
   Scenario: Handling mixed relationship patterns and directions 2
    passed - Scenario: Handling mixed relationship patterns and directions 2.Given an empty graph
    passed - Scenario: Handling mixed relationship patterns and directions 2.And having executed:
-   passed - Scenario: Handling mixed relationship patterns and directions 2.And having executed:
-   passed - Scenario: Handling mixed relationship patterns and directions 2.And having executed:
-   passed - Scenario: Handling mixed relationship patterns and directions 2.When executing query:
-   passed - Scenario: Handling mixed relationship patterns and directions 2.Then the result should be:
-   passed - Scenario: Handling mixed relationship patterns and directions 2.And no side effects
+   error - Scenario: Handling mixed relationship patterns and directions 2.And having executed:
+   ignored - Scenario: Handling mixed relationship patterns and directions 2.And having executed:
+   ignored - Scenario: Handling mixed relationship patterns and directions 2.When executing query:
+   ignored - Scenario: Handling mixed relationship patterns and directions 2.Then the result should be:
+   ignored - Scenario: Handling mixed relationship patterns and directions 2.And no side effects
   Scenario: Handling mixed relationship patterns 1
    passed - Scenario: Handling mixed relationship patterns 1.Given an empty graph
    passed - Scenario: Handling mixed relationship patterns 1.And having executed:
    passed - Scenario: Handling mixed relationship patterns 1.And having executed:
    passed - Scenario: Handling mixed relationship patterns 1.When executing query:
-   passed - Scenario: Handling mixed relationship patterns 1.Then the result should be:
-   passed - Scenario: Handling mixed relationship patterns 1.And no side effects
+   error - Scenario: Handling mixed relationship patterns 1.Then the result should be:
+   ignored - Scenario: Handling mixed relationship patterns 1.And no side effects
   Scenario: Handling mixed relationship patterns 2
    passed - Scenario: Handling mixed relationship patterns 2.Given an empty graph
    passed - Scenario: Handling mixed relationship patterns 2.And having executed:
    passed - Scenario: Handling mixed relationship patterns 2.And having executed:
    passed - Scenario: Handling mixed relationship patterns 2.When executing query:
-   passed - Scenario: Handling mixed relationship patterns 2.Then the result should be:
-   passed - Scenario: Handling mixed relationship patterns 2.And no side effects
+   error - Scenario: Handling mixed relationship patterns 2.Then the result should be:
+   ignored - Scenario: Handling mixed relationship patterns 2.And no side effects
 WhereAcceptanceTest
  Feature: WhereAcceptance
   Scenario: NOT and false
@@ -4707,8 +4731,8 @@ WithAcceptanceTest
    passed - Scenario: Passing on pattern nodes.Given an empty graph
    passed - Scenario: Passing on pattern nodes.And having executed:
    passed - Scenario: Passing on pattern nodes.When executing query:
-   passed - Scenario: Passing on pattern nodes.Then the result should be:
-   passed - Scenario: Passing on pattern nodes.And no side effects
+   failed - Scenario: Passing on pattern nodes.Then the result should be:
+   ignored - Scenario: Passing on pattern nodes.And no side effects
   Scenario: ORDER BY and LIMIT can be used
    passed - Scenario: ORDER BY and LIMIT can be used.Given an empty graph
    passed - Scenario: ORDER BY and LIMIT can be used.And having executed:
@@ -4755,25 +4779,25 @@ WithAcceptanceTest
    passed - Scenario: ORDER BY a DISTINCT column.Given an empty graph
    passed - Scenario: ORDER BY a DISTINCT column.And having executed:
    passed - Scenario: ORDER BY a DISTINCT column.When executing query:
-   passed - Scenario: ORDER BY a DISTINCT column.Then the result should be:
-   passed - Scenario: ORDER BY a DISTINCT column.And no side effects
+   failed - Scenario: ORDER BY a DISTINCT column.Then the result should be:
+   ignored - Scenario: ORDER BY a DISTINCT column.And no side effects
   Scenario: WHERE on a DISTINCT column
    passed - Scenario: WHERE on a DISTINCT column.Given an empty graph
    passed - Scenario: WHERE on a DISTINCT column.And having executed:
    passed - Scenario: WHERE on a DISTINCT column.When executing query:
-   passed - Scenario: WHERE on a DISTINCT column.Then the result should be:
-   passed - Scenario: WHERE on a DISTINCT column.And no side effects
+   failed - Scenario: WHERE on a DISTINCT column.Then the result should be:
+   ignored - Scenario: WHERE on a DISTINCT column.And no side effects
   Scenario: A simple pattern with one bound endpoint
    passed - Scenario: A simple pattern with one bound endpoint.Given an empty graph
    passed - Scenario: A simple pattern with one bound endpoint.And having executed:
    passed - Scenario: A simple pattern with one bound endpoint.When executing query:
-   passed - Scenario: A simple pattern with one bound endpoint.Then the result should be:
-   passed - Scenario: A simple pattern with one bound endpoint.And no side effects
+   failed - Scenario: A simple pattern with one bound endpoint.Then the result should be:
+   ignored - Scenario: A simple pattern with one bound endpoint.And no side effects
   Scenario: Null handling
    passed - Scenario: Null handling.Given an empty graph
    passed - Scenario: Null handling.When executing query:
-   passed - Scenario: Null handling.Then the result should be:
-   passed - Scenario: Null handling.And no side effects
+   error - Scenario: Null handling.Then the result should be:
+   ignored - Scenario: Null handling.And no side effects
   Scenario: Nested maps
    passed - Scenario: Nested maps.Given an empty graph
    passed - Scenario: Nested maps.When executing query:
@@ -4783,8 +4807,8 @@ WithAcceptanceTest
    passed - Scenario: Connected components succeeding WITH.Given an empty graph
    passed - Scenario: Connected components succeeding WITH.And having executed:
    passed - Scenario: Connected components succeeding WITH.When executing query:
-   passed - Scenario: Connected components succeeding WITH.Then the result should be:
-   passed - Scenario: Connected components succeeding WITH.And no side effects
+   failed - Scenario: Connected components succeeding WITH.Then the result should be:
+   ignored - Scenario: Connected components succeeding WITH.And no side effects
   Scenario: Single WITH using a predicate and aggregation
    passed - Scenario: Single WITH using a predicate and aggregation.Given an empty graph
    passed - Scenario: Single WITH using a predicate and aggregation.And having executed:
@@ -4799,6 +4823,13 @@ WithAcceptanceTest
    passed - Scenario: Multiple WITHs using a predicate and aggregation.And no side effects
 ObjectUtilsTest
    passed - ObjectUtilsTest.testCompare
+Scenario: Aggregates in aggregates
+   passed - Scenario: Aggregates in aggregates.Given any graph
+   ignored - Scenario: Aggregates in aggregates/Given any graph
+   passed - Scenario: Aggregates in aggregates.When executing query:
+   ignored - Scenario: Aggregates in aggregates/When executing query:
+   passed - Scenario: Aggregates in aggregates.Then a SyntaxError should be raised at compile time: NestedAggregation
+   ignored - Scenario: Aggregates in aggregates/Then a SyntaxError should be raised at compile time: NestedAggregation
 Scenario: Fail when adding a new label predicate on a node that is already bound 1
    passed - Scenario: Fail when adding a new label predicate on a node that is already bound 1.Given an empty graph
    ignored - Scenario: Fail when adding a new label predicate on a node that is already bound 1/Given an empty graph
@@ -4848,13 +4879,6 @@ Scenario: Failing on merging relationship with null property
    ignored - Scenario: Failing on merging relationship with null property/When executing query:
    passed - Scenario: Failing on merging relationship with null property.Then a SemanticError should be raised at compile time: MergeReadOwnWrites
    ignored - Scenario: Failing on merging relationship with null property/Then a SemanticError should be raised at compile time: MergeReadOwnWrites
-Scenario: Failing on merging node with null property
-   passed - Scenario: Failing on merging node with null property.Given any graph
-   ignored - Scenario: Failing on merging node with null property/Given any graph
-   passed - Scenario: Failing on merging node with null property.When executing query:
-   ignored - Scenario: Failing on merging node with null property/When executing query:
-   passed - Scenario: Failing on merging node with null property.Then a SemanticError should be raised at compile time: MergeReadOwnWrites
-   ignored - Scenario: Failing on merging node with null property/Then a SemanticError should be raised at compile time: MergeReadOwnWrites
 Scenario: Failing on aggregation in WHERE
    passed - Scenario: Failing on aggregation in WHERE.Given any graph
    ignored - Scenario: Failing on aggregation in WHERE/Given any graph
@@ -5403,6 +5427,20 @@ Scenario: Failing when using IN on a boolean literal
    ignored - Scenario: Failing when using IN on a boolean literal/When executing query:
    passed - Scenario: Failing when using IN on a boolean literal.Then a SyntaxError should be raised at compile time: InvalidArgumentType
    ignored - Scenario: Failing when using IN on a boolean literal/Then a SyntaxError should be raised at compile time: InvalidArgumentType
+Scenario: Failing when a node is used as a relationship
+   passed - Scenario: Failing when a node is used as a relationship.Given any graph
+   ignored - Scenario: Failing when a node is used as a relationship/Given any graph
+   passed - Scenario: Failing when a node is used as a relationship.When executing query:
+   ignored - Scenario: Failing when a node is used as a relationship/When executing query:
+   passed - Scenario: Failing when a node is used as a relationship.Then a SyntaxError should be raised at compile time: VariableTypeConflict
+   ignored - Scenario: Failing when a node is used as a relationship/Then a SyntaxError should be raised at compile time: VariableTypeConflict
+Scenario: Failing when a relationship is used as a node
+   passed - Scenario: Failing when a relationship is used as a node.Given any graph
+   ignored - Scenario: Failing when a relationship is used as a node/Given any graph
+   passed - Scenario: Failing when a relationship is used as a node.When executing query:
+   ignored - Scenario: Failing when a relationship is used as a node/When executing query:
+   passed - Scenario: Failing when a relationship is used as a node.Then a SyntaxError should be raised at compile time: VariableTypeConflict
+   ignored - Scenario: Failing when a relationship is used as a node/Then a SyntaxError should be raised at compile time: VariableTypeConflict
 )` on a node
    passed - )` on a node.Given any graph(Scenario: Failing when using `type
    ignored - )` on a node/Given any graph(Scenario: Failing when using `type
@@ -5472,6 +5510,13 @@ Scenario: Failing when using MERGE on a relationship that is already bound
    ignored - Scenario: Failing when using MERGE on a relationship that is already bound/When executing query:
    passed - Scenario: Failing when using MERGE on a relationship that is already bound.Then a SyntaxError should be raised at compile time: VariableAlreadyBound
    ignored - Scenario: Failing when using MERGE on a relationship that is already bound/Then a SyntaxError should be raised at compile time: VariableAlreadyBound
+Scenario: Failing when using undefined variable in ON CREATE
+   passed - Scenario: Failing when using undefined variable in ON CREATE.Given any graph
+   ignored - Scenario: Failing when using undefined variable in ON CREATE/Given any graph
+   passed - Scenario: Failing when using undefined variable in ON CREATE.When executing query:
+   ignored - Scenario: Failing when using undefined variable in ON CREATE/When executing query:
+   passed - Scenario: Failing when using undefined variable in ON CREATE.Then a SyntaxError should be raised at compile time: UndefinedVariable
+   ignored - Scenario: Failing when using undefined variable in ON CREATE/Then a SyntaxError should be raised at compile time: UndefinedVariable
 Scenario: Failing when using undefined variable in ON MATCH
    passed - Scenario: Failing when using undefined variable in ON MATCH.Given any graph
    ignored - Scenario: Failing when using undefined variable in ON MATCH/Given any graph
@@ -5479,13 +5524,6 @@ Scenario: Failing when using undefined variable in ON MATCH
    ignored - Scenario: Failing when using undefined variable in ON MATCH/When executing query:
    passed - Scenario: Failing when using undefined variable in ON MATCH.Then a SyntaxError should be raised at compile time: UndefinedVariable
    ignored - Scenario: Failing when using undefined variable in ON MATCH/Then a SyntaxError should be raised at compile time: UndefinedVariable
-Scenario: Failing when using MATCH after OPTIONAL MATCH
-   passed - Scenario: Failing when using MATCH after OPTIONAL MATCH.Given any graph
-   ignored - Scenario: Failing when using MATCH after OPTIONAL MATCH/Given any graph
-   passed - Scenario: Failing when using MATCH after OPTIONAL MATCH.When executing query:
-   ignored - Scenario: Failing when using MATCH after OPTIONAL MATCH/When executing query:
-   passed - Scenario: Failing when using MATCH after OPTIONAL MATCH.Then a SyntaxError should be raised at compile time: InvalidClauseComposition
-   ignored - Scenario: Failing when using MATCH after OPTIONAL MATCH/Then a SyntaxError should be raised at compile time: InvalidClauseComposition
 Scenario: Failing when float value is too large
    passed - Scenario: Failing when float value is too large.Given any graph
    ignored - Scenario: Failing when float value is too large/Given any graph
@@ -5514,6 +5552,34 @@ Scenario: Failing when using aggregation in list comprehension
    ignored - Scenario: Failing when using aggregation in list comprehension/When executing query:
    passed - Scenario: Failing when using aggregation in list comprehension.Then a SyntaxError should be raised at compile time: InvalidAggregation
    ignored - Scenario: Failing when using aggregation in list comprehension/Then a SyntaxError should be raised at compile time: InvalidAggregation
+Scenario: Failing when using non-constants in SKIP
+   passed - Scenario: Failing when using non-constants in SKIP.Given any graph
+   ignored - Scenario: Failing when using non-constants in SKIP/Given any graph
+   passed - Scenario: Failing when using non-constants in SKIP.When executing query:
+   ignored - Scenario: Failing when using non-constants in SKIP/When executing query:
+   passed - Scenario: Failing when using non-constants in SKIP.Then a SyntaxError should be raised at compile time: NonConstantExpression
+   ignored - Scenario: Failing when using non-constants in SKIP/Then a SyntaxError should be raised at compile time: NonConstantExpression
+Scenario: Failing when using negative value in SKIP
+   passed - Scenario: Failing when using negative value in SKIP.Given any graph
+   ignored - Scenario: Failing when using negative value in SKIP/Given any graph
+   passed - Scenario: Failing when using negative value in SKIP.When executing query:
+   ignored - Scenario: Failing when using negative value in SKIP/When executing query:
+   passed - Scenario: Failing when using negative value in SKIP.Then a SyntaxError should be raised at compile time: NegativeIntegerArgument
+   ignored - Scenario: Failing when using negative value in SKIP/Then a SyntaxError should be raised at compile time: NegativeIntegerArgument
+Scenario: Failing when using non-constants in LIMIT
+   passed - Scenario: Failing when using non-constants in LIMIT.Given any graph
+   ignored - Scenario: Failing when using non-constants in LIMIT/Given any graph
+   passed - Scenario: Failing when using non-constants in LIMIT.When executing query:
+   ignored - Scenario: Failing when using non-constants in LIMIT/When executing query:
+   passed - Scenario: Failing when using non-constants in LIMIT.Then a SyntaxError should be raised at compile time: NonConstantExpression
+   ignored - Scenario: Failing when using non-constants in LIMIT/Then a SyntaxError should be raised at compile time: NonConstantExpression
+Scenario: Failing when using floating point in LIMIT
+   passed - Scenario: Failing when using floating point in LIMIT.Given any graph
+   ignored - Scenario: Failing when using floating point in LIMIT/Given any graph
+   passed - Scenario: Failing when using floating point in LIMIT.When executing query:
+   ignored - Scenario: Failing when using floating point in LIMIT/When executing query:
+   passed - Scenario: Failing when using floating point in LIMIT.Then a SyntaxError should be raised at compile time: InvalidArgumentType
+   ignored - Scenario: Failing when using floating point in LIMIT/Then a SyntaxError should be raised at compile time: InvalidArgumentType
 Scenario: Failing when creating relationship without type
    passed - Scenario: Failing when creating relationship without type.Given any graph
    ignored - Scenario: Failing when creating relationship without type/Given any graph
@@ -5535,3 +5601,24 @@ Scenario: Failing when merging relationship without type, no colon
    ignored - Scenario: Failing when merging relationship without type, no colon/When executing query:
    passed - Scenario: Failing when merging relationship without type, no colon.Then a SyntaxError should be raised at compile time: NoSingleRelationshipType
    ignored - Scenario: Failing when merging relationship without type, no colon/Then a SyntaxError should be raised at compile time: NoSingleRelationshipType
+Scenario: SKIP with an expression that depends on variables should fail
+   passed - Scenario: SKIP with an expression that depends on variables should fail.Given any graph
+   ignored - Scenario: SKIP with an expression that depends on variables should fail/Given any graph
+   passed - Scenario: SKIP with an expression that depends on variables should fail.When executing query:
+   ignored - Scenario: SKIP with an expression that depends on variables should fail/When executing query:
+   passed - Scenario: SKIP with an expression that depends on variables should fail.Then a SyntaxError should be raised at compile time: NonConstantExpression
+   ignored - Scenario: SKIP with an expression that depends on variables should fail/Then a SyntaxError should be raised at compile time: NonConstantExpression
+Scenario: LIMIT with an expression that depends on variables should fail
+   passed - Scenario: LIMIT with an expression that depends on variables should fail.Given any graph
+   ignored - Scenario: LIMIT with an expression that depends on variables should fail/Given any graph
+   passed - Scenario: LIMIT with an expression that depends on variables should fail.When executing query:
+   ignored - Scenario: LIMIT with an expression that depends on variables should fail/When executing query:
+   passed - Scenario: LIMIT with an expression that depends on variables should fail.Then a SyntaxError should be raised at compile time: NonConstantExpression
+   ignored - Scenario: LIMIT with an expression that depends on variables should fail/Then a SyntaxError should be raised at compile time: NonConstantExpression
+)` in aggregations
+   passed - )` in aggregations.Given any graph(Scenario: Using `rand
+   ignored - )` in aggregations/Given any graph(Scenario: Using `rand
+   passed - )` in aggregations.When executing query:(Scenario: Using `rand
+   ignored - )` in aggregations/When executing query:(Scenario: Using `rand
+   passed - )` in aggregations.Then a SyntaxError should be raised at compile time: NonConstantExpression(Scenario: Using `rand
+   ignored - )` in aggregations/Then a SyntaxError should be raised at compile time: NonConstantExpression(Scenario: Using `rand

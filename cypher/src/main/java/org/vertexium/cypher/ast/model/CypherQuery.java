@@ -19,4 +19,14 @@ public class CypherQuery extends CypherAstBase {
     public Stream<? extends CypherAstBase> getChildren() {
         return clauses.stream();
     }
+
+    @Override
+    public String toString() {
+        StringBuilder results = new StringBuilder();
+        for (CypherClause clause : getClauses()) {
+            results.append(clause.toString());
+            results.append("\n");
+        }
+        return results.toString();
+    }
 }

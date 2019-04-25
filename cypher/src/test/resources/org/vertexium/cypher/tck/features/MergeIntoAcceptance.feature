@@ -96,6 +96,7 @@ Feature: MergeIntoAcceptance
       | keyValue    |
       | ['name->A'] |
 
+  @todo
   Scenario: Copying properties from node with ON MATCH
     And having executed:
       """

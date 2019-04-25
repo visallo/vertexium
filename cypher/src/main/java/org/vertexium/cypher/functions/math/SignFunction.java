@@ -1,11 +1,10 @@
 package org.vertexium.cypher.functions.math;
 
 import org.vertexium.cypher.VertexiumCypherQueryContext;
-import org.vertexium.cypher.executor.ExpressionScope;
 
 public class SignFunction extends CypherUnaryMathFunction {
     @Override
-    protected Object invokeDouble(VertexiumCypherQueryContext ctx, double value, ExpressionScope scope) {
+    protected Object invokeDouble(VertexiumCypherQueryContext ctx, double value) {
         if (value == 0) {
             return 0;
         }
@@ -16,7 +15,7 @@ public class SignFunction extends CypherUnaryMathFunction {
     }
 
     @Override
-    protected Object invokeLong(VertexiumCypherQueryContext ctx, long value, ExpressionScope scope) {
+    protected Object invokeLong(VertexiumCypherQueryContext ctx, long value) {
         if (value == 0) {
             return 0;
         }

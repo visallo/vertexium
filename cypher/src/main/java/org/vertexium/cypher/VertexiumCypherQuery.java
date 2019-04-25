@@ -4,18 +4,19 @@ import org.vertexium.VertexiumException;
 import org.vertexium.cypher.ast.CypherAstParser;
 import org.vertexium.cypher.ast.CypherCompilerContext;
 import org.vertexium.cypher.ast.model.CypherStatement;
-import org.vertexium.cypher.executor.QueryExecutor;
+import org.vertexium.cypher.executionPlan.ExecutionPlan;
+import org.vertexium.util.VertexiumLogger;
+import org.vertexium.util.VertexiumLoggerFactory;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
 public class VertexiumCypherQuery {
+    private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(VertexiumCypherQuery.class);
     private final CypherStatement statement;
-    private final QueryExecutor queryExecutor;
 
     protected VertexiumCypherQuery(CypherStatement statement) {
         checkNotNull(statement, "statement is required");
         this.statement = statement;
-        queryExecutor = new QueryExecutor();
     }
 
     public static VertexiumCypherQuery parse(CypherCompilerContext ctx, String queryString) {
@@ -27,6 +28,9 @@ public class VertexiumCypherQuery {
     }
 
     public VertexiumCypherResult execute(VertexiumCypherQueryContext ctx) {
-        return queryExecutor.execute(ctx, statement);
+        LOGGER.info("Executing:\n%s", statement);
+        ExecutionPlan plan = ctx.getExecutionPlanBuilder().build(ctx, statement);
+        LOGGER.info("Execution plan:\n%s", plan.toStringFull());
+        return plan.execute(ctx);
     }
 }
