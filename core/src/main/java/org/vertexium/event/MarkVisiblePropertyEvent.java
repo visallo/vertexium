@@ -9,12 +9,14 @@ public class MarkVisiblePropertyEvent extends GraphEvent {
     private final Element element;
     private final Property property;
     private final Visibility visibility;
+    private final Object data;
 
-    public MarkVisiblePropertyEvent(Graph graph, Element element, Property property, Visibility visibility) {
+    public MarkVisiblePropertyEvent(Graph graph, Element element, Property property, Visibility visibility, Object data) {
         super(graph);
         this.element = element;
         this.property = property;
         this.visibility = visibility;
+        this.data = data;
     }
 
     public Element getElement() {
@@ -27,6 +29,10 @@ public class MarkVisiblePropertyEvent extends GraphEvent {
 
     public Visibility getVisibility() {
         return visibility;
+    }
+
+    public Object getData() {
+        return data;
     }
 
     @Override

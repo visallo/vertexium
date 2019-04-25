@@ -3,7 +3,7 @@ package org.vertexium.inmemory.mutations;
 import org.vertexium.Property;
 import org.vertexium.Visibility;
 
-public class PropertyMutation extends Mutation {
+public abstract class PropertyMutation extends Mutation {
     private final String propertyKey;
     private final String propertyName;
     private final Visibility propertyVisibility;

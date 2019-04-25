@@ -61,4 +61,15 @@ public class ByteSequenceUtils {
     public static byte[] getBytes(ByteSequence byteSequence) {
         return byteSequence.toArray();
     }
+
+    public static String toHexString(ByteSequence bytes) {
+        StringBuilder result = new StringBuilder(bytes.length() * 2);
+        byte[] arr = bytes.getBackingArray();
+        int offset = bytes.offset();
+        for (int i = 0; i < bytes.length(); i++) {
+            byte b = arr[offset + i];
+            result.append(String.format("%02x", b));
+        }
+        return result.toString();
+    }
 }

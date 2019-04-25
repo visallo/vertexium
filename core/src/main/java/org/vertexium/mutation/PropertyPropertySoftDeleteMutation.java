@@ -2,12 +2,17 @@ package org.vertexium.mutation;
 
 import org.vertexium.Property;
 import org.vertexium.Visibility;
+import org.vertexium.util.IncreasingTime;
 
 public class PropertyPropertySoftDeleteMutation extends PropertySoftDeleteMutation {
     private final Property property;
+    private final Object data;
+    private final long timestamp;
 
-    public PropertyPropertySoftDeleteMutation(Property property) {
+    public PropertyPropertySoftDeleteMutation(Property property, Object data) {
         this.property = property;
+        this.data = data;
+        this.timestamp = IncreasingTime.currentTimeMillis();
     }
 
     @Override
@@ -22,7 +27,7 @@ public class PropertyPropertySoftDeleteMutation extends PropertySoftDeleteMutati
 
     @Override
     public long getTimestamp() {
-        return property.getTimestamp();
+        return timestamp;
     }
 
     @Override
@@ -32,5 +37,10 @@ public class PropertyPropertySoftDeleteMutation extends PropertySoftDeleteMutati
 
     public Property getProperty() {
         return property;
+    }
+
+    @Override
+    public Object getData() {
+        return data;
     }
 }

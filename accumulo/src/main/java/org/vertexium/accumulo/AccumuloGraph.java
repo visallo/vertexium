@@ -27,9 +27,8 @@ import org.apache.curator.framework.recipes.cache.TreeCacheEvent;
 import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.hadoop.io.Text;
 import org.apache.zookeeper.CreateMode;
-import org.vertexium.*;
 import org.vertexium.Range;
-import org.vertexium.HistoricalPropertyValue.HistoricalPropertyValueBuilder;
+import org.vertexium.*;
 import org.vertexium.accumulo.iterator.*;
 import org.vertexium.accumulo.iterator.model.EdgeInfo;
 import org.vertexium.accumulo.iterator.model.IteratorFetchHints;
@@ -38,10 +37,14 @@ import org.vertexium.accumulo.iterator.model.PropertyMetadataColumnQualifier;
 import org.vertexium.accumulo.iterator.util.ByteArrayWrapper;
 import org.vertexium.accumulo.iterator.util.ByteSequenceUtils;
 import org.vertexium.accumulo.keys.KeyHelper;
+import org.vertexium.accumulo.util.HistoricalEventsIteratorConverter;
 import org.vertexium.accumulo.util.RangeUtils;
+import org.vertexium.accumulo.util.ScannerStreamUtils;
 import org.vertexium.accumulo.util.StreamingPropertyValueStorageStrategy;
 import org.vertexium.accumulo.util.VisalloTabletServerBatchReader;
 import org.vertexium.event.*;
+import org.vertexium.historicalEvent.HistoricalEvent;
+import org.vertexium.historicalEvent.HistoricalEventId;
 import org.vertexium.mutation.*;
 import org.vertexium.property.MutableProperty;
 import org.vertexium.property.StreamingPropertyValue;
@@ -57,6 +60,7 @@ import java.util.concurrent.locks.StampedLock;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.vertexium.util.IterableUtils.singleOrDefault;
 import static org.vertexium.util.IterableUtils.toList;
@@ -502,9 +506,9 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         }
     }
 
-    void softDeleteProperty(AccumuloElement element, Property property, Authorizations authorizations) {
+    void softDeleteProperty(AccumuloElement element, Property property, Object data, Authorizations authorizations) {
         Mutation m = new Mutation(element.getId());
-        elementMutationBuilder.addPropertySoftDeleteToMutation(m, property);
+        elementMutationBuilder.addPropertySoftDeleteToMutation(m, property, IncreasingTime.currentTimeMillis(), data);
         addMutations(element, m);
 
         getSearchIndex().deleteProperty(
@@ -515,7 +519,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         );
 
         if (hasEventListeners()) {
-            queueEvent(new SoftDeletePropertyEvent(this, element, property));
+            queueEvent(new SoftDeletePropertyEvent(this, element, property, data));
         }
     }
 
@@ -624,7 +628,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
 
             deleteAllExtendedDataForElement(vertex, authorizations);
 
-            addMutations(VertexiumObjectType.VERTEX, getDeleteRowMutation(vertex.getId()));
+            addMutations(VertexiumObjectType.VERTEX, elementMutationBuilder.getDeleteRowMutation(vertex.getId()));
 
             if (hasEventListeners()) {
                 queueEvent(new DeleteVertexEvent(this, vertex));
@@ -644,7 +648,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
     }
 
     @Override
-    public void softDeleteVertex(Vertex vertex, Long timestamp, Authorizations authorizations) {
+    public void softDeleteVertex(Vertex vertex, Long timestamp, Object eventData, Authorizations authorizations) {
         checkNotNull(vertex, "vertex cannot be null");
         Span trace = Trace.start("softDeleteVertex");
         trace.data("vertexId", vertex.getId());
@@ -657,13 +661,13 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
 
             // Delete all edges that this vertex participates.
             for (Edge edge : vertex.getEdges(Direction.BOTH, authorizations)) {
-                softDeleteEdge(edge, timestamp, authorizations);
+                softDeleteEdge(edge, timestamp, eventData, authorizations);
             }
 
-            addMutations(VertexiumObjectType.VERTEX, getSoftDeleteRowMutation(vertex.getId(), timestamp));
+            addMutations(VertexiumObjectType.VERTEX, elementMutationBuilder.getSoftDeleteRowMutation(vertex.getId(), timestamp, eventData));
 
             if (hasEventListeners()) {
-                queueEvent(new SoftDeleteVertexEvent(this, vertex));
+                queueEvent(new SoftDeleteVertexEvent(this, vertex, eventData));
             }
         } finally {
             trace.stop();
@@ -671,24 +675,24 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
     }
 
     @Override
-    public void markVertexHidden(Vertex vertex, Visibility visibility, Authorizations authorizations) {
+    public void markVertexHidden(Vertex vertex, Visibility visibility, Object eventData, Authorizations authorizations) {
         checkNotNull(vertex, "vertex cannot be null");
-        Span trace = Trace.start("softDeleteVertex");
+        Span trace = Trace.start("markVertexHidden");
         trace.data("vertexId", vertex.getId());
         try {
             ColumnVisibility columnVisibility = visibilityToAccumuloVisibility(visibility);
 
             // Delete all edges that this vertex participates.
             for (Edge edge : vertex.getEdges(Direction.BOTH, authorizations)) {
-                markEdgeHidden(edge, visibility, authorizations);
+                markEdgeHidden(edge, visibility, eventData, authorizations);
             }
 
-            addMutations(VertexiumObjectType.VERTEX, getMarkHiddenRowMutation(vertex.getId(), columnVisibility));
+            addMutations(VertexiumObjectType.VERTEX, elementMutationBuilder.getMarkHiddenRowMutation(vertex.getId(), columnVisibility, eventData));
 
             getSearchIndex().markElementHidden(this, vertex, visibility, authorizations);
 
             if (hasEventListeners()) {
-                queueEvent(new MarkHiddenVertexEvent(this, vertex));
+                queueEvent(new MarkHiddenVertexEvent(this, vertex, eventData));
             }
         } finally {
             trace.stop();
@@ -696,9 +700,9 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
     }
 
     @Override
-    public void markVertexVisible(Vertex vertex, Visibility visibility, Authorizations authorizations) {
+    public void markVertexVisible(Vertex vertex, Visibility visibility, Object eventData, Authorizations authorizations) {
         checkNotNull(vertex, "vertex cannot be null");
-        Span trace = Trace.start("softDeleteVertex");
+        Span trace = Trace.start("markVertexVisible");
         trace.data("vertexId", vertex.getId());
         try {
             ColumnVisibility columnVisibility = visibilityToAccumuloVisibility(visibility);
@@ -708,12 +712,12 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                 markEdgeVisible(edge, visibility, authorizations);
             }
 
-            addMutations(VertexiumObjectType.VERTEX, getMarkVisibleRowMutation(vertex.getId(), columnVisibility));
+            addMutations(VertexiumObjectType.VERTEX, elementMutationBuilder.getMarkVisibleRowMutation(vertex.getId(), columnVisibility, eventData));
 
             getSearchIndex().markElementVisible(this, vertex, visibility, authorizations);
 
             if (hasEventListeners()) {
-                queueEvent(new MarkVisibleVertexEvent(this, vertex));
+                queueEvent(new MarkVisibleVertexEvent(this, vertex, eventData));
             }
         } finally {
             trace.stop();
@@ -892,6 +896,86 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         return nameSubstitutionStrategy;
     }
 
+    @Override
+    public Stream<HistoricalEvent> getHistoricalEvents(
+        Iterable<ElementId> elementIds,
+        HistoricalEventId after,
+        HistoricalEventsFetchHints fetchHints,
+        Authorizations authorizations
+    ) {
+        Span trace = Trace.start("getHistoricalEvents");
+        if (Trace.isTracing()) {
+            trace.data("fetchHints", fetchHints.toString());
+        }
+
+        try {
+            Map<ElementType, List<ElementId>> elementIdsByType = stream(elementIds)
+                .collect(Collectors.groupingBy(ElementId::getElementType));
+            return fetchHints.applyToResults(elementIdsByType.entrySet().stream()
+                .flatMap(entry -> {
+                    Set<String> ids = entry.getValue().stream().map(ElementId::getElementId).collect(Collectors.toSet());
+                    return getHistoricalEvents(entry.getKey(), ids, after, fetchHints, authorizations);
+                }), after);
+        } finally {
+            trace.stop();
+        }
+    }
+
+    private Stream<HistoricalEvent> getHistoricalEvents(
+        ElementType elementType,
+        Set<String> elementIds,
+        HistoricalEventId after,
+        HistoricalEventsFetchHints fetchHints,
+        Authorizations authorizations
+    ) {
+        FetchHints elementFetchHints = new FetchHintsBuilder()
+            .setIncludeAllProperties(true)
+            .setIncludeAllPropertyMetadata(true)
+            .setIncludeHidden(true)
+            .setIncludeAllEdgeRefs(true)
+            .build();
+        Collection<org.apache.accumulo.core.data.Range> ranges = elementIds.stream()
+            .map(RangeUtils::createRangeFromString)
+            .collect(Collectors.toList());
+        ScannerBase scanner = createElementScanner(
+            elementFetchHints,
+            elementType,
+            ALL_VERSIONS,
+            null,
+            null,
+            ranges,
+            false,
+            authorizations
+        );
+        IteratorSetting historicalEventsIteratorSettings = new IteratorSetting(
+            100000,
+            HistoricalEventsIterator.class.getSimpleName(),
+            HistoricalEventsIterator.class
+        );
+        HistoricalEventsIterator.setFetchHints(historicalEventsIteratorSettings, HistoricalEventsIteratorConverter.convertToIteratorHistoricalEventsFetchHints(fetchHints));
+        HistoricalEventsIterator.setElementType(historicalEventsIteratorSettings, HistoricalEventsIteratorConverter.convertToIteratorElementType(elementType));
+        HistoricalEventsIterator.setAfter(historicalEventsIteratorSettings, HistoricalEventsIteratorConverter.convertToIteratorHistoricalEventId(after));
+        scanner.addScanIterator(historicalEventsIteratorSettings);
+
+        return ScannerStreamUtils.stream(scanner)
+            .flatMap(r -> {
+                try {
+                    String elementId = r.getKey().getRow().toString();
+                    return HistoricalEventsIterator.decode(r.getValue(), elementId).stream()
+                        .map(iterEvent -> HistoricalEventsIteratorConverter.convert(
+                            this,
+                            elementType,
+                            elementId,
+                            iterEvent,
+                            fetchHints
+                        ));
+                } catch (IOException ex) {
+                    throw new VertexiumException("Could not decode row", ex);
+                }
+            });
+    }
+
+    @SuppressWarnings("deprecation")
     public Iterable<HistoricalPropertyValue> getHistoricalPropertyValues(Element element, String key, String name, Visibility visibility, Long startTime, Long endTime, Authorizations authorizations) {
         Span trace = Trace.start("getHistoricalPropertyValues");
         if (Trace.isTracing()) {
@@ -911,7 +995,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             FetchHints fetchHints = FetchHints.PROPERTIES_AND_METADATA;
             traceDataFetchHints(trace, fetchHints);
             org.apache.accumulo.core.data.Range range = RangeUtils.createRangeFromString(element.getId());
-            final ScannerBase scanner = createElementScanner(
+            ScannerBase scanner = createElementScanner(
                 fetchHints,
                 elementType,
                 ALL_VERSIONS,
@@ -957,14 +1041,14 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                         Visibility propertyVisibility = accumuloVisibilityToVisibility(columnVisibility);
 
                         HistoricalPropertyValue hpv =
-                            new HistoricalPropertyValueBuilder(propertyKey, propertyName, timestamp)
+                            new HistoricalPropertyValue.HistoricalPropertyValueBuilder(propertyKey, propertyName, timestamp)
                                 .propertyVisibility(propertyVisibility)
                                 .value(value)
                                 .metadata(metadata)
                                 .hiddenVisibilities(hiddenVisibilities)
                                 .build();
 
-                        String propIdent = propertyKey + ":" + propertyName;
+                        String propIdent = propertyKey + ":" + propertyName + ":" + columnVisibility;
                         activeVisibilities.put(propIdent, columnVisibility);
 
                         results.put(resultsKey, hpv);
@@ -985,7 +1069,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                         String propertyKey = propertyColumnQualifier.getPropertyKey();
                         String propertyName = propertyColumnQualifier.getPropertyName();
 
-                        String propIdent = propertyKey + ":" + propertyName;
+                        String propIdent = propertyKey + ":" + propertyName + ":" + columnVisibility;
                         activeVisibilities.remove(propIdent, columnVisibility);
                         softDeleteObserved.put(propIdent, column.getKey());
 
@@ -1007,37 +1091,33 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                     PropertyColumnQualifier propertyColumnQualifier = KeyHelper.createPropertyColumnQualifier(cq, getNameSubstitutionStrategy());
                     String propertyKey = propertyColumnQualifier.getPropertyKey();
                     String propertyName = propertyColumnQualifier.getPropertyName();
-                    String propIdent = propertyKey + ":" + propertyName;
+                    String columnVisibility = entry.getColumnVisibility().toString();
 
-                    List<String> active = activeVisibilities.get(propIdent);
-                    if (active == null || active.isEmpty()) {
-                        long timestamp = entry.getTimestamp() + 1;
-                        String columnVisibility = entry.getColumnVisibility().toString();
-                        Visibility propertyVisibility = accumuloVisibilityToVisibility(columnVisibility);
+                    long timestamp = entry.getTimestamp() + 1;
+                    Visibility propertyVisibility = accumuloVisibilityToVisibility(columnVisibility);
 
-                        String lastPropertyEntryKey = propertyColumnQualifier.getDiscriminator(columnVisibility);
-                        Long propertyTimestamp = lastPropertyEntryList.get(lastPropertyEntryKey);
-                        if (propertyTimestamp == null) {
-                            throw new VertexiumException("Did not find last property entry timestamp: " + lastPropertyEntryKey);
-                        }
-
-                        String resultKey = propertyColumnQualifier.getDiscriminator(columnVisibility, propertyTimestamp);
-                        HistoricalPropertyValue property = results.get(resultKey);
-                        if (property == null) {
-                            throw new VertexiumException("Did not find a matching historical property value for the last property entry timestamp: " + resultKey);
-                        }
-
-                        HistoricalPropertyValue hpv =
-                            new HistoricalPropertyValueBuilder(propertyKey, propertyName, timestamp)
-                                .propertyVisibility(propertyVisibility)
-                                .metadata(property.getMetadata())
-                                .value(property.getValue())
-                                .isDeleted(true)
-                                .build();
-
-                        String resultsKey = propertyColumnQualifier.getDiscriminator(columnVisibility, timestamp);
-                        results.put(resultsKey, hpv);
+                    String lastPropertyEntryKey = propertyColumnQualifier.getDiscriminator(columnVisibility);
+                    Long propertyTimestamp = lastPropertyEntryList.get(lastPropertyEntryKey);
+                    if (propertyTimestamp == null) {
+                        throw new VertexiumException("Did not find last property entry timestamp: " + lastPropertyEntryKey);
                     }
+
+                    String resultKey = propertyColumnQualifier.getDiscriminator(columnVisibility, propertyTimestamp);
+                    HistoricalPropertyValue property = results.get(resultKey);
+                    if (property == null) {
+                        throw new VertexiumException("Did not find a matching historical property value for the last property entry timestamp: " + resultKey);
+                    }
+
+                    HistoricalPropertyValue hpv =
+                        new HistoricalPropertyValue.HistoricalPropertyValueBuilder(propertyKey, propertyName, timestamp)
+                            .propertyVisibility(propertyVisibility)
+                            .metadata(property.getMetadata())
+                            .value(property.getValue())
+                            .isDeleted(true)
+                            .build();
+
+                    String resultsKey = propertyColumnQualifier.getDiscriminator(columnVisibility, timestamp);
+                    results.put(resultsKey, hpv);
                 }
 
                 return new TreeSet<>(results.values());
@@ -1199,7 +1279,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             deleteAllExtendedDataForElement(edge, authorizations);
 
             // Deletes everything else related to edge.
-            addMutations(VertexiumObjectType.EDGE, getDeleteRowMutation(edge.getId()));
+            addMutations(VertexiumObjectType.EDGE, elementMutationBuilder.getDeleteRowMutation(edge.getId()));
 
             if (hasEventListeners()) {
                 queueEvent(new DeleteEdgeEvent(this, edge));
@@ -1228,7 +1308,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
     }
 
     @Override
-    public void softDeleteEdge(Edge edge, Long timestamp, Authorizations authorizations) {
+    public void softDeleteEdge(Edge edge, Long timestamp, Object eventData, Authorizations authorizations) {
         checkNotNull(edge);
         Span trace = Trace.start("softDeleteEdge");
         trace.data("edgeId", edge.getId());
@@ -1241,19 +1321,21 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
 
             ColumnVisibility visibility = visibilityToAccumuloVisibility(edge.getVisibility());
 
+            Value value = elementMutationBuilder.toSoftDeleteDataToValue(eventData);
+
             Mutation outMutation = new Mutation(edge.getVertexId(Direction.OUT));
-            outMutation.put(AccumuloVertex.CF_OUT_EDGE_SOFT_DELETE, new Text(edge.getId()), visibility, timestamp, AccumuloElement.SOFT_DELETE_VALUE);
+            outMutation.put(AccumuloVertex.CF_OUT_EDGE_SOFT_DELETE, new Text(edge.getId()), visibility, timestamp, value);
 
             Mutation inMutation = new Mutation(edge.getVertexId(Direction.IN));
-            inMutation.put(AccumuloVertex.CF_IN_EDGE_SOFT_DELETE, new Text(edge.getId()), visibility, timestamp, AccumuloElement.SOFT_DELETE_VALUE);
+            inMutation.put(AccumuloVertex.CF_IN_EDGE_SOFT_DELETE, new Text(edge.getId()), visibility, timestamp, value);
 
             addMutations(VertexiumObjectType.VERTEX, outMutation, inMutation);
 
             // Soft deletes everything else related to edge.
-            addMutations(VertexiumObjectType.EDGE, getSoftDeleteRowMutation(edge.getId(), timestamp));
+            addMutations(VertexiumObjectType.EDGE, elementMutationBuilder.getSoftDeleteRowMutation(edge.getId(), timestamp, eventData));
 
             if (hasEventListeners()) {
-                queueEvent(new SoftDeleteEdgeEvent(this, edge));
+                queueEvent(new SoftDeleteEdgeEvent(this, edge, eventData));
             }
         } finally {
             trace.stop();
@@ -1261,7 +1343,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
     }
 
     @Override
-    public void markEdgeHidden(Edge edge, Visibility visibility, Authorizations authorizations) {
+    public void markEdgeHidden(Edge edge, Visibility visibility, Object eventData, Authorizations authorizations) {
         checkNotNull(edge);
         Span trace = Trace.start("markEdgeHidden");
         trace.data("edgeId", edge.getId());
@@ -1276,17 +1358,14 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             }
 
             ColumnVisibility columnVisibility = visibilityToAccumuloVisibility(visibility);
-
-            Mutation outMutation = new Mutation(out.getId());
-            outMutation.put(AccumuloVertex.CF_OUT_EDGE_HIDDEN, new Text(edge.getId()), columnVisibility, AccumuloElement.HIDDEN_VALUE);
-
-            Mutation inMutation = new Mutation(in.getId());
-            inMutation.put(AccumuloVertex.CF_IN_EDGE_HIDDEN, new Text(edge.getId()), columnVisibility, AccumuloElement.HIDDEN_VALUE);
-
-            addMutations(VertexiumObjectType.VERTEX, outMutation, inMutation);
+            addMutations(
+                VertexiumObjectType.VERTEX,
+                elementMutationBuilder.getMarkHiddenOutEdgeMutation(out, edge, columnVisibility, eventData),
+                elementMutationBuilder.getMarkHiddenInEdgeMutation(in, edge, columnVisibility, eventData)
+            );
 
             // Delete everything else related to edge.
-            addMutations(VertexiumObjectType.EDGE, getMarkHiddenRowMutation(edge.getId(), columnVisibility));
+            addMutations(VertexiumObjectType.EDGE, elementMutationBuilder.getMarkHiddenRowMutation(edge.getId(), columnVisibility, eventData));
 
             if (out instanceof AccumuloVertex) {
                 ((AccumuloVertex) out).removeOutEdge(edge);
@@ -1298,7 +1377,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             getSearchIndex().markElementHidden(this, edge, visibility, authorizations);
 
             if (hasEventListeners()) {
-                queueEvent(new MarkHiddenEdgeEvent(this, edge));
+                queueEvent(new MarkHiddenEdgeEvent(this, edge, eventData));
             }
         } finally {
             trace.stop();
@@ -1306,7 +1385,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
     }
 
     @Override
-    public void markEdgeVisible(Edge edge, Visibility visibility, Authorizations authorizations) {
+    public void markEdgeVisible(Edge edge, Visibility visibility, Object eventData, Authorizations authorizations) {
         checkNotNull(edge);
         Span trace = Trace.start("markEdgeVisible");
         trace.data("edgeId", edge.getId());
@@ -1322,16 +1401,14 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
 
             ColumnVisibility columnVisibility = visibilityToAccumuloVisibility(visibility);
 
-            Mutation outMutation = new Mutation(out.getId());
-            outMutation.putDelete(AccumuloVertex.CF_OUT_EDGE_HIDDEN, new Text(edge.getId()), columnVisibility);
-
-            Mutation inMutation = new Mutation(in.getId());
-            inMutation.putDelete(AccumuloVertex.CF_IN_EDGE_HIDDEN, new Text(edge.getId()), columnVisibility);
-
-            addMutations(VertexiumObjectType.VERTEX, outMutation, inMutation);
+            addMutations(
+                VertexiumObjectType.VERTEX,
+                elementMutationBuilder.getMarkVisibleOutEdgeMutation(out, edge, columnVisibility, eventData),
+                elementMutationBuilder.getMarkHiddenInEdgeMutation(in, edge, columnVisibility, eventData)
+            );
 
             // Delete everything else related to edge.
-            addMutations(VertexiumObjectType.EDGE, getMarkVisibleRowMutation(edge.getId(), columnVisibility));
+            addMutations(VertexiumObjectType.EDGE, elementMutationBuilder.getMarkVisibleRowMutation(edge.getId(), columnVisibility, eventData));
 
             if (out instanceof AccumuloVertex) {
                 ((AccumuloVertex) out).addOutEdge(edge);
@@ -1343,7 +1420,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             getSearchIndex().markElementVisible(this, edge, visibility, authorizations);
 
             if (hasEventListeners()) {
-                queueEvent(new MarkVisibleEdgeEvent(this, edge));
+                queueEvent(new MarkVisibleEdgeEvent(this, edge, eventData));
             }
         } finally {
             trace.stop();
@@ -1360,6 +1437,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         Property property,
         Long timestamp,
         Visibility visibility,
+        Object data,
         @SuppressWarnings("UnusedParameters") Authorizations authorizations
     ) {
         checkNotNull(element);
@@ -1375,30 +1453,30 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             ColumnVisibility columnVisibility = visibilityToAccumuloVisibility(visibility);
 
             if (element instanceof Vertex) {
-                addMutations(VertexiumObjectType.VERTEX, getMarkHiddenPropertyMutation(element.getId(), property, timestamp, columnVisibility));
+                addMutations(VertexiumObjectType.VERTEX, elementMutationBuilder.getMarkHiddenPropertyMutation(element.getId(), property, timestamp, columnVisibility, data));
             } else if (element instanceof Edge) {
-                addMutations(VertexiumObjectType.EDGE, getMarkHiddenPropertyMutation(element.getId(), property, timestamp, columnVisibility));
+                addMutations(VertexiumObjectType.EDGE, elementMutationBuilder.getMarkHiddenPropertyMutation(element.getId(), property, timestamp, columnVisibility, data));
             }
 
             getSearchIndex().markPropertyHidden(this, element, property, visibility, authorizations);
 
             if (hasEventListeners()) {
-                fireGraphEvent(new MarkHiddenPropertyEvent(this, element, property, visibility));
+                fireGraphEvent(new MarkHiddenPropertyEvent(this, element, property, visibility, data));
             }
         } finally {
             trace.stop();
         }
     }
 
-    private Mutation getMarkHiddenPropertyMutation(String rowKey, Property property, long timestamp, ColumnVisibility visibility) {
-        Mutation m = new Mutation(rowKey);
-        Text columnQualifier = KeyHelper.getColumnQualifierFromPropertyHiddenColumnQualifier(property, getNameSubstitutionStrategy());
-        m.put(AccumuloElement.CF_PROPERTY_HIDDEN, columnQualifier, visibility, timestamp, AccumuloElement.HIDDEN_VALUE);
-        return m;
-    }
-
     @SuppressWarnings("unused")
-    public void markPropertyVisible(AccumuloElement element, Property property, Long timestamp, Visibility visibility, Authorizations authorizations) {
+    public void markPropertyVisible(
+        AccumuloElement element,
+        Property property,
+        Long timestamp,
+        Visibility visibility,
+        Object data,
+        Authorizations authorizations
+    ) {
         checkNotNull(element);
         Span trace = Trace.start("markPropertyVisible");
         trace.data("elementId", element.getId());
@@ -1411,27 +1489,21 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
 
             ColumnVisibility columnVisibility = visibilityToAccumuloVisibility(visibility);
 
+            Mutation markVisiblePropertyMutation = elementMutationBuilder.getMarkVisiblePropertyMutation(element.getId(), property, timestamp, columnVisibility, data);
             if (element instanceof Vertex) {
-                addMutations(VertexiumObjectType.VERTEX, getMarkVisiblePropertyMutation(element.getId(), property, timestamp, columnVisibility));
+                addMutations(VertexiumObjectType.VERTEX, markVisiblePropertyMutation);
             } else if (element instanceof Edge) {
-                addMutations(VertexiumObjectType.EDGE, getMarkVisiblePropertyMutation(element.getId(), property, timestamp, columnVisibility));
+                addMutations(VertexiumObjectType.EDGE, markVisiblePropertyMutation);
             }
 
             getSearchIndex().markPropertyVisible(this, element, property, visibility, authorizations);
 
             if (hasEventListeners()) {
-                fireGraphEvent(new MarkVisiblePropertyEvent(this, element, property, visibility));
+                fireGraphEvent(new MarkVisiblePropertyEvent(this, element, property, visibility, data));
             }
         } finally {
             trace.stop();
         }
-    }
-
-    private Mutation getMarkVisiblePropertyMutation(String rowKey, Property property, long timestamp, ColumnVisibility visibility) {
-        Mutation m = new Mutation(rowKey);
-        Text columnQualifier = KeyHelper.getColumnQualifierFromPropertyHiddenColumnQualifier(property, getNameSubstitutionStrategy());
-        m.put(AccumuloElement.CF_PROPERTY_HIDDEN, columnQualifier, visibility, timestamp, AccumuloElement.HIDDEN_VALUE_DELETED);
-        return m;
     }
 
     @Override
@@ -1489,30 +1561,6 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         } catch (Exception ex) {
             throw new VertexiumException(ex);
         }
-    }
-
-    private Mutation getDeleteRowMutation(String rowKey) {
-        Mutation m = new Mutation(rowKey);
-        m.put(AccumuloElement.DELETE_ROW_COLUMN_FAMILY, AccumuloElement.DELETE_ROW_COLUMN_QUALIFIER, RowDeletingIterator.DELETE_ROW_VALUE);
-        return m;
-    }
-
-    private Mutation getSoftDeleteRowMutation(String rowKey, long timestamp) {
-        Mutation m = new Mutation(rowKey);
-        m.put(AccumuloElement.CF_SOFT_DELETE, AccumuloElement.CQ_SOFT_DELETE, timestamp, AccumuloElement.SOFT_DELETE_VALUE);
-        return m;
-    }
-
-    private Mutation getMarkHiddenRowMutation(String rowKey, ColumnVisibility visibility) {
-        Mutation m = new Mutation(rowKey);
-        m.put(AccumuloElement.CF_HIDDEN, AccumuloElement.CQ_HIDDEN, visibility, AccumuloElement.HIDDEN_VALUE);
-        return m;
-    }
-
-    private Mutation getMarkVisibleRowMutation(String rowKey, ColumnVisibility visibility) {
-        Mutation m = new Mutation(rowKey);
-        m.putDelete(AccumuloElement.CF_HIDDEN, AccumuloElement.CQ_HIDDEN, visibility);
-        return m;
     }
 
     public VertexiumSerializer getVertexiumSerializer() {
@@ -2085,7 +2133,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         return ranges;
     }
 
-    void alterElementVisibility(AccumuloElement element, Visibility newVisibility) {
+    void alterElementVisibility(AccumuloElement element, Visibility newVisibility, Object data) {
         String elementRowKey = element.getId();
         Span trace = Trace.start("alterElementVisibility");
         trace.data("elementRowKey", elementRowKey);
@@ -2107,7 +2155,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             }
 
             Mutation m = new Mutation(elementRowKey);
-            if (elementMutationBuilder.alterElementVisibility(m, element, newVisibility)) {
+            if (elementMutationBuilder.alterElementVisibility(m, element, newVisibility, data)) {
                 addMutations(element, m);
             }
             element.setVisibility(newVisibility);
@@ -2145,7 +2193,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             if (apv.getExistingVisibility() == null) {
                 apv.setExistingVisibility(property.getVisibility());
             }
-            elementMutationBuilder.addPropertySoftDeleteToMutation(m, property);
+            elementMutationBuilder.addPropertySoftDeleteToMutation(m, property, apv.getTimestamp() - 1, apv.getData());
             property.setVisibility(apv.getVisibility());
             property.setTimestamp(apv.getTimestamp());
             elementMutationBuilder.addPropertyToMutation(this, m, elementRowKey, property);

@@ -2,8 +2,12 @@ package org.vertexium.elasticsearch5;
 
 import com.google.common.collect.ImmutableSet;
 import org.vertexium.*;
+import org.vertexium.historicalEvent.HistoricalEvent;
+import org.vertexium.historicalEvent.HistoricalEventId;
 import org.vertexium.mutation.ExistingElementMutation;
 import org.vertexium.query.QueryableIterable;
+
+import java.util.stream.Stream;
 
 public abstract class ElasticsearchElement extends ElementBase {
     private final Graph graph;
@@ -84,21 +88,34 @@ public abstract class ElasticsearchElement extends ElementBase {
     }
 
     @Override
+    public Stream<HistoricalEvent> getHistoricalEvents(
+        HistoricalEventId after,
+        HistoricalEventsFetchHints fetchHints,
+        Authorizations authorizations
+    ) {
+        throw new VertexiumNotSupportedException("getHistoricalEvents is not supported");
+    }
+
+    @Override
+    @SuppressWarnings("deprecation")
     public Iterable<HistoricalPropertyValue> getHistoricalPropertyValues(Authorizations authorizations) {
         throw new VertexiumNotSupportedException("getHistoricalPropertyValues is not supported");
     }
 
     @Override
+    @SuppressWarnings("deprecation")
     public Iterable<HistoricalPropertyValue> getHistoricalPropertyValues(Long startTime, Long endTime, Authorizations authorizations) {
         throw new VertexiumNotSupportedException("getHistoricalPropertyValues is not supported");
     }
 
     @Override
+    @SuppressWarnings("deprecation")
     public Iterable<HistoricalPropertyValue> getHistoricalPropertyValues(String key, String name, Visibility visibility, Authorizations authorizations) {
         throw new VertexiumNotSupportedException("getHistoricalPropertyValues is not supported");
     }
 
     @Override
+    @SuppressWarnings("deprecation")
     public Iterable<HistoricalPropertyValue> getHistoricalPropertyValues(String key, String name, Visibility visibility, Long startTime, Long endTime, Authorizations authorizations) {
         throw new VertexiumNotSupportedException("getHistoricalPropertyValues is not supported");
     }
@@ -124,17 +141,17 @@ public abstract class ElasticsearchElement extends ElementBase {
     }
 
     @Override
-    public void softDeleteProperty(String key, String name, Authorizations authorizations) {
+    public void softDeleteProperty(String key, String name, Object eventData, Authorizations authorizations) {
         throw new VertexiumNotSupportedException("softDeleteProperty is not supported");
     }
 
     @Override
-    public void softDeleteProperty(String key, String name, Visibility visibility, Authorizations authorizations) {
+    public void softDeleteProperty(String key, String name, Visibility visibility, Object eventData, Authorizations authorizations) {
         throw new VertexiumNotSupportedException("softDeleteProperty is not supported");
     }
 
     @Override
-    public void softDeleteProperties(String name, Authorizations authorizations) {
+    public void softDeleteProperties(String name, Object eventData, Authorizations authorizations) {
         throw new VertexiumNotSupportedException("softDeleteProperties is not supported");
     }
 
@@ -169,42 +186,94 @@ public abstract class ElasticsearchElement extends ElementBase {
     }
 
     @Override
-    public void markPropertyHidden(String key, String name, Visibility propertyVisibility, Visibility visibility, Authorizations authorizations) {
+    public void markPropertyHidden(
+        String key,
+        String name,
+        Visibility propertyVisibility,
+        Visibility visibility,
+        Object eventData,
+        Authorizations authorizations
+    ) {
         throw new VertexiumNotSupportedException("markPropertyHidden is not supported");
     }
 
     @Override
-    public void markPropertyHidden(String key, String name, Visibility propertyVisibility, Long timestamp, Visibility visibility, Authorizations authorizations) {
+    public void markPropertyHidden(
+        String key,
+        String name,
+        Visibility propertyVisibility,
+        Long timestamp,
+        Visibility visibility,
+        Object eventData,
+        Authorizations authorizations
+    ) {
         throw new VertexiumNotSupportedException("markPropertyHidden is not supported");
     }
 
     @Override
-    public void markPropertyHidden(Property property, Visibility visibility, Authorizations authorizations) {
+    public void markPropertyHidden(
+        Property property,
+        Visibility visibility,
+        Object eventData,
+        Authorizations authorizations
+    ) {
         throw new VertexiumNotSupportedException("markPropertyHidden is not supported");
     }
 
     @Override
-    public void markPropertyHidden(Property property, Long timestamp, Visibility visibility, Authorizations authorizations) {
+    public void markPropertyHidden(
+        Property property,
+        Long timestamp,
+        Visibility visibility,
+        Object data,
+        Authorizations authorizations
+    ) {
         throw new VertexiumNotSupportedException("markPropertyHidden is not supported");
     }
 
     @Override
-    public void markPropertyVisible(String key, String name, Visibility propertyVisibility, Visibility visibility, Authorizations authorizations) {
+    public void markPropertyVisible(
+        String key,
+        String name,
+        Visibility propertyVisibility,
+        Visibility visibility,
+        Object eventData,
+        Authorizations authorizations
+    ) {
         throw new VertexiumNotSupportedException("markPropertyVisible is not supported");
     }
 
     @Override
-    public void markPropertyVisible(String key, String name, Visibility propertyVisibility, Long timestamp, Visibility visibility, Authorizations authorizations) {
+    public void markPropertyVisible(
+        String key,
+        String name,
+        Visibility propertyVisibility,
+        Long timestamp,
+        Visibility visibility,
+        Object eventData,
+        Authorizations authorizations
+    ) {
         throw new VertexiumNotSupportedException("markPropertyVisible is not supported");
     }
 
     @Override
-    public void markPropertyVisible(Property property, Visibility visibility, Authorizations authorizations) {
+    public void markPropertyVisible(
+        Property property,
+        Visibility visibility,
+        Object eventData,
+        Authorizations authorizations
+    ) {
         throw new VertexiumNotSupportedException("markPropertyVisible is not supported");
     }
 
     @Override
-    public void markPropertyVisible(Property property, Long timestamp, Visibility visibility, Authorizations authorizations) {
+    public void markPropertyVisible(
+        Property property,
+        Long timestamp,
+        Visibility visibility,
+        Object eventData,
+        Authorizations authorizations
+    ) {
         throw new VertexiumNotSupportedException("markPropertyVisible is not supported");
     }
 

@@ -1,8 +1,12 @@
 package org.vertexium;
 
 import com.google.common.collect.ImmutableSet;
+import org.vertexium.historicalEvent.HistoricalEvent;
+import org.vertexium.historicalEvent.HistoricalEventId;
 import org.vertexium.mutation.ExistingEdgeMutation;
 import org.vertexium.query.QueryableIterable;
+
+import java.util.stream.Stream;
 
 public class EdgeInfoEdge extends ElementBase implements Edge {
     private final Graph graph;
@@ -83,8 +87,8 @@ public class EdgeInfoEdge extends ElementBase implements Edge {
     }
 
     @Override
-    public void softDeleteProperty(String key, String name, Visibility visibility, Authorizations authorizations) {
-        getEdge().softDeleteProperty(key, name, visibility, authorizations);
+    public void softDeleteProperty(String key, String name, Visibility visibility, Object eventData, Authorizations authorizations) {
+        getEdge().softDeleteProperty(key, name, visibility, eventData, authorizations);
     }
 
     @Override
@@ -98,13 +102,13 @@ public class EdgeInfoEdge extends ElementBase implements Edge {
     }
 
     @Override
-    public void markPropertyHidden(Property property, Long timestamp, Visibility visibility, Authorizations authorizations) {
-        getEdge().markPropertyHidden(property, timestamp, visibility, authorizations);
+    public void markPropertyHidden(Property property, Long timestamp, Visibility visibility, Object data, Authorizations authorizations) {
+        getEdge().markPropertyHidden(property, timestamp, visibility, data, authorizations);
     }
 
     @Override
-    public void markPropertyVisible(Property property, Long timestamp, Visibility visibility, Authorizations authorizations) {
-        getEdge().markPropertyVisible(property, timestamp, visibility, authorizations);
+    public void markPropertyVisible(Property property, Long timestamp, Visibility visibility, Object eventData, Authorizations authorizations) {
+        getEdge().markPropertyVisible(property, timestamp, visibility, eventData, authorizations);
     }
 
     @Override
@@ -125,6 +129,28 @@ public class EdgeInfoEdge extends ElementBase implements Edge {
     @Override
     public FetchHints getFetchHints() {
         return fetchHints;
+    }
+
+    @Override
+    public Stream<HistoricalEvent> getHistoricalEvents(
+        HistoricalEventId after,
+        HistoricalEventsFetchHints fetchHints,
+        Authorizations authorizations
+    ) {
+        return getEdge().getHistoricalEvents(after, fetchHints, authorizations);
+    }
+
+    @Override
+    @SuppressWarnings("deprecation")
+    public Iterable<HistoricalPropertyValue> getHistoricalPropertyValues(
+        String key,
+        String name,
+        Visibility visibility,
+        Long startTime,
+        Long endTime,
+        Authorizations authorizations
+    ) {
+        return getEdge().getHistoricalPropertyValues(key, name, visibility, startTime, endTime, authorizations);
     }
 
     @Override

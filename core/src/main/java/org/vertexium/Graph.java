@@ -1,6 +1,8 @@
 package org.vertexium;
 
 import org.vertexium.event.GraphEventListener;
+import org.vertexium.historicalEvent.HistoricalEvent;
+import org.vertexium.historicalEvent.HistoricalEventId;
 import org.vertexium.id.IdGenerator;
 import org.vertexium.mutation.ElementMutation;
 import org.vertexium.property.StreamingPropertyValue;
@@ -13,6 +15,7 @@ import java.util.Collection;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 public interface Graph {
     /**
@@ -91,6 +94,34 @@ public interface Graph {
      * @return True if vertex exists.
      */
     boolean doesVertexExist(String vertexId, Authorizations authorizations);
+
+    /**
+     * Get an element from the graph.
+     *
+     * @param elementId      The element id to retrieve from the graph.
+     * @param authorizations The authorizations required to load the element.
+     * @return The element if successful. null if the element is not found or the required authorizations were not provided.
+     */
+    Element getElement(ElementId elementId, Authorizations authorizations);
+
+    /**
+     * Get an element from the graph.
+     *
+     * @param elementId      The element id to retrieve from the graph.
+     * @param fetchHints     Hint at what parts of the element to fetch.
+     * @param authorizations The authorizations required to load the element.
+     * @return The vertex if successful. null if the element is not found or the required authorizations were not provided.
+     */
+    default Element getElement(ElementId elementId, FetchHints fetchHints, Authorizations authorizations) {
+        switch (elementId.getElementType()) {
+            case VERTEX:
+                return getVertex(elementId.getElementId(), fetchHints, authorizations);
+            case EDGE:
+                return getEdge(elementId.getElementId(), fetchHints, authorizations);
+            default:
+                throw new VertexiumException("Unhandled element type: " + elementId.getElementType());
+        }
+    }
 
     /**
      * Get a vertex from the graph.
@@ -301,7 +332,37 @@ public interface Graph {
      * @param vertex         The vertex to soft delete.
      * @param authorizations The authorizations required to soft delete the vertex.
      */
-    void softDeleteVertex(Vertex vertex, Authorizations authorizations);
+    default void softDeleteVertex(Vertex vertex, Authorizations authorizations) {
+        softDeleteVertex(vertex, (Object) null, authorizations);
+    }
+
+    /**
+     * Soft deletes a vertex from the graph.
+     *
+     * @param vertex         The vertex to soft delete.
+     * @param eventData      Data to store with the soft delete
+     * @param authorizations The authorizations required to soft delete the vertex.
+     */
+    void softDeleteVertex(Vertex vertex, Object eventData, Authorizations authorizations);
+
+    /**
+     * Soft deletes a vertex from the graph.
+     *
+     * @param vertex         The vertex to soft delete.
+     * @param eventData      Data to store with the soft delete
+     * @param authorizations The authorizations required to soft delete the vertex.
+     */
+    void softDeleteVertex(Vertex vertex, Long timestamp, Object eventData, Authorizations authorizations);
+
+    /**
+     * Soft deletes a vertex from the graph.
+     *
+     * @param vertexId       The vertex id to soft delete.
+     * @param authorizations The authorizations required to soft delete the vertex.
+     */
+    default void softDeleteVertex(String vertexId, Authorizations authorizations) {
+        softDeleteVertex(vertexId, (Object) null, authorizations);
+    }
 
     /**
      * Soft deletes a vertex from the graph.
@@ -309,7 +370,18 @@ public interface Graph {
      * @param vertex         The vertex to soft delete.
      * @param authorizations The authorizations required to soft delete the vertex.
      */
-    void softDeleteVertex(Vertex vertex, Long timestamp, Authorizations authorizations);
+    default void softDeleteVertex(Vertex vertex, Long timestamp, Authorizations authorizations) {
+        softDeleteVertex(vertex, timestamp, null, authorizations);
+    }
+
+    /**
+     * Soft deletes a vertex from the graph.
+     *
+     * @param vertexId       The vertex id to soft delete.
+     * @param eventData      Data to store with the soft delete
+     * @param authorizations The authorizations required to soft delete the vertex.
+     */
+    void softDeleteVertex(String vertexId, Object eventData, Authorizations authorizations);
 
     /**
      * Soft deletes a vertex from the graph.
@@ -317,15 +389,18 @@ public interface Graph {
      * @param vertexId       The vertex id to soft delete.
      * @param authorizations The authorizations required to soft delete the vertex.
      */
-    void softDeleteVertex(String vertexId, Authorizations authorizations);
+    default void softDeleteVertex(String vertexId, Long timestamp, Authorizations authorizations) {
+        softDeleteVertex(vertexId, timestamp, null, authorizations);
+    }
 
     /**
      * Soft deletes a vertex from the graph.
      *
      * @param vertexId       The vertex id to soft delete.
+     * @param eventData      Data to store with the soft delete
      * @param authorizations The authorizations required to soft delete the vertex.
      */
-    void softDeleteVertex(String vertexId, Long timestamp, Authorizations authorizations);
+    void softDeleteVertex(String vertexId, Long timestamp, Object eventData, Authorizations authorizations);
 
     /**
      * Adds an edge between two vertices. The id of the new vertex will be generated using an IdGenerator.
@@ -714,15 +789,37 @@ public interface Graph {
      * @param edge           The edge to soft delete from the graph.
      * @param authorizations The authorizations required to delete the edge.
      */
-    void softDeleteEdge(Edge edge, Authorizations authorizations);
+    default void softDeleteEdge(Edge edge, Authorizations authorizations) {
+        softDeleteEdge(edge, (Object) null, authorizations);
+    }
 
     /**
      * Soft deletes an edge from the graph.
      *
      * @param edge           The edge to soft delete from the graph.
+     * @param eventData      Data to store with the soft delete
      * @param authorizations The authorizations required to delete the edge.
      */
-    void softDeleteEdge(Edge edge, Long timestamp, Authorizations authorizations);
+    void softDeleteEdge(Edge edge, Object eventData, Authorizations authorizations);
+
+    /**
+     * Soft deletes an edge from the graph.
+     *
+     * @param edge           The edge to soft delete from the graph.
+     * @param eventData      Data to store with the soft delete
+     * @param authorizations The authorizations required to delete the edge.
+     */
+    void softDeleteEdge(Edge edge, Long timestamp, Object eventData, Authorizations authorizations);
+
+    /**
+     * Soft deletes an edge from the graph. This method requires fetching the edge before soft deletion.
+     *
+     * @param edge           The edge to soft delete from the graph.
+     * @param authorizations The authorizations required to delete the edge.
+     */
+    default void softDeleteEdge(Edge edge, Long timestamp, Authorizations authorizations) {
+        softDeleteEdge(edge, timestamp, null, authorizations);
+    }
 
     /**
      * Soft deletes an edge from the graph. This method requires fetching the edge before soft deletion.
@@ -730,7 +827,18 @@ public interface Graph {
      * @param edgeId         The edge id of the vertex to soft delete from the graph.
      * @param authorizations The authorizations required to delete the edge.
      */
-    void softDeleteEdge(String edgeId, Authorizations authorizations);
+    default void softDeleteEdge(String edgeId, Authorizations authorizations) {
+        softDeleteEdge(edgeId, null, authorizations);
+    }
+
+    /**
+     * Soft deletes an edge from the graph. This method requires fetching the edge before soft deletion.
+     *
+     * @param edgeId         The edge id of the vertex to soft delete from the graph.
+     * @param eventData      Data to store with the soft delete
+     * @param authorizations The authorizations required to delete the edge.
+     */
+    void softDeleteEdge(String edgeId, Object eventData, Authorizations authorizations);
 
     /**
      * Soft deletes an edge from the graph. This method requires fetching the edge before soft deletion.
@@ -738,7 +846,18 @@ public interface Graph {
      * @param edgeId         The edge id of the vertex to soft delete from the graph.
      * @param authorizations The authorizations required to delete the edge.
      */
-    void softDeleteEdge(String edgeId, Long timestamp, Authorizations authorizations);
+    default void softDeleteEdge(String edgeId, Long timestamp, Authorizations authorizations) {
+        softDeleteEdge(edgeId, timestamp, null, authorizations);
+    }
+
+    /**
+     * Soft deletes an edge from the graph. This method requires fetching the edge before soft deletion.
+     *
+     * @param edgeId         The edge id of the vertex to soft delete from the graph.
+     * @param eventData      Data to store with the soft delete
+     * @param authorizations The authorizations required to delete the edge.
+     */
+    void softDeleteEdge(String edgeId, Long timestamp, Object eventData, Authorizations authorizations);
 
     /**
      * Creates a query builder object used to query the graph.
@@ -952,7 +1071,21 @@ public interface Graph {
      *                       it as hidden for only a subset of authorizations.
      * @param authorizations The authorizations used.
      */
-    void markVertexHidden(Vertex vertex, Visibility visibility, Authorizations authorizations);
+    default void markVertexHidden(Vertex vertex, Visibility visibility, Authorizations authorizations) {
+        markVertexHidden(vertex, visibility, null, authorizations);
+    }
+
+    /**
+     * Marks a vertex as hidden for a given visibility.
+     *
+     * @param vertex         The vertex to mark hidden.
+     * @param visibility     The visibility string under which this vertex is hidden.
+     *                       This visibility can be a superset of the vertex visibility to mark
+     *                       it as hidden for only a subset of authorizations.
+     * @param eventData      Data to store with the hidden
+     * @param authorizations The authorizations used.
+     */
+    void markVertexHidden(Vertex vertex, Visibility visibility, Object eventData, Authorizations authorizations);
 
     /**
      * Marks a vertex as visible for a given visibility, effectively undoing markVertexHidden.
@@ -961,7 +1094,19 @@ public interface Graph {
      * @param visibility     The visibility string under which this vertex is now visible.
      * @param authorizations The authorizations used.
      */
-    void markVertexVisible(Vertex vertex, Visibility visibility, Authorizations authorizations);
+    default void markVertexVisible(Vertex vertex, Visibility visibility, Authorizations authorizations) {
+        markVertexVisible(vertex, visibility, null, authorizations);
+    }
+
+    /**
+     * Marks a vertex as visible for a given visibility, effectively undoing markVertexHidden.
+     *
+     * @param vertex         The vertex to mark visible.
+     * @param visibility     The visibility string under which this vertex is now visible.
+     * @param eventData      Data to store with the visible
+     * @param authorizations The authorizations used.
+     */
+    void markVertexVisible(Vertex vertex, Visibility visibility, Object eventData, Authorizations authorizations);
 
     /**
      * Marks an edge as hidden for a given visibility.
@@ -972,7 +1117,21 @@ public interface Graph {
      *                       it as hidden for only a subset of authorizations.
      * @param authorizations The authorizations used.
      */
-    void markEdgeHidden(Edge edge, Visibility visibility, Authorizations authorizations);
+    default void markEdgeHidden(Edge edge, Visibility visibility, Authorizations authorizations) {
+        markEdgeHidden(edge, visibility, null, authorizations);
+    }
+
+    /**
+     * Marks an edge as hidden for a given visibility.
+     *
+     * @param edge           The edge to mark hidden.
+     * @param visibility     The visibility string under which this edge is hidden.
+     *                       This visibility can be a superset of the edge visibility to mark
+     *                       it as hidden for only a subset of authorizations.
+     * @param eventData      Data to store with the hidden
+     * @param authorizations The authorizations used.
+     */
+    void markEdgeHidden(Edge edge, Visibility visibility, Object eventData, Authorizations authorizations);
 
     /**
      * Marks an edge as visible for a given visibility, effectively undoing markEdgeHidden.
@@ -981,7 +1140,19 @@ public interface Graph {
      * @param visibility     The visibility string under which this edge is now visible.
      * @param authorizations The authorizations used.
      */
-    void markEdgeVisible(Edge edge, Visibility visibility, Authorizations authorizations);
+    default void markEdgeVisible(Edge edge, Visibility visibility, Authorizations authorizations) {
+        markEdgeVisible(edge, visibility, null, authorizations);
+    }
+
+    /**
+     * Marks an edge as visible for a given visibility, effectively undoing markEdgeHidden.
+     *
+     * @param edge           The edge to mark visible.
+     * @param visibility     The visibility string under which this edge is now visible.
+     * @param eventData      Data to store with the visible
+     * @param authorizations The authorizations used.
+     */
+    void markEdgeVisible(Edge edge, Visibility visibility, Object eventData, Authorizations authorizations);
 
     /**
      * Creates an authorizations object.
@@ -1126,6 +1297,49 @@ public interface Graph {
      * @return The extended data rows for the element ids in the range.
      */
     Iterable<ExtendedDataRow> getExtendedDataInRange(ElementType elementType, Range elementIdRange, Authorizations authorizations);
+
+    /**
+     * Gets a list of historical events.
+     *
+     * @param elementIds     Iterable of element ids to get events for
+     * @param authorizations The authorizations required to load the events
+     * @return An iterable of historic events
+     */
+    default Stream<HistoricalEvent> getHistoricalEvents(Iterable<ElementId> elementIds, Authorizations authorizations) {
+        return getHistoricalEvents(elementIds, HistoricalEventsFetchHints.ALL, authorizations);
+    }
+
+    /**
+     * Gets a list of historical events.
+     *
+     * @param elementIds     Iterable of element ids to get events for
+     * @param fetchHints     Fetch hints to filter historical events
+     * @param authorizations The authorizations required to load the events
+     * @return An iterable of historic events
+     */
+    default Stream<HistoricalEvent> getHistoricalEvents(
+        Iterable<ElementId> elementIds,
+        HistoricalEventsFetchHints fetchHints,
+        Authorizations authorizations
+    ) {
+        return getHistoricalEvents(elementIds, null, fetchHints, authorizations);
+    }
+
+    /**
+     * Gets a list of historical events.
+     *
+     * @param elementIds     Iterable of element ids to get events for
+     * @param after          Find events after the given id
+     * @param fetchHints     Fetch hints to filter historical events
+     * @param authorizations The authorizations required to load the events
+     * @return An iterable of historic events
+     */
+    Stream<HistoricalEvent> getHistoricalEvents(
+        Iterable<ElementId> elementIds,
+        HistoricalEventId after,
+        HistoricalEventsFetchHints fetchHints,
+        Authorizations authorizations
+    );
 
     /**
      * Deletes an extended data row

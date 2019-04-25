@@ -4,6 +4,8 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.vertexium.event.GraphEvent;
 import org.vertexium.event.GraphEventListener;
+import org.vertexium.historicalEvent.HistoricalEvent;
+import org.vertexium.historicalEvent.HistoricalEventId;
 import org.vertexium.id.IdGenerator;
 import org.vertexium.mutation.ElementMutation;
 import org.vertexium.mutation.ExistingElementMutation;
@@ -18,6 +20,7 @@ import java.io.InputStream;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.vertexium.util.IterableUtils.count;
 import static org.vertexium.util.Preconditions.checkNotNull;
@@ -314,48 +317,48 @@ public abstract class GraphBase implements Graph {
     }
 
     @Override
-    public void softDeleteVertex(String vertexId, Authorizations authorizations) {
+    public void softDeleteVertex(String vertexId, Object eventData, Authorizations authorizations) {
         Vertex vertex = getVertex(vertexId, authorizations);
         checkNotNull(vertex, "Could not find vertex to soft delete with id: " + vertexId);
-        softDeleteVertex(vertex, null, authorizations);
+        softDeleteVertex(vertex, null, eventData, authorizations);
     }
 
     @Override
-    public void softDeleteVertex(String vertexId, Long timestamp, Authorizations authorizations) {
+    public void softDeleteVertex(String vertexId, Long timestamp, Object eventData, Authorizations authorizations) {
         Vertex vertex = getVertex(vertexId, authorizations);
         checkNotNull(vertex, "Could not find vertex to soft delete with id: " + vertexId);
-        softDeleteVertex(vertex, timestamp, authorizations);
+        softDeleteVertex(vertex, timestamp, eventData, authorizations);
     }
 
     @Override
-    public void softDeleteVertex(Vertex vertex, Authorizations authorizations) {
-        softDeleteVertex(vertex, null, authorizations);
+    public void softDeleteVertex(Vertex vertex, Object eventData, Authorizations authorizations) {
+        softDeleteVertex(vertex, null, eventData, authorizations);
     }
 
     @Override
-    public abstract void softDeleteVertex(Vertex vertex, Long timestamp, Authorizations authorizations);
+    public abstract void softDeleteVertex(Vertex vertex, Long timestamp, Object eventData, Authorizations authorizations);
 
     @Override
-    public void softDeleteEdge(String edgeId, Authorizations authorizations) {
+    public void softDeleteEdge(String edgeId, Object eventData, Authorizations authorizations) {
         Edge edge = getEdge(edgeId, authorizations);
         checkNotNull(edge, "Could not find edge to soft delete with id: " + edgeId);
-        softDeleteEdge(edge, null, authorizations);
+        softDeleteEdge(edge, null, eventData, authorizations);
     }
 
     @Override
-    public void softDeleteEdge(String edgeId, Long timestamp, Authorizations authorizations) {
+    public void softDeleteEdge(String edgeId, Long timestamp, Object eventData, Authorizations authorizations) {
         Edge edge = getEdge(edgeId, authorizations);
         checkNotNull(edge, "Could not find edge to soft delete with id: " + edgeId);
-        softDeleteEdge(edge, timestamp, authorizations);
+        softDeleteEdge(edge, timestamp, eventData, authorizations);
     }
 
     @Override
-    public void softDeleteEdge(Edge edge, Authorizations authorizations) {
-        softDeleteEdge(edge, null, authorizations);
+    public void softDeleteEdge(Edge edge, Object eventData, Authorizations authorizations) {
+        softDeleteEdge(edge, null, eventData, authorizations);
     }
 
     @Override
-    public abstract void softDeleteEdge(Edge edge, Long timestamp, Authorizations authorizations);
+    public abstract void softDeleteEdge(Edge edge, Long timestamp, Object eventData, Authorizations authorizations);
 
     @Override
     public Iterable<String> filterEdgeIdsByAuthorization(
@@ -804,6 +807,9 @@ public abstract class GraphBase implements Graph {
     public abstract SearchIndexSecurityGranularity getSearchIndexSecurityGranularity();
 
     @Override
+    public abstract FetchHints getDefaultFetchHints();
+
+    @Override
     public void addGraphEventListener(GraphEventListener graphEventListener) {
         this.graphEventListeners.add(graphEventListener);
     }
@@ -904,16 +910,16 @@ public abstract class GraphBase implements Graph {
     public abstract void truncate();
 
     @Override
-    public abstract void markVertexHidden(Vertex vertex, Visibility visibility, Authorizations authorizations);
+    public abstract void markVertexHidden(Vertex vertex, Visibility visibility, Object eventData, Authorizations authorizations);
 
     @Override
-    public abstract void markVertexVisible(Vertex vertex, Visibility visibility, Authorizations authorizations);
+    public abstract void markVertexVisible(Vertex vertex, Visibility visibility, Object eventData, Authorizations authorizations);
 
     @Override
-    public abstract void markEdgeHidden(Edge edge, Visibility visibility, Authorizations authorizations);
+    public abstract void markEdgeHidden(Edge edge, Visibility visibility, Object eventData, Authorizations authorizations);
 
     @Override
-    public abstract void markEdgeVisible(Edge edge, Visibility visibility, Authorizations authorizations);
+    public abstract void markEdgeVisible(Edge edge, Visibility visibility, Object eventData, Authorizations authorizations);
 
     @Override
     public abstract Authorizations createAuthorizations(String... auths);
@@ -1144,5 +1150,33 @@ public abstract class GraphBase implements Graph {
 
             i++;
         }
+    }
+
+    @Override
+    public Element getElement(ElementId elementId, Authorizations authorizations) {
+        return getElement(elementId, getDefaultFetchHints(), authorizations);
+    }
+
+    @Override
+    public Stream<HistoricalEvent> getHistoricalEvents(
+        Iterable<ElementId> elementIds,
+        HistoricalEventId after,
+        HistoricalEventsFetchHints fetchHints,
+        Authorizations authorizations
+    ) {
+        FetchHints elementFetchHints = new FetchHintsBuilder()
+            .setIncludeAllProperties(true)
+            .setIncludeAllPropertyMetadata(true)
+            .setIncludeHidden(true)
+            .setIncludeAllEdgeRefs(true)
+            .build();
+        return fetchHints.applyToResults(stream(elementIds)
+            .flatMap(elementId -> {
+                Element element = getElement(elementId, elementFetchHints, authorizations);
+                if (element == null) {
+                    throw new VertexiumException("Could not find: " + elementId);
+                }
+                return element.getHistoricalEvents(after, fetchHints, authorizations);
+            }), after);
     }
 }

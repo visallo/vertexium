@@ -1,9 +1,13 @@
 package org.vertexium;
 
 import com.google.common.collect.ImmutableSet;
+import org.vertexium.historicalEvent.HistoricalEvent;
+import org.vertexium.historicalEvent.HistoricalEventId;
 import org.vertexium.mutation.ExistingElementMutation;
 import org.vertexium.query.QueryableIterable;
 import org.vertexium.util.FilterIterable;
+
+import java.util.stream.Stream;
 
 /**
  * An element on the graph. This can be either a vertex or edge.
@@ -34,15 +38,56 @@ public interface Element extends VertexiumObject {
     long getTimestamp();
 
     /**
-     * Gets all property values from all timestamps in descending timestamp order.
+     * Gets historical events about this element
+     *
+     * @param authorizations The authorizations required to load the events
+     * @return An iterable of historic events
      */
+    default Stream<HistoricalEvent> getHistoricalEvents(Authorizations authorizations) {
+        return getHistoricalEvents(HistoricalEventsFetchHints.ALL, authorizations);
+    }
+
+    /**
+     * Gets historical events about this element
+     *
+     * @param fetchHints     Fetch hints to filter historical events
+     * @param authorizations The authorizations required to load the events
+     * @return An iterable of historic events
+     */
+    default Stream<HistoricalEvent> getHistoricalEvents(HistoricalEventsFetchHints fetchHints, Authorizations authorizations) {
+        return getHistoricalEvents(null, fetchHints, authorizations);
+    }
+
+    /**
+     * Gets historical events about this element
+     *
+     * @param after          Find events after the given id
+     * @param fetchHints     Fetch hints to filter historical events
+     * @param authorizations The authorizations required to load the events
+     * @return An iterable of historic events
+     */
+    Stream<HistoricalEvent> getHistoricalEvents(
+        HistoricalEventId after,
+        HistoricalEventsFetchHints fetchHints,
+        Authorizations authorizations
+    );
+
+    /**
+     * Gets all property values from all timestamps in descending timestamp order.
+     *
+     * @deprecated Use {@link #getHistoricalEvents(HistoricalEventsFetchHints, Authorizations)}
+     */
+    @Deprecated
     default Iterable<HistoricalPropertyValue> getHistoricalPropertyValues(Authorizations authorizations) {
         return getHistoricalPropertyValues(null, null, authorizations);
     }
 
     /**
      * Gets all property values from the given range of timestamps in descending timestamp order.
+     *
+     * @deprecated Use {@link #getHistoricalEvents(HistoricalEventsFetchHints, Authorizations)}
      */
+    @Deprecated
     default Iterable<HistoricalPropertyValue> getHistoricalPropertyValues(final Long startTime, final Long endTime, Authorizations authorizations) {
         return getHistoricalPropertyValues(null, null, null, startTime, endTime, authorizations);
     }
@@ -53,7 +98,9 @@ public interface Element extends VertexiumObject {
      * @param key        the key of the property.
      * @param name       the name of the property.
      * @param visibility The visibility of the property to get.
+     * @deprecated Use {@link #getHistoricalEvents(HistoricalEventsFetchHints, Authorizations)}
      */
+    @Deprecated
     default Iterable<HistoricalPropertyValue> getHistoricalPropertyValues(String key, String name, Visibility visibility, Authorizations authorizations) {
         return getHistoricalPropertyValues(key, name, visibility, null, null, authorizations);
     }
@@ -64,7 +111,9 @@ public interface Element extends VertexiumObject {
      * @param key        the key of the property.
      * @param name       the name of the property.
      * @param visibility The visibility of the property to get.
+     * @deprecated Use {@link #getHistoricalEvents(HistoricalEventsFetchHints, Authorizations)}
      */
+    @Deprecated
     default Iterable<HistoricalPropertyValue> getHistoricalPropertyValues(
         String key,
         String name,
@@ -151,6 +200,18 @@ public interface Element extends VertexiumObject {
     }
 
     /**
+     * Soft deletes a property given it's key and name from the element. Only properties which you have access
+     * to can be soft deleted using this method.
+     *
+     * @param key       The property key.
+     * @param name      The property name.
+     * @param eventData Data to store with the soft delete
+     */
+    default void softDeleteProperty(String key, String name, Object eventData, Authorizations authorizations) {
+        softDeleteProperty(key, name, null, eventData, authorizations);
+    }
+
+    /**
      * Soft deletes a property given it's key and name from the element for a given visibility. Only properties which you have access
      * to can be soft deleted using this method.
      *
@@ -158,7 +219,20 @@ public interface Element extends VertexiumObject {
      * @param name       The property name.
      * @param visibility The visibility string of the property to soft delete.
      */
-    void softDeleteProperty(String key, String name, Visibility visibility, Authorizations authorizations);
+    default void softDeleteProperty(String key, String name, Visibility visibility, Authorizations authorizations) {
+        softDeleteProperty(key, name, visibility, null, authorizations);
+    }
+
+    /**
+     * Soft deletes a property given it's key and name from the element for a given visibility. Only properties which you have access
+     * to can be soft deleted using this method.
+     *
+     * @param key        The property key.
+     * @param name       The property name.
+     * @param visibility The visibility string of the property to soft delete.
+     * @param eventData  Data to store with the soft delete
+     */
+    void softDeleteProperty(String key, String name, Visibility visibility, Object eventData, Authorizations authorizations);
 
     /**
      * Soft deletes all properties with the given name that you have access to. Only properties which you have
@@ -167,8 +241,19 @@ public interface Element extends VertexiumObject {
      * @param name The name of the property to delete.
      */
     default void softDeleteProperties(String name, Authorizations authorizations) {
+        softDeleteProperties(name, null, authorizations);
+    }
+
+    /**
+     * Soft deletes all properties with the given name that you have access to. Only properties which you have
+     * access to will be soft deleted.
+     *
+     * @param name      The name of the property to delete.
+     * @param eventData Data to store with the soft delete
+     */
+    default void softDeleteProperties(String name, Object eventData, Authorizations authorizations) {
         for (Property property : getProperties(name)) {
-            softDeleteProperty(property.getKey(), property.getName(), property.getVisibility(), authorizations);
+            softDeleteProperty(property.getKey(), property.getName(), property.getVisibility(), eventData, authorizations);
         }
     }
 
@@ -248,7 +333,23 @@ public interface Element extends VertexiumObject {
      * @param authorizations     The authorizations used.
      */
     default void markPropertyHidden(String key, String name, Visibility propertyVisibility, Visibility visibility, Authorizations authorizations) {
-        markPropertyHidden(key, name, propertyVisibility, null, visibility, authorizations);
+        markPropertyHidden(key, name, propertyVisibility, null, visibility, null, authorizations);
+    }
+
+    /**
+     * Marks a property as hidden for a given visibility.
+     *
+     * @param key                The key of the property.
+     * @param name               The name of the property.
+     * @param propertyVisibility The visibility of the property.
+     * @param visibility         The visibility string under which this property is hidden.
+     *                           This visibility can be a superset of the property visibility to mark
+     *                           it as hidden for only a subset of authorizations.
+     * @param eventData          Data to store with the hidden
+     * @param authorizations     The authorizations used.
+     */
+    default void markPropertyHidden(String key, String name, Visibility propertyVisibility, Visibility visibility, Object eventData, Authorizations authorizations) {
+        markPropertyHidden(key, name, propertyVisibility, null, visibility, eventData, authorizations);
     }
 
     /**
@@ -263,11 +364,43 @@ public interface Element extends VertexiumObject {
      *                           it as hidden for only a subset of authorizations.
      * @param authorizations     The authorizations used.
      */
-    default void markPropertyHidden(String key, String name, Visibility propertyVisibility, Long timestamp, Visibility visibility, Authorizations authorizations) {
+    default void markPropertyHidden(
+        String key,
+        String name,
+        Visibility propertyVisibility,
+        Long timestamp,
+        Visibility visibility,
+        Authorizations authorizations
+    ) {
+        markPropertyHidden(key, name, propertyVisibility, timestamp, visibility, null, authorizations);
+    }
+
+    /**
+     * Marks a property as hidden for a given visibility.
+     *
+     * @param key                The key of the property.
+     * @param name               The name of the property.
+     * @param propertyVisibility The visibility of the property.
+     * @param timestamp          The timestamp.
+     * @param visibility         The visibility string under which this property is hidden.
+     *                           This visibility can be a superset of the property visibility to mark
+     *                           it as hidden for only a subset of authorizations.
+     * @param eventData          Data to store with the hidden
+     * @param authorizations     The authorizations used.
+     */
+    default void markPropertyHidden(
+        String key,
+        String name,
+        Visibility propertyVisibility,
+        Long timestamp,
+        Visibility visibility,
+        Object eventData,
+        Authorizations authorizations
+    ) {
         Iterable<Property> properties = getProperties(key, name);
         for (Property property : properties) {
             if (property.getVisibility().equals(propertyVisibility)) {
-                markPropertyHidden(property, timestamp, visibility, authorizations);
+                markPropertyHidden(property, timestamp, visibility, eventData, authorizations);
                 return;
             }
         }
@@ -284,7 +417,21 @@ public interface Element extends VertexiumObject {
      * @param authorizations The authorizations used.
      */
     default void markPropertyHidden(Property property, Visibility visibility, Authorizations authorizations) {
-        markPropertyHidden(property, null, visibility, authorizations);
+        markPropertyHidden(property, null, visibility, null, authorizations);
+    }
+
+    /**
+     * Marks a property as hidden for a given visibility.
+     *
+     * @param property       The property.
+     * @param visibility     The visibility string under which this property is hidden.
+     *                       This visibility can be a superset of the property visibility to mark
+     *                       it as hidden for only a subset of authorizations.
+     * @param eventData      Data to store with the hidden
+     * @param authorizations The authorizations used.
+     */
+    default void markPropertyHidden(Property property, Visibility visibility, Object eventData, Authorizations authorizations) {
+        markPropertyHidden(property, null, visibility, eventData, authorizations);
     }
 
     /**
@@ -297,7 +444,21 @@ public interface Element extends VertexiumObject {
      *                       it as hidden for only a subset of authorizations.
      * @param authorizations The authorizations used.
      */
-    void markPropertyHidden(Property property, Long timestamp, Visibility visibility, Authorizations authorizations);
+    default void markPropertyHidden(Property property, Long timestamp, Visibility visibility, Authorizations authorizations) {
+        markPropertyHidden(property, timestamp, visibility, null, authorizations);
+    }
+
+    /**
+     * Marks a property as hidden for a given visibility.
+     *
+     * @param property       The property.
+     * @param timestamp      The timestamp.
+     * @param visibility     The visibility string under which this property is hidden.
+     *                       This visibility can be a superset of the property visibility to mark
+     *                       it as hidden for only a subset of authorizations.
+     * @param authorizations The authorizations used.
+     */
+    void markPropertyHidden(Property property, Long timestamp, Visibility visibility, Object data, Authorizations authorizations);
 
     /**
      * Marks a property as visible for a given visibility, effectively undoing markPropertyHidden.
@@ -309,7 +470,21 @@ public interface Element extends VertexiumObject {
      * @param authorizations     The authorizations used.
      */
     default void markPropertyVisible(String key, String name, Visibility propertyVisibility, Visibility visibility, Authorizations authorizations) {
-        markPropertyVisible(key, name, propertyVisibility, null, visibility, authorizations);
+        markPropertyVisible(key, name, propertyVisibility, null, visibility, null, authorizations);
+    }
+
+    /**
+     * Marks a property as visible for a given visibility, effectively undoing markPropertyHidden.
+     *
+     * @param key                The key of the property.
+     * @param name               The name of the property.
+     * @param propertyVisibility The visibility of the property.
+     * @param visibility         The visibility string under which this property is now visible.
+     * @param eventData          Data to store with the visible
+     * @param authorizations     The authorizations used.
+     */
+    default void markPropertyVisible(String key, String name, Visibility propertyVisibility, Visibility visibility, Object eventData, Authorizations authorizations) {
+        markPropertyVisible(key, name, propertyVisibility, null, visibility, eventData, authorizations);
     }
 
     /**
@@ -322,11 +497,41 @@ public interface Element extends VertexiumObject {
      * @param visibility         The visibility string under which this property is now visible.
      * @param authorizations     The authorizations used.
      */
-    default void markPropertyVisible(String key, String name, Visibility propertyVisibility, Long timestamp, Visibility visibility, Authorizations authorizations) {
+    default void markPropertyVisible(
+        String key,
+        String name,
+        Visibility propertyVisibility,
+        Long timestamp,
+        Visibility visibility,
+        Authorizations authorizations
+    ) {
+        markPropertyVisible(key, name, propertyVisibility, timestamp, visibility, null, authorizations);
+    }
+
+    /**
+     * Marks a property as visible for a given visibility, effectively undoing markPropertyHidden.
+     *
+     * @param key                The key of the property.
+     * @param name               The name of the property.
+     * @param propertyVisibility The visibility of the property.
+     * @param timestamp          The timestamp.
+     * @param visibility         The visibility string under which this property is now visible.
+     * @param eventData          Data to store with the visible
+     * @param authorizations     The authorizations used.
+     */
+    default void markPropertyVisible(
+        String key,
+        String name,
+        Visibility propertyVisibility,
+        Long timestamp,
+        Visibility visibility,
+        Object eventData,
+        Authorizations authorizations
+    ) {
         Iterable<Property> properties = getProperties(key, name);
         for (Property property : properties) {
             if (property.getVisibility().equals(propertyVisibility)) {
-                markPropertyVisible(property, timestamp, visibility, authorizations);
+                markPropertyVisible(property, timestamp, visibility, eventData, authorizations);
                 return;
             }
         }
@@ -341,7 +546,19 @@ public interface Element extends VertexiumObject {
      * @param authorizations The authorizations used.
      */
     default void markPropertyVisible(Property property, Visibility visibility, Authorizations authorizations) {
-        markPropertyVisible(property, null, visibility, authorizations);
+        markPropertyVisible(property, null, visibility, null, authorizations);
+    }
+
+    /**
+     * Marks a property as visible for a given visibility, effectively undoing markPropertyHidden.
+     *
+     * @param property       The property.
+     * @param visibility     The visibility string under which this property is now visible.
+     * @param eventData      Data to store with the visible
+     * @param authorizations The authorizations used.
+     */
+    default void markPropertyVisible(Property property, Visibility visibility, Object eventData, Authorizations authorizations) {
+        markPropertyVisible(property, null, visibility, eventData, authorizations);
     }
 
     /**
@@ -352,7 +569,20 @@ public interface Element extends VertexiumObject {
      * @param visibility     The visibility string under which this property is now visible.
      * @param authorizations The authorizations used.
      */
-    void markPropertyVisible(Property property, Long timestamp, Visibility visibility, Authorizations authorizations);
+    default void markPropertyVisible(Property property, Long timestamp, Visibility visibility, Authorizations authorizations) {
+        markPropertyVisible(property, timestamp, visibility, null, authorizations);
+    }
+
+    /**
+     * Marks a property as visible for a given visibility, effectively undoing markPropertyHidden.
+     *
+     * @param property       The property.
+     * @param timestamp      The timestamp.
+     * @param visibility     The visibility string under which this property is now visible.
+     * @param eventData      Data to store with the visible
+     * @param authorizations The authorizations used.
+     */
+    void markPropertyVisible(Property property, Long timestamp, Visibility visibility, Object eventData, Authorizations authorizations);
 
     /**
      * Given the supplied authorizations is this element hidden?

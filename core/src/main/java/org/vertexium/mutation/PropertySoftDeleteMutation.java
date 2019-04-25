@@ -11,6 +11,8 @@ public abstract class PropertySoftDeleteMutation implements Comparable<PropertyS
 
     public abstract Visibility getVisibility();
 
+    public abstract Object getData();
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {

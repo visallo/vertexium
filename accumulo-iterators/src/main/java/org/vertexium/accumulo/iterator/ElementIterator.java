@@ -8,71 +8,71 @@ import org.apache.accumulo.core.iterators.SortedKeyValueIterator;
 import org.apache.accumulo.core.iterators.user.RowDeletingIterator;
 import org.apache.hadoop.io.Text;
 import org.vertexium.accumulo.iterator.model.*;
-import org.vertexium.accumulo.iterator.util.ByteSequenceUtils;
+import org.vertexium.accumulo.iterator.util.OptionsUtils;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.regex.Pattern;
 
 public abstract class ElementIterator<T extends ElementData> implements SortedKeyValueIterator<Key, Value>, OptionDescriber {
     public static final String CF_PROPERTY_STRING = "PROP";
     public static final Text CF_PROPERTY = new Text(CF_PROPERTY_STRING);
-    private static final byte[] CF_PROPERTY_BYTES = CF_PROPERTY.getBytes();
+    public static final byte[] CF_PROPERTY_BYTES = CF_PROPERTY.getBytes();
 
     public static final String CF_PROPERTY_HIDDEN_STRING = "PROPH";
     public static final Text CF_PROPERTY_HIDDEN = new Text(CF_PROPERTY_HIDDEN_STRING);
-    private static final byte[] CF_PROPERTY_HIDDEN_BYTES = CF_PROPERTY_HIDDEN.getBytes();
+    public static final byte[] CF_PROPERTY_HIDDEN_BYTES = CF_PROPERTY_HIDDEN.getBytes();
 
     public static final String CF_PROPERTY_SOFT_DELETE_STRING = "PROPD";
     public static final Text CF_PROPERTY_SOFT_DELETE = new Text(CF_PROPERTY_SOFT_DELETE_STRING);
-    private static final byte[] CF_PROPERTY_SOFT_DELETE_BYTES = CF_PROPERTY_SOFT_DELETE.getBytes();
+    public static final byte[] CF_PROPERTY_SOFT_DELETE_BYTES = CF_PROPERTY_SOFT_DELETE.getBytes();
 
     public static final String CF_PROPERTY_METADATA_STRING = "PROPMETA";
     public static final Text CF_PROPERTY_METADATA = new Text(CF_PROPERTY_METADATA_STRING);
-    private static final byte[] CF_PROPERTY_METADATA_BYTES = CF_PROPERTY_METADATA.getBytes();
+    public static final byte[] CF_PROPERTY_METADATA_BYTES = CF_PROPERTY_METADATA.getBytes();
 
     public static final String CF_HIDDEN_STRING = "H";
     public static final Text CF_HIDDEN = new Text(CF_HIDDEN_STRING);
-    private static final byte[] CF_HIDDEN_BYTES = CF_HIDDEN.getBytes();
+    public static final byte[] CF_HIDDEN_BYTES = CF_HIDDEN.getBytes();
 
     public static final Text CQ_HIDDEN = new Text("H");
-    private static final byte[] CQ_HIDDEN_BYTES = CQ_HIDDEN.getBytes();
+    public static final byte[] CQ_HIDDEN_BYTES = CQ_HIDDEN.getBytes();
 
     public static final String CF_SOFT_DELETE_STRING = "D";
     public static final Text CF_SOFT_DELETE = new Text(CF_SOFT_DELETE_STRING);
-    private static final byte[] CF_SOFT_DELETE_BYTES = CF_SOFT_DELETE.getBytes();
+    public static final byte[] CF_SOFT_DELETE_BYTES = CF_SOFT_DELETE.getBytes();
 
     public static final Text CQ_SOFT_DELETE = new Text("D");
-    private static final byte[] CQ_SOFT_DELETE_BYTES = CQ_SOFT_DELETE.getBytes();
+    public static final byte[] CQ_SOFT_DELETE_BYTES = CQ_SOFT_DELETE.getBytes();
 
     public static final Value SOFT_DELETE_VALUE = new Value("".getBytes());
+    public static final Value SOFT_DELETE_VALUE_DELETED = new Value("X".getBytes());
 
     public static final String CF_EXTENDED_DATA_STRING = "EXTDATA";
     public static final Text CF_EXTENDED_DATA = new Text(CF_EXTENDED_DATA_STRING);
-    private static final byte[] CF_EXTENDED_DATA_BYTES = CF_EXTENDED_DATA.getBytes();
+    public static final byte[] CF_EXTENDED_DATA_BYTES = CF_EXTENDED_DATA.getBytes();
 
     public static final Value HIDDEN_VALUE = new Value("".getBytes());
     public static final Value HIDDEN_VALUE_DELETED = new Value("X".getBytes());
 
+    public static final Value SIGNAL_VALUE_DELETED = new Value("X".getBytes());
+
     public static final String DELETE_ROW_COLUMN_FAMILY_STRING = "";
     public static final Text DELETE_ROW_COLUMN_FAMILY = new Text(DELETE_ROW_COLUMN_FAMILY_STRING);
-    private static final byte[] DELETE_ROW_COLUMN_FAMILY_BYTES = DELETE_ROW_COLUMN_FAMILY.getBytes();
+    public static final byte[] DELETE_ROW_COLUMN_FAMILY_BYTES = DELETE_ROW_COLUMN_FAMILY.getBytes();
 
     public static final String DELETE_ROW_COLUMN_QUALIFIER_STRING = "";
     public static final Text DELETE_ROW_COLUMN_QUALIFIER = new Text(DELETE_ROW_COLUMN_QUALIFIER_STRING);
-    private static final byte[] DELETE_ROW_COLUMN_QUALIFIER_BYTES = DELETE_ROW_COLUMN_QUALIFIER.getBytes();
+    public static final byte[] DELETE_ROW_COLUMN_QUALIFIER_BYTES = DELETE_ROW_COLUMN_QUALIFIER.getBytes();
 
     public static final String METADATA_COLUMN_FAMILY_STRING = "";
     public static final Text METADATA_COLUMN_FAMILY = new Text(METADATA_COLUMN_FAMILY_STRING);
-    private static final byte[] METADATA_COLUMN_FAMILY_BYTES = METADATA_COLUMN_FAMILY.getBytes();
+    public static final byte[] METADATA_COLUMN_FAMILY_BYTES = METADATA_COLUMN_FAMILY.getBytes();
 
     public static final String METADATA_COLUMN_QUALIFIER_STRING = "";
     public static final Text METADATA_COLUMN_QUALIFIER = new Text(METADATA_COLUMN_QUALIFIER_STRING);
-    private static final byte[] METADATA_COLUMN_QUALIFIER_BYTES = METADATA_COLUMN_QUALIFIER.getBytes();
+    public static final byte[] METADATA_COLUMN_QUALIFIER_BYTES = METADATA_COLUMN_QUALIFIER.getBytes();
 
     private static final String SETTING_FETCH_HINTS_PREFIX = "fetchHints.";
-    private static final String RECORD_SEPARATOR = "\u001f";
-    private static final Pattern RECORD_SEPARATOR_PATTERN = Pattern.compile(Pattern.quote(RECORD_SEPARATOR));
     private SortedKeyValueIterator<Key, Value> sourceIterator;
     private IteratorFetchHints fetchHints;
     private T elementData;
@@ -153,21 +153,16 @@ public abstract class ElementIterator<T extends ElementData> implements SortedKe
     protected Text loadElement() throws IOException {
         this.elementData.clear();
 
-        boolean deletedOrHidden = false;
         KeyValue keyValue = new KeyValue();
         Text currentRow = new Text(sourceIterator.getTopKey().getRow());
         Text row = new Text();
         while (sourceIterator.hasTop() && sourceIterator.getTopKey().getRow(row).equals(currentRow)) {
-            if (!deletedOrHidden) {
-                keyValue.set(sourceIterator.getTopKey(), sourceIterator.getTopValue());
-                if (!processKeyValue(keyValue)) {
-                    deletedOrHidden = true;
-                }
-            }
+            keyValue.set(sourceIterator.getTopKey(), sourceIterator.getTopValue());
+            processKeyValue(keyValue);
             sourceIterator.next();
         }
 
-        if (deletedOrHidden) {
+        if (elementData.isDeletedOrHidden()) {
             return null;
         }
 
@@ -182,75 +177,87 @@ public abstract class ElementIterator<T extends ElementData> implements SortedKe
         return currentRow;
     }
 
-    private boolean processKeyValue(KeyValue keyValue) {
+    private void processKeyValue(KeyValue keyValue) {
         if (this.elementData.id == null) {
             this.elementData.id = keyValue.takeRow();
         }
 
         if (keyValue.columnFamilyEquals(CF_PROPERTY_METADATA_BYTES)) {
             extractPropertyMetadata(keyValue);
-            return true;
+            return;
         }
 
         if (keyValue.columnFamilyEquals(CF_PROPERTY_BYTES)) {
             extractPropertyData(keyValue);
-            return true;
+            return;
         }
 
         if (keyValue.columnFamilyEquals(CF_EXTENDED_DATA_BYTES)) {
             this.elementData.extendedTableNames.add(keyValue.peekValue().toString());
-            return true;
+            return;
         }
 
         if (keyValue.columnFamilyEquals(getVisibilitySignal()) && keyValue.getTimestamp() > elementData.timestamp) {
-            elementData.visibility = keyValue.takeColumnVisibility();
-            elementData.timestamp = keyValue.getTimestamp();
-            processSignalColumn(keyValue);
-            return true;
+            processSignalColumn(keyValue, keyValue.isSignalValueDeleted());
+            return;
         }
 
         if (processColumn(keyValue)) {
-            return true;
+            return;
         }
 
         if (keyValue.columnFamilyEquals(DELETE_ROW_COLUMN_FAMILY_BYTES)
             && keyValue.columnQualifierEquals(DELETE_ROW_COLUMN_QUALIFIER_BYTES)
             && RowDeletingIterator.DELETE_ROW_VALUE.equals(keyValue.peekValue())) {
-            return false;
+            elementData.clear();
+            elementData.deleted = true;
+            return;
         }
 
         if (keyValue.columnFamilyEquals(CF_SOFT_DELETE_BYTES)
             && keyValue.columnQualifierEquals(CQ_SOFT_DELETE_BYTES)
             && SOFT_DELETE_VALUE.equals(keyValue.peekValue())) {
             elementData.softDeleteTimestamp = keyValue.getTimestamp();
-            return true;
+            return;
         }
 
         if (keyValue.columnFamilyEquals(CF_PROPERTY_SOFT_DELETE_BYTES)) {
             extractPropertySoftDelete(keyValue);
-            return true;
+            return;
         }
 
         if (keyValue.columnFamilyEquals(CF_HIDDEN_BYTES)) {
             if (fetchHints.isIncludeHidden()) {
-                this.elementData.hiddenVisibilities.add(keyValue.takeColumnVisibility());
-                return true;
+                if (keyValue.isHidden()) {
+                    this.elementData.hiddenVisibilities.add(keyValue.takeColumnVisibility());
+                } else {
+                    this.elementData.hiddenVisibilities.remove(keyValue.takeColumnVisibility());
+                }
+                return;
             } else {
-                return false;
+                elementData.hidden = keyValue.isHidden();
+                return;
             }
         }
 
         if (keyValue.columnFamilyEquals(CF_PROPERTY_HIDDEN_BYTES)) {
             extractPropertyHidden(keyValue);
-            return true;
+            return;
         }
-
-        return true;
     }
 
     protected abstract boolean processColumn(KeyValue keyValue);
 
-    protected void processSignalColumn(KeyValue keyValue) {
+    protected void processSignalColumn(KeyValue keyValue, boolean deleted) {
+        if (deleted) {
+            elementData.visibility = null;
+            elementData.timestamp = 0;
+            elementData.deleted = true;
+        } else {
+            elementData.visibility = keyValue.takeColumnVisibility();
+            elementData.timestamp = keyValue.getTimestamp();
+            elementData.deleted = false;
+        }
     }
 
     public T getElementData() {
@@ -292,9 +299,6 @@ public abstract class ElementIterator<T extends ElementData> implements SortedKe
     }
 
     private void extractPropertyHidden(KeyValue keyValue) {
-        if (keyValue.peekValue().equals(HIDDEN_VALUE_DELETED)) {
-            return;
-        }
         PropertyHiddenColumnQualifierByteSequence propertyHiddenColumnQualifier =
             new PropertyHiddenColumnQualifierByteSequence(keyValue.takeColumnQualifierByteSequence());
         HiddenProperty hiddenProperty = new HiddenProperty(
@@ -303,7 +307,11 @@ public abstract class ElementIterator<T extends ElementData> implements SortedKe
             propertyHiddenColumnQualifier.getPropertyVisibilityString(),
             keyValue.takeColumnVisibilityByteSequence()
         );
-        this.elementData.hiddenProperties.add(hiddenProperty);
+        if (keyValue.isHidden()) {
+            this.elementData.hiddenProperties.add(hiddenProperty);
+        } else {
+            this.elementData.hiddenProperties.remove(hiddenProperty);
+        }
     }
 
     private void extractPropertyData(KeyValue keyValue) {
@@ -371,14 +379,14 @@ public abstract class ElementIterator<T extends ElementData> implements SortedKe
         this.sourceIterator = source;
         fetchHints = new IteratorFetchHints(
             Boolean.parseBoolean(options.get(SETTING_FETCH_HINTS_PREFIX + "includeAllProperties")),
-            parseTextSet(options.get(SETTING_FETCH_HINTS_PREFIX + "propertyNamesToInclude")),
+            OptionsUtils.parseTextSet(options.get(SETTING_FETCH_HINTS_PREFIX + "propertyNamesToInclude")),
             Boolean.parseBoolean(options.get(SETTING_FETCH_HINTS_PREFIX + "includeAllPropertyMetadata")),
-            parseTextSet(options.get(SETTING_FETCH_HINTS_PREFIX + "metadataKeysToInclude")),
+            OptionsUtils.parseTextSet(options.get(SETTING_FETCH_HINTS_PREFIX + "metadataKeysToInclude")),
             Boolean.parseBoolean(options.get(SETTING_FETCH_HINTS_PREFIX + "includeHidden")),
             Boolean.parseBoolean(options.get(SETTING_FETCH_HINTS_PREFIX + "includeAllEdgeRefs")),
             Boolean.parseBoolean(options.get(SETTING_FETCH_HINTS_PREFIX + "includeOutEdgeRefs")),
             Boolean.parseBoolean(options.get(SETTING_FETCH_HINTS_PREFIX + "includeInEdgeRefs")),
-            parseSet(options.get(SETTING_FETCH_HINTS_PREFIX + "edgeLabelsOfEdgeRefsToInclude")),
+            OptionsUtils.parseSet(options.get(SETTING_FETCH_HINTS_PREFIX + "edgeLabelsOfEdgeRefsToInclude")),
             Boolean.parseBoolean(options.get(SETTING_FETCH_HINTS_PREFIX + "includeEdgeLabelsAndCounts")),
             Boolean.parseBoolean(options.get(SETTING_FETCH_HINTS_PREFIX + "includeExtendedDataTableNames"))
         );
@@ -389,81 +397,20 @@ public abstract class ElementIterator<T extends ElementData> implements SortedKe
         return sourceIterator;
     }
 
-    private Set<ByteSequence> parseTextSet(String str) {
-        if (str == null) {
-            return null;
-        }
-        String[] parts = RECORD_SEPARATOR_PATTERN.split(str);
-        Set<ByteSequence> results = new HashSet<>();
-        for (String part : parts) {
-            results.add(new ArrayByteSequence(part));
-        }
-        return results;
-    }
-
     protected abstract T createElementData();
 
     public static void setFetchHints(IteratorSetting iteratorSettings, IteratorFetchHints fetchHints) {
-        addOption(iteratorSettings, SETTING_FETCH_HINTS_PREFIX + "includeAllProperties", Boolean.toString(fetchHints.isIncludeAllProperties()));
-        addOption(iteratorSettings, SETTING_FETCH_HINTS_PREFIX + "propertyNamesToInclude", textSetToString(fetchHints.getPropertyNamesToInclude()));
-        addOption(iteratorSettings, SETTING_FETCH_HINTS_PREFIX + "includeAllPropertyMetadata", Boolean.toString(fetchHints.isIncludeAllPropertyMetadata()));
-        addOption(iteratorSettings, SETTING_FETCH_HINTS_PREFIX + "metadataKeysToInclude", textSetToString(fetchHints.getMetadataKeysToInclude()));
-        addOption(iteratorSettings, SETTING_FETCH_HINTS_PREFIX + "includeHidden", Boolean.toString(fetchHints.isIncludeHidden()));
-        addOption(iteratorSettings, SETTING_FETCH_HINTS_PREFIX + "includeAllEdgeRefs", Boolean.toString(fetchHints.isIncludeAllEdgeRefs()));
-        addOption(iteratorSettings, SETTING_FETCH_HINTS_PREFIX + "includeOutEdgeRefs", Boolean.toString(fetchHints.isIncludeOutEdgeRefs()));
-        addOption(iteratorSettings, SETTING_FETCH_HINTS_PREFIX + "includeInEdgeRefs", Boolean.toString(fetchHints.isIncludeInEdgeRefs()));
-        addOption(iteratorSettings, SETTING_FETCH_HINTS_PREFIX + "edgeLabelsOfEdgeRefsToInclude", setToString(fetchHints.getEdgeLabelsOfEdgeRefsToInclude()));
-        addOption(iteratorSettings, SETTING_FETCH_HINTS_PREFIX + "includeEdgeLabelsAndCounts", Boolean.toString(fetchHints.isIncludeEdgeLabelsAndCounts()));
-        addOption(iteratorSettings, SETTING_FETCH_HINTS_PREFIX + "includeExtendedDataTableNames", Boolean.toString(fetchHints.isIncludeExtendedDataTableNames()));
-    }
-
-    private static String textSetToString(Set<ByteSequence> set) {
-        if (set == null) {
-            return null;
-        }
-        StringBuilder sb = new StringBuilder();
-        boolean first = true;
-        for (ByteSequence s : set) {
-            if (!first) {
-                sb.append(RECORD_SEPARATOR);
-            }
-            sb.append(ByteSequenceUtils.toString(s));
-            first = false;
-        }
-        return sb.toString();
-    }
-
-    private static void addOption(IteratorSetting iteratorSettings, String key, String value) {
-        if (value == null) {
-            return;
-        }
-        iteratorSettings.addOption(key, value);
-    }
-
-    private Set<String> parseSet(String str) {
-        if (str == null) {
-            return null;
-        }
-        String[] parts = RECORD_SEPARATOR_PATTERN.split(str);
-        Set<String> results = new HashSet<>();
-        Collections.addAll(results, parts);
-        return results;
-    }
-
-    public static String setToString(Set<String> set) {
-        if (set == null) {
-            return null;
-        }
-        StringBuilder sb = new StringBuilder();
-        boolean first = true;
-        for (String s : set) {
-            if (!first) {
-                sb.append(RECORD_SEPARATOR);
-            }
-            sb.append(s);
-            first = false;
-        }
-        return sb.toString();
+        OptionsUtils.addOption(iteratorSettings, SETTING_FETCH_HINTS_PREFIX + "includeAllProperties", Boolean.toString(fetchHints.isIncludeAllProperties()));
+        OptionsUtils.addOption(iteratorSettings, SETTING_FETCH_HINTS_PREFIX + "propertyNamesToInclude", OptionsUtils.textSetToString(fetchHints.getPropertyNamesToInclude()));
+        OptionsUtils.addOption(iteratorSettings, SETTING_FETCH_HINTS_PREFIX + "includeAllPropertyMetadata", Boolean.toString(fetchHints.isIncludeAllPropertyMetadata()));
+        OptionsUtils.addOption(iteratorSettings, SETTING_FETCH_HINTS_PREFIX + "metadataKeysToInclude", OptionsUtils.textSetToString(fetchHints.getMetadataKeysToInclude()));
+        OptionsUtils.addOption(iteratorSettings, SETTING_FETCH_HINTS_PREFIX + "includeHidden", Boolean.toString(fetchHints.isIncludeHidden()));
+        OptionsUtils.addOption(iteratorSettings, SETTING_FETCH_HINTS_PREFIX + "includeAllEdgeRefs", Boolean.toString(fetchHints.isIncludeAllEdgeRefs()));
+        OptionsUtils.addOption(iteratorSettings, SETTING_FETCH_HINTS_PREFIX + "includeOutEdgeRefs", Boolean.toString(fetchHints.isIncludeOutEdgeRefs()));
+        OptionsUtils.addOption(iteratorSettings, SETTING_FETCH_HINTS_PREFIX + "includeInEdgeRefs", Boolean.toString(fetchHints.isIncludeInEdgeRefs()));
+        OptionsUtils.addOption(iteratorSettings, SETTING_FETCH_HINTS_PREFIX + "edgeLabelsOfEdgeRefsToInclude", OptionsUtils.setToString(fetchHints.getEdgeLabelsOfEdgeRefsToInclude()));
+        OptionsUtils.addOption(iteratorSettings, SETTING_FETCH_HINTS_PREFIX + "includeEdgeLabelsAndCounts", Boolean.toString(fetchHints.isIncludeEdgeLabelsAndCounts()));
+        OptionsUtils.addOption(iteratorSettings, SETTING_FETCH_HINTS_PREFIX + "includeExtendedDataTableNames", Boolean.toString(fetchHints.isIncludeExtendedDataTableNames()));
     }
 
     public IteratorFetchHints getFetchHints() {
@@ -478,9 +425,11 @@ public abstract class ElementIterator<T extends ElementData> implements SortedKe
             Key key = keys.get(i);
             Value value = values.get(i);
             keyValue.set(key, value);
-            if (!processKeyValue(keyValue)) {
-                return false;
-            }
+            processKeyValue(keyValue);
+        }
+
+        if (elementData.isDeletedOrHidden()) {
+            return false;
         }
 
         if (this.elementData.visibility == null) {
