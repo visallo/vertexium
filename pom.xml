@@ -69,7 +69,7 @@
         <apache.curator.version>2.12.0</apache.curator.version>
         <recurrent.version>0.3.2</recurrent.version>
         <mockito.version>1.9.5</mockito.version>
-        <puppycrawl.checkstyle.version>8.17</puppycrawl.checkstyle.version>
+        <puppycrawl.checkstyle.version>8.19</puppycrawl.checkstyle.version>
         <plugin.maven.checkstyle.version>3.0.0</plugin.maven.checkstyle.version>
 
         <maven.plugin.gpg.version>1.6</maven.plugin.gpg.version>
