@@ -83,8 +83,8 @@ public class EdgeInfoEdge extends ElementBase implements Edge {
     }
 
     @Override
-    public void softDeleteProperty(String key, String name, Visibility visibility, Authorizations authorizations) {
-        getEdge().softDeleteProperty(key, name, visibility, authorizations);
+    public void softDeleteProperty(String key, String name, Visibility visibility, Object data, Authorizations authorizations) {
+        getEdge().softDeleteProperty(key, name, visibility, data, authorizations);
     }
 
     @Override

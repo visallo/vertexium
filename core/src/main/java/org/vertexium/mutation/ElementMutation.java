@@ -83,7 +83,17 @@ public interface ElementMutation<T extends Element> {
      *
      * @param property the property to soft delete.
      */
-    ElementMutation<T> softDeleteProperty(Property property);
+    default ElementMutation<T> softDeleteProperty(Property property) {
+        return softDeleteProperty(property, null);
+    }
+
+    /**
+     * Soft deletes a property.
+     *
+     * @param property the property to soft delete.
+     * @param data     Data to store with the soft delete
+     */
+    ElementMutation<T> softDeleteProperty(Property property, Object data);
 
     /**
      * Deletes the default property with that name.
@@ -99,7 +109,18 @@ public interface ElementMutation<T extends Element> {
      * @param name       the property name to soft delete.
      * @param visibility the visibility of the property to soft delete.
      */
-    ElementMutation<T> softDeleteProperty(String name, Visibility visibility);
+    default ElementMutation<T> softDeleteProperty(String name, Visibility visibility) {
+        return softDeleteProperty(name, visibility, null);
+    }
+
+    /**
+     * Soft deletes the default property with that name.
+     *
+     * @param name       the property name to soft delete.
+     * @param visibility the visibility of the property to soft delete.
+     * @param data       Data to store with the soft delete
+     */
+    ElementMutation<T> softDeleteProperty(String name, Visibility visibility, Object data);
 
     /**
      * Deletes a property.
@@ -117,7 +138,19 @@ public interface ElementMutation<T extends Element> {
      * @param name       the name of the property to soft delete.
      * @param visibility the visibility of the property to soft delete.
      */
-    ElementMutation<T> softDeleteProperty(String key, String name, Visibility visibility);
+    default ElementMutation<T> softDeleteProperty(String key, String name, Visibility visibility) {
+        return softDeleteProperty(key, name, visibility, null);
+    }
+
+    /**
+     * Soft deletes a property.
+     *
+     * @param key        the key of the property to soft delete.
+     * @param name       the name of the property to soft delete.
+     * @param visibility the visibility of the property to soft delete.
+     * @param data       Data to store with the soft delete
+     */
+    ElementMutation<T> softDeleteProperty(String key, String name, Visibility visibility, Object data);
 
     /**
      * Gets the properties currently in this mutation.

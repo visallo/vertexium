@@ -1,3 +1,6 @@
+# v4.5.3
+* Changed: Throw exception on bad keys/ids
+
 # v4.5.2
 * Fixed: Accumulo delete extended data not removing rows 
 * Changed: Elasticsearch to not use locks when flushing it's internal queue

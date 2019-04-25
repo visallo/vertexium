@@ -11,13 +11,15 @@ public class SoftDeletePropertyEvent extends GraphEvent {
     private final String key;
     private final String name;
     private final Visibility visibility;
+    private final Object data;
 
-    public SoftDeletePropertyEvent(Graph graph, Element element, Property property) {
+    public SoftDeletePropertyEvent(Graph graph, Element element, Property property, Object data) {
         super(graph);
         this.element = element;
         this.key = property.getKey();
         this.name = property.getName();
         this.visibility = property.getVisibility();
+        this.data = data;
     }
 
     public SoftDeletePropertyEvent(Graph graph, Element element, PropertySoftDeleteMutation propertySoftDeleteMutation) {
@@ -26,6 +28,7 @@ public class SoftDeletePropertyEvent extends GraphEvent {
         this.key = propertySoftDeleteMutation.getKey();
         this.name = propertySoftDeleteMutation.getName();
         this.visibility = propertySoftDeleteMutation.getVisibility();
+        this.data = propertySoftDeleteMutation.getData();
     }
 
     public Element getElement() {
@@ -42,6 +45,10 @@ public class SoftDeletePropertyEvent extends GraphEvent {
 
     public Visibility getVisibility() {
         return visibility;
+    }
+
+    public Object getData() {
+        return data;
     }
 
     @Override
@@ -62,8 +69,8 @@ public class SoftDeletePropertyEvent extends GraphEvent {
 
         SoftDeletePropertyEvent other = (SoftDeletePropertyEvent) obj;
         return getElement().equals(other.getElement())
-                && getKey().equals(other.getKey())
-                && getName().equals(other.getName())
-                && getVisibility().equals(other.getVisibility());
+            && getKey().equals(other.getKey())
+            && getName().equals(other.getName())
+            && getVisibility().equals(other.getVisibility());
     }
 }

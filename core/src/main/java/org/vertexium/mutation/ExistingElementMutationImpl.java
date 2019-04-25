@@ -124,42 +124,42 @@ public abstract class ExistingElementMutationImpl<T extends Element> implements 
     }
 
     @Override
-    public ElementMutation<T> softDeleteProperty(Property property) {
+    public ElementMutation<T> softDeleteProperty(Property property, Object data) {
         Preconditions.checkNotNull(property, "property cannot be null");
-        propertySoftDeletes.add(new PropertyPropertySoftDeleteMutation(property));
+        propertySoftDeletes.add(new PropertyPropertySoftDeleteMutation(property, data));
         return this;
     }
 
     @Override
-    public ExistingElementMutation<T> softDeleteProperties(String name) {
+    public ExistingElementMutation<T> softDeleteProperties(String name, Object data) {
         for (Property prop : this.element.getProperties(name)) {
-            softDeleteProperty(prop);
+            softDeleteProperty(prop, data);
         }
         return this;
     }
 
     @Override
-    public ExistingElementMutation<T> softDeleteProperties(String key, String name) {
+    public ExistingElementMutation<T> softDeleteProperties(String key, String name, Object data) {
         for (Property prop : this.element.getProperties(key, name)) {
-            softDeleteProperty(prop);
+            softDeleteProperty(prop, data);
         }
         return this;
     }
 
     @Override
-    public ElementMutation<T> softDeleteProperty(String name, Visibility visibility) {
+    public ElementMutation<T> softDeleteProperty(String name, Visibility visibility, Object data) {
         Property property = this.element.getProperty(name, visibility);
         if (property != null) {
-            softDeleteProperty(property);
+            softDeleteProperty(property, data);
         }
         return this;
     }
 
     @Override
-    public ElementMutation<T> softDeleteProperty(String key, String name, Visibility visibility) {
+    public ElementMutation<T> softDeleteProperty(String key, String name, Visibility visibility, Object data) {
         Property property = this.element.getProperty(key, name, visibility);
         if (property != null) {
-            softDeleteProperty(property);
+            softDeleteProperty(property, data);
         }
         return this;
     }

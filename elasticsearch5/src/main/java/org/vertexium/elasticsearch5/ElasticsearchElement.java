@@ -12,10 +12,10 @@ public abstract class ElasticsearchElement extends ElementBase {
     private Authorizations authorizations;
 
     public ElasticsearchElement(
-            Graph graph,
-            String id,
-            FetchHints fetchHints,
-            Authorizations authorizations
+        Graph graph,
+        String id,
+        FetchHints fetchHints,
+        Authorizations authorizations
     ) {
         this.id = id;
         this.graph = graph;
@@ -124,17 +124,17 @@ public abstract class ElasticsearchElement extends ElementBase {
     }
 
     @Override
-    public void softDeleteProperty(String key, String name, Authorizations authorizations) {
+    public void softDeleteProperty(String key, String name, Object data, Authorizations authorizations) {
         throw new VertexiumNotSupportedException("softDeleteProperty is not supported");
     }
 
     @Override
-    public void softDeleteProperty(String key, String name, Visibility visibility, Authorizations authorizations) {
+    public void softDeleteProperty(String key, String name, Visibility visibility, Object data, Authorizations authorizations) {
         throw new VertexiumNotSupportedException("softDeleteProperty is not supported");
     }
 
     @Override
-    public void softDeleteProperties(String name, Authorizations authorizations) {
+    public void softDeleteProperties(String name, Object data, Authorizations authorizations) {
         throw new VertexiumNotSupportedException("softDeleteProperties is not supported");
     }
 

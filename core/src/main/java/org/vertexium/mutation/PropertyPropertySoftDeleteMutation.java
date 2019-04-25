@@ -5,9 +5,11 @@ import org.vertexium.Visibility;
 
 public class PropertyPropertySoftDeleteMutation extends PropertySoftDeleteMutation {
     private final Property property;
+    private final Object data;
 
-    public PropertyPropertySoftDeleteMutation(Property property) {
+    public PropertyPropertySoftDeleteMutation(Property property, Object data) {
         this.property = property;
+        this.data = data;
     }
 
     @Override
@@ -32,5 +34,10 @@ public class PropertyPropertySoftDeleteMutation extends PropertySoftDeleteMutati
 
     public Property getProperty() {
         return property;
+    }
+
+    @Override
+    public Object getData() {
+        return data;
     }
 }

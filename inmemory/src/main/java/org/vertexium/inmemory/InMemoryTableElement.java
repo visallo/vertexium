@@ -291,11 +291,11 @@ public abstract class InMemoryTableElement<TElement extends InMemoryElement> imp
         return m.getPropertyName() + m.getPropertyKey() + m.getPropertyVisibility().getVisibilityString();
     }
 
-    public void appendSoftDeleteMutation(Long timestamp) {
+    public void appendSoftDeleteMutation(Long timestamp, Object data) {
         if (timestamp == null) {
             timestamp = IncreasingTime.currentTimeMillis();
         }
-        addMutation(new SoftDeleteMutation(timestamp));
+        addMutation(new SoftDeleteMutation(timestamp, data));
     }
 
     public void appendMarkHiddenMutation(Visibility visibility) {
@@ -340,11 +340,11 @@ public abstract class InMemoryTableElement<TElement extends InMemoryElement> imp
         return prop;
     }
 
-    public void appendSoftDeletePropertyMutation(String key, String name, Visibility propertyVisibility, Long timestamp) {
+    public void appendSoftDeletePropertyMutation(String key, String name, Visibility propertyVisibility, Long timestamp, Object data) {
         if (timestamp == null) {
             timestamp = IncreasingTime.currentTimeMillis();
         }
-        addMutation(new SoftDeletePropertyMutation(timestamp, key, name, propertyVisibility));
+        addMutation(new SoftDeletePropertyMutation(timestamp, key, name, propertyVisibility, data));
     }
 
     public void appendAlterVisibilityMutation(Visibility newVisibility) {

@@ -4,6 +4,7 @@ import com.google.common.collect.ImmutableSet;
 import org.vertexium.mutation.*;
 import org.vertexium.property.MutablePropertyImpl;
 import org.vertexium.search.IndexHint;
+import org.vertexium.util.KeyUtils;
 import org.vertexium.util.Preconditions;
 import org.vertexium.util.StreamUtils;
 
@@ -20,6 +21,7 @@ public abstract class ElementBuilder<T extends Element> implements ElementMutati
     private IndexHint indexHint = IndexHint.INDEX;
 
     protected ElementBuilder(String elementId) {
+        KeyUtils.checkKey(elementId, "Invalid elementId");
         this.elementId = elementId;
     }
 
@@ -102,14 +104,14 @@ public abstract class ElementBuilder<T extends Element> implements ElementMutati
             throw new NullPointerException("property value cannot be null for property: " + name + ":" + key);
         }
         this.properties.add(new MutablePropertyImpl(
-                key,
-                name,
-                value,
-                metadata,
-                timestamp,
-                null,
-                visibility,
-                FetchHints.ALL_INCLUDING_HIDDEN
+            key,
+            name,
+            value,
+            metadata,
+            timestamp,
+            null,
+            visibility,
+            FetchHints.ALL_INCLUDING_HIDDEN
         ));
         return this;
     }
@@ -133,20 +135,20 @@ public abstract class ElementBuilder<T extends Element> implements ElementMutati
     }
 
     @Override
-    public ElementBuilder<T> softDeleteProperty(Property property) {
-        propertySoftDeletes.add(new PropertyPropertySoftDeleteMutation(property));
+    public ElementBuilder<T> softDeleteProperty(Property property, Object data) {
+        propertySoftDeletes.add(new PropertyPropertySoftDeleteMutation(property, data));
         return this;
     }
 
     @Override
-    public ElementBuilder<T> softDeleteProperty(String name, Visibility visibility) {
-        return softDeleteProperty(ElementMutation.DEFAULT_KEY, name, visibility);
+    public ElementBuilder<T> softDeleteProperty(String name, Visibility visibility, Object data) {
+        return softDeleteProperty(ElementMutation.DEFAULT_KEY, name, visibility, data);
     }
 
     @Override
-    public ElementBuilder<T> softDeleteProperty(String key, String name, Visibility visibility) {
+    public ElementBuilder<T> softDeleteProperty(String key, String name, Visibility visibility, Object data) {
         Preconditions.checkNotNull(name, "property name cannot be null for property: " + name + ":" + key);
-        propertySoftDeletes.add(new KeyNameVisibilityPropertySoftDeleteMutation(key, name, visibility));
+        propertySoftDeletes.add(new KeyNameVisibilityPropertySoftDeleteMutation(key, name, visibility, data));
         return this;
     }
 
@@ -215,8 +217,8 @@ public abstract class ElementBuilder<T extends Element> implements ElementMutati
 
     public ImmutableSet<String> getExtendedDataTableNames() {
         return extendedDatas.stream()
-                .map(ExtendedDataMutation::getTableName)
-                .collect(StreamUtils.toImmutableSet());
+            .map(ExtendedDataMutation::getTableName)
+            .collect(StreamUtils.toImmutableSet());
     }
 
     @Override

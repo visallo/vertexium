@@ -11,6 +11,8 @@ public abstract class PropertySoftDeleteMutation implements Comparable<PropertyS
 
     public abstract Visibility getVisibility();
 
+    public abstract Object getData();
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -97,9 +99,9 @@ public abstract class PropertySoftDeleteMutation implements Comparable<PropertyS
     @Override
     public String toString() {
         return this.getClass().getSimpleName() + "{" +
-                "key='" + getKey() + '\'' +
-                ", name='" + getName() + '\'' +
-                ", visibility=" + getVisibility() +
-                '}';
+            "key='" + getKey() + '\'' +
+            ", name='" + getName() + '\'' +
+            ", visibility=" + getVisibility() +
+            '}';
     }
 }

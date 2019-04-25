@@ -110,7 +110,17 @@ public interface ExistingElementMutation<T extends Element> extends ElementMutat
      *
      * @param name the property name to delete.
      */
-    ExistingElementMutation<T> softDeleteProperties(String name);
+    default ExistingElementMutation<T> softDeleteProperties(String name) {
+        return softDeleteProperties(name, (Object) null);
+    }
+
+    /**
+     * Soft deletes all default properties with that name irregardless of visibility.
+     *
+     * @param name the property name to delete.
+     * @param data Data to store with the soft delete
+     */
+    ExistingElementMutation<T> softDeleteProperties(String name, Object data);
 
     /**
      * Soft deletes all properties with this key and name irregardless of visibility.
@@ -118,7 +128,18 @@ public interface ExistingElementMutation<T extends Element> extends ElementMutat
      * @param key  the key of the property to delete.
      * @param name the name of the property to delete.
      */
-    ExistingElementMutation<T> softDeleteProperties(String key, String name);
+    default ExistingElementMutation<T> softDeleteProperties(String key, String name) {
+        return softDeleteProperties(key, name, null);
+    }
+
+    /**
+     * Soft deletes all properties with this key and name irregardless of visibility.
+     *
+     * @param key  the key of the property to delete.
+     * @param name the name of the property to delete.
+     * @param data Data to store with the soft delete
+     */
+    ExistingElementMutation<T> softDeleteProperties(String key, String name, Object data);
 
     /**
      * Gets the element this mutation is affecting.

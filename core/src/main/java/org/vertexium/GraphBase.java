@@ -314,55 +314,55 @@ public abstract class GraphBase implements Graph {
     }
 
     @Override
-    public void softDeleteVertex(String vertexId, Authorizations authorizations) {
+    public void softDeleteVertex(String vertexId, Object data, Authorizations authorizations) {
         Vertex vertex = getVertex(vertexId, authorizations);
         checkNotNull(vertex, "Could not find vertex to soft delete with id: " + vertexId);
-        softDeleteVertex(vertex, null, authorizations);
+        softDeleteVertex(vertex, null, data, authorizations);
     }
 
     @Override
-    public void softDeleteVertex(String vertexId, Long timestamp, Authorizations authorizations) {
+    public void softDeleteVertex(String vertexId, Long timestamp, Object data, Authorizations authorizations) {
         Vertex vertex = getVertex(vertexId, authorizations);
         checkNotNull(vertex, "Could not find vertex to soft delete with id: " + vertexId);
-        softDeleteVertex(vertex, timestamp, authorizations);
+        softDeleteVertex(vertex, timestamp, data, authorizations);
     }
 
     @Override
-    public void softDeleteVertex(Vertex vertex, Authorizations authorizations) {
-        softDeleteVertex(vertex, null, authorizations);
+    public void softDeleteVertex(Vertex vertex, Object data, Authorizations authorizations) {
+        softDeleteVertex(vertex, null, data, authorizations);
     }
 
     @Override
-    public abstract void softDeleteVertex(Vertex vertex, Long timestamp, Authorizations authorizations);
+    public abstract void softDeleteVertex(Vertex vertex, Long timestamp, Object data, Authorizations authorizations);
 
     @Override
-    public void softDeleteEdge(String edgeId, Authorizations authorizations) {
+    public void softDeleteEdge(String edgeId, Object data, Authorizations authorizations) {
         Edge edge = getEdge(edgeId, authorizations);
         checkNotNull(edge, "Could not find edge to soft delete with id: " + edgeId);
-        softDeleteEdge(edge, null, authorizations);
+        softDeleteEdge(edge, null, data, authorizations);
     }
 
     @Override
-    public void softDeleteEdge(String edgeId, Long timestamp, Authorizations authorizations) {
+    public void softDeleteEdge(String edgeId, Long timestamp, Object data, Authorizations authorizations) {
         Edge edge = getEdge(edgeId, authorizations);
         checkNotNull(edge, "Could not find edge to soft delete with id: " + edgeId);
-        softDeleteEdge(edge, timestamp, authorizations);
+        softDeleteEdge(edge, timestamp, data, authorizations);
     }
 
     @Override
-    public void softDeleteEdge(Edge edge, Authorizations authorizations) {
-        softDeleteEdge(edge, null, authorizations);
+    public void softDeleteEdge(Edge edge, Object data, Authorizations authorizations) {
+        softDeleteEdge(edge, null, data, authorizations);
     }
 
     @Override
-    public abstract void softDeleteEdge(Edge edge, Long timestamp, Authorizations authorizations);
+    public abstract void softDeleteEdge(Edge edge, Long timestamp, Object data, Authorizations authorizations);
 
     @Override
     public Iterable<String> filterEdgeIdsByAuthorization(
-            Iterable<String> edgeIds,
-            final String authorizationToMatch,
-            final EnumSet<ElementFilter> filters,
-            Authorizations authorizations
+        Iterable<String> edgeIds,
+        final String authorizationToMatch,
+        final EnumSet<ElementFilter> filters,
+        Authorizations authorizations
     ) {
         FilterIterable<Edge> edges = new FilterIterable<Edge>(getEdges(edgeIds, FetchHints.ALL_INCLUDING_HIDDEN, authorizations)) {
             @Override
@@ -405,10 +405,10 @@ public abstract class GraphBase implements Graph {
 
     @Override
     public Iterable<String> filterVertexIdsByAuthorization(
-            Iterable<String> vertexIds,
-            final String authorizationToMatch,
-            final EnumSet<ElementFilter> filters,
-            Authorizations authorizations
+        Iterable<String> vertexIds,
+        final String authorizationToMatch,
+        final EnumSet<ElementFilter> filters,
+        Authorizations authorizations
     ) {
         FilterIterable<Vertex> vertices = new FilterIterable<Vertex>(getVertices(vertexIds, FetchHints.ALL_INCLUDING_HIDDEN, authorizations)) {
             @Override
@@ -552,24 +552,24 @@ public abstract class GraphBase implements Graph {
         List<Path> foundPaths = new ArrayList<>();
         if (options.getMaxHops() == 2) {
             findPathsSetIntersection(
-                    options,
-                    foundPaths,
-                    sourceVertex,
-                    destVertex,
-                    progressCallback,
-                    authorizations
+                options,
+                foundPaths,
+                sourceVertex,
+                destVertex,
+                progressCallback,
+                authorizations
             );
         } else {
             findPathsRecursive(
-                    options,
-                    foundPaths,
-                    sourceVertex,
-                    destVertex,
-                    options.getMaxHops(),
-                    seenVertices,
-                    startPath,
-                    progressCallback,
-                    authorizations
+                options,
+                foundPaths,
+                sourceVertex,
+                destVertex,
+                options.getMaxHops(),
+                seenVertices,
+                startPath,
+                progressCallback,
+                authorizations
             );
         }
 
@@ -585,15 +585,15 @@ public abstract class GraphBase implements Graph {
         Set<String> sourceVertexConnectedVertexIds = filterFindPathEdgeInfo(options, sourceVertex.getEdgeInfos(Direction.BOTH, options.getLabels(), authorizations));
         Map<String, Boolean> sourceVerticesExist = doVerticesExist(sourceVertexConnectedVertexIds, authorizations);
         sourceVertexConnectedVertexIds = stream(sourceVerticesExist.keySet())
-                .filter(key -> sourceVerticesExist.getOrDefault(key, false))
-                .collect(Collectors.toSet());
+            .filter(key -> sourceVerticesExist.getOrDefault(key, false))
+            .collect(Collectors.toSet());
 
         progressCallback.progress(0.3, ProgressCallback.Step.SEARCHING_DESTINATION_VERTEX_EDGES);
         Set<String> destVertexConnectedVertexIds = filterFindPathEdgeInfo(options, destVertex.getEdgeInfos(Direction.BOTH, options.getLabels(), authorizations));
         Map<String, Boolean> destVerticesExist = doVerticesExist(destVertexConnectedVertexIds, authorizations);
         destVertexConnectedVertexIds = stream(destVerticesExist.keySet())
-                .filter(key -> destVerticesExist.getOrDefault(key, false))
-                .collect(Collectors.toSet());
+            .filter(key -> destVerticesExist.getOrDefault(key, false))
+            .collect(Collectors.toSet());
 
         if (sourceVertexConnectedVertexIds.contains(destVertexId)) {
             foundPaths.add(new Path(sourceVertexId, destVertexId));
@@ -613,38 +613,38 @@ public abstract class GraphBase implements Graph {
 
     private Set<String> filterFindPathEdgeInfo(FindPathOptions options, Iterable<EdgeInfo> edgeInfos) {
         return stream(edgeInfos)
-                .filter(edgeInfo -> {
-                    if (options.getExcludedLabels() != null) {
-                        return !ArrayUtils.contains(options.getExcludedLabels(), edgeInfo.getLabel());
-                    }
-                    return true;
-                })
-                .map(EdgeInfo::getVertexId)
-                .collect(Collectors.toSet());
+            .filter(edgeInfo -> {
+                if (options.getExcludedLabels() != null) {
+                    return !ArrayUtils.contains(options.getExcludedLabels(), edgeInfo.getLabel());
+                }
+                return true;
+            })
+            .map(EdgeInfo::getVertexId)
+            .collect(Collectors.toSet());
     }
 
     private Iterable<Vertex> filterFindPathEdgePairs(FindPathOptions options, Iterable<EdgeVertexPair> edgeVertexPairs) {
         return stream(edgeVertexPairs)
-                .filter(edgePair -> {
-                    if (options.getExcludedLabels() != null) {
-                        return !ArrayUtils.contains(options.getExcludedLabels(), edgePair.getEdge().getLabel());
-                    }
-                    return true;
-                })
-                .map(EdgeVertexPair::getVertex)
-                .collect(Collectors.toList());
+            .filter(edgePair -> {
+                if (options.getExcludedLabels() != null) {
+                    return !ArrayUtils.contains(options.getExcludedLabels(), edgePair.getEdge().getLabel());
+                }
+                return true;
+            })
+            .map(EdgeVertexPair::getVertex)
+            .collect(Collectors.toList());
     }
 
     protected void findPathsRecursive(
-            FindPathOptions options,
-            List<Path> foundPaths,
-            Vertex sourceVertex,
-            Vertex destVertex,
-            int hops,
-            Set<String> seenVertices,
-            Path currentPath,
-            ProgressCallback progressCallback,
-            Authorizations authorizations
+        FindPathOptions options,
+        List<Path> foundPaths,
+        Vertex sourceVertex,
+        Vertex destVertex,
+        int hops,
+        Set<String> seenVertices,
+        Path currentPath,
+        ProgressCallback progressCallback,
+        Authorizations authorizations
     ) {
         // if this is our first source vertex report progress back to the progress callback
         boolean firstLevelRecursion = hops == options.getMaxHops();
@@ -699,8 +699,8 @@ public abstract class GraphBase implements Graph {
     @Override
     public Iterable<String> findRelatedEdgeIds(Iterable<String> vertexIds, Long endTime, Authorizations authorizations) {
         FetchHints fetchHints = new FetchHintsBuilder()
-                .setIncludeOutEdgeRefs(true)
-                .build();
+            .setIncludeOutEdgeRefs(true)
+            .build();
         return findRelatedEdgeIdsForVertices(getVertices(vertexIds, fetchHints, endTime, authorizations), authorizations);
     }
 
@@ -712,8 +712,8 @@ public abstract class GraphBase implements Graph {
     @Override
     public Iterable<RelatedEdge> findRelatedEdgeSummary(Iterable<String> vertexIds, Long endTime, Authorizations authorizations) {
         FetchHints fetchHints = new FetchHintsBuilder()
-                .setIncludeOutEdgeRefs(true)
-                .build();
+            .setIncludeOutEdgeRefs(true)
+            .build();
         return findRelatedEdgeSummaryForVertices(getVertices(vertexIds, fetchHints, endTime, authorizations), authorizations);
     }
 
@@ -1009,8 +1009,8 @@ public abstract class GraphBase implements Graph {
     @Override
     public List<InputStream> getStreamingPropertyValueInputStreams(List<StreamingPropertyValue> streamingPropertyValues) {
         return streamingPropertyValues.stream()
-                .map(StreamingPropertyValue::getInputStream)
-                .collect(Collectors.toList());
+            .map(StreamingPropertyValue::getInputStream)
+            .collect(Collectors.toList());
     }
 
     @Override
@@ -1038,13 +1038,13 @@ public abstract class GraphBase implements Graph {
 
     @Override
     public Iterable<ExtendedDataRow> getExtendedData(
-            ElementType elementType,
-            String elementId,
-            String tableName,
-            Authorizations authorizations
+        ElementType elementType,
+        String elementId,
+        String tableName,
+        Authorizations authorizations
     ) {
         if ((elementType == null && (elementId != null || tableName != null))
-                || (elementType != null && elementId == null && tableName != null)) {
+            || (elementType != null && elementId == null && tableName != null)) {
             throw new VertexiumException("Cannot create partial key with missing inner value");
         }
 
@@ -1053,8 +1053,8 @@ public abstract class GraphBase implements Graph {
             protected boolean isIncluded(ExtendedDataRow row) {
                 ExtendedDataRowId rowId = row.getId();
                 return (elementType == null || elementType.equals(rowId.getElementType()))
-                        && (elementId == null || elementId.equals(rowId.getElementId()))
-                        && (tableName == null || tableName.equals(rowId.getTableName()));
+                    && (elementId == null || elementId.equals(rowId.getElementId()))
+                    && (tableName == null || tableName.equals(rowId.getTableName()));
             }
         };
     }
@@ -1066,7 +1066,7 @@ public abstract class GraphBase implements Graph {
             protected boolean isIncluded(ExtendedDataRow row) {
                 ExtendedDataRowId rowId = row.getId();
                 return elementType.equals(rowId.getElementType())
-                        && elementIdRange.isInRange(rowId.getElementId());
+                    && elementIdRange.isInRange(rowId.getElementId());
             }
         };
     }

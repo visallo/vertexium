@@ -66,12 +66,12 @@ public interface Element extends VertexiumObject {
      * @param visibility The visibility of the property to get.
      */
     default Iterable<HistoricalPropertyValue> getHistoricalPropertyValues(
-            String key,
-            String name,
-            Visibility visibility,
-            Long startTime,
-            Long endTime,
-            Authorizations authorizations
+        String key,
+        String name,
+        Visibility visibility,
+        Long startTime,
+        Long endTime,
+        Authorizations authorizations
     ) {
         return new FilterIterable<HistoricalPropertyValue>(getHistoricalPropertyValues(key, name, visibility, authorizations)) {
             @Override
@@ -151,6 +151,18 @@ public interface Element extends VertexiumObject {
     }
 
     /**
+     * Soft deletes a property given it's key and name from the element. Only properties which you have access
+     * to can be soft deleted using this method.
+     *
+     * @param key  The property key.
+     * @param name The property name.
+     * @param data Data to store with the soft delete
+     */
+    default void softDeleteProperty(String key, String name, Object data, Authorizations authorizations) {
+        softDeleteProperty(key, name, null, data, authorizations);
+    }
+
+    /**
      * Soft deletes a property given it's key and name from the element for a given visibility. Only properties which you have access
      * to can be soft deleted using this method.
      *
@@ -158,7 +170,20 @@ public interface Element extends VertexiumObject {
      * @param name       The property name.
      * @param visibility The visibility string of the property to soft delete.
      */
-    void softDeleteProperty(String key, String name, Visibility visibility, Authorizations authorizations);
+    default void softDeleteProperty(String key, String name, Visibility visibility, Authorizations authorizations) {
+        softDeleteProperty(key, name, visibility, null, authorizations);
+    }
+
+    /**
+     * Soft deletes a property given it's key and name from the element for a given visibility. Only properties which you have access
+     * to can be soft deleted using this method.
+     *
+     * @param key        The property key.
+     * @param name       The property name.
+     * @param visibility The visibility string of the property to soft delete.
+     * @param data       Data to store with the soft delete
+     */
+    void softDeleteProperty(String key, String name, Visibility visibility, Object data, Authorizations authorizations);
 
     /**
      * Soft deletes all properties with the given name that you have access to. Only properties which you have
@@ -167,8 +192,19 @@ public interface Element extends VertexiumObject {
      * @param name The name of the property to delete.
      */
     default void softDeleteProperties(String name, Authorizations authorizations) {
+        softDeleteProperties(name, null, authorizations);
+    }
+
+    /**
+     * Soft deletes all properties with the given name that you have access to. Only properties which you have
+     * access to will be soft deleted.
+     *
+     * @param name The name of the property to delete.
+     * @param data Data to store with the soft delete
+     */
+    default void softDeleteProperties(String name, Object data, Authorizations authorizations) {
         for (Property property : getProperties(name)) {
-            softDeleteProperty(property.getKey(), property.getName(), property.getVisibility(), authorizations);
+            softDeleteProperty(property.getKey(), property.getName(), property.getVisibility(), data, authorizations);
         }
     }
 

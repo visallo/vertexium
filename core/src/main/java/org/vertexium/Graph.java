@@ -301,7 +301,18 @@ public interface Graph {
      * @param vertex         The vertex to soft delete.
      * @param authorizations The authorizations required to soft delete the vertex.
      */
-    void softDeleteVertex(Vertex vertex, Authorizations authorizations);
+    default void softDeleteVertex(Vertex vertex, Authorizations authorizations) {
+        softDeleteVertex(vertex, (Object) null, authorizations);
+    }
+
+    /**
+     * Soft deletes a vertex from the graph.
+     *
+     * @param vertex         The vertex to soft delete.
+     * @param data           Data to store with the soft delete
+     * @param authorizations The authorizations required to soft delete the vertex.
+     */
+    void softDeleteVertex(Vertex vertex, Object data, Authorizations authorizations);
 
     /**
      * Soft deletes a vertex from the graph.
@@ -309,7 +320,18 @@ public interface Graph {
      * @param vertex         The vertex to soft delete.
      * @param authorizations The authorizations required to soft delete the vertex.
      */
-    void softDeleteVertex(Vertex vertex, Long timestamp, Authorizations authorizations);
+    default void softDeleteVertex(Vertex vertex, Long timestamp, Authorizations authorizations) {
+        softDeleteVertex(vertex, timestamp, null, authorizations);
+    }
+
+    /**
+     * Soft deletes a vertex from the graph.
+     *
+     * @param vertex         The vertex to soft delete.
+     * @param data           Data to store with the soft delete
+     * @param authorizations The authorizations required to soft delete the vertex.
+     */
+    void softDeleteVertex(Vertex vertex, Long timestamp, Object data, Authorizations authorizations);
 
     /**
      * Soft deletes a vertex from the graph.
@@ -317,7 +339,18 @@ public interface Graph {
      * @param vertexId       The vertex id to soft delete.
      * @param authorizations The authorizations required to soft delete the vertex.
      */
-    void softDeleteVertex(String vertexId, Authorizations authorizations);
+    default void softDeleteVertex(String vertexId, Authorizations authorizations) {
+        softDeleteVertex(vertexId, (Object) null, authorizations);
+    }
+
+    /**
+     * Soft deletes a vertex from the graph.
+     *
+     * @param vertexId       The vertex id to soft delete.
+     * @param data           Data to store with the soft delete
+     * @param authorizations The authorizations required to soft delete the vertex.
+     */
+    void softDeleteVertex(String vertexId, Object data, Authorizations authorizations);
 
     /**
      * Soft deletes a vertex from the graph.
@@ -325,7 +358,18 @@ public interface Graph {
      * @param vertexId       The vertex id to soft delete.
      * @param authorizations The authorizations required to soft delete the vertex.
      */
-    void softDeleteVertex(String vertexId, Long timestamp, Authorizations authorizations);
+    default void softDeleteVertex(String vertexId, Long timestamp, Authorizations authorizations) {
+        softDeleteVertex(vertexId, timestamp, null, authorizations);
+    }
+
+    /**
+     * Soft deletes a vertex from the graph.
+     *
+     * @param vertexId       The vertex id to soft delete.
+     * @param data           Data to store with the soft delete
+     * @param authorizations The authorizations required to soft delete the vertex.
+     */
+    void softDeleteVertex(String vertexId, Long timestamp, Object data, Authorizations authorizations);
 
     /**
      * Adds an edge between two vertices. The id of the new vertex will be generated using an IdGenerator.
@@ -714,7 +758,18 @@ public interface Graph {
      * @param edge           The edge to soft delete from the graph.
      * @param authorizations The authorizations required to delete the edge.
      */
-    void softDeleteEdge(Edge edge, Authorizations authorizations);
+    default void softDeleteEdge(Edge edge, Authorizations authorizations) {
+        softDeleteEdge(edge, (Object) null, authorizations);
+    }
+
+    /**
+     * Soft deletes an edge from the graph.
+     *
+     * @param edge           The edge to soft delete from the graph.
+     * @param data           Data to store with the soft delete
+     * @param authorizations The authorizations required to delete the edge.
+     */
+    void softDeleteEdge(Edge edge, Object data, Authorizations authorizations);
 
     /**
      * Soft deletes an edge from the graph.
@@ -722,7 +777,18 @@ public interface Graph {
      * @param edge           The edge to soft delete from the graph.
      * @param authorizations The authorizations required to delete the edge.
      */
-    void softDeleteEdge(Edge edge, Long timestamp, Authorizations authorizations);
+    default void softDeleteEdge(Edge edge, Long timestamp, Authorizations authorizations) {
+        softDeleteEdge(edge, timestamp, null, authorizations);
+    }
+
+    /**
+     * Soft deletes an edge from the graph.
+     *
+     * @param edge           The edge to soft delete from the graph.
+     * @param data           Data to store with the soft delete
+     * @param authorizations The authorizations required to delete the edge.
+     */
+    void softDeleteEdge(Edge edge, Long timestamp, Object data, Authorizations authorizations);
 
     /**
      * Soft deletes an edge from the graph. This method requires fetching the edge before soft deletion.
@@ -730,7 +796,18 @@ public interface Graph {
      * @param edgeId         The edge id of the vertex to soft delete from the graph.
      * @param authorizations The authorizations required to delete the edge.
      */
-    void softDeleteEdge(String edgeId, Authorizations authorizations);
+    default void softDeleteEdge(String edgeId, Authorizations authorizations) {
+        softDeleteEdge(edgeId, null, authorizations);
+    }
+
+    /**
+     * Soft deletes an edge from the graph. This method requires fetching the edge before soft deletion.
+     *
+     * @param edgeId         The edge id of the vertex to soft delete from the graph.
+     * @param data           Data to store with the soft delete
+     * @param authorizations The authorizations required to delete the edge.
+     */
+    void softDeleteEdge(String edgeId, Object data, Authorizations authorizations);
 
     /**
      * Soft deletes an edge from the graph. This method requires fetching the edge before soft deletion.
@@ -738,7 +815,18 @@ public interface Graph {
      * @param edgeId         The edge id of the vertex to soft delete from the graph.
      * @param authorizations The authorizations required to delete the edge.
      */
-    void softDeleteEdge(String edgeId, Long timestamp, Authorizations authorizations);
+    default void softDeleteEdge(String edgeId, Long timestamp, Authorizations authorizations) {
+        softDeleteEdge(edgeId, timestamp, null, authorizations);
+    }
+
+    /**
+     * Soft deletes an edge from the graph. This method requires fetching the edge before soft deletion.
+     *
+     * @param edgeId         The edge id of the vertex to soft delete from the graph.
+     * @param data           Data to store with the soft delete
+     * @param authorizations The authorizations required to delete the edge.
+     */
+    void softDeleteEdge(String edgeId, Long timestamp, Object data, Authorizations authorizations);
 
     /**
      * Creates a query builder object used to query the graph.

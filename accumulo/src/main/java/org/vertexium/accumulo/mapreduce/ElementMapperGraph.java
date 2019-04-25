@@ -31,22 +31,22 @@ public class ElementMapperGraph extends GraphBase {
     }
 
     @Override
-    public void softDeleteVertex(Vertex vertex, Authorizations authorizations) {
+    public void softDeleteVertex(Vertex vertex, Object data, Authorizations authorizations) {
         throw new VertexiumException("Not supported");
     }
 
     @Override
-    public void softDeleteVertex(Vertex vertex, Long timestamp, Authorizations authorizations) {
+    public void softDeleteVertex(Vertex vertex, Long timestamp, Object data, Authorizations authorizations) {
         throw new VertexiumException("Not supported");
     }
 
     @Override
-    public void softDeleteEdge(Edge edge, Long timestamp, Authorizations authorizations) {
+    public void softDeleteEdge(Edge edge, Long timestamp, Object data, Authorizations authorizations) {
         throw new VertexiumException("Not supported");
     }
 
     @Override
-    public void softDeleteEdge(Edge edge, Authorizations authorizations) {
+    public void softDeleteEdge(Edge edge, Object data, Authorizations authorizations) {
         throw new VertexiumException("Not supported");
     }
 
