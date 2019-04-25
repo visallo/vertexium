@@ -41,6 +41,7 @@ public class FlushObjectQueue {
                     try {
                         searchIndex.handleDocumentMissingException(flushObject, ex);
                     } catch (Exception e) {
+                        LOGGER.error("Failed to handle document missing exception", e);
                         throw new VertexiumException(ex);
                     }
                     return;
