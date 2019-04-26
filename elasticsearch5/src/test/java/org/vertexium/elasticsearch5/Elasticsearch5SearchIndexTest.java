@@ -230,6 +230,34 @@ public class Elasticsearch5SearchIndexTest extends GraphTestBase {
         toList(edges).get(0).getVertices(AUTHORIZATIONS_A);
     }
 
+    @Test
+    public void testUpdateVertexWithDeletedElasticsearchDocument() {
+        TestElasticsearch5ExceptionHandler.authorizations = AUTHORIZATIONS_A;
+
+        graph.prepareVertex("v1", VISIBILITY_A)
+            .addPropertyValue("k1", "prop1", "joe", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
+        graph.flush();
+
+        Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
+        getSearchIndex().deleteElement(graph, v1, AUTHORIZATIONS_A);
+        graph.flush();
+
+        v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
+        v1.prepareMutation()
+            .addPropertyValue("k1", "prop2", "bob", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
+        graph.flush();
+
+        List<String> results = toList(graph.query("joe", AUTHORIZATIONS_A).vertexIds());
+        assertEquals(1, results.size());
+        assertEquals("v1", results.get(0));
+
+        results = toList(graph.query("bob", AUTHORIZATIONS_A).vertexIds());
+        assertEquals(1, results.size());
+        assertEquals("v1", results.get(0));
+    }
+
     private long getNumQueries() {
         Client client = elasticsearchResource.getRunner().client();
         NodesStatsResponse nodeStats = NodesStatsAction.INSTANCE.newRequestBuilder(client).get();
