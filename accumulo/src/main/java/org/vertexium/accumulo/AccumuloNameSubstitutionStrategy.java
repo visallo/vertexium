@@ -16,11 +16,11 @@ public class AccumuloNameSubstitutionStrategy implements NameSubstitutionStrateg
     protected AccumuloNameSubstitutionStrategy(NameSubstitutionStrategy nameSubstitutionStrategy) {
         this.nameSubstitutionStrategy = nameSubstitutionStrategy;
         inflateTextCache = CacheBuilder
-                .newCache(ByteSequence.class, String.class)
-                .name(AccumuloNameSubstitutionStrategy.class, "inflateTextCache-" + System.identityHashCode(this))
-                .maxSize(10000)
-                .source(byteSequence -> inflate(ByteSequenceUtils.toString(byteSequence)))
-                .build();
+            .newCache(ByteSequence.class, String.class)
+            .name(AccumuloNameSubstitutionStrategy.class, "inflateTextCache-" + System.identityHashCode(this))
+            .maxSize(10000)
+            .source(byteSequence -> inflate(ByteSequenceUtils.toString(byteSequence)))
+            .build();
     }
 
     @Override

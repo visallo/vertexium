@@ -19,8 +19,8 @@ public class CountFunction extends AggregationFunction {
         if (arg0 instanceof String && arg0.equals("*")) {
             if (scope instanceof VertexiumCypherScope) {
                 return ((VertexiumCypherScope) scope).stream()
-                        .filter(Objects::nonNull)
-                        .count();
+                    .filter(Objects::nonNull)
+                    .count();
             } else if (scope instanceof VertexiumCypherScope.Item) {
                 return 1;
             }
@@ -33,8 +33,8 @@ public class CountFunction extends AggregationFunction {
 
         if (arg0 instanceof Stream) {
             return ((Stream<?>) arg0)
-                    .filter(Objects::nonNull)
-                    .count();
+                .filter(Objects::nonNull)
+                .count();
         }
 
         return 1;

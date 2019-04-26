@@ -52,10 +52,10 @@ public class OverflowIntoHdfsStreamingPropertyValueStorageStrategy implements St
 
     @Override
     public StreamingPropertyValueRef saveStreamingPropertyValue(
-            ElementMutationBuilder elementMutationBuilder,
-            String rowKey,
-            Property property,
-            StreamingPropertyValue streamingPropertyValue
+        ElementMutationBuilder elementMutationBuilder,
+        String rowKey,
+        Property property,
+        StreamingPropertyValue streamingPropertyValue
     ) {
         try {
             HdfsLargeDataStore largeDataStore = new HdfsLargeDataStore(this.fileSystem, this.dataDir, rowKey, property);
@@ -89,29 +89,29 @@ public class OverflowIntoHdfsStreamingPropertyValueStorageStrategy implements St
     @Override
     public List<InputStream> getInputStreams(List<StreamingPropertyValue> streamingPropertyValues) {
         List<StreamingPropertyValueTable> notLoadedTableSpvs = streamingPropertyValues.stream()
-                .filter((spv) -> spv instanceof StreamingPropertyValueTable)
-                .map((spv) -> (StreamingPropertyValueTable) spv)
-                .filter((spv) -> !spv.isDataLoaded())
-                .collect(Collectors.toList());
+            .filter((spv) -> spv instanceof StreamingPropertyValueTable)
+            .map((spv) -> (StreamingPropertyValueTable) spv)
+            .filter((spv) -> !spv.isDataLoaded())
+            .collect(Collectors.toList());
 
         List<String> dataRowKeys = notLoadedTableSpvs.stream()
-                .map(StreamingPropertyValueTable::getDataRowKey)
-                .collect(Collectors.toList());
+            .map(StreamingPropertyValueTable::getDataRowKey)
+            .collect(Collectors.toList());
 
         Map<String, byte[]> tableInputStreams = streamingPropertyValueTableDatas(dataRowKeys);
         notLoadedTableSpvs
-                .forEach((spv) -> {
-                    String dataRowKey = spv.getDataRowKey();
-                    byte[] bytes = tableInputStreams.get(dataRowKey);
-                    if (bytes == null) {
-                        throw new VertexiumException("Could not find StreamingPropertyValue data: " + dataRowKey);
-                    }
-                    spv.setData(bytes);
-                });
+            .forEach((spv) -> {
+                String dataRowKey = spv.getDataRowKey();
+                byte[] bytes = tableInputStreams.get(dataRowKey);
+                if (bytes == null) {
+                    throw new VertexiumException("Could not find StreamingPropertyValue data: " + dataRowKey);
+                }
+                spv.setData(bytes);
+            });
 
         return streamingPropertyValues.stream()
-                .map(StreamingPropertyValue::getInputStream)
-                .collect(Collectors.toList());
+            .map(StreamingPropertyValue::getInputStream)
+            .collect(Collectors.toList());
     }
 
     private Map<String, byte[]> streamingPropertyValueTableDatas(List<String> dataRowKeys) {
@@ -121,8 +121,8 @@ public class OverflowIntoHdfsStreamingPropertyValueStorageStrategy implements St
             }
 
             List<org.apache.accumulo.core.data.Range> ranges = dataRowKeys.stream()
-                    .map(RangeUtils::createRangeFromString)
-                    .collect(Collectors.toList());
+                .map(RangeUtils::createRangeFromString)
+                .collect(Collectors.toList());
 
             final long timerStartTime = System.currentTimeMillis();
             ScannerBase scanner = graph.createBatchScanner(graph.getDataTableName(), ranges, new org.apache.accumulo.core.security.Authorizations());
@@ -147,11 +147,11 @@ public class OverflowIntoHdfsStreamingPropertyValueStorageStrategy implements St
     }
 
     private StreamingPropertyValueRef saveStreamingPropertyValueSmall(
-            ElementMutationBuilder elementMutationBuilder,
-            String rowKey,
-            Property property,
-            byte[] data,
-            StreamingPropertyValue propertyValue
+        ElementMutationBuilder elementMutationBuilder,
+        String rowKey,
+        Property property,
+        byte[] data,
+        StreamingPropertyValue propertyValue
     ) {
         String dataTableRowKey = new DataTableRowKey(rowKey, property).getRowKey();
         Mutation dataMutation = new Mutation(dataTableRowKey);

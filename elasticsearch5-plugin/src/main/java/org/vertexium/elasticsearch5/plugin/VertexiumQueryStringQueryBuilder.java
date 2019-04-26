@@ -58,8 +58,8 @@ public class VertexiumQueryStringQueryBuilder extends QueryStringQueryBuilder {
     @Override
     protected boolean doEquals(QueryStringQueryBuilder other) {
         return other instanceof VertexiumQueryStringQueryBuilder &&
-                super.doEquals(other) &&
-                Objects.deepEquals(this.authorizations, ((VertexiumQueryStringQueryBuilder) other).authorizations);
+            super.doEquals(other) &&
+            Objects.deepEquals(this.authorizations, ((VertexiumQueryStringQueryBuilder) other).authorizations);
     }
 
     @Override
@@ -80,7 +80,7 @@ public class VertexiumQueryStringQueryBuilder extends QueryStringQueryBuilder {
         try {
             Map<String, String> results = new HashMap<>();
             ImmutableOpenMap<String, ImmutableOpenMap<String, MappingMetaData>> mappings
-                    = context.getClient().admin().indices().prepareGetMappings().get().getMappings();
+                = context.getClient().admin().indices().prepareGetMappings().get().getMappings();
             for (ObjectCursor<String> index : mappings.keys()) {
                 ImmutableOpenMap<String, MappingMetaData> types = mappings.get(index.value);
                 if (types == null) {

@@ -20,8 +20,8 @@ public class StatisticsAggregation extends Aggregation {
     @Override
     public String toString() {
         return "StatisticsQueryItem{" +
-                "aggregationName='" + aggregationName + '\'' +
-                ", field='" + fieldName + '\'' +
-                '}';
+            "aggregationName='" + aggregationName + '\'' +
+            ", field='" + fieldName + '\'' +
+            '}';
     }
 }

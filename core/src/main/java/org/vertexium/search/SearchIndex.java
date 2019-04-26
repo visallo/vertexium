@@ -27,19 +27,19 @@ public interface SearchIndex {
      * if a collective method can be made more efficient
      */
     default void deleteProperties(
-            Graph graph,
-            Element element,
-            Collection<PropertyDescriptor> propertyList,
-            Authorizations authorizations
+        Graph graph,
+        Element element,
+        Collection<PropertyDescriptor> propertyList,
+        Authorizations authorizations
     ) {
         propertyList.forEach(p -> deleteProperty(graph, element, p, authorizations));
     }
 
     void deleteProperty(
-            Graph graph,
-            Element element,
-            PropertyDescriptor property,
-            Authorizations authorizations
+        Graph graph,
+        Element element,
+        PropertyDescriptor property,
+        Authorizations authorizations
     );
 
     void addElements(Graph graph, Iterable<? extends Element> elements, Authorizations authorizations);
@@ -81,13 +81,13 @@ public interface SearchIndex {
     void deleteExtendedData(Graph graph, ExtendedDataRowId extendedDataRowId, Authorizations authorizations);
 
     void deleteExtendedData(
-            Graph graph,
-            Element element,
-            String tableName,
-            String row,
-            String columnName,
-            String key,
-            Visibility visibility,
-            Authorizations authorizations
+        Graph graph,
+        Element element,
+        String tableName,
+        String row,
+        String columnName,
+        String key,
+        Visibility visibility,
+        Authorizations authorizations
     );
 }

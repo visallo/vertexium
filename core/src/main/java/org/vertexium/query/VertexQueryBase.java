@@ -45,8 +45,8 @@ public abstract class VertexQueryBase extends QueryBase implements VertexQuery {
     @Override
     public String toString() {
         return super.toString() +
-                ", sourceVertex=" + sourceVertex +
-                ", otherVertexId=" + otherVertexId +
-                ", direction=" + direction;
+            ", sourceVertex=" + sourceVertex +
+            ", otherVertexId=" + otherVertexId +
+            ", direction=" + direction;
     }
 }

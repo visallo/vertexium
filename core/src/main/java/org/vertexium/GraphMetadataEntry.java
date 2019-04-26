@@ -31,8 +31,8 @@ public class GraphMetadataEntry {
     @Override
     public String toString() {
         return "GraphMetadataEntry{" +
-                "key='" + key + '\'' +
-                ", value=" + value +
-                '}';
+            "key='" + key + '\'' +
+            ", value=" + value +
+            '}';
     }
 }

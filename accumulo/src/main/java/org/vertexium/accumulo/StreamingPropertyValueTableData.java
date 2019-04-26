@@ -34,11 +34,11 @@ public class StreamingPropertyValueTableData extends StreamingPropertyValue {
     private final long timestamp;
 
     public StreamingPropertyValueTableData(
-            AccumuloGraph graph,
-            String dataRowKey,
-            Class valueType,
-            Long length,
-            long timestamp
+        AccumuloGraph graph,
+        String dataRowKey,
+        Class valueType,
+        Long length,
+        long timestamp
     ) {
         super(valueType);
         this.graph = graph;
@@ -190,9 +190,9 @@ public class StreamingPropertyValueTableData extends StreamingPropertyValue {
             }
 
             IteratorSetting iteratorSetting = new IteratorSetting(
-                    80,
-                    TimestampFilter.class.getSimpleName(),
-                    TimestampFilter.class
+                80,
+                TimestampFilter.class.getSimpleName(),
+                TimestampFilter.class
             );
             TimestampFilter.setStart(iteratorSetting, timestamp, true);
             TimestampFilter.setEnd(iteratorSetting, timestamp, true);

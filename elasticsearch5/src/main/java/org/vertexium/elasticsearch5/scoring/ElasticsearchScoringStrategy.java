@@ -8,9 +8,9 @@ import org.vertexium.scoring.ScoringStrategy;
 
 public interface ElasticsearchScoringStrategy extends ScoringStrategy {
     QueryBuilder updateElasticsearchQuery(
-            Graph graph,
-            Elasticsearch5SearchIndex searchIndex,
-            QueryBuilder query,
-            QueryParameters queryParameters
+        Graph graph,
+        Elasticsearch5SearchIndex searchIndex,
+        QueryBuilder query,
+        QueryParameters queryParameters
     );
 }

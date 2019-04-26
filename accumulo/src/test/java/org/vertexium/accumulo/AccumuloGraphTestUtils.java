@@ -26,8 +26,8 @@ public class AccumuloGraphTestUtils {
     private static void createTable(Connector connector, String tableName) {
         try {
             NewTableConfiguration config = new NewTableConfiguration()
-                    .withoutDefaultIterators()
-                    .setTimeType(TimeType.MILLIS);
+                .withoutDefaultIterators()
+                .setTimeType(TimeType.MILLIS);
             connector.tableOperations().create(tableName, config);
         } catch (Exception e) {
             throw new VertexiumException("Unable to create table " + tableName);

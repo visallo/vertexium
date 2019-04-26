@@ -24,17 +24,17 @@ public class CypherRelationshipsPattern extends CypherAstBase {
     @Override
     public String toString() {
         return String.format(
-                "%s%s",
-                getNodePattern(),
-                getPatternElementChains().stream().map(CypherElementPattern::toString).collect(Collectors.joining(""))
+            "%s%s",
+            getNodePattern(),
+            getPatternElementChains().stream().map(CypherElementPattern::toString).collect(Collectors.joining(""))
         );
     }
 
     @Override
     public Stream<? extends CypherAstBase> getChildren() {
         return Stream.concat(
-                Stream.of(nodePattern),
-                patternElementChains.stream()
+            Stream.of(nodePattern),
+            patternElementChains.stream()
         );
     }
 }

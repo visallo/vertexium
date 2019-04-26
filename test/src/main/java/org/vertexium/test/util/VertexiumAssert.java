@@ -67,8 +67,8 @@ public class VertexiumAssert {
 
     public static void assertElementIdsAnyOrder(Iterable<? extends Element> elements, String... expectedIds) {
         List<Element> sortedElements = stream(elements)
-                .sorted(Comparator.comparing(Element::getId))
-                .collect(Collectors.toList());
+            .sorted(Comparator.comparing(Element::getId))
+            .collect(Collectors.toList());
         Arrays.sort(expectedIds);
         assertElementIds(sortedElements, expectedIds);
     }
@@ -88,9 +88,9 @@ public class VertexiumAssert {
     }
 
     public static void assertResultsCount(
-            int expectedCount,
-            int expectedTotalHits,
-            IterableWithTotalHits<?> results
+        int expectedCount,
+        int expectedTotalHits,
+        IterableWithTotalHits<?> results
     ) {
         assertEquals(expectedTotalHits, results.getTotalHits());
         assertCount(expectedCount, results);
@@ -133,9 +133,9 @@ public class VertexiumAssert {
 
     private static List<String> getRowIds(Iterable<? extends VertexiumObject> searchResults) {
         return stream(searchResults)
-                .filter((sr) -> sr instanceof ExtendedDataRow)
-                .map((sr) -> ((ExtendedDataRow) sr).getId().getRowId())
-                .collect(Collectors.toList());
+            .filter((sr) -> sr instanceof ExtendedDataRow)
+            .map((sr) -> ((ExtendedDataRow) sr).getId().getRowId())
+            .collect(Collectors.toList());
     }
 
     public static void assertThrowsException(Runnable fn) {

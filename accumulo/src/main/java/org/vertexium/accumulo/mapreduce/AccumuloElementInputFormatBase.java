@@ -39,8 +39,8 @@ public abstract class AccumuloElementInputFormatBase<TValue extends Element> ext
         AccumuloRowInputFormat.setInputTableName(job, tableName);
         AccumuloRowInputFormat.setConnectorInfo(job, principal, token);
         ClientConfiguration clientConfig = ClientConfiguration.create()
-                .withInstance(instanceName)
-                .withZkHosts(zooKeepers);
+            .withInstance(instanceName)
+            .withZkHosts(zooKeepers);
         AccumuloRowInputFormat.setZooKeeperInstance(job, clientConfig);
         AccumuloRowInputFormat.setScanAuthorizations(job, new org.apache.accumulo.core.security.Authorizations(authorizations));
         job.getConfiguration().setStrings(VertexiumMRUtils.CONFIG_AUTHORIZATIONS, authorizations);
@@ -128,19 +128,19 @@ public abstract class AccumuloElementInputFormatBase<TValue extends Element> ext
             }));
         }
         Visibility visibility = AccumuloGraph.accumuloVisibilityToVisibility(
-                AccumuloGraph.visibilityToAccumuloVisibility(property.visibility)
+            AccumuloGraph.visibilityToAccumuloVisibility(property.visibility)
         );
         return new LazyMutableProperty(
-                graph,
-                graph.getVertexiumSerializer(),
-                graph.getNameSubstitutionStrategy().inflate(property.key),
-                graph.getNameSubstitutionStrategy().inflate(property.name),
-                property.value,
-                null,
-                hiddenVisibilities,
-                visibility,
-                property.timestamp,
-                FetchHints.ALL_INCLUDING_HIDDEN
+            graph,
+            graph.getVertexiumSerializer(),
+            graph.getNameSubstitutionStrategy().inflate(property.key),
+            graph.getNameSubstitutionStrategy().inflate(property.name),
+            property.value,
+            null,
+            hiddenVisibilities,
+            visibility,
+            property.timestamp,
+            FetchHints.ALL_INCLUDING_HIDDEN
         );
     }
 }

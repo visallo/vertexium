@@ -17,9 +17,9 @@ public class DataTableRowKey extends KeyBase {
 
     public DataTableRowKey(String elementRowKey, String propertyKey, String propertyName) {
         this.parts = new String[]{
-                elementRowKey,
-                propertyName,
-                propertyKey
+            elementRowKey,
+            propertyName,
+            propertyKey
         };
     }
 
@@ -28,8 +28,8 @@ public class DataTableRowKey extends KeyBase {
         assertNoValueSeparator(getPropertyName());
         assertNoValueSeparator(getPropertyKey());
         return getElementRowKey()
-                + VALUE_SEPARATOR + getPropertyName()
-                + VALUE_SEPARATOR + getPropertyKey();
+            + VALUE_SEPARATOR + getPropertyName()
+            + VALUE_SEPARATOR + getPropertyKey();
     }
 
     public String getElementRowKey() {

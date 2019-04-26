@@ -85,8 +85,8 @@ public class RelationshipMatchRange {
     @Override
     public String toString() {
         return "RelationshipMatchRange{" +
-                "from=" + from +
-                ", to=" + to +
-                '}';
+            "from=" + from +
+            ", to=" + to +
+            '}';
     }
 }

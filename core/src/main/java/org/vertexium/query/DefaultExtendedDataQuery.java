@@ -7,11 +7,11 @@ public class DefaultExtendedDataQuery extends QueryBase {
     private final String tableName;
 
     public DefaultExtendedDataQuery(
-            Graph graph,
-            Element element,
-            String tableName,
-            String queryString,
-            Authorizations authorizations
+        Graph graph,
+        Element element,
+        String tableName,
+        String queryString,
+        Authorizations authorizations
     ) {
         super(graph, queryString, authorizations);
         this.element = element;
@@ -37,19 +37,19 @@ public class DefaultExtendedDataQuery extends QueryBase {
     @Override
     protected QueryResultsIterable<? extends VertexiumObject> extendedData(FetchHints fetchHints) {
         return new DefaultGraphQueryIterableWithAggregations<>(
-                getParameters(),
-                getElement().getExtendedData(getTableName()),
-                true,
-                true,
-                true,
-                getAggregations()
+            getParameters(),
+            getElement().getExtendedData(getTableName()),
+            true,
+            true,
+            true,
+            getAggregations()
         );
     }
 
     @Override
     public String toString() {
         return super.toString() +
-                ", element=" + element +
-                ", tableName=" + tableName;
+            ", element=" + element +
+            ", tableName=" + tableName;
     }
 }

@@ -59,8 +59,8 @@ public class HasAuthorizationFilter extends Filter {
     @Override
     public boolean accept(Key k, Value v) {
         if (filters.contains(ElementFilter.ELEMENT)
-                && (k.getColumnFamily().equals(EdgeIterator.CF_SIGNAL) || k.getColumnFamily().equals(VertexIterator.CF_SIGNAL))
-                && isMatch(k)) {
+            && (k.getColumnFamily().equals(EdgeIterator.CF_SIGNAL) || k.getColumnFamily().equals(VertexIterator.CF_SIGNAL))
+            && isMatch(k)) {
             return true;
         }
 

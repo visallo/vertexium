@@ -23,9 +23,9 @@ public class MinFunction extends AggregationFunction {
         if (arg0 instanceof Stream) {
             Stream<?> list = (Stream<?>) arg0;
             return list
-                    .filter(Objects::nonNull)
-                    .min(ObjectUtils::compare)
-                    .orElse(null);
+                .filter(Objects::nonNull)
+                .min(ObjectUtils::compare)
+                .orElse(null);
         }
 
         throw new VertexiumCypherTypeErrorException(arg0, Collection.class, Stream.class);

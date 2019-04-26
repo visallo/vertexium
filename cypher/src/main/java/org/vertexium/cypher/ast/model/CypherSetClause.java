@@ -18,8 +18,8 @@ public class CypherSetClause extends CypherClause {
     @Override
     public String toString() {
         return String.format(
-                "SET %s",
-                getSetItems().stream().map(Object::toString).collect(Collectors.joining(", "))
+            "SET %s",
+            getSetItems().stream().map(Object::toString).collect(Collectors.joining(", "))
         );
     }
 

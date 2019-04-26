@@ -12,10 +12,10 @@ public class TestElasticsearch5ExceptionHandler implements Elasticsearch5Excepti
 
     @Override
     public void handleDocumentMissingException(
-            Graph graph,
-            Elasticsearch5SearchIndex elasticsearch5SearchIndex,
-            FlushObjectQueue.FlushObject flushObject,
-            Exception ex
+        Graph graph,
+        Elasticsearch5SearchIndex elasticsearch5SearchIndex,
+        FlushObjectQueue.FlushObject flushObject,
+        Exception ex
     ) {
         LOGGER.warn("document missing %s, attempting to add document", flushObject, ex);
         LoadAndAddDocumentMissingHelper.handleDocumentMissingException(graph, elasticsearch5SearchIndex, flushObject, ex, authorizations);

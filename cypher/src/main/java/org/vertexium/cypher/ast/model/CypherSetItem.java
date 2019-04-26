@@ -34,10 +34,10 @@ public abstract class CypherSetItem<TLeft extends CypherAstBase, TRight extends 
             return String.format("%s%s", getLeft(), getRight());
         }
         return String.format(
-                "%s %s %s",
-                getLeft(),
-                getOp(),
-                getRight()
+            "%s %s %s",
+            getLeft(),
+            getOp(),
+            getRight()
         );
     }
 

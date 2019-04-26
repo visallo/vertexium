@@ -19,8 +19,8 @@ public class HiddenProperty {
 
     public boolean matches(ByteSequence propertyKey, ByteSequence propertyName, ByteSequence visibility) {
         return propertyKey.equals(this.key)
-                && propertyName.equals(this.name)
-                && visibility.equals(this.visibility);
+            && propertyName.equals(this.name)
+            && visibility.equals(this.visibility);
     }
 
     public ByteSequence getHiddenVisibility() {
@@ -62,9 +62,9 @@ public class HiddenProperty {
     @Override
     public String toString() {
         return "HiddenProperty{" +
-                "key='" + key + '\'' +
-                ", name='" + name + '\'' +
-                ", visibility='" + visibility + '\'' +
-                '}';
+            "key='" + key + '\'' +
+            ", name='" + name + '\'' +
+            ", visibility='" + visibility + '\'' +
+            '}';
     }
 }

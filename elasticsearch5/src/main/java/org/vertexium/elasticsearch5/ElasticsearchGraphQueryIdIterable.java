@@ -11,8 +11,8 @@ import org.vertexium.util.VertexiumLoggerFactory;
 import java.io.IOException;
 
 public class ElasticsearchGraphQueryIdIterable<T>
-        extends ConvertingIterable<SearchHit, T>
-        implements QueryResultsIterable<T> {
+    extends ConvertingIterable<SearchHit, T>
+    implements QueryResultsIterable<T> {
 
     private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(ElasticsearchGraphQueryIdIterable.class);
 

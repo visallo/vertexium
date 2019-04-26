@@ -97,9 +97,9 @@ public abstract class PropertySoftDeleteMutation implements Comparable<PropertyS
     @Override
     public String toString() {
         return this.getClass().getSimpleName() + "{" +
-                "key='" + getKey() + '\'' +
-                ", name='" + getName() + '\'' +
-                ", visibility=" + getVisibility() +
-                '}';
+            "key='" + getKey() + '\'' +
+            ", name='" + getName() + '\'' +
+            ", visibility=" + getVisibility() +
+            '}';
     }
 }

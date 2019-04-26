@@ -12,10 +12,10 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 public abstract class PagingIterable<T> implements
-        Iterable<T>,
-        IterableWithTotalHits<T>,
-        IterableWithScores<T>,
-        QueryResultsIterable<T> {
+    Iterable<T>,
+    IterableWithTotalHits<T>,
+    IterableWithScores<T>,
+    QueryResultsIterable<T> {
     private final long skip;
     private final long limit;
     private boolean isFirstCallToIterator;

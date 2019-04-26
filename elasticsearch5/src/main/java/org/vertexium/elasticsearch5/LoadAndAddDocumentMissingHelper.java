@@ -7,11 +7,11 @@ import java.util.Collections;
 
 public class LoadAndAddDocumentMissingHelper implements Elasticsearch5ExceptionHandler {
     public static void handleDocumentMissingException(
-            Graph graph,
-            Elasticsearch5SearchIndex elasticsearch5SearchIndex,
-            FlushObjectQueue.FlushObject flushObject,
-            Exception ex,
-            Authorizations authorizations
+        Graph graph,
+        Elasticsearch5SearchIndex elasticsearch5SearchIndex,
+        FlushObjectQueue.FlushObject flushObject,
+        Exception ex,
+        Authorizations authorizations
     ) {
         graph.flush();
 
@@ -24,10 +24,10 @@ public class LoadAndAddDocumentMissingHelper implements Elasticsearch5ExceptionH
     }
 
     protected static void handleElement(
-            Graph graph,
-            Elasticsearch5SearchIndex elasticsearch5SearchIndex,
-            FlushObjectQueue.FlushObject flushObject,
-            Authorizations authorizations
+        Graph graph,
+        Elasticsearch5SearchIndex elasticsearch5SearchIndex,
+        FlushObjectQueue.FlushObject flushObject,
+        Authorizations authorizations
     ) {
         Element element;
         switch (flushObject.getElementType()) {
@@ -44,16 +44,16 @@ public class LoadAndAddDocumentMissingHelper implements Elasticsearch5ExceptionH
     }
 
     protected static void handleExtendedDataRow(
-            Graph graph,
-            Elasticsearch5SearchIndex elasticsearch5SearchIndex,
-            FlushObjectQueue.FlushObject flushObject,
-            Authorizations authorizations
+        Graph graph,
+        Elasticsearch5SearchIndex elasticsearch5SearchIndex,
+        FlushObjectQueue.FlushObject flushObject,
+        Authorizations authorizations
     ) {
         ExtendedDataRowId id = new ExtendedDataRowId(
-                flushObject.getElementType(),
-                flushObject.getElementId(),
-                flushObject.getExtendedDataTableName(),
-                flushObject.getExtendedDataRowId()
+            flushObject.getElementType(),
+            flushObject.getElementId(),
+            flushObject.getExtendedDataTableName(),
+            flushObject.getExtendedDataRowId()
         );
         ExtendedDataRow row = graph.getExtendedData(id, authorizations);
         elasticsearch5SearchIndex.addExtendedData(graph, Collections.singletonList(row), authorizations);

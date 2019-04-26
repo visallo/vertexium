@@ -7,8 +7,8 @@ public class CypherPatternComprehension extends CypherAstBase {
     private final CypherAstBase expression;
 
     public CypherPatternComprehension(
-            CypherMatchClause matchClause,
-            CypherAstBase expression
+        CypherMatchClause matchClause,
+        CypherAstBase expression
     ) {
         this.matchClause = matchClause;
         this.expression = expression;
@@ -36,8 +36,8 @@ public class CypherPatternComprehension extends CypherAstBase {
     @Override
     public Stream<? extends CypherAstBase> getChildren() {
         return Stream.of(
-                matchClause,
-                expression
+            matchClause,
+            expression
         );
     }
 }

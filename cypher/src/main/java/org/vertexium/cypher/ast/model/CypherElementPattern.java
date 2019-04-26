@@ -37,8 +37,8 @@ public abstract class CypherElementPattern extends CypherAstBase {
     @Override
     public String toString() {
         return this.getClass().getName() + "{" +
-                "name='" + name + '\'' +
-                '}';
+            "name='" + name + '\'' +
+            '}';
     }
 
     @Override

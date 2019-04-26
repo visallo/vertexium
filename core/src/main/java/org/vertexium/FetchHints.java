@@ -19,48 +19,48 @@ public class FetchHints {
     private final boolean includeExtendedDataTableNames;
 
     public static final FetchHints NONE = new FetchHintsBuilder()
-            .build();
+        .build();
 
     public static final FetchHints PROPERTIES_AND_METADATA = new FetchHintsBuilder()
-            .setIncludeAllProperties(true)
-            .setIncludeAllPropertyMetadata(true)
-            .build();
+        .setIncludeAllProperties(true)
+        .setIncludeAllPropertyMetadata(true)
+        .build();
 
     public static final FetchHints ALL = new FetchHintsBuilder()
-            .setIncludeAllProperties(true)
-            .setIncludeAllPropertyMetadata(true)
-            .setIncludeAllEdgeRefs(true)
-            .setIncludeExtendedDataTableNames(true)
-            .build();
+        .setIncludeAllProperties(true)
+        .setIncludeAllPropertyMetadata(true)
+        .setIncludeAllEdgeRefs(true)
+        .setIncludeExtendedDataTableNames(true)
+        .build();
 
     public static final FetchHints ALL_INCLUDING_HIDDEN = new FetchHintsBuilder()
-            .setIncludeAllProperties(true)
-            .setIncludeAllPropertyMetadata(true)
-            .setIncludeAllEdgeRefs(true)
-            .setIncludeExtendedDataTableNames(true)
-            .setIncludeHidden(true)
-            .build();
+        .setIncludeAllProperties(true)
+        .setIncludeAllPropertyMetadata(true)
+        .setIncludeAllEdgeRefs(true)
+        .setIncludeExtendedDataTableNames(true)
+        .setIncludeHidden(true)
+        .build();
 
     public static final FetchHints EDGE_REFS = new FetchHintsBuilder()
-            .setIncludeAllEdgeRefs(true)
-            .build();
+        .setIncludeAllEdgeRefs(true)
+        .build();
 
     public static final FetchHints EDGE_LABELS = new FetchHintsBuilder()
-            .setIncludeEdgeLabelsAndCounts(true)
-            .build();
+        .setIncludeEdgeLabelsAndCounts(true)
+        .build();
 
     FetchHints(
-            boolean includeAllProperties,
-            ImmutableSet<String> propertyNamesToInclude,
-            boolean includeAllPropertyMetadata,
-            ImmutableSet<String> metadataKeysToInclude,
-            boolean includeHidden,
-            boolean includeAllEdgeRefs,
-            boolean includeOutEdgeRefs,
-            boolean includeInEdgeRefs,
-            ImmutableSet<String> edgeLabelsOfEdgeRefsToInclude,
-            boolean includeEdgeLabelsAndCounts,
-            boolean includeExtendedDataTableNames
+        boolean includeAllProperties,
+        ImmutableSet<String> propertyNamesToInclude,
+        boolean includeAllPropertyMetadata,
+        ImmutableSet<String> metadataKeysToInclude,
+        boolean includeHidden,
+        boolean includeAllEdgeRefs,
+        boolean includeOutEdgeRefs,
+        boolean includeInEdgeRefs,
+        ImmutableSet<String> edgeLabelsOfEdgeRefsToInclude,
+        boolean includeEdgeLabelsAndCounts,
+        boolean includeExtendedDataTableNames
     ) {
         this.includeAllProperties = includeAllProperties;
         this.propertyNamesToInclude = propertyNamesToInclude;
@@ -170,7 +170,7 @@ public class FetchHints {
 
     public boolean isIncludeEdgeRefs() {
         return isIncludeAllEdgeRefs() || isIncludeInEdgeRefs() || isIncludeOutEdgeRefs()
-                || (getEdgeLabelsOfEdgeRefsToInclude() != null && getEdgeLabelsOfEdgeRefsToInclude().size() > 0);
+            || (getEdgeLabelsOfEdgeRefsToInclude() != null && getEdgeLabelsOfEdgeRefsToInclude().size() > 0);
     }
 
     public boolean hasEdgeLabelsOfEdgeRefsToInclude() {
@@ -195,11 +195,11 @@ public class FetchHints {
         }
 
         if (labels != null
-                && labels.length != 0
-                && !isIncludeAllEdgeRefs()
-                && !isIncludeInEdgeRefs()
-                && !isIncludeOutEdgeRefs()
-                && (getEdgeLabelsOfEdgeRefsToInclude() != null && getEdgeLabelsOfEdgeRefsToInclude().size() > 0)) {
+            && labels.length != 0
+            && !isIncludeAllEdgeRefs()
+            && !isIncludeInEdgeRefs()
+            && !isIncludeOutEdgeRefs()
+            && (getEdgeLabelsOfEdgeRefsToInclude() != null && getEdgeLabelsOfEdgeRefsToInclude().size() > 0)) {
             for (String label : labels) {
                 if (!getEdgeLabelsOfEdgeRefsToInclude().contains(label)) {
                     throw new VertexiumMissingFetchHintException(this, "edgeLabel:" + label);
@@ -211,16 +211,16 @@ public class FetchHints {
     @Override
     public String toString() {
         return "FetchHints{" +
-                "includeAllProperties=" + includeAllProperties +
-                ", propertyNamesToInclude=" + setToString(propertyNamesToInclude) +
-                ", includeAllPropertyMetadata=" + includeAllPropertyMetadata +
-                ", metadataKeysToInclude=" + setToString(metadataKeysToInclude) +
-                ", includeHidden=" + includeHidden +
-                ", includeAllEdgeRefs=" + includeAllEdgeRefs +
-                ", edgeLabelsOfEdgeRefsToInclude=" + setToString(edgeLabelsOfEdgeRefsToInclude) +
-                ", includeEdgeLabelsAndCounts=" + includeEdgeLabelsAndCounts +
-                ", includeExtendedDataTableNames=" + includeExtendedDataTableNames +
-                '}';
+            "includeAllProperties=" + includeAllProperties +
+            ", propertyNamesToInclude=" + setToString(propertyNamesToInclude) +
+            ", includeAllPropertyMetadata=" + includeAllPropertyMetadata +
+            ", metadataKeysToInclude=" + setToString(metadataKeysToInclude) +
+            ", includeHidden=" + includeHidden +
+            ", includeAllEdgeRefs=" + includeAllEdgeRefs +
+            ", edgeLabelsOfEdgeRefsToInclude=" + setToString(edgeLabelsOfEdgeRefsToInclude) +
+            ", includeEdgeLabelsAndCounts=" + includeEdgeLabelsAndCounts +
+            ", includeExtendedDataTableNames=" + includeExtendedDataTableNames +
+            '}';
     }
 
     @Override
@@ -233,32 +233,32 @@ public class FetchHints {
         }
         FetchHints that = (FetchHints) o;
         return includeAllProperties == that.includeAllProperties
-                && includeAllPropertyMetadata == that.includeAllPropertyMetadata
-                && includeHidden == that.includeHidden
-                && includeAllEdgeRefs == that.includeAllEdgeRefs
-                && includeOutEdgeRefs == that.includeOutEdgeRefs
-                && includeInEdgeRefs == that.includeInEdgeRefs
-                && includeEdgeLabelsAndCounts == that.includeEdgeLabelsAndCounts
-                && includeExtendedDataTableNames == that.includeExtendedDataTableNames
-                && Objects.equals(propertyNamesToInclude, that.propertyNamesToInclude)
-                && Objects.equals(metadataKeysToInclude, that.metadataKeysToInclude)
-                && Objects.equals(edgeLabelsOfEdgeRefsToInclude, that.edgeLabelsOfEdgeRefsToInclude);
+            && includeAllPropertyMetadata == that.includeAllPropertyMetadata
+            && includeHidden == that.includeHidden
+            && includeAllEdgeRefs == that.includeAllEdgeRefs
+            && includeOutEdgeRefs == that.includeOutEdgeRefs
+            && includeInEdgeRefs == that.includeInEdgeRefs
+            && includeEdgeLabelsAndCounts == that.includeEdgeLabelsAndCounts
+            && includeExtendedDataTableNames == that.includeExtendedDataTableNames
+            && Objects.equals(propertyNamesToInclude, that.propertyNamesToInclude)
+            && Objects.equals(metadataKeysToInclude, that.metadataKeysToInclude)
+            && Objects.equals(edgeLabelsOfEdgeRefsToInclude, that.edgeLabelsOfEdgeRefsToInclude);
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(
-                includeAllProperties,
-                propertyNamesToInclude,
-                includeAllPropertyMetadata,
-                metadataKeysToInclude,
-                includeHidden,
-                includeAllEdgeRefs,
-                includeOutEdgeRefs,
-                includeInEdgeRefs,
-                edgeLabelsOfEdgeRefsToInclude,
-                includeEdgeLabelsAndCounts,
-                includeExtendedDataTableNames
+            includeAllProperties,
+            propertyNamesToInclude,
+            includeAllPropertyMetadata,
+            metadataKeysToInclude,
+            includeHidden,
+            includeAllEdgeRefs,
+            includeOutEdgeRefs,
+            includeInEdgeRefs,
+            edgeLabelsOfEdgeRefsToInclude,
+            includeEdgeLabelsAndCounts,
+            includeExtendedDataTableNames
         );
     }
 

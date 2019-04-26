@@ -55,8 +55,8 @@ public class SoftDeletedProperty {
 
     public boolean matches(ByteSequence propertyKey, ByteSequence propertyName, ByteSequence visibility) {
         return propertyKey.equals(this.propertyKey)
-                && propertyName.equals(this.propertyName)
-                && visibility.equals(this.visibility);
+            && propertyName.equals(this.propertyName)
+            && visibility.equals(this.visibility);
     }
 }
 

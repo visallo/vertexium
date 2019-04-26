@@ -11,8 +11,8 @@ public class EdgesSummary {
     private final ImmutableMap<String, Integer> inEdgeCountsByLabels;
 
     public EdgesSummary(
-            ImmutableMap<String, Integer> outEdgeCountsByLabels,
-            ImmutableMap<String, Integer> inEdgeCountsByLabels
+        ImmutableMap<String, Integer> outEdgeCountsByLabels,
+        ImmutableMap<String, Integer> inEdgeCountsByLabels
     ) {
         this.outEdgeCountsByLabels = outEdgeCountsByLabels;
         this.inEdgeCountsByLabels = inEdgeCountsByLabels;
@@ -20,8 +20,8 @@ public class EdgesSummary {
 
     public EdgesSummary(Map<String, Integer> outEdgeCountsByLabels, Map<String, Integer> inEdgeCountsByLabels) {
         this(
-                ImmutableMap.copyOf(outEdgeCountsByLabels),
-                ImmutableMap.copyOf(inEdgeCountsByLabels)
+            ImmutableMap.copyOf(outEdgeCountsByLabels),
+            ImmutableMap.copyOf(inEdgeCountsByLabels)
         );
     }
 
@@ -56,9 +56,9 @@ public class EdgesSummary {
 
     public ImmutableSet<String> getEdgeLabels() {
         return ImmutableSet.<String>builder()
-                .addAll(getOutEdgeLabels())
-                .addAll(getInEdgeLabels())
-                .build();
+            .addAll(getOutEdgeLabels())
+            .addAll(getInEdgeLabels())
+            .build();
     }
 
     public ImmutableSet<String> getEdgeLabels(Direction direction) {

@@ -22,6 +22,6 @@ public class QueryStringQueryParameters extends QueryParameters {
     @Override
     public String toString() {
         return super.toString() +
-                ", queryString=" + (queryString == null ? "" : "\"" + queryString + "\"");
+            ", queryString=" + (queryString == null ? "" : "\"" + queryString + "\"");
     }
 }

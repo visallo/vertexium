@@ -36,11 +36,11 @@ public class RelatedEdgeImpl implements RelatedEdge {
     @Override
     public String toString() {
         return "RelatedEdgeImpl{" +
-                "edgeId='" + edgeId + '\'' +
-                ", label='" + label + '\'' +
-                ", inVertexId='" + inVertexId + '\'' +
-                ", outVertexId='" + outVertexId + '\'' +
-                '}';
+            "edgeId='" + edgeId + '\'' +
+            ", label='" + label + '\'' +
+            ", inVertexId='" + inVertexId + '\'' +
+            ", outVertexId='" + outVertexId + '\'' +
+            '}';
     }
 
     @Override

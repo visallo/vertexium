@@ -7,8 +7,8 @@ public class DoubleQuickTypeSerializer implements QuickTypeSerializer {
     public byte[] objectToBytes(Object value) {
         byte[] bytes = new byte[1 + 8];
         ByteBuffer.wrap(bytes)
-                .put(MARKER_DOUBLE)
-                .putDouble((double) value);
+            .put(MARKER_DOUBLE)
+            .putDouble((double) value);
         return bytes;
     }
 

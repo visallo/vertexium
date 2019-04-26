@@ -5,8 +5,8 @@ import java.util.Map;
 
 public class GeoHash extends GeoShapeBase {
     private static final char[] BASE32 = {
-            '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'b', 'c', 'd', 'e', 'f', 'g',
-            'h', 'j', 'k', 'm', 'n', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'
+        '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'b', 'c', 'd', 'e', 'f', 'g',
+        'h', 'j', 'k', 'm', 'n', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'
     };
     private static final int[] BITS = {16, 8, 4, 2, 1};
     private static final Map<Character, Integer> DECODE_MAP = new HashMap<>();
@@ -44,8 +44,8 @@ public class GeoHash extends GeoShapeBase {
     @Override
     public String toString() {
         return "GeoHash{" +
-                "hash='" + hash + '\'' +
-                '}';
+            "hash='" + hash + '\'' +
+            '}';
     }
 
     @Override

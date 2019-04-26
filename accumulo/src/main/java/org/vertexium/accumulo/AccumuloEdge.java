@@ -30,34 +30,34 @@ public class AccumuloEdge extends AccumuloElement implements Edge {
     private final String newEdgeLabel;
 
     public AccumuloEdge(
-            Graph graph,
-            String id,
-            String outVertexId,
-            String inVertexId,
-            String label,
-            String newEdgeLabel,
-            Visibility visibility,
-            Iterable<Property> properties,
-            Iterable<PropertyDeleteMutation> propertyDeleteMutations,
-            Iterable<PropertySoftDeleteMutation> propertySoftDeleteMutations,
-            Iterable<Visibility> hiddenVisibilities,
-            ImmutableSet<String> extendedDataTableNames,
-            long timestamp,
-            FetchHints fetchHints,
-            Authorizations authorizations
+        Graph graph,
+        String id,
+        String outVertexId,
+        String inVertexId,
+        String label,
+        String newEdgeLabel,
+        Visibility visibility,
+        Iterable<Property> properties,
+        Iterable<PropertyDeleteMutation> propertyDeleteMutations,
+        Iterable<PropertySoftDeleteMutation> propertySoftDeleteMutations,
+        Iterable<Visibility> hiddenVisibilities,
+        ImmutableSet<String> extendedDataTableNames,
+        long timestamp,
+        FetchHints fetchHints,
+        Authorizations authorizations
     ) {
         super(
-                graph,
-                id,
-                visibility,
-                properties,
-                propertyDeleteMutations,
-                propertySoftDeleteMutations,
-                hiddenVisibilities,
-                extendedDataTableNames,
-                timestamp,
-                fetchHints,
-                authorizations
+            graph,
+            id,
+            visibility,
+            properties,
+            propertyDeleteMutations,
+            propertySoftDeleteMutations,
+            hiddenVisibilities,
+            extendedDataTableNames,
+            timestamp,
+            fetchHints,
+            authorizations
         );
         this.outVertexId = outVertexId;
         this.inVertexId = inVertexId;
@@ -66,11 +66,11 @@ public class AccumuloEdge extends AccumuloElement implements Edge {
     }
 
     public static Edge createFromIteratorValue(
-            AccumuloGraph graph,
-            Key key,
-            Value value,
-            FetchHints fetchHints,
-            Authorizations authorizations
+        AccumuloGraph graph,
+        Key key,
+        Value value,
+        FetchHints fetchHints,
+        Authorizations authorizations
     ) {
         try {
             String edgeId;
@@ -100,21 +100,21 @@ public class AccumuloEdge extends AccumuloElement implements Edge {
             String label = graph.getNameSubstitutionStrategy().inflate(DataInputStreamUtils.decodeString(in));
 
             return new AccumuloEdge(
-                    graph,
-                    edgeId,
-                    outVertexId,
-                    inVertexId,
-                    label,
-                    null,
-                    vertexVisibility,
-                    properties,
-                    null,
-                    null,
-                    hiddenVisibilities,
-                    extendedDataTableNames,
-                    timestamp,
-                    fetchHints,
-                    authorizations
+                graph,
+                edgeId,
+                outVertexId,
+                inVertexId,
+                label,
+                null,
+                vertexVisibility,
+                properties,
+                null,
+                null,
+                hiddenVisibilities,
+                extendedDataTableNames,
+                timestamp,
+                fetchHints,
+                authorizations
             );
         } catch (IOException ex) {
             throw new VertexiumException("Could not read vertex", ex);

@@ -200,10 +200,10 @@ public class MapMetadata implements Metadata {
         @Override
         public String toString() {
             return "Entry{" +
-                    "key='" + key + '\'' +
-                    ", value=" + value +
-                    ", visibility=" + visibility +
-                    '}';
+                "key='" + key + '\'' +
+                ", value=" + value +
+                ", visibility=" + visibility +
+                '}';
         }
     }
 }

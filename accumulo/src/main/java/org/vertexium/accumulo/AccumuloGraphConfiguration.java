@@ -24,7 +24,10 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
 
 public class AccumuloGraphConfiguration extends GraphConfiguration {
@@ -77,10 +80,10 @@ public class AccumuloGraphConfiguration extends GraphConfiguration {
     public static final String DEFAULT_STREAMING_PROPERTY_VALUE_STORAGE_STRATEGY = OverflowIntoHdfsStreamingPropertyValueStorageStrategy.class.getName();
 
     public static final String[] HADOOP_CONF_FILENAMES = new String[]{
-            "core-site.xml",
-            "hdfs-site.xml",
-            "mapred-site.xml",
-            "yarn-site.xml"
+        "core-site.xml",
+        "hdfs-site.xml",
+        "mapred-site.xml",
+        "yarn-site.xml"
     };
 
     public AccumuloGraphConfiguration(Map<String, Object> config) {
@@ -110,8 +113,8 @@ public class AccumuloGraphConfiguration extends GraphConfiguration {
             return instance.getConnector(this.getAccumuloUsername(), this.getAuthenticationToken());
         } catch (Exception ex) {
             throw new VertexiumException(
-                    String.format("Could not connect to Accumulo instance [%s] zookeeper servers [%s]", this.getAccumuloInstanceName(), this.getZookeeperServers()),
-                    ex
+                String.format("Could not connect to Accumulo instance [%s] zookeeper servers [%s]", this.getAccumuloInstanceName(), this.getZookeeperServers()),
+                ex
             );
         }
     }
@@ -119,8 +122,8 @@ public class AccumuloGraphConfiguration extends GraphConfiguration {
     @SuppressWarnings("unchecked")
     public ClientConfiguration getClientConfiguration() {
         ClientConfiguration config = ClientConfiguration.create()
-                .withInstance(this.getAccumuloInstanceName())
-                .withZkHosts(this.getZookeeperServers());
+            .withInstance(this.getAccumuloInstanceName())
+            .withZkHosts(this.getZookeeperServers());
         for (Map.Entry<String, String> entry : getClientConfigurationProperties().entrySet()) {
             config.setProperty(entry.getKey(), entry.getValue());
         }

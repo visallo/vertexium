@@ -36,8 +36,8 @@ public abstract class Mutation implements Comparable<Mutation>, Serializable {
     @Override
     public String toString() {
         return this.getClass().getName() + "{" +
-                "timestamp=" + timestamp +
-                ", visibility=" + visibility +
-                '}';
+            "timestamp=" + timestamp +
+            ", visibility=" + visibility +
+            '}';
     }
 }

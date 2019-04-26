@@ -19,14 +19,14 @@ public class MutablePropertyImpl extends MutableProperty {
     private final Metadata metadata;
 
     public MutablePropertyImpl(
-            String key,
-            String name,
-            Object value,
-            Metadata metadata,
-            Long timestamp,
-            Set<Visibility> hiddenVisibilities,
-            Visibility visibility,
-            FetchHints fetchHints
+        String key,
+        String name,
+        Object value,
+        Metadata metadata,
+        Long timestamp,
+        Set<Visibility> hiddenVisibilities,
+        Visibility visibility,
+        FetchHints fetchHints
     ) {
         if (metadata == null && fetchHints.isIncludePropertyMetadata()) {
             metadata = Metadata.create(fetchHints);

@@ -28,10 +28,10 @@ public class CypherBinaryExpression extends CypherExpression {
     @Override
     public String toString() {
         return String.format(
-                "%s %s %s",
-                getLeft(),
-                getOp().text,
-                getRight()
+            "%s %s %s",
+            getLeft(),
+            getOp().text,
+            getRight()
         );
     }
 

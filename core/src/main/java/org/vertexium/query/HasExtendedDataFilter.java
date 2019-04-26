@@ -28,9 +28,9 @@ public class HasExtendedDataFilter {
     @Override
     public String toString() {
         return "HasExtendedDataFilter{" +
-                "elementType=" + elementType +
-                ", elementId='" + elementId + '\'' +
-                ", tableName='" + tableName + '\'' +
-                '}';
+            "elementType=" + elementType +
+            ", elementId='" + elementId + '\'' +
+            ", tableName='" + tableName + '\'' +
+            '}';
     }
 }

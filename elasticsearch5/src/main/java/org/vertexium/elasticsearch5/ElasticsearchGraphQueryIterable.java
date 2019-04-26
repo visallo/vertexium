@@ -30,22 +30,22 @@ import org.vertexium.util.StreamUtils;
 import java.util.*;
 
 public class ElasticsearchGraphQueryIterable<T> extends DefaultGraphQueryIterable<T> implements
-        IterableWithTotalHits<T>,
-        IterableWithSearchTime<T>,
-        IterableWithScores<T> {
+    IterableWithTotalHits<T>,
+    IterableWithSearchTime<T>,
+    IterableWithScores<T> {
     private final long totalHits;
     private final long searchTimeInNanoSeconds;
     private final Map<Object, Double> scores = new HashMap<>();
     private final Map<String, AggregationResult> aggregationResults;
 
     public ElasticsearchGraphQueryIterable(
-            ElasticsearchSearchQueryBase query,
-            SearchResponse searchResponse,
-            QueryParameters parameters,
-            Iterable<T> iterable,
-            long totalHits,
-            long searchTimeInNanoSeconds,
-            SearchHits hits
+        ElasticsearchSearchQueryBase query,
+        SearchResponse searchResponse,
+        QueryParameters parameters,
+        Iterable<T> iterable,
+        long totalHits,
+        long searchTimeInNanoSeconds,
+        SearchHits hits
     ) {
         super(parameters, iterable, false, false, false);
         this.totalHits = totalHits;
@@ -217,8 +217,8 @@ public class ElasticsearchGraphQueryIterable<T> extends DefaultGraphQueryIterabl
         if (agg instanceof Percentiles) {
             Percentiles percentiles = (Percentiles) agg;
             StreamUtils.stream(percentiles)
-                    .filter(percentile -> !Double.isNaN(percentile.getValue()))
-                    .forEach(percentile -> results.add(new Percentile(percentile.getPercent(), percentile.getValue())));
+                .filter(percentile -> !Double.isNaN(percentile.getValue()))
+                .forEach(percentile -> results.add(new Percentile(percentile.getPercent(), percentile.getValue())));
         } else {
             throw new VertexiumException("Aggregation is not a percentile: " + agg.getClass().getName());
         }

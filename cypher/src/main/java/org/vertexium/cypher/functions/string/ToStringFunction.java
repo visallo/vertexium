@@ -13,7 +13,7 @@ public class ToStringFunction extends TypeConversionFunction {
             return value;
         }
         if (value instanceof Number
-                || value instanceof Boolean) {
+            || value instanceof Boolean) {
             return value.toString();
         }
         throw new VertexiumCypherTypeErrorException("InvalidArgumentValue: " + value + " (" + value.getClass().getName() + ")");

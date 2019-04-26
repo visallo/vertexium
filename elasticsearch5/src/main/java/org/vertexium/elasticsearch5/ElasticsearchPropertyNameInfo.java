@@ -25,9 +25,9 @@ public class ElasticsearchPropertyNameInfo {
     }
 
     public static ElasticsearchPropertyNameInfo parse(
-            Graph graph,
-            PropertyNameVisibilitiesStore propertyNameVisibilitiesStore,
-            String rawPropertyName
+        Graph graph,
+        PropertyNameVisibilitiesStore propertyNameVisibilitiesStore,
+        String rawPropertyName
     ) {
         Matcher m = PROPERTY_NAME_PATTERN.matcher(rawPropertyName);
         if (!m.matches()) {

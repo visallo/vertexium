@@ -6,9 +6,9 @@ import org.junit.runner.RunWith;
 
 @RunWith(Cucumber.class)
 @CucumberOptions(
-        format = "pretty",
-        features = "classpath:org/vertexium/cypher/tck/features/TemporalToStringAcceptance.feature",
-        glue = "org.vertexium.cypher.glue"
+    format = "pretty",
+    features = "classpath:org/vertexium/cypher/tck/features/TemporalToStringAcceptance.feature",
+    glue = "org.vertexium.cypher.glue"
 )
 public class TemporalToStringAcceptanceTest {
 }

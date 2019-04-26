@@ -131,12 +131,12 @@ public abstract class AccumuloGraphTestBase extends GraphTestBase {
 
         AccumuloGraph accumuloGraph = (AccumuloGraph) graph;
         ScannerBase vertexScanner = accumuloGraph.createVertexScanner(
-                graph.getDefaultFetchHints(),
-                AccumuloGraph.SINGLE_VERSION,
-                null,
-                null,
-                new Range("V", "W"),
-                AUTHORIZATIONS_EMPTY
+            graph.getDefaultFetchHints(),
+            AccumuloGraph.SINGLE_VERSION,
+            null,
+            null,
+            new Range("V", "W"),
+            AUTHORIZATIONS_EMPTY
         );
         RowIterator rows = new RowIterator(vertexScanner.iterator());
         while (rows.hasNext()) {
@@ -319,8 +319,8 @@ public abstract class AccumuloGraphTestBase extends GraphTestBase {
     public void testPropertyWithValueSeparator() {
         try {
             graph.prepareVertex("v1", VISIBILITY_EMPTY)
-                    .addPropertyValue("prop1" + VALUE_SEPARATOR, "name1", "test", VISIBILITY_EMPTY)
-                    .save(AUTHORIZATIONS_EMPTY);
+                .addPropertyValue("prop1" + VALUE_SEPARATOR, "name1", "test", VISIBILITY_EMPTY)
+                .save(AUTHORIZATIONS_EMPTY);
             throw new RuntimeException("Should have thrown a bad character exception");
         } catch (VertexiumInvalidKeyException ex) {
             // ok
@@ -367,7 +367,7 @@ public abstract class AccumuloGraphTestBase extends GraphTestBase {
     public void testLegacyStreamingPropertyValuesWithTimestampInRowKey() throws Exception {
         String vertexId = "v1";
         graph.prepareVertex(vertexId, VISIBILITY_EMPTY)
-                .save(AUTHORIZATIONS_EMPTY);
+            .save(AUTHORIZATIONS_EMPTY);
         graph.flush();
 
         long timestamp = new Date().getTime();
@@ -391,7 +391,7 @@ public abstract class AccumuloGraphTestBase extends GraphTestBase {
     public void testDeleteHistoricalLegacyStreamingPropertyValueData_keysWithCommonPrefix() throws Exception {
         String vertexId = "v1";
         graph.prepareVertex(vertexId, VISIBILITY_EMPTY)
-                .save(AUTHORIZATIONS_EMPTY);
+            .save(AUTHORIZATIONS_EMPTY);
         graph.flush();
 
         long timestamp = new Date().getTime();
@@ -407,12 +407,12 @@ public abstract class AccumuloGraphTestBase extends GraphTestBase {
         getGraph().flush();
 
         new DeleteHistoricalLegacyStreamingPropertyValueData(getGraph())
-                .execute(
-                        new DeleteHistoricalLegacyStreamingPropertyValueData.Options()
-                                .setDryRun(false)
-                                .setVersionsToKeep(1),
-                        AUTHORIZATIONS_EMPTY
-                );
+            .execute(
+                new DeleteHistoricalLegacyStreamingPropertyValueData.Options()
+                    .setDryRun(false)
+                    .setVersionsToKeep(1),
+                AUTHORIZATIONS_EMPTY
+            );
 
         // verify we can still retrieve it
         Vertex v1 = graph.getVertex(vertexId, AUTHORIZATIONS_EMPTY);
@@ -429,7 +429,7 @@ public abstract class AccumuloGraphTestBase extends GraphTestBase {
     public void testDeleteHistoricalLegacyStreamingPropertyValueData_mixOfOldAndNew() throws Exception {
         String vertexId = "v1";
         graph.prepareVertex(vertexId, VISIBILITY_EMPTY)
-                .save(AUTHORIZATIONS_EMPTY);
+            .save(AUTHORIZATIONS_EMPTY);
         graph.flush();
 
         long timestamp = new Date().getTime();
@@ -442,17 +442,17 @@ public abstract class AccumuloGraphTestBase extends GraphTestBase {
         addLegacySPVData(vertexId, timestamp - 100, propertyKey, propertyName, propertyValue1);
         StreamingPropertyValue newSpv = StreamingPropertyValue.create(propertyValue2);
         getGraph().getVertex("v1", AUTHORIZATIONS_EMPTY)
-                .addPropertyValue(propertyKey, propertyName, newSpv, VISIBILITY_EMPTY, AUTHORIZATIONS_EMPTY);
+            .addPropertyValue(propertyKey, propertyName, newSpv, VISIBILITY_EMPTY, AUTHORIZATIONS_EMPTY);
 
         getGraph().flush();
 
         new DeleteHistoricalLegacyStreamingPropertyValueData(getGraph())
-                .execute(
-                        new DeleteHistoricalLegacyStreamingPropertyValueData.Options()
-                                .setDryRun(false)
-                                .setVersionsToKeep(1),
-                        AUTHORIZATIONS_EMPTY
-                );
+            .execute(
+                new DeleteHistoricalLegacyStreamingPropertyValueData.Options()
+                    .setDryRun(false)
+                    .setVersionsToKeep(1),
+                AUTHORIZATIONS_EMPTY
+            );
 
         // verify we can still retrieve it
         Vertex v1 = graph.getVertex(vertexId, AUTHORIZATIONS_EMPTY);
@@ -463,11 +463,11 @@ public abstract class AccumuloGraphTestBase extends GraphTestBase {
 
     // need to add it manually because the key format changed
     private void addLegacySPVData(
-            String vertexId,
-            long timestamp,
-            String propertyKey,
-            String propertyName,
-            String propertyValue
+        String vertexId,
+        long timestamp,
+        String propertyKey,
+        String propertyName,
+        String propertyValue
     ) throws MutationsRejectedException {
         String dataRowKey = new DataTableRowKey(vertexId, propertyKey, propertyName).getRowKey() + VALUE_SEPARATOR + timestamp;
 

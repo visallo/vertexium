@@ -6,9 +6,9 @@ import java.util.List;
 
 public class NodeMatchConstraint extends MatchConstraint<CypherNodePattern, RelationshipMatchConstraint> {
     public NodeMatchConstraint(
-            String name,
-            List<CypherNodePattern> nodePatterns,
-            boolean optional
+        String name,
+        List<CypherNodePattern> nodePatterns,
+        boolean optional
     ) {
         super(name, nodePatterns, optional);
     }

@@ -31,8 +31,8 @@ public class MetadataEntry {
         }
         MetadataEntry that = (MetadataEntry) o;
         return Objects.equals(key, that.key)
-                && Objects.equals(visibility, that.visibility)
-                && Arrays.equals(value, that.value);
+            && Objects.equals(visibility, that.visibility)
+            && Arrays.equals(value, that.value);
     }
 
     @Override

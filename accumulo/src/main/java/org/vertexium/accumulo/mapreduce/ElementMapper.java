@@ -112,17 +112,17 @@ public abstract class ElementMapper<KEYIN, VALUEIN, KEYOUT, VALUEOUT> extends Ma
                 elementMutationBuilder.saveVertexBuilder(graph, this, timestampLong);
 
                 return new AccumuloVertex(
-                        graph,
-                        getElementId(),
-                        getVisibility(),
-                        getProperties(),
-                        getPropertyDeletes(),
-                        getPropertySoftDeletes(),
-                        hiddenVisibilities,
-                        getExtendedDataTableNames(),
-                        timestampLong,
-                        FetchHints.ALL_INCLUDING_HIDDEN,
-                        authorizations
+                    graph,
+                    getElementId(),
+                    getVisibility(),
+                    getProperties(),
+                    getPropertyDeletes(),
+                    getPropertySoftDeletes(),
+                    hiddenVisibilities,
+                    getExtendedDataTableNames(),
+                    timestampLong,
+                    FetchHints.ALL_INCLUDING_HIDDEN,
+                    authorizations
                 );
             }
         };
@@ -134,32 +134,32 @@ public abstract class ElementMapper<KEYIN, VALUEIN, KEYOUT, VALUEOUT> extends Ma
 
     public EdgeBuilderByVertexId prepareEdge(Edge edge) {
         return prepareEdge(
-                edge.getId(),
-                edge.getVertexId(Direction.OUT),
-                edge.getVertexId(Direction.IN),
-                edge.getLabel(),
-                edge.getTimestamp(),
-                edge.getVisibility()
+            edge.getId(),
+            edge.getVertexId(Direction.OUT),
+            edge.getVertexId(Direction.IN),
+            edge.getLabel(),
+            edge.getTimestamp(),
+            edge.getVisibility()
         );
     }
 
     public EdgeBuilderByVertexId prepareEdge(
-            String edgeId,
-            String outVertexId,
-            String inVertexId,
-            String label,
-            Visibility visibility
+        String edgeId,
+        String outVertexId,
+        String inVertexId,
+        String label,
+        Visibility visibility
     ) {
         return prepareEdge(edgeId, outVertexId, inVertexId, label, null, visibility);
     }
 
     public EdgeBuilderByVertexId prepareEdge(
-            String edgeId,
-            String outVertexId,
-            String inVertexId,
-            String label,
-            Long timestamp,
-            Visibility visibility
+        String edgeId,
+        String outVertexId,
+        String inVertexId,
+        String label,
+        Long timestamp,
+        Visibility visibility
     ) {
         if (edgeId == null) {
             edgeId = getIdGenerator().nextId();
@@ -176,21 +176,21 @@ public abstract class ElementMapper<KEYIN, VALUEIN, KEYOUT, VALUEOUT> extends Ma
                 elementMutationBuilder.saveEdgeBuilder(null, this, timestampLong);
 
                 AccumuloEdge edge = new AccumuloEdge(
-                        null,
-                        getElementId(),
-                        getOutVertexId(),
-                        getInVertexId(),
-                        getLabel(),
-                        getNewEdgeLabel(),
-                        getVisibility(),
-                        getProperties(),
-                        getPropertyDeletes(),
-                        getPropertySoftDeletes(),
-                        null,
-                        getExtendedDataTableNames(),
-                        timestampLong,
-                        FetchHints.ALL_INCLUDING_HIDDEN,
-                        authorizations
+                    null,
+                    getElementId(),
+                    getOutVertexId(),
+                    getInVertexId(),
+                    getLabel(),
+                    getNewEdgeLabel(),
+                    getVisibility(),
+                    getProperties(),
+                    getPropertyDeletes(),
+                    getPropertySoftDeletes(),
+                    null,
+                    getExtendedDataTableNames(),
+                    timestampLong,
+                    FetchHints.ALL_INCLUDING_HIDDEN,
+                    authorizations
                 );
                 return edge;
             }
@@ -217,21 +217,21 @@ public abstract class ElementMapper<KEYIN, VALUEIN, KEYOUT, VALUEOUT> extends Ma
                 elementMutationBuilder.saveEdgeBuilder(null, this, timestampLong);
 
                 AccumuloEdge edge = new AccumuloEdge(
-                        null,
-                        getElementId(),
-                        getOutVertex().getId(),
-                        getInVertex().getId(),
-                        getLabel(),
-                        getNewEdgeLabel(),
-                        getVisibility(),
-                        getProperties(),
-                        getPropertyDeletes(),
-                        getPropertySoftDeletes(),
-                        null,
-                        getExtendedDataTableNames(),
-                        timestampLong,
-                        FetchHints.ALL_INCLUDING_HIDDEN,
-                        authorizations
+                    null,
+                    getElementId(),
+                    getOutVertex().getId(),
+                    getInVertex().getId(),
+                    getLabel(),
+                    getNewEdgeLabel(),
+                    getVisibility(),
+                    getProperties(),
+                    getPropertyDeletes(),
+                    getPropertySoftDeletes(),
+                    null,
+                    getExtendedDataTableNames(),
+                    timestampLong,
+                    FetchHints.ALL_INCLUDING_HIDDEN,
+                    authorizations
                 );
                 return edge;
             }

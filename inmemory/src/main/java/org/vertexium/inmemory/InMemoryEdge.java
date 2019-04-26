@@ -10,12 +10,12 @@ public class InMemoryEdge extends InMemoryElement<InMemoryEdge> implements Edge 
     private final EdgeSetupMutation edgeSetupMutation;
 
     public InMemoryEdge(
-            InMemoryGraph graph,
-            String id,
-            InMemoryTableEdge inMemoryTableElement,
-            FetchHints fetchHints,
-            Long endTime,
-            Authorizations authorizations
+        InMemoryGraph graph,
+        String id,
+        InMemoryTableEdge inMemoryTableElement,
+        FetchHints fetchHints,
+        Long endTime,
+        Authorizations authorizations
     ) {
         super(graph, id, inMemoryTableElement, fetchHints, endTime, authorizations);
         edgeSetupMutation = inMemoryTableElement.findLastMutation(EdgeSetupMutation.class);
@@ -76,8 +76,8 @@ public class InMemoryEdge extends InMemoryElement<InMemoryEdge> implements Edge 
     @Override
     public EdgeVertices getVertices(FetchHints fetchHints, Authorizations authorizations) {
         return new EdgeVertices(
-                getVertex(Direction.OUT, authorizations),
-                getVertex(Direction.IN, authorizations)
+            getVertex(Direction.OUT, authorizations),
+            getVertex(Direction.IN, authorizations)
         );
     }
 

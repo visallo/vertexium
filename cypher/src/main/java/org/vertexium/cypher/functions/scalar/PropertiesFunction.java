@@ -18,8 +18,8 @@ public class PropertiesFunction extends CypherFunction {
     public void compile(CypherCompilerContext compilerContext, CypherAstBase[] arguments) {
         CypherAstBase arg0 = arguments[0];
         if (arg0 == null
-                || arg0 instanceof CypherVariable
-                || arg0 instanceof CypherMapLiteral) {
+            || arg0 instanceof CypherVariable
+            || arg0 instanceof CypherMapLiteral) {
             return;
         }
 

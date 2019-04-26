@@ -111,8 +111,8 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
     }
 
     private static class SelectManySearch
-            extends SelectManyIterable<QueryResultsIterable<? extends VertexiumObject>, VertexiumObject>
-            implements QueryResultsIterable<VertexiumObject> {
+        extends SelectManyIterable<QueryResultsIterable<? extends VertexiumObject>, VertexiumObject>
+        implements QueryResultsIterable<VertexiumObject> {
         public SelectManySearch(Iterable<? extends QueryResultsIterable<? extends VertexiumObject>> source) {
             super(source);
         }
@@ -445,9 +445,9 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
         @Override
         public String toString() {
             return this.getClass().getName() + "{" +
-                    "propertyName='" + propertyName + '\'' +
-                    ", direction=" + direction +
-                    '}';
+                "propertyName='" + propertyName + '\'' +
+                ", direction=" + direction +
+                '}';
         }
     }
 
@@ -466,19 +466,19 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
                 }
 
                 boolean hiddenVisibilityMatches = StreamUtils.stream(element.getHiddenVisibilities())
-                        .anyMatch(visibility -> visibility.hasAuthorization(authorization));
+                    .anyMatch(visibility -> visibility.hasAuthorization(authorization));
                 if (hiddenVisibilityMatches) {
                     return true;
                 }
 
                 boolean propertyMatches = StreamUtils.stream(element.getProperties())
-                        .anyMatch(property -> {
-                            if (property.getVisibility().hasAuthorization(authorization)) {
-                                return true;
-                            }
-                            return StreamUtils.stream(property.getHiddenVisibilities())
-                                    .anyMatch(visibility -> visibility.hasAuthorization(authorization));
-                        });
+                    .anyMatch(property -> {
+                        if (property.getVisibility().hasAuthorization(authorization)) {
+                            return true;
+                        }
+                        return StreamUtils.stream(property.getHiddenVisibilities())
+                            .anyMatch(visibility -> visibility.hasAuthorization(authorization));
+                    });
                 if (propertyMatches) {
                     return true;
                 }
@@ -490,7 +490,7 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
         protected boolean isMatch(ExtendedDataRow row) {
             for (String authorization : authorizations) {
                 boolean propertyMatches = StreamSupport.stream(row.getProperties().spliterator(), false)
-                        .anyMatch(property -> property.getVisibility().hasAuthorization(authorization));
+                    .anyMatch(property -> property.getVisibility().hasAuthorization(authorization));
                 if (propertyMatches) {
                     return true;
                 }
@@ -505,8 +505,8 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
         @Override
         public String toString() {
             return this.getClass().getName() + "{" +
-                    ", authorizations='" + Joiner.on(", ").join(authorizations) + '\'' +
-                    '}';
+                ", authorizations='" + Joiner.on(", ").join(authorizations) + '\'' +
+                '}';
         }
     }
 
@@ -536,9 +536,9 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
             this.value = value;
             this.predicate = predicate;
             this.keys = propertyDefinitions.stream()
-                    .filter(propertyDefinition -> isPropertyOfType(propertyDefinition, dataType))
-                    .map(PropertyDefinition::getPropertyName)
-                    .collect(Collectors.toSet());
+                .filter(propertyDefinition -> isPropertyOfType(propertyDefinition, dataType))
+                .map(PropertyDefinition::getPropertyName)
+                .collect(Collectors.toSet());
             this.propertyDefinitions = propertyDefinitions;
 
             if (this.keys.isEmpty()) {
@@ -592,10 +592,10 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
         @Override
         public String toString() {
             return this.getClass().getName() + "{" +
-                    "predicate=" + predicate +
-                    ", value=" + value +
-                    ", keys='" + Joiner.on(", ").join(keys) + '\'' +
-                    '}';
+                "predicate=" + predicate +
+                ", value=" + value +
+                ", keys='" + Joiner.on(", ").join(keys) + '\'' +
+                '}';
         }
     }
 
@@ -620,8 +620,8 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
             ExtendedDataRowId rowId = row.getId();
             for (HasExtendedDataFilter filter : filters) {
                 if (filter.getElementType() == null || rowId.getElementType().equals(filter.getElementType())
-                        && (filter.getElementId() == null || rowId.getElementId().equals(filter.getElementId()))
-                        && (filter.getTableName() == null || rowId.getTableName().equals(filter.getTableName()))) {
+                    && (filter.getElementId() == null || rowId.getElementId().equals(filter.getElementId()))
+                    && (filter.getTableName() == null || rowId.getTableName().equals(filter.getTableName()))) {
                     return true;
                 }
             }
@@ -642,9 +642,9 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
 
         public HasPropertyContainer(Class dataType, Collection<PropertyDefinition> propertyDefinitions) {
             this.keys = propertyDefinitions.stream()
-                    .filter(propertyDefinition -> isPropertyOfType(propertyDefinition, dataType))
-                    .map(PropertyDefinition::getPropertyName)
-                    .collect(Collectors.toSet());
+                .filter(propertyDefinition -> isPropertyOfType(propertyDefinition, dataType))
+                .map(PropertyDefinition::getPropertyName)
+                .collect(Collectors.toSet());
 
             if (this.keys.isEmpty()) {
                 throw new VertexiumException("Invalid query parameters, no properties of type " + dataType.getName() + " found");
@@ -678,8 +678,8 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
         @Override
         public String toString() {
             return this.getClass().getName() + "{" +
-                    ", keys='" + Joiner.on(", ").join(keys) + '\'' +
-                    '}';
+                ", keys='" + Joiner.on(", ").join(keys) + '\'' +
+                '}';
         }
     }
 
@@ -696,9 +696,9 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
 
         public HasNotPropertyContainer(Class dataType, Collection<PropertyDefinition> propertyDefinitions) {
             this.keys = propertyDefinitions.stream()
-                    .filter(propertyDefinition -> isPropertyOfType(propertyDefinition, dataType))
-                    .map(PropertyDefinition::getPropertyName)
-                    .collect(Collectors.toSet());
+                .filter(propertyDefinition -> isPropertyOfType(propertyDefinition, dataType))
+                .map(PropertyDefinition::getPropertyName)
+                .collect(Collectors.toSet());
 
             if (this.keys.isEmpty()) {
                 throw new VertexiumException("Invalid query parameters, no properties of type " + dataType.getName() + " found");
@@ -732,8 +732,8 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
         @Override
         public String toString() {
             return this.getClass().getName() + "{" +
-                    ", keys='" + Joiner.on(", ").join(keys) + '\'' +
-                    '}';
+                ", keys='" + Joiner.on(", ").join(keys) + '\'' +
+                '}';
         }
     }
 
@@ -816,7 +816,7 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
     @Override
     public String toString() {
         return this.getClass().getName() + "{" +
-                "parameters=" + getParameters() +
-                '}';
+            "parameters=" + getParameters() +
+            '}';
     }
 }

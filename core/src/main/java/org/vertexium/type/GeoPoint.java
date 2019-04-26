@@ -161,8 +161,8 @@ public class GeoPoint extends GeoShapeBase implements Comparable<GeoPoint> {
 
     public double distanceFrom(GeoPoint geoPoint) {
         return distanceBetween(
-                this.getLatitude(), this.getLongitude(),
-                geoPoint.getLatitude(), geoPoint.getLongitude()
+            this.getLatitude(), this.getLongitude(),
+            geoPoint.getLatitude(), geoPoint.getLongitude()
         );
     }
 
@@ -331,9 +331,9 @@ public class GeoPoint extends GeoShapeBase implements Comparable<GeoPoint> {
         z = z / (double) geoPoints.size();
 
         return new GeoPoint(
-                Math.toDegrees(Math.atan2(z, Math.sqrt(x * x + y * y))),
-                Math.toDegrees(Math.atan2(y, x)),
-                altitudeCount == geoPoints.size() ? (totalAlt / (double) altitudeCount) : null
+            Math.toDegrees(Math.atan2(z, Math.sqrt(x * x + y * y))),
+            Math.toDegrees(Math.atan2(y, x)),
+            altitudeCount == geoPoints.size() ? (totalAlt / (double) altitudeCount) : null
         );
     }
 }

@@ -20,7 +20,10 @@ import org.vertexium.cypher.functions.string.*;
 import org.vertexium.mutation.ElementMutation;
 import org.vertexium.mutation.ExistingElementMutation;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -178,17 +181,17 @@ public abstract class VertexiumCypherQueryContext {
     public abstract void removeProperty(ElementMutation<Element> m, String propertyName);
 
     public abstract String calculateEdgeLabel(
-            CypherRelationshipPattern relationshipPattern,
-            Vertex outVertex,
-            Vertex inVertex,
-            ExpressionScope scope
+        CypherRelationshipPattern relationshipPattern,
+        Vertex outVertex,
+        Vertex inVertex,
+        ExpressionScope scope
     );
 
     public abstract Visibility calculateEdgeVisibility(
-            CypherRelationshipPattern relationshipPattern,
-            Vertex outVertex,
-            Vertex inVertex,
-            ExpressionScope scope
+        CypherRelationshipPattern relationshipPattern,
+        Vertex outVertex,
+        Vertex inVertex,
+        ExpressionScope scope
     );
 
     public abstract boolean isLabelProperty(Property property);
@@ -298,8 +301,8 @@ public abstract class VertexiumCypherQueryContext {
 
     public Map<String, Object> getElementPropertiesAsMap(Element element) {
         return stream(element.getProperties())
-                .filter(p -> !isLabelProperty(p))
-                .collect(Collectors.toMap(Property::getName, Property::getValue));
+            .filter(p -> !isLabelProperty(p))
+            .collect(Collectors.toMap(Property::getName, Property::getValue));
     }
 
     public FetchHints getFetchHints() {
@@ -325,8 +328,8 @@ public abstract class VertexiumCypherQueryContext {
     }
 
     public Long getTotalHitsForMatchConstraint(
-            MatchConstraint<?, ?> matchConstraint,
-            Function<MatchConstraint<?, ?>, Long> computeFn
+        MatchConstraint<?, ?> matchConstraint,
+        Function<MatchConstraint<?, ?>, Long> computeFn
     ) {
         return totalHitsByMatchConstraint.computeIfAbsent(matchConstraint, computeFn);
     }

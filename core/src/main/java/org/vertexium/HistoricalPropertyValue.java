@@ -126,13 +126,13 @@ public class HistoricalPropertyValue implements Serializable, Comparable<Histori
     @Override
     public String toString() {
         return "HistoricalPropertyValue{" +
-                "propertyKey='" + propertyKey + '\'' +
-                ", propertyName='" + propertyName + '\'' +
-                ", propertyVisibility=" + propertyVisibility +
-                ", timestamp=" + timestamp +
-                ", value=" + value +
-                ", isDeleted=" + isDeleted +
-                '}';
+            "propertyKey='" + propertyKey + '\'' +
+            ", propertyName='" + propertyName + '\'' +
+            ", propertyVisibility=" + propertyVisibility +
+            ", timestamp=" + timestamp +
+            ", value=" + value +
+            ", isDeleted=" + isDeleted +
+            '}';
     }
 
     public static class HistoricalPropertyValueBuilder {
@@ -155,14 +155,17 @@ public class HistoricalPropertyValue implements Serializable, Comparable<Histori
             this.value = value;
             return this;
         }
+
         public HistoricalPropertyValueBuilder metadata(Metadata metadata) {
             this.metadata = metadata;
             return this;
         }
+
         public HistoricalPropertyValueBuilder isDeleted(Boolean isDeleted) {
             this.isDeleted = isDeleted;
             return this;
         }
+
         public HistoricalPropertyValueBuilder hiddenVisibilities(Set<Visibility> hiddenVisibilities) {
             this.hiddenVisibilities = hiddenVisibilities;
             return this;

@@ -8,7 +8,7 @@ public class AddPropertyMetadataMutation extends PropertyMutation {
     private final Metadata metadata;
 
     public AddPropertyMetadataMutation(
-            long timestamp, String key, String name, Metadata metadata, Visibility visibility) {
+        long timestamp, String key, String name, Metadata metadata, Visibility visibility) {
         super(timestamp, key, name, visibility, visibility);
         this.metadata = Metadata.create(metadata);
     }

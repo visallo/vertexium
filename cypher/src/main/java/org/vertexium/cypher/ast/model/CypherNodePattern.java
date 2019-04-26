@@ -6,9 +6,9 @@ public class CypherNodePattern extends CypherElementPattern {
     private final CypherListLiteral<CypherLabelName> labelNames;
 
     public CypherNodePattern(
-            String name,
-            CypherMapLiteral<String, CypherAstBase> properties,
-            CypherListLiteral<CypherLabelName> labelNames
+        String name,
+        CypherMapLiteral<String, CypherAstBase> properties,
+        CypherListLiteral<CypherLabelName> labelNames
     ) {
         super(name, properties);
         this.labelNames = labelNames;

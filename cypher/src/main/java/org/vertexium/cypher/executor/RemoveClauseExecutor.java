@@ -17,7 +17,7 @@ public class RemoveClauseExecutor {
         LOGGER.debug("execute: %s", clause);
         scope.run(); // TODO change the execute to peek and remove instead of consuming the stream
         scope.stream()
-                .forEach(item -> execute(ctx, clause, item));
+            .forEach(item -> execute(ctx, clause, item));
         return scope;
     }
 
@@ -42,9 +42,9 @@ public class RemoveClauseExecutor {
     }
 
     private void executeRemoveProperty(
-            VertexiumCypherQueryContext ctx,
-            CypherRemovePropertyExpressionItem removeItem,
-            VertexiumCypherScope.Item item
+        VertexiumCypherQueryContext ctx,
+        CypherRemovePropertyExpressionItem removeItem,
+        VertexiumCypherScope.Item item
     ) {
         CypherAstBase propertyExpression = removeItem.getPropertyExpression();
 
@@ -71,9 +71,9 @@ public class RemoveClauseExecutor {
     }
 
     private void executeRemoveLabelItem(
-            VertexiumCypherQueryContext ctx,
-            CypherRemoveLabelItem removeItem,
-            VertexiumCypherScope.Item item
+        VertexiumCypherQueryContext ctx,
+        CypherRemoveLabelItem removeItem,
+        VertexiumCypherScope.Item item
     ) {
         Object vertexObj = ctx.getExpressionExecutor().executeExpression(ctx, removeItem.getVariable(), item);
 

@@ -26,11 +26,11 @@ public class MapInMemoryExtendedDataTable extends InMemoryExtendedDataTable {
 
     @Override
     public Iterable<ExtendedDataRow> getTable(
-            ElementType elementType,
-            String elementId,
-            String tableName,
-            FetchHints fetchHints,
-            Authorizations authorizations
+        ElementType elementType,
+        String elementId,
+        String tableName,
+        FetchHints fetchHints,
+        Authorizations authorizations
     ) {
         ElementTypeData data = elementTypeData.get(elementType);
         if (data == null) {
@@ -41,12 +41,12 @@ public class MapInMemoryExtendedDataTable extends InMemoryExtendedDataTable {
 
     @Override
     public synchronized void addData(
-            ExtendedDataRowId rowId,
-            String column,
-            String key,
-            Object value,
-            long timestamp,
-            Visibility visibility
+        ExtendedDataRowId rowId,
+        String column,
+        String key,
+        Object value,
+        long timestamp,
+        Visibility visibility
     ) {
         ElementTypeData data = elementTypeData.computeIfAbsent(rowId.getElementType(), k -> new ElementTypeData());
         data.addData(rowId, column, key, value, timestamp, visibility);
@@ -80,9 +80,9 @@ public class MapInMemoryExtendedDataTable extends InMemoryExtendedDataTable {
         }
 
         public Iterable<ExtendedDataRow> getTable(
-                String elementId,
-                String tableName,
-                Authorizations authorizations
+            String elementId,
+            String tableName,
+            Authorizations authorizations
         ) {
             ElementData data = elementData.get(elementId);
             if (data == null) {
@@ -92,12 +92,12 @@ public class MapInMemoryExtendedDataTable extends InMemoryExtendedDataTable {
         }
 
         public synchronized void addData(
-                ExtendedDataRowId rowId,
-                String column,
-                String key,
-                Object value,
-                long timestamp,
-                Visibility visibility
+            ExtendedDataRowId rowId,
+            String column,
+            String key,
+            Object value,
+            long timestamp,
+            Visibility visibility
         ) {
             ElementData data = elementData.computeIfAbsent(rowId.getElementId(), k -> new ElementData());
             data.addData(rowId, column, key, value, timestamp, visibility);
@@ -124,9 +124,9 @@ public class MapInMemoryExtendedDataTable extends InMemoryExtendedDataTable {
         public ImmutableSet<String> getTableNames(Authorizations authorizations) {
             VisibilityEvaluator visibilityEvaluator = new VisibilityEvaluator(new org.vertexium.security.Authorizations(authorizations.getAuthorizations()));
             return tables.entrySet().stream()
-                    .filter(entry -> entry.getValue().canRead(visibilityEvaluator))
-                    .map(Map.Entry::getKey)
-                    .collect(StreamUtils.toImmutableSet());
+                .filter(entry -> entry.getValue().canRead(visibilityEvaluator))
+                .map(Map.Entry::getKey)
+                .collect(StreamUtils.toImmutableSet());
         }
 
         public Iterable<ExtendedDataRow> getTable(String tableName, Authorizations authorizations) {
@@ -143,12 +143,12 @@ public class MapInMemoryExtendedDataTable extends InMemoryExtendedDataTable {
         }
 
         public synchronized void addData(
-                ExtendedDataRowId rowId,
-                String column,
-                String key,
-                Object value,
-                long timestamp,
-                Visibility visibility
+            ExtendedDataRowId rowId,
+            String column,
+            String key,
+            Object value,
+            long timestamp,
+            Visibility visibility
         ) {
             Table table = tables.computeIfAbsent(rowId.getTableName(), k -> new Table());
             table.addData(rowId, column, key, value, timestamp, visibility);
@@ -173,9 +173,9 @@ public class MapInMemoryExtendedDataTable extends InMemoryExtendedDataTable {
 
             public Iterable<ExtendedDataRow> getRows(VisibilityEvaluator visibilityEvaluator) {
                 return rows.stream()
-                        .map(row -> row.toReadable(visibilityEvaluator))
-                        .filter(row -> IterableUtils.count(row.getProperties()) > 0)
-                        .collect(Collectors.toList());
+                    .map(row -> row.toReadable(visibilityEvaluator))
+                    .filter(row -> IterableUtils.count(row.getProperties()) > 0)
+                    .collect(Collectors.toList());
             }
 
             public boolean canRead(VisibilityEvaluator visibilityEvaluator) {
@@ -183,12 +183,12 @@ public class MapInMemoryExtendedDataTable extends InMemoryExtendedDataTable {
             }
 
             public void addData(
-                    ExtendedDataRowId rowId,
-                    String column,
-                    String key,
-                    Object value,
-                    long timestamp,
-                    Visibility visibility
+                ExtendedDataRowId rowId,
+                String column,
+                String key,
+                Object value,
+                long timestamp,
+                Visibility visibility
             ) {
                 InMemoryExtendedDataRow row = findOrAddRow(rowId);
                 row.addColumn(column, key, value, timestamp, visibility);

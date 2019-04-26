@@ -37,14 +37,14 @@ public class ParametersBase {
             throw new VertexiumException("Directory does not exist: " + dir.getAbsolutePath());
         }
         List<String> files = Lists.newArrayList(dir.listFiles()).stream()
-                .filter(File::isFile)
-                .map(File::getName)
-                .filter(f -> f.endsWith(".properties"))
-                .collect(Collectors.toList());
+            .filter(File::isFile)
+            .map(File::getName)
+            .filter(f -> f.endsWith(".properties"))
+            .collect(Collectors.toList());
         Collections.sort(files);
         files = files.stream()
-                .map(f -> new File(dir, f).getAbsolutePath())
-                .collect(Collectors.toList());
+            .map(f -> new File(dir, f).getAbsolutePath())
+            .collect(Collectors.toList());
         return files;
     }
 

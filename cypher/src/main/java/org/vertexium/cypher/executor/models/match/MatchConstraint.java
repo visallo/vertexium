@@ -55,8 +55,8 @@ public abstract class MatchConstraint<TCypherElementPattern extends CypherElemen
 
     @SuppressWarnings("unchecked")
     public static <TCypherElementPattern extends CypherElementPattern, TConnected extends MatchConstraint> void merge(
-            MatchConstraint<TCypherElementPattern, TConnected> src,
-            MatchConstraint<TCypherElementPattern, TConnected> dest
+        MatchConstraint<TCypherElementPattern, TConnected> src,
+        MatchConstraint<TCypherElementPattern, TConnected> dest
     ) {
         dest.connectedConstraints.addAll(src.getConnectedConstraints());
         for (TConnected connectedConstraint : dest.connectedConstraints) {
@@ -72,11 +72,11 @@ public abstract class MatchConstraint<TCypherElementPattern extends CypherElemen
     @Override
     public String toString() {
         return "MatchConstraint{" +
-                "name='" + name + '\'' +
-                ", hashName='" + hashName + '\'' +
-                ", patterns=" + patterns +
-                ", optional=" + optional +
-                '}';
+            "name='" + name + '\'' +
+            ", hashName='" + hashName + '\'' +
+            ", patterns=" + patterns +
+            ", optional=" + optional +
+            '}';
     }
 
     @Override
@@ -119,7 +119,7 @@ public abstract class MatchConstraint<TCypherElementPattern extends CypherElemen
 
     public int getConstraintCount() {
         return getPatterns().stream()
-                .map(CypherElementPattern::getConstraintCount)
-                .reduce(0, (i1, i2) -> i1 + i2);
+            .map(CypherElementPattern::getConstraintCount)
+            .reduce(0, (i1, i2) -> i1 + i2);
     }
 }

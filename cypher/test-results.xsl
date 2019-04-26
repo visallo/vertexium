@@ -16,7 +16,8 @@
 
     <template match="test">
         <text>   </text>
-        <value-of select="@status"/> - <value-of select="@name"/>
+        <value-of select="@status"/> -
+        <value-of select="@name"/>
         <text>&#xa;</text>
     </template>
 </stylesheet>

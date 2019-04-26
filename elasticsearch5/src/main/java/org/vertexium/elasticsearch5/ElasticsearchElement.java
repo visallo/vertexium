@@ -12,10 +12,10 @@ public abstract class ElasticsearchElement extends ElementBase {
     private Authorizations authorizations;
 
     public ElasticsearchElement(
-            Graph graph,
-            String id,
-            FetchHints fetchHints,
-            Authorizations authorizations
+        Graph graph,
+        String id,
+        FetchHints fetchHints,
+        Authorizations authorizations
     ) {
         this.id = id;
         this.graph = graph;

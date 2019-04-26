@@ -75,14 +75,14 @@ public class ObjectUtils {
                 throw ex;
             }
             throw new VertexiumException(
-                    String.format(
-                            "Could not compare \"%s\" (%s) to \"%s\" (%s)",
-                            leftObj,
-                            leftObj == null ? "null" : leftObj.getClass().getName(),
-                            rightObj,
-                            rightObj == null ? "null" : rightObj.getClass().getName()
-                    ),
-                    ex
+                String.format(
+                    "Could not compare \"%s\" (%s) to \"%s\" (%s)",
+                    leftObj,
+                    leftObj == null ? "null" : leftObj.getClass().getName(),
+                    rightObj,
+                    rightObj == null ? "null" : rightObj.getClass().getName()
+                ),
+                ex
             );
         }
     }
@@ -128,7 +128,7 @@ public class ObjectUtils {
         Number leftNumber = left;
         Number rightNumber = right;
         if (leftNumber instanceof Double || leftNumber instanceof Float
-                || rightNumber instanceof Double || rightNumber instanceof Float) {
+            || rightNumber instanceof Double || rightNumber instanceof Float) {
             return leftNumber.doubleValue() + rightNumber.doubleValue();
         }
         if (leftNumber instanceof Long || rightNumber instanceof Long) {
@@ -139,24 +139,24 @@ public class ObjectUtils {
 
     public static Number sumNumbers(Stream<?> stream) {
         return stream
-                .filter(Objects::nonNull)
-                .map(o -> {
-                    VertexiumCypherTypeErrorException.assertType(o, Number.class);
-                    return (Number) o;
-                })
-                .reduce(0L, ObjectUtils::addNumbers);
+            .filter(Objects::nonNull)
+            .map(o -> {
+                VertexiumCypherTypeErrorException.assertType(o, Number.class);
+                return (Number) o;
+            })
+            .reduce(0L, ObjectUtils::addNumbers);
     }
 
     public static double averageNumbers(Stream<?> stream) {
         AtomicInteger count = new AtomicInteger();
         return stream
-                .filter(Objects::nonNull)
-                .map(o -> {
-                    VertexiumCypherTypeErrorException.assertType(o, Number.class);
-                    count.incrementAndGet();
-                    return (Number) o;
-                })
-                .reduce(0L, ObjectUtils::addNumbers)
-                .doubleValue() / count.doubleValue();
+            .filter(Objects::nonNull)
+            .map(o -> {
+                VertexiumCypherTypeErrorException.assertType(o, Number.class);
+                count.incrementAndGet();
+                return (Number) o;
+            })
+            .reduce(0L, ObjectUtils::addNumbers)
+            .doubleValue() / count.doubleValue();
     }
 }

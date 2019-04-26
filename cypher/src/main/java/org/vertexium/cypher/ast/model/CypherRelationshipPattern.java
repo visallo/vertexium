@@ -8,11 +8,11 @@ public class CypherRelationshipPattern extends CypherElementPattern {
     private CypherNodePattern nextNodePattern;
 
     public CypherRelationshipPattern(
-            String name,
-            CypherListLiteral<CypherRelTypeName> relTypeNames,
-            CypherMapLiteral<String, CypherAstBase> properties,
-            CypherRangeLiteral range,
-            CypherDirection direction
+        String name,
+        CypherListLiteral<CypherRelTypeName> relTypeNames,
+        CypherMapLiteral<String, CypherAstBase> properties,
+        CypherRangeLiteral range,
+        CypherDirection direction
     ) {
         super(name, properties);
         this.relTypeNames = relTypeNames;
@@ -44,9 +44,9 @@ public class CypherRelationshipPattern extends CypherElementPattern {
         }
         result.append("-");
         if (getName() != null
-                || (getPropertiesMap() != null && getPropertiesMap().size() > 0)
-                || (getRelTypeNames() != null && getRelTypeNames().size() > 0)
-                || getRange() != null) {
+            || (getPropertiesMap() != null && getPropertiesMap().size() > 0)
+            || (getRelTypeNames() != null && getRelTypeNames().size() > 0)
+            || getRange() != null) {
             result.append("[");
             if (getName() != null) {
                 result.append(getName());

@@ -24,13 +24,13 @@ public class LongQuickTypeSerializer implements QuickTypeSerializer {
     @Override
     public <T> T valueToObject(byte[] data) {
         long l = ((((long) data[1]) << 56)
-                | (((long) data[2] & 0xff) << 48)
-                | (((long) data[3] & 0xff) << 40)
-                | (((long) data[4] & 0xff) << 32)
-                | (((long) data[5] & 0xff) << 24)
-                | (((long) data[6] & 0xff) << 16)
-                | (((long) data[7] & 0xff) << 8)
-                | (((long) data[8] & 0xff)));
+            | (((long) data[2] & 0xff) << 48)
+            | (((long) data[3] & 0xff) << 40)
+            | (((long) data[4] & 0xff) << 32)
+            | (((long) data[5] & 0xff) << 24)
+            | (((long) data[6] & 0xff) << 16)
+            | (((long) data[7] & 0xff) << 8)
+            | (((long) data[8] & 0xff)));
         return (T) (Long) l;
     }
 }

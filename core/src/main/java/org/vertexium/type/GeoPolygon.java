@@ -127,8 +127,8 @@ public class GeoPolygon extends GeoShapeBase {
     @Override
     public String toString() {
         return "GeoPolygon[" +
-                "outerBoundary: [" + outerBoundary.stream().map(Object::toString).collect(Collectors.joining(", ")) + "]" +
-                "holes: [" + holeBoundaries.stream().map(hole -> "[" + hole.stream().map(Object::toString).collect(Collectors.joining(", ")) + "]").collect(Collectors.joining(", ")) + "]" +
-                "]";
+            "outerBoundary: [" + outerBoundary.stream().map(Object::toString).collect(Collectors.joining(", ")) + "]" +
+            "holes: [" + holeBoundaries.stream().map(hole -> "[" + hole.stream().map(Object::toString).collect(Collectors.joining(", ")) + "]").collect(Collectors.joining(", ")) + "]" +
+            "]";
     }
 }

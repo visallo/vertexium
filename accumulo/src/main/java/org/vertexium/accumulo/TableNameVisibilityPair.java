@@ -34,9 +34,9 @@ class TableNameVisibilityPair {
     @Override
     public String toString() {
         return "TableNameVisibilityPair{" +
-                "visibility=" + visibility +
-                ", tableName='" + tableName + '\'' +
-                '}';
+            "visibility=" + visibility +
+            ", tableName='" + tableName + '\'' +
+            '}';
     }
 
     @Override

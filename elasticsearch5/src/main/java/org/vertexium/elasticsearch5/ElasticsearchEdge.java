@@ -9,13 +9,13 @@ public class ElasticsearchEdge extends ElasticsearchElement implements Edge {
     private String outVertexId;
 
     public ElasticsearchEdge(
-            Graph graph,
-            String id,
-            String label,
-            String inVertexId,
-            String outVertexId,
-            FetchHints fetchHints,
-            Authorizations authorizations
+        Graph graph,
+        String id,
+        String label,
+        String inVertexId,
+        String outVertexId,
+        FetchHints fetchHints,
+        Authorizations authorizations
     ) {
         super(graph, id, fetchHints, authorizations);
         this.label = label;

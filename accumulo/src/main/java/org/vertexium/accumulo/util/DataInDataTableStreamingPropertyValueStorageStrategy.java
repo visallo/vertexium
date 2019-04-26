@@ -19,9 +19,7 @@ import java.io.InputStream;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static org.vertexium.accumulo.StreamingPropertyValueTableData.DATA_COLUMN_FAMILY;
-import static org.vertexium.accumulo.StreamingPropertyValueTableData.METADATA_COLUMN_FAMILY;
-import static org.vertexium.accumulo.StreamingPropertyValueTableData.METADATA_LENGTH_COLUMN_QUALIFIER;
+import static org.vertexium.accumulo.StreamingPropertyValueTableData.*;
 
 public class DataInDataTableStreamingPropertyValueStorageStrategy implements StreamingPropertyValueStorageStrategy {
     public static final int DEFAULT_PART_SIZE = 10 * 1024;
@@ -37,10 +35,10 @@ public class DataInDataTableStreamingPropertyValueStorageStrategy implements Str
 
     @Override
     public StreamingPropertyValueRef saveStreamingPropertyValue(
-            ElementMutationBuilder elementMutationBuilder,
-            String rowKey,
-            Property property,
-            StreamingPropertyValue streamingPropertyValue
+        ElementMutationBuilder elementMutationBuilder,
+        String rowKey,
+        Property property,
+        StreamingPropertyValue streamingPropertyValue
     ) {
         try {
             String dataTableRowKey = new DataTableRowKey(rowKey, property).getRowKey();
@@ -78,7 +76,7 @@ public class DataInDataTableStreamingPropertyValueStorageStrategy implements Str
     public List<InputStream> getInputStreams(List<StreamingPropertyValue> streamingPropertyValues) {
         // TODO optimize performance similar to org.vertexium.accumulo.util.OverflowIntoHdfsStreamingPropertyValueStorageStrategy.getInputStreams()
         return streamingPropertyValues.stream()
-                .map(StreamingPropertyValue::getInputStream)
-                .collect(Collectors.toList());
+            .map(StreamingPropertyValue::getInputStream)
+            .collect(Collectors.toList());
     }
 }

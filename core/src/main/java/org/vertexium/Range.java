@@ -45,9 +45,9 @@ public class Range implements Serializable {
     @Override
     public String toString() {
         return "Range{" +
-                "inclusiveStart='" + getInclusiveStart() + '\'' +
-                ", exclusiveEnd='" + getExclusiveEnd() + '\'' +
-                '}';
+            "inclusiveStart='" + getInclusiveStart() + '\'' +
+            ", exclusiveEnd='" + getExclusiveEnd() + '\'' +
+            '}';
     }
 
     @Override

@@ -157,14 +157,14 @@ public abstract class ExtendedDataRowBase implements ExtendedDataRow {
     protected Property getRowIdProperty() {
         if (rowIdProperty == null) {
             rowIdProperty = new MutablePropertyImpl(
-                    ElementMutation.DEFAULT_KEY,
-                    ExtendedDataRow.ROW_ID,
-                    getId().getRowId(),
-                    null,
-                    null,
-                    null,
-                    null,
-                    FetchHints.ALL
+                ElementMutation.DEFAULT_KEY,
+                ExtendedDataRow.ROW_ID,
+                getId().getRowId(),
+                null,
+                null,
+                null,
+                null,
+                FetchHints.ALL
             );
         }
         return rowIdProperty;
@@ -173,14 +173,14 @@ public abstract class ExtendedDataRowBase implements ExtendedDataRow {
     protected Property getTableNameProperty() {
         if (tableNameProperty == null) {
             tableNameProperty = new MutablePropertyImpl(
-                    ElementMutation.DEFAULT_KEY,
-                    ExtendedDataRow.TABLE_NAME,
-                    getId().getTableName(),
-                    null,
-                    null,
-                    null,
-                    null,
-                    FetchHints.ALL
+                ElementMutation.DEFAULT_KEY,
+                ExtendedDataRow.TABLE_NAME,
+                getId().getTableName(),
+                null,
+                null,
+                null,
+                null,
+                FetchHints.ALL
             );
         }
         return tableNameProperty;
@@ -189,14 +189,14 @@ public abstract class ExtendedDataRowBase implements ExtendedDataRow {
     protected Property getElementIdProperty() {
         if (elementIdProperty == null) {
             elementIdProperty = new MutablePropertyImpl(
-                    ElementMutation.DEFAULT_KEY,
-                    ExtendedDataRow.ELEMENT_ID,
-                    getId().getElementId(),
-                    null,
-                    null,
-                    null,
-                    null,
-                    FetchHints.ALL
+                ElementMutation.DEFAULT_KEY,
+                ExtendedDataRow.ELEMENT_ID,
+                getId().getElementId(),
+                null,
+                null,
+                null,
+                null,
+                FetchHints.ALL
             );
         }
         return elementIdProperty;
@@ -205,14 +205,14 @@ public abstract class ExtendedDataRowBase implements ExtendedDataRow {
     protected Property getElementTypeProperty() {
         if (elementTypeProperty == null) {
             elementTypeProperty = new MutablePropertyImpl(
-                    ElementMutation.DEFAULT_KEY,
-                    ExtendedDataRow.ELEMENT_TYPE,
-                    getId().getElementType().name(),
-                    null,
-                    null,
-                    null,
-                    null,
-                    FetchHints.ALL
+                ElementMutation.DEFAULT_KEY,
+                ExtendedDataRow.ELEMENT_TYPE,
+                getId().getElementType().name(),
+                null,
+                null,
+                null,
+                null,
+                FetchHints.ALL
             );
         }
         return elementTypeProperty;

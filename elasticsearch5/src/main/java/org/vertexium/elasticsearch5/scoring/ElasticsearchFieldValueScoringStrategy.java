@@ -19,8 +19,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class ElasticsearchFieldValueScoringStrategy
-        extends FieldValueScoringStrategy
-        implements ElasticsearchScoringStrategy {
+    extends FieldValueScoringStrategy
+    implements ElasticsearchScoringStrategy {
     private final String scriptSrc;
 
     public ElasticsearchFieldValueScoringStrategy(String field) {
@@ -34,10 +34,10 @@ public class ElasticsearchFieldValueScoringStrategy
 
     @Override
     public QueryBuilder updateElasticsearchQuery(
-            Graph graph,
-            Elasticsearch5SearchIndex searchIndex,
-            QueryBuilder query,
-            QueryParameters queryParameters
+        Graph graph,
+        Elasticsearch5SearchIndex searchIndex,
+        QueryBuilder query,
+        QueryParameters queryParameters
     ) {
         List<String> fieldNames = getFieldNames(graph, searchIndex, queryParameters, getField());
         if (fieldNames == null) {
@@ -51,10 +51,10 @@ public class ElasticsearchFieldValueScoringStrategy
     }
 
     private List<String> getFieldNames(
-            Graph graph,
-            Elasticsearch5SearchIndex searchIndex,
-            QueryParameters queryParameters,
-            String field
+        Graph graph,
+        Elasticsearch5SearchIndex searchIndex,
+        QueryParameters queryParameters,
+        String field
     ) {
         PropertyDefinition propertyDefinition = graph.getPropertyDefinition(field);
         if (propertyDefinition == null) {
@@ -65,12 +65,12 @@ public class ElasticsearchFieldValueScoringStrategy
         }
 
         String[] propertyNames = searchIndex.getPropertyNames(
-                graph,
-                propertyDefinition.getPropertyName(),
-                queryParameters.getAuthorizations()
+            graph,
+            propertyDefinition.getPropertyName(),
+            queryParameters.getAuthorizations()
         );
         return Arrays.stream(propertyNames)
-                .filter(propertyName -> Number.class.isAssignableFrom(propertyDefinition.getDataType()))
-                .collect(Collectors.toList());
+            .filter(propertyName -> Number.class.isAssignableFrom(propertyDefinition.getDataType()))
+            .collect(Collectors.toList());
     }
 }

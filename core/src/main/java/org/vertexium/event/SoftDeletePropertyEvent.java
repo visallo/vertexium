@@ -62,8 +62,8 @@ public class SoftDeletePropertyEvent extends GraphEvent {
 
         SoftDeletePropertyEvent other = (SoftDeletePropertyEvent) obj;
         return getElement().equals(other.getElement())
-                && getKey().equals(other.getKey())
-                && getName().equals(other.getName())
-                && getVisibility().equals(other.getVisibility());
+            && getKey().equals(other.getKey())
+            && getName().equals(other.getName())
+            && getVisibility().equals(other.getVisibility());
     }
 }

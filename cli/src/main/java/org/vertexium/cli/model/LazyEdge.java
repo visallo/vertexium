@@ -70,12 +70,12 @@ public class LazyEdge extends ModelBase {
             String valueString = VertexiumScript.valueToString(prop.getValue(), false);
             boolean isHidden = prop.isHidden(getAuthorizations());
             writer.println(
-                    "    @|bold " + propertyIndexString + ":|@ "
-                            + prop.getName() + ":"
-                            + prop.getKey()
-                            + "[" + prop.getVisibility().getVisibilityString() + "] "
-                            + "= " + valueString
-                            + (isHidden ? " @|red (hidden)|@" : "")
+                "    @|bold " + propertyIndexString + ":|@ "
+                    + prop.getName() + ":"
+                    + prop.getKey()
+                    + "[" + prop.getVisibility().getVisibilityString() + "] "
+                    + "= " + valueString
+                    + (isHidden ? " @|red (hidden)|@" : "")
             );
             LazyProperty lazyProperty = new LazyEdgeProperty(e.getId(), prop.getKey(), prop.getName(), prop.getVisibility());
             VertexiumScript.getContextProperties().put(propertyIndexString, lazyProperty);

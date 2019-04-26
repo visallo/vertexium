@@ -9,12 +9,12 @@ public abstract class AccumuloEdgeBuilderByVertexId extends EdgeBuilderByVertexI
     private final ElementMutationBuilder elementMutationBuilder;
 
     protected AccumuloEdgeBuilderByVertexId(
-            String edgeId,
-            String outVertexId,
-            String inVertexId,
-            String label,
-            Visibility visibility,
-            ElementMutationBuilder elementMutationBuilder
+        String edgeId,
+        String outVertexId,
+        String inVertexId,
+        String label,
+        Visibility visibility,
+        ElementMutationBuilder elementMutationBuilder
     ) {
         super(edgeId, outVertexId, inVertexId, label, visibility);
         this.elementMutationBuilder = elementMutationBuilder;

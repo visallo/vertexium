@@ -16,13 +16,13 @@ public class ElasticsearchSearchExtendedDataQuery extends ElasticsearchSearchQue
     private final String tableName;
 
     public ElasticsearchSearchExtendedDataQuery(
-            Client client,
-            Graph graph,
-            String elementId,
-            String tableName,
-            String queryString,
-            Options options,
-            Authorizations authorizations
+        Client client,
+        Graph graph,
+        String elementId,
+        String tableName,
+        String queryString,
+        Options options,
+        Authorizations authorizations
     ) {
         super(client, graph, queryString, options, authorizations);
         this.elementId = elementId;
@@ -33,14 +33,14 @@ public class ElasticsearchSearchExtendedDataQuery extends ElasticsearchSearchQue
     protected List<QueryBuilder> getFilters(EnumSet<ElasticsearchDocumentType> elementTypes, FetchHints fetchHints) {
         List<QueryBuilder> filters = super.getFilters(elementTypes, fetchHints);
         filters.add(
-                QueryBuilders.boolQuery()
-                        .must(QueryBuilders.termsQuery(
-                                Elasticsearch5SearchIndex.ELEMENT_TYPE_FIELD_NAME,
-                                ElasticsearchDocumentType.VERTEX_EXTENDED_DATA.getKey(),
-                                ElasticsearchDocumentType.EDGE_EXTENDED_DATA.getKey()
-                        ))
-                        .must(QueryBuilders.termQuery(Elasticsearch5SearchIndex.ELEMENT_ID_FIELD_NAME, elementId))
-                        .must(QueryBuilders.termQuery(Elasticsearch5SearchIndex.EXTENDED_DATA_TABLE_NAME_FIELD_NAME, tableName))
+            QueryBuilders.boolQuery()
+                .must(QueryBuilders.termsQuery(
+                    Elasticsearch5SearchIndex.ELEMENT_TYPE_FIELD_NAME,
+                    ElasticsearchDocumentType.VERTEX_EXTENDED_DATA.getKey(),
+                    ElasticsearchDocumentType.EDGE_EXTENDED_DATA.getKey()
+                ))
+                .must(QueryBuilders.termQuery(Elasticsearch5SearchIndex.ELEMENT_ID_FIELD_NAME, elementId))
+                .must(QueryBuilders.termQuery(Elasticsearch5SearchIndex.EXTENDED_DATA_TABLE_NAME_FIELD_NAME, tableName))
         );
         return filters;
     }
@@ -48,7 +48,7 @@ public class ElasticsearchSearchExtendedDataQuery extends ElasticsearchSearchQue
     @Override
     public String toString() {
         return super.toString() +
-                ", elementId=" + elementId +
-                ", tableName=" + tableName;
+            ", elementId=" + elementId +
+            ", tableName=" + tableName;
     }
 }

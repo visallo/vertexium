@@ -16,11 +16,11 @@ public class VertexiumCypherTypeErrorException extends VertexiumCypherException 
 
     private static String createMessage(Object value, Class[] acceptedClasses) {
         return String.format(
-                "InvalidArgumentValue: expected one of [%s] found \"%s\"",
-                Arrays.stream(acceptedClasses)
-                        .map((c) -> c == null ? "null" : c.getName())
-                        .collect(Collectors.joining(", ")),
-                value == null ? "null" : value.getClass().getName()
+            "InvalidArgumentValue: expected one of [%s] found \"%s\"",
+            Arrays.stream(acceptedClasses)
+                .map((c) -> c == null ? "null" : c.getName())
+                .collect(Collectors.joining(", ")),
+            value == null ? "null" : value.getClass().getName()
         );
     }
 

@@ -1,7 +1,7 @@
 package org.vertexium.query;
 
-import org.vertexium.VertexiumObject;
 import org.vertexium.VertexiumException;
+import org.vertexium.VertexiumObject;
 import org.vertexium.util.SelectManyIterable;
 
 import java.io.IOException;

@@ -9,10 +9,10 @@ public class PropertyMetadataColumnQualifier extends KeyBase {
 
     public PropertyMetadataColumnQualifier(String propertyName, String propertyKey, String visibilityString, String metadataKey) {
         parts = new String[]{
-                propertyName,
-                propertyKey,
-                visibilityString,
-                metadataKey
+            propertyName,
+            propertyKey,
+            visibilityString,
+            metadataKey
         };
     }
 

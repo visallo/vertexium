@@ -27,8 +27,8 @@ public class CypherRemoveLabelItem extends CypherRemoveItem {
     @Override
     public Stream<? extends CypherAstBase> getChildren() {
         return Stream.concat(
-                Stream.of(variable),
-                labelNames.stream()
+            Stream.of(variable),
+            labelNames.stream()
         );
     }
 }

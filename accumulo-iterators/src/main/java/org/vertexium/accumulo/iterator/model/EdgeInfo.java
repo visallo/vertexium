@@ -138,9 +138,9 @@ public class EdgeInfo {
 
     private static int readInt(byte[] buffer, int offset) {
         return ((buffer[offset] & 0xff) << 24)
-                | ((buffer[offset + 1] & 0xff) << 16)
-                | ((buffer[offset + 2] & 0xff) << 8)
-                | ((buffer[offset + 3] & 0xff));
+            | ((buffer[offset + 1] & 0xff) << 16)
+            | ((buffer[offset + 2] & 0xff) << 8)
+            | ((buffer[offset + 3] & 0xff));
     }
 
     private static String readString(byte[] buffer, int offset, int length) {
@@ -164,8 +164,8 @@ public class EdgeInfo {
     @Override
     public String toString() {
         return "EdgeInfo{" +
-                "vertexId='" + vertexId + '\'' +
-                ", label='" + label + '\'' +
-                '}';
+            "vertexId='" + vertexId + '\'' +
+            ", label='" + label + '\'' +
+            '}';
     }
 }

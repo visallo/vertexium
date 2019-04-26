@@ -61,10 +61,10 @@ public class ElasticsearchResource extends ExternalResource {
 
         runner = new ElasticsearchClusterRunner();
         runner.onBuild((i, builder) ->
-                builder.put("script.inline", "true")
-                        .put("cluster.name", clusterName)
-                        .put("http.type", "netty3")
-                        .put("transport.type", "netty3")
+            builder.put("script.inline", "true")
+                .put("cluster.name", clusterName)
+                .put("http.type", "netty3")
+                .put("transport.type", "netty3")
         ).build(newConfigs().basePath(basePath.getAbsolutePath()).numOfNode(1));
 
         runner.ensureGreen();
@@ -115,8 +115,8 @@ public class ElasticsearchResource extends ExternalResource {
             if (index.startsWith(ES_INDEX_NAME) || index.startsWith(ES_EXTENDED_DATA_INDEX_NAME_PREFIX)) {
                 LOGGER.info("clearing test index: %s", index);
                 BulkByScrollResponse response = DeleteByQueryAction.INSTANCE.newRequestBuilder(searchIndex.getClient())
-                        .source(index)
-                        .get();
+                    .source(index)
+                    .get();
                 LOGGER.info("removed %d documents", response.getDeleted());
             }
         }
@@ -155,7 +155,7 @@ public class ElasticsearchResource extends ExternalResource {
     private String getLocation() {
         ClusterStateResponse responsee = runner.node().client().admin().cluster().prepareState().execute().actionGet();
         InetSocketTransportAddress address = (InetSocketTransportAddress)
-                responsee.getState().getNodes().getNodes().values().iterator().next().value.getAddress();
+            responsee.getState().getNodes().getNodes().values().iterator().next().value.getAddress();
         return "localhost:" + address.address().getPort();
     }
 

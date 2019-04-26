@@ -51,8 +51,8 @@ public class CypherLookup extends CypherAstBase {
     @Override
     public Stream<? extends CypherAstBase> getChildren() {
         return Stream.concat(
-                Stream.of(atom),
-                labels.stream().flatMap(CypherLiteral::getChildren)
+            Stream.of(atom),
+            labels.stream().flatMap(CypherLiteral::getChildren)
         );
     }
 }

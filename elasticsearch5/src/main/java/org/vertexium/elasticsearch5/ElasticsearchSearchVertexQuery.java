@@ -21,12 +21,12 @@ public class ElasticsearchSearchVertexQuery extends ElasticsearchSearchQueryBase
     private String otherVertexId;
 
     public ElasticsearchSearchVertexQuery(
-            Client client,
-            Graph graph,
-            Vertex sourceVertex,
-            String queryString,
-            Options options,
-            Authorizations authorizations
+        Client client,
+        Graph graph,
+        Vertex sourceVertex,
+        String queryString,
+        Options options,
+        Authorizations authorizations
     ) {
         super(client, graph, queryString, options, authorizations);
         this.sourceVertex = sourceVertex;
@@ -39,12 +39,12 @@ public class ElasticsearchSearchVertexQuery extends ElasticsearchSearchQueryBase
         List<QueryBuilder> relatedFilters = new ArrayList<>();
 
         if (elementTypes.contains(ElasticsearchDocumentType.VERTEX)
-                || elementTypes.contains(ElasticsearchDocumentType.VERTEX_EXTENDED_DATA)) {
+            || elementTypes.contains(ElasticsearchDocumentType.VERTEX_EXTENDED_DATA)) {
             relatedFilters.add(getVertexFilter(elementTypes));
         }
 
         if (elementTypes.contains(ElasticsearchDocumentType.EDGE)
-                || elementTypes.contains(ElasticsearchDocumentType.EDGE_EXTENDED_DATA)) {
+            || elementTypes.contains(ElasticsearchDocumentType.EDGE_EXTENDED_DATA)) {
             relatedFilters.add(getEdgeFilter());
         }
 
@@ -59,9 +59,9 @@ public class ElasticsearchSearchVertexQuery extends ElasticsearchSearchQueryBase
                 QueryBuilder inVertexIdFilter = getDirectionInEdgeFilter();
                 QueryBuilder outVertexIdFilter = getDirectionOutEdgeFilter();
                 return QueryBuilders.boolQuery()
-                        .should(inVertexIdFilter)
-                        .should(outVertexIdFilter)
-                        .minimumShouldMatch(1);
+                    .should(inVertexIdFilter)
+                    .should(outVertexIdFilter)
+                    .minimumShouldMatch(1);
             case OUT:
                 return getDirectionOutEdgeFilter();
             case IN:
@@ -76,8 +76,8 @@ public class ElasticsearchSearchVertexQuery extends ElasticsearchSearchQueryBase
         if (otherVertexId != null) {
             QueryBuilder inVertexIdFilter = QueryBuilders.termQuery(Elasticsearch5SearchIndex.OUT_VERTEX_ID_FIELD_NAME, otherVertexId);
             return QueryBuilders.boolQuery()
-                    .must(outVertexIdFilter)
-                    .must(inVertexIdFilter);
+                .must(outVertexIdFilter)
+                .must(inVertexIdFilter);
         }
         return outVertexIdFilter;
     }
@@ -87,8 +87,8 @@ public class ElasticsearchSearchVertexQuery extends ElasticsearchSearchQueryBase
         if (otherVertexId != null) {
             QueryBuilder inVertexIdFilter = QueryBuilders.termQuery(Elasticsearch5SearchIndex.IN_VERTEX_ID_FIELD_NAME, otherVertexId);
             return QueryBuilders.boolQuery()
-                    .must(outVertexIdFilter)
-                    .must(inVertexIdFilter);
+                .must(outVertexIdFilter)
+                .must(inVertexIdFilter);
         }
         return outVertexIdFilter;
     }
@@ -97,12 +97,12 @@ public class ElasticsearchSearchVertexQuery extends ElasticsearchSearchQueryBase
         List<QueryBuilder> filters = new ArrayList<>();
         List<String> edgeLabels = getParameters().getEdgeLabels();
         String[] edgeLabelsArray = edgeLabels == null || edgeLabels.size() == 0
-                ? null
-                : edgeLabels.toArray(new String[edgeLabels.size()]);
+            ? null
+            : edgeLabels.toArray(new String[edgeLabels.size()]);
         Stream<EdgeInfo> edgeInfos = stream(sourceVertex.getEdgeInfos(
-                direction,
-                edgeLabelsArray,
-                getParameters().getAuthorizations()
+            direction,
+            edgeLabelsArray,
+            getParameters().getAuthorizations()
         ));
         if (otherVertexId != null) {
             edgeInfos = edgeInfos.filter(ei -> ei.getVertexId().equals(otherVertexId));
@@ -119,9 +119,9 @@ public class ElasticsearchSearchVertexQuery extends ElasticsearchSearchQueryBase
         if (elementTypes.contains(ElasticsearchDocumentType.VERTEX_EXTENDED_DATA)) {
             for (String vertexId : ids) {
                 filters.add(
-                        QueryBuilders.boolQuery()
-                                .must(QueryBuilders.termQuery(Elasticsearch5SearchIndex.ELEMENT_TYPE_FIELD_NAME, ElasticsearchDocumentType.VERTEX_EXTENDED_DATA.getKey()))
-                                .must(QueryBuilders.termQuery(Elasticsearch5SearchIndex.ELEMENT_ID_FIELD_NAME, vertexId)));
+                    QueryBuilders.boolQuery()
+                        .must(QueryBuilders.termQuery(Elasticsearch5SearchIndex.ELEMENT_TYPE_FIELD_NAME, ElasticsearchDocumentType.VERTEX_EXTENDED_DATA.getKey()))
+                        .must(QueryBuilders.termQuery(Elasticsearch5SearchIndex.ELEMENT_ID_FIELD_NAME, vertexId)));
             }
         }
 
@@ -156,8 +156,8 @@ public class ElasticsearchSearchVertexQuery extends ElasticsearchSearchQueryBase
     @Override
     public String toString() {
         return super.toString() +
-                ", sourceVertex=" + sourceVertex +
-                ", otherVertexId=" + otherVertexId +
-                ", direction=" + direction;
+            ", sourceVertex=" + sourceVertex +
+            ", otherVertexId=" + otherVertexId +
+            ", direction=" + direction;
     }
 }

@@ -27,21 +27,21 @@ public class CreateClauseExecutor {
         LOGGER.debug("execute: %s", clause);
         scope.run(); // materialize existing scope to prevent new items being returned as if they matched the previous step
         Stream<VertexiumCypherScope.Item> results = scope.stream()
-                .map(item -> executeCreate(ctx, clause, item));
+            .map(item -> executeCreate(ctx, clause, item));
         return VertexiumCypherScope.newItemsScope(results, scope);
     }
 
     private VertexiumCypherScope.Item executeCreate(
-            VertexiumCypherQueryContext ctx,
-            CypherCreateClause createClause,
-            VertexiumCypherScope.Item item
+        VertexiumCypherQueryContext ctx,
+        CypherCreateClause createClause,
+        VertexiumCypherScope.Item item
     ) {
         LinkedHashMap<String, Object> map = new LinkedHashMap<>();
         for (CypherPatternPart cypherPatternPart : createClause.getPatternParts()) {
             LinkedHashMap<String, Element> patternPartResult = executePatternPart(
-                    ctx,
-                    cypherPatternPart,
-                    VertexiumCypherScope.newMapItem(map, item)
+                ctx,
+                cypherPatternPart,
+                VertexiumCypherScope.newMapItem(map, item)
             );
             map.putAll(patternPartResult);
         }
@@ -49,9 +49,9 @@ public class CreateClauseExecutor {
     }
 
     public LinkedHashMap<String, Element> executePatternPart(
-            VertexiumCypherQueryContext ctx,
-            CypherPatternPart cypherPatternPart,
-            VertexiumCypherScope.Item item
+        VertexiumCypherQueryContext ctx,
+        CypherPatternPart cypherPatternPart,
+        VertexiumCypherScope.Item item
     ) {
         LinkedHashMap<String, Element> elements = new LinkedHashMap<>();
         Vertex lastVertex = null;
@@ -97,10 +97,10 @@ public class CreateClauseExecutor {
     }
 
     private <T extends Element> T lookupExistingElement(
-            String name,
-            Map<String, Element> elements,
-            Class<T> resultType,
-            ExpressionScope scope
+        String name,
+        Map<String, Element> elements,
+        Class<T> resultType,
+        ExpressionScope scope
     ) {
         Element element;
         if (scope == null) {
@@ -134,11 +134,11 @@ public class CreateClauseExecutor {
     }
 
     private Edge executeCreateEdge(
-            VertexiumCypherQueryContext ctx,
-            CypherRelationshipPattern relationshipPattern,
-            Vertex leftVertex,
-            Vertex rightVertex,
-            VertexiumCypherScope.Item item
+        VertexiumCypherQueryContext ctx,
+        CypherRelationshipPattern relationshipPattern,
+        Vertex leftVertex,
+        Vertex rightVertex,
+        VertexiumCypherScope.Item item
     ) {
         CypherDirection direction = relationshipPattern.getDirection();
         Vertex outVertex;
@@ -162,9 +162,9 @@ public class CreateClauseExecutor {
     }
 
     private Vertex executeCreateVertex(
-            VertexiumCypherQueryContext ctx,
-            CypherNodePattern nodePattern,
-            VertexiumCypherScope.Item item
+        VertexiumCypherQueryContext ctx,
+        CypherNodePattern nodePattern,
+        VertexiumCypherScope.Item item
     ) {
         String vertexId = ctx.calculateVertexId(nodePattern, item);
         Visibility vertexVisibility = ctx.calculateVertexVisibility(nodePattern, item);
@@ -174,10 +174,10 @@ public class CreateClauseExecutor {
     }
 
     private void executeUpdateVertex(
-            VertexiumCypherQueryContext ctx,
-            CypherNodePattern nodePattern,
-            Vertex vertex,
-            VertexiumCypherScope.Item item
+        VertexiumCypherQueryContext ctx,
+        CypherNodePattern nodePattern,
+        Vertex vertex,
+        VertexiumCypherScope.Item item
     ) {
         ExistingElementMutation<Vertex> m = vertex.prepareMutation();
         updateVertex(ctx, m, nodePattern, item);
@@ -185,10 +185,10 @@ public class CreateClauseExecutor {
     }
 
     private void updateVertex(
-            VertexiumCypherQueryContext ctx,
-            ElementMutation<Vertex> m,
-            CypherNodePattern nodePattern,
-            VertexiumCypherScope.Item item
+        VertexiumCypherQueryContext ctx,
+        ElementMutation<Vertex> m,
+        CypherNodePattern nodePattern,
+        VertexiumCypherScope.Item item
     ) {
         for (CypherLabelName label : nodePattern.getLabelNames()) {
             String labelName = ctx.normalizeLabelName(label.getValue());
@@ -198,10 +198,10 @@ public class CreateClauseExecutor {
     }
 
     private <T extends Element> void setPropertiesOnElement(
-            VertexiumCypherQueryContext ctx,
-            ElementMutation<T> m,
-            CypherElementPattern elementPattern,
-            VertexiumCypherScope.Item item
+        VertexiumCypherQueryContext ctx,
+        ElementMutation<T> m,
+        CypherElementPattern elementPattern,
+        VertexiumCypherScope.Item item
     ) {
         for (Map.Entry<String, CypherAstBase> property : elementPattern.getPropertiesMap().entrySet()) {
             String propertyName = ctx.normalizePropertyName(property.getKey());

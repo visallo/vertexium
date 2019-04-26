@@ -152,8 +152,8 @@ public class VertexIterator extends ElementIterator<VertexElementData> {
         }
 
         return getFetchHints().isIncludeAllEdgeRefs()
-                || getFetchHints().isIncludeEdgeLabelsAndCounts()
-                || getFetchHints().isIncludeOutEdgeRefs();
+            || getFetchHints().isIncludeEdgeLabelsAndCounts()
+            || getFetchHints().isIncludeOutEdgeRefs();
     }
 
     private boolean shouldIncludeInEdge(EdgeInfo edgeInfo) {
@@ -163,8 +163,8 @@ public class VertexIterator extends ElementIterator<VertexElementData> {
         }
 
         return getFetchHints().isIncludeAllEdgeRefs()
-                || getFetchHints().isIncludeEdgeLabelsAndCounts()
-                || getFetchHints().isIncludeInEdgeRefs();
+            || getFetchHints().isIncludeEdgeLabelsAndCounts()
+            || getFetchHints().isIncludeInEdgeRefs();
     }
 
     @Override

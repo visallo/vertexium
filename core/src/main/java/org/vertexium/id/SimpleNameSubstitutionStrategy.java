@@ -23,18 +23,18 @@ public class SimpleNameSubstitutionStrategy implements NameSubstitutionStrategy 
 
     public SimpleNameSubstitutionStrategy() {
         deflateCache = CacheBuilder
-                .newCache(String.class, String.class)
-                .name(SimpleNameSubstitutionStrategy.class, "deflateCache-" + System.identityHashCode(this))
-                .maxSize(10000)
-                .source(new DeflateCacheSource())
-                .build();
+            .newCache(String.class, String.class)
+            .name(SimpleNameSubstitutionStrategy.class, "deflateCache-" + System.identityHashCode(this))
+            .maxSize(10000)
+            .source(new DeflateCacheSource())
+            .build();
 
         inflateCache = CacheBuilder
-                .newCache(String.class, String.class)
-                .name(SimpleNameSubstitutionStrategy.class, "inflateCache-" + System.identityHashCode(this))
-                .maxSize(10000)
-                .source(new InflateCacheSource())
-                .build();
+            .newCache(String.class, String.class)
+            .name(SimpleNameSubstitutionStrategy.class, "inflateCache-" + System.identityHashCode(this))
+            .maxSize(10000)
+            .source(new InflateCacheSource())
+            .build();
     }
 
     @Override

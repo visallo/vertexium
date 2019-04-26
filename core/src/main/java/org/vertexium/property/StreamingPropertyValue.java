@@ -56,8 +56,8 @@ public abstract class StreamingPropertyValue extends PropertyValue implements Se
     @Override
     public String toString() {
         return "StreamingPropertyValue{" +
-                "valueType=" + getValueType() +
-                ", length=" + getLength() +
-                '}';
+            "valueType=" + getValueType() +
+            ", length=" + getLength() +
+            '}';
     }
 }

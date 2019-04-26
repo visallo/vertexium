@@ -31,13 +31,13 @@ public class VertexElementData extends ElementData {
     protected void encode(DataOutputStream out, IteratorFetchHints fetchHints) throws IOException {
         super.encode(out, fetchHints);
         DataOutputStreamUtils.encodeEdges(
-                out,
-                outEdges,
-                fetchHints.isIncludeEdgeLabelsAndCounts() && !(fetchHints.isIncludeAllEdgeRefs() || fetchHints.isIncludeOutEdgeRefs()));
+            out,
+            outEdges,
+            fetchHints.isIncludeEdgeLabelsAndCounts() && !(fetchHints.isIncludeAllEdgeRefs() || fetchHints.isIncludeOutEdgeRefs()));
         DataOutputStreamUtils.encodeEdges(
-                out,
-                inEdges,
-                fetchHints.isIncludeEdgeLabelsAndCounts() && !(fetchHints.isIncludeAllEdgeRefs() || fetchHints.isIncludeInEdgeRefs()));
+            out,
+            inEdges,
+            fetchHints.isIncludeEdgeLabelsAndCounts() && !(fetchHints.isIncludeAllEdgeRefs() || fetchHints.isIncludeInEdgeRefs()));
     }
 
     @Override

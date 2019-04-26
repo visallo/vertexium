@@ -37,18 +37,18 @@ public class CypherMapLiteral<TKey, TValue> extends CypherLiteral<Map<TKey, TVal
     @Override
     public Stream<? extends CypherAstBase> getChildren() {
         return getValue().entrySet().stream()
-                .flatMap(entry -> {
-                    if (entry.getKey() instanceof CypherAstBase && entry.getValue() instanceof CypherAstBase) {
-                        return Stream.of((CypherAstBase) entry.getKey(), (CypherAstBase) entry.getValue());
-                    }
-                    if (entry.getValue() instanceof CypherAstBase) {
-                        return Stream.of((CypherAstBase) entry.getValue());
-                    }
-                    if (entry.getKey() instanceof CypherAstBase) {
-                        return Stream.of((CypherAstBase) entry.getKey());
-                    }
-                    return Stream.empty();
-                });
+            .flatMap(entry -> {
+                if (entry.getKey() instanceof CypherAstBase && entry.getValue() instanceof CypherAstBase) {
+                    return Stream.of((CypherAstBase) entry.getKey(), (CypherAstBase) entry.getValue());
+                }
+                if (entry.getValue() instanceof CypherAstBase) {
+                    return Stream.of((CypherAstBase) entry.getValue());
+                }
+                if (entry.getKey() instanceof CypherAstBase) {
+                    return Stream.of((CypherAstBase) entry.getKey());
+                }
+                return Stream.empty();
+            });
     }
 
     @Override

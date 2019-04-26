@@ -25,10 +25,10 @@ public class ByteSequenceUtils {
 
     public static String toString(ByteSequence byteSequence) {
         return new String(
-                byteSequence.getBackingArray(),
-                byteSequence.offset(),
-                byteSequence.length(),
-                StandardCharsets.UTF_8
+            byteSequence.getBackingArray(),
+            byteSequence.offset(),
+            byteSequence.length(),
+            StandardCharsets.UTF_8
         );
     }
 

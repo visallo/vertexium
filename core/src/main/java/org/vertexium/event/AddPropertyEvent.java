@@ -40,6 +40,6 @@ public class AddPropertyEvent extends GraphEvent {
 
         AddPropertyEvent other = (AddPropertyEvent) obj;
         return getElement().equals(other.getElement())
-                && getProperty().equals(other.getProperty());
+            && getProperty().equals(other.getProperty());
     }
 }

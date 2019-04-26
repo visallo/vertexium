@@ -91,8 +91,8 @@ public class IndexRefreshTrackerTest {
         Collections.sort(foundList);
 
         assertEquals(
-                Joiner.on(", ").join(expectedList),
-                Joiner.on(", ").join(foundList)
+            Joiner.on(", ").join(expectedList),
+            Joiner.on(", ").join(foundList)
         );
     }
 }
