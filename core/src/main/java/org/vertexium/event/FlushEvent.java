@@ -2,8 +2,6 @@ package org.vertexium.event;
 
 import org.vertexium.Graph;
 
-import java.util.HashMap;
-
 public class FlushEvent extends GraphEvent {
 
     private final int HASHCODE = 52937;
