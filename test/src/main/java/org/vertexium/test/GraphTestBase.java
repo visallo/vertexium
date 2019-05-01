@@ -8834,6 +8834,7 @@ public abstract class GraphTestBase {
         benchmarkAddVertices(vertexCount);
         benchmarkAddEdges(random, vertexCount, edgeCount);
         benchmarkFindVerticesById(random, vertexCount, findVerticesByIdCount);
+        benchmarkFindConnectedVertices();
     }
 
     @Test
@@ -9009,6 +9010,17 @@ public abstract class GraphTestBase {
         graph.flush();
         double endTime = System.currentTimeMillis();
         LOGGER.info("find vertices by id in %.3fs", (endTime - startTime) / 1000);
+    }
+
+    private void benchmarkFindConnectedVertices() {
+        double startTime = System.currentTimeMillis();
+        for (Vertex vertex : graph.getVertices(AUTHORIZATIONS_ALL)) {
+            for (Vertex connectedVertex : vertex.getVertices(Direction.BOTH, AUTHORIZATIONS_ALL)) {
+                connectedVertex.getId();
+            }
+        }
+        double endTime = System.currentTimeMillis();
+        LOGGER.info("find connected vertices in %.3fs", (endTime - startTime) / 1000);
     }
 
     private boolean benchmarkEnabled() {

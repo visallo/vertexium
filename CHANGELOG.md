@@ -1,3 +1,6 @@
+# v4.6.0
+* Changed: Accumulo use a thread pool when doing batch scans 
+
 # v4.5.2
 * Fixed: Accumulo delete extended data not removing rows 
 * Changed: Elasticsearch to not use locks when flushing it's internal queue
