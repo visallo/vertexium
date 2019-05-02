@@ -52,6 +52,8 @@ public class KeyValue {
         return new Value(value);
     }
 
+    public Key peekKey() { return key; }
+
     public ByteSequence takeColumnQualifierByteSequence() {
         return new ArrayByteSequence(takeColumnQualifier().getBytes());
     }

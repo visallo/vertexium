@@ -16,6 +16,9 @@ import org.vertexium.accumulo.iterator.model.VertexiumInvalidKeyException;
 import org.vertexium.accumulo.keys.DataTableRowKey;
 import org.vertexium.accumulo.keys.KeyHelper;
 import org.vertexium.accumulo.tools.DeleteHistoricalLegacyStreamingPropertyValueData;
+import org.vertexium.event.FlushEvent;
+import org.vertexium.event.GraphEvent;
+import org.vertexium.event.GraphEventListener;
 import org.vertexium.property.MutablePropertyImpl;
 import org.vertexium.property.StreamingPropertyValue;
 import org.vertexium.test.GraphTestBase;
@@ -40,6 +43,21 @@ public abstract class AccumuloGraphTestBase extends GraphTestBase {
     public void before() throws Exception {
         getAccumuloResource().dropGraph();
         super.before();
+        graph.addGraphEventListener(new GraphEventListener() {
+            @Override
+            public void onGraphEvent(GraphEvent graphEvent) {
+                if (graphEvent instanceof FlushEvent) {
+                    try {
+                        AccumuloGraph accumuloGraph = (AccumuloGraph)graph;
+                        accumuloGraph.getConnector().tableOperations().compact(accumuloGraph.getHistoryVerticesTableName(), null, null, true, true);
+                        accumuloGraph.getConnector().tableOperations().compact(accumuloGraph.getHistoryEdgesTableName(), null, null, true, true);
+                    } catch (Exception e) {
+                        throw new VertexiumException("Unable to compact", e);
+                    }
+                }
+            }
+        });
+
     }
 
     @SuppressWarnings("unchecked")

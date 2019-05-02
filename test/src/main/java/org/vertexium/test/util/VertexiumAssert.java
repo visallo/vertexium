@@ -3,6 +3,7 @@ package org.vertexium.test.util;
 import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
 import org.vertexium.*;
+import org.vertexium.event.FlushEvent;
 import org.vertexium.event.GraphEvent;
 import org.vertexium.query.IterableWithTotalHits;
 import org.vertexium.query.QueryResultsIterable;
@@ -50,10 +51,12 @@ public class VertexiumAssert {
     }
 
     public static void assertEvents(GraphEvent... expectedEvents) {
-        assertEquals("Different number of events occurred than were asserted", expectedEvents.length, graphEvents.size());
-
-        for (int i = 0; i < expectedEvents.length; i++) {
-            assertEquals(expectedEvents[i], graphEvents.get(i));
+        int eventCounter = 0;
+        for (GraphEvent event : graphEvents) {
+            if (!(event instanceof FlushEvent)) {
+                assertEquals(event, expectedEvents[eventCounter]);
+                eventCounter++;
+            }
         }
     }
 
