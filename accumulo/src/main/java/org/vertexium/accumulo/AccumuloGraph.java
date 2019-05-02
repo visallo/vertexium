@@ -40,6 +40,7 @@ import org.vertexium.accumulo.iterator.util.ByteSequenceUtils;
 import org.vertexium.accumulo.keys.KeyHelper;
 import org.vertexium.accumulo.util.RangeUtils;
 import org.vertexium.accumulo.util.StreamingPropertyValueStorageStrategy;
+import org.vertexium.accumulo.util.VisalloTabletServerBatchReader;
 import org.vertexium.event.*;
 import org.vertexium.mutation.*;
 import org.vertexium.property.MutableProperty;
@@ -1800,9 +1801,13 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         Collection<org.apache.accumulo.core.data.Range> ranges,
         org.apache.accumulo.core.security.Authorizations accumuloAuthorizations
     ) throws TableNotFoundException {
-        ScannerBase scanner;
-        scanner = connector.createBatchScanner(tableName, accumuloAuthorizations, numberOfQueryThreads);
-        ((BatchScanner) scanner).setRanges(ranges);
+        VisalloTabletServerBatchReader scanner = new VisalloTabletServerBatchReader(
+            connector,
+            tableName,
+            accumuloAuthorizations,
+            numberOfQueryThreads
+        );
+        scanner.setRanges(ranges);
         return scanner;
     }
 
