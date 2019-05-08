@@ -6,6 +6,7 @@ import org.vertexium.historicalEvent.HistoricalEventId;
 import org.vertexium.id.IdGenerator;
 import org.vertexium.mutation.ElementMutation;
 import org.vertexium.property.StreamingPropertyValue;
+import org.vertexium.query.Aggregation;
 import org.vertexium.query.GraphQuery;
 import org.vertexium.query.MultiVertexQuery;
 import org.vertexium.query.SimilarToGraphQuery;
@@ -1194,7 +1195,9 @@ public interface Graph {
      * @param propertyName   The name of the property to find
      * @param authorizations The authorizations to use to find the property
      * @return The results
+     * @deprecated Use {@link org.vertexium.query.Query#addAggregation(Aggregation)}
      */
+    @Deprecated
     Map<Object, Long> getVertexPropertyCountByValue(String propertyName, Authorizations authorizations);
 
     /**

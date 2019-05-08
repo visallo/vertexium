@@ -159,6 +159,7 @@ public abstract class GraphBaseWithSearchIndex extends GraphBase implements Grap
     }
 
     @Override
+    @Deprecated
     public Map<Object, Long> getVertexPropertyCountByValue(String propertyName, Authorizations authorizations) {
         if (getSearchIndex() instanceof SearchIndexWithVertexPropertyCountByValue) {
             return ((SearchIndexWithVertexPropertyCountByValue) getSearchIndex()).getVertexPropertyCountByValue(this, propertyName, authorizations);

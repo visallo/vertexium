@@ -7528,6 +7528,7 @@ public abstract class GraphTestBase {
         return geoHashBucketToMap(q.vertices().getAggregationResult("geo-count", GeohashResult.class).getBuckets());
     }
 
+    @SuppressWarnings("deprecation")
     @Test
     public void testGetVertexPropertyCountByValue() {
         boolean searchIndexFieldLevelSecurity = isSearchIndexFieldLevelSecuritySupported();
