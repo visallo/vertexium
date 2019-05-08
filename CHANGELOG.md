@@ -2,6 +2,7 @@
 * Added: History for vertices, edges, and properties
 * Changed: Accumulo use a thread pool when doing batch scans 
 * Changed: Throw exception on bad keys/ids
+* Deprecated: Graph.getVertexPropertyCountByValue 
 
 # v4.5.2
 * Fixed: Accumulo delete extended data not removing rows 

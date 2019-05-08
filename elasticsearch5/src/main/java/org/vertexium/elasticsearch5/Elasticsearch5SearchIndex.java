@@ -1635,6 +1635,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
     }
 
     @Override
+    @Deprecated
     public Map<Object, Long> getVertexPropertyCountByValue(Graph graph, String propertyName, Authorizations authorizations) {
         indexRefreshTracker.refresh(client);
 

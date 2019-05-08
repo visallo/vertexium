@@ -854,6 +854,7 @@ public abstract class GraphBase implements Graph {
     }
 
     @Override
+    @Deprecated
     public Map<Object, Long> getVertexPropertyCountByValue(String propertyName, Authorizations authorizations) {
         Map<Object, Long> countsByValue = new HashMap<>();
         for (Vertex v : getVertices(authorizations)) {
