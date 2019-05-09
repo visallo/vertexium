@@ -263,18 +263,6 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
     }
 
     @Override
-    @Deprecated
-    public int getEdgeCount(Direction direction, Authorizations authorizations) {
-        return getEdgesSummary(authorizations).getCountOfEdges(direction);
-    }
-
-    @Override
-    @Deprecated
-    public Iterable<String> getEdgeLabels(Direction direction, Authorizations authorizations) {
-        return getEdgesSummary(authorizations).getEdgeLabels(direction);
-    }
-
-    @Override
     public EdgesSummary getEdgesSummary(Authorizations authorizations) {
         Map<String, Integer> outEdgeCountsByLabels = new HashMap<>();
         Map<String, Integer> inEdgeCountsByLabels = new HashMap<>();

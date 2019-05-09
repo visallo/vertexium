@@ -239,20 +239,6 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
     }
 
     @Override
-    @Deprecated
-    public QueryResultsIterable<Edge> edges(final String label, FetchHints fetchHints) {
-        hasEdgeLabel(label);
-        return edges(fetchHints);
-    }
-
-    @Override
-    @Deprecated
-    public QueryResultsIterable<Edge> edges(final String label) {
-        hasEdgeLabel(label);
-        return edges();
-    }
-
-    @Override
     public QueryResultsIterable<Element> elements() {
         return elements(getGraph().getDefaultFetchHints());
     }

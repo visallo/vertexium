@@ -497,33 +497,6 @@ public abstract class GraphBase implements Graph {
     }
 
     @Override
-    @Deprecated
-    public Iterable<Path> findPaths(String sourceVertexId, String destVertexId, int maxHops, Authorizations authorizations) {
-        return findPaths(sourceVertexId, destVertexId, null, maxHops, authorizations);
-    }
-
-    @Override
-    @Deprecated
-    public Iterable<Path> findPaths(String sourceVertexId, String destVertexId, String[] labels, int maxHops, Authorizations authorizations) {
-        return findPaths(sourceVertexId, destVertexId, labels, maxHops, null, authorizations);
-    }
-
-    @Override
-    @Deprecated
-    public Iterable<Path> findPaths(String sourceVertexId, String destVertexId, int maxHops, ProgressCallback progressCallback, Authorizations authorizations) {
-        return findPaths(sourceVertexId, destVertexId, null, maxHops, progressCallback, authorizations);
-    }
-
-    @Override
-    @Deprecated
-    public Iterable<Path> findPaths(String sourceVertexId, String destVertexId, String[] labels, int maxHops, ProgressCallback progressCallback, Authorizations authorizations) {
-        FindPathOptions options = new FindPathOptions(sourceVertexId, destVertexId, maxHops);
-        options.setLabels(labels);
-        options.setProgressCallback(progressCallback);
-        return findPaths(options, authorizations);
-    }
-
-    @Override
     public Iterable<Path> findPaths(FindPathOptions options, Authorizations authorizations) {
         ProgressCallback progressCallback = options.getProgressCallback();
         if (progressCallback == null) {
@@ -680,18 +653,6 @@ public abstract class GraphBase implements Graph {
             }
         }
         seenVertices.remove(sourceVertex.getId());
-    }
-
-    @Override
-    @Deprecated
-    public Iterable<String> findRelatedEdges(Iterable<String> vertexIds, Authorizations authorizations) {
-        return findRelatedEdgeIds(vertexIds, authorizations);
-    }
-
-    @Override
-    @Deprecated
-    public Iterable<String> findRelatedEdges(Iterable<String> vertexIds, Long endTime, Authorizations authorizations) {
-        return findRelatedEdgeIds(vertexIds, endTime, authorizations);
     }
 
     @Override

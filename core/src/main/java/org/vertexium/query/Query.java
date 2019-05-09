@@ -81,12 +81,6 @@ public interface Query {
      */
     QueryResultsIterable<ExtendedDataRowId> extendedDataRowIds(EnumSet<IdFetchHint> fetchHints);
 
-    @Deprecated
-    QueryResultsIterable<Edge> edges(String label);
-
-    @Deprecated
-    QueryResultsIterable<Edge> edges(String label, FetchHints fetchHints);
-
     QueryResultsIterable<Element> elements();
 
     QueryResultsIterable<Element> elements(FetchHints fetchHints);

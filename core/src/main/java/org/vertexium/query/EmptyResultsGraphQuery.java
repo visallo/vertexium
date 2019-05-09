@@ -52,18 +52,6 @@ public class EmptyResultsGraphQuery implements Query {
     }
 
     @Override
-    @Deprecated
-    public QueryResultsIterable<Edge> edges(final String label) {
-        return new EmptyResultsQueryResultsIterable<>();
-    }
-
-    @Override
-    @Deprecated
-    public QueryResultsIterable<Edge> edges(final String label, final FetchHints fetchHints) {
-        return new EmptyResultsQueryResultsIterable<>();
-    }
-
-    @Override
     public QueryResultsIterable<Element> elements() {
         return new EmptyResultsQueryResultsIterable<>();
     }
