@@ -239,18 +239,6 @@ public class InMemoryVertex extends InMemoryElement<InMemoryVertex> implements V
     }
 
     @Override
-    @Deprecated
-    public int getEdgeCount(Direction direction, Authorizations authorizations) {
-        return getEdgesSummary(authorizations).getCountOfEdges(direction);
-    }
-
-    @Override
-    @Deprecated
-    public Iterable<String> getEdgeLabels(Direction direction, Authorizations authorizations) {
-        return getEdgesSummary(authorizations).getEdgeLabels(direction);
-    }
-
-    @Override
     public EdgesSummary getEdgesSummary(Authorizations authorizations) {
         Map<String, Integer> outEdgeCountsByLabels = new HashMap<>();
         Map<String, Integer> inEdgeCountsByLabels = new HashMap<>();

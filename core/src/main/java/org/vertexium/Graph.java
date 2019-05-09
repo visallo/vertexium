@@ -700,18 +700,6 @@ public interface Graph {
     Iterable<Edge> getEdges(Iterable<String> ids, FetchHints fetchHints, Long endTime, Authorizations authorizations);
 
     /**
-     * Use {@link #findRelatedEdgeIds(Iterable, Authorizations)}
-     */
-    @Deprecated
-    Iterable<String> findRelatedEdges(Iterable<String> vertexIds, Authorizations authorizations);
-
-    /**
-     * Use {@link #findRelatedEdgeIds(Iterable, Long, Authorizations)}
-     */
-    @Deprecated
-    Iterable<String> findRelatedEdges(Iterable<String> vertexIds, Long endTime, Authorizations authorizations);
-
-    /**
      * Given a list of vertices, find all the edge ids that connect them.
      *
      * @param vertices       The list of vertices.
@@ -920,62 +908,6 @@ public interface Graph {
      * Cleans up or disconnects from the underlying storage.
      */
     void shutdown();
-
-    /**
-     * Finds all paths between two vertices.
-     *
-     * @param sourceVertexId The source vertex id to start the search from.
-     * @param destVertexId   The destination vertex id to get to.
-     * @param maxHops        The maximum number of hops to make before giving up.
-     * @param authorizations The authorizations required to load all edges and vertices.
-     * @return An Iterable of lists of paths.
-     * @deprecated Use {@link #findPaths(FindPathOptions, Authorizations)}
-     */
-    @Deprecated
-    Iterable<Path> findPaths(String sourceVertexId, String destVertexId, int maxHops, Authorizations authorizations);
-
-    /**
-     * Finds all paths between two vertices.
-     *
-     * @param sourceVertexId The source vertex id to start the search from.
-     * @param destVertexId   The destination vertex id to get to.
-     * @param labels         Edge labels
-     * @param maxHops        The maximum number of hops to make before giving up.
-     * @param authorizations The authorizations required to load all edges and vertices.
-     * @return An Iterable of lists of paths.
-     * @deprecated Use {@link #findPaths(FindPathOptions, Authorizations)}
-     */
-    @Deprecated
-    Iterable<Path> findPaths(String sourceVertexId, String destVertexId, String[] labels, int maxHops, Authorizations authorizations);
-
-    /**
-     * Finds all paths between two vertices.
-     *
-     * @param sourceVertexId   The source vertex id to start the search from.
-     * @param destVertexId     The destination vertex id to get to.
-     * @param maxHops          The maximum number of hops to make before giving up.
-     * @param progressCallback Callback used to report progress.
-     * @param authorizations   The authorizations required to load all edges and vertices.
-     * @return An Iterable of lists of paths.
-     * @deprecated Use {@link #findPaths(FindPathOptions, Authorizations)}
-     */
-    @Deprecated
-    Iterable<Path> findPaths(String sourceVertexId, String destVertexId, int maxHops, ProgressCallback progressCallback, Authorizations authorizations);
-
-    /**
-     * Finds all paths between two vertices.
-     *
-     * @param sourceVertexId   The source vertex id to start the search from.
-     * @param destVertexId     The destination vertex id to get to.
-     * @param labels           Edge labels
-     * @param maxHops          The maximum number of hops to make before giving up.
-     * @param progressCallback Callback used to report progress.
-     * @param authorizations   The authorizations required to load all edges and vertices.
-     * @return An Iterable of lists of paths.
-     * @deprecated Use {@link #findPaths(FindPathOptions, Authorizations)}
-     */
-    @Deprecated
-    Iterable<Path> findPaths(String sourceVertexId, String destVertexId, String[] labels, int maxHops, ProgressCallback progressCallback, Authorizations authorizations);
 
     /**
      * Finds all paths between two vertices.
