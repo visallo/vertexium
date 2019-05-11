@@ -37,11 +37,7 @@ import org.vertexium.accumulo.iterator.model.PropertyMetadataColumnQualifier;
 import org.vertexium.accumulo.iterator.util.ByteArrayWrapper;
 import org.vertexium.accumulo.iterator.util.ByteSequenceUtils;
 import org.vertexium.accumulo.keys.KeyHelper;
-import org.vertexium.accumulo.util.HistoricalEventsIteratorConverter;
-import org.vertexium.accumulo.util.RangeUtils;
-import org.vertexium.accumulo.util.ScannerStreamUtils;
-import org.vertexium.accumulo.util.StreamingPropertyValueStorageStrategy;
-import org.vertexium.accumulo.util.VisalloTabletServerBatchReader;
+import org.vertexium.accumulo.util.*;
 import org.vertexium.event.*;
 import org.vertexium.historicalEvent.HistoricalEvent;
 import org.vertexium.historicalEvent.HistoricalEventId;
@@ -1461,7 +1457,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             getSearchIndex().markPropertyHidden(this, element, property, visibility, authorizations);
 
             if (hasEventListeners()) {
-                fireGraphEvent(new MarkHiddenPropertyEvent(this, element, property, visibility, data));
+                queueEvent(new MarkHiddenPropertyEvent(this, element, property, visibility, data));
             }
         } finally {
             trace.stop();
@@ -1499,7 +1495,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             getSearchIndex().markPropertyVisible(this, element, property, visibility, authorizations);
 
             if (hasEventListeners()) {
-                fireGraphEvent(new MarkVisiblePropertyEvent(this, element, property, visibility, data));
+                queueEvent(new MarkVisiblePropertyEvent(this, element, property, visibility, data));
             }
         } finally {
             trace.stop();
