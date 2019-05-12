@@ -4,7 +4,7 @@ import org.vertexium.cypher.CypherResultRow;
 import org.vertexium.cypher.VertexiumCypherQueryContext;
 import org.vertexium.cypher.executionPlan.AggregationFunctionInvocationExecutionStep;
 import org.vertexium.cypher.executionPlan.ExecutionStepWithResultName;
-import org.vertexium.cypher.utils.ObjectUtils;
+import org.vertexium.cypher.utils.CypherObjectUtils;
 
 import java.util.stream.Stream;
 
@@ -21,7 +21,7 @@ public class MinFunction implements AggregationFunction {
 
                 Object minValue = rows
                     .filter(r -> r.arguments[0] != null)
-                    .min((row1, row2) -> ObjectUtils.compare(row1.arguments[0], row2.arguments[0]))
+                    .min((row1, row2) -> CypherObjectUtils.compare(row1.arguments[0], row2.arguments[0]))
                     .map(r -> r.arguments[0])
                     .orElse(null);
                 return group.clone()

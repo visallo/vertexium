@@ -40,5 +40,10 @@ public class EdgeBuilderBaseTest {
         public Edge save(Authorizations authorizations) {
             return null;
         }
+
+        @Override
+        public String save(User user) {
+            return null;
+        }
     }
 }

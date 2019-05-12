@@ -13,7 +13,6 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import static org.vertexium.elasticsearch5.Elasticsearch5SearchIndex.ELEMENT_ID_FIELD_NAME;
-import static org.vertexium.util.StreamUtils.stream;
 
 public class ElasticsearchSearchVertexQuery extends ElasticsearchSearchQueryBase implements VertexQuery {
     private final Vertex sourceVertex;
@@ -23,12 +22,15 @@ public class ElasticsearchSearchVertexQuery extends ElasticsearchSearchQueryBase
     public ElasticsearchSearchVertexQuery(
         Client client,
         Graph graph,
-        Vertex sourceVertex,
+        IndexService indexService,
+        PropertyNameService propertyNameService,
+        PropertyNameVisibilitiesStore propertyNameVisibilitiesStore,
         String queryString,
+        Vertex sourceVertex,
         Options options,
         Authorizations authorizations
     ) {
-        super(client, graph, queryString, options, authorizations);
+        super(client, graph, indexService, propertyNameService, propertyNameVisibilitiesStore, queryString, options, authorizations);
         this.sourceVertex = sourceVertex;
     }
 
@@ -98,12 +100,12 @@ public class ElasticsearchSearchVertexQuery extends ElasticsearchSearchQueryBase
         List<String> edgeLabels = getParameters().getEdgeLabels();
         String[] edgeLabelsArray = edgeLabels == null || edgeLabels.size() == 0
             ? null
-            : edgeLabels.toArray(new String[edgeLabels.size()]);
-        Stream<EdgeInfo> edgeInfos = stream(sourceVertex.getEdgeInfos(
+            : edgeLabels.toArray(new String[0]);
+        Stream<EdgeInfo> edgeInfos = sourceVertex.getEdgeInfos(
             direction,
             edgeLabelsArray,
-            getParameters().getAuthorizations()
-        ));
+            getParameters().getUser()
+        );
         if (otherVertexId != null) {
             edgeInfos = edgeInfos.filter(ei -> ei.getVertexId().equals(otherVertexId));
         }

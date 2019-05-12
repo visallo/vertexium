@@ -1,9 +1,9 @@
 package org.vertexium.elasticsearch5;
 
 import com.google.common.hash.Hashing;
-import org.vertexium.Authorizations;
 import org.vertexium.Graph;
 import org.vertexium.GraphMetadataEntry;
+import org.vertexium.User;
 import org.vertexium.Visibility;
 import org.vertexium.util.VertexiumLogger;
 import org.vertexium.util.VertexiumLoggerFactory;
@@ -18,11 +18,12 @@ public class MetadataTablePropertyNameVisibilitiesStore extends PropertyNameVisi
     private static final Charset UTF8 = Charset.forName("utf8");
     private Map<String, Visibility> visibilityCache = new HashMap<>();
 
-    public Collection<String> getHashesWithAuthorization(Graph graph, String authorization, Authorizations authorizations) {
+    @Override
+    public Collection<String> getHashesWithAuthorization(Graph graph, String authorization, User user) {
         List<String> hashes = new ArrayList<>();
         for (GraphMetadataEntry metadata : graph.getMetadataWithPrefix(HASH_TO_VISIBILITY)) {
             Visibility visibility = getVisibility((String) metadata.getValue());
-            if (authorizations.canRead(visibility) && visibility.hasAuthorization(authorization)) {
+            if (user.canRead(visibility) && visibility.hasAuthorization(authorization)) {
                 String hash = metadata.getKey().substring(HASH_TO_VISIBILITY.length());
                 hashes.add(hash);
             }
@@ -30,11 +31,12 @@ public class MetadataTablePropertyNameVisibilitiesStore extends PropertyNameVisi
         return hashes;
     }
 
-    public Collection<String> getHashes(Graph graph, Authorizations authorizations) {
+    @Override
+    public Collection<String> getHashes(Graph graph, User user) {
         List<String> hashes = new ArrayList<>();
         for (GraphMetadataEntry metadata : graph.getMetadataWithPrefix(HASH_TO_VISIBILITY)) {
             Visibility visibility = getVisibility((String) metadata.getValue());
-            if (authorizations.canRead(visibility)) {
+            if (user.canRead(visibility)) {
                 String hash = metadata.getKey().substring(HASH_TO_VISIBILITY.length());
                 hashes.add(hash);
             }
@@ -42,13 +44,14 @@ public class MetadataTablePropertyNameVisibilitiesStore extends PropertyNameVisi
         return hashes;
     }
 
-    public Collection<String> getHashes(Graph graph, String propertyName, Authorizations authorizations) {
+    @Override
+    public Collection<String> getHashes(Graph graph, String propertyName, User user) {
         List<String> results = new ArrayList<>();
         String prefix = getPropertyNameVisibilityToHashPrefix(propertyName);
         for (GraphMetadataEntry metadata : graph.getMetadataWithPrefix(prefix)) {
             String visibilityString = metadata.getKey().substring(prefix.length());
             Visibility visibility = getVisibility(visibilityString);
-            if (authorizations.canRead(visibility)) {
+            if (user.canRead(visibility)) {
                 String hash = (String) metadata.getValue();
                 results.add(hash);
             }
@@ -60,6 +63,7 @@ public class MetadataTablePropertyNameVisibilitiesStore extends PropertyNameVisi
         return visibilityCache.computeIfAbsent(visibilityString, Visibility::new);
     }
 
+    @Override
     public String getHash(Graph graph, String propertyName, Visibility visibility) {
         String visibilityString = visibility.getVisibilityString();
         String propertyNameVisibilityToHashKey = getMetadataKey(propertyName, visibilityString);

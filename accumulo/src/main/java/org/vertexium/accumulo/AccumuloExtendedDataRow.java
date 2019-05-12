@@ -14,34 +14,38 @@ import java.util.*;
 public class AccumuloExtendedDataRow extends ExtendedDataRowBase {
     private final ExtendedDataRowId rowId;
     private final Set<Property> properties;
-    private final Set<String> additionalVisibilities;
+    private final Set<Visibility> additionalVisibilities;
 
     public AccumuloExtendedDataRow(
+        AccumuloGraph graph,
         ExtendedDataRowId rowId,
         Set<Property> properties,
         FetchHints fetchHints,
-        Set<String> additionalVisibilities
+        Set<Visibility> additionalVisibilities,
+        User user
     ) {
-        super(fetchHints);
+        super(graph, fetchHints, user);
         this.rowId = rowId;
         this.properties = properties;
         this.additionalVisibilities = additionalVisibilities;
     }
 
     public static AccumuloExtendedDataRow create(
+        AccumuloGraph graph,
         ExtendedDataRowId rowId,
         SortedMap<Key, Value> row,
         FetchHints fetchHints,
-        VertexiumSerializer vertexiumSerializer
+        VertexiumSerializer vertexiumSerializer,
+        User user
     ) {
         Set<Property> properties = new HashSet<>();
-        Set<String> additionalVisibilities = new HashSet<>();
+        Set<Visibility> additionalVisibilities = new HashSet<>();
         List<Map.Entry<Key, Value>> entries = new ArrayList<>(row.entrySet());
         entries.sort(Comparator.comparingLong(o -> o.getKey().getTimestamp()));
         for (Map.Entry<Key, Value> rowEntry : entries) {
             Text columnFamily = rowEntry.getKey().getColumnFamily();
             if (columnFamily.equals(AccumuloElement.CF_ADDITIONAL_VISIBILITY)) {
-                String additionalVisibility = rowEntry.getKey().getColumnQualifier().toString();
+                Visibility additionalVisibility = new Visibility(rowEntry.getKey().getColumnQualifier().toString());
                 if (ArrayUtils.startsWith(rowEntry.getValue().get(), ElementIterator.ADDITIONAL_VISIBILITY_VALUE_DELETED.get())) {
                     additionalVisibilities.remove(additionalVisibility);
                 } else {
@@ -71,7 +75,7 @@ public class AccumuloExtendedDataRow extends ExtendedDataRowBase {
             }
         }
 
-        return new AccumuloExtendedDataRow(rowId, properties, fetchHints, additionalVisibilities);
+        return new AccumuloExtendedDataRow(graph, rowId, properties, fetchHints, additionalVisibilities, user);
     }
 
     @Override
@@ -85,7 +89,7 @@ public class AccumuloExtendedDataRow extends ExtendedDataRowBase {
     }
 
     @Override
-    public ImmutableSet<String> getAdditionalVisibilities() {
+    public ImmutableSet<Visibility> getAdditionalVisibilities() {
         return ImmutableSet.copyOf(additionalVisibilities);
     }
 

@@ -6,7 +6,7 @@ import org.elasticsearch.common.xcontent.ToXContent;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.index.query.QueryShardContext;
 import org.elasticsearch.index.query.QueryStringQueryBuilder;
-import org.vertexium.Authorizations;
+import org.vertexium.User;
 import org.vertexium.VertexiumException;
 
 import java.io.IOException;
@@ -14,22 +14,22 @@ import java.util.Objects;
 
 public class VertexiumQueryStringQueryBuilder extends QueryStringQueryBuilder {
     public static final String NAME = "vertexium_query_string";
-    private final Authorizations authorizations;
+    private final User user;
 
-    private VertexiumQueryStringQueryBuilder(String queryString, Authorizations authorizations) {
+    private VertexiumQueryStringQueryBuilder(String queryString, User user) {
         super(queryString);
-        this.authorizations = authorizations;
+        this.user = user;
         allowLeadingWildcard(false);
     }
 
-    public static VertexiumQueryStringQueryBuilder build(String queryString, Authorizations authorizations) {
-        return new VertexiumQueryStringQueryBuilder(queryString, authorizations);
+    public static VertexiumQueryStringQueryBuilder build(String queryString, User user) {
+        return new VertexiumQueryStringQueryBuilder(queryString, user);
     }
 
     @Override
     protected void doWriteTo(StreamOutput out) throws IOException {
         super.doWriteTo(out);
-        out.writeStringArray(authorizations.getAuthorizations());
+        out.writeStringArray(user.getAuthorizations());
     }
 
     @Override
@@ -38,7 +38,7 @@ public class VertexiumQueryStringQueryBuilder extends QueryStringQueryBuilder {
         super.doXContent(builder, params);
 
         builder.startArray("authorizations");
-        for (String authorization : authorizations.getAuthorizations()) {
+        for (String authorization : user.getAuthorizations()) {
             builder.value(authorization);
         }
         builder.endArray();
@@ -55,12 +55,12 @@ public class VertexiumQueryStringQueryBuilder extends QueryStringQueryBuilder {
     protected boolean doEquals(QueryStringQueryBuilder other) {
         return other instanceof VertexiumQueryStringQueryBuilder &&
             super.doEquals(other) &&
-            Objects.deepEquals(this.authorizations, ((VertexiumQueryStringQueryBuilder) other).authorizations);
+            Objects.deepEquals(this.user, ((VertexiumQueryStringQueryBuilder) other).user);
     }
 
     @Override
     protected int doHashCode() {
-        return Objects.hash(super.doHashCode(), authorizations);
+        return Objects.hash(super.doHashCode(), user);
     }
 
     @Override

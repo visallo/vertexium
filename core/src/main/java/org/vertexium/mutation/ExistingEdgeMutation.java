@@ -4,7 +4,7 @@ import org.vertexium.Direction;
 import org.vertexium.Edge;
 import org.vertexium.util.IncreasingTime;
 
-public abstract class ExistingEdgeMutation extends ExistingElementMutationImpl<Edge> implements EdgeMutation {
+public abstract class ExistingEdgeMutation extends ExistingElementMutationBase<Edge> implements EdgeMutation {
     private String newEdgeLabel;
     private long alterEdgeLabelTimestamp;
 
@@ -15,6 +15,11 @@ public abstract class ExistingEdgeMutation extends ExistingElementMutationImpl<E
     @Override
     public String getVertexId(Direction direction) {
         return getElement().getVertexId(direction);
+    }
+
+    @Override
+    public String getLabel() {
+        return getElement().getLabel();
     }
 
     @Override

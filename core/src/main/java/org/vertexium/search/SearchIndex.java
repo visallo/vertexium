@@ -1,90 +1,118 @@
 package org.vertexium.search;
 
 import org.vertexium.*;
-import org.vertexium.mutation.AdditionalExtendedDataVisibilityAddMutation;
-import org.vertexium.mutation.AdditionalExtendedDataVisibilityDeleteMutation;
-import org.vertexium.mutation.ExistingElementMutation;
-import org.vertexium.mutation.ExtendedDataMutation;
-import org.vertexium.query.*;
+import org.vertexium.mutation.*;
+import org.vertexium.util.FutureDeprecation;
 
 import java.util.Collection;
 import java.util.Set;
 
 public interface SearchIndex {
-    void addElement(
+
+    @FutureDeprecation
+    default void addElement(
         Graph graph,
         Element element,
-        Set<String> additionalVisibilities,
-        Set<String> additionalVisibilitiesToDelete,
+        Set<Visibility> additionalVisibilities,
+        Set<Visibility> additionalVisibilitiesToDelete,
         Authorizations authorizations
-    );
+    ) {
+        addElement(
+            graph,
+            element,
+            additionalVisibilities,
+            additionalVisibilitiesToDelete,
+            authorizations.getUser()
+        );
+    }
 
-    <TElement extends Element> void updateElement(Graph graph, ExistingElementMutation<TElement> mutation, Authorizations authorizations);
+    void deleteElement(Graph graph, ElementId elementId, User user);
 
-    void deleteElement(Graph graph, ElementId elementId, Authorizations authorizations);
-
-    default void deleteElements(Graph graph, Iterable<? extends ElementId> elementIds, Authorizations authorizations) {
+    default void deleteElements(Graph graph, Iterable<? extends ElementId> elementIds, User user) {
         for (ElementId elementId : elementIds) {
-            deleteElement(graph, elementId, authorizations);
+            deleteElement(graph, elementId, user);
         }
     }
 
-    void markElementHidden(Graph graph, Element element, Visibility visibility, Authorizations authorizations);
-
-    void markElementVisible(
+    void addElement(
         Graph graph,
-        ElementLocation elementLocation,
-        Visibility visibility,
-        Authorizations authorizations
+        Element element,
+        Set<Visibility> additionalVisibilities,
+        Set<Visibility> additionalVisibilitiesToDelete,
+        User user
     );
 
-    void markPropertyHidden(
-        Graph graph,
-        ElementLocation elementLocation,
-        Property property,
-        Visibility visibility,
-        Authorizations authorizations
-    );
+    <TElement extends Element> void addOrUpdateElement(Graph graph, ElementMutation<TElement> mutation, User user);
 
-    void markPropertyVisible(
-        Graph graph,
-        ElementLocation elementLocation,
-        Property property,
-        Visibility visibility,
-        Authorizations authorizations
-    );
+    @FutureDeprecation
+    default void deleteElement(Graph graph, Element element, Authorizations authorizations) {
+        addOrUpdateElement(graph, element.prepareMutation().deleteElement(), authorizations.getUser());
+    }
+
+    @FutureDeprecation
+    default void markElementHidden(Graph graph, Element element, Visibility visibility, Authorizations authorizations) {
+        addOrUpdateElement(graph, element.prepareMutation().markElementHidden(visibility), authorizations.getUser());
+    }
+
+    @FutureDeprecation
+    default void markElementVisible(Graph graph, Element element, Visibility visibility, Authorizations authorizations) {
+        addOrUpdateElement(graph, element.prepareMutation().markElementVisible(visibility), authorizations.getUser());
+    }
+
+    @FutureDeprecation
+    default void markPropertyHidden(Graph graph, Element element, Property property, Visibility visibility, Authorizations authorizations) {
+        addOrUpdateElement(graph, element.prepareMutation().markPropertyHidden(property, visibility), authorizations.getUser());
+    }
+
+    @FutureDeprecation
+    default void markPropertyVisible(Graph graph, Element element, Property property, Visibility visibility, Authorizations authorizations) {
+        addOrUpdateElement(graph, element.prepareMutation().markPropertyVisible(property, visibility), authorizations.getUser());
+    }
 
     /**
      * Default delete property simply calls deleteProperty in a loop. It is up to the SearchIndex implementation to decide
      * if a collective method can be made more efficient
      */
-    default void deleteProperties(
-        Graph graph,
-        Element element,
-        Collection<PropertyDescriptor> propertyList,
-        Authorizations authorizations
-    ) {
-        propertyList.forEach(p -> deleteProperty(graph, element, p, authorizations));
+    @FutureDeprecation
+    default void deleteProperties(Graph graph, Element element, Collection<PropertyDescriptor> propertyList, Authorizations authorizations) {
+        deleteProperties(graph, element, propertyList, authorizations.getUser());
     }
 
-    void deleteProperty(
-        Graph graph,
-        Element element,
-        PropertyDescriptor property,
-        Authorizations authorizations
-    );
+    default void deleteProperties(Graph graph, Element element, Collection<PropertyDescriptor> propertyList, User user) {
+        propertyList.forEach(p -> deleteProperty(graph, element, p, user));
+    }
 
-    void addElements(Graph graph, Iterable<? extends Element> elements, Authorizations authorizations);
+    @FutureDeprecation
+    default void deleteProperty(Graph graph, Element element, PropertyDescriptor property, Authorizations authorizations) {
+        deleteProperty(graph, element, property, authorizations.getUser());
+    }
 
-    GraphQuery queryGraph(Graph graph, String queryString, Authorizations authorizations);
+    void deleteProperty(Graph graph, Element element, PropertyDescriptor property, User user);
 
-    MultiVertexQuery queryGraph(Graph graph, String[] vertexIds, String queryString, Authorizations authorizations);
+    @FutureDeprecation
+    org.vertexium.query.GraphQuery queryGraph(Graph graph, String queryString, Authorizations authorizations);
 
-    VertexQuery queryVertex(Graph graph, Vertex vertex, String queryString, Authorizations authorizations);
+    GraphQuery queryGraph(Graph graph, String queryString, User user);
 
-    Query queryExtendedData(Graph graph, Element element, String tableName, String queryString, Authorizations authorizations);
+    @FutureDeprecation
+    org.vertexium.query.MultiVertexQuery queryGraph(Graph graph, String[] vertexIds, String queryString, Authorizations authorizations);
 
-    SimilarToGraphQuery querySimilarTo(Graph graph, String[] fields, String text, Authorizations authorizations);
+    MultiVertexQuery queryGraph(Graph graph, String[] vertexIds, String queryString, User user);
+
+    @FutureDeprecation
+    org.vertexium.query.VertexQuery queryVertex(Graph graph, Vertex vertex, String queryString, Authorizations authorizations);
+
+    VertexQuery queryVertex(Graph graph, Vertex vertex, String queryString, User user);
+
+    @FutureDeprecation
+    org.vertexium.query.Query queryExtendedData(Graph graph, Element element, String tableName, String queryString, Authorizations authorizations);
+
+    Query queryExtendedData(Graph graph, Element element, String tableName, String queryString, User user);
+
+    @FutureDeprecation
+    org.vertexium.query.SimilarToGraphQuery querySimilarTo(Graph graph, String[] fields, String text, Authorizations authorizations);
+
+    SimilarToGraphQuery querySimilarTo(Graph graph, String[] fields, String text, User user);
 
     void flush(Graph graph);
 
@@ -104,13 +132,43 @@ public interface SearchIndex {
 
     boolean isFieldLevelSecuritySupported();
 
-    <T extends Element> void alterElementVisibility(
+    @FutureDeprecation
+    default <T extends Element> void alterElementVisibility(
         Graph graph,
         ExistingElementMutation<T> elementMutation,
         Visibility oldVisibility,
         Visibility newVisibility,
         Authorizations authorizations
+    ) {
+        alterElementVisibility(graph, elementMutation, oldVisibility, newVisibility, authorizations.getUser());
+    }
+
+    <T extends Element> void alterElementVisibility(
+        Graph graph,
+        ExistingElementMutation<T> elementMutation,
+        Visibility oldVisibility,
+        Visibility newVisibility,
+        User user
     );
+
+    @FutureDeprecation
+    default void addElementExtendedData(
+        Graph graph,
+        ElementLocation elementLocation,
+        Iterable<ExtendedDataMutation> extendedDatas,
+        Iterable<AdditionalExtendedDataVisibilityAddMutation> additionalExtendedDataVisibilities,
+        Iterable<AdditionalExtendedDataVisibilityDeleteMutation> additionalExtendedDataVisibilityDeletes,
+        Authorizations authorizations
+    ) {
+        addElementExtendedData(
+            graph,
+            elementLocation,
+            extendedDatas,
+            additionalExtendedDataVisibilities,
+            additionalExtendedDataVisibilityDeletes,
+            authorizations.getUser()
+        );
+    }
 
     void addElementExtendedData(
         Graph graph,
@@ -118,17 +176,46 @@ public interface SearchIndex {
         Iterable<ExtendedDataMutation> extendedDatas,
         Iterable<AdditionalExtendedDataVisibilityAddMutation> additionalExtendedDataVisibilities,
         Iterable<AdditionalExtendedDataVisibilityDeleteMutation> additionalExtendedDataVisibilityDeletes,
-        Authorizations authorizations
+        User user
     );
+
+    @FutureDeprecation
+    default void addExtendedData(
+        Graph graph,
+        ElementLocation elementLocation,
+        Iterable<ExtendedDataRow> extendedDatas,
+        Authorizations authorizations
+    ) {
+        addExtendedData(graph, elementLocation, extendedDatas, authorizations.getUser());
+    }
 
     void addExtendedData(
         Graph graph,
         ElementLocation elementLocation,
         Iterable<ExtendedDataRow> extendedDatas,
-        Authorizations authorizations
+        User user
     );
 
-    void deleteExtendedData(Graph graph, ExtendedDataRowId extendedDataRowId, Authorizations authorizations);
+    @FutureDeprecation
+    default void deleteExtendedData(Graph graph, ExtendedDataRowId extendedDataRowId, Authorizations authorizations) {
+        deleteExtendedData(graph, extendedDataRowId, authorizations.getUser());
+    }
+
+    void deleteExtendedData(Graph graph, ExtendedDataRowId extendedDataRowId, User user);
+
+    @FutureDeprecation
+    default void deleteExtendedData(
+        Graph graph,
+        ElementLocation elementLocation,
+        String tableName,
+        String row,
+        String columnName,
+        String key,
+        Visibility visibility,
+        Authorizations authorizations
+    ) {
+        deleteExtendedData(graph, elementLocation, tableName, row, columnName, key, visibility, authorizations.getUser());
+    }
 
     void deleteExtendedData(
         Graph graph,
@@ -138,6 +225,20 @@ public interface SearchIndex {
         String columnName,
         String key,
         Visibility visibility,
-        Authorizations authorizations
+        User user
     );
+
+    @FutureDeprecation
+    default void addAdditionalVisibility(Graph graph, Element element, Visibility visibility, Object eventData, Authorizations authorizations) {
+        addAdditionalVisibility(graph, element, visibility, eventData, authorizations.getUser());
+    }
+
+    void addAdditionalVisibility(Graph graph, Element element, Visibility visibility, Object eventData, User user);
+
+    @FutureDeprecation
+    default void deleteAdditionalVisibility(Graph graph, Element element, Visibility visibility, Object eventData, Authorizations authorizations) {
+        deleteAdditionalVisibility(graph, element, visibility, eventData, authorizations.getUser());
+    }
+
+    void deleteAdditionalVisibility(Graph graph, Element element, Visibility visibility, Object eventData, User user);
 }

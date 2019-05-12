@@ -7,7 +7,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.vertexium.*;
 import org.vertexium.id.UUIDIdGenerator;
-import org.vertexium.search.DefaultSearchIndex;
+import org.vertexium.inmemory.search.DefaultSearchIndex;
 import org.vertexium.test.GraphTestBase;
 
 import java.util.HashMap;
@@ -38,12 +38,12 @@ public class InMemoryGraphTest extends GraphTestBase {
 
     @Override
     protected Authorizations createAuthorizations(String... auths) {
-        return new InMemoryAuthorizations(auths);
+        return getGraph().createAuthorizations(auths);
     }
 
     @Override
-    protected void addAuthorizations(String... authorizations) {
-        getGraph().createAuthorizations(authorizations);
+    protected Authorizations createButDontAddAuthorizations(String... auths) {
+        return new InMemoryAuthorizations(auths);
     }
 
     @Before
@@ -60,6 +60,11 @@ public class InMemoryGraphTest extends GraphTestBase {
     @Override
     protected boolean isAdvancedGeoQuerySupported() {
         return false;
+    }
+
+    @Override
+    protected boolean isDefaultSearchIndex() {
+        return true;
     }
 
     @Test

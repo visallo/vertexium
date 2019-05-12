@@ -5,6 +5,7 @@ import org.vertexium.util.FilterIterable;
 import org.vertexium.util.JoinIterable;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class DefaultVertexQuery extends VertexQueryBase implements VertexQuery {
     public DefaultVertexQuery(Graph graph, Vertex sourceVertex, String queryString, Authorizations authorizations) {
@@ -26,8 +27,8 @@ public class DefaultVertexQuery extends VertexQueryBase implements VertexQuery {
             getDirection(),
             edgeLabelsArray,
             fetchHints,
-            getParameters().getAuthorizations()
-        );
+            getParameters().getUser()
+        ).collect(Collectors.toList());
         if (getOtherVertexId() != null) {
             results = new FilterIterable<Vertex>(results) {
                 @Override
@@ -54,7 +55,7 @@ public class DefaultVertexQuery extends VertexQueryBase implements VertexQuery {
     }
 
     private Iterable<Edge> allEdges(FetchHints fetchHints) {
-        Iterable<Edge> results = getSourceVertex().getEdges(getDirection(), fetchHints, getParameters().getAuthorizations());
+        Iterable<Edge> results = getSourceVertex().getEdges(getDirection(), fetchHints, getParameters().getUser()).collect(Collectors.toList());
         if (getOtherVertexId() != null) {
             results = new FilterIterable<Edge>(results) {
                 @Override

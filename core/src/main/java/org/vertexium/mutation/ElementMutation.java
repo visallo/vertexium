@@ -2,6 +2,7 @@ package org.vertexium.mutation;
 
 import org.vertexium.*;
 import org.vertexium.search.IndexHint;
+import org.vertexium.util.FutureDeprecation;
 
 public interface ElementMutation<T extends Element> extends ElementLocation {
     String DEFAULT_KEY = "";
@@ -11,7 +12,15 @@ public interface ElementMutation<T extends Element> extends ElementLocation {
      *
      * @return the element which was mutated.
      */
+    @FutureDeprecation
     T save(Authorizations authorizations);
+
+    /**
+     * saves the element to the graph.
+     *
+     * @return the id of the element just saved
+     */
+    String save(User user);
 
     /**
      * Sets or updates a property value. The property key will be set to a constant. This is a convenience method
@@ -158,7 +167,7 @@ public interface ElementMutation<T extends Element> extends ElementLocation {
      *
      * @param visibility The additional visibility to be applied
      */
-    default ElementMutation<T> addAdditionalVisibility(String visibility) {
+    default ElementMutation<T> addAdditionalVisibility(Visibility visibility) {
         return addAdditionalVisibility(visibility, null);
     }
 
@@ -169,14 +178,14 @@ public interface ElementMutation<T extends Element> extends ElementLocation {
      * @param visibility The additional visibility to be applied
      * @param eventData  Data to store with the mutation
      */
-    ElementMutation<T> addAdditionalVisibility(String visibility, Object eventData);
+    ElementMutation<T> addAdditionalVisibility(Visibility visibility, Object eventData);
 
     /**
      * Deletes a previously set additional visibility.
      *
      * @param visibility The additional visibility to be deleted
      */
-    default ElementMutation<T> deleteAdditionalVisibility(String visibility) {
+    default ElementMutation<T> deleteAdditionalVisibility(Visibility visibility) {
         return deleteAdditionalVisibility(visibility, null);
     }
 
@@ -186,7 +195,7 @@ public interface ElementMutation<T extends Element> extends ElementLocation {
      * @param visibility The additional visibility to be deleted
      * @param eventData  Data to store with the mutation
      */
-    ElementMutation<T> deleteAdditionalVisibility(String visibility, Object eventData);
+    ElementMutation<T> deleteAdditionalVisibility(Visibility visibility, Object eventData);
 
     /**
      * Adds additional visibilities to the row column. These visibilities will not effect the Visibility returned from
@@ -199,7 +208,7 @@ public interface ElementMutation<T extends Element> extends ElementLocation {
     default ElementMutation<T> addExtendedDataAdditionalVisibility(
         String tableName,
         String row,
-        String additionalVisibility
+        Visibility additionalVisibility
     ) {
         return addExtendedDataAdditionalVisibility(tableName, row, additionalVisibility, null);
     }
@@ -216,7 +225,7 @@ public interface ElementMutation<T extends Element> extends ElementLocation {
     ElementMutation<T> addExtendedDataAdditionalVisibility(
         String tableName,
         String row,
-        String additionalVisibility,
+        Visibility additionalVisibility,
         Object eventData
     );
 
@@ -230,7 +239,7 @@ public interface ElementMutation<T extends Element> extends ElementLocation {
     default ElementMutation<T> deleteExtendedDataAdditionalVisibility(
         String tableName,
         String row,
-        String additionalVisibility
+        Visibility additionalVisibility
     ) {
         return deleteExtendedDataAdditionalVisibility(tableName, row, additionalVisibility, null);
     }
@@ -246,9 +255,367 @@ public interface ElementMutation<T extends Element> extends ElementLocation {
     ElementMutation<T> deleteExtendedDataAdditionalVisibility(
         String tableName,
         String row,
-        String additionalVisibility,
+        Visibility additionalVisibility,
         Object eventData
     );
+
+    /**
+     * Delete the element
+     */
+    ElementMutation<T> deleteElement();
+
+    /**
+     * Soft delete the element
+     */
+    default ElementMutation<T> softDeleteElement() {
+        return softDeleteElement(null);
+    }
+
+    /**
+     * Soft delete the element
+     */
+    default ElementMutation<T> softDeleteElement(Object eventData) {
+        return softDeleteElement(null, eventData);
+    }
+
+    /**
+     * Soft delete the element
+     */
+    default ElementMutation<T> softDeleteElement(Long timestamp) {
+        return softDeleteElement(timestamp, null);
+    }
+
+    /**
+     * Soft delete the element
+     */
+    ElementMutation<T> softDeleteElement(Long timestamp, Object eventData);
+
+    /**
+     * Marks a vertex as hidden for a given visibility.
+     *
+     * @param visibility The visibility string under which this vertex is hidden.
+     *                   This visibility can be a superset of the vertex visibility to mark
+     *                   it as hidden for only a subset of authorizations.
+     */
+    default ElementMutation<T> markElementHidden(Visibility visibility) {
+        return markElementHidden(visibility, null);
+    }
+
+    /**
+     * Marks a vertex as hidden for a given visibility.
+     *
+     * @param visibility The visibility string under which this vertex is hidden.
+     *                   This visibility can be a superset of the vertex visibility to mark
+     *                   it as hidden for only a subset of authorizations.
+     * @param eventData  Data to store with the hidden
+     */
+    default ElementMutation<T> markElementHidden(Visibility visibility, Object eventData) {
+        return markElementHidden(visibility, null, eventData);
+    }
+
+    /**
+     * Marks a vertex as hidden for a given visibility.
+     *
+     * @param visibility The visibility string under which this vertex is hidden.
+     *                   This visibility can be a superset of the vertex visibility to mark
+     *                   it as hidden for only a subset of authorizations.
+     * @param timestamp  Mark hidden as of a specific time
+     */
+    default ElementMutation<T> markElementHidden(Visibility visibility, Long timestamp) {
+        return markElementHidden(visibility, timestamp, null);
+    }
+
+    /**
+     * Marks a vertex as hidden for a given visibility.
+     *
+     * @param visibility The visibility string under which this vertex is hidden.
+     *                   This visibility can be a superset of the vertex visibility to mark
+     *                   it as hidden for only a subset of authorizations.
+     * @param timestamp  Mark hidden as of a specific time
+     * @param eventData  Data to store with the hidden
+     */
+    ElementMutation<T> markElementHidden(Visibility visibility, Long timestamp, Object eventData);
+
+    /**
+     * Marks a vertex as visible for a given visibility, effectively undoing markVertexHidden.
+     *
+     * @param visibility The visibility string under which this vertex is now visible.
+     */
+    default ElementMutation<T> markElementVisible(Visibility visibility) {
+        return markElementVisible(visibility, null);
+    }
+
+    /**
+     * Marks a vertex as visible for a given visibility, effectively undoing markVertexHidden.
+     *
+     * @param visibility The visibility string under which this vertex is now visible.
+     * @param eventData  Data to store with the visible
+     */
+    default ElementMutation<T> markElementVisible(Visibility visibility, Object eventData) {
+        return markElementVisible(visibility, null, eventData);
+    }
+
+    /**
+     * Marks a vertex as visible for a given visibility, effectively undoing markVertexHidden.
+     *
+     * @param visibility The visibility string under which this vertex is now visible.
+     * @param timestamp  Mark visible as of a specific time
+     */
+    default ElementMutation<T> markElementVisible(Visibility visibility, Long timestamp) {
+        return markElementVisible(visibility, timestamp, null);
+    }
+
+    /**
+     * Marks a vertex as visible for a given visibility, effectively undoing markVertexHidden.
+     *
+     * @param visibility The visibility string under which this vertex is now visible.
+     * @param timestamp  Mark visible as of a specific time
+     * @param eventData  Data to store with the visible
+     */
+    ElementMutation<T> markElementVisible(Visibility visibility, Long timestamp, Object eventData);
+
+    /**
+     * Marks a property as hidden for a given visibility.
+     *
+     * @param key                The key of the property.
+     * @param name               The name of the property.
+     * @param propertyVisibility The visibility of the property.
+     * @param visibility         The visibility string under which this property is hidden.
+     *                           This visibility can be a superset of the property visibility to mark
+     *                           it as hidden for only a subset of authorizations.
+     */
+    default ElementMutation<T> markPropertyHidden(String key, String name, Visibility propertyVisibility, Visibility visibility) {
+        return markPropertyHidden(key, name, propertyVisibility, visibility, null);
+    }
+
+    /**
+     * Marks a property as hidden for a given visibility.
+     *
+     * @param key                The key of the property.
+     * @param name               The name of the property.
+     * @param propertyVisibility The visibility of the property.
+     * @param visibility         The visibility string under which this property is hidden.
+     *                           This visibility can be a superset of the property visibility to mark
+     *                           it as hidden for only a subset of authorizations.
+     * @param eventData          Data to store with the hidden
+     */
+    default ElementMutation<T> markPropertyHidden(String key, String name, Visibility propertyVisibility, Visibility visibility, Object eventData) {
+        return markPropertyHidden(key, name, propertyVisibility, null, visibility, eventData);
+    }
+
+    /**
+     * Marks a property as hidden for a given visibility.
+     *
+     * @param key                The key of the property.
+     * @param name               The name of the property.
+     * @param propertyVisibility The visibility of the property.
+     * @param timestamp          The timestamp.
+     * @param visibility         The visibility string under which this property is hidden.
+     *                           This visibility can be a superset of the property visibility to mark
+     *                           it as hidden for only a subset of authorizations.
+     */
+    default ElementMutation<T> markPropertyHidden(
+        String key,
+        String name,
+        Visibility propertyVisibility,
+        Long timestamp,
+        Visibility visibility
+    ) {
+        return markPropertyHidden(key, name, propertyVisibility, timestamp, visibility, null);
+    }
+
+    /**
+     * Marks a property as hidden for a given visibility.
+     *
+     * @param key                The key of the property.
+     * @param name               The name of the property.
+     * @param propertyVisibility The visibility of the property.
+     * @param timestamp          The timestamp.
+     * @param visibility         The visibility string under which this property is hidden.
+     *                           This visibility can be a superset of the property visibility to mark
+     *                           it as hidden for only a subset of authorizations.
+     * @param eventData          Data to store with the hidden
+     */
+    ElementMutation<T> markPropertyHidden(
+        String key,
+        String name,
+        Visibility propertyVisibility,
+        Long timestamp,
+        Visibility visibility,
+        Object eventData
+    );
+
+    /**
+     * Marks a property as hidden for a given visibility.
+     *
+     * @param property   The property.
+     * @param visibility The visibility string under which this property is hidden.
+     *                   This visibility can be a superset of the property visibility to mark
+     *                   it as hidden for only a subset of authorizations.
+     */
+    default ElementMutation<T> markPropertyHidden(Property property, Visibility visibility) {
+        return markPropertyHidden(property, null, visibility, null);
+    }
+
+    /**
+     * Marks a property as hidden for a given visibility.
+     *
+     * @param property   The property.
+     * @param visibility The visibility string under which this property is hidden.
+     *                   This visibility can be a superset of the property visibility to mark
+     *                   it as hidden for only a subset of authorizations.
+     * @param eventData  Data to store with the hidden
+     */
+    default ElementMutation<T> markPropertyHidden(Property property, Visibility visibility, Object eventData) {
+        return markPropertyHidden(property, null, visibility, eventData);
+    }
+
+    /**
+     * Marks a property as hidden for a given visibility.
+     *
+     * @param property   The property.
+     * @param timestamp  The timestamp.
+     * @param visibility The visibility string under which this property is hidden.
+     *                   This visibility can be a superset of the property visibility to mark
+     *                   it as hidden for only a subset of authorizations.
+     */
+    default ElementMutation<T> markPropertyHidden(Property property, Long timestamp, Visibility visibility) {
+        return markPropertyHidden(property, timestamp, visibility, null);
+    }
+
+    /**
+     * Marks a property as hidden for a given visibility.
+     *
+     * @param property   The property.
+     * @param timestamp  The timestamp.
+     * @param visibility The visibility string under which this property is hidden.
+     *                   This visibility can be a superset of the property visibility to mark
+     *                   it as hidden for only a subset of authorizations.
+     */
+    default ElementMutation<T> markPropertyHidden(Property property, Long timestamp, Visibility visibility, Object data) {
+        return markPropertyHidden(
+            property.getKey(),
+            property.getName(),
+            property.getVisibility(),
+            timestamp,
+            visibility,
+            data
+        );
+    }
+
+    /**
+     * Marks a property as visible for a given visibility, effectively undoing markPropertyHidden.
+     *
+     * @param key                The key of the property.
+     * @param name               The name of the property.
+     * @param propertyVisibility The visibility of the property.
+     * @param visibility         The visibility string under which this property is now visible.
+     */
+    default ElementMutation<T> markPropertyVisible(String key, String name, Visibility propertyVisibility, Visibility visibility) {
+        return markPropertyVisible(key, name, propertyVisibility, null, visibility, null);
+    }
+
+    /**
+     * Marks a property as visible for a given visibility, effectively undoing markPropertyHidden.
+     *
+     * @param key                The key of the property.
+     * @param name               The name of the property.
+     * @param propertyVisibility The visibility of the property.
+     * @param visibility         The visibility string under which this property is now visible.
+     * @param eventData          Data to store with the visible
+     */
+    default ElementMutation<T> markPropertyVisible(String key, String name, Visibility propertyVisibility, Visibility visibility, Object eventData) {
+        return markPropertyVisible(key, name, propertyVisibility, null, visibility, eventData);
+    }
+
+    /**
+     * Marks a property as visible for a given visibility, effectively undoing markPropertyHidden.
+     *
+     * @param key                The key of the property.
+     * @param name               The name of the property.
+     * @param propertyVisibility The visibility of the property.
+     * @param timestamp          The timestamp.
+     * @param visibility         The visibility string under which this property is now visible.
+     */
+    default ElementMutation<T> markPropertyVisible(
+        String key,
+        String name,
+        Visibility propertyVisibility,
+        Long timestamp,
+        Visibility visibility
+    ) {
+        return markPropertyVisible(key, name, propertyVisibility, timestamp, visibility, null);
+    }
+
+    /**
+     * Marks a property as visible for a given visibility, effectively undoing markPropertyHidden.
+     *
+     * @param key                The key of the property.
+     * @param name               The name of the property.
+     * @param propertyVisibility The visibility of the property.
+     * @param timestamp          The timestamp.
+     * @param visibility         The visibility string under which this property is now visible.
+     * @param eventData          Data to store with the visible
+     */
+    ElementMutation<T> markPropertyVisible(
+        String key,
+        String name,
+        Visibility propertyVisibility,
+        Long timestamp,
+        Visibility visibility,
+        Object eventData
+    );
+
+    /**
+     * Marks a property as visible for a given visibility, effectively undoing markPropertyHidden.
+     *
+     * @param property   The property.
+     * @param visibility The visibility string under which this property is now visible.
+     */
+    default ElementMutation<T> markPropertyVisible(Property property, Visibility visibility) {
+        return markPropertyVisible(property, null, visibility, null);
+    }
+
+    /**
+     * Marks a property as visible for a given visibility, effectively undoing markPropertyHidden.
+     *
+     * @param property   The property.
+     * @param visibility The visibility string under which this property is now visible.
+     * @param eventData  Data to store with the visible
+     */
+    default ElementMutation<T> markPropertyVisible(Property property, Visibility visibility, Object eventData) {
+        return markPropertyVisible(property, null, visibility, eventData);
+    }
+
+    /**
+     * Marks a property as visible for a given visibility, effectively undoing markPropertyHidden.
+     *
+     * @param property   The property.
+     * @param timestamp  The timestamp.
+     * @param visibility The visibility string under which this property is now visible.
+     */
+    default ElementMutation<T> markPropertyVisible(Property property, Long timestamp, Visibility visibility) {
+        return markPropertyVisible(property, timestamp, visibility, null);
+    }
+
+    /**
+     * Marks a property as visible for a given visibility, effectively undoing markPropertyHidden.
+     *
+     * @param property   The property.
+     * @param timestamp  The timestamp.
+     * @param visibility The visibility string under which this property is now visible.
+     * @param eventData  Data to store with the visible
+     */
+    default ElementMutation<T> markPropertyVisible(Property property, Long timestamp, Visibility visibility, Object eventData) {
+        return markPropertyVisible(
+            property.getKey(),
+            property.getName(),
+            property.getVisibility(),
+            timestamp,
+            visibility,
+            eventData
+        );
+    }
 
     /**
      * Gets the properties currently in this mutation.
@@ -294,6 +661,51 @@ public interface ElementMutation<T extends Element> extends ElementLocation {
      * Gets the additional extended data visibility delete mutations
      */
     Iterable<AdditionalExtendedDataVisibilityDeleteMutation> getAdditionalExtendedDataVisibilityDeletes();
+
+    /**
+     * Gets the properties whose visibilities are being altered in this mutation.
+     */
+    Iterable<AlterPropertyVisibility> getAlterPropertyVisibilities();
+
+    /**
+     * Gets all of the property metadata changes that are part of this mutation.
+     */
+    Iterable<SetPropertyMetadata> getSetPropertyMetadata();
+
+    /**
+     * Gets all the mark hidden changes
+     */
+    Iterable<ElementMutationBase.MarkHiddenData> getMarkHiddenData();
+
+    /**
+     * Gets all the mark visible changes
+     */
+    Iterable<ElementMutationBase.MarkVisibleData> getMarkVisibleData();
+
+    /**
+     * Gets all the mark property hidden changes
+     */
+    Iterable<ElementMutationBase.MarkPropertyHiddenData> getMarkPropertyHiddenData();
+
+    /**
+     * Gets all the mark property visible changes
+     */
+    Iterable<ElementMutationBase.MarkPropertyVisibleData> getMarkPropertyVisibleData();
+
+    /**
+     * Gets all the delete extended data row changes
+     */
+    Iterable<ElementMutationBase.DeleteExtendedDataRowData> getDeleteExtendedDataRowData();
+
+    /**
+     * Gets soft delete data
+     */
+    ElementMutationBase.SoftDeleteData getSoftDeleteData();
+
+    /**
+     * true, if this element should be deleted
+     */
+    boolean isDeleteElement();
 
     /**
      * Sets the index hint of this element.
@@ -357,6 +769,23 @@ public interface ElementMutation<T extends Element> extends ElementLocation {
      * @param visibility The visibility of the value.
      */
     ElementMutation<T> addExtendedData(String tableName, String row, String column, String key, Object value, Long timestamp, Visibility visibility);
+
+    /**
+     * Deletes an extended data cell from an element.
+     *
+     * @param tableName The extended data table to add the cell to.
+     * @param row       The row to add the cell to.
+     */
+    ElementMutation<T> deleteExtendedDataRow(String tableName, String row);
+
+    /**
+     * Deletes an extended data cell from an element.
+     *
+     * @param id The row id to delete
+     */
+    default ElementMutation<T> deleteExtendedDataRow(ExtendedDataRowId id) {
+        return deleteExtendedDataRow(id.getTableName(), id.getRowId());
+    }
 
     /**
      * Deletes an extended data cell from an element.

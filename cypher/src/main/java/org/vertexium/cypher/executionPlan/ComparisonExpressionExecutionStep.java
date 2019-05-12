@@ -3,7 +3,7 @@ package org.vertexium.cypher.executionPlan;
 import org.vertexium.cypher.VertexiumCypherQueryContext;
 import org.vertexium.cypher.VertexiumCypherResult;
 import org.vertexium.cypher.exceptions.VertexiumCypherNotImplemented;
-import org.vertexium.cypher.utils.ObjectUtils;
+import org.vertexium.cypher.utils.CypherObjectUtils;
 
 public class ComparisonExpressionExecutionStep extends ExecutionStepWithChildren implements ExecutionStepWithResultName {
     private final String resultName;
@@ -34,7 +34,7 @@ public class ComparisonExpressionExecutionStep extends ExecutionStepWithChildren
             if (leftValue == null && rightValue == null) {
                 row.pushScope(resultName, null);
             } else {
-                int compareResults = ObjectUtils.compare(leftValue, rightValue);
+                int compareResults = CypherObjectUtils.compare(leftValue, rightValue);
                 boolean result;
                 switch (op) {
                     case "=":

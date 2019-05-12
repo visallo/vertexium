@@ -8,7 +8,7 @@ import org.vertexium.cypher.VertexiumCypherResult;
 import org.vertexium.cypher.ast.model.CypherSetItem;
 import org.vertexium.cypher.exceptions.VertexiumCypherException;
 import org.vertexium.cypher.exceptions.VertexiumCypherNotImplemented;
-import org.vertexium.cypher.utils.ObjectUtils;
+import org.vertexium.cypher.utils.CypherObjectUtils;
 import org.vertexium.mutation.ExistingElementMutation;
 
 import java.util.Map;
@@ -119,7 +119,7 @@ public class SetItemExecutionStep extends ExecutionStepWithChildren {
                 executeSetLabels(ctx, leftElement, (Iterable) right);
                 return;
             } else if (right.getClass().isArray()) {
-                executeSetLabels(ctx, leftElement, (Iterable) ObjectUtils.arrayToList(right));
+                executeSetLabels(ctx, leftElement, (Iterable) CypherObjectUtils.arrayToList(right));
                 return;
             } else if (right instanceof Map) {
                 executeSetProperties(ctx, leftElement, (Map<String, ?>) right);

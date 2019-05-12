@@ -11,21 +11,21 @@ public class HistoricalEventId implements Serializable, Comparable<HistoricalEve
     private final long timestamp;
     private final ElementType elementType;
     private final String elementId;
-    private final int subOrder;
+    private final String subOrder;
 
     // for Serializable
     protected HistoricalEventId() {
         timestamp = 0;
         elementType = null;
         elementId = null;
-        subOrder = 0;
+        subOrder = null;
     }
 
     public HistoricalEventId(
         long timestamp,
         ElementType elementType,
         String elementId,
-        int subOrder
+        String subOrder
     ) {
         this.timestamp = timestamp;
         this.elementType = elementType;
@@ -39,7 +39,7 @@ public class HistoricalEventId implements Serializable, Comparable<HistoricalEve
             Long.parseLong(parts[0], 16),
             ElementType.valueOf(parts[1]),
             parts[2],
-            Integer.parseInt(parts[3], 16)
+            parts[3]
         );
     }
 
@@ -49,7 +49,7 @@ public class HistoricalEventId implements Serializable, Comparable<HistoricalEve
             MultiFieldStringEncoder.timestampToString(getTimestamp()),
             getElementType().name(),
             getElementId(),
-            String.format("%04x", getSubOrder())
+            getSubOrder()
         );
     }
 
@@ -70,7 +70,7 @@ public class HistoricalEventId implements Serializable, Comparable<HistoricalEve
             return result;
         }
 
-        return Integer.compare(getSubOrder(), other.getSubOrder());
+        return getSubOrder().compareTo(other.getSubOrder());
     }
 
     public long getTimestamp() {
@@ -85,7 +85,7 @@ public class HistoricalEventId implements Serializable, Comparable<HistoricalEve
         return elementId;
     }
 
-    public int getSubOrder() {
+    public String getSubOrder() {
         return subOrder;
     }
 }

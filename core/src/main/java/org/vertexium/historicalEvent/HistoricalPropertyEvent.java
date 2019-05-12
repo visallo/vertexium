@@ -48,4 +48,9 @@ public abstract class HistoricalPropertyEvent extends HistoricalEvent {
             getPropertyVisibility()
         );
     }
+
+    @Override
+    protected String getHistoricalEventIdSubOrder() {
+        return "prop:" + getPropertyName();
+    }
 }

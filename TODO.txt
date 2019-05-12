@@ -1,0 +1,522 @@
+AccumuloGraph
+
+    @Override
+    public Stream<Vertex> getVertices(FetchHints fetchHints, Long endTime, User user) throws VertexiumException {
+        Span trace = Trace.start("getVertices");
+<<<<<<< HEAD
+        return getVerticesInRange(trace, null, null, fetchHints, endTime, authorizations);
+    }
+
+    @Override
+    public void deleteElements(Stream<? extends ElementId> elementIds, Authorizations authorizations) {
+        DeleteElementsConsumer consumer = new DeleteElementsConsumer(authorizations);
+        elementIds.forEach(consumer);
+        consumer.processBatches(true);
+    }
+
+    private class DeleteElementsConsumer implements Consumer<ElementId> {
+        private final Authorizations authorizations;
+        private final Set<String> verticesToFetch = new HashSet<>();
+        private final Set<String> edgesToFetch = new HashSet<>();
+        private final Set<Vertex> verticesToDelete = new HashSet<>();
+        private final Set<EdgeElementLocation> edgesToDelete = new HashSet<>();
+
+        public DeleteElementsConsumer(Authorizations authorizations) {
+            this.authorizations = authorizations;
+        }
+
+        @Override
+        public void accept(ElementId elementId) {
+            if (elementId instanceof Vertex) {
+                verticesToDelete.add((Vertex) elementId);
+            } else if (elementId instanceof EdgeElementLocation) {
+                edgesToDelete.add((EdgeElementLocation) elementId);
+            } else if (elementId.getElementType() == ElementType.VERTEX) {
+                verticesToFetch.add(elementId.getId());
+            } else if (elementId.getElementType() == ElementType.EDGE) {
+                edgesToFetch.add(elementId.getId());
+            } else {
+                throw new VertexiumException("unhandled element type: " + elementId.getElementType());
+            }
+            processBatches(false);
+        }
+
+        public void processBatches(boolean finalBatch) {
+            if (finalBatch || verticesToFetch.size() > 100) {
+                verticesToDelete.addAll(toList(getVertices(verticesToFetch, FetchHints.EDGE_REFS, authorizations)));
+                verticesToFetch.clear();
+            }
+
+            if (finalBatch || verticesToDelete.size() > 100) {
+                for (Vertex vertexToDelete : verticesToDelete) {
+                    edgesToFetch.addAll(toList(vertexToDelete.getEdgeIds(Direction.BOTH, authorizations)));
+                }
+                deleteVertices(verticesToDelete);
+                verticesToDelete.clear();
+            }
+
+            if (finalBatch || edgesToFetch.size() > 100) {
+                edgesToDelete.addAll(toList(getEdges(edgesToFetch, FetchHints.NONE, authorizations)));
+                edgesToFetch.clear();
+            }
+
+            if (finalBatch || edgesToDelete.size() > 100) {
+                deleteEdges(edgesToDelete);
+                edgesToDelete.clear();
+            }
+        }
+
+        private void deleteVertices(Set<Vertex> verticesToDelete) {
+            getSearchIndex().deleteElements(AccumuloGraph.this, verticesToDelete, authorizations);
+
+            deleteAllExtendedDataForElements(verticesToDelete, authorizations);
+
+            for (Vertex vertex : verticesToDelete) {
+                addMutations(VertexiumObjectType.VERTEX, elementMutationBuilder.getDeleteRowMutation(vertex.getId()));
+
+                queueEvent(new DeleteVertexEvent(AccumuloGraph.this, vertex));
+            }
+        }
+
+        private void deleteEdges(Set<EdgeElementLocation> edgesToDelete) {
+            getSearchIndex().deleteElements(AccumuloGraph.this, edgesToDelete, authorizations);
+
+            deleteAllExtendedDataForElements(edgesToDelete, authorizations);
+
+            for (EdgeElementLocation edgeLocation : edgesToDelete) {
+                ColumnVisibility visibility = visibilityToAccumuloVisibility(edgeLocation.getVisibility());
+
+                Mutation outMutation = new Mutation(edgeLocation.getVertexId(Direction.OUT));
+                outMutation.putDelete(AccumuloVertex.CF_OUT_EDGE, new Text(edgeLocation.getId()), visibility);
+
+                Mutation inMutation = new Mutation(edgeLocation.getVertexId(Direction.IN));
+                inMutation.putDelete(AccumuloVertex.CF_IN_EDGE, new Text(edgeLocation.getId()), visibility);
+
+                addMutations(VertexiumObjectType.VERTEX, outMutation, inMutation);
+
+                // Deletes everything else related to edge.
+                addMutations(VertexiumObjectType.EDGE, elementMutationBuilder.getDeleteRowMutation(edgeLocation.getId()));
+
+                queueEvent(new DeleteEdgeEvent(AccumuloGraph.this, edgeLocation));
+            }
+        }
+
+        private void deleteAllExtendedDataForElements(Iterable<? extends ElementId> elementIds, Authorizations authorizations) {
+            FetchHints fetchHints = new FetchHintsBuilder()
+                .setIncludeExtendedDataTableNames(true)
+                .build();
+            Iterable<ExtendedDataRow> rows = getExtendedDataForElements(
+                elementIds,
+                fetchHints,
+                authorizations
+            );
+            for (ExtendedDataRow row : rows) {
+                deleteExtendedDataRow(row.getId(), authorizations);
+            }
+        }
+    }
+
+    @Override
+    public void deleteVertex(Vertex vertex, Authorizations authorizations) {
+        deleteElements(Stream.of(vertex), authorizations);
+    }
+
+    private Mutation[] getDeleteExtendedDataMutations(ExtendedDataRowId rowId) {
+        Mutation[] mutations = new Mutation[1];
+        Text rowKey = KeyHelper.createExtendedDataRowKey(rowId);
+        Mutation m = new Mutation(rowKey);
+        m.put(AccumuloElement.DELETE_ROW_COLUMN_FAMILY, AccumuloElement.DELETE_ROW_COLUMN_QUALIFIER, RowDeletingIterator.DELETE_ROW_VALUE);
+        mutations[0] = m;
+        return mutations;
+    }
+
+    @Override
+    public void softDeleteVertex(Vertex vertex, Long timestamp, Object eventData, Authorizations authorizations) {
+        checkNotNull(vertex, "vertex cannot be null");
+        Span trace = Trace.start("softDeleteVertex");
+        trace.data("vertexId", vertex.getId());
+        try {
+            if (timestamp == null) {
+                timestamp = IncreasingTime.currentTimeMillis();
+            }
+
+            getSearchIndex().deleteElement(this, vertex, authorizations);
+
+            // Delete all edges that this vertex participates.
+            for (Edge edge : vertex.getEdges(Direction.BOTH, authorizations)) {
+                softDeleteEdge(edge, timestamp, eventData, authorizations);
+            }
+
+            addMutations(VertexiumObjectType.VERTEX, elementMutationBuilder.getSoftDeleteRowMutation(vertex.getId(), timestamp, eventData));
+
+            if (hasEventListeners()) {
+                queueEvent(new SoftDeleteVertexEvent(this, vertex, eventData));
+            }
+        } finally {
+            trace.stop();
+        }
+    }
+
+    @Override
+    public void markVertexHidden(Vertex vertex, Visibility visibility, Object eventData, Authorizations authorizations) {
+        checkNotNull(vertex, "vertex cannot be null");
+        Span trace = Trace.start("markVertexHidden");
+        trace.data("vertexId", vertex.getId());
+        try {
+            ColumnVisibility columnVisibility = visibilityToAccumuloVisibility(visibility);
+
+            // Delete all edges that this vertex participates.
+            for (Edge edge : vertex.getEdges(Direction.BOTH, authorizations)) {
+                markEdgeHidden(edge, visibility, eventData, authorizations);
+            }
+
+            addMutations(VertexiumObjectType.VERTEX, elementMutationBuilder.getMarkHiddenRowMutation(vertex.getId(), columnVisibility, eventData));
+
+            getSearchIndex().markElementHidden(this, vertex, visibility, authorizations);
+
+            if (hasEventListeners()) {
+                queueEvent(new MarkHiddenVertexEvent(this, vertex, eventData));
+            }
+        } finally {
+            trace.stop();
+        }
+    }
+
+    @Override
+    public void markVertexVisible(Vertex vertex, Visibility visibility, Object eventData, Authorizations authorizations) {
+        checkNotNull(vertex, "vertex cannot be null");
+        Span trace = Trace.start("markVertexVisible");
+        trace.data("vertexId", vertex.getId());
+        try {
+            ColumnVisibility columnVisibility = visibilityToAccumuloVisibility(visibility);
+
+            // Delete all edges that this vertex participates.
+            for (Edge edge : vertex.getEdges(Direction.BOTH, FetchHints.ALL_INCLUDING_HIDDEN, authorizations)) {
+                markEdgeVisible(edge, visibility, authorizations);
+            }
+
+            addMutations(VertexiumObjectType.VERTEX, elementMutationBuilder.getMarkVisibleRowMutation(vertex.getId(), columnVisibility, eventData));
+
+            getSearchIndex().markElementVisible(this, vertex, visibility, authorizations);
+
+            if (hasEventListeners()) {
+                queueEvent(new MarkVisibleVertexEvent(this, vertex, eventData));
+            }
+        } finally {
+            trace.stop();
+        }
+=======
+        return getVerticesInRange(trace, null, null, fetchHints, endTime, user);
+>>>>>>> 7cb84560... The big rewrite: Authorizations -> User, Interable -> Stream
+    }
+
+
+
+
+    public Stream<ExtendedDataRow> getExtendedDataInRange(IdRange extendedDataRowKeyRange, User user) {
+            Span trace = Trace.start("getExtendedDataInRange");
+            trace.data("rangeStart", extendedDataRowKeyRange.getStart());
+            trace.data("rangeEnd", extendedDataRowKeyRange.getEnd());
+
+            org.apache.accumulo.core.data.Range range = vertexiumRangeToAccumuloRange(extendedDataRowKeyRange);
+    <<<<<<< HEAD
+            return getExtendedDataRowsInRange(trace, Collections.singletonList(range), FetchHints.ALL, authorizations);
+        }
+
+        private List<org.apache.accumulo.core.data.Range> extendedDataRowIdToRange(Iterable<ExtendedDataRowId> ids) {
+            return stream(ids)
+                .map(id -> org.apache.accumulo.core.data.Range.prefix(KeyHelper.createExtendedDataRowKey(id)))
+                .collect(Collectors.toList());
+        }
+
+        void saveExtendedDataMutations(
+            Element element,
+            ElementType elementType,
+            IndexHint indexHint,
+            Iterable<ExtendedDataMutation> extendedData,
+            Iterable<ExtendedDataDeleteMutation> extendedDataDeletes,
+            Iterable<AdditionalExtendedDataVisibilityAddMutation> additionalExtendedDataVisibilities,
+            Iterable<AdditionalExtendedDataVisibilityDeleteMutation> additionalExtendedDataVisibilityDeletes,
+            Authorizations authorizations
+        ) {
+            if (extendedData == null) {
+                return;
+            }
+
+            String elementId = element.getId();
+            elementMutationBuilder.saveExtendedDataMarkers(elementId, elementType, extendedData);
+            elementMutationBuilder.saveExtendedData(
+                this,
+                elementId,
+                elementType,
+                extendedData,
+                extendedDataDeletes,
+                additionalExtendedDataVisibilities,
+                additionalExtendedDataVisibilityDeletes
+            );
+
+            if (indexHint != IndexHint.DO_NOT_INDEX) {
+                getSearchIndex().addElementExtendedData(
+                    this,
+                    element,
+                    extendedData,
+                    additionalExtendedDataVisibilities,
+                    additionalExtendedDataVisibilityDeletes,
+                    authorizations
+                );
+                for (ExtendedDataDeleteMutation m : extendedDataDeletes) {
+                    getSearchIndex().deleteExtendedData(
+                        this,
+                        element,
+                        m.getTableName(),
+                        m.getRow(),
+                        m.getColumnName(),
+                        m.getKey(),
+                        m.getVisibility(),
+                        authorizations
+                    );
+                }
+            }
+
+            if (hasEventListeners()) {
+                queueEvents(
+                    element,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    extendedData,
+                    extendedDataDeletes,
+                    additionalExtendedDataVisibilities,
+                    additionalExtendedDataVisibilityDeletes
+                );
+            }
+        }
+
+        private static abstract class AddEdgeToVertexRunnable {
+            public abstract void run(AccumuloEdge edge);
+        }
+
+        @Override
+        public CloseableIterable<Edge> getEdges(FetchHints fetchHints, Long endTime, Authorizations authorizations) {
+            Span trace = Trace.start("getEdges");
+            return getEdgesInRange(trace, null, null, fetchHints, endTime, authorizations);
+        }
+
+        @Override
+        public void deleteEdge(Edge edge, Authorizations authorizations) {
+            deleteElements(Stream.of(edge), authorizations);
+        }
+
+        @Override
+        public void deleteExtendedDataRow(ExtendedDataRowId rowId, Authorizations authorizations) {
+            checkNotNull(rowId);
+            Span trace = Trace.start("deleteExtendedDataRow");
+            trace.data("rowId", rowId.toString());
+            try {
+                getSearchIndex().deleteExtendedData(this, rowId, authorizations);
+
+                addMutations(VertexiumObjectType.EXTENDED_DATA, getDeleteExtendedDataMutations(rowId));
+
+                if (hasEventListeners()) {
+                    queueEvent(new DeleteExtendedDataRowEvent(this, rowId));
+                }
+            } finally {
+                trace.stop();
+            }
+        }
+
+        @Override
+        public void softDeleteEdge(Edge edge, Long timestamp, Object eventData, Authorizations authorizations) {
+            checkNotNull(edge);
+            Span trace = Trace.start("softDeleteEdge");
+            trace.data("edgeId", edge.getId());
+            try {
+                if (timestamp == null) {
+                    timestamp = IncreasingTime.currentTimeMillis();
+                }
+
+                getSearchIndex().deleteElement(this, edge, authorizations);
+
+                ColumnVisibility visibility = visibilityToAccumuloVisibility(edge.getVisibility());
+
+                Value value = elementMutationBuilder.toSoftDeleteDataToValue(eventData);
+
+                Mutation outMutation = new Mutation(edge.getVertexId(Direction.OUT));
+                outMutation.put(AccumuloVertex.CF_OUT_EDGE_SOFT_DELETE, new Text(edge.getId()), visibility, timestamp, value);
+
+                Mutation inMutation = new Mutation(edge.getVertexId(Direction.IN));
+                inMutation.put(AccumuloVertex.CF_IN_EDGE_SOFT_DELETE, new Text(edge.getId()), visibility, timestamp, value);
+
+                addMutations(VertexiumObjectType.VERTEX, outMutation, inMutation);
+
+                // Soft deletes everything else related to edge.
+                addMutations(VertexiumObjectType.EDGE, elementMutationBuilder.getSoftDeleteRowMutation(edge.getId(), timestamp, eventData));
+
+                if (hasEventListeners()) {
+                    queueEvent(new SoftDeleteEdgeEvent(this, edge, eventData));
+                }
+            } finally {
+                trace.stop();
+            }
+        }
+
+        @Override
+        public void markEdgeHidden(Edge edge, Visibility visibility, Object eventData, Authorizations authorizations) {
+            checkNotNull(edge);
+            Span trace = Trace.start("markEdgeHidden");
+            trace.data("edgeId", edge.getId());
+            try {
+                Vertex out = edge.getVertex(Direction.OUT, authorizations);
+                if (out == null) {
+                    throw new VertexiumException(String.format("Unable to mark edge hidden %s, can't find out vertex %s", edge.getId(), edge.getVertexId(Direction.OUT)));
+                }
+                Vertex in = edge.getVertex(Direction.IN, authorizations);
+                if (in == null) {
+                    throw new VertexiumException(String.format("Unable to mark edge hidden %s, can't find in vertex %s", edge.getId(), edge.getVertexId(Direction.IN)));
+                }
+
+                ColumnVisibility columnVisibility = visibilityToAccumuloVisibility(visibility);
+                addMutations(
+                    VertexiumObjectType.VERTEX,
+                    elementMutationBuilder.getMarkHiddenOutEdgeMutation(out, edge, columnVisibility, eventData),
+                    elementMutationBuilder.getMarkHiddenInEdgeMutation(in, edge, columnVisibility, eventData)
+                );
+
+                // Delete everything else related to edge.
+                addMutations(VertexiumObjectType.EDGE, elementMutationBuilder.getMarkHiddenRowMutation(edge.getId(), columnVisibility, eventData));
+
+                if (out instanceof AccumuloVertex) {
+                    ((AccumuloVertex) out).removeOutEdge(edge);
+                }
+                if (in instanceof AccumuloVertex) {
+                    ((AccumuloVertex) in).removeInEdge(edge);
+                }
+
+                getSearchIndex().markElementHidden(this, edge, visibility, authorizations);
+
+                if (hasEventListeners()) {
+                    queueEvent(new MarkHiddenEdgeEvent(this, edge, eventData));
+                }
+            } finally {
+                trace.stop();
+            }
+        }
+
+        @Override
+        public void markEdgeVisible(Edge edge, Visibility visibility, Object eventData, Authorizations authorizations) {
+            checkNotNull(edge);
+            Span trace = Trace.start("markEdgeVisible");
+            trace.data("edgeId", edge.getId());
+            try {
+                Vertex out = edge.getVertex(Direction.OUT, FetchHints.ALL_INCLUDING_HIDDEN, authorizations);
+                if (out == null) {
+                    throw new VertexiumException(String.format("Unable to mark edge visible %s, can't find out vertex %s", edge.getId(), edge.getVertexId(Direction.OUT)));
+                }
+                Vertex in = edge.getVertex(Direction.IN, FetchHints.ALL_INCLUDING_HIDDEN, authorizations);
+                if (in == null) {
+                    throw new VertexiumException(String.format("Unable to mark edge visible %s, can't find in vertex %s", edge.getId(), edge.getVertexId(Direction.IN)));
+                }
+
+                ColumnVisibility columnVisibility = visibilityToAccumuloVisibility(visibility);
+
+                addMutations(
+                    VertexiumObjectType.VERTEX,
+                    elementMutationBuilder.getMarkVisibleOutEdgeMutation(out, edge, columnVisibility, eventData),
+                    elementMutationBuilder.getMarkHiddenInEdgeMutation(in, edge, columnVisibility, eventData)
+                );
+
+                // Delete everything else related to edge.
+                addMutations(VertexiumObjectType.EDGE, elementMutationBuilder.getMarkVisibleRowMutation(edge.getId(), columnVisibility, eventData));
+
+                if (out instanceof AccumuloVertex) {
+                    ((AccumuloVertex) out).addOutEdge(edge);
+                }
+                if (in instanceof AccumuloVertex) {
+                    ((AccumuloVertex) in).addInEdge(edge);
+                }
+
+                getSearchIndex().markElementVisible(this, edge, visibility, authorizations);
+
+                if (hasEventListeners()) {
+                    queueEvent(new MarkVisibleEdgeEvent(this, edge, eventData));
+                }
+            } finally {
+                trace.stop();
+            }
+        }
+
+        @Override
+        public Authorizations createAuthorizations(String... auths) {
+            return new AccumuloAuthorizations(auths);
+    =======
+            return getExtendedDataRowsInRange(trace, Collections.singletonList(range), FetchHints.ALL, user);
+    >>>>>>> 7cb84560... The big rewrite: Authorizations -> User, Interable -> Stream
+        }
+
+
+
+AccumuloElement
+
+private void updateAdditionalVisibilitiesInternal(Iterable<AdditionalVisibilityAddMutation> additionalVisibilities, Iterable<AdditionalVisibilityDeleteMutation> additionalVisibilityDeletes) {
+        if (additionalVisibilities != null) {
+            for (AdditionalVisibilityAddMutation additionalVisibility : additionalVisibilities) {
+                this.additionalVisibilities.add(additionalVisibility.getAdditionalVisibility());
+            }
+        }
+        if (additionalVisibilityDeletes != null) {
+            for (AdditionalVisibilityDeleteMutation additionalVisibilityDelete : additionalVisibilityDeletes) {
+                this.additionalVisibilities.remove(additionalVisibilityDelete.getAdditionalVisibility());
+            }
+        }
+    }
+
+    // this method differs setProperties in that it only updates the in memory representation of the properties
+    protected void updatePropertiesInternal(
+        Iterable<Property> properties,
+        Iterable<PropertyDeleteMutation> propertyDeleteMutations,
+        Iterable<PropertySoftDeleteMutation> propertySoftDeleteMutations
+    ) {
+        if (propertyDeleteMutations != null) {
+            this.propertyDeleteMutations = new ConcurrentSkipListSet<>();
+            for (PropertyDeleteMutation propertyDeleteMutation : propertyDeleteMutations) {
+                removePropertyInternal(
+                    propertyDeleteMutation.getKey(),
+                    propertyDeleteMutation.getName(),
+                    propertyDeleteMutation.getVisibility()
+                );
+                this.propertyDeleteMutations.add(propertyDeleteMutation);
+            }
+        }
+        if (propertySoftDeleteMutations != null) {
+            this.propertySoftDeleteMutations = new ConcurrentSkipListSet<>();
+            for (PropertySoftDeleteMutation propertySoftDeleteMutation : propertySoftDeleteMutations) {
+                removePropertyInternal(
+                    propertySoftDeleteMutation.getKey(),
+                    propertySoftDeleteMutation.getName(),
+                    propertySoftDeleteMutation.getVisibility()
+                );
+                this.propertySoftDeleteMutations.add(propertySoftDeleteMutation);
+            }
+        }
+
+        for (Property property : properties) {
+            addPropertyInternal(property);
+        }
+    }
+
+        protected void removePropertyInternal(String key, String name, Visibility visibility) {
+            Property property = getProperty(key, name, visibility);
+            if (property != null) {
+                this.properties.removeProperty(property);
+            }
+        }
+
+    public Iterable<PropertyDeleteMutation> getPropertyDeleteMutations() {
+        return this.propertyDeleteMutations;
+    }
+
+    public Iterable<PropertySoftDeleteMutation> getPropertySoftDeleteMutations() {
+        return this.propertySoftDeleteMutations;
+    }

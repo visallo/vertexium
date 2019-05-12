@@ -8,4 +8,8 @@ public interface Authorizations extends Serializable {
     String[] getAuthorizations();
 
     boolean equals(Authorizations authorizations);
+
+    default User getUser() {
+        return new AuthorizationsUser(this);
+    }
 }

@@ -8,4 +8,6 @@ public interface EdgeInfo {
     String getVertexId();
 
     Direction getDirection();
+
+    Visibility getVisibility();
 }

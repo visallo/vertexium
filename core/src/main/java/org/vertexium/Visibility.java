@@ -68,4 +68,8 @@ public class Visibility implements Serializable, Comparable<Visibility> {
     public boolean hasAuthorization(String authorizationToMatch) {
         return ArrayUtils.contains(SPLIT_PATTERN.split(getVisibilityString()), authorizationToMatch);
     }
+
+    public String[] getAuthorizations() {
+        return SPLIT_PATTERN.split(getVisibilityString());
+    }
 }

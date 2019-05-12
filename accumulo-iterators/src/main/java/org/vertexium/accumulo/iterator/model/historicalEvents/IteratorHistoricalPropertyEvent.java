@@ -45,4 +45,9 @@ public abstract class IteratorHistoricalPropertyEvent extends IteratorHistorical
         DataOutputStreamUtils.encodeByteSequence(out, getPropertyName());
         DataOutputStreamUtils.encodeByteSequence(out, getPropertyVisibilityString());
     }
+
+    @Override
+    protected String getHistoricalEventIdSubOrder() {
+        return "prop:" + getPropertyName();
+    }
 }

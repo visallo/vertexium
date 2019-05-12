@@ -35,14 +35,14 @@ public abstract class VertexiumCypherQueryContext {
     private final Graph graph;
     private final Map<String, Object> parameters = new HashMap<>();
     private final Map<String, CypherFunction> functions = new HashMap<>();
-    private final Authorizations authorizations;
+    private final User user;
     private final CypherResultWriter resultWriter;
     private ExecutionPlanBuilder executionPlanBuilder = new ExecutionPlanBuilder();
     private ExecutionPlan currentlyExecutingPlan;
 
-    public VertexiumCypherQueryContext(Graph graph, Authorizations authorizations) {
+    public VertexiumCypherQueryContext(Graph graph, User user) {
         this.graph = graph;
-        this.authorizations = authorizations;
+        this.user = user;
 
         // aggregate
         addFunction("avg", new AverageFunction());
@@ -167,8 +167,8 @@ public abstract class VertexiumCypherQueryContext {
 
     public abstract Visibility calculateVertexVisibility(CreateNodePatternExecutionStep nodePattern, CypherResultRow row);
 
-    public Authorizations getAuthorizations() {
-        return authorizations;
+    public User getUser() {
+        return user;
     }
 
     public abstract String getLabelPropertyName();
@@ -206,27 +206,31 @@ public abstract class VertexiumCypherQueryContext {
     }
 
     public void deleteEdge(Edge edge) {
-        getGraph().deleteEdge(edge, getAuthorizations());
+        edge.prepareMutation()
+            .deleteElement()
+            .save(getUser());
     }
 
     public void deleteVertex(Vertex vertex) {
-        getGraph().deleteVertex(vertex, getAuthorizations());
+        vertex.prepareMutation()
+            .deleteElement()
+            .save(getUser());
     }
 
-    public Edge saveEdge(ElementMutation<Edge> m) {
-        return m.save(getAuthorizations());
+    public String saveEdge(ElementMutation<Edge> m) {
+        return m.save(getUser());
     }
 
-    public Vertex saveVertex(ElementMutation<Vertex> m) {
-        return m.save(getAuthorizations());
+    public String saveVertex(ElementMutation<Vertex> m) {
+        return m.save(getUser());
     }
 
     @SuppressWarnings("unchecked")
-    public <T extends Element> T saveElement(ExistingElementMutation<T> m) {
+    public <T extends Element> void saveElement(ExistingElementMutation<T> m) {
         if (m.getElement() instanceof Vertex) {
-            return (T) saveVertex((ElementMutation<Vertex>) m);
+            saveVertex((ElementMutation<Vertex>) m);
         } else if (m.getElement() instanceof Edge) {
-            return (T) saveEdge((ElementMutation<Edge>) m);
+            saveEdge((ElementMutation<Edge>) m);
         } else {
             throw new VertexiumCypherNotImplemented("Cannot save: " + m.getElement().getClass().getName());
         }
@@ -236,9 +240,9 @@ public abstract class VertexiumCypherQueryContext {
     public <T extends Element> T saveElement(ElementType type, ElementMutation<T> m) {
         switch (type) {
             case VERTEX:
-                return (T) saveVertex((ElementMutation<Vertex>) m);
+                return (T) getGraph().getVertex(saveVertex((ElementMutation<Vertex>) m), getUser());
             case EDGE:
-                return (T) saveEdge((ElementMutation<Edge>) m);
+                return (T) getGraph().getEdge(saveEdge((ElementMutation<Edge>) m), getUser());
             default:
                 throw new VertexiumCypherNotImplemented("Cannot save: " + type);
         }

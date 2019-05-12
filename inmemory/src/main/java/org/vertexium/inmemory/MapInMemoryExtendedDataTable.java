@@ -20,13 +20,13 @@ public class MapInMemoryExtendedDataTable extends InMemoryExtendedDataTable {
         ElementType elementType,
         String elementId,
         FetchHints fetchHints,
-        Authorizations authorizations
+        User user
     ) {
         ElementTypeData data = elementTypeData.get(elementType);
         if (data == null) {
             return ImmutableSet.of();
         }
-        return data.getTableNames(elementId, fetchHints, authorizations);
+        return data.getTableNames(elementId, fetchHints, user);
     }
 
     @Override
@@ -35,26 +35,28 @@ public class MapInMemoryExtendedDataTable extends InMemoryExtendedDataTable {
         String elementId,
         String tableName,
         FetchHints fetchHints,
-        Authorizations authorizations
+        User user
     ) {
         ElementTypeData data = elementTypeData.get(elementType);
         if (data == null) {
             return ImmutableList.of();
         }
-        return data.getTable(elementId, tableName, fetchHints, authorizations);
+        return data.getTable(elementId, tableName, fetchHints, user);
     }
 
     @Override
     public synchronized void addData(
+        InMemoryGraph graph,
         ExtendedDataRowId rowId,
         String column,
         String key,
         Object value,
         long timestamp,
-        Visibility visibility
+        Visibility visibility,
+        User user
     ) {
         ElementTypeData data = elementTypeData.computeIfAbsent(rowId.getElementType(), k -> new ElementTypeData());
-        data.addData(rowId, column, key, value, timestamp, visibility);
+        data.addData(graph, rowId, column, key, value, timestamp, visibility, user);
     }
 
     @Override
@@ -76,7 +78,7 @@ public class MapInMemoryExtendedDataTable extends InMemoryExtendedDataTable {
     @Override
     public void addAdditionalVisibility(
         ExtendedDataRowId rowId,
-        String additionalVisibility
+        Visibility additionalVisibility
     ) {
         ElementTypeData data = elementTypeData.computeIfAbsent(rowId.getElementType(), k -> new ElementTypeData());
         data.addAdditionalVisibility(rowId, additionalVisibility);
@@ -85,7 +87,7 @@ public class MapInMemoryExtendedDataTable extends InMemoryExtendedDataTable {
     @Override
     public void deleteAdditionalVisibility(
         ExtendedDataRowId rowId,
-        String additionalVisibility
+        Visibility additionalVisibility
     ) {
         ElementTypeData data = elementTypeData.computeIfAbsent(rowId.getElementType(), k -> new ElementTypeData());
         data.deleteAdditionalVisibility(rowId, additionalVisibility);
@@ -94,37 +96,39 @@ public class MapInMemoryExtendedDataTable extends InMemoryExtendedDataTable {
     private static class ElementTypeData {
         Map<String, ElementData> elementData = new HashMap<>();
 
-        public ImmutableSet<String> getTableNames(String elementId, FetchHints fetchHints, Authorizations authorizations) {
+        public ImmutableSet<String> getTableNames(String elementId, FetchHints fetchHints, User user) {
             ElementData data = elementData.get(elementId);
             if (data == null) {
                 return ImmutableSet.of();
             }
-            return data.getTableNames(fetchHints, authorizations);
+            return data.getTableNames(fetchHints, user);
         }
 
         public Iterable<ExtendedDataRow> getTable(
             String elementId,
             String tableName,
             FetchHints fetchHints,
-            Authorizations authorizations
+            User user
         ) {
             ElementData data = elementData.get(elementId);
             if (data == null) {
                 return ImmutableList.of();
             }
-            return data.getTable(tableName, fetchHints, authorizations);
+            return data.getTable(tableName, fetchHints, user);
         }
 
         public synchronized void addData(
+            InMemoryGraph graph,
             ExtendedDataRowId rowId,
             String column,
             String key,
             Object value,
             long timestamp,
-            Visibility visibility
+            Visibility visibility,
+            User user
         ) {
             ElementData data = elementData.computeIfAbsent(rowId.getElementId(), k -> new ElementData());
-            data.addData(rowId, column, key, value, timestamp, visibility);
+            data.addData(graph, rowId, column, key, value, timestamp, visibility, user);
         }
 
         public void removeData(ExtendedDataRowId rowId) {
@@ -141,14 +145,14 @@ public class MapInMemoryExtendedDataTable extends InMemoryExtendedDataTable {
             }
         }
 
-        public void addAdditionalVisibility(ExtendedDataRowId rowId, String additionalVisibility) {
+        public void addAdditionalVisibility(ExtendedDataRowId rowId, Visibility additionalVisibility) {
             ElementData data = elementData.get(rowId.getElementId());
             if (data != null) {
                 data.addAdditionalVisibility(rowId, additionalVisibility);
             }
         }
 
-        public void deleteAdditionalVisibility(ExtendedDataRowId rowId, String additionalVisibility) {
+        public void deleteAdditionalVisibility(ExtendedDataRowId rowId, Visibility additionalVisibility) {
             ElementData data = elementData.get(rowId.getElementId());
             if (data != null) {
                 data.deleteAdditionalVisibility(rowId, additionalVisibility);
@@ -159,21 +163,21 @@ public class MapInMemoryExtendedDataTable extends InMemoryExtendedDataTable {
     private static class ElementData {
         private final Map<String, Table> tables = new HashMap<>();
 
-        public ImmutableSet<String> getTableNames(FetchHints fetchHints, Authorizations authorizations) {
-            VisibilityEvaluator visibilityEvaluator = new VisibilityEvaluator(new org.vertexium.security.Authorizations(authorizations.getAuthorizations()));
+        public ImmutableSet<String> getTableNames(FetchHints fetchHints, User user) {
+            VisibilityEvaluator visibilityEvaluator = new VisibilityEvaluator(new org.vertexium.security.Authorizations(user.getAuthorizations()));
             return tables.entrySet().stream()
                 .filter(entry -> entry.getValue().canRead(visibilityEvaluator, fetchHints))
                 .map(Map.Entry::getKey)
                 .collect(StreamUtils.toImmutableSet());
         }
 
-        public Iterable<ExtendedDataRow> getTable(String tableName, FetchHints fetchHints, Authorizations authorizations) {
+        public Iterable<ExtendedDataRow> getTable(String tableName, FetchHints fetchHints, User user) {
             if (tableName == null) {
-                return getTableNames(fetchHints, authorizations).stream()
-                    .flatMap(t -> stream(getTable(t, fetchHints, authorizations)))
+                return getTableNames(fetchHints, user).stream()
+                    .flatMap(t -> stream(getTable(t, fetchHints, user)))
                     .collect(Collectors.toList());
             }
-            VisibilityEvaluator visibilityEvaluator = new VisibilityEvaluator(new org.vertexium.security.Authorizations(authorizations.getAuthorizations()));
+            VisibilityEvaluator visibilityEvaluator = new VisibilityEvaluator(new org.vertexium.security.Authorizations(user.getAuthorizations()));
             Table table = tables.get(tableName);
             if (table == null) {
                 throw new VertexiumException("Invalid table '" + tableName + "'");
@@ -186,15 +190,17 @@ public class MapInMemoryExtendedDataTable extends InMemoryExtendedDataTable {
         }
 
         public synchronized void addData(
+            InMemoryGraph graph,
             ExtendedDataRowId rowId,
             String column,
             String key,
             Object value,
             long timestamp,
-            Visibility visibility
+            Visibility visibility,
+            User user
         ) {
             Table table = tables.computeIfAbsent(rowId.getTableName(), k -> new Table());
-            table.addData(rowId, column, key, value, timestamp, visibility);
+            table.addData(graph, rowId, column, key, value, timestamp, visibility, user);
         }
 
         public void removeData(ExtendedDataRowId rowId) {
@@ -211,14 +217,14 @@ public class MapInMemoryExtendedDataTable extends InMemoryExtendedDataTable {
             }
         }
 
-        public void addAdditionalVisibility(ExtendedDataRowId rowId, String additionalVisibility) {
+        public void addAdditionalVisibility(ExtendedDataRowId rowId, Visibility additionalVisibility) {
             Table table = tables.get(rowId.getTableName());
             if (table != null) {
                 table.addAdditionalVisibility(rowId, additionalVisibility);
             }
         }
 
-        public void deleteAdditionalVisibility(ExtendedDataRowId rowId, String additionalVisibility) {
+        public void deleteAdditionalVisibility(ExtendedDataRowId rowId, Visibility additionalVisibility) {
             Table table = tables.get(rowId.getTableName());
             if (table != null) {
                 table.deleteAdditionalVisibility(rowId, additionalVisibility);
@@ -241,23 +247,25 @@ public class MapInMemoryExtendedDataTable extends InMemoryExtendedDataTable {
             }
 
             public void addData(
+                InMemoryGraph graph,
                 ExtendedDataRowId rowId,
                 String column,
                 String key,
                 Object value,
                 long timestamp,
-                Visibility visibility
+                Visibility visibility,
+                User user
             ) {
-                InMemoryExtendedDataRow row = findOrAddRow(rowId);
+                InMemoryExtendedDataRow row = findOrAddRow(graph, rowId, user);
                 row.addColumn(column, key, value, timestamp, visibility);
             }
 
-            private InMemoryExtendedDataRow findOrAddRow(ExtendedDataRowId rowId) {
+            private InMemoryExtendedDataRow findOrAddRow(InMemoryGraph graph, ExtendedDataRowId rowId, User user) {
                 InMemoryExtendedDataRow row = findRow(rowId);
                 if (row != null) {
                     return row;
                 }
-                row = new InMemoryExtendedDataRow(rowId, FetchHints.ALL);
+                row = new InMemoryExtendedDataRow(graph, rowId, FetchHints.ALL, user);
                 rows.add(row);
                 return row;
             }
@@ -283,7 +291,7 @@ public class MapInMemoryExtendedDataTable extends InMemoryExtendedDataTable {
                 row.removeColumn(columnName, key, visibility);
             }
 
-            public void addAdditionalVisibility(ExtendedDataRowId rowId, String additionalVisibility) {
+            public void addAdditionalVisibility(ExtendedDataRowId rowId, Visibility additionalVisibility) {
                 InMemoryExtendedDataRow row = findRow(rowId);
                 if (row == null) {
                     return;
@@ -291,7 +299,7 @@ public class MapInMemoryExtendedDataTable extends InMemoryExtendedDataTable {
                 row.addAdditionalVisibility(additionalVisibility);
             }
 
-            public void deleteAdditionalVisibility(ExtendedDataRowId rowId, String additionalVisibility) {
+            public void deleteAdditionalVisibility(ExtendedDataRowId rowId, Visibility additionalVisibility) {
                 InMemoryExtendedDataRow row = findRow(rowId);
                 if (row == null) {
                     return;

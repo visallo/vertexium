@@ -1,12 +1,6 @@
 package org.vertexium.inmemory;
 
-import java.util.Map;
-
 public class InMemoryVertexTable extends InMemoryTable<InMemoryVertex> {
-    public InMemoryVertexTable(Map<String, InMemoryTableElement<InMemoryVertex>> rows) {
-        super(rows);
-    }
-
     public InMemoryVertexTable() {
         super();
     }

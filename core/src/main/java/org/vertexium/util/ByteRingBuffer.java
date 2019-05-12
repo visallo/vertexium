@@ -1,6 +1,6 @@
 package org.vertexium.util;
 
-import static org.vertexium.util.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkArgument;
 
 public class ByteRingBuffer {
     private byte[] buffer;

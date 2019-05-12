@@ -27,13 +27,14 @@ import static org.vertexium.security.ColumnVisibility.*;
 public class ColumnVisibilityTest {
 
     private void shouldThrow(String... strings) {
-        for (String s : strings)
+        for (String s : strings) {
             try {
                 new ColumnVisibility(s.getBytes());
                 fail("Should throw: " + s);
             } catch (IllegalArgumentException e) {
                 // expected
             }
+        }
     }
 
     private void shouldNotThrow(String... strings) {

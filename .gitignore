@@ -3,3 +3,4 @@
 target
 .DS_Store
 .attach_pid*
+dependency-reduced-pom.xml

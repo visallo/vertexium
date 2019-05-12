@@ -10,6 +10,7 @@ import org.vertexium.query.Query;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -147,6 +148,10 @@ public class StreamUtils {
         }
     }
 
+    public static <T> Iterable<T> toIterable(Stream<T> stream) {
+        return stream::iterator;
+    }
+
     public static <T> Predicate<T> distinctBy(Function<? super T, ?> fn) {
         Set<Object> seen = ConcurrentHashMap.newKeySet();
         return t -> seen.add(fn.apply(t));
@@ -160,5 +165,9 @@ public class StreamUtils {
         } else {
             return l.stream().map(transform);
         }
+    }
+
+    public static <T> BatchCollector<T> batchCollector(int batchSize, Consumer<List<T>> batchProcessor) {
+        return new BatchCollector<>(batchSize, batchProcessor);
     }
 }

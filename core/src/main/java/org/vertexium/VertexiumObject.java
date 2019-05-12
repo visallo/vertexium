@@ -1,9 +1,13 @@
 package org.vertexium;
 
 import com.google.common.collect.ImmutableSet;
+import org.vertexium.mutation.ElementMutation;
 import org.vertexium.util.ConvertingIterable;
+import org.vertexium.util.FilterIterable;
 
 import java.util.Iterator;
+
+import static org.vertexium.util.StreamUtils.stream;
 
 public interface VertexiumObject extends Comparable {
     /**
@@ -20,7 +24,7 @@ public interface VertexiumObject extends Comparable {
     /**
      * Set of all additional visibilities on this object
      */
-    ImmutableSet<String> getAdditionalVisibilities();
+    ImmutableSet<Visibility> getAdditionalVisibilities();
 
     /**
      * Gets a property by name. This assumes a single valued property. If multiple property values exists this will only return the first one.
@@ -68,7 +72,14 @@ public interface VertexiumObject extends Comparable {
      * @param visibility The visibility of the property to get.
      * @return The property if found. null, if not found.
      */
-    Property getProperty(String key, String name, Visibility visibility);
+    default Property getProperty(String key, String name, Visibility visibility) {
+        for (Property property : getProperties(key, name)) {
+            if (visibility == null || property.getVisibility().equals(visibility)) {
+                return property;
+            }
+        }
+        return null;
+    }
 
     /**
      * Gets a property by name, and visibility.
@@ -77,7 +88,9 @@ public interface VertexiumObject extends Comparable {
      * @param visibility The visibility of the property to get.
      * @return The property if found. null, if not found.
      */
-    Property getProperty(String name, Visibility visibility);
+    default Property getProperty(String name, Visibility visibility) {
+        return getProperty(ElementMutation.DEFAULT_KEY, name, visibility);
+    }
 
     /**
      * an Iterable of all the properties with the given name on this element that you have access to based on the authorizations
@@ -85,7 +98,14 @@ public interface VertexiumObject extends Comparable {
      *
      * @param name The name of the property to retrieve
      */
-    Iterable<Property> getProperties(String name);
+    default Iterable<Property> getProperties(String name) {
+        return new FilterIterable<Property>(getProperties()) {
+            @Override
+            protected boolean isIncluded(Property o) {
+                return o.getName().equals(name);
+            }
+        };
+    }
 
     /**
      * an Iterable of all the properties with the given name and key on this element that you have access to based on the authorizations
@@ -94,7 +114,17 @@ public interface VertexiumObject extends Comparable {
      * @param key  The property key
      * @param name The name of the property to retrieve
      */
-    Iterable<Property> getProperties(String key, String name);
+    default Iterable<Property> getProperties(String key, String name) {
+        return new FilterIterable<Property>(getProperties(name)) {
+            @Override
+            protected boolean isIncluded(Property o) {
+                if (key == null) {
+                    return true;
+                }
+                return o.getKey().equals(key);
+            }
+        };
+    }
 
     /**
      * an Iterable of all the property values with the given name on this element that you have access to based on the authorizations
@@ -155,15 +185,7 @@ public interface VertexiumObject extends Comparable {
      * @return The value of the property. null, if the property doesn't exist or doesn't have that many values.
      */
     default Object getPropertyValue(String name, int index) {
-        Iterator<Object> values = getPropertyValues(name).iterator();
-        while (values.hasNext() && index >= 0) {
-            Object v = values.next();
-            if (index == 0) {
-                return v;
-            }
-            index--;
-        }
-        return null;
+        return getPropertyValue(null, name, index);
     }
 
     /**
@@ -181,14 +203,37 @@ public interface VertexiumObject extends Comparable {
      * @return The value of the property. null, if the property doesn't exist or doesn't have that many values.
      */
     default Object getPropertyValue(String key, String name, int index) {
-        Iterator<Object> values = getPropertyValues(key, name).iterator();
-        while (values.hasNext() && index >= 0) {
-            Object v = values.next();
-            if (index == 0) {
-                return v;
-            }
-            index--;
-        }
-        return null;
+        return stream(getPropertyValues(key, name))
+            .sorted()
+            .skip(index)
+            .findFirst()
+            .orElse(null);
     }
+
+    /**
+     * Get the names of all the properties of this object.
+     */
+    default Iterable<String> getPropertyNames() {
+        return new ConvertingIterable<Property, String>(getProperties()) {
+            @Override
+            protected String convert(Property prop) {
+                return prop.getName();
+            }
+        };
+    }
+
+    /**
+     * Fetch hints used when fetching this object.
+     */
+    FetchHints getFetchHints();
+
+    /**
+     * Gets the graph that this object belongs to.
+     */
+    Graph getGraph();
+
+    /**
+     * Gets the user used to get this object.
+     */
+    User getUser();
 }

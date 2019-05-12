@@ -31,7 +31,7 @@ public class SimpleSubstitutionUtils {
                 String valueType = parts.get(parts.size() - 1);
 
                 if (!substitutionMap.containsKey(pairKey)) {
-                    substitutionMap.put(pairKey, new MutablePair<String, String>());
+                    substitutionMap.put(pairKey, new MutablePair<>());
                 }
 
                 MutablePair<String, String> pair = substitutionMap.get(pairKey);

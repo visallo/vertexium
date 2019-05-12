@@ -1,6 +1,8 @@
 package org.vertexium.util;
 
 public class ArrayUtils {
+    private static final char[] HEX_ARRAY = "0123456789abcdef".toCharArray();
+
     /**
      * Determines if all values in a1 appear in a2 and that all values in a2 appear in a2.
      */
@@ -39,5 +41,15 @@ public class ArrayUtils {
             }
         }
         return true;
+    }
+
+    public static String toHex(byte[] array) {
+        char[] hexChars = new char[array.length * 2];
+        for (int j = 0; j < array.length; j++) {
+            int v = array[j] & 0xFF;
+            hexChars[j * 2] = HEX_ARRAY[v >>> 4];
+            hexChars[j * 2 + 1] = HEX_ARRAY[v & 0x0F];
+        }
+        return new String(hexChars);
     }
 }

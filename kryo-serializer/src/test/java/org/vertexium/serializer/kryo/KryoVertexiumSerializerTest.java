@@ -426,13 +426,13 @@ public class KryoVertexiumSerializerTest extends VertexiumSerializerTestBase {
 
         @Override
         public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
+            if (this == o) { return true; }
+            if (o == null || getClass() != o.getClass()) { return false; }
 
             TestClass testClass = (TestClass) o;
 
-            if (field2 != testClass.field2) return false;
-            if (field1 != null ? !field1.equals(testClass.field1) : testClass.field1 != null) return false;
+            if (field2 != testClass.field2) { return false; }
+            if (field1 != null ? !field1.equals(testClass.field1) : testClass.field1 != null) { return false; }
 
             return true;
         }

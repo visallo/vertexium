@@ -36,17 +36,13 @@ public class ExtendedDataQueryableIterable implements QueryableIterable<Extended
 
     @Override
     public Query query(String queryString, Authorizations authorizations) {
-        if (getGraph() instanceof GraphWithSearchIndex) {
-            GraphWithSearchIndex graphWithSearchIndex = (GraphWithSearchIndex) getGraph();
-            return graphWithSearchIndex.getSearchIndex().queryExtendedData(
-                getGraph(),
-                getElement(),
-                getTableName(),
-                queryString,
-                authorizations
-            );
-        }
-        return new DefaultExtendedDataQuery(getGraph(), getElement(), getTableName(), queryString, authorizations);
+        return getGraph().getSearchIndex().queryExtendedData(
+            getGraph(),
+            getElement(),
+            getTableName(),
+            queryString,
+            authorizations
+        );
     }
 
     @SuppressWarnings("unchecked")

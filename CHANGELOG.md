@@ -1,3 +1,9 @@
+# v5.0.0
+* Added: APIs which return `Stream`
+* Added: `User` which is preferred over `Authorizations`
+* Changed: `Mutation#save` to return the id instead of an updated `Element`
+* Deprecated: `Graph#visit*`
+
 # v4.8.0
 * Fixed: Soft delete with event data cannot be un-soft deleted
 * Changed: Elasticsearch to use bulk updates

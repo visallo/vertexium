@@ -6,8 +6,8 @@ import org.vertexium.cypher.CypherResultRow;
 import org.vertexium.cypher.RelationshipRangePathResult;
 import org.vertexium.cypher.VertexiumCypherQueryContext;
 import org.vertexium.cypher.exceptions.VertexiumCypherException;
-import org.vertexium.query.Query;
-import org.vertexium.query.QueryResultsIterable;
+import org.vertexium.search.Query;
+import org.vertexium.search.QueryResults;
 
 import java.util.List;
 import java.util.Objects;
@@ -30,8 +30,8 @@ public class MatchNodePartExecutionStep extends MatchPartExecutionStep<MatchRela
     }
 
     @Override
-    protected QueryResultsIterable<? extends Element> getElements(VertexiumCypherQueryContext ctx, Query q) {
-        QueryResultsIterable<? extends Element> elements;
+    protected QueryResults<? extends Element> getElements(VertexiumCypherQueryContext ctx, Query q) {
+        QueryResults<? extends Element> elements;
         for (String labelName : labelNames) {
             q = q.has(ctx.getLabelPropertyName(), ctx.normalizeLabelName(labelName));
         }
@@ -69,7 +69,7 @@ public class MatchNodePartExecutionStep extends MatchPartExecutionStep<MatchRela
             throw new VertexiumCypherException("expecting only a single vertex but found: " + vertexIds.size());
         }
         String vertexId = vertexIds.iterator().next();
-        Vertex vertex = ctx.getGraph().getVertex(vertexId, ctx.getAuthorizations()); // TODO fetch hints
+        Vertex vertex = ctx.getGraph().getVertex(vertexId, ctx.getUser()); // TODO fetch hints
         if (vertex == null) {
             throw new VertexiumCypherException("could not find vertex " + vertexId);
         }

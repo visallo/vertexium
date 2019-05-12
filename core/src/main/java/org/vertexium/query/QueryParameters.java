@@ -1,7 +1,7 @@
 package org.vertexium.query;
 
 import com.google.common.base.Joiner;
-import org.vertexium.Authorizations;
+import org.vertexium.User;
 import org.vertexium.scoring.ScoringStrategy;
 import org.vertexium.util.VertexiumLogger;
 import org.vertexium.util.VertexiumLoggerFactory;
@@ -14,7 +14,7 @@ public abstract class QueryParameters {
     private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(QueryParameters.class);
     public static final int DEFAULT_SKIP = 0;
 
-    private final Authorizations authorizations;
+    private final User user;
     private Long limit = null;
     private long skip = DEFAULT_SKIP;
     private Double minScore = null;
@@ -24,8 +24,8 @@ public abstract class QueryParameters {
     private List<String> ids;
     private ScoringStrategy scoringStrategy;
 
-    public QueryParameters(Authorizations authorizations) {
-        this.authorizations = authorizations;
+    public QueryParameters(User user) {
+        this.user = user;
     }
 
     public void addHasContainer(QueryBase.HasContainer hasContainer) {
@@ -64,8 +64,8 @@ public abstract class QueryParameters {
         this.minScore = minScore;
     }
 
-    public Authorizations getAuthorizations() {
-        return authorizations;
+    public User getUser() {
+        return user;
     }
 
     public List<QueryBase.HasContainer> getHasContainers() {
@@ -139,7 +139,7 @@ public abstract class QueryParameters {
     @Override
     public String toString() {
         return this.getClass().getName() + "{" +
-            "authorizations=" + authorizations +
+            "user=" + user +
             ", limit=" + limit +
             ", skip=" + skip +
             ", hasContainers=" + Joiner.on(", ").join(hasContainers) +

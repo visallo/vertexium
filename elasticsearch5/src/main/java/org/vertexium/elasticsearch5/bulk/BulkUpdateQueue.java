@@ -2,7 +2,7 @@ package org.vertexium.elasticsearch5.bulk;
 
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.vertexium.VertexiumException;
-import org.vertexium.elasticsearch5.IndexRefreshTracker;
+import org.vertexium.elasticsearch5.IndexService;
 import org.vertexium.util.VertexiumLogger;
 import org.vertexium.util.VertexiumLoggerFactory;
 import org.vertexium.util.VertexiumReentrantReadWriteLock;
@@ -18,7 +18,7 @@ import java.util.stream.Collectors;
 
 public class BulkUpdateQueue {
     private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(BulkUpdateQueue.class);
-    private final IndexRefreshTracker indexRefreshTracker;
+    private final IndexService indexService;
     private final BulkUpdateService bulkUpdateService;
     private final BulkItemList todoItems = new BulkItemList();
     private final BulkItemList submittedItems = new BulkItemList();
@@ -30,11 +30,11 @@ public class BulkUpdateQueue {
     private final int maxFailCount;
 
     public BulkUpdateQueue(
-        IndexRefreshTracker indexRefreshTracker,
+        IndexService indexService,
         BulkUpdateService bulkUpdateService,
         BulkUpdateQueueConfiguration configuration
     ) {
-        this.indexRefreshTracker = indexRefreshTracker;
+        this.indexService = indexService;
         this.bulkUpdateService = bulkUpdateService;
         this.maxBatchSize = configuration.getMaxBatchSize();
         this.maxBatchSizeInBytes = configuration.getMaxBatchSizeInBytes();
@@ -91,7 +91,7 @@ public class BulkUpdateQueue {
 
                 Set<String> indexNames = batch.stream().map(BulkItem::getIndexName).collect(Collectors.toSet());
                 for (String indexName : indexNames) {
-                    indexRefreshTracker.pushChange(indexName);
+                    indexService.pushChange(indexName);
                 }
 
                 if (oneOrMoreItemsFailed.get()) {

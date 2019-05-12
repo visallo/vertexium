@@ -8,7 +8,7 @@ public abstract class IteratorHistoricalDeleteElementEvent extends IteratorHisto
     }
 
     @Override
-    protected int getHistoricalEventIdSubOrder() {
-        return 0;
+    protected String getHistoricalEventIdSubOrder() {
+        return "!";
     }
 }

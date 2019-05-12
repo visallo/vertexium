@@ -42,7 +42,7 @@ public class ExecuteCypherQuery {
         Graph graph = new GraphFactory().createGraph(config);
 
         Authorizations authorizations = params.getAuthorizations(graph);
-        VertexiumCypherQueryContext ctx = new CliVertexiumCypherQueryContext(graph, authorizations);
+        VertexiumCypherQueryContext ctx = new CliVertexiumCypherQueryContext(graph, authorizations.getUser());
         CliVertexiumCypherQueryContext.setLabelPropertyName(params.cypherLabelProperty);
         CypherCompilerContext compilerContext = new CypherCompilerContext(ctx.getFunctions());
 

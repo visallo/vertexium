@@ -11,7 +11,7 @@
     <groupId>org.vertexium</groupId>
     <artifactId>vertexium-root</artifactId>
     <packaging>pom</packaging>
-    <version>4.7.2-SNAPSHOT</version>
+    <version>5.0.0-SNAPSHOT</version>
     <name>Vertexium</name>
     <description>
         Vertexium is an API to manipulate graphs. Every Vertexium method requires authorizations
@@ -408,6 +408,8 @@
 
         <module>elasticsearch5</module>
         <module>elasticsearch5-plugin</module>
+
+        <module>elasticsearch5-graph</module>
 
         <module>inmemory</module>
 

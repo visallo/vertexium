@@ -424,8 +424,38 @@ public class ColumnVisibility {
     /**
      * Creates a column visibility for a Mutation.
      *
-     * @param expression An expression of the rights needed to see this mutation. The expression syntax is
-     *                   defined at the class-level documentation
+     * @param expression An expression of the rights needed to see this mutation. The expression is a sequence of characters from the set [A-Za-z0-9_-] along with the
+     *                   binary operators "&amp;" and "|" indicating that both operands are necessary, or that either is necessary. The following are valid expressions for
+     *                   visibility:
+     *
+     *                   <pre>
+     *                                                                                                                                                                                                                                                                                                                                                       A
+     *                                                                                                                                                                                                                                                                                                                                                       A|B
+     *                                                                                                                                                                                                                                                                                                                                                       (A|B)&amp;(C|D)
+     *                                                                                                                                                                                                                                                                                                                                                       orange|(red&amp;yellow)
+     *
+     *                                                                                                                                                                                                                                                                                                                                                       </pre>
+     *                   <p>
+     *                   <p>
+     *                   The following are not valid expressions for visibility:
+     *
+     *                   <pre>
+     *                                                                                                                                                                                                                                                                                                                                                       A|B&amp;C
+     *                                                                                                                                                                                                                                                                                                                                                       A=B
+     *                                                                                                                                                                                                                                                                                                                                                       A|B|
+     *                                                                                                                                                                                                                                                                                                                                                       A&amp;|B
+     *                                                                                                                                                                                                                                                                                                                                                       ()
+     *                                                                                                                                                                                                                                                                                                                                                       )
+     *                                                                                                                                                                                                                                                                                                                                                       dog|!cat
+     *                                                                                                                                                                                                                                                                                                                                                       </pre>
+     *                   <p>
+     *                   <p>
+     *                   You can use any character you like in your column visibility expression with quoting. If your quoted term contains '&quot;' or '\' then escape
+     *                   them with '\'. The {@link #quote(String)} method will properly quote and escape terms for you.
+     *
+     *                   <pre>
+     *                                                                                                                                                                                                                                                                                                                                                       &quot;A#C&quot;&amp;B
+     *                                                                                                                                                                                                                                                                                                                                                       </pre>
      */
     public ColumnVisibility(String expression) {
         this(expression.getBytes(UTF_8));

@@ -67,7 +67,7 @@ public class GraphGlue {
     private void createGraph() {
         InMemoryGraph graph = InMemoryGraph.create();
         Authorizations authorizations = graph.createAuthorizations();
-        ctx = new TestVertexiumCypherQueryContext(graph, authorizations);
+        ctx = new TestVertexiumCypherQueryContext(graph, authorizations.getUser());
     }
 
     @Given("^parameters are:$")

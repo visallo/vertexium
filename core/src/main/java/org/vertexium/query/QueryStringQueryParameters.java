@@ -1,12 +1,12 @@
 package org.vertexium.query;
 
-import org.vertexium.Authorizations;
+import org.vertexium.User;
 
 public class QueryStringQueryParameters extends QueryParameters {
     private final String queryString;
 
-    public QueryStringQueryParameters(String queryString, Authorizations authorizations) {
-        super(authorizations);
+    public QueryStringQueryParameters(String queryString, User user) {
+        super(user);
         this.queryString = queryString;
     }
 
@@ -15,7 +15,7 @@ public class QueryStringQueryParameters extends QueryParameters {
     }
 
     public QueryParameters clone() {
-        QueryParameters result = new QueryStringQueryParameters(this.getQueryString(), this.getAuthorizations());
+        QueryParameters result = new QueryStringQueryParameters(this.getQueryString(), this.getUser());
         return super.cloneTo(result);
     }
 

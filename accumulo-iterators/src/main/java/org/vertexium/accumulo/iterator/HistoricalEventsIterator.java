@@ -204,7 +204,7 @@ public class HistoricalEventsIterator extends RowEncodingIterator {
                 ));
             } else if (elementType == ElementType.VERTEX && (r.columnFamilyEquals(VertexIterator.CF_OUT_EDGE_BYTES) || r.columnFamilyEquals(VertexIterator.CF_IN_EDGE_BYTES))) {
                 state.emitPropertyEvent();
-                EdgeInfo edgeInfo = EdgeInfo.parse(r.takeValue(), timestamp);
+                EdgeInfo edgeInfo = EdgeInfo.parse(r.takeValue(), r.takeColumnVisibility(), timestamp);
                 ByteSequence edgeId = r.takeColumnQualifierByteSequence();
                 state.addEdgeInfo(edgeId, edgeInfo);
                 state.events.add(new IteratorHistoricalAddEdgeToVertexEvent(

@@ -9,21 +9,46 @@ public class ElasticsearchSearchGraphQuery extends ElasticsearchSearchQueryBase 
     public ElasticsearchSearchGraphQuery(
         Client client,
         Graph graph,
+        IndexService indexService,
+        PropertyNameService propertyNameService,
+        PropertyNameVisibilitiesStore propertyNameVisibilitiesStore,
         String queryString,
         Options options,
         Authorizations authorizations
     ) {
-        super(client, graph, queryString, options, authorizations);
+        super(
+            client,
+            graph,
+            indexService,
+            propertyNameService,
+            propertyNameVisibilitiesStore,
+            queryString,
+            options,
+            authorizations
+        );
     }
 
     public ElasticsearchSearchGraphQuery(
         Client client,
         Graph graph,
+        IndexService indexService,
+        PropertyNameService propertyNameService,
+        PropertyNameVisibilitiesStore propertyNameVisibilitiesStore,
         String[] similarToFields,
         String similarToText,
         Options options,
         Authorizations authorizations
     ) {
-        super(client, graph, similarToFields, similarToText, options, authorizations);
+        super(
+            client,
+            graph,
+            indexService,
+            propertyNameService,
+            propertyNameVisibilitiesStore,
+            similarToFields,
+            similarToText,
+            options,
+            authorizations
+        );
     }
 }

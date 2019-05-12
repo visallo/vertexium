@@ -27,23 +27,23 @@ import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
+import static org.vertexium.test.util.VertexiumAssert.assertIdsAnyOrder;
 import static org.vertexium.test.util.VertexiumAssert.assertResultsCount;
 import static org.vertexium.util.IterableUtils.count;
 import static org.vertexium.util.IterableUtils.toList;
 
 public class Elasticsearch5SearchIndexTest extends GraphTestBase {
-
     @ClassRule
     public static ElasticsearchResource elasticsearchResource = new ElasticsearchResource(Elasticsearch5SearchIndexTest.class.getName());
 
     @Override
     protected Authorizations createAuthorizations(String... auths) {
-        return new InMemoryAuthorizations(auths);
+        return getGraph().createAuthorizations(auths);
     }
 
     @Override
-    protected void addAuthorizations(String... authorizations) {
-        getGraph().createAuthorizations(authorizations);
+    protected Authorizations createButDontAddAuthorizations(String... auths) {
+        return new InMemoryAuthorizations(auths);
     }
 
     @Before
@@ -60,16 +60,22 @@ public class Elasticsearch5SearchIndexTest extends GraphTestBase {
     }
 
     private Elasticsearch5SearchIndex getSearchIndex() {
-        return (Elasticsearch5SearchIndex) ((GraphWithSearchIndex) graph).getSearchIndex();
+        return (Elasticsearch5SearchIndex) graph.getSearchIndex();
     }
 
+    @Override
     protected boolean isFieldNamesInQuerySupported() {
         return true;
     }
 
     @Override
+    protected boolean isPartialUpdateOfVertexPropertyKeySupported() {
+        return false;
+    }
+
+    @Override
     protected boolean disableEdgeIndexing(Graph graph) {
-        Elasticsearch5SearchIndex searchIndex = (Elasticsearch5SearchIndex) ((GraphWithSearchIndex) graph).getSearchIndex();
+        Elasticsearch5SearchIndex searchIndex = (Elasticsearch5SearchIndex) graph.getSearchIndex();
         searchIndex.getConfig().getGraphConfiguration().set(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + ElasticsearchSearchIndexConfiguration.INDEX_EDGES, "false");
         return true;
     }
@@ -93,6 +99,11 @@ public class Elasticsearch5SearchIndexTest extends GraphTestBase {
     @Override
     protected boolean isPainlessDateMath() {
         return true;
+    }
+
+    @Override
+    protected boolean isDefaultSearchIndex() {
+        return false;
     }
 
     @Test
@@ -124,7 +135,7 @@ public class Elasticsearch5SearchIndexTest extends GraphTestBase {
 
     @Test
     public void testQueryExecutionCountWhenScrollingApi() {
-        Elasticsearch5SearchIndex searchIndex = (Elasticsearch5SearchIndex) ((GraphWithSearchIndex) graph).getSearchIndex();
+        Elasticsearch5SearchIndex searchIndex = (Elasticsearch5SearchIndex) graph.getSearchIndex();
         searchIndex.getConfig().getGraphConfiguration().set(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + ElasticsearchSearchIndexConfiguration.QUERY_PAGE_SIZE, 1);
 
         graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
@@ -137,7 +148,7 @@ public class Elasticsearch5SearchIndexTest extends GraphTestBase {
         assertResultsCount(2, vertices);
         assertEquals(startingNumQueries + 4, getNumQueries());
 
-        searchIndex = (Elasticsearch5SearchIndex) ((GraphWithSearchIndex) graph).getSearchIndex();
+        searchIndex = (Elasticsearch5SearchIndex) graph.getSearchIndex();
         searchIndex.getConfig().getGraphConfiguration().set(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + ElasticsearchSearchIndexConfiguration.QUERY_PAGE_SIZE, 2);
 
         graph.addVertex("v3", VISIBILITY_A, AUTHORIZATIONS_A);
@@ -251,13 +262,11 @@ public class Elasticsearch5SearchIndexTest extends GraphTestBase {
             .save(AUTHORIZATIONS_A);
         graph.flush();
 
-        List<String> results = toList(graph.query("joe", AUTHORIZATIONS_A).vertexIds());
-        assertEquals(1, results.size());
-        assertEquals("v1", results.get(0));
+        QueryResultsIterable<String> results = graph.query("joe", AUTHORIZATIONS_A).vertexIds();
+        assertIdsAnyOrder(results);
 
-        results = toList(graph.query("bob", AUTHORIZATIONS_A).vertexIds());
-        assertEquals(1, results.size());
-        assertEquals("v1", results.get(0));
+        results = graph.query("bob", AUTHORIZATIONS_A).vertexIds();
+        assertIdsAnyOrder(results, "v1");
     }
 
     private long getNumQueries() {

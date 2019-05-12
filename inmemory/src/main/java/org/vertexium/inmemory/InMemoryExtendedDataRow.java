@@ -21,9 +21,14 @@ public class InMemoryExtendedDataRow extends ExtendedDataRowBase {
     private final Set<InMemoryProperty> properties = new HashSet<>();
     private final Set<ColumnVisibility> additionalVisibilities = new HashSet<>();
 
-    public InMemoryExtendedDataRow(ExtendedDataRowId id, FetchHints fetchHints) {
-        super(fetchHints);
+    public InMemoryExtendedDataRow(InMemoryGraph graph, ExtendedDataRowId id, FetchHints fetchHints, User user) {
+        super(graph, fetchHints, user);
         this.id = id;
+    }
+
+    @Override
+    public InMemoryGraph getGraph() {
+        return (InMemoryGraph) super.getGraph();
     }
 
     public boolean canRead(VisibilityEvaluator visibilityEvaluator, FetchHints fetchHints) {
@@ -46,7 +51,7 @@ public class InMemoryExtendedDataRow extends ExtendedDataRowBase {
     public InMemoryExtendedDataRow toReadable(VisibilityEvaluator visibilityEvaluator, FetchHints fetchHints) {
         propertiesLock.readLock().lock();
         try {
-            InMemoryExtendedDataRow row = new InMemoryExtendedDataRow(getId(), getFetchHints());
+            InMemoryExtendedDataRow row = new InMemoryExtendedDataRow(getGraph(), getId(), getFetchHints(), getUser());
             if (!fetchHints.isIgnoreAdditionalVisibilities() && !canReadAdditionalVisibility(visibilityEvaluator)) {
                 return null;
             }
@@ -108,19 +113,19 @@ public class InMemoryExtendedDataRow extends ExtendedDataRowBase {
         }
     }
 
-    public void addAdditionalVisibility(String additionalVisibility) {
+    public void addAdditionalVisibility(Visibility additionalVisibility) {
         propertiesLock.writeLock().lock();
         try {
-            additionalVisibilities.add(new ColumnVisibility(additionalVisibility));
+            additionalVisibilities.add(new ColumnVisibility(additionalVisibility.getVisibilityString()));
         } finally {
             propertiesLock.writeLock().unlock();
         }
     }
 
-    public void deleteAdditionalVisibility(String additionalVisibility) {
+    public void deleteAdditionalVisibility(Visibility additionalVisibility) {
         propertiesLock.writeLock().lock();
         try {
-            additionalVisibilities.remove(new ColumnVisibility(additionalVisibility));
+            additionalVisibilities.remove(new ColumnVisibility(additionalVisibility.getVisibilityString()));
         } finally {
             propertiesLock.writeLock().unlock();
         }
@@ -137,9 +142,9 @@ public class InMemoryExtendedDataRow extends ExtendedDataRowBase {
     }
 
     @Override
-    public ImmutableSet<String> getAdditionalVisibilities() {
+    public ImmutableSet<Visibility> getAdditionalVisibilities() {
         return additionalVisibilities.stream()
-            .map(av -> new String(av.getExpression(), StandardCharsets.UTF_8))
+            .map(av -> new Visibility(new String(av.getExpression(), StandardCharsets.UTF_8)))
             .collect(StreamUtils.toImmutableSet());
     }
 

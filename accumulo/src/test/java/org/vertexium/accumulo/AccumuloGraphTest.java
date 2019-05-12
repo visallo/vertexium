@@ -2,11 +2,19 @@ package org.vertexium.accumulo;
 
 import org.junit.ClassRule;
 import org.junit.Test;
+import org.vertexium.GraphConfiguration;
+import org.vertexium.inmemory.search.DefaultSearchIndex;
+
+import java.util.HashMap;
 
 public class AccumuloGraphTest extends AccumuloGraphTestBase {
 
     @ClassRule
-    public static final AccumuloResource accumuloResource = new AccumuloResource();
+    public static final AccumuloResource accumuloResource = new AccumuloResource(new HashMap<String, String>() {
+        {
+            put(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX, DefaultSearchIndex.class.getName());
+        }
+    });
 
     @Override
     public AccumuloResource getAccumuloResource() {

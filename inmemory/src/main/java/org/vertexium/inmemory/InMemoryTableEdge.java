@@ -11,6 +11,8 @@ import java.util.List;
 import java.util.stream.Stream;
 
 public class InMemoryTableEdge extends InMemoryTableElement<InMemoryEdge> {
+    private static final long serialVersionUID = 7193421350589782382L;
+
     public InMemoryTableEdge(String id) {
         super(id);
     }
@@ -21,14 +23,13 @@ public class InMemoryTableEdge extends InMemoryTableElement<InMemoryEdge> {
     }
 
     @Override
-    public InMemoryEdge createElementInternal(InMemoryGraph graph, FetchHints fetchHints, Long endTime, Authorizations authorizations) {
-        return new InMemoryEdge(graph, getId(), this, fetchHints, endTime, authorizations);
+    public InMemoryEdge createElementInternal(InMemoryGraph graph, FetchHints fetchHints, Long endTime, User user) {
+        return new InMemoryEdge(graph, getId(), this, fetchHints, endTime, user);
     }
 
     public Stream<HistoricalEvent> getHistoricalEventsForVertex(
         String vertexId,
-        HistoricalEventsFetchHints historicalEventsFetchHints,
-        Authorizations authorizations
+        HistoricalEventsFetchHints historicalEventsFetchHints
     ) {
         List<HistoricalEvent> results = new ArrayList<>();
         String otherVertexId = null;

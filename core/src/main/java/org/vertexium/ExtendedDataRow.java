@@ -25,14 +25,4 @@ public interface ExtendedDataRow extends VertexiumObject {
      * Id of the row
      */
     ExtendedDataRowId getId();
-
-    /**
-     * Get the names of all the properties of this row.
-     */
-    Iterable<String> getPropertyNames();
-
-    /**
-     * Fetch hints used to get this row. {@code FetchHints.ALL} if this is a new row.
-     */
-    FetchHints getFetchHints();
 }

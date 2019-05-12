@@ -10,9 +10,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static org.vertexium.util.IterableUtils.count;
 import static org.vertexium.util.IterableUtils.toList;
-import static org.vertexium.util.Preconditions.checkNotNull;
 
 public class DefaultGraphQueryIterable<T> implements
     Iterable<T>,

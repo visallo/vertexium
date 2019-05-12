@@ -1,0 +1,79 @@
+int hexNibbleToInt(int ch) {
+  if (ch >= 48 && ch <= 57) { // '0' - '9'
+    return ch - 48;
+  }
+  if (ch >= 97 && ch <= 102) { // 'a' - 'f'
+    return ch - 97 + 10;
+  }
+  if (ch >= 65 && ch <= 70) { // 'A' - 'F'
+    return ch - 65 + 10;
+  }
+  return 0;
+}
+
+int calculateNumberOfBitsDifferent(String hashA, String hashB, int maxLen) {
+  int bits = 0;
+  int i = 0;
+  while (i < maxLen) {
+    int a = i < hashA.length() ? hexNibbleToInt(hashA.charAt(i)) : 0;
+    int b = i < hashB.length() ? hexNibbleToInt(hashB.charAt(i)) : 0;
+    int x = a ^ b;
+    if ((x & 0x1) == 0x1) {
+      bits++;
+    }
+    if ((x & 0x2) == 0x2) {
+      bits++;
+    }
+    if ((x & 0x4) == 0x4) {
+      bits++;
+    }
+    if ((x & 0x8) == 0x8) {
+      bits++;
+    }
+    i++;
+  }
+  return bits;
+}
+
+int mathMin(int a, int b) {
+  if (a < b) {
+    return a;
+  }
+  return b;
+}
+
+int mathMax(int a, int b) {
+  if (a > b) {
+    return a;
+  }
+  return b;
+}
+
+int calculateForValue(def value, String hash) {
+  int BITS_PER_NIBBLE = 4;
+  int maxLen = mathMin(value.length(), hash.length());
+  return (maxLen * BITS_PER_NIBBLE) - calculateNumberOfBitsDifferent(value, hash, maxLen);
+}
+
+int calculateForValues(def values, String hash) {
+  int score = 0;
+  for (def value : values) {
+    score = mathMax(score, calculateForValue(value, hash));
+  }
+  return score;
+}
+
+double calculate(def doc, String hash, def fieldNames) {
+  int score = 0;
+  for (def field : fieldNames) {
+    if (!doc.containsKey(field)) {
+      continue;
+    }
+
+    def values = doc[field].values;
+    score = mathMax(score, calculateForValues(values, hash));
+  }
+  return score;
+}
+
+return calculate(doc, params.hash, params.fieldNames);

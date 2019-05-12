@@ -139,7 +139,7 @@ public class VertexIterator extends ElementIterator<VertexElementData> {
     }
 
     private void processOutEdge(KeyValue keyValue) {
-        EdgeInfo edgeInfo = EdgeInfo.parse(keyValue.takeValue(), keyValue.getTimestamp());
+        EdgeInfo edgeInfo = EdgeInfo.parse(keyValue.takeValue(), keyValue.takeColumnVisibility(), keyValue.getTimestamp());
         if (shouldIncludeOutEdge(edgeInfo)) {
             Text edgeId = keyValue.takeColumnQualifier();
             getElementData().outEdges.add(edgeId, edgeInfo);
@@ -147,7 +147,7 @@ public class VertexIterator extends ElementIterator<VertexElementData> {
     }
 
     private void processInEdge(KeyValue keyValue) {
-        EdgeInfo edgeInfo = EdgeInfo.parse(keyValue.takeValue(), keyValue.getTimestamp());
+        EdgeInfo edgeInfo = EdgeInfo.parse(keyValue.takeValue(), keyValue.takeColumnVisibility(), keyValue.getTimestamp());
         if (shouldIncludeInEdge(edgeInfo)) {
             Text edgeId = keyValue.takeColumnQualifier();
             getElementData().inEdges.add(edgeId, edgeInfo);

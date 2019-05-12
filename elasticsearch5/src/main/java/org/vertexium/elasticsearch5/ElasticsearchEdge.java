@@ -15,9 +15,9 @@ public class ElasticsearchEdge extends ElasticsearchElement implements Edge {
         String inVertexId,
         String outVertexId,
         FetchHints fetchHints,
-        Authorizations authorizations
+        User user
     ) {
-        super(graph, id, fetchHints, authorizations);
+        super(graph, id, fetchHints, user);
         this.label = label;
         this.inVertexId = inVertexId;
         this.outVertexId = outVertexId;
@@ -46,14 +46,6 @@ public class ElasticsearchEdge extends ElasticsearchElement implements Edge {
     @Override
     public Vertex getVertex(Direction direction, FetchHints fetchHints, Authorizations authorizations) {
         throw new VertexiumNotSupportedException("getVertex is not supported");
-    }
-
-    @Override
-    public String getOtherVertexId(String myVertexId) {
-        if (myVertexId.equals(inVertexId)) {
-            return outVertexId;
-        }
-        return inVertexId;
     }
 
     @Override

@@ -12,7 +12,7 @@ import org.vertexium.ElementId;
 import org.vertexium.ElementLocation;
 import org.vertexium.VertexiumException;
 import org.vertexium.elasticsearch5.Elasticsearch5SearchIndex;
-import org.vertexium.elasticsearch5.IndexRefreshTracker;
+import org.vertexium.elasticsearch5.IndexService;
 import org.vertexium.util.VertexiumLogger;
 import org.vertexium.util.VertexiumLoggerFactory;
 
@@ -30,7 +30,7 @@ public class BulkUpdateService {
 
     public BulkUpdateService(
         Elasticsearch5SearchIndex searchIndex,
-        IndexRefreshTracker indexRefreshTracker,
+        IndexService indexService,
         BulkUpdateServiceConfiguration configuration
     ) {
         this.searchIndex = searchIndex;
@@ -53,7 +53,7 @@ public class BulkUpdateService {
             .setMaxBatchSize(configuration.getMaxBatchSize())
             .setMaxBatchSizeInBytes(configuration.getMaxBatchSizeInBytes())
             .setMaxFailCount(configuration.getMaxFailCount());
-        this.bulkUpdateQueue = new BulkUpdateQueue(indexRefreshTracker, this, bulkUpdateQueueConfiguration);
+        this.bulkUpdateQueue = new BulkUpdateQueue(indexService, this, bulkUpdateQueueConfiguration);
     }
 
     private boolean containsElementId(String elementId) {

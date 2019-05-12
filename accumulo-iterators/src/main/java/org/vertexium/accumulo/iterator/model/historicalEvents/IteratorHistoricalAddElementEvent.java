@@ -8,7 +8,7 @@ public abstract class IteratorHistoricalAddElementEvent extends IteratorHistoric
     }
 
     @Override
-    protected int getHistoricalEventIdSubOrder() {
-        return 0;
+    protected String getHistoricalEventIdSubOrder() {
+        return "!";
     }
 }

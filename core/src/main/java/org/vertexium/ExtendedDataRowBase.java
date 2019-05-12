@@ -3,108 +3,33 @@ package org.vertexium;
 import com.google.common.collect.Lists;
 import org.vertexium.mutation.ElementMutation;
 import org.vertexium.property.MutablePropertyImpl;
-import org.vertexium.util.ConvertingIterable;
 import org.vertexium.util.FilterIterable;
 
-import java.util.Iterator;
-
 public abstract class ExtendedDataRowBase implements ExtendedDataRow {
+    private final Graph graph;
     private final FetchHints fetchHints;
+    private final User user;
     private transient Property rowIdProperty;
     private transient Property tableNameProperty;
     private transient Property elementIdProperty;
     private transient Property elementTypeProperty;
 
-    protected ExtendedDataRowBase(FetchHints fetchHints) {
+    protected ExtendedDataRowBase(Graph graph, FetchHints fetchHints, User user) {
+        this.graph = graph;
         this.fetchHints = fetchHints;
-    }
-
-    @Override
-    public abstract ExtendedDataRowId getId();
-
-    @Override
-    public Iterable<String> getPropertyNames() {
-        return new ConvertingIterable<Property, String>(getProperties()) {
-            @Override
-            protected String convert(Property prop) {
-                return prop.getName();
-            }
-        };
-    }
-
-    @Override
-    public abstract Iterable<Property> getProperties();
-
-    @Override
-    public Property getProperty(String name) {
-        return getProperty(null, name, null);
-    }
-
-    @Override
-    public Object getPropertyValue(String name) {
-        return getPropertyValue(null, name);
-    }
-
-    @Override
-    public Property getProperty(String key, String name, Visibility visibility) {
-        if (ExtendedDataRow.ROW_ID.equals(name)) {
-            return getRowIdProperty();
-        } else if (ExtendedDataRow.TABLE_NAME.equals(name)) {
-            return getTableNameProperty();
-        } else if (ExtendedDataRow.ELEMENT_ID.equals(name)) {
-            return getElementIdProperty();
-        } else if (ExtendedDataRow.ELEMENT_TYPE.equals(name)) {
-            return getElementTypeProperty();
-        }
-        getFetchHints().assertPropertyIncluded(name);
-        for (Property property : getProperties()) {
-            if (isMatch(property, key, name, visibility)) {
-                return property;
-            }
-        }
-        return null;
-    }
-
-    private boolean isMatch(Property property, String key, String name, Visibility visibility) {
-        if (name != null && !property.getName().equals(name)) {
-            return false;
-        }
-        if (key != null && !property.getKey().equals(key)) {
-            return false;
-        }
-        if (visibility != null && !property.getVisibility().equals(visibility)) {
-            return false;
-        }
-        return true;
-    }
-
-    @Override
-    public Property getProperty(String name, Visibility visibility) {
-        return getProperty(null, name, visibility);
+        this.user = user;
     }
 
     @Override
     public Iterable<Property> getProperties(String name) {
-        return getProperties(null, name);
-    }
-
-    @Override
-    public Iterable<Property> getProperties(String key, String name) {
-        if (ExtendedDataRow.ROW_ID.equals(name)) {
-            return Lists.newArrayList(getRowIdProperty());
-        } else if (ExtendedDataRow.TABLE_NAME.equals(name)) {
-            return Lists.newArrayList(getTableNameProperty());
-        } else if (ExtendedDataRow.ELEMENT_ID.equals(name)) {
-            return Lists.newArrayList(getElementIdProperty());
-        } else if (ExtendedDataRow.ELEMENT_TYPE.equals(name)) {
-            return Lists.newArrayList(getElementTypeProperty());
+        if (isInternalPropertyName(name)) {
+            return Lists.newArrayList(getInternalProperty(name));
         }
-
         getFetchHints().assertPropertyIncluded(name);
         return new FilterIterable<Property>(getProperties()) {
             @Override
             protected boolean isIncluded(Property prop) {
-                return isMatch(prop, key, name, null);
+                return isMatch(prop, name);
             }
         };
     }
@@ -118,32 +43,34 @@ public abstract class ExtendedDataRowBase implements ExtendedDataRow {
         return prop.getValue();
     }
 
-    @Override
-    public Object getPropertyValue(String name, int index) {
-        return getPropertyValue(null, name, index);
+    private boolean isMatch(Property property, String name) {
+        if (name != null && !property.getName().equals(name)) {
+            return false;
+        }
+        return true;
     }
 
-    @Override
-    public Object getPropertyValue(String key, String name, int index) {
+    private Property getInternalProperty(String name) {
         if (ExtendedDataRow.ROW_ID.equals(name)) {
-            return getRowIdProperty().getValue();
+            return getRowIdProperty();
         } else if (ExtendedDataRow.TABLE_NAME.equals(name)) {
-            return getTableNameProperty().getValue();
+            return getTableNameProperty();
         } else if (ExtendedDataRow.ELEMENT_ID.equals(name)) {
-            return getElementIdProperty().getValue();
+            return getElementIdProperty();
         } else if (ExtendedDataRow.ELEMENT_TYPE.equals(name)) {
-            return getElementTypeProperty().getValue();
+            return getElementTypeProperty();
         }
+        throw new VertexiumException("Not an internal property name: " + name);
+    }
 
-        Iterator<Object> values = getPropertyValues(key, name).iterator();
-        while (values.hasNext() && index > 0) {
-            values.next();
-            index--;
+    protected boolean isInternalPropertyName(String name) {
+        if (ExtendedDataRow.ROW_ID.equals(name)
+            || ExtendedDataRow.TABLE_NAME.equals(name)
+            || ExtendedDataRow.ELEMENT_ID.equals(name)
+            || ExtendedDataRow.ELEMENT_TYPE.equals(name)) {
+            return true;
         }
-        if (!values.hasNext()) {
-            return null;
-        }
-        return values.next();
+        return false;
     }
 
     @Override
@@ -221,5 +148,15 @@ public abstract class ExtendedDataRowBase implements ExtendedDataRow {
     @Override
     public FetchHints getFetchHints() {
         return fetchHints;
+    }
+
+    @Override
+    public Graph getGraph() {
+        return graph;
+    }
+
+    @Override
+    public User getUser() {
+        return user;
     }
 }

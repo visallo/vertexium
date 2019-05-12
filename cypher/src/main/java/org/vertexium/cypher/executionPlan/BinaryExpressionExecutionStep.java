@@ -4,7 +4,7 @@ import org.vertexium.cypher.VertexiumCypherQueryContext;
 import org.vertexium.cypher.VertexiumCypherResult;
 import org.vertexium.cypher.ast.model.CypherBinaryExpression;
 import org.vertexium.cypher.exceptions.VertexiumCypherNotImplemented;
-import org.vertexium.cypher.utils.ObjectUtils;
+import org.vertexium.cypher.utils.CypherObjectUtils;
 
 public class BinaryExpressionExecutionStep extends ExecutionStepWithChildren implements ExecutionStepWithResultName {
     private final String resultName;
@@ -78,7 +78,7 @@ public class BinaryExpressionExecutionStep extends ExecutionStepWithChildren imp
         if (leftValue instanceof Number && rightValue instanceof Number) {
             Number leftNumber = (Number) leftValue;
             Number rightNumber = (Number) rightValue;
-            return ObjectUtils.addNumbers(leftNumber, rightNumber);
+            return CypherObjectUtils.addNumbers(leftNumber, rightNumber);
         }
         if (leftValue instanceof Object[] && rightValue instanceof Object[]) {
             Object[] leftArr = (Object[]) leftValue;
@@ -99,7 +99,7 @@ public class BinaryExpressionExecutionStep extends ExecutionStepWithChildren imp
         if (!(leftValue instanceof Number) || !(rightValue instanceof Number)) {
             throw new VertexiumCypherNotImplemented("cannot subtract non-numbers");
         }
-        result = ObjectUtils.subtractNumbers((Number) leftValue, (Number) rightValue);
+        result = CypherObjectUtils.subtractNumbers((Number) leftValue, (Number) rightValue);
         return result;
     }
 
@@ -111,7 +111,7 @@ public class BinaryExpressionExecutionStep extends ExecutionStepWithChildren imp
         if (!(leftValue instanceof Number) || !(rightValue instanceof Number)) {
             throw new VertexiumCypherNotImplemented("cannot multiply non-numbers");
         }
-        result = ObjectUtils.multiplyNumbers((Number) leftValue, (Number) rightValue);
+        result = CypherObjectUtils.multiplyNumbers((Number) leftValue, (Number) rightValue);
         return result;
     }
 
@@ -123,7 +123,7 @@ public class BinaryExpressionExecutionStep extends ExecutionStepWithChildren imp
         if (!(leftValue instanceof Number) || !(rightValue instanceof Number)) {
             throw new VertexiumCypherNotImplemented("cannot divide non-numbers");
         }
-        result = ObjectUtils.divideNumbers((Number) leftValue, (Number) rightValue);
+        result = CypherObjectUtils.divideNumbers((Number) leftValue, (Number) rightValue);
         return result;
     }
 
@@ -135,7 +135,7 @@ public class BinaryExpressionExecutionStep extends ExecutionStepWithChildren imp
         if (!(leftValue instanceof Number) || !(rightValue instanceof Number)) {
             throw new VertexiumCypherNotImplemented("cannot mod non-numbers");
         }
-        result = ObjectUtils.modNumbers((Number) leftValue, (Number) rightValue);
+        result = CypherObjectUtils.modNumbers((Number) leftValue, (Number) rightValue);
         return result;
     }
 
@@ -147,7 +147,7 @@ public class BinaryExpressionExecutionStep extends ExecutionStepWithChildren imp
         if (!(leftValue instanceof Number) || !(rightValue instanceof Number)) {
             throw new VertexiumCypherNotImplemented("cannot power non-numbers");
         }
-        result = ObjectUtils.powerNumbers((Number) leftValue, (Number) rightValue);
+        result = CypherObjectUtils.powerNumbers((Number) leftValue, (Number) rightValue);
         return result;
     }
 

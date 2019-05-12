@@ -12,7 +12,7 @@ public class EdgeInfoEdge extends ElementBase implements Edge {
     private final Graph graph;
     private final String sourceVertexId;
     private final EdgeInfo edgeInfo;
-    private final Authorizations authorizations;
+    private final User user;
     private final FetchHints fetchHints;
 
     public EdgeInfoEdge(
@@ -20,13 +20,13 @@ public class EdgeInfoEdge extends ElementBase implements Edge {
         String sourceVertexId,
         EdgeInfo edgeInfo,
         FetchHints fetchHints,
-        Authorizations authorizations
+        User user
     ) {
         this.graph = graph;
         this.sourceVertexId = sourceVertexId;
         this.edgeInfo = edgeInfo;
         this.fetchHints = fetchHints;
-        this.authorizations = authorizations;
+        this.user = user;
     }
 
     @Override
@@ -43,22 +43,12 @@ public class EdgeInfoEdge extends ElementBase implements Edge {
     }
 
     @Override
-    public String getOtherVertexId(String myVertexId) {
-        if (sourceVertexId.equals(myVertexId)) {
-            return edgeInfo.getVertexId();
-        } else if (edgeInfo.getVertexId().equals(myVertexId)) {
-            return sourceVertexId;
-        }
-        throw new VertexiumException("myVertexId(" + myVertexId + ") does not appear on edge (" + getId() + ").");
-    }
-
-    @Override
     public ExistingEdgeMutation prepareMutation() {
         return getEdge().prepareMutation();
     }
 
     private Edge getEdge() {
-        return getGraph().getEdge(getId(), getFetchHints(), authorizations);
+        return getGraph().getEdge(getId(), getFetchHints(), user);
     }
 
     @Override
@@ -82,33 +72,8 @@ public class EdgeInfoEdge extends ElementBase implements Edge {
     }
 
     @Override
-    public void deleteProperty(String key, String name, Visibility visibility, Authorizations authorizations) {
-        getEdge().deleteProperty(key, name, visibility, authorizations);
-    }
-
-    @Override
-    public void softDeleteProperty(String key, String name, Visibility visibility, Object eventData, Authorizations authorizations) {
-        getEdge().softDeleteProperty(key, name, visibility, eventData, authorizations);
-    }
-
-    @Override
     public Graph getGraph() {
         return graph;
-    }
-
-    @Override
-    public Authorizations getAuthorizations() {
-        return authorizations;
-    }
-
-    @Override
-    public void markPropertyHidden(Property property, Long timestamp, Visibility visibility, Object data, Authorizations authorizations) {
-        getEdge().markPropertyHidden(property, timestamp, visibility, data, authorizations);
-    }
-
-    @Override
-    public void markPropertyVisible(Property property, Long timestamp, Visibility visibility, Object eventData, Authorizations authorizations) {
-        getEdge().markPropertyVisible(property, timestamp, visibility, eventData, authorizations);
     }
 
     @Override
@@ -117,7 +82,7 @@ public class EdgeInfoEdge extends ElementBase implements Edge {
     }
 
     @Override
-    public ImmutableSet<String> getAdditionalVisibilities() {
+    public ImmutableSet<Visibility> getAdditionalVisibilities() {
         return getEdge().getAdditionalVisibilities();
     }
 
@@ -140,36 +105,14 @@ public class EdgeInfoEdge extends ElementBase implements Edge {
     public Stream<HistoricalEvent> getHistoricalEvents(
         HistoricalEventId after,
         HistoricalEventsFetchHints fetchHints,
-        Authorizations authorizations
+        User user
     ) {
-        return getEdge().getHistoricalEvents(after, fetchHints, authorizations);
+        return getEdge().getHistoricalEvents(after, fetchHints, user);
     }
 
     @Override
-    @SuppressWarnings("deprecation")
-    public Iterable<HistoricalPropertyValue> getHistoricalPropertyValues(
-        String key,
-        String name,
-        Visibility visibility,
-        Long startTime,
-        Long endTime,
-        Authorizations authorizations
-    ) {
-        return getEdge().getHistoricalPropertyValues(key, name, visibility, startTime, endTime, authorizations);
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (obj instanceof Element) {
-            Element objElem = (Element) obj;
-            return getId().equals(objElem.getId());
-        }
-        return super.equals(obj);
-    }
-
-    @Override
-    public int hashCode() {
-        return getId().hashCode();
+    public User getUser() {
+        return user;
     }
 
     @Override

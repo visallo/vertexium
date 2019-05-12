@@ -67,28 +67,6 @@ public abstract class LazyProperty extends ModelBase {
         return out.toString();
     }
 
-    @SuppressWarnings("deprecation")
-    public String getHistory() {
-        Element e = getE();
-        if (e == null) {
-            return null;
-        }
-        Iterable<HistoricalPropertyValue> historicalValues = e.getHistoricalPropertyValues(getKey(), getName(), getVisibility(), getAuthorizations());
-
-        StringWriter out = new StringWriter();
-        PrintWriter writer = new PrintWriter(out);
-        writer.println("@|bold history:|@");
-        for (HistoricalPropertyValue historicalValue : historicalValues) {
-            writer.println("  @|bold " + VertexiumScript.timestampToString(historicalValue.getTimestamp()) + ":|@");
-            writer.println("    @|bold value:|@" + VertexiumScript.valueToString(historicalValue.getValue(), true));
-            writer.println("    @|bold metadata:|@");
-            for (Metadata.Entry m : historicalValue.getMetadata().entrySet()) {
-                writer.println("      " + m.getKey() + "[" + m.getVisibility() + "]: " + VertexiumScript.valueToString(m.getValue(), false));
-            }
-        }
-        return out.toString();
-    }
-
     protected abstract String getToStringHeaderLine();
 
     protected abstract Element getE();

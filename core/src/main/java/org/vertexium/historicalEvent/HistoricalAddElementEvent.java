@@ -30,7 +30,7 @@ public abstract class HistoricalAddElementEvent extends HistoricalEvent {
     }
 
     @Override
-    protected int getHistoricalEventIdSubOrder() {
-        return 0;
+    protected String getHistoricalEventIdSubOrder() {
+        return "!";
     }
 }

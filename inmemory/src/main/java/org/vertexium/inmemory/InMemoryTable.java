@@ -1,16 +1,15 @@
 package org.vertexium.inmemory;
 
-import org.vertexium.Authorizations;
 import org.vertexium.FetchHints;
+import org.vertexium.User;
 import org.vertexium.inmemory.mutations.Mutation;
-import org.vertexium.util.StreamUtils;
 
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public abstract class InMemoryTable<TElement extends InMemoryElement> {
     private ReadWriteLock rowsLock = new ReentrantReadWriteLock();
@@ -24,12 +23,12 @@ public abstract class InMemoryTable<TElement extends InMemoryElement> {
         this(new ConcurrentSkipListMap<>());
     }
 
-    public TElement get(InMemoryGraph graph, String id, FetchHints fetchHints, Authorizations authorizations) {
+    public TElement get(InMemoryGraph graph, String id, FetchHints fetchHints, User user) {
         InMemoryTableElement<TElement> inMemoryTableElement = getTableElement(id);
         if (inMemoryTableElement == null) {
             return null;
         }
-        return inMemoryTableElement.createElement(graph, fetchHints, authorizations);
+        return inMemoryTableElement.createElement(graph, fetchHints, user);
     }
 
     public InMemoryTableElement<TElement> getTableElement(String id) {
@@ -75,22 +74,21 @@ public abstract class InMemoryTable<TElement extends InMemoryElement> {
         }
     }
 
-    public Iterable<TElement> getAll(
+    public Stream<TElement> getAll(
         InMemoryGraph graph,
         FetchHints fetchHints,
         Long endTime,
-        Authorizations authorizations
+        User user
     ) {
-        return StreamUtils.stream(getRowValues())
-            .filter(element -> graph.isIncludedInTimeSpan(element, fetchHints, endTime, authorizations))
-            .map(element -> element.createElement(graph, fetchHints, endTime, authorizations))
-            .collect(Collectors.toList());
+        return getRowValues()
+            .filter(element -> graph.isIncludedInTimeSpan(element, fetchHints, endTime, user))
+            .map(element -> element.createElement(graph, fetchHints, endTime, user));
     }
 
-    public Iterable<InMemoryTableElement<TElement>> getRowValues() {
+    public Stream<InMemoryTableElement<TElement>> getRowValues() {
         rowsLock.readLock().lock();
         try {
-            return new ArrayList<>(this.rows.values());
+            return new ArrayList<>(this.rows.values()).stream();
         } finally {
             rowsLock.readLock().unlock();
         }

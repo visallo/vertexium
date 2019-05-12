@@ -1,8 +1,7 @@
 package org.vertexium.elasticsearch5.utils;
 
 import org.junit.Test;
-
-import javax.xml.bind.DatatypeConverter;
+import org.vertexium.util.ArrayUtils;
 
 import static org.junit.Assert.assertEquals;
 
@@ -15,6 +14,6 @@ public class Murmur3Test {
     }
 
     private void assertBytes(String expectedHexString, byte[] found) {
-        assertEquals(expectedHexString.toLowerCase(), DatatypeConverter.printHexBinary(found).toLowerCase());
+        assertEquals(expectedHexString.toLowerCase(), ArrayUtils.toHex(found));
     }
 }

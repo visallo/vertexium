@@ -5,7 +5,7 @@ import org.vertexium.cypher.SingleRowVertexiumCypherResult;
 import org.vertexium.cypher.VertexiumCypherQueryContext;
 import org.vertexium.cypher.VertexiumCypherResult;
 import org.vertexium.cypher.exceptions.VertexiumCypherNotImplemented;
-import org.vertexium.cypher.utils.ObjectUtils;
+import org.vertexium.cypher.utils.CypherObjectUtils;
 import org.vertexium.cypher.utils.PredicateWithIndex;
 
 import java.util.ArrayList;
@@ -110,7 +110,7 @@ public class ReturnExecutionStep extends ExecutionStepWithChildren {
                 for (SortItemExecutionStep sortItem : sortItems) {
                     Object value1 = row1.get(sortItem.getResultName());
                     Object value2 = row2.get(sortItem.getResultName());
-                    int r = ObjectUtils.compare(value1, value2);
+                    int r = CypherObjectUtils.compare(value1, value2);
                     if (r != 0) {
                         switch (sortItem.getDirection()) {
                             case ASCENDING:

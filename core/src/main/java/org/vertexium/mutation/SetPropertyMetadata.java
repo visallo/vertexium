@@ -10,7 +10,14 @@ public class SetPropertyMetadata {
     private final Object newValue;
     private final Visibility metadataVisibility;
 
-    public SetPropertyMetadata(String propertyKey, String propertyName, Visibility propertyVisibility, String metadataName, Object newValue, Visibility metadataVisibility) {
+    public SetPropertyMetadata(
+        String propertyKey,
+        String propertyName,
+        Visibility propertyVisibility,
+        String metadataName,
+        Object newValue,
+        Visibility metadataVisibility
+    ) {
         this.propertyKey = propertyKey;
         this.propertyName = propertyName;
         this.propertyVisibility = propertyVisibility;

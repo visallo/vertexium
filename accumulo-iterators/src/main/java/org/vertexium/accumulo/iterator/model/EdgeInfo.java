@@ -1,6 +1,7 @@
 package org.vertexium.accumulo.iterator.model;
 
 import org.apache.accumulo.core.data.Value;
+import org.apache.hadoop.io.Text;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -10,6 +11,7 @@ import java.util.Arrays;
 public class EdgeInfo {
     public static final String CHARSET_NAME = "UTF-8";
     private byte[] bytes;
+    private Text columnVisibility;
     private transient long timestamp;
     private transient String label;
     private transient String vertexId;
@@ -20,11 +22,11 @@ public class EdgeInfo {
 
     }
 
-    public EdgeInfo(String label, String vertexId) {
-        this(label, vertexId, System.currentTimeMillis());
+    public EdgeInfo(String label, String vertexId, Text columnVisibility) {
+        this(label, vertexId, columnVisibility, System.currentTimeMillis());
     }
 
-    public EdgeInfo(String label, String vertexId, long timestamp) {
+    public EdgeInfo(String label, String vertexId, Text columnVisibility, long timestamp) {
         if (label == null) {
             throw new IllegalArgumentException("label cannot be null");
         }
@@ -33,13 +35,15 @@ public class EdgeInfo {
         }
         this.label = label;
         this.vertexId = vertexId;
+        this.columnVisibility = columnVisibility;
         this.timestamp = timestamp;
         this.decoded = true;
     }
 
-    public EdgeInfo(byte[] bytes, long timestamp) {
+    public EdgeInfo(byte[] bytes, Text columnVisibility, long timestamp) {
         this.timestamp = timestamp;
         this.bytes = bytes;
+        this.columnVisibility = columnVisibility;
     }
 
     public String getLabel() {
@@ -91,8 +95,8 @@ public class EdgeInfo {
         return Arrays.copyOfRange(this.bytes, 4, 4 + labelBytesLength);
     }
 
-    public static EdgeInfo parse(Value value, long timestamp) {
-        return new EdgeInfo(value.get(), timestamp);
+    public static EdgeInfo parse(Value value, Text columnVisibility, long timestamp) {
+        return new EdgeInfo(value.get(), columnVisibility, timestamp);
     }
 
     public byte[] getBytes() {
@@ -161,11 +165,16 @@ public class EdgeInfo {
         return timestamp;
     }
 
+    public Text getColumnVisibility() {
+        return columnVisibility;
+    }
+
     @Override
     public String toString() {
         return "EdgeInfo{" +
-            "vertexId='" + vertexId + '\'' +
-            ", label='" + label + '\'' +
+            "vertexId='" + getVertexId() + '\'' +
+            ", label='" + getLabel() + '\'' +
+            ", columnVisibility='" + getColumnVisibility() + '\'' +
             '}';
     }
 }

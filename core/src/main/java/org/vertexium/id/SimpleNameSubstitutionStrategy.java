@@ -99,7 +99,7 @@ public class SimpleNameSubstitutionStrategy implements NameSubstitutionStrategy 
 
     private class InflateCacheSource implements CacheSource<String, String> {
         @Override
-        public String get(String value) throws Throwable {
+        public String get(String value) {
             inflateCacheMisses++;
             String inflatedValue = value;
             for (InflateItem inflateItem : inflateSubstitutionList) {
@@ -125,7 +125,7 @@ public class SimpleNameSubstitutionStrategy implements NameSubstitutionStrategy 
 
     private class DeflateCacheSource implements CacheSource<String, String> {
         @Override
-        public String get(String value) throws Throwable {
+        public String get(String value) {
             deflateCacheMisses++;
             String deflatedVal = value;
             for (DeflateItem deflateItem : deflateSubstitutionList) {

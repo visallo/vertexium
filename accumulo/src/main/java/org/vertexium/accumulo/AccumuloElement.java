@@ -9,18 +9,21 @@ import org.vertexium.*;
 import org.vertexium.accumulo.iterator.ElementIterator;
 import org.vertexium.historicalEvent.HistoricalEvent;
 import org.vertexium.historicalEvent.HistoricalEventId;
-import org.vertexium.mutation.*;
+import org.vertexium.mutation.EdgeMutation;
+import org.vertexium.mutation.ElementMutation;
+import org.vertexium.mutation.ExistingElementMutation;
 import org.vertexium.property.MutableProperty;
 import org.vertexium.query.ExtendedDataQueryableIterable;
 import org.vertexium.query.QueryableIterable;
-import org.vertexium.search.IndexHint;
+import org.vertexium.util.IncreasingTime;
 import org.vertexium.util.PropertyCollection;
 
 import java.io.Serializable;
 import java.util.Iterator;
 import java.util.Set;
-import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.stream.Stream;
+
+import static org.vertexium.util.StreamUtils.toIterable;
 
 public abstract class AccumuloElement extends ElementBase implements Serializable, HasTimestamp {
     private static final long serialVersionUID = 1L;
@@ -52,27 +55,23 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
     private final long timestamp;
     private final FetchHints fetchHints;
     private final Set<Visibility> hiddenVisibilities;
-    private final Set<String> additionalVisibilities;
+    private final Set<Visibility> additionalVisibilities;
 
     private final PropertyCollection properties;
     private final ImmutableSet<String> extendedDataTableNames;
-    private ConcurrentSkipListSet<PropertyDeleteMutation> propertyDeleteMutations;
-    private ConcurrentSkipListSet<PropertySoftDeleteMutation> propertySoftDeleteMutations;
-    private final Authorizations authorizations;
+    private final User user;
 
     protected AccumuloElement(
         Graph graph,
         String id,
         Visibility visibility,
         Iterable<Property> properties,
-        Iterable<PropertyDeleteMutation> propertyDeleteMutations,
-        Iterable<PropertySoftDeleteMutation> propertySoftDeleteMutations,
         Iterable<Visibility> hiddenVisibilities,
-        Iterable<String> additionalVisibilities,
+        Iterable<Visibility> additionalVisibilities,
         ImmutableSet<String> extendedDataTableNames,
         long timestamp,
         FetchHints fetchHints,
-        Authorizations authorizations
+        User user
     ) {
         this.graph = graph;
         this.id = id;
@@ -81,7 +80,7 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
         this.fetchHints = fetchHints;
         this.properties = new PropertyCollection();
         this.extendedDataTableNames = extendedDataTableNames;
-        this.authorizations = authorizations;
+        this.user = user;
 
         ImmutableSet.Builder<Visibility> hiddenVisibilityBuilder = new ImmutableSet.Builder<>();
         if (hiddenVisibilities != null) {
@@ -91,35 +90,9 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
         }
         this.hiddenVisibilities = hiddenVisibilityBuilder.build();
         this.additionalVisibilities = Sets.newHashSet(additionalVisibilities);
-        updatePropertiesInternal(properties, propertyDeleteMutations, propertySoftDeleteMutations);
-    }
-
-    @Override
-    public void deleteProperty(String key, String name, Visibility visibility, Authorizations authorizations) {
-        Property property = getProperty(key, name, visibility);
-        if (property != null) {
-            this.properties.removeProperty(property);
-            getGraph().deleteProperty(this, property, authorizations);
+        for (Property property : properties) {
+            addPropertyInternal(property);
         }
-    }
-
-    @Override
-    public void softDeleteProperty(String key, String name, Visibility visibility, Object eventData, Authorizations authorizations) {
-        Property property = getProperty(key, name, visibility);
-        if (property != null) {
-            this.properties.removeProperty(property);
-            getGraph().softDeleteProperty(this, property, eventData, authorizations);
-        }
-    }
-
-    @Override
-    public void markPropertyHidden(Property property, Long timestamp, Visibility visibility, Object data, Authorizations authorizations) {
-        getGraph().markPropertyHidden(this, property, timestamp, visibility, data, authorizations);
-    }
-
-    @Override
-    public void markPropertyVisible(Property property, Long timestamp, Visibility visibility, Object eventData, Authorizations authorizations) {
-        getGraph().markPropertyVisible(this, property, timestamp, visibility, eventData, authorizations);
     }
 
     @Override
@@ -127,85 +100,28 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
         return (AccumuloGraph) graph;
     }
 
-    protected <TElement extends Element> void saveExistingElementMutation(ExistingElementMutation<TElement> mutation, Authorizations authorizations) {
-        // Order matters a lot in this method
-        AccumuloElement element = (AccumuloElement) mutation.getElement();
-
-        // metadata must be altered first because the lookup of a property can include visibility which will be altered by alterElementPropertyVisibilities
-        getGraph().alterPropertyMetadatas(element, mutation.getSetPropertyMetadatas());
-
-        // altering properties comes next because alterElementVisibility may alter the vertex and we won't find it
-        getGraph().alterElementPropertyVisibilities(element, mutation.getAlterPropertyVisibilities());
-
-        Iterable<PropertyDeleteMutation> propertyDeletes = mutation.getPropertyDeletes();
-        Iterable<PropertySoftDeleteMutation> propertySoftDeletes = mutation.getPropertySoftDeletes();
-        Iterable<Property> properties = mutation.getProperties();
-        Iterable<AdditionalVisibilityAddMutation> additionalVisibilities = mutation.getAdditionalVisibilities();
-        Iterable<AdditionalVisibilityDeleteMutation> additionalVisibilityDeletes = mutation.getAdditionalVisibilityDeletes();
-
-        updatePropertiesInternal(properties, propertyDeletes, propertySoftDeletes);
-        updateAdditionalVisibilitiesInternal(additionalVisibilities, additionalVisibilityDeletes);
-        getGraph().savePropertiesAndAdditionalVisibilities(
-            element,
-            properties,
-            propertyDeletes,
-            propertySoftDeletes,
-            additionalVisibilities,
-            additionalVisibilityDeletes
-        );
-
-        if (mutation.getNewElementVisibility() != null) {
-            getGraph().alterElementVisibility(element, mutation.getNewElementVisibility(), mutation.getNewElementVisibilityData());
-        }
-
+    @SuppressWarnings("unchecked")
+    protected <TElement extends Element> void saveExistingElementMutation(ExistingElementMutation<TElement> mutation, User user) {
         if (mutation instanceof EdgeMutation) {
-            EdgeMutation edgeMutation = (EdgeMutation) mutation;
-
-            String newEdgeLabel = edgeMutation.getNewEdgeLabel();
-            if (newEdgeLabel != null) {
-                getGraph().alterEdgeLabel((AccumuloEdge) mutation.getElement(), newEdgeLabel);
-            }
+            getGraph().elementMutationBuilder.saveEdgeMutation((EdgeMutation) mutation, IncreasingTime.currentTimeMillis(), user);
+        } else {
+            getGraph().elementMutationBuilder.saveVertexMutation((ElementMutation<Vertex>) mutation, IncreasingTime.currentTimeMillis(), user);
         }
-
-        if (mutation.getIndexHint() != IndexHint.DO_NOT_INDEX) {
-            getGraph().getSearchIndex().updateElement(graph, mutation, authorizations);
-        }
-
-        ElementType elementType = ElementType.getTypeFromElement(mutation.getElement());
-        getGraph().saveExtendedDataMutations(
-            mutation.getElement(),
-            elementType,
-            mutation.getIndexHint(),
-            mutation.getExtendedData(),
-            mutation.getExtendedDataDeletes(),
-            mutation.getAdditionalExtendedDataVisibilities(),
-            mutation.getAdditionalExtendedDataVisibilityDeletes(),
-            authorizations
-        );
-    }
-
-    @Override
-    @SuppressWarnings("deprecation")
-    public Iterable<HistoricalPropertyValue> getHistoricalPropertyValues(String key, String name, Visibility visibility, Long startTime, Long endTime, Authorizations authorizations) {
-        return getGraph().getHistoricalPropertyValues(this, key, name, visibility, startTime, endTime, authorizations);
     }
 
     @Override
     public Stream<HistoricalEvent> getHistoricalEvents(
         HistoricalEventId after,
         HistoricalEventsFetchHints fetchHints,
-        Authorizations authorizations
+        User user
     ) {
         return getGraph().getHistoricalEvents(
             Lists.newArrayList(this),
             after,
             fetchHints,
-            authorizations
+            user
         );
     }
-
-    @Override
-    public abstract <T extends Element> ExistingElementMutation<T> prepareMutation();
 
     @Override
     public QueryableIterable<ExtendedDataRow> getExtendedData(String tableName, FetchHints fetchHints) {
@@ -213,13 +129,13 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
             getGraph(),
             this,
             tableName,
-            getGraph().getExtendedData(
+            toIterable(getGraph().getExtendedData(
                 ElementType.getTypeFromElement(this),
                 getId(),
                 tableName,
                 fetchHints,
-                getAuthorizations()
-            )
+                getUser()
+            ))
         );
     }
 
@@ -271,10 +187,6 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
         return timestamp;
     }
 
-    protected void setVisibility(Visibility visibility) {
-        this.visibility = visibility;
-    }
-
     @Override
     public Iterable<Property> getProperties() {
         if (!getFetchHints().isIncludeProperties()) {
@@ -283,79 +195,7 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
         return this.properties.getProperties();
     }
 
-    public Iterable<PropertyDeleteMutation> getPropertyDeleteMutations() {
-        return this.propertyDeleteMutations;
-    }
-
-    public Iterable<PropertySoftDeleteMutation> getPropertySoftDeleteMutations() {
-        return this.propertySoftDeleteMutations;
-    }
-
-    @Override
-    public Iterable<Property> getProperties(String key, String name) {
-        Property reservedProperty = getReservedProperty(name);
-        if (reservedProperty != null) {
-            return Lists.newArrayList(reservedProperty);
-        }
-        getFetchHints().assertPropertyIncluded(name);
-        return this.properties.getProperties(key, name);
-    }
-
-    private void updateAdditionalVisibilitiesInternal(Iterable<AdditionalVisibilityAddMutation> additionalVisibilities, Iterable<AdditionalVisibilityDeleteMutation> additionalVisibilityDeletes) {
-        if (additionalVisibilities != null) {
-            for (AdditionalVisibilityAddMutation additionalVisibility : additionalVisibilities) {
-                this.additionalVisibilities.add(additionalVisibility.getAdditionalVisibility());
-            }
-        }
-        if (additionalVisibilityDeletes != null) {
-            for (AdditionalVisibilityDeleteMutation additionalVisibilityDelete : additionalVisibilityDeletes) {
-                this.additionalVisibilities.remove(additionalVisibilityDelete.getAdditionalVisibility());
-            }
-        }
-    }
-
-    // this method differs setProperties in that it only updates the in memory representation of the properties
-    protected void updatePropertiesInternal(
-        Iterable<Property> properties,
-        Iterable<PropertyDeleteMutation> propertyDeleteMutations,
-        Iterable<PropertySoftDeleteMutation> propertySoftDeleteMutations
-    ) {
-        if (propertyDeleteMutations != null) {
-            this.propertyDeleteMutations = new ConcurrentSkipListSet<>();
-            for (PropertyDeleteMutation propertyDeleteMutation : propertyDeleteMutations) {
-                removePropertyInternal(
-                    propertyDeleteMutation.getKey(),
-                    propertyDeleteMutation.getName(),
-                    propertyDeleteMutation.getVisibility()
-                );
-                this.propertyDeleteMutations.add(propertyDeleteMutation);
-            }
-        }
-        if (propertySoftDeleteMutations != null) {
-            this.propertySoftDeleteMutations = new ConcurrentSkipListSet<>();
-            for (PropertySoftDeleteMutation propertySoftDeleteMutation : propertySoftDeleteMutations) {
-                removePropertyInternal(
-                    propertySoftDeleteMutation.getKey(),
-                    propertySoftDeleteMutation.getName(),
-                    propertySoftDeleteMutation.getVisibility()
-                );
-                this.propertySoftDeleteMutations.add(propertySoftDeleteMutation);
-            }
-        }
-
-        for (Property property : properties) {
-            addPropertyInternal(property);
-        }
-    }
-
-    protected void removePropertyInternal(String key, String name, Visibility visibility) {
-        Property property = getProperty(key, name, visibility);
-        if (property != null) {
-            this.properties.removeProperty(property);
-        }
-    }
-
-    protected void addPropertyInternal(Property property) {
+    private void addPropertyInternal(Property property) {
         if (property.getKey() == null) {
             throw new IllegalArgumentException("key is required for property");
         }
@@ -372,31 +212,18 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
     }
 
     @Override
-    public int hashCode() {
-        return getId().hashCode();
-    }
-
-    @Override
-    public String toString() {
-        if (this instanceof Edge) {
-            Edge edge = (Edge) this;
-            return getId() + ":[" + edge.getVertexId(Direction.OUT) + "-" + edge.getLabel() + "->" + edge.getVertexId(Direction.IN) + "]";
+    public Iterable<Property> getProperties(String key, String name) {
+        Property reservedProperty = getReservedProperty(name);
+        if (reservedProperty != null) {
+            return Lists.newArrayList(reservedProperty);
         }
-        return getId();
+        getFetchHints().assertPropertyIncluded(name);
+        return this.properties.getProperties(key, name);
     }
 
     @Override
-    public boolean equals(Object obj) {
-        if (obj instanceof Element) {
-            Element objElem = (Element) obj;
-            return getId().equals(objElem.getId());
-        }
-        return super.equals(obj);
-    }
-
-    @Override
-    public Authorizations getAuthorizations() {
-        return authorizations;
+    public User getUser() {
+        return user;
     }
 
     @Override
@@ -405,7 +232,7 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
     }
 
     @Override
-    public ImmutableSet<String> getAdditionalVisibilities() {
+    public ImmutableSet<Visibility> getAdditionalVisibilities() {
         return ImmutableSet.copyOf(additionalVisibilities);
     }
 

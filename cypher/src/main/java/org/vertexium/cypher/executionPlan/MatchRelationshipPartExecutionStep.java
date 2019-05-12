@@ -12,8 +12,8 @@ import org.vertexium.cypher.ast.model.CypherDirection;
 import org.vertexium.cypher.ast.model.CypherRangeLiteral;
 import org.vertexium.cypher.exceptions.VertexiumCypherException;
 import org.vertexium.cypher.exceptions.VertexiumCypherNotImplemented;
-import org.vertexium.query.Query;
-import org.vertexium.query.QueryResultsIterable;
+import org.vertexium.search.Query;
+import org.vertexium.search.QueryResults;
 
 import java.util.*;
 import java.util.function.Function;
@@ -21,7 +21,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.vertexium.util.StreamUtils.mapOptional;
-import static org.vertexium.util.StreamUtils.stream;
 
 public class MatchRelationshipPartExecutionStep extends MatchPartExecutionStep<MatchNodePartExecutionStep> {
     private final List<String> relTypesNames;
@@ -44,8 +43,8 @@ public class MatchRelationshipPartExecutionStep extends MatchPartExecutionStep<M
     }
 
     @Override
-    protected QueryResultsIterable<? extends Element> getElements(VertexiumCypherQueryContext ctx, Query q) {
-        QueryResultsIterable<? extends Element> elements;
+    protected QueryResults<? extends Element> getElements(VertexiumCypherQueryContext ctx, Query q) {
+        QueryResults<Edge> elements;
         if (relTypesNames.size() > 0) {
             throw new VertexiumCypherNotImplemented("cannot filter rel types names");
         }
@@ -82,7 +81,7 @@ public class MatchRelationshipPartExecutionStep extends MatchPartExecutionStep<M
 
         if (left != null) {
             Direction direction = toVertexiumQueryDirection(this.direction);
-            Set<EdgeData> leftEdgeData = stream(left.getEdgeIds(direction, ctx.getAuthorizations()))
+            Set<EdgeData> leftEdgeData = left.getEdgeIds(direction, ctx.getUser())
                 .map(edgeId -> new EdgeData(left, edgeId))
                 .collect(Collectors.toSet());
             edgeDatas.addAll(leftEdgeData);
@@ -91,7 +90,7 @@ public class MatchRelationshipPartExecutionStep extends MatchPartExecutionStep<M
         // if this is a cyclic edge (left == right) don't add the edge id twice
         if (right != null && left != right) {
             Direction direction = toVertexiumQueryDirection(this.direction).reverse();
-            Set<EdgeData> rightEdgeData = stream(right.getEdgeIds(direction, ctx.getAuthorizations()))
+            Set<EdgeData> rightEdgeData = right.getEdgeIds(direction, ctx.getUser())
                 .map(edgeId -> new EdgeData(right, edgeId))
                 .collect(Collectors.toSet());
             edgeDatas.addAll(rightEdgeData);
@@ -147,11 +146,11 @@ public class MatchRelationshipPartExecutionStep extends MatchPartExecutionStep<M
             if (path.containsVertexId(vertexId)) {
                 return results;
             }
-            Vertex vertex = ctx.getGraph().getVertex(vertexId, ctx.getAuthorizations());
+            Vertex vertex = ctx.getGraph().getVertex(vertexId, ctx.getUser());
             return Stream.concat(results, expandPath(ctx, row, new RelationshipRangePathResult(path, vertex), range));
         } else if (lastElement instanceof Vertex) {
             Vertex vertex = (Vertex) lastElement;
-            Set<EdgeData> edgeDatas = stream(vertex.getEdgeIds(toVertexiumQueryDirection(this.direction), ctx.getAuthorizations()))
+            Set<EdgeData> edgeDatas = vertex.getEdgeIds(toVertexiumQueryDirection(this.direction), ctx.getUser())
                 .map(edgeId -> new EdgeData(vertex, edgeId))
                 .collect(Collectors.toSet());
             edgeDatas = populateAndFilterEdgeData(ctx, row, edgeDatas);
@@ -166,7 +165,7 @@ public class MatchRelationshipPartExecutionStep extends MatchPartExecutionStep<M
 
     private Set<EdgeData> populateAndFilterEdgeData(VertexiumCypherQueryContext ctx, CypherResultRow row, Set<EdgeData> edgeDatas) {
         Iterable<String> edgeIds = edgeDatas.stream().map(ed -> ed.edgeId).collect(Collectors.toList());
-        Map<String, Edge> edgesById = stream(ctx.getGraph().getEdges(edgeIds, ctx.getAuthorizations()))
+        Map<String, Edge> edgesById = ctx.getGraph().getEdges(edgeIds, ctx.getUser())
             .collect(Collectors.toMap(Element::getId, e -> e));
         return edgeDatas.stream()
             .peek(edgeData -> edgeData.edge = edgesById.get(edgeData.edgeId))

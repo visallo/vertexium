@@ -149,7 +149,7 @@ public abstract class IteratorHistoricalEvent implements Comparable<IteratorHist
         return new HistoricalEventId(getTimestamp(), getElementType(), getElementId(), getHistoricalEventIdSubOrder());
     }
 
-    protected int getHistoricalEventIdSubOrder() {
-        return 1000;
+    protected String getHistoricalEventIdSubOrder() {
+        return "~";
     }
 }

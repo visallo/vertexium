@@ -92,6 +92,10 @@ public class VertexiumScript extends Script {
         return authorizations;
     }
 
+    public static User getUser() {
+        return getAuthorizations().getUser();
+    }
+
     public static void setAuthorizations(Authorizations authorizations) {
         VertexiumScript.authorizations = authorizations;
     }
@@ -101,7 +105,7 @@ public class VertexiumScript extends Script {
     }
 
     public static Object executeCypher(String code) {
-        VertexiumCypherQueryContext ctx = new CliVertexiumCypherQueryContext(getGraph(), getAuthorizations());
+        VertexiumCypherQueryContext ctx = new CliVertexiumCypherQueryContext(getGraph(), getUser());
         CypherCompilerContext compilerContext = new CypherCompilerContext(ctx.getFunctions());
         VertexiumCypherQuery query = VertexiumCypherQuery.parse(compilerContext, code);
         return query.execute(ctx);
@@ -238,7 +242,7 @@ public class VertexiumScript extends Script {
         AtomicInteger vertexIndex = new AtomicInteger(0);
         AtomicInteger edgeIndex = new AtomicInteger(0);
 
-        VertexiumCypherQueryContext ctx = new CliVertexiumCypherQueryContext(getGraph(), getAuthorizations());
+        VertexiumCypherQueryContext ctx = new CliVertexiumCypherQueryContext(getGraph(), getUser());
         LinkedHashSet<String> columnNames = cypherResult.getColumnNames();
         List<List<String>> table = new ArrayList<>();
         table.add(new ArrayList<>(columnNames));

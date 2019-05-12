@@ -9,7 +9,6 @@ import org.elasticsearch.index.reindex.BulkByScrollResponse;
 import org.elasticsearch.index.reindex.DeleteByQueryAction;
 import org.junit.rules.ExternalResource;
 import org.vertexium.Graph;
-import org.vertexium.GraphWithSearchIndex;
 import org.vertexium.VertexiumException;
 import org.vertexium.util.IOUtils;
 import org.vertexium.util.VertexiumLogger;
@@ -160,7 +159,7 @@ public class ElasticsearchResource extends ExternalResource {
     }
 
     public boolean disableEdgeIndexing(Graph graph) {
-        Elasticsearch5SearchIndex searchIndex = (Elasticsearch5SearchIndex) ((GraphWithSearchIndex) graph).getSearchIndex();
+        Elasticsearch5SearchIndex searchIndex = (Elasticsearch5SearchIndex) graph.getSearchIndex();
         searchIndex.getConfig().getGraphConfiguration().set(SEARCH_INDEX_PROP_PREFIX + "." + INDEX_EDGES, "false");
         return true;
     }

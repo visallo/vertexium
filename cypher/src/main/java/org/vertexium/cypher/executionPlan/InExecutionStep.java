@@ -2,7 +2,7 @@ package org.vertexium.cypher.executionPlan;
 
 import org.vertexium.cypher.VertexiumCypherQueryContext;
 import org.vertexium.cypher.VertexiumCypherResult;
-import org.vertexium.cypher.utils.ObjectUtils;
+import org.vertexium.cypher.utils.CypherObjectUtils;
 
 public class InExecutionStep extends ExecutionStepWithChildren implements ExecutionStepWithResultName {
     private final String resultName;
@@ -43,7 +43,7 @@ public class InExecutionStep extends ExecutionStepWithChildren implements Execut
                     for (Object o : arr) {
                         if (o == null) {
                             containsNull = true;
-                        } else if (ObjectUtils.equals(value, o)) {
+                        } else if (CypherObjectUtils.equals(value, o)) {
                             found = true;
                             break;
                         }

@@ -7,10 +7,11 @@ import org.vertexium.security.ColumnVisibility;
 import org.vertexium.security.VisibilityEvaluator;
 import org.vertexium.security.VisibilityParseException;
 import org.vertexium.util.ArrayUtils;
-import org.vertexium.util.Preconditions;
 
 import java.io.Serializable;
 import java.util.Arrays;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 public class InMemoryAuthorizations implements org.vertexium.Authorizations, Serializable {
     private static final long serialVersionUID = 1L;
@@ -37,7 +38,7 @@ public class InMemoryAuthorizations implements org.vertexium.Authorizations, Ser
 
     @Override
     public boolean canRead(Visibility visibility) {
-        Preconditions.checkNotNull(visibility, "visibility is required");
+        checkNotNull(visibility, "visibility is required");
 
         // this is just a shortcut so that we don't need to construct evaluators and visibility objects to check for an empty string.
         if (visibility.getVisibilityString().length() == 0) {

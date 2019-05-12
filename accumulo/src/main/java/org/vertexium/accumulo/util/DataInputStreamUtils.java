@@ -164,7 +164,13 @@ public class DataInputStreamUtils {
                 Text edgeId = decodeText(in);
                 long timestamp = in.readLong();
                 String vertexId = decodeString(in);
-                EdgeInfo edgeInfo = new EdgeInfo(nameSubstitutionStrategy.inflate(label), vertexId, timestamp);
+                Text columnVisibility = decodeText(in);
+                EdgeInfo edgeInfo = new EdgeInfo(
+                    nameSubstitutionStrategy.inflate(label),
+                    vertexId,
+                    columnVisibility,
+                    timestamp
+                );
                 edges.add(edgeId, edgeInfo);
             }
         }

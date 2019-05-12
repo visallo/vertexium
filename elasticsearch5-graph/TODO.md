@@ -1,0 +1,3 @@
+- verify extended data edge labels change when calling alter edge label
+- verify you can store SPVs in extended data
+- de-dup metadata values in protobuf storage

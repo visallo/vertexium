@@ -8,7 +8,7 @@ public abstract class InMemoryExtendedDataTable {
         ElementType elementType,
         String elementId,
         FetchHints fetchHints,
-        Authorizations authorizations
+        User user
     );
 
     public abstract Iterable<? extends ExtendedDataRow> getTable(
@@ -16,16 +16,18 @@ public abstract class InMemoryExtendedDataTable {
         String elementId,
         String tableName,
         FetchHints fetchHints,
-        Authorizations authorizations
+        User user
     );
 
     public abstract void addData(
+        InMemoryGraph graph,
         ExtendedDataRowId rowId,
         String column,
         String key,
         Object value,
         long timestamp,
-        Visibility visibility
+        Visibility visibility,
+        User user
     );
 
     public abstract void remove(ExtendedDataRowId id);
@@ -34,11 +36,11 @@ public abstract class InMemoryExtendedDataTable {
 
     public abstract void addAdditionalVisibility(
         ExtendedDataRowId extendedDataRowId,
-        String additionalVisibility
+        Visibility additionalVisibility
     );
 
     public abstract void deleteAdditionalVisibility(
         ExtendedDataRowId extendedDataRowId,
-        String additionalVisibility
+        Visibility additionalVisibility
     );
 }

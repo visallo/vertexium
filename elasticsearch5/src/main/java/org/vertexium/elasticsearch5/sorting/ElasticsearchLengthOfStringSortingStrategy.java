@@ -49,7 +49,7 @@ public class ElasticsearchLengthOfStringSortingStrategy
 
         SortOrder esOrder = direction == SortDirection.ASCENDING ? SortOrder.ASC : SortOrder.DESC;
         Map<String, Object> scriptParams = new HashMap<>();
-        String[] propertyNames = searchIndex.getPropertyNames(graph, getPropertyName(), parameters.getAuthorizations());
+        String[] propertyNames = searchIndex.getPropertyNames(graph, getPropertyName(), parameters.getUser());
         List<String> fieldNames = Arrays.stream(propertyNames)
             .map(propertyName -> {
                 String suffix = propertyDefinition.getDataType() == String.class

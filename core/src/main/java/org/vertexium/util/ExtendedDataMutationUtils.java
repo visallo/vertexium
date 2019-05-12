@@ -1,9 +1,6 @@
 package org.vertexium.util;
 
-import org.vertexium.mutation.AdditionalExtendedDataVisibilityAddMutation;
-import org.vertexium.mutation.AdditionalExtendedDataVisibilityDeleteMutation;
-import org.vertexium.mutation.ExtendedDataDeleteMutation;
-import org.vertexium.mutation.ExtendedDataMutation;
+import org.vertexium.mutation.*;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -14,6 +11,7 @@ public class ExtendedDataMutationUtils {
     public static Map<String, Map<String, Mutations>> getByTableThenRowId(
         Iterable<ExtendedDataMutation> extendedData,
         Iterable<ExtendedDataDeleteMutation> extendedDataDeletes,
+        Iterable<ElementMutationBase.DeleteExtendedDataRowData> extendedDataRowDeletes,
         Iterable<AdditionalExtendedDataVisibilityAddMutation> additionalExtendedDataVisibilities,
         Iterable<AdditionalExtendedDataVisibilityDeleteMutation> additionalExtendedDataVisibilityDeletes
     ) {
@@ -32,6 +30,14 @@ public class ExtendedDataMutationUtils {
                 Map<String, Mutations> byTable = results.computeIfAbsent(m.getTableName(), s -> new HashMap<>());
                 Mutations byRow = byTable.computeIfAbsent(m.getRow(), s -> new Mutations());
                 byRow.addExtendedDataDeleteMutation(m);
+            }
+        }
+
+        if (extendedDataRowDeletes != null) {
+            for (ElementMutationBase.DeleteExtendedDataRowData m : extendedDataRowDeletes) {
+                Map<String, Mutations> byTable = results.computeIfAbsent(m.getTableName(), s -> new HashMap<>());
+                Mutations byRow = byTable.computeIfAbsent(m.getRow(), s -> new Mutations());
+                byRow.addExtendedDataRowDeleteMutation(m);
             }
         }
 
@@ -57,6 +63,7 @@ public class ExtendedDataMutationUtils {
     public static class Mutations {
         private final List<ExtendedDataMutation> extendedData = new ArrayList<>();
         private final List<ExtendedDataDeleteMutation> extendedDataDeletes = new ArrayList<>();
+        private final List<ElementMutationBase.DeleteExtendedDataRowData> extendedDataRowDeletes = new ArrayList<>();
         private final List<AdditionalExtendedDataVisibilityAddMutation> additionalExtendedDataVisibilities = new ArrayList<>();
         private final List<AdditionalExtendedDataVisibilityDeleteMutation> additionalExtendedDataVisibilityDeletes = new ArrayList<>();
 
@@ -66,6 +73,10 @@ public class ExtendedDataMutationUtils {
 
         public Iterable<ExtendedDataDeleteMutation> getExtendedDataDeletes() {
             return extendedDataDeletes;
+        }
+
+        public List<ElementMutationBase.DeleteExtendedDataRowData> getExtendedDataRowDeletes() {
+            return extendedDataRowDeletes;
         }
 
         public Iterable<AdditionalExtendedDataVisibilityAddMutation> getAdditionalExtendedDataVisibilities() {
@@ -82,6 +93,10 @@ public class ExtendedDataMutationUtils {
 
         public void addExtendedDataDeleteMutation(ExtendedDataDeleteMutation m) {
             extendedDataDeletes.add(m);
+        }
+
+        public void addExtendedDataRowDeleteMutation(ElementMutationBase.DeleteExtendedDataRowData m) {
+            extendedDataRowDeletes.add(m);
         }
 
         public void addAdditionalExtendedDataVisibilityAddMutation(AdditionalExtendedDataVisibilityAddMutation m) {
