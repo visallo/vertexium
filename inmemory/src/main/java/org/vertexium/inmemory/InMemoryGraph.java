@@ -10,10 +10,7 @@ import org.vertexium.inmemory.mutations.AlterEdgeLabelMutation;
 import org.vertexium.inmemory.mutations.AlterVisibilityMutation;
 import org.vertexium.inmemory.mutations.EdgeSetupMutation;
 import org.vertexium.inmemory.mutations.ElementTimestampMutation;
-import org.vertexium.mutation.AlterPropertyVisibility;
-import org.vertexium.mutation.ExtendedDataDeleteMutation;
-import org.vertexium.mutation.ExtendedDataMutation;
-import org.vertexium.mutation.SetPropertyMetadata;
+import org.vertexium.mutation.*;
 import org.vertexium.property.StreamingPropertyValue;
 import org.vertexium.property.StreamingPropertyValueRef;
 import org.vertexium.search.IndexHint;
@@ -129,22 +126,22 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
             public Vertex save(Authorizations authorizations) {
                 addValidAuthorizations(authorizations.getAuthorizations());
                 boolean isNew = false;
-                InMemoryTableElement vertexTableElement = InMemoryGraph.this.vertices.getTableElement(getElementId());
+                InMemoryTableElement vertexTableElement = InMemoryGraph.this.vertices.getTableElement(getId());
                 if (vertexTableElement == null) {
                     isNew = true;
                     vertices.append(
-                        getElementId(),
+                        getId(),
                         new AlterVisibilityMutation(timestampLong, getVisibility(), null),
                         new ElementTimestampMutation(timestampLong)
                     );
                 } else {
                     if (vertexTableElement.getVisibility().equals(getVisibility())) {
-                        vertices.append(getElementId(), new ElementTimestampMutation(timestampLong));
+                        vertices.append(getId(), new ElementTimestampMutation(timestampLong));
                     } else {
-                        vertices.append(getElementId(), new AlterVisibilityMutation(timestampLong, getVisibility(), null), new ElementTimestampMutation(timestampLong));
+                        vertices.append(getId(), new AlterVisibilityMutation(timestampLong, getVisibility(), null), new ElementTimestampMutation(timestampLong));
                     }
                 }
-                InMemoryVertex vertex = InMemoryGraph.this.vertices.get(InMemoryGraph.this, getElementId(), FetchHints.ALL_INCLUDING_HIDDEN, authorizations);
+                InMemoryVertex vertex = InMemoryGraph.this.vertices.get(InMemoryGraph.this, getId(), FetchHints.ALL_INCLUDING_HIDDEN, authorizations);
                 if (isNew && hasEventListeners()) {
                     fireGraphEvent(new AddVertexEvent(InMemoryGraph.this, vertex));
                 }
@@ -152,25 +149,44 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
 
                 // to more closely simulate how accumulo works. add a potentially sparse (in case of an update) vertex to the search index.
                 if (getIndexHint() != IndexHint.DO_NOT_INDEX) {
-                    getSearchIndex().addElement(InMemoryGraph.this, vertex, authorizations);
-                    getSearchIndex().addElementExtendedData(InMemoryGraph.this, vertex, getExtendedData(), authorizations);
-                    for (ExtendedDataDeleteMutation m : getExtendedDataDeletes()) {
-                        getSearchIndex().deleteExtendedData(
-                            InMemoryGraph.this,
-                            vertex,
-                            m.getTableName(),
-                            m.getRow(),
-                            m.getColumnName(),
-                            m.getKey(),
-                            m.getVisibility(),
-                            authorizations
-                        );
-                    }
+                    updateElementAndExtendedDataInSearchIndex(vertex, this, authorizations);
                 }
 
                 return vertex;
             }
         };
+    }
+
+    <T extends Element> void updateElementAndExtendedDataInSearchIndex(
+        Element element,
+        ElementMutation<T> elementMutation,
+        Authorizations authorizations
+    ) {
+        if (elementMutation instanceof ExistingElementMutation) {
+            getSearchIndex().updateElement(this, (ExistingElementMutation<? extends Element>) elementMutation, authorizations);
+        } else {
+            getSearchIndex().addElement(this, element, authorizations);
+        }
+        getSearchIndex().addElementExtendedData(
+            InMemoryGraph.this,
+            element,
+            elementMutation.getExtendedData(),
+            elementMutation.getAdditionalExtendedDataVisibilities(),
+            elementMutation.getAdditionalExtendedDataVisibilityDeletes(),
+            authorizations
+        );
+        for (ExtendedDataDeleteMutation m : elementMutation.getExtendedDataDeletes()) {
+            getSearchIndex().deleteExtendedData(
+                InMemoryGraph.this,
+                element,
+                m.getTableName(),
+                m.getRow(),
+                m.getColumnName(),
+                m.getKey(),
+                m.getVisibility(),
+                authorizations
+            );
+        }
     }
 
     private void addValidAuthorizations(String[] authorizations) {
@@ -359,7 +375,7 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
             @Override
             public Edge save(Authorizations authorizations) {
                 addValidAuthorizations(authorizations.getAuthorizations());
-                return savePreparedEdge(this, getOutVertexId(), getInVertexId(), timestamp, authorizations);
+                return savePreparedEdge(this, getVertexId(Direction.OUT), getVertexId(Direction.IN), timestamp, authorizations);
             }
         };
     }
@@ -390,51 +406,38 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
             IncreasingTime.advanceTime(10);
         }
         long incrementingTimestamp = timestamp;
-        InMemoryTableElement edgeTableElement = this.edges.getTableElement(edgeBuilder.getElementId());
+        InMemoryTableElement edgeTableElement = this.edges.getTableElement(edgeBuilder.getId());
         boolean isNew = false;
         if (edgeTableElement == null) {
             isNew = true;
             edges.append(
-                edgeBuilder.getElementId(),
+                edgeBuilder.getId(),
                 new AlterVisibilityMutation(incrementingTimestamp++, edgeBuilder.getVisibility(), null),
                 new ElementTimestampMutation(incrementingTimestamp++),
-                new AlterEdgeLabelMutation(incrementingTimestamp++, edgeBuilder.getLabel()),
+                new AlterEdgeLabelMutation(incrementingTimestamp++, edgeBuilder.getEdgeLabel()),
                 new EdgeSetupMutation(incrementingTimestamp++, outVertexId, inVertexId)
             );
         } else {
-            edges.append(edgeBuilder.getElementId(), new ElementTimestampMutation(incrementingTimestamp++));
+            edges.append(edgeBuilder.getId(), new ElementTimestampMutation(incrementingTimestamp++));
             if (edgeBuilder.getNewEdgeLabel() == null) {
                 AlterEdgeLabelMutation alterEdgeLabelMutation = (AlterEdgeLabelMutation) edgeTableElement.findLastMutation(AlterEdgeLabelMutation.class);
-                if (alterEdgeLabelMutation != null && !alterEdgeLabelMutation.getNewEdgeLabel().equals(edgeBuilder.getLabel())) {
-                    edges.append(edgeBuilder.getElementId(), new AlterEdgeLabelMutation(incrementingTimestamp++, edgeBuilder.getLabel()));
+                if (alterEdgeLabelMutation != null && !alterEdgeLabelMutation.getNewEdgeLabel().equals(edgeBuilder.getEdgeLabel())) {
+                    edges.append(edgeBuilder.getId(), new AlterEdgeLabelMutation(incrementingTimestamp++, edgeBuilder.getEdgeLabel()));
                 }
             }
         }
         if (edgeBuilder.getNewEdgeLabel() != null) {
-            edges.append(edgeBuilder.getElementId(), new AlterEdgeLabelMutation(incrementingTimestamp, edgeBuilder.getNewEdgeLabel()));
+            edges.append(edgeBuilder.getId(), new AlterEdgeLabelMutation(incrementingTimestamp, edgeBuilder.getNewEdgeLabel()));
         }
 
-        InMemoryEdge edge = this.edges.get(InMemoryGraph.this, edgeBuilder.getElementId(), FetchHints.ALL_INCLUDING_HIDDEN, authorizations);
+        InMemoryEdge edge = this.edges.get(InMemoryGraph.this, edgeBuilder.getId(), FetchHints.ALL_INCLUDING_HIDDEN, authorizations);
         if (isNew && hasEventListeners()) {
             fireGraphEvent(new AddEdgeEvent(InMemoryGraph.this, edge));
         }
         edge.updatePropertiesInternal(edgeBuilder);
 
         if (edgeBuilder.getIndexHint() != IndexHint.DO_NOT_INDEX) {
-            getSearchIndex().addElement(InMemoryGraph.this, edge, authorizations);
-            getSearchIndex().addElementExtendedData(InMemoryGraph.this, edge, edgeBuilder.getExtendedData(), authorizations);
-            for (ExtendedDataDeleteMutation m : edgeBuilder.getExtendedDataDeletes()) {
-                getSearchIndex().deleteExtendedData(
-                    InMemoryGraph.this,
-                    edge,
-                    m.getTableName(),
-                    m.getRow(),
-                    m.getColumnName(),
-                    m.getKey(),
-                    m.getVisibility(),
-                    authorizations
-                );
-            }
+            updateElementAndExtendedDataInSearchIndex(edge, edgeBuilder, authorizations);
         }
 
         return edge;
@@ -665,7 +668,7 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
     ) {
         boolean includeHidden = fetchHints.isIncludeHidden();
 
-        if (!element.canRead(authorizations)) {
+        if (!element.canRead(fetchHints, authorizations)) {
             return false;
         }
 
@@ -684,7 +687,7 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
     ) {
         boolean includeHidden = fetchHints.isIncludeHidden();
 
-        if (!element.canRead(authorizations)) {
+        if (!element.canRead(fetchHints, authorizations)) {
             return false;
         }
         if (!includeHidden && element.isHidden(authorizations)) {
@@ -700,6 +703,52 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
         }
 
         return true;
+    }
+
+    protected void addAdditionalVisibility(
+        InMemoryTableElement inMemoryTableElement,
+        String visibility,
+        Object eventData,
+        Authorizations authorizations
+    ) {
+        Element element;
+        FetchHints fetchHints = new FetchHintsBuilder(FetchHints.ALL_INCLUDING_HIDDEN)
+            .setIgnoreAdditionalVisibilities(true)
+            .build();
+        inMemoryTableElement.appendAddAdditionalVisibilityMutation(visibility, eventData);
+        if (inMemoryTableElement instanceof InMemoryTableVertex) {
+            element = getVertex(inMemoryTableElement.getId(), fetchHints, authorizations);
+        } else if (inMemoryTableElement instanceof InMemoryTableEdge) {
+            element = getEdge(inMemoryTableElement.getId(), fetchHints, authorizations);
+        } else {
+            throw new IllegalArgumentException("Unexpected element type: " + inMemoryTableElement.getClass().getName());
+        }
+        if (hasEventListeners()) {
+            fireGraphEvent(new AddAdditionalVisibilityEvent(this, element, visibility, eventData));
+        }
+    }
+
+    protected void deleteAdditionalVisibility(
+        InMemoryTableElement inMemoryTableElement,
+        String visibility,
+        Object eventData,
+        Authorizations authorizations
+    ) {
+        Element element;
+        FetchHints fetchHints = new FetchHintsBuilder(FetchHints.ALL_INCLUDING_HIDDEN)
+            .setIgnoreAdditionalVisibilities(true)
+            .build();
+        inMemoryTableElement.appendDeleteAdditionalVisibilityMutation(visibility, eventData);
+        if (inMemoryTableElement instanceof InMemoryTableVertex) {
+            element = getVertex(inMemoryTableElement.getId(), fetchHints, authorizations);
+        } else if (inMemoryTableElement instanceof InMemoryTableEdge) {
+            element = getEdge(inMemoryTableElement.getId(), fetchHints, authorizations);
+        } else {
+            throw new IllegalArgumentException("Unexpected element type: " + inMemoryTableElement.getClass().getName());
+        }
+        if (hasEventListeners()) {
+            fireGraphEvent(new DeleteAdditionalVisibilityEvent(this, element, visibility, eventData));
+        }
     }
 
     protected void softDeleteProperty(
@@ -847,8 +896,11 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
     }
 
     protected StreamingPropertyValueRef saveStreamingPropertyValue(
-        String elementId, String key, String name,
-        Visibility visibility, long timestamp,
+        String elementId,
+        String key,
+        String name,
+        Visibility visibility,
+        long timestamp,
         StreamingPropertyValue value
     ) {
         return new InMemoryStreamingPropertyValueRef(value);
@@ -899,8 +951,13 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
         ((InMemoryVertex) vertex).setInMemoryTableElement(this.vertices.getTableElement(vertex.getId()));
     }
 
-    public ImmutableSet<String> getExtendedDataTableNames(ElementType elementType, String elementId, Authorizations authorizations) {
-        return extendedDataTable.getTableNames(elementType, elementId, authorizations);
+    public ImmutableSet<String> getExtendedDataTableNames(
+        ElementType elementType,
+        String elementId,
+        FetchHints fetchHints,
+        Authorizations authorizations
+    ) {
+        return extendedDataTable.getTableNames(elementType, elementId, fetchHints, authorizations);
     }
 
     public Iterable<? extends ExtendedDataRow> getExtendedDataTable(
@@ -920,7 +977,14 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
         Authorizations authorizations
     ) {
         extendedDataTable.addData(rowId, extendedData.getColumnName(), extendedData.getKey(), extendedData.getValue(), extendedData.getTimestamp(), extendedData.getVisibility());
-        getSearchIndex().addElementExtendedData(this, element, Collections.singleton(extendedData), authorizations);
+        getSearchIndex().addElementExtendedData(
+            this,
+            element,
+            Collections.singleton(extendedData),
+            Collections.emptyList(),
+            Collections.emptyList(),
+            authorizations
+        );
         if (hasEventListeners()) {
             fireGraphEvent(new AddExtendedDataEvent(
                 this,
@@ -972,6 +1036,40 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
         getSearchIndex().deleteExtendedData(this, element, tableName, row, columnName, key, visibility, authorizations);
         if (hasEventListeners()) {
             fireGraphEvent(new DeleteExtendedDataEvent(this, element, tableName, row, columnName, key));
+        }
+    }
+
+    public void addAdditionalExtendedDataVisibility(
+        InMemoryElement element,
+        String tableName,
+        String row,
+        String additionalVisibility,
+        Authorizations authorizations
+    ) {
+        extendedDataTable.addAdditionalVisibility(
+            new ExtendedDataRowId(ElementType.getTypeFromElement(element), element.getId(), tableName, row),
+            additionalVisibility
+        );
+
+        if (hasEventListeners()) {
+            fireGraphEvent(new AddAdditionalExtendedDataVisibilityEvent(this, element, tableName, row, additionalVisibility));
+        }
+    }
+
+    public void deleteAdditionalExtendedDataVisibility(
+        InMemoryElement element,
+        String tableName,
+        String row,
+        String additionalVisibility,
+        Authorizations authorizations
+    ) {
+        extendedDataTable.deleteAdditionalVisibility(
+            new ExtendedDataRowId(ElementType.getTypeFromElement(element), element.getId(), tableName, row),
+            additionalVisibility
+        );
+
+        if (hasEventListeners()) {
+            fireGraphEvent(new DeleteAdditionalExtendedDataVisibilityEvent(this, element, tableName, row, additionalVisibility));
         }
     }
 

@@ -1,10 +1,13 @@
 package org.vertexium.inmemory;
 
+import com.google.common.collect.ImmutableSet;
 import org.vertexium.*;
 import org.vertexium.security.ColumnVisibility;
 import org.vertexium.security.VisibilityEvaluator;
 import org.vertexium.security.VisibilityParseException;
+import org.vertexium.util.StreamUtils;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
@@ -14,17 +17,21 @@ import java.util.stream.Collectors;
 
 public class InMemoryExtendedDataRow extends ExtendedDataRowBase {
     private final ExtendedDataRowId id;
-    private ReadWriteLock propertiesLock = new ReentrantReadWriteLock();
-    private Set<InMemoryProperty> properties = new HashSet<>();
+    private final ReadWriteLock propertiesLock = new ReentrantReadWriteLock();
+    private final Set<InMemoryProperty> properties = new HashSet<>();
+    private final Set<ColumnVisibility> additionalVisibilities = new HashSet<>();
 
     public InMemoryExtendedDataRow(ExtendedDataRowId id, FetchHints fetchHints) {
         super(fetchHints);
         this.id = id;
     }
 
-    public boolean canRead(VisibilityEvaluator visibilityEvaluator) {
+    public boolean canRead(VisibilityEvaluator visibilityEvaluator, FetchHints fetchHints) {
         propertiesLock.readLock().lock();
         try {
+            if (!fetchHints.isIgnoreAdditionalVisibilities() && !canReadAdditionalVisibility(visibilityEvaluator)) {
+                return false;
+            }
             return properties.stream().anyMatch(e -> e.canRead(visibilityEvaluator));
         } finally {
             propertiesLock.readLock().unlock();
@@ -36,19 +43,39 @@ public class InMemoryExtendedDataRow extends ExtendedDataRowBase {
         return id;
     }
 
-    public InMemoryExtendedDataRow toReadable(VisibilityEvaluator visibilityEvaluator) {
+    public InMemoryExtendedDataRow toReadable(VisibilityEvaluator visibilityEvaluator, FetchHints fetchHints) {
         propertiesLock.readLock().lock();
         try {
             InMemoryExtendedDataRow row = new InMemoryExtendedDataRow(getId(), getFetchHints());
+            if (!fetchHints.isIgnoreAdditionalVisibilities() && !canReadAdditionalVisibility(visibilityEvaluator)) {
+                return null;
+            }
             for (InMemoryProperty column : properties) {
                 if (column.canRead(visibilityEvaluator)) {
                     row.properties.add(column);
                 }
             }
+            row.additionalVisibilities.addAll(additionalVisibilities);
             return row;
         } finally {
             propertiesLock.readLock().unlock();
         }
+    }
+
+    private boolean canReadAdditionalVisibility(VisibilityEvaluator visibilityEvaluator) {
+        if (additionalVisibilities.size() == 0) {
+            return true;
+        }
+        try {
+            for (ColumnVisibility additionalVisibility : additionalVisibilities) {
+                if (!visibilityEvaluator.evaluate(additionalVisibility)) {
+                    return false;
+                }
+            }
+        } catch (VisibilityParseException ex) {
+            throw new VertexiumException("Could not evaluate visibility", ex);
+        }
+        return true;
     }
 
     public void addColumn(
@@ -81,6 +108,24 @@ public class InMemoryExtendedDataRow extends ExtendedDataRowBase {
         }
     }
 
+    public void addAdditionalVisibility(String additionalVisibility) {
+        propertiesLock.writeLock().lock();
+        try {
+            additionalVisibilities.add(new ColumnVisibility(additionalVisibility));
+        } finally {
+            propertiesLock.writeLock().unlock();
+        }
+    }
+
+    public void deleteAdditionalVisibility(String additionalVisibility) {
+        propertiesLock.writeLock().lock();
+        try {
+            additionalVisibilities.remove(new ColumnVisibility(additionalVisibility));
+        } finally {
+            propertiesLock.writeLock().unlock();
+        }
+    }
+
     @Override
     public Iterable<Property> getProperties() {
         propertiesLock.readLock().lock();
@@ -89,6 +134,13 @@ public class InMemoryExtendedDataRow extends ExtendedDataRowBase {
         } finally {
             propertiesLock.readLock().unlock();
         }
+    }
+
+    @Override
+    public ImmutableSet<String> getAdditionalVisibilities() {
+        return additionalVisibilities.stream()
+            .map(av -> new String(av.getExpression(), StandardCharsets.UTF_8))
+            .collect(StreamUtils.toImmutableSet());
     }
 
     private static class InMemoryProperty extends Property {

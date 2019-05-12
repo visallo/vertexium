@@ -156,7 +156,7 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
                 return new SelectManyIterable<String, ExtendedDataRow>(element.getExtendedDataTableNames()) {
                     @Override
                     protected Iterable<? extends ExtendedDataRow> getIterable(String tableName) {
-                        return element.getExtendedData(tableName);
+                        return element.getExtendedData(tableName, fetchHints);
                     }
                 };
             }

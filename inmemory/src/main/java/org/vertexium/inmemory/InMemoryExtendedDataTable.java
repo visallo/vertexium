@@ -7,6 +7,7 @@ public abstract class InMemoryExtendedDataTable {
     public abstract ImmutableSet<String> getTableNames(
         ElementType elementType,
         String elementId,
+        FetchHints fetchHints,
         Authorizations authorizations
     );
 
@@ -30,4 +31,14 @@ public abstract class InMemoryExtendedDataTable {
     public abstract void remove(ExtendedDataRowId id);
 
     public abstract void removeColumn(ExtendedDataRowId extendedDataRowId, String columnName, String key, Visibility visibility);
+
+    public abstract void addAdditionalVisibility(
+        ExtendedDataRowId extendedDataRowId,
+        String additionalVisibility
+    );
+
+    public abstract void deleteAdditionalVisibility(
+        ExtendedDataRowId extendedDataRowId,
+        String additionalVisibility
+    );
 }

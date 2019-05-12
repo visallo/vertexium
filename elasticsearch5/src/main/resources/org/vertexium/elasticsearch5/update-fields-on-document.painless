@@ -1,14 +1,52 @@
-for (def fieldName : params.fieldsToRemove) {
-    ctx._source.remove(fieldName);
-}
-for (fieldToRename in params.fieldsToRename.entrySet()) {
-    ctx._source[fieldToRename.getValue()] = ctx._source[fieldToRename.getKey()]; ctx._source.remove(fieldToRename.getKey());
-}
-for (fieldToSet in params.fieldsToSet.entrySet()) {
-    ctx._source[fieldToSet.getKey()] = fieldToSet.getValue();
+
+void updateFieldsToRemove(def ctx, def fieldsToRemove) {
+    for (def fieldName : fieldsToRemove) {
+        ctx._source.remove(fieldName);
+    }
 }
 
-if (ctx._source['__elementType'] == 'vertexextdata' || ctx._source['__elementType'] == 'edgeextdata') {
-    /* see helper-functions.painless for definition of getFieldVisibilities() */
-    ctx._source['__extendedDataColumnVisibilities'] = getFieldVisibilities(ctx._source).toArray();
+void updateFieldsToRename(def ctx, def fieldsToRename) {
+    for (def fieldToRename : fieldsToRename.entrySet()) {
+        ctx._source[fieldToRename.getValue()] = ctx._source[fieldToRename.getKey()];
+        ctx._source.remove(fieldToRename.getKey());
+    }
 }
+
+void updateFieldsToSet(def ctx, def fieldsToSet) {
+    for (def fieldToSet : fieldsToSet.entrySet()) {
+        ctx._source[fieldToSet.getKey()] = fieldToSet.getValue();
+    }
+}
+
+void updateExtendedDataColumnVisibilities(def ctx) {
+    if (ctx._source['__elementType'] == 'vertexextdata' || ctx._source['__elementType'] == 'edgeextdata') {
+        /* see helper-functions.painless for definition of getFieldVisibilities() */
+        ctx._source['__extendedDataColumnVisibilities'] = getFieldVisibilities(ctx._source).toArray();
+    }
+}
+
+void updateAdditionalVisibilities(def ctx, def additionalVisibilities) {
+    for (String additionalVisibility : additionalVisibilities) {
+        if (!hasAdditionalVisibility(ctx._source, additionalVisibility)) {
+            if (ctx._source['__additionalVisibility'] == null) {
+                ctx._source['__additionalVisibility'] = new ArrayList();
+            }
+            ctx._source['__additionalVisibility'].add(additionalVisibility);
+        }
+    }
+}
+
+void updateAdditionalVisibilitiesToDelete(def ctx, def additionalVisibilitiesToDelete) {
+    for (String additionalVisibilityToDelete : additionalVisibilitiesToDelete) {
+        if (hasAdditionalVisibility(ctx._source, additionalVisibilityToDelete)) {
+            ctx._source['__additionalVisibility'].remove(ctx._source['__additionalVisibility'].indexOf(additionalVisibilityToDelete));
+        }
+    }
+}
+
+updateFieldsToRemove(ctx, params.fieldsToRemove);
+updateFieldsToRename(ctx, params.fieldsToRename);
+updateFieldsToSet(ctx, params.fieldsToSet);
+updateExtendedDataColumnVisibilities(ctx);
+updateAdditionalVisibilities(ctx, params.additionalVisibilities);
+updateAdditionalVisibilitiesToDelete(ctx, params.additionalVisibilitiesToDelete);

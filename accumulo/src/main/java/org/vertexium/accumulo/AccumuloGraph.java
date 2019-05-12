@@ -333,7 +333,14 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
 
                     if (getIndexHint() != IndexHint.DO_NOT_INDEX) {
                         getSearchIndex().addElement(AccumuloGraph.this, vertex, authorizations);
-                        getSearchIndex().addElementExtendedData(AccumuloGraph.this, vertex, getExtendedData(), authorizations);
+                        getSearchIndex().addElementExtendedData(
+                            AccumuloGraph.this,
+                            vertex,
+                            getExtendedData(),
+                            getAdditionalExtendedDataVisibilities(),
+                            getAdditionalExtendedDataVisibilityDeletes(),
+                            authorizations
+                        );
 
                         for (ExtendedDataDeleteMutation m : getExtendedDataDeletes()) {
                             getSearchIndex().deleteExtendedData(
@@ -356,8 +363,12 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                             getProperties(),
                             getPropertyDeletes(),
                             getPropertySoftDeletes(),
+                            getAdditionalVisibilities(),
+                            getAdditionalVisibilityDeletes(),
                             getExtendedData(),
-                            getExtendedDataDeletes()
+                            getExtendedDataDeletes(),
+                            getAdditionalExtendedDataVisibilities(),
+                            getAdditionalExtendedDataVisibilityDeletes()
                         );
                     }
 
@@ -372,12 +383,13 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                 Iterable<Visibility> hiddenVisibilities = null;
                 return new AccumuloVertex(
                     AccumuloGraph.this,
-                    getElementId(),
+                    getId(),
                     getVisibility(),
                     getProperties(),
                     getPropertyDeletes(),
                     getPropertySoftDeletes(),
                     hiddenVisibilities,
+                    getAdditionalVisibilitiesAsStringSet(),
                     getExtendedDataTableNames(),
                     timestampLong,
                     FetchHints.ALL_INCLUDING_HIDDEN,
@@ -388,12 +400,16 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
     }
 
     private void queueEvents(
-        AccumuloElement element,
+        Element element,
         Iterable<Property> properties,
         Iterable<PropertyDeleteMutation> propertyDeletes,
         Iterable<PropertySoftDeleteMutation> propertySoftDeletes,
+        Iterable<AdditionalVisibilityAddMutation> additionalVisibilities,
+        Iterable<AdditionalVisibilityDeleteMutation> additionalVisibilityDeletes,
         Iterable<ExtendedDataMutation> extendedData,
-        Iterable<ExtendedDataDeleteMutation> extendedDataDeletes
+        Iterable<ExtendedDataDeleteMutation> extendedDataDeletes,
+        Iterable<AdditionalExtendedDataVisibilityAddMutation> additionalExtendedDataVisibilities,
+        Iterable<AdditionalExtendedDataVisibilityDeleteMutation> additionalExtendedDataVisibilityDeletes
     ) {
         if (properties != null) {
             for (Property property : properties) {
@@ -408,6 +424,16 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         if (propertySoftDeletes != null) {
             for (PropertySoftDeleteMutation propertySoftDeleteMutation : propertySoftDeletes) {
                 queueEvent(new SoftDeletePropertyEvent(this, element, propertySoftDeleteMutation));
+            }
+        }
+        if (additionalVisibilities != null) {
+            for (AdditionalVisibilityAddMutation additionalVisibilityAddMutation : additionalVisibilities) {
+                queueEvent(new AddAdditionalVisibilityEvent(this, element, additionalVisibilityAddMutation));
+            }
+        }
+        if (additionalVisibilityDeletes != null) {
+            for (AdditionalVisibilityDeleteMutation additionalVisibilityDeleteMutation : additionalVisibilityDeletes) {
+                queueEvent(new DeleteAdditionalVisibilityEvent(this, element, additionalVisibilityDeleteMutation));
             }
         }
         if (extendedData != null) {
@@ -436,6 +462,28 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                 ));
             }
         }
+        if (additionalExtendedDataVisibilities != null) {
+            for (AdditionalExtendedDataVisibilityAddMutation additionalExtendedDataVisibility : additionalExtendedDataVisibilities) {
+                queueEvent(new AddAdditionalExtendedDataVisibilityEvent(
+                    this,
+                    element,
+                    additionalExtendedDataVisibility.getTableName(),
+                    additionalExtendedDataVisibility.getRow(),
+                    additionalExtendedDataVisibility.getAdditionalVisibility()
+                ));
+            }
+        }
+        if (additionalExtendedDataVisibilityDeletes != null) {
+            for (AdditionalExtendedDataVisibilityDeleteMutation additionalExtendedDataVisibilityDelete : additionalExtendedDataVisibilityDeletes) {
+                queueEvent(new DeleteAdditionalExtendedDataVisibilityEvent(
+                    this,
+                    element,
+                    additionalExtendedDataVisibilityDelete.getTableName(),
+                    additionalExtendedDataVisibilityDelete.getRow(),
+                    additionalExtendedDataVisibilityDelete.getAdditionalVisibility()
+                ));
+            }
+        }
     }
 
     private void queueEvent(GraphEvent graphEvent) {
@@ -444,11 +492,13 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         }
     }
 
-    void saveProperties(
+    void savePropertiesAndAdditionalVisibilities(
         AccumuloElement element,
         Iterable<Property> properties,
         Iterable<PropertyDeleteMutation> propertyDeletes,
-        Iterable<PropertySoftDeleteMutation> propertySoftDeletes
+        Iterable<PropertySoftDeleteMutation> propertySoftDeletes,
+        Iterable<AdditionalVisibilityAddMutation> additionalVisibilities,
+        Iterable<AdditionalVisibilityDeleteMutation> additionalVisibilityDeletes
     ) {
         String elementRowKey = element.getId();
         Mutation m = new Mutation(elementRowKey);
@@ -468,6 +518,12 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         if (hasProperty) {
             addMutations(element, m);
         }
+        for (AdditionalVisibilityAddMutation additionalVisibility : additionalVisibilities) {
+            elementMutationBuilder.addAdditionalVisibilityToMutation(m, additionalVisibility);
+        }
+        for (AdditionalVisibilityDeleteMutation additionalVisibilityDelete : additionalVisibilityDeletes) {
+            elementMutationBuilder.addAdditionalVisibilityDeleteToMutation(m, additionalVisibilityDelete);
+        }
 
         if (hasEventListeners()) {
             queueEvents(
@@ -475,6 +531,10 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                 properties,
                 propertyDeletes,
                 propertySoftDeletes,
+                additionalVisibilities,
+                additionalVisibilityDeletes,
+                null,
+                null,
                 null,
                 null
             );
@@ -829,16 +889,17 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         Iterable<Visibility> hiddenVisibilities = null;
         return new AccumuloEdge(
             accumuloGraph,
-            edgeBuilder.getElementId(),
-            edgeBuilder.getOutVertexId(),
-            edgeBuilder.getInVertexId(),
-            edgeBuilder.getLabel(),
+            edgeBuilder.getId(),
+            edgeBuilder.getVertexId(Direction.OUT),
+            edgeBuilder.getVertexId(Direction.IN),
+            edgeBuilder.getEdgeLabel(),
             edgeBuilder.getNewEdgeLabel(),
             edgeBuilder.getVisibility(),
             edgeBuilder.getProperties(),
             edgeBuilder.getPropertyDeletes(),
             edgeBuilder.getPropertySoftDeletes(),
             hiddenVisibilities,
+            edgeBuilder.getAdditionalVisibilitiesAsStringSet(),
             edgeBuilder.getExtendedDataTableNames(),
             timestamp,
             fetchHints,
@@ -858,7 +919,14 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
 
         if (edgeBuilder.getIndexHint() != IndexHint.DO_NOT_INDEX) {
             getSearchIndex().addElement(AccumuloGraph.this, edge, authorizations);
-            getSearchIndex().addElementExtendedData(AccumuloGraph.this, edge, edgeBuilder.getExtendedData(), authorizations);
+            getSearchIndex().addElementExtendedData(
+                AccumuloGraph.this,
+                edge,
+                edgeBuilder.getExtendedData(),
+                edgeBuilder.getAdditionalExtendedDataVisibilities(),
+                edgeBuilder.getAdditionalExtendedDataVisibilityDeletes(),
+                authorizations
+            );
             for (ExtendedDataDeleteMutation m : edgeBuilder.getExtendedDataDeletes()) {
                 getSearchIndex().deleteExtendedData(
                     AccumuloGraph.this,
@@ -880,8 +948,12 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                 edgeBuilder.getProperties(),
                 edgeBuilder.getPropertyDeletes(),
                 edgeBuilder.getPropertySoftDeletes(),
+                edgeBuilder.getAdditionalVisibilities(),
+                edgeBuilder.getAdditionalVisibilityDeletes(),
                 edgeBuilder.getExtendedData(),
-                edgeBuilder.getExtendedDataDeletes()
+                edgeBuilder.getExtendedDataDeletes(),
+                edgeBuilder.getAdditionalExtendedDataVisibilities(),
+                edgeBuilder.getAdditionalExtendedDataVisibilityDeletes()
             );
         }
 
@@ -1134,10 +1206,10 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
     }
 
     @Override
-    public Iterable<ExtendedDataRow> getExtendedData(Iterable<ExtendedDataRowId> ids, Authorizations authorizations) {
+    public Iterable<ExtendedDataRow> getExtendedData(Iterable<ExtendedDataRowId> ids, FetchHints fetchHints, Authorizations authorizations) {
         List<org.apache.accumulo.core.data.Range> ranges = extendedDataRowIdToRange(ids);
         Span trace = Trace.start("getExtendedData");
-        return getExtendedDataRowsInRange(trace, ranges, FetchHints.ALL, authorizations);
+        return getExtendedDataRowsInRange(trace, ranges, fetchHints, authorizations);
     }
 
     @Override
@@ -1145,6 +1217,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         ElementType elementType,
         String elementId,
         String tableName,
+        FetchHints fetchHints,
         Authorizations authorizations
     ) {
         try {
@@ -1153,7 +1226,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             trace.data("elementId", elementId);
             trace.data("tableName", tableName);
             org.apache.accumulo.core.data.Range range = org.apache.accumulo.core.data.Range.prefix(KeyHelper.createExtendedDataRowKey(elementType, elementId, tableName, null));
-            return getExtendedDataRowsInRange(trace, Lists.newArrayList(range), FetchHints.ALL, authorizations);
+            return getExtendedDataRowsInRange(trace, Lists.newArrayList(range), fetchHints, authorizations);
         } catch (IllegalStateException ex) {
             throw new VertexiumException("Failed to get extended data: " + elementType + ":" + elementId + ":" + tableName, ex);
         } catch (RuntimeException ex) {
@@ -1191,6 +1264,8 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         IndexHint indexHint,
         Iterable<ExtendedDataMutation> extendedData,
         Iterable<ExtendedDataDeleteMutation> extendedDataDeletes,
+        Iterable<AdditionalExtendedDataVisibilityAddMutation> additionalExtendedDataVisibilities,
+        Iterable<AdditionalExtendedDataVisibilityDeleteMutation> additionalExtendedDataVisibilityDeletes,
         Authorizations authorizations
     ) {
         if (extendedData == null) {
@@ -1199,11 +1274,25 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
 
         String elementId = element.getId();
         elementMutationBuilder.saveExtendedDataMarkers(elementId, elementType, extendedData);
-        elementMutationBuilder.saveExtendedData(this, elementId, elementType, extendedData);
-        elementMutationBuilder.saveExtendedDataDeletes(this, elementId, elementType, extendedDataDeletes);
+        elementMutationBuilder.saveExtendedData(
+            this,
+            elementId,
+            elementType,
+            extendedData,
+            extendedDataDeletes,
+            additionalExtendedDataVisibilities,
+            additionalExtendedDataVisibilityDeletes
+        );
 
         if (indexHint != IndexHint.DO_NOT_INDEX) {
-            getSearchIndex().addElementExtendedData(this, element, extendedData, authorizations);
+            getSearchIndex().addElementExtendedData(
+                this,
+                element,
+                extendedData,
+                additionalExtendedDataVisibilities,
+                additionalExtendedDataVisibilityDeletes,
+                authorizations
+            );
             for (ExtendedDataDeleteMutation m : extendedDataDeletes) {
                 getSearchIndex().deleteExtendedData(
                     this,
@@ -1219,28 +1308,18 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         }
 
         if (hasEventListeners()) {
-            for (ExtendedDataMutation extendedDataMutation : extendedData) {
-                queueEvent(new AddExtendedDataEvent(
-                    AccumuloGraph.this,
-                    element,
-                    extendedDataMutation.getTableName(),
-                    extendedDataMutation.getRow(),
-                    extendedDataMutation.getColumnName(),
-                    extendedDataMutation.getKey(),
-                    extendedDataMutation.getValue(),
-                    extendedDataMutation.getVisibility()
-                ));
-            }
-            for (ExtendedDataDeleteMutation extendedDataDeleteMutation : extendedDataDeletes) {
-                queueEvent(new DeleteExtendedDataEvent(
-                    AccumuloGraph.this,
-                    element,
-                    extendedDataDeleteMutation.getTableName(),
-                    extendedDataDeleteMutation.getRow(),
-                    extendedDataDeleteMutation.getColumnName(),
-                    extendedDataDeleteMutation.getKey()
-                ));
-            }
+            queueEvents(
+                element,
+                null,
+                null,
+                null,
+                null,
+                null,
+                extendedData,
+                extendedDataDeletes,
+                additionalExtendedDataVisibilities,
+                additionalExtendedDataVisibilityDeletes
+            );
         }
     }
 
@@ -1733,6 +1812,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                         VertexIterator.class
                     );
                     VertexIterator.setFetchHints(vertexIteratorSettings, toIteratorFetchHints(fetchHints));
+                    VertexIterator.setAuthorizations(vertexIteratorSettings, authorizations.getAuthorizations());
                     scanner.addScanIterator(vertexIteratorSettings);
                 } else if (elementType == ElementType.EDGE) {
                     IteratorSetting edgeIteratorSettings = new IteratorSetting(
@@ -1741,6 +1821,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                         EdgeIterator.class
                     );
                     EdgeIterator.setFetchHints(edgeIteratorSettings, toIteratorFetchHints(fetchHints));
+                    EdgeIterator.setAuthorizations(edgeIteratorSettings, authorizations.getAuthorizations());
                     scanner.addScanIterator(edgeIteratorSettings);
                 } else {
                     throw new VertexiumException("Unexpected element type: " + elementType);
@@ -1765,6 +1846,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             fetchHints.isIncludeAllEdgeRefs(),
             fetchHints.isIncludeOutEdgeRefs(),
             fetchHints.isIncludeInEdgeRefs(),
+            fetchHints.isIgnoreAdditionalVisibilities(),
             deflate(fetchHints.getEdgeLabelsOfEdgeRefsToInclude()),
             fetchHints.isIncludeEdgeLabelsAndCounts(),
             fetchHints.isIncludeExtendedDataTableNames()
@@ -1891,6 +1973,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         columnFamiliesToFetch.add(AccumuloElement.CF_HIDDEN);
         columnFamiliesToFetch.add(AccumuloElement.CF_SOFT_DELETE);
         columnFamiliesToFetch.add(AccumuloElement.DELETE_ROW_COLUMN_FAMILY);
+        columnFamiliesToFetch.add(AccumuloElement.CF_ADDITIONAL_VISIBILITY);
 
         if (elementType == ElementType.VERTEX) {
             columnFamiliesToFetch.add(AccumuloVertex.CF_SIGNAL);
@@ -2589,8 +2672,27 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             public ScannerBase scanner;
 
             @Override
-            protected boolean isIncluded(Map.Entry<Key, Value> src, ExtendedDataRow dest) {
-                return dest != null;
+            protected boolean isIncluded(Map.Entry<Key, Value> src, ExtendedDataRow row) {
+                if (row == null) {
+                    return false;
+                }
+                if (!fetchHints.isIgnoreAdditionalVisibilities()) {
+                    return canRead(row);
+                }
+                return true;
+            }
+
+            private boolean canRead(ExtendedDataRow row) {
+                Set<String> additionalVisibilities = row.getAdditionalVisibilities();
+                if (additionalVisibilities.size() == 0) {
+                    return true;
+                }
+                for (String additionalVisibility : additionalVisibilities) {
+                    if (!authorizations.canRead(new Visibility(additionalVisibility))) {
+                        return false;
+                    }
+                }
+                return true;
             }
 
             @Override
@@ -2598,7 +2700,12 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                 try {
                     SortedMap<Key, Value> row = WholeRowIterator.decodeRow(next.getKey(), next.getValue());
                     ExtendedDataRowId extendedDataRowId = KeyHelper.parseExtendedDataRowId(next.getKey().getRow());
-                    return new AccumuloExtendedDataRow(extendedDataRowId, row, fetchHints, vertexiumSerializer);
+                    return AccumuloExtendedDataRow.create(
+                        extendedDataRowId,
+                        row,
+                        fetchHints,
+                        vertexiumSerializer
+                    );
                 } catch (IOException e) {
                     throw new VertexiumException("Could not decode row", e);
                 }

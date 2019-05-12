@@ -9,6 +9,7 @@ import org.vertexium.query.ExtendedDataQueryableIterable;
 import org.vertexium.query.QueryableIterable;
 import org.vertexium.search.IndexHint;
 
+import java.util.List;
 import java.util.stream.Stream;
 
 public abstract class InMemoryElement<TElement extends InMemoryElement> extends ElementBase {
@@ -65,6 +66,52 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> extends 
         if (property != null) {
             getGraph().softDeleteProperty(inMemoryTableElement, property, timestamp, data, indexHint, authorizations);
         }
+    }
+
+    protected void addAdditionalVisibility(
+        String additionalVisibility,
+        Object eventData,
+        Authorizations authorizations
+    ) {
+        getGraph().addAdditionalVisibility(inMemoryTableElement, additionalVisibility, eventData, authorizations);
+    }
+
+    protected void deleteAdditionalVisibility(
+        String additionalVisibility,
+        Object eventData,
+        Authorizations authorizations
+    ) {
+        getGraph().deleteAdditionalVisibility(inMemoryTableElement, additionalVisibility, eventData, authorizations);
+    }
+
+    private void addAdditionalExtendedDataVisibility(
+        String tableName,
+        String row,
+        String additionalVisibility,
+        Authorizations authorizations
+    ) {
+        getGraph().addAdditionalExtendedDataVisibility(
+            this,
+            tableName,
+            row,
+            additionalVisibility,
+            authorizations
+        );
+    }
+
+    private void deleteAdditionalExtendedDataVisibility(
+        String tableName,
+        String row,
+        String additionalVisibility,
+        Authorizations authorizations
+    ) {
+        getGraph().deleteAdditionalExtendedDataVisibility(
+            this,
+            tableName,
+            row,
+            additionalVisibility,
+            authorizations
+        );
     }
 
     private void deleteExtendedData(String tableName, String row, String columnName, String key, Visibility visibility) {
@@ -209,8 +256,12 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> extends 
             vertexBuilder.getProperties(),
             vertexBuilder.getPropertyDeletes(),
             vertexBuilder.getPropertySoftDeletes(),
+            vertexBuilder.getAdditionalVisibilities(),
+            vertexBuilder.getAdditionalVisibilityDeletes(),
             vertexBuilder.getExtendedData(),
             vertexBuilder.getExtendedDataDeletes(),
+            vertexBuilder.getAdditionalExtendedDataVisibilities(),
+            vertexBuilder.getAdditionalExtendedDataVisibilityDeletes(),
             vertexBuilder.getIndexHint()
         );
     }
@@ -220,8 +271,12 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> extends 
             edgeBuilder.getProperties(),
             edgeBuilder.getPropertyDeletes(),
             edgeBuilder.getPropertySoftDeletes(),
+            edgeBuilder.getAdditionalVisibilities(),
+            edgeBuilder.getAdditionalVisibilityDeletes(),
             edgeBuilder.getExtendedData(),
             edgeBuilder.getExtendedDataDeletes(),
+            edgeBuilder.getAdditionalExtendedDataVisibilities(),
+            edgeBuilder.getAdditionalExtendedDataVisibilityDeletes(),
             edgeBuilder.getIndexHint()
         );
     }
@@ -230,8 +285,12 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> extends 
         Iterable<Property> properties,
         Iterable<PropertyDeleteMutation> propertyDeleteMutations,
         Iterable<PropertySoftDeleteMutation> propertySoftDeleteMutations,
+        Iterable<AdditionalVisibilityAddMutation> additionalVisibilities,
+        Iterable<AdditionalVisibilityDeleteMutation> additionalVisibilityDeletes,
         Iterable<ExtendedDataMutation> extendedDatas,
         Iterable<ExtendedDataDeleteMutation> extendedDataDeletes,
+        List<AdditionalExtendedDataVisibilityAddMutation> additionalExtendedDataVisibilities,
+        List<AdditionalExtendedDataVisibilityDeleteMutation> additionalExtendedDataVisibilityDeletes,
         IndexHint indexHint
     ) {
         for (Property property : properties) {
@@ -260,6 +319,20 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> extends 
                 authorizations
             );
         }
+        for (AdditionalVisibilityAddMutation additionalVisibility : additionalVisibilities) {
+            addAdditionalVisibility(
+                additionalVisibility.getAdditionalVisibility(),
+                additionalVisibility.getEventData(),
+                authorizations
+            );
+        }
+        for (AdditionalVisibilityDeleteMutation additionalVisibilityDelete : additionalVisibilityDeletes) {
+            deleteAdditionalVisibility(
+                additionalVisibilityDelete.getAdditionalVisibility(),
+                additionalVisibilityDelete.getEventData(),
+                authorizations
+            );
+        }
         for (ExtendedDataMutation extendedData : extendedDatas) {
             getGraph().ensurePropertyDefined(extendedData.getColumnName(), extendedData.getValue());
             extendedData(extendedData, authorizations);
@@ -271,6 +344,22 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> extends 
                 extendedDataDelete.getColumnName(),
                 extendedDataDelete.getKey(),
                 extendedDataDelete.getVisibility()
+            );
+        }
+        for (AdditionalExtendedDataVisibilityAddMutation additionalVisibility : additionalExtendedDataVisibilities) {
+            addAdditionalExtendedDataVisibility(
+                additionalVisibility.getTableName(),
+                additionalVisibility.getRow(),
+                additionalVisibility.getAdditionalVisibility(),
+                authorizations
+            );
+        }
+        for (AdditionalExtendedDataVisibilityDeleteMutation additionalVisibilityDelete : additionalExtendedDataVisibilityDeletes) {
+            deleteAdditionalExtendedDataVisibility(
+                additionalVisibilityDelete.getTableName(),
+                additionalVisibilityDelete.getRow(),
+                additionalVisibilityDelete.getAdditionalVisibility(),
+                authorizations
             );
         }
     }
@@ -301,8 +390,12 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> extends 
             properties,
             propertyDeleteMutations,
             propertySoftDeleteMutations,
+            mutation.getAdditionalVisibilities(),
+            mutation.getAdditionalVisibilityDeletes(),
             mutation.getExtendedData(),
             mutation.getExtendedDataDeletes(),
+            mutation.getAdditionalExtendedDataVisibilities(),
+            mutation.getAdditionalExtendedDataVisibilityDeletes(),
             indexHint
         );
 
@@ -344,12 +437,17 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> extends 
     }
 
     public boolean canRead(Authorizations authorizations) {
-        return inMemoryTableElement.canRead(authorizations);
+        return inMemoryTableElement.canRead(getFetchHints(), authorizations);
     }
 
     @Override
     public Iterable<Visibility> getHiddenVisibilities() {
         return inMemoryTableElement.getHiddenVisibilities();
+    }
+
+    @Override
+    public ImmutableSet<String> getAdditionalVisibilities() {
+        return inMemoryTableElement.getAdditionalVisibilities();
     }
 
     public FetchHints getFetchHints() {
@@ -370,16 +468,16 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> extends 
             throw new VertexiumMissingFetchHintException(getFetchHints(), "includeExtendedDataTableNames");
         }
 
-        return graph.getExtendedDataTableNames(ElementType.getTypeFromElement(this), id, authorizations);
+        return graph.getExtendedDataTableNames(ElementType.getTypeFromElement(this), id, getFetchHints(), authorizations);
     }
 
     @Override
-    public QueryableIterable<ExtendedDataRow> getExtendedData(String tableName) {
+    public QueryableIterable<ExtendedDataRow> getExtendedData(String tableName, FetchHints fetchHints) {
         return new ExtendedDataQueryableIterable(
             getGraph(),
             this,
             tableName,
-            graph.getExtendedDataTable(ElementType.getTypeFromElement(this), id, tableName, getFetchHints(), authorizations)
+            graph.getExtendedDataTable(ElementType.getTypeFromElement(this), id, tableName, fetchHints, authorizations)
         );
     }
 }

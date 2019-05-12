@@ -3,7 +3,6 @@ package org.vertexium;
 import org.vertexium.id.IdGenerator;
 import org.vertexium.mutation.ElementMutation;
 import org.vertexium.mutation.ExistingElementMutation;
-import org.vertexium.mutation.ExtendedDataMutation;
 import org.vertexium.query.GraphQuery;
 import org.vertexium.query.MultiVertexQuery;
 import org.vertexium.query.SimilarToGraphQuery;
@@ -168,11 +167,13 @@ public abstract class GraphBaseWithSearchIndex extends GraphBase implements Grap
     }
 
     @Override
-    public Iterable<Element> saveElementMutations(Iterable<ElementMutation> mutations, Authorizations authorizations) {
+    public Iterable<Element> saveElementMutations(
+        Iterable<ElementMutation<? extends Element>> mutations,
+        Authorizations authorizations
+    ) {
         List<Element> elements = new ArrayList<>();
         List<Element> elementsToAddToIndex = new ArrayList<>();
-        List<ElementAndIterableExtendedDataMutation> extendedDataToIndex = new ArrayList<>();
-        for (ElementMutation m : mutations) {
+        for (ElementMutation<? extends Element> m : mutations) {
             if (m instanceof ExistingElementMutation && !m.hasChanges()) {
                 elements.add(((ExistingElementMutation) m).getElement());
                 continue;
@@ -181,28 +182,26 @@ public abstract class GraphBaseWithSearchIndex extends GraphBase implements Grap
             IndexHint indexHint = m.getIndexHint();
             m.setIndexHint(IndexHint.DO_NOT_INDEX);
             Element element = m.save(authorizations);
+            m.setIndexHint(indexHint);
             elements.add(element);
             if (indexHint == IndexHint.INDEX) {
                 elementsToAddToIndex.add(element);
-                //noinspection unchecked
-                extendedDataToIndex.add(new ElementAndIterableExtendedDataMutation(element, m.getExtendedData()));
             }
         }
         getSearchIndex().addElements(this, elementsToAddToIndex, authorizations);
-        for (ElementAndIterableExtendedDataMutation ed : extendedDataToIndex) {
-            getSearchIndex().addElementExtendedData(this, ed.element, ed.extendedData, authorizations);
+        for (ElementMutation<? extends Element> m : mutations) {
+            if (m.getIndexHint() == IndexHint.INDEX) {
+                getSearchIndex().addElementExtendedData(
+                    this,
+                    m,
+                    m.getExtendedData(),
+                    m.getAdditionalExtendedDataVisibilities(),
+                    m.getAdditionalExtendedDataVisibilityDeletes(),
+                    authorizations
+                );
+            }
         }
         return elements;
-    }
-
-    private static class ElementAndIterableExtendedDataMutation {
-        public final Element element;
-        public final Iterable<ExtendedDataMutation> extendedData;
-
-        public ElementAndIterableExtendedDataMutation(Element element, Iterable<ExtendedDataMutation> extendedData) {
-            this.element = element;
-            this.extendedData = extendedData;
-        }
     }
 
     @Override

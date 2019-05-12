@@ -960,7 +960,10 @@ public abstract class GraphBase implements Graph {
     }
 
     @Override
-    public Iterable<Element> saveElementMutations(Iterable<ElementMutation> mutations, Authorizations authorizations) {
+    public Iterable<Element> saveElementMutations(
+        Iterable<ElementMutation<? extends Element>> mutations,
+        Authorizations authorizations
+    ) {
         List<Element> elements = new ArrayList<>();
         for (ElementMutation m : mutations) {
             if (m instanceof ExistingElementMutation && !m.hasChanges()) {
@@ -982,9 +985,9 @@ public abstract class GraphBase implements Graph {
     }
 
     @Override
-    public Iterable<ExtendedDataRow> getExtendedData(Iterable<ExtendedDataRowId> idsIterable, Authorizations authorizations) {
+    public Iterable<ExtendedDataRow> getExtendedData(Iterable<ExtendedDataRowId> idsIterable, FetchHints fetchHints, Authorizations authorizations) {
         Set<ExtendedDataRowId> ids = Sets.newHashSet(idsIterable);
-        return new FilterIterable<ExtendedDataRow>(getAllExtendedData(authorizations)) {
+        return new FilterIterable<ExtendedDataRow>(getAllExtendedData(fetchHints, authorizations)) {
             @Override
             protected boolean isIncluded(ExtendedDataRow row) {
                 return ids.contains(row.getId());
@@ -1009,6 +1012,7 @@ public abstract class GraphBase implements Graph {
         ElementType elementType,
         String elementId,
         String tableName,
+        FetchHints fetchHints,
         Authorizations authorizations
     ) {
         if ((elementType == null && (elementId != null || tableName != null))
@@ -1016,7 +1020,7 @@ public abstract class GraphBase implements Graph {
             throw new VertexiumException("Cannot create partial key with missing inner value");
         }
 
-        return new FilterIterable<ExtendedDataRow>(getAllExtendedData(authorizations)) {
+        return new FilterIterable<ExtendedDataRow>(getAllExtendedData(fetchHints, authorizations)) {
             @Override
             protected boolean isIncluded(ExtendedDataRow row) {
                 ExtendedDataRowId rowId = row.getId();
@@ -1029,7 +1033,7 @@ public abstract class GraphBase implements Graph {
 
     @Override
     public Iterable<ExtendedDataRow> getExtendedDataInRange(ElementType elementType, Range elementIdRange, Authorizations authorizations) {
-        return new FilterIterable<ExtendedDataRow>(getAllExtendedData(authorizations)) {
+        return new FilterIterable<ExtendedDataRow>(getAllExtendedData(FetchHints.ALL, authorizations)) {
             @Override
             protected boolean isIncluded(ExtendedDataRow row) {
                 ExtendedDataRowId rowId = row.getId();
@@ -1039,8 +1043,8 @@ public abstract class GraphBase implements Graph {
         };
     }
 
-    protected Iterable<ExtendedDataRow> getAllExtendedData(Authorizations authorizations) {
-        JoinIterable<Element> allElements = new JoinIterable<>(getVertices(authorizations), getEdges(authorizations));
+    protected Iterable<ExtendedDataRow> getAllExtendedData(FetchHints fetchHints, Authorizations authorizations) {
+        JoinIterable<Element> allElements = new JoinIterable<>(getVertices(fetchHints, authorizations), getEdges(fetchHints, authorizations));
         return new SelectManyIterable<Element, ExtendedDataRow>(allElements) {
             @Override
             protected Iterable<? extends ExtendedDataRow> getIterable(Element element) {

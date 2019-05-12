@@ -41,6 +41,7 @@ public class AccumuloEdge extends AccumuloElement implements Edge {
         Iterable<PropertyDeleteMutation> propertyDeleteMutations,
         Iterable<PropertySoftDeleteMutation> propertySoftDeleteMutations,
         Iterable<Visibility> hiddenVisibilities,
+        Iterable<String> additionalVisibilities,
         ImmutableSet<String> extendedDataTableNames,
         long timestamp,
         FetchHints fetchHints,
@@ -54,6 +55,7 @@ public class AccumuloEdge extends AccumuloElement implements Edge {
             propertyDeleteMutations,
             propertySoftDeleteMutations,
             hiddenVisibilities,
+            additionalVisibilities,
             extendedDataTableNames,
             timestamp,
             fetchHints,
@@ -85,6 +87,7 @@ public class AccumuloEdge extends AccumuloElement implements Edge {
             edgeId = DataInputStreamUtils.decodeString(in);
             timestamp = in.readLong();
             vertexVisibility = new Visibility(DataInputStreamUtils.decodeString(in));
+
             hiddenVisibilities = Iterables.transform(DataInputStreamUtils.decodeStringSet(in), new Function<String, Visibility>() {
                 @Nullable
                 @Override
@@ -92,6 +95,9 @@ public class AccumuloEdge extends AccumuloElement implements Edge {
                     return new Visibility(input);
                 }
             });
+
+            ImmutableSet<String> additionalVisibilities = DataInputStreamUtils.decodeStringSet(in);
+
             List<MetadataEntry> metadataEntries = DataInputStreamUtils.decodeMetadataEntries(in);
             properties = DataInputStreamUtils.decodeProperties(graph, in, metadataEntries, fetchHints);
             ImmutableSet<String> extendedDataTableNames = DataInputStreamUtils.decodeStringSet(in);
@@ -111,6 +117,7 @@ public class AccumuloEdge extends AccumuloElement implements Edge {
                 null,
                 null,
                 hiddenVisibilities,
+                additionalVisibilities,
                 extendedDataTableNames,
                 timestamp,
                 fetchHints,
@@ -187,5 +194,10 @@ public class AccumuloEdge extends AccumuloElement implements Edge {
                 return getElement();
             }
         };
+    }
+
+    @Override
+    public ElementType getElementType() {
+        return ElementType.EDGE;
     }
 }

@@ -4,33 +4,53 @@ import org.vertexium.mutation.EdgeMutation;
 import org.vertexium.util.IncreasingTime;
 
 public abstract class EdgeBuilderBase extends ElementBuilder<Edge> implements EdgeMutation {
+    private final String outVertexId;
+    private final String inVertexId;
     private final String label;
-    private final Visibility visibility;
     private String newEdgeLabel;
     private long alterEdgeLabelTimestamp;
 
-    protected EdgeBuilderBase(String edgeId, String label, Visibility visibility) {
-        super(edgeId);
+    protected EdgeBuilderBase(
+        String edgeId,
+        String outVertexId,
+        String inVertexId,
+        String label,
+        Visibility visibility
+    ) {
+        super(ElementType.EDGE, edgeId, visibility);
+        this.outVertexId = outVertexId;
+        this.inVertexId = inVertexId;
         this.label = label;
-        this.visibility = visibility;
         this.alterEdgeLabelTimestamp = IncreasingTime.currentTimeMillis();
     }
 
+    @Override
+    public String getVertexId(Direction direction) {
+        switch (direction) {
+            case OUT:
+                return outVertexId;
+            case IN:
+                return inVertexId;
+            default:
+                throw new VertexiumException("unhandled direction: " + direction);
+        }
+    }
+
+    /**
+     * @deprecated Use {@link #getId()}
+     */
+    @Deprecated
     public String getEdgeId() {
         return getElementId();
     }
 
-    public String getLabel() {
+    public String getEdgeLabel() {
         return label;
     }
 
     @Override
     public long getAlterEdgeLabelTimestamp() {
         return alterEdgeLabelTimestamp;
-    }
-
-    public Visibility getVisibility() {
-        return visibility;
     }
 
     @Override
@@ -51,10 +71,6 @@ public abstract class EdgeBuilderBase extends ElementBuilder<Edge> implements Ed
      */
     @Override
     public abstract Edge save(Authorizations authorizations);
-
-    public abstract String getOutVertexId();
-
-    public abstract String getInVertexId();
 
     @Override
     public boolean hasChanges() {

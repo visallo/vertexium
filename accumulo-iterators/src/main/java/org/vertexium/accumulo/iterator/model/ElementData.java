@@ -31,6 +31,7 @@ public abstract class ElementData {
     public final Map<ByteSequence, byte[]> propertyValues = new HashMap<>();
     public final Map<ByteSequence, ByteSequence> propertyVisibilities = new HashMap<>();
     public final Map<ByteSequence, Long> propertyTimestamps = new HashMap<>();
+    public final Set<Text> additionalVisibilities = new HashSet<>();
     public final Set<String> extendedTableNames = new HashSet<>();
     public boolean deleted;
     public boolean hidden;
@@ -51,6 +52,7 @@ public abstract class ElementData {
         propertyValues.clear();
         propertyVisibilities.clear();
         propertyTimestamps.clear();
+        additionalVisibilities.clear();
         extendedTableNames.clear();
     }
 
@@ -67,6 +69,7 @@ public abstract class ElementData {
         out.writeLong(timestamp);
         DataOutputStreamUtils.encodeText(out, visibility);
         DataOutputStreamUtils.encodeTextList(out, hiddenVisibilities);
+        DataOutputStreamUtils.encodeTextList(out, additionalVisibilities);
         encodePropertyMetadataLookup(out);
         encodeProperties(out, fetchHints);
         DataOutputStreamUtils.encodeStringSet(out, extendedTableNames);

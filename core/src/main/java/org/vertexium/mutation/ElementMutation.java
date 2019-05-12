@@ -3,7 +3,7 @@ package org.vertexium.mutation;
 import org.vertexium.*;
 import org.vertexium.search.IndexHint;
 
-public interface ElementMutation<T extends Element> {
+public interface ElementMutation<T extends Element> extends ElementLocation {
     String DEFAULT_KEY = "";
 
     /**
@@ -153,6 +153,104 @@ public interface ElementMutation<T extends Element> {
     ElementMutation<T> softDeleteProperty(String key, String name, Visibility visibility, Object eventData);
 
     /**
+     * Adds additional visibilities to the element. These visibilities will not effect the Visibility returned from
+     * {@link Element#getVisibility()}. These visibilities can also be bypassed by {@link FetchHints}.
+     *
+     * @param visibility The additional visibility to be applied
+     */
+    default ElementMutation<T> addAdditionalVisibility(String visibility) {
+        return addAdditionalVisibility(visibility, null);
+    }
+
+    /**
+     * Adds additional visibilities to the element. These visibilities will not effect the Visibility returned from
+     * {@link Element#getVisibility()}. These visibilities can also be bypassed by {@link FetchHints}.
+     *
+     * @param visibility The additional visibility to be applied
+     * @param eventData  Data to store with the mutation
+     */
+    ElementMutation<T> addAdditionalVisibility(String visibility, Object eventData);
+
+    /**
+     * Deletes a previously set additional visibility.
+     *
+     * @param visibility The additional visibility to be deleted
+     */
+    default ElementMutation<T> deleteAdditionalVisibility(String visibility) {
+        return deleteAdditionalVisibility(visibility, null);
+    }
+
+    /**
+     * Deletes a previously set additional visibility.
+     *
+     * @param visibility The additional visibility to be deleted
+     * @param eventData  Data to store with the mutation
+     */
+    ElementMutation<T> deleteAdditionalVisibility(String visibility, Object eventData);
+
+    /**
+     * Adds additional visibilities to the row column. These visibilities will not effect the Visibility returned from
+     * {@link Element#getVisibility()}. These visibilities can also be bypassed by {@link FetchHints}.
+     *
+     * @param tableName            Name of the table the row resides in
+     * @param row                  The row
+     * @param additionalVisibility The additional visibility to be applied
+     */
+    default ElementMutation<T> addExtendedDataAdditionalVisibility(
+        String tableName,
+        String row,
+        String additionalVisibility
+    ) {
+        return addExtendedDataAdditionalVisibility(tableName, row, additionalVisibility, null);
+    }
+
+    /**
+     * Adds additional visibilities to the row column. These visibilities will not effect the Visibility returned from
+     * {@link Element#getVisibility()}. These visibilities can also be bypassed by {@link FetchHints}.
+     *
+     * @param tableName            Name of the table the row resides in
+     * @param row                  The row
+     * @param additionalVisibility The additional visibility to be applied
+     * @param eventData            Data to store with the mutation
+     */
+    ElementMutation<T> addExtendedDataAdditionalVisibility(
+        String tableName,
+        String row,
+        String additionalVisibility,
+        Object eventData
+    );
+
+    /**
+     * Deletes a previously set additional visibility.
+     *
+     * @param tableName            Table name of the row to delete the additional visibility on.
+     * @param row                  Row to delete the additional visibility on.
+     * @param additionalVisibility The additional visibility to be deleted
+     */
+    default ElementMutation<T> deleteExtendedDataAdditionalVisibility(
+        String tableName,
+        String row,
+        String additionalVisibility
+    ) {
+        return deleteExtendedDataAdditionalVisibility(tableName, row, additionalVisibility, null);
+    }
+
+    /**
+     * Deletes a previously set additional visibility.
+     *
+     * @param tableName            Table name of the row to delete the additional visibility on.
+     * @param row                  Row to delete the additional visibility on.
+     * @param additionalVisibility The additional visibility to be deleted
+     * @param eventData            Data to store with the delete
+     */
+    ElementMutation<T> deleteExtendedDataAdditionalVisibility(
+        String tableName,
+        String row,
+        String additionalVisibility,
+        Object eventData
+    );
+
+    /**
      * Gets the properties currently in this mutation.
      */
     Iterable<Property> getProperties();
@@ -176,6 +274,26 @@ public interface ElementMutation<T extends Element> {
      * Gets the extended data columns currently being deleted in this mutation
      */
     Iterable<ExtendedDataDeleteMutation> getExtendedDataDeletes();
+
+    /**
+     * Gets the additional visibility mutations
+     */
+    Iterable<AdditionalVisibilityAddMutation> getAdditionalVisibilities();
+
+    /**
+     * Gets the additional visibility delete mutations
+     */
+    Iterable<AdditionalVisibilityDeleteMutation> getAdditionalVisibilityDeletes();
+
+    /**
+     * Gets the additional extended data visibility mutations
+     */
+    Iterable<AdditionalExtendedDataVisibilityAddMutation> getAdditionalExtendedDataVisibilities();
+
+    /**
+     * Gets the additional extended data visibility delete mutations
+     */
+    Iterable<AdditionalExtendedDataVisibilityDeleteMutation> getAdditionalExtendedDataVisibilityDeletes();
 
     /**
      * Sets the index hint of this element.

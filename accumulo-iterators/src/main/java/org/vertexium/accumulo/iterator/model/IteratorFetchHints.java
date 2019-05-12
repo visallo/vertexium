@@ -17,6 +17,7 @@ public class IteratorFetchHints implements Serializable {
     private final boolean includeAllEdgeRefs;
     private final boolean includeOutEdgeRefs;
     private final boolean includeInEdgeRefs;
+    private final boolean ignoreAdditionalVisibilities;
     private final Set<String> edgeLabelsOfEdgeRefsToInclude;
     private final boolean includeEdgeLabelsAndCounts;
     private final boolean includeExtendedDataTableNames;
@@ -30,6 +31,7 @@ public class IteratorFetchHints implements Serializable {
         this.includeAllEdgeRefs = false;
         this.includeOutEdgeRefs = false;
         this.includeInEdgeRefs = false;
+        this.ignoreAdditionalVisibilities = false;
         this.edgeLabelsOfEdgeRefsToInclude = null;
         this.includeEdgeLabelsAndCounts = false;
         this.includeExtendedDataTableNames = false;
@@ -44,6 +46,7 @@ public class IteratorFetchHints implements Serializable {
         boolean includeAllEdgeRefs,
         boolean includeOutEdgeRefs,
         boolean includeInEdgeRefs,
+        boolean ignoreAdditionalVisibilities,
         Set<String> edgeLabelsOfEdgeRefsToInclude,
         boolean includeEdgeLabelsAndCounts,
         boolean includeExtendedDataTableNames
@@ -56,6 +59,7 @@ public class IteratorFetchHints implements Serializable {
         this.includeAllEdgeRefs = includeAllEdgeRefs;
         this.includeOutEdgeRefs = includeOutEdgeRefs;
         this.includeInEdgeRefs = includeInEdgeRefs;
+        this.ignoreAdditionalVisibilities = ignoreAdditionalVisibilities;
         this.edgeLabelsOfEdgeRefsToInclude = edgeLabelsOfEdgeRefsToInclude;
         this.includeEdgeLabelsAndCounts = includeEdgeLabelsAndCounts;
         this.includeExtendedDataTableNames = includeExtendedDataTableNames;
@@ -105,6 +109,10 @@ public class IteratorFetchHints implements Serializable {
         return includeExtendedDataTableNames;
     }
 
+    public boolean isIgnoreAdditionalVisibilities() {
+        return ignoreAdditionalVisibilities;
+    }
+
     @Override
     public String toString() {
         return "IteratorFetchHints{" +
@@ -116,6 +124,7 @@ public class IteratorFetchHints implements Serializable {
             ", includeAllEdgeRefs=" + includeAllEdgeRefs +
             ", includeOutEdgeRefs=" + includeOutEdgeRefs +
             ", includeInEdgeRefs=" + includeInEdgeRefs +
+            ", ignoreAdditionalVisibilities=" + ignoreAdditionalVisibilities +
             ", edgeLabelsOfEdgeRefsToInclude=" + setToString(edgeLabelsOfEdgeRefsToInclude) +
             ", includeEdgeLabelsAndCounts=" + includeEdgeLabelsAndCounts +
             ", includeExtendedDataTableNames=" + includeExtendedDataTableNames +

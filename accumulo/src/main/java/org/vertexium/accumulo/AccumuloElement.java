@@ -2,16 +2,14 @@ package org.vertexium.accumulo;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import org.apache.accumulo.core.data.Value;
 import org.apache.hadoop.io.Text;
 import org.vertexium.*;
 import org.vertexium.accumulo.iterator.ElementIterator;
 import org.vertexium.historicalEvent.HistoricalEvent;
 import org.vertexium.historicalEvent.HistoricalEventId;
-import org.vertexium.mutation.EdgeMutation;
-import org.vertexium.mutation.ExistingElementMutation;
-import org.vertexium.mutation.PropertyDeleteMutation;
-import org.vertexium.mutation.PropertySoftDeleteMutation;
+import org.vertexium.mutation.*;
 import org.vertexium.property.MutableProperty;
 import org.vertexium.query.ExtendedDataQueryableIterable;
 import org.vertexium.query.QueryableIterable;
@@ -35,6 +33,8 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
     public static final Value HIDDEN_VALUE = ElementIterator.HIDDEN_VALUE;
     public static final Text CF_PROPERTY_HIDDEN = ElementIterator.CF_PROPERTY_HIDDEN;
     public static final Value HIDDEN_VALUE_DELETED = ElementIterator.HIDDEN_VALUE_DELETED;
+    public static final Value ADD_ADDITIONAL_VISIBILITY_VALUE = ElementIterator.ADDITIONAL_VISIBILITY_VALUE;
+    public static final Value ADD_ADDITIONAL_VISIBILITY_VALUE_DELETED = ElementIterator.ADDITIONAL_VISIBILITY_VALUE_DELETED;
     public static final Value SIGNAL_VALUE_DELETED = ElementIterator.SIGNAL_VALUE_DELETED;
     public static final Text DELETE_ROW_COLUMN_FAMILY = ElementIterator.DELETE_ROW_COLUMN_FAMILY;
     public static final Text DELETE_ROW_COLUMN_QUALIFIER = ElementIterator.DELETE_ROW_COLUMN_QUALIFIER;
@@ -42,6 +42,7 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
     public static final Text CQ_SOFT_DELETE = ElementIterator.CQ_SOFT_DELETE;
     public static final Text CF_HIDDEN = ElementIterator.CF_HIDDEN;
     public static final Text CQ_HIDDEN = ElementIterator.CQ_HIDDEN;
+    public static final Text CF_ADDITIONAL_VISIBILITY = ElementIterator.CF_ADDITIONAL_VISIBILITY;
     public static final Text METADATA_COLUMN_FAMILY = ElementIterator.METADATA_COLUMN_FAMILY;
     public static final Text METADATA_COLUMN_QUALIFIER = ElementIterator.METADATA_COLUMN_QUALIFIER;
 
@@ -51,6 +52,7 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
     private final long timestamp;
     private final FetchHints fetchHints;
     private final Set<Visibility> hiddenVisibilities;
+    private final Set<String> additionalVisibilities;
 
     private final PropertyCollection properties;
     private final ImmutableSet<String> extendedDataTableNames;
@@ -66,6 +68,7 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
         Iterable<PropertyDeleteMutation> propertyDeleteMutations,
         Iterable<PropertySoftDeleteMutation> propertySoftDeleteMutations,
         Iterable<Visibility> hiddenVisibilities,
+        Iterable<String> additionalVisibilities,
         ImmutableSet<String> extendedDataTableNames,
         long timestamp,
         FetchHints fetchHints,
@@ -87,6 +90,7 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
             }
         }
         this.hiddenVisibilities = hiddenVisibilityBuilder.build();
+        this.additionalVisibilities = Sets.newHashSet(additionalVisibilities);
         updatePropertiesInternal(properties, propertyDeleteMutations, propertySoftDeleteMutations);
     }
 
@@ -136,9 +140,19 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
         Iterable<PropertyDeleteMutation> propertyDeletes = mutation.getPropertyDeletes();
         Iterable<PropertySoftDeleteMutation> propertySoftDeletes = mutation.getPropertySoftDeletes();
         Iterable<Property> properties = mutation.getProperties();
+        Iterable<AdditionalVisibilityAddMutation> additionalVisibilities = mutation.getAdditionalVisibilities();
+        Iterable<AdditionalVisibilityDeleteMutation> additionalVisibilityDeletes = mutation.getAdditionalVisibilityDeletes();
 
         updatePropertiesInternal(properties, propertyDeletes, propertySoftDeletes);
-        getGraph().saveProperties(element, properties, propertyDeletes, propertySoftDeletes);
+        updateAdditionalVisibilitiesInternal(additionalVisibilities, additionalVisibilityDeletes);
+        getGraph().savePropertiesAndAdditionalVisibilities(
+            element,
+            properties,
+            propertyDeletes,
+            propertySoftDeletes,
+            additionalVisibilities,
+            additionalVisibilityDeletes
+        );
 
         if (mutation.getNewElementVisibility() != null) {
             getGraph().alterElementVisibility(element, mutation.getNewElementVisibility(), mutation.getNewElementVisibilityData());
@@ -164,6 +178,8 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
             mutation.getIndexHint(),
             mutation.getExtendedData(),
             mutation.getExtendedDataDeletes(),
+            mutation.getAdditionalExtendedDataVisibilities(),
+            mutation.getAdditionalExtendedDataVisibilityDeletes(),
             authorizations
         );
     }
@@ -192,12 +208,18 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
     public abstract <T extends Element> ExistingElementMutation<T> prepareMutation();
 
     @Override
-    public QueryableIterable<ExtendedDataRow> getExtendedData(String tableName) {
+    public QueryableIterable<ExtendedDataRow> getExtendedData(String tableName, FetchHints fetchHints) {
         return new ExtendedDataQueryableIterable(
             getGraph(),
             this,
             tableName,
-            getGraph().getExtendedData(ElementType.getTypeFromElement(this), getId(), tableName, getAuthorizations())
+            getGraph().getExtendedData(
+                ElementType.getTypeFromElement(this),
+                getId(),
+                tableName,
+                fetchHints,
+                getAuthorizations()
+            )
         );
     }
 
@@ -314,6 +336,19 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
         return this.properties.getProperties(key, name);
     }
 
+    private void updateAdditionalVisibilitiesInternal(Iterable<AdditionalVisibilityAddMutation> additionalVisibilities, Iterable<AdditionalVisibilityDeleteMutation> additionalVisibilityDeletes) {
+        if (additionalVisibilities != null) {
+            for (AdditionalVisibilityAddMutation additionalVisibility : additionalVisibilities) {
+                this.additionalVisibilities.add(additionalVisibility.getAdditionalVisibility());
+            }
+        }
+        if (additionalVisibilityDeletes != null) {
+            for (AdditionalVisibilityDeleteMutation additionalVisibilityDelete : additionalVisibilityDeletes) {
+                this.additionalVisibilities.remove(additionalVisibilityDelete.getAdditionalVisibility());
+            }
+        }
+    }
+
     // this method differs setProperties in that it only updates the in memory representation of the properties
     protected void updatePropertiesInternal(
         Iterable<Property> properties,
@@ -399,8 +434,14 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
         return authorizations;
     }
 
+    @Override
     public Iterable<Visibility> getHiddenVisibilities() {
         return hiddenVisibilities;
+    }
+
+    @Override
+    public ImmutableSet<String> getAdditionalVisibilities() {
+        return ImmutableSet.copyOf(additionalVisibilities);
     }
 
     @Override

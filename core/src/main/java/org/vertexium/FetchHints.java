@@ -17,6 +17,7 @@ public class FetchHints {
     private final ImmutableSet<String> edgeLabelsOfEdgeRefsToInclude;
     private final boolean includeEdgeLabelsAndCounts;
     private final boolean includeExtendedDataTableNames;
+    private final boolean ignoreAdditionalVisibilities;
 
     public static final FetchHints NONE = new FetchHintsBuilder()
         .build();
@@ -60,7 +61,8 @@ public class FetchHints {
         boolean includeInEdgeRefs,
         ImmutableSet<String> edgeLabelsOfEdgeRefsToInclude,
         boolean includeEdgeLabelsAndCounts,
-        boolean includeExtendedDataTableNames
+        boolean includeExtendedDataTableNames,
+        boolean ignoreAdditionalVisibilities
     ) {
         this.includeAllProperties = includeAllProperties;
         this.propertyNamesToInclude = propertyNamesToInclude;
@@ -73,6 +75,7 @@ public class FetchHints {
         this.edgeLabelsOfEdgeRefsToInclude = edgeLabelsOfEdgeRefsToInclude;
         this.includeEdgeLabelsAndCounts = includeEdgeLabelsAndCounts;
         this.includeExtendedDataTableNames = includeExtendedDataTableNames;
+        this.ignoreAdditionalVisibilities = ignoreAdditionalVisibilities;
     }
 
     public boolean isIncludeAllProperties() {
@@ -117,6 +120,10 @@ public class FetchHints {
 
     public boolean isIncludeExtendedDataTableNames() {
         return includeExtendedDataTableNames;
+    }
+
+    public boolean isIgnoreAdditionalVisibilities() {
+        return ignoreAdditionalVisibilities;
     }
 
     public boolean isIncludePropertyMetadata() {
@@ -220,6 +227,7 @@ public class FetchHints {
             ", edgeLabelsOfEdgeRefsToInclude=" + setToString(edgeLabelsOfEdgeRefsToInclude) +
             ", includeEdgeLabelsAndCounts=" + includeEdgeLabelsAndCounts +
             ", includeExtendedDataTableNames=" + includeExtendedDataTableNames +
+            ", ignoreAdditionalVisibilities=" + ignoreAdditionalVisibilities +
             '}';
     }
 
@@ -240,6 +248,7 @@ public class FetchHints {
             && includeInEdgeRefs == that.includeInEdgeRefs
             && includeEdgeLabelsAndCounts == that.includeEdgeLabelsAndCounts
             && includeExtendedDataTableNames == that.includeExtendedDataTableNames
+            && ignoreAdditionalVisibilities == that.ignoreAdditionalVisibilities
             && Objects.equals(propertyNamesToInclude, that.propertyNamesToInclude)
             && Objects.equals(metadataKeysToInclude, that.metadataKeysToInclude)
             && Objects.equals(edgeLabelsOfEdgeRefsToInclude, that.edgeLabelsOfEdgeRefsToInclude);
@@ -258,7 +267,8 @@ public class FetchHints {
             includeInEdgeRefs,
             edgeLabelsOfEdgeRefsToInclude,
             includeEdgeLabelsAndCounts,
-            includeExtendedDataTableNames
+            includeExtendedDataTableNames,
+            ignoreAdditionalVisibilities
         );
     }
 

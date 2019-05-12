@@ -77,6 +77,10 @@ public class KeyValue {
         return ArrayUtils.startsWith(peekValue().get(), ElementIterator.SIGNAL_VALUE_DELETED.get());
     }
 
+    public boolean isAdditionalVisibilityDeleted() {
+        return ArrayUtils.startsWith(peekValue().get(), ElementIterator.ADDITIONAL_VISIBILITY_VALUE_DELETED.get());
+    }
+
     @Override
     public String toString() {
         return "KeyValue{" +

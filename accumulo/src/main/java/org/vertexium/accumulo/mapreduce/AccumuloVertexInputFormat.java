@@ -21,6 +21,7 @@ import org.vertexium.mutation.PropertySoftDeleteMutation;
 import javax.annotation.Nullable;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class AccumuloVertexInputFormat extends AccumuloElementInputFormatBase<Vertex> {
     private static VertexIterator vertexIterator;
@@ -38,7 +39,7 @@ public class AccumuloVertexInputFormat extends AccumuloElementInputFormatBase<Ve
     public static Vertex createVertex(AccumuloGraph graph, Iterator<Map.Entry<Key, Value>> row, Authorizations authorizations) {
         try {
             FetchHints fetchHints = graph.getDefaultFetchHints();
-            VertexElementData vertexElementData = getVertexIterator(graph).createElementDataFromRows(row);
+            VertexElementData vertexElementData = getVertexIterator(graph, authorizations).createElementDataFromRows(row);
             if (vertexElementData == null) {
                 return null;
             }
@@ -53,6 +54,9 @@ public class AccumuloVertexInputFormat extends AccumuloElementInputFormatBase<Ve
                     return AccumuloGraph.accumuloVisibilityToVisibility(AccumuloGraph.visibilityToAccumuloVisibility(visibilityText.toString()));
                 }
             });
+            Iterable<String> additionalVisibilities = vertexElementData.additionalVisibilities.stream()
+                .map(Text::toString)
+                .collect(Collectors.toSet());
             ImmutableSet<String> extendedDataTableNames = vertexElementData.extendedTableNames.size() > 0
                 ? ImmutableSet.copyOf(vertexElementData.extendedTableNames)
                 : null;
@@ -64,6 +68,7 @@ public class AccumuloVertexInputFormat extends AccumuloElementInputFormatBase<Ve
                 propertyDeleteMutations,
                 propertySoftDeleteMutations,
                 hiddenVisibilities,
+                additionalVisibilities,
                 extendedDataTableNames,
                 vertexElementData.inEdges,
                 vertexElementData.outEdges,
@@ -76,9 +81,9 @@ public class AccumuloVertexInputFormat extends AccumuloElementInputFormatBase<Ve
         }
     }
 
-    private static VertexIterator getVertexIterator(AccumuloGraph graph) {
+    private static VertexIterator getVertexIterator(AccumuloGraph graph, Authorizations authorizations) {
         if (vertexIterator == null) {
-            vertexIterator = new VertexIterator(graph.toIteratorFetchHints(graph.getDefaultFetchHints()));
+            vertexIterator = new VertexIterator(graph.toIteratorFetchHints(graph.getDefaultFetchHints()), authorizations.getAuthorizations());
         }
         return vertexIterator;
     }

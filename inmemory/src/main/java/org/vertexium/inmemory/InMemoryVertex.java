@@ -32,6 +32,11 @@ public class InMemoryVertex extends InMemoryElement<InMemoryVertex> implements V
     }
 
     @Override
+    public ElementType getElementType() {
+        return ElementType.VERTEX;
+    }
+
+    @Override
     public Iterable<Edge> getEdges(Direction direction, Authorizations authorizations) {
         return getEdges(direction, getGraph().getDefaultFetchHints(), authorizations);
     }
@@ -344,7 +349,7 @@ public class InMemoryVertex extends InMemoryElement<InMemoryVertex> implements V
                 saveExistingElementMutation(this, indexHint, authorizations);
                 Vertex vertex = getElement();
                 if (indexHint != IndexHint.DO_NOT_INDEX) {
-                    getGraph().getSearchIndex().updateElement(getGraph(), this, authorizations);
+                    getGraph().updateElementAndExtendedDataInSearchIndex(vertex, this, authorizations);
                 }
                 return vertex;
             }

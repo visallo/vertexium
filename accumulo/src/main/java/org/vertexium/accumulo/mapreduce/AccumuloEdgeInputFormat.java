@@ -20,6 +20,7 @@ import org.vertexium.mutation.PropertySoftDeleteMutation;
 
 import javax.annotation.Nullable;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class AccumuloEdgeInputFormat extends AccumuloElementInputFormatBase<Edge> {
     private static EdgeIterator edgeIterator;
@@ -37,7 +38,7 @@ public class AccumuloEdgeInputFormat extends AccumuloElementInputFormatBase<Edge
     ) {
         try {
             FetchHints fetchHints = graph.getDefaultFetchHints();
-            EdgeElementData edgeElementData = getEdgeIterator(graph).createElementDataFromRows(row);
+            EdgeElementData edgeElementData = getEdgeIterator(graph, authorizations).createElementDataFromRows(row);
             if (edgeElementData == null) {
                 return null;
             }
@@ -52,6 +53,9 @@ public class AccumuloEdgeInputFormat extends AccumuloElementInputFormatBase<Edge
                     return AccumuloGraph.accumuloVisibilityToVisibility(AccumuloGraph.visibilityToAccumuloVisibility(visibilityText.toString()));
                 }
             });
+            Iterable<String> additionalVisibilities = edgeElementData.additionalVisibilities.stream()
+                .map(Text::toString)
+                .collect(Collectors.toSet());
             ImmutableSet<String> extendedDataTableNames = edgeElementData.extendedTableNames.size() > 0
                 ? ImmutableSet.copyOf(edgeElementData.extendedTableNames)
                 : null;
@@ -67,6 +71,7 @@ public class AccumuloEdgeInputFormat extends AccumuloElementInputFormatBase<Edge
                 propertyDeleteMutations,
                 propertySoftDeleteMutations,
                 hiddenVisibilities,
+                additionalVisibilities,
                 extendedDataTableNames,
                 edgeElementData.timestamp,
                 fetchHints,
@@ -77,9 +82,9 @@ public class AccumuloEdgeInputFormat extends AccumuloElementInputFormatBase<Edge
         }
     }
 
-    private EdgeIterator getEdgeIterator(AccumuloGraph graph) {
+    private EdgeIterator getEdgeIterator(AccumuloGraph graph, Authorizations authorizations) {
         if (edgeIterator == null) {
-            edgeIterator = new EdgeIterator(graph.toIteratorFetchHints(graph.getDefaultFetchHints()));
+            edgeIterator = new EdgeIterator(graph.toIteratorFetchHints(graph.getDefaultFetchHints()), authorizations.getAuthorizations());
         }
         return edgeIterator;
     }

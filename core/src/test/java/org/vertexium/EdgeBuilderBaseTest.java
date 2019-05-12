@@ -11,7 +11,7 @@ public class EdgeBuilderBaseTest {
 
     @Before
     public void before() {
-        mutation = new TestEdgeBuilderBase("e1", "label", new Visibility(""));
+        mutation = new TestEdgeBuilderBase("e1", "v1", "v2", "label", new Visibility(""));
     }
 
     @Test
@@ -26,22 +26,18 @@ public class EdgeBuilderBaseTest {
     }
 
     private static class TestEdgeBuilderBase extends EdgeBuilderBase {
-        protected TestEdgeBuilderBase(String edgeId, String label, Visibility visibility) {
-            super(edgeId, label, visibility);
+        protected TestEdgeBuilderBase(
+            String edgeId,
+            String outVertexId,
+            String inVertexId,
+            String label,
+            Visibility visibility
+        ) {
+            super(edgeId, outVertexId, inVertexId, label, visibility);
         }
 
         @Override
         public Edge save(Authorizations authorizations) {
-            return null;
-        }
-
-        @Override
-        public String getOutVertexId() {
-            return null;
-        }
-
-        @Override
-        public String getInVertexId() {
             return null;
         }
     }

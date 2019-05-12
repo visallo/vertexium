@@ -10,6 +10,8 @@ import org.vertexium.util.StreamUtils;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public abstract class ElementBuilder<T extends Element> implements ElementMutation<T> {
     private final List<Property> properties = new ArrayList<>();
@@ -17,14 +19,41 @@ public abstract class ElementBuilder<T extends Element> implements ElementMutati
     private final List<PropertySoftDeleteMutation> propertySoftDeletes = new ArrayList<>();
     private final List<ExtendedDataMutation> extendedDatas = new ArrayList<>();
     private final List<ExtendedDataDeleteMutation> extendedDataDeletes = new ArrayList<>();
+    private final List<AdditionalVisibilityAddMutation> additionalVisibilities = new ArrayList<>();
+    private final List<AdditionalVisibilityDeleteMutation> additionalVisibilityDeletes = new ArrayList<>();
+    private final List<AdditionalExtendedDataVisibilityAddMutation> additionalExtendedDataVisibilities = new ArrayList<>();
+    private final List<AdditionalExtendedDataVisibilityDeleteMutation> additionalExtendedDataVisibilityDeletes = new ArrayList<>();
+    private final ElementType elementType;
     private final String elementId;
+    private final Visibility elementVisibility;
     private IndexHint indexHint = IndexHint.INDEX;
 
-    protected ElementBuilder(String elementId) {
+    protected ElementBuilder(ElementType elementType, String elementId, Visibility elementVisibility) {
         KeyUtils.checkKey(elementId, "Invalid elementId");
+        this.elementType = elementType;
         this.elementId = elementId;
+        this.elementVisibility = elementVisibility;
     }
 
+    @Override
+    public ElementType getElementType() {
+        return elementType;
+    }
+
+    @Override
+    public Visibility getVisibility() {
+        return elementVisibility;
+    }
+
+    @Override
+    public String getId() {
+        return elementId;
+    }
+
+    /**
+     * @deprecated use {@link #getId()}
+     */
+    @Deprecated
     public String getElementId() {
         return elementId;
     }
@@ -184,6 +213,50 @@ public abstract class ElementBuilder<T extends Element> implements ElementMutati
         return this;
     }
 
+    @Override
+    public ElementMutation<T> addAdditionalVisibility(String visibility, Object eventData) {
+        additionalVisibilities.add(new AdditionalVisibilityAddMutation(visibility, eventData));
+        return this;
+    }
+
+    @Override
+    public ElementMutation<T> deleteAdditionalVisibility(String visibility, Object eventData) {
+        additionalVisibilityDeletes.add(new AdditionalVisibilityDeleteMutation(visibility, eventData));
+        return this;
+    }
+
+    @Override
+    public ElementMutation<T> addExtendedDataAdditionalVisibility(
+        String tableName,
+        String row,
+        String additionalVisibility,
+        Object eventData
+    ) {
+        additionalExtendedDataVisibilities.add(new AdditionalExtendedDataVisibilityAddMutation(
+            tableName,
+            row,
+            additionalVisibility,
+            eventData
+        ));
+        return this;
+    }
+
+    @Override
+    public ElementMutation<T> deleteExtendedDataAdditionalVisibility(
+        String tableName,
+        String row,
+        String additionalVisibility,
+        Object eventData
+    ) {
+        additionalExtendedDataVisibilityDeletes.add(new AdditionalExtendedDataVisibilityDeleteMutation(
+            tableName,
+            row,
+            additionalVisibility,
+            eventData
+        ));
+        return this;
+    }
+
     /**
      * saves the element to the graph.
      *
@@ -191,26 +264,64 @@ public abstract class ElementBuilder<T extends Element> implements ElementMutati
      */
     public abstract T save(Authorizations authorizations);
 
+    @Override
     public Iterable<Property> getProperties() {
         return properties;
     }
 
+    @Override
     public Iterable<PropertyDeleteMutation> getPropertyDeletes() {
         return propertyDeletes;
     }
 
+    @Override
     public Iterable<PropertySoftDeleteMutation> getPropertySoftDeletes() {
         return propertySoftDeletes;
     }
 
+    @Override
     public Iterable<ExtendedDataMutation> getExtendedData() {
         return extendedDatas;
     }
 
+    @Override
     public Iterable<ExtendedDataDeleteMutation> getExtendedDataDeletes() {
         return extendedDataDeletes;
     }
 
+    @Override
+    public List<AdditionalVisibilityAddMutation> getAdditionalVisibilities() {
+        return additionalVisibilities;
+    }
+
+    @Override
+    public List<AdditionalVisibilityDeleteMutation> getAdditionalVisibilityDeletes() {
+        return additionalVisibilityDeletes;
+    }
+
+    @Override
+    public List<AdditionalExtendedDataVisibilityAddMutation> getAdditionalExtendedDataVisibilities() {
+        return additionalExtendedDataVisibilities;
+    }
+
+    @Override
+    public List<AdditionalExtendedDataVisibilityDeleteMutation> getAdditionalExtendedDataVisibilityDeletes() {
+        return additionalExtendedDataVisibilityDeletes;
+    }
+
+    public Set<String> getAdditionalVisibilitiesAsStringSet() {
+        Set<String> results = getAdditionalVisibilities().stream()
+            .map(AdditionalVisibilityAddMutation::getAdditionalVisibility)
+            .collect(Collectors.toSet());
+        results.removeAll(
+            getAdditionalVisibilityDeletes().stream()
+                .map(AdditionalVisibilityDeleteMutation::getAdditionalVisibility)
+                .collect(Collectors.toSet())
+        );
+        return results;
+    }
+
+    @Override
     public IndexHint getIndexHint() {
         return indexHint;
     }

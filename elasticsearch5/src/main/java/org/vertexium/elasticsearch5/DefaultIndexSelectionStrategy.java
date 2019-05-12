@@ -103,21 +103,26 @@ public class DefaultIndexSelectionStrategy implements IndexSelectionStrategy {
     }
 
     @Override
-    public String getIndexName(Elasticsearch5SearchIndex es, Element element) {
+    public String getIndexName(Elasticsearch5SearchIndex es, ElementLocation elementLocation) {
         if (splitEdgesAndVertices) {
-            if (element instanceof Vertex) {
+            if (elementLocation.getElementType() == ElementType.VERTEX) {
                 return defaultIndexName + VERTICES_INDEX_SUFFIX_NAME;
-            } else if (element instanceof Edge) {
+            } else if (elementLocation.getElementType() == ElementType.EDGE) {
                 return defaultIndexName + EDGES_INDEX_SUFFIX_NAME;
             } else {
-                throw new VertexiumException("Unhandled element type: " + element.getClass().getName());
+                throw new VertexiumException("Unhandled element type: " + elementLocation.getClass().getName());
             }
         }
         return defaultIndexName;
     }
 
     @Override
-    public String getExtendedDataIndexName(Elasticsearch5SearchIndex es, Element element, String tableName, String rowId) {
+    public String getExtendedDataIndexName(
+        Elasticsearch5SearchIndex es,
+        ElementLocation elementLocation,
+        String tableName,
+        String rowId
+    ) {
         return getExtendedDataIndexName(es, tableName);
     }
 

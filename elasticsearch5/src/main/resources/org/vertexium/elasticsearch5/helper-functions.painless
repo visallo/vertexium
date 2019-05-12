@@ -28,3 +28,11 @@ Set getFieldVisibilities(def source) {
     }
     visibilities;
 }
+
+boolean hasAdditionalVisibility(def source, def additionalVisibility) {
+    def field = source['__additionalVisibility'];
+    if (field != null) {
+        return field.contains(additionalVisibility);
+    }
+    return false;
+}

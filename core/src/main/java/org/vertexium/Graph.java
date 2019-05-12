@@ -1183,7 +1183,10 @@ public interface Graph {
      * @param authorizations the authorizations used during save
      * @return the elements which were saved
      */
-    Iterable<Element> saveElementMutations(Iterable<ElementMutation> mutations, Authorizations authorizations);
+    Iterable<Element> saveElementMutations(
+        Iterable<ElementMutation<? extends Element>> mutations,
+        Authorizations authorizations
+    );
 
     /**
      * Opens multiple StreamingPropertyValue input streams at once. This can have performance benefits by
@@ -1201,7 +1204,18 @@ public interface Graph {
      * @param authorizations The authorizations used to get the rows
      * @return Rows
      */
-    Iterable<ExtendedDataRow> getExtendedData(Iterable<ExtendedDataRowId> ids, Authorizations authorizations);
+    default Iterable<ExtendedDataRow> getExtendedData(Iterable<ExtendedDataRowId> ids, Authorizations authorizations) {
+        return getExtendedData(ids, FetchHints.ALL, authorizations);
+    }
+
+    /**
+     * Gets the specified extended data rows.
+     *
+     * @param ids            The ids of the rows to get.
+     * @param authorizations The authorizations used to get the rows
+     * @return Rows
+     */
+    Iterable<ExtendedDataRow> getExtendedData(Iterable<ExtendedDataRowId> ids, FetchHints fetchHints, Authorizations authorizations);
 
     /**
      * Gets the specified extended data row.
@@ -1221,7 +1235,32 @@ public interface Graph {
      * @param authorizations The authorizations used to get the rows
      * @return Rows
      */
-    Iterable<ExtendedDataRow> getExtendedData(ElementType elementType, String elementId, String tableName, Authorizations authorizations);
+    default Iterable<ExtendedDataRow> getExtendedData(
+        ElementType elementType,
+        String elementId,
+        String tableName,
+        Authorizations authorizations
+    ) {
+        return getExtendedData(elementType, elementId, tableName, FetchHints.ALL, authorizations);
+    }
+
+    /**
+     * Gets the specified extended data rows.
+     *
+     * @param elementType    The type of element to get the rows from
+     * @param elementId      The element id to get the rows from
+     * @param tableName      The name of the table within the element to get the rows from
+     * @param fetchHints     Fetch hints to filter extended data
+     * @param authorizations The authorizations used to get the rows
+     * @return Rows
+     */
+    Iterable<ExtendedDataRow> getExtendedData(
+        ElementType elementType,
+        String elementId,
+        String tableName,
+        FetchHints fetchHints,
+        Authorizations authorizations
+    );
 
     /**
      * Gets extended data rows from the graph in the given range.

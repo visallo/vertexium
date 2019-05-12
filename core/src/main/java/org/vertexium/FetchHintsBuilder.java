@@ -17,6 +17,7 @@ public class FetchHintsBuilder {
     private Set<String> edgeLabelsOfEdgeRefsToInclude;
     private boolean includeEdgeLabelsAndCounts;
     private boolean includeExtendedDataTableNames;
+    private boolean ignoreAdditionalVisibilities;
 
     public FetchHintsBuilder() {
 
@@ -34,6 +35,7 @@ public class FetchHintsBuilder {
         edgeLabelsOfEdgeRefsToInclude = fetchHints.getEdgeLabelsOfEdgeRefsToInclude();
         includeEdgeLabelsAndCounts = fetchHints.isIncludeEdgeLabelsAndCounts();
         includeExtendedDataTableNames = fetchHints.isIncludeExtendedDataTableNames();
+        ignoreAdditionalVisibilities = fetchHints.isIgnoreAdditionalVisibilities();
     }
 
     public FetchHints build() {
@@ -51,7 +53,8 @@ public class FetchHintsBuilder {
             includeInEdgeRefs || includeAllEdgeRefs,
             edgeLabelsOfEdgeRefsToInclude == null ? null : ImmutableSet.copyOf(edgeLabelsOfEdgeRefsToInclude),
             includeEdgeLabelsAndCounts,
-            includeExtendedDataTableNames
+            includeExtendedDataTableNames,
+            ignoreAdditionalVisibilities
         );
     }
 
@@ -130,6 +133,11 @@ public class FetchHintsBuilder {
 
     public FetchHintsBuilder setIncludeExtendedDataTableNames(boolean includeExtendedDataTableNames) {
         this.includeExtendedDataTableNames = includeExtendedDataTableNames;
+        return this;
+    }
+
+    public FetchHintsBuilder setIgnoreAdditionalVisibilities(boolean ignoreAdditionalVisibilities) {
+        this.ignoreAdditionalVisibilities = ignoreAdditionalVisibilities;
         return this;
     }
 }
