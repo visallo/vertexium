@@ -212,6 +212,14 @@ public class DefaultSearchIndex implements SearchIndex {
     }
 
     @Override
+    public void addAdditionalVisibility(Graph graph, Element element, String visibility, Object eventData, Authorizations authorizations) {
+    }
+
+    @Override
+    public void deleteAdditionalVisibility(Graph graph, Element element, String visibility, Object eventData, Authorizations authorizations) {
+    }
+
+    @Override
     public Query queryExtendedData(Graph graph, Element element, String tableName, String queryString, Authorizations authorizations) {
         return new DefaultExtendedDataQuery(graph, element, tableName, queryString, authorizations);
     }

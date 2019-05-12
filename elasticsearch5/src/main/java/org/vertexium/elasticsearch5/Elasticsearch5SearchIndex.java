@@ -6,6 +6,7 @@ import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.SettableFuture;
 import io.netty.util.internal.ConcurrentSet;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
@@ -1008,6 +1009,18 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
         addValuesToFieldMap(graph, fieldsMap, propertyName, value);
     }
 
+    private void addFieldsMap(XContentBuilder jsonBuilder, Map<String, Object> fields) throws IOException {
+        for (Map.Entry<String, Object> property : fields.entrySet()) {
+            String propertyKey = replaceFieldnameDots(property.getKey());
+            if (property.getValue() instanceof List) {
+                List list = (List) property.getValue();
+                jsonBuilder.field(propertyKey, list.toArray(new Object[0]));
+            } else {
+                jsonBuilder.field(propertyKey, property.getValue());
+            }
+        }
+    }
+
     private Map<ElementType, Map<String, List<ExtendedDataRow>>> mapExtendedDatasByElementTypeByElementId(Iterable<ExtendedDataRow> extendedData) {
         Map<ElementType, Map<String, List<ExtendedDataRow>>> rowsByElementTypeByElementId = new HashMap<>();
         extendedData.forEach(row -> {
@@ -1035,6 +1048,8 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
     }
 
     private XContentBuilder buildJsonContentFromElement(Graph graph, Element element) throws IOException {
+        ensureAdditionalVisibilitiesDefined(element.getAdditionalVisibilities());
+
         XContentBuilder jsonBuilder;
         jsonBuilder = XContentFactory.jsonBuilder()
             .startObject();
@@ -1043,6 +1058,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
 
         jsonBuilder.field(ELEMENT_ID_FIELD_NAME, element.getId());
         jsonBuilder.field(ELEMENT_TYPE_FIELD_NAME, getElementTypeValueFromElement(element));
+        jsonBuilder.field(ADDITIONAL_VISIBILITY_FIELD_NAME, element.getAdditionalVisibilities());
         if (element instanceof Vertex) {
             jsonBuilder.field(elementTypeVisibilityPropertyName, ElasticsearchDocumentType.VERTEX.getKey());
         } else if (element instanceof Edge) {
@@ -1057,6 +1073,64 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
 
         jsonBuilder.endObject();
         return jsonBuilder;
+    }
+
+    @Override
+    public void addAdditionalVisibility(
+        Graph graph,
+        Element element,
+        String visibility,
+        Object eventData,
+        Authorizations authorizations
+    ) {
+        String indexName = getIndexName(element);
+        String documentId = getIdStrategy().createElementDocId(element);
+        UpdateRequestBuilder updateRequestBuilder = prepareUpdateFieldsOnDocument(
+            indexName,
+            documentId,
+            null,
+            null,
+            null,
+            Sets.newHashSet(visibility),
+            null
+        );
+        if (updateRequestBuilder != null) {
+            getIndexRefreshTracker().pushChange(indexName);
+            addActionRequestBuilderForFlush(element, updateRequestBuilder);
+
+            if (getConfig().isAutoFlush()) {
+                flush(graph);
+            }
+        }
+    }
+
+    @Override
+    public void deleteAdditionalVisibility(
+        Graph graph,
+        Element element,
+        String visibility,
+        Object eventData,
+        Authorizations authorizations
+    ) {
+        String indexName = getIndexName(element);
+        String documentId = getIdStrategy().createElementDocId(element);
+        UpdateRequestBuilder updateRequestBuilder = prepareUpdateFieldsOnDocument(
+            indexName,
+            documentId,
+            null,
+            null,
+            null,
+            null,
+            Sets.newHashSet(visibility)
+        );
+        if (updateRequestBuilder != null) {
+            getIndexRefreshTracker().pushChange(indexName);
+            addActionRequestBuilderForFlush(element, updateRequestBuilder);
+
+            if (getConfig().isAutoFlush()) {
+                flush(graph);
+            }
+        }
     }
 
     @Override

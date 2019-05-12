@@ -7,6 +7,7 @@ import org.vertexium.util.ConvertingIterable;
 import org.vertexium.util.FilterIterable;
 
 import java.util.Iterator;
+import java.util.Set;
 
 public abstract class ExtendedDataRowBase implements ExtendedDataRow {
     private final FetchHints fetchHints;
@@ -34,6 +35,9 @@ public abstract class ExtendedDataRowBase implements ExtendedDataRow {
 
     @Override
     public abstract Iterable<Property> getProperties();
+
+    @Override
+    public abstract Set<String> getAdditionalVisibilities();
 
     @Override
     public Property getProperty(String name) {

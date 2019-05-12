@@ -6,6 +6,7 @@ import org.vertexium.historicalEvent.HistoricalEventId;
 import org.vertexium.mutation.ExistingEdgeMutation;
 import org.vertexium.query.QueryableIterable;
 
+import java.util.Set;
 import java.util.stream.Stream;
 
 public class EdgeInfoEdge extends ElementBase implements Edge {

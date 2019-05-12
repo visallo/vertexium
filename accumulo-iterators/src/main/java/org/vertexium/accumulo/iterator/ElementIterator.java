@@ -225,6 +225,8 @@ public abstract class ElementIterator<T extends ElementData> implements SortedKe
     }
 
     private void processKeyValue(KeyValue keyValue) {
+        System.out.println("keyValue: " + keyValue);
+
         if (this.elementData.id == null) {
             this.elementData.id = keyValue.takeRow();
         }

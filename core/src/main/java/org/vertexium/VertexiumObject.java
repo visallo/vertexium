@@ -4,6 +4,7 @@ import com.google.common.collect.ImmutableSet;
 import org.vertexium.util.ConvertingIterable;
 
 import java.util.Iterator;
+import java.util.Set;
 
 public interface VertexiumObject extends Comparable {
     /**

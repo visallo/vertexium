@@ -134,4 +134,8 @@ public interface SearchIndex {
         Visibility visibility,
         Authorizations authorizations
     );
+
+    void addAdditionalVisibility(Graph graph, Element element, String visibility, Object eventData, Authorizations authorizations);
+
+    void deleteAdditionalVisibility(Graph graph, Element element, String visibility, Object eventData, Authorizations authorizations);
 }
