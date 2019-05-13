@@ -6,4 +6,9 @@ public class AuthorizationsUser implements User {
     public AuthorizationsUser(Authorizations authorizations) {
         this.authorizations = authorizations;
     }
+
+    @Override
+    public String[] getAuthorizations() {
+        return authorizations.getAuthorizations();
+    }
 }

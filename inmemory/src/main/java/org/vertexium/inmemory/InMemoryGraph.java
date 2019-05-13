@@ -28,7 +28,7 @@ import java.util.stream.Stream;
 import static org.vertexium.util.Preconditions.checkNotNull;
 import static org.vertexium.util.StreamUtils.stream;
 
-public class InMemoryGraph extends GraphBaseWithSearchIndex {
+public class InMemoryGraph extends GraphBase {
     private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(InMemoryGraph.class);
     protected static final InMemoryGraphConfiguration DEFAULT_CONFIGURATION =
         new InMemoryGraphConfiguration(new HashMap<>());
@@ -68,7 +68,7 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
         this.vertices = vertices;
         this.edges = edges;
         this.extendedDataTable = extendedDataTable;
-        this.graphMetadataStore = newGraphMetadataStore(configuration);
+        this.graphMetadataStore = newGraphMetadataStore();
     }
 
     protected InMemoryGraph(
@@ -83,10 +83,10 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
         this.vertices = vertices;
         this.edges = edges;
         this.extendedDataTable = extendedDataTable;
-        this.graphMetadataStore = newGraphMetadataStore(configuration);
+        this.graphMetadataStore = newGraphMetadataStore();
     }
 
-    protected GraphMetadataStore newGraphMetadataStore(GraphConfiguration configuration) {
+    protected GraphMetadataStore newGraphMetadataStore() {
         return new InMemoryGraphMetadataStore();
     }
 
@@ -126,7 +126,16 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
         return new VertexBuilder(vertexId, visibility) {
             @Override
             public Vertex save(Authorizations authorizations) {
-                addValidAuthorizations(authorizations.getAuthorizations());
+                return saveVertex(authorizations.getUser());
+            }
+
+            @Override
+            public String save(User user) {
+                return saveVertex(user).getId();
+            }
+
+            private Vertex saveVertex(User user) {
+                addValidAuthorizations(user.getAuthorizations());
                 boolean isNew = false;
                 InMemoryTableElement vertexTableElement = InMemoryGraph.this.vertices.getTableElement(getId());
                 if (vertexTableElement == null) {
@@ -143,7 +152,7 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
                         vertices.append(getId(), new AlterVisibilityMutation(timestampLong, getVisibility(), null), new ElementTimestampMutation(timestampLong));
                     }
                 }
-                InMemoryVertex vertex = InMemoryGraph.this.vertices.get(InMemoryGraph.this, getId(), FetchHints.ALL_INCLUDING_HIDDEN, authorizations);
+                InMemoryVertex vertex = InMemoryGraph.this.vertices.get(InMemoryGraph.this, getId(), FetchHints.ALL_INCLUDING_HIDDEN, user);
                 if (isNew && hasEventListeners()) {
                     fireGraphEvent(new AddVertexEvent(InMemoryGraph.this, vertex));
                 }
@@ -151,7 +160,7 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
 
                 // to more closely simulate how accumulo works. add a potentially sparse (in case of an update) vertex to the search index.
                 if (getIndexHint() != IndexHint.DO_NOT_INDEX) {
-                    updateElementAndExtendedDataInSearchIndex(vertex, this, authorizations);
+                    updateElementAndExtendedDataInSearchIndex(vertex, this, user);
                 }
 
                 return vertex;
@@ -197,6 +206,38 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
                 m.getKey(),
                 m.getVisibility(),
                 user
+            );
+        }
+    }
+
+    <T extends Element> void updateElementAndExtendedDataInSearchIndex(
+        Element element,
+        ElementMutation<T> elementMutation,
+        Authorizations authorizations
+    ) {
+        if (elementMutation instanceof ExistingElementMutation) {
+            getSearchIndex().updateElement(this, (ExistingElementMutation<? extends Element>) elementMutation, authorizations);
+        } else {
+            getSearchIndex().addElement(this, element, authorizations);
+        }
+        getSearchIndex().addElementExtendedData(
+            InMemoryGraph.this,
+            element,
+            elementMutation.getExtendedData(),
+            elementMutation.getAdditionalExtendedDataVisibilities(),
+            elementMutation.getAdditionalExtendedDataVisibilityDeletes(),
+            authorizations
+        );
+        for (ExtendedDataDeleteMutation m : elementMutation.getExtendedDataDeletes()) {
+            getSearchIndex().deleteExtendedData(
+                InMemoryGraph.this,
+                element,
+                m.getTableName(),
+                m.getRow(),
+                m.getColumnName(),
+                m.getKey(),
+                m.getVisibility(),
+                authorizations
             );
         }
     }
@@ -388,7 +429,14 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
             @Override
             public Edge save(Authorizations authorizations) {
                 addValidAuthorizations(authorizations.getAuthorizations());
-                return savePreparedEdge(this, getVertexId(Direction.OUT), getVertexId(Direction.IN), timestamp, authorizations);
+                return savePreparedEdge(this, getVertexId(Direction.OUT), getVertexId(Direction.IN), timestamp, authorizations.getUser());
+            }
+
+            @Override
+            public String save(User user) {
+                addValidAuthorizations(user.getAuthorizations());
+                Edge e = savePreparedEdge(this, getVertexId(Direction.OUT), getVertexId(Direction.IN), timestamp, user);
+                return e.getId();
             }
         };
     }
@@ -406,12 +454,19 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
             @Override
             public Edge save(Authorizations authorizations) {
                 addValidAuthorizations(authorizations.getAuthorizations());
-                return savePreparedEdge(this, getOutVertex().getId(), getInVertex().getId(), timestamp, authorizations);
+                return savePreparedEdge(this, getOutVertex().getId(), getInVertex().getId(), timestamp, authorizations.getUser());
+            }
+
+            @Override
+            public String save(User user) {
+                addValidAuthorizations(user.getAuthorizations());
+                Edge e = savePreparedEdge(this, getOutVertex().getId(), getInVertex().getId(), timestamp, user);
+                return e.getId();
             }
         };
     }
 
-    private Edge savePreparedEdge(final EdgeBuilderBase edgeBuilder, final String outVertexId, final String inVertexId, Long timestamp, Authorizations authorizations) {
+    private Edge savePreparedEdge(final EdgeBuilderBase edgeBuilder, final String outVertexId, final String inVertexId, Long timestamp, User user) {
         if (timestamp == null) {
             timestamp = IncreasingTime.currentTimeMillis();
 
@@ -443,14 +498,14 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
             edges.append(edgeBuilder.getId(), new AlterEdgeLabelMutation(incrementingTimestamp, edgeBuilder.getNewEdgeLabel()));
         }
 
-        InMemoryEdge edge = this.edges.get(InMemoryGraph.this, edgeBuilder.getId(), FetchHints.ALL_INCLUDING_HIDDEN, authorizations);
+        InMemoryEdge edge = this.edges.get(InMemoryGraph.this, edgeBuilder.getId(), FetchHints.ALL_INCLUDING_HIDDEN, user);
         if (isNew && hasEventListeners()) {
             fireGraphEvent(new AddEdgeEvent(InMemoryGraph.this, edge));
         }
         edge.updatePropertiesInternal(edgeBuilder);
 
         if (edgeBuilder.getIndexHint() != IndexHint.DO_NOT_INDEX) {
-            updateElementAndExtendedDataInSearchIndex(edge, edgeBuilder, authorizations);
+            updateElementAndExtendedDataInSearchIndex(edge, edgeBuilder, user);
         }
 
         return edge;
@@ -596,75 +651,6 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
     @Override
     public Stream<HistoricalEvent> getHistoricalEvents(Iterable<ElementId> elementIds, HistoricalEventId after, HistoricalEventsFetchHints fetchHints, User user) {
         return null;
-    }
-
-    protected void findPathsRecursive(
-        FindPathOptions options,
-        List<Path> foundPaths,
-        String sourceVertexId,
-        String destVertexId,
-        int hops,
-        Set<String> seenVertices,
-        Path currentPath,
-        ProgressCallback progressCallback,
-        User user
-    ) {
-        // if this is our first source vertex report progress back to the progress callback
-        boolean firstLevelRecursion = hops == options.getMaxHops();
-
-        if (options.isGetAnyPath() && foundPaths.size() == 1) {
-            return;
-        }
-
-        seenVertices.add(sourceVertexId);
-        if (sourceVertexId.equals(destVertexId)) {
-            foundPaths.add(currentPath);
-        } else if (hops > 0) {
-            Stream<Edge> edges = getEdgesFromVertex(sourceVertexId, getDefaultFetchHints(), null, user)
-                .filter(edge -> {
-                    if (options.getExcludedLabels() != null) {
-                        if (ArrayUtils.contains(options.getExcludedLabels(), edge.getLabel())) {
-                            return false;
-                        }
-                    }
-                    return options.getLabels() == null || ArrayUtils.contains(options.getLabels(), edge.getLabel());
-                });
-            List<String> vertexIds = new ArrayList<>();
-            edges.forEach(edge -> {
-                if (edge.getOtherVertex(sourceVertexId, FetchHints.NONE, user) != null) {
-                    vertexIds.add(edge.getOtherVertexId(sourceVertexId));
-                }
-            });
-
-            int vertexCount = 0;
-            if (firstLevelRecursion) {
-                vertexCount = vertexIds.size();
-            }
-            int i = 0;
-            for (String childId : vertexIds) {
-                if (firstLevelRecursion) {
-                    // this will never get to 100% since i starts at 0. which is good. 100% signifies done and we still
-                    // have work to do.
-                    double progress = (double) i / (double) vertexCount;
-                    progressCallback.progress(progress, ProgressCallback.Step.SEARCHING_EDGES, i + 1, vertexCount);
-                }
-                if (!seenVertices.contains(childId)) {
-                    findPathsRecursive(
-                        options,
-                        foundPaths,
-                        childId,
-                        destVertexId,
-                        hops - 1,
-                        seenVertices,
-                        new Path(currentPath, childId),
-                        progressCallback,
-                        user
-                    );
-                }
-                i++;
-            }
-        }
-        seenVertices.remove(sourceVertexId);
     }
 
     private Stream<InMemoryTableEdge> getInMemoryTableEdges() {
@@ -833,14 +819,7 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
         }
 
         if (value instanceof StreamingPropertyValue) {
-            value = saveStreamingPropertyValue(
-                element.getId(),
-                key,
-                name,
-                visibility,
-                timestamp,
-                (StreamingPropertyValue) value
-            );
+            value = saveStreamingPropertyValue((StreamingPropertyValue) value);
         }
         inMemoryTableElement.appendAddPropertyValueMutation(key, name, value, metadata, visibility, timestamp, null);
         Property property = inMemoryTableElement.getProperty(key, name, visibility, FetchHints.ALL_INCLUDING_HIDDEN, authorizations);
@@ -886,14 +865,7 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
 
             long newTimestamp = apv.getTimestamp() + 1;
             if (value instanceof StreamingPropertyValue) {
-                value = saveStreamingPropertyValue(
-                    inMemoryTableElement.getId(),
-                    apv.getKey(),
-                    apv.getName(),
-                    apv.getVisibility(),
-                    newTimestamp,
-                    (StreamingPropertyValue) value
-                );
+                value = saveStreamingPropertyValue((StreamingPropertyValue) value);
             }
             inMemoryTableElement.appendAddPropertyValueMutation(
                 apv.getKey(),
@@ -932,14 +904,7 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
         }
     }
 
-    protected StreamingPropertyValueRef saveStreamingPropertyValue(
-        String elementId,
-        String key,
-        String name,
-        Visibility visibility,
-        long timestamp,
-        StreamingPropertyValue value
-    ) {
+    protected StreamingPropertyValueRef saveStreamingPropertyValue(StreamingPropertyValue value) {
         return new InMemoryStreamingPropertyValueRef(value);
     }
 

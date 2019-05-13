@@ -6,11 +6,16 @@ import org.vertexium.event.GraphEvent;
 import org.vertexium.event.GraphEventListener;
 import org.vertexium.historicalEvent.HistoricalEvent;
 import org.vertexium.historicalEvent.HistoricalEventId;
+import org.vertexium.id.IdGenerator;
 import org.vertexium.mutation.ElementMutation;
 import org.vertexium.mutation.ExistingElementMutation;
 import org.vertexium.property.StreamingPropertyValue;
 import org.vertexium.property.StreamingPropertyValueRef;
+import org.vertexium.query.GraphQuery;
+import org.vertexium.query.MultiVertexQuery;
 import org.vertexium.query.SimilarToGraphQuery;
+import org.vertexium.search.IndexHint;
+import org.vertexium.search.SearchIndex;
 import org.vertexium.util.*;
 
 import java.io.InputStream;
@@ -23,16 +28,72 @@ import static org.vertexium.util.IterableUtils.count;
 import static org.vertexium.util.Preconditions.checkNotNull;
 import static org.vertexium.util.StreamUtils.stream;
 
-public abstract class GraphBase implements Graph {
+@SuppressWarnings("deprecation")
+public abstract class GraphBase implements Graph, GraphWithSearchIndex {
     private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(GraphBase.class);
     protected static final VertexiumLogger QUERY_LOGGER = VertexiumLoggerFactory.getQueryLogger(Graph.class);
     public static final String METADATA_DEFINE_PROPERTY_PREFIX = "defineProperty.";
     private final List<GraphEventListener> graphEventListeners = new ArrayList<>();
     private Map<String, PropertyDefinition> propertyDefinitionCache = new ConcurrentHashMap<>();
     private final boolean strictTyping;
+    public static final String METADATA_ID_GENERATOR_CLASSNAME = "idGenerator.classname";
+    private final GraphConfiguration configuration;
+    private final IdGenerator idGenerator;
+    private final FetchHints defaultFetchHints;
+    private SearchIndex searchIndex;
+    private boolean foundIdGeneratorClassnameInMetadata;
 
-    protected GraphBase(boolean strictTyping) {
-        this.strictTyping = strictTyping;
+    protected GraphBase(GraphConfiguration configuration) {
+        this.configuration = configuration;
+        this.strictTyping = configuration.isStrictTyping();
+        this.searchIndex = configuration.createSearchIndex(this);
+        this.idGenerator = configuration.createIdGenerator(this);
+        this.defaultFetchHints = FetchHints.ALL;
+    }
+
+    protected GraphBase(
+        GraphConfiguration configuration,
+        IdGenerator idGenerator,
+        SearchIndex searchIndex
+    ) {
+        this.configuration = configuration;
+        this.strictTyping = configuration.isStrictTyping();
+        this.searchIndex = searchIndex;
+        this.idGenerator = idGenerator;
+        this.defaultFetchHints = FetchHints.ALL;
+    }
+
+    protected void setup() {
+        setupGraphMetadata();
+    }
+
+    protected void setupGraphMetadata() {
+        foundIdGeneratorClassnameInMetadata = false;
+        for (GraphMetadataEntry graphMetadataEntry : getMetadata()) {
+            setupGraphMetadata(graphMetadataEntry);
+        }
+        if (!foundIdGeneratorClassnameInMetadata) {
+            setMetadata(METADATA_ID_GENERATOR_CLASSNAME, this.idGenerator.getClass().getName());
+        }
+    }
+
+    protected void setupGraphMetadata(GraphMetadataEntry graphMetadataEntry) {
+        if (graphMetadataEntry.getKey().startsWith(METADATA_DEFINE_PROPERTY_PREFIX)) {
+            if (graphMetadataEntry.getValue() instanceof PropertyDefinition) {
+                addToPropertyDefinitionCache((PropertyDefinition) graphMetadataEntry.getValue());
+            } else {
+                throw new VertexiumException("Invalid property definition metadata: " + graphMetadataEntry.getKey() + " expected " + PropertyDefinition.class.getName() + " found " + graphMetadataEntry.getValue().getClass().getName());
+            }
+        } else if (graphMetadataEntry.getKey().equals(METADATA_ID_GENERATOR_CLASSNAME)) {
+            if (graphMetadataEntry.getValue() instanceof String) {
+                String idGeneratorClassname = (String) graphMetadataEntry.getValue();
+                if (idGeneratorClassname.equals(idGenerator.getClass().getName())) {
+                    foundIdGeneratorClassnameInMetadata = true;
+                }
+            } else {
+                throw new VertexiumException("Invalid " + METADATA_ID_GENERATOR_CLASSNAME + " expected String found " + graphMetadataEntry.getValue().getClass().getName());
+            }
+        }
     }
 
     @Override
@@ -113,19 +174,9 @@ public abstract class GraphBase implements Graph {
     }
 
     @Override
-    public boolean isQuerySimilarToTextSupported() {
-        return false;
-    }
-
-    @Override
-    public SimilarToGraphQuery querySimilarTo(String[] fields, String text, Authorizations authorizations) {
-        throw new VertexiumException("querySimilarTo not supported");
-    }
-
-    @Override
     public Authorizations createAuthorizations(Collection<String> auths) {
         checkNotNull(auths, "auths cannot be null");
-        return createAuthorizations(auths.toArray(new String[auths.size()]));
+        return createAuthorizations(auths.toArray(new String[0]));
     }
 
     @Override
@@ -138,30 +189,7 @@ public abstract class GraphBase implements Graph {
 
     @Override
     public Authorizations createAuthorizations(Authorizations auths, Collection<String> additionalAuthorizations) {
-        return createAuthorizations(auths, additionalAuthorizations.toArray(new String[additionalAuthorizations.size()]));
-    }
-
-    @Override
-    @Deprecated
-    public Map<Object, Long> getVertexPropertyCountByValue(String propertyName, Authorizations authorizations) {
-        Map<Object, Long> countsByValue = new HashMap<>();
-        for (Vertex v : getVertices(authorizations)) {
-            for (Property p : v.getProperties()) {
-                if (propertyName.equals(p.getName())) {
-                    Object mapKey = p.getValue();
-                    if (mapKey instanceof String) {
-                        mapKey = ((String) mapKey).toLowerCase();
-                    }
-                    Long currentValue = countsByValue.get(mapKey);
-                    if (currentValue == null) {
-                        countsByValue.put(mapKey, 1L);
-                    } else {
-                        countsByValue.put(mapKey, currentValue + 1);
-                    }
-                }
-            }
-        }
-        return countsByValue;
+        return createAuthorizations(auths, additionalAuthorizations.toArray(new String[0]));
     }
 
     @Override
@@ -248,24 +276,6 @@ public abstract class GraphBase implements Graph {
     }
 
     @Override
-    public Iterable<Element> saveElementMutations(
-        Iterable<ElementMutation<? extends Element>> mutations,
-        Authorizations authorizations
-    ) {
-        List<Element> elements = new ArrayList<>();
-        for (ElementMutation m : mutations) {
-            if (m instanceof ExistingElementMutation && !m.hasChanges()) {
-                elements.add(((ExistingElementMutation) m).getElement());
-                continue;
-            }
-
-            Element element = m.save(authorizations);
-            elements.add(element);
-        }
-        return elements;
-    }
-
-    @Override
     public List<InputStream> getStreamingPropertyValueInputStreams(List<StreamingPropertyValue> streamingPropertyValues) {
         return streamingPropertyValues.stream()
             .map(StreamingPropertyValue::getInputStream)
@@ -346,6 +356,7 @@ public abstract class GraphBase implements Graph {
         };
     }
 
+    @SuppressWarnings("deprecation")
     protected void deleteAllExtendedDataForElement(Element element, Authorizations authorizations) {
         if (!element.getFetchHints().isIncludeExtendedDataTableNames() || element.getExtendedDataTableNames().size() <= 0) {
             return;
@@ -427,5 +438,154 @@ public abstract class GraphBase implements Graph {
                 }
                 return element.getHistoricalEvents(after, fetchHints, authorizations);
             }), after);
+    }
+
+    public IdGenerator getIdGenerator() {
+        return idGenerator;
+    }
+
+    public GraphConfiguration getConfiguration() {
+        return configuration;
+    }
+
+    @Override
+    public SearchIndex getSearchIndex() {
+        return searchIndex;
+    }
+
+    @Override
+    public void reindex(Authorizations authorizations) {
+        reindexVertices(authorizations);
+        reindexEdges(authorizations);
+    }
+
+    protected void reindexVertices(Authorizations authorizations) {
+        this.searchIndex.addElements(this, getVertices(authorizations), authorizations);
+    }
+
+    private void reindexEdges(Authorizations authorizations) {
+        this.searchIndex.addElements(this, getEdges(authorizations), authorizations);
+    }
+
+    @Override
+    public void flush() {
+        if (getSearchIndex() != null) {
+            this.searchIndex.flush(this);
+        }
+    }
+
+    @Override
+    public void shutdown() {
+        flush();
+        if (getSearchIndex() != null) {
+            this.searchIndex.shutdown();
+            this.searchIndex = null;
+        }
+    }
+
+    @Override
+    public GraphQuery query(Authorizations authorizations) {
+        return getSearchIndex().queryGraph(this, null, authorizations);
+    }
+
+    @Override
+    public GraphQuery query(String queryString, Authorizations authorizations) {
+        return getSearchIndex().queryGraph(this, queryString, authorizations);
+    }
+
+    @Override
+    public MultiVertexQuery query(String[] vertexIds, String queryString, Authorizations authorizations) {
+        return getSearchIndex().queryGraph(this, vertexIds, queryString, authorizations);
+    }
+
+    @Override
+    public MultiVertexQuery query(String[] vertexIds, Authorizations authorizations) {
+        return getSearchIndex().queryGraph(this, vertexIds, null, authorizations);
+    }
+
+    @Override
+    public boolean isQuerySimilarToTextSupported() {
+        return getSearchIndex().isQuerySimilarToTextSupported();
+    }
+
+    @Override
+    public SimilarToGraphQuery querySimilarTo(String[] fields, String text, Authorizations authorizations) {
+        return getSearchIndex().querySimilarTo(this, fields, text, authorizations);
+    }
+
+    @Override
+    public boolean isFieldBoostSupported() {
+        return getSearchIndex().isFieldBoostSupported();
+    }
+
+    @Override
+    public SearchIndexSecurityGranularity getSearchIndexSecurityGranularity() {
+        return getSearchIndex().getSearchIndexSecurityGranularity();
+    }
+
+    @Override
+    @Deprecated
+    public Map<Object, Long> getVertexPropertyCountByValue(String propertyName, Authorizations authorizations) {
+        Map<Object, Long> countsByValue = new HashMap<>();
+        for (Vertex v : getVertices(authorizations)) {
+            for (Property p : v.getProperties()) {
+                if (propertyName.equals(p.getName())) {
+                    Object mapKey = p.getValue();
+                    if (mapKey instanceof String) {
+                        mapKey = ((String) mapKey).toLowerCase();
+                    }
+                    Long currentValue = countsByValue.get(mapKey);
+                    if (currentValue == null) {
+                        countsByValue.put(mapKey, 1L);
+                    } else {
+                        countsByValue.put(mapKey, currentValue + 1);
+                    }
+                }
+            }
+        }
+        return countsByValue;
+    }
+
+    @Override
+    public Iterable<Element> saveElementMutations(
+        Iterable<ElementMutation<? extends Element>> mutations,
+        Authorizations authorizations
+    ) {
+        List<Element> elements = new ArrayList<>();
+        List<Element> elementsToAddToIndex = new ArrayList<>();
+        for (ElementMutation<? extends Element> m : mutations) {
+            if (m instanceof ExistingElementMutation && !m.hasChanges()) {
+                elements.add(((ExistingElementMutation) m).getElement());
+                continue;
+            }
+
+            IndexHint indexHint = m.getIndexHint();
+            m.setIndexHint(IndexHint.DO_NOT_INDEX);
+            Element element = m.save(authorizations);
+            m.setIndexHint(indexHint);
+            elements.add(element);
+            if (indexHint == IndexHint.INDEX) {
+                elementsToAddToIndex.add(element);
+            }
+        }
+        getSearchIndex().addElements(this, elementsToAddToIndex, authorizations);
+        for (ElementMutation<? extends Element> m : mutations) {
+            if (m.getIndexHint() == IndexHint.INDEX) {
+                getSearchIndex().addElementExtendedData(
+                    this,
+                    m,
+                    m.getExtendedData(),
+                    m.getAdditionalExtendedDataVisibilities(),
+                    m.getAdditionalExtendedDataVisibilityDeletes(),
+                    authorizations
+                );
+            }
+        }
+        return elements;
+    }
+
+    @Override
+    public FetchHints getDefaultFetchHints() {
+        return defaultFetchHints;
     }
 }

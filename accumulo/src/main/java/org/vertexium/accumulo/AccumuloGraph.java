@@ -63,7 +63,7 @@ import static org.vertexium.util.IterableUtils.toList;
 import static org.vertexium.util.Preconditions.checkNotNull;
 import static org.vertexium.util.StreamUtils.stream;
 
-public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable {
+public class AccumuloGraph extends GraphBase implements Traceable {
     private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(AccumuloGraph.class);
     static final AccumuloGraphLogger GRAPH_LOGGER = new AccumuloGraphLogger(QUERY_LOGGER);
     private static final String ROW_DELETING_ITERATOR_NAME = RowDeletingIterator.class.getSimpleName();

@@ -25,7 +25,7 @@ public abstract class InMemoryTable<TElement extends InMemoryElement> {
         this(new ConcurrentSkipListMap<>());
     }
 
-    public TElement get(InMemoryGraph graph, String id, FetchHints fetchHints, Authorizations authorizations) {
+    public TElement get(InMemoryGraph graph, String id, FetchHints fetchHints, User user) {
         InMemoryTableElement<TElement> inMemoryTableElement = getTableElement(id);
         if (inMemoryTableElement == null) {
             return null;

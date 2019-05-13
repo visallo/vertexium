@@ -2,6 +2,7 @@ package org.vertexium.search;
 
 import org.vertexium.*;
 import org.vertexium.query.Aggregation;
+import org.vertexium.query.DefaultGraphQueryIterableWithAggregations;
 import org.vertexium.util.JoinIterable;
 
 public class DefaultGraphQuery extends GraphQueryBase {
