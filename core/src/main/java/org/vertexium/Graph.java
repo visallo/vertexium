@@ -8,6 +8,7 @@ import org.vertexium.id.IdGenerator;
 import org.vertexium.mutation.ElementMutation;
 import org.vertexium.property.StreamingPropertyValue;
 import org.vertexium.query.*;
+import org.vertexium.search.SearchIndex;
 import org.vertexium.util.FutureDeprecation;
 import org.vertexium.util.IterableUtils;
 
@@ -1730,6 +1731,13 @@ public interface Graph {
     void flush();
 
     /**
+     * This method will only flush the primary graph and not the search index
+     */
+    void flushGraph();
+
+    SearchIndex getSearchIndex();
+
+    /**
      * Cleans up or disconnects from the underlying storage.
      */
     void shutdown();
@@ -2061,8 +2069,8 @@ public interface Graph {
      */
     @FutureDeprecation
     Iterable<Element> saveElementMutations(
-        Iterable<ElementMutation<? extends Element>> mutations,
-        Authorizations authorizations
+            Iterable<ElementMutation<? extends Element>> mutations,
+            Authorizations authorizations
     );
 
     /**
@@ -2163,10 +2171,10 @@ public interface Graph {
      */
     @FutureDeprecation
     default Iterable<ExtendedDataRow> getExtendedData(
-        ElementType elementType,
-        String elementId,
-        String tableName,
-        Authorizations authorizations
+            ElementType elementType,
+            String elementId,
+            String tableName,
+            Authorizations authorizations
     ) {
         return getExtendedData(elementType, elementId, tableName, getDefaultFetchHints(), authorizations);
     }
@@ -2181,10 +2189,10 @@ public interface Graph {
      * @return Rows
      */
     default Iterable<ExtendedDataRow> getExtendedData(
-        ElementType elementType,
-        String elementId,
-        String tableName,
-        User user
+            ElementType elementType,
+            String elementId,
+            String tableName,
+            User user
     ) {
         return toIterable(getExtendedData(elementType, elementId, tableName, getDefaultFetchHints(), user));
     }
@@ -2283,9 +2291,9 @@ public interface Graph {
      */
     @FutureDeprecation
     default Stream<HistoricalEvent> getHistoricalEvents(
-        Iterable<ElementId> elementIds,
-        HistoricalEventsFetchHints fetchHints,
-        Authorizations authorizations
+            Iterable<ElementId> elementIds,
+            HistoricalEventsFetchHints fetchHints,
+            Authorizations authorizations
     ) {
         return getHistoricalEvents(elementIds, null, fetchHints, authorizations);
     }
@@ -2299,9 +2307,9 @@ public interface Graph {
      * @return An iterable of historic events
      */
     default Stream<HistoricalEvent> getHistoricalEvents(
-        Iterable<ElementId> elementIds,
-        HistoricalEventsFetchHints fetchHints,
-        User user
+            Iterable<ElementId> elementIds,
+            HistoricalEventsFetchHints fetchHints,
+            User user
     ) {
         return getHistoricalEvents(elementIds, null, fetchHints, user);
     }
@@ -2317,10 +2325,10 @@ public interface Graph {
      */
     @FutureDeprecation
     Stream<HistoricalEvent> getHistoricalEvents(
-        Iterable<ElementId> elementIds,
-        HistoricalEventId after,
-        HistoricalEventsFetchHints fetchHints,
-        Authorizations authorizations
+            Iterable<ElementId> elementIds,
+            HistoricalEventId after,
+            HistoricalEventsFetchHints fetchHints,
+            Authorizations authorizations
     );
 
     /**
@@ -2333,10 +2341,10 @@ public interface Graph {
      * @return An iterable of historic events
      */
     Stream<HistoricalEvent> getHistoricalEvents(
-        Iterable<ElementId> elementIds,
-        HistoricalEventId after,
-        HistoricalEventsFetchHints fetchHints,
-        User user
+            Iterable<ElementId> elementIds,
+            HistoricalEventId after,
+            HistoricalEventsFetchHints fetchHints,
+            User user
     );
 
     /**

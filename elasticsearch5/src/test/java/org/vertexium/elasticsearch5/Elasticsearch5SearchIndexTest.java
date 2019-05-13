@@ -58,7 +58,7 @@ public class Elasticsearch5SearchIndexTest extends GraphTestBase {
     }
 
     private Elasticsearch5SearchIndex getSearchIndex() {
-        return (Elasticsearch5SearchIndex) ((GraphWithSearchIndex) graph).getSearchIndex();
+        return (Elasticsearch5SearchIndex) graph.getSearchIndex();
     }
 
     protected boolean isFieldNamesInQuerySupported() {
@@ -67,7 +67,7 @@ public class Elasticsearch5SearchIndexTest extends GraphTestBase {
 
     @Override
     protected boolean disableEdgeIndexing(Graph graph) {
-        Elasticsearch5SearchIndex searchIndex = (Elasticsearch5SearchIndex) ((GraphWithSearchIndex) graph).getSearchIndex();
+        Elasticsearch5SearchIndex searchIndex = (Elasticsearch5SearchIndex) graph.getSearchIndex();
         searchIndex.getConfig().getGraphConfiguration().set(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + ElasticsearchSearchIndexConfiguration.INDEX_EDGES, "false");
         return true;
     }
@@ -122,7 +122,7 @@ public class Elasticsearch5SearchIndexTest extends GraphTestBase {
 
     @Test
     public void testQueryExecutionCountWhenScrollingApi() {
-        Elasticsearch5SearchIndex searchIndex = (Elasticsearch5SearchIndex) ((GraphWithSearchIndex) graph).getSearchIndex();
+        Elasticsearch5SearchIndex searchIndex = (Elasticsearch5SearchIndex) graph.getSearchIndex();
         searchIndex.getConfig().getGraphConfiguration().set(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + ElasticsearchSearchIndexConfiguration.QUERY_PAGE_SIZE, 1);
 
         graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
@@ -135,7 +135,7 @@ public class Elasticsearch5SearchIndexTest extends GraphTestBase {
         assertResultsCount(2, vertices);
         assertEquals(startingNumQueries + 4, getNumQueries());
 
-        searchIndex = (Elasticsearch5SearchIndex) ((GraphWithSearchIndex) graph).getSearchIndex();
+        searchIndex = (Elasticsearch5SearchIndex) graph.getSearchIndex();
         searchIndex.getConfig().getGraphConfiguration().set(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + ElasticsearchSearchIndexConfiguration.QUERY_PAGE_SIZE, 2);
 
         graph.addVertex("v3", VISIBILITY_A, AUTHORIZATIONS_A);

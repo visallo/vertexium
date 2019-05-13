@@ -23,54 +23,37 @@ public class DefaultSearchIndex implements SearchIndex {
         Element element,
         Set<String> additionalVisibilities,
         Set<String> additionalVisibilitiesToDelete,
-        Authorizations authorizations
+        User user
     ) {
         checkNotNull(element, "element cannot be null");
     }
 
     @Override
-    public <TElement extends Element> void updateElement(Graph graph, ExistingElementMutation<TElement> mutation, Authorizations authorizations) {
+    public <TElement extends Element> void updateElement(Graph graph, ExistingElementMutation<TElement> mutation, User user) {
         checkNotNull(mutation, "mutation cannot be null");
     }
 
     @Override
-    public void markElementHidden(Graph graph, Element element, Visibility visibility, Authorizations authorizations) {
+    public void markElementHidden(Graph graph, Element element, Visibility visibility, User user) {
         checkNotNull(element, "element cannot be null");
         checkNotNull(visibility, "visibility cannot be null");
     }
 
     @Override
-    public void markElementVisible(
-        Graph graph,
-        ElementLocation elementLocation,
-        Visibility visibility,
-        Authorizations authorizations
-    ) {
+    public void markElementVisible(Graph graph, ElementLocation elementLocation, Visibility visibility, User user) {
         checkNotNull(elementLocation, "elementLocation cannot be null");
         checkNotNull(visibility, "visibility cannot be null");
     }
 
     @Override
-    public void markPropertyHidden(
-        Graph graph,
-        ElementLocation elementLocation,
-        Property property,
-        Visibility visibility,
-        Authorizations authorizations
-    ) {
+    public void markPropertyHidden(Graph graph, ElementLocation elementLocation, Property property, Visibility visibility, User user) {
         checkNotNull(elementLocation, "elementLocation cannot be null");
         checkNotNull(property, "property cannot be null");
         checkNotNull(visibility, "visibility cannot be null");
     }
 
     @Override
-    public void markPropertyVisible(
-        Graph graph,
-        ElementLocation elementLocation,
-        Property property,
-        Visibility visibility,
-        Authorizations authorizations
-    ) {
+    public void markPropertyVisible(Graph graph, ElementLocation elementLocation, Property property, Visibility visibility, User user) {
         checkNotNull(elementLocation, "elementLocation cannot be null");
         checkNotNull(property, "property cannot be null");
         checkNotNull(visibility, "visibility cannot be null");
@@ -82,57 +65,54 @@ public class DefaultSearchIndex implements SearchIndex {
         ExistingElementMutation<T> elementMutation,
         Visibility oldVisibility,
         Visibility newVisibility,
-        Authorizations authorizations
+        User user
     ) {
         checkNotNull(elementMutation, "elementMutation cannot be null");
         checkNotNull(newVisibility, "newVisibility cannot be null");
     }
 
     @Override
-    public void deleteElement(Graph graph, Element element, Authorizations authorizations) {
+    public void deleteElement(Graph graph, Element element, User user) {
         checkNotNull(element, "element cannot be null");
     }
 
     @Override
-    public void deleteProperty(Graph graph, Element element, PropertyDescriptor property, Authorizations authorizations) {
+    public void deleteProperty(Graph graph, Element element, PropertyDescriptor property, User user) {
         checkNotNull(element, "element cannot be null");
     }
 
     @Override
-    public void addElements(Graph graph, Iterable<? extends Element> elements, Authorizations authorizations) {
+    public void addElements(Graph graph, Iterable<? extends Element> elements, User user) {
         for (Element element : elements) {
-            addElement(graph, element, element.getAdditionalVisibilities(), null, authorizations);
+            addElement(graph, element, element.getAdditionalVisibilities(), null, user);
         }
     }
 
     @Override
-    public GraphQuery queryGraph(Graph graph, String queryString, Authorizations authorizations) {
+    public org.vertexium.query.GraphQuery queryGraph(Graph graph, String queryString, Authorizations authorizations) {
         return new DefaultGraphQuery(graph, queryString, authorizations);
     }
 
     @Override
-    public MultiVertexQuery queryGraph(Graph graph, String[] vertexIds, String queryString, Authorizations authorizations) {
+    public org.vertexium.query.MultiVertexQuery queryGraph(Graph graph, String[] vertexIds, String queryString, Authorizations authorizations) {
         return new DefaultMultiVertexQuery(graph, vertexIds, queryString, authorizations);
     }
 
     @Override
-    public VertexQuery queryVertex(Graph graph, Vertex vertex, String queryString, Authorizations authorizations) {
+    public org.vertexium.query.VertexQuery queryVertex(Graph graph, Vertex vertex, String queryString, Authorizations authorizations) {
         return new DefaultVertexQuery(graph, vertex, queryString, authorizations);
     }
 
     @Override
     public void flush(Graph graph) {
-
     }
 
     @Override
     public void clearCache() {
-
     }
 
     @Override
     public void shutdown() {
-
     }
 
     @Override
@@ -146,7 +126,6 @@ public class DefaultSearchIndex implements SearchIndex {
 
     @Override
     public void drop(Graph graph) {
-
     }
 
     public SearchIndexSecurityGranularity getSearchIndexSecurityGranularity() {
@@ -159,7 +138,7 @@ public class DefaultSearchIndex implements SearchIndex {
     }
 
     @Override
-    public SimilarToGraphQuery querySimilarTo(Graph graph, String[] fields, String text, Authorizations authorizations) {
+    public org.vertexium.query.SimilarToGraphQuery querySimilarTo(Graph graph, String[] fields, String text, Authorizations authorizations) {
         throw new VertexiumException("querySimilarTo not supported");
     }
 
@@ -175,7 +154,7 @@ public class DefaultSearchIndex implements SearchIndex {
         Iterable<ExtendedDataMutation> extendedDatas,
         Iterable<AdditionalExtendedDataVisibilityAddMutation> additionalExtendedDataVisibilities,
         Iterable<AdditionalExtendedDataVisibilityDeleteMutation> additionalExtendedDataVisibilityDeletes,
-        Authorizations authorizations
+        User user
     ) {
     }
 
@@ -184,12 +163,12 @@ public class DefaultSearchIndex implements SearchIndex {
         Graph graph,
         ElementLocation elementLocation,
         Iterable<ExtendedDataRow> extendedDatas,
-        Authorizations authorizations
+        User user
     ) {
     }
 
     @Override
-    public void deleteExtendedData(Graph graph, ExtendedDataRowId extendedDataRowId, Authorizations authorizations) {
+    public void deleteExtendedData(Graph graph, ExtendedDataRowId extendedDataRowId, User user) {
         checkNotNull(extendedDataRowId, "extendedDataRowId cannot be null");
     }
 
@@ -202,7 +181,7 @@ public class DefaultSearchIndex implements SearchIndex {
         String columnName,
         String key,
         Visibility visibility,
-        Authorizations authorizations
+        User user
     ) {
         checkNotNull(elementLocation, "elementLocation cannot be null");
         checkNotNull(tableName, "tableName cannot be null");
@@ -212,15 +191,15 @@ public class DefaultSearchIndex implements SearchIndex {
     }
 
     @Override
-    public void addAdditionalVisibility(Graph graph, Element element, String visibility, Object eventData, Authorizations authorizations) {
+    public void addAdditionalVisibility(Graph graph, Element element, String visibility, Object eventData, User user) {
     }
 
     @Override
-    public void deleteAdditionalVisibility(Graph graph, Element element, String visibility, Object eventData, Authorizations authorizations) {
+    public void deleteAdditionalVisibility(Graph graph, Element element, String visibility, Object eventData, User user) {
     }
 
     @Override
-    public Query queryExtendedData(Graph graph, Element element, String tableName, String queryString, Authorizations authorizations) {
+    public org.vertexium.query.Query queryExtendedData(Graph graph, Element element, String tableName, String queryString, Authorizations authorizations) {
         return new DefaultExtendedDataQuery(graph, element, tableName, queryString, authorizations);
     }
 }

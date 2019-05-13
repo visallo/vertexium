@@ -157,11 +157,6 @@ public abstract class ElasticsearchElement extends ElementBase {
     }
 
     @Override
-    public GraphWithSearchIndex getGraph() {
-        return (GraphWithSearchIndex) graph;
-    }
-
-    @Override
     public void addPropertyValue(String key, String name, Object value, Visibility visibility, Authorizations authorizations) {
         throw new VertexiumNotSupportedException("addPropertyValue is not supported");
     }

@@ -254,7 +254,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
             || elementTypes.contains(ElasticsearchDocumentType.EDGE_EXTENDED_DATA)
             || elementTypes.contains(ElasticsearchDocumentType.VERTEX_EXTENDED_DATA)
         ) {
-            Elasticsearch5SearchIndex es = (Elasticsearch5SearchIndex) ((GraphWithSearchIndex) getGraph()).getSearchIndex();
+            Elasticsearch5SearchIndex es = (Elasticsearch5SearchIndex) getGraph().getSearchIndex();
             Collection<String> queryableVisibilities = es.getQueryableExtendedDataVisibilities(getGraph(), getParameters().getAuthorizations());
             TermsQueryBuilder extendedDataVisibilitiesTerms = QueryBuilders.termsQuery(EXTENDED_DATA_TABLE_COLUMN_VISIBILITIES_FIELD_NAME, queryableVisibilities);
 
@@ -281,7 +281,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
         }
 
         if (getParameters() instanceof QueryStringQueryParameters) {
-            Elasticsearch5SearchIndex es = (Elasticsearch5SearchIndex) ((GraphWithSearchIndex) getGraph()).getSearchIndex();
+            Elasticsearch5SearchIndex es = (Elasticsearch5SearchIndex) getGraph().getSearchIndex();
             Collection<String> fields = es.getQueryableElementTypeVisibilityPropertyNames(getGraph(), getParameters().getAuthorizations());
             BoolQueryBuilder atLeastOneFieldExistsFilter = QueryBuilders.boolQuery();
             for (String field : fields) {
@@ -1181,7 +1181,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
     }
 
     public Elasticsearch5SearchIndex getSearchIndex() {
-        return (Elasticsearch5SearchIndex) ((GraphWithSearchIndex) getGraph()).getSearchIndex();
+        return (Elasticsearch5SearchIndex) getGraph().getSearchIndex();
     }
 
     protected void addElementTypeFilter(List<QueryBuilder> filters, EnumSet<ElasticsearchDocumentType> elementType) {
