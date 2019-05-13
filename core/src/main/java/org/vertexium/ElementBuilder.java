@@ -23,10 +23,17 @@ public abstract class ElementBuilder<T extends Element> implements ElementMutati
     private final List<AdditionalVisibilityDeleteMutation> additionalVisibilityDeletes = new ArrayList<>();
     private final List<AdditionalExtendedDataVisibilityAddMutation> additionalExtendedDataVisibilities = new ArrayList<>();
     private final List<AdditionalExtendedDataVisibilityDeleteMutation> additionalExtendedDataVisibilityDeletes = new ArrayList<>();
+    private final List<MarkHiddenData> markHiddenData = new ArrayList<>();
+    private final List<MarkVisibleData> markVisibleData = new ArrayList<>();
+    private final List<DeleteExtendedDataRowData> deleteExtendedDataRowData = new ArrayList<>();
     private final ElementType elementType;
     private final String elementId;
     private final Visibility elementVisibility;
     private IndexHint indexHint = IndexHint.INDEX;
+    private boolean deleteElement;
+    private boolean softDeleteElement;
+    private Long softDeleteElementTimestamp;
+    private Object softDeleteElementEventData;
 
     protected ElementBuilder(ElementType elementType, String elementId, Visibility elementVisibility) {
         KeyUtils.checkKey(elementId, "Invalid elementId");
@@ -339,6 +346,38 @@ public abstract class ElementBuilder<T extends Element> implements ElementMutati
     }
 
     @Override
+    public ElementMutation<T> deleteElement() {
+        deleteElement = true;
+        return this;
+    }
+
+    @Override
+    public ElementMutation<T> softDeleteElement(Long timestamp, Object eventData) {
+        softDeleteElement = true;
+        softDeleteElementTimestamp = timestamp;
+        softDeleteElementEventData = eventData;
+        return this;
+    }
+
+    @Override
+    public ElementMutation<T> markElementHidden(Visibility visibility, Object eventData) {
+        markHiddenData.add(new MarkHiddenData(visibility, eventData));
+        return this;
+    }
+
+    @Override
+    public ElementMutation<T> markElementVisible(Visibility visibility, Object eventData) {
+        markVisibleData.add(new MarkVisibleData(visibility, eventData));
+        return this;
+    }
+
+    @Override
+    public ElementMutation<T> deleteExtendedDataRow(String tableName, String row) {
+        deleteExtendedDataRowData.add(new DeleteExtendedDataRowData(tableName, row));
+        return this;
+    }
+
+    @Override
     public boolean hasChanges() {
         if (properties.size() > 0) {
             return true;
@@ -360,6 +399,88 @@ public abstract class ElementBuilder<T extends Element> implements ElementMutati
             return true;
         }
 
+        if (additionalVisibilities.size() > 0) {
+            return true;
+        }
+
+        if (additionalVisibilityDeletes.size() > 0) {
+            return true;
+        }
+
+        if (additionalExtendedDataVisibilities.size() > 0) {
+            return true;
+        }
+
+        if (additionalExtendedDataVisibilityDeletes.size() > 0) {
+            return true;
+        }
+
+        if (markHiddenData.size() > 0) {
+            return true;
+        }
+
+        if (markVisibleData.size() > 0) {
+            return true;
+        }
+
+        if (deleteElement || softDeleteElement) {
+            return true;
+        }
+
         return false;
+    }
+
+    public static class MarkHiddenData {
+        private final Visibility visibility;
+        private final Object eventData;
+
+        public MarkHiddenData(Visibility visibility, Object eventData) {
+            this.visibility = visibility;
+            this.eventData = eventData;
+        }
+
+        public Visibility getVisibility() {
+            return visibility;
+        }
+
+        public Object getEventData() {
+            return eventData;
+        }
+    }
+
+    public static class MarkVisibleData {
+        private final Visibility visibility;
+        private final Object eventData;
+
+        public MarkVisibleData(Visibility visibility, Object eventData) {
+            this.visibility = visibility;
+            this.eventData = eventData;
+        }
+
+        public Visibility getVisibility() {
+            return visibility;
+        }
+
+        public Object getEventData() {
+            return eventData;
+        }
+    }
+
+    public static class DeleteExtendedDataRowData {
+        private final String tableName;
+        private final String row;
+
+        public DeleteExtendedDataRowData(String tableName, String row) {
+            this.tableName = tableName;
+            this.row = row;
+        }
+
+        public String getTableName() {
+            return tableName;
+        }
+
+        public String getRow() {
+            return row;
+        }
     }
 }

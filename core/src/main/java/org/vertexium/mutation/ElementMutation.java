@@ -288,7 +288,9 @@ public interface ElementMutation<T extends Element> extends ElementLocation {
      *                   This visibility can be a superset of the vertex visibility to mark
      *                   it as hidden for only a subset of authorizations.
      */
-    ElementMutation<T> markElementHidden(Visibility visibility);
+    default ElementMutation<T> markElementHidden(Visibility visibility) {
+        return markElementHidden(visibility, null);
+    }
 
     /**
      * Marks a vertex as hidden for a given visibility.
