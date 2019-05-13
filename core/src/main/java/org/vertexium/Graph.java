@@ -2072,7 +2072,7 @@ public interface Graph {
         String tableName,
         User user
     ) {
-        return getExtendedData(elementType, elementId, tableName, FetchHints.ALL, user);
+        return toIterable(getExtendedData(elementType, elementId, tableName, FetchHints.ALL, user));
     }
 
     /**
