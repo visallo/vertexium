@@ -664,6 +664,7 @@ public abstract class GraphTestBase {
             .addPropertyValue("propid1a", "prop1", "value1a", VISIBILITY_A)
             .addPropertyValue("propid1b", "prop1", "value1b", VISIBILITY_A)
             .addPropertyValue("propid2a", "prop2", "value2a", VISIBILITY_A)
+            .addPropertyValue("propid3a", "prop3", new GeoPoint(1, 1), VISIBILITY_A)
             .save(AUTHORIZATIONS_ALL);
         graph.flush();
         clearGraphEvents();
@@ -673,9 +674,9 @@ public abstract class GraphTestBase {
         Property prop1_propid1b = v.getProperty("propid1b", "prop1");
         v.deleteProperties("prop1", AUTHORIZATIONS_A_AND_B);
         graph.flush();
-        Assert.assertEquals(1, count(v.getProperties()));
+        Assert.assertEquals(2, count(v.getProperties()));
         v = graph.getVertex("v1", FetchHints.ALL, AUTHORIZATIONS_A);
-        Assert.assertEquals(1, count(v.getProperties()));
+        Assert.assertEquals(2, count(v.getProperties()));
 
         Assert.assertEquals(1, count(graph.query(AUTHORIZATIONS_A_AND_B).has("prop2", "value2a").vertices()));
         Assert.assertEquals(0, count(graph.query(AUTHORIZATIONS_A_AND_B).has("prop1", "value1a").vertices()));
@@ -688,13 +689,23 @@ public abstract class GraphTestBase {
         Property prop2_propid2a = v.getProperty("propid2a", "prop2");
         v.deleteProperty("propid2a", "prop2", AUTHORIZATIONS_A_AND_B);
         graph.flush();
-        Assert.assertEquals(0, count(v.getProperties()));
+        Assert.assertEquals(1, count(v.getProperties()));
         v = graph.getVertex("v1", AUTHORIZATIONS_A);
-        Assert.assertEquals(0, count(v.getProperties()));
+        Assert.assertEquals(1, count(v.getProperties()));
 
         assertEvents(
             new DeletePropertyEvent(graph, v, prop2_propid2a)
         );
+
+        v = graph.getVertex("v1", AUTHORIZATIONS_A);
+        for (Property property : v.getProperties("prop3")) {
+            v.deleteProperty(property, AUTHORIZATIONS_A);
+        }
+        graph.flush();
+        Assert.assertEquals(0, count(v.getProperties()));
+        v = graph.getVertex("v1", AUTHORIZATIONS_A);
+        Assert.assertEquals(0, count(v.getProperties()));
+        assertEquals(0, count(graph.query(AUTHORIZATIONS_A_AND_B).has("prop3").vertices()));
     }
 
     @Test
@@ -703,6 +714,7 @@ public abstract class GraphTestBase {
             .addPropertyValue("propid1a", "prop1", "value1a", VISIBILITY_A)
             .addPropertyValue("propid1b", "prop1", "value1b", VISIBILITY_A)
             .addPropertyValue("propid2a", "prop2", "value2a", VISIBILITY_A)
+            .addPropertyValue("propid3a", "prop3", new GeoPoint(1, 1), VISIBILITY_A)
             .save(AUTHORIZATIONS_A_AND_B);
         Vertex v2 = graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_A);
         graph.prepareEdge("e1", v1, v2, LABEL_LABEL1, VISIBILITY_A)
@@ -719,9 +731,9 @@ public abstract class GraphTestBase {
             .deleteProperties("prop1")
             .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
-        Assert.assertEquals(1, count(v1.getProperties()));
+        Assert.assertEquals(2, count(v1.getProperties()));
         v1 = graph.getVertex("v1", FetchHints.ALL, AUTHORIZATIONS_A);
-        Assert.assertEquals(1, count(v1.getProperties()));
+        Assert.assertEquals(2, count(v1.getProperties()));
 
         Assert.assertEquals(1, count(graph.query(AUTHORIZATIONS_A_AND_B).has("prop2", "value2a").vertices()));
         Assert.assertEquals(0, count(graph.query(AUTHORIZATIONS_A_AND_B).has("prop1", "value1a").vertices()));
@@ -737,9 +749,9 @@ public abstract class GraphTestBase {
             .deleteProperties("propid2a", "prop2")
             .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
-        Assert.assertEquals(0, count(v1.getProperties()));
+        Assert.assertEquals(1, count(v1.getProperties()));
         v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
-        Assert.assertEquals(0, count(v1.getProperties()));
+        Assert.assertEquals(1, count(v1.getProperties()));
         assertEvents(
             new DeletePropertyEvent(graph, v1, prop2_propid2a)
         );
@@ -758,6 +770,19 @@ public abstract class GraphTestBase {
         assertEvents(
             new DeletePropertyEvent(graph, e1, edgeProperty)
         );
+
+        // delete geo-property
+        v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
+        ExistingElementMutation<Vertex> m = v1.prepareMutation();
+        for (Property property : v1.getProperties("prop3")) {
+            m.deleteProperty(property);
+        }
+        m.save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+        Assert.assertEquals(0, count(v1.getProperties()));
+        v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
+        Assert.assertEquals(0, count(v1.getProperties()));
+        assertEquals(0, count(graph.query(AUTHORIZATIONS_A_AND_B).has("prop3").vertices()));
     }
 
     @Test
@@ -983,36 +1008,43 @@ public abstract class GraphTestBase {
     public void testSoftDeleteProperty() throws InterruptedException {
         graph.prepareVertex("v1", VISIBILITY_A)
             .addPropertyValue("key1", "name1", "value1", VISIBILITY_A)
+            .addPropertyValue("key1", "name2", new GeoPoint(1, 1), VISIBILITY_A)
             .save(AUTHORIZATIONS_A);
         graph.flush();
-        assertEquals(1, count(graph.getVertex("v1", AUTHORIZATIONS_A).getProperties()));
+        assertEquals(2, count(graph.getVertex("v1", AUTHORIZATIONS_A).getProperties()));
         assertResultsCount(1, graph.query(AUTHORIZATIONS_A).has("name1", "value1").vertices());
 
         graph.getVertex("v1", AUTHORIZATIONS_A).softDeleteProperties("name1", AUTHORIZATIONS_A);
         graph.flush();
-        assertEquals(0, count(graph.getVertex("v1", AUTHORIZATIONS_A).getProperties()));
+        assertEquals(1, count(graph.getVertex("v1", AUTHORIZATIONS_A).getProperties()));
         assertResultsCount(0, graph.query(AUTHORIZATIONS_A).has("name1", "value1").vertices());
 
         graph.prepareVertex("v1", VISIBILITY_A)
             .addPropertyValue("key1", "name1", "value1", VISIBILITY_A)
             .save(AUTHORIZATIONS_A);
         graph.flush();
-        assertEquals(1, count(graph.getVertex("v1", AUTHORIZATIONS_A).getProperties()));
+        assertEquals(2, count(graph.getVertex("v1", AUTHORIZATIONS_A).getProperties()));
         assertResultsCount(1, graph.query(AUTHORIZATIONS_A).has("name1", "value1").vertices());
 
         graph.getVertex("v1", AUTHORIZATIONS_A).softDeleteProperties("name1", AUTHORIZATIONS_A);
         graph.flush();
-        assertEquals(0, count(graph.getVertex("v1", AUTHORIZATIONS_A).getProperties()));
+        assertEquals(1, count(graph.getVertex("v1", AUTHORIZATIONS_A).getProperties()));
         assertResultsCount(0, graph.query(AUTHORIZATIONS_A).has("name1", "value1").vertices());
+
+        graph.getVertex("v1", AUTHORIZATIONS_A).softDeleteProperties("name2", AUTHORIZATIONS_A);
+        graph.flush();
+        assertEquals(0, count(graph.getVertex("v1", AUTHORIZATIONS_A).getProperties()));
+        assertResultsCount(0, graph.query(AUTHORIZATIONS_A).has("name2").vertices());
     }
 
     @Test
     public void testSoftDeletePropertyThroughMutation() {
         graph.prepareVertex("v1", VISIBILITY_A)
             .addPropertyValue("key1", "name1", "value1", VISIBILITY_A)
+            .addPropertyValue("key1", "name2", new GeoPoint(1, 1), VISIBILITY_A)
             .save(AUTHORIZATIONS_A);
         graph.flush();
-        assertEquals(1, count(graph.getVertex("v1", AUTHORIZATIONS_A).getProperties()));
+        assertEquals(2, count(graph.getVertex("v1", AUTHORIZATIONS_A).getProperties()));
         assertEquals(1, count(graph.query(AUTHORIZATIONS_A).has("name1", "value1").vertices()));
 
         graph.getVertex("v1", AUTHORIZATIONS_A)
@@ -1020,14 +1052,14 @@ public abstract class GraphTestBase {
             .softDeleteProperties("name1")
             .save(AUTHORIZATIONS_A);
         graph.flush();
-        assertEquals(0, count(graph.getVertex("v1", AUTHORIZATIONS_A).getProperties()));
+        assertEquals(1, count(graph.getVertex("v1", AUTHORIZATIONS_A).getProperties()));
         assertEquals(0, count(graph.query(AUTHORIZATIONS_A).has("name1", "value1").vertices()));
 
         graph.prepareVertex("v1", VISIBILITY_A)
             .addPropertyValue("key1", "name1", "value1", VISIBILITY_A)
             .save(AUTHORIZATIONS_A);
         graph.flush();
-        assertEquals(1, count(graph.getVertex("v1", AUTHORIZATIONS_A).getProperties()));
+        assertEquals(2, count(graph.getVertex("v1", AUTHORIZATIONS_A).getProperties()));
         assertResultsCount(1, graph.query(AUTHORIZATIONS_A).has("name1", "value1").vertices());
 
         graph.getVertex("v1", AUTHORIZATIONS_A)
@@ -1035,8 +1067,16 @@ public abstract class GraphTestBase {
             .softDeleteProperties("name1")
             .save(AUTHORIZATIONS_A);
         graph.flush();
-        assertEquals(0, count(graph.getVertex("v1", AUTHORIZATIONS_A).getProperties()));
+        assertEquals(1, count(graph.getVertex("v1", AUTHORIZATIONS_A).getProperties()));
         assertResultsCount(0, graph.query(AUTHORIZATIONS_A).has("name1", "value1").vertices());
+
+        graph.getVertex("v1", AUTHORIZATIONS_A)
+            .prepareMutation()
+            .softDeleteProperties("name2")
+            .save(AUTHORIZATIONS_A);
+        graph.flush();
+        assertEquals(0, count(graph.getVertex("v1", AUTHORIZATIONS_A).getProperties()));
+        assertResultsCount(0, graph.query(AUTHORIZATIONS_A).has("name2").vertices());
     }
 
     @Test

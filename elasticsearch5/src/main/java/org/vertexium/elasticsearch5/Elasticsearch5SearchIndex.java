@@ -446,21 +446,24 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
 
     private <TElement extends Element> List<String> getFieldsToRemove(Graph graph, ExistingElementMutation<TElement> mutation) {
         List<String> fieldsToRemove = new ArrayList<>();
-        mutation.getPropertyDeletes().forEach(p -> {
-            String propertyName = addVisibilityToPropertyName(graph, p.getName(), p.getVisibility());
-            fieldsToRemove.add(propertyName);
+        mutation.getPropertyDeletes().forEach(p -> fieldsToRemove.addAll(getFieldsToRemove(graph, p.getName(), p.getVisibility())));
+        mutation.getPropertySoftDeletes().forEach(p -> fieldsToRemove.addAll(getFieldsToRemove(graph, p.getName(), p.getVisibility())));
+        return fieldsToRemove;
+    }
 
-            PropertyDefinition propertyDefinition = getPropertyDefinition(graph, p.getName());
-            if (GeoShape.class.isAssignableFrom(propertyDefinition.getDataType())) {
-                fieldsToRemove.add(propertyName + GEO_PROPERTY_NAME_SUFFIX);
+    private List<String> getFieldsToRemove(Graph graph, String name, Visibility visibility) {
+        List<String> fieldsToRemove = new ArrayList<>();
+        String propertyName = addVisibilityToPropertyName(graph, name, visibility);
+        fieldsToRemove.add(propertyName);
 
-                if (GeoPoint.class.isAssignableFrom(propertyDefinition.getDataType())) {
-                    fieldsToRemove.add(propertyName + GEO_POINT_PROPERTY_NAME_SUFFIX);
-                }
+        PropertyDefinition propertyDefinition = getPropertyDefinition(graph, name);
+        if (GeoShape.class.isAssignableFrom(propertyDefinition.getDataType())) {
+            fieldsToRemove.add(propertyName + GEO_PROPERTY_NAME_SUFFIX);
+
+            if (GeoPoint.class.isAssignableFrom(propertyDefinition.getDataType())) {
+                fieldsToRemove.add(propertyName + GEO_POINT_PROPERTY_NAME_SUFFIX);
             }
-        });
-        mutation.getPropertySoftDeletes().forEach(p ->
-            fieldsToRemove.add(addVisibilityToPropertyName(graph, p.getName(), p.getVisibility())));
+        }
         return fieldsToRemove;
     }
 
@@ -1776,8 +1779,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
         List<String> fieldsToRemove = new ArrayList<>();
         Map<String, Object> fieldsToSet = new HashMap<>();
         propertyList.forEach(p -> {
-            String fieldName = addVisibilityToPropertyName(graph, p.getName(), p.getVisibility());
-            fieldsToRemove.add(fieldName);
+            fieldsToRemove.addAll(getFieldsToRemove(graph, p.getName(), p.getVisibility()));
             addExistingValuesToFieldMap(graph, element, p.getName(), p.getVisibility(), fieldsToSet);
         });
 
