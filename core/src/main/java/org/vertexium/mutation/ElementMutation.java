@@ -251,6 +251,73 @@ public interface ElementMutation<T extends Element> extends ElementLocation {
     );
 
     /**
+     * Delete the element
+     */
+    ElementMutation<T> deleteElement();
+
+    /**
+     * Soft delete the element
+     */
+    default ElementMutation<T> softDeleteElement() {
+        return softDeleteElement(null);
+    }
+
+    /**
+     * Soft delete the element
+     */
+    default ElementMutation<T> softDeleteElement(Object eventData) {
+        return softDeleteElement(null, eventData);
+    }
+
+    /**
+     * Soft delete the element
+     */
+    default ElementMutation<T> softDeleteElement(Long timestamp) {
+        return softDeleteElement(timestamp, null);
+    }
+
+    /**
+     * Soft delete the element
+     */
+    ElementMutation<T> softDeleteElement(Long timestamp, Object eventData);
+
+    /**
+     * Marks a vertex as hidden for a given visibility.
+     *
+     * @param visibility The visibility string under which this vertex is hidden.
+     *                   This visibility can be a superset of the vertex visibility to mark
+     *                   it as hidden for only a subset of authorizations.
+     */
+    ElementMutation<T> markElementHidden(Visibility visibility);
+
+    /**
+     * Marks a vertex as hidden for a given visibility.
+     *
+     * @param visibility The visibility string under which this vertex is hidden.
+     *                   This visibility can be a superset of the vertex visibility to mark
+     *                   it as hidden for only a subset of authorizations.
+     * @param eventData  Data to store with the hidden
+     */
+    ElementMutation<T> markElementHidden(Visibility visibility, Object eventData);
+
+    /**
+     * Marks a vertex as visible for a given visibility, effectively undoing markVertexHidden.
+     *
+     * @param visibility The visibility string under which this vertex is now visible.
+     */
+    default ElementMutation<T> markElementVisible(Visibility visibility) {
+        return markElementVisible(visibility, null);
+    }
+
+    /**
+     * Marks a vertex as visible for a given visibility, effectively undoing markVertexHidden.
+     *
+     * @param visibility The visibility string under which this vertex is now visible.
+     * @param eventData  Data to store with the visible
+     */
+    ElementMutation<T> markElementVisible(Visibility visibility, Object eventData);
+
+    /**
      * Gets the properties currently in this mutation.
      */
     Iterable<Property> getProperties();
@@ -357,6 +424,15 @@ public interface ElementMutation<T extends Element> extends ElementLocation {
      * @param visibility The visibility of the value.
      */
     ElementMutation<T> addExtendedData(String tableName, String row, String column, String key, Object value, Long timestamp, Visibility visibility);
+
+    /**
+     * Deletes an extended data cell from an element.
+     *
+     * @param tableName The extended data table to add the cell to.
+     * @param row       The row to add the cell to.
+     */
+    ElementMutation<T> deleteExtendedDataRow(String tableName, String row);
+
 
     /**
      * Deletes an extended data cell from an element.

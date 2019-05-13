@@ -6,10 +6,8 @@ import org.vertexium.historicalEvent.HistoricalEventId;
 import org.vertexium.id.IdGenerator;
 import org.vertexium.mutation.ElementMutation;
 import org.vertexium.property.StreamingPropertyValue;
-import org.vertexium.query.Aggregation;
-import org.vertexium.query.GraphQuery;
-import org.vertexium.query.MultiVertexQuery;
-import org.vertexium.query.SimilarToGraphQuery;
+import org.vertexium.query.*;
+import org.vertexium.util.FutureDeprecation;
 
 import java.io.InputStream;
 import java.util.Collection;
@@ -25,7 +23,9 @@ public interface Graph {
      * @param visibility     The visibility to assign to the new vertex.
      * @param authorizations The authorizations required to add and retrieve the new vertex.
      * @return The newly added vertex.
+     * @deprecated Use {@link #prepareVertex(Visibility)}
      */
+    @Deprecated
     Vertex addVertex(Visibility visibility, Authorizations authorizations);
 
     /**
@@ -35,7 +35,9 @@ public interface Graph {
      * @param visibility     The visibility to assign to the new vertex.
      * @param authorizations The authorizations required to add and retrieve the new vertex.
      * @return The newly added vertex.
+     * @deprecated Use {@link #prepareVertex(String, Visibility)}
      */
+    @Deprecated
     Vertex addVertex(String vertexId, Visibility visibility, Authorizations authorizations);
 
     /**
@@ -45,7 +47,17 @@ public interface Graph {
      * @param authorizations The authorizations required to add and retrieve the new vertex.
      * @return The vertices.
      */
+    @FutureDeprecation
     Iterable<Vertex> addVertices(Iterable<ElementBuilder<Vertex>> vertices, Authorizations authorizations);
+
+    /**
+     * Adds the vertices to the graph.
+     *
+     * @param vertices The vertices to add.
+     * @param user     The user required to add and retrieve the new vertex.
+     */
+    // TODO should this return the ids? I don't want to return the vertices
+    void addVertices(Iterable<ElementBuilder<Vertex>> vertices, User user);
 
     /**
      * Prepare a vertex to be added to the graph. This method provides a way to build up a vertex with it's properties to be inserted
@@ -94,7 +106,17 @@ public interface Graph {
      * @param authorizations The authorizations required to load the vertex.
      * @return True if vertex exists.
      */
+    @FutureDeprecation
     boolean doesVertexExist(String vertexId, Authorizations authorizations);
+
+    /**
+     * Tests the existence of a vertex with the given authorizations.
+     *
+     * @param vertexId The vertex id to check existence of.
+     * @param user     The user required to load the vertex.
+     * @return True if vertex exists.
+     */
+    boolean doesVertexExist(String vertexId, User user);
 
     /**
      * Get an element from the graph.
@@ -103,7 +125,17 @@ public interface Graph {
      * @param authorizations The authorizations required to load the element.
      * @return The element if successful. null if the element is not found or the required authorizations were not provided.
      */
+    @FutureDeprecation
     Element getElement(ElementId elementId, Authorizations authorizations);
+
+    /**
+     * Get an element from the graph.
+     *
+     * @param elementId The element id to retrieve from the graph.
+     * @param user      The user required to load the element.
+     * @return The element if successful. null if the element is not found or the required authorizations were not provided.
+     */
+    Element getElement(ElementId elementId, User user);
 
     /**
      * Get an element from the graph.
@@ -113,6 +145,7 @@ public interface Graph {
      * @param authorizations The authorizations required to load the element.
      * @return The vertex if successful. null if the element is not found or the required authorizations were not provided.
      */
+    @FutureDeprecation
     default Element getElement(ElementId elementId, FetchHints fetchHints, Authorizations authorizations) {
         switch (elementId.getElementType()) {
             case VERTEX:
@@ -125,13 +158,44 @@ public interface Graph {
     }
 
     /**
+     * Get an element from the graph.
+     *
+     * @param elementId  The element id to retrieve from the graph.
+     * @param fetchHints Hint at what parts of the element to fetch.
+     * @param user       The user required to load the element.
+     * @return The vertex if successful. null if the element is not found or the required authorizations were not provided.
+     */
+    default Element getElement(ElementId elementId, FetchHints fetchHints, User user) {
+        switch (elementId.getElementType()) {
+            case VERTEX:
+                return getVertex(elementId.getElementId(), fetchHints, user);
+            case EDGE:
+                return getEdge(elementId.getElementId(), fetchHints, user);
+            default:
+                throw new VertexiumException("Unhandled element type: " + elementId.getElementType());
+        }
+    }
+
+    /**
      * Get a vertex from the graph.
      *
      * @param vertexId       The vertex id to retrieve from the graph.
      * @param authorizations The authorizations required to load the vertex.
      * @return The vertex if successful. null if the vertex is not found or the required authorizations were not provided.
      */
+    @FutureDeprecation
     Vertex getVertex(String vertexId, Authorizations authorizations);
+
+    /**
+     * Get a vertex from the graph.
+     *
+     * @param vertexId The vertex id to retrieve from the graph.
+     * @param user     The user required to load the vertex.
+     * @return The vertex if successful. null if the vertex is not found or the required authorizations were not provided.
+     */
+    default Vertex getVertex(String vertexId, User user) {
+        return getVertex(vertexId, FetchHints.ALL, user);
+    }
 
     /**
      * Get a vertex from the graph.
@@ -141,7 +205,20 @@ public interface Graph {
      * @param authorizations The authorizations required to load the vertex.
      * @return The vertex if successful. null if the vertex is not found or the required authorizations were not provided.
      */
+    @FutureDeprecation
     Vertex getVertex(String vertexId, FetchHints fetchHints, Authorizations authorizations);
+
+    /**
+     * Get a vertex from the graph.
+     *
+     * @param vertexId   The vertex id to retrieve from the graph.
+     * @param fetchHints Hint at what parts of the vertex to fetch.
+     * @param user       The user required to load the vertex.
+     * @return The vertex if successful. null if the vertex is not found or the required authorizations were not provided.
+     */
+    default Vertex getVertex(String vertexId, FetchHints fetchHints, User user) {
+        return getVertex(vertexId, fetchHints, null, user);
+    }
 
     /**
      * Get a vertex from the graph.
@@ -152,7 +229,19 @@ public interface Graph {
      * @param authorizations The authorizations required to load the vertex.
      * @return The vertex if successful. null if the vertex is not found or the required authorizations were not provided.
      */
+    @FutureDeprecation
     Vertex getVertex(String vertexId, FetchHints fetchHints, Long endTime, Authorizations authorizations);
+
+    /**
+     * Get a vertex from the graph.
+     *
+     * @param vertexId   The vertex id to retrieve from the graph.
+     * @param fetchHints Hint at what parts of the vertex to fetch.
+     * @param endTime    Include all changes made up until the point in time.
+     * @param user       The user required to load the vertex.
+     * @return The vertex if successful. null if the vertex is not found or the required authorizations were not provided.
+     */
+    Vertex getVertex(String vertexId, FetchHints fetchHints, Long endTime, User user);
 
     /**
      * Gets vertices from the graph given the prefix.
@@ -161,7 +250,19 @@ public interface Graph {
      * @param authorizations The authorizations required to load the vertex.
      * @return The vertex if successful. null if the vertex is not found or the required authorizations were not provided.
      */
+    @FutureDeprecation
     Iterable<Vertex> getVerticesWithPrefix(String vertexIdPrefix, Authorizations authorizations);
+
+    /**
+     * Gets vertices from the graph given the prefix.
+     *
+     * @param vertexIdPrefix The prefix of the vertex ids to retrieve from the graph.
+     * @param user           The user required to load the vertex.
+     * @return The vertex if successful. null if the vertex is not found or the required authorizations were not provided.
+     */
+    default Stream<Vertex> getVerticesWithPrefix(String vertexIdPrefix, User user) {
+        return getVerticesWithPrefix(vertexIdPrefix, FetchHints.ALL, user);
+    }
 
     /**
      * Gets vertices from the graph given the prefix.
@@ -171,6 +272,7 @@ public interface Graph {
      * @param authorizations The authorizations required to load the vertex.
      * @return The vertex if successful. null if the vertex is not found or the required authorizations were not provided.
      */
+    @FutureDeprecation
     Iterable<Vertex> getVerticesWithPrefix(String vertexIdPrefix, FetchHints fetchHints, Authorizations authorizations);
 
     /**
@@ -178,11 +280,35 @@ public interface Graph {
      *
      * @param vertexIdPrefix The prefix of the vertex ids to retrieve from the graph.
      * @param fetchHints     Hint at what parts of the vertex to fetch.
+     * @param user           The user required to load the vertex.
+     * @return The vertex if successful. null if the vertex is not found or the required authorizations were not provided.
+     */
+    default Stream<Vertex> getVerticesWithPrefix(String vertexIdPrefix, FetchHints fetchHints, User user) {
+        return getVerticesWithPrefix(vertexIdPrefix, fetchHints, null, user);
+    }
+
+    /**
+     * Gets vertices from the graph given the prefix.
+     *
+     * @param vertexIdPrefix The prefix of the vertex ids to retrieve from the graph.
+     * @param fetchHints     Hint at what parts of the vertex to fetch.
      * @param endTime        Include all changes made up until the point in time.
      * @param authorizations The authorizations required to load the vertex.
      * @return The vertex if successful. null if the vertex is not found or the required authorizations were not provided.
      */
+    @FutureDeprecation
     Iterable<Vertex> getVerticesWithPrefix(String vertexIdPrefix, FetchHints fetchHints, Long endTime, Authorizations authorizations);
+
+    /**
+     * Gets vertices from the graph given the prefix.
+     *
+     * @param vertexIdPrefix The prefix of the vertex ids to retrieve from the graph.
+     * @param fetchHints     Hint at what parts of the vertex to fetch.
+     * @param endTime        Include all changes made up until the point in time.
+     * @param user           The user required to load the vertex.
+     * @return The vertex if successful. null if the vertex is not found or the required authorizations were not provided.
+     */
+    Stream<Vertex> getVerticesWithPrefix(String vertexIdPrefix, FetchHints fetchHints, Long endTime, User user);
 
     /**
      * Gets vertices from the graph in the given range.
@@ -191,17 +317,42 @@ public interface Graph {
      * @param authorizations The authorizations required to load the vertex.
      * @return The vertices in the range.
      */
+    @FutureDeprecation
     Iterable<Vertex> getVerticesInRange(Range idRange, Authorizations authorizations);
 
     /**
      * Gets vertices from the graph in the given range.
      *
+     * @param idRange The range of ids to get.
+     * @param user    The user required to load the vertex.
+     * @return The vertices in the range.
+     */
+    default Stream<Vertex> getVerticesInRange(Range idRange, User user) {
+        return getVerticesInRange(idRange, FetchHints.ALL, user);
+    }
+
+    /**
+     * Gets vertices from the graph in the given range.
+     *
      * @param idRange        The range of ids to get.
      * @param fetchHints     Hint at what parts of the vertex to fetch.
      * @param authorizations The authorizations required to load the vertex.
      * @return The vertices in the range.
      */
+    @FutureDeprecation
     Iterable<Vertex> getVerticesInRange(Range idRange, FetchHints fetchHints, Authorizations authorizations);
+
+    /**
+     * Gets vertices from the graph in the given range.
+     *
+     * @param idRange    The range of ids to get.
+     * @param fetchHints Hint at what parts of the vertex to fetch.
+     * @param user       The user required to load the vertex.
+     * @return The vertices in the range.
+     */
+    default Stream<Vertex> getVerticesInRange(Range idRange, FetchHints fetchHints, User user) {
+        return getVerticesInRange(idRange, fetchHints, null, user);
+    }
 
     /**
      * Gets vertices from the graph in the given range.
@@ -212,7 +363,19 @@ public interface Graph {
      * @param authorizations The authorizations required to load the vertex.
      * @return The vertices in the range.
      */
+    @FutureDeprecation
     Iterable<Vertex> getVerticesInRange(Range idRange, FetchHints fetchHints, Long endTime, Authorizations authorizations);
+
+    /**
+     * Gets vertices from the graph in the given range.
+     *
+     * @param idRange    The range of ids to get.
+     * @param fetchHints Hint at what parts of the vertex to fetch.
+     * @param endTime    Include all changes made up until the point in time.
+     * @param user       The user required to load the vertex.
+     * @return The vertices in the range.
+     */
+    Stream<Vertex> getVerticesInRange(Range idRange, FetchHints fetchHints, Long endTime, User user);
 
     /**
      * Gets all vertices on the graph.
@@ -220,7 +383,18 @@ public interface Graph {
      * @param authorizations The authorizations required to load the vertex.
      * @return An iterable of all the vertices.
      */
+    @FutureDeprecation
     Iterable<Vertex> getVertices(Authorizations authorizations);
+
+    /**
+     * Gets all vertices on the graph.
+     *
+     * @param user The user required to load the vertex.
+     * @return An iterable of all the vertices.
+     */
+    default Stream<Vertex> getVertices(User user) {
+        return getVertices(FetchHints.ALL, user);
+    }
 
     /**
      * Gets all vertices on the graph.
@@ -229,7 +403,19 @@ public interface Graph {
      * @param authorizations The authorizations required to load the vertex.
      * @return An iterable of all the vertices.
      */
+    @FutureDeprecation
     Iterable<Vertex> getVertices(FetchHints fetchHints, Authorizations authorizations);
+
+    /**
+     * Gets all vertices on the graph.
+     *
+     * @param fetchHints Hint at what parts of the vertex to fetch.
+     * @param user       The user required to load the vertex.
+     * @return An iterable of all the vertices.
+     */
+    default Stream<Vertex> getVertices(FetchHints fetchHints, User user) {
+        return getVertices(fetchHints, null, user);
+    }
 
     /**
      * Gets all vertices on the graph.
@@ -239,7 +425,18 @@ public interface Graph {
      * @param authorizations The authorizations required to load the vertex.
      * @return An iterable of all the vertices.
      */
+    @FutureDeprecation
     Iterable<Vertex> getVertices(FetchHints fetchHints, Long endTime, Authorizations authorizations);
+
+    /**
+     * Gets all vertices on the graph.
+     *
+     * @param fetchHints Hint at what parts of the vertex to fetch.
+     * @param endTime    Include all changes made up until the point in time.
+     * @param user       The user required to load the vertex.
+     * @return An iterable of all the vertices.
+     */
+    Stream<Vertex> getVertices(FetchHints fetchHints, Long endTime, User user);
 
     /**
      * Tests the existence of vertices with the given authorizations.
@@ -248,7 +445,17 @@ public interface Graph {
      * @param authorizations The authorizations required to load the vertices.
      * @return Map of ids to exists status.
      */
+    @FutureDeprecation
     Map<String, Boolean> doVerticesExist(Iterable<String> ids, Authorizations authorizations);
+
+    /**
+     * Tests the existence of vertices with the given authorizations.
+     *
+     * @param ids  The vertex ids to check existence of.
+     * @param user The user required to load the vertices.
+     * @return Map of ids to exists status.
+     */
+    Map<String, Boolean> doVerticesExist(Iterable<String> ids, User user);
 
     /**
      * Gets all vertices matching the given ids on the graph. The order of
@@ -259,7 +466,21 @@ public interface Graph {
      * @param authorizations The authorizations required to load the vertex.
      * @return An iterable of all the vertices.
      */
+    @FutureDeprecation
     Iterable<Vertex> getVertices(Iterable<String> ids, Authorizations authorizations);
+
+    /**
+     * Gets all vertices matching the given ids on the graph. The order of
+     * the returned vertices is not guaranteed {@link Graph#getVerticesInOrder(Iterable, Authorizations)}.
+     * Vertices are not kept in memory during the iteration.
+     *
+     * @param ids  The ids of the vertices to get.
+     * @param user The user required to load the vertex.
+     * @return An iterable of all the vertices.
+     */
+    default Stream<Vertex> getVertices(Iterable<String> ids, User user) {
+        return getVertices(ids, FetchHints.ALL, user);
+    }
 
     /**
      * Gets all vertices matching the given ids on the graph. The order of
@@ -271,7 +492,22 @@ public interface Graph {
      * @param authorizations The authorizations required to load the vertex.
      * @return An iterable of all the vertices.
      */
+    @FutureDeprecation
     Iterable<Vertex> getVertices(Iterable<String> ids, FetchHints fetchHints, Authorizations authorizations);
+
+    /**
+     * Gets all vertices matching the given ids on the graph. The order of
+     * the returned vertices is not guaranteed {@link Graph#getVerticesInOrder(Iterable, Authorizations)}.
+     * Vertices are not kept in memory during the iteration.
+     *
+     * @param ids        The ids of the vertices to get.
+     * @param fetchHints Hint at what parts of the vertex to fetch.
+     * @param user       The user required to load the vertex.
+     * @return An iterable of all the vertices.
+     */
+    default Stream<Vertex> getVertices(Iterable<String> ids, FetchHints fetchHints, User user) {
+        return getVertices(ids, fetchHints, null, user);
+    }
 
     /**
      * Gets all vertices matching the given ids on the graph. The order of
@@ -284,7 +520,21 @@ public interface Graph {
      * @param authorizations The authorizations required to load the vertex.
      * @return An iterable of all the vertices.
      */
+    @FutureDeprecation
     Iterable<Vertex> getVertices(Iterable<String> ids, FetchHints fetchHints, Long endTime, Authorizations authorizations);
+
+    /**
+     * Gets all vertices matching the given ids on the graph. The order of
+     * the returned vertices is not guaranteed {@link Graph#getVerticesInOrder(Iterable, Authorizations)}.
+     * Vertices are not kept in memory during the iteration.
+     *
+     * @param ids        The ids of the vertices to get.
+     * @param fetchHints Hint at what parts of the vertex to fetch.
+     * @param endTime    Include all changes made up until the point in time.
+     * @param user       The user required to load the vertex.
+     * @return An iterable of all the vertices.
+     */
+    Stream<Vertex> getVertices(Iterable<String> ids, FetchHints fetchHints, Long endTime, User user);
 
     /**
      * Gets all vertices matching the given ids on the graph. This method is similar to
@@ -296,7 +546,22 @@ public interface Graph {
      * @param authorizations The authorizations required to load the vertex.
      * @return An iterable of all the vertices.
      */
+    @FutureDeprecation
     List<Vertex> getVerticesInOrder(Iterable<String> ids, Authorizations authorizations);
+
+    /**
+     * Gets all vertices matching the given ids on the graph. This method is similar to
+     * {@link Graph#getVertices(Iterable, Authorizations)}
+     * but returns the vertices in the order that you passed in the ids. This requires loading
+     * all the vertices in memory to sort them.
+     *
+     * @param ids  The ids of the vertices to get.
+     * @param user The user required to load the vertex.
+     * @return An iterable of all the vertices.
+     */
+    default Stream<Vertex> getVerticesInOrder(Iterable<String> ids, User user) {
+        return getVerticesInOrder(ids, FetchHints.ALL, user);
+    }
 
     /**
      * Gets all vertices matching the given ids on the graph. This method is similar to
@@ -309,14 +574,30 @@ public interface Graph {
      * @param authorizations The authorizations required to load the vertex.
      * @return An iterable of all the vertices.
      */
+    @FutureDeprecation
     List<Vertex> getVerticesInOrder(Iterable<String> ids, FetchHints fetchHints, Authorizations authorizations);
+
+    /**
+     * Gets all vertices matching the given ids on the graph. This method is similar to
+     * {@link Graph#getVertices(Iterable, Authorizations)}
+     * but returns the vertices in the order that you passed in the ids. This requires loading
+     * all the vertices in memory to sort them.
+     *
+     * @param ids        The ids of the vertices to get.
+     * @param fetchHints Hint at what parts of the vertex to fetch.
+     * @param user       The user required to load the vertex.
+     * @return An iterable of all the vertices.
+     */
+    Stream<Vertex> getVerticesInOrder(Iterable<String> ids, FetchHints fetchHints, User user);
 
     /**
      * Permanently deletes a vertex from the graph.
      *
      * @param vertex         The vertex to delete.
      * @param authorizations The authorizations required to delete the vertex.
+     * @deprecated Use {@link ElementMutation#deleteElement()}
      */
+    @Deprecated
     void deleteVertex(Vertex vertex, Authorizations authorizations);
 
     /**
@@ -324,7 +605,9 @@ public interface Graph {
      *
      * @param vertexId       The vertex id to delete.
      * @param authorizations The authorizations required to delete the vertex.
+     * @deprecated Use {@link ElementMutation#deleteElement()}
      */
+    @Deprecated
     void deleteVertex(String vertexId, Authorizations authorizations);
 
     /**
@@ -332,7 +615,9 @@ public interface Graph {
      *
      * @param vertex         The vertex to soft delete.
      * @param authorizations The authorizations required to soft delete the vertex.
+     * @deprecated Use {@link ElementMutation#softDeleteElement()}
      */
+    @Deprecated
     default void softDeleteVertex(Vertex vertex, Authorizations authorizations) {
         softDeleteVertex(vertex, (Object) null, authorizations);
     }
@@ -343,7 +628,9 @@ public interface Graph {
      * @param vertex         The vertex to soft delete.
      * @param eventData      Data to store with the soft delete
      * @param authorizations The authorizations required to soft delete the vertex.
+     * @deprecated Use {@link ElementMutation#softDeleteElement(Object)} )}
      */
+    @Deprecated
     void softDeleteVertex(Vertex vertex, Object eventData, Authorizations authorizations);
 
     /**
@@ -352,7 +639,9 @@ public interface Graph {
      * @param vertex         The vertex to soft delete.
      * @param eventData      Data to store with the soft delete
      * @param authorizations The authorizations required to soft delete the vertex.
+     * @deprecated Use {@link ElementMutation#softDeleteElement(Long, Object)} )}
      */
+    @Deprecated
     void softDeleteVertex(Vertex vertex, Long timestamp, Object eventData, Authorizations authorizations);
 
     /**
@@ -360,7 +649,9 @@ public interface Graph {
      *
      * @param vertexId       The vertex id to soft delete.
      * @param authorizations The authorizations required to soft delete the vertex.
+     * @deprecated Use {@link ElementMutation#softDeleteElement()}
      */
+    @Deprecated
     default void softDeleteVertex(String vertexId, Authorizations authorizations) {
         softDeleteVertex(vertexId, (Object) null, authorizations);
     }
@@ -370,7 +661,9 @@ public interface Graph {
      *
      * @param vertex         The vertex to soft delete.
      * @param authorizations The authorizations required to soft delete the vertex.
+     * @deprecated Use {@link ElementMutation#softDeleteElement(Long)}
      */
+    @Deprecated
     default void softDeleteVertex(Vertex vertex, Long timestamp, Authorizations authorizations) {
         softDeleteVertex(vertex, timestamp, null, authorizations);
     }
@@ -381,7 +674,9 @@ public interface Graph {
      * @param vertexId       The vertex id to soft delete.
      * @param eventData      Data to store with the soft delete
      * @param authorizations The authorizations required to soft delete the vertex.
+     * @deprecated Use {@link ElementMutation#softDeleteElement(Object)}
      */
+    @Deprecated
     void softDeleteVertex(String vertexId, Object eventData, Authorizations authorizations);
 
     /**
@@ -389,7 +684,9 @@ public interface Graph {
      *
      * @param vertexId       The vertex id to soft delete.
      * @param authorizations The authorizations required to soft delete the vertex.
+     * @deprecated Use {@link ElementMutation#softDeleteElement(Long)}
      */
+    @Deprecated
     default void softDeleteVertex(String vertexId, Long timestamp, Authorizations authorizations) {
         softDeleteVertex(vertexId, timestamp, null, authorizations);
     }
@@ -400,7 +697,9 @@ public interface Graph {
      * @param vertexId       The vertex id to soft delete.
      * @param eventData      Data to store with the soft delete
      * @param authorizations The authorizations required to soft delete the vertex.
+     * @deprecated Use {@link ElementMutation#softDeleteElement(Long, Object)}
      */
+    @Deprecated
     void softDeleteVertex(String vertexId, Long timestamp, Object eventData, Authorizations authorizations);
 
     /**
@@ -412,7 +711,9 @@ public interface Graph {
      * @param visibility     The visibility to assign to the new edge.
      * @param authorizations The authorizations required to add and retrieve the new edge.
      * @return The newly created edge.
+     * @deprecated Use {@link #prepareEdge(Vertex, Vertex, String, Visibility)}
      */
+    @Deprecated
     Edge addEdge(Vertex outVertex, Vertex inVertex, String label, Visibility visibility, Authorizations authorizations);
 
     /**
@@ -425,7 +726,9 @@ public interface Graph {
      * @param visibility     The visibility to assign to the new edge.
      * @param authorizations The authorizations required to add and retrieve the new edge.
      * @return The newly created edge.
+     * @deprecated Use {@link #prepareEdge(String, Vertex, Vertex, String, Visibility)}
      */
+    @Deprecated
     Edge addEdge(String edgeId, Vertex outVertex, Vertex inVertex, String label, Visibility visibility, Authorizations authorizations);
 
     /**
@@ -437,7 +740,9 @@ public interface Graph {
      * @param visibility     The visibility to assign to the new edge.
      * @param authorizations The authorizations required to add and retrieve the new edge.
      * @return The newly created edge.
+     * @deprecated Use {@link #prepareEdge(String, String, String, Visibility)}
      */
+    @Deprecated
     Edge addEdge(String outVertexId, String inVertexId, String label, Visibility visibility, Authorizations authorizations);
 
     /**
@@ -450,7 +755,9 @@ public interface Graph {
      * @param visibility     The visibility to assign to the new edge.
      * @param authorizations The authorizations required to add and retrieve the new edge.
      * @return The newly created edge.
+     * @deprecated Use {@link #prepareEdge(String, String, String, String, Visibility)}
      */
+    @Deprecated
     Edge addEdge(String edgeId, String outVertexId, String inVertexId, String label, Visibility visibility, Authorizations authorizations);
 
     /**
@@ -462,7 +769,9 @@ public interface Graph {
      * @param label      The label to assign to the edge. eg knows, works at, etc.
      * @param visibility The visibility to assign to the new edge.
      * @return The edge builder.
+     * @deprecated Use {@link #prepareEdge(String, String, String, Visibility)}
      */
+    @Deprecated
     EdgeBuilder prepareEdge(Vertex outVertex, Vertex inVertex, String label, Visibility visibility);
 
     /**
@@ -538,7 +847,17 @@ public interface Graph {
      * @param authorizations The authorizations required to load the edge.
      * @return True if edge exists.
      */
+    @FutureDeprecation
     boolean doesEdgeExist(String edgeId, Authorizations authorizations);
+
+    /**
+     * Tests the existence of a edge with the given authorizations.
+     *
+     * @param edgeId The edge id to check existence of.
+     * @param user   The user required to load the edge.
+     * @return True if edge exists.
+     */
+    boolean doesEdgeExist(String edgeId, User user);
 
     /**
      * Get an edge from the graph.
@@ -552,12 +871,36 @@ public interface Graph {
     /**
      * Get an edge from the graph.
      *
+     * @param edgeId The edge id to retrieve from the graph.
+     * @param user   The user required to load the edge.
+     * @return The edge if successful. null if the edge is not found or the required authorizations were not provided.
+     */
+    default Edge getEdge(String edgeId, User user) {
+        return getEdge(edgeId, FetchHints.ALL, user);
+    }
+
+    /**
+     * Get an edge from the graph.
+     *
      * @param edgeId         The edge id to retrieve from the graph.
      * @param fetchHints     Hint at what parts of the edge to fetch.
      * @param authorizations The authorizations required to load the edge.
      * @return The edge if successful. null if the edge is not found or the required authorizations were not provided.
      */
+    @FutureDeprecation
     Edge getEdge(String edgeId, FetchHints fetchHints, Authorizations authorizations);
+
+    /**
+     * Get an edge from the graph.
+     *
+     * @param edgeId     The edge id to retrieve from the graph.
+     * @param fetchHints Hint at what parts of the edge to fetch.
+     * @param user       The user required to load the edge.
+     * @return The edge if successful. null if the edge is not found or the required authorizations were not provided.
+     */
+    default Edge getEdge(String edgeId, FetchHints fetchHints, User user) {
+        return getEdge(edgeId, fetchHints, null, user);
+    }
 
     /**
      * Get an edge from the graph.
@@ -568,7 +911,19 @@ public interface Graph {
      * @param authorizations The authorizations required to load the edge.
      * @return The edge if successful. null if the edge is not found or the required authorizations were not provided.
      */
+    @FutureDeprecation
     Edge getEdge(String edgeId, FetchHints fetchHints, Long endTime, Authorizations authorizations);
+
+    /**
+     * Get an edge from the graph.
+     *
+     * @param edgeId     The edge id to retrieve from the graph.
+     * @param fetchHints Hint at what parts of the edge to fetch.
+     * @param endTime    Include all changes made up until the point in time.
+     * @param user       The user required to load the edge.
+     * @return The edge if successful. null if the edge is not found or the required authorizations were not provided.
+     */
+    Edge getEdge(String edgeId, FetchHints fetchHints, Long endTime, User user);
 
     /**
      * Gets all edges on the graph.
@@ -576,16 +931,39 @@ public interface Graph {
      * @param authorizations The authorizations required to load the edge.
      * @return An iterable of all the edges.
      */
+    @FutureDeprecation
     Iterable<Edge> getEdges(Authorizations authorizations);
 
     /**
      * Gets all edges on the graph.
      *
+     * @param user The user required to load the edge.
+     * @return An iterable of all the edges.
+     */
+    default Stream<Edge> getEdges(User user) {
+        return getEdges(FetchHints.ALL, user);
+    }
+
+    /**
+     * Gets all edges on the graph.
+     *
      * @param fetchHints     Hint at what parts of the edge to fetch.
      * @param authorizations The authorizations required to load the edge.
      * @return An iterable of all the edges.
      */
+    @FutureDeprecation
     Iterable<Edge> getEdges(FetchHints fetchHints, Authorizations authorizations);
+
+    /**
+     * Gets all edges on the graph.
+     *
+     * @param fetchHints Hint at what parts of the edge to fetch.
+     * @param user       The user required to load the edge.
+     * @return An iterable of all the edges.
+     */
+    default Stream<Edge> getEdges(FetchHints fetchHints, User user) {
+        return getEdges(fetchHints, null, user);
+    }
 
     /**
      * Gets all edges on the graph.
@@ -595,7 +973,18 @@ public interface Graph {
      * @param authorizations The authorizations required to load the edge.
      * @return An iterable of all the edges.
      */
+    @FutureDeprecation
     Iterable<Edge> getEdges(FetchHints fetchHints, Long endTime, Authorizations authorizations);
+
+    /**
+     * Gets all edges on the graph.
+     *
+     * @param fetchHints Hint at what parts of the edge to fetch.
+     * @param endTime    Include all changes made up until the point in time.
+     * @param user       The user required to load the edge.
+     * @return An iterable of all the edges.
+     */
+    Stream<Edge> getEdges(FetchHints fetchHints, Long endTime, User user);
 
     /**
      * Gets edges from the graph in the given range.
@@ -604,7 +993,19 @@ public interface Graph {
      * @param authorizations The authorizations required to load the vertex.
      * @return The edges in the range.
      */
+    @FutureDeprecation
     Iterable<Edge> getEdgesInRange(Range idRange, Authorizations authorizations);
+
+    /**
+     * Gets edges from the graph in the given range.
+     *
+     * @param idRange The range of ids to get.
+     * @param user    The user required to load the vertex.
+     * @return The edges in the range.
+     */
+    default Stream<Edge> getEdgesInRange(Range idRange, User user) {
+        return getEdgesInRange(idRange, FetchHints.ALL, user);
+    }
 
     /**
      * Gets edges from the graph in the given range.
@@ -614,7 +1015,20 @@ public interface Graph {
      * @param authorizations The authorizations required to load the vertex.
      * @return The edges in the range.
      */
+    @FutureDeprecation
     Iterable<Edge> getEdgesInRange(Range idRange, FetchHints fetchHints, Authorizations authorizations);
+
+    /**
+     * Gets edges from the graph in the given range.
+     *
+     * @param idRange    The range of ids to get.
+     * @param fetchHints Hint at what parts of the vertex to fetch.
+     * @param user       The user required to load the vertex.
+     * @return The edges in the range.
+     */
+    default Stream<Edge> getEdgesInRange(Range idRange, FetchHints fetchHints, User user) {
+        return getEdgesInRange(idRange, fetchHints, null, user);
+    }
 
     /**
      * Gets edges from the graph in the given range.
@@ -625,7 +1039,19 @@ public interface Graph {
      * @param authorizations The authorizations required to load the vertex.
      * @return The edges in the range.
      */
+    @FutureDeprecation
     Iterable<Edge> getEdgesInRange(Range idRange, FetchHints fetchHints, Long endTime, Authorizations authorizations);
+
+    /**
+     * Gets edges from the graph in the given range.
+     *
+     * @param idRange    The range of ids to get.
+     * @param fetchHints Hint at what parts of the vertex to fetch.
+     * @param endTime    Include all changes made up until the point in time.
+     * @param user       The user required to load the vertex.
+     * @return The edges in the range.
+     */
+    Stream<Edge> getEdgesInRange(Range idRange, FetchHints fetchHints, Long endTime, User user);
 
     /**
      * Filters a collection of edge ids by the authorizations of that edge, properties, etc. If
@@ -636,7 +1062,9 @@ public interface Graph {
      * @param filters              The parts of the edge to filter on
      * @param authorizations       The authorization to find the edges with
      * @return The filtered down list of edge ids
+     * @deprecated Use {@link org.vertexium.query.Query#hasId(String...)} and {@link org.vertexium.query.Query#hasAuthorization(String...)}
      */
+    @Deprecated
     Iterable<String> filterEdgeIdsByAuthorization(Iterable<String> edgeIds, String authorizationToMatch, EnumSet<ElementFilter> filters, Authorizations authorizations);
 
     /**
@@ -648,7 +1076,9 @@ public interface Graph {
      * @param filters              The parts of the edge to filter on
      * @param authorizations       The authorization to find the edges with
      * @return The filtered down list of vertex ids
+     * @deprecated Use {@link org.vertexium.query.Query#hasId(String...)} and {@link org.vertexium.query.Query#hasAuthorization(String...)}
      */
+    @Deprecated
     Iterable<String> filterVertexIdsByAuthorization(Iterable<String> vertexIds, String authorizationToMatch, EnumSet<ElementFilter> filters, Authorizations authorizations);
 
     /**
@@ -658,7 +1088,19 @@ public interface Graph {
      * @param authorizations The authorizations required to load the edges.
      * @return Maps of ids to exists status.
      */
+    @FutureDeprecation
     Map<String, Boolean> doEdgesExist(Iterable<String> ids, Authorizations authorizations);
+
+    /**
+     * Tests the existence of edges with the given authorizations.
+     *
+     * @param ids  The edge ids to check existence of.
+     * @param user The user required to load the edges.
+     * @return Maps of ids to exists status.
+     */
+    default Map<String, Boolean> doEdgesExist(Iterable<String> ids, User user) {
+        return doEdgesExist(ids, null, user);
+    }
 
     /**
      * Tests the existence of edges with the given authorizations.
@@ -668,7 +1110,18 @@ public interface Graph {
      * @param authorizations The authorizations required to load the edges.
      * @return Maps of ids to exists status.
      */
+    @FutureDeprecation
     Map<String, Boolean> doEdgesExist(Iterable<String> ids, Long endTime, Authorizations authorizations);
+
+    /**
+     * Tests the existence of edges with the given authorizations.
+     *
+     * @param ids     The edge ids to check existence of.
+     * @param endTime Include all changes made up until the point in time.
+     * @param user    The user required to load the edges.
+     * @return Maps of ids to exists status.
+     */
+    Map<String, Boolean> doEdgesExist(Iterable<String> ids, Long endTime, User user);
 
     /**
      * Gets all edges on the graph matching the given ids.
@@ -677,7 +1130,19 @@ public interface Graph {
      * @param authorizations The authorizations required to load the edge.
      * @return An iterable of all the edges.
      */
+    @FutureDeprecation
     Iterable<Edge> getEdges(Iterable<String> ids, Authorizations authorizations);
+
+    /**
+     * Gets all edges on the graph matching the given ids.
+     *
+     * @param ids  The ids of the edges to get.
+     * @param user The user required to load the edge.
+     * @return An iterable of all the edges.
+     */
+    default Stream<Edge> getEdges(Iterable<String> ids, User user) {
+        return getEdges(ids, FetchHints.ALL, user);
+    }
 
     /**
      * Gets all edges on the graph matching the given ids.
@@ -687,7 +1152,20 @@ public interface Graph {
      * @param authorizations The authorizations required to load the edge.
      * @return An iterable of all the edges.
      */
+    @FutureDeprecation
     Iterable<Edge> getEdges(Iterable<String> ids, FetchHints fetchHints, Authorizations authorizations);
+
+    /**
+     * Gets all edges on the graph matching the given ids.
+     *
+     * @param ids        The ids of the edges to get.
+     * @param fetchHints Hint at what parts of the edge to fetch.
+     * @param user       The user required to load the edge.
+     * @return An iterable of all the edges.
+     */
+    default Stream<Edge> getEdges(Iterable<String> ids, FetchHints fetchHints, User user) {
+        return getEdges(ids, fetchHints, null, user);
+    }
 
     /**
      * Gets all edges on the graph matching the given ids.
@@ -698,7 +1176,19 @@ public interface Graph {
      * @param authorizations The authorizations required to load the edge.
      * @return An iterable of all the edges.
      */
+    @FutureDeprecation
     Iterable<Edge> getEdges(Iterable<String> ids, FetchHints fetchHints, Long endTime, Authorizations authorizations);
+
+    /**
+     * Gets all edges on the graph matching the given ids.
+     *
+     * @param ids        The ids of the edges to get.
+     * @param fetchHints Hint at what parts of the edge to fetch.
+     * @param endTime    Include all changes made up until the point in time.
+     * @param user       The user required to load the edge.
+     * @return An iterable of all the edges.
+     */
+    Stream<Edge> getEdges(Iterable<String> ids, FetchHints fetchHints, Long endTime, User user);
 
     /**
      * Given a list of vertices, find all the edge ids that connect them.
@@ -707,7 +1197,17 @@ public interface Graph {
      * @param authorizations The authorizations required to load the edges.
      * @return An iterable of all the edge ids between any two vertices.
      */
+    @FutureDeprecation
     Iterable<String> findRelatedEdgeIdsForVertices(Iterable<Vertex> vertices, Authorizations authorizations);
+
+    /**
+     * Given a list of vertices, find all the edge ids that connect them.
+     *
+     * @param vertices The list of vertices.
+     * @param user     The user required to load the edges.
+     * @return An iterable of all the edge ids between any two vertices.
+     */
+    Stream<String> findRelatedEdgeIdsForVertices(Iterable<Vertex> vertices, User user);
 
     /**
      * Given a list of vertex ids, find all the edge ids that connect them.
@@ -716,7 +1216,19 @@ public interface Graph {
      * @param authorizations The authorizations required to load the edges.
      * @return An iterable of all the edge ids between any two vertices.
      */
+    @FutureDeprecation
     Iterable<String> findRelatedEdgeIds(Iterable<String> vertexIds, Authorizations authorizations);
+
+    /**
+     * Given a list of vertex ids, find all the edge ids that connect them.
+     *
+     * @param vertexIds The list of vertex ids.
+     * @param user      The user required to load the edges.
+     * @return An iterable of all the edge ids between any two vertices.
+     */
+    default Stream<String> findRelatedEdgeIds(Iterable<String> vertexIds, User user) {
+        return findRelatedEdgeIds(vertexIds, null, user);
+    }
 
     /**
      * Given a list of vertex ids, find all the edge ids that connect them.
@@ -726,7 +1238,18 @@ public interface Graph {
      * @param authorizations The authorizations required to load the edges.
      * @return An iterable of all the edge ids between any two vertices.
      */
+    @FutureDeprecation
     Iterable<String> findRelatedEdgeIds(Iterable<String> vertexIds, Long endTime, Authorizations authorizations);
+
+    /**
+     * Given a list of vertex ids, find all the edge ids that connect them.
+     *
+     * @param vertexIds The list of vertex ids.
+     * @param endTime   Include all changes made up until the point in time.
+     * @param user      The user required to load the edges.
+     * @return An iterable of all the edge ids between any two vertices.
+     */
+    Stream<String> findRelatedEdgeIds(Iterable<String> vertexIds, Long endTime, User user);
 
     /**
      * Given a list of vertices, find all the edges that connect them.
@@ -735,7 +1258,17 @@ public interface Graph {
      * @param authorizations The authorizations required to load the edges.
      * @return Summary information about the related edges.
      */
+    @FutureDeprecation
     Iterable<RelatedEdge> findRelatedEdgeSummaryForVertices(Iterable<Vertex> vertices, Authorizations authorizations);
+
+    /**
+     * Given a list of vertices, find all the edges that connect them.
+     *
+     * @param vertices The list of vertices.
+     * @param user     The user required to load the edges.
+     * @return Summary information about the related edges.
+     */
+    Stream<RelatedEdge> findRelatedEdgeSummaryForVertices(Iterable<Vertex> vertices, User user);
 
     /**
      * Given a list of vertex ids, find all the edges that connect them.
@@ -744,7 +1277,19 @@ public interface Graph {
      * @param authorizations The authorizations required to load the edges.
      * @return Summary information about the related edges.
      */
+    @FutureDeprecation
     Iterable<RelatedEdge> findRelatedEdgeSummary(Iterable<String> vertexIds, Authorizations authorizations);
+
+    /**
+     * Given a list of vertex ids, find all the edges that connect them.
+     *
+     * @param vertexIds The list of vertex ids.
+     * @param user      The user required to load the edges.
+     * @return Summary information about the related edges.
+     */
+    default Stream<RelatedEdge> findRelatedEdgeSummary(Iterable<String> vertexIds, User user) {
+        return findRelatedEdgeSummary(vertexIds, null, user);
+    }
 
     /**
      * Given a list of vertex ids, find all the edges that connect them.
@@ -754,14 +1299,27 @@ public interface Graph {
      * @param authorizations The authorizations required to load the edges.
      * @return Summary information about the related edges.
      */
+    @FutureDeprecation
     Iterable<RelatedEdge> findRelatedEdgeSummary(Iterable<String> vertexIds, Long endTime, Authorizations authorizations);
+
+    /**
+     * Given a list of vertex ids, find all the edges that connect them.
+     *
+     * @param vertexIds The list of vertex ids.
+     * @param endTime   Include all changes made up until the point in time.
+     * @param user      The user required to load the edges.
+     * @return Summary information about the related edges.
+     */
+    Stream<RelatedEdge> findRelatedEdgeSummary(Iterable<String> vertexIds, Long endTime, User user);
 
     /**
      * Permanently deletes an edge from the graph.
      *
      * @param edge           The edge to delete from the graph.
      * @param authorizations The authorizations required to delete the edge.
+     * @deprecated Use {@link ElementMutation#deleteElement()}
      */
+    @Deprecated
     void deleteEdge(Edge edge, Authorizations authorizations);
 
     /**
@@ -769,7 +1327,9 @@ public interface Graph {
      *
      * @param edgeId         The edge id of the edge to delete from the graph.
      * @param authorizations The authorizations required to delete the edge.
+     * @deprecated Use {@link ElementMutation#deleteElement()}
      */
+    @Deprecated
     void deleteEdge(String edgeId, Authorizations authorizations);
 
     /**
@@ -777,7 +1337,9 @@ public interface Graph {
      *
      * @param edge           The edge to soft delete from the graph.
      * @param authorizations The authorizations required to delete the edge.
+     * @deprecated Use {@link ElementMutation#softDeleteElement()}
      */
+    @Deprecated
     default void softDeleteEdge(Edge edge, Authorizations authorizations) {
         softDeleteEdge(edge, (Object) null, authorizations);
     }
@@ -788,7 +1350,9 @@ public interface Graph {
      * @param edge           The edge to soft delete from the graph.
      * @param eventData      Data to store with the soft delete
      * @param authorizations The authorizations required to delete the edge.
+     * @deprecated Use {@link ElementMutation#softDeleteElement(Object)}
      */
+    @Deprecated
     void softDeleteEdge(Edge edge, Object eventData, Authorizations authorizations);
 
     /**
@@ -797,7 +1361,9 @@ public interface Graph {
      * @param edge           The edge to soft delete from the graph.
      * @param eventData      Data to store with the soft delete
      * @param authorizations The authorizations required to delete the edge.
+     * @deprecated Use {@link ElementMutation#softDeleteElement(Long, Object)}
      */
+    @Deprecated
     void softDeleteEdge(Edge edge, Long timestamp, Object eventData, Authorizations authorizations);
 
     /**
@@ -805,7 +1371,9 @@ public interface Graph {
      *
      * @param edge           The edge to soft delete from the graph.
      * @param authorizations The authorizations required to delete the edge.
+     * @deprecated Use {@link ElementMutation#softDeleteElement(Long)}
      */
+    @Deprecated
     default void softDeleteEdge(Edge edge, Long timestamp, Authorizations authorizations) {
         softDeleteEdge(edge, timestamp, null, authorizations);
     }
@@ -815,7 +1383,9 @@ public interface Graph {
      *
      * @param edgeId         The edge id of the vertex to soft delete from the graph.
      * @param authorizations The authorizations required to delete the edge.
+     * @deprecated Use {@link ElementMutation#softDeleteElement()}
      */
+    @Deprecated
     default void softDeleteEdge(String edgeId, Authorizations authorizations) {
         softDeleteEdge(edgeId, null, authorizations);
     }
@@ -826,7 +1396,9 @@ public interface Graph {
      * @param edgeId         The edge id of the vertex to soft delete from the graph.
      * @param eventData      Data to store with the soft delete
      * @param authorizations The authorizations required to delete the edge.
+     * @deprecated Use {@link ElementMutation#softDeleteElement(Object)}
      */
+    @Deprecated
     void softDeleteEdge(String edgeId, Object eventData, Authorizations authorizations);
 
     /**
@@ -834,7 +1406,9 @@ public interface Graph {
      *
      * @param edgeId         The edge id of the vertex to soft delete from the graph.
      * @param authorizations The authorizations required to delete the edge.
+     * @deprecated Use {@link ElementMutation#softDeleteElement(Long)}
      */
+    @Deprecated
     default void softDeleteEdge(String edgeId, Long timestamp, Authorizations authorizations) {
         softDeleteEdge(edgeId, timestamp, null, authorizations);
     }
@@ -845,7 +1419,9 @@ public interface Graph {
      * @param edgeId         The edge id of the vertex to soft delete from the graph.
      * @param eventData      Data to store with the soft delete
      * @param authorizations The authorizations required to delete the edge.
+     * @deprecated Use {@link ElementMutation#softDeleteElement(Long, Object)}
      */
+    @Deprecated
     void softDeleteEdge(String edgeId, Long timestamp, Object eventData, Authorizations authorizations);
 
     /**
@@ -855,7 +1431,17 @@ public interface Graph {
      * @param authorizations The authorizations required to load the elements.
      * @return A query builder object.
      */
+    @FutureDeprecation
     GraphQuery query(String queryString, Authorizations authorizations);
+
+    /**
+     * Creates a query builder object used to query the graph.
+     *
+     * @param queryString The string to search for in the text of an element. This will search all fields for the given text.
+     * @param user        The user required to load the elements.
+     * @return A query builder object.
+     */
+    GraphQuery2 query(String queryString, User user);
 
     /**
      * Creates a query builder object used to query the graph.
@@ -863,7 +1449,18 @@ public interface Graph {
      * @param authorizations The authorizations required to load the elements.
      * @return A query builder object.
      */
+    @FutureDeprecation
     GraphQuery query(Authorizations authorizations);
+
+    /**
+     * Creates a query builder object used to query the graph.
+     *
+     * @param user The user required to load the elements.
+     * @return A query builder object.
+     */
+    default GraphQuery2 query(User user) {
+        return query(null, user);
+    }
 
     /**
      * Creates a query builder object used to query a list of vertices.
@@ -873,7 +1470,18 @@ public interface Graph {
      * @param authorizations The authorizations required to load the elements.
      * @return A query builder object.
      */
+    @FutureDeprecation
     MultiVertexQuery query(String[] vertexIds, String queryString, Authorizations authorizations);
+
+    /**
+     * Creates a query builder object used to query a list of vertices.
+     *
+     * @param vertexIds   The vertex ids to query.
+     * @param queryString The string to search for in the text of an element. This will search all fields for the given text.
+     * @param user        The user required to load the elements.
+     * @return A query builder object.
+     */
+    MultiVertexQuery2 query(String[] vertexIds, String queryString, User user);
 
     /**
      * Creates a query builder object used to query a list of vertices.
@@ -882,7 +1490,19 @@ public interface Graph {
      * @param authorizations The authorizations required to load the elements.
      * @return A query builder object.
      */
+    @FutureDeprecation
     MultiVertexQuery query(String[] vertexIds, Authorizations authorizations);
+
+    /**
+     * Creates a query builder object used to query a list of vertices.
+     *
+     * @param vertexIds The vertex ids to query.
+     * @param user      The user required to load the elements.
+     * @return A query builder object.
+     */
+    default MultiVertexQuery2 query(String[] vertexIds, User user) {
+        return query(vertexIds, null, user);
+    }
 
     /**
      * Returns true if this graph supports similar to text queries.
@@ -898,7 +1518,19 @@ public interface Graph {
      * @param authorizations The authorizations required to load the elements.
      * @return A query builder object.
      */
+    @FutureDeprecation
     SimilarToGraphQuery querySimilarTo(String[] fields, String text, Authorizations authorizations);
+
+    /**
+     * Creates a query builder object that finds all vertices similar to the given text for the specified fields.
+     * This could be implemented similar to the ElasticSearch more like this query.
+     *
+     * @param fields The fields to match against.
+     * @param text   The text to find similar to.
+     * @param user   The user required to load the elements.
+     * @return A query builder object.
+     */
+    SimilarToGraphQuery2 querySimilarTo(String[] fields, String text, User user);
 
     /**
      * Flushes any pending mutations to the graph.
@@ -917,7 +1549,17 @@ public interface Graph {
      * @param authorizations The authorizations required to load all edges and vertices.
      * @return An Iterable of lists of paths.
      */
+    @FutureDeprecation
     Iterable<Path> findPaths(FindPathOptions options, Authorizations authorizations);
+
+    /**
+     * Finds all paths between two vertices.
+     *
+     * @param options Find path options
+     * @param user    The user required to load all edges and vertices.
+     * @return An Iterable of lists of paths.
+     */
+    Stream<Path> findPaths(FindPathOptions options, User user);
 
     /**
      * Gets the id generator used by this graph to create ids.
@@ -933,13 +1575,24 @@ public interface Graph {
      * @param authorizations The given authorizations.
      * @return true if the visibility is valid given an authorization, else return false.
      */
+    @FutureDeprecation
     boolean isVisibilityValid(Visibility visibility, Authorizations authorizations);
+
+    /**
+     * Given an authorization is the visibility object valid.
+     *
+     * @param visibility The visibility you want to check.
+     * @param user       The given user.
+     * @return true if the visibility is valid given an authorization, else return false.
+     */
+    boolean isVisibilityValid(Visibility visibility, User user);
 
     /**
      * Reindex all vertices and edges.
      *
      * @param authorizations authorizations used to query for the data to reindex.
      */
+    @Deprecated
     void reindex(Authorizations authorizations);
 
     /**
@@ -988,6 +1641,7 @@ public interface Graph {
     /**
      * Gets the granularity of the search index {@link SearchIndexSecurityGranularity}
      */
+    @Deprecated
     SearchIndexSecurityGranularity getSearchIndexSecurityGranularity();
 
     /**
@@ -1003,7 +1657,9 @@ public interface Graph {
      *                       This visibility can be a superset of the vertex visibility to mark
      *                       it as hidden for only a subset of authorizations.
      * @param authorizations The authorizations used.
+     * @deprecated Use {@link ElementMutation#markElementHidden(Visibility)}
      */
+    @Deprecated
     default void markVertexHidden(Vertex vertex, Visibility visibility, Authorizations authorizations) {
         markVertexHidden(vertex, visibility, null, authorizations);
     }
@@ -1017,7 +1673,9 @@ public interface Graph {
      *                       it as hidden for only a subset of authorizations.
      * @param eventData      Data to store with the hidden
      * @param authorizations The authorizations used.
+     * @deprecated Use {@link ElementMutation#markElementHidden(Visibility, Object)}
      */
+    @Deprecated
     void markVertexHidden(Vertex vertex, Visibility visibility, Object eventData, Authorizations authorizations);
 
     /**
@@ -1026,7 +1684,9 @@ public interface Graph {
      * @param vertex         The vertex to mark visible.
      * @param visibility     The visibility string under which this vertex is now visible.
      * @param authorizations The authorizations used.
+     * @deprecated Use {@link ElementMutation#markElementVisible(Visibility)}
      */
+    @Deprecated
     default void markVertexVisible(Vertex vertex, Visibility visibility, Authorizations authorizations) {
         markVertexVisible(vertex, visibility, null, authorizations);
     }
@@ -1038,7 +1698,9 @@ public interface Graph {
      * @param visibility     The visibility string under which this vertex is now visible.
      * @param eventData      Data to store with the visible
      * @param authorizations The authorizations used.
+     * @deprecated Use {@link ElementMutation#markElementVisible(Visibility, Object)}
      */
+    @Deprecated
     void markVertexVisible(Vertex vertex, Visibility visibility, Object eventData, Authorizations authorizations);
 
     /**
@@ -1049,7 +1711,9 @@ public interface Graph {
      *                       This visibility can be a superset of the edge visibility to mark
      *                       it as hidden for only a subset of authorizations.
      * @param authorizations The authorizations used.
+     * @deprecated Use {@link ElementMutation#markElementHidden(Visibility)}
      */
+    @Deprecated
     default void markEdgeHidden(Edge edge, Visibility visibility, Authorizations authorizations) {
         markEdgeHidden(edge, visibility, null, authorizations);
     }
@@ -1063,7 +1727,9 @@ public interface Graph {
      *                       it as hidden for only a subset of authorizations.
      * @param eventData      Data to store with the hidden
      * @param authorizations The authorizations used.
+     * @deprecated Use {@link ElementMutation#markElementHidden(Visibility, Object)}
      */
+    @Deprecated
     void markEdgeHidden(Edge edge, Visibility visibility, Object eventData, Authorizations authorizations);
 
     /**
@@ -1072,7 +1738,9 @@ public interface Graph {
      * @param edge           The edge to mark visible.
      * @param visibility     The visibility string under which this edge is now visible.
      * @param authorizations The authorizations used.
+     * @deprecated Use {@link ElementMutation#markElementVisible(Visibility)}
      */
+    @Deprecated
     default void markEdgeVisible(Edge edge, Visibility visibility, Authorizations authorizations) {
         markEdgeVisible(edge, visibility, null, authorizations);
     }
@@ -1084,7 +1752,9 @@ public interface Graph {
      * @param visibility     The visibility string under which this edge is now visible.
      * @param eventData      Data to store with the visible
      * @param authorizations The authorizations used.
+     * @deprecated Use {@link ElementMutation#markElementVisible(Visibility, Object)}
      */
+    @Deprecated
     void markEdgeVisible(Edge edge, Visibility visibility, Object eventData, Authorizations authorizations);
 
     /**
@@ -1093,6 +1763,7 @@ public interface Graph {
      * @param auths The authorizations granted.
      * @return A new authorizations object
      */
+    @FutureDeprecation
     Authorizations createAuthorizations(String... auths);
 
     /**
@@ -1101,6 +1772,7 @@ public interface Graph {
      * @param auths The authorizations granted.
      * @return A new authorizations object
      */
+    @FutureDeprecation
     Authorizations createAuthorizations(Collection<String> auths);
 
     /**
@@ -1110,6 +1782,7 @@ public interface Graph {
      * @param additionalAuthorizations additional authorizations
      * @return A new authorizations object
      */
+    @FutureDeprecation
     Authorizations createAuthorizations(Authorizations auths, String... additionalAuthorizations);
 
     /**
@@ -1119,6 +1792,7 @@ public interface Graph {
      * @param additionalAuthorizations additional authorizations
      * @return A new authorizations object
      */
+    @FutureDeprecation
     Authorizations createAuthorizations(Authorizations auths, Collection<String> additionalAuthorizations);
 
     /**
@@ -1134,12 +1808,18 @@ public interface Graph {
 
     /**
      * Gets a count of the number of vertices in the system.
+     *
+     * @deprecated Use {@link #query(User)}.{@link Query#vertices()}.{@link QueryResultsIterable#getTotalHits()}
      */
+    @Deprecated
     long getVertexCount(Authorizations authorizations);
 
     /**
      * Gets a count of the number of edges in the system.
+     *
+     * @deprecated Use {@link #query(User)}.{@link Query#vertices()}.{@link QueryResultsIterable#getTotalHits()}
      */
+    @Deprecated
     long getEdgeCount(Authorizations authorizations);
 
     /**
@@ -1183,10 +1863,25 @@ public interface Graph {
      * @param authorizations the authorizations used during save
      * @return the elements which were saved
      */
+    @FutureDeprecation
     Iterable<Element> saveElementMutations(
         Iterable<ElementMutation<? extends Element>> mutations,
         Authorizations authorizations
     );
+
+    /**
+     * Saves multiple mutations with a single call.
+     *
+     * @param mutations the mutations to save
+     * @param user      the user used during save
+     * @return the elements which were saved
+     */
+    // TODO do we want to return something here?
+    void saveElementMutations(
+        Iterable<ElementMutation<? extends Element>> mutations,
+        User user
+    );
+
 
     /**
      * Opens multiple StreamingPropertyValue input streams at once. This can have performance benefits by
@@ -1204,8 +1899,20 @@ public interface Graph {
      * @param authorizations The authorizations used to get the rows
      * @return Rows
      */
+    @FutureDeprecation
     default Iterable<ExtendedDataRow> getExtendedData(Iterable<ExtendedDataRowId> ids, Authorizations authorizations) {
         return getExtendedData(ids, FetchHints.ALL, authorizations);
+    }
+
+    /**
+     * Gets the specified extended data rows.
+     *
+     * @param ids  The ids of the rows to get.
+     * @param user The user used to get the rows
+     * @return Rows
+     */
+    default Stream<ExtendedDataRow> getExtendedData(Iterable<ExtendedDataRowId> ids, User user) {
+        return getExtendedData(ids, FetchHints.ALL, user);
     }
 
     /**
@@ -1215,7 +1922,17 @@ public interface Graph {
      * @param authorizations The authorizations used to get the rows
      * @return Rows
      */
+    @FutureDeprecation
     Iterable<ExtendedDataRow> getExtendedData(Iterable<ExtendedDataRowId> ids, FetchHints fetchHints, Authorizations authorizations);
+
+    /**
+     * Gets the specified extended data rows.
+     *
+     * @param ids  The ids of the rows to get.
+     * @param user The user used to get the rows
+     * @return Rows
+     */
+    Stream<ExtendedDataRow> getExtendedData(Iterable<ExtendedDataRowId> ids, FetchHints fetchHints, User user);
 
     /**
      * Gets the specified extended data row.
@@ -1224,7 +1941,17 @@ public interface Graph {
      * @param authorizations The authorizations used to get the rows
      * @return Rows
      */
+    @FutureDeprecation
     ExtendedDataRow getExtendedData(ExtendedDataRowId id, Authorizations authorizations);
+
+    /**
+     * Gets the specified extended data row.
+     *
+     * @param id   The id of the row to get.
+     * @param user The user used to get the rows
+     * @return Rows
+     */
+    ExtendedDataRow getExtendedData(ExtendedDataRowId id, User user);
 
     /**
      * Gets the specified extended data rows.
@@ -1235,6 +1962,7 @@ public interface Graph {
      * @param authorizations The authorizations used to get the rows
      * @return Rows
      */
+    @FutureDeprecation
     default Iterable<ExtendedDataRow> getExtendedData(
         ElementType elementType,
         String elementId,
@@ -1247,6 +1975,24 @@ public interface Graph {
     /**
      * Gets the specified extended data rows.
      *
+     * @param elementType The type of element to get the rows from
+     * @param elementId   The element id to get the rows from
+     * @param tableName   The name of the table within the element to get the rows from
+     * @param user        The user used to get the rows
+     * @return Rows
+     */
+    default Iterable<ExtendedDataRow> getExtendedData(
+        ElementType elementType,
+        String elementId,
+        String tableName,
+        User user
+    ) {
+        return getExtendedData(elementType, elementId, tableName, FetchHints.ALL, user);
+    }
+
+    /**
+     * Gets the specified extended data rows.
+     *
      * @param elementType    The type of element to get the rows from
      * @param elementId      The element id to get the rows from
      * @param tableName      The name of the table within the element to get the rows from
@@ -1254,12 +2000,30 @@ public interface Graph {
      * @param authorizations The authorizations used to get the rows
      * @return Rows
      */
+    @FutureDeprecation
     Iterable<ExtendedDataRow> getExtendedData(
         ElementType elementType,
         String elementId,
         String tableName,
         FetchHints fetchHints,
         Authorizations authorizations
+    );
+
+    /**
+     * Gets the specified extended data rows.
+     *
+     * @param elementType The type of element to get the rows from
+     * @param elementId   The element id to get the rows from
+     * @param tableName   The name of the table within the element to get the rows from
+     * @param user        The user used to get the rows
+     * @return Rows
+     */
+    Iterable<ExtendedDataRow> getExtendedData(
+        ElementType elementType,
+        String elementId,
+        String tableName,
+        FetchHints fetchHints,
+        User user
     );
 
     /**
@@ -1270,7 +2034,18 @@ public interface Graph {
      * @param authorizations The authorizations required to load the vertex.
      * @return The extended data rows for the element ids in the range.
      */
+    @FutureDeprecation
     Iterable<ExtendedDataRow> getExtendedDataInRange(ElementType elementType, Range elementIdRange, Authorizations authorizations);
+
+    /**
+     * Gets extended data rows from the graph in the given range.
+     *
+     * @param elementType    The type of element to get the rows from
+     * @param elementIdRange The range of element ids to get extended data rows for.
+     * @param user           The user required to load the vertex.
+     * @return The extended data rows for the element ids in the range.
+     */
+    Stream<ExtendedDataRow> getExtendedDataInRange(ElementType elementType, Range elementIdRange, User user);
 
     /**
      * Gets a list of historical events.
@@ -1279,8 +2054,20 @@ public interface Graph {
      * @param authorizations The authorizations required to load the events
      * @return An iterable of historic events
      */
+    @FutureDeprecation
     default Stream<HistoricalEvent> getHistoricalEvents(Iterable<ElementId> elementIds, Authorizations authorizations) {
         return getHistoricalEvents(elementIds, HistoricalEventsFetchHints.ALL, authorizations);
+    }
+
+    /**
+     * Gets a list of historical events.
+     *
+     * @param elementIds Iterable of element ids to get events for
+     * @param user       The user required to load the events
+     * @return An iterable of historic events
+     */
+    default Stream<HistoricalEvent> getHistoricalEvents(Iterable<ElementId> elementIds, User user) {
+        return getHistoricalEvents(elementIds, HistoricalEventsFetchHints.ALL, user);
     }
 
     /**
@@ -1291,6 +2078,7 @@ public interface Graph {
      * @param authorizations The authorizations required to load the events
      * @return An iterable of historic events
      */
+    @FutureDeprecation
     default Stream<HistoricalEvent> getHistoricalEvents(
         Iterable<ElementId> elementIds,
         HistoricalEventsFetchHints fetchHints,
@@ -1302,12 +2090,29 @@ public interface Graph {
     /**
      * Gets a list of historical events.
      *
+     * @param elementIds Iterable of element ids to get events for
+     * @param fetchHints Fetch hints to filter historical events
+     * @param user       The user required to load the events
+     * @return An iterable of historic events
+     */
+    default Stream<HistoricalEvent> getHistoricalEvents(
+        Iterable<ElementId> elementIds,
+        HistoricalEventsFetchHints fetchHints,
+        User user
+    ) {
+        return getHistoricalEvents(elementIds, null, fetchHints, user);
+    }
+
+    /**
+     * Gets a list of historical events.
+     *
      * @param elementIds     Iterable of element ids to get events for
      * @param after          Find events after the given id
      * @param fetchHints     Fetch hints to filter historical events
      * @param authorizations The authorizations required to load the events
      * @return An iterable of historic events
      */
+    @FutureDeprecation
     Stream<HistoricalEvent> getHistoricalEvents(
         Iterable<ElementId> elementIds,
         HistoricalEventId after,
@@ -1316,8 +2121,27 @@ public interface Graph {
     );
 
     /**
-     * Deletes an extended data row
+     * Gets a list of historical events.
+     *
+     * @param elementIds Iterable of element ids to get events for
+     * @param after      Find events after the given id
+     * @param fetchHints Fetch hints to filter historical events
+     * @param user       The user required to load the events
+     * @return An iterable of historic events
      */
+    Stream<HistoricalEvent> getHistoricalEvents(
+        Iterable<ElementId> elementIds,
+        HistoricalEventId after,
+        HistoricalEventsFetchHints fetchHints,
+        User user
+    );
+
+    /**
+     * Deletes an extended data row
+     *
+     * @deprecated Use {@link ElementMutation#deleteExtendedDataRow(String, String)}
+     */
+    @Deprecated
     void deleteExtendedDataRow(ExtendedDataRowId id, Authorizations authorizations);
 
     /**
@@ -1328,20 +2152,24 @@ public interface Graph {
     /**
      * Visits all elements on the graph
      */
+    @Deprecated
     void visitElements(GraphVisitor graphVisitor, Authorizations authorizations);
 
     /**
      * Visits all vertices on the graph
      */
+    @Deprecated
     void visitVertices(GraphVisitor graphVisitor, Authorizations authorizations);
 
     /**
      * Visits all edges on the graph
      */
+    @Deprecated
     void visitEdges(GraphVisitor graphVisitor, Authorizations authorizations);
 
     /**
      * Visits elements using the supplied elements and visitor
      */
+    @Deprecated
     void visit(Iterable<? extends Element> elements, GraphVisitor visitor);
 }
