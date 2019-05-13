@@ -1,11 +1,9 @@
 package org.vertexium;
 
-import org.vertexium.util.ConvertingIterable;
-import org.vertexium.util.IterableUtils;
-
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
 
 public class EdgeVertexPair {
     private final Edge edge;
@@ -60,32 +58,29 @@ public class EdgeVertexPair {
         return result;
     }
 
-    public static Iterable<EdgeVertexPair> getEdgeVertexPairs(
+    public static Stream<EdgeVertexPair> getEdgeVertexPairs(
         Graph graph,
         String sourceVertexId,
-        Iterable<EdgeInfo> edgeInfos,
+        Stream<EdgeInfo> edgeInfos,
         FetchHints fetchHints,
         Long endTime,
-        Authorizations authorizations
+        User user
     ) {
         Set<String> edgeIdsToFetch = new HashSet<>();
         Set<String> vertexIdsToFetch = new HashSet<>();
-        for (EdgeInfo edgeInfo : edgeInfos) {
+        edgeInfos.forEach(edgeInfo -> {
             edgeIdsToFetch.add(edgeInfo.getEdgeId());
             vertexIdsToFetch.add(edgeInfo.getVertexId());
-        }
-        final Map<String, Vertex> vertices = IterableUtils.toMapById(graph.getVertices(vertexIdsToFetch, fetchHints, endTime, authorizations));
-        Iterable<Edge> edges = graph.getEdges(edgeIdsToFetch, fetchHints, endTime, authorizations);
-        return new ConvertingIterable<Edge, EdgeVertexPair>(edges) {
-            @Override
-            protected EdgeVertexPair convert(Edge edge) {
+        });
+        Map<String, Vertex> vertices = graph.getVerticesMappedById(vertexIdsToFetch, fetchHints, endTime, user);
+        return graph.getEdges(edgeIdsToFetch, fetchHints, endTime, user)
+            .map(edge -> {
                 String otherVertexId = edge.getOtherVertexId(sourceVertexId);
                 Vertex otherVertex = vertices.get(otherVertexId);
                 if (otherVertex == null) {
                     throw new VertexiumException("Found an edge " + edge.getId() + ", but could not find the vertex on the other end: " + otherVertexId);
                 }
                 return new EdgeVertexPair(edge, otherVertex);
-            }
-        };
+            });
     }
 }

@@ -2,6 +2,7 @@ package org.vertexium.mutation;
 
 import org.vertexium.*;
 import org.vertexium.search.IndexHint;
+import org.vertexium.util.FutureDeprecation;
 
 public interface ElementMutation<T extends Element> extends ElementLocation {
     String DEFAULT_KEY = "";
@@ -11,7 +12,15 @@ public interface ElementMutation<T extends Element> extends ElementLocation {
      *
      * @return the element which was mutated.
      */
+    @FutureDeprecation
     T save(Authorizations authorizations);
+
+    /**
+     * saves the element to the graph.
+     *
+     * @return the id of the element just saved
+     */
+    String save(User user);
 
     /**
      * Sets or updates a property value. The property key will be set to a constant. This is a convenience method

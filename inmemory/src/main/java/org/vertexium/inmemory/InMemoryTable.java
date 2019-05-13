@@ -1,6 +1,5 @@
 package org.vertexium.inmemory;
 
-import org.vertexium.Authorizations;
 import org.vertexium.FetchHints;
 import org.vertexium.User;
 import org.vertexium.inmemory.mutations.Mutation;
@@ -10,7 +9,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public abstract class InMemoryTable<TElement extends InMemoryElement> {
@@ -30,7 +28,7 @@ public abstract class InMemoryTable<TElement extends InMemoryElement> {
         if (inMemoryTableElement == null) {
             return null;
         }
-        return inMemoryTableElement.createElement(graph, fetchHints, authorizations);
+        return inMemoryTableElement.createElement(graph, fetchHints, user);
     }
 
     public InMemoryTableElement<TElement> getTableElement(String id) {
@@ -84,8 +82,7 @@ public abstract class InMemoryTable<TElement extends InMemoryElement> {
     ) {
         return getRowValues()
             .filter(element -> graph.isIncludedInTimeSpan(element, fetchHints, endTime, user))
-            .map(element -> element.createElement(graph, fetchHints, endTime, user))
-            .collect(Collectors.toList());
+            .map(element -> element.createElement(graph, fetchHints, endTime, user));
     }
 
     public Stream<InMemoryTableElement<TElement>> getRowValues() {

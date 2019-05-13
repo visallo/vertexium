@@ -92,11 +92,21 @@ public class InMemoryEdge extends InMemoryElement<InMemoryEdge> implements Edge 
         return new ExistingEdgeMutation(this) {
             @Override
             public Edge save(Authorizations authorizations) {
+                User user = authorizations.getUser();
+                return saveEdge(user);
+            }
+
+            @Override
+            public String save(User user) {
+                return saveEdge(user).getId();
+            }
+
+            private Edge saveEdge(User user) {
                 IndexHint indexHint = getIndexHint();
-                saveExistingElementMutation(this, indexHint, authorizations);
+                saveExistingElementMutation(this, indexHint, user);
                 Edge edge = getElement();
                 if (indexHint != IndexHint.DO_NOT_INDEX) {
-                    getGraph().updateElementAndExtendedDataInSearchIndex(edge, this, authorizations);
+                    getGraph().updateElementAndExtendedDataInSearchIndex(edge, this, user);
                 }
                 return edge;
             }

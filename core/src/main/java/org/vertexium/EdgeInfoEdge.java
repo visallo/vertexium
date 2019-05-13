@@ -146,22 +146,9 @@ public class EdgeInfoEdge extends ElementBase implements Edge {
     public Stream<HistoricalEvent> getHistoricalEvents(
         HistoricalEventId after,
         HistoricalEventsFetchHints fetchHints,
-        Authorizations authorizations
+        User user
     ) {
-        return getEdge().getHistoricalEvents(after, fetchHints, authorizations);
-    }
-
-    @Override
-    @SuppressWarnings("deprecation")
-    public Iterable<HistoricalPropertyValue> getHistoricalPropertyValues(
-        String key,
-        String name,
-        Visibility visibility,
-        Long startTime,
-        Long endTime,
-        Authorizations authorizations
-    ) {
-        return getEdge().getHistoricalPropertyValues(key, name, visibility, startTime, endTime, authorizations);
+        return getEdge().getHistoricalEvents(after, fetchHints, user);
     }
 
     @Override

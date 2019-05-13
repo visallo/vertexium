@@ -5,7 +5,7 @@ import org.vertexium.historicalEvent.HistoricalEvent;
 import org.vertexium.historicalEvent.HistoricalEventId;
 import org.vertexium.mutation.ExistingElementMutation;
 import org.vertexium.query.QueryableIterable;
-import org.vertexium.util.FilterIterable;
+import org.vertexium.util.FutureDeprecation;
 
 import java.util.stream.Stream;
 
@@ -66,75 +66,28 @@ public interface Element extends VertexiumObject, ElementLocation {
      * @param authorizations The authorizations required to load the events
      * @return An iterable of historic events
      */
-    Stream<HistoricalEvent> getHistoricalEvents(
+    @FutureDeprecation
+    default Stream<HistoricalEvent> getHistoricalEvents(
         HistoricalEventId after,
         HistoricalEventsFetchHints fetchHints,
         Authorizations authorizations
-    );
-
-    /**
-     * Gets all property values from all timestamps in descending timestamp order.
-     *
-     * @deprecated Use {@link #getHistoricalEvents(HistoricalEventsFetchHints, Authorizations)}
-     */
-    @Deprecated
-    default Iterable<HistoricalPropertyValue> getHistoricalPropertyValues(Authorizations authorizations) {
-        return getHistoricalPropertyValues(null, null, authorizations);
-    }
-
-    /**
-     * Gets all property values from the given range of timestamps in descending timestamp order.
-     *
-     * @deprecated Use {@link #getHistoricalEvents(HistoricalEventsFetchHints, Authorizations)}
-     */
-    @Deprecated
-    default Iterable<HistoricalPropertyValue> getHistoricalPropertyValues(final Long startTime, final Long endTime, Authorizations authorizations) {
-        return getHistoricalPropertyValues(null, null, null, startTime, endTime, authorizations);
-    }
-
-    /**
-     * Gets property values from all timestamps in descending timestamp order.
-     *
-     * @param key        the key of the property.
-     * @param name       the name of the property.
-     * @param visibility The visibility of the property to get.
-     * @deprecated Use {@link #getHistoricalEvents(HistoricalEventsFetchHints, Authorizations)}
-     */
-    @Deprecated
-    default Iterable<HistoricalPropertyValue> getHistoricalPropertyValues(String key, String name, Visibility visibility, Authorizations authorizations) {
-        return getHistoricalPropertyValues(key, name, visibility, null, null, authorizations);
-    }
-
-    /**
-     * Gets property values from the given range of timestamps in descending timestamp order.
-     *
-     * @param key        the key of the property.
-     * @param name       the name of the property.
-     * @param visibility The visibility of the property to get.
-     * @deprecated Use {@link #getHistoricalEvents(HistoricalEventsFetchHints, Authorizations)}
-     */
-    @Deprecated
-    default Iterable<HistoricalPropertyValue> getHistoricalPropertyValues(
-        String key,
-        String name,
-        Visibility visibility,
-        Long startTime,
-        Long endTime,
-        Authorizations authorizations
     ) {
-        return new FilterIterable<HistoricalPropertyValue>(getHistoricalPropertyValues(key, name, visibility, authorizations)) {
-            @Override
-            protected boolean isIncluded(HistoricalPropertyValue pv) {
-                if (startTime != null && pv.getTimestamp() < startTime) {
-                    return false;
-                }
-                if (endTime != null && pv.getTimestamp() > endTime) {
-                    return false;
-                }
-                return true;
-            }
-        };
+        return getHistoricalEvents(after, fetchHints, authorizations.getUser());
     }
+
+    /**
+     * Gets historical events about this element
+     *
+     * @param after      Find events after the given id
+     * @param fetchHints Fetch hints to filter historical events
+     * @param user       The user required to load the events
+     * @return An iterable of historic events
+     */
+    Stream<HistoricalEvent> getHistoricalEvents(
+        HistoricalEventId after,
+        HistoricalEventsFetchHints fetchHints,
+        User user
+    );
 
     /**
      * Prepares a mutation to allow changing multiple property values at the same time. This method is similar to

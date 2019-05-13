@@ -11,4 +11,9 @@ public class AuthorizationsUser implements User {
     public String[] getAuthorizations() {
         return authorizations.getAuthorizations();
     }
+
+    @Override
+    public boolean canRead(Visibility visibility) {
+        return authorizations.canRead(visibility);
+    }
 }

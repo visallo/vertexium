@@ -8,6 +8,7 @@ import org.vertexium.mutation.*;
 import org.vertexium.query.ExtendedDataQueryableIterable;
 import org.vertexium.query.QueryableIterable;
 import org.vertexium.search.IndexHint;
+import org.vertexium.util.FutureDeprecation;
 
 import java.util.List;
 import java.util.stream.Stream;
@@ -53,7 +54,7 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> extends 
 
     @Override
     public void deleteProperty(String key, String name, Visibility visibility, Authorizations authorizations) {
-        getGraph().deleteProperty(this, inMemoryTableElement, key, name, visibility, authorizations);
+        getGraph().deleteProperty(this, inMemoryTableElement, key, name, visibility, authorizations.getUser());
     }
 
     @Override
@@ -87,30 +88,26 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> extends 
     private void addAdditionalExtendedDataVisibility(
         String tableName,
         String row,
-        String additionalVisibility,
-        Authorizations authorizations
+        String additionalVisibility
     ) {
         getGraph().addAdditionalExtendedDataVisibility(
             this,
             tableName,
             row,
-            additionalVisibility,
-            authorizations
+            additionalVisibility
         );
     }
 
     private void deleteAdditionalExtendedDataVisibility(
         String tableName,
         String row,
-        String additionalVisibility,
-        Authorizations authorizations
+        String additionalVisibility
     ) {
         getGraph().deleteAdditionalExtendedDataVisibility(
             this,
             tableName,
             row,
-            additionalVisibility,
-            authorizations
+            additionalVisibility
         );
     }
 
@@ -143,7 +140,7 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> extends 
             null,
             visibility,
             data,
-            authorizations
+            authorizations.getUser()
         );
     }
 
@@ -164,7 +161,7 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> extends 
             timestamp,
             visibility,
             eventData,
-            authorizations
+            authorizations.getUser()
         );
     }
 
@@ -180,8 +177,17 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> extends 
         return p == null ? null : p.getValue();
     }
 
-    public void addPropertyValue(String key, String name, Object value, Metadata metadata, Visibility visibility, Long timestamp, boolean indexAfterAdd, Authorizations authorizations) {
-        getGraph().addPropertyValue(this, inMemoryTableElement, key, name, value, metadata, visibility, timestamp, authorizations);
+    public void addPropertyValue(
+        String key,
+        String name,
+        Object value,
+        Metadata metadata,
+        Visibility visibility,
+        Long timestamp,
+        boolean indexAfterAdd,
+        Authorizations authorizations
+    ) {
+        getGraph().addPropertyValue(this, inMemoryTableElement, key, name, value, metadata, visibility, timestamp, authorizations.getUser());
         if (indexAfterAdd) {
             getGraph().getSearchIndex().addElement(getGraph(), this, null, null, authorizations);
         }
@@ -206,13 +212,13 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> extends 
             timestamp,
             visibility,
             eventData,
-            authorizations
+            authorizations.getUser()
         );
     }
 
     @Override
     public boolean isHidden(Authorizations authorizations) {
-        return inMemoryTableElement.isHidden(authorizations);
+        return inMemoryTableElement.isHidden(authorizations.getUser());
     }
 
     @Override
@@ -220,22 +226,16 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> extends 
         if (!getFetchHints().isIncludeProperties()) {
             throw new VertexiumMissingFetchHintException(getFetchHints(), "includeProperties");
         }
-        return inMemoryTableElement.getProperties(fetchHints, endTime, authorizations);
-    }
-
-    @Override
-    @SuppressWarnings("deprecation")
-    public Iterable<HistoricalPropertyValue> getHistoricalPropertyValues(String key, String name, Visibility visibility, Long startTime, Long endTime, Authorizations authorizations) {
-        return inMemoryTableElement.getHistoricalPropertyValues(key, name, visibility, startTime, endTime, authorizations);
+        return inMemoryTableElement.getProperties(fetchHints, endTime, authorizations.getUser());
     }
 
     @Override
     public Stream<HistoricalEvent> getHistoricalEvents(
         HistoricalEventId after,
         HistoricalEventsFetchHints historicalEventsFetchHints,
-        Authorizations authorizations
+        User user
     ) {
-        return inMemoryTableElement.getHistoricalEvents(getGraph(), after, historicalEventsFetchHints, authorizations);
+        return inMemoryTableElement.getHistoricalEvents(getGraph(), after, historicalEventsFetchHints, user);
     }
 
     @Override
@@ -350,21 +350,19 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> extends 
             addAdditionalExtendedDataVisibility(
                 additionalVisibility.getTableName(),
                 additionalVisibility.getRow(),
-                additionalVisibility.getAdditionalVisibility(),
-                authorizations
+                additionalVisibility.getAdditionalVisibility()
             );
         }
         for (AdditionalExtendedDataVisibilityDeleteMutation additionalVisibilityDelete : additionalExtendedDataVisibilityDeletes) {
             deleteAdditionalExtendedDataVisibility(
                 additionalVisibilityDelete.getTableName(),
                 additionalVisibilityDelete.getRow(),
-                additionalVisibilityDelete.getAdditionalVisibility(),
-                authorizations
+                additionalVisibilityDelete.getAdditionalVisibility()
             );
         }
     }
 
-    protected <T extends Element> void saveExistingElementMutation(ExistingElementMutationImpl<T> mutation, IndexHint indexHint, Authorizations authorizations) {
+    protected <T extends Element> void saveExistingElementMutation(ExistingElementMutationImpl<T> mutation, IndexHint indexHint, User user) {
         if (mutation.getElement() != this) {
             throw new VertexiumException("cannot save mutation from another element");
         }
@@ -373,13 +371,13 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> extends 
 
         // Metadata must be altered first because the lookup of a property can include visibility which will be
         // altered by alterElementPropertyVisibilities
-        graph.alterElementPropertyMetadata(inMemoryTableElement, mutation.getSetPropertyMetadatas(), authorizations);
+        graph.alterElementPropertyMetadata(inMemoryTableElement, mutation.getSetPropertyMetadatas(), user);
 
         // Altering properties comes next because alterElementVisibility may alter the vertex and we won't find it
         graph.alterElementPropertyVisibilities(
             inMemoryTableElement,
             mutation.getAlterPropertyVisibilities(),
-            authorizations
+            user
         );
 
         Iterable<Property> properties = mutation.getProperties();
@@ -436,8 +434,13 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> extends 
         return getId();
     }
 
+    @FutureDeprecation
     public boolean canRead(Authorizations authorizations) {
-        return inMemoryTableElement.canRead(getFetchHints(), authorizations);
+        return canRead(authorizations.getUser());
+    }
+
+    public boolean canRead(User user) {
+        return inMemoryTableElement.canRead(getFetchHints(), user);
     }
 
     @Override
