@@ -6,6 +6,8 @@ import org.vertexium.util.JoinIterable;
 
 import java.util.List;
 
+import static org.vertexium.util.StreamUtils.toIterable;
+
 public class DefaultVertexQuery extends VertexQueryBase implements VertexQuery {
     public DefaultVertexQuery(Graph graph, Vertex sourceVertex, String queryString, Authorizations authorizations) {
         super(graph, sourceVertex, queryString, authorizations);
@@ -22,12 +24,12 @@ public class DefaultVertexQuery extends VertexQueryBase implements VertexQuery {
         String[] edgeLabelsArray = edgeLabels == null || edgeLabels.size() == 0
             ? null
             : edgeLabels.toArray(new String[edgeLabels.size()]);
-        Iterable<Vertex> results = getSourceVertex().getVertices(
+        Iterable<Vertex> results = toIterable(getSourceVertex().getVertices(
             getDirection(),
             edgeLabelsArray,
             fetchHints,
-            getParameters().getAuthorizations()
-        );
+            getParameters().getUser()
+        ));
         if (getOtherVertexId() != null) {
             results = new FilterIterable<Vertex>(results) {
                 @Override
@@ -54,7 +56,7 @@ public class DefaultVertexQuery extends VertexQueryBase implements VertexQuery {
     }
 
     private Iterable<Edge> allEdges(FetchHints fetchHints) {
-        Iterable<Edge> results = getSourceVertex().getEdges(getDirection(), fetchHints, getParameters().getAuthorizations());
+        Iterable<Edge> results = toIterable(getSourceVertex().getEdges(getDirection(), fetchHints, getParameters().getUser()));
         if (getOtherVertexId() != null) {
             results = new FilterIterable<Edge>(results) {
                 @Override

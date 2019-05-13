@@ -1,12 +1,12 @@
 package org.vertexium.query;
 
-import org.vertexium.Authorizations;
+import org.vertexium.User;
 
 public class SimilarToTextQueryParameters extends SimilarToQueryParameters {
     private final String text;
 
-    public SimilarToTextQueryParameters(String[] fields, String text, Authorizations authorizations) {
-        super(fields, authorizations);
+    public SimilarToTextQueryParameters(String[] fields, String text, User user) {
+        super(fields, user);
         this.text = text;
     }
 
@@ -16,7 +16,7 @@ public class SimilarToTextQueryParameters extends SimilarToQueryParameters {
 
     @Override
     public QueryParameters clone() {
-        SimilarToTextQueryParameters results = new SimilarToTextQueryParameters(getFields(), getText(), getAuthorizations());
+        SimilarToTextQueryParameters results = new SimilarToTextQueryParameters(getFields(), getText(), getUser());
         super.cloneTo(results);
         return results;
     }

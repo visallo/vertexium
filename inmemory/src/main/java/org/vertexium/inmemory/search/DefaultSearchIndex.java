@@ -1,4 +1,4 @@
-package org.vertexium.search;
+package org.vertexium.inmemory.search;
 
 import org.vertexium.*;
 import org.vertexium.mutation.AdditionalExtendedDataVisibilityAddMutation;
@@ -6,6 +6,7 @@ import org.vertexium.mutation.AdditionalExtendedDataVisibilityDeleteMutation;
 import org.vertexium.mutation.ExistingElementMutation;
 import org.vertexium.mutation.ExtendedDataMutation;
 import org.vertexium.query.*;
+import org.vertexium.search.SearchIndex;
 
 import java.util.Set;
 
@@ -90,7 +91,7 @@ public class DefaultSearchIndex implements SearchIndex {
 
     @Override
     public org.vertexium.query.GraphQuery queryGraph(Graph graph, String queryString, Authorizations authorizations) {
-        return new DefaultGraphQuery(graph, queryString, authorizations);
+        return new org.vertexium.query.DefaultGraphQuery(graph, queryString, authorizations);
     }
 
     @Override

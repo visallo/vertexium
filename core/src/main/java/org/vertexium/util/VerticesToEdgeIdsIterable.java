@@ -2,17 +2,20 @@ package org.vertexium.util;
 
 import org.vertexium.Authorizations;
 import org.vertexium.Direction;
+import org.vertexium.User;
 import org.vertexium.Vertex;
 
 import java.util.Iterator;
 
+import static org.vertexium.util.StreamUtils.toIterable;
+
 public class VerticesToEdgeIdsIterable implements Iterable<String> {
     private final Iterable<? extends Vertex> vertices;
-    private final Authorizations authorizations;
+    private final User user;
 
-    public VerticesToEdgeIdsIterable(Iterable<? extends Vertex> vertices, Authorizations authorizations) {
+    public VerticesToEdgeIdsIterable(Iterable<? extends Vertex> vertices, User user) {
         this.vertices = vertices;
-        this.authorizations = authorizations;
+        this.user = user;
     }
 
     @Override
@@ -20,7 +23,7 @@ public class VerticesToEdgeIdsIterable implements Iterable<String> {
         return new SelectManyIterable<Vertex, String>(this.vertices) {
             @Override
             public Iterable<String> getIterable(Vertex vertex) {
-                return vertex.getEdgeIds(Direction.BOTH, authorizations);
+                return toIterable(vertex.getEdgeIds(Direction.BOTH, user));
             }
         }.iterator();
     }

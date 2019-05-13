@@ -7,7 +7,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.vertexium.*;
 import org.vertexium.id.UUIDIdGenerator;
-import org.vertexium.search.DefaultSearchIndex;
+import org.vertexium.inmemory.search.DefaultSearchIndex;
 import org.vertexium.test.GraphTestBase;
 
 import java.util.HashMap;

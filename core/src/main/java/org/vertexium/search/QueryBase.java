@@ -16,14 +16,14 @@ public abstract class QueryBase implements org.vertexium.search.Query, org.verte
     private final QueryParameters parameters;
     private List<Aggregation> aggregations = new ArrayList<>();
 
-    protected QueryBase(Graph graph, String queryString, Authorizations authorizations) {
+    protected QueryBase(Graph graph, String queryString, User user) {
         this.graph = graph;
-        this.parameters = new QueryStringQueryParameters(queryString, authorizations);
+        this.parameters = new QueryStringQueryParameters(queryString, user);
     }
 
-    protected QueryBase(Graph graph, String[] similarToFields, String similarToText, Authorizations authorizations) {
+    protected QueryBase(Graph graph, String[] similarToFields, String similarToText, User user) {
         this.graph = graph;
-        this.parameters = new SimilarToTextQueryParameters(similarToFields, similarToText, authorizations);
+        this.parameters = new SimilarToTextQueryParameters(similarToFields, similarToText, user);
     }
 
     @Override

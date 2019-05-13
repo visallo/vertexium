@@ -23,12 +23,12 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
 
     protected QueryBase(Graph graph, String queryString, Authorizations authorizations) {
         this.graph = graph;
-        this.parameters = new QueryStringQueryParameters(queryString, authorizations);
+        this.parameters = new QueryStringQueryParameters(queryString, authorizations.getUser());
     }
 
     protected QueryBase(Graph graph, String[] similarToFields, String similarToText, Authorizations authorizations) {
         this.graph = graph;
-        this.parameters = new SimilarToTextQueryParameters(similarToFields, similarToText, authorizations);
+        this.parameters = new SimilarToTextQueryParameters(similarToFields, similarToText, authorizations.getUser());
     }
 
     @Override
@@ -142,9 +142,6 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
         }
     }
 
-    /**
-     * This method should be overridden if {@link #search(EnumSet, EnumSet)} is not overridden.
-     */
     protected QueryResultsIterable<? extends VertexiumObject> extendedData(FetchHints fetchHints) {
         throw new VertexiumException("not implemented");
     }

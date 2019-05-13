@@ -5,10 +5,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
-import org.vertexium.Authorizations;
-import org.vertexium.Element;
-import org.vertexium.FetchHints;
-import org.vertexium.Visibility;
+import org.vertexium.*;
 import org.vertexium.property.MutablePropertyImpl;
 
 import static org.junit.Assert.assertFalse;
@@ -94,6 +91,11 @@ public class ExistingElementMutationImplTest {
 
         @Override
         public T save(Authorizations authorizations) {
+            return null;
+        }
+
+        @Override
+        public String save(User user) {
             return null;
         }
     }

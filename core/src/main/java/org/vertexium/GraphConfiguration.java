@@ -2,7 +2,6 @@ package org.vertexium;
 
 import org.vertexium.id.IdGenerator;
 import org.vertexium.id.UUIDIdGenerator;
-import org.vertexium.search.DefaultSearchIndex;
 import org.vertexium.search.SearchIndex;
 import org.vertexium.util.ConfigurationUtils;
 
@@ -14,7 +13,6 @@ public class GraphConfiguration {
     public static final String AUTO_FLUSH = "autoFlush";
 
     public static final String DEFAULT_IDGENERATOR = UUIDIdGenerator.class.getName();
-    public static final String DEFAULT_SEARCH_INDEX = DefaultSearchIndex.class.getName();
     public static final boolean DEFAULT_AUTO_FLUSH = false;
     public static final String TABLE_NAME_PREFIX = "tableNamePrefix";
     public static final String DEFAULT_TABLE_NAME_PREFIX = "vertexium";
@@ -53,7 +51,7 @@ public class GraphConfiguration {
     }
 
     public SearchIndex createSearchIndex(Graph graph) throws VertexiumException {
-        return ConfigurationUtils.createProvider(graph, this, SEARCH_INDEX_PROP_PREFIX, DEFAULT_SEARCH_INDEX);
+        return ConfigurationUtils.createProvider(graph, this, SEARCH_INDEX_PROP_PREFIX, null);
     }
 
     public VertexiumSerializer createSerializer(Graph graph) throws VertexiumException {

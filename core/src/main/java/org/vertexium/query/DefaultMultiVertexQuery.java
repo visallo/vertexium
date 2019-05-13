@@ -6,6 +6,8 @@ import org.vertexium.util.IterableUtils;
 import org.vertexium.util.JoinIterable;
 import org.vertexium.util.VerticesToEdgeIdsIterable;
 
+import static org.vertexium.util.StreamUtils.toIterable;
+
 public class DefaultMultiVertexQuery extends QueryBase implements MultiVertexQuery {
     private final String[] vertexIds;
 
@@ -16,23 +18,23 @@ public class DefaultMultiVertexQuery extends QueryBase implements MultiVertexQue
 
     @Override
     public QueryResultsIterable<Vertex> vertices(FetchHints fetchHints) {
-        Iterable<Vertex> vertices = getGraph().getVertices(IterableUtils.toIterable(getVertexIds()), fetchHints, getParameters().getAuthorizations());
+        Iterable<Vertex> vertices = toIterable(getGraph().getVertices(IterableUtils.toIterable(getVertexIds()), fetchHints, getParameters().getUser()));
         return new DefaultGraphQueryIterableWithAggregations<>(getParameters(), vertices, true, true, true, getAggregations());
     }
 
     @Override
     public QueryResultsIterable<Edge> edges(FetchHints fetchHints) {
-        Iterable<Vertex> vertices = getGraph().getVertices(IterableUtils.toIterable(getVertexIds()), fetchHints, getParameters().getAuthorizations());
-        Iterable<String> edgeIds = new VerticesToEdgeIdsIterable(vertices, getParameters().getAuthorizations());
-        Iterable<Edge> edges = getGraph().getEdges(edgeIds, fetchHints, getParameters().getAuthorizations());
+        Iterable<Vertex> vertices = toIterable(getGraph().getVertices(IterableUtils.toIterable(getVertexIds()), fetchHints, getParameters().getUser()));
+        Iterable<String> edgeIds = new VerticesToEdgeIdsIterable(vertices, getParameters().getUser());
+        Iterable<Edge> edges = toIterable(getGraph().getEdges(edgeIds, fetchHints, getParameters().getUser()));
         return new DefaultGraphQueryIterableWithAggregations<>(getParameters(), edges, true, true, true, getAggregations());
     }
 
     @Override
     protected QueryResultsIterable<? extends VertexiumObject> extendedData(FetchHints fetchHints) {
-        Iterable<Vertex> vertices = getGraph().getVertices(IterableUtils.toIterable(getVertexIds()), fetchHints, getParameters().getAuthorizations());
-        Iterable<String> edgeIds = new VerticesToEdgeIdsIterable(vertices, getParameters().getAuthorizations());
-        Iterable<Edge> edges = getGraph().getEdges(edgeIds, fetchHints, getParameters().getAuthorizations());
+        Iterable<Vertex> vertices = toIterable(getGraph().getVertices(IterableUtils.toIterable(getVertexIds()), fetchHints, getParameters().getUser()));
+        Iterable<String> edgeIds = new VerticesToEdgeIdsIterable(vertices, getParameters().getUser());
+        Iterable<Edge> edges = toIterable(getGraph().getEdges(edgeIds, fetchHints, getParameters().getUser()));
         return extendedData(fetchHints, new JoinIterable<>(vertices, edges));
     }
 

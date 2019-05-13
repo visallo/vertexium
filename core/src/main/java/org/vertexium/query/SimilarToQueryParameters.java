@@ -1,6 +1,6 @@
 package org.vertexium.query;
 
-import org.vertexium.Authorizations;
+import org.vertexium.User;
 
 public abstract class SimilarToQueryParameters extends QueryParameters {
     private final String[] fields;
@@ -10,8 +10,8 @@ public abstract class SimilarToQueryParameters extends QueryParameters {
     private Integer maxDocFrequency;
     private Float boost;
 
-    protected SimilarToQueryParameters(String[] fields, Authorizations authorizations) {
-        super(authorizations);
+    protected SimilarToQueryParameters(String[] fields, User user) {
+        super(user);
         this.fields = fields;
     }
 

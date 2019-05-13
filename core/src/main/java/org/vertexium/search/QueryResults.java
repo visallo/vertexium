@@ -4,7 +4,7 @@ import org.vertexium.query.AggregationResult;
 
 import java.util.stream.Stream;
 
-public interface QueryResults<T> extends Stream<T> {
+public interface QueryResults<T> {
     /**
      * This value will be returned from results methods when the answer cannot be determined.
      */
@@ -14,6 +14,8 @@ public interface QueryResults<T> extends Stream<T> {
      * This value will be returned from results methods when the score cannot be determined.
      */
     Double UNKNOWN_SCORE = -1.0;
+
+    Stream<T> getHits();
 
     /**
      * Get the total number of hits for the query that produced these results

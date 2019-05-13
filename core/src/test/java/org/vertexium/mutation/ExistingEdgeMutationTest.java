@@ -4,6 +4,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.vertexium.Authorizations;
 import org.vertexium.Edge;
+import org.vertexium.User;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -34,6 +35,11 @@ public class ExistingEdgeMutationTest {
 
         @Override
         public Edge save(Authorizations authorizations) {
+            return null;
+        }
+
+        @Override
+        public String save(User user) {
             return null;
         }
     }

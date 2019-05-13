@@ -21,7 +21,6 @@ import org.vertexium.query.*;
 import org.vertexium.scoring.FieldValueScoringStrategy;
 import org.vertexium.scoring.HammingDistanceScoringStrategy;
 import org.vertexium.scoring.ScoringStrategy;
-import org.vertexium.search.DefaultSearchIndex;
 import org.vertexium.search.IndexHint;
 import org.vertexium.search.SearchIndex;
 import org.vertexium.test.util.LargeStringInputStream;
@@ -5732,12 +5731,6 @@ public abstract class GraphTestBase {
         assertNotNull(v1.getProperty("prop1"));
         assertEquals(VISIBILITY_B, v1.getProperty("prop1").getVisibility());
         assertEquals("metadata1New", v1.getProperty("prop1").getMetadata().getValue("prop1_key1"));
-
-        List<HistoricalPropertyValue> historicalPropertyValues = toList(v1.getHistoricalPropertyValues(AUTHORIZATIONS_A_AND_B));
-        assertEquals(3, historicalPropertyValues.size());
-        assertEquals("metadata1New", historicalPropertyValues.get(0).getMetadata().getValue("prop1_key1"));
-        assumeTrue(historicalPropertyValues.get(1).isDeleted());
-        assertEquals("metadata1", historicalPropertyValues.get(2).getMetadata().getValue("prop1_key1"));
     }
 
     @Test
@@ -6548,85 +6541,6 @@ public abstract class GraphTestBase {
         Vertex retrievedVertex = graph.getVertex(vertexId, AUTHORIZATIONS_EMPTY);
         Iterable<HistoricalPropertyValue> historicalPropertyValues = retrievedVertex.getHistoricalPropertyValues(propertyKey, propertyName, VISIBILITY_EMPTY, null, null, AUTHORIZATIONS_EMPTY);
         compareHistoricalValues(values, historicalPropertyValues);
-    }
-
-    @Test
-    @SuppressWarnings("deprecation")
-    public void testSaveMultipleTimestampedValuesInSameMutationEdge() {
-        Vertex v1 = graph.addVertex("v1", VISIBILITY_EMPTY, AUTHORIZATIONS_EMPTY);
-        Vertex v2 = graph.addVertex("v2", VISIBILITY_EMPTY, AUTHORIZATIONS_EMPTY);
-
-        String edgeId = "e1";
-        String propertyKey = "k1";
-        String propertyName = "p1";
-        Map<String, Long> values = ImmutableMap.of(
-            "value1", createDate(2016, 4, 6, 9, 20, 0).getTime(),
-            "value2", createDate(2016, 5, 6, 9, 20, 0).getTime(),
-            "value3", createDate(2016, 6, 6, 9, 20, 0).getTime(),
-            "value4", createDate(2016, 7, 6, 9, 20, 0).getTime(),
-            "value5", createDate(2016, 8, 6, 9, 20, 0).getTime()
-        );
-
-        ElementMutation<Edge> edgeMutation = graph.prepareEdge(edgeId, v1, v2, LABEL_LABEL1, VISIBILITY_EMPTY);
-        for (Map.Entry<String, Long> entry : values.entrySet()) {
-            edgeMutation.addPropertyValue(propertyKey, propertyName, entry.getKey(), Metadata.create(), entry.getValue(), VISIBILITY_EMPTY);
-        }
-        edgeMutation.save(AUTHORIZATIONS_EMPTY);
-        graph.flush();
-
-        Edge retrievedEdge = graph.getEdge(edgeId, AUTHORIZATIONS_EMPTY);
-        Iterable<HistoricalPropertyValue> historicalPropertyValues = retrievedEdge.getHistoricalPropertyValues(propertyKey, propertyName, VISIBILITY_EMPTY, null, null, AUTHORIZATIONS_EMPTY);
-        compareHistoricalValues(values, historicalPropertyValues);
-    }
-
-    @SuppressWarnings("deprecation")
-    private void compareHistoricalValues(Map<String, Long> expectedValues, Iterable<HistoricalPropertyValue> historicalPropertyValues) {
-        Map<String, Long> expectedValuesCopy = new HashMap<>(expectedValues);
-        for (HistoricalPropertyValue historicalPropertyValue : historicalPropertyValues) {
-            String value = (String) historicalPropertyValue.getValue();
-            if (!expectedValuesCopy.containsKey(value)) {
-                throw new VertexiumException("Expected historical values to contain: " + value);
-            }
-            long expectedValue = expectedValuesCopy.remove(value);
-            long ts = historicalPropertyValue.getTimestamp();
-            assertEquals(expectedValue, ts);
-        }
-        if (expectedValuesCopy.size() > 0) {
-            StringBuilder result = new StringBuilder();
-            for (Map.Entry<String, Long> entry : expectedValuesCopy.entrySet()) {
-                result.append(entry.getKey()).append(" = ").append(entry.getValue()).append("\n");
-            }
-            throw new VertexiumException("Missing historical values:\n" + result.toString());
-        }
-    }
-
-    @Test
-    @SuppressWarnings("deprecation")
-    public void testTimestampsInExistingElementMutation() {
-        long t1 = createDate(2017, 1, 18, 9, 20, 0).getTime();
-        long t2 = createDate(2017, 1, 19, 9, 20, 0).getTime();
-
-        graph.prepareVertex("v1", VISIBILITY_EMPTY)
-            .addPropertyValue("k1", "prop1", "test1", Metadata.create(), t1, VISIBILITY_EMPTY)
-            .save(AUTHORIZATIONS_ALL);
-        graph.flush();
-
-        Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_ALL);
-        assertEquals(t1, v1.getProperty("k1", "prop1").getTimestamp());
-
-        graph.getVertex("v1", AUTHORIZATIONS_ALL)
-            .prepareMutation()
-            .addPropertyValue("k1", "prop1", "test2", Metadata.create(), t2, VISIBILITY_EMPTY)
-            .save(AUTHORIZATIONS_ALL);
-        graph.flush();
-
-        v1 = graph.getVertex("v1", AUTHORIZATIONS_ALL);
-        assertEquals(t2, v1.getProperty("k1", "prop1").getTimestamp());
-
-        List<HistoricalPropertyValue> historicalValues = toList(v1.getHistoricalPropertyValues("k1", "prop1", VISIBILITY_EMPTY, AUTHORIZATIONS_ALL));
-        assertEquals(2, historicalValues.size());
-        assertEquals(t1, historicalValues.get(1).getTimestamp());
-        assertEquals(t2, historicalValues.get(0).getTimestamp());
     }
 
     @Test
@@ -9375,14 +9289,7 @@ public abstract class GraphTestBase {
         return vertices;
     }
 
-    private boolean isDefaultSearchIndex() {
-        if (!(graph instanceof GraphWithSearchIndex)) {
-            return false;
-        }
-
-        GraphWithSearchIndex graphWithSearchIndex = (GraphWithSearchIndex) graph;
-        return graphWithSearchIndex.getSearchIndex() instanceof DefaultSearchIndex;
-    }
+    protected abstract boolean isDefaultSearchIndex() ;
 
     protected List<Vertex> sortById(List<Vertex> vertices) {
         Collections.sort(vertices, Comparator.comparing(Element::getId));
