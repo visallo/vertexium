@@ -5,6 +5,7 @@ import com.google.common.collect.Lists;
 import org.vertexium.*;
 import org.vertexium.event.*;
 import org.vertexium.historicalEvent.HistoricalEvent;
+import org.vertexium.historicalEvent.HistoricalEventId;
 import org.vertexium.id.IdGenerator;
 import org.vertexium.inmemory.mutations.AlterEdgeLabelMutation;
 import org.vertexium.inmemory.mutations.AlterVisibilityMutation;
@@ -13,12 +14,12 @@ import org.vertexium.inmemory.mutations.ElementTimestampMutation;
 import org.vertexium.mutation.*;
 import org.vertexium.property.StreamingPropertyValue;
 import org.vertexium.property.StreamingPropertyValueRef;
+import org.vertexium.query.GraphQuery;
+import org.vertexium.query.MultiVertexQuery;
+import org.vertexium.query.SimilarToGraphQuery;
 import org.vertexium.search.IndexHint;
 import org.vertexium.search.SearchIndex;
-import org.vertexium.util.ArrayUtils;
-import org.vertexium.util.ConvertingIterable;
-import org.vertexium.util.IncreasingTime;
-import org.vertexium.util.IterableUtils;
+import org.vertexium.util.*;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -28,6 +29,7 @@ import static org.vertexium.util.Preconditions.checkNotNull;
 import static org.vertexium.util.StreamUtils.stream;
 
 public class InMemoryGraph extends GraphBaseWithSearchIndex {
+    private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(InMemoryGraph.class);
     protected static final InMemoryGraphConfiguration DEFAULT_CONFIGURATION =
         new InMemoryGraphConfiguration(new HashMap<>());
     private final Set<String> validAuthorizations = new HashSet<>();
@@ -160,10 +162,10 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
     <T extends Element> void updateElementAndExtendedDataInSearchIndex(
         Element element,
         ElementMutation<T> elementMutation,
-        Authorizations authorizations
+        User user
     ) {
         if (elementMutation instanceof ExistingElementMutation) {
-            getSearchIndex().updateElement(this, (ExistingElementMutation<? extends Element>) elementMutation, authorizations);
+            getSearchIndex().updateElement(this, (ExistingElementMutation<? extends Element>) elementMutation, user);
         } else {
             getSearchIndex().addElement(
                 this,
@@ -174,7 +176,7 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
                 stream(elementMutation.getAdditionalVisibilityDeletes())
                     .map(AdditionalVisibilityDeleteMutation::getAdditionalVisibility)
                     .collect(Collectors.toSet()),
-                authorizations
+                user
             );
         }
         getSearchIndex().addElementExtendedData(
@@ -183,7 +185,7 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
             elementMutation.getExtendedData(),
             elementMutation.getAdditionalExtendedDataVisibilities(),
             elementMutation.getAdditionalExtendedDataVisibilityDeletes(),
-            authorizations
+            user
         );
         for (ExtendedDataDeleteMutation m : elementMutation.getExtendedDataDeletes()) {
             getSearchIndex().deleteExtendedData(
@@ -194,7 +196,7 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
                 m.getColumnName(),
                 m.getKey(),
                 m.getVisibility(),
-                authorizations
+                user
             );
         }
     }
@@ -204,20 +206,16 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
     }
 
     @Override
-    public Iterable<Vertex> getVertices(FetchHints fetchHints, final Long endTime, final Authorizations authorizations) throws VertexiumException {
-        validateAuthorizations(authorizations);
-        return new ConvertingIterable<InMemoryVertex, Vertex>(this.vertices.getAll(InMemoryGraph.this, fetchHints, endTime, authorizations)) {
-            @Override
-            protected Vertex convert(InMemoryVertex o) {
-                return o;
-            }
-        };
+    public Stream<Vertex> getVertices(FetchHints fetchHints, Long endTime, User user) {
+        validateAuthorizations(user);
+        return this.vertices.getAll(InMemoryGraph.this, fetchHints, endTime, user)
+            .map(v -> v);
     }
 
-    protected void validateAuthorizations(Authorizations authorizations) {
-        for (String auth : authorizations.getAuthorizations()) {
+    protected void validateAuthorizations(User user) {
+        for (String auth : user.getAuthorizations()) {
             if (!this.validAuthorizations.contains(auth)) {
-                throw new SecurityVertexiumException("Invalid authorizations", authorizations);
+                throw new SecurityVertexiumException("Invalid authorizations", user);
             }
         }
     }
@@ -241,6 +239,11 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
         if (hasEventListeners()) {
             fireGraphEvent(new DeleteVertexEvent(this, vertex));
         }
+    }
+
+    @Override
+    public void softDeleteVertex(Vertex vertex, Object eventData, Authorizations authorizations) {
+
     }
 
     @Override
@@ -454,13 +457,10 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
     }
 
     @Override
-    public Iterable<Edge> getEdges(FetchHints fetchHints, final Long endTime, final Authorizations authorizations) {
-        return new ConvertingIterable<InMemoryEdge, Edge>(this.edges.getAll(InMemoryGraph.this, fetchHints, endTime, authorizations)) {
-            @Override
-            protected Edge convert(InMemoryEdge o) {
-                return o;
-            }
-        };
+    public Stream<Edge> getEdges(FetchHints fetchHints, Long endTime, User user) {
+        validateAuthorizations(user);
+        return this.edges.getAll(InMemoryGraph.this, fetchHints, endTime, user)
+            .map(e -> e);
     }
 
     @Override
@@ -486,6 +486,11 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
     }
 
     @Override
+    public void softDeleteEdge(Edge edge, Object eventData, Authorizations authorizations) {
+
+    }
+
+    @Override
     public void softDeleteEdge(Edge edge, Long timestamp, Object eventData, Authorizations authorizations) {
         checkNotNull(edge, "Edge cannot be null");
         if (!((InMemoryEdge) edge).canRead(authorizations)) {
@@ -502,6 +507,21 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
         if (hasEventListeners()) {
             fireGraphEvent(new SoftDeleteEdgeEvent(this, edge, eventData));
         }
+    }
+
+    @Override
+    public GraphQuery query(String queryString, User user) {
+        return null;
+    }
+
+    @Override
+    public MultiVertexQuery query(String[] vertexIds, String queryString, User user) {
+        return null;
+    }
+
+    @Override
+    public SimilarToGraphQuery querySimilarTo(String[] fields, String text, User user) {
+        return null;
     }
 
     @Override
@@ -549,28 +569,33 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
     }
 
     @Override
-    protected void findPathsRecursive(
-        FindPathOptions options,
-        List<Path> foundPaths,
-        Vertex sourceVertex,
-        Vertex destVertex,
-        int hops,
-        Set<String> seenVertices,
-        Path currentPath,
-        ProgressCallback progressCallback,
-        Authorizations authorizations
-    ) {
-        findPathsRecursive(
-            options,
-            foundPaths,
-            sourceVertex.getId(),
-            destVertex.getId(),
-            hops,
-            seenVertices,
-            currentPath,
-            progressCallback,
-            authorizations
-        );
+    public Stream<String> saveElementMutations(Iterable<ElementMutation<? extends Element>> mutations, User user) {
+        return null;
+    }
+
+    @Override
+    public Stream<ExtendedDataRow> getExtendedData(Iterable<ExtendedDataRowId> ids, FetchHints fetchHints, User user) {
+        return null;
+    }
+
+    @Override
+    public ExtendedDataRow getExtendedData(ExtendedDataRowId id, User user) {
+        return null;
+    }
+
+    @Override
+    public Stream<ExtendedDataRow> getExtendedData(ElementType elementType, String elementId, String tableName, FetchHints fetchHints, User user) {
+        return null;
+    }
+
+    @Override
+    public Stream<ExtendedDataRow> getExtendedDataInRange(ElementType elementType, Range elementIdRange, User user) {
+        return null;
+    }
+
+    @Override
+    public Stream<HistoricalEvent> getHistoricalEvents(Iterable<ElementId> elementIds, HistoricalEventId after, HistoricalEventsFetchHints fetchHints, User user) {
+        return null;
     }
 
     protected void findPathsRecursive(
@@ -582,7 +607,7 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
         Set<String> seenVertices,
         Path currentPath,
         ProgressCallback progressCallback,
-        Authorizations authorizations
+        User user
     ) {
         // if this is our first source vertex report progress back to the progress callback
         boolean firstLevelRecursion = hops == options.getMaxHops();
@@ -595,7 +620,7 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
         if (sourceVertexId.equals(destVertexId)) {
             foundPaths.add(currentPath);
         } else if (hops > 0) {
-            Stream<Edge> edges = stream(getEdgesFromVertex(sourceVertexId, getDefaultFetchHints(), null, authorizations))
+            Stream<Edge> edges = getEdgesFromVertex(sourceVertexId, getDefaultFetchHints(), null, user)
                 .filter(edge -> {
                     if (options.getExcludedLabels() != null) {
                         if (ArrayUtils.contains(options.getExcludedLabels(), edge.getLabel())) {
@@ -606,7 +631,7 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
                 });
             List<String> vertexIds = new ArrayList<>();
             edges.forEach(edge -> {
-                if (edge.getOtherVertex(sourceVertexId, FetchHints.NONE, authorizations) != null) {
+                if (edge.getOtherVertex(sourceVertexId, FetchHints.NONE, user) != null) {
                     vertexIds.add(edge.getOtherVertexId(sourceVertexId));
                 }
             });
@@ -633,7 +658,7 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
                         seenVertices,
                         new Path(currentPath, childId),
                         progressCallback,
-                        authorizations
+                        user
                     );
                 }
                 i++;
@@ -646,7 +671,7 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
         return stream(edges.getAllTableElements());
     }
 
-    private Stream<InMemoryTableEdge> getInMemoryTableEdgesForVertex(String vertexId, FetchHints fetchHints, Authorizations authorizations) {
+    private Stream<InMemoryTableEdge> getInMemoryTableEdgesForVertex(String vertexId, FetchHints fetchHints, User user) {
         return getInMemoryTableEdges()
             .filter(inMemoryTableElement -> {
                 EdgeSetupMutation edgeSetupMutation = inMemoryTableElement.findLastMutation(EdgeSetupMutation.class);
@@ -656,34 +681,34 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
                 checkNotNull(outVertexId, "outVertexId was null");
 
                 return (inVertexId.equals(vertexId) || outVertexId.equals(vertexId)) &&
-                    InMemoryGraph.this.isIncluded(inMemoryTableElement, fetchHints, authorizations);
+                    InMemoryGraph.this.isIncluded(inMemoryTableElement, fetchHints, user);
             });
     }
 
-    protected Iterable<Edge> getEdgesFromVertex(
+    protected Stream<Edge> getEdgesFromVertex(
         String vertexId,
         FetchHints fetchHints,
         Long endTime,
-        Authorizations authorizations
+        User user
     ) {
-        return getInMemoryTableEdgesForVertex(vertexId, fetchHints, authorizations)
-            .map(inMemoryTableElement -> inMemoryTableElement.createElement(InMemoryGraph.this, fetchHints, endTime, authorizations))
-            .filter(Objects::nonNull) // edge deleted or outside of time range
-            .collect(Collectors.toList());
+        return getInMemoryTableEdgesForVertex(vertexId, fetchHints, user)
+            .map(inMemoryTableElement -> (Edge) inMemoryTableElement.createElement(InMemoryGraph.this, fetchHints, endTime, user))
+            .filter(Objects::nonNull); // edge deleted or outside of time range
     }
 
     protected boolean isIncluded(
-        InMemoryTableElement element, FetchHints fetchHints,
-        Authorizations authorizations
+        InMemoryTableElement element,
+        FetchHints fetchHints,
+        User user
     ) {
         boolean includeHidden = fetchHints.isIncludeHidden();
 
-        if (!element.canRead(fetchHints, authorizations)) {
+        if (!element.canRead(fetchHints, user)) {
             return false;
         }
 
         if (!includeHidden) {
-            if (element.isHidden(authorizations)) {
+            if (element.isHidden(user)) {
                 return false;
             }
         }
@@ -692,19 +717,21 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
     }
 
     protected boolean isIncludedInTimeSpan(
-        InMemoryTableElement element, FetchHints fetchHints, Long endTime,
-        Authorizations authorizations
+        InMemoryTableElement element,
+        FetchHints fetchHints,
+        Long endTime,
+        User user
     ) {
         boolean includeHidden = fetchHints.isIncludeHidden();
 
-        if (!element.canRead(fetchHints, authorizations)) {
+        if (!element.canRead(fetchHints, user)) {
             return false;
         }
-        if (!includeHidden && element.isHidden(authorizations)) {
+        if (!includeHidden && element.isHidden(user)) {
             return false;
         }
 
-        if (element.isDeleted(endTime, authorizations)) {
+        if (element.isDeleted(endTime, user)) {
             return false;
         }
 
@@ -922,6 +949,11 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
     }
 
     @Override
+    public boolean isVisibilityValid(Visibility visibility, User user) {
+        return false;
+    }
+
+    @Override
     public void truncate() {
         this.vertices.clear();
         this.edges.clear();
@@ -1053,8 +1085,7 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
         InMemoryElement element,
         String tableName,
         String row,
-        String additionalVisibility,
-        Authorizations authorizations
+        String additionalVisibility
     ) {
         extendedDataTable.addAdditionalVisibility(
             new ExtendedDataRowId(ElementType.getTypeFromElement(element), element.getId(), tableName, row),
@@ -1070,8 +1101,7 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
         InMemoryElement element,
         String tableName,
         String row,
-        String additionalVisibility,
-        Authorizations authorizations
+        String additionalVisibility
     ) {
         extendedDataTable.deleteAdditionalVisibility(
             new ExtendedDataRowId(ElementType.getTypeFromElement(element), element.getId(), tableName, row),
@@ -1091,7 +1121,7 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
     Stream<HistoricalEvent> getHistoricalVertexEdgeEvents(
         String vertexId,
         HistoricalEventsFetchHints historicalEventsFetchHints,
-        Authorizations authorizations
+        User user
     ) {
         FetchHints elementFetchHints = new FetchHintsBuilder()
             .setIncludeAllProperties(true)
@@ -1099,7 +1129,317 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
             .setIncludeHidden(true)
             .setIncludeAllEdgeRefs(true)
             .build();
-        return getInMemoryTableEdgesForVertex(vertexId, elementFetchHints, authorizations)
-            .flatMap(inMemoryTableElement -> inMemoryTableElement.getHistoricalEventsForVertex(vertexId, historicalEventsFetchHints, authorizations));
+        return getInMemoryTableEdgesForVertex(vertexId, elementFetchHints, user)
+            .flatMap(inMemoryTableElement -> inMemoryTableElement.getHistoricalEventsForVertex(vertexId, historicalEventsFetchHints));
+    }
+
+    @Override
+    public Vertex getVertex(String vertexId, FetchHints fetchHints, Long endTime, User user) {
+        return getVertices(fetchHints, endTime, user)
+            .filter(v -> v.getId().equals(vertexId))
+            .findFirst()
+            .orElse(null);
+    }
+
+    @Override
+    public Edge getEdge(String edgeId, FetchHints fetchHints, Long endTime, User user) {
+        return getEdges(fetchHints, endTime, user)
+            .filter(e -> e.getId().equals(edgeId))
+            .findFirst()
+            .orElse(null);
+    }
+
+    @Override
+    public Stream<Vertex> getVerticesWithPrefix(String vertexIdPrefix, FetchHints fetchHints, Long endTime, User user) {
+        return getVertices(fetchHints, endTime, user)
+            .filter(v -> v.getId().startsWith(vertexIdPrefix));
+    }
+
+    @Override
+    public Stream<Vertex> getVerticesInRange(Range idRange, FetchHints fetchHints, Long endTime, User user) {
+        return getVertices(fetchHints, endTime, user)
+            .filter(v -> idRange.isInRange(v.getId()));
+    }
+
+    @Override
+    public Stream<Edge> getEdgesInRange(Range idRange, FetchHints fetchHints, Long endTime, User user) {
+        return getEdges(fetchHints, endTime, user)
+            .filter(e -> idRange.isInRange(e.getId()));
+    }
+
+    @Override
+    public Stream<Vertex> getVertices(Iterable<String> ids, FetchHints fetchHints, Long endTime, User user) {
+        return stream(ids)
+            .distinct()
+            .map(id -> getVertex(id, fetchHints, endTime, user))
+            .filter(Objects::nonNull);
+    }
+
+    @Override
+    public Stream<Edge> getEdges(Iterable<String> ids, FetchHints fetchHints, Long endTime, User user) {
+        return stream(ids)
+            .distinct()
+            .map(id -> getEdge(id, fetchHints, endTime, user))
+            .filter(Objects::nonNull);
+    }
+
+    @Override
+    public Iterable<String> filterEdgeIdsByAuthorization(
+        Iterable<String> edgeIds,
+        final String authorizationToMatch,
+        final EnumSet<ElementFilter> filters,
+        Authorizations authorizations
+    ) {
+        FilterIterable<Edge> edges = new FilterIterable<Edge>(getEdges(edgeIds, FetchHints.ALL_INCLUDING_HIDDEN, authorizations)) {
+            @Override
+            protected boolean isIncluded(Edge edge) {
+                if (filters.contains(ElementFilter.ELEMENT)) {
+                    if (edge.getVisibility().hasAuthorization(authorizationToMatch)) {
+                        return true;
+                    }
+                }
+                return isIncludedByAuthorizations(edge, filters, authorizationToMatch);
+            }
+        };
+        return new ConvertingIterable<Edge, String>(edges) {
+            @Override
+            protected String convert(Edge edge) {
+                return edge.getId();
+            }
+        };
+    }
+
+    @Override
+    public Iterable<String> filterVertexIdsByAuthorization(
+        Iterable<String> vertexIds,
+        final String authorizationToMatch,
+        final EnumSet<ElementFilter> filters,
+        Authorizations authorizations
+    ) {
+        FilterIterable<Vertex> vertices = new FilterIterable<Vertex>(getVertices(vertexIds, FetchHints.ALL_INCLUDING_HIDDEN, authorizations)) {
+            @Override
+            protected boolean isIncluded(Vertex vertex) {
+                if (filters.contains(ElementFilter.ELEMENT)) {
+                    if (vertex.getVisibility().hasAuthorization(authorizationToMatch)) {
+                        return true;
+                    }
+                }
+                return isIncludedByAuthorizations(vertex, filters, authorizationToMatch);
+            }
+        };
+        return new ConvertingIterable<Vertex, String>(vertices) {
+            @Override
+            protected String convert(Vertex vertex) {
+                return vertex.getId();
+            }
+        };
+    }
+
+    private boolean isIncludedByAuthorizations(Element element, EnumSet<ElementFilter> filters, String authorizationToMatch) {
+        if (filters.contains(ElementFilter.PROPERTY) || filters.contains(ElementFilter.PROPERTY_METADATA)) {
+            for (Property property : element.getProperties()) {
+                if (filters.contains(ElementFilter.PROPERTY)) {
+                    if (property.getVisibility().hasAuthorization(authorizationToMatch)) {
+                        return true;
+                    }
+                }
+                if (filters.contains(ElementFilter.PROPERTY_METADATA)) {
+                    for (Metadata.Entry entry : property.getMetadata().entrySet()) {
+                        if (entry.getVisibility().hasAuthorization(authorizationToMatch)) {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public Stream<Path> findPaths(FindPathOptions options, User user) {
+        ProgressCallback progressCallback = options.getProgressCallback();
+        if (progressCallback == null) {
+            progressCallback = new ProgressCallback() {
+                @Override
+                public void progress(double progressPercent, Step step, Integer edgeIndex, Integer vertexCount) {
+                    LOGGER.debug("findPaths progress %d%%: %s", (int) (progressPercent * 100.0), step.formatMessage(edgeIndex, vertexCount));
+                }
+            };
+        }
+
+        FetchHints fetchHints = FetchHints.EDGE_REFS;
+        Vertex sourceVertex = getVertex(options.getSourceVertexId(), fetchHints, user);
+        if (sourceVertex == null) {
+            throw new IllegalArgumentException("Could not find vertex with id: " + options.getSourceVertexId());
+        }
+        Vertex destVertex = getVertex(options.getDestVertexId(), fetchHints, user);
+        if (destVertex == null) {
+            throw new IllegalArgumentException("Could not find vertex with id: " + options.getDestVertexId());
+        }
+
+        progressCallback.progress(0, ProgressCallback.Step.FINDING_PATH);
+
+        Set<String> seenVertices = new HashSet<>();
+        seenVertices.add(sourceVertex.getId());
+
+        Path startPath = new Path(sourceVertex.getId());
+
+        List<Path> foundPaths = new ArrayList<>();
+        if (options.getMaxHops() == 2) {
+            findPathsSetIntersection(
+                options,
+                foundPaths,
+                sourceVertex,
+                destVertex,
+                progressCallback,
+                user
+            );
+        } else {
+            findPathsRecursive(
+                options,
+                foundPaths,
+                sourceVertex,
+                destVertex,
+                options.getMaxHops(),
+                seenVertices,
+                startPath,
+                progressCallback,
+                user
+            );
+        }
+
+        progressCallback.progress(1, ProgressCallback.Step.COMPLETE);
+        return foundPaths.stream();
+    }
+
+    private void findPathsSetIntersection(
+        FindPathOptions options,
+        List<Path> foundPaths,
+        Vertex sourceVertex,
+        Vertex destVertex,
+        ProgressCallback progressCallback,
+        User user
+    ) {
+        String sourceVertexId = sourceVertex.getId();
+        String destVertexId = destVertex.getId();
+
+        progressCallback.progress(0.1, ProgressCallback.Step.SEARCHING_SOURCE_VERTEX_EDGES);
+        Set<String> sourceVertexConnectedVertexIds = filterFindPathEdgeInfo(options, sourceVertex.getEdgeInfos(Direction.BOTH, options.getLabels(), user));
+        Map<String, Boolean> sourceVerticesExist = doVerticesExist(sourceVertexConnectedVertexIds, user);
+        sourceVertexConnectedVertexIds = stream(sourceVerticesExist.keySet())
+            .filter(key -> sourceVerticesExist.getOrDefault(key, false))
+            .collect(Collectors.toSet());
+
+        progressCallback.progress(0.3, ProgressCallback.Step.SEARCHING_DESTINATION_VERTEX_EDGES);
+        Set<String> destVertexConnectedVertexIds = filterFindPathEdgeInfo(options, destVertex.getEdgeInfos(Direction.BOTH, options.getLabels(), user));
+        Map<String, Boolean> destVerticesExist = doVerticesExist(destVertexConnectedVertexIds, user);
+        destVertexConnectedVertexIds = stream(destVerticesExist.keySet())
+            .filter(key -> destVerticesExist.getOrDefault(key, false))
+            .collect(Collectors.toSet());
+
+        if (sourceVertexConnectedVertexIds.contains(destVertexId)) {
+            foundPaths.add(new Path(sourceVertexId, destVertexId));
+            if (options.isGetAnyPath()) {
+                return;
+            }
+        }
+
+        progressCallback.progress(0.6, ProgressCallback.Step.MERGING_EDGES);
+        sourceVertexConnectedVertexIds.retainAll(destVertexConnectedVertexIds);
+
+        progressCallback.progress(0.9, ProgressCallback.Step.ADDING_PATHS);
+        for (String connectedVertexId : sourceVertexConnectedVertexIds) {
+            foundPaths.add(new Path(sourceVertexId, connectedVertexId, destVertexId));
+        }
+    }
+
+    private void findPathsRecursive(
+        FindPathOptions options,
+        List<Path> foundPaths,
+        Vertex sourceVertex,
+        Vertex destVertex,
+        int hops,
+        Set<String> seenVertices,
+        Path currentPath,
+        ProgressCallback progressCallback,
+        User user
+    ) {
+        // if this is our first source vertex report progress back to the progress callback
+        boolean firstLevelRecursion = hops == options.getMaxHops();
+
+        if (options.isGetAnyPath() && foundPaths.size() == 1) {
+            return;
+        }
+
+        seenVertices.add(sourceVertex.getId());
+        if (sourceVertex.getId().equals(destVertex.getId())) {
+            foundPaths.add(currentPath);
+        } else if (hops > 0) {
+            Iterable<Vertex> vertices = filterFindPathEdgePairs(options, sourceVertex.getEdgeVertexPairs(Direction.BOTH, options.getLabels(), user));
+            int vertexCount = 0;
+            if (firstLevelRecursion) {
+                vertices = IterableUtils.toList(vertices);
+                vertexCount = ((List<Vertex>) vertices).size();
+            }
+            int i = 0;
+            for (Vertex child : vertices) {
+                if (firstLevelRecursion) {
+                    // this will never get to 100% since i starts at 0. which is good. 100% signifies done and we still have work to do.
+                    double progressPercent = (double) i / (double) vertexCount;
+                    progressCallback.progress(progressPercent, ProgressCallback.Step.SEARCHING_EDGES, i + 1, vertexCount);
+                }
+                if (!seenVertices.contains(child.getId())) {
+                    findPathsRecursive(options, foundPaths, child, destVertex, hops - 1, seenVertices, new Path(currentPath, child.getId()), progressCallback, user);
+                }
+                i++;
+            }
+        }
+        seenVertices.remove(sourceVertex.getId());
+    }
+
+    private Set<String> filterFindPathEdgeInfo(FindPathOptions options, Stream<EdgeInfo> edgeInfos) {
+        return edgeInfos
+            .filter(edgeInfo -> {
+                if (options.getExcludedLabels() != null) {
+                    return !ArrayUtils.contains(options.getExcludedLabels(), edgeInfo.getLabel());
+                }
+                return true;
+            })
+            .map(EdgeInfo::getVertexId)
+            .collect(Collectors.toSet());
+    }
+
+    private Iterable<Vertex> filterFindPathEdgePairs(FindPathOptions options, Stream<EdgeVertexPair> edgeVertexPairs) {
+        return edgeVertexPairs
+            .filter(edgePair -> {
+                if (options.getExcludedLabels() != null) {
+                    return !ArrayUtils.contains(options.getExcludedLabels(), edgePair.getEdge().getLabel());
+                }
+                return true;
+            })
+            .map(EdgeVertexPair::getVertex)
+            .collect(Collectors.toList());
+    }
+
+    @Override
+    public Stream<String> findRelatedEdgeIds(Iterable<String> vertexIds, Long endTime, User user) {
+        FetchHints fetchHints = new FetchHintsBuilder()
+            .setIncludeOutEdgeRefs(true)
+            .build();
+        return findRelatedEdgeIdsForVertices(
+            getVertices(vertexIds, fetchHints, endTime, user).collect(Collectors.toList()),
+            user
+        );
+    }
+
+    @Override
+    public Stream<RelatedEdge> findRelatedEdgeSummary(Iterable<String> vertexIds, Long endTime, User user) {
+        FetchHints fetchHints = new FetchHintsBuilder()
+            .setIncludeOutEdgeRefs(true)
+            .build();
+        return findRelatedEdgeSummaryForVertices(
+            getVertices(vertexIds, fetchHints, endTime, user).collect(Collectors.toList()),
+            user
+        );
     }
 }

@@ -1,5 +1,6 @@
 package org.vertexium;
 
+import com.google.common.collect.Sets;
 import org.vertexium.event.GraphEventListener;
 import org.vertexium.historicalEvent.HistoricalEvent;
 import org.vertexium.historicalEvent.HistoricalEventId;
@@ -8,15 +9,14 @@ import org.vertexium.mutation.ElementMutation;
 import org.vertexium.property.StreamingPropertyValue;
 import org.vertexium.query.*;
 import org.vertexium.util.FutureDeprecation;
+import org.vertexium.util.IterableUtils;
 
 import java.io.InputStream;
-import java.util.Collection;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static org.vertexium.util.Preconditions.checkNotNull;
 import static org.vertexium.util.StreamUtils.toIterable;
 
 public interface Graph {
@@ -29,7 +29,9 @@ public interface Graph {
      * @deprecated Use {@link #prepareVertex(Visibility)}
      */
     @Deprecated
-    Vertex addVertex(Visibility visibility, Authorizations authorizations);
+    default Vertex addVertex(Visibility visibility, Authorizations authorizations) {
+        return prepareVertex(visibility).save(authorizations);
+    }
 
     /**
      * Adds a vertex to the graph.
@@ -41,7 +43,9 @@ public interface Graph {
      * @deprecated Use {@link #prepareVertex(String, Visibility)}
      */
     @Deprecated
-    Vertex addVertex(String vertexId, Visibility visibility, Authorizations authorizations);
+    default Vertex addVertex(String vertexId, Visibility visibility, Authorizations authorizations) {
+        return prepareVertex(vertexId, visibility).save(authorizations);
+    }
 
     /**
      * Adds the vertices to the graph.
@@ -51,7 +55,13 @@ public interface Graph {
      * @return The vertices.
      */
     @FutureDeprecation
-    Iterable<Vertex> addVertices(Iterable<ElementBuilder<Vertex>> vertices, Authorizations authorizations);
+    default Iterable<Vertex> addVertices(Iterable<ElementBuilder<Vertex>> vertices, Authorizations authorizations) {
+        List<Vertex> addedVertices = new ArrayList<>();
+        for (ElementBuilder<Vertex> vertexBuilder : vertices) {
+            addedVertices.add(vertexBuilder.save(authorizations));
+        }
+        return addedVertices;
+    }
 
     /**
      * Adds the vertices to the graph.
@@ -59,7 +69,13 @@ public interface Graph {
      * @param vertices The vertices to add.
      * @param user     The user required to add and retrieve the new vertex.
      */
-    Stream<String> addVertices(Iterable<ElementBuilder<Vertex>> vertices, User user);
+    default Stream<String> addVertices(Iterable<ElementBuilder<Vertex>> vertices, User user) {
+        List<String> addedVertexIds = new ArrayList<>();
+        for (ElementBuilder<Vertex> vertexBuilder : vertices) {
+            addedVertexIds.add(vertexBuilder.save(user));
+        }
+        return addedVertexIds.stream();
+    }
 
     /**
      * Prepare a vertex to be added to the graph. This method provides a way to build up a vertex with it's properties to be inserted
@@ -68,7 +84,9 @@ public interface Graph {
      * @param visibility The visibility to assign to the new vertex.
      * @return The vertex builder.
      */
-    VertexBuilder prepareVertex(Visibility visibility);
+    default VertexBuilder prepareVertex(Visibility visibility) {
+        return prepareVertex(getIdGenerator().nextId(), null, visibility);
+    }
 
     /**
      * Prepare a vertex to be added to the graph. This method provides a way to build up a vertex with it's properties to be inserted
@@ -78,7 +96,9 @@ public interface Graph {
      * @param visibility The visibility to assign to the new vertex.
      * @return The vertex builder.
      */
-    VertexBuilder prepareVertex(Long timestamp, Visibility visibility);
+    default VertexBuilder prepareVertex(Long timestamp, Visibility visibility) {
+        return prepareVertex(getIdGenerator().nextId(), timestamp, visibility);
+    }
 
     /**
      * Prepare a vertex to be added to the graph. This method provides a way to build up a vertex with it's properties to be inserted
@@ -88,7 +108,9 @@ public interface Graph {
      * @param visibility The visibility to assign to the new vertex.
      * @return The vertex builder.
      */
-    VertexBuilder prepareVertex(String vertexId, Visibility visibility);
+    default VertexBuilder prepareVertex(String vertexId, Visibility visibility) {
+        return prepareVertex(vertexId, null, visibility);
+    }
 
     /**
      * Prepare a vertex to be added to the graph. This method provides a way to build up a vertex with it's properties to be inserted
@@ -120,7 +142,9 @@ public interface Graph {
      * @param user     The user required to load the vertex.
      * @return True if vertex exists.
      */
-    boolean doesVertexExist(String vertexId, User user);
+    default boolean doesVertexExist(String vertexId, User user) {
+        return getVertex(vertexId, FetchHints.NONE, user) != null;
+    }
 
     /**
      * Get an element from the graph.
@@ -141,7 +165,16 @@ public interface Graph {
      * @param user      The user required to load the element.
      * @return The element if successful. null if the element is not found or the required authorizations were not provided.
      */
-    Element getElement(ElementId elementId, User user);
+    default Element getElement(ElementId elementId, User user) {
+        switch (elementId.getElementType()) {
+            case EDGE:
+                return getEdge(elementId.getElementId(), user);
+            case VERTEX:
+                return getVertex(elementId.getElementId(), user);
+            default:
+                throw new VertexiumException("Unhandled element type: " + elementId.getElementType());
+        }
+    }
 
     /**
      * Get an element from the graph.
@@ -195,7 +228,7 @@ public interface Graph {
      * @return The vertex if successful. null if the vertex is not found or the required authorizations were not provided.
      */
     default Vertex getVertex(String vertexId, User user) {
-        return getVertex(vertexId, FetchHints.ALL, user);
+        return getVertex(vertexId, getDefaultFetchHints(), user);
     }
 
     /**
@@ -268,7 +301,7 @@ public interface Graph {
      * @return The vertex if successful. null if the vertex is not found or the required authorizations were not provided.
      */
     default Stream<Vertex> getVerticesWithPrefix(String vertexIdPrefix, User user) {
-        return getVerticesWithPrefix(vertexIdPrefix, FetchHints.ALL, user);
+        return getVerticesWithPrefix(vertexIdPrefix, getDefaultFetchHints(), user);
     }
 
     /**
@@ -341,7 +374,7 @@ public interface Graph {
      * @return The vertices in the range.
      */
     default Stream<Vertex> getVerticesInRange(Range idRange, User user) {
-        return getVerticesInRange(idRange, FetchHints.ALL, user);
+        return getVerticesInRange(idRange, getDefaultFetchHints(), user);
     }
 
     /**
@@ -412,7 +445,7 @@ public interface Graph {
      * @return An iterable of all the vertices.
      */
     default Stream<Vertex> getVertices(User user) {
-        return getVertices(FetchHints.ALL, user);
+        return getVertices(getDefaultFetchHints(), user);
     }
 
     /**
@@ -480,7 +513,16 @@ public interface Graph {
      * @param user The user required to load the vertices.
      * @return Map of ids to exists status.
      */
-    Map<String, Boolean> doVerticesExist(Iterable<String> ids, User user);
+    default Map<String, Boolean> doVerticesExist(Iterable<String> ids, User user) {
+        Map<String, Boolean> results = new HashMap<>();
+        ids = Sets.newHashSet(ids);
+        for (String id : ids) {
+            results.put(id, false);
+        }
+        getVertices(ids, FetchHints.NONE, user)
+            .forEach(vertex -> results.put(vertex.getId(), true));
+        return results;
+    }
 
     /**
      * Gets all vertices matching the given ids on the graph. The order of
@@ -506,7 +548,7 @@ public interface Graph {
      * @return An iterable of all the vertices.
      */
     default Stream<Vertex> getVertices(Iterable<String> ids, User user) {
-        return getVertices(ids, FetchHints.ALL, user);
+        return getVertices(ids, getDefaultFetchHints(), user);
     }
 
     /**
@@ -536,6 +578,19 @@ public interface Graph {
      */
     default Stream<Vertex> getVertices(Iterable<String> ids, FetchHints fetchHints, User user) {
         return getVertices(ids, fetchHints, null, user);
+    }
+
+    /**
+     * Gets all vertices matching the given ids on the graph mapped by their id.
+     *
+     * @param ids        The ids of the vertices to get.
+     * @param fetchHints Hint at what parts of the vertex to fetch.
+     * @param user       The user required to load the vertex.
+     * @return An map of vertices.
+     */
+    default Map<String, Vertex> getVerticesMappedById(Iterable<String> ids, FetchHints fetchHints, User user) {
+        return getVertices(ids, fetchHints, null, user)
+            .collect(Collectors.toMap(Element::getId, v -> v));
     }
 
     /**
@@ -593,7 +648,7 @@ public interface Graph {
      * @return An iterable of all the vertices.
      */
     default Stream<Vertex> getVerticesInOrder(Iterable<String> ids, User user) {
-        return getVerticesInOrder(ids, FetchHints.ALL, user);
+        return getVerticesInOrder(ids, getDefaultFetchHints(), user);
     }
 
     /**
@@ -623,7 +678,15 @@ public interface Graph {
      * @param user       The user required to load the vertex.
      * @return An iterable of all the vertices.
      */
-    Stream<Vertex> getVerticesInOrder(Iterable<String> ids, FetchHints fetchHints, User user);
+    default Stream<Vertex> getVerticesInOrder(Iterable<String> ids, FetchHints fetchHints, User user) {
+        final List<String> vertexIds = IterableUtils.toList(ids);
+        return getVertices(vertexIds, user)
+            .sorted((v1, v2) -> {
+                Integer i1 = vertexIds.indexOf(v1.getId());
+                Integer i2 = vertexIds.indexOf(v2.getId());
+                return i1.compareTo(i2);
+            });
+    }
 
     /**
      * Permanently deletes a vertex from the graph.
@@ -643,7 +706,11 @@ public interface Graph {
      * @deprecated Use {@link ElementMutation#deleteElement()}
      */
     @Deprecated
-    void deleteVertex(String vertexId, Authorizations authorizations);
+    default void deleteVertex(String vertexId, Authorizations authorizations) {
+        Vertex vertex = getVertex(vertexId, authorizations);
+        checkNotNull(vertex, "Could not find vertex to delete with id: " + vertexId);
+        deleteVertex(vertex, authorizations);
+    }
 
     /**
      * Soft deletes a vertex from the graph.
@@ -712,7 +779,11 @@ public interface Graph {
      * @deprecated Use {@link ElementMutation#softDeleteElement(Object)}
      */
     @Deprecated
-    void softDeleteVertex(String vertexId, Object eventData, Authorizations authorizations);
+    default void softDeleteVertex(String vertexId, Object eventData, Authorizations authorizations) {
+        Vertex vertex = getVertex(vertexId, authorizations);
+        checkNotNull(vertex, "Could not find vertex to soft delete with id: " + vertexId);
+        softDeleteVertex(vertex, null, eventData, authorizations);
+    }
 
     /**
      * Soft deletes a vertex from the graph.
@@ -735,7 +806,11 @@ public interface Graph {
      * @deprecated Use {@link ElementMutation#softDeleteElement(Long, Object)}
      */
     @Deprecated
-    void softDeleteVertex(String vertexId, Long timestamp, Object eventData, Authorizations authorizations);
+    default void softDeleteVertex(String vertexId, Long timestamp, Object eventData, Authorizations authorizations) {
+        Vertex vertex = getVertex(vertexId, authorizations);
+        checkNotNull(vertex, "Could not find vertex to soft delete with id: " + vertexId);
+        softDeleteVertex(vertex, timestamp, eventData, authorizations);
+    }
 
     /**
      * Adds an edge between two vertices. The id of the new vertex will be generated using an IdGenerator.
@@ -749,7 +824,9 @@ public interface Graph {
      * @deprecated Use {@link #prepareEdge(Vertex, Vertex, String, Visibility)}
      */
     @Deprecated
-    Edge addEdge(Vertex outVertex, Vertex inVertex, String label, Visibility visibility, Authorizations authorizations);
+    default Edge addEdge(Vertex outVertex, Vertex inVertex, String label, Visibility visibility, Authorizations authorizations) {
+        return prepareEdge(outVertex, inVertex, label, visibility).save(authorizations);
+    }
 
     /**
      * Adds an edge between two vertices.
@@ -764,7 +841,9 @@ public interface Graph {
      * @deprecated Use {@link #prepareEdge(String, Vertex, Vertex, String, Visibility)}
      */
     @Deprecated
-    Edge addEdge(String edgeId, Vertex outVertex, Vertex inVertex, String label, Visibility visibility, Authorizations authorizations);
+    default Edge addEdge(String edgeId, Vertex outVertex, Vertex inVertex, String label, Visibility visibility, Authorizations authorizations) {
+        return prepareEdge(edgeId, outVertex, inVertex, label, visibility).save(authorizations);
+    }
 
     /**
      * Adds an edge between two vertices.
@@ -778,7 +857,9 @@ public interface Graph {
      * @deprecated Use {@link #prepareEdge(String, String, String, Visibility)}
      */
     @Deprecated
-    Edge addEdge(String outVertexId, String inVertexId, String label, Visibility visibility, Authorizations authorizations);
+    default Edge addEdge(String outVertexId, String inVertexId, String label, Visibility visibility, Authorizations authorizations) {
+        return prepareEdge(outVertexId, inVertexId, label, visibility).save(authorizations);
+    }
 
     /**
      * Adds an edge between two vertices.
@@ -793,7 +874,9 @@ public interface Graph {
      * @deprecated Use {@link #prepareEdge(String, String, String, String, Visibility)}
      */
     @Deprecated
-    Edge addEdge(String edgeId, String outVertexId, String inVertexId, String label, Visibility visibility, Authorizations authorizations);
+    default Edge addEdge(String edgeId, String outVertexId, String inVertexId, String label, Visibility visibility, Authorizations authorizations) {
+        return prepareEdge(edgeId, outVertexId, inVertexId, label, visibility).save(authorizations);
+    }
 
     /**
      * Prepare an edge to be added to the graph. This method provides a way to build up an edge with it's properties to be inserted
@@ -807,7 +890,9 @@ public interface Graph {
      * @deprecated Use {@link #prepareEdge(String, String, String, Visibility)}
      */
     @Deprecated
-    EdgeBuilder prepareEdge(Vertex outVertex, Vertex inVertex, String label, Visibility visibility);
+    default EdgeBuilder prepareEdge(Vertex outVertex, Vertex inVertex, String label, Visibility visibility) {
+        return prepareEdge(getIdGenerator().nextId(), outVertex, inVertex, label, visibility);
+    }
 
     /**
      * Prepare an edge to be added to the graph. This method provides a way to build up an edge with it's properties to be inserted
@@ -820,7 +905,9 @@ public interface Graph {
      * @param visibility The visibility to assign to the new edge.
      * @return The edge builder.
      */
-    EdgeBuilder prepareEdge(String edgeId, Vertex outVertex, Vertex inVertex, String label, Visibility visibility);
+    default EdgeBuilder prepareEdge(String edgeId, Vertex outVertex, Vertex inVertex, String label, Visibility visibility) {
+        return prepareEdge(edgeId, outVertex, inVertex, label, null, visibility);
+    }
 
     /**
      * Prepare an edge to be added to the graph. This method provides a way to build up an edge with it's properties to be inserted
@@ -846,7 +933,9 @@ public interface Graph {
      * @param visibility  The visibility to assign to the new edge.
      * @return The edge builder.
      */
-    EdgeBuilderByVertexId prepareEdge(String outVertexId, String inVertexId, String label, Visibility visibility);
+    default EdgeBuilderByVertexId prepareEdge(String outVertexId, String inVertexId, String label, Visibility visibility) {
+        return prepareEdge(getIdGenerator().nextId(), outVertexId, inVertexId, label, visibility);
+    }
 
     /**
      * Prepare an edge to be added to the graph. This method provides a way to build up an edge with it's properties to be inserted
@@ -859,7 +948,9 @@ public interface Graph {
      * @param visibility  The visibility to assign to the new edge.
      * @return The edge builder.
      */
-    EdgeBuilderByVertexId prepareEdge(String edgeId, String outVertexId, String inVertexId, String label, Visibility visibility);
+    default EdgeBuilderByVertexId prepareEdge(String edgeId, String outVertexId, String inVertexId, String label, Visibility visibility) {
+        return prepareEdge(edgeId, outVertexId, inVertexId, label, null, visibility);
+    }
 
     /**
      * Prepare an edge to be added to the graph. This method provides a way to build up an edge with it's properties to be inserted
@@ -894,7 +985,9 @@ public interface Graph {
      * @param user   The user required to load the edge.
      * @return True if edge exists.
      */
-    boolean doesEdgeExist(String edgeId, User user);
+    default boolean doesEdgeExist(String edgeId, User user) {
+        return getEdge(edgeId, FetchHints.NONE, user) != null;
+    }
 
     /**
      * Get an edge from the graph.
@@ -916,7 +1009,7 @@ public interface Graph {
      * @return The edge if successful. null if the edge is not found or the required authorizations were not provided.
      */
     default Edge getEdge(String edgeId, User user) {
-        return getEdge(edgeId, FetchHints.ALL, user);
+        return getEdge(edgeId, getDefaultFetchHints(), user);
     }
 
     /**
@@ -987,7 +1080,7 @@ public interface Graph {
      * @return An iterable of all the edges.
      */
     default Stream<Edge> getEdges(User user) {
-        return getEdges(FetchHints.ALL, user);
+        return getEdges(getDefaultFetchHints(), user);
     }
 
     /**
@@ -1056,7 +1149,7 @@ public interface Graph {
      * @return The edges in the range.
      */
     default Stream<Edge> getEdgesInRange(Range idRange, User user) {
-        return getEdgesInRange(idRange, FetchHints.ALL, user);
+        return getEdgesInRange(idRange, getDefaultFetchHints(), user);
     }
 
     /**
@@ -1181,7 +1274,16 @@ public interface Graph {
      * @param user    The user required to load the edges.
      * @return Maps of ids to exists status.
      */
-    Map<String, Boolean> doEdgesExist(Iterable<String> ids, Long endTime, User user);
+    default Map<String, Boolean> doEdgesExist(Iterable<String> ids, Long endTime, User user) {
+        Map<String, Boolean> results = new HashMap<>();
+        ids = Sets.newHashSet(ids);
+        for (String id : ids) {
+            results.put(id, false);
+        }
+        getEdges(ids, FetchHints.NONE, user)
+            .forEach(edge -> results.put(edge.getId(), true));
+        return results;
+    }
 
     /**
      * Gets all edges on the graph matching the given ids.
@@ -1203,7 +1305,7 @@ public interface Graph {
      * @return An iterable of all the edges.
      */
     default Stream<Edge> getEdges(Iterable<String> ids, User user) {
-        return getEdges(ids, FetchHints.ALL, user);
+        return getEdges(ids, getDefaultFetchHints(), user);
     }
 
     /**
@@ -1408,7 +1510,11 @@ public interface Graph {
      * @deprecated Use {@link ElementMutation#deleteElement()}
      */
     @Deprecated
-    void deleteEdge(String edgeId, Authorizations authorizations);
+    default void deleteEdge(String edgeId, Authorizations authorizations) {
+        Edge edge = getEdge(edgeId, authorizations);
+        checkNotNull(edge, "Could not find edge to delete with id: " + edgeId);
+        deleteEdge(edge, authorizations);
+    }
 
     /**
      * Soft deletes an edge from the graph.
@@ -1477,7 +1583,11 @@ public interface Graph {
      * @deprecated Use {@link ElementMutation#softDeleteElement(Object)}
      */
     @Deprecated
-    void softDeleteEdge(String edgeId, Object eventData, Authorizations authorizations);
+    default void softDeleteEdge(String edgeId, Object eventData, Authorizations authorizations) {
+        Edge edge = getEdge(edgeId, authorizations);
+        checkNotNull(edge, "Could not find edge to soft delete with id: " + edgeId);
+        softDeleteEdge(edge, null, eventData, authorizations);
+    }
 
     /**
      * Soft deletes an edge from the graph. This method requires fetching the edge before soft deletion.
@@ -1500,7 +1610,11 @@ public interface Graph {
      * @deprecated Use {@link ElementMutation#softDeleteElement(Long, Object)}
      */
     @Deprecated
-    void softDeleteEdge(String edgeId, Long timestamp, Object eventData, Authorizations authorizations);
+    default void softDeleteEdge(String edgeId, Long timestamp, Object eventData, Authorizations authorizations) {
+        Edge edge = getEdge(edgeId, authorizations);
+        checkNotNull(edge, "Could not find edge to soft delete with id: " + edgeId);
+        softDeleteEdge(edge, timestamp, eventData, authorizations);
+    }
 
     /**
      * Creates a query builder object used to query the graph.
@@ -1982,7 +2096,7 @@ public interface Graph {
      */
     @FutureDeprecation
     default Iterable<ExtendedDataRow> getExtendedData(Iterable<ExtendedDataRowId> ids, Authorizations authorizations) {
-        return getExtendedData(ids, FetchHints.ALL, authorizations);
+        return getExtendedData(ids, getDefaultFetchHints(), authorizations);
     }
 
     /**
@@ -1993,7 +2107,7 @@ public interface Graph {
      * @return Rows
      */
     default Stream<ExtendedDataRow> getExtendedData(Iterable<ExtendedDataRowId> ids, User user) {
-        return getExtendedData(ids, FetchHints.ALL, user);
+        return getExtendedData(ids, getDefaultFetchHints(), user);
     }
 
     /**
@@ -2054,7 +2168,7 @@ public interface Graph {
         String tableName,
         Authorizations authorizations
     ) {
-        return getExtendedData(elementType, elementId, tableName, FetchHints.ALL, authorizations);
+        return getExtendedData(elementType, elementId, tableName, getDefaultFetchHints(), authorizations);
     }
 
     /**
@@ -2072,7 +2186,7 @@ public interface Graph {
         String tableName,
         User user
     ) {
-        return toIterable(getExtendedData(elementType, elementId, tableName, FetchHints.ALL, user));
+        return toIterable(getExtendedData(elementType, elementId, tableName, getDefaultFetchHints(), user));
     }
 
     /**
@@ -2145,7 +2259,7 @@ public interface Graph {
      */
     @FutureDeprecation
     default Stream<HistoricalEvent> getHistoricalEvents(Iterable<ElementId> elementIds, Authorizations authorizations) {
-        return getHistoricalEvents(elementIds, HistoricalEventsFetchHints.ALL, authorizations);
+        return getHistoricalEvents(elementIds, getDefaultHistoricalEventsFetchHints(), authorizations);
     }
 
     /**
@@ -2156,7 +2270,7 @@ public interface Graph {
      * @return An iterable of historic events
      */
     default Stream<HistoricalEvent> getHistoricalEvents(Iterable<ElementId> elementIds, User user) {
-        return getHistoricalEvents(elementIds, HistoricalEventsFetchHints.ALL, user);
+        return getHistoricalEvents(elementIds, getDefaultHistoricalEventsFetchHints(), user);
     }
 
     /**
@@ -2236,7 +2350,16 @@ public interface Graph {
     /**
      * The default fetch hints to use if none are provided
      */
-    FetchHints getDefaultFetchHints();
+    default FetchHints getDefaultFetchHints() {
+        return FetchHints.ALL;
+    }
+
+    /**
+     * The default fetch hints to use if none are provided
+     */
+    default HistoricalEventsFetchHints getDefaultHistoricalEventsFetchHints() {
+        return HistoricalEventsFetchHints.ALL;
+    }
 
     /**
      * Visits all elements on the graph

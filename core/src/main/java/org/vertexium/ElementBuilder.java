@@ -4,6 +4,7 @@ import com.google.common.collect.ImmutableSet;
 import org.vertexium.mutation.*;
 import org.vertexium.property.MutablePropertyImpl;
 import org.vertexium.search.IndexHint;
+import org.vertexium.util.FutureDeprecation;
 import org.vertexium.util.KeyUtils;
 import org.vertexium.util.Preconditions;
 import org.vertexium.util.StreamUtils;
@@ -269,7 +270,15 @@ public abstract class ElementBuilder<T extends Element> implements ElementMutati
      *
      * @return either the vertex or edge just saved.
      */
+    @FutureDeprecation
     public abstract T save(Authorizations authorizations);
+
+    /**
+     * saves the element to the graph.
+     *
+     * @return the id of the element just saved
+     */
+    public abstract String save(User user);
 
     @Override
     public Iterable<Property> getProperties() {

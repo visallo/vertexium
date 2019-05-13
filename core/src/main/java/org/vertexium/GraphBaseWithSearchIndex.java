@@ -208,9 +208,6 @@ public abstract class GraphBaseWithSearchIndex extends GraphBase implements Grap
     public abstract VertexBuilder prepareVertex(String vertexId, Long timestamp, Visibility visibility);
 
     @Override
-    public abstract Iterable<Vertex> getVertices(FetchHints fetchHints, Long endTime, Authorizations authorizations);
-
-    @Override
     public abstract EdgeBuilder prepareEdge(String edgeId, Vertex outVertex, Vertex inVertex, String label, Long timestamp, Visibility visibility);
 
     @Override
@@ -221,9 +218,6 @@ public abstract class GraphBaseWithSearchIndex extends GraphBase implements Grap
 
     @Override
     public abstract void softDeleteEdge(Edge edge, Long timestamp, Object eventData, Authorizations authorizations);
-
-    @Override
-    public abstract Iterable<Edge> getEdges(FetchHints fetchHints, Long endTime, Authorizations authorizations);
 
     @Override
     protected abstract GraphMetadataStore getGraphMetadataStore();

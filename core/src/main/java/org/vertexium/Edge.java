@@ -54,6 +54,16 @@ public interface Edge extends Element, EdgeElementLocation {
     /**
      * Get the attach vertex on either side of the edge.
      *
+     * @param direction The side of the edge to get the vertex from (IN or OUT).
+     * @return The vertex.
+     */
+    default Vertex getVertex(Direction direction, User user) {
+        return getVertex(direction, getGraph().getDefaultFetchHints(), user);
+    }
+
+    /**
+     * Get the attach vertex on either side of the edge.
+     *
      * @param direction  The side of the edge to get the vertex from (IN or OUT).
      * @param fetchHints Hint on what should be fetched from the datastore.
      * @return The vertex.
@@ -61,6 +71,18 @@ public interface Edge extends Element, EdgeElementLocation {
     default Vertex getVertex(Direction direction, FetchHints fetchHints, Authorizations authorizations) {
         String vertexId = getVertexId(direction);
         return getGraph().getVertex(vertexId, fetchHints, authorizations);
+    }
+
+    /**
+     * Get the attach vertex on either side of the edge.
+     *
+     * @param direction  The side of the edge to get the vertex from (IN or OUT).
+     * @param fetchHints Hint on what should be fetched from the datastore.
+     * @return The vertex.
+     */
+    default Vertex getVertex(Direction direction, FetchHints fetchHints, User user) {
+        String vertexId = getVertexId(direction);
+        return getGraph().getVertex(vertexId, fetchHints, user);
     }
 
     /**
@@ -78,9 +100,24 @@ public interface Edge extends Element, EdgeElementLocation {
     /**
      * Given a vertexId that represents one side of a relationship, get me the vertex of the other side.
      */
+    default Vertex getOtherVertex(String myVertexId, User user) {
+        return getOtherVertex(myVertexId, getGraph().getDefaultFetchHints(), user);
+    }
+
+    /**
+     * Given a vertexId that represents one side of a relationship, get me the vertex of the other side.
+     */
     default Vertex getOtherVertex(String myVertexId, FetchHints fetchHints, Authorizations authorizations) {
         String vertexId = getOtherVertexId(myVertexId);
         return getGraph().getVertex(vertexId, fetchHints, authorizations);
+    }
+
+    /**
+     * Given a vertexId that represents one side of a relationship, get me the vertex of the other side.
+     */
+    default Vertex getOtherVertex(String myVertexId, FetchHints fetchHints, User user) {
+        String vertexId = getOtherVertexId(myVertexId);
+        return getGraph().getVertex(vertexId, fetchHints, user);
     }
 
     /**
@@ -93,11 +130,32 @@ public interface Edge extends Element, EdgeElementLocation {
     /**
      * Gets both in and out vertices of this edge.
      */
+    default EdgeVertices getVertices(User user) {
+        return getVertices(getGraph().getDefaultFetchHints(), user);
+    }
+
+    /**
+     * Gets both in and out vertices of this edge.
+     */
     default EdgeVertices getVertices(FetchHints fetchHints, Authorizations authorizations) {
         List<String> ids = new ArrayList<>();
         ids.add(getVertexId(Direction.OUT));
         ids.add(getVertexId(Direction.IN));
         Map<String, Vertex> vertices = IterableUtils.toMapById(getGraph().getVertices(ids, fetchHints, authorizations));
+        return new EdgeVertices(
+            vertices.get(getVertexId(Direction.OUT)),
+            vertices.get(getVertexId(Direction.IN))
+        );
+    }
+
+    /**
+     * Gets both in and out vertices of this edge.
+     */
+    default EdgeVertices getVertices(FetchHints fetchHints, User user) {
+        List<String> ids = new ArrayList<>();
+        ids.add(getVertexId(Direction.OUT));
+        ids.add(getVertexId(Direction.IN));
+        Map<String, Vertex> vertices = getGraph().getVerticesMappedById(ids, fetchHints, user);
         return new EdgeVertices(
             vertices.get(getVertexId(Direction.OUT)),
             vertices.get(getVertexId(Direction.IN))

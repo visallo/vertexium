@@ -714,7 +714,7 @@ public abstract class InMemoryTableElement<TElement extends InMemoryElement> imp
         );
     }
 
-    public boolean canRead(FetchHints fetchHints, Authorizations authorizations) {
+    public boolean canRead(FetchHints fetchHints, User user) {
         if (!fetchHints.isIgnoreAdditionalVisibilities()) {
             Visibility additionalVisibility = getAdditionalVisibilitiesAsVisibility();
             if (additionalVisibility != null) {
@@ -791,7 +791,7 @@ public abstract class InMemoryTableElement<TElement extends InMemoryElement> imp
         return results;
     }
 
-    public boolean isHidden(Authorizations authorizations) {
+    public boolean isHidden(User user) {
         for (Visibility visibility : getHiddenVisibilities()) {
             if (authorizations.canRead(visibility)) {
                 return true;
@@ -804,7 +804,7 @@ public abstract class InMemoryTableElement<TElement extends InMemoryElement> imp
         return createElement(graph, fetchHints, null, authorizations);
     }
 
-    public final TElement createElement(InMemoryGraph graph, FetchHints fetchHints, Long endTime, Authorizations authorizations) {
+    public final TElement createElement(InMemoryGraph graph, FetchHints fetchHints, Long endTime, User user) {
         if (endTime != null && getFirstTimestamp() > endTime) {
             return null;
         }
@@ -814,7 +814,7 @@ public abstract class InMemoryTableElement<TElement extends InMemoryElement> imp
         return createElementInternal(graph, fetchHints, endTime, authorizations);
     }
 
-    public boolean isDeleted(Long endTime, Authorizations authorizations) {
+    public boolean isDeleted(Long endTime, User user) {
         List<Mutation> filteredMutations = getFilteredMutations(m ->
             canRead(m.getVisibility(), authorizations) &&
                 (endTime == null || m.getTimestamp() <= endTime) &&

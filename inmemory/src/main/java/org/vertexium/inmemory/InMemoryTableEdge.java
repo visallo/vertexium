@@ -27,8 +27,7 @@ public class InMemoryTableEdge extends InMemoryTableElement<InMemoryEdge> {
 
     public Stream<HistoricalEvent> getHistoricalEventsForVertex(
         String vertexId,
-        HistoricalEventsFetchHints historicalEventsFetchHints,
-        Authorizations authorizations
+        HistoricalEventsFetchHints historicalEventsFetchHints
     ) {
         List<HistoricalEvent> results = new ArrayList<>();
         String otherVertexId = null;

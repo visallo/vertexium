@@ -1,19 +1,19 @@
 package org.vertexium;
 
 public class SecurityVertexiumException extends VertexiumException {
-    private final Authorizations authorizations;
+    private final User user;
 
-    public SecurityVertexiumException(String message, Authorizations authorizations) {
+    public SecurityVertexiumException(String message, User user) {
         super(message);
-        this.authorizations = authorizations;
+        this.user = user;
     }
 
-    public SecurityVertexiumException(String message, Authorizations authorizations, Throwable cause) {
+    public SecurityVertexiumException(String message, User user, Throwable cause) {
         super(message, cause);
-        this.authorizations = authorizations;
+        this.user = user;
     }
 
-    public Authorizations getAuthorizations() {
-        return authorizations;
+    public User getUser() {
+        return user;
     }
 }
