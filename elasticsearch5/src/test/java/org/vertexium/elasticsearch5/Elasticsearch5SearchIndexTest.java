@@ -40,8 +40,9 @@ public class Elasticsearch5SearchIndexTest extends GraphTestBase {
     }
 
     @Override
-    protected void addAuthorizations(String... authorizations) {
+    protected Authorizations addAuthorizations(String... authorizations) {
         getGraph().createAuthorizations(authorizations);
+        return null;
     }
 
     @Before

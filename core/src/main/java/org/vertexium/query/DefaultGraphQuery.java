@@ -3,7 +3,7 @@ package org.vertexium.query;
 import org.vertexium.*;
 import org.vertexium.util.JoinIterable;
 
-import static org.vertexium.util.StreamUtils.toIterable;
+import java.util.stream.Collectors;
 
 public class DefaultGraphQuery extends GraphQueryBase {
     public DefaultGraphQuery(Graph graph, String queryString, Authorizations authorizations) {
@@ -38,9 +38,9 @@ public class DefaultGraphQuery extends GraphQueryBase {
     private <T extends Element> Iterable<T> getIterableFromElementType(ElementType elementType, FetchHints fetchHints) throws VertexiumException {
         switch (elementType) {
             case VERTEX:
-                return (Iterable<T>) toIterable(getGraph().getVertices(fetchHints, getParameters().getUser()));
+                return (Iterable<T>) getGraph().getVertices(fetchHints, getParameters().getUser()).collect(Collectors.toList());
             case EDGE:
-                return (Iterable<T>) toIterable(getGraph().getEdges(fetchHints, getParameters().getUser()));
+                return (Iterable<T>) getGraph().getEdges(fetchHints, getParameters().getUser()).collect(Collectors.toList());
             default:
                 throw new VertexiumException("Unexpected element type: " + elementType);
         }

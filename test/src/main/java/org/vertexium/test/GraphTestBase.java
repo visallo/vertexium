@@ -66,16 +66,16 @@ public abstract class GraphTestBase {
     public static final String LABEL_LABEL2 = "label2";
     public static final String LABEL_LABEL3 = "label3";
     public static final String LABEL_BAD = "bad";
-    public final Authorizations AUTHORIZATIONS_A;
-    public final Authorizations AUTHORIZATIONS_B;
-    public final Authorizations AUTHORIZATIONS_C;
-    public final Authorizations AUTHORIZATIONS_MIXED_CASE_a_AND_B;
-    public final Authorizations AUTHORIZATIONS_A_AND_B;
-    public final Authorizations AUTHORIZATIONS_B_AND_C;
-    public final Authorizations AUTHORIZATIONS_A_AND_B_AND_C;
-    public final Authorizations AUTHORIZATIONS_EMPTY;
-    public final Authorizations AUTHORIZATIONS_BAD;
-    public final Authorizations AUTHORIZATIONS_ALL;
+    public Authorizations AUTHORIZATIONS_A;
+    public Authorizations AUTHORIZATIONS_B;
+    public Authorizations AUTHORIZATIONS_C;
+    public Authorizations AUTHORIZATIONS_MIXED_CASE_a_AND_B;
+    public Authorizations AUTHORIZATIONS_A_AND_B;
+    public Authorizations AUTHORIZATIONS_B_AND_C;
+    public Authorizations AUTHORIZATIONS_A_AND_B_AND_C;
+    public Authorizations AUTHORIZATIONS_EMPTY;
+    public Authorizations AUTHORIZATIONS_BAD;
+    public Authorizations AUTHORIZATIONS_ALL;
     public static final int LARGE_PROPERTY_VALUE_SIZE = 1024 * 1024 + 1;
 
     protected Graph graph;
@@ -86,7 +86,13 @@ public abstract class GraphTestBase {
         return graph;
     }
 
-    public GraphTestBase() {
+    protected abstract Authorizations createAuthorizations(String... auths);
+
+    protected abstract Authorizations createButDontAddAuthorizations(String... auths);
+
+    @Before
+    public void before() throws Exception {
+        graph = createGraph();
         AUTHORIZATIONS_A = createAuthorizations("a");
         AUTHORIZATIONS_B = createAuthorizations("b");
         AUTHORIZATIONS_C = createAuthorizations("c");
@@ -94,18 +100,9 @@ public abstract class GraphTestBase {
         AUTHORIZATIONS_B_AND_C = createAuthorizations("b", "c");
         AUTHORIZATIONS_MIXED_CASE_a_AND_B = createAuthorizations("MIXED_CASE_a", "b");
         AUTHORIZATIONS_EMPTY = createAuthorizations();
-        AUTHORIZATIONS_BAD = createAuthorizations("bad");
+        AUTHORIZATIONS_BAD = createButDontAddAuthorizations("bad");
         AUTHORIZATIONS_A_AND_B_AND_C = createAuthorizations("a", "b", "c");
         AUTHORIZATIONS_ALL = createAuthorizations("a", "b", "c", "MIXED_CASE_a");
-    }
-
-    protected abstract Authorizations createAuthorizations(String... auths);
-
-    protected abstract void addAuthorizations(String... authorizations);
-
-    @Before
-    public void before() throws Exception {
-        graph = createGraph();
         clearGraphEvents();
         graph.addGraphEventListener(new GraphEventListener() {
             @Override
@@ -2225,11 +2222,11 @@ public abstract class GraphTestBase {
         graph.addEdge("e2", v1, v2, LABEL_LABEL2, VISIBILITY_B, AUTHORIZATIONS_B);
         graph.flush();
 
-        Iterable<Edge> aEdges = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B).getEdges(Direction.BOTH, AUTHORIZATIONS_A);
+        Iterable<Edge> aEdges = toList(graph.getVertex("v1", AUTHORIZATIONS_A_AND_B).getEdges(Direction.BOTH, AUTHORIZATIONS_A));
         Assert.assertEquals(1, count(aEdges));
         assertEquals(LABEL_LABEL1, IterableUtils.single(aEdges).getLabel());
 
-        Iterable<Edge> bEdges = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B).getEdges(Direction.BOTH, AUTHORIZATIONS_B);
+        Iterable<Edge> bEdges = toList(graph.getVertex("v1", AUTHORIZATIONS_A_AND_B).getEdges(Direction.BOTH, AUTHORIZATIONS_B));
         Assert.assertEquals(1, count(bEdges));
         assertEquals(LABEL_LABEL2, IterableUtils.single(bEdges).getLabel());
 
@@ -7779,7 +7776,7 @@ public abstract class GraphTestBase {
 
     @Test
     public void testAdditionalVisibilitiesWithNot() {
-        addAuthorizations(VISIBILITY_C_STRING, VISIBILITY_D_STRING);
+        createAuthorizations(VISIBILITY_C_STRING, VISIBILITY_D_STRING);
         Authorizations authorizationABD = createAuthorizations(VISIBILITY_A_STRING, VISIBILITY_B_STRING, VISIBILITY_D_STRING);
         Authorizations authorizationABCD = createAuthorizations(VISIBILITY_A_STRING, VISIBILITY_B_STRING, VISIBILITY_C_STRING, VISIBILITY_D_STRING);
 
@@ -9138,7 +9135,7 @@ public abstract class GraphTestBase {
         return vertices;
     }
 
-    protected abstract boolean isDefaultSearchIndex() ;
+    protected abstract boolean isDefaultSearchIndex();
 
     protected List<Vertex> sortById(List<Vertex> vertices) {
         Collections.sort(vertices, Comparator.comparing(Element::getId));
@@ -9558,7 +9555,7 @@ public abstract class GraphTestBase {
             authsToAdd.add(itemVisibilityString);
         }
         System.out.println("Adding auths");
-        addAuthorizations(authsToAdd.toArray(new String[authsToAdd.size()]));
+        createAuthorizations(authsToAdd.toArray(new String[authsToAdd.size()]));
 
         System.out.println("Add vertices");
         for (int i = 0; i < count; i++) {
