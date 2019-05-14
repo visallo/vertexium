@@ -22,15 +22,15 @@ public abstract class ElementMutationBase<T extends Element, TResult extends Ele
     private final List<AdditionalVisibilityDeleteMutation> additionalVisibilityDeletes = new ArrayList<>();
     private final List<AdditionalExtendedDataVisibilityAddMutation> additionalExtendedDataVisibilities = new ArrayList<>();
     private final List<AdditionalExtendedDataVisibilityDeleteMutation> additionalExtendedDataVisibilityDeletes = new ArrayList<>();
-    private final List<ElementBuilder.MarkHiddenData> markHiddenData = new ArrayList<>();
-    private final List<ElementBuilder.MarkVisibleData> markVisibleData = new ArrayList<>();
-    private final List<ElementBuilder.DeleteExtendedDataRowData> deleteExtendedDataRowData = new ArrayList<>();
+    private final List<MarkHiddenData> markHiddenData = new ArrayList<>();
+    private final List<MarkVisibleData> markVisibleData = new ArrayList<>();
+    private final List<DeleteExtendedDataRowData> deleteExtendedDataRowData = new ArrayList<>();
+    private final List<MarkPropertyHiddenData> markPropertyHiddenData = new ArrayList<>();
+    private final List<MarkPropertyVisibleData> markPropertyVisibleData = new ArrayList<>();
     private final List<AlterPropertyVisibility> alterPropertyVisibilities = new ArrayList<>();
     private final List<SetPropertyMetadata> setPropertyMetadatas = new ArrayList<>();
     private boolean deleteElement;
-    private boolean softDeleteElement;
-    private Long softDeleteElementTimestamp;
-    private Object softDeleteElementEventData;
+    private SoftDeleteData softDeleteData;
     private Visibility newElementVisibility;
     private Object newElementVisibilityData;
     private IndexHint indexHint = IndexHint.INDEX;
@@ -218,10 +218,12 @@ public abstract class ElementMutationBase<T extends Element, TResult extends Ele
         return (TResult) this;
     }
 
+    @Override
     public List<AlterPropertyVisibility> getAlterPropertyVisibilities() {
         return alterPropertyVisibilities;
     }
 
+    @Override
     public List<SetPropertyMetadata> getSetPropertyMetadatas() {
         return setPropertyMetadatas;
     }
@@ -263,6 +265,46 @@ public abstract class ElementMutationBase<T extends Element, TResult extends Ele
     @Override
     public List<AdditionalExtendedDataVisibilityDeleteMutation> getAdditionalExtendedDataVisibilityDeletes() {
         return additionalExtendedDataVisibilityDeletes;
+    }
+
+    @Override
+    public List<MarkHiddenData> getMarkHiddenData() {
+        return markHiddenData;
+    }
+
+    @Override
+    public List<MarkVisibleData> getMarkVisibleData() {
+        return markVisibleData;
+    }
+
+    @Override
+    public List<MarkPropertyHiddenData> getMarkPropertyHiddenData() {
+        return markPropertyHiddenData;
+    }
+
+    @Override
+    public List<MarkPropertyVisibleData> getMarkPropertyVisibleData() {
+        return markPropertyVisibleData;
+    }
+
+    @Override
+    public List<ExtendedDataMutation> getExtendedDatas() {
+        return extendedDatas;
+    }
+
+    @Override
+    public List<DeleteExtendedDataRowData> getDeleteExtendedDataRowData() {
+        return deleteExtendedDataRowData;
+    }
+
+    @Override
+    public SoftDeleteData getSoftDeleteData() {
+        return softDeleteData;
+    }
+
+    @Override
+    public boolean isDeleteElement() {
+        return deleteElement;
     }
 
     @Override
@@ -322,9 +364,7 @@ public abstract class ElementMutationBase<T extends Element, TResult extends Ele
     @SuppressWarnings("unchecked")
     @Override
     public TResult softDeleteElement(Long timestamp, Object eventData) {
-        softDeleteElement = true;
-        softDeleteElementTimestamp = timestamp;
-        softDeleteElementEventData = eventData;
+        softDeleteData = new SoftDeleteData(timestamp, eventData);
         return (TResult) this;
     }
 
@@ -340,6 +380,46 @@ public abstract class ElementMutationBase<T extends Element, TResult extends Ele
     public TResult markElementVisible(Visibility visibility, Object eventData) {
         markVisibleData.add(new MarkVisibleData(visibility, eventData));
         return (TResult) this;
+    }
+
+    @Override
+    public ElementMutation<T> markPropertyHidden(
+        String key,
+        String name,
+        Visibility propertyVisibility,
+        Long timestamp,
+        Visibility visibility,
+        Object eventData
+    ) {
+        markPropertyHiddenData.add(new MarkPropertyHiddenData(
+            key,
+            name,
+            propertyVisibility,
+            timestamp,
+            visibility,
+            eventData
+        ));
+        return this;
+    }
+
+    @Override
+    public ElementMutation<T> markPropertyVisible(
+        String key,
+        String name,
+        Visibility propertyVisibility,
+        Long timestamp,
+        Visibility visibility,
+        Object eventData
+    ) {
+        markPropertyVisibleData.add(new MarkPropertyVisibleData(
+            key,
+            name,
+            propertyVisibility,
+            timestamp,
+            visibility,
+            eventData
+        ));
+        return this;
     }
 
     @SuppressWarnings("unchecked")
@@ -418,7 +498,15 @@ public abstract class ElementMutationBase<T extends Element, TResult extends Ele
             return true;
         }
 
-        if (deleteElement || softDeleteElement) {
+        if (markPropertyHiddenData.size() > 0) {
+            return true;
+        }
+
+        if (markPropertyVisibleData.size() > 0) {
+            return true;
+        }
+
+        if (deleteElement || softDeleteData != null) {
             return true;
         }
 
@@ -480,6 +568,122 @@ public abstract class ElementMutationBase<T extends Element, TResult extends Ele
 
         public String getRow() {
             return row;
+        }
+    }
+
+    public static class MarkPropertyHiddenData {
+        private final String key;
+        private final String name;
+        private final Visibility propertyVisibility;
+        private final Long timestamp;
+        private final Visibility visibility;
+        private final Object eventData;
+
+        public MarkPropertyHiddenData(
+            String key,
+            String name,
+            Visibility propertyVisibility,
+            Long timestamp,
+            Visibility visibility,
+            Object eventData
+        ) {
+            this.key = key;
+            this.name = name;
+            this.propertyVisibility = propertyVisibility;
+            this.timestamp = timestamp;
+            this.visibility = visibility;
+            this.eventData = eventData;
+        }
+
+        public String getKey() {
+            return key;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public Visibility getPropertyVisibility() {
+            return propertyVisibility;
+        }
+
+        public Long getTimestamp() {
+            return timestamp;
+        }
+
+        public Visibility getVisibility() {
+            return visibility;
+        }
+
+        public Object getEventData() {
+            return eventData;
+        }
+    }
+
+    public static class MarkPropertyVisibleData {
+        private final String key;
+        private final String name;
+        private final Visibility propertyVisibility;
+        private final Long timestamp;
+        private final Visibility visibility;
+        private final Object eventData;
+
+        public MarkPropertyVisibleData(
+            String key,
+            String name,
+            Visibility propertyVisibility,
+            Long timestamp,
+            Visibility visibility,
+            Object eventData
+        ) {
+            this.key = key;
+            this.name = name;
+            this.propertyVisibility = propertyVisibility;
+            this.timestamp = timestamp;
+            this.visibility = visibility;
+            this.eventData = eventData;
+        }
+
+        public String getKey() {
+            return key;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public Visibility getPropertyVisibility() {
+            return propertyVisibility;
+        }
+
+        public Long getTimestamp() {
+            return timestamp;
+        }
+
+        public Visibility getVisibility() {
+            return visibility;
+        }
+
+        public Object getEventData() {
+            return eventData;
+        }
+    }
+
+    public static class SoftDeleteData {
+        private final Long timestamp;
+        private final Object eventData;
+
+        public SoftDeleteData(Long timestamp, Object eventData) {
+            this.timestamp = timestamp;
+            this.eventData = eventData;
+        }
+
+        public Long getTimestamp() {
+            return timestamp;
+        }
+
+        public Object getEventData() {
+            return eventData;
         }
     }
 }

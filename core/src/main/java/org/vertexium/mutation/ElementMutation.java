@@ -353,7 +353,9 @@ public interface ElementMutation<T extends Element> extends ElementLocation {
      *                           it as hidden for only a subset of authorizations.
      * @param eventData          Data to store with the hidden
      */
-    ElementMutation<T> markPropertyHidden(String key, String name, Visibility propertyVisibility, Visibility visibility, Object eventData);
+    default ElementMutation<T> markPropertyHidden(String key, String name, Visibility propertyVisibility, Visibility visibility, Object eventData) {
+        return markPropertyHidden(key, name, propertyVisibility, null, visibility, eventData);
+    }
 
     /**
      * Marks a property as hidden for a given visibility.
@@ -444,7 +446,16 @@ public interface ElementMutation<T extends Element> extends ElementLocation {
      *                   This visibility can be a superset of the property visibility to mark
      *                   it as hidden for only a subset of authorizations.
      */
-    ElementMutation<T> markPropertyHidden(Property property, Long timestamp, Visibility visibility, Object data);
+    default ElementMutation<T> markPropertyHidden(Property property, Long timestamp, Visibility visibility, Object data) {
+        return markPropertyHidden(
+            property.getKey(),
+            property.getName(),
+            property.getVisibility(),
+            timestamp,
+            visibility,
+            data
+        );
+    }
 
     /**
      * Marks a property as visible for a given visibility, effectively undoing markPropertyHidden.
@@ -549,7 +560,16 @@ public interface ElementMutation<T extends Element> extends ElementLocation {
      * @param visibility The visibility string under which this property is now visible.
      * @param eventData  Data to store with the visible
      */
-    ElementMutation<T> markPropertyVisible(Property property, Long timestamp, Visibility visibility, Object eventData);
+    default ElementMutation<T> markPropertyVisible(Property property, Long timestamp, Visibility visibility, Object eventData) {
+        return markPropertyVisible(
+            property.getKey(),
+            property.getName(),
+            property.getVisibility(),
+            timestamp,
+            visibility,
+            eventData
+        );
+    }
 
     /**
      * Gets the properties currently in this mutation.
@@ -595,6 +615,26 @@ public interface ElementMutation<T extends Element> extends ElementLocation {
      * Gets the additional extended data visibility delete mutations
      */
     Iterable<AdditionalExtendedDataVisibilityDeleteMutation> getAdditionalExtendedDataVisibilityDeletes();
+
+    Iterable<AlterPropertyVisibility> getAlterPropertyVisibilities();
+
+    Iterable<SetPropertyMetadata> getSetPropertyMetadatas();
+
+    Iterable<ElementMutationBase.MarkHiddenData> getMarkHiddenData();
+
+    Iterable<ElementMutationBase.MarkVisibleData> getMarkVisibleData();
+
+    Iterable<ElementMutationBase.MarkPropertyHiddenData> getMarkPropertyHiddenData();
+
+    Iterable<ElementMutationBase.MarkPropertyVisibleData> getMarkPropertyVisibleData();
+
+    Iterable<ExtendedDataMutation> getExtendedDatas();
+
+    Iterable<ElementMutationBase.DeleteExtendedDataRowData> getDeleteExtendedDataRowData();
+
+    ElementMutationBase.SoftDeleteData getSoftDeleteData();
+
+    boolean isDeleteElement();
 
     /**
      * Sets the index hint of this element.
