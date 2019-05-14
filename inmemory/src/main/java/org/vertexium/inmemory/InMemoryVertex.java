@@ -105,7 +105,7 @@ public class InMemoryVertex extends InMemoryElement<InMemoryVertex> implements V
 
     @Override
     public Stream<Edge> getEdges(Direction direction, String[] labels, FetchHints fetchHints, User user) {
-        return getEdges(direction, user)
+        return getEdges(direction, fetchHints, user)
             .filter(edge -> {
                 if (labels == null) {
                     return true;
@@ -121,7 +121,7 @@ public class InMemoryVertex extends InMemoryElement<InMemoryVertex> implements V
 
     @Override
     public Stream<String> getEdgeIds(Direction direction, String[] labels, User user) {
-        return getEdges(direction, labels, FetchHints.NONE, user)
+        return getEdges(direction, labels, getFetchHints(), user)
             .map(Element::getId);
     }
 
