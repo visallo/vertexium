@@ -130,7 +130,25 @@ public class DefaultGraphQuery extends GraphQueryBase {
 
     @Override
     public QueryResults<? extends VertexiumObject> search(EnumSet<VertexiumObjectType> objectTypes, FetchHints fetchHints) {
-        throw new VertexiumException("Not yet implemented");
+        Stream<? extends VertexiumObject> objects = Stream.empty();
+        if (objectTypes.contains(VertexiumObjectType.VERTEX)) {
+            objects = this.<Vertex>getStreamFromElementType(ElementType.VERTEX, fetchHints);
+        }
+        if (objectTypes.contains(VertexiumObjectType.EDGE)) {
+            objects = Stream.concat(objects, this.<Vertex>getStreamFromElementType(ElementType.EDGE, fetchHints));
+        }
+        if (objectTypes.contains(VertexiumObjectType.EXTENDED_DATA)) {
+            objects = Stream.concat(objects, extendedData(fetchHints));
+        }
+        return new DefaultGraphQueryResults<>(
+                getParameters(),
+                objects,
+                true,
+                true,
+                true,
+                getAggregations(),
+                Function.identity()
+        );
     }
 
     private Stream<ExtendedDataRow> extendedData(FetchHints fetchHints) {
