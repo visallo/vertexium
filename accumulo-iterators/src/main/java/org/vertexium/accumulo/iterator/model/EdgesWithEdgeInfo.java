@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 public class EdgesWithEdgeInfo extends Edges {
     // We used to use a HashMap here but that was too slow. Replaced with a List since we really don't care about duplicates anyway.
@@ -51,29 +52,8 @@ public class EdgesWithEdgeInfo extends Edges {
         return null;
     }
 
-    public Iterable<EdgeInfo> getEdgeInfos() {
-        return new Iterable<EdgeInfo>() {
-            @Override
-            public Iterator<EdgeInfo> iterator() {
-                final Iterator<Map.Entry<Text, EdgeInfo>> it = pairs.iterator();
-                return new Iterator<EdgeInfo>() {
-                    @Override
-                    public boolean hasNext() {
-                        return it.hasNext();
-                    }
-
-                    @Override
-                    public EdgeInfo next() {
-                        return it.next().getValue();
-                    }
-
-                    @Override
-                    public void remove() {
-                        throw new RuntimeException("not supported");
-                    }
-                };
-            }
-        };
+    public Stream<EdgeInfo> getEdgeInfos() {
+        return pairs.stream().map(Map.Entry::getValue);
     }
 
     public Iterable<Map.Entry<Text, EdgeInfo>> getEntries() {

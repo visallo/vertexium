@@ -45,7 +45,7 @@ public class AccumuloEdge extends AccumuloElement implements Edge {
         ImmutableSet<String> extendedDataTableNames,
         long timestamp,
         FetchHints fetchHints,
-        Authorizations authorizations
+        User user
     ) {
         super(
             graph,
@@ -59,7 +59,7 @@ public class AccumuloEdge extends AccumuloElement implements Edge {
             extendedDataTableNames,
             timestamp,
             fetchHints,
-            authorizations
+            user
         );
         this.outVertexId = outVertexId;
         this.inVertexId = inVertexId;
@@ -72,7 +72,7 @@ public class AccumuloEdge extends AccumuloElement implements Edge {
         Key key,
         Value value,
         FetchHints fetchHints,
-        Authorizations authorizations
+        User user
     ) {
         try {
             String edgeId;
@@ -121,7 +121,7 @@ public class AccumuloEdge extends AccumuloElement implements Edge {
                 extendedDataTableNames,
                 timestamp,
                 fetchHints,
-                authorizations
+                user
             );
         } catch (IOException ex) {
             throw new VertexiumException("Could not read vertex", ex);
@@ -189,8 +189,17 @@ public class AccumuloEdge extends AccumuloElement implements Edge {
     public ExistingEdgeMutation prepareMutation() {
         return new ExistingEdgeMutation(this) {
             @Override
+            public String save(User user) {
+                return saveEdge(user).getId();
+            }
+
+            @Override
             public Edge save(Authorizations authorizations) {
-                saveExistingElementMutation(this, authorizations);
+                return saveEdge(authorizations.getUser());
+            }
+
+            private Edge saveEdge(User user) {
+                saveExistingElementMutation(this, user);
                 return getElement();
             }
         };

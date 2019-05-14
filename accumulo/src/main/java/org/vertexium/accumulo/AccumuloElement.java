@@ -22,6 +22,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.stream.Stream;
 
+import static org.vertexium.util.StreamUtils.toIterable;
+
 public abstract class AccumuloElement extends ElementBase implements Serializable, HasTimestamp {
     private static final long serialVersionUID = 1L;
     public static final Text CF_PROPERTY = ElementIterator.CF_PROPERTY;
@@ -58,7 +60,7 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
     private final ImmutableSet<String> extendedDataTableNames;
     private ConcurrentSkipListSet<PropertyDeleteMutation> propertyDeleteMutations;
     private ConcurrentSkipListSet<PropertySoftDeleteMutation> propertySoftDeleteMutations;
-    private final Authorizations authorizations;
+    private final User user;
 
     protected AccumuloElement(
         Graph graph,
@@ -72,7 +74,7 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
         ImmutableSet<String> extendedDataTableNames,
         long timestamp,
         FetchHints fetchHints,
-        Authorizations authorizations
+        User user
     ) {
         this.graph = graph;
         this.id = id;
@@ -81,7 +83,7 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
         this.fetchHints = fetchHints;
         this.properties = new PropertyCollection();
         this.extendedDataTableNames = extendedDataTableNames;
-        this.authorizations = authorizations;
+        this.user = user;
 
         ImmutableSet.Builder<Visibility> hiddenVisibilityBuilder = new ImmutableSet.Builder<>();
         if (hiddenVisibilities != null) {
@@ -127,7 +129,7 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
         return (AccumuloGraph) graph;
     }
 
-    protected <TElement extends Element> void saveExistingElementMutation(ExistingElementMutation<TElement> mutation, Authorizations authorizations) {
+    protected <TElement extends Element> void saveExistingElementMutation(ExistingElementMutation<TElement> mutation, User user) {
         // Order matters a lot in this method
         AccumuloElement element = (AccumuloElement) mutation.getElement();
 
@@ -168,7 +170,7 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
         }
 
         if (mutation.getIndexHint() != IndexHint.DO_NOT_INDEX) {
-            getGraph().getSearchIndex().updateElement(graph, mutation, authorizations);
+            getGraph().getSearchIndex().updateElement(graph, mutation, user);
         }
 
         ElementType elementType = ElementType.getTypeFromElement(mutation.getElement());
@@ -180,14 +182,8 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
             mutation.getExtendedDataDeletes(),
             mutation.getAdditionalExtendedDataVisibilities(),
             mutation.getAdditionalExtendedDataVisibilityDeletes(),
-            authorizations
+            user
         );
-    }
-
-    @Override
-    @SuppressWarnings("deprecation")
-    public Iterable<HistoricalPropertyValue> getHistoricalPropertyValues(String key, String name, Visibility visibility, Long startTime, Long endTime, Authorizations authorizations) {
-        return getGraph().getHistoricalPropertyValues(this, key, name, visibility, startTime, endTime, authorizations);
     }
 
     @Override
@@ -213,13 +209,13 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
             getGraph(),
             this,
             tableName,
-            getGraph().getExtendedData(
+            toIterable(getGraph().getExtendedData(
                 ElementType.getTypeFromElement(this),
                 getId(),
                 tableName,
                 fetchHints,
-                getAuthorizations()
-            )
+                getUser()
+            ))
         );
     }
 
@@ -430,8 +426,8 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
     }
 
     @Override
-    public Authorizations getAuthorizations() {
-        return authorizations;
+    public User getUser() {
+        return user;
     }
 
     @Override

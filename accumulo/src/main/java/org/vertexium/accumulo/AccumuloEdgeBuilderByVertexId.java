@@ -1,9 +1,6 @@
 package org.vertexium.accumulo;
 
-import org.vertexium.Authorizations;
-import org.vertexium.Edge;
-import org.vertexium.EdgeBuilderByVertexId;
-import org.vertexium.Visibility;
+import org.vertexium.*;
 
 public abstract class AccumuloEdgeBuilderByVertexId extends EdgeBuilderByVertexId implements EdgeBuilderWithKeyValuePairs {
     private final ElementMutationBuilder elementMutationBuilder;
@@ -21,19 +18,16 @@ public abstract class AccumuloEdgeBuilderByVertexId extends EdgeBuilderByVertexI
     }
 
     @Override
-    public abstract Edge save(Authorizations authorizations);
-
-    @Override
     public Iterable<KeyValuePair> getEdgeTableKeyValuePairs() {
-        AccumuloEdge edge = createEdge(new AccumuloAuthorizations());
+        AccumuloEdge edge = createEdge(new AccumuloAuthorizations().getUser());
         return getElementMutationBuilder().getEdgeTableKeyValuePairsEdge(edge);
     }
 
-    protected abstract AccumuloEdge createEdge(Authorizations authorizations);
+    protected abstract AccumuloEdge createEdge(User user);
 
     @Override
     public Iterable<KeyValuePair> getVertexTableKeyValuePairs() {
-        AccumuloEdge edge = createEdge(new AccumuloAuthorizations());
+        AccumuloEdge edge = createEdge(new AccumuloAuthorizations().getUser());
         return getElementMutationBuilder().getVertexTableKeyValuePairsEdge(edge);
     }
 

@@ -1,9 +1,6 @@
 package org.vertexium.accumulo;
 
-import org.vertexium.Authorizations;
-import org.vertexium.Vertex;
-import org.vertexium.VertexBuilder;
-import org.vertexium.Visibility;
+import org.vertexium.*;
 
 public abstract class AccumuloVertexBuilder extends VertexBuilder implements VertexBuilderWithKeyValuePairs {
     private final ElementMutationBuilder elementMutationBuilder;
@@ -22,7 +19,7 @@ public abstract class AccumuloVertexBuilder extends VertexBuilder implements Ver
     @Override
     public abstract Vertex save(Authorizations authorizations);
 
-    protected abstract AccumuloVertex createVertex(Authorizations authorizations);
+    protected abstract AccumuloVertex createVertex(User user);
 
     public ElementMutationBuilder getElementMutationBuilder() {
         return elementMutationBuilder;

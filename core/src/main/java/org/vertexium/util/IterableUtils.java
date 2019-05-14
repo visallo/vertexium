@@ -4,6 +4,8 @@ import org.vertexium.Element;
 
 import java.lang.reflect.Array;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.vertexium.util.CloseableUtils.closeQuietly;
 
@@ -130,6 +132,14 @@ public class IterableUtils {
 
         closeQuietly(i, it);
         return result;
+    }
+
+    public static <T> T singleOrDefault(Stream<? extends T> stream, T defaultValue) {
+        List<? extends T> items = stream.limit(2).collect(Collectors.toList());
+        if (items.size() > 1) {
+            throw new IllegalStateException("More than 1 item found. [" + result + ", " + nextValue + "...]");
+        }
+        return items.size() == 1 ? items.get(0) : defaultValue;
     }
 
     public static <T> T singleOrDefault(final Iterable<? extends T> it, T defaultValue) {
