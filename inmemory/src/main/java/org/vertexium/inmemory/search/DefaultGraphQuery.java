@@ -6,6 +6,7 @@ import org.vertexium.search.GraphQueryBase;
 import org.vertexium.search.QueryResults;
 
 import java.util.EnumSet;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 public class DefaultGraphQuery extends GraphQueryBase {
@@ -15,36 +16,56 @@ public class DefaultGraphQuery extends GraphQueryBase {
 
     @Override
     public QueryResults<Vertex> vertices(FetchHints fetchHints) {
-        return new DefaultGraphQueryResultsWithAggregations<>(
+        return new DefaultGraphQueryResults<>(
+                getParameters(),
+                this.getIterableFromElementType(ElementType.VERTEX, fetchHints),
+                true,
+                true,
+                true,
+                getAggregations(),
+                Function.identity()
+        );
+    }
+
+    @Override
+    public QueryResults<String> vertexIds(EnumSet<IdFetchHint> idFetchHints) {
+        FetchHints fetchHints = idFetchHints == IdFetchHint.ALL_INCLUDING_HIDDEN ? FetchHints.ALL : FetchHints.NONE;
+        return new DefaultGraphQueryResults<>(
                 getParameters(),
                 this.<Vertex>getIterableFromElementType(ElementType.VERTEX, fetchHints),
                 true,
                 true,
                 true,
-                getAggregations()
+                getAggregations(),
+                Element::getId
         );
     }
 
     @Override
-    public QueryResults<String> vertexIds(EnumSet<IdFetchHint> fetchHints) {
-        return null;
-    }
-
-    @Override
     public QueryResults<Edge> edges(FetchHints fetchHints) {
-        return new DefaultGraphQueryResultsWithAggregations<>(
+        return new DefaultGraphQueryResults<>(
                 getParameters(),
                 this.<Edge>getIterableFromElementType(ElementType.EDGE, fetchHints),
                 true,
                 true,
                 true,
-                getAggregations()
+                getAggregations(),
+                Function.identity()
         );
     }
 
     @Override
-    public QueryResults<String> edgeIds(EnumSet<IdFetchHint> fetchHints) {
-        return null;
+    public QueryResults<String> edgeIds(EnumSet<IdFetchHint> idFetchHints) {
+        FetchHints fetchHints = idFetchHints == IdFetchHint.ALL_INCLUDING_HIDDEN ? FetchHints.ALL : FetchHints.NONE;
+        return new DefaultGraphQueryResults<>(
+                getParameters(),
+                this.<Edge>getIterableFromElementType(ElementType.EDGE, fetchHints),
+                true,
+                true,
+                true,
+                getAggregations(),
+                Element::getId
+        );
     }
 
     @Override
@@ -88,7 +109,7 @@ public class DefaultGraphQuery extends GraphQueryBase {
 
     @Override
     public boolean isAggregationSupported(Aggregation aggregation) {
-        if (DefaultGraphQueryResultsWithAggregations.isAggregationSupported(aggregation)) {
+        if (DefaultGraphQueryResults.isAggregationSupported(aggregation)) {
             return true;
         }
         return super.isAggregationSupported(aggregation);
