@@ -262,6 +262,7 @@ public class InMemoryGraph extends GraphBase {
     }
 
     @Override
+    @Deprecated
     public void deleteVertex(Vertex vertex, Authorizations authorizations) {
         if (!((InMemoryVertex) vertex).canRead(authorizations)) {
             return;
@@ -283,11 +284,13 @@ public class InMemoryGraph extends GraphBase {
     }
 
     @Override
+    @Deprecated
     public void softDeleteVertex(Vertex vertex, Object eventData, Authorizations authorizations) {
 
     }
 
     @Override
+    @Deprecated
     public void softDeleteVertex(Vertex vertex, Long timestamp, Object eventData, Authorizations authorizations) {
         if (!((InMemoryVertex) vertex).canRead(authorizations)) {
             return;
@@ -315,6 +318,7 @@ public class InMemoryGraph extends GraphBase {
     }
 
     @Override
+    @Deprecated
     public void markVertexHidden(Vertex vertex, Visibility visibility, Object eventData, Authorizations authorizations) {
         if (!((InMemoryVertex) vertex).canRead(authorizations)) {
             return;
@@ -335,6 +339,7 @@ public class InMemoryGraph extends GraphBase {
     }
 
     @Override
+    @Deprecated
     public void markVertexVisible(Vertex vertex, Visibility visibility, Object eventData, Authorizations authorizations) {
         if (!((InMemoryVertex) vertex).canRead(authorizations)) {
             return;
@@ -524,6 +529,7 @@ public class InMemoryGraph extends GraphBase {
     }
 
     @Override
+    @Deprecated
     public void deleteEdge(Edge edge, Authorizations authorizations) {
         checkNotNull(edge, "Edge cannot be null");
         if (!((InMemoryEdge) edge).canRead(authorizations)) {
@@ -541,11 +547,13 @@ public class InMemoryGraph extends GraphBase {
     }
 
     @Override
+    @Deprecated
     public void softDeleteEdge(Edge edge, Object eventData, Authorizations authorizations) {
 
     }
 
     @Override
+    @Deprecated
     public void softDeleteEdge(Edge edge, Long timestamp, Object eventData, Authorizations authorizations) {
         checkNotNull(edge, "Edge cannot be null");
         if (!((InMemoryEdge) edge).canRead(authorizations)) {
@@ -580,6 +588,7 @@ public class InMemoryGraph extends GraphBase {
     }
 
     @Override
+    @Deprecated
     public void markEdgeHidden(Edge edge, Visibility visibility, Object eventData, Authorizations authorizations) {
         if (!((InMemoryEdge) edge).canRead(authorizations)) {
             return;
@@ -599,6 +608,7 @@ public class InMemoryGraph extends GraphBase {
     }
 
     @Override
+    @Deprecated
     public void markEdgeVisible(Edge edge, Visibility visibility, Object eventData, Authorizations authorizations) {
         if (!((InMemoryEdge) edge).canRead(authorizations)) {
             return;
@@ -1008,6 +1018,7 @@ public class InMemoryGraph extends GraphBase {
     }
 
     @Override
+    @Deprecated
     public void deleteExtendedDataRow(ExtendedDataRowId id, Authorizations authorizations) {
         List<ExtendedDataRow> rows = Lists.newArrayList(getExtendedData(Lists.newArrayList(id), authorizations));
         if (rows.size() > 1) {
@@ -1150,6 +1161,7 @@ public class InMemoryGraph extends GraphBase {
     }
 
     @Override
+    @Deprecated
     public Iterable<String> filterEdgeIdsByAuthorization(
         Iterable<String> edgeIds,
         final String authorizationToMatch,
@@ -1176,6 +1188,7 @@ public class InMemoryGraph extends GraphBase {
     }
 
     @Override
+    @Deprecated
     public Iterable<String> filterVertexIdsByAuthorization(
         Iterable<String> vertexIds,
         final String authorizationToMatch,
