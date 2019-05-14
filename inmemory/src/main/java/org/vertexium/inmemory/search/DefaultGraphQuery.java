@@ -166,7 +166,7 @@ public class DefaultGraphQuery extends GraphQueryBase {
     }
 
     @SuppressWarnings("unchecked")
-    private <T extends Element> Stream<T> getStreamFromElementType(ElementType elementType, FetchHints fetchHints) throws VertexiumException {
+    protected <T extends Element> Stream<T> getStreamFromElementType(ElementType elementType, FetchHints fetchHints) throws VertexiumException {
         switch (elementType) {
             case VERTEX:
                 return (Stream<T>) getGraph().getVertices(fetchHints, getParameters().getUser());
