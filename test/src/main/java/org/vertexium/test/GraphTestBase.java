@@ -1,6 +1,5 @@
 package org.vertexium.test;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import org.apache.commons.io.IOUtils;
@@ -6202,7 +6201,7 @@ public abstract class GraphTestBase {
 
     @Test
     public void testIteratorWithLessThanPageSizeResultsPageOne() {
-        QueryParameters parameters = new QueryStringQueryParameters("*", AUTHORIZATIONS_EMPTY);
+        QueryParameters parameters = new QueryStringQueryParameters("*", AUTHORIZATIONS_EMPTY.getUser());
         parameters.setSkip(0);
         parameters.setLimit(5);
         DefaultGraphQueryIterable<Vertex> iterable = new DefaultGraphQueryIterable<>(parameters, getVertices(3), false, false, false);
@@ -6221,7 +6220,7 @@ public abstract class GraphTestBase {
 
     @Test
     public void testIteratorWithPageSizeResultsPageOne() {
-        QueryParameters parameters = new QueryStringQueryParameters("*", AUTHORIZATIONS_EMPTY);
+        QueryParameters parameters = new QueryStringQueryParameters("*", AUTHORIZATIONS_EMPTY.getUser());
         parameters.setSkip(0);
         parameters.setLimit(5);
         DefaultGraphQueryIterable<Vertex> iterable = new DefaultGraphQueryIterable<>(parameters, getVertices(5), false, false, false);
@@ -6240,7 +6239,7 @@ public abstract class GraphTestBase {
 
     @Test
     public void testIteratorWithMoreThanPageSizeResultsPageOne() {
-        QueryParameters parameters = new QueryStringQueryParameters("*", AUTHORIZATIONS_EMPTY);
+        QueryParameters parameters = new QueryStringQueryParameters("*", AUTHORIZATIONS_EMPTY.getUser());
         parameters.setSkip(0);
         parameters.setLimit(5);
         DefaultGraphQueryIterable<Vertex> iterable = new DefaultGraphQueryIterable<>(parameters, getVertices(7), false, false, false);
@@ -6259,7 +6258,7 @@ public abstract class GraphTestBase {
 
     @Test
     public void testIteratorWithMoreThanPageSizeResultsPageTwo() {
-        QueryParameters parameters = new QueryStringQueryParameters("*", AUTHORIZATIONS_EMPTY);
+        QueryParameters parameters = new QueryStringQueryParameters("*", AUTHORIZATIONS_EMPTY.getUser());
         parameters.setSkip(5);
         parameters.setLimit(5);
         DefaultGraphQueryIterable<Vertex> iterable = new DefaultGraphQueryIterable<>(parameters, getVertices(12), false, false, false);
@@ -6278,7 +6277,7 @@ public abstract class GraphTestBase {
 
     @Test
     public void testIteratorWithMoreThanPageSizeResultsPageThree() {
-        QueryParameters parameters = new QueryStringQueryParameters("*", AUTHORIZATIONS_EMPTY);
+        QueryParameters parameters = new QueryStringQueryParameters("*", AUTHORIZATIONS_EMPTY.getUser());
         parameters.setSkip(10);
         parameters.setLimit(5);
         DefaultGraphQueryIterable<Vertex> iterable = new DefaultGraphQueryIterable<>(parameters, getVertices(12), false, false, false);
@@ -6359,130 +6358,6 @@ public abstract class GraphTestBase {
     }
 
     @Test
-    @SuppressWarnings("deprecation")
-    public void testAllPropertyHistoricalVersions() {
-        Date time25 = createDate(2015, 4, 6, 16, 15, 0);
-        Date time30 = createDate(2015, 4, 6, 16, 16, 0);
-
-        Metadata metadata = Metadata.create();
-        metadata.add("author", "author1", VISIBILITY_A);
-        graph.prepareVertex("v1", VISIBILITY_A)
-            .addPropertyValue("", "age", 25, metadata, time25.getTime(), VISIBILITY_A)
-            .addPropertyValue("k1", "name", "k1Time25Value", metadata, time25.getTime(), VISIBILITY_A)
-            .addPropertyValue("k2", "name", "k2Time25Value", metadata, time25.getTime(), VISIBILITY_A)
-            .save(AUTHORIZATIONS_A);
-
-        metadata = Metadata.create();
-        metadata.add("author", "author2", VISIBILITY_A);
-        graph.prepareVertex("v1", VISIBILITY_A)
-            .addPropertyValue("", "age", 30, metadata, time30.getTime(), VISIBILITY_A)
-            .addPropertyValue("k1", "name", "k1Time30Value", metadata, time30.getTime(), VISIBILITY_A)
-            .addPropertyValue("k2", "name", "k2Time30Value", metadata, time30.getTime(), VISIBILITY_A)
-            .save(AUTHORIZATIONS_A);
-        graph.flush();
-
-        Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
-        List<HistoricalPropertyValue> values = toList(v1.getHistoricalPropertyValues(AUTHORIZATIONS_A));
-        assertEquals(6, values.size());
-
-        for (int i = 0; i < 3; i++) {
-            HistoricalPropertyValue item = values.get(i);
-            assertEquals(time30, new Date(values.get(i).getTimestamp()));
-            if (item.getPropertyName().equals("age")) {
-                assertEquals(30, item.getValue());
-            } else if (item.getPropertyName().equals("name") && item.getPropertyKey().equals("k1")) {
-                assertEquals("k1Time30Value", item.getValue());
-            } else if (item.getPropertyName().equals("name") && item.getPropertyKey().equals("k2")) {
-                assertEquals("k2Time30Value", item.getValue());
-            } else {
-                fail("Invalid " + item);
-            }
-        }
-
-        for (int i = 3; i < 6; i++) {
-            HistoricalPropertyValue item = values.get(i);
-            assertEquals(time25, new Date(values.get(i).getTimestamp()));
-            if (item.getPropertyName().equals("age")) {
-                assertEquals(25, item.getValue());
-            } else if (item.getPropertyName().equals("name") && item.getPropertyKey().equals("k1")) {
-                assertEquals("k1Time25Value", item.getValue());
-            } else if (item.getPropertyName().equals("name") && item.getPropertyKey().equals("k2")) {
-                assertEquals("k2Time25Value", item.getValue());
-            } else {
-                fail("Invalid " + item);
-            }
-        }
-    }
-
-    @Test
-    @SuppressWarnings("deprecation")
-    public void testPropertyHistoricalVersions() {
-        Date time25 = createDate(2015, 4, 6, 16, 15, 0);
-        Date time30 = createDate(2015, 4, 6, 16, 16, 0);
-
-        Metadata metadata = Metadata.create();
-        metadata.add("author", "author1", VISIBILITY_A);
-        graph.prepareVertex("v1", VISIBILITY_A)
-            .addPropertyValue("", "age", 25, metadata, time25.getTime(), VISIBILITY_A)
-            .save(AUTHORIZATIONS_A);
-
-        metadata = Metadata.create();
-        metadata.add("author", "author2", VISIBILITY_A);
-        graph.prepareVertex("v1", VISIBILITY_A)
-            .addPropertyValue("", "age", 30, metadata, time30.getTime(), VISIBILITY_A)
-            .save(AUTHORIZATIONS_A);
-        graph.flush();
-
-        Vertex v1 = graph.getVertex("v1", FetchHints.ALL, AUTHORIZATIONS_A);
-        List<HistoricalPropertyValue> values = toList(v1.getHistoricalPropertyValues("", "age", VISIBILITY_A, AUTHORIZATIONS_A));
-        assertEquals(2, values.size());
-
-        assertEquals(30, values.get(0).getValue());
-        assertEquals(time30, new Date(values.get(0).getTimestamp()));
-        assertEquals("author2", values.get(0).getMetadata().getValue("author", VISIBILITY_A));
-
-        assertEquals(25, values.get(1).getValue());
-        assertEquals(time25, new Date(values.get(1).getTimestamp()));
-        assertEquals("author1", values.get(1).getMetadata().getValue("author", VISIBILITY_A));
-
-        // make sure we get the correct age when we only ask for one value
-        assertEquals(30, v1.getPropertyValue("", "age"));
-        assertEquals("author2", v1.getProperty("", "age").getMetadata().getValue("author", VISIBILITY_A));
-    }
-
-    @Test
-    @SuppressWarnings("deprecation")
-    public void testStreamingPropertyHistoricalVersions() {
-        Date time25 = createDate(2015, 4, 6, 16, 15, 0);
-        Date time30 = createDate(2015, 4, 6, 16, 16, 0);
-
-        Metadata metadata = Metadata.create();
-        StreamingPropertyValue value1 = StreamingPropertyValue.create("value1");
-        graph.prepareVertex("v1", VISIBILITY_A)
-            .addPropertyValue("", "text", value1, metadata, time25.getTime(), VISIBILITY_A)
-            .save(AUTHORIZATIONS_A);
-
-        StreamingPropertyValue value2 = StreamingPropertyValue.create("value2");
-        graph.prepareVertex("v1", VISIBILITY_A)
-            .addPropertyValue("", "text", value2, metadata, time30.getTime(), VISIBILITY_A)
-            .save(AUTHORIZATIONS_A);
-        graph.flush();
-
-        Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
-        List<HistoricalPropertyValue> values = toList(v1.getHistoricalPropertyValues("", "text", VISIBILITY_A, AUTHORIZATIONS_A));
-        assertEquals(2, values.size());
-
-        assertEquals("value2", ((StreamingPropertyValue) values.get(0).getValue()).readToString());
-        assertEquals(time30, new Date(values.get(0).getTimestamp()));
-
-        assertEquals("value1", ((StreamingPropertyValue) values.get(1).getValue()).readToString());
-        assertEquals(time25, new Date(values.get(1).getTimestamp()));
-
-        // make sure we get the correct age when we only ask for one value
-        assertEquals("value2", ((StreamingPropertyValue) v1.getPropertyValue("", "text")).readToString());
-    }
-
-    @Test
     public void testGetVertexAtASpecificTimeInHistory() {
         Date time25 = createDate(2015, 4, 6, 16, 15, 0);
         Date time30 = createDate(2015, 4, 6, 16, 16, 0);
@@ -6515,32 +6390,6 @@ public abstract class GraphTestBase {
         assertEquals(25, graph.getVertex("v1", graph.getDefaultFetchHints(), time25.getTime(), AUTHORIZATIONS_A).getPropertyValue("", "age"));
         assertNull("v3 should not exist at time25", graph.getVertex("v3", graph.getDefaultFetchHints(), time25.getTime(), AUTHORIZATIONS_A));
         assertEquals("e1 should not exist", 0, count(graph.getEdges(graph.getDefaultFetchHints(), time25.getTime(), AUTHORIZATIONS_A)));
-    }
-
-    @Test
-    @SuppressWarnings("deprecation")
-    public void testSaveMultipleTimestampedValuesInSameMutationVertex() {
-        String vertexId = "v1";
-        String propertyKey = "k1";
-        String propertyName = "p1";
-        Map<String, Long> values = ImmutableMap.of(
-            "value1", createDate(2016, 4, 6, 9, 20, 0).getTime(),
-            "value2", createDate(2016, 5, 6, 9, 20, 0).getTime(),
-            "value3", createDate(2016, 6, 6, 9, 20, 0).getTime(),
-            "value4", createDate(2016, 7, 6, 9, 20, 0).getTime(),
-            "value5", createDate(2016, 8, 6, 9, 20, 0).getTime()
-        );
-
-        ElementMutation<Vertex> vertexMutation = graph.prepareVertex(vertexId, VISIBILITY_EMPTY);
-        for (Map.Entry<String, Long> entry : values.entrySet()) {
-            vertexMutation.addPropertyValue(propertyKey, propertyName, entry.getKey(), Metadata.create(), entry.getValue(), VISIBILITY_EMPTY);
-        }
-        vertexMutation.save(AUTHORIZATIONS_EMPTY);
-        graph.flush();
-
-        Vertex retrievedVertex = graph.getVertex(vertexId, AUTHORIZATIONS_EMPTY);
-        Iterable<HistoricalPropertyValue> historicalPropertyValues = retrievedVertex.getHistoricalPropertyValues(propertyKey, propertyName, VISIBILITY_EMPTY, null, null, AUTHORIZATIONS_EMPTY);
-        compareHistoricalValues(values, historicalPropertyValues);
     }
 
     @Test
@@ -9695,232 +9544,6 @@ public abstract class GraphTestBase {
         assertEquals("label1", addEdgeToVertexEvent.getEdgeLabel());
         assertEquals("v2", addEdgeToVertexEvent.getOtherVertexId());
         assertEquals(VISIBILITY_A, addEdgeToVertexEvent.getEdgeVisibility());
-    }
-
-    // Historical Property Value tests
-    @Test
-    @SuppressWarnings("deprecation")
-    public void historicalPropertyValueAddProp() {
-        graph.prepareVertex("v1", VISIBILITY_A)
-            .setProperty("prop1_A", "value1", VISIBILITY_A)
-            .setProperty("prop2_B", "value2", VISIBILITY_B)
-            .save(AUTHORIZATIONS_A_AND_B);
-        graph.flush();
-
-        // Add property
-        Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B);
-        v1.prepareMutation()
-            .setProperty("prop3_A", "value3", VISIBILITY_A)
-            .save(AUTHORIZATIONS_A_AND_B);
-        graph.flush();
-
-        v1 = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B);
-        List<HistoricalPropertyValue> values = toList(v1.getHistoricalPropertyValues(AUTHORIZATIONS_A_AND_B));
-        Collections.reverse(values);
-
-        assertEquals(3, values.size());
-        assertEquals("prop1_A", values.get(0).getPropertyName());
-        assertEquals("prop2_B", values.get(1).getPropertyName());
-        assertEquals("prop3_A", values.get(2).getPropertyName());
-    }
-
-    @Test
-    @SuppressWarnings("deprecation")
-    public void historicalPropertyValueDeleteProp() {
-        graph.prepareVertex("v1", VISIBILITY_A)
-            .setProperty("prop1_A", "value1", VISIBILITY_A)
-            .setProperty("prop2_B", "value2", VISIBILITY_B)
-            .setProperty("prop3_A", "value3", VISIBILITY_A)
-            .save(AUTHORIZATIONS_A_AND_B);
-        graph.flush();
-
-        // remove property
-        Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B);
-        v1.prepareMutation()
-            .softDeleteProperties("prop2_B")
-            .save(AUTHORIZATIONS_A_AND_B);
-        graph.flush();
-
-        v1 = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B);
-        List<HistoricalPropertyValue> values = toList(v1.getHistoricalPropertyValues(AUTHORIZATIONS_A_AND_B));
-        Collections.reverse(values);
-        assertEquals(4, values.size());
-
-        boolean isDeletedExpected = false;
-        for (int i = 0; i < 4; i++) {
-            HistoricalPropertyValue item = values.get(i);
-            if (item.getPropertyName().equals("prop1_A")) {
-                assertEquals("prop1_A", values.get(i).getPropertyName());
-                assertFalse(values.get(i).isDeleted());
-            } else if (item.getPropertyName().equals("prop2_B")) {
-                assertEquals("prop2_B", values.get(i).getPropertyName());
-                assertEquals(isDeletedExpected, values.get(i).isDeleted());
-                isDeletedExpected = !isDeletedExpected;
-            } else if (item.getPropertyName().equals("prop3_A")) {
-                assertEquals("prop3_A", values.get(i).getPropertyName());
-                assertFalse(values.get(i).isDeleted());
-            } else {
-                fail("Invalid " + item);
-            }
-        }
-
-        Metadata metadata = Metadata.create();
-        metadata.add("metadata1", "metadata1Value", VISIBILITY_A);
-        Vertex v2 = graph.prepareVertex("v2", VISIBILITY_A)
-            .setProperty("prop1_A", "value2", metadata, VISIBILITY_A)
-            .save(AUTHORIZATIONS_A_AND_B);
-        graph.flush();
-
-        metadata = Metadata.create();
-        metadata.add("metadata1", "metadata1Value", VISIBILITY_A);
-        metadata.add("metadata2", "metadata2Value", VISIBILITY_A);
-        v2.prepareMutation()
-            .setProperty("prop1_A", "value3", metadata, VISIBILITY_B)
-            .save(AUTHORIZATIONS_A_AND_B);
-        graph.flush();
-
-        // remove property
-        v2 = graph.getVertex("v2", AUTHORIZATIONS_A_AND_B);
-        v2.prepareMutation()
-            .softDeleteProperties("prop1_A")
-            .save(AUTHORIZATIONS_A_AND_B);
-        graph.flush();
-
-        v2 = graph.getVertex("v2", AUTHORIZATIONS_A_AND_B);
-        values = toList(v2.getHistoricalPropertyValues(AUTHORIZATIONS_A_AND_B));
-        Collections.reverse(values);
-        assertEquals(4, values.size());
-
-        List<HistoricalPropertyValue> deletedHpv = values.stream()
-            .filter(HistoricalPropertyValue::isDeleted)
-            .collect(Collectors.toList());
-
-        assertEquals(2, deletedHpv.size());
-
-        for (int i = 0; i < values.size(); i++) {
-            HistoricalPropertyValue item = values.get(i);
-            if (item.getPropertyName().equals("prop1_A")) {
-                assertEquals("prop1_A", values.get(i).getPropertyName());
-                if (item.isDeleted()) {
-                    Metadata hpvMetadata = item.getMetadata();
-                    if (item.getPropertyVisibility().equals(VISIBILITY_A)) {
-                        assertEquals(1, hpvMetadata.entrySet().size());
-                        assertEquals("value2", item.getValue());
-                        assertEquals(VISIBILITY_A_STRING, item.getPropertyVisibility().getVisibilityString());
-                    } else if (item.getPropertyVisibility().equals(VISIBILITY_B)) {
-                        assertEquals(2, hpvMetadata.entrySet().size());
-                        assertEquals("value3", item.getValue());
-                        assertEquals(VISIBILITY_B_STRING, item.getPropertyVisibility().getVisibilityString());
-                    } else {
-                        fail("Invalid " + item);
-                    }
-                }
-            } else {
-                fail("Invalid " + item);
-            }
-        }
-    }
-
-    @Test
-    @SuppressWarnings("deprecation")
-    public void historicalPropertyValueModifyPropValue() {
-        graph.prepareVertex("v1", VISIBILITY_A)
-            .setProperty("prop1_A", "value1", VISIBILITY_A)
-            .setProperty("prop2_B", "value2", VISIBILITY_B)
-            .setProperty("prop3_A", "value3", VISIBILITY_A)
-            .save(AUTHORIZATIONS_A_AND_B);
-        graph.flush();
-
-        // modify property value
-        Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B);
-        v1.prepareMutation()
-            .setProperty("prop3_A", "value4", VISIBILITY_A)
-            .save(AUTHORIZATIONS_A_AND_B);
-        graph.flush();
-
-        // Restore
-        v1 = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B);
-        v1.prepareMutation()
-            .setProperty("prop3_A", "value3", VISIBILITY_A)
-            .save(AUTHORIZATIONS_A_AND_B);
-        graph.flush();
-
-        v1 = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B);
-        List<HistoricalPropertyValue> values = toList(v1.getHistoricalPropertyValues(AUTHORIZATIONS_A_AND_B));
-        Collections.reverse(values);
-        assertEquals(5, values.size());
-        assertEquals("prop1_A", values.get(0).getPropertyName());
-        assertFalse(values.get(0).isDeleted());
-        assertEquals("value1", values.get(0).getValue());
-        assertEquals("prop2_B", values.get(1).getPropertyName());
-        assertFalse(values.get(1).isDeleted());
-        assertEquals("value2", values.get(1).getValue());
-        assertEquals("prop3_A", values.get(2).getPropertyName());
-        assertFalse(values.get(2).isDeleted());
-        assertEquals("value3", values.get(2).getValue());
-        assertEquals("prop3_A", values.get(3).getPropertyName());
-        assertFalse(values.get(3).isDeleted());
-        assertEquals("value4", values.get(3).getValue());
-        assertEquals("prop3_A", values.get(4).getPropertyName());
-        assertFalse(values.get(4).isDeleted());
-        assertEquals("value3", values.get(4).getValue());
-    }
-
-    @Test
-    @SuppressWarnings("deprecation")
-    public void historicalPropertyValueModifyPropVisibility() {
-        graph.prepareVertex("v1", VISIBILITY_A)
-            .setProperty("prop1_A", "value1", VISIBILITY_A)
-            .setProperty("prop2_B", "value2", VISIBILITY_B)
-            .setProperty("prop3_A", "value3", VISIBILITY_A)
-            .save(AUTHORIZATIONS_A_AND_B);
-        graph.flush();
-
-        // modify property value
-        Vertex v1 = graph.getVertex("v1", FetchHints.ALL, AUTHORIZATIONS_A_AND_B);
-        v1.prepareMutation()
-            .alterPropertyVisibility("prop1_A", VISIBILITY_B)
-            .save(AUTHORIZATIONS_A_AND_B);
-        graph.flush();
-
-        // Restore
-        v1 = graph.getVertex("v1", FetchHints.ALL, AUTHORIZATIONS_A_AND_B);
-        v1.prepareMutation()
-            .alterPropertyVisibility("prop1_A", VISIBILITY_A)
-            .save(AUTHORIZATIONS_A_AND_B);
-        graph.flush();
-
-        List<HistoricalPropertyValue> values = toList(v1.getHistoricalPropertyValues(AUTHORIZATIONS_A_AND_B));
-        Collections.reverse(values);
-        assertEquals(7, values.size());
-
-        assertEquals("prop1_A", values.get(0).getPropertyName());
-        assertFalse(values.get(0).isDeleted());
-        assertEquals(VISIBILITY_A, values.get(0).getPropertyVisibility());
-
-        assertEquals("prop2_B", values.get(1).getPropertyName());
-        assertFalse(values.get(1).isDeleted());
-        assertEquals(VISIBILITY_B, values.get(1).getPropertyVisibility());
-
-        assertEquals("prop3_A", values.get(2).getPropertyName());
-        assertFalse(values.get(2).isDeleted());
-        assertEquals(VISIBILITY_A, values.get(2).getPropertyVisibility());
-
-        assertEquals("prop1_A", values.get(3).getPropertyName());
-        assertTrue(values.get(3).isDeleted());
-        assertEquals(VISIBILITY_A, values.get(3).getPropertyVisibility());
-
-        assertEquals("prop1_A", values.get(4).getPropertyName());
-        assertFalse(values.get(4).isDeleted());
-        assertEquals(VISIBILITY_B, values.get(4).getPropertyVisibility());
-
-        assertEquals("prop1_A", values.get(5).getPropertyName());
-        assertTrue(values.get(5).isDeleted());
-        assertEquals(VISIBILITY_B, values.get(5).getPropertyVisibility());
-
-        assertEquals("prop1_A", values.get(6).getPropertyName());
-        assertFalse(values.get(6).isDeleted());
-        assertEquals(VISIBILITY_A, values.get(6).getPropertyVisibility());
     }
 
     @Test

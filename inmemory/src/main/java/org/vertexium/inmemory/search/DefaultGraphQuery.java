@@ -4,7 +4,6 @@ import org.vertexium.*;
 import org.vertexium.query.Aggregation;
 import org.vertexium.search.GraphQueryBase;
 import org.vertexium.search.QueryResults;
-import org.vertexium.util.JoinIterable;
 
 import java.util.EnumSet;
 import java.util.stream.Stream;
@@ -75,17 +74,17 @@ public class DefaultGraphQuery extends GraphQueryBase {
         }
     }
 
-    @Override
-    protected QueryResults<? extends VertexiumObject> extendedData(FetchHints extendedDataFetchHints) {
-        FetchHints extendedDataTableNamesFetchHints = FetchHints.builder()
-                .setIncludeExtendedDataTableNames(true)
-                .setIgnoreAdditionalVisibilities(extendedDataFetchHints.isIgnoreAdditionalVisibilities())
-                .build();
-        return extendedData(extendedDataFetchHints, new JoinIterable<>(
-                getIterableFromElementType(ElementType.VERTEX, extendedDataTableNamesFetchHints),
-                getIterableFromElementType(ElementType.EDGE, extendedDataTableNamesFetchHints)
-        ));
-    }
+//    @Override
+//    protected QueryResults<? extends VertexiumObject> extendedData(FetchHints extendedDataFetchHints) {
+//        FetchHints extendedDataTableNamesFetchHints = FetchHints.builder()
+//                .setIncludeExtendedDataTableNames(true)
+//                .setIgnoreAdditionalVisibilities(extendedDataFetchHints.isIgnoreAdditionalVisibilities())
+//                .build();
+//        return extendedData(extendedDataFetchHints, new JoinIterable<>(
+//                getIterableFromElementType(ElementType.VERTEX, extendedDataTableNamesFetchHints),
+//                getIterableFromElementType(ElementType.EDGE, extendedDataTableNamesFetchHints)
+//        ));
+//    }
 
     @Override
     public boolean isAggregationSupported(Aggregation aggregation) {

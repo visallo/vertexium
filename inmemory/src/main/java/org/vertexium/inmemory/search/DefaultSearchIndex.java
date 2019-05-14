@@ -95,13 +95,28 @@ public class DefaultSearchIndex implements SearchIndex {
     }
 
     @Override
+    public org.vertexium.search.GraphQuery queryGraph(Graph graph, String queryString, User user) {
+        return new DefaultGraphQuery(graph, queryString, user);
+    }
+
+    @Override
     public org.vertexium.query.MultiVertexQuery queryGraph(Graph graph, String[] vertexIds, String queryString, Authorizations authorizations) {
-        return new DefaultMultiVertexQuery(graph, vertexIds, queryString, authorizations);
+        return new org.vertexium.query.DefaultMultiVertexQuery(graph, vertexIds, queryString, authorizations);
+    }
+
+    @Override
+    public org.vertexium.search.MultiVertexQuery queryGraph(Graph graph, String[] vertexIds, String queryString, User user) {
+        throw new VertexiumException("Not Yet Implemented");
     }
 
     @Override
     public org.vertexium.query.VertexQuery queryVertex(Graph graph, Vertex vertex, String queryString, Authorizations authorizations) {
         return new DefaultVertexQuery(graph, vertex, queryString, authorizations);
+    }
+
+    @Override
+    public org.vertexium.search.VertexQuery queryVertex(Graph graph, Vertex vertex, String queryString, User user) {
+        throw new VertexiumException("Not Yet Implemented");
     }
 
     @Override
@@ -140,6 +155,11 @@ public class DefaultSearchIndex implements SearchIndex {
 
     @Override
     public org.vertexium.query.SimilarToGraphQuery querySimilarTo(Graph graph, String[] fields, String text, Authorizations authorizations) {
+        throw new VertexiumException("querySimilarTo not supported");
+    }
+
+    @Override
+    public org.vertexium.search.SimilarToGraphQuery querySimilarTo(Graph graph, String[] fields, String text, User user) {
         throw new VertexiumException("querySimilarTo not supported");
     }
 
@@ -202,5 +222,10 @@ public class DefaultSearchIndex implements SearchIndex {
     @Override
     public org.vertexium.query.Query queryExtendedData(Graph graph, Element element, String tableName, String queryString, Authorizations authorizations) {
         return new DefaultExtendedDataQuery(graph, element, tableName, queryString, authorizations);
+    }
+
+    @Override
+    public org.vertexium.search.Query queryExtendedData(Graph graph, Element element, String tableName, String queryString, User user) {
+        throw new VertexiumException("Not Yet Implemented");
     }
 }

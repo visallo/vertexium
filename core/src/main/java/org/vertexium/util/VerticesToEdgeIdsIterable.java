@@ -1,6 +1,5 @@
 package org.vertexium.util;
 
-import org.vertexium.Authorizations;
 import org.vertexium.Direction;
 import org.vertexium.User;
 import org.vertexium.Vertex;

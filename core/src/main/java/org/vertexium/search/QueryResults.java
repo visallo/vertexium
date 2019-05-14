@@ -15,6 +15,10 @@ public interface QueryResults<T> {
      */
     Double UNKNOWN_SCORE = -1.0;
 
+    /**
+     * Get the hits for the current page of results
+     * @return A stream of matches to the query
+     */
     Stream<T> getHits();
 
     /**

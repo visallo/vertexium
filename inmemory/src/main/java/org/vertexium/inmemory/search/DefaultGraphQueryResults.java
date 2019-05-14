@@ -2,180 +2,115 @@ package org.vertexium.inmemory.search;
 
 import org.vertexium.*;
 import org.vertexium.property.StreamingPropertyValue;
-import org.vertexium.query.QueryBase;
 import org.vertexium.query.*;
 import org.vertexium.scoring.ScoringStrategy;
 import org.vertexium.search.QueryResults;
-import org.vertexium.util.CloseableIterator;
-import org.vertexium.util.CloseableUtils;
 
-import java.util.Iterator;
-import java.util.List;
-import java.util.NoSuchElementException;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.vertexium.util.IterableUtils.count;
-import static org.vertexium.util.IterableUtils.toList;
 import static org.vertexium.util.Preconditions.checkNotNull;
 
-public class DefaultGraphQueryResults<T> implements QueryResults<T> {
+public class DefaultGraphQueryResults<T, U extends VertexiumObject> implements QueryResults<T> {
     private final QueryParameters parameters;
-    private final Stream<T> objects;
     private final boolean evaluateQueryString;
     private final boolean evaluateHasContainers;
-
+    private final List<U> allHits;
+    private final Collection<Aggregation> aggregations;
+    private final Function<U, T> transform;
 
     public DefaultGraphQueryResults(
-        QueryParameters parameters,
-        Stream<T> objects,
-        boolean evaluateQueryString,
-        boolean evaluateHasContainers,
-        boolean evaluateSortContainers
+            QueryParameters parameters,
+            Stream<U> objects,
+            boolean evaluateQueryString,
+            boolean evaluateHasContainers,
+            boolean evaluateSortContainers,
+            Function<U, T> transform
+    ) {
+        this(parameters, objects, evaluateQueryString, evaluateHasContainers, evaluateSortContainers, null, transform);
+    }
+
+    public DefaultGraphQueryResults(
+            QueryParameters parameters,
+            Stream<U> objects,
+            boolean evaluateQueryString,
+            boolean evaluateHasContainers,
+            boolean evaluateSortContainers,
+            Collection<Aggregation> aggregations,
+            Function<U, T> transform
     ) {
         checkNotNull(objects, "objects cannot be null");
         this.parameters = parameters;
         this.evaluateQueryString = evaluateQueryString;
         this.evaluateHasContainers = evaluateHasContainers;
+        this.aggregations = aggregations;
+        this.transform = transform;
         if (evaluateSortContainers && this.parameters.getSortContainers().size() > 0) {
-            this.objects = sortUsingSortContainers(objects, parameters.getSortContainers());
+            objects = sortUsingSortContainers(objects, parameters.getSortContainers());
         } else if (evaluateHasContainers && this.parameters.getScoringStrategy() != null) {
-            this.objects = sortUsingScoringStrategy(objects, parameters.getScoringStrategy());
-        } else {
-            this.objects = objects;
+            objects = sortUsingScoringStrategy(objects, parameters.getScoringStrategy());
         }
+
+        allHits = objects.filter(this::isMatch).collect(Collectors.toList());
     }
 
-    private Stream<T> sortUsingScoringStrategy(Stream<T> objects, ScoringStrategy scoringStrategy) {
+    private Stream<U> sortUsingScoringStrategy(Stream<U> objects, ScoringStrategy scoringStrategy) {
         return objects.sorted(new ScoringStrategyComparator<>(scoringStrategy));
     }
 
-    private Stream<T> sortUsingSortContainers(Stream<T> objects, List<QueryBase.SortContainer> sortContainers) {
+    private Stream<U> sortUsingSortContainers(Stream<U> objects, List<QueryBase.SortContainer> sortContainers) {
         return objects.sorted(new SortContainersComparator<>(sortContainers));
     }
 
-    @Override
-    public Iterator<T> iterator() {
-        return iterator(false);
+    private boolean isMatch(VertexiumObject vertexiumElem) {
+        if (evaluateHasContainers && vertexiumElem != null) {
+            for (QueryBase.HasContainer has : parameters.getHasContainers()) {
+                if (!has.isMatch(vertexiumElem)) {
+                    return false;
+                }
+            }
+            if (vertexiumElem instanceof Edge && parameters.getEdgeLabels().size() > 0) {
+                Edge edge = (Edge) vertexiumElem;
+                if (!parameters.getEdgeLabels().contains(edge.getLabel())) {
+                    return false;
+                }
+            }
+            if (parameters.getIds() != null) {
+                if (vertexiumElem instanceof Element) {
+                    if (!parameters.getIds().contains(((Element) vertexiumElem).getId())) {
+                        return false;
+                    }
+                } else if (vertexiumElem instanceof ExtendedDataRow) {
+                    if (!parameters.getIds().contains(((ExtendedDataRow) vertexiumElem).getId().getElementId())) {
+                        return false;
+                    }
+                } else {
+                    throw new VertexiumException("Unhandled element type: " + vertexiumElem.getClass().getName());
+                }
+            }
+
+            if (parameters.getMinScore() != null) {
+                if (parameters.getScoringStrategy() == null) {
+                    return false;
+                } else {
+                    Double elementScore = parameters.getScoringStrategy().getScore(vertexiumElem);
+                    if (elementScore == null || elementScore < parameters.getMinScore()) {
+                        return false;
+                    }
+                }
+            }
+        }
+
+        return !evaluateQueryString
+                || vertexiumElem == null
+                || !(parameters instanceof QueryStringQueryParameters)
+                || ((QueryStringQueryParameters) parameters).getQueryString() == null
+                || evaluateQueryString(vertexiumElem, ((QueryStringQueryParameters) parameters).getQueryString());
     }
 
-    protected Iterator<T> iterator(final boolean iterateAll) {
-        final Iterator<T> it = objects.iterator();
-
-        return new CloseableIterator<T>() {
-            public T next;
-            public T current;
-            public long count;
-
-            @Override
-            public boolean hasNext() {
-                loadNext();
-                if (next == null) {
-                    close();
-                }
-                return next != null;
-            }
-
-            @Override
-            public T next() {
-                loadNext();
-                if (next == null) {
-                    throw new NoSuchElementException();
-                }
-                this.current = this.next;
-                this.next = null;
-                return this.current;
-            }
-
-            @Override
-            public void remove() {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public void close() {
-                CloseableUtils.closeQuietly(it);
-                DefaultGraphQueryResults.this.close();
-            }
-
-            private void loadNext() {
-                if (this.next != null) {
-                    return;
-                }
-
-                if (!iterateAll && parameters.getLimit() != null && (this.count >= parameters.getSkip() + parameters.getLimit())) {
-                    return;
-                }
-
-                while (it.hasNext()) {
-                    T elem = it.next();
-                    VertexiumObject vertexiumElem = elem instanceof VertexiumObject ? (VertexiumObject) elem : null;
-
-                    boolean match = true;
-                    if (evaluateHasContainers && vertexiumElem != null) {
-                        for (QueryBase.HasContainer has : parameters.getHasContainers()) {
-                            if (!has.isMatch(vertexiumElem)) {
-                                match = false;
-                                break;
-                            }
-                        }
-                        if (vertexiumElem instanceof Edge && parameters.getEdgeLabels().size() > 0) {
-                            Edge edge = (Edge) vertexiumElem;
-                            if (!parameters.getEdgeLabels().contains(edge.getLabel())) {
-                                match = false;
-                            }
-                        }
-                        if (parameters.getIds() != null) {
-                            if (vertexiumElem instanceof Element) {
-                                if (!parameters.getIds().contains(((Element) vertexiumElem).getId())) {
-                                    match = false;
-                                }
-                            } else if (vertexiumElem instanceof ExtendedDataRow) {
-                                if (!parameters.getIds().contains(((ExtendedDataRow) vertexiumElem).getId().getElementId())) {
-                                    match = false;
-                                }
-                            } else {
-                                throw new VertexiumException("Unhandled element type: " + vertexiumElem.getClass().getName());
-                            }
-                        }
-
-                        if (parameters.getMinScore() != null) {
-                            if (parameters.getScoringStrategy() == null) {
-                                match = false;
-                            } else {
-                                Double elementScore = parameters.getScoringStrategy().getScore(vertexiumElem);
-                                if (elementScore == null) {
-                                    match = false;
-                                } else {
-                                    match = elementScore >= parameters.getMinScore();
-                                }
-                            }
-                        }
-                    }
-                    if (!match) {
-                        continue;
-                    }
-                    if (evaluateQueryString
-                        && vertexiumElem != null
-                        && parameters instanceof QueryStringQueryParameters
-                        && ((QueryStringQueryParameters) parameters).getQueryString() != null
-                        && !evaluateQueryString(vertexiumElem, ((QueryStringQueryParameters) parameters).getQueryString())
-                    ) {
-                        continue;
-                    }
-
-                    this.count++;
-                    if (!iterateAll && (this.count <= parameters.getSkip())) {
-                        continue;
-                    }
-
-                    this.next = elem;
-                    break;
-                }
-            }
-        };
-    }
-
-    protected boolean evaluateQueryString(VertexiumObject vertexiumObject, String queryString) {
+    private boolean evaluateQueryString(VertexiumObject vertexiumObject, String queryString) {
         if (vertexiumObject instanceof Element) {
             return evaluateQueryString((Element) vertexiumObject, queryString);
         } else if (vertexiumObject instanceof ExtendedDataRow) {
@@ -219,23 +154,21 @@ public class DefaultGraphQueryResults<T> implements QueryResults<T> {
 
     @Override
     public Stream<T> getHits() {
-        return objects;
+        List<U> hits  = allHits;
+        int skip = Math.max(0, (int) parameters.getSkip());
+        if (skip > 0) {
+            hits = hits.subList(skip, hits.size());
+        }
+        if (parameters.getLimit() != null) {
+            int limit = Math.min(hits.size(), parameters.getLimit().intValue());
+            hits.subList(0, limit);
+        }
+        return hits.stream().map(transform);
     }
 
     @Override
     public long getTotalHits() {
-        // a limit could be set on a query which could prevent all items being returned
-        return count(this.iterator(true));
-    }
-
-    @Override
-    public void close() {
-        CloseableUtils.closeQuietly(objects);
-    }
-
-    @Override
-    public <TResult extends AggregationResult> TResult getAggregationResult(String name, Class<? extends TResult> resultType) {
-        throw new VertexiumException("Could not find aggregation with name: " + name);
+        return allHits.size();
     }
 
     @Override
@@ -255,16 +188,172 @@ public class DefaultGraphQueryResults<T> implements QueryResults<T> {
     }
 
     private VertexiumObject findVertexiumObjectById(Object id) {
-        Iterator<T> it = iterator(true);
-        while (it.hasNext()) {
-            T obj = it.next();
-            if (obj instanceof VertexiumObject) {
-                VertexiumObject vertexiumObject = (VertexiumObject) obj;
-                if (vertexiumObject.getId().equals(id)) {
-                    return vertexiumObject;
-                }
+        return allHits.stream()
+                .filter(obj -> obj != null && obj.getId().equals(id))
+                .map(obj -> (VertexiumObject) obj)
+                .findFirst().orElse(null);
+    }
+
+    @Override
+    public <TResult extends AggregationResult> TResult getAggregationResult(String name, Class<? extends TResult> resultType) {
+        for (Aggregation agg : this.aggregations) {
+            if (agg.getAggregationName().equals(name)) {
+                return getAggregationResult(agg, allHits.iterator());
             }
         }
         return null;
+    }
+
+    public static boolean isAggregationSupported(Aggregation agg) {
+        if (agg instanceof TermsAggregation) {
+            return true;
+        }
+        if (agg instanceof CalendarFieldAggregation) {
+            return true;
+        }
+        if (agg instanceof CardinalityAggregation) {
+            return true;
+        }
+        return false;
+    }
+
+    @SuppressWarnings("unchecked")
+    public <TResult extends AggregationResult> TResult getAggregationResult(Aggregation agg, Iterator<U> it) {
+        if (agg instanceof TermsAggregation) {
+            return (TResult) getTermsAggregationResult((TermsAggregation) agg, it);
+        }
+        if (agg instanceof CalendarFieldAggregation) {
+            return (TResult) getCalendarFieldHistogramResult((CalendarFieldAggregation) agg, it);
+        }
+        if (agg instanceof CardinalityAggregation) {
+            return (TResult) getCardinalityAggregationResult((CardinalityAggregation) agg, it);
+        }
+        throw new VertexiumException("Unhandled aggregation: " + agg.getClass().getName());
+    }
+
+    private CardinalityResult getCardinalityAggregationResult(CardinalityAggregation agg, Iterator<U> it) {
+        String fieldName = agg.getPropertyName();
+
+        if (Element.ID_PROPERTY_NAME.equals(fieldName)
+                || Edge.LABEL_PROPERTY_NAME.equals(fieldName)
+                || Edge.OUT_VERTEX_ID_PROPERTY_NAME.equals(fieldName)
+                || Edge.IN_VERTEX_ID_PROPERTY_NAME.equals(fieldName)
+                || ExtendedDataRow.TABLE_NAME.equals(fieldName)
+                || ExtendedDataRow.ROW_ID.equals(fieldName)
+                || ExtendedDataRow.ELEMENT_ID.equals(fieldName)
+                || ExtendedDataRow.ELEMENT_TYPE.equals(fieldName)) {
+            Set<Object> values = new HashSet<>();
+            while (it.hasNext()) {
+                VertexiumObject vertexiumObject = it.next();
+                Iterable<Object> propertyValues = vertexiumObject.getPropertyValues(fieldName);
+                for (Object propertyValue : propertyValues) {
+                    values.add(propertyValue);
+                }
+            }
+            return new CardinalityResult(values.size());
+        } else {
+            throw new VertexiumException("Cannot use cardinality aggregation on properties with visibility: " + fieldName);
+        }
+    }
+
+    private TermsResult getTermsAggregationResult(TermsAggregation agg, Iterator<U> it) {
+        String propertyName = agg.getPropertyName();
+        Map<Object, List<U>> elementsByProperty = getElementsByProperty(it, propertyName, o -> o);
+        elementsByProperty = collapseBucketsByCase(elementsByProperty);
+
+        List<TermsBucket> buckets = new ArrayList<>();
+        for (Map.Entry<Object, List<U>> entry : elementsByProperty.entrySet()) {
+            Object key = entry.getKey();
+            int count = entry.getValue().size();
+            Map<String, AggregationResult> nestedResults = getNestedResults(agg.getNestedAggregations(), entry.getValue());
+            buckets.add(new TermsBucket(key, count, nestedResults));
+        }
+        return new TermsResult(buckets);
+    }
+
+    private Map<Object, List<U>> collapseBucketsByCase(Map<Object, List<U>> elementsByProperty) {
+        Map<String, List<Map.Entry<Object, List<U>>>> stringEntries = new HashMap<>();
+        Map<Object, List<U>> results = new HashMap<>();
+
+        // for strings first group them by there lowercase version
+        for (Map.Entry<Object, List<U>> entry : elementsByProperty.entrySet()) {
+            if (entry.getKey() instanceof String) {
+                String lowerCaseKey = ((String) entry.getKey()).toLowerCase();
+                List<Map.Entry<Object, List<U>>> l = stringEntries.computeIfAbsent(lowerCaseKey, s -> new ArrayList<>());
+                l.add(entry);
+            } else {
+                results.put(entry.getKey(), entry.getValue());
+            }
+        }
+
+        // for strings find the best key (the one with the most entries) and use that as the bucket name
+        for (Map.Entry<String, List<Map.Entry<Object, List<U>>>> entry : stringEntries.entrySet()) {
+            results.put(
+                    findBestKey(entry.getValue()),
+                    entry.getValue().stream()
+                            .flatMap(l -> l.getValue().stream())
+                            .collect(Collectors.toList())
+            );
+        }
+        return results;
+    }
+
+    private Object findBestKey(List<Map.Entry<Object, List<U>>> value) {
+        int longestListLength = 0;
+        String longestString = null;
+        for (Map.Entry<Object, List<U>> entry : value) {
+            if (entry.getValue().size() >= longestListLength) {
+                longestListLength = entry.getValue().size();
+                longestString = (String) entry.getKey();
+            }
+        }
+        return longestString;
+    }
+
+    private HistogramResult getCalendarFieldHistogramResult(final CalendarFieldAggregation agg, Iterator<U> it) {
+        String propertyName = agg.getPropertyName();
+        final Calendar calendar = GregorianCalendar.getInstance(agg.getTimeZone());
+        Map<Integer, List<U>> elementsByProperty = getElementsByProperty(it, propertyName, o -> {
+            Date d = (Date) o;
+            calendar.setTime(d);
+            //noinspection MagicConstant
+            return calendar.get(agg.getCalendarField());
+        });
+
+        Map<Integer, HistogramBucket> buckets = new HashMap<>(24);
+        for (Map.Entry<Integer, List<U>> entry : elementsByProperty.entrySet()) {
+            int key = entry.getKey();
+            int count = entry.getValue().size();
+            Map<String, AggregationResult> nestedResults = getNestedResults(agg.getNestedAggregations(), entry.getValue());
+            buckets.put(key, new HistogramBucket(key, count, nestedResults));
+        }
+        return new HistogramResult(buckets.values());
+    }
+
+    private Map<String, AggregationResult> getNestedResults(Iterable<Aggregation> nestedAggregations, List<U> elements) {
+        Map<String, AggregationResult> results = new HashMap<>();
+        for (Aggregation nestedAggregation : nestedAggregations) {
+            AggregationResult nestedResult = getAggregationResult(nestedAggregation, elements.iterator());
+            results.put(nestedAggregation.getAggregationName(), nestedResult);
+        }
+        return results;
+    }
+
+    private <TKey> Map<TKey, List<U>> getElementsByProperty(Iterator<U> it, String propertyName, ValueConverter<TKey> valueConverter) {
+        Map<TKey, List<U>> elementsByProperty = new HashMap<>();
+        while (it.hasNext()) {
+            U vertexiumObject = it.next();
+            Iterable<Object> values = vertexiumObject.getPropertyValues(propertyName);
+            for (Object value : values) {
+                TKey convertedValue = valueConverter.convert(value);
+                List<U> list = elementsByProperty.computeIfAbsent(convertedValue, k -> new ArrayList<>());
+                list.add(vertexiumObject);
+            }
+        }
+        return elementsByProperty;
+    }
+
+    private interface ValueConverter<T> {
+        T convert(Object o);
     }
 }
