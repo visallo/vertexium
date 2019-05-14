@@ -111,12 +111,12 @@ public class DefaultSearchIndex implements SearchIndex {
 
     @Override
     public org.vertexium.query.VertexQuery queryVertex(Graph graph, Vertex vertex, String queryString, Authorizations authorizations) {
-        return new DefaultVertexQuery(graph, vertex, queryString, authorizations);
+        return new org.vertexium.query.DefaultVertexQuery(graph, vertex, queryString, authorizations);
     }
 
     @Override
     public org.vertexium.search.VertexQuery queryVertex(Graph graph, Vertex vertex, String queryString, User user) {
-        throw new VertexiumException("Not Yet Implemented");
+        return new DefaultVertexQuery(graph, vertex, queryString, user);
     }
 
     @Override
@@ -180,12 +180,7 @@ public class DefaultSearchIndex implements SearchIndex {
     }
 
     @Override
-    public void addExtendedData(
-        Graph graph,
-        ElementLocation elementLocation,
-        Iterable<ExtendedDataRow> extendedDatas,
-        User user
-    ) {
+    public void addExtendedData(Graph graph, ElementLocation elementLocation, Iterable<ExtendedDataRow> extendedDatas, User user) {
     }
 
     @Override
