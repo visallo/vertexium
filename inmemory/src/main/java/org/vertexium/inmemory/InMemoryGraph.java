@@ -548,12 +548,6 @@ public class InMemoryGraph extends GraphBase {
 
     @Override
     @Deprecated
-    public void softDeleteEdge(Edge edge, Object eventData, Authorizations authorizations) {
-
-    }
-
-    @Override
-    @Deprecated
     public void softDeleteEdge(Edge edge, Long timestamp, Object eventData, Authorizations authorizations) {
         checkNotNull(edge, "Edge cannot be null");
         if (!((InMemoryEdge) edge).canRead(authorizations)) {

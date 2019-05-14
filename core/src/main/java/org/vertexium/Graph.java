@@ -1550,7 +1550,9 @@ public interface Graph {
      * @deprecated Use {@link ElementMutation#softDeleteElement(Object)}
      */
     @Deprecated
-    void softDeleteEdge(Edge edge, Object eventData, Authorizations authorizations);
+    default void softDeleteEdge(Edge edge, Object eventData, Authorizations authorizations) {
+        softDeleteEdge(edge, null, eventData, authorizations);
+    }
 
     /**
      * Soft deletes an edge from the graph.
