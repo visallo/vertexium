@@ -8,6 +8,7 @@ import org.vertexium.search.QueryResults;
 import org.vertexium.util.IterableUtils;
 
 import java.util.EnumSet;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 public class DefaultMultiVertexQuery extends QueryBase implements MultiVertexQuery {
@@ -21,7 +22,7 @@ public class DefaultMultiVertexQuery extends QueryBase implements MultiVertexQue
     @Override
     public QueryResults<Vertex> vertices(FetchHints fetchHints) {
         Stream<Vertex> vertices = getGraph().getVertices(IterableUtils.toIterable(getVertexIds()), fetchHints, getParameters().getUser());
-        return new DefaultGraphQueryResultsWithAggregations<>(getParameters(), vertices, true, true, true, getAggregations());
+        return new DefaultGraphQueryResults<>(getParameters(), vertices, true, true, true, getAggregations(), Function.identity());
     }
 
     @Override
@@ -33,7 +34,7 @@ public class DefaultMultiVertexQuery extends QueryBase implements MultiVertexQue
     public QueryResults<Edge> edges(FetchHints fetchHints) {
         Stream<Edge> edges = getGraph().getVertices(IterableUtils.toIterable(getVertexIds()), fetchHints, getParameters().getUser())
             .flatMap(v -> v.getEdges(Direction.BOTH, fetchHints, getParameters().getUser()));
-        return new DefaultGraphQueryResultsWithAggregations<>(getParameters(), edges, true, true, true, getAggregations());
+        return new DefaultGraphQueryResults<>(getParameters(), edges, true, true, true, getAggregations(), Function.identity());
     }
 
     @Override

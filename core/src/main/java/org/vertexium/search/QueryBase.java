@@ -32,12 +32,6 @@ public abstract class QueryBase implements org.vertexium.search.Query, org.verte
     }
 
     @Override
-    public QueryResults<Vertex> vertices(FetchHints fetchHints) {
-        //noinspection unchecked
-        return (QueryResults<Vertex>) search(EnumSet.of(VertexiumObjectType.VERTEX), fetchHints);
-    }
-
-    @Override
     public QueryResults<String> vertexIds() {
         return vertexIds(IdFetchHint.NONE);
     }
@@ -48,12 +42,6 @@ public abstract class QueryBase implements org.vertexium.search.Query, org.verte
     }
 
     @Override
-    public QueryResults<Edge> edges(FetchHints fetchHints) {
-        //noinspection unchecked
-        return (QueryResults<Edge>) search(EnumSet.of(VertexiumObjectType.EDGE), fetchHints);
-    }
-
-    @Override
     public QueryResults<String> edgeIds() {
         return edgeIds(IdFetchHint.NONE);
     }
@@ -61,12 +49,6 @@ public abstract class QueryBase implements org.vertexium.search.Query, org.verte
     @Override
     public QueryResults<ExtendedDataRow> extendedDataRows() {
         return extendedDataRows(getGraph().getDefaultFetchHints());
-    }
-
-    @Override
-    public QueryResults<ExtendedDataRow> extendedDataRows(FetchHints fetchHints) {
-        //noinspection unchecked
-        return (QueryResults<ExtendedDataRow>) search(EnumSet.of(VertexiumObjectType.EXTENDED_DATA), fetchHints);
     }
 
     @Override
@@ -144,12 +126,6 @@ public abstract class QueryBase implements org.vertexium.search.Query, org.verte
     @Override
     public QueryResults<Element> elements() {
         return elements(getGraph().getDefaultFetchHints());
-    }
-
-    @Override
-    public QueryResults<Element> elements(FetchHints fetchHints) {
-        //noinspection unchecked
-        return (QueryResults<Element>) search(VertexiumObjectType.ELEMENTS, fetchHints);
     }
 
     @Override

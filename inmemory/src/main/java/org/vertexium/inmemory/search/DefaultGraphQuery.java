@@ -4,6 +4,7 @@ import org.vertexium.*;
 import org.vertexium.query.Aggregation;
 import org.vertexium.search.GraphQueryBase;
 import org.vertexium.search.QueryResults;
+import org.vertexium.util.StreamUtils;
 
 import java.util.EnumSet;
 import java.util.function.Function;
@@ -18,7 +19,7 @@ public class DefaultGraphQuery extends GraphQueryBase {
     public QueryResults<Vertex> vertices(FetchHints fetchHints) {
         return new DefaultGraphQueryResults<>(
                 getParameters(),
-                this.getIterableFromElementType(ElementType.VERTEX, fetchHints),
+                this.getStreamFromElementType(ElementType.VERTEX, fetchHints),
                 true,
                 true,
                 true,
@@ -29,10 +30,9 @@ public class DefaultGraphQuery extends GraphQueryBase {
 
     @Override
     public QueryResults<String> vertexIds(EnumSet<IdFetchHint> idFetchHints) {
-        FetchHints fetchHints = idFetchHints == IdFetchHint.ALL_INCLUDING_HIDDEN ? FetchHints.ALL : FetchHints.NONE;
         return new DefaultGraphQueryResults<>(
                 getParameters(),
-                this.<Vertex>getIterableFromElementType(ElementType.VERTEX, fetchHints),
+                this.<Vertex>getStreamFromElementType(ElementType.VERTEX, idFetchHintsToElementFetchHints(idFetchHints)),
                 true,
                 true,
                 true,
@@ -45,7 +45,7 @@ public class DefaultGraphQuery extends GraphQueryBase {
     public QueryResults<Edge> edges(FetchHints fetchHints) {
         return new DefaultGraphQueryResults<>(
                 getParameters(),
-                this.<Edge>getIterableFromElementType(ElementType.EDGE, fetchHints),
+                this.getStreamFromElementType(ElementType.EDGE, fetchHints),
                 true,
                 true,
                 true,
@@ -56,10 +56,9 @@ public class DefaultGraphQuery extends GraphQueryBase {
 
     @Override
     public QueryResults<String> edgeIds(EnumSet<IdFetchHint> idFetchHints) {
-        FetchHints fetchHints = idFetchHints == IdFetchHint.ALL_INCLUDING_HIDDEN ? FetchHints.ALL : FetchHints.NONE;
         return new DefaultGraphQueryResults<>(
                 getParameters(),
-                this.<Edge>getIterableFromElementType(ElementType.EDGE, fetchHints),
+                this.<Edge>getStreamFromElementType(ElementType.EDGE, idFetchHintsToElementFetchHints(idFetchHints)),
                 true,
                 true,
                 true,
@@ -69,22 +68,87 @@ public class DefaultGraphQuery extends GraphQueryBase {
     }
 
     @Override
-    public QueryResults<ExtendedDataRowId> extendedDataRowIds(EnumSet<IdFetchHint> fetchHints) {
-        return null;
+    public QueryResults<ExtendedDataRow> extendedDataRows(FetchHints fetchHints) {
+        return new DefaultGraphQueryResults<>(
+                getParameters(),
+                extendedData(fetchHints),
+                true,
+                true,
+                true,
+                getAggregations(),
+                Function.identity()
+        );
     }
 
     @Override
-    public QueryResults<String> elementIds(EnumSet<IdFetchHint> fetchHints) {
-        return null;
+    public QueryResults<ExtendedDataRowId> extendedDataRowIds(EnumSet<IdFetchHint> idFetchHints) {
+        return new DefaultGraphQueryResults<>(
+                getParameters(),
+                extendedData(idFetchHintsToElementFetchHints(idFetchHints)),
+                true,
+                true,
+                true,
+                getAggregations(),
+                ExtendedDataRow::getId
+        );
+    }
+
+    @Override
+    public QueryResults<Element> elements(FetchHints fetchHints) {
+        Stream<Element> elements = Stream.concat(
+                getStreamFromElementType(ElementType.VERTEX, fetchHints),
+                getStreamFromElementType(ElementType.EDGE, fetchHints)
+        );
+        return new DefaultGraphQueryResults<>(
+                getParameters(),
+                elements,
+                true,
+                true,
+                true,
+                getAggregations(),
+                Function.identity()
+        );
+    }
+
+    @Override
+    public QueryResults<String> elementIds(EnumSet<IdFetchHint> idFetchHints) {
+        FetchHints fetchHints = idFetchHintsToElementFetchHints(idFetchHints);
+        Stream<Element> elements = Stream.concat(
+                getStreamFromElementType(ElementType.VERTEX, fetchHints),
+                getStreamFromElementType(ElementType.EDGE, fetchHints)
+        );
+        return new DefaultGraphQueryResults<>(
+                getParameters(),
+                elements,
+                true,
+                true,
+                true,
+                getAggregations(),
+                Element::getId
+        );
     }
 
     @Override
     public QueryResults<? extends VertexiumObject> search(EnumSet<VertexiumObjectType> objectTypes, FetchHints fetchHints) {
-        return null;
+        throw new VertexiumException("Not yet implemented");
+    }
+
+    private Stream<ExtendedDataRow> extendedData(FetchHints fetchHints) {
+        FetchHints extendedDataTableNamesFetchHints = FetchHints.builder()
+                .setIncludeExtendedDataTableNames(true)
+                .setIgnoreAdditionalVisibilities(fetchHints.isIgnoreAdditionalVisibilities())
+                .build();
+        return Stream.concat(
+                this.<Vertex>getStreamFromElementType(ElementType.VERTEX, extendedDataTableNamesFetchHints),
+                this.<Edge>getStreamFromElementType(ElementType.EDGE, extendedDataTableNamesFetchHints)
+        ).flatMap(element ->
+                element.getExtendedDataTableNames().stream()
+                .flatMap(tableName -> StreamUtils.stream(element.getExtendedData(tableName, fetchHints)))
+        );
     }
 
     @SuppressWarnings("unchecked")
-    private <T extends Element> Stream<T> getIterableFromElementType(ElementType elementType, FetchHints fetchHints) throws VertexiumException {
+    private <T extends Element> Stream<T> getStreamFromElementType(ElementType elementType, FetchHints fetchHints) throws VertexiumException {
         switch (elementType) {
             case VERTEX:
                 return (Stream<T>) getGraph().getVertices(fetchHints, getParameters().getUser());
@@ -94,18 +158,6 @@ public class DefaultGraphQuery extends GraphQueryBase {
                 throw new VertexiumException("Unexpected element type: " + elementType);
         }
     }
-
-//    @Override
-//    protected QueryResults<? extends VertexiumObject> extendedData(FetchHints extendedDataFetchHints) {
-//        FetchHints extendedDataTableNamesFetchHints = FetchHints.builder()
-//                .setIncludeExtendedDataTableNames(true)
-//                .setIgnoreAdditionalVisibilities(extendedDataFetchHints.isIgnoreAdditionalVisibilities())
-//                .build();
-//        return extendedData(extendedDataFetchHints, new JoinIterable<>(
-//                getIterableFromElementType(ElementType.VERTEX, extendedDataTableNamesFetchHints),
-//                getIterableFromElementType(ElementType.EDGE, extendedDataTableNamesFetchHints)
-//        ));
-//    }
 
     @Override
     public boolean isAggregationSupported(Aggregation aggregation) {
