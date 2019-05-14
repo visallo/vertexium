@@ -53,6 +53,11 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> extends 
     }
 
     @Override
+    public User getUser() {
+        return user;
+    }
+
+    @Override
     public void deleteProperty(String key, String name, Visibility visibility, User user) {
         getGraph().deleteProperty(this, inMemoryTableElement, key, name, visibility, user);
     }

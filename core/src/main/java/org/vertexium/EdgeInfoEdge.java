@@ -12,7 +12,7 @@ public class EdgeInfoEdge extends ElementBase implements Edge {
     private final Graph graph;
     private final String sourceVertexId;
     private final EdgeInfo edgeInfo;
-    private final Authorizations authorizations;
+    private final User user;
     private final FetchHints fetchHints;
 
     public EdgeInfoEdge(
@@ -20,13 +20,13 @@ public class EdgeInfoEdge extends ElementBase implements Edge {
         String sourceVertexId,
         EdgeInfo edgeInfo,
         FetchHints fetchHints,
-        Authorizations authorizations
+        User user
     ) {
         this.graph = graph;
         this.sourceVertexId = sourceVertexId;
         this.edgeInfo = edgeInfo;
         this.fetchHints = fetchHints;
-        this.authorizations = authorizations;
+        this.user = user;
     }
 
     @Override
@@ -63,7 +63,7 @@ public class EdgeInfoEdge extends ElementBase implements Edge {
     }
 
     private Edge getEdge() {
-        return getGraph().getEdge(getId(), getFetchHints(), authorizations);
+        return getGraph().getEdge(getId(), getFetchHints(), user);
     }
 
     @Override
@@ -99,11 +99,6 @@ public class EdgeInfoEdge extends ElementBase implements Edge {
     @Override
     public Graph getGraph() {
         return graph;
-    }
-
-    @Override
-    public Authorizations getAuthorizations() {
-        return authorizations;
     }
 
     @Override
@@ -162,6 +157,11 @@ public class EdgeInfoEdge extends ElementBase implements Edge {
     @Override
     public int hashCode() {
         return getId().hashCode();
+    }
+
+    @Override
+    public User getUser() {
+        return user;
     }
 
     @Override
