@@ -329,6 +329,229 @@ public interface ElementMutation<T extends Element> extends ElementLocation {
     ElementMutation<T> markElementVisible(Visibility visibility, Object eventData);
 
     /**
+     * Marks a property as hidden for a given visibility.
+     *
+     * @param key                The key of the property.
+     * @param name               The name of the property.
+     * @param propertyVisibility The visibility of the property.
+     * @param visibility         The visibility string under which this property is hidden.
+     *                           This visibility can be a superset of the property visibility to mark
+     *                           it as hidden for only a subset of authorizations.
+     */
+    default ElementMutation<T> markPropertyHidden(String key, String name, Visibility propertyVisibility, Visibility visibility) {
+        return markPropertyHidden(key, name, propertyVisibility, visibility, null);
+    }
+
+    /*
+     * Marks a property as hidden for a given visibility.
+     *
+     * @param key                The key of the property.
+     * @param name               The name of the property.
+     * @param propertyVisibility The visibility of the property.
+     * @param visibility         The visibility string under which this property is hidden.
+     *                           This visibility can be a superset of the property visibility to mark
+     *                           it as hidden for only a subset of authorizations.
+     * @param eventData          Data to store with the hidden
+     */
+    ElementMutation<T> markPropertyHidden(String key, String name, Visibility propertyVisibility, Visibility visibility, Object eventData);
+
+    /**
+     * Marks a property as hidden for a given visibility.
+     *
+     * @param key                The key of the property.
+     * @param name               The name of the property.
+     * @param propertyVisibility The visibility of the property.
+     * @param timestamp          The timestamp.
+     * @param visibility         The visibility string under which this property is hidden.
+     *                           This visibility can be a superset of the property visibility to mark
+     *                           it as hidden for only a subset of authorizations.
+     */
+    default ElementMutation<T> markPropertyHidden(
+        String key,
+        String name,
+        Visibility propertyVisibility,
+        Long timestamp,
+        Visibility visibility
+    ) {
+        return markPropertyHidden(key, name, propertyVisibility, timestamp, visibility, null);
+    }
+
+    /**
+     * Marks a property as hidden for a given visibility.
+     *
+     * @param key                The key of the property.
+     * @param name               The name of the property.
+     * @param propertyVisibility The visibility of the property.
+     * @param timestamp          The timestamp.
+     * @param visibility         The visibility string under which this property is hidden.
+     *                           This visibility can be a superset of the property visibility to mark
+     *                           it as hidden for only a subset of authorizations.
+     * @param eventData          Data to store with the hidden
+     */
+    ElementMutation<T> markPropertyHidden(
+        String key,
+        String name,
+        Visibility propertyVisibility,
+        Long timestamp,
+        Visibility visibility,
+        Object eventData
+    );
+
+    /**
+     * Marks a property as hidden for a given visibility.
+     *
+     * @param property   The property.
+     * @param visibility The visibility string under which this property is hidden.
+     *                   This visibility can be a superset of the property visibility to mark
+     *                   it as hidden for only a subset of authorizations.
+     */
+    default ElementMutation<T> markPropertyHidden(Property property, Visibility visibility) {
+        return markPropertyHidden(property, null, visibility, null);
+    }
+
+    /**
+     * Marks a property as hidden for a given visibility.
+     *
+     * @param property   The property.
+     * @param visibility The visibility string under which this property is hidden.
+     *                   This visibility can be a superset of the property visibility to mark
+     *                   it as hidden for only a subset of authorizations.
+     * @param eventData  Data to store with the hidden
+     */
+    default ElementMutation<T> markPropertyHidden(Property property, Visibility visibility, Object eventData) {
+        return markPropertyHidden(property, null, visibility, eventData);
+    }
+
+    /**
+     * Marks a property as hidden for a given visibility.
+     *
+     * @param property   The property.
+     * @param timestamp  The timestamp.
+     * @param visibility The visibility string under which this property is hidden.
+     *                   This visibility can be a superset of the property visibility to mark
+     *                   it as hidden for only a subset of authorizations.
+     */
+    default ElementMutation<T> markPropertyHidden(Property property, Long timestamp, Visibility visibility) {
+        return markPropertyHidden(property, timestamp, visibility, null);
+    }
+
+    /**
+     * Marks a property as hidden for a given visibility.
+     *
+     * @param property   The property.
+     * @param timestamp  The timestamp.
+     * @param visibility The visibility string under which this property is hidden.
+     *                   This visibility can be a superset of the property visibility to mark
+     *                   it as hidden for only a subset of authorizations.
+     */
+    ElementMutation<T> markPropertyHidden(Property property, Long timestamp, Visibility visibility, Object data);
+
+    /**
+     * Marks a property as visible for a given visibility, effectively undoing markPropertyHidden.
+     *
+     * @param key                The key of the property.
+     * @param name               The name of the property.
+     * @param propertyVisibility The visibility of the property.
+     * @param visibility         The visibility string under which this property is now visible.
+     */
+    default ElementMutation<T> markPropertyVisible(String key, String name, Visibility propertyVisibility, Visibility visibility) {
+        return markPropertyVisible(key, name, propertyVisibility, null, visibility, null);
+    }
+
+    /**
+     * Marks a property as visible for a given visibility, effectively undoing markPropertyHidden.
+     *
+     * @param key                The key of the property.
+     * @param name               The name of the property.
+     * @param propertyVisibility The visibility of the property.
+     * @param visibility         The visibility string under which this property is now visible.
+     * @param eventData          Data to store with the visible
+     */
+    default ElementMutation<T> markPropertyVisible(String key, String name, Visibility propertyVisibility, Visibility visibility, Object eventData) {
+        return markPropertyVisible(key, name, propertyVisibility, null, visibility, eventData);
+    }
+
+    /**
+     * Marks a property as visible for a given visibility, effectively undoing markPropertyHidden.
+     *
+     * @param key                The key of the property.
+     * @param name               The name of the property.
+     * @param propertyVisibility The visibility of the property.
+     * @param timestamp          The timestamp.
+     * @param visibility         The visibility string under which this property is now visible.
+     */
+    default ElementMutation<T> markPropertyVisible(
+        String key,
+        String name,
+        Visibility propertyVisibility,
+        Long timestamp,
+        Visibility visibility
+    ) {
+        return markPropertyVisible(key, name, propertyVisibility, timestamp, visibility, null);
+    }
+
+    /**
+     * Marks a property as visible for a given visibility, effectively undoing markPropertyHidden.
+     *
+     * @param key                The key of the property.
+     * @param name               The name of the property.
+     * @param propertyVisibility The visibility of the property.
+     * @param timestamp          The timestamp.
+     * @param visibility         The visibility string under which this property is now visible.
+     * @param eventData          Data to store with the visible
+     */
+    ElementMutation<T> markPropertyVisible(
+        String key,
+        String name,
+        Visibility propertyVisibility,
+        Long timestamp,
+        Visibility visibility,
+        Object eventData
+    );
+
+    /**
+     * Marks a property as visible for a given visibility, effectively undoing markPropertyHidden.
+     *
+     * @param property   The property.
+     * @param visibility The visibility string under which this property is now visible.
+     */
+    default ElementMutation<T> markPropertyVisible(Property property, Visibility visibility) {
+        return markPropertyVisible(property, null, visibility, null);
+    }
+
+    /**
+     * Marks a property as visible for a given visibility, effectively undoing markPropertyHidden.
+     *
+     * @param property   The property.
+     * @param visibility The visibility string under which this property is now visible.
+     * @param eventData  Data to store with the visible
+     */
+    default ElementMutation<T> markPropertyVisible(Property property, Visibility visibility, Object eventData) {
+        return markPropertyVisible(property, null, visibility, eventData);
+    }
+
+    /**
+     * Marks a property as visible for a given visibility, effectively undoing markPropertyHidden.
+     *
+     * @param property   The property.
+     * @param timestamp  The timestamp.
+     * @param visibility The visibility string under which this property is now visible.
+     */
+    default ElementMutation<T> markPropertyVisible(Property property, Long timestamp, Visibility visibility) {
+        return markPropertyVisible(property, timestamp, visibility, null);
+    }
+
+    /**
+     * Marks a property as visible for a given visibility, effectively undoing markPropertyHidden.
+     *
+     * @param property   The property.
+     * @param timestamp  The timestamp.
+     * @param visibility The visibility string under which this property is now visible.
+     * @param eventData  Data to store with the visible
+     */
+    ElementMutation<T> markPropertyVisible(Property property, Long timestamp, Visibility visibility, Object eventData);
+
+    /**
      * Gets the properties currently in this mutation.
      */
     Iterable<Property> getProperties();

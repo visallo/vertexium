@@ -116,7 +116,7 @@ public interface Element extends VertexiumObject, ElementLocation {
      *
      * @param key  The property key.
      * @param name The property name.
-     * @deprecated Use {@link org.vertexium.mutation.ExistingElementMutation#deleteProperty(String, String)}
+     * @deprecated Use {@link org.vertexium.mutation.ExistingElementMutation#deleteProperties(String, String)}
      */
     @Deprecated
     default void deleteProperty(String key, String name, Authorizations authorizations) {
