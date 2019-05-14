@@ -206,38 +206,6 @@ public class InMemoryGraph extends GraphBase {
         }
     }
 
-    <T extends Element> void updateElementAndExtendedDataInSearchIndex(
-        Element element,
-        ElementMutation<T> elementMutation,
-        Authorizations authorizations
-    ) {
-        if (elementMutation instanceof ExistingElementMutation) {
-            getSearchIndex().updateElement(this, (ExistingElementMutation<? extends Element>) elementMutation, authorizations);
-        } else {
-            getSearchIndex().addElement(this, element, authorizations);
-        }
-        getSearchIndex().addElementExtendedData(
-            InMemoryGraph.this,
-            element,
-            elementMutation.getExtendedData(),
-            elementMutation.getAdditionalExtendedDataVisibilities(),
-            elementMutation.getAdditionalExtendedDataVisibilityDeletes(),
-            authorizations
-        );
-        for (ExtendedDataDeleteMutation m : elementMutation.getExtendedDataDeletes()) {
-            getSearchIndex().deleteExtendedData(
-                InMemoryGraph.this,
-                element,
-                m.getTableName(),
-                m.getRow(),
-                m.getColumnName(),
-                m.getKey(),
-                m.getVisibility(),
-                authorizations
-            );
-        }
-    }
-
     private void addValidAuthorizations(String[] authorizations) {
         Collections.addAll(this.validAuthorizations, authorizations);
     }
