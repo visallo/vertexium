@@ -9469,7 +9469,7 @@ public abstract class GraphTestBase {
 
         List<HistoricalEvent> events = graph.getHistoricalEvents(Lists.newArrayList(ElementId.edge("e1")), AUTHORIZATIONS_ALL)
             .collect(Collectors.toList());
-        assertEquals(5, events.size());
+        assertEquals(6, events.size());
 
         assertTrue(events.get(0) instanceof HistoricalAddEdgeEvent);
         HistoricalAddEdgeEvent addEdgeEvent = (HistoricalAddEdgeEvent) events.get(0);
@@ -9498,8 +9498,15 @@ public abstract class GraphTestBase {
         assertEquals("v1", softDeleteEvent.getOutVertexId());
         assertEquals("v2", softDeleteEvent.getInVertexId());
 
-        assertTrue(events.get(4) instanceof HistoricalAddEdgeEvent);
-        addEdgeEvent = (HistoricalAddEdgeEvent) events.get(4);
+        assertTrue(events.get(4) instanceof HistoricalSoftDeletePropertyEvent);
+        HistoricalSoftDeletePropertyEvent softDeletePropertyEvent = (HistoricalSoftDeletePropertyEvent) events.get(4);
+        assertEquals("e1", softDeletePropertyEvent.getElementId());
+        assertEquals("k1", softDeletePropertyEvent.getPropertyKey());
+        assertEquals("prop1", softDeletePropertyEvent.getPropertyName());
+        assertEquals(VISIBILITY_A, softDeletePropertyEvent.getPropertyVisibility());
+
+        assertTrue(events.get(5) instanceof HistoricalAddEdgeEvent);
+        addEdgeEvent = (HistoricalAddEdgeEvent) events.get(5);
         assertEquals("e1", addEdgeEvent.getElementId());
 
         events = graph.getHistoricalEvents(Lists.newArrayList(ElementId.vertex("v1")), AUTHORIZATIONS_ALL)
