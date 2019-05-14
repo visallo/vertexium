@@ -87,28 +87,8 @@ public class EdgeInfoEdge extends ElementBase implements Edge {
     }
 
     @Override
-    public void deleteProperty(String key, String name, Visibility visibility, User user) {
-        getEdge().deleteProperty(key, name, visibility, user);
-    }
-
-    @Override
-    public void softDeleteProperty(String key, String name, Visibility visibility, Object eventData, User user) {
-        getEdge().softDeleteProperty(key, name, visibility, eventData, user);
-    }
-
-    @Override
     public Graph getGraph() {
         return graph;
-    }
-
-    @Override
-    public void markPropertyHidden(Property property, Long timestamp, Visibility visibility, Object data, Authorizations authorizations) {
-        getEdge().markPropertyHidden(property, timestamp, visibility, data, authorizations);
-    }
-
-    @Override
-    public void markPropertyVisible(Property property, Long timestamp, Visibility visibility, Object eventData, Authorizations authorizations) {
-        getEdge().markPropertyVisible(property, timestamp, visibility, eventData, authorizations);
     }
 
     @Override

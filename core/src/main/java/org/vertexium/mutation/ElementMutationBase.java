@@ -16,7 +16,7 @@ public abstract class ElementMutationBase<T extends Element, TResult extends Ele
     private final List<Property> properties = new ArrayList<>();
     private final List<PropertyDeleteMutation> propertyDeletes = new ArrayList<>();
     private final List<PropertySoftDeleteMutation> propertySoftDeletes = new ArrayList<>();
-    private final List<ExtendedDataMutation> extendedDatas = new ArrayList<>();
+    private final List<ExtendedDataMutation> extendedData = new ArrayList<>();
     private final List<ExtendedDataDeleteMutation> extendedDataDeletes = new ArrayList<>();
     private final List<AdditionalVisibilityAddMutation> additionalVisibilities = new ArrayList<>();
     private final List<AdditionalVisibilityDeleteMutation> additionalVisibilityDeletes = new ArrayList<>();
@@ -28,7 +28,7 @@ public abstract class ElementMutationBase<T extends Element, TResult extends Ele
     private final List<MarkPropertyHiddenData> markPropertyHiddenData = new ArrayList<>();
     private final List<MarkPropertyVisibleData> markPropertyVisibleData = new ArrayList<>();
     private final List<AlterPropertyVisibility> alterPropertyVisibilities = new ArrayList<>();
-    private final List<SetPropertyMetadata> setPropertyMetadatas = new ArrayList<>();
+    private final List<SetPropertyMetadata> setPropertyMetadata = new ArrayList<>();
     private boolean deleteElement;
     private SoftDeleteData softDeleteData;
     private Visibility newElementVisibility;
@@ -76,7 +76,7 @@ public abstract class ElementMutationBase<T extends Element, TResult extends Ele
 
     @Override
     public Iterable<ExtendedDataMutation> getExtendedData() {
-        return extendedDatas;
+        return extendedData;
     }
 
     @Override
@@ -136,7 +136,7 @@ public abstract class ElementMutationBase<T extends Element, TResult extends Ele
 
     @SuppressWarnings("unchecked")
     public TResult setPropertyMetadata(Property property, String metadataName, Object newValue, Visibility visibility) {
-        this.setPropertyMetadatas.add(new SetPropertyMetadata(property.getKey(), property.getName(), property.getVisibility(), metadataName, newValue, visibility));
+        this.setPropertyMetadata.add(new SetPropertyMetadata(property.getKey(), property.getName(), property.getVisibility(), metadataName, newValue, visibility));
         return (TResult) this;
     }
 
@@ -146,7 +146,7 @@ public abstract class ElementMutationBase<T extends Element, TResult extends Ele
 
     @SuppressWarnings("unchecked")
     public TResult setPropertyMetadata(String propertyKey, String propertyName, String metadataName, Object newValue, Visibility visibility) {
-        this.setPropertyMetadatas.add(new SetPropertyMetadata(propertyKey, propertyName, null, metadataName, newValue, visibility));
+        this.setPropertyMetadata.add(new SetPropertyMetadata(propertyKey, propertyName, null, metadataName, newValue, visibility));
         return (TResult) this;
     }
 
@@ -202,7 +202,7 @@ public abstract class ElementMutationBase<T extends Element, TResult extends Ele
     @SuppressWarnings("unchecked")
     @Override
     public TResult addExtendedData(String tableName, String row, String column, String key, Object value, Long timestamp, Visibility visibility) {
-        this.extendedDatas.add(new ExtendedDataMutation(tableName, row, column, key, value, timestamp, visibility));
+        this.extendedData.add(new ExtendedDataMutation(tableName, row, column, key, value, timestamp, visibility));
         return (TResult) this;
     }
 
@@ -224,8 +224,8 @@ public abstract class ElementMutationBase<T extends Element, TResult extends Ele
     }
 
     @Override
-    public List<SetPropertyMetadata> getSetPropertyMetadatas() {
-        return setPropertyMetadatas;
+    public List<SetPropertyMetadata> getSetPropertyMetadata() {
+        return setPropertyMetadata;
     }
 
     @Override
@@ -288,11 +288,6 @@ public abstract class ElementMutationBase<T extends Element, TResult extends Ele
     }
 
     @Override
-    public List<ExtendedDataMutation> getExtendedDatas() {
-        return extendedDatas;
-    }
-
-    @Override
     public List<DeleteExtendedDataRowData> getDeleteExtendedDataRowData() {
         return deleteExtendedDataRowData;
     }
@@ -342,7 +337,7 @@ public abstract class ElementMutationBase<T extends Element, TResult extends Ele
     }
 
     public ImmutableSet<String> getExtendedDataTableNames() {
-        return extendedDatas.stream()
+        return extendedData.stream()
             .map(ExtendedDataMutation::getTableName)
             .collect(StreamUtils.toImmutableSet());
     }
@@ -462,11 +457,11 @@ public abstract class ElementMutationBase<T extends Element, TResult extends Ele
             return true;
         }
 
-        if (setPropertyMetadatas.size() > 0) {
+        if (setPropertyMetadata.size() > 0) {
             return true;
         }
 
-        if (extendedDatas.size() > 0) {
+        if (extendedData.size() > 0) {
             return true;
         }
 

@@ -147,7 +147,11 @@ public interface Element extends VertexiumObject, ElementLocation {
      * @deprecated Use {@link org.vertexium.mutation.ElementMutation#deleteProperty(String, String, Visibility)}
      */
     @Deprecated
-    void deleteProperty(String key, String name, Visibility visibility, User user);
+    default void deleteProperty(String key, String name, Visibility visibility, User user) {
+        prepareMutation()
+            .deleteProperty(key, name, visibility)
+            .save(user);
+    }
 
     /**
      * Permanently deletes all properties with the given name that you have access to. Only properties which you have
@@ -230,7 +234,11 @@ public interface Element extends VertexiumObject, ElementLocation {
      * @deprecated Use {@link org.vertexium.mutation.ElementMutation#softDeleteProperty(String, String, Visibility)}
      */
     @Deprecated
-    void softDeleteProperty(String key, String name, Visibility visibility, Object eventData, User user);
+    default void softDeleteProperty(String key, String name, Visibility visibility, Object eventData, User user) {
+        prepareMutation()
+            .softDeleteProperty(key, name, visibility, eventData)
+            .save(user);
+    }
 
     /**
      * Soft deletes all properties with the given name that you have access to. Only properties which you have
@@ -484,7 +492,11 @@ public interface Element extends VertexiumObject, ElementLocation {
      * @deprecated Use {@link org.vertexium.mutation.ElementMutation#markPropertyHidden(Property, Long, Visibility, Object)}
      */
     @Deprecated
-    void markPropertyHidden(Property property, Long timestamp, Visibility visibility, Object data, Authorizations authorizations);
+    default void markPropertyHidden(Property property, Long timestamp, Visibility visibility, Object data, Authorizations authorizations) {
+        prepareMutation()
+            .markPropertyHidden(property, timestamp, visibility, data)
+            .save(authorizations);
+    }
 
     /**
      * Marks a property as visible for a given visibility, effectively undoing markPropertyHidden.
@@ -562,14 +574,9 @@ public interface Element extends VertexiumObject, ElementLocation {
         Object eventData,
         Authorizations authorizations
     ) {
-        Iterable<Property> properties = getProperties(key, name);
-        for (Property property : properties) {
-            if (property.getVisibility().equals(propertyVisibility)) {
-                markPropertyVisible(property, timestamp, visibility, eventData, authorizations);
-                return;
-            }
-        }
-        throw new IllegalArgumentException("Could not find property " + key + " : " + name + " : " + propertyVisibility);
+        prepareMutation()
+            .markPropertyVisible(key, name, propertyVisibility, timestamp, visibility, eventData)
+            .save(authorizations);
     }
 
     /**
@@ -624,7 +631,11 @@ public interface Element extends VertexiumObject, ElementLocation {
      * @deprecated Use {@link org.vertexium.mutation.ElementMutation#markPropertyVisible(Property, Long, Visibility, Object)}
      */
     @Deprecated
-    void markPropertyVisible(Property property, Long timestamp, Visibility visibility, Object eventData, Authorizations authorizations);
+    default void markPropertyVisible(Property property, Long timestamp, Visibility visibility, Object eventData, Authorizations authorizations) {
+        prepareMutation()
+            .markPropertyVisible(property, timestamp, visibility, eventData)
+            .save(authorizations);
+    }
 
     /**
      * Given the supplied authorizations is this element hidden?

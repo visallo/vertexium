@@ -709,7 +709,11 @@ public interface Graph {
      * @deprecated Use {@link ElementMutation#deleteElement()}
      */
     @Deprecated
-    void deleteVertex(Vertex vertex, Authorizations authorizations);
+    default void deleteVertex(Vertex vertex, Authorizations authorizations) {
+        vertex.prepareMutation()
+            .deleteElement()
+            .save(authorizations);
+    }
 
     /**
      * Permanently deletes a vertex from the graph.
@@ -759,7 +763,11 @@ public interface Graph {
      * @deprecated Use {@link ElementMutation#softDeleteElement(Long, Object)} )}
      */
     @Deprecated
-    void softDeleteVertex(Vertex vertex, Long timestamp, Object eventData, Authorizations authorizations);
+    default void softDeleteVertex(Vertex vertex, Long timestamp, Object eventData, Authorizations authorizations) {
+        vertex.prepareMutation()
+            .softDeleteElement(timestamp, eventData)
+            .save(authorizations);
+    }
 
     /**
      * Soft deletes a vertex from the graph.
@@ -1515,7 +1523,11 @@ public interface Graph {
      * @deprecated Use {@link ElementMutation#deleteElement()}
      */
     @Deprecated
-    void deleteEdge(Edge edge, Authorizations authorizations);
+    default void deleteEdge(Edge edge, Authorizations authorizations) {
+        edge.prepareMutation()
+            .deleteElement()
+            .save(authorizations);
+    }
 
     /**
      * Permanently deletes an edge from the graph. This method requires fetching the edge before deletion.
@@ -1565,7 +1577,11 @@ public interface Graph {
      * @deprecated Use {@link ElementMutation#softDeleteElement(Long, Object)}
      */
     @Deprecated
-    void softDeleteEdge(Edge edge, Long timestamp, Object eventData, Authorizations authorizations);
+    default void softDeleteEdge(Edge edge, Long timestamp, Object eventData, Authorizations authorizations) {
+        edge.prepareMutation()
+            .softDeleteElement(timestamp, eventData)
+            .save(authorizations);
+    }
 
     /**
      * Soft deletes an edge from the graph. This method requires fetching the edge before soft deletion.
@@ -1650,7 +1666,7 @@ public interface Graph {
      * @param user        The user required to load the elements.
      * @return A query builder object.
      */
-    GraphQuery query(String queryString, User user);
+    org.vertexium.search.GraphQuery query(String queryString, User user);
 
     /**
      * Creates a query builder object used to query the graph.
@@ -1667,7 +1683,7 @@ public interface Graph {
      * @param user The user required to load the elements.
      * @return A query builder object.
      */
-    default GraphQuery query(User user) {
+    default org.vertexium.search.GraphQuery query(User user) {
         return query((String) null, user);
     }
 
@@ -1690,7 +1706,7 @@ public interface Graph {
      * @param user        The user required to load the elements.
      * @return A query builder object.
      */
-    MultiVertexQuery query(String[] vertexIds, String queryString, User user);
+    org.vertexium.search.MultiVertexQuery query(String[] vertexIds, String queryString, User user);
 
     /**
      * Creates a query builder object used to query a list of vertices.
@@ -1709,7 +1725,7 @@ public interface Graph {
      * @param user      The user required to load the elements.
      * @return A query builder object.
      */
-    default MultiVertexQuery query(String[] vertexIds, User user) {
+    default org.vertexium.search.MultiVertexQuery query(String[] vertexIds, User user) {
         return query(vertexIds, null, user);
     }
 
@@ -1739,7 +1755,7 @@ public interface Graph {
      * @param user   The user required to load the elements.
      * @return A query builder object.
      */
-    SimilarToGraphQuery querySimilarTo(String[] fields, String text, User user);
+    org.vertexium.search.SimilarToGraphQuery querySimilarTo(String[] fields, String text, User user);
 
     /**
      * Flushes any pending mutations to the graph.
@@ -1896,7 +1912,11 @@ public interface Graph {
      * @deprecated Use {@link ElementMutation#markElementHidden(Visibility, Object)}
      */
     @Deprecated
-    void markVertexHidden(Vertex vertex, Visibility visibility, Object eventData, Authorizations authorizations);
+    default void markVertexHidden(Vertex vertex, Visibility visibility, Object eventData, Authorizations authorizations) {
+        vertex.prepareMutation()
+            .markElementHidden(visibility, eventData)
+            .save(authorizations);
+    }
 
     /**
      * Marks a vertex as visible for a given visibility, effectively undoing markVertexHidden.
@@ -1921,7 +1941,11 @@ public interface Graph {
      * @deprecated Use {@link ElementMutation#markElementVisible(Visibility, Object)}
      */
     @Deprecated
-    void markVertexVisible(Vertex vertex, Visibility visibility, Object eventData, Authorizations authorizations);
+    default void markVertexVisible(Vertex vertex, Visibility visibility, Object eventData, Authorizations authorizations) {
+        vertex.prepareMutation()
+            .markElementVisible(visibility, eventData)
+            .save(authorizations);
+    }
 
     /**
      * Marks an edge as hidden for a given visibility.
@@ -1950,7 +1974,11 @@ public interface Graph {
      * @deprecated Use {@link ElementMutation#markElementHidden(Visibility, Object)}
      */
     @Deprecated
-    void markEdgeHidden(Edge edge, Visibility visibility, Object eventData, Authorizations authorizations);
+    default void markEdgeHidden(Edge edge, Visibility visibility, Object eventData, Authorizations authorizations) {
+        edge.prepareMutation()
+            .markElementHidden(visibility, eventData)
+            .save(authorizations);
+    }
 
     /**
      * Marks an edge as visible for a given visibility, effectively undoing markEdgeHidden.
@@ -1975,7 +2003,11 @@ public interface Graph {
      * @deprecated Use {@link ElementMutation#markElementVisible(Visibility, Object)}
      */
     @Deprecated
-    void markEdgeVisible(Edge edge, Visibility visibility, Object eventData, Authorizations authorizations);
+    default void markEdgeVisible(Edge edge, Visibility visibility, Object eventData, Authorizations authorizations) {
+        edge.prepareMutation()
+            .markElementVisible(visibility, eventData)
+            .save(authorizations);
+    }
 
     /**
      * Creates an authorizations object.
@@ -2088,19 +2120,6 @@ public interface Graph {
         Iterable<ElementMutation<? extends Element>> mutations,
         Authorizations authorizations
     );
-
-    /**
-     * Saves multiple mutations with a single call.
-     *
-     * @param mutations the mutations to save
-     * @param user      the user used during save
-     * @return the elements which were saved
-     */
-    Stream<String> saveElementMutations(
-        Iterable<ElementMutation<? extends Element>> mutations,
-        User user
-    );
-
 
     /**
      * Opens multiple StreamingPropertyValue input streams at once. This can have performance benefits by
@@ -2340,12 +2359,14 @@ public interface Graph {
      * @return An iterable of historic events
      */
     @FutureDeprecation
-    Stream<HistoricalEvent> getHistoricalEvents(
+    default Stream<HistoricalEvent> getHistoricalEvents(
         Iterable<ElementId> elementIds,
         HistoricalEventId after,
         HistoricalEventsFetchHints fetchHints,
         Authorizations authorizations
-    );
+    ) {
+        return getHistoricalEvents(elementIds, after, fetchHints, authorizations.getUser());
+    }
 
     /**
      * Gets a list of historical events.
@@ -2369,7 +2390,23 @@ public interface Graph {
      * @deprecated Use {@link ElementMutation#deleteExtendedDataRow(String, String)}
      */
     @Deprecated
-    void deleteExtendedDataRow(ExtendedDataRowId id, Authorizations authorizations);
+    default void deleteExtendedDataRow(ExtendedDataRowId id, Authorizations authorizations) {
+        deleteExtendedDataRow(id, authorizations.getUser());
+    }
+
+    /**
+     * Deletes an extended data row
+     *
+     * @deprecated Use {@link ElementMutation#deleteExtendedDataRow(String, String)}
+     */
+    @Deprecated
+    default void deleteExtendedDataRow(ExtendedDataRowId id, User user) {
+        ElementId elementId = new ElementId(id.getElementType(), id.getElementId());
+        Element element = getElement(elementId, user);
+        element.prepareMutation()
+            .deleteExtendedDataRow(id.getTableName(), id.getRowId())
+            .save(user);
+    }
 
     /**
      * The default fetch hints to use if none are provided

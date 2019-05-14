@@ -97,34 +97,6 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
     }
 
     @Override
-    public void deleteProperty(String key, String name, Visibility visibility, Authorizations authorizations) {
-        Property property = getProperty(key, name, visibility);
-        if (property != null) {
-            this.properties.removeProperty(property);
-            getGraph().deleteProperty(this, property, authorizations);
-        }
-    }
-
-    @Override
-    public void softDeleteProperty(String key, String name, Visibility visibility, Object eventData, Authorizations authorizations) {
-        Property property = getProperty(key, name, visibility);
-        if (property != null) {
-            this.properties.removeProperty(property);
-            getGraph().softDeleteProperty(this, property, eventData, authorizations);
-        }
-    }
-
-    @Override
-    public void markPropertyHidden(Property property, Long timestamp, Visibility visibility, Object data, Authorizations authorizations) {
-        getGraph().markPropertyHidden(this, property, timestamp, visibility, data, authorizations);
-    }
-
-    @Override
-    public void markPropertyVisible(Property property, Long timestamp, Visibility visibility, Object eventData, Authorizations authorizations) {
-        getGraph().markPropertyVisible(this, property, timestamp, visibility, eventData, authorizations);
-    }
-
-    @Override
     public AccumuloGraph getGraph() {
         return (AccumuloGraph) graph;
     }
@@ -134,7 +106,7 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
         AccumuloElement element = (AccumuloElement) mutation.getElement();
 
         // metadata must be altered first because the lookup of a property can include visibility which will be altered by alterElementPropertyVisibilities
-        getGraph().alterPropertyMetadatas(element, mutation.getSetPropertyMetadatas());
+        getGraph().alterPropertyMetadatas(element, mutation.getSetPropertyMetadata());
 
         // altering properties comes next because alterElementVisibility may alter the vertex and we won't find it
         getGraph().alterElementPropertyVisibilities(element, mutation.getAlterPropertyVisibilities());

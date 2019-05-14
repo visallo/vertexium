@@ -10,7 +10,6 @@ import org.vertexium.query.QueryableIterable;
 import org.vertexium.search.IndexHint;
 import org.vertexium.util.FutureDeprecation;
 
-import java.util.List;
 import java.util.stream.Stream;
 
 public abstract class InMemoryElement<TElement extends InMemoryElement> extends ElementBase {
@@ -55,18 +54,6 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> extends 
     @Override
     public User getUser() {
         return user;
-    }
-
-    @Override
-    @Deprecated
-    public void deleteProperty(String key, String name, Visibility visibility, User user) {
-        getGraph().deleteProperty(this, inMemoryTableElement, key, name, visibility, user);
-    }
-
-    @Override
-    @Deprecated
-    public void softDeleteProperty(String key, String name, Visibility visibility, Object eventData, User user) {
-        softDeleteProperty(key, name, null, visibility, eventData, IndexHint.INDEX, user);
     }
 
     protected void softDeleteProperty(String key, String name, Long timestamp, Visibility visibility, Object data, IndexHint indexHint, User user) {
@@ -133,48 +120,6 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> extends 
     }
 
     @Override
-    @Deprecated
-    public void markPropertyHidden(
-        Property property,
-        Long timestamp,
-        Visibility visibility,
-        Object data,
-        Authorizations authorizations
-    ) {
-        getGraph().markPropertyHidden(
-            this,
-            inMemoryTableElement,
-            property,
-            null,
-            visibility,
-            data,
-            authorizations.getUser()
-        );
-    }
-
-    @Override
-    @Deprecated
-    public void markPropertyVisible(
-        Property property,
-        Long timestamp,
-        Visibility visibility,
-        Object eventData,
-        Authorizations authorizations
-    ) {
-        getGraph().markPropertyVisible(
-            this,
-            inMemoryTableElement,
-            property.getKey(),
-            property.getName(),
-            property.getVisibility(),
-            timestamp,
-            visibility,
-            eventData,
-            authorizations.getUser()
-        );
-    }
-
-    @Override
     public Object getPropertyValue(String name) {
         Property p = getProperty(name);
         return p == null ? null : p.getValue();
@@ -203,35 +148,6 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> extends 
     }
 
     @Override
-    @Deprecated
-    public void markPropertyVisible(
-        String key,
-        String name,
-        Visibility propertyVisibility,
-        Long timestamp,
-        Visibility visibility,
-        Object eventData,
-        Authorizations authorizations
-    ) {
-        getGraph().markPropertyVisible(
-            this,
-            inMemoryTableElement,
-            key,
-            name,
-            propertyVisibility,
-            timestamp,
-            visibility,
-            eventData,
-            authorizations.getUser()
-        );
-    }
-
-    @Override
-    public boolean isHidden(Authorizations authorizations) {
-        return inMemoryTableElement.isHidden(authorizations.getUser());
-    }
-
-    @Override
     public Iterable<Property> getProperties() {
         if (!getFetchHints().isIncludeProperties()) {
             throw new VertexiumMissingFetchHintException(getFetchHints(), "includeProperties");
@@ -256,14 +172,21 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> extends 
         return this.graph;
     }
 
-    void updatePropertiesInternal(VertexBuilder vertexBuilder) {
-        updatePropertiesInternal(
+    void updateInternal(VertexBuilder vertexBuilder) {
+        updateInternal(
+            vertexBuilder.isDeleteElement(),
+            vertexBuilder.getSoftDeleteData(),
+            vertexBuilder.getMarkHiddenData(),
+            vertexBuilder.getMarkVisibleData(),
             vertexBuilder.getProperties(),
             vertexBuilder.getPropertyDeletes(),
             vertexBuilder.getPropertySoftDeletes(),
+            vertexBuilder.getMarkPropertyHiddenData(),
+            vertexBuilder.getMarkPropertyVisibleData(),
             vertexBuilder.getAdditionalVisibilities(),
             vertexBuilder.getAdditionalVisibilityDeletes(),
             vertexBuilder.getExtendedData(),
+            vertexBuilder.getDeleteExtendedDataRowData(),
             vertexBuilder.getExtendedDataDeletes(),
             vertexBuilder.getAdditionalExtendedDataVisibilities(),
             vertexBuilder.getAdditionalExtendedDataVisibilityDeletes(),
@@ -271,14 +194,21 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> extends 
         );
     }
 
-    void updatePropertiesInternal(EdgeBuilderBase edgeBuilder) {
-        updatePropertiesInternal(
+    void updateInternal(EdgeBuilderBase edgeBuilder) {
+        updateInternal(
+            edgeBuilder.isDeleteElement(),
+            edgeBuilder.getSoftDeleteData(),
+            edgeBuilder.getMarkHiddenData(),
+            edgeBuilder.getMarkVisibleData(),
             edgeBuilder.getProperties(),
             edgeBuilder.getPropertyDeletes(),
             edgeBuilder.getPropertySoftDeletes(),
+            edgeBuilder.getMarkPropertyHiddenData(),
+            edgeBuilder.getMarkPropertyVisibleData(),
             edgeBuilder.getAdditionalVisibilities(),
             edgeBuilder.getAdditionalVisibilityDeletes(),
             edgeBuilder.getExtendedData(),
+            edgeBuilder.getDeleteExtendedDataRowData(),
             edgeBuilder.getExtendedDataDeletes(),
             edgeBuilder.getAdditionalExtendedDataVisibilities(),
             edgeBuilder.getAdditionalExtendedDataVisibilityDeletes(),
@@ -286,16 +216,23 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> extends 
         );
     }
 
-    protected void updatePropertiesInternal(
+    protected void updateInternal(
+        boolean deleteElement,
+        ElementMutationBase.SoftDeleteData softDeleteData,
+        Iterable<ElementMutationBase.MarkHiddenData> markHiddenData,
+        Iterable<ElementMutationBase.MarkVisibleData> markVisibleData,
         Iterable<Property> properties,
         Iterable<PropertyDeleteMutation> propertyDeleteMutations,
         Iterable<PropertySoftDeleteMutation> propertySoftDeleteMutations,
+        Iterable<ElementMutationBase.MarkPropertyHiddenData> markPropertyHiddenData,
+        Iterable<ElementMutationBase.MarkPropertyVisibleData> markPropertyVisibleData,
         Iterable<AdditionalVisibilityAddMutation> additionalVisibilities,
         Iterable<AdditionalVisibilityDeleteMutation> additionalVisibilityDeletes,
         Iterable<ExtendedDataMutation> extendedDatas,
+        Iterable<ElementMutationBase.DeleteExtendedDataRowData> deleteExtendedDataRowData,
         Iterable<ExtendedDataDeleteMutation> extendedDataDeletes,
-        List<AdditionalExtendedDataVisibilityAddMutation> additionalExtendedDataVisibilities,
-        List<AdditionalExtendedDataVisibilityDeleteMutation> additionalExtendedDataVisibilityDeletes,
+        Iterable<AdditionalExtendedDataVisibilityAddMutation> additionalExtendedDataVisibilities,
+        Iterable<AdditionalExtendedDataVisibilityDeleteMutation> additionalExtendedDataVisibilityDeletes,
         IndexHint indexHint
     ) {
         for (Property property : properties) {
@@ -310,9 +247,18 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> extends 
                 user
             );
         }
+
         for (PropertyDeleteMutation propertyDeleteMutation : propertyDeleteMutations) {
-            deleteProperty(propertyDeleteMutation.getKey(), propertyDeleteMutation.getName(), propertyDeleteMutation.getVisibility(), user);
+            graph.deleteProperty(
+                this,
+                inMemoryTableElement,
+                propertyDeleteMutation.getKey(),
+                propertyDeleteMutation.getName(),
+                propertyDeleteMutation.getVisibility(),
+                user
+            );
         }
+
         for (PropertySoftDeleteMutation propertySoftDeleteMutation : propertySoftDeleteMutations) {
             softDeleteProperty(
                 propertySoftDeleteMutation.getKey(),
@@ -324,6 +270,7 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> extends 
                 user
             );
         }
+
         for (AdditionalVisibilityAddMutation additionalVisibility : additionalVisibilities) {
             addAdditionalVisibility(
                 additionalVisibility.getAdditionalVisibility(),
@@ -331,6 +278,7 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> extends 
                 user
             );
         }
+
         for (AdditionalVisibilityDeleteMutation additionalVisibilityDelete : additionalVisibilityDeletes) {
             deleteAdditionalVisibility(
                 additionalVisibilityDelete.getAdditionalVisibility(),
@@ -338,10 +286,21 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> extends 
                 user
             );
         }
+
+        for (ElementMutationBase.DeleteExtendedDataRowData data : deleteExtendedDataRowData) {
+            getGraph().deleteExtendedDataRow(
+                this,
+                data.getTableName(),
+                data.getRow(),
+                user
+            );
+        }
+
         for (ExtendedDataMutation extendedData : extendedDatas) {
             getGraph().ensurePropertyDefined(extendedData.getColumnName(), extendedData.getValue());
             extendedData(extendedData, user);
         }
+
         for (ExtendedDataDeleteMutation extendedDataDelete : extendedDataDeletes) {
             deleteExtendedData(
                 extendedDataDelete.getTableName(),
@@ -351,6 +310,7 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> extends 
                 extendedDataDelete.getVisibility()
             );
         }
+
         for (AdditionalExtendedDataVisibilityAddMutation additionalVisibility : additionalExtendedDataVisibilities) {
             addAdditionalExtendedDataVisibility(
                 additionalVisibility.getTableName(),
@@ -358,12 +318,67 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> extends 
                 additionalVisibility.getAdditionalVisibility()
             );
         }
+
         for (AdditionalExtendedDataVisibilityDeleteMutation additionalVisibilityDelete : additionalExtendedDataVisibilityDeletes) {
             deleteAdditionalExtendedDataVisibility(
                 additionalVisibilityDelete.getTableName(),
                 additionalVisibilityDelete.getRow(),
                 additionalVisibilityDelete.getAdditionalVisibility()
             );
+        }
+
+        for (ElementMutationBase.MarkPropertyVisibleData data : markPropertyVisibleData) {
+            graph.markPropertyVisible(
+                this,
+                getInMemoryTableElement(),
+                data.getKey(),
+                data.getName(),
+                data.getPropertyVisibility(),
+                data.getTimestamp(),
+                data.getVisibility(),
+                data.getEventData(),
+                user
+            );
+        }
+
+        for (ElementMutationBase.MarkPropertyHiddenData data : markPropertyHiddenData) {
+            graph.markPropertyHidden(
+                this,
+                getInMemoryTableElement(),
+                data.getKey(),
+                data.getName(),
+                data.getPropertyVisibility(),
+                data.getTimestamp(),
+                data.getVisibility(),
+                data.getEventData(),
+                user
+            );
+        }
+
+        for (ElementMutationBase.MarkVisibleData data : markVisibleData) {
+            graph.markElementVisible(
+                this,
+                data.getVisibility(),
+                data.getEventData(),
+                user
+            );
+        }
+
+        for (ElementMutationBase.MarkHiddenData data : markHiddenData) {
+            graph.markElementHidden(
+                this,
+                data.getVisibility(),
+                data.getEventData(),
+                user
+            );
+        }
+
+        if (softDeleteData != null) {
+            graph.softDeleteElement(this, softDeleteData.getTimestamp(), softDeleteData.getEventData(), user);
+        }
+
+        if (deleteElement) {
+            graph.deleteElement(this, user);
         }
     }
 
@@ -376,7 +391,7 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> extends 
 
         // Metadata must be altered first because the lookup of a property can include visibility which will be
         // altered by alterElementPropertyVisibilities
-        graph.alterElementPropertyMetadata(inMemoryTableElement, mutation.getSetPropertyMetadatas(), user);
+        graph.alterElementPropertyMetadata(inMemoryTableElement, mutation.getSetPropertyMetadata(), user);
 
         // Altering properties comes next because alterElementVisibility may alter the vertex and we won't find it
         graph.alterElementPropertyVisibilities(
@@ -385,17 +400,20 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> extends 
             user
         );
 
-        Iterable<Property> properties = mutation.getProperties();
-        Iterable<PropertyDeleteMutation> propertyDeleteMutations = mutation.getPropertyDeletes();
-        Iterable<PropertySoftDeleteMutation> propertySoftDeleteMutations = mutation.getPropertySoftDeletes();
-
-        updatePropertiesInternal(
-            properties,
-            propertyDeleteMutations,
-            propertySoftDeleteMutations,
+        updateInternal(
+            mutation.isDeleteElement(),
+            mutation.getSoftDeleteData(),
+            mutation.getMarkHiddenData(),
+            mutation.getMarkVisibleData(),
+            mutation.getProperties(),
+            mutation.getPropertyDeletes(),
+            mutation.getPropertySoftDeletes(),
+            mutation.getMarkPropertyHiddenData(),
+            mutation.getMarkPropertyVisibleData(),
             mutation.getAdditionalVisibilities(),
             mutation.getAdditionalVisibilityDeletes(),
             mutation.getExtendedData(),
+            mutation.getDeleteExtendedDataRowData(),
             mutation.getExtendedDataDeletes(),
             mutation.getAdditionalExtendedDataVisibilities(),
             mutation.getAdditionalExtendedDataVisibilityDeletes(),

@@ -16,7 +16,9 @@ import org.vertexium.query.MultiVertexQuery;
 import org.vertexium.query.SimilarToGraphQuery;
 import org.vertexium.search.IndexHint;
 import org.vertexium.search.SearchIndex;
-import org.vertexium.util.*;
+import org.vertexium.util.IterableUtils;
+import org.vertexium.util.VertexiumLogger;
+import org.vertexium.util.VertexiumLoggerFactory;
 
 import java.io.InputStream;
 import java.util.*;
@@ -283,19 +285,15 @@ public abstract class GraphBase implements Graph, GraphWithSearchIndex {
     }
 
     @Override
-    public Iterable<ExtendedDataRow> getExtendedData(Iterable<ExtendedDataRowId> idsIterable, FetchHints fetchHints, Authorizations authorizations) {
+    public Stream<ExtendedDataRow> getExtendedData(Iterable<ExtendedDataRowId> idsIterable, FetchHints fetchHints, User user) {
         Set<ExtendedDataRowId> ids = Sets.newHashSet(idsIterable);
-        return new FilterIterable<ExtendedDataRow>(getAllExtendedData(fetchHints, authorizations)) {
-            @Override
-            protected boolean isIncluded(ExtendedDataRow row) {
-                return ids.contains(row.getId());
-            }
-        };
+        return getAllExtendedData(fetchHints, user)
+            .filter(row -> ids.contains(row.getId()));
     }
 
     @Override
-    public ExtendedDataRow getExtendedData(ExtendedDataRowId id, Authorizations authorizations) {
-        ArrayList<ExtendedDataRow> rows = Lists.newArrayList(getExtendedData(Lists.newArrayList(id), authorizations));
+    public ExtendedDataRow getExtendedData(ExtendedDataRowId id, User user) {
+        List<ExtendedDataRow> rows = getExtendedData(Lists.newArrayList(id), user).collect(Collectors.toList());
         if (rows.size() == 0) {
             return null;
         }
@@ -306,64 +304,51 @@ public abstract class GraphBase implements Graph, GraphWithSearchIndex {
     }
 
     @Override
-    public Iterable<ExtendedDataRow> getExtendedData(
+    public Stream<ExtendedDataRow> getExtendedData(
         ElementType elementType,
         String elementId,
         String tableName,
         FetchHints fetchHints,
-        Authorizations authorizations
+        User user
     ) {
         if ((elementType == null && (elementId != null || tableName != null))
             || (elementType != null && elementId == null && tableName != null)) {
             throw new VertexiumException("Cannot create partial key with missing inner value");
         }
 
-        return new FilterIterable<ExtendedDataRow>(getAllExtendedData(fetchHints, authorizations)) {
-            @Override
-            protected boolean isIncluded(ExtendedDataRow row) {
+        return getAllExtendedData(fetchHints, user)
+            .filter(row -> {
                 ExtendedDataRowId rowId = row.getId();
                 return (elementType == null || elementType.equals(rowId.getElementType()))
                     && (elementId == null || elementId.equals(rowId.getElementId()))
                     && (tableName == null || tableName.equals(rowId.getTableName()));
-            }
-        };
+            });
     }
 
     @Override
-    public Iterable<ExtendedDataRow> getExtendedDataInRange(ElementType elementType, Range elementIdRange, Authorizations authorizations) {
-        return new FilterIterable<ExtendedDataRow>(getAllExtendedData(FetchHints.ALL, authorizations)) {
-            @Override
-            protected boolean isIncluded(ExtendedDataRow row) {
+    public Stream<ExtendedDataRow> getExtendedDataInRange(ElementType elementType, Range elementIdRange, User user) {
+        return getAllExtendedData(FetchHints.ALL, user)
+            .filter(row -> {
                 ExtendedDataRowId rowId = row.getId();
                 return elementType.equals(rowId.getElementType())
                     && elementIdRange.isInRange(rowId.getElementId());
-            }
-        };
+            });
     }
 
-    protected Iterable<ExtendedDataRow> getAllExtendedData(FetchHints fetchHints, Authorizations authorizations) {
-        JoinIterable<Element> allElements = new JoinIterable<>(getVertices(fetchHints, authorizations), getEdges(fetchHints, authorizations));
-        return new SelectManyIterable<Element, ExtendedDataRow>(allElements) {
-            @Override
-            protected Iterable<? extends ExtendedDataRow> getIterable(Element element) {
-                return new SelectManyIterable<String, ExtendedDataRow>(element.getExtendedDataTableNames()) {
-                    @Override
-                    protected Iterable<? extends ExtendedDataRow> getIterable(String tableName) {
-                        return element.getExtendedData(tableName);
-                    }
-                };
-            }
-        };
+    protected Stream<ExtendedDataRow> getAllExtendedData(FetchHints fetchHints, User user) {
+        return Stream.concat(getVertices(fetchHints, user), getEdges(fetchHints, user))
+            .flatMap(element -> element.getExtendedDataTableNames().stream()
+                .flatMap(tableName -> stream(element.getExtendedData(tableName))));
     }
 
     @SuppressWarnings("deprecation")
-    protected void deleteAllExtendedDataForElement(Element element, Authorizations authorizations) {
+    protected void deleteAllExtendedDataForElement(Element element, User user) {
         if (!element.getFetchHints().isIncludeExtendedDataTableNames() || element.getExtendedDataTableNames().size() <= 0) {
             return;
         }
 
-        for (ExtendedDataRow row : getExtendedData(ElementType.getTypeFromElement(element), element.getId(), null, authorizations)) {
-            deleteExtendedDataRow(row.getId(), authorizations);
+        for (ExtendedDataRow row : getExtendedData(ElementType.getTypeFromElement(element), element.getId(), null, user)) {
+            deleteExtendedDataRow(row.getId(), user);
         }
     }
 
@@ -422,7 +407,7 @@ public abstract class GraphBase implements Graph, GraphWithSearchIndex {
         Iterable<ElementId> elementIds,
         HistoricalEventId after,
         HistoricalEventsFetchHints fetchHints,
-        Authorizations authorizations
+        User user
     ) {
         FetchHints elementFetchHints = new FetchHintsBuilder()
             .setIncludeAllProperties(true)
@@ -432,11 +417,11 @@ public abstract class GraphBase implements Graph, GraphWithSearchIndex {
             .build();
         return fetchHints.applyToResults(stream(elementIds)
             .flatMap(elementId -> {
-                Element element = getElement(elementId, elementFetchHints, authorizations);
+                Element element = getElement(elementId, elementFetchHints, user);
                 if (element == null) {
                     throw new VertexiumException("Could not find: " + elementId);
                 }
-                return element.getHistoricalEvents(after, fetchHints, authorizations);
+                return element.getHistoricalEvents(after, fetchHints, user);
             }), after);
     }
 
@@ -504,6 +489,16 @@ public abstract class GraphBase implements Graph, GraphWithSearchIndex {
     }
 
     @Override
+    public org.vertexium.search.GraphQuery query(String queryString, User user) {
+        return getSearchIndex().queryGraph(this, queryString, user);
+    }
+
+    @Override
+    public org.vertexium.search.MultiVertexQuery query(String[] vertexIds, String queryString, User user) {
+        return getSearchIndex().queryGraph(this, vertexIds, queryString, user);
+    }
+
+    @Override
     public boolean isQuerySimilarToTextSupported() {
         return getSearchIndex().isQuerySimilarToTextSupported();
     }
@@ -511,6 +506,11 @@ public abstract class GraphBase implements Graph, GraphWithSearchIndex {
     @Override
     public SimilarToGraphQuery querySimilarTo(String[] fields, String text, Authorizations authorizations) {
         return getSearchIndex().querySimilarTo(this, fields, text, authorizations);
+    }
+
+    @Override
+    public org.vertexium.search.SimilarToGraphQuery querySimilarTo(String[] fields, String text, User user) {
+        return getSearchIndex().querySimilarTo(this, fields, text, user);
     }
 
     @Override

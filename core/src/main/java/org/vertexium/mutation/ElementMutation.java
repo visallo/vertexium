@@ -616,24 +616,49 @@ public interface ElementMutation<T extends Element> extends ElementLocation {
      */
     Iterable<AdditionalExtendedDataVisibilityDeleteMutation> getAdditionalExtendedDataVisibilityDeletes();
 
+    /**
+     * Gets the properties whose visibilities are being altered in this mutation.
+     */
     Iterable<AlterPropertyVisibility> getAlterPropertyVisibilities();
 
-    Iterable<SetPropertyMetadata> getSetPropertyMetadatas();
+    /**
+     * Gets all of the property metadata changes that are part of this mutation.
+     */
+    Iterable<SetPropertyMetadata> getSetPropertyMetadata();
 
+    /**
+     * Gets all the mark hidden changes
+     */
     Iterable<ElementMutationBase.MarkHiddenData> getMarkHiddenData();
 
+    /**
+     * Gets all the mark visible changes
+     */
     Iterable<ElementMutationBase.MarkVisibleData> getMarkVisibleData();
 
+    /**
+     * Gets all the mark property hidden changes
+     */
     Iterable<ElementMutationBase.MarkPropertyHiddenData> getMarkPropertyHiddenData();
 
+    /**
+     * Gets all the mark property visible changes
+     */
     Iterable<ElementMutationBase.MarkPropertyVisibleData> getMarkPropertyVisibleData();
 
-    Iterable<ExtendedDataMutation> getExtendedDatas();
-
+    /**
+     * Gets all the delete extended data row changes
+     */
     Iterable<ElementMutationBase.DeleteExtendedDataRowData> getDeleteExtendedDataRowData();
 
+    /**
+     * Gets soft delete data
+     */
     ElementMutationBase.SoftDeleteData getSoftDeleteData();
 
+    /**
+     * true, if this element should be deleted
+     */
     boolean isDeleteElement();
 
     /**
