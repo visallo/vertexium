@@ -74,6 +74,7 @@ public class EdgeVertexPair {
         });
         Map<String, Vertex> vertices = graph.getVerticesMappedById(vertexIdsToFetch, fetchHints, endTime, user);
         return graph.getEdges(edgeIdsToFetch, fetchHints, endTime, user)
+            .filter(edge -> vertices.get(edge.getOtherVertexId(sourceVertexId)) != null)
             .map(edge -> {
                 String otherVertexId = edge.getOtherVertexId(sourceVertexId);
                 Vertex otherVertex = vertices.get(otherVertexId);
