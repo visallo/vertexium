@@ -746,7 +746,9 @@ public interface Graph {
      * @deprecated Use {@link ElementMutation#softDeleteElement(Object)} )}
      */
     @Deprecated
-    void softDeleteVertex(Vertex vertex, Object eventData, Authorizations authorizations);
+    default void softDeleteVertex(Vertex vertex, Object eventData, Authorizations authorizations) {
+        softDeleteVertex(vertex, null, eventData, authorizations);
+    }
 
     /**
      * Soft deletes a vertex from the graph.

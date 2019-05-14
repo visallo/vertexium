@@ -285,12 +285,6 @@ public class InMemoryGraph extends GraphBase {
 
     @Override
     @Deprecated
-    public void softDeleteVertex(Vertex vertex, Object eventData, Authorizations authorizations) {
-
-    }
-
-    @Override
-    @Deprecated
     public void softDeleteVertex(Vertex vertex, Long timestamp, Object eventData, Authorizations authorizations) {
         if (!((InMemoryVertex) vertex).canRead(authorizations)) {
             return;
