@@ -37,9 +37,6 @@ public abstract class ExtendedDataRowBase implements ExtendedDataRow {
     public abstract Iterable<Property> getProperties();
 
     @Override
-    public abstract Set<String> getAdditionalVisibilities();
-
-    @Override
     public Property getProperty(String name) {
         return getProperty(null, name, null);
     }
