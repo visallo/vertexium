@@ -162,18 +162,15 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
     public Stream<HistoricalEvent> getHistoricalEvents(
         HistoricalEventId after,
         HistoricalEventsFetchHints fetchHints,
-        Authorizations authorizations
+        User user
     ) {
         return getGraph().getHistoricalEvents(
             Lists.newArrayList(new ElementId(ElementType.getTypeFromElement(this), getId())),
             after,
             fetchHints,
-            authorizations
+            user
         );
     }
-
-    @Override
-    public abstract <T extends Element> ExistingElementMutation<T> prepareMutation();
 
     @Override
     public QueryableIterable<ExtendedDataRow> getExtendedData(String tableName, FetchHints fetchHints) {
@@ -189,11 +186,6 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
                 getUser()
             ))
         );
-    }
-
-    @Override
-    public Property getProperty(String key, String name) {
-        return getProperty(key, name, null);
     }
 
     @Override

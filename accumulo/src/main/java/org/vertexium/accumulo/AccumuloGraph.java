@@ -690,19 +690,17 @@ public class AccumuloGraph extends GraphBase implements Traceable {
     }
 
     @Override
-    public void deleteVertex(Vertex vertex, Authorizations authorizations) {
+    public void deleteVertex(Vertex vertex, User user) {
         checkNotNull(vertex, "vertex cannot be null");
         Span trace = Trace.start("deleteVertex");
         trace.data("vertexId", vertex.getId());
         try {
-            getSearchIndex().deleteElement(this, vertex, authorizations);
+            getSearchIndex().deleteElement(this, vertex, user);
 
             // Delete all edges that this vertex participates.
-            for (Edge edge : vertex.getEdges(Direction.BOTH, authorizations)) {
-                deleteEdge(edge, authorizations);
-            }
+            vertex.getEdges(Direction.BOTH, user).forEach(edge -> deleteEdge(edge, user));
 
-            deleteAllExtendedDataForElement(vertex, authorizations);
+            deleteAllExtendedDataForElement(vertex, user);
 
             addMutations(VertexiumObjectType.VERTEX, elementMutationBuilder.getDeleteRowMutation(vertex.getId()));
 
@@ -2141,8 +2139,9 @@ public class AccumuloGraph extends GraphBase implements Traceable {
         elementMutationBuilder.alterEdgeLabel(edge, newEdgeLabel);
     }
 
-    void alterElementPropertyVisibilities(AccumuloElement element, List<AlterPropertyVisibility> alterPropertyVisibilities) {
-        if (alterPropertyVisibilities.size() == 0) {
+    void alterElementPropertyVisibilities(AccumuloElement element, Iterable<AlterPropertyVisibility> alterPropertyVisibilities) {
+        Iterator<AlterPropertyVisibility> it = alterPropertyVisibilities.iterator();
+        if (!it.hasNext()) {
             return;
         }
 
@@ -2151,7 +2150,8 @@ public class AccumuloGraph extends GraphBase implements Traceable {
         Mutation m = new Mutation(elementRowKey);
 
         List<PropertyDescriptor> propertyList = Lists.newArrayList();
-        for (AlterPropertyVisibility apv : alterPropertyVisibilities) {
+        while (it.hasNext()) {
+            AlterPropertyVisibility apv = it.next();
             MutableProperty property = (MutableProperty) element.getProperty(
                 apv.getKey(),
                 apv.getName(),
@@ -2181,14 +2181,16 @@ public class AccumuloGraph extends GraphBase implements Traceable {
         }
     }
 
-    void alterPropertyMetadatas(AccumuloElement element, List<SetPropertyMetadata> setPropertyMetadatas) {
-        if (setPropertyMetadatas.size() == 0) {
+    void alterPropertyMetadatas(AccumuloElement element, Iterable<SetPropertyMetadata> setPropertyMetadatas) {
+        Iterator<SetPropertyMetadata> it = setPropertyMetadatas.iterator();
+        if (!it.hasNext()) {
             return;
         }
 
         String elementRowKey = element.getId();
         Mutation m = new Mutation(elementRowKey);
-        for (SetPropertyMetadata apm : setPropertyMetadatas) {
+        while (it.hasNext()) {
+            SetPropertyMetadata apm  = it.next();
             Property property = element.getProperty(apm.getPropertyKey(), apm.getPropertyName(), apm.getPropertyVisibility());
             if (property == null) {
                 throw new VertexiumException(String.format("Could not find property %s:%s(%s)", apm.getPropertyKey(), apm.getPropertyName(), apm.getPropertyVisibility()));
@@ -2209,8 +2211,8 @@ public class AccumuloGraph extends GraphBase implements Traceable {
     }
 
     @Override
-    public boolean isVisibilityValid(Visibility visibility, Authorizations authorizations) {
-        return authorizations.canRead(visibility);
+    public boolean isVisibilityValid(Visibility visibility, User user) {
+        return user.canRead(visibility);
     }
 
     private boolean isHistoryInSeparateTable() {
@@ -2411,7 +2413,7 @@ public class AccumuloGraph extends GraphBase implements Traceable {
     }
 
     @Override
-    public Iterable<Path> findPaths(FindPathOptions options, Authorizations authorizations) {
+    public Stream<Path> findPaths(FindPathOptions options, User user) {
         ProgressCallback progressCallback = options.getProgressCallback();
         if (progressCallback == null) {
             progressCallback = new ProgressCallback() {
@@ -2422,7 +2424,7 @@ public class AccumuloGraph extends GraphBase implements Traceable {
             };
         }
 
-        return new AccumuloFindPathStrategy(this, options, progressCallback, authorizations).findPaths();
+        return new AccumuloFindPathStrategy(this, options, progressCallback, user).findPaths();
     }
 
     @Override

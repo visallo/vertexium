@@ -150,11 +150,6 @@ public class AccumuloEdge extends AccumuloElement implements Edge {
     }
 
     @Override
-    public Vertex getVertex(Direction direction, Authorizations authorizations) {
-        return getVertex(direction, getGraph().getDefaultFetchHints(), authorizations);
-    }
-
-    @Override
     public String getOtherVertexId(String myVertexId) {
         if (inVertexId.equals(myVertexId)) {
             return outVertexId;
@@ -162,26 +157,6 @@ public class AccumuloEdge extends AccumuloElement implements Edge {
             return inVertexId;
         }
         throw new VertexiumException("myVertexId(" + myVertexId + ") does not appear on edge (" + getId() + ") in either the in (" + inVertexId + ") or the out (" + outVertexId + ").");
-    }
-
-    @Override
-    public Vertex getOtherVertex(String myVertexId, Authorizations authorizations) {
-        return getOtherVertex(myVertexId, getGraph().getDefaultFetchHints(), authorizations);
-    }
-
-    @Override
-    public Vertex getOtherVertex(String myVertexId, FetchHints fetchHints, Authorizations authorizations) {
-        return getGraph().getVertex(getOtherVertexId(myVertexId), fetchHints, authorizations);
-    }
-
-    @Override
-    public EdgeVertices getVertices(Authorizations authorizations) {
-        return getVertices(getGraph().getDefaultFetchHints(), authorizations);
-    }
-
-    @Override
-    public Vertex getVertex(Direction direction, FetchHints fetchHints, Authorizations authorizations) {
-        return getGraph().getVertex(getVertexId(direction), fetchHints, authorizations);
     }
 
     @Override

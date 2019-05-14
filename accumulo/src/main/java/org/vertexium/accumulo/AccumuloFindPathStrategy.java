@@ -13,6 +13,7 @@ import org.vertexium.util.VertexiumLoggerFactory;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.vertexium.util.StreamUtils.stream;
 
@@ -21,7 +22,7 @@ public class AccumuloFindPathStrategy {
     private final AccumuloGraph graph;
     private final FindPathOptions options;
     private final ProgressCallback progressCallback;
-    private final Authorizations authorizations;
+    private final User user;
     private final Set<String> includeLabels;
     private final Set<String> excludeLabels;
 
@@ -29,12 +30,12 @@ public class AccumuloFindPathStrategy {
         AccumuloGraph graph,
         FindPathOptions options,
         ProgressCallback progressCallback,
-        Authorizations authorizations
+        User user
     ) {
         this.graph = graph;
         this.options = options;
         this.progressCallback = progressCallback;
-        this.authorizations = authorizations;
+        this.user = user;
         this.includeLabels = labelsToSet(graph.getNameSubstitutionStrategy(), options.getLabels());
         this.excludeLabels = labelsToSet(graph.getNameSubstitutionStrategy(), options.getExcludedLabels());
     }
@@ -50,7 +51,7 @@ public class AccumuloFindPathStrategy {
         return results;
     }
 
-    public Iterable<Path> findPaths() {
+    public Stream<Path> findPaths() {
         progressCallback.progress(0, ProgressCallback.Step.FINDING_PATH);
 
         List<Path> foundPaths = new ArrayList<>();
@@ -68,7 +69,7 @@ public class AccumuloFindPathStrategy {
         }
 
         progressCallback.progress(1, ProgressCallback.Step.COMPLETE);
-        return foundPaths;
+        return foundPaths.stream();
     }
 
     private void findPathsSetIntersection(List<Path> foundPaths) {
@@ -200,7 +201,7 @@ public class AccumuloFindPathStrategy {
                 null,
                 ranges,
                 true,
-                authorizations
+                user
             );
 
 
@@ -208,8 +209,8 @@ public class AccumuloFindPathStrategy {
             try {
                 Map<String, Set<String>> results = new HashMap<>();
                 for (Map.Entry<Key, Value> row : scanner) {
-                    Vertex vertex = AccumuloVertex.createFromIteratorValue(graph, row.getKey(), row.getValue(), FetchHints.EDGE_REFS, authorizations);
-                    Iterable<String> otherVertexIds = stream(vertex.getEdgeInfos(Direction.BOTH, authorizations))
+                    Vertex vertex = AccumuloVertex.createFromIteratorValue(graph, row.getKey(), row.getValue(), FetchHints.EDGE_REFS, user);
+                    Iterable<String> otherVertexIds = vertex.getEdgeInfos(Direction.BOTH, user)
                         .filter(edgeInfo -> {
                             if (excludeLabels != null && excludeLabels.contains(edgeInfo.getLabel())) {
                                 return false;
@@ -219,7 +220,7 @@ public class AccumuloFindPathStrategy {
                         })
                         .map(EdgeInfo::getVertexId)
                         .collect(Collectors.toSet());
-                    Map<String, Boolean> verticesExist = graph.doVerticesExist(otherVertexIds, authorizations);
+                    Map<String, Boolean> verticesExist = graph.doVerticesExist(otherVertexIds, user);
                     Set<String> rowVertexIds = stream(verticesExist.keySet())
                         .filter(key -> verticesExist.getOrDefault(key, false))
                         .collect(Collectors.toSet());

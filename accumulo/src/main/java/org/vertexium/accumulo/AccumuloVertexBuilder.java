@@ -12,7 +12,7 @@ public abstract class AccumuloVertexBuilder extends VertexBuilder implements Ver
 
     @Override
     public Iterable<KeyValuePair> getKeyValuePairs() {
-        AccumuloVertex vertex = createVertex(new AccumuloAuthorizations());
+        AccumuloVertex vertex = createVertex(new AccumuloAuthorizations().getUser());
         return getElementMutationBuilder().getKeyValuePairsForVertex(vertex);
     }
 

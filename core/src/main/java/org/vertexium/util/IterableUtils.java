@@ -137,7 +137,7 @@ public class IterableUtils {
     public static <T> T singleOrDefault(Stream<? extends T> stream, T defaultValue) {
         List<? extends T> items = stream.limit(2).collect(Collectors.toList());
         if (items.size() > 1) {
-            throw new IllegalStateException("More than 1 item found. [" + result + ", " + nextValue + "...]");
+            throw new IllegalStateException("More than 1 item found.");
         }
         return items.size() == 1 ? items.get(0) : defaultValue;
     }
