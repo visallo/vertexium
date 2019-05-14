@@ -8,7 +8,7 @@ public abstract class InMemoryExtendedDataTable {
         ElementType elementType,
         String elementId,
         FetchHints fetchHints,
-        Authorizations authorizations
+        User user
     );
 
     public abstract Iterable<? extends ExtendedDataRow> getTable(
@@ -16,7 +16,7 @@ public abstract class InMemoryExtendedDataTable {
         String elementId,
         String tableName,
         FetchHints fetchHints,
-        Authorizations authorizations
+        User user
     );
 
     public abstract void addData(

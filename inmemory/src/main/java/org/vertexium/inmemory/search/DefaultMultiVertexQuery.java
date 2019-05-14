@@ -32,7 +32,7 @@ public class DefaultMultiVertexQuery extends QueryBase implements MultiVertexQue
     @Override
     public QueryResults<Edge> edges(FetchHints fetchHints) {
         Stream<Edge> edges = getGraph().getVertices(IterableUtils.toIterable(getVertexIds()), fetchHints, getParameters().getUser())
-                .flatMap(v -> v.getEdges(Direction.BOTH, fetchHints, getParameters().getUser()));
+            .flatMap(v -> v.getEdges(Direction.BOTH, fetchHints, getParameters().getUser()));
         return new DefaultGraphQueryResultsWithAggregations<>(getParameters(), edges, true, true, true, getAggregations());
     }
 

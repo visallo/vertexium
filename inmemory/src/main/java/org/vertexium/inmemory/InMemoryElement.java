@@ -19,7 +19,7 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> extends 
     private InMemoryGraph graph;
     private InMemoryTableElement<TElement> inMemoryTableElement;
     private final Long endTime;
-    private final Authorizations authorizations;
+    private final User user;
 
     protected InMemoryElement(
         InMemoryGraph graph,
@@ -27,13 +27,13 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> extends 
         InMemoryTableElement<TElement> inMemoryTableElement,
         FetchHints fetchHints,
         Long endTime,
-        Authorizations authorizations
+        User user
     ) {
         this.graph = graph;
         this.id = id;
         this.fetchHints = fetchHints;
         this.endTime = endTime;
-        this.authorizations = authorizations;
+        this.user = user;
         this.inMemoryTableElement = inMemoryTableElement;
     }
 
@@ -53,36 +53,36 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> extends 
     }
 
     @Override
-    public void deleteProperty(String key, String name, Visibility visibility, Authorizations authorizations) {
-        getGraph().deleteProperty(this, inMemoryTableElement, key, name, visibility, authorizations.getUser());
+    public void deleteProperty(String key, String name, Visibility visibility, User user) {
+        getGraph().deleteProperty(this, inMemoryTableElement, key, name, visibility, user);
     }
 
     @Override
-    public void softDeleteProperty(String key, String name, Visibility visibility, Object eventData, Authorizations authorizations) {
-        softDeleteProperty(key, name, null, visibility, eventData, IndexHint.INDEX, authorizations);
+    public void softDeleteProperty(String key, String name, Visibility visibility, Object eventData, User user) {
+        softDeleteProperty(key, name, null, visibility, eventData, IndexHint.INDEX, user);
     }
 
-    protected void softDeleteProperty(String key, String name, Long timestamp, Visibility visibility, Object data, IndexHint indexHint, Authorizations authorizations) {
+    protected void softDeleteProperty(String key, String name, Long timestamp, Visibility visibility, Object data, IndexHint indexHint, User user) {
         Property property = getProperty(key, name, visibility);
         if (property != null) {
-            getGraph().softDeleteProperty(inMemoryTableElement, property, timestamp, data, indexHint, authorizations);
+            getGraph().softDeleteProperty(inMemoryTableElement, property, timestamp, data, indexHint, user);
         }
     }
 
     protected void addAdditionalVisibility(
         String additionalVisibility,
         Object eventData,
-        Authorizations authorizations
+        User user
     ) {
-        getGraph().addAdditionalVisibility(inMemoryTableElement, additionalVisibility, eventData, authorizations);
+        getGraph().addAdditionalVisibility(inMemoryTableElement, additionalVisibility, eventData, user);
     }
 
     protected void deleteAdditionalVisibility(
         String additionalVisibility,
         Object eventData,
-        Authorizations authorizations
+        User user
     ) {
-        getGraph().deleteAdditionalVisibility(inMemoryTableElement, additionalVisibility, eventData, authorizations);
+        getGraph().deleteAdditionalVisibility(inMemoryTableElement, additionalVisibility, eventData, user);
     }
 
     private void addAdditionalExtendedDataVisibility(
@@ -112,17 +112,17 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> extends 
     }
 
     private void deleteExtendedData(String tableName, String row, String columnName, String key, Visibility visibility) {
-        getGraph().deleteExtendedData(this, tableName, row, columnName, key, visibility, authorizations);
+        getGraph().deleteExtendedData(this, tableName, row, columnName, key, visibility, user);
     }
 
-    protected void extendedData(ExtendedDataMutation extendedData, Authorizations authorizations) {
+    protected void extendedData(ExtendedDataMutation extendedData, User user) {
         ExtendedDataRowId extendedDataRowId = new ExtendedDataRowId(
             ElementType.getTypeFromElement(this),
             getId(),
             extendedData.getTableName(),
             extendedData.getRow()
         );
-        getGraph().extendedData(this, extendedDataRowId, extendedData, authorizations);
+        getGraph().extendedData(this, extendedDataRowId, extendedData, user);
     }
 
     @Override
@@ -185,11 +185,11 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> extends 
         Visibility visibility,
         Long timestamp,
         boolean indexAfterAdd,
-        Authorizations authorizations
+        User user
     ) {
-        getGraph().addPropertyValue(this, inMemoryTableElement, key, name, value, metadata, visibility, timestamp, authorizations.getUser());
+        getGraph().addPropertyValue(this, inMemoryTableElement, key, name, value, metadata, visibility, timestamp, user);
         if (indexAfterAdd) {
-            getGraph().getSearchIndex().addElement(getGraph(), this, null, null, authorizations);
+            getGraph().getSearchIndex().addElement(getGraph(), this, null, null, user);
         }
     }
 
@@ -226,7 +226,7 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> extends 
         if (!getFetchHints().isIncludeProperties()) {
             throw new VertexiumMissingFetchHintException(getFetchHints(), "includeProperties");
         }
-        return inMemoryTableElement.getProperties(fetchHints, endTime, authorizations.getUser());
+        return inMemoryTableElement.getProperties(fetchHints, endTime, user);
     }
 
     @Override
@@ -240,11 +240,6 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> extends 
 
     @Override
     public abstract <T extends Element> ExistingElementMutation<T> prepareMutation();
-
-    @Override
-    public Authorizations getAuthorizations() {
-        return this.authorizations;
-    }
 
     @Override
     public InMemoryGraph getGraph() {
@@ -302,11 +297,11 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> extends 
                 property.getVisibility(),
                 property.getTimestamp(),
                 false,
-                authorizations
+                user
             );
         }
         for (PropertyDeleteMutation propertyDeleteMutation : propertyDeleteMutations) {
-            deleteProperty(propertyDeleteMutation.getKey(), propertyDeleteMutation.getName(), propertyDeleteMutation.getVisibility(), authorizations);
+            deleteProperty(propertyDeleteMutation.getKey(), propertyDeleteMutation.getName(), propertyDeleteMutation.getVisibility(), user);
         }
         for (PropertySoftDeleteMutation propertySoftDeleteMutation : propertySoftDeleteMutations) {
             softDeleteProperty(
@@ -316,26 +311,26 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> extends 
                 propertySoftDeleteMutation.getVisibility(),
                 propertySoftDeleteMutation.getData(),
                 indexHint,
-                authorizations
+                user
             );
         }
         for (AdditionalVisibilityAddMutation additionalVisibility : additionalVisibilities) {
             addAdditionalVisibility(
                 additionalVisibility.getAdditionalVisibility(),
                 additionalVisibility.getEventData(),
-                authorizations
+                user
             );
         }
         for (AdditionalVisibilityDeleteMutation additionalVisibilityDelete : additionalVisibilityDeletes) {
             deleteAdditionalVisibility(
                 additionalVisibilityDelete.getAdditionalVisibility(),
                 additionalVisibilityDelete.getEventData(),
-                authorizations
+                user
             );
         }
         for (ExtendedDataMutation extendedData : extendedDatas) {
             getGraph().ensurePropertyDefined(extendedData.getColumnName(), extendedData.getValue());
-            extendedData(extendedData, authorizations);
+            extendedData(extendedData, user);
         }
         for (ExtendedDataDeleteMutation extendedDataDelete : extendedDataDeletes) {
             deleteExtendedData(
@@ -471,7 +466,7 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> extends 
             throw new VertexiumMissingFetchHintException(getFetchHints(), "includeExtendedDataTableNames");
         }
 
-        return graph.getExtendedDataTableNames(ElementType.getTypeFromElement(this), id, getFetchHints(), authorizations);
+        return graph.getExtendedDataTableNames(ElementType.getTypeFromElement(this), id, getFetchHints(), user);
     }
 
     @Override
@@ -480,7 +475,7 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> extends 
             getGraph(),
             this,
             tableName,
-            graph.getExtendedDataTable(ElementType.getTypeFromElement(this), id, tableName, fetchHints, authorizations)
+            graph.getExtendedDataTable(ElementType.getTypeFromElement(this), id, tableName, fetchHints, user)
         );
     }
 }

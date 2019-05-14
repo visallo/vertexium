@@ -21,8 +21,8 @@ public class InMemoryTableEdge extends InMemoryTableElement<InMemoryEdge> {
     }
 
     @Override
-    public InMemoryEdge createElementInternal(InMemoryGraph graph, FetchHints fetchHints, Long endTime, Authorizations authorizations) {
-        return new InMemoryEdge(graph, getId(), this, fetchHints, endTime, authorizations);
+    public InMemoryEdge createElementInternal(InMemoryGraph graph, FetchHints fetchHints, Long endTime, User user) {
+        return new InMemoryEdge(graph, getId(), this, fetchHints, endTime, user);
     }
 
     public Stream<HistoricalEvent> getHistoricalEventsForVertex(

@@ -15,9 +15,9 @@ public class InMemoryEdge extends InMemoryElement<InMemoryEdge> implements Edge 
         InMemoryTableEdge inMemoryTableElement,
         FetchHints fetchHints,
         Long endTime,
-        Authorizations authorizations
+        User user
     ) {
-        super(graph, id, inMemoryTableElement, fetchHints, endTime, authorizations);
+        super(graph, id, inMemoryTableElement, fetchHints, endTime, user);
         edgeSetupMutation = inMemoryTableElement.findLastMutation(EdgeSetupMutation.class);
     }
 

@@ -6,7 +6,6 @@ import org.vertexium.historicalEvent.HistoricalEventId;
 import org.vertexium.mutation.ExistingEdgeMutation;
 import org.vertexium.query.QueryableIterable;
 
-import java.util.Set;
 import java.util.stream.Stream;
 
 public class EdgeInfoEdge extends ElementBase implements Edge {
@@ -88,13 +87,13 @@ public class EdgeInfoEdge extends ElementBase implements Edge {
     }
 
     @Override
-    public void deleteProperty(String key, String name, Visibility visibility, Authorizations authorizations) {
-        getEdge().deleteProperty(key, name, visibility, authorizations);
+    public void deleteProperty(String key, String name, Visibility visibility, User user) {
+        getEdge().deleteProperty(key, name, visibility, user);
     }
 
     @Override
-    public void softDeleteProperty(String key, String name, Visibility visibility, Object eventData, Authorizations authorizations) {
-        getEdge().softDeleteProperty(key, name, visibility, eventData, authorizations);
+    public void softDeleteProperty(String key, String name, Visibility visibility, Object eventData, User user) {
+        getEdge().softDeleteProperty(key, name, visibility, eventData, user);
     }
 
     @Override

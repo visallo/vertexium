@@ -18,7 +18,7 @@ public class InMemoryVertex extends InMemoryElement<InMemoryVertex> implements V
         InMemoryTableVertex inMemoryTableElement,
         FetchHints fetchHints,
         Long endTime,
-        Authorizations authorizations
+        User user
     ) {
         super(
             graph,
@@ -26,7 +26,7 @@ public class InMemoryVertex extends InMemoryElement<InMemoryVertex> implements V
             inMemoryTableElement,
             fetchHints,
             endTime,
-            authorizations
+            user
         );
     }
 

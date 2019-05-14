@@ -18,13 +18,13 @@ public class MapInMemoryExtendedDataTable extends InMemoryExtendedDataTable {
         ElementType elementType,
         String elementId,
         FetchHints fetchHints,
-        Authorizations authorizations
+        User user
     ) {
         ElementTypeData data = elementTypeData.get(elementType);
         if (data == null) {
             return ImmutableSet.of();
         }
-        return data.getTableNames(elementId, fetchHints, authorizations);
+        return data.getTableNames(elementId, fetchHints, user);
     }
 
     @Override
@@ -33,13 +33,13 @@ public class MapInMemoryExtendedDataTable extends InMemoryExtendedDataTable {
         String elementId,
         String tableName,
         FetchHints fetchHints,
-        Authorizations authorizations
+        User user
     ) {
         ElementTypeData data = elementTypeData.get(elementType);
         if (data == null) {
             return ImmutableList.of();
         }
-        return data.getTable(elementId, tableName, fetchHints, authorizations);
+        return data.getTable(elementId, tableName, fetchHints, user);
     }
 
     @Override
@@ -92,25 +92,25 @@ public class MapInMemoryExtendedDataTable extends InMemoryExtendedDataTable {
     private static class ElementTypeData {
         Map<String, ElementData> elementData = new HashMap<>();
 
-        public ImmutableSet<String> getTableNames(String elementId, FetchHints fetchHints, Authorizations authorizations) {
+        public ImmutableSet<String> getTableNames(String elementId, FetchHints fetchHints, User user) {
             ElementData data = elementData.get(elementId);
             if (data == null) {
                 return ImmutableSet.of();
             }
-            return data.getTableNames(fetchHints, authorizations);
+            return data.getTableNames(fetchHints, user);
         }
 
         public Iterable<ExtendedDataRow> getTable(
             String elementId,
             String tableName,
             FetchHints fetchHints,
-            Authorizations authorizations
+            User user
         ) {
             ElementData data = elementData.get(elementId);
             if (data == null) {
                 return ImmutableList.of();
             }
-            return data.getTable(tableName, fetchHints, authorizations);
+            return data.getTable(tableName, fetchHints, user);
         }
 
         public synchronized void addData(
@@ -157,16 +157,16 @@ public class MapInMemoryExtendedDataTable extends InMemoryExtendedDataTable {
     private static class ElementData {
         private final Map<String, Table> tables = new HashMap<>();
 
-        public ImmutableSet<String> getTableNames(FetchHints fetchHints, Authorizations authorizations) {
-            VisibilityEvaluator visibilityEvaluator = new VisibilityEvaluator(new org.vertexium.security.Authorizations(authorizations.getAuthorizations()));
+        public ImmutableSet<String> getTableNames(FetchHints fetchHints, User user) {
+            VisibilityEvaluator visibilityEvaluator = new VisibilityEvaluator(new org.vertexium.security.Authorizations(user.getAuthorizations()));
             return tables.entrySet().stream()
                 .filter(entry -> entry.getValue().canRead(visibilityEvaluator, fetchHints))
                 .map(Map.Entry::getKey)
                 .collect(StreamUtils.toImmutableSet());
         }
 
-        public Iterable<ExtendedDataRow> getTable(String tableName, FetchHints fetchHints, Authorizations authorizations) {
-            VisibilityEvaluator visibilityEvaluator = new VisibilityEvaluator(new org.vertexium.security.Authorizations(authorizations.getAuthorizations()));
+        public Iterable<ExtendedDataRow> getTable(String tableName, FetchHints fetchHints, User user) {
+            VisibilityEvaluator visibilityEvaluator = new VisibilityEvaluator(new org.vertexium.security.Authorizations(user.getAuthorizations()));
             Table table = tables.get(tableName);
             if (table == null) {
                 throw new VertexiumException("Invalid table '" + tableName + "'");

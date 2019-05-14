@@ -1,8 +1,8 @@
 package org.vertexium.inmemory;
 
-import org.vertexium.Authorizations;
 import org.vertexium.ElementType;
 import org.vertexium.FetchHints;
+import org.vertexium.User;
 
 public class InMemoryTableVertex extends InMemoryTableElement<InMemoryVertex> {
     public InMemoryTableVertex(String id) {
@@ -15,7 +15,7 @@ public class InMemoryTableVertex extends InMemoryTableElement<InMemoryVertex> {
     }
 
     @Override
-    public InMemoryVertex createElementInternal(InMemoryGraph graph, FetchHints fetchHints, Long endTime, Authorizations authorizations) {
-        return new InMemoryVertex(graph, getId(), this, fetchHints, endTime, authorizations);
+    public InMemoryVertex createElementInternal(InMemoryGraph graph, FetchHints fetchHints, Long endTime, User user) {
+        return new InMemoryVertex(graph, getId(), this, fetchHints, endTime, user);
     }
 }
