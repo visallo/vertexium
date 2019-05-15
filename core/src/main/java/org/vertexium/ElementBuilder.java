@@ -1,12 +1,9 @@
 package org.vertexium;
 
-import org.vertexium.mutation.ElementMutation;
 import org.vertexium.mutation.ElementMutationBase;
 import org.vertexium.util.KeyUtils;
 
-public abstract class ElementBuilder<T extends Element>
-    extends ElementMutationBase<T, ElementBuilder<T>>
-    implements ElementMutation<T> {
+public abstract class ElementBuilder<T extends Element> extends ElementMutationBase<T, ElementBuilder<T>> {
     private final ElementType elementType;
     private final String elementId;
     private final Visibility elementVisibility;

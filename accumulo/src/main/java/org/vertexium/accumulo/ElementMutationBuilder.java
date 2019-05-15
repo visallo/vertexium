@@ -1,5 +1,7 @@
 package org.vertexium.accumulo;
 
+import com.google.common.base.Supplier;
+import com.google.common.base.Suppliers;
 import org.apache.accumulo.core.data.Key;
 import org.apache.accumulo.core.data.Mutation;
 import org.apache.accumulo.core.data.Value;
@@ -19,12 +21,10 @@ import org.vertexium.property.StreamingPropertyValueRef;
 import org.vertexium.util.ArrayUtils;
 import org.vertexium.util.ExtendedDataMutationUtils;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.vertexium.mutation.ElementMutationBase.*;
 import static org.vertexium.util.IncreasingTime.currentTimeMillis;
 
 public abstract class ElementMutationBuilder {
@@ -47,13 +47,50 @@ public abstract class ElementMutationBuilder {
         this.vertexiumSerializer = vertexiumSerializer;
     }
 
-    public void saveVertexBuilder(AccumuloGraph graph, VertexBuilder vertexBuilder, long timestamp) {
-        Mutation m = createMutationForVertexBuilder(graph, vertexBuilder, timestamp);
-        saveVertexMutation(m);
+    public void saveVertexMutation(AccumuloGraph graph, ElementMutation<Vertex> vertexBuilder, long timestamp, User user) {
+        String vertexRowKey = vertexBuilder.getId();
+        Mutation vertexMutation = new Mutation(vertexRowKey);
+        if (!vertexBuilder.isDeleteElement()) {
+            vertexMutation.put(AccumuloVertex.CF_SIGNAL, EMPTY_TEXT, visibilityToAccumuloVisibility(vertexBuilder.getVisibility()), timestamp, EMPTY_VALUE);
+        }
+        addElementMutationsToAccumuloMutation(graph, vertexBuilder, vertexRowKey, vertexMutation);
+        saveVertexMutations(vertexMutation);
+
         saveExtendedDataMutations(graph, ElementType.VERTEX, vertexBuilder);
+
+        Supplier<Vertex> vertex = Suppliers.memoize(() ->
+                vertexBuilder instanceof ExistingElementMutation ?
+                        ((ExistingElementMutation<Vertex>) vertexBuilder).getElement() :
+                        graph.getVertex(vertexBuilder.getId(), FetchHints.EDGE_REFS, user)
+        );
+        if (vertexBuilder.isDeleteElement()) {
+            vertex.get().getEdges(Direction.BOTH, user).forEach(edge -> {
+                EdgeMutation edgeMutation = (EdgeMutation) edge.prepareMutation().deleteElement();
+                saveEdgeMutation(graph, edgeMutation, timestamp);
+            });
+        } else if (vertexBuilder.getSoftDeleteData() != null) {
+            SoftDeleteData data = vertexBuilder.getSoftDeleteData();
+            vertex.get().getEdges(Direction.BOTH, user).forEach(edge -> {
+                EdgeMutation edgeMutation = (EdgeMutation) edge.prepareMutation().softDeleteElement(data.getTimestamp(), data.getEventData());
+                saveEdgeMutation(graph, edgeMutation, timestamp);
+            });
+        } else {
+            vertexBuilder.getMarkVisibleData().forEach(data -> {
+                vertex.get().getEdges(Direction.BOTH, user).forEach(edge -> {
+                    EdgeMutation edgeMutation = (EdgeMutation) edge.prepareMutation().markElementVisible(data.getVisibility(), data.getEventData());
+                    saveEdgeMutation(graph, edgeMutation, timestamp);
+                });
+            });
+            vertexBuilder.getMarkHiddenData().forEach(data -> {
+                vertex.get().getEdges(Direction.BOTH, user).forEach(edge -> {
+                    EdgeMutation edgeMutation = (EdgeMutation) edge.prepareMutation().markElementHidden(data.getVisibility(), data.getEventData());
+                    saveEdgeMutation(graph, edgeMutation, timestamp);
+                });
+            });
+        }
     }
 
-    private <T extends Element> void saveExtendedDataMutations(AccumuloGraph graph, ElementType elementType, ElementBuilder<T> elementBuilder) {
+    private <T extends Element> void saveExtendedDataMutations(AccumuloGraph graph, ElementType elementType, ElementMutation<T> elementBuilder) {
         saveExtendedData(
             graph,
             elementBuilder.getId(),
@@ -141,34 +178,50 @@ public abstract class ElementMutationBuilder {
 
     protected abstract void saveExtendedDataMutation(ElementType elementType, Mutation m);
 
-    protected abstract void saveVertexMutation(Mutation m);
+    protected abstract void saveVertexMutations(Mutation... m);
 
-    private Mutation createMutationForVertexBuilder(AccumuloGraph graph, VertexBuilder vertexBuilder, long timestamp) {
-        String vertexRowKey = vertexBuilder.getId();
-        Mutation m = new Mutation(vertexRowKey);
-        m.put(AccumuloVertex.CF_SIGNAL, EMPTY_TEXT, visibilityToAccumuloVisibility(vertexBuilder.getVisibility()), timestamp, EMPTY_VALUE);
-        createMutationForElementBuilder(graph, vertexBuilder, vertexRowKey, m);
-        return m;
-    }
+    private <T extends Element> void addElementMutationsToAccumuloMutation(AccumuloGraph graph, ElementMutation<T> elementMutation, String rowKey, Mutation m) {
+        if (elementMutation.isDeleteElement()) {
+            m.put(AccumuloElement.DELETE_ROW_COLUMN_FAMILY, AccumuloElement.DELETE_ROW_COLUMN_QUALIFIER, RowDeletingIterator.DELETE_ROW_VALUE);
+            return;
+        }
 
-    private <T extends Element> void createMutationForElementBuilder(AccumuloGraph graph, ElementBuilder<T> elementBuilder, String rowKey, Mutation m) {
-        for (PropertyDeleteMutation propertyDeleteMutation : elementBuilder.getPropertyDeletes()) {
+        for (PropertyDeleteMutation propertyDeleteMutation : elementMutation.getPropertyDeletes()) {
             addPropertyDeleteToMutation(m, propertyDeleteMutation);
         }
-        for (PropertySoftDeleteMutation propertySoftDeleteMutation : elementBuilder.getPropertySoftDeletes()) {
+        for (PropertySoftDeleteMutation propertySoftDeleteMutation : elementMutation.getPropertySoftDeletes()) {
             addPropertySoftDeleteToMutation(m, propertySoftDeleteMutation);
         }
-        for (Property property : elementBuilder.getProperties()) {
+        for (Property property : elementMutation.getProperties()) {
             addPropertyToMutation(graph, m, rowKey, property);
         }
-        for (AdditionalVisibilityAddMutation additionalVisibility : elementBuilder.getAdditionalVisibilities()) {
+        for (AdditionalVisibilityAddMutation additionalVisibility : elementMutation.getAdditionalVisibilities()) {
             addAdditionalVisibilityToMutation(m, additionalVisibility);
         }
-        for (AdditionalVisibilityDeleteMutation additionalVisibilityDelete : elementBuilder.getAdditionalVisibilityDeletes()) {
+        for (AdditionalVisibilityDeleteMutation additionalVisibilityDelete : elementMutation.getAdditionalVisibilityDeletes()) {
             addAdditionalVisibilityDeleteToMutation(m, additionalVisibilityDelete);
         }
-        Iterable<ExtendedDataMutation> extendedData = elementBuilder.getExtendedData();
+
+        // TODO: handle cleaning up the extended data markers for extended data deletions. need to elevate to do this properly
+
+        Iterable<ExtendedDataMutation> extendedData = elementMutation.getExtendedData();
         saveExtendedDataMarkers(m, extendedData);
+
+        for (MarkPropertyVisibleData markPropertyVisibleData : elementMutation.getMarkPropertyVisibleData()) {
+            addMarkPropertyVisibleToMutation(m, markPropertyVisibleData);
+        }
+        for (MarkPropertyHiddenData markPropertyHiddenData : elementMutation.getMarkPropertyHiddenData()) {
+            addMarkPropertyHiddenToMutation(m, markPropertyHiddenData);
+        }
+        for (MarkVisibleData markVisibleData : elementMutation.getMarkVisibleData()) {
+            addMarkVisibleToMutation(m, markVisibleData);
+        }
+        for (MarkHiddenData markHiddenData : elementMutation.getMarkHiddenData()) {
+            addMarkHiddenToMutation(m, markHiddenData);
+        }
+        if (elementMutation.getSoftDeleteData() != null) {
+            addSoftDeleteToMutation(m, elementMutation.getSoftDeleteData());
+        }
     }
 
     public void saveExtendedDataMarkers(
@@ -190,10 +243,10 @@ public abstract class ElementMutationBuilder {
     private void saveElementMutation(ElementType elementType, Mutation m) {
         switch (elementType) {
             case VERTEX:
-                saveVertexMutation(m);
+                saveVertexMutations(m);
                 break;
             case EDGE:
-                saveEdgeMutation(m);
+                saveEdgeMutations(m);
                 break;
             default:
                 throw new VertexiumException("Unhandled element type: " + elementType);
@@ -332,19 +385,8 @@ public abstract class ElementMutationBuilder {
         );
     }
 
-    public void saveEdgeBuilder(AccumuloGraph graph, EdgeBuilderBase edgeBuilder, long timestamp) {
+    public void saveEdgeMutation(AccumuloGraph graph, EdgeMutation edgeBuilder, long timestamp) {
         ColumnVisibility edgeColumnVisibility = visibilityToAccumuloVisibility(edgeBuilder.getVisibility());
-        Mutation m = createMutationForEdgeBuilder(graph, edgeBuilder, edgeColumnVisibility, timestamp);
-        saveEdgeMutation(m);
-
-        String edgeLabel = edgeBuilder.getNewEdgeLabel() != null ? edgeBuilder.getNewEdgeLabel() : edgeBuilder.getEdgeLabel();
-        saveEdgeInfoOnVertex(
-            edgeBuilder.getId(),
-            edgeBuilder.getVertexId(Direction.OUT),
-            edgeBuilder.getVertexId(Direction.IN),
-            edgeLabel,
-            edgeColumnVisibility
-        );
 
         saveExtendedDataMutations(graph, ElementType.EDGE, edgeBuilder);
     }
@@ -395,24 +437,59 @@ public abstract class ElementMutationBuilder {
     private Mutation createMutationForEdgeBuilder(AccumuloGraph graph, EdgeBuilderBase edgeBuilder, ColumnVisibility edgeColumnVisibility, long timestamp) {
         String edgeRowKey = edgeBuilder.getId();
         Mutation m = new Mutation(edgeRowKey);
-        String edgeLabel = edgeBuilder.getEdgeLabel();
-        if (edgeBuilder.getNewEdgeLabel() != null) {
-            edgeLabel = edgeBuilder.getNewEdgeLabel();
-            m.putDelete(AccumuloEdge.CF_SIGNAL, new Text(edgeBuilder.getEdgeLabel()), edgeColumnVisibility, currentTimeMillis());
+
+        String edgeLabel = edgeBuilder.getNewEdgeLabel() != null ? edgeBuilder.getNewEdgeLabel() : edgeBuilder.getEdgeLabel();
+        if (!edgeBuilder.isDeleteElement()) {
+            if (edgeBuilder.getNewEdgeLabel() != null) {
+                m.putDelete(AccumuloEdge.CF_SIGNAL, new Text(edgeBuilder.getEdgeLabel()), edgeColumnVisibility, currentTimeMillis());
+            }
+            m.put(AccumuloEdge.CF_SIGNAL, new Text(edgeLabel), edgeColumnVisibility, timestamp, ElementMutationBuilder.EMPTY_VALUE);
+            m.put(AccumuloEdge.CF_OUT_VERTEX, new Text(edgeBuilder.getVertexId(Direction.OUT)), edgeColumnVisibility, timestamp, ElementMutationBuilder.EMPTY_VALUE);
+            m.put(AccumuloEdge.CF_IN_VERTEX, new Text(edgeBuilder.getVertexId(Direction.IN)), edgeColumnVisibility, timestamp, ElementMutationBuilder.EMPTY_VALUE);
         }
-        m.put(AccumuloEdge.CF_SIGNAL, new Text(edgeLabel), edgeColumnVisibility, timestamp, ElementMutationBuilder.EMPTY_VALUE);
-        m.put(AccumuloEdge.CF_OUT_VERTEX, new Text(edgeBuilder.getVertexId(Direction.OUT)), edgeColumnVisibility, timestamp, ElementMutationBuilder.EMPTY_VALUE);
-        m.put(AccumuloEdge.CF_IN_VERTEX, new Text(edgeBuilder.getVertexId(Direction.IN)), edgeColumnVisibility, timestamp, ElementMutationBuilder.EMPTY_VALUE);
-        createMutationForElementBuilder(graph, edgeBuilder, edgeRowKey, m);
-        return m;
+        addElementMutationsToAccumuloMutation(graph, edgeBuilder, edgeRowKey, m);
+        saveEdgeMutations(m);
+
+        Mutation outMutation = new Mutation(edgeBuilder.getVertexId(Direction.OUT));
+        Mutation inMutation = new Mutation(edgeBuilder.getVertexId(Direction.IN));
+        Text edgeIdText = new Text(edgeBuilder.getId());
+        if (edgeBuilder.isDeleteElement()) {
+            outMutation.putDelete(AccumuloVertex.CF_OUT_EDGE, edgeIdText, edgeColumnVisibility);
+            inMutation.putDelete(AccumuloVertex.CF_IN_EDGE, edgeIdText, edgeColumnVisibility);
+        } else if (edgeBuilder.getSoftDeleteData() != null) {
+            Long softDeleteTimestamp = edgeBuilder.getSoftDeleteData().getTimestamp();
+            Value value = toSoftDeleteDataToValue(edgeBuilder.getSoftDeleteData().getEventData());
+            outMutation.put(AccumuloVertex.CF_OUT_EDGE_SOFT_DELETE, edgeIdText, edgeColumnVisibility, softDeleteTimestamp, value);
+            inMutation.put(AccumuloVertex.CF_IN_EDGE_SOFT_DELETE, edgeIdText, edgeColumnVisibility, softDeleteTimestamp, value);
+        } else {
+            EdgeInfo edgeInfo = new EdgeInfo(getNameSubstitutionStrategy().deflate(edgeLabel), edgeBuilder.getVertexId(Direction.IN));
+            outMutation.put(AccumuloVertex.CF_OUT_EDGE, edgeIdText, edgeColumnVisibility, edgeInfo.toValue());
+
+            edgeInfo = new EdgeInfo(getNameSubstitutionStrategy().deflate(edgeLabel), edgeBuilder.getVertexId(Direction.OUT));
+            inMutation.put(AccumuloVertex.CF_IN_EDGE, edgeIdText, edgeColumnVisibility, edgeInfo.toValue());
+
+            edgeBuilder.getMarkVisibleData().forEach(markVisibleData -> {
+                Value value = toHiddenDeletedValue(markVisibleData.getEventData());
+                ColumnVisibility hiddenVisibility = visibilityToAccumuloVisibility(markVisibleData.getVisibility());
+                outMutation.put(AccumuloVertex.CF_OUT_EDGE_HIDDEN, edgeIdText, hiddenVisibility, value);
+                inMutation.put(AccumuloVertex.CF_IN_EDGE_HIDDEN, edgeIdText, hiddenVisibility, value);
+            });
+            edgeBuilder.getMarkHiddenData().forEach(markHiddenData -> {
+                Value value = toHiddenValue(markHiddenData.getEventData());
+                ColumnVisibility hiddenVisibility = visibilityToAccumuloVisibility(markHiddenData.getVisibility());
+                outMutation.put(AccumuloVertex.CF_OUT_EDGE_HIDDEN, edgeIdText, hiddenVisibility, value);
+                inMutation.put(AccumuloVertex.CF_IN_EDGE_HIDDEN, edgeIdText, hiddenVisibility, value);
+            });
+        }
+        saveVertexMutations(outMutation, inMutation);
+        saveExtendedDataMutations(graph, ElementType.EDGE, edgeBuilder);
     }
 
-    private Mutation createAlterEdgeLabelMutation(Edge edge, String newEdgeLabel, ColumnVisibility edgeColumnVisibility) {
-        String edgeRowKey = edge.getId();
-        Mutation m = new Mutation(edgeRowKey);
-        m.put(AccumuloEdge.CF_SIGNAL, new Text(newEdgeLabel), edgeColumnVisibility, currentTimeMillis(), ElementMutationBuilder.EMPTY_VALUE);
-        return m;
+    private ColumnVisibility visibilityToAccumuloVisibility(Visibility visibility) {
+        return new ColumnVisibility(visibility.getVisibilityString());
     }
+
+    protected abstract void saveEdgeMutations(Mutation... m);
 
     public boolean alterElementVisibility(Mutation m, AccumuloElement element, Visibility newVisibility, Object data) {
         ColumnVisibility currentColumnVisibility = visibilityToAccumuloVisibility(element.getVisibility());
@@ -480,6 +557,42 @@ public abstract class ElementMutationBuilder {
     ) {
         Value value = toDeleteAdditionalVisibilityValue(additionalVisibilityDelete.getEventData());
         m.put(AccumuloElement.CF_ADDITIONAL_VISIBILITY, new Text(additionalVisibilityDelete.getAdditionalVisibility()), new ColumnVisibility(), value);
+    }
+
+    public void addMarkPropertyHiddenToMutation(Mutation m, MarkPropertyHiddenData markPropertyHiddenData) {
+        Visibility visibility = markPropertyHiddenData.getVisibility();
+        ColumnVisibility columnVisibility = visibilityToAccumuloVisibility(visibility);
+        Text columnQualifier = KeyHelper.getColumnQualifierFromPropertyHiddenColumnQualifier(markPropertyHiddenData.getKey(), markPropertyHiddenData.getName(), visibility.getVisibilityString(), getNameSubstitutionStrategy());
+        Long timestamp = markPropertyHiddenData.getTimestamp();
+        Object data = markPropertyHiddenData.getEventData();
+        m.put(AccumuloElement.CF_PROPERTY_HIDDEN, columnQualifier, columnVisibility, timestamp, toHiddenValue(data));
+    }
+
+    public void addMarkPropertyVisibleToMutation(Mutation m, MarkPropertyVisibleData markPropertyVisibleData) {
+        Visibility visibility = markPropertyVisibleData.getVisibility();
+        ColumnVisibility columnVisibility = visibilityToAccumuloVisibility(visibility);
+        Text columnQualifier = KeyHelper.getColumnQualifierFromPropertyHiddenColumnQualifier(markPropertyVisibleData.getKey(), markPropertyVisibleData.getName(), visibility.getVisibilityString(), getNameSubstitutionStrategy());
+        Long timestamp = markPropertyVisibleData.getTimestamp();
+        Object data = markPropertyVisibleData.getEventData();
+        m.put(AccumuloElement.CF_PROPERTY_HIDDEN, columnQualifier, columnVisibility, timestamp, toHiddenDeletedValue(data));
+    }
+
+    public void addMarkVisibleToMutation(Mutation m, MarkVisibleData markVisibleData) {
+        ColumnVisibility columnVisibility = visibilityToAccumuloVisibility(markVisibleData.getVisibility());
+        Object data = markVisibleData.getEventData();
+        m.put(AccumuloElement.CF_HIDDEN, AccumuloElement.CQ_HIDDEN, columnVisibility, toHiddenDeletedValue(data));
+    }
+
+    public void addMarkHiddenToMutation(Mutation m, MarkHiddenData markHiddenData) {
+        ColumnVisibility columnVisibility = visibilityToAccumuloVisibility(markHiddenData.getVisibility());
+        Object data = markHiddenData.getEventData();
+        m.put(AccumuloElement.CF_HIDDEN, AccumuloElement.CQ_HIDDEN, columnVisibility, toHiddenValue(data));
+    }
+
+    public void addSoftDeleteToMutation(Mutation m, SoftDeleteData softDeleteData) {
+        Long timestamp = softDeleteData.getTimestamp();
+        Object data = softDeleteData.getEventData();
+        m.put(AccumuloElement.CF_SOFT_DELETE, AccumuloElement.CQ_SOFT_DELETE, timestamp, toSoftDeleteDataToValue(data));
     }
 
     public void addPropertyToMutation(AccumuloGraph graph, Mutation m, String rowKey, Property property) {
