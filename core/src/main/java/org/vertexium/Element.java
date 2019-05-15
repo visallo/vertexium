@@ -107,7 +107,9 @@ public interface Element extends VertexiumObject, ElementLocation {
      */
     @Deprecated
     default void deleteProperty(Property property, Authorizations authorizations) {
-        deleteProperty(property.getKey(), property.getName(), property.getVisibility(), authorizations);
+        prepareMutation()
+            .deleteProperty(property)
+            .save(authorizations);
     }
 
     /**
@@ -120,7 +122,9 @@ public interface Element extends VertexiumObject, ElementLocation {
      */
     @Deprecated
     default void deleteProperty(String key, String name, Authorizations authorizations) {
-        deleteProperty(key, name, null, authorizations);
+        prepareMutation()
+            .deleteProperties(key, name)
+            .save(authorizations);
     }
 
     /**
@@ -134,7 +138,9 @@ public interface Element extends VertexiumObject, ElementLocation {
      */
     @Deprecated
     default void deleteProperty(String key, String name, Visibility visibility, Authorizations authorizations) {
-        deleteProperty(key, name, visibility, authorizations.getUser());
+        prepareMutation()
+            .deleteProperty(key, name, visibility)
+            .save(authorizations);
     }
 
     /**
@@ -162,9 +168,9 @@ public interface Element extends VertexiumObject, ElementLocation {
      */
     @Deprecated
     default void deleteProperties(String name, Authorizations authorizations) {
-        for (Property p : getProperties(name)) {
-            deleteProperty(p.getKey(), p.getName(), p.getVisibility(), authorizations);
-        }
+        prepareMutation()
+            .deleteProperties(name)
+            .save(authorizations);
     }
 
     /**
@@ -177,7 +183,9 @@ public interface Element extends VertexiumObject, ElementLocation {
      */
     @Deprecated
     default void softDeleteProperty(String key, String name, Authorizations authorizations) {
-        softDeleteProperty(key, name, null, authorizations);
+        prepareMutation()
+            .softDeleteProperties(key, name)
+            .save(authorizations);
     }
 
     /**
@@ -191,7 +199,9 @@ public interface Element extends VertexiumObject, ElementLocation {
      */
     @Deprecated
     default void softDeleteProperty(String key, String name, Object eventData, Authorizations authorizations) {
-        softDeleteProperty(key, name, null, eventData, authorizations);
+        prepareMutation()
+            .softDeleteProperties(key, name, eventData)
+            .save(authorizations);
     }
 
     /**
@@ -205,7 +215,9 @@ public interface Element extends VertexiumObject, ElementLocation {
      */
     @Deprecated
     default void softDeleteProperty(String key, String name, Visibility visibility, Authorizations authorizations) {
-        softDeleteProperty(key, name, visibility, null, authorizations);
+        prepareMutation()
+            .softDeleteProperty(key, name, visibility)
+            .save(authorizations);
     }
 
     /**
@@ -220,7 +232,9 @@ public interface Element extends VertexiumObject, ElementLocation {
      */
     @Deprecated
     default void softDeleteProperty(String key, String name, Visibility visibility, Object eventData, Authorizations authorizations) {
-        softDeleteProperty(key, name, visibility, eventData, authorizations.getUser());
+        prepareMutation()
+            .softDeleteProperty(key, name, visibility, eventData)
+            .save(authorizations);
     }
 
     /**
@@ -249,7 +263,9 @@ public interface Element extends VertexiumObject, ElementLocation {
      */
     @Deprecated
     default void softDeleteProperties(String name, Authorizations authorizations) {
-        softDeleteProperties(name, null, authorizations);
+        prepareMutation()
+            .softDeleteProperties(name)
+            .save(authorizations);
     }
 
     /**
@@ -262,9 +278,9 @@ public interface Element extends VertexiumObject, ElementLocation {
      */
     @Deprecated
     default void softDeleteProperties(String name, Object eventData, Authorizations authorizations) {
-        for (Property property : getProperties(name)) {
-            softDeleteProperty(property.getKey(), property.getName(), property.getVisibility(), eventData, authorizations);
-        }
+        prepareMutation()
+            .softDeleteProperties(name, eventData)
+            .save(authorizations);
     }
 
     /**
@@ -283,7 +299,9 @@ public interface Element extends VertexiumObject, ElementLocation {
      */
     @Deprecated
     default void addPropertyValue(String key, String name, Object value, Visibility visibility, Authorizations authorizations) {
-        prepareMutation().addPropertyValue(key, name, value, visibility).save(authorizations);
+        prepareMutation()
+            .addPropertyValue(key, name, value, visibility)
+            .save(authorizations);
     }
 
     /**
@@ -298,7 +316,9 @@ public interface Element extends VertexiumObject, ElementLocation {
      */
     @Deprecated
     default void addPropertyValue(String key, String name, Object value, Metadata metadata, Visibility visibility, Authorizations authorizations) {
-        prepareMutation().addPropertyValue(key, name, value, metadata, visibility).save(authorizations);
+        prepareMutation()
+            .addPropertyValue(key, name, value, metadata, visibility)
+            .save(authorizations);
     }
 
     /**
@@ -314,7 +334,9 @@ public interface Element extends VertexiumObject, ElementLocation {
      */
     @Deprecated
     default void setProperty(String name, Object value, Visibility visibility, Authorizations authorizations) {
-        prepareMutation().setProperty(name, value, visibility).save(authorizations);
+        prepareMutation()
+            .setProperty(name, value, visibility)
+            .save(authorizations);
     }
 
     /**
@@ -331,7 +353,9 @@ public interface Element extends VertexiumObject, ElementLocation {
      */
     @Deprecated
     default void setProperty(String name, Object value, Metadata metadata, Visibility visibility, Authorizations authorizations) {
-        prepareMutation().setProperty(name, value, metadata, visibility).save(authorizations);
+        prepareMutation()
+            .setProperty(name, value, metadata, visibility)
+            .save(authorizations);
     }
 
     /**
@@ -353,7 +377,9 @@ public interface Element extends VertexiumObject, ElementLocation {
      */
     @Deprecated
     default void markPropertyHidden(String key, String name, Visibility propertyVisibility, Visibility visibility, Authorizations authorizations) {
-        markPropertyHidden(key, name, propertyVisibility, null, visibility, null, authorizations);
+        prepareMutation()
+            .markPropertyHidden(key, name, propertyVisibility, visibility)
+            .save(authorizations);
     }
 
     /**
@@ -371,7 +397,9 @@ public interface Element extends VertexiumObject, ElementLocation {
      */
     @Deprecated
     default void markPropertyHidden(String key, String name, Visibility propertyVisibility, Visibility visibility, Object eventData, Authorizations authorizations) {
-        markPropertyHidden(key, name, propertyVisibility, null, visibility, eventData, authorizations);
+        prepareMutation()
+            .markPropertyHidden(key, name, propertyVisibility, visibility, eventData)
+            .save(authorizations);
     }
 
     /**
@@ -396,7 +424,9 @@ public interface Element extends VertexiumObject, ElementLocation {
         Visibility visibility,
         Authorizations authorizations
     ) {
-        markPropertyHidden(key, name, propertyVisibility, timestamp, visibility, null, authorizations);
+        prepareMutation()
+            .markPropertyHidden(key, name, propertyVisibility, timestamp, visibility)
+            .save(authorizations);
     }
 
     /**
@@ -423,14 +453,9 @@ public interface Element extends VertexiumObject, ElementLocation {
         Object eventData,
         Authorizations authorizations
     ) {
-        Iterable<Property> properties = getProperties(key, name);
-        for (Property property : properties) {
-            if (property.getVisibility().equals(propertyVisibility)) {
-                markPropertyHidden(property, timestamp, visibility, eventData, authorizations);
-                return;
-            }
-        }
-        throw new IllegalArgumentException("Could not find property " + key + " : " + name + " : " + propertyVisibility);
+        prepareMutation()
+            .markPropertyHidden(key, name, propertyVisibility, timestamp, visibility, eventData)
+            .save(authorizations);
     }
 
     /**
@@ -445,7 +470,9 @@ public interface Element extends VertexiumObject, ElementLocation {
      */
     @Deprecated
     default void markPropertyHidden(Property property, Visibility visibility, Authorizations authorizations) {
-        markPropertyHidden(property, null, visibility, null, authorizations);
+        prepareMutation()
+            .markPropertyHidden(property, visibility)
+            .save(authorizations);
     }
 
     /**
@@ -461,7 +488,9 @@ public interface Element extends VertexiumObject, ElementLocation {
      */
     @Deprecated
     default void markPropertyHidden(Property property, Visibility visibility, Object eventData, Authorizations authorizations) {
-        markPropertyHidden(property, null, visibility, eventData, authorizations);
+        prepareMutation()
+            .markPropertyHidden(property, visibility, eventData)
+            .save(authorizations);
     }
 
     /**
@@ -477,7 +506,9 @@ public interface Element extends VertexiumObject, ElementLocation {
      */
     @Deprecated
     default void markPropertyHidden(Property property, Long timestamp, Visibility visibility, Authorizations authorizations) {
-        markPropertyHidden(property, timestamp, visibility, null, authorizations);
+        prepareMutation()
+            .markPropertyHidden(property, timestamp, visibility)
+            .save(authorizations);
     }
 
     /**
@@ -510,7 +541,9 @@ public interface Element extends VertexiumObject, ElementLocation {
      */
     @Deprecated
     default void markPropertyVisible(String key, String name, Visibility propertyVisibility, Visibility visibility, Authorizations authorizations) {
-        markPropertyVisible(key, name, propertyVisibility, null, visibility, null, authorizations);
+        prepareMutation()
+            .markPropertyVisible(key, name, propertyVisibility, visibility)
+            .save(authorizations);
     }
 
     /**
@@ -526,7 +559,9 @@ public interface Element extends VertexiumObject, ElementLocation {
      */
     @Deprecated
     default void markPropertyVisible(String key, String name, Visibility propertyVisibility, Visibility visibility, Object eventData, Authorizations authorizations) {
-        markPropertyVisible(key, name, propertyVisibility, null, visibility, eventData, authorizations);
+        prepareMutation()
+            .markPropertyVisible(key, name, propertyVisibility, visibility, eventData)
+            .save(authorizations);
     }
 
     /**
@@ -549,7 +584,9 @@ public interface Element extends VertexiumObject, ElementLocation {
         Visibility visibility,
         Authorizations authorizations
     ) {
-        markPropertyVisible(key, name, propertyVisibility, timestamp, visibility, null, authorizations);
+        prepareMutation()
+            .markPropertyVisible(key, name, propertyVisibility, timestamp, visibility)
+            .save(authorizations);
     }
 
     /**
@@ -589,7 +626,9 @@ public interface Element extends VertexiumObject, ElementLocation {
      */
     @Deprecated
     default void markPropertyVisible(Property property, Visibility visibility, Authorizations authorizations) {
-        markPropertyVisible(property, null, visibility, null, authorizations);
+        prepareMutation()
+            .markPropertyVisible(property, visibility)
+            .save(authorizations);
     }
 
     /**
@@ -603,7 +642,9 @@ public interface Element extends VertexiumObject, ElementLocation {
      */
     @Deprecated
     default void markPropertyVisible(Property property, Visibility visibility, Object eventData, Authorizations authorizations) {
-        markPropertyVisible(property, null, visibility, eventData, authorizations);
+        prepareMutation()
+            .markPropertyVisible(property, visibility, eventData)
+            .save(authorizations);
     }
 
     /**
@@ -617,7 +658,9 @@ public interface Element extends VertexiumObject, ElementLocation {
      */
     @Deprecated
     default void markPropertyVisible(Property property, Long timestamp, Visibility visibility, Authorizations authorizations) {
-        markPropertyVisible(property, timestamp, visibility, null, authorizations);
+        prepareMutation()
+            .markPropertyVisible(property, timestamp, visibility)
+            .save(authorizations);
     }
 
     /**

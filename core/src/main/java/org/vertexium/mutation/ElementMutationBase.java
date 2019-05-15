@@ -4,13 +4,14 @@ import com.google.common.collect.ImmutableSet;
 import org.vertexium.*;
 import org.vertexium.property.MutablePropertyImpl;
 import org.vertexium.search.IndexHint;
-import org.vertexium.util.Preconditions;
 import org.vertexium.util.StreamUtils;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 public abstract class ElementMutationBase<T extends Element, TResult extends ElementMutation<T>> implements ElementMutation<T> {
     private final List<Property> properties = new ArrayList<>();
@@ -54,8 +55,8 @@ public abstract class ElementMutationBase<T extends Element, TResult extends Ele
     @SuppressWarnings("unchecked")
     @Override
     public TResult addPropertyValue(String key, String name, Object value, Metadata metadata, Long timestamp, Visibility visibility) {
-        Preconditions.checkNotNull(name, "property name cannot be null for property: " + name + ":" + key);
-        Preconditions.checkNotNull(value, "property value cannot be null for property: " + name + ":" + key);
+        checkNotNull(name, "property name cannot be null for property: " + name + ":" + key);
+        checkNotNull(value, "property value cannot be null for property: " + name + ":" + key);
         properties.add(new MutablePropertyImpl(key, name, value, metadata, timestamp, null, visibility, FetchHints.ALL_INCLUDING_HIDDEN));
         return (TResult) this;
     }
@@ -103,7 +104,7 @@ public abstract class ElementMutationBase<T extends Element, TResult extends Ele
             throw new VertexiumMissingFetchHintException(getFetchHints(), "Property " + property.getName() + " needs to be included with metadata");
         }
 
-        Preconditions.checkNotNull(property, "property cannot be null");
+        checkNotNull(property, "property cannot be null");
         propertyDeletes.add(new PropertyPropertyDeleteMutation(property));
         return (TResult) this;
     }
@@ -310,7 +311,8 @@ public abstract class ElementMutationBase<T extends Element, TResult extends Ele
     @SuppressWarnings("unchecked")
     @Override
     public TResult deleteProperty(String key, String name, Visibility visibility) {
-        Preconditions.checkNotNull(name, "property name cannot be null for property: " + name + ":" + key);
+        checkNotNull(name, "property name cannot be null for property: " + name + ":" + key);
+        checkNotNull(visibility, "property visibility cannot be null for property: " + name + ":" + key);
         propertyDeletes.add(new KeyNameVisibilityPropertyDeleteMutation(key, name, visibility));
         return (TResult) this;
     }
@@ -318,7 +320,7 @@ public abstract class ElementMutationBase<T extends Element, TResult extends Ele
     @SuppressWarnings("unchecked")
     @Override
     public TResult softDeleteProperty(Property property, Object eventData) {
-        Preconditions.checkNotNull(property, "property cannot be null");
+        checkNotNull(property, "property cannot be null");
         propertySoftDeletes.add(new PropertyPropertySoftDeleteMutation(property, eventData));
         return (TResult) this;
     }
@@ -331,7 +333,7 @@ public abstract class ElementMutationBase<T extends Element, TResult extends Ele
     @SuppressWarnings("unchecked")
     @Override
     public TResult softDeleteProperty(String key, String name, Visibility visibility, Object eventData) {
-        Preconditions.checkNotNull(name, "property name cannot be null for property: " + name + ":" + key);
+        checkNotNull(name, "property name cannot be null for property: " + name + ":" + key);
         propertySoftDeletes.add(new KeyNameVisibilityPropertySoftDeleteMutation(key, name, visibility, eventData));
         return (TResult) this;
     }
