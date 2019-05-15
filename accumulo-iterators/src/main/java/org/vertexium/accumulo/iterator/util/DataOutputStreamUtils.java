@@ -136,6 +136,7 @@ public class DataOutputStreamUtils {
                     encodeText(out, edgeEntry.getKey());
                     out.writeLong(edgeEntry.getValue().getTimestamp());
                     encodeString(out, edgeEntry.getValue().getVertexId());
+                    encodeText(out, edgeEntry.getValue().getColumnVisibility());
                 }
             }
         }

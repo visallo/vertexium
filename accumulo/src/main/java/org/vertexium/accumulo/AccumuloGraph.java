@@ -2384,7 +2384,7 @@ public class AccumuloGraph extends GraphBase implements Traceable {
                     }
 
                     org.vertexium.accumulo.iterator.model.EdgeInfo edgeInfo
-                        = new EdgeInfo(row.getValue().get(), row.getKey().getTimestamp());
+                        = new EdgeInfo(row.getValue().get(), row.getKey().getColumnVisibility(), row.getKey().getTimestamp());
                     String edgeId = row.getKey().getColumnQualifier().toString();
                     String outVertexId = row.getKey().getRow().toString();
                     String inVertexId = edgeInfo.getVertexId();

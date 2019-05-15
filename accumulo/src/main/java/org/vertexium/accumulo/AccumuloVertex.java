@@ -323,6 +323,11 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
                     public Direction getDirection() {
                         return direction;
                     }
+
+                    @Override
+                    public Visibility getVisibility() {
+                        return new Visibility(edgeInfo.getColumnVisibility().toString());
+                    }
                 };
             });
     }
@@ -380,7 +385,11 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
 
     void addOutEdge(Edge edge) {
         if (this.outEdges instanceof EdgesWithEdgeInfo) {
-            ((EdgesWithEdgeInfo) this.outEdges).add(edge.getId(), new org.vertexium.accumulo.iterator.model.EdgeInfo(edge.getLabel(), edge.getVertexId(Direction.IN)));
+            ((EdgesWithEdgeInfo) this.outEdges).add(edge.getId(), new org.vertexium.accumulo.iterator.model.EdgeInfo(
+                edge.getLabel(),
+                edge.getVertexId(Direction.IN),
+                new Text(edge.getVisibility().getVisibilityString())
+            ));
         } else {
             throw new VertexiumException("Cannot add edge");
         }
@@ -396,7 +405,11 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
 
     void addInEdge(Edge edge) {
         if (this.inEdges instanceof EdgesWithEdgeInfo) {
-            ((EdgesWithEdgeInfo) this.inEdges).add(edge.getId(), new org.vertexium.accumulo.iterator.model.EdgeInfo(edge.getLabel(), edge.getVertexId(Direction.OUT)));
+            ((EdgesWithEdgeInfo) this.inEdges).add(edge.getId(), new org.vertexium.accumulo.iterator.model.EdgeInfo(
+                edge.getLabel(),
+                edge.getVertexId(Direction.OUT),
+                new Text(edge.getVisibility().getVisibilityString())
+            ));
         } else {
             throw new VertexiumException("Cannot add edge");
         }

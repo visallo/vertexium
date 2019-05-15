@@ -43,7 +43,7 @@ public class EdgeRefFilter extends Filter {
     public boolean accept(Key k, Value v) {
         Text columnFamily = k.getColumnFamily();
         if (columnFamily.equals(VertexIterator.CF_IN_EDGE) || columnFamily.equals(VertexIterator.CF_OUT_EDGE)) {
-            EdgeInfo edgeInfo = new EdgeInfo(v.get(), k.getTimestamp());
+            EdgeInfo edgeInfo = new EdgeInfo(v.get(), k.getColumnVisibility(), k.getTimestamp());
             return vertexIdsSet.contains(edgeInfo.getVertexId());
         }
         return nonVisibleEdges.contains(columnFamily);

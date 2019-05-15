@@ -79,6 +79,11 @@ public class InMemoryVertex extends InMemoryElement<InMemoryVertex> implements V
                         ? Direction.IN
                         : Direction.OUT;
                 }
+
+                @Override
+                public Visibility getVisibility() {
+                    return edge.getVisibility();
+                }
             });
     }
 
