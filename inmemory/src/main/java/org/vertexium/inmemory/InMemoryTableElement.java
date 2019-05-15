@@ -10,7 +10,6 @@ import org.vertexium.property.MutablePropertyImpl;
 import org.vertexium.property.StreamingPropertyValue;
 import org.vertexium.property.StreamingPropertyValueRef;
 import org.vertexium.util.IncreasingTime;
-import org.vertexium.util.LookAheadIterable;
 
 import java.io.Serializable;
 import java.time.ZonedDateTime;
@@ -468,22 +467,10 @@ public abstract class InMemoryTableElement<TElement extends InMemoryElement> imp
             List<PropertyMutation> propertyMutations = propertiesMutations.computeIfAbsent(mapKey, k -> new ArrayList<>());
             propertyMutations.add(m);
         }
-        return new LookAheadIterable<List<PropertyMutation>, Property>() {
-            @Override
-            protected boolean isIncluded(List<PropertyMutation> src, Property property) {
-                return property != null;
-            }
-
-            @Override
-            protected Property convert(List<PropertyMutation> propertyMutations) {
-                return toProperty(propertyMutations, fetchHints, user);
-            }
-
-            @Override
-            protected Iterator<List<PropertyMutation>> createIterator() {
-                return propertiesMutations.values().iterator();
-            }
-        };
+        return propertiesMutations.values().stream()
+            .map(propertyMutations -> toProperty(propertyMutations, fetchHints, user))
+            .filter(Objects::nonNull)
+            .collect(Collectors.toList());
     }
 
     private Property toProperty(List<PropertyMutation> propertyMutations, FetchHints fetchHints, User user) {

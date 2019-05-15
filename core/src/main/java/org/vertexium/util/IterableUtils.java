@@ -174,11 +174,6 @@ public class IterableUtils {
         return sb.toString();
     }
 
-    @SuppressWarnings("unchecked")
-    public static Iterable<Element> toElementIterable(Iterable<? extends Element> elements) {
-        return (Iterable<Element>) elements;
-    }
-
     public static <T extends Element> Map<String, T> toMapById(Iterable<T> elements) {
         Map<String, T> result = new HashMap<>();
         for (T element : elements) {

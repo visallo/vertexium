@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-import static org.vertexium.util.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 class InMemoryElementMutationBuilder {
     private final InMemoryGraph graph;

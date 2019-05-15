@@ -6,7 +6,7 @@ import java.util.LinkedList;
 import java.util.Queue;
 
 public class QueueIdGenerator implements IdGenerator {
-    private Queue<String> ids = new LinkedList<String>();
+    private final Queue<String> ids = new LinkedList<>();
 
     @Override
     public String nextId() {

@@ -3,7 +3,6 @@ package org.vertexium.elasticsearch5;
 import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Maps;
 import com.vividsolutions.jts.geom.Coordinate;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
@@ -49,7 +48,6 @@ import org.vertexium.query.*;
 import org.vertexium.scoring.ScoringStrategy;
 import org.vertexium.type.*;
 import org.vertexium.util.IterableUtils;
-import org.vertexium.util.JoinIterable;
 import org.vertexium.util.VertexiumLogger;
 import org.vertexium.util.VertexiumLoggerFactory;
 
@@ -59,6 +57,7 @@ import java.math.BigInteger;
 import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import static org.vertexium.elasticsearch5.Elasticsearch5SearchIndex.*;
@@ -487,36 +486,38 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
         // and rely on the DefaultGraphQueryIterable to provide property filtering
         QueryParameters filterParameters = getParameters().clone();
         filterParameters.setSkip(0); // ES already did a skip
-        List<Iterable<? extends VertexiumObject>> items = new ArrayList<>();
+        List<VertexiumObject> items = new ArrayList<>();
         User user = filterParameters.getUser();
         if (ids.getVertexIds().size() > 0) {
             if (fetchHints.equals(FetchHints.NONE)) {
-                items.add(getElasticsearchVertices(hits, fetchHints, user));
+                items.addAll(getElasticsearchVertices(hits, fetchHints, user));
             } else {
-                Iterable<? extends VertexiumObject> vertices = getGraph()
+                List<VertexiumObject> vertices = getGraph()
                     .getVertices(ids.getVertexIds(), fetchHints, user)
                     .collect(Collectors.toList());
-                items.add(vertices);
+                items.addAll(vertices);
             }
         }
         if (ids.getEdgeIds().size() > 0) {
             if (fetchHints.equals(FetchHints.NONE)) {
-                items.add(getElasticsearchEdges(hits, fetchHints, user));
+                items.addAll(getElasticsearchEdges(hits, fetchHints, user));
             } else {
-                Iterable<? extends VertexiumObject> edges = getGraph()
+                List<? extends VertexiumObject> edges = getGraph()
                     .getEdges(ids.getEdgeIds(), fetchHints, user)
                     .collect(Collectors.toList());
-                items.add(edges);
+                items.addAll(edges);
             }
         }
         if (ids.getExtendedDataIds().size() > 0) {
-            Iterable<? extends VertexiumObject> extendedDataRows = getGraph()
+            List<? extends VertexiumObject> extendedDataRows = getGraph()
                 .getExtendedData(ids.getExtendedDataIds(), fetchHints, user)
                 .collect(Collectors.toList());
-            items.add(extendedDataRows);
+            items.addAll(extendedDataRows);
         }
-        Iterable<VertexiumObject> vertexiumObjects = new JoinIterable<>(items);
-        List<VertexiumObject> sortedVertexiumObjects = sortVertexiumObjectsByResultOrder(vertexiumObjects, ids.getIds());
+        List<VertexiumObject> sortedVertexiumObjects = sortVertexiumObjectsByResultOrder(
+            items.stream(),
+            ids.getIds()
+        );
 
         // TODO instead of passing false here to not evaluate the query string it would be better to support the Lucene query
         return createIterable(response, filterParameters, sortedVertexiumObjects, response.getTookInMillis(), hits);
@@ -626,20 +627,24 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
         return new ElasticsearchGraphQueryIdIterable<>(getIdStrategy(), searchHits(VertexiumObjectType.ELEMENTS, fetchHints));
     }
 
-    private <T extends VertexiumObject> List<T> sortVertexiumObjectsByResultOrder(Iterable<T> vertexiumObjects, List<String> ids) {
-        ImmutableMap<String, T> itemMap = Maps.uniqueIndex(vertexiumObjects, vertexiumObject -> {
-            if (vertexiumObject instanceof Element) {
-                return ((Element) vertexiumObject).getId();
-            } else if (vertexiumObject instanceof ExtendedDataRow) {
-                return ((ExtendedDataRow) vertexiumObject).getId().toString();
-            } else {
-                throw new VertexiumException("Unhandled searchable item type: " + vertexiumObject.getClass().getName());
-            }
-        });
+    private List<VertexiumObject> sortVertexiumObjectsByResultOrder(
+        Stream<? extends VertexiumObject> vertexiumObjects,
+        List<String> ids
+    ) {
+        Map<String, VertexiumObject> itemMap = vertexiumObjects
+            .collect(Collectors.toMap(vo -> {
+                if (vo instanceof Element) {
+                    return ((Element) vo).getId();
+                } else if (vo instanceof ExtendedDataRow) {
+                    return ((ExtendedDataRow) vo).getId().toString();
+                } else {
+                    throw new VertexiumException("Unhandled searchable item type: " + vo.getClass().getName());
+                }
+            }, v -> v));
 
-        List<T> results = new ArrayList<>();
+        List<VertexiumObject> results = new ArrayList<>();
         for (String id : ids) {
-            T item = itemMap.get(id);
+            VertexiumObject item = itemMap.get(id);
             if (item != null) {
                 results.add(item);
             }

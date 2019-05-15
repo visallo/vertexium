@@ -6,8 +6,8 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static org.vertexium.util.Preconditions.checkArgument;
-import static org.vertexium.util.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 public class GeoPoint extends GeoShapeBase implements Comparable<GeoPoint> {
     private static final long serialVersionUID = 1L;

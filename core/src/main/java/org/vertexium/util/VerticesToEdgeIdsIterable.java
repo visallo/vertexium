@@ -6,7 +6,7 @@ import org.vertexium.Vertex;
 
 import java.util.Iterator;
 
-import static org.vertexium.util.StreamUtils.toIterable;
+import static org.vertexium.util.StreamUtils.stream;
 
 public class VerticesToEdgeIdsIterable implements Iterable<String> {
     private final Iterable<? extends Vertex> vertices;
@@ -19,11 +19,8 @@ public class VerticesToEdgeIdsIterable implements Iterable<String> {
 
     @Override
     public Iterator<String> iterator() {
-        return new SelectManyIterable<Vertex, String>(this.vertices) {
-            @Override
-            public Iterable<String> getIterable(Vertex vertex) {
-                return toIterable(vertex.getEdgeIds(Direction.BOTH, user));
-            }
-        }.iterator();
+        return stream(this.vertices)
+            .flatMap(vertex -> vertex.getEdgeIds(Direction.BOTH, user))
+            .iterator();
     }
 }

@@ -2,7 +2,7 @@ package org.vertexium.type;
 
 import org.vertexium.VertexiumException;
 
-import static org.vertexium.util.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 public class GeoRect extends GeoShapeBase {
     private static final long serialVersionUID = 7701255671989639309L;

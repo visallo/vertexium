@@ -1,19 +1,22 @@
 package org.vertexium.inmemory;
 
+import com.google.common.collect.Sets;
 import org.vertexium.*;
 import org.vertexium.event.GraphEvent;
 import org.vertexium.id.IdGenerator;
 import org.vertexium.inmemory.mutations.EdgeSetupMutation;
+import org.vertexium.property.StreamingPropertyValue;
 import org.vertexium.search.SearchIndex;
 import org.vertexium.util.ConvertingIterable;
 import org.vertexium.util.FilterIterable;
 import org.vertexium.util.IncreasingTime;
 
+import java.io.InputStream;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.vertexium.util.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkNotNull;
 import static org.vertexium.util.StreamUtils.stream;
 
 public class InMemoryGraph extends GraphBase {
@@ -588,5 +591,57 @@ public class InMemoryGraph extends GraphBase {
 
     public InMemoryElementMutationBuilder getElementMutationBuilder() {
         return elementMutationBuilder;
+    }
+
+    @Override
+    public Stream<ExtendedDataRow> getExtendedData(Iterable<ExtendedDataRowId> idsIterable, FetchHints fetchHints, User user) {
+        Set<ExtendedDataRowId> ids = Sets.newHashSet(idsIterable);
+        return getAllExtendedData(fetchHints, user)
+            .filter(row -> ids.contains(row.getId()));
+    }
+
+    @Override
+    public Stream<ExtendedDataRow> getExtendedData(
+        ElementType elementType,
+        String elementId,
+        String tableName,
+        FetchHints fetchHints,
+        User user
+    ) {
+        if ((elementType == null && (elementId != null || tableName != null))
+            || (elementType != null && elementId == null && tableName != null)) {
+            throw new VertexiumException("Cannot create partial key with missing inner value");
+        }
+
+        return getAllExtendedData(fetchHints, user)
+            .filter(row -> {
+                ExtendedDataRowId rowId = row.getId();
+                return (elementType == null || elementType.equals(rowId.getElementType()))
+                    && (elementId == null || elementId.equals(rowId.getElementId()))
+                    && (tableName == null || tableName.equals(rowId.getTableName()));
+            });
+    }
+
+    @Override
+    public Stream<ExtendedDataRow> getExtendedDataInRange(ElementType elementType, Range elementIdRange, User user) {
+        return getAllExtendedData(FetchHints.ALL, user)
+            .filter(row -> {
+                ExtendedDataRowId rowId = row.getId();
+                return elementType.equals(rowId.getElementType())
+                    && elementIdRange.isInRange(rowId.getElementId());
+            });
+    }
+
+    private Stream<ExtendedDataRow> getAllExtendedData(FetchHints fetchHints, User user) {
+        return Stream.concat(getVertices(fetchHints, user), getEdges(fetchHints, user))
+            .flatMap(element -> element.getExtendedDataTableNames().stream()
+                .flatMap(tableName -> stream(element.getExtendedData(tableName))));
+    }
+
+    @Override
+    public List<InputStream> getStreamingPropertyValueInputStreams(List<StreamingPropertyValue> streamingPropertyValues) {
+        return streamingPropertyValues.stream()
+            .map(StreamingPropertyValue::getInputStream)
+            .collect(Collectors.toList());
     }
 }

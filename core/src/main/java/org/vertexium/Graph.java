@@ -1,13 +1,16 @@
 package org.vertexium;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.vertexium.event.GraphEventListener;
 import org.vertexium.historicalEvent.HistoricalEvent;
 import org.vertexium.historicalEvent.HistoricalEventId;
 import org.vertexium.id.IdGenerator;
 import org.vertexium.mutation.ElementMutation;
+import org.vertexium.mutation.ExistingElementMutation;
 import org.vertexium.property.StreamingPropertyValue;
 import org.vertexium.query.*;
+import org.vertexium.search.IndexHint;
 import org.vertexium.search.SearchIndex;
 import org.vertexium.util.FutureDeprecation;
 import org.vertexium.util.IterableUtils;
@@ -17,7 +20,9 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.vertexium.util.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkNotNull;
+import static org.vertexium.util.IterableUtils.count;
+import static org.vertexium.util.StreamUtils.stream;
 import static org.vertexium.util.StreamUtils.toIterable;
 
 public interface Graph {
@@ -1400,7 +1405,27 @@ public interface Graph {
      * @param user     The user required to load the edges.
      * @return An iterable of all the edge ids between any two vertices.
      */
-    Stream<String> findRelatedEdgeIdsForVertices(Iterable<Vertex> vertices, User user);
+    default Stream<String> findRelatedEdgeIdsForVertices(Iterable<Vertex> vertices, User user) {
+        List<String> results = new ArrayList<>();
+        List<Vertex> verticesList = IterableUtils.toList(vertices);
+        for (Vertex outVertex : verticesList) {
+            if (outVertex == null) {
+                throw new VertexiumException("verticesIterable cannot have null values");
+            }
+            outVertex.getEdgeInfos(Direction.OUT, user)
+                .forEach(edgeInfo -> {
+                    for (Vertex inVertex : verticesList) {
+                        if (edgeInfo.getVertexId() == null) { // This check is for legacy data. null EdgeInfo.vertexIds are no longer permitted
+                            continue;
+                        }
+                        if (edgeInfo.getVertexId().equals(inVertex.getId())) {
+                            results.add(edgeInfo.getEdgeId());
+                        }
+                    }
+                });
+        }
+        return results.stream();
+    }
 
     /**
      * Given a list of vertex ids, find all the edge ids that connect them.
@@ -1467,7 +1492,21 @@ public interface Graph {
      * @param user     The user required to load the edges.
      * @return Summary information about the related edges.
      */
-    Stream<RelatedEdge> findRelatedEdgeSummaryForVertices(Iterable<Vertex> vertices, User user);
+    default Stream<RelatedEdge> findRelatedEdgeSummaryForVertices(Iterable<Vertex> vertices, User user) {
+        List<RelatedEdge> results = new ArrayList<>();
+        List<Vertex> verticesList = IterableUtils.toList(vertices);
+        for (Vertex outVertex : verticesList) {
+            outVertex.getEdgeInfos(Direction.OUT, user)
+                .forEach(edgeInfo -> {
+                    for (Vertex inVertex : verticesList) {
+                        if (edgeInfo.getVertexId().equals(inVertex.getId())) {
+                            results.add(new RelatedEdgeImpl(edgeInfo.getEdgeId(), edgeInfo.getLabel(), outVertex.getId(), inVertex.getId()));
+                        }
+                    }
+                });
+        }
+        return results.stream();
+    }
 
     /**
      * Given a list of vertex ids, find all the edges that connect them.
@@ -1657,7 +1696,9 @@ public interface Graph {
      * @return A query builder object.
      */
     @FutureDeprecation
-    GraphQuery query(String queryString, Authorizations authorizations);
+    default GraphQuery query(String queryString, Authorizations authorizations) {
+        return getSearchIndex().queryGraph(this, queryString, authorizations);
+    }
 
     /**
      * Creates a query builder object used to query the graph.
@@ -1666,7 +1707,9 @@ public interface Graph {
      * @param user        The user required to load the elements.
      * @return A query builder object.
      */
-    org.vertexium.search.GraphQuery query(String queryString, User user);
+    default org.vertexium.search.GraphQuery query(String queryString, User user) {
+        return getSearchIndex().queryGraph(this, queryString, user);
+    }
 
     /**
      * Creates a query builder object used to query the graph.
@@ -1675,7 +1718,9 @@ public interface Graph {
      * @return A query builder object.
      */
     @FutureDeprecation
-    GraphQuery query(Authorizations authorizations);
+    default GraphQuery query(Authorizations authorizations) {
+        return getSearchIndex().queryGraph(this, null, authorizations);
+    }
 
     /**
      * Creates a query builder object used to query the graph.
@@ -1696,7 +1741,9 @@ public interface Graph {
      * @return A query builder object.
      */
     @FutureDeprecation
-    MultiVertexQuery query(String[] vertexIds, String queryString, Authorizations authorizations);
+    default MultiVertexQuery query(String[] vertexIds, String queryString, Authorizations authorizations) {
+        return getSearchIndex().queryGraph(this, vertexIds, queryString, authorizations);
+    }
 
     /**
      * Creates a query builder object used to query a list of vertices.
@@ -1706,7 +1753,9 @@ public interface Graph {
      * @param user        The user required to load the elements.
      * @return A query builder object.
      */
-    org.vertexium.search.MultiVertexQuery query(String[] vertexIds, String queryString, User user);
+    default org.vertexium.search.MultiVertexQuery query(String[] vertexIds, String queryString, User user) {
+        return getSearchIndex().queryGraph(this, vertexIds, queryString, user);
+    }
 
     /**
      * Creates a query builder object used to query a list of vertices.
@@ -1716,7 +1765,9 @@ public interface Graph {
      * @return A query builder object.
      */
     @FutureDeprecation
-    MultiVertexQuery query(String[] vertexIds, Authorizations authorizations);
+    default MultiVertexQuery query(String[] vertexIds, Authorizations authorizations) {
+        return getSearchIndex().queryGraph(this, vertexIds, null, authorizations);
+    }
 
     /**
      * Creates a query builder object used to query a list of vertices.
@@ -1732,7 +1783,9 @@ public interface Graph {
     /**
      * Returns true if this graph supports similar to text queries.
      */
-    boolean isQuerySimilarToTextSupported();
+    default boolean isQuerySimilarToTextSupported() {
+        return getSearchIndex().isQuerySimilarToTextSupported();
+    }
 
     /**
      * Creates a query builder object that finds all vertices similar to the given text for the specified fields.
@@ -1744,7 +1797,9 @@ public interface Graph {
      * @return A query builder object.
      */
     @FutureDeprecation
-    SimilarToGraphQuery querySimilarTo(String[] fields, String text, Authorizations authorizations);
+    default SimilarToGraphQuery querySimilarTo(String[] fields, String text, Authorizations authorizations) {
+        return getSearchIndex().querySimilarTo(this, fields, text, authorizations);
+    }
 
     /**
      * Creates a query builder object that finds all vertices similar to the given text for the specified fields.
@@ -1755,12 +1810,18 @@ public interface Graph {
      * @param user   The user required to load the elements.
      * @return A query builder object.
      */
-    org.vertexium.search.SimilarToGraphQuery querySimilarTo(String[] fields, String text, User user);
+    default org.vertexium.search.SimilarToGraphQuery querySimilarTo(String[] fields, String text, User user) {
+        return getSearchIndex().querySimilarTo(this, fields, text, user);
+    }
 
     /**
      * Flushes any pending mutations to the graph.
      */
-    void flush();
+    default void flush() {
+        if (getSearchIndex() != null) {
+            getSearchIndex().flush(this);
+        }
+    }
 
     /**
      * This method will only flush the primary graph and not the search index
@@ -1772,7 +1833,12 @@ public interface Graph {
     /**
      * Cleans up or disconnects from the underlying storage.
      */
-    void shutdown();
+    default void shutdown() {
+        flush();
+        if (getSearchIndex() != null) {
+            getSearchIndex().shutdown();
+        }
+    }
 
     /**
      * Finds all paths between two vertices.
@@ -1829,7 +1895,10 @@ public interface Graph {
      * @param authorizations authorizations used to query for the data to reindex.
      */
     @Deprecated
-    void reindex(Authorizations authorizations);
+    default void reindex(Authorizations authorizations) {
+        getSearchIndex().addElements(this, getVertices(authorizations), authorizations);
+        getSearchIndex().addElements(this, getEdges(authorizations), authorizations);
+    }
 
     /**
      * Sets metadata on the graph.
@@ -1862,7 +1931,9 @@ public interface Graph {
     /**
      * Determine if field boost is support. That is can you change the boost at a field level to give higher priority.
      */
-    boolean isFieldBoostSupported();
+    default boolean isFieldBoostSupported() {
+        return getSearchIndex().isFieldBoostSupported();
+    }
 
     /**
      * Clears all data from the graph.
@@ -1878,7 +1949,9 @@ public interface Graph {
      * Gets the granularity of the search index {@link SearchIndexSecurityGranularity}
      */
     @Deprecated
-    SearchIndexSecurityGranularity getSearchIndexSecurityGranularity();
+    default SearchIndexSecurityGranularity getSearchIndexSecurityGranularity() {
+        return getSearchIndex().getSearchIndexSecurityGranularity();
+    }
 
     /**
      * Adds a graph event listener that will be called when graph events occur.
@@ -2025,7 +2098,10 @@ public interface Graph {
      * @return A new authorizations object
      */
     @FutureDeprecation
-    Authorizations createAuthorizations(Collection<String> auths);
+    default Authorizations createAuthorizations(Collection<String> auths) {
+        checkNotNull(auths, "auths cannot be null");
+        return createAuthorizations(auths.toArray(new String[0]));
+    }
 
     /**
      * Creates an authorizations object combining auths and additionalAuthorizations.
@@ -2035,7 +2111,12 @@ public interface Graph {
      * @return A new authorizations object
      */
     @FutureDeprecation
-    Authorizations createAuthorizations(Authorizations auths, String... additionalAuthorizations);
+    default Authorizations createAuthorizations(Authorizations auths, String... additionalAuthorizations) {
+        Set<String> newAuths = new HashSet<>();
+        Collections.addAll(newAuths, auths.getAuthorizations());
+        Collections.addAll(newAuths, additionalAuthorizations);
+        return createAuthorizations(newAuths);
+    }
 
     /**
      * Creates an authorizations object combining auths and additionalAuthorizations.
@@ -2045,7 +2126,9 @@ public interface Graph {
      * @return A new authorizations object
      */
     @FutureDeprecation
-    Authorizations createAuthorizations(Authorizations auths, Collection<String> additionalAuthorizations);
+    default Authorizations createAuthorizations(Authorizations auths, Collection<String> additionalAuthorizations) {
+        return createAuthorizations(auths, additionalAuthorizations.toArray(new String[0]));
+    }
 
     /**
      * Gets the number of times a property with a given value occurs on vertices
@@ -2056,7 +2139,26 @@ public interface Graph {
      * @deprecated Use {@link org.vertexium.query.Query#addAggregation(Aggregation)}
      */
     @Deprecated
-    Map<Object, Long> getVertexPropertyCountByValue(String propertyName, Authorizations authorizations);
+    default Map<Object, Long> getVertexPropertyCountByValue(String propertyName, Authorizations authorizations) {
+        Map<Object, Long> countsByValue = new HashMap<>();
+        for (Vertex v : getVertices(authorizations)) {
+            for (Property p : v.getProperties()) {
+                if (propertyName.equals(p.getName())) {
+                    Object mapKey = p.getValue();
+                    if (mapKey instanceof String) {
+                        mapKey = ((String) mapKey).toLowerCase();
+                    }
+                    Long currentValue = countsByValue.get(mapKey);
+                    if (currentValue == null) {
+                        countsByValue.put(mapKey, 1L);
+                    } else {
+                        countsByValue.put(mapKey, currentValue + 1);
+                    }
+                }
+            }
+        }
+        return countsByValue;
+    }
 
     /**
      * Gets a count of the number of vertices in the system.
@@ -2064,7 +2166,9 @@ public interface Graph {
      * @deprecated Use {@link #query(User)}.{@link Query#vertices()}.{@link QueryResultsIterable#getTotalHits()}
      */
     @Deprecated
-    long getVertexCount(Authorizations authorizations);
+    default long getVertexCount(Authorizations authorizations) {
+        return count(getVertices(authorizations));
+    }
 
     /**
      * Gets a count of the number of edges in the system.
@@ -2072,7 +2176,9 @@ public interface Graph {
      * @deprecated Use {@link #query(User)}.{@link Query#vertices()}.{@link QueryResultsIterable#getTotalHits()}
      */
     @Deprecated
-    long getEdgeCount(Authorizations authorizations);
+    default long getEdgeCount(Authorizations authorizations) {
+        return count(getEdges(authorizations));
+    }
 
     /**
      * Save a pre-made property definition.
@@ -2086,7 +2192,16 @@ public interface Graph {
      *
      * @param propertyName The name of the property to define.
      */
-    DefinePropertyBuilder defineProperty(String propertyName);
+    default DefinePropertyBuilder defineProperty(String propertyName) {
+        return new DefinePropertyBuilder(propertyName) {
+            @Override
+            public PropertyDefinition define() {
+                PropertyDefinition propertyDefinition = super.define();
+                savePropertyDefinition(propertyDefinition);
+                return propertyDefinition;
+            }
+        };
+    }
 
     /**
      * Determine if a property is already defined
@@ -2116,10 +2231,42 @@ public interface Graph {
      * @return the elements which were saved
      */
     @FutureDeprecation
-    Iterable<Element> saveElementMutations(
+    default Iterable<Element> saveElementMutations(
         Iterable<ElementMutation<? extends Element>> mutations,
         Authorizations authorizations
-    );
+    ) {
+        List<Element> elements = new ArrayList<>();
+        List<Element> elementsToAddToIndex = new ArrayList<>();
+        for (ElementMutation<? extends Element> m : mutations) {
+            if (m instanceof ExistingElementMutation && !m.hasChanges()) {
+                elements.add(((ExistingElementMutation) m).getElement());
+                continue;
+            }
+
+            IndexHint indexHint = m.getIndexHint();
+            m.setIndexHint(IndexHint.DO_NOT_INDEX);
+            Element element = m.save(authorizations);
+            m.setIndexHint(indexHint);
+            elements.add(element);
+            if (indexHint == IndexHint.INDEX) {
+                elementsToAddToIndex.add(element);
+            }
+        }
+        getSearchIndex().addElements(this, elementsToAddToIndex, authorizations);
+        for (ElementMutation<? extends Element> m : mutations) {
+            if (m.getIndexHint() == IndexHint.INDEX) {
+                getSearchIndex().addElementExtendedData(
+                    this,
+                    m,
+                    m.getExtendedData(),
+                    m.getAdditionalExtendedDataVisibilities(),
+                    m.getAdditionalExtendedDataVisibilityDeletes(),
+                    authorizations
+                );
+            }
+        }
+        return elements;
+    }
 
     /**
      * Opens multiple StreamingPropertyValue input streams at once. This can have performance benefits by
@@ -2193,7 +2340,16 @@ public interface Graph {
      * @param user The user used to get the rows
      * @return Rows
      */
-    ExtendedDataRow getExtendedData(ExtendedDataRowId id, User user);
+    default ExtendedDataRow getExtendedData(ExtendedDataRowId id, User user) {
+        List<ExtendedDataRow> rows = getExtendedData(Lists.newArrayList(id), user).collect(Collectors.toList());
+        if (rows.size() == 0) {
+            return null;
+        }
+        if (rows.size() == 1) {
+            return rows.get(0);
+        }
+        throw new VertexiumException("Expected 0 or 1 rows found " + rows.size());
+    }
 
     /**
      * Gets the specified extended data rows.
@@ -2377,12 +2533,27 @@ public interface Graph {
      * @param user       The user required to load the events
      * @return An iterable of historic events
      */
-    Stream<HistoricalEvent> getHistoricalEvents(
+    default Stream<HistoricalEvent> getHistoricalEvents(
         Iterable<ElementId> elementIds,
         HistoricalEventId after,
         HistoricalEventsFetchHints fetchHints,
         User user
-    );
+    ) {
+        FetchHints elementFetchHints = new FetchHintsBuilder()
+            .setIncludeAllProperties(true)
+            .setIncludeAllPropertyMetadata(true)
+            .setIncludeHidden(true)
+            .setIncludeAllEdgeRefs(true)
+            .build();
+        return fetchHints.applyToResults(stream(elementIds)
+            .flatMap(elementId -> {
+                Element element = getElement(elementId, elementFetchHints, user);
+                if (element == null) {
+                    throw new VertexiumException("Could not find: " + elementId);
+                }
+                return element.getHistoricalEvents(after, fetchHints, user);
+            }), after);
+    }
 
     /**
      * Deletes an extended data row
@@ -2426,23 +2597,54 @@ public interface Graph {
      * Visits all elements on the graph
      */
     @Deprecated
-    void visitElements(GraphVisitor graphVisitor, Authorizations authorizations);
+    default void visitElements(GraphVisitor graphVisitor, Authorizations authorizations) {
+        visitVertices(graphVisitor, authorizations);
+        visitEdges(graphVisitor, authorizations);
+    }
 
     /**
      * Visits all vertices on the graph
      */
     @Deprecated
-    void visitVertices(GraphVisitor graphVisitor, Authorizations authorizations);
+    default void visitVertices(GraphVisitor graphVisitor, Authorizations authorizations) {
+        visit(getVertices(authorizations), graphVisitor);
+    }
 
     /**
      * Visits all edges on the graph
      */
     @Deprecated
-    void visitEdges(GraphVisitor graphVisitor, Authorizations authorizations);
+    default void visitEdges(GraphVisitor graphVisitor, Authorizations authorizations) {
+        visit(getEdges(authorizations), graphVisitor);
+    }
 
     /**
      * Visits elements using the supplied elements and visitor
      */
     @Deprecated
-    void visit(Iterable<? extends Element> elements, GraphVisitor visitor);
+    default void visit(Iterable<? extends Element> elements, GraphVisitor visitor) {
+        for (Element element : elements) {
+            visitor.visitElement(element);
+            if (element instanceof Vertex) {
+                visitor.visitVertex((Vertex) element);
+            } else if (element instanceof Edge) {
+                visitor.visitEdge((Edge) element);
+            } else {
+                throw new VertexiumException("Invalid element type to visit: " + element.getClass().getName());
+            }
+
+            for (Property property : element.getProperties()) {
+                visitor.visitProperty(element, property);
+            }
+
+            for (String tableName : element.getExtendedDataTableNames()) {
+                for (ExtendedDataRow extendedDataRow : element.getExtendedData(tableName)) {
+                    visitor.visitExtendedDataRow(element, tableName, extendedDataRow);
+                    for (Property property : extendedDataRow.getProperties()) {
+                        visitor.visitProperty(element, tableName, extendedDataRow, property);
+                    }
+                }
+            }
+        }
+    }
 }
