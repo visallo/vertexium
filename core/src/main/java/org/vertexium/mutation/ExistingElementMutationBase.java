@@ -2,13 +2,13 @@ package org.vertexium.mutation;
 
 import org.vertexium.*;
 
-public abstract class ExistingElementMutationImpl<T extends Element>
+public abstract class ExistingElementMutationBase<T extends Element>
     extends ElementMutationBase<T, ExistingElementMutation<T>>
     implements ElementMutation<T>, ExistingElementMutation<T> {
     private final T element;
     private Visibility oldElementVisibility;
 
-    public ExistingElementMutationImpl(T element) {
+    public ExistingElementMutationBase(T element) {
         this.element = element;
         if (element != null) {
             this.oldElementVisibility = element.getVisibility();

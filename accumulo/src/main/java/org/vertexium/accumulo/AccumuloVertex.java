@@ -12,7 +12,7 @@ import org.vertexium.accumulo.iterator.model.EdgesWithEdgeInfo;
 import org.vertexium.accumulo.iterator.model.ElementData;
 import org.vertexium.accumulo.util.DataInputStreamUtils;
 import org.vertexium.mutation.ExistingElementMutation;
-import org.vertexium.mutation.ExistingElementMutationImpl;
+import org.vertexium.mutation.ExistingElementMutationBase;
 import org.vertexium.mutation.PropertyDeleteMutation;
 import org.vertexium.mutation.PropertySoftDeleteMutation;
 import org.vertexium.query.VertexQuery;
@@ -413,7 +413,7 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
     @Override
     @SuppressWarnings("unchecked")
     public ExistingElementMutation<Vertex> prepareMutation() {
-        return new ExistingElementMutationImpl<Vertex>(this) {
+        return new ExistingElementMutationBase<Vertex>(this) {
             @Override
             public String save(User user) {
                 return saveVertex(user).getId();

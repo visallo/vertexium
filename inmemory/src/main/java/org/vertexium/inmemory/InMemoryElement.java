@@ -382,7 +382,7 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> extends 
         }
     }
 
-    protected <T extends Element> void saveExistingElementMutation(ExistingElementMutationImpl<T> mutation, IndexHint indexHint, User user) {
+    protected <T extends Element> void saveExistingElementMutation(ExistingElementMutationBase<T> mutation, IndexHint indexHint, User user) {
         if (mutation.getElement() != this) {
             throw new VertexiumException("cannot save mutation from another element");
         }

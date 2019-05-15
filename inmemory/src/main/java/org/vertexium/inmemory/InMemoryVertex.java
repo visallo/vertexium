@@ -2,7 +2,7 @@ package org.vertexium.inmemory;
 
 import org.vertexium.*;
 import org.vertexium.mutation.ExistingElementMutation;
-import org.vertexium.mutation.ExistingElementMutationImpl;
+import org.vertexium.mutation.ExistingElementMutationBase;
 import org.vertexium.query.VertexQuery;
 import org.vertexium.search.IndexHint;
 
@@ -161,7 +161,7 @@ public class InMemoryVertex extends InMemoryElement<InMemoryVertex> implements V
     @Override
     @SuppressWarnings("unchecked")
     public ExistingElementMutation<Vertex> prepareMutation() {
-        return new ExistingElementMutationImpl<Vertex>(this) {
+        return new ExistingElementMutationBase<Vertex>(this) {
             @Override
             public Vertex save(Authorizations authorizations) {
                 User user = authorizations.getUser();

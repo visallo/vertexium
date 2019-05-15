@@ -13,8 +13,8 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
-public class ExistingElementMutationImplTest {
-    private TestExistingElementMutationImpl mutation;
+public class ExistingElementMutationBaseTest {
+    private TestExistingElementMutationBase mutation;
 
     @Mock
     private Element element;
@@ -22,7 +22,7 @@ public class ExistingElementMutationImplTest {
     @Before
     public void before() {
         when(element.getFetchHints()).thenReturn(FetchHints.ALL);
-        mutation = new TestExistingElementMutationImpl<>(element);
+        mutation = new TestExistingElementMutationBase<>(element);
     }
 
     @Test
@@ -84,8 +84,8 @@ public class ExistingElementMutationImplTest {
         assertTrue("should have changes", mutation.hasChanges());
     }
 
-    private static class TestExistingElementMutationImpl<T extends Element> extends ExistingElementMutationImpl<T> {
-        public TestExistingElementMutationImpl(T element) {
+    private static class TestExistingElementMutationBase<T extends Element> extends ExistingElementMutationBase<T> {
+        public TestExistingElementMutationBase(T element) {
             super(element);
         }
 
