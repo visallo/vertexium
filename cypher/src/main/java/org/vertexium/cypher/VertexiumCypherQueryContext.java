@@ -33,7 +33,7 @@ public abstract class VertexiumCypherQueryContext {
     private final Graph graph;
     private final Map<String, Object> parameters = new HashMap<>();
     private final Map<String, CypherFunction> functions = new HashMap<>();
-    private final Authorizations authorizations;
+    private final User user;
     private final ExpressionExecutor expressionExecutor;
     private final CreateClauseExecutor createClauseExecutor;
     private final ReturnClauseExecutor returnClauseExecutor;
@@ -47,9 +47,9 @@ public abstract class VertexiumCypherQueryContext {
     private final CypherResultWriter resultWriter;
     private final Map<MatchConstraint<?, ?>, Long> totalHitsByMatchConstraint = new HashMap<>();
 
-    public VertexiumCypherQueryContext(Graph graph, Authorizations authorizations) {
+    public VertexiumCypherQueryContext(Graph graph, User user) {
         this.graph = graph;
-        this.authorizations = authorizations;
+        this.user = user;
 
         // aggregate
         addFunction("avg", new AverageFunction());
@@ -166,8 +166,8 @@ public abstract class VertexiumCypherQueryContext {
 
     public abstract Visibility calculateVertexVisibility(CypherNodePattern nodePattern, ExpressionScope scope);
 
-    public Authorizations getAuthorizations() {
-        return authorizations;
+    public User getUser() {
+        return user;
     }
 
     public abstract String getLabelPropertyName();
@@ -207,19 +207,23 @@ public abstract class VertexiumCypherQueryContext {
     }
 
     public void deleteEdge(Edge edge) {
-        getGraph().deleteEdge(edge, getAuthorizations());
+        edge.prepareMutation()
+            .deleteElement()
+            .save(getUser());
     }
 
     public void deleteVertex(Vertex vertex) {
-        getGraph().deleteVertex(vertex, getAuthorizations());
+        vertex.prepareMutation()
+            .deleteElement()
+            .save(getUser());
     }
 
-    public Edge saveEdge(ElementMutation<Edge> m) {
-        return m.save(getAuthorizations());
+    public String saveEdge(ElementMutation<Edge> m) {
+        return m.save(getUser());
     }
 
-    public Vertex saveVertex(ElementMutation<Vertex> m) {
-        return m.save(getAuthorizations());
+    public String saveVertex(ElementMutation<Vertex> m) {
+        return m.save(getUser());
     }
 
     @SuppressWarnings("unchecked")

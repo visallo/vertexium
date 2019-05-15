@@ -80,7 +80,9 @@ public interface Vertex extends Element {
      * @param user       The user used to find the edges.
      * @return An Iterable of edges.
      */
-    Stream<Edge> getEdges(Direction direction, FetchHints fetchHints, Long endTime, User user);
+    default Stream<Edge> getEdges(Direction direction, FetchHints fetchHints, Long endTime, User user) {
+        return getEdges(direction, null, fetchHints, endTime, user);
+    }
 
     /**
      * Gets the connected edge ids.
@@ -227,10 +229,24 @@ public interface Vertex extends Element {
      * @param direction  The side of the edge that this vertex is attached to.
      * @param labels     An array of edge labels to search for.
      * @param fetchHints Hint on what should be fetched from the datastore.
+     * @param endTime    Include all changes made up until the point in time.
      * @param user       The user used to find the edges.
      * @return An Iterable of edges.
      */
-    Stream<Edge> getEdges(Direction direction, String[] labels, FetchHints fetchHints, User user);
+    Stream<Edge> getEdges(Direction direction, String[] labels, FetchHints fetchHints, Long endTime, User user);
+
+    /**
+     * Gets all edges with any of the given labels attached to this vertex.
+     *
+     * @param direction  The side of the edge that this vertex is attached to.
+     * @param labels     An array of edge labels to search for.
+     * @param fetchHints Hint on what should be fetched from the datastore.
+     * @param user       The user used to find the edges.
+     * @return An Iterable of edges.
+     */
+    default Stream<Edge> getEdges(Direction direction, String[] labels, FetchHints fetchHints, User user) {
+        return getEdges(direction, labels, fetchHints, null, user);
+    }
 
     /**
      * Gets the connected edge ids.
@@ -253,7 +269,10 @@ public interface Vertex extends Element {
      * @param user      The user used to find the edges.
      * @return An Iterable of edge ids
      */
-    Stream<String> getEdgeIds(Direction direction, String[] labels, User user);
+    default Stream<String> getEdgeIds(Direction direction, String[] labels, User user) {
+        return getEdgeInfos(direction, labels, user)
+            .map(EdgeInfo::getEdgeId);
+    }
 
     /**
      * Gets all edges between this vertex and another vertex.
@@ -303,7 +322,9 @@ public interface Vertex extends Element {
      * @param user        The user used to find the edges.
      * @return An Iterable of edges.
      */
-    Stream<Edge> getEdges(Vertex otherVertex, Direction direction, FetchHints fetchHints, User user);
+    default Stream<Edge> getEdges(Vertex otherVertex, Direction direction, FetchHints fetchHints, User user) {
+        return getEdges(otherVertex, direction, (String[]) null, fetchHints, user);
+    }
 
     /**
      * Gets the connected edge ids.
@@ -490,7 +511,11 @@ public interface Vertex extends Element {
      * @param user        The user used to find the edges.
      * @return An Iterable of edge ids.
      */
-    Stream<String> getEdgeIds(Vertex otherVertex, Direction direction, String[] labels, User user);
+    default Stream<String> getEdgeIds(Vertex otherVertex, Direction direction, String[] labels, User user) {
+        return getEdgeInfos(direction, labels, user)
+            .filter(ei -> ei.getVertexId().equals(otherVertex.getId()))
+            .map(EdgeInfo::getEdgeId);
+    }
 
     /**
      * Gets edge summary information
@@ -876,7 +901,10 @@ public interface Vertex extends Element {
      * @param user      The user used to find the vertices.
      * @return An Iterable of vertex ids.
      */
-    Stream<String> getVertexIds(Direction direction, String[] labels, User user);
+    default Stream<String> getVertexIds(Direction direction, String[] labels, User user) {
+        return getEdgeInfos(direction, labels, user)
+            .map(EdgeInfo::getVertexId);
+    }
 
     /**
      * Gets vertex ids of connected vertices.

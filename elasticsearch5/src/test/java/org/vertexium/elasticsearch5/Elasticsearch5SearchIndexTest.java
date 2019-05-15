@@ -30,19 +30,17 @@ import static org.vertexium.util.IterableUtils.count;
 import static org.vertexium.util.IterableUtils.toList;
 
 public class Elasticsearch5SearchIndexTest extends GraphTestBase {
-
     @ClassRule
     public static ElasticsearchResource elasticsearchResource = new ElasticsearchResource(Elasticsearch5SearchIndexTest.class.getName());
 
     @Override
     protected Authorizations createAuthorizations(String... auths) {
-        return new InMemoryAuthorizations(auths);
+        return getGraph().createAuthorizations(auths);
     }
 
     @Override
-    protected Authorizations addAuthorizations(String... authorizations) {
-        getGraph().createAuthorizations(authorizations);
-        return null;
+    protected Authorizations createButDontAddAuthorizations(String... auths) {
+        return new InMemoryAuthorizations(auths);
     }
 
     @Before
@@ -92,6 +90,11 @@ public class Elasticsearch5SearchIndexTest extends GraphTestBase {
     @Override
     protected boolean isPainlessDateMath() {
         return true;
+    }
+
+    @Override
+    protected boolean isDefaultSearchIndex() {
+        return false;
     }
 
     @Test

@@ -104,7 +104,7 @@ public class DeleteClauseExecutor {
     }
 
     private boolean isAttached(VertexiumCypherQueryContext ctx, Vertex vertex, Stream<DeleteElementItem> elementsToDelete) {
-        for (String vertexId : vertex.getVertexIds(Direction.BOTH, ctx.getAuthorizations())) {
+        for (String vertexId : vertex.getVertexIds(Direction.BOTH, ctx.getUser()).collect(Collectors.toList())) {
             if (elementsToDelete.noneMatch(e -> vertexId.equals(e.element.getId()))) {
                 return true;
             }

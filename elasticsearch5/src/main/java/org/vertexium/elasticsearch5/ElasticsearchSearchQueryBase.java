@@ -201,9 +201,9 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
             return QueryBuilders.matchAllQuery();
         }
         if (getSearchIndex().isServerPluginInstalled()) {
-            return VertexiumQueryStringQueryBuilder.build(queryString, getParameters().getAuthorizations());
+            return VertexiumQueryStringQueryBuilder.build(queryString, getParameters().getUser());
         } else {
-            Collection<String> fields = getSearchIndex().getQueryablePropertyNames(getGraph(), getParameters().getAuthorizations());
+            Collection<String> fields = getSearchIndex().getQueryablePropertyNames(getGraph(), getParameters().getUser());
             QueryStringQueryBuilder qs = QueryBuilders.queryStringQuery(queryString);
             for (String field : fields) {
                 qs = qs.field(getSearchIndex().replaceFieldnameDots(field));
@@ -255,7 +255,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
             || elementTypes.contains(ElasticsearchDocumentType.VERTEX_EXTENDED_DATA)
         ) {
             Elasticsearch5SearchIndex es = (Elasticsearch5SearchIndex) getGraph().getSearchIndex();
-            Collection<String> queryableVisibilities = es.getQueryableExtendedDataVisibilities(getGraph(), getParameters().getAuthorizations());
+            Collection<String> queryableVisibilities = es.getQueryableExtendedDataVisibilities(getGraph(), getParameters().getUser());
             TermsQueryBuilder extendedDataVisibilitiesTerms = QueryBuilders.termsQuery(EXTENDED_DATA_TABLE_COLUMN_VISIBILITIES_FIELD_NAME, queryableVisibilities);
 
             if (elementTypes == null
@@ -282,7 +282,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
 
         if (getParameters() instanceof QueryStringQueryParameters) {
             Elasticsearch5SearchIndex es = (Elasticsearch5SearchIndex) getGraph().getSearchIndex();
-            Collection<String> fields = es.getQueryableElementTypeVisibilityPropertyNames(getGraph(), getParameters().getAuthorizations());
+            Collection<String> fields = es.getQueryableElementTypeVisibilityPropertyNames(getGraph(), getParameters().getUser());
             BoolQueryBuilder atLeastOneFieldExistsFilter = QueryBuilders.boolQuery();
             for (String field : fields) {
                 atLeastOneFieldExistsFilter.should(new ExistsQueryBuilder(field));
@@ -488,25 +488,31 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
         QueryParameters filterParameters = getParameters().clone();
         filterParameters.setSkip(0); // ES already did a skip
         List<Iterable<? extends VertexiumObject>> items = new ArrayList<>();
-        Authorizations authorizations = filterParameters.getAuthorizations();
+        User user = filterParameters.getUser();
         if (ids.getVertexIds().size() > 0) {
             if (fetchHints.equals(FetchHints.NONE)) {
-                items.add(getElasticsearchVertices(hits, fetchHints, authorizations));
+                items.add(getElasticsearchVertices(hits, fetchHints, user));
             } else {
-                Iterable<? extends VertexiumObject> vertices = getGraph().getVertices(ids.getVertexIds(), fetchHints, authorizations);
+                Iterable<? extends VertexiumObject> vertices = getGraph()
+                    .getVertices(ids.getVertexIds(), fetchHints, user)
+                    .collect(Collectors.toList());
                 items.add(vertices);
             }
         }
         if (ids.getEdgeIds().size() > 0) {
             if (fetchHints.equals(FetchHints.NONE)) {
-                items.add(getElasticsearchEdges(hits, fetchHints, authorizations));
+                items.add(getElasticsearchEdges(hits, fetchHints, user));
             } else {
-                Iterable<? extends VertexiumObject> edges = getGraph().getEdges(ids.getEdgeIds(), fetchHints, authorizations);
+                Iterable<? extends VertexiumObject> edges = getGraph()
+                    .getEdges(ids.getEdgeIds(), fetchHints, user)
+                    .collect(Collectors.toList());
                 items.add(edges);
             }
         }
         if (ids.getExtendedDataIds().size() > 0) {
-            Iterable<? extends VertexiumObject> extendedDataRows = getGraph().getExtendedData(ids.getExtendedDataIds(), fetchHints, authorizations);
+            Iterable<? extends VertexiumObject> extendedDataRows = getGraph()
+                .getExtendedData(ids.getExtendedDataIds(), fetchHints, user)
+                .collect(Collectors.toList());
             items.add(extendedDataRows);
         }
         Iterable<VertexiumObject> vertexiumObjects = new JoinIterable<>(items);
@@ -564,7 +570,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
         return createIterable(response, filterParameters, hitsIterable, response.getTookInMillis(), hits);
     }
 
-    private List<ElasticsearchVertex> getElasticsearchVertices(SearchHits hits, FetchHints fetchHints, Authorizations authorizations) {
+    private List<ElasticsearchVertex> getElasticsearchVertices(SearchHits hits, FetchHints fetchHints, User user) {
         return stream(hits)
             .map(hit -> {
                 String elementId = hit.getField(Elasticsearch5SearchIndex.ELEMENT_ID_FIELD_NAME).getValue();
@@ -572,12 +578,12 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
                     getGraph(),
                     elementId,
                     fetchHints,
-                    authorizations
+                    user
                 );
             }).collect(Collectors.toList());
     }
 
-    private List<ElasticsearchEdge> getElasticsearchEdges(SearchHits hits, FetchHints fetchHints, Authorizations authorizations) {
+    private List<ElasticsearchEdge> getElasticsearchEdges(SearchHits hits, FetchHints fetchHints, User user) {
         return stream(hits)
             .map(hit -> {
                 String inVertexId = hit.getField(Elasticsearch5SearchIndex.IN_VERTEX_ID_FIELD_NAME).getValue();
@@ -591,7 +597,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
                     inVertexId,
                     outVertexId,
                     fetchHints,
-                    authorizations
+                    user
                 );
             }).collect(Collectors.toList());
     }
@@ -752,18 +758,18 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
 
     protected QueryBuilder getFilterForHasAuthorizationContainer(HasAuthorizationContainer hasAuthorization) {
         PropertyNameVisibilitiesStore visibilitiesStore = getSearchIndex().getPropertyNameVisibilitiesStore();
-        Authorizations auths = getParameters().getAuthorizations();
+        User user = getParameters().getUser();
         Graph graph = getGraph();
 
         Set<String> hashes = stream(hasAuthorization.getAuthorizations())
-            .flatMap(authorization -> visibilitiesStore.getHashesWithAuthorization(graph, authorization, auths).stream())
+            .flatMap(authorization -> visibilitiesStore.getHashesWithAuthorization(graph, authorization, user).stream())
             .collect(Collectors.toSet());
 
         List<QueryBuilder> filters = new ArrayList<>();
         for (PropertyDefinition propertyDefinition : graph.getPropertyDefinitions()) {
             String propertyName = propertyDefinition.getPropertyName();
 
-            Set<String> matchingPropertyHashes = visibilitiesStore.getHashes(graph, propertyName, auths).stream()
+            Set<String> matchingPropertyHashes = visibilitiesStore.getHashes(graph, propertyName, user).stream()
                 .filter(hashes::contains)
                 .collect(Collectors.toSet());
             for (String fieldName : getSearchIndex().addHashesToPropertyName(propertyName, matchingPropertyHashes)) {
@@ -777,7 +783,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
             Elasticsearch5SearchIndex.HIDDEN_PROPERTY_FIELD_NAME
         );
         internalFields.forEach(fieldName -> {
-            Collection<String> fieldHashes = visibilitiesStore.getHashes(graph, fieldName, auths);
+            Collection<String> fieldHashes = visibilitiesStore.getHashes(graph, fieldName, user);
             Collection<String> matchingFieldHashes = fieldHashes.stream().filter(hashes::contains).collect(Collectors.toSet());
             for (String fieldNameWithHash : getSearchIndex().addHashesToPropertyName(fieldName, matchingFieldHashes)) {
                 filters.add(QueryBuilders.existsQuery(fieldNameWithHash));
@@ -1177,7 +1183,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
     }
 
     protected String[] getPropertyNames(String propertyName) {
-        return getSearchIndex().getPropertyNames(getGraph(), propertyName, getParameters().getAuthorizations());
+        return getSearchIndex().getPropertyNames(getGraph(), propertyName, getParameters().getUser());
     }
 
     public Elasticsearch5SearchIndex getSearchIndex() {
@@ -1213,7 +1219,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
     }
 
     private QueryBuilder getAdditionalVisibilitiesFilter() {
-        return getSearchIndex().getAdditionalVisibilitiesFilter(getParameters().getAuthorizations());
+        return getSearchIndex().getAdditionalVisibilitiesFilter(getParameters().getUser());
     }
 
     private String[] splitStringIntoTerms(String value) {

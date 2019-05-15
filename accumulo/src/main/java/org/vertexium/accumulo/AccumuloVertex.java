@@ -16,12 +16,16 @@ import org.vertexium.mutation.ExistingElementMutationImpl;
 import org.vertexium.mutation.PropertyDeleteMutation;
 import org.vertexium.mutation.PropertySoftDeleteMutation;
 import org.vertexium.query.VertexQuery;
-import org.vertexium.util.*;
+import org.vertexium.util.JoinIterable;
+import org.vertexium.util.StreamUtils;
 
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -163,27 +167,9 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
     }
 
     @Override
-    public Stream<Edge> getEdges(Direction direction, FetchHints fetchHints, Long endTime, User user) {
-        getFetchHints().validateHasEdgeFetchHints(direction);
-        return getGraph().getEdges(toIterable(getEdgeIds(direction, user)), fetchHints, endTime, user);
-    }
-
-    @Override
-    public Stream<Edge> getEdges(Direction direction, String[] labels, FetchHints fetchHints, User user) {
-        getFetchHints().validateHasEdgeFetchHints(direction, labels);
-        return getGraph().getEdges(toIterable(getEdgeIdsWithOtherVertexId(null, direction, labels)), fetchHints, user);
-    }
-
-    @Override
     public Stream<String> getEdgeIds(Direction direction, String[] labels, User user) {
         getFetchHints().validateHasEdgeFetchHints(direction, labels);
         return getEdgeIdsWithOtherVertexId(null, direction, labels);
-    }
-
-    @Override
-    public Stream<Edge> getEdges(Vertex otherVertex, Direction direction, FetchHints fetchHints, User user) {
-        getFetchHints().validateHasEdgeFetchHints(direction);
-        return getGraph().getEdges(toIterable(getEdgeIdsWithOtherVertexId(otherVertex.getId(), direction, null)), fetchHints, user);
     }
 
     @Override
@@ -234,23 +220,23 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
             throw new VertexiumException("getEdgeIdsWithOtherVertexId called without including any edge infos");
         }
         return StreamUtils.stream(getEdgeInfos(direction).iterator())
-                .filter(entry -> {
-                    if (otherVertexId != null) {
-                        if (!otherVertexId.equals(entry.getValue().getVertexId())) {
-                            return false;
-                        }
+            .filter(entry -> {
+                if (otherVertexId != null) {
+                    if (!otherVertexId.equals(entry.getValue().getVertexId())) {
+                        return false;
                     }
-                    if (labels == null || labels.length == 0) {
+                }
+                if (labels == null || labels.length == 0) {
+                    return true;
+                }
+
+                for (String label : labels) {
+                    if (label.equals(entry.getValue().getLabel())) {
                         return true;
                     }
-
-                    for (String label : labels) {
-                        if (label.equals(entry.getValue().getLabel())) {
-                            return true;
-                        }
-                    }
-                    return false;
-                }).map(entry -> entry.getKey().toString());
+                }
+                return false;
+            }).map(entry -> entry.getKey().toString());
     }
 
     private Iterable<Map.Entry<Text, org.vertexium.accumulo.iterator.model.EdgeInfo>> getEdgeInfos(Direction direction) {
@@ -314,31 +300,31 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
 
     private Stream<org.vertexium.EdgeInfo> accumuloEdgeInfosToEdgeInfos(Iterable<Map.Entry<Text, org.vertexium.accumulo.iterator.model.EdgeInfo>> edgeInfos, Direction direction) {
         return StreamUtils.stream(edgeInfos)
-                .map(edgeInfoEntry -> {
-                    final String edgeId = edgeInfoEntry.getKey().toString();
-                    final org.vertexium.accumulo.iterator.model.EdgeInfo edgeInfo = edgeInfoEntry.getValue();
-                    return new EdgeInfo() {
-                        @Override
-                        public String getEdgeId() {
-                            return edgeId;
-                        }
+            .map(edgeInfoEntry -> {
+                final String edgeId = edgeInfoEntry.getKey().toString();
+                final org.vertexium.accumulo.iterator.model.EdgeInfo edgeInfo = edgeInfoEntry.getValue();
+                return new EdgeInfo() {
+                    @Override
+                    public String getEdgeId() {
+                        return edgeId;
+                    }
 
-                        @Override
-                        public String getLabel() {
-                            return edgeInfo.getLabel();
-                        }
+                    @Override
+                    public String getLabel() {
+                        return edgeInfo.getLabel();
+                    }
 
-                        @Override
-                        public String getVertexId() {
-                            return edgeInfo.getVertexId();
-                        }
+                    @Override
+                    public String getVertexId() {
+                        return edgeInfo.getVertexId();
+                    }
 
-                        @Override
-                        public Direction getDirection() {
-                            return direction;
-                        }
-                    };
-                });
+                    @Override
+                    public Direction getDirection() {
+                        return direction;
+                    }
+                };
+            });
     }
 
     @Override
@@ -452,6 +438,12 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
 
     private Stream<EdgeVertexPair> getEdgeVertexPairs(Stream<EdgeInfo> edgeInfos, FetchHints fetchHints, Long endTime, User user) {
         return EdgeVertexPair.getEdgeVertexPairs(getGraph(), getId(), edgeInfos, fetchHints, endTime, user);
+    }
+
+    @Override
+    public Stream<Edge> getEdges(Direction direction, String[] labels, FetchHints fetchHints, Long endTime, User user) {
+        getFetchHints().validateHasEdgeFetchHints(direction, labels);
+        return getGraph().getEdges(toIterable(getEdgeIdsWithOtherVertexId(null, direction, labels)), fetchHints, endTime, user);
     }
 
     @Override

@@ -158,7 +158,7 @@ public class CreateClauseExecutor {
         Visibility visibility = ctx.calculateEdgeVisibility(relationshipPattern, outVertex, inVertex, item);
         EdgeBuilder m = ctx.getGraph().prepareEdge(edgeId, outVertex, inVertex, label, visibility);
         setPropertiesOnElement(ctx, m, relationshipPattern, item);
-        return ctx.saveEdge(m);
+        return ctx.getGraph().getEdge(ctx.saveEdge(m), ctx.getFetchHints(), ctx.getUser());
     }
 
     private Vertex executeCreateVertex(
@@ -170,7 +170,7 @@ public class CreateClauseExecutor {
         Visibility vertexVisibility = ctx.calculateVertexVisibility(nodePattern, item);
         VertexBuilder m = ctx.getGraph().prepareVertex(vertexId, vertexVisibility);
         updateVertex(ctx, m, nodePattern, item);
-        return ctx.saveVertex(m);
+        return ctx.getGraph().getVertex(ctx.saveVertex(m), ctx.getFetchHints(), ctx.getUser());
     }
 
     private void executeUpdateVertex(

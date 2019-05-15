@@ -13,18 +13,18 @@ public abstract class ElasticsearchElement extends ElementBase {
     private final Graph graph;
     private FetchHints fetchHints;
     private String id;
-    private Authorizations authorizations;
+    private User user;
 
     public ElasticsearchElement(
         Graph graph,
         String id,
         FetchHints fetchHints,
-        Authorizations authorizations
+        User user
     ) {
         this.id = id;
         this.graph = graph;
         this.fetchHints = fetchHints;
-        this.authorizations = authorizations;
+        this.user = user;
     }
 
     @Override
@@ -35,46 +35,6 @@ public abstract class ElasticsearchElement extends ElementBase {
     @Override
     public Iterable<Property> getProperties() {
         throw new VertexiumNotSupportedException("getProperties is not supported");
-    }
-
-    @Override
-    public Property getProperty(String name) {
-        throw new VertexiumNotSupportedException("getProperty is not supported");
-    }
-
-    @Override
-    public Object getPropertyValue(String name) {
-        throw new VertexiumNotSupportedException("getPropertyValue is not supported");
-    }
-
-    @Override
-    public Property getProperty(String key, String name) {
-        throw new VertexiumNotSupportedException("getProperty is not supported");
-    }
-
-    @Override
-    public Iterable<Object> getPropertyValues(String name) {
-        throw new VertexiumNotSupportedException("getPropertyValues is not supported");
-    }
-
-    @Override
-    public Iterable<Object> getPropertyValues(String key, String name) {
-        throw new VertexiumNotSupportedException("getPropertyValues is not supported");
-    }
-
-    @Override
-    public Object getPropertyValue(String key, String name) {
-        throw new VertexiumNotSupportedException("getPropertyValue is not supported");
-    }
-
-    @Override
-    public Object getPropertyValue(String name, int index) {
-        throw new VertexiumNotSupportedException("getPropertyValue is not supported");
-    }
-
-    @Override
-    public Object getPropertyValue(String key, String name, int index) {
-        throw new VertexiumNotSupportedException("getPropertyValue is not supported");
     }
 
     @Override
@@ -91,7 +51,7 @@ public abstract class ElasticsearchElement extends ElementBase {
     public Stream<HistoricalEvent> getHistoricalEvents(
         HistoricalEventId after,
         HistoricalEventsFetchHints fetchHints,
-        Authorizations authorizations
+        User user
     ) {
         throw new VertexiumNotSupportedException("getHistoricalEvents is not supported");
     }
@@ -102,8 +62,8 @@ public abstract class ElasticsearchElement extends ElementBase {
     }
 
     @Override
-    public Authorizations getAuthorizations() {
-        return authorizations;
+    public User getUser() {
+        return user;
     }
 
     @Override
@@ -129,5 +89,10 @@ public abstract class ElasticsearchElement extends ElementBase {
     @Override
     public FetchHints getFetchHints() {
         return fetchHints;
+    }
+
+    @Override
+    public Graph getGraph() {
+        return graph;
     }
 }

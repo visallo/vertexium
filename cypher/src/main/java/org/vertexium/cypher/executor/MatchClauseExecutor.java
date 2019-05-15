@@ -13,7 +13,9 @@ import org.vertexium.cypher.exceptions.VertexiumCypherTypeErrorException;
 import org.vertexium.cypher.executor.models.match.*;
 import org.vertexium.cypher.executor.utils.MatchConstraintBuilder;
 import org.vertexium.cypher.utils.ObjectUtils;
-import org.vertexium.query.*;
+import org.vertexium.query.Contains;
+import org.vertexium.search.EmptyQueryResults;
+import org.vertexium.search.QueryResults;
 import org.vertexium.util.StreamUtils;
 import org.vertexium.util.VertexiumLogger;
 import org.vertexium.util.VertexiumLoggerFactory;
@@ -24,8 +26,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
-
-import static org.vertexium.util.StreamUtils.stream;
 
 public class MatchClauseExecutor {
     private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(MatchClauseExecutor.class);
@@ -134,7 +134,7 @@ public class MatchClauseExecutor {
     private Stream<MatchContext> getInitialMatchContextsBySearching(VertexiumCypherQueryContext ctx, PatternPartMatchConstraint patternPartConstraint, ExpressionScope scope) {
         MatchConstraint workingMatchConstraint = MatchContext.getNextConstraintToWorkOn(ctx, scope, patternPartConstraint.getMatchConstraints(), new HashMap<>());
         LOGGER.debug("working on: %s", workingMatchConstraint);
-        Stream<? extends Element> matchingElements = stream(executeFirstMatchConstraint(ctx, workingMatchConstraint, scope, null));
+        Stream<? extends Element> matchingElements = executeFirstMatchConstraint(ctx, workingMatchConstraint, scope, null).getHits();
         if (workingMatchConstraint.isOptional()) {
             matchingElements = StreamUtils.ifEmpty(matchingElements, () -> Stream.of((Element) null), s -> s);
         }
@@ -317,7 +317,7 @@ public class MatchClauseExecutor {
         MatchConstraint edgeMatchConstraint = edgeVertexConstraint.getEdgeMatchConstraint();
         boolean foundMatch = false;
         if (edge != null && previousVertex != null) {
-            Vertex vertex = edge.getOtherVertex(previousVertex.getId(), ctx.getFetchHints(), ctx.getAuthorizations());
+            Vertex vertex = edge.getOtherVertex(previousVertex.getId(), ctx.getFetchHints(), ctx.getUser());
             if (vertexIsMatch(ctx, vertex, labelNames, propertiesMap, scope)
                 && vertexRelationshipMatches(matchContext, matchConstraint, vertex)) {
                 results.add(vertex);
@@ -385,7 +385,7 @@ public class MatchClauseExecutor {
         );
     }
 
-    private static IterableWithTotalHits<? extends Element> executeFirstMatchConstraint(
+    private static QueryResults<? extends Element> executeFirstMatchConstraint(
         VertexiumCypherQueryContext ctx,
         MatchConstraint<?, ?> matchConstraint,
         ExpressionScope scope,
@@ -394,8 +394,8 @@ public class MatchClauseExecutor {
         try {
             List<String> labelNames = getLabelNamesFromMatchConstraint(matchConstraint);
             ListMultimap<String, CypherAstBase> propertiesMap = getPropertiesMapFromElementPatterns(ctx, matchConstraint.getPatterns());
-            QueryResultsIterable<? extends Element> elements;
-            Query query = ctx.getGraph().query(ctx.getAuthorizations())
+            QueryResults<? extends Element> elements;
+            org.vertexium.search.Query query = ctx.getGraph().query(ctx.getUser())
                 .limit(limit);
             if (labelNames.size() == 0 && propertiesMap.size() == 0) {
                 elements = executeQuery(ctx, query, matchConstraint);
@@ -440,16 +440,16 @@ public class MatchClauseExecutor {
             return elements;
         } catch (VertexiumPropertyNotDefinedException e) {
             LOGGER.error(e.getMessage());
-            return new EmptyResultsQueryResultsIterable<>();
+            return new EmptyQueryResults<>();
         }
     }
 
-    private static QueryResultsIterable<? extends Element> executeQuery(
+    private static QueryResults<? extends Element> executeQuery(
         VertexiumCypherQueryContext ctx,
-        Query query,
+        org.vertexium.search.Query query,
         MatchConstraint<?, ?> matchConstraint
     ) {
-        QueryResultsIterable<? extends Element> elements;
+        QueryResults<? extends Element> elements;
         if (matchConstraint instanceof NodeMatchConstraint) {
             elements = query.vertices(ctx.getFetchHints());
         } else if (matchConstraint instanceof RelationshipMatchConstraint) {
@@ -559,7 +559,7 @@ public class MatchClauseExecutor {
                             return;
                         }
                         if (edgeIsMatch(ctx, edge, labelNames, propertiesMap, scope)) {
-                            Vertex otherVertex = edge.getOtherVertex(startingVertex.getId(), ctx.getFetchHints(), ctx.getAuthorizations());
+                            Vertex otherVertex = edge.getOtherVertex(startingVertex.getId(), ctx.getFetchHints(), ctx.getUser());
                             VertexiumCypherScope.PathItem newPath = previousPath
                                 .concat(name, edge)
                                 .concat(null, otherVertex);
@@ -612,10 +612,10 @@ public class MatchClauseExecutor {
         List<String> labelNames
     ) {
         if (name == null && propertiesMap.size() == 0) {
-            return stream(startingVertex.getEdgeInfos(direction, labelNamesToArray(labelNames), ctx.getAuthorizations()))
-                .map(edgeInfo -> new EdgeInfoEdge(ctx.getGraph(), startingVertex.getId(), edgeInfo, ctx.getFetchHints(), ctx.getAuthorizations()));
+            return startingVertex.getEdgeInfos(direction, labelNamesToArray(labelNames), ctx.getUser())
+                .map(edgeInfo -> new EdgeInfoEdge(ctx.getGraph(), startingVertex.getId(), edgeInfo, ctx.getFetchHints(), ctx.getUser()));
         }
-        return stream(startingVertex.getEdges(direction, labelNamesToArray(labelNames), ctx.getFetchHints(), ctx.getAuthorizations()));
+        return startingVertex.getEdges(direction, labelNamesToArray(labelNames), ctx.getFetchHints(), ctx.getUser());
     }
 
     private String[] labelNamesToArray(List<String> labelNames) {
@@ -891,7 +891,7 @@ public class MatchClauseExecutor {
 
                     // this can happen if we start the search with relationships
                     if (matchedVertices.size() == 0) {
-                        EdgeVertices edgeVertices = edge.getVertices(ctx.getFetchHints(), ctx.getAuthorizations());
+                        EdgeVertices edgeVertices = edge.getVertices(ctx.getFetchHints(), ctx.getUser());
                         switch (edgeMatchConstraint.getDirection()) {
                             case BOTH:
                             case UNSPECIFIED:

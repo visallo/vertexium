@@ -71,7 +71,7 @@ public class ElasticsearchHammingDistanceScoringStrategy
         String[] propertyNames = searchIndex.getPropertyNames(
             graph,
             propertyDefinition.getPropertyName(),
-            queryParameters.getAuthorizations()
+            queryParameters.getUser()
         );
         return Arrays.stream(propertyNames)
             .filter(propertyName -> String.class.isAssignableFrom(propertyDefinition.getDataType()))
