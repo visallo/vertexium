@@ -5,6 +5,8 @@ import org.vertexium.FetchHints;
 import org.vertexium.User;
 
 public class InMemoryTableVertex extends InMemoryTableElement<InMemoryVertex> {
+    private static final long serialVersionUID = -7587878000189582069L;
+
     public InMemoryTableVertex(String id) {
         super(id);
     }

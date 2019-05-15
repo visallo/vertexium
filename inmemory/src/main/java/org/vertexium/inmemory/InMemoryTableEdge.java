@@ -11,6 +11,8 @@ import java.util.List;
 import java.util.stream.Stream;
 
 public class InMemoryTableEdge extends InMemoryTableElement<InMemoryEdge> {
+    private static final long serialVersionUID = 7193421350589782382L;
+
     public InMemoryTableEdge(String id) {
         super(id);
     }

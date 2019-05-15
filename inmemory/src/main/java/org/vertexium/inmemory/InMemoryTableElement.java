@@ -22,6 +22,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public abstract class InMemoryTableElement<TElement extends InMemoryElement> implements Serializable {
+    private static final long serialVersionUID = -437237206393541404L;
     private final String id;
     private ReadWriteLock mutationLock = new ReentrantReadWriteLock();
     protected final TreeSet<Mutation> mutations = new TreeSet<>();
@@ -376,12 +377,27 @@ public abstract class InMemoryTableElement<TElement extends InMemoryElement> imp
 
         if (getElementType() == ElementType.VERTEX) {
             historicalEvents.addAll(
-                graph.getHistoricalVertexEdgeEvents(getId(), historicalEventsFetchHints, user)
+                getHistoricalVertexEdgeEvents(graph, historicalEventsFetchHints, user)
                     .collect(Collectors.toList())
             );
         }
 
         return historicalEventsFetchHints.applyToResults(historicalEvents.stream(), after);
+    }
+
+    private Stream<HistoricalEvent> getHistoricalVertexEdgeEvents(
+        InMemoryGraph graph,
+        HistoricalEventsFetchHints historicalEventsFetchHints,
+        User user
+    ) {
+        FetchHints elementFetchHints = new FetchHintsBuilder()
+            .setIncludeAllProperties(true)
+            .setIncludeAllPropertyMetadata(true)
+            .setIncludeHidden(true)
+            .setIncludeAllEdgeRefs(true)
+            .build();
+        return graph.getInMemoryTableEdgesForVertex(getId(), elementFetchHints, user)
+            .flatMap(inMemoryTableElement -> inMemoryTableElement.getHistoricalEventsForVertex(getId(), historicalEventsFetchHints));
     }
 
     private String getHistoricalOrder(Mutation m) {
