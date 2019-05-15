@@ -1,10 +1,10 @@
 package org.vertexium;
 
 import com.google.common.collect.ImmutableSet;
+import org.vertexium.mutation.ElementMutation;
 import org.vertexium.util.ConvertingIterable;
 
 import java.util.Iterator;
-import java.util.Set;
 
 public interface VertexiumObject extends Comparable {
     /**
@@ -78,7 +78,9 @@ public interface VertexiumObject extends Comparable {
      * @param visibility The visibility of the property to get.
      * @return The property if found. null, if not found.
      */
-    Property getProperty(String name, Visibility visibility);
+    default Property getProperty(String name, Visibility visibility) {
+        return getProperty(ElementMutation.DEFAULT_KEY, name, visibility);
+    }
 
     /**
      * an Iterable of all the properties with the given name on this element that you have access to based on the authorizations
@@ -156,15 +158,7 @@ public interface VertexiumObject extends Comparable {
      * @return The value of the property. null, if the property doesn't exist or doesn't have that many values.
      */
     default Object getPropertyValue(String name, int index) {
-        Iterator<Object> values = getPropertyValues(name).iterator();
-        while (values.hasNext() && index >= 0) {
-            Object v = values.next();
-            if (index == 0) {
-                return v;
-            }
-            index--;
-        }
-        return null;
+        return getPropertyValue(null, name, index);
     }
 
     /**

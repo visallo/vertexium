@@ -1,10 +1,11 @@
 package org.vertexium;
 
+import com.google.common.collect.Lists;
 import org.vertexium.mutation.ElementMutation;
 import org.vertexium.property.MutablePropertyImpl;
 import org.vertexium.util.FilterIterable;
 
-import java.util.ArrayList;
+import java.util.Iterator;
 
 public abstract class ElementBase implements Element {
     private transient Property idProperty;
@@ -15,16 +16,8 @@ public abstract class ElementBase implements Element {
 
     @Override
     public Property getProperty(String key, String name, Visibility visibility) {
-        if (ID_PROPERTY_NAME.equals(name)) {
-            return getIdProperty();
-        } else if (Edge.LABEL_PROPERTY_NAME.equals(name) && this instanceof Edge) {
-            return getEdgeLabelProperty();
-        } else if (Edge.OUT_VERTEX_ID_PROPERTY_NAME.equals(name) && this instanceof Edge) {
-            return getOutVertexIdProperty();
-        } else if (Edge.IN_VERTEX_ID_PROPERTY_NAME.equals(name) && this instanceof Edge) {
-            return getInVertexIdProperty();
-        } else if (Edge.IN_OR_OUT_VERTEX_ID_PROPERTY_NAME.equals(name) && this instanceof Edge) {
-            return getInOrOutVertexIdProperty();
+        if (isInternalPropertyName(name)) {
+            return getInternalProperty(name);
         }
         for (Property p : internalGetProperties(key, name)) {
             if (visibility == null) {
@@ -39,34 +32,57 @@ public abstract class ElementBase implements Element {
     }
 
     @Override
-    public Property getProperty(String name, Visibility visibility) {
-        return getProperty(ElementMutation.DEFAULT_KEY, name, visibility);
+    public Property getProperty(String name) {
+        if (isInternalPropertyName(name)) {
+            return getInternalProperty(name);
+        }
+        Iterator<Property> propertiesWithName = internalGetProperties(null, name).iterator();
+        if (propertiesWithName.hasNext()) {
+            return propertiesWithName.next();
+        }
+        return null;
+    }
+
+    @Override
+    public Iterable<Property> getProperties(String key, String name) {
+        if (isInternalPropertyName(name)) {
+            return Lists.newArrayList(getInternalProperty(name));
+        }
+        return internalGetProperties(key, name);
     }
 
     @Override
     public Iterable<Property> getProperties(String name) {
-        if (ID_PROPERTY_NAME.equals(name)) {
-            ArrayList<Property> result = new ArrayList<>();
-            result.add(getIdProperty());
-            return result;
-        } else if (Edge.LABEL_PROPERTY_NAME.equals(name) && this instanceof Edge) {
-            ArrayList<Property> result = new ArrayList<>();
-            result.add(getEdgeLabelProperty());
-            return result;
-        } else if (Edge.OUT_VERTEX_ID_PROPERTY_NAME.equals(name) && this instanceof Edge) {
-            ArrayList<Property> result = new ArrayList<>();
-            result.add(getOutVertexIdProperty());
-            return result;
-        } else if (Edge.IN_VERTEX_ID_PROPERTY_NAME.equals(name) && this instanceof Edge) {
-            ArrayList<Property> result = new ArrayList<>();
-            result.add(getInVertexIdProperty());
-            return result;
-        } else if (Edge.IN_OR_OUT_VERTEX_ID_PROPERTY_NAME.equals(name) && this instanceof Edge) {
-            ArrayList<Property> result = new ArrayList<>();
-            result.add(getInOrOutVertexIdProperty());
-            return result;
+        if (isInternalPropertyName(name)) {
+            return Lists.newArrayList(getInternalProperty(name));
         }
         return internalGetProperties(null, name);
+    }
+
+    private Property getInternalProperty(String name) {
+        if (ID_PROPERTY_NAME.equals(name)) {
+            return getIdProperty();
+        } else if (Edge.LABEL_PROPERTY_NAME.equals(name) && this instanceof Edge) {
+            return getEdgeLabelProperty();
+        } else if (Edge.OUT_VERTEX_ID_PROPERTY_NAME.equals(name) && this instanceof Edge) {
+            return getOutVertexIdProperty();
+        } else if (Edge.IN_VERTEX_ID_PROPERTY_NAME.equals(name) && this instanceof Edge) {
+            return getInVertexIdProperty();
+        } else if (Edge.IN_OR_OUT_VERTEX_ID_PROPERTY_NAME.equals(name) && this instanceof Edge) {
+            return getInOrOutVertexIdProperty();
+        }
+        throw new VertexiumException("Not an internal property: " + name);
+    }
+
+    protected boolean isInternalPropertyName(String name) {
+        if (ID_PROPERTY_NAME.equals(name)
+            || (Edge.LABEL_PROPERTY_NAME.equals(name) && this instanceof Edge)
+            || (Edge.OUT_VERTEX_ID_PROPERTY_NAME.equals(name) && this instanceof Edge)
+            || (Edge.IN_VERTEX_ID_PROPERTY_NAME.equals(name) && this instanceof Edge)
+            || (Edge.IN_OR_OUT_VERTEX_ID_PROPERTY_NAME.equals(name) && this instanceof Edge)) {
+            return true;
+        }
+        return false;
     }
 
     protected Iterable<Property> internalGetProperties(String key, String name) {
@@ -80,33 +96,6 @@ public abstract class ElementBase implements Element {
                 return property.getName().equals(name);
             }
         };
-    }
-
-    @Override
-    public Iterable<Property> getProperties(final String key, final String name) {
-        if (ID_PROPERTY_NAME.equals(name)) {
-            ArrayList<Property> result = new ArrayList<>();
-            result.add(getIdProperty());
-            return result;
-        } else if (Edge.LABEL_PROPERTY_NAME.equals(name) && this instanceof Edge) {
-            ArrayList<Property> result = new ArrayList<>();
-            result.add(getEdgeLabelProperty());
-            return result;
-        } else if (Edge.OUT_VERTEX_ID_PROPERTY_NAME.equals(name) && this instanceof Edge) {
-            ArrayList<Property> result = new ArrayList<>();
-            result.add(getOutVertexIdProperty());
-            return result;
-        } else if (Edge.IN_VERTEX_ID_PROPERTY_NAME.equals(name) && this instanceof Edge) {
-            ArrayList<Property> result = new ArrayList<>();
-            result.add(getInVertexIdProperty());
-            return result;
-        } else if (Edge.IN_OR_OUT_VERTEX_ID_PROPERTY_NAME.equals(name) && this instanceof Edge) {
-            ArrayList<Property> result = new ArrayList<>();
-            result.add(getInOrOutVertexIdProperty());
-            return result;
-        }
-        getFetchHints().assertPropertyIncluded(name);
-        return internalGetProperties(key, name);
     }
 
     protected Property getIdProperty() {

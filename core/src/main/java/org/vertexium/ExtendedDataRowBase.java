@@ -47,14 +47,8 @@ public abstract class ExtendedDataRowBase implements ExtendedDataRow {
 
     @Override
     public Property getProperty(String key, String name, Visibility visibility) {
-        if (ExtendedDataRow.ROW_ID.equals(name)) {
-            return getRowIdProperty();
-        } else if (ExtendedDataRow.TABLE_NAME.equals(name)) {
-            return getTableNameProperty();
-        } else if (ExtendedDataRow.ELEMENT_ID.equals(name)) {
-            return getElementIdProperty();
-        } else if (ExtendedDataRow.ELEMENT_TYPE.equals(name)) {
-            return getElementTypeProperty();
+        if (isInternalPropertyName(name)) {
+            return getInternalProperty(name);
         }
         getFetchHints().assertPropertyIncluded(name);
         for (Property property : getProperties()) {
@@ -90,14 +84,8 @@ public abstract class ExtendedDataRowBase implements ExtendedDataRow {
 
     @Override
     public Iterable<Property> getProperties(String key, String name) {
-        if (ExtendedDataRow.ROW_ID.equals(name)) {
-            return Lists.newArrayList(getRowIdProperty());
-        } else if (ExtendedDataRow.TABLE_NAME.equals(name)) {
-            return Lists.newArrayList(getTableNameProperty());
-        } else if (ExtendedDataRow.ELEMENT_ID.equals(name)) {
-            return Lists.newArrayList(getElementIdProperty());
-        } else if (ExtendedDataRow.ELEMENT_TYPE.equals(name)) {
-            return Lists.newArrayList(getElementTypeProperty());
+        if (isInternalPropertyName(name)) {
+            return Lists.newArrayList(getInternalProperty(name));
         }
 
         getFetchHints().assertPropertyIncluded(name);
@@ -125,14 +113,8 @@ public abstract class ExtendedDataRowBase implements ExtendedDataRow {
 
     @Override
     public Object getPropertyValue(String key, String name, int index) {
-        if (ExtendedDataRow.ROW_ID.equals(name)) {
-            return getRowIdProperty().getValue();
-        } else if (ExtendedDataRow.TABLE_NAME.equals(name)) {
-            return getTableNameProperty().getValue();
-        } else if (ExtendedDataRow.ELEMENT_ID.equals(name)) {
-            return getElementIdProperty().getValue();
-        } else if (ExtendedDataRow.ELEMENT_TYPE.equals(name)) {
-            return getElementTypeProperty().getValue();
+        if (isInternalPropertyName(name)) {
+            return getInternalProperty(name).getValue();
         }
 
         Iterator<Object> values = getPropertyValues(key, name).iterator();
@@ -144,6 +126,29 @@ public abstract class ExtendedDataRowBase implements ExtendedDataRow {
             return null;
         }
         return values.next();
+    }
+
+    private Property getInternalProperty(String name) {
+        if (ExtendedDataRow.ROW_ID.equals(name)) {
+            return getRowIdProperty();
+        } else if (ExtendedDataRow.TABLE_NAME.equals(name)) {
+            return getTableNameProperty();
+        } else if (ExtendedDataRow.ELEMENT_ID.equals(name)) {
+            return getElementIdProperty();
+        } else if (ExtendedDataRow.ELEMENT_TYPE.equals(name)) {
+            return getElementTypeProperty();
+        }
+        throw new VertexiumException("Not an internal property name: " + name);
+    }
+
+    protected boolean isInternalPropertyName(String name) {
+        if (ExtendedDataRow.ROW_ID.equals(name)
+            || ExtendedDataRow.TABLE_NAME.equals(name)
+            || ExtendedDataRow.ELEMENT_ID.equals(name)
+            || ExtendedDataRow.ELEMENT_TYPE.equals(name)) {
+            return true;
+        }
+        return false;
     }
 
     @Override

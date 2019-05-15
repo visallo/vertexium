@@ -17,7 +17,6 @@ import org.vertexium.search.IndexHint;
 import org.vertexium.util.PropertyCollection;
 
 import java.io.Serializable;
-import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.stream.Stream;
@@ -189,59 +188,11 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
     }
 
     @Override
-    public Property getProperty(String name) {
-        if (ID_PROPERTY_NAME.equals(name)) {
-            return getIdProperty();
-        } else if (Edge.LABEL_PROPERTY_NAME.equals(name) && this instanceof Edge) {
-            return getEdgeLabelProperty();
-        } else if (Edge.OUT_VERTEX_ID_PROPERTY_NAME.equals(name) && this instanceof Edge) {
-            return getOutVertexIdProperty();
-        } else if (Edge.IN_VERTEX_ID_PROPERTY_NAME.equals(name) && this instanceof Edge) {
-            return getInVertexIdProperty();
-        } else if (Edge.IN_OR_OUT_VERTEX_ID_PROPERTY_NAME.equals(name) && this instanceof Edge) {
-            return getInOrOutVertexIdProperty();
-        }
-        Iterator<Property> propertiesWithName = getProperties(name).iterator();
-        if (propertiesWithName.hasNext()) {
-            return propertiesWithName.next();
-        }
-        return null;
-    }
-
-    @Override
-    public Object getPropertyValue(String name, int index) {
-        if (ID_PROPERTY_NAME.equals(name)) {
-            return getIdProperty();
-        } else if (Edge.LABEL_PROPERTY_NAME.equals(name) && this instanceof Edge) {
-            return getEdgeLabelProperty();
-        } else if (Edge.OUT_VERTEX_ID_PROPERTY_NAME.equals(name) && this instanceof Edge) {
-            return getOutVertexIdProperty();
-        } else if (Edge.IN_VERTEX_ID_PROPERTY_NAME.equals(name) && this instanceof Edge) {
-            return getInVertexIdProperty();
-        } else if (Edge.IN_OR_OUT_VERTEX_ID_PROPERTY_NAME.equals(name) && this instanceof Edge) {
-            return getInOrOutVertexIdProperty();
+    public Object getPropertyValue(String key, String name, int index) {
+        if (isInternalPropertyName(name)) {
+            return getProperty(name).getValue();
         }
         getFetchHints().assertPropertyIncluded(name);
-        Property property = this.properties.getProperty(name, index);
-        if (property == null) {
-            return null;
-        }
-        return property.getValue();
-    }
-
-    @Override
-    public Object getPropertyValue(String key, String name, int index) {
-        if (ID_PROPERTY_NAME.equals(name)) {
-            return getIdProperty();
-        } else if (Edge.LABEL_PROPERTY_NAME.equals(name) && this instanceof Edge) {
-            return getEdgeLabelProperty();
-        } else if (Edge.OUT_VERTEX_ID_PROPERTY_NAME.equals(name) && this instanceof Edge) {
-            return getOutVertexIdProperty();
-        } else if (Edge.IN_VERTEX_ID_PROPERTY_NAME.equals(name) && this instanceof Edge) {
-            return getInVertexIdProperty();
-        } else if (Edge.IN_OR_OUT_VERTEX_ID_PROPERTY_NAME.equals(name) && this instanceof Edge) {
-            return getInOrOutVertexIdProperty();
-        }
         Property property = this.properties.getProperty(key, name, index);
         if (property == null) {
             return null;
@@ -282,18 +233,6 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
 
     public Iterable<PropertySoftDeleteMutation> getPropertySoftDeleteMutations() {
         return this.propertySoftDeleteMutations;
-    }
-
-    @Override
-    public Iterable<Property> getProperties(final String key, final String name) {
-        if (ID_PROPERTY_NAME.equals(name)
-            || (Edge.LABEL_PROPERTY_NAME.equals(name) && this instanceof Edge)
-            || (Edge.OUT_VERTEX_ID_PROPERTY_NAME.equals(name) && this instanceof Edge)
-            || (Edge.IN_VERTEX_ID_PROPERTY_NAME.equals(name) && this instanceof Edge)
-            || (Edge.IN_OR_OUT_VERTEX_ID_PROPERTY_NAME.equals(name) && this instanceof Edge)) {
-            return getProperties(name);
-        }
-        return this.properties.getProperties(key, name);
     }
 
     private void updateAdditionalVisibilitiesInternal(Iterable<AdditionalVisibilityAddMutation> additionalVisibilities, Iterable<AdditionalVisibilityDeleteMutation> additionalVisibilityDeletes) {
