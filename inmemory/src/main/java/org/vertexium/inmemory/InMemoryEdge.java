@@ -4,7 +4,6 @@ import org.vertexium.*;
 import org.vertexium.inmemory.mutations.AlterEdgeLabelMutation;
 import org.vertexium.inmemory.mutations.EdgeSetupMutation;
 import org.vertexium.mutation.ExistingEdgeMutation;
-import org.vertexium.search.IndexHint;
 
 public class InMemoryEdge extends InMemoryElement<InMemoryEdge> implements Edge {
     private final EdgeSetupMutation edgeSetupMutation;
@@ -77,13 +76,8 @@ public class InMemoryEdge extends InMemoryElement<InMemoryEdge> implements Edge 
             }
 
             private Edge saveEdge(User user) {
-                IndexHint indexHint = getIndexHint();
-                saveExistingElementMutation(this, indexHint, user);
-                Edge edge = getElement();
-                if (indexHint != IndexHint.DO_NOT_INDEX) {
-                    getGraph().updateElementAndExtendedDataInSearchIndex(edge, this, user);
-                }
-                return edge;
+                getGraph().getElementMutationBuilder().saveExistingElementMutation(this, user);
+                return getElement();
             }
         };
     }

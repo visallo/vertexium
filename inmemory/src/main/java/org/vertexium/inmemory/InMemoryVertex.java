@@ -4,7 +4,6 @@ import org.vertexium.*;
 import org.vertexium.mutation.ExistingElementMutation;
 import org.vertexium.mutation.ExistingElementMutationBase;
 import org.vertexium.query.VertexQuery;
-import org.vertexium.search.IndexHint;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -174,13 +173,8 @@ public class InMemoryVertex extends InMemoryElement<InMemoryVertex> implements V
             }
 
             private Vertex saveVertex(User user) {
-                IndexHint indexHint = getIndexHint();
-                saveExistingElementMutation(this, indexHint, user);
-                Vertex vertex = getElement();
-                if (indexHint != IndexHint.DO_NOT_INDEX) {
-                    getGraph().updateElementAndExtendedDataInSearchIndex(vertex, this, user);
-                }
-                return vertex;
+                getGraph().getElementMutationBuilder().saveExistingElementMutation(this, user);
+                return getElement();
             }
         };
     }

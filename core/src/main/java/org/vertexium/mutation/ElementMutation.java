@@ -732,6 +732,14 @@ public interface ElementMutation<T extends Element> extends ElementLocation {
      */
     ElementMutation<T> deleteExtendedDataRow(String tableName, String row);
 
+    /**
+     * Deletes an extended data cell from an element.
+     *
+     * @param id The row id to delete
+     */
+    default ElementMutation<T> deleteExtendedDataRow(ExtendedDataRowId id) {
+        return deleteExtendedDataRow(id.getTableName(), id.getRowId());
+    }
 
     /**
      * Deletes an extended data cell from an element.
