@@ -51,19 +51,13 @@ public abstract class ElementMutationBuilder {
     }
 
     public void saveVertexMutation(AccumuloGraph graph, ElementMutation<Vertex> vertexBuilder, long timestamp, User user) {
-        // We only need the vertex in certain situations, loading it like this lets it be lazy
-        Supplier<Vertex> vertex = Suppliers.memoize(() ->
-                vertexBuilder instanceof ExistingElementMutation ?
-                        ((ExistingElementMutation<Vertex>) vertexBuilder).getElement() :
-                        graph.getVertex(vertexBuilder.getId(), FetchHints.EDGE_REFS, user)
-        );
-
         String vertexRowKey = vertexBuilder.getId();
         Mutation vertexMutation = new Mutation(vertexRowKey);
 
         if (!vertexBuilder.isDeleteElement()) {
             Visibility visibility = vertexBuilder.getVisibility();
-            ColumnVisibility columnVisibility = visibilityToAccumuloVisibility(visibility == null ? vertex.get().getVisibility() : visibility);
+            ColumnVisibility columnVisibility = visibilityToAccumuloVisibility(visibility == null ?
+                    getVertexFromMutation(graph, vertexBuilder, user).getVisibility() : visibility);
             vertexMutation.put(AccumuloVertex.CF_SIGNAL, EMPTY_TEXT, columnVisibility, timestamp, EMPTY_VALUE);
         }
         addElementMutationsToAccumuloMutation(graph, vertexBuilder, vertexRowKey, vertexMutation);
@@ -71,13 +65,8 @@ public abstract class ElementMutationBuilder {
         saveExtendedDataMutations(graph, vertexBuilder, user);
         graph.flush();
 
-        saveExtendedDataMutations(graph, ElementType.VERTEX, vertexBuilder);
-
-        Supplier<Vertex> vertex = Suppliers.memoize(() ->
-                vertexBuilder instanceof ExistingElementMutation ?
-                        ((ExistingElementMutation<Vertex>) vertexBuilder).getElement() :
-                        graph.getVertex(vertexBuilder.getId(), FetchHints.EDGE_REFS, user)
-        );
+        // We only need the vertex in certain situations, loading it like this lets it be lazy
+        Supplier<Vertex> vertex = Suppliers.memoize(() -> getVertexFromMutation(graph, vertexBuilder, user));
         if (vertexBuilder.isDeleteElement()) {
             graph.getSearchIndex().deleteElement(graph, vertex.get(), user);
 
@@ -121,6 +110,17 @@ public abstract class ElementMutationBuilder {
         // TODO: In all of the above cases where we delete/modify edges, it would be more efficient to collect all of the vertex mutations and submit them as a batch
 
         queueEvents(graph, vertex, vertexBuilder);
+    }
+
+    private Vertex getVertexFromMutation(AccumuloGraph graph, ElementMutation<Vertex> vertexBuilder, User user) {
+        Vertex vertex = vertexBuilder instanceof ExistingElementMutation ?
+                ((ExistingElementMutation<Vertex>) vertexBuilder).getElement() :
+                graph.getVertex(vertexBuilder.getId(), FetchHints.EDGE_REFS, user);
+        if (vertex == null) {
+            throw new VertexiumException("Expected to find vertex but was unable to load: " + vertexBuilder.getId());
+        }
+        return  vertex;
+
     }
 
     private <T extends Element> void saveExtendedDataMutations(AccumuloGraph graph, ElementMutation<T> elementBuilder, User user) {
@@ -447,62 +447,7 @@ public abstract class ElementMutationBuilder {
         );
     }
 
-    @SuppressWarnings("unchecked")
     public void saveEdgeMutation(AccumuloGraph graph, EdgeMutation edgeBuilder, long timestamp, User user) {
-        // We only need the edge in certain situations, loading it like this lets it be lazy
-        Supplier<Edge> edge = Suppliers.memoize(() ->
-                edgeBuilder instanceof ExistingElementMutation ?
-                        ((ExistingElementMutation<Edge>) edgeBuilder).getElement() :
-                        graph.getEdge(edgeBuilder.getId(), FetchHints.NONE, user)
-        );
-
-        saveExtendedDataMutations(graph, ElementType.EDGE, edgeBuilder);
-    }
-
-    private void saveEdgeInfoOnVertex(
-        String edgeId,
-        String outVertexId,
-        String inVertexId,
-        String edgeLabel,
-        ColumnVisibility edgeColumnVisibility
-    ) {
-        Text edgeIdText = new Text(edgeId);
-        Text visibility = new Text(edgeColumnVisibility.getExpression());
-
-        // Update out vertex.
-        Mutation addEdgeToOutMutation = new Mutation(outVertexId);
-        EdgeInfo edgeInfo = new EdgeInfo(getNameSubstitutionStrategy().deflate(edgeLabel), inVertexId, visibility);
-        addEdgeToOutMutation.put(AccumuloVertex.CF_OUT_EDGE, edgeIdText, edgeColumnVisibility, edgeInfo.toValue());
-        saveVertexMutation(addEdgeToOutMutation);
-
-        // Update in vertex.
-        Mutation addEdgeToInMutation = new Mutation(inVertexId);
-        edgeInfo = new EdgeInfo(getNameSubstitutionStrategy().deflate(edgeLabel), outVertexId, visibility);
-        addEdgeToInMutation.put(AccumuloVertex.CF_IN_EDGE, edgeIdText, edgeColumnVisibility, edgeInfo.toValue());
-        saveVertexMutation(addEdgeToInMutation);
-    }
-
-    public void alterEdgeLabel(Edge edge, String newEdgeLabel) {
-        ColumnVisibility edgeColumnVisibility = visibilityToAccumuloVisibility(edge.getVisibility());
-        Mutation m = createAlterEdgeLabelMutation(edge, newEdgeLabel, edgeColumnVisibility);
-        saveEdgeMutation(m);
-
-        saveEdgeInfoOnVertex(
-            edge.getId(),
-            edge.getVertexId(Direction.OUT),
-            edge.getVertexId(Direction.IN),
-            newEdgeLabel,
-            edgeColumnVisibility
-        );
-    }
-
-    private ColumnVisibility visibilityToAccumuloVisibility(Visibility visibility) {
-        return new ColumnVisibility(visibility.getVisibilityString());
-    }
-
-    protected abstract void saveEdgeMutation(Mutation m);
-
-    private Mutation createMutationForEdgeBuilder(AccumuloGraph graph, EdgeBuilderBase edgeBuilder, ColumnVisibility edgeColumnVisibility, long timestamp) {
         String edgeRowKey = edgeBuilder.getId();
         Mutation edgeMutation = new Mutation(edgeRowKey);
         ColumnVisibility edgeColumnVisibility = visibilityToAccumuloVisibility(edgeBuilder.getVisibility());
@@ -512,7 +457,7 @@ public abstract class ElementMutationBuilder {
             // TODO: handle element visibility changes
 
             if (edgeBuilder.getNewEdgeLabel() != null) {
-                edgeMutation.putDelete(AccumuloEdge.CF_SIGNAL, new Text(edgeBuilder.getEdgeLabel()), edgeColumnVisibility, currentTimeMillis());
+                edgeMutation.putDelete(AccumuloEdge.CF_SIGNAL, new Text(getEdgeFromMutation(graph, edgeBuilder, user).getLabel()), edgeColumnVisibility, currentTimeMillis());
             }
             edgeMutation.put(AccumuloEdge.CF_SIGNAL, new Text(edgeLabel), edgeColumnVisibility, timestamp, ElementMutationBuilder.EMPTY_VALUE);
             edgeMutation.put(AccumuloEdge.CF_OUT_VERTEX, new Text(edgeBuilder.getVertexId(Direction.OUT)), edgeColumnVisibility, timestamp, ElementMutationBuilder.EMPTY_VALUE);
@@ -522,6 +467,8 @@ public abstract class ElementMutationBuilder {
         saveEdgeMutations(edgeMutation);
         graph.flush();
 
+        // We only need the edge in certain situations, loading it like this lets it be lazy
+        Supplier<Edge> edge = Suppliers.memoize(() -> getEdgeFromMutation(graph, edgeBuilder, user));
         Mutation outMutation = new Mutation(edgeBuilder.getVertexId(Direction.OUT));
         Mutation inMutation = new Mutation(edgeBuilder.getVertexId(Direction.IN));
         Text edgeIdText = new Text(edgeBuilder.getId());
@@ -578,6 +525,17 @@ public abstract class ElementMutationBuilder {
         saveExtendedDataMutations(graph, edgeBuilder, user);
 
         queueEvents(graph, edge, edgeBuilder);
+    }
+
+    @SuppressWarnings("unchecked")
+    private Edge getEdgeFromMutation(AccumuloGraph graph, EdgeMutation edgeBuilder, User user) {
+        Edge edge = edgeBuilder instanceof ExistingElementMutation ?
+                ((ExistingElementMutation<Edge>) edgeBuilder).getElement() :
+                graph.getEdge(edgeBuilder.getId(), FetchHints.NONE, user);
+        if (edge == null) {
+            throw new VertexiumException("Expected to find edge but was unable to load: " + edgeBuilder.getId());
+        }
+        return  edge;
     }
 
     private ColumnVisibility visibilityToAccumuloVisibility(Visibility visibility) {
@@ -659,6 +617,9 @@ public abstract class ElementMutationBuilder {
         ColumnVisibility columnVisibility = visibilityToAccumuloVisibility(visibility);
         Text columnQualifier = KeyHelper.getColumnQualifierFromPropertyHiddenColumnQualifier(markPropertyHiddenData.getKey(), markPropertyHiddenData.getName(), visibility.getVisibilityString(), getNameSubstitutionStrategy());
         Long timestamp = markPropertyHiddenData.getTimestamp();
+        if (timestamp == null) {
+            timestamp = IncreasingTime.currentTimeMillis();
+        }
         Object data = markPropertyHiddenData.getEventData();
         m.put(AccumuloElement.CF_PROPERTY_HIDDEN, columnQualifier, columnVisibility, timestamp, toHiddenValue(data));
     }
@@ -668,6 +629,9 @@ public abstract class ElementMutationBuilder {
         ColumnVisibility columnVisibility = visibilityToAccumuloVisibility(visibility);
         Text columnQualifier = KeyHelper.getColumnQualifierFromPropertyHiddenColumnQualifier(markPropertyVisibleData.getKey(), markPropertyVisibleData.getName(), visibility.getVisibilityString(), getNameSubstitutionStrategy());
         Long timestamp = markPropertyVisibleData.getTimestamp();
+        if (timestamp == null) {
+            timestamp = IncreasingTime.currentTimeMillis();
+        }
         Object data = markPropertyVisibleData.getEventData();
         m.put(AccumuloElement.CF_PROPERTY_HIDDEN, columnQualifier, columnVisibility, timestamp, toHiddenDeletedValue(data));
     }
