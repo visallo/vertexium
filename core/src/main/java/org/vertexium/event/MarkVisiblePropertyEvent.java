@@ -14,6 +14,19 @@ public class MarkVisiblePropertyEvent extends GraphEvent {
     private final Visibility visibility;
     private final Object data;
 
+    public MarkVisiblePropertyEvent(Graph graph, Element element, Property property, Visibility visibility, Object data) {
+        this(
+            graph,
+            element,
+            property.getKey(),
+            property.getName(),
+            property.getVisibility(),
+            property.getTimestamp(),
+            visibility,
+            data
+        );
+    }
+
     public MarkVisiblePropertyEvent(Graph graph, Element element, String key, String name, Visibility propertyVisibility, Long timestamp, Visibility visibility, Object data) {
         super(graph);
         this.element = element;

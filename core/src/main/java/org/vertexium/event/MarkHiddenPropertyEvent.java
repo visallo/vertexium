@@ -2,6 +2,7 @@ package org.vertexium.event;
 
 import org.vertexium.Element;
 import org.vertexium.Graph;
+import org.vertexium.Property;
 import org.vertexium.Visibility;
 
 public class MarkHiddenPropertyEvent extends GraphEvent {
@@ -12,6 +13,19 @@ public class MarkHiddenPropertyEvent extends GraphEvent {
     private final Long timestamp;
     private final Visibility visibility;
     private final Object data;
+
+    public MarkHiddenPropertyEvent(Graph graph, Element element, Property property, Visibility visibility, Object data) {
+        this(
+            graph,
+            element,
+            property.getKey(),
+            property.getName(),
+            property.getVisibility(),
+            property.getTimestamp(),
+            visibility,
+            data
+        );
+    }
 
     public MarkHiddenPropertyEvent(Graph graph, Element element, String key, String name, Visibility propertyVisibility, Long timestamp, Visibility visibility, Object data) {
         super(graph);
