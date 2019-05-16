@@ -9685,6 +9685,7 @@ public abstract class GraphTestBase {
             .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
+        v1 = graph.getVertex("v1", AUTHORIZATIONS_A.getUser());
         List<Vertex> inVertices = IterableUtils.toList(v1.getVertices(Direction.OUT, "test_label", timestamp, AUTHORIZATIONS_A_AND_B));
         assertEquals(1, IterableUtils.count(inVertices));
         assertEquals("v2", inVertices.get(0).getId());

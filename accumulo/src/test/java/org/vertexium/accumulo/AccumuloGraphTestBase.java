@@ -15,15 +15,12 @@ import org.vertexium.accumulo.iterator.model.EdgeInfo;
 import org.vertexium.accumulo.iterator.model.VertexiumInvalidKeyException;
 import org.vertexium.accumulo.keys.DataTableRowKey;
 import org.vertexium.accumulo.keys.KeyHelper;
-import org.vertexium.accumulo.tools.DeleteHistoricalLegacyStreamingPropertyValueData;
 import org.vertexium.property.MutablePropertyImpl;
 import org.vertexium.property.StreamingPropertyValue;
 import org.vertexium.test.GraphTestBase;
 import org.vertexium.util.VertexiumLogger;
 import org.vertexium.util.VertexiumLoggerFactory;
 
-import java.io.IOException;
-import java.net.URISyntaxException;
 import java.util.*;
 
 import static junit.framework.TestCase.fail;
@@ -44,7 +41,7 @@ public abstract class AccumuloGraphTestBase extends GraphTestBase {
 
     @SuppressWarnings("unchecked")
     @Override
-    protected Graph createGraph() throws AccumuloSecurityException, AccumuloException, VertexiumException, InterruptedException, IOException, URISyntaxException {
+    protected Graph createGraph() throws VertexiumException {
         return AccumuloGraph.create(new AccumuloGraphConfiguration(getAccumuloResource().createConfig()));
     }
 
@@ -52,13 +49,18 @@ public abstract class AccumuloGraphTestBase extends GraphTestBase {
 
     @Override
     protected Authorizations createAuthorizations(String... auths) {
+        getGraph().createAuthorizations(auths);
         return new AccumuloAuthorizations(auths);
     }
 
     @Override
-    protected Authorizations addAuthorizations(String... authorizations) {
-        getAccumuloResource().addAuthorizations(getGraph(), authorizations);
-        return null;
+    protected Authorizations createButDontAddAuthorizations(String... auths) {
+        return new AccumuloAuthorizations(auths);
+    }
+
+    @Override
+    protected boolean isDefaultSearchIndex() {
+        return true;
     }
 
     @Override
@@ -137,7 +139,7 @@ public abstract class AccumuloGraphTestBase extends GraphTestBase {
             null,
             null,
             new Range("V", "W"),
-            AUTHORIZATIONS_EMPTY
+            AUTHORIZATIONS_EMPTY.getUser()
         );
         RowIterator rows = new RowIterator(vertexScanner.iterator());
         while (rows.hasNext()) {
@@ -304,12 +306,12 @@ public abstract class AccumuloGraphTestBase extends GraphTestBase {
         assertEquals(2, keyValuePairs.size());
 
         pair = keyValuePairs.get(i++);
-        org.vertexium.accumulo.iterator.model.EdgeInfo edgeInfo = new EdgeInfo(getGraph().getNameSubstitutionStrategy().deflate(LABEL_LABEL1), "v2");
+        org.vertexium.accumulo.iterator.model.EdgeInfo edgeInfo = new EdgeInfo(getGraph().getNameSubstitutionStrategy().deflate(LABEL_LABEL1), "v2", new Text("a"));
         assertEquals(new Key(new Text("v1"), AccumuloVertex.CF_OUT_EDGE, new Text("e1"), new Text("a"), 100L), pair.getKey());
         assertEquals(edgeInfo.toValue(), pair.getValue());
 
         pair = keyValuePairs.get(i++);
-        edgeInfo = new EdgeInfo(getGraph().getNameSubstitutionStrategy().deflate(LABEL_LABEL1), "v1");
+        edgeInfo = new EdgeInfo(getGraph().getNameSubstitutionStrategy().deflate(LABEL_LABEL1), "v1", new Text("a"));
         assertEquals(new Key(new Text("v2"), AccumuloVertex.CF_IN_EDGE, new Text("e1"), new Text("a"), 100L), pair.getKey());
         assertEquals(edgeInfo.toValue(), pair.getValue());
     }
@@ -386,80 +388,6 @@ public abstract class AccumuloGraphTestBase extends GraphTestBase {
         StreamingPropertyValue spv = (StreamingPropertyValue) v1.getPropertyValue(propertyKey, propertyName);
         assertNotNull("spv should not be null", spv);
         assertEquals(propertyValue, IOUtils.toString(spv.getInputStream()));
-    }
-
-    @Test
-    public void testDeleteHistoricalLegacyStreamingPropertyValueData_keysWithCommonPrefix() throws Exception {
-        String vertexId = "v1";
-        graph.prepareVertex(vertexId, VISIBILITY_EMPTY)
-            .save(AUTHORIZATIONS_EMPTY);
-        graph.flush();
-
-        long timestamp = new Date().getTime();
-
-        String propertyKey1 = "prefix";
-        String propertyKey2 = "prefixSuffix";
-        String propertyName = "prop1";
-        String propertyValue = "Hello";
-
-        addLegacySPVData(vertexId, timestamp, propertyKey1, propertyName, propertyValue);
-        addLegacySPVData(vertexId, timestamp, propertyKey2, propertyName, propertyValue);
-
-        getGraph().flush();
-
-        new DeleteHistoricalLegacyStreamingPropertyValueData(getGraph())
-            .execute(
-                new DeleteHistoricalLegacyStreamingPropertyValueData.Options()
-                    .setDryRun(false)
-                    .setVersionsToKeep(1),
-                AUTHORIZATIONS_EMPTY
-            );
-
-        // verify we can still retrieve it
-        Vertex v1 = graph.getVertex(vertexId, AUTHORIZATIONS_EMPTY);
-        StreamingPropertyValue spv = (StreamingPropertyValue) v1.getPropertyValue(propertyKey1, propertyName);
-        assertNotNull("spv should not be null", spv);
-        assertEquals(propertyValue, IOUtils.toString(spv.getInputStream()));
-
-        spv = (StreamingPropertyValue) v1.getPropertyValue(propertyKey2, propertyName);
-        assertNotNull("spv should not be null", spv);
-        assertEquals(propertyValue, IOUtils.toString(spv.getInputStream()));
-    }
-
-    @Test
-    public void testDeleteHistoricalLegacyStreamingPropertyValueData_mixOfOldAndNew() throws Exception {
-        String vertexId = "v1";
-        graph.prepareVertex(vertexId, VISIBILITY_EMPTY)
-            .save(AUTHORIZATIONS_EMPTY);
-        graph.flush();
-
-        long timestamp = new Date().getTime();
-
-        String propertyKey = "prefix";
-        String propertyName = "prop1";
-        String propertyValue1 = "Hello1";
-        String propertyValue2 = "Hello2";
-
-        addLegacySPVData(vertexId, timestamp - 100, propertyKey, propertyName, propertyValue1);
-        StreamingPropertyValue newSpv = StreamingPropertyValue.create(propertyValue2);
-        getGraph().getVertex("v1", AUTHORIZATIONS_EMPTY)
-            .addPropertyValue(propertyKey, propertyName, newSpv, VISIBILITY_EMPTY, AUTHORIZATIONS_EMPTY);
-
-        getGraph().flush();
-
-        new DeleteHistoricalLegacyStreamingPropertyValueData(getGraph())
-            .execute(
-                new DeleteHistoricalLegacyStreamingPropertyValueData.Options()
-                    .setDryRun(false)
-                    .setVersionsToKeep(1),
-                AUTHORIZATIONS_EMPTY
-            );
-
-        // verify we can still retrieve it
-        Vertex v1 = graph.getVertex(vertexId, AUTHORIZATIONS_EMPTY);
-        StreamingPropertyValue spv = (StreamingPropertyValue) v1.getPropertyValue(propertyKey, propertyName);
-        assertNotNull("spv should not be null", spv);
-        assertEquals(propertyValue2, IOUtils.toString(spv.getInputStream()));
     }
 
     // need to add it manually because the key format changed

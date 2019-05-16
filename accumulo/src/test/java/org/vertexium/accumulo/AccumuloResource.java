@@ -10,6 +10,7 @@ import org.junit.rules.ExternalResource;
 import org.vertexium.GraphConfiguration;
 import org.vertexium.VertexiumException;
 import org.vertexium.accumulo.util.DataInDataTableStreamingPropertyValueStorageStrategy;
+import org.vertexium.inmemory.search.DefaultSearchIndex;
 import org.vertexium.test.GraphTestBase;
 import org.vertexium.util.VertexiumLogger;
 import org.vertexium.util.VertexiumLoggerFactory;
@@ -118,6 +119,7 @@ public class AccumuloResource extends ExternalResource {
         configMap.put(AccumuloGraphConfiguration.DATA_DIR, "/tmp/");
         configMap.put(AccumuloGraphConfiguration.HISTORY_IN_SEPARATE_TABLE, true);
         configMap.put(AccumuloGraphConfiguration.STREAMING_PROPERTY_VALUE_STORAGE_STRATEGY_PREFIX, DataInDataTableStreamingPropertyValueStorageStrategy.class.getName());
+        configMap.put(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX, DefaultSearchIndex.class.getName());
 
         if (extraConfig != null) {
             configMap.putAll(extraConfig);

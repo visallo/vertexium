@@ -14,6 +14,7 @@ import org.vertexium.property.MutableProperty;
 import org.vertexium.query.ExtendedDataQueryableIterable;
 import org.vertexium.query.QueryableIterable;
 import org.vertexium.search.IndexHint;
+import org.vertexium.util.IncreasingTime;
 import org.vertexium.util.PropertyCollection;
 
 import java.io.Serializable;
@@ -110,51 +111,21 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
         // altering properties comes next because alterElementVisibility may alter the vertex and we won't find it
         getGraph().alterElementPropertyVisibilities(element, mutation.getAlterPropertyVisibilities());
 
-        Iterable<PropertyDeleteMutation> propertyDeletes = mutation.getPropertyDeletes();
-        Iterable<PropertySoftDeleteMutation> propertySoftDeletes = mutation.getPropertySoftDeletes();
-        Iterable<Property> properties = mutation.getProperties();
-        Iterable<AdditionalVisibilityAddMutation> additionalVisibilities = mutation.getAdditionalVisibilities();
-        Iterable<AdditionalVisibilityDeleteMutation> additionalVisibilityDeletes = mutation.getAdditionalVisibilityDeletes();
-
-        updatePropertiesInternal(properties, propertyDeletes, propertySoftDeletes);
-        updateAdditionalVisibilitiesInternal(additionalVisibilities, additionalVisibilityDeletes);
-        getGraph().savePropertiesAndAdditionalVisibilities(
-            element,
-            properties,
-            propertyDeletes,
-            propertySoftDeletes,
-            additionalVisibilities,
-            additionalVisibilityDeletes
-        );
+        if (mutation instanceof EdgeMutation) {
+            getGraph().elementMutationBuilder.saveEdgeMutation(getGraph(), (EdgeMutation) mutation, IncreasingTime.currentTimeMillis(), user);
+        } else {
+            getGraph().elementMutationBuilder.saveVertexMutation(getGraph(), (ElementMutation<Vertex>) mutation, IncreasingTime.currentTimeMillis(), user);
+        }
 
         if (mutation.getNewElementVisibility() != null) {
+            // TODO: does this mess up the extended data? I suspect it does.
+
             getGraph().alterElementVisibility(element, mutation.getNewElementVisibility(), mutation.getNewElementVisibilityData());
-        }
 
-        if (mutation instanceof EdgeMutation) {
-            EdgeMutation edgeMutation = (EdgeMutation) mutation;
-
-            String newEdgeLabel = edgeMutation.getNewEdgeLabel();
-            if (newEdgeLabel != null) {
-                getGraph().alterEdgeLabel((AccumuloEdge) mutation.getElement(), newEdgeLabel);
+            if (mutation.getIndexHint() != IndexHint.DO_NOT_INDEX) {
+                getGraph().getSearchIndex().updateElement(graph, mutation, user);
             }
         }
-
-        if (mutation.getIndexHint() != IndexHint.DO_NOT_INDEX) {
-            getGraph().getSearchIndex().updateElement(graph, mutation, user);
-        }
-
-        ElementType elementType = ElementType.getTypeFromElement(mutation.getElement());
-        getGraph().saveExtendedDataMutations(
-            mutation.getElement(),
-            elementType,
-            mutation.getIndexHint(),
-            mutation.getExtendedData(),
-            mutation.getExtendedDataDeletes(),
-            mutation.getAdditionalExtendedDataVisibilities(),
-            mutation.getAdditionalExtendedDataVisibilityDeletes(),
-            user
-        );
     }
 
     @Override
@@ -233,19 +204,6 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
 
     public Iterable<PropertySoftDeleteMutation> getPropertySoftDeleteMutations() {
         return this.propertySoftDeleteMutations;
-    }
-
-    private void updateAdditionalVisibilitiesInternal(Iterable<AdditionalVisibilityAddMutation> additionalVisibilities, Iterable<AdditionalVisibilityDeleteMutation> additionalVisibilityDeletes) {
-        if (additionalVisibilities != null) {
-            for (AdditionalVisibilityAddMutation additionalVisibility : additionalVisibilities) {
-                this.additionalVisibilities.add(additionalVisibility.getAdditionalVisibility());
-            }
-        }
-        if (additionalVisibilityDeletes != null) {
-            for (AdditionalVisibilityDeleteMutation additionalVisibilityDelete : additionalVisibilityDeletes) {
-                this.additionalVisibilities.remove(additionalVisibilityDelete.getAdditionalVisibility());
-            }
-        }
     }
 
     // this method differs setProperties in that it only updates the in memory representation of the properties

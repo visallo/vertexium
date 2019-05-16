@@ -342,7 +342,7 @@ public interface ElementMutation<T extends Element> extends ElementLocation {
         return markPropertyHidden(key, name, propertyVisibility, visibility, null);
     }
 
-    /*
+    /**
      * Marks a property as hidden for a given visibility.
      *
      * @param key                The key of the property.

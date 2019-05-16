@@ -59,16 +59,16 @@ public abstract class ElementMutationBuilder {
 
         String vertexRowKey = vertexBuilder.getId();
         Mutation vertexMutation = new Mutation(vertexRowKey);
-        ColumnVisibility columnVisibility = visibilityToAccumuloVisibility(vertexBuilder.getVisibility());
 
         if (!vertexBuilder.isDeleteElement()) {
-            // TODO: handle element visibility changes
-
+            Visibility visibility = vertexBuilder.getVisibility();
+            ColumnVisibility columnVisibility = visibilityToAccumuloVisibility(visibility == null ? vertex.get().getVisibility() : visibility);
             vertexMutation.put(AccumuloVertex.CF_SIGNAL, EMPTY_TEXT, columnVisibility, timestamp, EMPTY_VALUE);
         }
         addElementMutationsToAccumuloMutation(graph, vertexBuilder, vertexRowKey, vertexMutation);
         saveVertexMutations(vertexMutation);
         saveExtendedDataMutations(graph, vertexBuilder, user);
+        graph.flush();
 
         saveExtendedDataMutations(graph, ElementType.VERTEX, vertexBuilder);
 
@@ -118,6 +118,8 @@ public abstract class ElementMutationBuilder {
         }
 
         // TODO: In all of the above cases where we delete/modify edges, it would be more efficient to collect all of the vertex mutations and submit them as a batch
+
+        queueEvents(graph, vertex, vertexBuilder);
     }
 
     private <T extends Element> void saveExtendedDataMutations(AccumuloGraph graph, ElementMutation<T> elementBuilder, User user) {
@@ -517,6 +519,7 @@ public abstract class ElementMutationBuilder {
         }
         addElementMutationsToAccumuloMutation(graph, edgeBuilder, edgeRowKey, edgeMutation);
         saveEdgeMutations(edgeMutation);
+        graph.flush();
 
         Mutation outMutation = new Mutation(edgeBuilder.getVertexId(Direction.OUT));
         Mutation inMutation = new Mutation(edgeBuilder.getVertexId(Direction.IN));
@@ -569,6 +572,8 @@ public abstract class ElementMutationBuilder {
         }
         saveVertexMutations(outMutation, inMutation);
         saveExtendedDataMutations(graph, edgeBuilder, user);
+
+        queueEvents(graph, edge, edgeBuilder);
     }
 
     private ColumnVisibility visibilityToAccumuloVisibility(Visibility visibility) {
@@ -959,6 +964,16 @@ public abstract class ElementMutationBuilder {
             Supplier<? extends Element> element,
             ElementMutation<? extends Element> mutation
     ) {
+        if (!(mutation instanceof ExistingElementMutation)) {
+            if (element.get() instanceof Edge) {
+                graph.queueEvent(new AddEdgeEvent(graph, (Edge) element.get()));
+            } else if (element.get() instanceof Vertex) {
+                graph.queueEvent(new AddVertexEvent(graph, (Vertex) element.get()));
+            } else {
+                throw new VertexiumException("Unexpected element type: " + element.get());
+            }
+        }
+
         mutation.getProperties().forEach(property ->
             graph.queueEvent(new AddPropertyEvent(graph, element.get(), property))
         );
@@ -1030,19 +1045,31 @@ public abstract class ElementMutationBuilder {
             graph.queueEvent(new MarkVisiblePropertyEvent(
                     graph,
                     element.get(),
-                    markPropertyHiddenData.getKey(),
-                    markPropertyHiddenData.getName(),
-                    markPropertyHiddenData.getPropertyVisibility(),
-                    markPropertyHiddenData.getTimestamp(),
-                    markPropertyHiddenData.getVisibility(),
-                    markPropertyHiddenData.getEventData()
+                    markPropertyVisibleData.getKey(),
+                    markPropertyVisibleData.getName(),
+                    markPropertyVisibleData.getPropertyVisibility(),
+                    markPropertyVisibleData.getTimestamp(),
+                    markPropertyVisibleData.getVisibility(),
+                    markPropertyVisibleData.getEventData()
             ))
         );
         mutation.getMarkHiddenData().forEach(markHiddenData -> {
-            // TODO:
+            if (element.get() instanceof Edge) {
+                graph.queueEvent(new MarkHiddenEdgeEvent(graph, (Edge) element.get(), markHiddenData.getEventData()));
+            } else if (element.get() instanceof Vertex) {
+                graph.queueEvent(new MarkHiddenVertexEvent(graph, (Vertex) element.get(), markHiddenData.getEventData()));
+            } else {
+                throw new VertexiumException("Unexpected element type: " + element.get());
+            }
         });
         mutation.getMarkVisibleData().forEach(markVisibleData -> {
-            // TODO:
+            if (element.get() instanceof Edge) {
+                graph.queueEvent(new MarkVisibleEdgeEvent(graph, (Edge) element.get(), markVisibleData.getEventData()));
+            } else if (element.get() instanceof Vertex) {
+                graph.queueEvent(new MarkVisibleVertexEvent(graph, (Vertex) element.get(), markVisibleData.getEventData()));
+            } else {
+                throw new VertexiumException("Unexpected element type: " + element.get());
+            }
         });
 
         if (mutation.getSoftDeleteData() != null) {
