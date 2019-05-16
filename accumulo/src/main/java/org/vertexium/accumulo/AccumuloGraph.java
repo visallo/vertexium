@@ -503,7 +503,7 @@ public class AccumuloGraph extends GraphBase implements Traceable {
         }
     }
 
-    private void queueEvent(GraphEvent graphEvent) {
+    void queueEvent(GraphEvent graphEvent) {
         synchronized (this.graphEventQueue) {
             this.graphEventQueue.add(graphEvent);
         }
