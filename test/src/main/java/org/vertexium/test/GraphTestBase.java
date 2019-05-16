@@ -1571,6 +1571,7 @@ public abstract class GraphTestBase {
         Assert.assertEquals(2, count(graph.getVertices(AUTHORIZATIONS_A)));
         Assert.assertEquals(1, count(graph.getEdges(AUTHORIZATIONS_A)));
 
+        v1 = graph.getVertex("v1", AUTHORIZATIONS_ALL.getUser());
         graph.markVertexHidden(v1, VISIBILITY_A_AND_B, AUTHORIZATIONS_A);
         graph.flush();
 
@@ -1582,6 +1583,7 @@ public abstract class GraphTestBase {
         Assert.assertEquals(0, count(graph.getVertices(AUTHORIZATIONS_B)));
         Assert.assertEquals(1, count(graph.getEdges(AUTHORIZATIONS_A)));
 
+        v1 = graph.getVertex("v1", AUTHORIZATIONS_A.getUser());
         graph.markVertexHidden(v1, VISIBILITY_A, AUTHORIZATIONS_A);
         graph.flush();
 
@@ -1597,6 +1599,7 @@ public abstract class GraphTestBase {
         assertNotNull("did not find v1 but should have", v1Hidden);
         assertTrue("v1 should be hidden", v1Hidden.isHidden(AUTHORIZATIONS_A));
 
+        v1 = graph.getVertex("v1", FetchHints.ALL_INCLUDING_HIDDEN, AUTHORIZATIONS_ALL.getUser());
         graph.markVertexVisible(v1, VISIBILITY_A, AUTHORIZATIONS_A);
         graph.flush();
 
@@ -1608,6 +1611,7 @@ public abstract class GraphTestBase {
         assertEquals(0, count(graph.getVertices(AUTHORIZATIONS_B)));
         assertEquals(1, count(graph.getEdges(AUTHORIZATIONS_A)));
 
+        v1 = graph.getVertex("v1", FetchHints.ALL_INCLUDING_HIDDEN, AUTHORIZATIONS_ALL.getUser());
         graph.markVertexVisible(v1, VISIBILITY_A_AND_B, AUTHORIZATIONS_A);
         graph.flush();
 
