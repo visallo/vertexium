@@ -123,7 +123,7 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
             getGraph().alterElementVisibility(element, mutation.getNewElementVisibility(), mutation.getNewElementVisibilityData());
 
             if (mutation.getIndexHint() != IndexHint.DO_NOT_INDEX) {
-                getGraph().getSearchIndex().updateElement(graph, mutation, user);
+                getGraph().getSearchIndex().addOrUpdateElement(graph, mutation, user);
             }
         }
     }

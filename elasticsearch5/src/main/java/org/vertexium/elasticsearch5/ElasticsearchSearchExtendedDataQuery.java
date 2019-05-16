@@ -18,13 +18,16 @@ public class ElasticsearchSearchExtendedDataQuery extends ElasticsearchSearchQue
     public ElasticsearchSearchExtendedDataQuery(
         Client client,
         Graph graph,
+        IndexService indexService,
+        PropertyNameService propertyNameService,
+        PropertyNameVisibilitiesStore propertyNameVisibilitiesStore,
+        String queryString,
         String elementId,
         String tableName,
-        String queryString,
         Options options,
         Authorizations authorizations
     ) {
-        super(client, graph, queryString, options, authorizations);
+        super(client, graph, indexService, propertyNameService, propertyNameVisibilitiesStore, queryString, options, authorizations);
         this.elementId = elementId;
         this.tableName = tableName;
     }

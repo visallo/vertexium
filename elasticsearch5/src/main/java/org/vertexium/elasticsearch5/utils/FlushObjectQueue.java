@@ -16,7 +16,7 @@ import java.util.concurrent.TimeUnit;
 
 public class FlushObjectQueue {
     private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(FlushObjectQueue.class);
-    private static final int MAX_RETRIES = 10;
+    public static final int MAX_RETRIES = 10;
     private final Elasticsearch5SearchIndex searchIndex;
     private final Queue<FlushObject> queue = new ConcurrentLinkedQueue<>();
 

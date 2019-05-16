@@ -22,12 +22,15 @@ public class ElasticsearchSearchVertexQuery extends ElasticsearchSearchQueryBase
     public ElasticsearchSearchVertexQuery(
         Client client,
         Graph graph,
-        Vertex sourceVertex,
+        IndexService indexService,
+        PropertyNameService propertyNameService,
+        PropertyNameVisibilitiesStore propertyNameVisibilitiesStore,
         String queryString,
+        Vertex sourceVertex,
         Options options,
         Authorizations authorizations
     ) {
-        super(client, graph, queryString, options, authorizations);
+        super(client, graph, indexService, propertyNameService, propertyNameVisibilitiesStore, queryString, options, authorizations);
         this.sourceVertex = sourceVertex;
     }
 

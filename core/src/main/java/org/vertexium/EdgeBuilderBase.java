@@ -25,6 +25,11 @@ public abstract class EdgeBuilderBase extends ElementBuilder<Edge> implements Ed
     }
 
     @Override
+    public String getLabel() {
+        return label;
+    }
+
+    @Override
     public String getVertexId(Direction direction) {
         switch (direction) {
             case OUT:

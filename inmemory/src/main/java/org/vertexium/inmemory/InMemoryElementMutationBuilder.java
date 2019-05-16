@@ -869,11 +869,7 @@ class InMemoryElementMutationBuilder {
         ElementMutation<T> elementMutation,
         User user
     ) {
-        if (elementMutation instanceof ExistingElementMutation) {
-            graph.getSearchIndex().updateElement(graph, (ExistingElementMutation<? extends Element>) elementMutation, user);
-        } else {
-            graph.getSearchIndex().addElement(graph, element, user);
-        }
+        graph.getSearchIndex().addOrUpdateElement(graph, elementMutation, user);
         graph.getSearchIndex().addElementExtendedData(
             graph,
             element,

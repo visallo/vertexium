@@ -71,6 +71,9 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
     public static final String KEYWORD_UNMAPPED_TYPE = "keyword";
     public static final String AGGREGATION_METADATA_FIELD_NAME_KEY = "fieldName";
     private final Client client;
+    private final IndexService indexService;
+    private final PropertyNameService propertyNameService;
+    private final PropertyNameVisibilitiesStore propertyNameVisibilitiesStore;
     private final StandardAnalyzer analyzer;
     private final IndexSelectionStrategy indexSelectionStrategy;
     private final int pageSize;
@@ -83,12 +86,18 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
     public ElasticsearchSearchQueryBase(
         Client client,
         Graph graph,
+        IndexService indexService,
+        PropertyNameService propertyNameService,
+        PropertyNameVisibilitiesStore propertyNameVisibilitiesStore,
         String queryString,
         Options options,
         Authorizations authorizations
     ) {
         super(graph, queryString, authorizations);
         this.client = client;
+        this.indexService = indexService;
+        this.propertyNameService = propertyNameService;
+        this.propertyNameVisibilitiesStore = propertyNameVisibilitiesStore;
         this.queryString = queryString;
         this.pageSize = options.pageSize;
         this.indexSelectionStrategy = options.indexSelectionStrategy;
@@ -102,6 +111,9 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
     public ElasticsearchSearchQueryBase(
         Client client,
         Graph graph,
+        IndexService indexService,
+        PropertyNameService propertyNameService,
+        PropertyNameVisibilitiesStore propertyNameVisibilitiesStore,
         String[] similarToFields,
         String similarToText,
         Options options,
@@ -109,6 +121,9 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
     ) {
         super(graph, similarToFields, similarToText, authorizations);
         this.client = client;
+        this.indexService = indexService;
+        this.propertyNameService = propertyNameService;
+        this.propertyNameVisibilitiesStore = propertyNameVisibilitiesStore;
         this.queryString = null;
         this.pageSize = options.pageSize;
         this.indexSelectionStrategy = options.indexSelectionStrategy;
@@ -160,7 +175,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
         if (QUERY_LOGGER.isTraceEnabled()) {
             QUERY_LOGGER.trace("indicesToQuery: %s", Joiner.on(", ").join(indicesToQuery));
         }
-        getSearchIndex().getIndexRefreshTracker().refresh(client, indicesToQuery);
+        indexService.refresh(indicesToQuery);
 
         SearchRequestBuilder searchRequestBuilder = getClient()
             .prepareSearch(indicesToQuery)
@@ -202,10 +217,10 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
         if (getSearchIndex().isServerPluginInstalled()) {
             return VertexiumQueryStringQueryBuilder.build(queryString, getParameters().getUser());
         } else {
-            Collection<String> fields = getSearchIndex().getQueryablePropertyNames(getGraph(), getParameters().getUser());
+            Collection<String> fields = propertyNameService.getQueryablePropertyNames(getGraph(), getParameters().getUser());
             QueryStringQueryBuilder qs = QueryBuilders.queryStringQuery(queryString);
             for (String field : fields) {
-                qs = qs.field(getSearchIndex().replaceFieldnameDots(field));
+                qs = qs.field(propertyNameService.replaceFieldnameDots(field));
             }
             qs.allowLeadingWildcard(false);
             return qs;
@@ -253,8 +268,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
             || elementTypes.contains(ElasticsearchDocumentType.EDGE_EXTENDED_DATA)
             || elementTypes.contains(ElasticsearchDocumentType.VERTEX_EXTENDED_DATA)
         ) {
-            Elasticsearch5SearchIndex es = (Elasticsearch5SearchIndex) getGraph().getSearchIndex();
-            Collection<String> queryableVisibilities = es.getQueryableExtendedDataVisibilities(getGraph(), getParameters().getUser());
+            Collection<String> queryableVisibilities = propertyNameService.getQueryableExtendedDataVisibilities(getGraph(), getParameters().getUser());
             TermsQueryBuilder extendedDataVisibilitiesTerms = QueryBuilders.termsQuery(EXTENDED_DATA_TABLE_COLUMN_VISIBILITIES_FIELD_NAME, queryableVisibilities);
 
             if (elementTypes == null
@@ -280,8 +294,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
         }
 
         if (getParameters() instanceof QueryStringQueryParameters) {
-            Elasticsearch5SearchIndex es = (Elasticsearch5SearchIndex) getGraph().getSearchIndex();
-            Collection<String> fields = es.getQueryableElementTypeVisibilityPropertyNames(getGraph(), getParameters().getUser());
+            Collection<String> fields = propertyNameService.getQueryableElementTypeVisibilityPropertyNames(getGraph(), getParameters().getUser());
             BoolQueryBuilder atLeastOneFieldExistsFilter = QueryBuilders.boolQuery();
             for (String field : fields) {
                 atLeastOneFieldExistsFilter.should(new ExistsQueryBuilder(field));
@@ -348,7 +361,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
                 if (propertyDefinition == null) {
                     continue;
                 }
-                if (!getSearchIndex().isPropertyInIndex(getGraph(), sortContainer.propertyName)) {
+                if (!indexService.isPropertyInIndex(getGraph(), sortContainer.propertyName)) {
                     continue;
                 }
                 if (!propertyDefinition.isSortable()) {
@@ -762,23 +775,22 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
     }
 
     protected QueryBuilder getFilterForHasAuthorizationContainer(HasAuthorizationContainer hasAuthorization) {
-        PropertyNameVisibilitiesStore visibilitiesStore = getSearchIndex().getPropertyNameVisibilitiesStore();
         User user = getParameters().getUser();
         Graph graph = getGraph();
 
         Set<String> hashes = stream(hasAuthorization.getAuthorizations())
-            .flatMap(authorization -> visibilitiesStore.getHashesWithAuthorization(graph, authorization, user).stream())
+            .flatMap(authorization -> propertyNameVisibilitiesStore.getHashesWithAuthorization(graph, authorization, user).stream())
             .collect(Collectors.toSet());
 
         List<QueryBuilder> filters = new ArrayList<>();
         for (PropertyDefinition propertyDefinition : graph.getPropertyDefinitions()) {
             String propertyName = propertyDefinition.getPropertyName();
 
-            Set<String> matchingPropertyHashes = visibilitiesStore.getHashes(graph, propertyName, user).stream()
+            Set<String> matchingPropertyHashes = propertyNameVisibilitiesStore.getHashes(graph, propertyName, user).stream()
                 .filter(hashes::contains)
                 .collect(Collectors.toSet());
-            for (String fieldName : getSearchIndex().addHashesToPropertyName(propertyName, matchingPropertyHashes)) {
-                filters.add(QueryBuilders.existsQuery(getSearchIndex().replaceFieldnameDots(fieldName)));
+            for (String fieldName : propertyNameService.addHashesToPropertyName(propertyName, matchingPropertyHashes)) {
+                filters.add(QueryBuilders.existsQuery(propertyNameService.replaceFieldnameDots(fieldName)));
             }
         }
 
@@ -788,9 +800,9 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
             Elasticsearch5SearchIndex.HIDDEN_PROPERTY_FIELD_NAME
         );
         internalFields.forEach(fieldName -> {
-            Collection<String> fieldHashes = visibilitiesStore.getHashes(graph, fieldName, user);
+            Collection<String> fieldHashes = propertyNameVisibilitiesStore.getHashes(graph, fieldName, user);
             Collection<String> matchingFieldHashes = fieldHashes.stream().filter(hashes::contains).collect(Collectors.toSet());
-            for (String fieldNameWithHash : getSearchIndex().addHashesToPropertyName(fieldName, matchingFieldHashes)) {
+            for (String fieldNameWithHash : propertyNameService.addHashesToPropertyName(fieldName, matchingFieldHashes)) {
                 filters.add(QueryBuilders.existsQuery(fieldNameWithHash));
             }
         });
@@ -1208,7 +1220,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
         }
         return QueryBuilders.termsQuery(
             Elasticsearch5SearchIndex.ELEMENT_TYPE_FIELD_NAME,
-            values.toArray(new String[values.size()])
+            values.toArray(new String[0])
         );
     }
 
@@ -1240,7 +1252,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
                     }
                 }
             }
-            return results.toArray(new String[results.size()]);
+            return results.toArray(new String[0]);
         } catch (IOException e) {
             throw new VertexiumException("Could not tokenize string: " + value, e);
         }
@@ -1277,7 +1289,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
             Collections.addAll(allFields, getPropertyNames(field));
         }
         MoreLikeThisQueryBuilder q = QueryBuilders.moreLikeThisQuery(
-            allFields.toArray(new String[allFields.size()]),
+            allFields.toArray(new String[0]),
             new String[]{similarTo.getText()},
             null
         );
@@ -1339,7 +1351,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
             throw new VertexiumNotSupportedException("Only GeoPoint properties are valid for Geohash aggregation. Invalid property " + agg.getFieldName());
         }
         for (String propertyName : getPropertyNames(agg.getFieldName())) {
-            String visibilityHash = getSearchIndex().getPropertyVisibilityHashFromPropertyName(propertyName);
+            String visibilityHash = propertyNameService.getPropertyVisibilityHashFromPropertyName(propertyName);
             String aggName = createAggregationName(agg.getAggregationName(), visibilityHash);
             GeoGridAggregationBuilder geoHashAgg = AggregationBuilders.geohashGrid(aggName);
             geoHashAgg.field(propertyName + Elasticsearch5SearchIndex.GEO_POINT_PROPERTY_NAME_SUFFIX);
@@ -1352,7 +1364,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
     protected List<AbstractAggregationBuilder> getElasticsearchStatisticsAggregations(StatisticsAggregation agg) {
         List<AbstractAggregationBuilder> aggs = new ArrayList<>();
         for (String propertyName : getPropertyNames(agg.getFieldName())) {
-            String visibilityHash = getSearchIndex().getPropertyVisibilityHashFromPropertyName(propertyName);
+            String visibilityHash = propertyNameService.getPropertyVisibilityHashFromPropertyName(propertyName);
             String aggName = createAggregationName(agg.getAggregationName(), visibilityHash);
             ExtendedStatsAggregationBuilder statsAgg = AggregationBuilders.extendedStats(aggName);
             statsAgg.field(propertyName);
@@ -1362,8 +1374,8 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
     }
 
     protected List<AbstractAggregationBuilder> getElasticsearchPercentilesAggregations(PercentilesAggregation agg) {
-        String propertyName = getSearchIndex().addVisibilityToPropertyName(getGraph(), agg.getFieldName(), agg.getVisibility());
-        String visibilityHash = getSearchIndex().getPropertyVisibilityHashFromPropertyName(propertyName);
+        String propertyName = propertyNameService.addVisibilityToPropertyName(getGraph(), agg.getFieldName(), agg.getVisibility());
+        String visibilityHash = propertyNameService.getPropertyVisibilityHashFromPropertyName(propertyName);
         String aggName = createAggregationName(agg.getAggregationName(), visibilityHash);
         PercentilesAggregationBuilder percentilesAgg = AggregationBuilders.percentiles(aggName);
         percentilesAgg.field(propertyName);
@@ -1457,7 +1469,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
                     propertyNameWithSuffix = propertyName;
                 }
 
-                String visibilityHash = getSearchIndex().getPropertyVisibilityHashFromPropertyName(propertyNameWithSuffix);
+                String visibilityHash = propertyNameService.getPropertyVisibilityHashFromPropertyName(propertyNameWithSuffix);
                 String aggregationName = createAggregationName(agg.getAggregationName(), visibilityHash);
                 TermsAggregationBuilder termsAgg = AggregationBuilders.terms(aggregationName);
                 termsAgg.field(propertyNameWithSuffix);
@@ -1498,7 +1510,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
         }
         Class propertyDataType = propertyDefinition.getDataType();
         for (String propertyName : getPropertyNames(agg.getPropertyName())) {
-            String visibilityHash = getSearchIndex().getPropertyVisibilityHashFromPropertyName(propertyName);
+            String visibilityHash = propertyNameService.getPropertyVisibilityHashFromPropertyName(propertyName);
             String aggName = createAggregationName(agg.getAggregationName(), visibilityHash);
             if (propertyDataType == Date.class) {
                 HistogramAggregationBuilder histAgg = AggregationBuilders.histogram(aggName);
@@ -1511,7 +1523,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
                 Script script = new Script(
                     ScriptType.INLINE,
                     "painless",
-                    getCalendarFieldAggregationScript(agg, propertyName),
+                    getCalendarFieldAggregationScript(agg),
                     ImmutableMap.of(
                         "tzId", agg.getTimeZone().getID(),
                         "fieldName", propertyName,
@@ -1531,7 +1543,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
         return aggs;
     }
 
-    private String getCalendarFieldAggregationScript(CalendarFieldAggregation agg, String propertyName) {
+    private String getCalendarFieldAggregationScript(CalendarFieldAggregation agg) {
         String prefix = "def d = doc[params.fieldName]; ZoneId zone = ZoneId.of(params.tzId); " +
             "if (d == null || d.size() == 0) { return -1; }" +
             "d = Instant.ofEpochMilli(d.date.millis).atZone(zone);";
@@ -1560,7 +1572,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
         }
         Class propertyDataType = propertyDefinition.getDataType();
         for (String propertyName : getPropertyNames(agg.getFieldName())) {
-            String visibilityHash = getSearchIndex().getPropertyVisibilityHashFromPropertyName(propertyName);
+            String visibilityHash = propertyNameService.getPropertyVisibilityHashFromPropertyName(propertyName);
             String aggName = createAggregationName(agg.getAggregationName(), visibilityHash);
             if (propertyDataType == Date.class) {
                 DateHistogramAggregationBuilder dateAgg = AggregationBuilders.dateHistogram(aggName);
@@ -1632,7 +1644,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
         }
         Class propertyDataType = propertyDefinition.getDataType();
         for (String propertyName : getPropertyNames(agg.getFieldName())) {
-            String visibilityHash = getSearchIndex().getPropertyVisibilityHashFromPropertyName(propertyName);
+            String visibilityHash = propertyNameService.getPropertyVisibilityHashFromPropertyName(propertyName);
             String aggName = createAggregationName(agg.getAggregationName(), visibilityHash);
             if (propertyDataType == Date.class) {
                 DateRangeAggregationBuilder dateRangeBuilder = AggregationBuilders.dateRange(aggName);

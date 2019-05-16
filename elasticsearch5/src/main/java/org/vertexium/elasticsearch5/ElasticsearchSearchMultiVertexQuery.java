@@ -9,25 +9,31 @@ public class ElasticsearchSearchMultiVertexQuery extends ElasticsearchSearchGrap
     public ElasticsearchSearchMultiVertexQuery(
         Client client,
         Graph graph,
-        String[] vertexIds,
+        IndexService indexService,
+        PropertyNameService propertyNameService,
+        PropertyNameVisibilitiesStore propertyNameVisibilitiesStore,
         String queryString,
+        String[] vertexIds,
         Options options,
         Authorizations authorizations
     ) {
-        super(client, graph, queryString, options, authorizations);
+        super(client, graph, indexService, propertyNameService, propertyNameVisibilitiesStore, queryString, options, authorizations);
         hasId(vertexIds);
     }
 
     public ElasticsearchSearchMultiVertexQuery(
         Client client,
         Graph graph,
-        String[] vertexIds,
+        IndexService indexService,
+        PropertyNameService propertyNameService,
+        PropertyNameVisibilitiesStore propertyNameVisibilitiesStore,
         String[] similarToFields,
         String similarToText,
+        String[] vertexIds,
         Options options,
         Authorizations authorizations
     ) {
-        super(client, graph, similarToFields, similarToText, options, authorizations);
+        super(client, graph, indexService, propertyNameService, propertyNameVisibilitiesStore, similarToFields, similarToText, options, authorizations);
         hasId(vertexIds);
     }
 }

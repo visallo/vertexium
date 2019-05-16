@@ -51,6 +51,13 @@ public abstract class ElementMutationBuilder {
     }
 
     public void saveVertexMutation(AccumuloGraph graph, ElementMutation<Vertex> vertexBuilder, long timestamp, User user) {
+        // We only need the vertex in certain situations, loading it like this lets it be lazy
+        Supplier<Vertex> vertex = Suppliers.memoize(() ->
+            vertexBuilder instanceof ExistingElementMutation ?
+                ((ExistingElementMutation<Vertex>) vertexBuilder).getElement() :
+                graph.getVertex(vertexBuilder.getId(), FetchHints.EDGE_REFS, user)
+        );
+
         String vertexRowKey = vertexBuilder.getId();
         Mutation vertexMutation = new Mutation(vertexRowKey);
 
@@ -65,8 +72,6 @@ public abstract class ElementMutationBuilder {
         saveExtendedDataMutations(graph, vertexBuilder, user);
         graph.flush();
 
-        // We only need the vertex in certain situations, loading it like this lets it be lazy
-        Supplier<Vertex> vertex = Suppliers.memoize(() -> getVertexFromMutation(graph, vertexBuilder, user));
         if (vertexBuilder.isDeleteElement()) {
             graph.getSearchIndex().deleteElement(graph, vertex.get(), user);
 
@@ -86,8 +91,7 @@ public abstract class ElementMutationBuilder {
             });
         } else {
             if (vertexBuilder.getIndexHint() != IndexHint.DO_NOT_INDEX) {
-                // TODO: allow for addOrUpdate by mutation
-                graph.getSearchIndex().addElement(graph, vertex.get(), user);
+                graph.getSearchIndex().addOrUpdateElement(graph, vertexBuilder, user);
                 // TODO: timing issue? If this is an add with hidden/visible the ES requests may not finish in proper order?
             }
 
@@ -214,23 +218,23 @@ public abstract class ElementMutationBuilder {
 
         if (updateIndex) {
             graph.getSearchIndex().addElementExtendedData(
-                    graph,
-                    elementLocation,
-                    extendedData,
-                    additionalExtendedDataVisibilities,
-                    additionalExtendedDataVisibilityDeletes,
-                    user
+                graph,
+                elementLocation,
+                extendedData,
+                additionalExtendedDataVisibilities,
+                additionalExtendedDataVisibilityDeletes,
+                user
             );
             for (ExtendedDataDeleteMutation m : extendedDataDeletes) {
                 graph.getSearchIndex().deleteExtendedData(
-                        graph,
-                        elementLocation,
-                        m.getTableName(),
-                        m.getRow(),
-                        m.getColumnName(),
-                        m.getKey(),
-                        m.getVisibility(),
-                        user
+                    graph,
+                    elementLocation,
+                    m.getTableName(),
+                    m.getRow(),
+                    m.getColumnName(),
+                    m.getKey(),
+                    m.getVisibility(),
+                    user
                 );
             }
         }
@@ -450,6 +454,13 @@ public abstract class ElementMutationBuilder {
     }
 
     public void saveEdgeMutation(AccumuloGraph graph, EdgeMutation edgeBuilder, long timestamp, User user) {
+        // We only need the edge in certain situations, loading it like this lets it be lazy
+        Supplier<Edge> edge = Suppliers.memoize(() ->
+            edgeBuilder instanceof ExistingElementMutation ?
+                ((ExistingElementMutation<Edge>) edgeBuilder).getElement() :
+                graph.getEdge(edgeBuilder.getId(), FetchHints.NONE, user)
+        );
+
         String edgeRowKey = edgeBuilder.getId();
         Mutation edgeMutation = new Mutation(edgeRowKey);
         ColumnVisibility edgeColumnVisibility = visibilityToAccumuloVisibility(edgeBuilder.getVisibility());
@@ -469,8 +480,6 @@ public abstract class ElementMutationBuilder {
         saveEdgeMutations(edgeMutation);
         graph.flush();
 
-        // We only need the edge in certain situations, loading it like this lets it be lazy
-        Supplier<Edge> edge = Suppliers.memoize(() -> getEdgeFromMutation(graph, edgeBuilder, user));
         Mutation outMutation = new Mutation(edgeBuilder.getVertexId(Direction.OUT));
         Mutation inMutation = new Mutation(edgeBuilder.getVertexId(Direction.IN));
         Text edgeIdText = new Text(edgeBuilder.getId());
@@ -491,8 +500,7 @@ public abstract class ElementMutationBuilder {
             inMutation.put(AccumuloVertex.CF_IN_EDGE_SOFT_DELETE, edgeIdText, edgeColumnVisibility, softDeleteTimestamp, value);
         } else {
             if (edgeBuilder.getIndexHint() != IndexHint.DO_NOT_INDEX) {
-                // TODO: allow for addOrUpdate by mutation
-                graph.getSearchIndex().addElement(graph, edge.get(), user);
+                graph.getSearchIndex().addOrUpdateElement(graph, edgeBuilder, user);
                 // TODO: timing issue? If this is an add with hidden/visible the ES requests may not finish in proper order?
             }
 
@@ -942,9 +950,9 @@ public abstract class ElementMutationBuilder {
     }
 
     private void queueEvents(
-            AccumuloGraph graph,
-            Supplier<? extends Element> element,
-            ElementMutation<? extends Element> mutation
+        AccumuloGraph graph,
+        Supplier<? extends Element> element,
+        ElementMutation<? extends Element> mutation
     ) {
         if (!(mutation instanceof ExistingElementMutation)) {
             if (element.get() instanceof Edge) {
@@ -972,67 +980,67 @@ public abstract class ElementMutationBuilder {
             graph.queueEvent(new DeleteAdditionalVisibilityEvent(graph, element.get(), additionalVisibilityDeleteMutation))
         );
         mutation.getExtendedData().forEach(extendedDataMutation ->
-                graph.queueEvent(new AddExtendedDataEvent(
-                        graph,
-                        element.get(),
-                        extendedDataMutation.getTableName(),
-                        extendedDataMutation.getRow(),
-                        extendedDataMutation.getColumnName(),
-                        extendedDataMutation.getKey(),
-                        extendedDataMutation.getValue(),
-                        extendedDataMutation.getVisibility()
-                ))
+            graph.queueEvent(new AddExtendedDataEvent(
+                graph,
+                element.get(),
+                extendedDataMutation.getTableName(),
+                extendedDataMutation.getRow(),
+                extendedDataMutation.getColumnName(),
+                extendedDataMutation.getKey(),
+                extendedDataMutation.getValue(),
+                extendedDataMutation.getVisibility()
+            ))
         );
         mutation.getExtendedDataDeletes().forEach(extendedDataDeleteMutation ->
-                graph.queueEvent(new DeleteExtendedDataEvent(
-                        graph,
-                        element.get(),
-                        extendedDataDeleteMutation.getTableName(),
-                        extendedDataDeleteMutation.getRow(),
-                        extendedDataDeleteMutation.getColumnName(),
-                        extendedDataDeleteMutation.getKey()
-                ))
+            graph.queueEvent(new DeleteExtendedDataEvent(
+                graph,
+                element.get(),
+                extendedDataDeleteMutation.getTableName(),
+                extendedDataDeleteMutation.getRow(),
+                extendedDataDeleteMutation.getColumnName(),
+                extendedDataDeleteMutation.getKey()
+            ))
         );
         mutation.getAdditionalExtendedDataVisibilities().forEach(additionalExtendedDataVisibility ->
-                graph.queueEvent(new AddAdditionalExtendedDataVisibilityEvent(
-                        graph,
-                        element.get(),
-                        additionalExtendedDataVisibility.getTableName(),
-                        additionalExtendedDataVisibility.getRow(),
-                        additionalExtendedDataVisibility.getAdditionalVisibility()
-                ))
+            graph.queueEvent(new AddAdditionalExtendedDataVisibilityEvent(
+                graph,
+                element.get(),
+                additionalExtendedDataVisibility.getTableName(),
+                additionalExtendedDataVisibility.getRow(),
+                additionalExtendedDataVisibility.getAdditionalVisibility()
+            ))
         );
         mutation.getAdditionalExtendedDataVisibilityDeletes().forEach(additionalExtendedDataVisibilityDelete ->
-                graph.queueEvent(new DeleteAdditionalExtendedDataVisibilityEvent(
-                        graph,
-                        element.get(),
-                        additionalExtendedDataVisibilityDelete.getTableName(),
-                        additionalExtendedDataVisibilityDelete.getRow(),
-                        additionalExtendedDataVisibilityDelete.getAdditionalVisibility()
-                ))
+            graph.queueEvent(new DeleteAdditionalExtendedDataVisibilityEvent(
+                graph,
+                element.get(),
+                additionalExtendedDataVisibilityDelete.getTableName(),
+                additionalExtendedDataVisibilityDelete.getRow(),
+                additionalExtendedDataVisibilityDelete.getAdditionalVisibility()
+            ))
         );
         mutation.getMarkPropertyHiddenData().forEach(markPropertyHiddenData ->
             graph.queueEvent(new MarkHiddenPropertyEvent(
-                    graph,
-                    element.get(),
-                    markPropertyHiddenData.getKey(),
-                    markPropertyHiddenData.getName(),
-                    markPropertyHiddenData.getPropertyVisibility(),
-                    markPropertyHiddenData.getTimestamp(),
-                    markPropertyHiddenData.getVisibility(),
-                    markPropertyHiddenData.getEventData()
+                graph,
+                element.get(),
+                markPropertyHiddenData.getKey(),
+                markPropertyHiddenData.getName(),
+                markPropertyHiddenData.getPropertyVisibility(),
+                markPropertyHiddenData.getTimestamp(),
+                markPropertyHiddenData.getVisibility(),
+                markPropertyHiddenData.getEventData()
             ))
         );
         mutation.getMarkPropertyVisibleData().forEach(markPropertyVisibleData ->
             graph.queueEvent(new MarkVisiblePropertyEvent(
-                    graph,
-                    element.get(),
-                    markPropertyVisibleData.getKey(),
-                    markPropertyVisibleData.getName(),
-                    markPropertyVisibleData.getPropertyVisibility(),
-                    markPropertyVisibleData.getTimestamp(),
-                    markPropertyVisibleData.getVisibility(),
-                    markPropertyVisibleData.getEventData()
+                graph,
+                element.get(),
+                markPropertyVisibleData.getKey(),
+                markPropertyVisibleData.getName(),
+                markPropertyVisibleData.getPropertyVisibility(),
+                markPropertyVisibleData.getTimestamp(),
+                markPropertyVisibleData.getVisibility(),
+                markPropertyVisibleData.getEventData()
             ))
         );
         mutation.getMarkHiddenData().forEach(markHiddenData -> {

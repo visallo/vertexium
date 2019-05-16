@@ -18,6 +18,11 @@ public abstract class ExistingEdgeMutation extends ExistingElementMutationBase<E
     }
 
     @Override
+    public String getLabel() {
+        return getElement().getLabel();
+    }
+
+    @Override
     public String getEdgeLabel() {
         if (getNewEdgeLabel() != null) {
             return getNewEdgeLabel();

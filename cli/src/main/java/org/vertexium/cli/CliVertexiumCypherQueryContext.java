@@ -14,8 +14,8 @@ import java.util.Set;
 public class CliVertexiumCypherQueryContext extends VertexiumCypherQueryContext {
     private static String labelPropertyName;
 
-    public CliVertexiumCypherQueryContext(Graph graph, Authorizations authorizations) {
-        super(graph, authorizations);
+    public CliVertexiumCypherQueryContext(Graph graph, User user) {
+        super(graph, user);
     }
 
     public static void setLabelPropertyName(String labelPropertyName) {

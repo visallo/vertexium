@@ -1896,8 +1896,12 @@ public interface Graph {
      */
     @Deprecated
     default void reindex(Authorizations authorizations) {
-        getSearchIndex().addElements(this, getVertices(authorizations), authorizations);
-        getSearchIndex().addElements(this, getEdges(authorizations), authorizations);
+        for (Vertex vertex : getVertices(authorizations)) {
+            getSearchIndex().addElement(this, vertex, authorizations.getUser());
+        }
+        for (Edge edge : getEdges(authorizations)) {
+            getSearchIndex().addElement(this, edge, authorizations.getUser());
+        }
     }
 
     /**
@@ -2236,23 +2240,15 @@ public interface Graph {
         Authorizations authorizations
     ) {
         List<Element> elements = new ArrayList<>();
-        List<Element> elementsToAddToIndex = new ArrayList<>();
         for (ElementMutation<? extends Element> m : mutations) {
             if (m instanceof ExistingElementMutation && !m.hasChanges()) {
                 elements.add(((ExistingElementMutation) m).getElement());
                 continue;
             }
 
-            IndexHint indexHint = m.getIndexHint();
-            m.setIndexHint(IndexHint.DO_NOT_INDEX);
             Element element = m.save(authorizations);
-            m.setIndexHint(indexHint);
             elements.add(element);
-            if (indexHint == IndexHint.INDEX) {
-                elementsToAddToIndex.add(element);
-            }
         }
-        getSearchIndex().addElements(this, elementsToAddToIndex, authorizations);
         for (ElementMutation<? extends Element> m : mutations) {
             if (m.getIndexHint() == IndexHint.INDEX) {
                 getSearchIndex().addElementExtendedData(

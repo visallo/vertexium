@@ -84,7 +84,7 @@ public class DefaultIndexSelectionStrategy implements IndexSelectionStrategy {
             } else {
                 newIndicesToQuery.add(defaultIndexName);
             }
-            Set<String> indexNames = es.getIndexNamesFromElasticsearch();
+            Set<String> indexNames = es.getIndexService().getIndexNamesFromElasticsearch();
             for (String indexName : indexNames) {
                 if (indexName.startsWith(extendedDataIndexNamePrefix)) {
                     newIndicesToQuery.add(indexName);
@@ -92,7 +92,7 @@ public class DefaultIndexSelectionStrategy implements IndexSelectionStrategy {
             }
 
             for (String indexName : newIndicesToQuery) {
-                es.ensureIndexCreatedAndInitialized(indexName);
+                es.getIndexService().ensureIndexCreatedAndInitialized(indexName);
             }
 
             indicesToQueryArray = newIndicesToQuery.toArray(new String[0]);

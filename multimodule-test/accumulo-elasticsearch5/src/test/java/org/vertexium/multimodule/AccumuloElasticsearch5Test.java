@@ -58,7 +58,7 @@ public class AccumuloElasticsearch5Test extends AccumuloGraphTestBase {
 
     @SuppressWarnings("unchecked")
     @Override
-    protected Graph createGraph() throws AccumuloSecurityException, AccumuloException, VertexiumException, InterruptedException, IOException, URISyntaxException {
+    protected Graph createGraph() throws VertexiumException {
         Map accumuloConfig = accumuloResource.createConfig();
         accumuloConfig.putAll(elasticsearchResource.createConfig());
         return AccumuloGraph.create(new AccumuloGraphConfiguration(accumuloConfig));
