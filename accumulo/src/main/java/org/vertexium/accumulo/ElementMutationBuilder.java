@@ -22,6 +22,7 @@ import org.vertexium.property.StreamingPropertyValueRef;
 import org.vertexium.search.IndexHint;
 import org.vertexium.util.ArrayUtils;
 import org.vertexium.util.ExtendedDataMutationUtils;
+import org.vertexium.util.IncreasingTime;
 
 import java.util.*;
 
@@ -533,6 +534,9 @@ public abstract class ElementMutationBuilder {
             graph.getSearchIndex().deleteElement(graph, edge.get(), user);
 
             Long softDeleteTimestamp = edgeBuilder.getSoftDeleteData().getTimestamp();
+            if (softDeleteTimestamp == null) {
+                softDeleteTimestamp = IncreasingTime.currentTimeMillis();
+            }
             Value value = toSoftDeleteDataToValue(edgeBuilder.getSoftDeleteData().getEventData());
             outMutation.put(AccumuloVertex.CF_OUT_EDGE_SOFT_DELETE, edgeIdText, edgeColumnVisibility, softDeleteTimestamp, value);
             inMutation.put(AccumuloVertex.CF_IN_EDGE_SOFT_DELETE, edgeIdText, edgeColumnVisibility, softDeleteTimestamp, value);
@@ -681,8 +685,11 @@ public abstract class ElementMutationBuilder {
     }
 
     public void addSoftDeleteToMutation(Mutation m, SoftDeleteData softDeleteData) {
-        Long timestamp = softDeleteData.getTimestamp();
         Object data = softDeleteData.getEventData();
+        Long timestamp = softDeleteData.getTimestamp();
+        if (timestamp == null) {
+            timestamp = IncreasingTime.currentTimeMillis();
+        }
         m.put(AccumuloElement.CF_SOFT_DELETE, AccumuloElement.CQ_SOFT_DELETE, timestamp, toSoftDeleteDataToValue(data));
     }
 
