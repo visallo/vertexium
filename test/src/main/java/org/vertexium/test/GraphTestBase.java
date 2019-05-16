@@ -4851,13 +4851,16 @@ public abstract class GraphTestBase {
         v.setProperty("prop1", "value1-1", VISIBILITY_A, AUTHORIZATIONS_ALL);
         graph.flush();
 
+        v = graph.getVertex("v1", AUTHORIZATIONS_ALL.getUser());
+
         ElementMutation<Vertex> m = v.prepareMutation()
             .setProperty("prop1", "value1-2", VISIBILITY_A)
             .setProperty("prop2", "value2-2", VISIBILITY_A);
         Assert.assertEquals(1, count(v.getProperties()));
         assertEquals("value1-1", v.getPropertyValue("prop1"));
 
-        v = m.save(AUTHORIZATIONS_A_AND_B);
+        m.save(AUTHORIZATIONS_A_AND_B);
+        v = graph.getVertex("v1", AUTHORIZATIONS_ALL.getUser());
         Assert.assertEquals(2, count(v.getProperties()));
         assertEquals("value1-2", v.getPropertyValue("prop1"));
         assertEquals("value2-2", v.getPropertyValue("prop2"));
@@ -4899,11 +4902,9 @@ public abstract class GraphTestBase {
         Edge ev2v3 = graph.addEdge("e v2->v3", v2, v3, LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_A);
         Edge ev3v1 = graph.addEdge("e v3->v1", v3, v1, LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_A);
         graph.addEdge("e v3->v4", v3, v4, LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.flush();
 
-        List<Vertex> vertices = new ArrayList<>();
-        vertices.add(v1);
-        vertices.add(v2);
-        vertices.add(v3);
+        List<Vertex> vertices = graph.getVertices(Arrays.asList("v1", "v2", "v3"), AUTHORIZATIONS_A.getUser()).collect(Collectors.toList());
         Iterable<String> edgeIds = toList(graph.findRelatedEdgeIdsForVertices(vertices, AUTHORIZATIONS_A));
         Assert.assertEquals(4, count(edgeIds));
         org.vertexium.test.util.IterableUtils.assertContains(ev1v2.getId(), edgeIds);
