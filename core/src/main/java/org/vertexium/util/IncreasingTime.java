@@ -1,5 +1,7 @@
 package org.vertexium.util;
 
+import org.vertexium.VertexiumException;
+
 public class IncreasingTime {
     private static long last = System.currentTimeMillis();
 
@@ -15,5 +17,15 @@ public class IncreasingTime {
 
     public static void advanceTime(int inc) {
         last += inc;
+    }
+
+    public static void catchUp() {
+        while (last > System.currentTimeMillis()) {
+            try {
+                Thread.sleep(last - System.currentTimeMillis());
+            } catch (InterruptedException e) {
+                throw new VertexiumException("Interrupted waiting for catch up", e);
+            }
+        }
     }
 }

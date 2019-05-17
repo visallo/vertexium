@@ -61,7 +61,10 @@ public abstract class ElementMutationBuilder {
             Visibility visibility = vertexBuilder.getVisibility();
             visibility = visibility == null ? getVertexFromMutation(vertexBuilder, user).getVisibility() : visibility;
             ColumnVisibility columnVisibility = visibilityToAccumuloVisibility(visibility);
-            vertexMutation.put(AccumuloVertex.CF_SIGNAL, EMPTY_TEXT, columnVisibility, timestamp, EMPTY_VALUE);
+
+            if (!(vertexBuilder instanceof ExistingElementMutation)) {
+                vertexMutation.put(AccumuloVertex.CF_SIGNAL, EMPTY_TEXT, columnVisibility, timestamp, EMPTY_VALUE);
+            }
         }
         addElementMutationsToAccumuloMutation(vertexBuilder, vertexRowKey, vertexMutation);
         saveVertexMutations(vertexMutation);
@@ -141,6 +144,7 @@ public abstract class ElementMutationBuilder {
             elementBuilder.getIndexHint() != IndexHint.DO_NOT_INDEX,
             elementBuilder.getExtendedData(),
             elementBuilder.getExtendedDataDeletes(),
+            elementBuilder.getDeleteExtendedDataRowData(),
             elementBuilder.getAdditionalExtendedDataVisibilities(),
             elementBuilder.getAdditionalExtendedDataVisibilityDeletes(),
             user
@@ -152,6 +156,7 @@ public abstract class ElementMutationBuilder {
         boolean updateIndex,
         Iterable<ExtendedDataMutation> extendedData,
         Iterable<ExtendedDataDeleteMutation> extendedDataDeletes,
+        Iterable<ElementMutationBase.DeleteExtendedDataRowData> extendedDataRowDeletes,
         Iterable<AdditionalExtendedDataVisibilityAddMutation> additionalExtendedDataVisibilities,
         Iterable<AdditionalExtendedDataVisibilityDeleteMutation> additionalExtendedDataVisibilityDeletes,
         User user
@@ -159,6 +164,7 @@ public abstract class ElementMutationBuilder {
         Map<String, Map<String, ExtendedDataMutationUtils.Mutations>> byTableThenRowId = ExtendedDataMutationUtils.getByTableThenRowId(
             extendedData,
             extendedDataDeletes,
+            extendedDataRowDeletes,
             additionalExtendedDataVisibilities,
             additionalExtendedDataVisibilityDeletes
         );
@@ -171,6 +177,10 @@ public abstract class ElementMutationBuilder {
                 ExtendedDataMutationUtils.Mutations mutations = byRowIdEntry.getValue();
 
                 Mutation m = new Mutation(KeyHelper.createExtendedDataRowKey(elementLocation.getElementType(), elementLocation.getId(), tableName, row));
+
+                if (!mutations.getExtendedDataRowDeletes().isEmpty()) {
+                    m.put(AccumuloElement.DELETE_ROW_COLUMN_FAMILY, AccumuloElement.DELETE_ROW_COLUMN_QUALIFIER, RowDeletingIterator.DELETE_ROW_VALUE);
+                }
 
                 for (ExtendedDataMutation edm : mutations.getExtendedData()) {
                     Object value = transformValue(edm.getValue(), null, null);
@@ -462,12 +472,11 @@ public abstract class ElementMutationBuilder {
         if (!edgeBuilder.isDeleteElement()) {
             // TODO: handle element visibility changes
 
-            if (edgeBuilder.getNewEdgeLabel() != null) {
-                edgeMutation.putDelete(AccumuloEdge.CF_SIGNAL, new Text(getEdgeFromMutation(edgeBuilder, user).getLabel()), edgeColumnVisibility, currentTimeMillis());
+            if (!(edgeBuilder instanceof ExistingElementMutation) || edgeBuilder.getNewEdgeLabel() != null) {
+                edgeMutation.put(AccumuloEdge.CF_SIGNAL, new Text(edgeLabel), edgeColumnVisibility, timestamp, ElementMutationBuilder.EMPTY_VALUE);
+                edgeMutation.put(AccumuloEdge.CF_OUT_VERTEX, new Text(edgeBuilder.getVertexId(Direction.OUT)), edgeColumnVisibility, timestamp, ElementMutationBuilder.EMPTY_VALUE);
+                edgeMutation.put(AccumuloEdge.CF_IN_VERTEX, new Text(edgeBuilder.getVertexId(Direction.IN)), edgeColumnVisibility, timestamp, ElementMutationBuilder.EMPTY_VALUE);
             }
-            edgeMutation.put(AccumuloEdge.CF_SIGNAL, new Text(edgeLabel), edgeColumnVisibility, timestamp, ElementMutationBuilder.EMPTY_VALUE);
-            edgeMutation.put(AccumuloEdge.CF_OUT_VERTEX, new Text(edgeBuilder.getVertexId(Direction.OUT)), edgeColumnVisibility, timestamp, ElementMutationBuilder.EMPTY_VALUE);
-            edgeMutation.put(AccumuloEdge.CF_IN_VERTEX, new Text(edgeBuilder.getVertexId(Direction.IN)), edgeColumnVisibility, timestamp, ElementMutationBuilder.EMPTY_VALUE);
         }
         addElementMutationsToAccumuloMutation(edgeBuilder, edgeRowKey, edgeMutation);
         saveEdgeMutations(edgeMutation);
@@ -513,11 +522,13 @@ public abstract class ElementMutationBuilder {
 
             // TODO: handle element visibility changes
 
-            EdgeInfo edgeInfo = new EdgeInfo(getNameSubstitutionStrategy().deflate(edgeLabel), edgeBuilder.getVertexId(Direction.IN), edgeInfoVisibility);
-            outMutation.put(AccumuloVertex.CF_OUT_EDGE, edgeIdText, edgeColumnVisibility, timestamp, edgeInfo.toValue());
+            if (!(edgeBuilder instanceof ExistingElementMutation) || edgeBuilder.getNewEdgeLabel() != null) {
+                EdgeInfo edgeInfo = new EdgeInfo(getNameSubstitutionStrategy().deflate(edgeLabel), edgeBuilder.getVertexId(Direction.IN), edgeInfoVisibility);
+                outMutation.put(AccumuloVertex.CF_OUT_EDGE, edgeIdText, edgeColumnVisibility, timestamp, edgeInfo.toValue());
 
-            edgeInfo = new EdgeInfo(getNameSubstitutionStrategy().deflate(edgeLabel), edgeBuilder.getVertexId(Direction.OUT), edgeInfoVisibility);
-            inMutation.put(AccumuloVertex.CF_IN_EDGE, edgeIdText, edgeColumnVisibility, timestamp, edgeInfo.toValue());
+                edgeInfo = new EdgeInfo(getNameSubstitutionStrategy().deflate(edgeLabel), edgeBuilder.getVertexId(Direction.OUT), edgeInfoVisibility);
+                inMutation.put(AccumuloVertex.CF_IN_EDGE, edgeIdText, edgeColumnVisibility, timestamp, edgeInfo.toValue());
+            }
 
             edgeBuilder.getMarkVisibleData().forEach(data -> {
                 graph.getSearchIndex().markElementVisible(graph, edge.get(), data.getVisibility(), user);

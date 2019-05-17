@@ -1343,6 +1343,9 @@ public abstract class GraphTestBase {
             graph.flush();
         }
 
+        List<ExtendedDataRow> rowsList = toList(graph.getExtendedData(ElementType.VERTEX, "v1", "table1", AUTHORIZATIONS_A));
+        assertEquals(2, rowsList.size());
+
         QueryResultsIterable<ExtendedDataRow> rows = graph.query(AUTHORIZATIONS_A).extendedDataRows();
         assertResultsCount(2, 2, rows);
 
@@ -1361,7 +1364,10 @@ public abstract class GraphTestBase {
         }
         graph.flush();
 
-        List<ExtendedDataRow> rowsList = toList(graph.getExtendedData(ElementType.VERTEX, "v1", "table1", AUTHORIZATIONS_A));
+        rows = graph.query(AUTHORIZATIONS_A).extendedDataRows();
+        assertResultsCount(0, 0, rows);
+
+        rowsList = toList(graph.getExtendedData(ElementType.VERTEX, "v1", "table1", AUTHORIZATIONS_A));
         assertEquals(0, rowsList.size());
     }
 
@@ -9475,6 +9481,12 @@ public abstract class GraphTestBase {
             .save(AUTHORIZATIONS_ALL);
         graph.flush();
 
+        e = graph.getEdge("e1", AUTHORIZATIONS_ALL);
+        e.prepareMutation()
+            .softDeleteProperties("prop1")
+            .save(AUTHORIZATIONS_ALL);
+        graph.flush();
+
         graph.softDeleteEdge("e1", AUTHORIZATIONS_ALL);
         graph.flush();
 
@@ -9506,19 +9518,19 @@ public abstract class GraphTestBase {
         assertEquals("e1", alterEdgeLabelEvent.getElementId());
         assertEquals("label2", alterEdgeLabelEvent.getNewEdgeLabel());
 
-        assertTrue(events.get(3) instanceof HistoricalSoftDeleteEdgeEvent);
-        HistoricalSoftDeleteEdgeEvent softDeleteEvent = (HistoricalSoftDeleteEdgeEvent) events.get(3);
-        assertEquals("e1", softDeleteEvent.getElementId());
-        assertEquals("label2", softDeleteEvent.getEdgeLabel());
-        assertEquals("v1", softDeleteEvent.getOutVertexId());
-        assertEquals("v2", softDeleteEvent.getInVertexId());
-
-        assertTrue(events.get(4) instanceof HistoricalSoftDeletePropertyEvent);
-        HistoricalSoftDeletePropertyEvent softDeletePropertyEvent = (HistoricalSoftDeletePropertyEvent) events.get(4);
+        assertTrue(events.get(3) instanceof HistoricalSoftDeletePropertyEvent);
+        HistoricalSoftDeletePropertyEvent softDeletePropertyEvent = (HistoricalSoftDeletePropertyEvent) events.get(3);
         assertEquals("e1", softDeletePropertyEvent.getElementId());
         assertEquals("k1", softDeletePropertyEvent.getPropertyKey());
         assertEquals("prop1", softDeletePropertyEvent.getPropertyName());
         assertEquals(VISIBILITY_A, softDeletePropertyEvent.getPropertyVisibility());
+
+        assertTrue(events.get(4) instanceof HistoricalSoftDeleteEdgeEvent);
+        HistoricalSoftDeleteEdgeEvent softDeleteEvent = (HistoricalSoftDeleteEdgeEvent) events.get(4);
+        assertEquals("e1", softDeleteEvent.getElementId());
+        assertEquals("label2", softDeleteEvent.getEdgeLabel());
+        assertEquals("v1", softDeleteEvent.getOutVertexId());
+        assertEquals("v2", softDeleteEvent.getInVertexId());
 
         assertTrue(events.get(5) instanceof HistoricalAddEdgeEvent);
         addEdgeEvent = (HistoricalAddEdgeEvent) events.get(5);
