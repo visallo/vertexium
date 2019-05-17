@@ -20,6 +20,7 @@ public class IncreasingTime {
     }
 
     public static void catchUp() {
+        advanceTime(1);
         while (last > System.currentTimeMillis()) {
             try {
                 Thread.sleep(last - System.currentTimeMillis());

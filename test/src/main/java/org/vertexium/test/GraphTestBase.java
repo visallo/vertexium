@@ -5761,7 +5761,7 @@ public abstract class GraphTestBase {
 
         IncreasingTime.advanceTime(1);
         long beforeAlterTimestamp = IncreasingTime.currentTimeMillis();
-        Thread.sleep(1);
+        IncreasingTime.catchUp();
 
         Vertex v1 = graph.getVertex("v1", FetchHints.ALL, AUTHORIZATIONS_A);
         v1.prepareMutation()
@@ -9206,7 +9206,7 @@ public abstract class GraphTestBase {
     }
 
     @Test
-    public void historicalEventsVertex() {
+    public void historicalEventsVertex() throws Exception {
         long ts = IncreasingTime.currentTimeMillis();
         Metadata prop1Metadata = Metadata.create();
         prop1Metadata.add("m1", "value_m1", VISIBILITY_A);
