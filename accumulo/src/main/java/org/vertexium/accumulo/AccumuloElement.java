@@ -112,9 +112,9 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
         getGraph().alterElementPropertyVisibilities(element, mutation.getAlterPropertyVisibilities());
 
         if (mutation instanceof EdgeMutation) {
-            getGraph().elementMutationBuilder.saveEdgeMutation(getGraph(), (EdgeMutation) mutation, IncreasingTime.currentTimeMillis(), user);
+            getGraph().elementMutationBuilder.saveEdgeMutation((EdgeMutation) mutation, IncreasingTime.currentTimeMillis(), user);
         } else {
-            getGraph().elementMutationBuilder.saveVertexMutation(getGraph(), (ElementMutation<Vertex>) mutation, IncreasingTime.currentTimeMillis(), user);
+            getGraph().elementMutationBuilder.saveVertexMutation((ElementMutation<Vertex>) mutation, IncreasingTime.currentTimeMillis(), user);
         }
 
         if (mutation.getNewElementVisibility() != null) {

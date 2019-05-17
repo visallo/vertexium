@@ -49,7 +49,7 @@ public abstract class AccumuloGraphTestBase extends GraphTestBase {
 
     @Override
     protected Authorizations createAuthorizations(String... auths) {
-        getGraph().createAuthorizations(auths);
+        getAccumuloResource().addAuthorizations(getGraph(), auths);
         return new AccumuloAuthorizations(auths);
     }
 

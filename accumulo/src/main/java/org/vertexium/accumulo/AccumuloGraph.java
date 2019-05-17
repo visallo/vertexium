@@ -106,7 +106,7 @@ public class AccumuloGraph extends GraphBase implements Traceable {
         this.vertexiumSerializer = config.createSerializer(this);
         this.nameSubstitutionStrategy = AccumuloNameSubstitutionStrategy.create(config.createSubstitutionStrategy(this));
         this.streamingPropertyValueStorageStrategy = config.createStreamingPropertyValueStorageStrategy(this);
-        this.elementMutationBuilder = new ElementMutationBuilder(streamingPropertyValueStorageStrategy, vertexiumSerializer) {
+        this.elementMutationBuilder = new ElementMutationBuilder(this, streamingPropertyValueStorageStrategy, vertexiumSerializer) {
             @Override
             protected void saveVertexMutations(Mutation... m) {
                 addMutations(VertexiumObjectType.VERTEX, m);
@@ -317,16 +317,16 @@ public class AccumuloGraph extends GraphBase implements Traceable {
         final long timestampLong = timestamp;
 
         final String finalVertexId = vertexId;
-        return new AccumuloVertexBuilder(finalVertexId, visibility, elementMutationBuilder) {
+        return new AccumuloVertexBuilder(finalVertexId, visibility, timestampLong, elementMutationBuilder) {
             @Override
             public String save(User user) {
-                getElementMutationBuilder().saveVertexMutation(AccumuloGraph.this, this, timestampLong, user);
+                getElementMutationBuilder().saveVertexMutation(this, timestampLong, user);
                 return getId();
             }
 
             @Override
             public Vertex save(Authorizations authorizations) {
-                getElementMutationBuilder().saveVertexMutation(AccumuloGraph.this, this, timestampLong, authorizations.getUser());
+                getElementMutationBuilder().saveVertexMutation(this, timestampLong, authorizations.getUser());
                 return createVertex(authorizations.getUser());
             }
 
@@ -356,10 +356,14 @@ public class AccumuloGraph extends GraphBase implements Traceable {
 
     protected void _addMutations(BatchWriter writer, Mutation... mutations) {
         try {
+            boolean writes = false;
             for (Mutation mutation : mutations) {
-                writer.addMutation(mutation);
+                if (mutation.getUpdates().size() > 0) {
+                    writes = true;
+                    writer.addMutation(mutation);
+                }
             }
-            if (getConfiguration().isAutoFlush()) {
+            if (writes && getConfiguration().isAutoFlush()) {
                 flush();
             }
         } catch (MutationsRejectedException ex) {
@@ -447,16 +451,16 @@ public class AccumuloGraph extends GraphBase implements Traceable {
         final long timestampLong = timestamp;
 
         final String finalEdgeId = edgeId;
-        return new AccumuloEdgeBuilderByVertexId(finalEdgeId, outVertexId, inVertexId, label, visibility, elementMutationBuilder) {
+        return new AccumuloEdgeBuilderByVertexId(this, finalEdgeId, outVertexId, inVertexId, label, visibility, timestamp, elementMutationBuilder) {
             @Override
             public String save(User user) {
-                elementMutationBuilder.saveEdgeMutation(AccumuloGraph.this, this, timestampLong, user);
+                elementMutationBuilder.saveEdgeMutation(this, timestampLong, user);
                 return getId();
             }
 
             @Override
             public Edge save(Authorizations authorizations) {
-                elementMutationBuilder.saveEdgeMutation(AccumuloGraph.this, this, timestampLong, authorizations.getUser());
+                elementMutationBuilder.saveEdgeMutation(this, timestampLong, authorizations.getUser());
                 return createEdge(authorizations.getUser());
             }
 
@@ -484,13 +488,13 @@ public class AccumuloGraph extends GraphBase implements Traceable {
         return new EdgeBuilder(finalEdgeId, outVertex, inVertex, label, visibility) {
             @Override
             public String save(User user) {
-                elementMutationBuilder.saveEdgeMutation(AccumuloGraph.this, this, timestampLong, user);
+                elementMutationBuilder.saveEdgeMutation(this, timestampLong, user);
                 return getId();
             }
 
             @Override
             public Edge save(Authorizations authorizations) {
-                elementMutationBuilder.saveEdgeMutation(AccumuloGraph.this, this, timestampLong, authorizations.getUser());
+                elementMutationBuilder.saveEdgeMutation(this, timestampLong, authorizations.getUser());
                 return AccumuloGraph.this.getEdge(getId(), authorizations.getUser());
             }
         };
@@ -1343,7 +1347,7 @@ public class AccumuloGraph extends GraphBase implements Traceable {
             elementMutationBuilder.addPropertySoftDeleteToMutation(m, property, apv.getTimestamp() - 1, apv.getData());
             property.setVisibility(apv.getVisibility());
             property.setTimestamp(apv.getTimestamp());
-            elementMutationBuilder.addPropertyToMutation(this, m, elementRowKey, property);
+            elementMutationBuilder.addPropertyToMutation(m, elementRowKey, property);
 
             // Keep track of properties that need to be removed from indices
             propertyList.add(PropertyDescriptor.from(apv.getKey(), apv.getName(), apv.getExistingVisibility()));

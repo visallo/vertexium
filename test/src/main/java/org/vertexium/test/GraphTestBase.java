@@ -1129,11 +1129,13 @@ public abstract class GraphTestBase {
         org.vertexium.test.util.IterableUtils.assertContains("value1", v1.getPropertyValues("name1"));
         org.vertexium.test.util.IterableUtils.assertContains("value2", v1.getPropertyValues("name1"));
 
-        v1 = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B)
+        graph.getVertex("v1", AUTHORIZATIONS_A_AND_B)
             .prepareMutation()
             .softDeleteProperty("key1", "name1", VISIBILITY_A)
             .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
+
+        v1 = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B);
         assertEquals(1, count(v1.getProperties()));
         assertEquals(1, count(v1.getPropertyValues("key1", "name1")));
         org.vertexium.test.util.IterableUtils.assertContains("value2", v1.getPropertyValues("name1"));
