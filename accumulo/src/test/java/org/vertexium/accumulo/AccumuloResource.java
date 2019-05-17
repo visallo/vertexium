@@ -4,8 +4,10 @@ import org.apache.accumulo.core.client.AccumuloException;
 import org.apache.accumulo.core.client.AccumuloSecurityException;
 import org.apache.accumulo.core.client.Connector;
 import org.apache.accumulo.core.security.Authorizations;
+import org.apache.accumulo.core.util.Pair;
 import org.apache.accumulo.minicluster.MiniAccumuloCluster;
 import org.apache.accumulo.minicluster.MiniAccumuloConfig;
+import org.apache.accumulo.minicluster.ServerType;
 import org.junit.rules.ExternalResource;
 import org.vertexium.GraphConfiguration;
 import org.vertexium.VertexiumException;
@@ -163,8 +165,18 @@ public class AccumuloResource extends ExternalResource {
 
         MiniAccumuloConfig miniAccumuloConfig = new MiniAccumuloConfig(tempDir, ACCUMULO_PASSWORD);
         miniAccumuloConfig.setZooKeeperStartupTime(60000);
+        if (System.getProperty("ENABLE_JDWP") != null) {
+            miniAccumuloConfig.setJDWPEnabled(true);
+        }
         accumulo = new MiniAccumuloCluster(miniAccumuloConfig);
         accumulo.start();
+
+        if (miniAccumuloConfig.isJDWPEnabled()) {
+            System.out.println("Debug Ports");
+            for (Pair<ServerType, Integer> debugPort : accumulo.getDebugPorts()) {
+                System.out.println(debugPort.getFirst() + " - " + debugPort.getSecond());
+            }
+        }
 
         Runtime.getRuntime().addShutdownHook(new Thread() {
             @Override
