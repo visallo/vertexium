@@ -294,6 +294,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex {
         Map<String, Map<String, ExtendedDataMutationUtils.Mutations>> byTableThenRowId = ExtendedDataMutationUtils.getByTableThenRowId(
             extendedData,
             null,
+            null,
             additionalExtendedDataVisibilities,
             additionalExtendedDataVisibilityDeletes
         );
