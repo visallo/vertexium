@@ -42,7 +42,7 @@ public abstract class AccumuloVertexBuilder extends VertexBuilder implements Ver
                     new Value(columnUpdate.getValue())
                 ))
             );
-            return results;
+        return results;
     }
 
     @Override

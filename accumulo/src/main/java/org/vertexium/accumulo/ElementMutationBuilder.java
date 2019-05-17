@@ -131,7 +131,7 @@ public abstract class ElementMutationBuilder {
         if (vertex == null) {
             throw new VertexiumException("Expected to find vertex but was unable to load: " + vertexBuilder.getId());
         }
-        return  vertex;
+        return vertex;
 
     }
 
@@ -545,8 +545,8 @@ public abstract class ElementMutationBuilder {
     @SuppressWarnings("unchecked")
     private Edge getEdgeFromMutation(EdgeMutation edgeBuilder, User user) {
         Edge edge = edgeBuilder instanceof ExistingElementMutation ?
-                ((ExistingElementMutation<Edge>) edgeBuilder).getElement() :
-                graph.getEdge(edgeBuilder.getId(), FetchHints.NONE, user);
+            ((ExistingElementMutation<Edge>) edgeBuilder).getElement() :
+            graph.getEdge(edgeBuilder.getId(), FetchHints.NONE, user);
         if (edge == null) {
             throw new VertexiumException("Expected to find edge but was unable to load: " + edgeBuilder.getId());
         }
@@ -631,10 +631,10 @@ public abstract class ElementMutationBuilder {
         Visibility visibility = markPropertyHiddenData.getVisibility();
         ColumnVisibility columnVisibility = visibilityToAccumuloVisibility(visibility);
         Text columnQualifier = KeyHelper.getColumnQualifierFromPropertyHiddenColumnQualifier(
-                markPropertyHiddenData.getKey(),
-                markPropertyHiddenData.getName(),
-                markPropertyHiddenData.getPropertyVisibility().getVisibilityString(),
-                getNameSubstitutionStrategy()
+            markPropertyHiddenData.getKey(),
+            markPropertyHiddenData.getName(),
+            markPropertyHiddenData.getPropertyVisibility().getVisibilityString(),
+            getNameSubstitutionStrategy()
         );
         Long timestamp = markPropertyHiddenData.getTimestamp();
         if (timestamp == null) {
@@ -648,10 +648,10 @@ public abstract class ElementMutationBuilder {
         Visibility visibility = markPropertyVisibleData.getVisibility();
         ColumnVisibility columnVisibility = visibilityToAccumuloVisibility(visibility);
         Text columnQualifier = KeyHelper.getColumnQualifierFromPropertyHiddenColumnQualifier(
-                markPropertyVisibleData.getKey(),
-                markPropertyVisibleData.getName(),
-                markPropertyVisibleData.getPropertyVisibility().getVisibilityString(),
-                getNameSubstitutionStrategy());
+            markPropertyVisibleData.getKey(),
+            markPropertyVisibleData.getName(),
+            markPropertyVisibleData.getPropertyVisibility().getVisibilityString(),
+            getNameSubstitutionStrategy());
         Long timestamp = markPropertyVisibleData.getTimestamp();
         if (timestamp == null) {
             timestamp = IncreasingTime.currentTimeMillis();

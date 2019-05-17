@@ -15,7 +15,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.vertexium.accumulo.AccumuloGraph.visibilityToAccumuloVisibility;
-import static org.vertexium.accumulo.ElementMutationBuilder.EMPTY_VALUE;
 
 public abstract class AccumuloEdgeBuilderByVertexId extends EdgeBuilderByVertexId implements EdgeBuilderWithKeyValuePairs {
     private final AccumuloGraph graph;
