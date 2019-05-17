@@ -25,6 +25,7 @@ import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
+import static org.vertexium.test.util.VertexiumAssert.assertIdsAnyOrder;
 import static org.vertexium.test.util.VertexiumAssert.assertResultsCount;
 import static org.vertexium.util.IterableUtils.count;
 import static org.vertexium.util.IterableUtils.toList;
@@ -60,8 +61,14 @@ public class Elasticsearch5SearchIndexTest extends GraphTestBase {
         return (Elasticsearch5SearchIndex) graph.getSearchIndex();
     }
 
+    @Override
     protected boolean isFieldNamesInQuerySupported() {
         return true;
+    }
+
+    @Override
+    protected boolean isParitalUpdateOfVertexPropertyKeySupported() {
+        return false;
     }
 
     @Override
@@ -253,13 +260,11 @@ public class Elasticsearch5SearchIndexTest extends GraphTestBase {
             .save(AUTHORIZATIONS_A);
         graph.flush();
 
-        List<String> results = toList(graph.query("joe", AUTHORIZATIONS_A).vertexIds());
-        assertEquals(1, results.size());
-        assertEquals("v1", results.get(0));
+        QueryResultsIterable<String> results = graph.query("joe", AUTHORIZATIONS_A).vertexIds();
+        assertIdsAnyOrder(results);
 
-        results = toList(graph.query("bob", AUTHORIZATIONS_A).vertexIds());
-        assertEquals(1, results.size());
-        assertEquals("v1", results.get(0));
+        results = graph.query("bob", AUTHORIZATIONS_A).vertexIds();
+        assertIdsAnyOrder(results, "v1");
     }
 
     private long getNumQueries() {

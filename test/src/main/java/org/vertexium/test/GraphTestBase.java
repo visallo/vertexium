@@ -1316,7 +1316,7 @@ public abstract class GraphTestBase {
         graph.flush();
 
         if (graph instanceof GraphWithSearchIndex) {
-            for(Vertex vertex : vertices) {
+            for (Vertex vertex : vertices) {
                 ((GraphWithSearchIndex) graph).getSearchIndex().addElement(graph, vertex, AUTHORIZATIONS_A_AND_B.getUser());
             }
             assertVertexIds(graph.query(AUTHORIZATIONS_A_AND_B).has("prop1", "v1").vertices(), "v1");
@@ -3695,11 +3695,11 @@ public abstract class GraphTestBase {
             .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
-        Iterable<Vertex> vertices = graph.query("hello", AUTHORIZATIONS_A).vertices();
-        assertResultsCount(1, 1, (QueryResultsIterable) vertices);
+        QueryResultsIterable<Vertex> vertices = graph.query("hello", AUTHORIZATIONS_A).vertices();
+        assertVertexIdsAnyOrder(vertices, "v1");
 
         vertices = graph.query("hello", AUTHORIZATIONS_A_AND_B).vertices();
-        assertResultsCount(2, 2, (QueryResultsIterable) vertices);
+        assertVertexIdsAnyOrder(vertices, "v1", "v2");
     }
 
     @Test
