@@ -885,17 +885,20 @@ public class IndexService {
         }
     }
 
-    protected Object convertValueForIndexing(Object obj) {
-        if (obj == null) {
+    protected Object convertValueForIndexing(Object value) {
+        if (value == null) {
             return null;
         }
-        if (obj instanceof BigDecimal) {
-            return ((BigDecimal) obj).doubleValue();
+        if (value instanceof BigInteger) {
+            return ((BigInteger) value).intValue();
         }
-        if (obj instanceof BigInteger) {
-            return ((BigInteger) obj).intValue();
+        if (value instanceof BigDecimal) {
+            return ((BigDecimal) value).doubleValue();
         }
-        return obj;
+        if (value instanceof IpV4Address) {
+            return value.toString();
+        }
+        return value;
     }
 
     protected String[] getIndexNamesAsArray(Graph graph) {
