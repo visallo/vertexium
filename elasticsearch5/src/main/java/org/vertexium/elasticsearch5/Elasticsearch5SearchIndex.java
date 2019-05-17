@@ -842,14 +842,6 @@ public class Elasticsearch5SearchIndex implements SearchIndex {
         Set<String> additionalVisibilities,
         Set<String> additionalVisibilitiesToDelete
     ) {
-        if ((fieldsToSet == null || fieldsToSet.isEmpty()) &&
-            (fieldsToRemove == null || fieldsToRemove.isEmpty()) &&
-            (fieldsToRename == null || fieldsToRename.isEmpty()) &&
-            (additionalVisibilities == null || additionalVisibilities.isEmpty()) &&
-            (additionalVisibilitiesToDelete == null || additionalVisibilitiesToDelete.isEmpty())) {
-            return null;
-        }
-
         fieldsToSet = fieldsToSet == null ? Collections.emptyMap() : fieldsToSet.entrySet().stream()
             .collect(Collectors.toMap(e -> propertyNameService.replaceFieldnameDots(e.getKey()), Map.Entry::getValue));
         fieldsToRemove = fieldsToRemove == null ? Collections.emptyList() : fieldsToRemove.stream().map(propertyNameService::replaceFieldnameDots).collect(Collectors.toList());

@@ -16,4 +16,9 @@ public class AuthorizationsUser implements User {
     public boolean canRead(Visibility visibility) {
         return authorizations.canRead(visibility);
     }
+
+    @Override
+    public String toString() {
+        return String.format("AuthorizationsUser{authorizations=%s}", authorizations);
+    }
 }
