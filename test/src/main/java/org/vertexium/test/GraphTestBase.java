@@ -780,7 +780,7 @@ public abstract class GraphTestBase {
         }
         m.save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
-        Assert.assertEquals(0, count(v1.getProperties()));
+
         v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
         Assert.assertEquals(0, count(v1.getProperties()));
         assertEquals(0, count(graph.query(AUTHORIZATIONS_A_AND_B).has("prop3").vertices()));
@@ -5752,7 +5752,7 @@ public abstract class GraphTestBase {
     }
 
     @Test
-    public void testAlterPropertyVisibilityOverwritingProperty() {
+    public void testAlterPropertyVisibilityOverwritingProperty() throws Exception {
         graph.prepareVertex("v1", VISIBILITY_EMPTY)
             .addPropertyValue("", "prop1", "value1", VISIBILITY_EMPTY)
             .addPropertyValue("", "prop1", "value2", VISIBILITY_A)
@@ -5761,6 +5761,7 @@ public abstract class GraphTestBase {
 
         IncreasingTime.advanceTime(1);
         long beforeAlterTimestamp = IncreasingTime.currentTimeMillis();
+        Thread.sleep(1);
 
         Vertex v1 = graph.getVertex("v1", FetchHints.ALL, AUTHORIZATIONS_A);
         v1.prepareMutation()
