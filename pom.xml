@@ -402,6 +402,10 @@
         <module>elasticsearch5</module>
         <module>elasticsearch5-plugin</module>
 
+        <module>elasticsearch5-graph</module>
+        <module>elasticsearch5-graph-common</module>
+        <module>elasticsearch5-graph-plugin</module>
+
         <module>inmemory</module>
 
         <module>cypher</module>

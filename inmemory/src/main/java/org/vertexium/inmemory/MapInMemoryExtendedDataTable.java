@@ -44,15 +44,17 @@ public class MapInMemoryExtendedDataTable extends InMemoryExtendedDataTable {
 
     @Override
     public synchronized void addData(
+        InMemoryGraph graph,
         ExtendedDataRowId rowId,
         String column,
         String key,
         Object value,
         long timestamp,
-        Visibility visibility
+        Visibility visibility,
+        User user
     ) {
         ElementTypeData data = elementTypeData.computeIfAbsent(rowId.getElementType(), k -> new ElementTypeData());
-        data.addData(rowId, column, key, value, timestamp, visibility);
+        data.addData(graph, rowId, column, key, value, timestamp, visibility, user);
     }
 
     @Override
@@ -114,15 +116,17 @@ public class MapInMemoryExtendedDataTable extends InMemoryExtendedDataTable {
         }
 
         public synchronized void addData(
+            InMemoryGraph graph,
             ExtendedDataRowId rowId,
             String column,
             String key,
             Object value,
             long timestamp,
-            Visibility visibility
+            Visibility visibility,
+            User user
         ) {
             ElementData data = elementData.computeIfAbsent(rowId.getElementId(), k -> new ElementData());
-            data.addData(rowId, column, key, value, timestamp, visibility);
+            data.addData(graph, rowId, column, key, value, timestamp, visibility, user);
         }
 
         public void removeData(ExtendedDataRowId rowId) {
@@ -179,15 +183,17 @@ public class MapInMemoryExtendedDataTable extends InMemoryExtendedDataTable {
         }
 
         public synchronized void addData(
+            InMemoryGraph graph,
             ExtendedDataRowId rowId,
             String column,
             String key,
             Object value,
             long timestamp,
-            Visibility visibility
+            Visibility visibility,
+            User user
         ) {
             Table table = tables.computeIfAbsent(rowId.getTableName(), k -> new Table());
-            table.addData(rowId, column, key, value, timestamp, visibility);
+            table.addData(graph, rowId, column, key, value, timestamp, visibility, user);
         }
 
         public void removeData(ExtendedDataRowId rowId) {
@@ -234,23 +240,25 @@ public class MapInMemoryExtendedDataTable extends InMemoryExtendedDataTable {
             }
 
             public void addData(
+                InMemoryGraph graph,
                 ExtendedDataRowId rowId,
                 String column,
                 String key,
                 Object value,
                 long timestamp,
-                Visibility visibility
+                Visibility visibility,
+                User user
             ) {
-                InMemoryExtendedDataRow row = findOrAddRow(rowId);
+                InMemoryExtendedDataRow row = findOrAddRow(graph, rowId, user);
                 row.addColumn(column, key, value, timestamp, visibility);
             }
 
-            private InMemoryExtendedDataRow findOrAddRow(ExtendedDataRowId rowId) {
+            private InMemoryExtendedDataRow findOrAddRow(InMemoryGraph graph, ExtendedDataRowId rowId, User user) {
                 InMemoryExtendedDataRow row = findRow(rowId);
                 if (row != null) {
                     return row;
                 }
-                row = new InMemoryExtendedDataRow(rowId, FetchHints.ALL);
+                row = new InMemoryExtendedDataRow(graph, rowId, FetchHints.ALL, user);
                 rows.add(row);
                 return row;
             }

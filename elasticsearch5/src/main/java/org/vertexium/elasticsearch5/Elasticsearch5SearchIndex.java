@@ -770,7 +770,6 @@ public class Elasticsearch5SearchIndex implements SearchIndex {
                 .setMaxQueryStringTerms(getConfig().getMaxQueryStringTerms()),
             authorizations
         );
-
     }
 
     @Override

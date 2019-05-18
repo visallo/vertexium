@@ -604,7 +604,8 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
             for (HasExtendedDataFilter filter : filters) {
                 if (filter.getElementType() == null || rowId.getElementType().equals(filter.getElementType())
                     && (filter.getElementId() == null || rowId.getElementId().equals(filter.getElementId()))
-                    && (filter.getTableName() == null || rowId.getTableName().equals(filter.getTableName()))) {
+                    && (filter.getTableName() == null || rowId.getTableName().equals(filter.getTableName()))
+                    && (filter.getRowId() == null || rowId.getRowId().equals(filter.getRowId()))) {
                     return true;
                 }
             }

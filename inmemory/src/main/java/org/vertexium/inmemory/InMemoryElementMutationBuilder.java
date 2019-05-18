@@ -2,7 +2,6 @@ package org.vertexium.inmemory;
 
 import com.google.common.collect.Lists;
 import org.vertexium.*;
-import org.vertexium.event.*;
 import org.vertexium.inmemory.mutations.AlterEdgeLabelMutation;
 import org.vertexium.inmemory.mutations.AlterVisibilityMutation;
 import org.vertexium.inmemory.mutations.EdgeSetupMutation;
@@ -15,7 +14,6 @@ import org.vertexium.util.IncreasingTime;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -25,24 +23,17 @@ class InMemoryElementMutationBuilder {
     private final InMemoryVertexTable vertices;
     private final InMemoryEdgeTable edges;
     private final InMemoryExtendedDataTable extendedDataTable;
-    private final Consumer<GraphEvent> fireGraphEvent;
 
     public InMemoryElementMutationBuilder(
         InMemoryGraph graph,
         InMemoryVertexTable vertices,
         InMemoryEdgeTable edges,
-        InMemoryExtendedDataTable extendedDataTable,
-        Consumer<GraphEvent> fireGraphEvent
+        InMemoryExtendedDataTable extendedDataTable
     ) {
         this.graph = graph;
         this.vertices = vertices;
         this.edges = edges;
         this.extendedDataTable = extendedDataTable;
-        this.fireGraphEvent = fireGraphEvent;
-    }
-
-    private void fireGraphEvent(GraphEvent graphEvent) {
-        this.fireGraphEvent.accept(graphEvent);
     }
 
     public <T extends Element> void saveExistingElementMutation(ExistingElementMutationBase<T> mutation, User user) {
@@ -78,10 +69,8 @@ class InMemoryElementMutationBuilder {
 
     public Vertex saveVertexBuilder(VertexBuilder vertexBuilder, long timestamp, User user) {
         graph.addValidAuthorizations(user.getAuthorizations());
-        boolean isNew = false;
         InMemoryTableElement vertexTableElement = vertices.getTableElement(vertexBuilder.getId());
         if (vertexTableElement == null) {
-            isNew = true;
             vertices.append(
                 vertexBuilder.getId(),
                 new AlterVisibilityMutation(timestamp, vertexBuilder.getVisibility(), null),
@@ -98,9 +87,6 @@ class InMemoryElementMutationBuilder {
             }
         }
         InMemoryVertex vertex = vertices.get(graph, vertexBuilder.getId(), FetchHints.ALL_INCLUDING_HIDDEN, user);
-        if (isNew) {
-            fireGraphEvent(new AddVertexEvent(graph, vertex));
-        }
 
         update(vertexBuilder, vertex, user);
 
@@ -115,9 +101,7 @@ class InMemoryElementMutationBuilder {
     public Edge savePreparedEdge(EdgeBuilderBase edgeBuilder, String outVertexId, String inVertexId, long timestamp, User user) {
         long incrementingTimestamp = timestamp;
         InMemoryTableElement edgeTableElement = this.edges.getTableElement(edgeBuilder.getId());
-        boolean isNew = false;
         if (edgeTableElement == null) {
-            isNew = true;
             edges.append(
                 edgeBuilder.getId(),
                 new AlterVisibilityMutation(incrementingTimestamp++, edgeBuilder.getVisibility(), null),
@@ -139,9 +123,6 @@ class InMemoryElementMutationBuilder {
         }
 
         InMemoryEdge edge = this.edges.get(graph, edgeBuilder.getId(), FetchHints.ALL_INCLUDING_HIDDEN, user);
-        if (isNew) {
-            fireGraphEvent(new AddEdgeEvent(graph, edge));
-        }
         update(edgeBuilder, edge, user);
 
         if (edgeBuilder.getIndexHint() != IndexHint.DO_NOT_INDEX) {
@@ -160,15 +141,13 @@ class InMemoryElementMutationBuilder {
 
         for (Property property : m.getProperties()) {
             addPropertyValue(
-                element,
                 inMemoryTableElement,
                 property.getKey(),
                 property.getName(),
                 property.getValue(),
                 property.getMetadata(),
                 property.getVisibility(),
-                property.getTimestamp(),
-                user
+                property.getTimestamp()
             );
         }
 
@@ -205,8 +184,7 @@ class InMemoryElementMutationBuilder {
             addAdditionalVisibility(
                 inMemoryTableElement,
                 additionalVisibility.getAdditionalVisibility(),
-                additionalVisibility.getEventData(),
-                user
+                additionalVisibility.getEventData()
             );
         }
 
@@ -214,8 +192,7 @@ class InMemoryElementMutationBuilder {
             deleteAdditionalVisibility(
                 inMemoryTableElement,
                 additionalVisibilityDelete.getAdditionalVisibility(),
-                additionalVisibilityDelete.getEventData(),
-                user
+                additionalVisibilityDelete.getEventData()
             );
         }
 
@@ -326,15 +303,13 @@ class InMemoryElementMutationBuilder {
     }
 
     private void addPropertyValue(
-        InMemoryElement element,
         InMemoryTableElement inMemoryTableElement,
         String key,
         String name,
         Object value,
         Metadata metadata,
         Visibility visibility,
-        Long timestamp,
-        User user
+        Long timestamp
     ) {
         graph.ensurePropertyDefined(name, value);
 
@@ -346,9 +321,6 @@ class InMemoryElementMutationBuilder {
             value = saveStreamingPropertyValue((StreamingPropertyValue) value);
         }
         inMemoryTableElement.appendAddPropertyValueMutation(key, name, value, metadata, visibility, timestamp, null);
-        Property property = inMemoryTableElement.getProperty(key, name, visibility, FetchHints.ALL_INCLUDING_HIDDEN, user);
-
-        fireGraphEvent(new AddPropertyEvent(graph, element, property));
     }
 
     private void deleteProperty(
@@ -363,8 +335,6 @@ class InMemoryElementMutationBuilder {
         inMemoryTableElement.deleteProperty(key, name, visibility, user);
 
         graph.getSearchIndex().deleteProperty(graph, element, PropertyDescriptor.fromProperty(property), user);
-
-        fireGraphEvent(new DeletePropertyEvent(graph, element, property));
     }
 
     private void softDeleteProperty(
@@ -388,50 +358,22 @@ class InMemoryElementMutationBuilder {
         if (indexHint != IndexHint.DO_NOT_INDEX) {
             graph.getSearchIndex().deleteProperty(graph, element, PropertyDescriptor.fromProperty(property), user);
         }
-
-        fireGraphEvent(new SoftDeletePropertyEvent(graph, element, property, data));
     }
 
     private void addAdditionalVisibility(
         InMemoryTableElement inMemoryTableElement,
         String visibility,
-        Object eventData,
-        User user
+        Object eventData
     ) {
-        Element element;
-        FetchHints fetchHints = new FetchHintsBuilder(FetchHints.ALL_INCLUDING_HIDDEN)
-            .setIgnoreAdditionalVisibilities(true)
-            .build();
         inMemoryTableElement.appendAddAdditionalVisibilityMutation(visibility, eventData);
-        if (inMemoryTableElement instanceof InMemoryTableVertex) {
-            element = graph.getVertex(inMemoryTableElement.getId(), fetchHints, user);
-        } else if (inMemoryTableElement instanceof InMemoryTableEdge) {
-            element = graph.getEdge(inMemoryTableElement.getId(), fetchHints, user);
-        } else {
-            throw new IllegalArgumentException("Unexpected element type: " + inMemoryTableElement.getClass().getName());
-        }
-        fireGraphEvent(new AddAdditionalVisibilityEvent(graph, element, visibility, eventData));
     }
 
     private void deleteAdditionalVisibility(
         InMemoryTableElement inMemoryTableElement,
         String visibility,
-        Object eventData,
-        User user
+        Object eventData
     ) {
-        Element element;
-        FetchHints fetchHints = new FetchHintsBuilder(FetchHints.ALL_INCLUDING_HIDDEN)
-            .setIgnoreAdditionalVisibilities(true)
-            .build();
         inMemoryTableElement.appendDeleteAdditionalVisibilityMutation(visibility, eventData);
-        if (inMemoryTableElement instanceof InMemoryTableVertex) {
-            element = graph.getVertex(inMemoryTableElement.getId(), fetchHints, user);
-        } else if (inMemoryTableElement instanceof InMemoryTableEdge) {
-            element = graph.getEdge(inMemoryTableElement.getId(), fetchHints, user);
-        } else {
-            throw new IllegalArgumentException("Unexpected element type: " + inMemoryTableElement.getClass().getName());
-        }
-        fireGraphEvent(new DeleteAdditionalVisibilityEvent(graph, element, visibility, eventData));
     }
 
     private <T extends InMemoryElement> void deleteExtendedDataRow(
@@ -456,8 +398,6 @@ class InMemoryElementMutationBuilder {
 
         extendedDataTable.remove(id);
         graph.getSearchIndex().deleteExtendedData(graph, id, user);
-
-        fireGraphEvent(new DeleteExtendedDataRowEvent(graph, id));
     }
 
     private void deleteExtendedData(
@@ -477,7 +417,6 @@ class InMemoryElementMutationBuilder {
         );
 
         graph.getSearchIndex().deleteExtendedData(graph, element, tableName, row, columnName, key, visibility, user);
-        fireGraphEvent(new DeleteExtendedDataEvent(graph, element, tableName, row, columnName, key));
     }
 
     private void addAdditionalExtendedDataVisibility(
@@ -490,8 +429,6 @@ class InMemoryElementMutationBuilder {
             new ExtendedDataRowId(ElementType.getTypeFromElement(element), element.getId(), tableName, row),
             additionalVisibility
         );
-
-        fireGraphEvent(new AddAdditionalExtendedDataVisibilityEvent(graph, element, tableName, row, additionalVisibility));
     }
 
     private void deleteAdditionalExtendedDataVisibility(
@@ -504,8 +441,6 @@ class InMemoryElementMutationBuilder {
             new ExtendedDataRowId(ElementType.getTypeFromElement(element), element.getId(), tableName, row),
             additionalVisibility
         );
-
-        fireGraphEvent(new DeleteAdditionalExtendedDataVisibilityEvent(graph, element, tableName, row, additionalVisibility));
     }
 
     private void extendedData(
@@ -514,7 +449,16 @@ class InMemoryElementMutationBuilder {
         ExtendedDataMutation extendedData,
         User user
     ) {
-        extendedDataTable.addData(rowId, extendedData.getColumnName(), extendedData.getKey(), extendedData.getValue(), extendedData.getTimestamp(), extendedData.getVisibility());
+        extendedDataTable.addData(
+            graph,
+            rowId,
+            extendedData.getColumnName(),
+            extendedData.getKey(),
+            extendedData.getValue(),
+            extendedData.getTimestamp(),
+            extendedData.getVisibility(),
+            user
+        );
         graph.getSearchIndex().addElementExtendedData(
             graph,
             element,
@@ -523,16 +467,6 @@ class InMemoryElementMutationBuilder {
             Collections.emptyList(),
             user
         );
-        fireGraphEvent(new AddExtendedDataEvent(
-            graph,
-            element,
-            rowId.getTableName(),
-            rowId.getRowId(),
-            extendedData.getColumnName(),
-            extendedData.getKey(),
-            extendedData.getValue(),
-            extendedData.getVisibility()
-        ));
     }
 
     private void markPropertyVisible(
@@ -561,10 +495,6 @@ class InMemoryElementMutationBuilder {
         );
 
         graph.getSearchIndex().markPropertyVisible(graph, element, property, visibility, user);
-
-        if (property != null) {
-            fireGraphEvent(new MarkVisiblePropertyEvent(graph, element, property, visibility, data));
-        }
     }
 
     private void markPropertyHidden(
@@ -593,10 +523,6 @@ class InMemoryElementMutationBuilder {
         );
 
         graph.getSearchIndex().markPropertyHidden(graph, element, hiddenProperty, visibility, user);
-
-        if (hiddenProperty != null) {
-            fireGraphEvent(new MarkHiddenPropertyEvent(graph, element, hiddenProperty, visibility, data));
-        }
     }
 
     private <T extends InMemoryElement> void markElementHidden(
@@ -619,8 +545,6 @@ class InMemoryElementMutationBuilder {
 
             edges.getTableElement(edge.getId()).appendMarkHiddenMutation(visibility, eventData);
             graph.getSearchIndex().markElementHidden(graph, edge, visibility, user);
-
-            fireGraphEvent(new MarkHiddenEdgeEvent(graph, edge, eventData));
         } else if (element instanceof Vertex) {
             Vertex vertex = (Vertex) element;
 
@@ -630,8 +554,6 @@ class InMemoryElementMutationBuilder {
             vertices.getTableElement(vertex.getId()).appendMarkHiddenMutation(visibility, eventData);
             refreshVertexInMemoryTableElement(vertex);
             graph.getSearchIndex().markElementHidden(graph, vertex, visibility, user);
-
-            fireGraphEvent(new MarkHiddenVertexEvent(graph, vertex, eventData));
         } else {
             throw new VertexiumException("Unhandled element type: " + element);
         }
@@ -657,8 +579,6 @@ class InMemoryElementMutationBuilder {
 
             edges.getTableElement(edge.getId()).appendMarkVisibleMutation(visibility, eventData);
             graph.getSearchIndex().markElementVisible(graph, edge, visibility, user);
-
-            fireGraphEvent(new MarkVisibleEdgeEvent(graph, edge, eventData));
         } else if (element instanceof Vertex) {
             Vertex vertex = (Vertex) element;
 
@@ -668,8 +588,6 @@ class InMemoryElementMutationBuilder {
             vertices.getTableElement(vertex.getId()).appendMarkVisibleMutation(visibility, eventData);
             refreshVertexInMemoryTableElement(vertex);
             graph.getSearchIndex().markElementVisible(graph, vertex, visibility, user);
-
-            fireGraphEvent(new MarkVisibleVertexEvent(graph, vertex, eventData));
         } else {
             throw new VertexiumException("Unhandled element type: " + element);
         }
@@ -708,8 +626,6 @@ class InMemoryElementMutationBuilder {
             edges.getTableElement(edge.getId()).appendSoftDeleteMutation(timestamp, eventData);
 
             graph.getSearchIndex().deleteElement(graph, edge, user);
-
-            fireGraphEvent(new SoftDeleteEdgeEvent(graph, edge, eventData));
         } else if (element instanceof Vertex) {
             Vertex vertex = (Vertex) element;
             if (!((InMemoryVertex) vertex).canRead(user)) {
@@ -722,8 +638,6 @@ class InMemoryElementMutationBuilder {
             vertices.getTableElement(vertex.getId()).appendSoftDeleteMutation(timestamp, eventData);
 
             graph.getSearchIndex().deleteElement(graph, vertex, user);
-
-            fireGraphEvent(new SoftDeleteVertexEvent(graph, vertex, eventData));
         } else {
             throw new VertexiumException("Unhandled element type: " + element);
         }
@@ -742,8 +656,6 @@ class InMemoryElementMutationBuilder {
 
             edges.remove(edge.getId());
             graph.getSearchIndex().deleteElement(graph, edge, user);
-
-            fireGraphEvent(new DeleteEdgeEvent(graph, edge));
         } else if (element instanceof Vertex) {
             Vertex vertex = (Vertex) element;
             if (!((InMemoryVertex) vertex).canRead(user)) {
@@ -757,8 +669,6 @@ class InMemoryElementMutationBuilder {
 
             vertices.remove(vertex.getId());
             graph.getSearchIndex().deleteElement(graph, vertex, user);
-
-            fireGraphEvent(new DeleteVertexEvent(graph, vertex));
         } else {
             throw new VertexiumException("Unhandled element type: " + element);
         }

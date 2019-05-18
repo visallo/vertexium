@@ -88,7 +88,19 @@ public interface Edge extends Element, EdgeElementLocation {
     /**
      * Given a vertexId that represents one side of a relationship, get me the id of the other side.
      */
-    String getOtherVertexId(String myVertexId);
+    default String getOtherVertexId(String myVertexId) {
+        String outVertexId = getVertexId(Direction.OUT);
+        if (myVertexId.equals(outVertexId)) {
+            return getVertexId(Direction.IN);
+        }
+
+        String inVertexId = getVertexId(Direction.IN);
+        if (myVertexId.equals(inVertexId)) {
+            return outVertexId;
+        }
+
+        throw new VertexiumException("myVertexId(" + myVertexId + ") does not appear on edge (" + getId() + ") in either the in (" + inVertexId + ") or the out (" + outVertexId + ").");
+    }
 
     /**
      * Given a vertexId that represents one side of a relationship, get me the vertex of the other side.

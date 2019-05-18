@@ -3,11 +3,9 @@ package org.vertexium.inmemory;
 import org.vertexium.*;
 import org.vertexium.mutation.ExistingElementMutation;
 import org.vertexium.mutation.ExistingElementMutationBase;
-import org.vertexium.query.VertexQuery;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class InMemoryVertex extends InMemoryElement<InMemoryVertex> implements Vertex {
@@ -147,22 +145,6 @@ public class InMemoryVertex extends InMemoryElement<InMemoryVertex> implements V
     }
 
     @Override
-    public Stream<Vertex> getVertices(Direction direction, String[] labels, FetchHints fetchHints, Long endTime, User user) {
-        Iterable<String> vertexIds = getVertexIds(direction, labels, user).collect(Collectors.toList());
-        return getGraph().getVertices(vertexIds, fetchHints, endTime, user);
-    }
-
-    @Override
-    public VertexQuery query(Authorizations authorizations) {
-        return query(null, authorizations);
-    }
-
-    @Override
-    public VertexQuery query(String queryString, Authorizations authorizations) {
-        return getGraph().getSearchIndex().queryVertex(getGraph(), this, queryString, authorizations);
-    }
-
-    @Override
     @SuppressWarnings("unchecked")
     public ExistingElementMutation<Vertex> prepareMutation() {
         return new ExistingElementMutationBase<Vertex>(this) {
@@ -182,14 +164,5 @@ public class InMemoryVertex extends InMemoryElement<InMemoryVertex> implements V
                 return getElement();
             }
         };
-    }
-
-    @Override
-    public Stream<EdgeVertexPair> getEdgeVertexPairs(Direction direction, String[] labels, FetchHints fetchHints, Long endTime, User user) {
-        return getEdgeVertexPairs(getEdgeInfos(direction, labels, user), fetchHints, endTime, user);
-    }
-
-    private Stream<EdgeVertexPair> getEdgeVertexPairs(Stream<EdgeInfo> edgeInfos, FetchHints fetchHints, Long endTime, User user) {
-        return EdgeVertexPair.getEdgeVertexPairs(getGraph(), getId(), edgeInfos, fetchHints, endTime, user);
     }
 }

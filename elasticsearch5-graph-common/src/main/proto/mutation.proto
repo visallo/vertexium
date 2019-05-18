@@ -1,0 +1,139 @@
+syntax = "proto2";
+option java_multiple_files = true;
+option java_package = "org.vertexium.elasticsearch5.models";
+package vertexium;
+
+import "value.proto";
+import "metadata.proto";
+
+message Mutations {
+    repeated Mutation mutations = 1;
+}
+
+message Mutation {
+    required uint64 timestamp = 1;
+    oneof mutation {
+        SetPropertyMutation set_property_mutation = 2;
+        AlterEdgeLabelMutation alter_edge_label_mutation = 3;
+        SoftDeleteMutation soft_delete_mutation = 4;
+        PropertyDeleteMutation property_delete_mutation = 5;
+        PropertySoftDeleteMutation property_soft_delete_mutation = 6;
+        MarkHiddenMutation mark_hidden_mutation = 7;
+        MarkVisibleMutation mark_visible_mutation = 8;
+        MarkPropertyHiddenMutation mark_property_hidden_mutation = 9;
+        MarkPropertyVisibleMutation mark_property_visible_mutation = 10;
+        AlterElementVisibilityMutation alter_element_visibility_mutation = 11;
+        AdditionalVisibilityAddMutation additional_visibility_add_mutation = 12;
+        AdditionalVisibilityDeleteMutation additional_visibility_delete_mutation = 13;
+        AlterPropertyVisibilityMutation alter_property_visibility_mutation = 14;
+        SetPropertyMetadataMutation set_property_metadata_mutation = 15;
+        DeleteMutation delete_mutation = 16;
+        UpdateVertexMutation update_vertex_mutation = 17;
+        UpdateEdgeMutation update_edge_mutation = 18;
+    }
+}
+
+message UpdateVertexMutation {
+    required string id = 1;
+    required string visibility = 2;
+}
+
+message UpdateEdgeMutation {
+    required string id = 1;
+    required string visibility = 2;
+    required string outVertexId = 3;
+    required string inVertexId = 4;
+    required string label = 5;
+}
+
+message DeleteMutation {
+    required bool soft_delete = 1;
+    optional Value event_data = 2;
+}
+
+message SetPropertyMutation {
+    optional string key = 1;
+    required string name = 2;
+    required string visibility = 3;
+    required Value value = 4;
+    repeated MetadataEntry metadata = 5;
+}
+
+message AlterEdgeLabelMutation {
+    required string new_edge_label = 1;
+}
+
+message SoftDeleteMutation {
+    optional Value event_data = 1;
+}
+
+message PropertyDeleteMutation {
+    optional string key = 1;
+    required string name = 2;
+    required string visibility = 3;
+}
+
+message PropertySoftDeleteMutation {
+    required string key = 1;
+    required string name = 2;
+    required string visibility = 3;
+    optional Value event_data = 4;
+}
+
+message MarkHiddenMutation {
+    required string visibility = 1;
+    optional Value event_data = 2;
+}
+
+message MarkVisibleMutation {
+    required string visibility = 1;
+    optional Value event_data = 2;
+}
+
+message MarkPropertyHiddenMutation {
+    required string key = 1;
+    required string name = 2;
+    required string propertyVisibility = 3;
+    required string visibility = 4;
+    optional Value event_data = 5;
+}
+
+message MarkPropertyVisibleMutation {
+    required string key = 1;
+    required string name = 2;
+    required string propertyVisibility = 3;
+    required string visibility = 4;
+    optional Value event_data = 5;
+}
+
+message AlterElementVisibilityMutation {
+    required string visibility = 1;
+    optional Value event_data = 2;
+}
+
+message AdditionalVisibilityAddMutation {
+    required string visibility = 1;
+    optional Value event_data = 2;
+}
+
+message AdditionalVisibilityDeleteMutation {
+    required string visibility = 1;
+    optional Value event_data = 2;
+}
+
+message AlterPropertyVisibilityMutation {
+    required string key = 1;
+    required string name = 2;
+    optional string oldVisibility = 4;
+    required string newVisibility = 5;
+    optional Value event_data = 6;
+}
+
+message SetPropertyMetadataMutation {
+    required string property_key = 1;
+    required string property_name = 2;
+    optional string property_visibility = 3;
+    required string metadata_key = 4;
+    required string metadata_visibility = 5;
+    required Value metadata_value = 6;
+}

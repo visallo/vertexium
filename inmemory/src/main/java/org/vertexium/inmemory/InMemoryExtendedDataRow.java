@@ -21,9 +21,14 @@ public class InMemoryExtendedDataRow extends ExtendedDataRowBase {
     private final Set<InMemoryProperty> properties = new HashSet<>();
     private final Set<ColumnVisibility> additionalVisibilities = new HashSet<>();
 
-    public InMemoryExtendedDataRow(ExtendedDataRowId id, FetchHints fetchHints) {
-        super(fetchHints);
+    public InMemoryExtendedDataRow(InMemoryGraph graph, ExtendedDataRowId id, FetchHints fetchHints, User user) {
+        super(graph, fetchHints, user);
         this.id = id;
+    }
+
+    @Override
+    public InMemoryGraph getGraph() {
+        return (InMemoryGraph) super.getGraph();
     }
 
     public boolean canRead(VisibilityEvaluator visibilityEvaluator, FetchHints fetchHints) {
@@ -46,7 +51,7 @@ public class InMemoryExtendedDataRow extends ExtendedDataRowBase {
     public InMemoryExtendedDataRow toReadable(VisibilityEvaluator visibilityEvaluator, FetchHints fetchHints) {
         propertiesLock.readLock().lock();
         try {
-            InMemoryExtendedDataRow row = new InMemoryExtendedDataRow(getId(), getFetchHints());
+            InMemoryExtendedDataRow row = new InMemoryExtendedDataRow(getGraph(), getId(), getFetchHints(), getUser());
             if (!fetchHints.isIgnoreAdditionalVisibilities() && !canReadAdditionalVisibility(visibilityEvaluator)) {
                 return null;
             }

@@ -150,16 +150,6 @@ public class AccumuloEdge extends AccumuloElement implements Edge {
     }
 
     @Override
-    public String getOtherVertexId(String myVertexId) {
-        if (inVertexId.equals(myVertexId)) {
-            return outVertexId;
-        } else if (outVertexId.equals(myVertexId)) {
-            return inVertexId;
-        }
-        throw new VertexiumException("myVertexId(" + myVertexId + ") does not appear on edge (" + getId() + ") in either the in (" + inVertexId + ") or the out (" + outVertexId + ").");
-    }
-
-    @Override
     @SuppressWarnings("unchecked")
     public ExistingEdgeMutation prepareMutation() {
         return new ExistingEdgeMutation(this) {

@@ -1,0 +1,5 @@
+- lazy hidden visibilities list
+- verify extended data edge labels change when calling alter edge label
+- verify you can store SPVs in extended data
+- don't save event data in main index 
+- de-dup metadata values in storage

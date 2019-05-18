@@ -17,8 +17,15 @@ public abstract class StreamingPropertyValueRef<T extends Graph> implements Seri
     }
 
     protected StreamingPropertyValueRef(StreamingPropertyValue propertyValue) {
-        this.valueType = propertyValue.getValueType().getName();
-        this.searchIndex = propertyValue.isSearchIndex();
+        this(
+            propertyValue.getValueType().getName(),
+            propertyValue.isSearchIndex()
+        );
+    }
+
+    protected StreamingPropertyValueRef(String valueType, boolean searchIndex) {
+        this.valueType = valueType;
+        this.searchIndex = searchIndex;
     }
 
     public Class getValueType() {

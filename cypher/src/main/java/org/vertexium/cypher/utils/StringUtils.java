@@ -239,14 +239,9 @@ public class StringUtils {
                         }
 
                         if (!((ch >= '0' && ch <= '9')
-                            ||
-                            (ch >= 'a' && ch <= 'f')
-                            ||
-                            (ch >= 'A' && ch <= 'F')
-                            )
-                        ) {
-                            die(String.format(
-                                "illegal hex digit #%d '%c' in \\x", ch, ch));
+                            || (ch >= 'a' && ch <= 'f')
+                            || (ch >= 'A' && ch <= 'F'))) {
+                            die(String.format("illegal hex digit #%d '%c' in \\x", ch, ch));
                         }
 
                     }

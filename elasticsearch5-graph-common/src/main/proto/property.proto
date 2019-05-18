@@ -1,0 +1,28 @@
+syntax = "proto2";
+option java_multiple_files = true;
+option java_package = "org.vertexium.elasticsearch5.models";
+package vertexium;
+
+import "value.proto";
+import "metadata.proto";
+
+message Properties {
+    repeated Property properties = 1;
+}
+
+message Property {
+    required string key = 1;
+    required string name = 2;
+    required string visibility = 3;
+    required uint64 timestamp = 4;
+    required Value value = 5;
+    repeated MetadataEntry metadata = 6;
+    repeated PropertyHiddenVisibility hidden_visibilities = 7;
+    optional bool softDelete = 8;
+    optional Value soft_delete_event_data = 9;
+}
+
+message PropertyHiddenVisibility {
+    required string visibility = 1;
+    optional Value event_data = 2;
+}

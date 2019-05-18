@@ -284,11 +284,6 @@ public interface Element extends VertexiumObject, ElementLocation {
     }
 
     /**
-     * Gets the graph that this element belongs to.
-     */
-    Graph getGraph();
-
-    /**
      * Adds or updates a property.
      *
      * @param key        The unique key given to the property allowing for multi-valued properties.
@@ -357,11 +352,6 @@ public interface Element extends VertexiumObject, ElementLocation {
             .setProperty(name, value, metadata, visibility)
             .save(authorizations);
     }
-
-    /**
-     * Gets the user used to get this element.
-     */
-    User getUser();
 
     /**
      * Marks a property as hidden for a given visibility.
@@ -722,11 +712,6 @@ public interface Element extends VertexiumObject, ElementLocation {
      * @return Iterable of all the rows.
      */
     QueryableIterable<ExtendedDataRow> getExtendedData(String tableName, FetchHints fetchHints);
-
-    /**
-     * Fetch hints used when fetching this element.
-     */
-    FetchHints getFetchHints();
 
     @Override
     default int compareTo(Object o) {

@@ -2,7 +2,6 @@ package org.vertexium;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import org.vertexium.event.GraphEventListener;
 import org.vertexium.historicalEvent.HistoricalEvent;
 import org.vertexium.historicalEvent.HistoricalEventId;
 import org.vertexium.id.IdGenerator;
@@ -1231,34 +1230,6 @@ public interface Graph {
     Stream<Edge> getEdgesInRange(Range idRange, FetchHints fetchHints, Long endTime, User user);
 
     /**
-     * Filters a collection of edge ids by the authorizations of that edge, properties, etc. If
-     * any of the filtered items match that edge id will be included.
-     *
-     * @param edgeIds              The edge ids to filter on.
-     * @param authorizationToMatch The authorization to look for
-     * @param filters              The parts of the edge to filter on
-     * @param authorizations       The authorization to find the edges with
-     * @return The filtered down list of edge ids
-     * @deprecated Use {@link org.vertexium.query.Query#hasId(String...)} and {@link org.vertexium.query.Query#hasAuthorization(String...)}
-     */
-    @Deprecated
-    Iterable<String> filterEdgeIdsByAuthorization(Iterable<String> edgeIds, String authorizationToMatch, EnumSet<ElementFilter> filters, Authorizations authorizations);
-
-    /**
-     * Filters a collection of vertex ids by the authorizations of that vertex, properties, etc. If
-     * any of the filtered items match that vertex id will be included.
-     *
-     * @param vertexIds            The vertex ids to filter on.
-     * @param authorizationToMatch The authorization to look for
-     * @param filters              The parts of the edge to filter on
-     * @param authorizations       The authorization to find the edges with
-     * @return The filtered down list of vertex ids
-     * @deprecated Use {@link org.vertexium.query.Query#hasId(String...)} and {@link org.vertexium.query.Query#hasAuthorization(String...)}
-     */
-    @Deprecated
-    Iterable<String> filterVertexIdsByAuthorization(Iterable<String> vertexIds, String authorizationToMatch, EnumSet<ElementFilter> filters, Authorizations authorizations);
-
-    /**
      * Tests the existence of edges with the given authorizations.
      *
      * @param ids            The edge ids to check existence of.
@@ -1471,7 +1442,15 @@ public interface Graph {
      * @param user      The user required to load the edges.
      * @return An iterable of all the edge ids between any two vertices.
      */
-    Stream<String> findRelatedEdgeIds(Iterable<String> vertexIds, Long endTime, User user);
+    default Stream<String> findRelatedEdgeIds(Iterable<String> vertexIds, Long endTime, User user) {
+        FetchHints fetchHints = new FetchHintsBuilder()
+            .setIncludeOutEdgeRefs(true)
+            .build();
+        return findRelatedEdgeIdsForVertices(
+            getVertices(vertexIds, fetchHints, endTime, user).collect(Collectors.toList()),
+            user
+        );
+    }
 
     /**
      * Given a list of vertices, find all the edges that connect them.
@@ -1552,7 +1531,15 @@ public interface Graph {
      * @param user      The user required to load the edges.
      * @return Summary information about the related edges.
      */
-    Stream<RelatedEdge> findRelatedEdgeSummary(Iterable<String> vertexIds, Long endTime, User user);
+    default Stream<RelatedEdge> findRelatedEdgeSummary(Iterable<String> vertexIds, Long endTime, User user) {
+        FetchHints fetchHints = new FetchHintsBuilder()
+            .setIncludeOutEdgeRefs(true)
+            .build();
+        return findRelatedEdgeSummaryForVertices(
+            getVertices(vertexIds, fetchHints, endTime, user).collect(Collectors.toList()),
+            user
+        );
+    }
 
     /**
      * Permanently deletes an edge from the graph.
@@ -1958,11 +1945,6 @@ public interface Graph {
     }
 
     /**
-     * Adds a graph event listener that will be called when graph events occur.
-     */
-    void addGraphEventListener(GraphEventListener graphEventListener);
-
-    /**
      * Marks a vertex as hidden for a given visibility.
      *
      * @param vertex         The vertex to mark hidden.
@@ -2147,7 +2129,7 @@ public interface Graph {
         Map<Object, Long> countsByValue = new HashMap<>();
         for (Vertex v : getVertices(authorizations)) {
             for (Property p : v.getProperties()) {
-                if (propertyName.equals(p.getName())) {
+                if (propertyName.equals(p.getName()) && authorizations.canRead(p.getVisibility())) {
                     Object mapKey = p.getValue();
                     if (mapKey instanceof String) {
                         mapKey = ((String) mapKey).toLowerCase();

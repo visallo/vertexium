@@ -2,14 +2,11 @@ package org.vertexium.inmemory;
 
 import com.google.common.collect.Sets;
 import org.vertexium.*;
-import org.vertexium.event.GraphEvent;
 import org.vertexium.id.IdGenerator;
 import org.vertexium.inmemory.mutations.EdgeSetupMutation;
 import org.vertexium.mutation.*;
 import org.vertexium.property.StreamingPropertyValue;
 import org.vertexium.search.SearchIndex;
-import org.vertexium.util.ConvertingIterable;
-import org.vertexium.util.FilterIterable;
 import org.vertexium.util.IncreasingTime;
 
 import java.io.InputStream;
@@ -86,12 +83,7 @@ public class InMemoryGraph extends GraphBase {
             this,
             this.vertices,
             this.edges,
-            this.extendedDataTable,
-            (GraphEvent event) -> {
-                if (hasEventListeners()) {
-                    fireGraphEvent(event);
-                }
-            }
+            this.extendedDataTable
         );
     }
 
@@ -490,104 +482,8 @@ public class InMemoryGraph extends GraphBase {
     }
 
     @Override
-    @Deprecated
-    public Iterable<String> filterEdgeIdsByAuthorization(
-        Iterable<String> edgeIds,
-        final String authorizationToMatch,
-        final EnumSet<ElementFilter> filters,
-        Authorizations authorizations
-    ) {
-        FilterIterable<Edge> edges = new FilterIterable<Edge>(getEdges(edgeIds, FetchHints.ALL_INCLUDING_HIDDEN, authorizations)) {
-            @Override
-            protected boolean isIncluded(Edge edge) {
-                if (filters.contains(ElementFilter.ELEMENT)) {
-                    if (edge.getVisibility().hasAuthorization(authorizationToMatch)) {
-                        return true;
-                    }
-                }
-                return isIncludedByAuthorizations(edge, filters, authorizationToMatch);
-            }
-        };
-        return new ConvertingIterable<Edge, String>(edges) {
-            @Override
-            protected String convert(Edge edge) {
-                return edge.getId();
-            }
-        };
-    }
-
-    @Override
-    @Deprecated
-    public Iterable<String> filterVertexIdsByAuthorization(
-        Iterable<String> vertexIds,
-        final String authorizationToMatch,
-        final EnumSet<ElementFilter> filters,
-        Authorizations authorizations
-    ) {
-        FilterIterable<Vertex> vertices = new FilterIterable<Vertex>(getVertices(vertexIds, FetchHints.ALL_INCLUDING_HIDDEN, authorizations)) {
-            @Override
-            protected boolean isIncluded(Vertex vertex) {
-                if (filters.contains(ElementFilter.ELEMENT)) {
-                    if (vertex.getVisibility().hasAuthorization(authorizationToMatch)) {
-                        return true;
-                    }
-                }
-                return isIncludedByAuthorizations(vertex, filters, authorizationToMatch);
-            }
-        };
-        return new ConvertingIterable<Vertex, String>(vertices) {
-            @Override
-            protected String convert(Vertex vertex) {
-                return vertex.getId();
-            }
-        };
-    }
-
-    private boolean isIncludedByAuthorizations(Element element, EnumSet<ElementFilter> filters, String authorizationToMatch) {
-        if (filters.contains(ElementFilter.PROPERTY) || filters.contains(ElementFilter.PROPERTY_METADATA)) {
-            for (Property property : element.getProperties()) {
-                if (filters.contains(ElementFilter.PROPERTY)) {
-                    if (property.getVisibility().hasAuthorization(authorizationToMatch)) {
-                        return true;
-                    }
-                }
-                if (filters.contains(ElementFilter.PROPERTY_METADATA)) {
-                    for (Metadata.Entry entry : property.getMetadata().entrySet()) {
-                        if (entry.getVisibility().hasAuthorization(authorizationToMatch)) {
-                            return true;
-                        }
-                    }
-                }
-            }
-        }
-        return false;
-    }
-
-    @Override
     public Stream<Path> findPaths(FindPathOptions options, User user) {
         return findPathStrategy.findPaths(options, user);
-    }
-
-    @Override
-    public Stream<String> findRelatedEdgeIds(Iterable<String> vertexIds, Long endTime, User user) {
-        FetchHints fetchHints = new FetchHintsBuilder()
-            .setIncludeOutEdgeRefs(true)
-            .build();
-        return findRelatedEdgeIdsForVertices(
-            getVertices(vertexIds, fetchHints, endTime, user).collect(Collectors.toList()),
-            user
-        );
-    }
-
-    @Override
-    public Stream<RelatedEdge> findRelatedEdgeSummary(Iterable<String> vertexIds, Long endTime, User user) {
-        FetchHints fetchHints = new FetchHintsBuilder()
-            .setIncludeOutEdgeRefs(true)
-            .build();
-        return findRelatedEdgeSummaryForVertices(
-            getVertices(vertexIds, fetchHints, endTime, user).collect(Collectors.toList()),
-            user
-        );
     }
 
     public InMemoryElementMutationBuilder getElementMutationBuilder() {

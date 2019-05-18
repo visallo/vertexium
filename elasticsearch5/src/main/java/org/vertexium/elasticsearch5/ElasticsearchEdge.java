@@ -49,14 +49,6 @@ public class ElasticsearchEdge extends ElasticsearchElement implements Edge {
     }
 
     @Override
-    public String getOtherVertexId(String myVertexId) {
-        if (myVertexId.equals(inVertexId)) {
-            return outVertexId;
-        }
-        return inVertexId;
-    }
-
-    @Override
     public Vertex getOtherVertex(String myVertexId, Authorizations authorizations) {
         throw new VertexiumNotSupportedException("getOtherVertex is not supported");
     }

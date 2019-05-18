@@ -20,12 +20,14 @@ public abstract class InMemoryExtendedDataTable {
     );
 
     public abstract void addData(
+        InMemoryGraph graph,
         ExtendedDataRowId rowId,
         String column,
         String key,
         Object value,
         long timestamp,
-        Visibility visibility
+        Visibility visibility,
+        User user
     );
 
     public abstract void remove(ExtendedDataRowId id);

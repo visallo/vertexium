@@ -768,6 +768,10 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
             boolQuery.must(QueryBuilders.termQuery(Elasticsearch5SearchIndex.EXTENDED_DATA_TABLE_NAME_FIELD_NAME, has.getTableName()));
             hasQuery = true;
         }
+        if (has.getRowId() != null) {
+            boolQuery.must(QueryBuilders.termQuery(EXTENDED_DATA_TABLE_ROW_ID_FIELD_NAME, has.getRowId()));
+            hasQuery = true;
+        }
         if (!hasQuery) {
             throw new VertexiumException("Cannot include a hasExtendedData clause with all nulls");
         }

@@ -68,6 +68,9 @@ public class StatisticsResult extends AggregationResult {
         double standardDeviationS1 = 0.0;
         double standardDeviationS2 = 0.0;
         for (StatisticsResult statisticsResult : statisticsResults) {
+            if (statisticsResult.getCount() == 0) {
+                continue;
+            }
             standardDeviationS1 += statisticsResult.getCount() * Math.pow(statisticsResult.getStandardDeviation(), 2.0);
             standardDeviationS2 += statisticsResult.getCount() * Math.pow(statisticsResult.getAverage() - average, 2.0);
         }

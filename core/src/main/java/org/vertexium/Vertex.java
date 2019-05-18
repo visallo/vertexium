@@ -4,6 +4,7 @@ import org.vertexium.mutation.ExistingElementMutation;
 import org.vertexium.query.VertexQuery;
 import org.vertexium.util.FutureDeprecation;
 
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.vertexium.util.StreamUtils.toIterable;
@@ -606,7 +607,6 @@ public interface Vertex extends Element {
      */
     Stream<EdgeInfo> getEdgeInfos(Direction direction, String[] labels, User user);
 
-
     /**
      * Similar to getEdges but gets the vertices on the other side of the edges attached to this vertex.
      *
@@ -853,7 +853,10 @@ public interface Vertex extends Element {
      * @param user       The user used to find the vertices.
      * @return An Iterable of vertices.
      */
-    Stream<Vertex> getVertices(Direction direction, String[] labels, FetchHints fetchHints, Long endTime, User user);
+    default Stream<Vertex> getVertices(Direction direction, String[] labels, FetchHints fetchHints, Long endTime, User user) {
+        Iterable<String> vertexIds = getVertexIds(direction, labels, user).collect(Collectors.toList());
+        return getGraph().getVertices(vertexIds, fetchHints, endTime, user);
+    }
 
     /**
      * Gets vertex ids of connected vertices.
@@ -935,7 +938,9 @@ public interface Vertex extends Element {
      * @param authorizations The authorizations used to find the edges and vertices.
      * @return The query builder.
      */
-    VertexQuery query(Authorizations authorizations);
+    default VertexQuery query(Authorizations authorizations) {
+        return query(null, authorizations);
+    }
 
     /**
      * Creates a query to query the edges and vertices attached to this vertex.
@@ -944,7 +949,9 @@ public interface Vertex extends Element {
      * @param authorizations The authorizations used to find the edges and vertices.
      * @return The query builder.
      */
-    VertexQuery query(String queryString, Authorizations authorizations);
+    default VertexQuery query(String queryString, Authorizations authorizations) {
+        return getGraph().getSearchIndex().queryVertex(getGraph(), this, queryString, authorizations);
+    }
 
     /**
      * Prepares a mutation to allow changing multiple property values at the same time. This method is similar to
@@ -1054,7 +1061,16 @@ public interface Vertex extends Element {
      * @param user       The user used to find the edge/vertex pairs.
      * @return An Iterable of edge/vertex pairs.
      */
-    Stream<EdgeVertexPair> getEdgeVertexPairs(Direction direction, String[] labels, FetchHints fetchHints, Long endTime, User user);
+    default Stream<EdgeVertexPair> getEdgeVertexPairs(
+        Direction direction,
+        String[] labels,
+        FetchHints fetchHints,
+        Long endTime,
+        User user
+    ) {
+        Stream<EdgeInfo> edgeInfos = getEdgeInfos(direction, labels, user);
+        return EdgeVertexPair.getEdgeVertexPairs(getGraph(), getId(), edgeInfos, fetchHints, endTime, user);
+    }
 
     /**
      * Gets all edge/vertex pairs with the given label attached to this vertex.

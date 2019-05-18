@@ -91,29 +91,6 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> extends 
         return this.graph;
     }
 
-    @Override
-    public int hashCode() {
-        return getId().hashCode();
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (obj instanceof Element) {
-            Element objElem = (Element) obj;
-            return getId().equals(objElem.getId());
-        }
-        return super.equals(obj);
-    }
-
-    @Override
-    public String toString() {
-        if (this instanceof Edge) {
-            Edge edge = (Edge) this;
-            return getId() + ":[" + edge.getVertexId(Direction.OUT) + "-" + edge.getLabel() + "->" + edge.getVertexId(Direction.IN) + "]";
-        }
-        return getId();
-    }
-
     public boolean canRead(User user) {
         return inMemoryTableElement.canRead(getFetchHints(), user);
     }

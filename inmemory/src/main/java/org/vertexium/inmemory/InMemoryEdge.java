@@ -43,16 +43,6 @@ public class InMemoryEdge extends InMemoryElement<InMemoryEdge> implements Edge 
     }
 
     @Override
-    public String getOtherVertexId(String myVertexId) {
-        if (edgeSetupMutation.getInVertexId().equals(myVertexId)) {
-            return edgeSetupMutation.getOutVertexId();
-        } else if (edgeSetupMutation.getOutVertexId().equals(myVertexId)) {
-            return edgeSetupMutation.getInVertexId();
-        }
-        throw new VertexiumException("myVertexId does not appear on either the in or the out.");
-    }
-
-    @Override
     public EdgeVertices getVertices(FetchHints fetchHints, Authorizations authorizations) {
         return new EdgeVertices(
             getVertex(Direction.OUT, authorizations),

@@ -1,0 +1,98 @@
+syntax = "proto2";
+option java_multiple_files = true;
+option java_package = "org.vertexium.elasticsearch5.models";
+package vertexium;
+
+message Value {
+    oneof value {
+        string string_value = 1;
+        GeoShape geo_shape = 2;
+        sint32 byte_value = 3;
+        sint32 int16_value = 4;
+        sint32 int32_value = 5;
+        sint64 int64_value = 6;
+        uint64 date = 7;
+        uint64 date_only = 8;
+        string ipv4_address = 9;
+        string big_integer_value = 10;
+        string big_decimal_value = 11;
+        double double_value = 12;
+        double float_value = 13;
+        bool bool_value = 14;
+        StreamingPropertyValueRef streaming_property_value_ref = 15;
+        ListValue list_value = 16;
+        PropertyDefinition property_definition_value = 17;
+    }
+}
+
+message PropertyDefinition {
+    required string property_name = 1;
+    required string data_type = 2;
+    repeated TextIndexHint text_index_hints = 3;
+    optional double boost = 4;
+    optional bool sortable = 5;
+}
+
+enum TextIndexHint {
+    FULL_TEXT = 1;
+    EXACT_MATCH = 2;
+}
+
+message ListValue {
+    repeated Value values = 1;
+}
+
+message GeoShape {
+    optional string description = 1;
+    oneof geoShape {
+        GeoPoint geo_point = 2;
+        GeoCircle geo_circle = 3;
+        GeoPolygon geo_polygon = 4;
+        GeoLine geo_line = 5;
+        GeoCollection geo_collection = 6;
+        GeoRect geo_rect = 7;
+    }
+}
+
+message GeoPoint {
+    required double latitude = 1;
+    required double longitude = 2;
+    optional double altitude = 4;
+    optional double accuracy = 6;
+}
+
+message GeoCircle {
+    required double latitude = 1;
+    required double longitude = 2;
+    required double radius = 3;
+}
+
+message GeoRect {
+    required GeoPoint north_west = 1;
+    required GeoPoint south_east = 2;
+}
+
+message GeoPolygon {
+    repeated GeoPoint outer_boundary = 1;
+    repeated GeoPolygonHole holes = 2;
+}
+
+message GeoPolygonHole {
+    repeated GeoPoint points = 1;
+}
+
+message GeoLine {
+    repeated GeoPoint points = 1;
+}
+
+message GeoCollection {
+    repeated GeoShape shapes = 1;
+}
+
+message StreamingPropertyValueRef {
+    required string value_type = 1;
+    optional bool searchIndex = 2;
+    optional uint64 length = 3;
+    optional string md5 = 4;
+    optional string string_value = 5;
+}

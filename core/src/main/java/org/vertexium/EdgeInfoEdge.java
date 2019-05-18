@@ -48,16 +48,6 @@ public class EdgeInfoEdge extends ElementBase implements Edge {
     }
 
     @Override
-    public String getOtherVertexId(String myVertexId) {
-        if (sourceVertexId.equals(myVertexId)) {
-            return edgeInfo.getVertexId();
-        } else if (edgeInfo.getVertexId().equals(myVertexId)) {
-            return sourceVertexId;
-        }
-        throw new VertexiumException("myVertexId(" + myVertexId + ") does not appear on edge (" + getId() + ").");
-    }
-
-    @Override
     public ExistingEdgeMutation prepareMutation() {
         return getEdge().prepareMutation();
     }
@@ -123,20 +113,6 @@ public class EdgeInfoEdge extends ElementBase implements Edge {
         User user
     ) {
         return getEdge().getHistoricalEvents(after, fetchHints, user);
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (obj instanceof Element) {
-            Element objElem = (Element) obj;
-            return getId().equals(objElem.getId());
-        }
-        return super.equals(obj);
-    }
-
-    @Override
-    public int hashCode() {
-        return getId().hashCode();
     }
 
     @Override

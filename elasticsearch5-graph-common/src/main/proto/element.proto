@@ -1,0 +1,28 @@
+syntax = "proto2";
+option java_multiple_files = true;
+option java_package = "org.vertexium.elasticsearch5.models";
+package vertexium;
+
+import "value.proto";
+
+message HiddenData {
+    repeated HiddenDataItem hidden_data = 1;
+}
+
+message HiddenDataItem {
+    required string visibility = 1;
+    optional Value event_data = 2;
+}
+
+message AdditionalVisibilities {
+    repeated AdditionalVisibility additional_visibilities = 1;
+}
+
+message AdditionalVisibility {
+    required string visibility = 1;
+    optional Value event_data = 2;
+}
+
+message SoftDeleteData {
+    optional Value event_data = 2;
+}

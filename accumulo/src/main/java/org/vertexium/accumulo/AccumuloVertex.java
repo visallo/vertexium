@@ -15,7 +15,6 @@ import org.vertexium.mutation.ExistingElementMutation;
 import org.vertexium.mutation.ExistingElementMutationBase;
 import org.vertexium.mutation.PropertyDeleteMutation;
 import org.vertexium.mutation.PropertySoftDeleteMutation;
-import org.vertexium.query.VertexQuery;
 import org.vertexium.util.JoinIterable;
 import org.vertexium.util.StreamUtils;
 
@@ -333,11 +332,6 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
     }
 
     @Override
-    public Stream<Vertex> getVertices(Direction direction, String[] labels, FetchHints fetchHints, Long endTime, User user) {
-        return getGraph().getVertices(toIterable(getVertexIds(direction, labels, user)), fetchHints, endTime, user);
-    }
-
-    @Override
     public Stream<String> getVertexIds(Direction direction, String[] labels, User user) {
         Stream<org.vertexium.accumulo.iterator.model.EdgeInfo> edgeInfos;
         switch (direction) {
@@ -373,14 +367,44 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
         }).map(org.vertexium.accumulo.iterator.model.EdgeInfo::getVertexId);
     }
 
-    @Override
-    public VertexQuery query(Authorizations authorizations) {
-        return query(null, authorizations);
+    void addOutEdge(Edge edge) {
+        if (this.outEdges instanceof EdgesWithEdgeInfo) {
+            ((EdgesWithEdgeInfo) this.outEdges).add(edge.getId(), new org.vertexium.accumulo.iterator.model.EdgeInfo(
+                edge.getLabel(),
+                edge.getVertexId(Direction.IN),
+                new Text(edge.getVisibility().getVisibilityString())
+            ));
+        } else {
+            throw new VertexiumException("Cannot add edge");
+        }
     }
 
-    @Override
-    public VertexQuery query(String queryString, Authorizations authorizations) {
-        return getGraph().getSearchIndex().queryVertex(getGraph(), this, queryString, authorizations);
+    void removeOutEdge(Edge edge) {
+        if (this.outEdges instanceof EdgesWithEdgeInfo) {
+            ((EdgesWithEdgeInfo) this.outEdges).remove(edge.getId());
+        } else {
+            throw new VertexiumException("Cannot remove out edge");
+        }
+    }
+
+    void addInEdge(Edge edge) {
+        if (this.inEdges instanceof EdgesWithEdgeInfo) {
+            ((EdgesWithEdgeInfo) this.inEdges).add(edge.getId(), new org.vertexium.accumulo.iterator.model.EdgeInfo(
+                edge.getLabel(),
+                edge.getVertexId(Direction.OUT),
+                new Text(edge.getVisibility().getVisibilityString())
+            ));
+        } else {
+            throw new VertexiumException("Cannot add edge");
+        }
+    }
+
+    void removeInEdge(Edge edge) {
+        if (this.inEdges instanceof EdgesWithEdgeInfo) {
+            ((EdgesWithEdgeInfo) this.inEdges).remove(edge.getId());
+        } else {
+            throw new VertexiumException("Cannot remove in edge");
+        }
     }
 
     @Override
@@ -402,15 +426,6 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
                 return getElement();
             }
         };
-    }
-
-    @Override
-    public Stream<EdgeVertexPair> getEdgeVertexPairs(Direction direction, String[] labels, FetchHints fetchHints, Long endTime, User user) {
-        return getEdgeVertexPairs(getEdgeInfos(direction, labels, user), fetchHints, endTime, user);
-    }
-
-    private Stream<EdgeVertexPair> getEdgeVertexPairs(Stream<EdgeInfo> edgeInfos, FetchHints fetchHints, Long endTime, User user) {
-        return EdgeVertexPair.getEdgeVertexPairs(getGraph(), getId(), edgeInfos, fetchHints, endTime, user);
     }
 
     @Override

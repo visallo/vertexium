@@ -33,6 +33,27 @@ public class PropertyDefinition implements Serializable {
         String.class,
         Sets.newHashSet(TextIndexHint.EXACT_MATCH)
     );
+    private static final PropertyDefinition EXTDATA_ELEMENT_TYPE_PROPERTY_DEFINITION = new PropertyDefinition(
+        ExtendedDataRow.ELEMENT_TYPE,
+        String.class,
+        Sets.newHashSet(TextIndexHint.EXACT_MATCH)
+    );
+    private static final PropertyDefinition EXTDATA_ELEMENT_ID_PROPERTY_DEFINITION = new PropertyDefinition(
+        ExtendedDataRow.ELEMENT_ID,
+        String.class,
+        Sets.newHashSet(TextIndexHint.EXACT_MATCH)
+    );
+    private static final PropertyDefinition EXTDATA_ROW_ID_PROPERTY_DEFINITION = new PropertyDefinition(
+        ExtendedDataRow.ROW_ID,
+        String.class,
+        Sets.newHashSet(TextIndexHint.EXACT_MATCH)
+    );
+    private static final PropertyDefinition EXTDATA_TABLE_NAME_PROPERTY_DEFINITION = new PropertyDefinition(
+        ExtendedDataRow.TABLE_NAME,
+        String.class,
+        Sets.newHashSet(TextIndexHint.EXACT_MATCH)
+    );
+
     private final String propertyName;
     private final Class dataType;
     private final Set<TextIndexHint> textIndexHints;
@@ -106,6 +127,18 @@ public class PropertyDefinition implements Serializable {
         }
         if (Edge.IN_OR_OUT_VERTEX_ID_PROPERTY_NAME.equals(propertyName)) {
             return IN_OR_OUT_VERTEX_ID_PROPERTY_DEFINITION;
+        }
+        if (ExtendedDataRow.ELEMENT_TYPE.equals(propertyName)) {
+            return EXTDATA_ELEMENT_TYPE_PROPERTY_DEFINITION;
+        }
+        if (ExtendedDataRow.ELEMENT_ID.equals(propertyName)) {
+            return EXTDATA_ELEMENT_ID_PROPERTY_DEFINITION;
+        }
+        if (ExtendedDataRow.ROW_ID.equals(propertyName)) {
+            return EXTDATA_ROW_ID_PROPERTY_DEFINITION;
+        }
+        if (ExtendedDataRow.TABLE_NAME.equals(propertyName)) {
+            return EXTDATA_TABLE_NAME_PROPERTY_DEFINITION;
         }
         for (PropertyDefinition propertyDefinition : propertyDefinitions) {
             if (propertyDefinition.getPropertyName().equals(propertyName)) {

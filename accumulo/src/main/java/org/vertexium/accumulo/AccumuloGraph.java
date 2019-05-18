@@ -33,7 +33,6 @@ import org.vertexium.accumulo.iterator.util.ByteArrayWrapper;
 import org.vertexium.accumulo.iterator.util.ByteSequenceUtils;
 import org.vertexium.accumulo.keys.KeyHelper;
 import org.vertexium.accumulo.util.*;
-import org.vertexium.event.GraphEvent;
 import org.vertexium.historicalEvent.HistoricalEvent;
 import org.vertexium.historicalEvent.HistoricalEventId;
 import org.vertexium.mutation.AlterPropertyVisibility;
@@ -58,7 +57,6 @@ import static org.vertexium.VertexiumObjectType.getTypeFromElement;
 import static org.vertexium.util.IterableUtils.singleOrDefault;
 import static org.vertexium.util.IterableUtils.toList;
 import static org.vertexium.util.StreamUtils.stream;
-import static org.vertexium.util.StreamUtils.toIterable;
 
 public class AccumuloGraph extends GraphBase implements Traceable {
     private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(AccumuloGraph.class);
@@ -84,7 +82,6 @@ public class AccumuloGraph extends GraphBase implements Traceable {
     private final StreamingPropertyValueStorageStrategy streamingPropertyValueStorageStrategy;
     private final MultiTableBatchWriter batchWriter;
     protected final ElementMutationBuilder elementMutationBuilder;
-    private final Queue<GraphEvent> graphEventQueue = new LinkedList<>();
     private Integer accumuloGraphVersion;
     private boolean foundVertexiumSerializerMetadata;
     private boolean foundStreamingPropertyValueStorageStrategyMetadata;
@@ -335,12 +332,6 @@ public class AccumuloGraph extends GraphBase implements Traceable {
                 return (AccumuloVertex) AccumuloGraph.this.getVertex(getId(), user);
             }
         };
-    }
-
-    void queueEvent(GraphEvent graphEvent) {
-        synchronized (this.graphEventQueue) {
-            this.graphEventQueue.add(graphEvent);
-        }
     }
 
     protected void addMutations(Element element, Mutation... mutations) {
@@ -662,26 +653,12 @@ public class AccumuloGraph extends GraphBase implements Traceable {
 
     @Override
     public void flush() {
-        if (hasEventListeners()) {
-            synchronized (this.graphEventQueue) {
-                flushWritersAndSuper();
-                flushGraphEventQueue();
-            }
-        } else {
-            flushWritersAndSuper();
-        }
+        flushWritersAndSuper();
     }
 
     private void flushWritersAndSuper() {
         flushWriter(this.batchWriter);
         super.flush();
-    }
-
-    private void flushGraphEventQueue() {
-        GraphEvent graphEvent;
-        while ((graphEvent = this.graphEventQueue.poll()) != null) {
-            fireGraphEvent(graphEvent);
-        }
     }
 
     private static void flushWriter(MultiTableBatchWriter writer) {
@@ -1495,84 +1472,6 @@ public class AccumuloGraph extends GraphBase implements Traceable {
         return new AccumuloFindPathStrategy(this, options, progressCallback, user).findPaths();
     }
 
-    @Override
-    public Iterable<String> filterEdgeIdsByAuthorization(Iterable<String> edgeIds, String authorizationToMatch, EnumSet<ElementFilter> filters, Authorizations authorizations) {
-        return toIterable(filterElementIdsByAuthorization(
-            ElementType.EDGE,
-            edgeIds,
-            authorizationToMatch,
-            filters,
-            authorizations.getUser()
-        ));
-    }
-
-    @Override
-    public Iterable<String> filterVertexIdsByAuthorization(Iterable<String> vertexIds, String authorizationToMatch, EnumSet<ElementFilter> filters, Authorizations authorizations) {
-        return toIterable(filterElementIdsByAuthorization(
-            ElementType.VERTEX,
-            vertexIds,
-            authorizationToMatch,
-            filters,
-            authorizations.getUser()
-        ));
-    }
-
-    private Stream<String> filterElementIdsByAuthorization(ElementType elementType, Iterable<String> elementIds, String authorizationToMatch, EnumSet<ElementFilter> filters, User user) {
-        Set<String> elementIdsSet = IterableUtils.toSet(elementIds);
-        Span trace = Trace.start("filterElementIdsByAuthorization");
-        try {
-            if (LOGGER.isTraceEnabled()) {
-                LOGGER.trace("filterElementIdsByAuthorization:\n  %s", IterableUtils.join(elementIdsSet, "\n  "));
-            }
-
-            if (elementIdsSet.size() == 0) {
-                return Stream.empty();
-            }
-
-            List<org.apache.accumulo.core.data.Range> ranges = new ArrayList<>();
-            for (String elementId : elementIdsSet) {
-                ranges.add(RangeUtils.createRangeFromString(elementId));
-            }
-
-            Long startTime = null;
-            Long endTime = null;
-            int maxVersions = 1;
-            ScannerBase scanner = createElementScanner(
-                FetchHints.ALL_INCLUDING_HIDDEN,
-                elementType,
-                maxVersions,
-                startTime,
-                endTime,
-                ranges,
-                false,
-                user
-            );
-
-            IteratorSetting hasAuthorizationFilterSettings = new IteratorSetting(
-                1000,
-                HasAuthorizationFilter.class.getSimpleName(),
-                HasAuthorizationFilter.class
-            );
-            HasAuthorizationFilter.setAuthorizationToMatch(hasAuthorizationFilterSettings, authorizationToMatch);
-            HasAuthorizationFilter.setFilters(hasAuthorizationFilterSettings, filters);
-            scanner.addScanIterator(hasAuthorizationFilterSettings);
-
-            final long timerStartTime = System.currentTimeMillis();
-            try {
-                Set<String> results = new HashSet<>();
-                for (Map.Entry<Key, Value> row : scanner) {
-                    results.add(row.getKey().getRow().toString());
-                }
-                return results.stream();
-            } finally {
-                scanner.close();
-                GRAPH_LOGGER.logEndIterator(System.currentTimeMillis() - timerStartTime);
-            }
-        } finally {
-            trace.stop();
-        }
-    }
-
     public Iterable<GraphMetadataEntry> getMetadataInRange(org.apache.accumulo.core.data.Range range) {
         final long timerStartTime = System.currentTimeMillis();
 
@@ -1645,10 +1544,12 @@ public class AccumuloGraph extends GraphBase implements Traceable {
                     SortedMap<Key, Value> row = WholeRowIterator.decodeRow(rawRow.getKey(), rawRow.getValue());
                     ExtendedDataRowId extendedDataRowId = KeyHelper.parseExtendedDataRowId(rawRow.getKey().getRow());
                     return (ExtendedDataRow) AccumuloExtendedDataRow.create(
+                        this,
                         extendedDataRowId,
                         row,
                         fetchHints,
-                        vertexiumSerializer
+                        vertexiumSerializer,
+                        user
                     );
                 } catch (IOException e) {
                     throw new VertexiumException("Could not decode row", e);
@@ -1897,14 +1798,6 @@ public class AccumuloGraph extends GraphBase implements Traceable {
         if (Trace.isTracing()) {
             trace.data("fetchHints", fetchHints.toString());
         }
-    }
-
-    @Override
-    protected Class<?> getValueType(Object value) {
-        if (value instanceof StreamingPropertyValueTableRef) {
-            return ((StreamingPropertyValueTableRef) value).getValueType();
-        }
-        return super.getValueType(value);
     }
 
     private class AccumuloGraphMetadataStore extends GraphMetadataStore {

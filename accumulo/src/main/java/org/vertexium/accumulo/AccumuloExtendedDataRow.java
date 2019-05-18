@@ -17,22 +17,26 @@ public class AccumuloExtendedDataRow extends ExtendedDataRowBase {
     private final Set<String> additionalVisibilities;
 
     public AccumuloExtendedDataRow(
+        AccumuloGraph graph,
         ExtendedDataRowId rowId,
         Set<Property> properties,
         FetchHints fetchHints,
-        Set<String> additionalVisibilities
+        Set<String> additionalVisibilities,
+        User user
     ) {
-        super(fetchHints);
+        super(graph, fetchHints, user);
         this.rowId = rowId;
         this.properties = properties;
         this.additionalVisibilities = additionalVisibilities;
     }
 
     public static AccumuloExtendedDataRow create(
+        AccumuloGraph graph,
         ExtendedDataRowId rowId,
         SortedMap<Key, Value> row,
         FetchHints fetchHints,
-        VertexiumSerializer vertexiumSerializer
+        VertexiumSerializer vertexiumSerializer,
+        User user
     ) {
         Set<Property> properties = new HashSet<>();
         Set<String> additionalVisibilities = new HashSet<>();
@@ -71,7 +75,7 @@ public class AccumuloExtendedDataRow extends ExtendedDataRowBase {
             }
         }
 
-        return new AccumuloExtendedDataRow(rowId, properties, fetchHints, additionalVisibilities);
+        return new AccumuloExtendedDataRow(graph, rowId, properties, fetchHints, additionalVisibilities, user);
     }
 
     @Override
