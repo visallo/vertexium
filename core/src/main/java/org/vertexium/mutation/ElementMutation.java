@@ -309,7 +309,32 @@ public interface ElementMutation<T extends Element> extends ElementLocation {
      *                   it as hidden for only a subset of authorizations.
      * @param eventData  Data to store with the hidden
      */
-    ElementMutation<T> markElementHidden(Visibility visibility, Object eventData);
+    default ElementMutation<T> markElementHidden(Visibility visibility, Object eventData) {
+        return markElementHidden(visibility, null, eventData);
+    }
+
+    /**
+     * Marks a vertex as hidden for a given visibility.
+     *
+     * @param visibility The visibility string under which this vertex is hidden.
+     *                   This visibility can be a superset of the vertex visibility to mark
+     *                   it as hidden for only a subset of authorizations.
+     * @param timestamp  Mark hidden as of a specific time
+     */
+    default ElementMutation<T> markElementHidden(Visibility visibility, Long timestamp) {
+        return markElementHidden(visibility, timestamp, null);
+    }
+
+    /**
+     * Marks a vertex as hidden for a given visibility.
+     *
+     * @param visibility The visibility string under which this vertex is hidden.
+     *                   This visibility can be a superset of the vertex visibility to mark
+     *                   it as hidden for only a subset of authorizations.
+     * @param timestamp  Mark hidden as of a specific time
+     * @param eventData  Data to store with the hidden
+     */
+    ElementMutation<T> markElementHidden(Visibility visibility, Long timestamp, Object eventData);
 
     /**
      * Marks a vertex as visible for a given visibility, effectively undoing markVertexHidden.
@@ -326,7 +351,28 @@ public interface ElementMutation<T extends Element> extends ElementLocation {
      * @param visibility The visibility string under which this vertex is now visible.
      * @param eventData  Data to store with the visible
      */
-    ElementMutation<T> markElementVisible(Visibility visibility, Object eventData);
+    default ElementMutation<T> markElementVisible(Visibility visibility, Object eventData) {
+        return markElementVisible(visibility, null, eventData);
+    }
+
+    /**
+     * Marks a vertex as visible for a given visibility, effectively undoing markVertexHidden.
+     *
+     * @param visibility The visibility string under which this vertex is now visible.
+     * @param timestamp  Mark visible as of a specific time
+     */
+    default ElementMutation<T> markElementVisible(Visibility visibility, Long timestamp) {
+        return markElementVisible(visibility, timestamp, null);
+    }
+
+    /**
+     * Marks a vertex as visible for a given visibility, effectively undoing markVertexHidden.
+     *
+     * @param visibility The visibility string under which this vertex is now visible.
+     * @param timestamp  Mark visible as of a specific time
+     * @param eventData  Data to store with the visible
+     */
+    ElementMutation<T> markElementVisible(Visibility visibility, Long timestamp, Object eventData);
 
     /**
      * Marks a property as hidden for a given visibility.

@@ -367,15 +367,15 @@ public abstract class ElementMutationBase<T extends Element, TResult extends Ele
 
     @SuppressWarnings("unchecked")
     @Override
-    public TResult markElementHidden(Visibility visibility, Object eventData) {
-        markHiddenData.add(new MarkHiddenData(visibility, eventData));
+    public TResult markElementHidden(Visibility visibility, Long timestamp, Object eventData) {
+        markHiddenData.add(new MarkHiddenData(visibility, timestamp, eventData));
         return (TResult) this;
     }
 
     @SuppressWarnings("unchecked")
     @Override
-    public TResult markElementVisible(Visibility visibility, Object eventData) {
-        markVisibleData.add(new MarkVisibleData(visibility, eventData));
+    public TResult markElementVisible(Visibility visibility, Long timestamp, Object eventData) {
+        markVisibleData.add(new MarkVisibleData(visibility, timestamp, eventData));
         return (TResult) this;
     }
 
@@ -516,10 +516,12 @@ public abstract class ElementMutationBase<T extends Element, TResult extends Ele
 
     public static class MarkHiddenData {
         private final Visibility visibility;
+        private final Long timestamp;
         private final Object eventData;
 
-        public MarkHiddenData(Visibility visibility, Object eventData) {
+        public MarkHiddenData(Visibility visibility, Long timestamp, Object eventData) {
             this.visibility = visibility;
+            this.timestamp = timestamp;
             this.eventData = eventData;
         }
 
@@ -529,15 +531,21 @@ public abstract class ElementMutationBase<T extends Element, TResult extends Ele
 
         public Object getEventData() {
             return eventData;
+        }
+
+        public Long getTimestamp() {
+            return timestamp;
         }
     }
 
     public static class MarkVisibleData {
         private final Visibility visibility;
+        private final Long timestamp;
         private final Object eventData;
 
-        public MarkVisibleData(Visibility visibility, Object eventData) {
+        public MarkVisibleData(Visibility visibility, Long timestamp, Object eventData) {
             this.visibility = visibility;
+            this.timestamp = timestamp;
             this.eventData = eventData;
         }
 
@@ -547,6 +555,10 @@ public abstract class ElementMutationBase<T extends Element, TResult extends Ele
 
         public Object getEventData() {
             return eventData;
+        }
+
+        public Long getTimestamp() {
+            return timestamp;
         }
     }
 

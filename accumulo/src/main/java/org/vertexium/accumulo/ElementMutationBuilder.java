@@ -674,13 +674,21 @@ public abstract class ElementMutationBuilder {
     public void addMarkVisibleToMutation(Mutation m, MarkVisibleData markVisibleData) {
         ColumnVisibility columnVisibility = visibilityToAccumuloVisibility(markVisibleData.getVisibility());
         Object data = markVisibleData.getEventData();
-        m.put(AccumuloElement.CF_HIDDEN, AccumuloElement.CQ_HIDDEN, columnVisibility, toHiddenDeletedValue(data));
+        Long timestamp = markVisibleData.getTimestamp();
+        if (timestamp == null) {
+            timestamp = IncreasingTime.currentTimeMillis();
+        }
+        m.put(AccumuloElement.CF_HIDDEN, AccumuloElement.CQ_HIDDEN, columnVisibility, timestamp, toHiddenDeletedValue(data));
     }
 
     public void addMarkHiddenToMutation(Mutation m, MarkHiddenData markHiddenData) {
         ColumnVisibility columnVisibility = visibilityToAccumuloVisibility(markHiddenData.getVisibility());
         Object data = markHiddenData.getEventData();
-        m.put(AccumuloElement.CF_HIDDEN, AccumuloElement.CQ_HIDDEN, columnVisibility, toHiddenValue(data));
+        Long timestamp = markHiddenData.getTimestamp();
+        if (timestamp == null) {
+            timestamp = IncreasingTime.currentTimeMillis();
+        }
+        m.put(AccumuloElement.CF_HIDDEN, AccumuloElement.CQ_HIDDEN, columnVisibility, timestamp, toHiddenValue(data));
     }
 
     public void addSoftDeleteToMutation(Mutation m, SoftDeleteData softDeleteData) {
