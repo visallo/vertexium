@@ -383,46 +383,6 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
         return getGraph().getSearchIndex().queryVertex(getGraph(), this, queryString, authorizations);
     }
 
-    void addOutEdge(Edge edge) {
-        if (this.outEdges instanceof EdgesWithEdgeInfo) {
-            ((EdgesWithEdgeInfo) this.outEdges).add(edge.getId(), new org.vertexium.accumulo.iterator.model.EdgeInfo(
-                edge.getLabel(),
-                edge.getVertexId(Direction.IN),
-                new Text(edge.getVisibility().getVisibilityString())
-            ));
-        } else {
-            throw new VertexiumException("Cannot add edge");
-        }
-    }
-
-    void removeOutEdge(Edge edge) {
-        if (this.outEdges instanceof EdgesWithEdgeInfo) {
-            ((EdgesWithEdgeInfo) this.outEdges).remove(edge.getId());
-        } else {
-            throw new VertexiumException("Cannot remove out edge");
-        }
-    }
-
-    void addInEdge(Edge edge) {
-        if (this.inEdges instanceof EdgesWithEdgeInfo) {
-            ((EdgesWithEdgeInfo) this.inEdges).add(edge.getId(), new org.vertexium.accumulo.iterator.model.EdgeInfo(
-                edge.getLabel(),
-                edge.getVertexId(Direction.OUT),
-                new Text(edge.getVisibility().getVisibilityString())
-            ));
-        } else {
-            throw new VertexiumException("Cannot add edge");
-        }
-    }
-
-    void removeInEdge(Edge edge) {
-        if (this.inEdges instanceof EdgesWithEdgeInfo) {
-            ((EdgesWithEdgeInfo) this.inEdges).remove(edge.getId());
-        } else {
-            throw new VertexiumException("Cannot remove in edge");
-        }
-    }
-
     @Override
     @SuppressWarnings("unchecked")
     public ExistingElementMutation<Vertex> prepareMutation() {

@@ -223,7 +223,7 @@ public class StringUtils {
                     for (j = 0; j < 8; j++) {
 
                         if (!saw_brace && j == 2) {
-                            break;  /* for */
+                            break; /* for */
                         }
 
                         /*
@@ -243,7 +243,7 @@ public class StringUtils {
                             (ch >= 'a' && ch <= 'f')
                             ||
                             (ch >= 'A' && ch <= 'F')
-                        )
+                            )
                         ) {
                             die(String.format(
                                 "illegal hex digit #%d '%c' in \\x", ch, ch));

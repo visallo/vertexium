@@ -1149,14 +1149,6 @@ public class AccumuloGraph extends GraphBase implements Traceable {
         return new ColumnVisibility(ByteSequenceUtils.getBytes(visibilityBytes));
     }
 
-    public static Visibility accumuloVisibilityToVisibility(ColumnVisibility columnVisibility) {
-        if (columnVisibility.equals(EMPTY_COLUMN_VISIBILITY)) {
-            return Visibility.EMPTY;
-        }
-        String columnVisibilityString = columnVisibility.toString();
-        return accumuloVisibilityToVisibility(columnVisibilityString);
-    }
-
     public static Visibility accumuloVisibilityToVisibility(Text columnVisibility) {
         return accumuloVisibilityToVisibility(columnVisibility.toString());
     }

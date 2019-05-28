@@ -2,7 +2,6 @@ package org.vertexium.accumulo;
 
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
-import org.apache.accumulo.core.data.Key;
 import org.apache.accumulo.core.data.Mutation;
 import org.apache.accumulo.core.data.Value;
 import org.apache.accumulo.core.iterators.user.RowDeletingIterator;
@@ -25,6 +24,7 @@ import org.vertexium.util.ExtendedDataMutationUtils;
 import org.vertexium.util.IncreasingTime;
 
 import java.util.*;
+import java.util.Map;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.vertexium.mutation.ElementMutationBase.*;
@@ -60,6 +60,9 @@ public abstract class ElementMutationBuilder {
         if (!vertexBuilder.isDeleteElement()) {
             Visibility visibility = vertexBuilder.getVisibility();
             visibility = visibility == null ? getVertexFromMutation(vertexBuilder, user).getVisibility() : visibility;
+
+            // todo: handle visibility changes
+
             ColumnVisibility columnVisibility = visibilityToAccumuloVisibility(visibility);
 
             if (!(vertexBuilder instanceof ExistingElementMutation)) {
@@ -151,7 +154,7 @@ public abstract class ElementMutationBuilder {
         );
     }
 
-    void saveExtendedData(
+    private void saveExtendedData(
         ElementLocation elementLocation,
         boolean updateIndex,
         Iterable<ExtendedDataMutation> extendedData,
@@ -302,35 +305,6 @@ public abstract class ElementMutationBuilder {
         }
     }
 
-    public void saveExtendedDataMarkers(
-        String elementId,
-        ElementType elementType,
-        Iterable<ExtendedDataMutation> extendedData
-    ) {
-        Set<TableNameVisibilityPair> uniquePairs = TableNameVisibilityPair.getUniquePairs(extendedData);
-        if (uniquePairs.size() == 0) {
-            return;
-        }
-        Mutation m = new Mutation(elementId);
-        for (TableNameVisibilityPair pair : uniquePairs) {
-            addExtendedDataMarkerToElementMutation(m, pair);
-        }
-        saveElementMutation(elementType, m);
-    }
-
-    private void saveElementMutation(ElementType elementType, Mutation m) {
-        switch (elementType) {
-            case VERTEX:
-                saveVertexMutations(m);
-                break;
-            case EDGE:
-                saveEdgeMutations(m);
-                break;
-            default:
-                throw new VertexiumException("Unhandled element type: " + elementType);
-        }
-    }
-
     private void saveExtendedDataMarkers(Mutation m, Iterable<ExtendedDataMutation> extendedData) {
         for (TableNameVisibilityPair pair : TableNameVisibilityPair.getUniquePairs(extendedData)) {
             addExtendedDataMarkerToElementMutation(m, pair);
@@ -346,76 +320,6 @@ public abstract class ElementMutationBuilder {
         );
     }
 
-    public Iterable<KeyValuePair> getKeyValuePairsForVertex(AccumuloVertex vertex) {
-        List<KeyValuePair> results = new ArrayList<>();
-        Text vertexRowKey = new Text(vertex.getId());
-        results.add(new KeyValuePair(new Key(vertexRowKey, AccumuloVertex.CF_SIGNAL, ElementMutationBuilder.EMPTY_TEXT, visibilityToAccumuloVisibility(vertex.getVisibility()), vertex.getTimestamp()), EMPTY_VALUE));
-        if (vertex.getPropertyDeleteMutations().iterator().hasNext()) {
-            throw new VertexiumException("Cannot get key/value pairs for property deletions");
-        }
-        for (PropertySoftDeleteMutation propertySoftDeleteMutation : vertex.getPropertySoftDeleteMutations()) {
-            addPropertySoftDeleteToKeyValuePairs(results, vertexRowKey, propertySoftDeleteMutation);
-        }
-        for (Property property : vertex.getProperties()) {
-            addPropertyToKeyValuePairs(results, vertexRowKey, property);
-        }
-        return results;
-    }
-
-    public Iterable<KeyValuePair> getEdgeTableKeyValuePairsEdge(AccumuloEdge edge) {
-        List<KeyValuePair> results = new ArrayList<>();
-
-        ColumnVisibility edgeColumnVisibility = visibilityToAccumuloVisibility(edge.getVisibility());
-        Text edgeRowKey = new Text(edge.getId());
-        String edgeLabel = edge.getLabel();
-        if (edge.getNewEdgeLabel() != null) {
-            throw new VertexiumException("Cannot get key/value pairs for label changes");
-        }
-        results.add(new KeyValuePair(new Key(edgeRowKey, AccumuloEdge.CF_SIGNAL, new Text(edgeLabel), edgeColumnVisibility, edge.getTimestamp()), ElementMutationBuilder.EMPTY_VALUE));
-        results.add(new KeyValuePair(new Key(edgeRowKey, AccumuloEdge.CF_OUT_VERTEX, new Text(edge.getVertexId(Direction.OUT)), edgeColumnVisibility, edge.getTimestamp()), ElementMutationBuilder.EMPTY_VALUE));
-        results.add(new KeyValuePair(new Key(edgeRowKey, AccumuloEdge.CF_IN_VERTEX, new Text(edge.getVertexId(Direction.IN)), edgeColumnVisibility, edge.getTimestamp()), ElementMutationBuilder.EMPTY_VALUE));
-        if (edge.getPropertyDeleteMutations().iterator().hasNext()) {
-            throw new VertexiumException("Cannot get key/value pairs for property deletions");
-        }
-        for (PropertySoftDeleteMutation propertySoftDeleteMutation : edge.getPropertySoftDeleteMutations()) {
-            addPropertySoftDeleteToKeyValuePairs(results, edgeRowKey, propertySoftDeleteMutation);
-        }
-        for (Property property : edge.getProperties()) {
-            addPropertyToKeyValuePairs(results, edgeRowKey, property);
-        }
-        return results;
-    }
-
-    public Iterable<KeyValuePair> getVertexTableKeyValuePairsEdge(AccumuloEdge edge) {
-        List<KeyValuePair> results = new ArrayList<>();
-        ColumnVisibility edgeColumnVisibility = visibilityToAccumuloVisibility(edge.getVisibility());
-        String edgeLabel = edge.getNewEdgeLabel() != null ? edge.getNewEdgeLabel() : edge.getLabel();
-        Text edgeIdText = new Text(edge.getId());
-        long timestamp = edge.getTimestamp();
-        Text visibility = new Text(edge.getVisibility().getVisibilityString());
-
-        // out vertex.
-        Text vertexOutIdRowKey = new Text(edge.getVertexId(Direction.OUT));
-        org.vertexium.accumulo.iterator.model.EdgeInfo edgeInfo = new EdgeInfo(getNameSubstitutionStrategy().deflate(edgeLabel), edge.getVertexId(Direction.IN), visibility);
-        results.add(new KeyValuePair(new Key(vertexOutIdRowKey, AccumuloVertex.CF_OUT_EDGE, edgeIdText, edgeColumnVisibility, timestamp), edgeInfo.toValue()));
-
-        // in vertex.
-        Text vertexInIdRowKey = new Text(edge.getVertexId(Direction.IN));
-        edgeInfo = new EdgeInfo(getNameSubstitutionStrategy().deflate(edgeLabel), edge.getVertexId(Direction.OUT), visibility);
-        results.add(new KeyValuePair(new Key(vertexInIdRowKey, AccumuloVertex.CF_IN_EDGE, edgeIdText, edgeColumnVisibility, timestamp), edgeInfo.toValue()));
-
-        return results;
-    }
-
-    private void addPropertyToKeyValuePairs(List<KeyValuePair> results, Text elementRowKey, Property property) {
-        Text columnQualifier = KeyHelper.getColumnQualifierFromPropertyColumnQualifier(property, getNameSubstitutionStrategy());
-        ColumnVisibility columnVisibility = visibilityToAccumuloVisibility(property.getVisibility());
-        Object propertyValue = property.getValue();
-        Value value = new Value(vertexiumSerializer.objectToBytes(transformValue(propertyValue, null, null)));
-        results.add(new KeyValuePair(new Key(elementRowKey, AccumuloElement.CF_PROPERTY, columnQualifier, columnVisibility, property.getTimestamp()), value));
-        addPropertyMetadataToKeyValuePairs(results, elementRowKey, property);
-    }
-
     private Object transformValue(Object propertyValue, String rowKey, Property property) {
         if (propertyValue instanceof StreamingPropertyValue) {
             if (rowKey != null && property != null) {
@@ -428,39 +332,6 @@ public abstract class ElementMutationBuilder {
             propertyValue = ((DateOnly) propertyValue).getDate();
         }
         return propertyValue;
-    }
-
-    private void addPropertyMetadataToKeyValuePairs(List<KeyValuePair> results, Text vertexRowKey, Property property) {
-        Metadata metadata = property.getMetadata();
-        for (Metadata.Entry metadataItem : metadata.entrySet()) {
-            addPropertyMetadataItemToKeyValuePairs(results, vertexRowKey, property, metadataItem);
-        }
-    }
-
-    private void addPropertyMetadataItemToKeyValuePairs(List<KeyValuePair> results, Text vertexRowKey, Property property, Metadata.Entry metadataItem) {
-        Text columnQualifier = getPropertyMetadataColumnQualifierText(property, metadataItem.getKey());
-        ColumnVisibility metadataVisibility = visibilityToAccumuloVisibility(metadataItem.getVisibility());
-        if (metadataItem.getValue() == null) {
-            throw new VertexiumException("Property metadata deletes are not supported");
-        } else {
-            addPropertyMetadataItemAddToKeyValuePairs(results, vertexRowKey, columnQualifier, metadataVisibility, property.getTimestamp(), metadataItem.getValue());
-        }
-    }
-
-    private void addPropertyMetadataItemAddToKeyValuePairs(List<KeyValuePair> results, Text vertexRowKey, Text columnQualifier, ColumnVisibility metadataVisibility, long propertyTimestamp, Object value) {
-        Value metadataValue = new Value(vertexiumSerializer.objectToBytes(value));
-        results.add(new KeyValuePair(new Key(vertexRowKey, AccumuloElement.CF_PROPERTY_METADATA, columnQualifier, metadataVisibility, propertyTimestamp), metadataValue));
-    }
-
-    private void addPropertySoftDeleteToKeyValuePairs(List<KeyValuePair> results, Text elementRowKey, PropertySoftDeleteMutation propertySoftDeleteMutation) {
-        Text columnQualifier = KeyHelper.getColumnQualifierFromPropertyColumnQualifier(propertySoftDeleteMutation.getKey(), propertySoftDeleteMutation.getName(), getNameSubstitutionStrategy());
-        ColumnVisibility columnVisibility = visibilityToAccumuloVisibility(propertySoftDeleteMutation.getVisibility());
-        results.add(
-            new KeyValuePair(
-                new Key(elementRowKey, AccumuloElement.CF_PROPERTY_SOFT_DELETE, columnQualifier, columnVisibility, propertySoftDeleteMutation.getTimestamp()),
-                toSoftDeleteDataToValue(propertySoftDeleteMutation.getData())
-            )
-        );
     }
 
     public void saveEdgeMutation(EdgeMutation edgeBuilder, long timestamp, User user) {
@@ -797,19 +668,6 @@ public abstract class ElementMutationBuilder {
         return streamingPropertyValueStorageStrategy.saveStreamingPropertyValue(this, rowKey, property, propertyValue);
     }
 
-    public void addPropertyDeleteToMutation(Mutation m, Property property) {
-        checkNotNull(m, "mutation cannot be null");
-        checkNotNull(property, "property cannot be null");
-        Text columnQualifier = KeyHelper.getColumnQualifierFromPropertyColumnQualifier(property, getNameSubstitutionStrategy());
-        ColumnVisibility columnVisibility = visibilityToAccumuloVisibility(property.getVisibility());
-        m.putDelete(AccumuloElement.CF_PROPERTY, columnQualifier, columnVisibility, currentTimeMillis());
-        for (Metadata.Entry metadataEntry : property.getMetadata().entrySet()) {
-            Text metadataEntryColumnQualifier = getPropertyMetadataColumnQualifierText(property, metadataEntry.getKey());
-            ColumnVisibility metadataEntryVisibility = visibilityToAccumuloVisibility(metadataEntry.getVisibility());
-            addPropertyMetadataItemDeleteToMutation(m, metadataEntryColumnQualifier, metadataEntryVisibility);
-        }
-    }
-
     public void addPropertySoftDeleteToMutation(Mutation m, Property property, long timestamp, Object data) {
         checkNotNull(m, "mutation cannot be null");
         checkNotNull(property, "property cannot be null");
@@ -837,44 +695,6 @@ public abstract class ElementMutationBuilder {
             throw new VertexiumException("Soft delete value data cannot start with soft delete value deleted marker: " + AccumuloElement.SOFT_DELETE_VALUE_DELETED.toString());
         }
         return new Value(dataArray);
-    }
-
-    public Mutation getDeleteRowMutation(String rowKey) {
-        Mutation m = new Mutation(rowKey);
-        m.put(AccumuloElement.DELETE_ROW_COLUMN_FAMILY, AccumuloElement.DELETE_ROW_COLUMN_QUALIFIER, RowDeletingIterator.DELETE_ROW_VALUE);
-        return m;
-    }
-
-    public Mutation getSoftDeleteRowMutation(String rowKey, long timestamp, Object data) {
-        Mutation m = new Mutation(rowKey);
-        m.put(AccumuloElement.CF_SOFT_DELETE, AccumuloElement.CQ_SOFT_DELETE, timestamp, toSoftDeleteDataToValue(data));
-        return m;
-    }
-
-    public Mutation getMarkHiddenRowMutation(String rowKey, ColumnVisibility visibility, Object data) {
-        Mutation m = new Mutation(rowKey);
-        m.put(AccumuloElement.CF_HIDDEN, AccumuloElement.CQ_HIDDEN, visibility, toHiddenValue(data));
-        return m;
-    }
-
-    public Mutation getMarkVisibleRowMutation(String rowKey, ColumnVisibility visibility, Object data) {
-        Mutation m = new Mutation(rowKey);
-        m.put(AccumuloElement.CF_HIDDEN, AccumuloElement.CQ_HIDDEN, visibility, toHiddenDeletedValue(data));
-        return m;
-    }
-
-    public Mutation getMarkHiddenPropertyMutation(String rowKey, Property property, long timestamp, ColumnVisibility visibility, Object data) {
-        Mutation m = new Mutation(rowKey);
-        Text columnQualifier = KeyHelper.getColumnQualifierFromPropertyHiddenColumnQualifier(property, getNameSubstitutionStrategy());
-        m.put(AccumuloElement.CF_PROPERTY_HIDDEN, columnQualifier, visibility, timestamp, toHiddenValue(data));
-        return m;
-    }
-
-    public Mutation getMarkVisiblePropertyMutation(String rowKey, Property property, long timestamp, ColumnVisibility visibility, Object data) {
-        Mutation m = new Mutation(rowKey);
-        Text columnQualifier = KeyHelper.getColumnQualifierFromPropertyHiddenColumnQualifier(property, getNameSubstitutionStrategy());
-        m.put(AccumuloElement.CF_PROPERTY_HIDDEN, columnQualifier, visibility, timestamp, toHiddenDeletedValue(data));
-        return m;
     }
 
     private Value toHiddenDeletedValue(Object data) {
@@ -947,30 +767,6 @@ public abstract class ElementMutationBuilder {
             throw new VertexiumException("Signal value data cannot start with delete value marker: " + AccumuloElement.SIGNAL_VALUE_DELETED.toString());
         }
         return new Value(dataArray);
-    }
-
-    public Mutation getMarkHiddenOutEdgeMutation(Vertex out, Edge edge, ColumnVisibility columnVisibility, Object data) {
-        Mutation m = new Mutation(out.getId());
-        m.put(AccumuloVertex.CF_OUT_EDGE_HIDDEN, new Text(edge.getId()), columnVisibility, toHiddenValue(data));
-        return m;
-    }
-
-    public Mutation getMarkHiddenInEdgeMutation(Vertex in, Edge edge, ColumnVisibility columnVisibility, Object data) {
-        Mutation m = new Mutation(in.getId());
-        m.put(AccumuloVertex.CF_IN_EDGE_HIDDEN, new Text(edge.getId()), columnVisibility, toHiddenValue(data));
-        return m;
-    }
-
-    public Mutation getMarkVisibleOutEdgeMutation(Vertex out, Edge edge, ColumnVisibility columnVisibility, Object data) {
-        Mutation m = new Mutation(out.getId());
-        m.put(AccumuloVertex.CF_OUT_EDGE_HIDDEN, new Text(edge.getId()), columnVisibility, toHiddenDeletedValue(data));
-        return m;
-    }
-
-    public Mutation getMarkVisibleInEdgeMutation(Vertex in, Edge edge, ColumnVisibility columnVisibility, Object data) {
-        Mutation m = new Mutation(in.getId());
-        m.put(AccumuloVertex.CF_IN_EDGE_HIDDEN, new Text(edge.getId()), columnVisibility, toHiddenDeletedValue(data));
-        return m;
     }
 
     private void queueEvents(

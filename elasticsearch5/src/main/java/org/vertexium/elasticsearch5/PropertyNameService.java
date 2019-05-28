@@ -6,7 +6,6 @@ import org.vertexium.type.GeoShape;
 
 import java.util.*;
 import java.util.regex.Matcher;
-import java.util.stream.StreamSupport;
 
 import static org.vertexium.elasticsearch5.Elasticsearch5SearchIndex.*;
 import static org.vertexium.elasticsearch5.ElasticsearchPropertyNameInfo.PROPERTY_NAME_PATTERN;
