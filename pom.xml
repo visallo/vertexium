@@ -1,18 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>org.sonatype.oss</groupId>
         <artifactId>oss-parent</artifactId>
         <version>7</version>
-        <relativePath/>
+        <relativePath />
     </parent>
 
     <groupId>org.vertexium</groupId>
     <artifactId>vertexium-root</artifactId>
     <packaging>pom</packaging>
-    <version>4.5.3-SNAPSHOT</version>
+    <version>4.6.0</version>
     <name>Vertexium</name>
     <description>
         Vertexium is an API to manipulate graphs. Every Vertexium method requires authorizations
@@ -36,7 +35,7 @@
         <url>scm:git:git@github.com:visallo/vertexium.git</url>
         <connection>scm:git:git@github.com:visallo/vertexium.git</connection>
         <developerConnection>scm:git:git@github.com:visallo/vertexium.git</developerConnection>
-        <tag>HEAD</tag>
+        <tag>vertexium-root-4.6.0</tag>
     </scm>
 
     <issueManagement>
@@ -452,7 +451,7 @@
                             <systemProperties>
                                 <!-- This prevents log4j from initializing. Use for Travis CI, which fails the build
                                      when the log output is too long. -->
-                                <log4j.configuration/>
+                                <log4j.configuration />
                             </systemProperties>
                         </configuration>
                     </plugin>
