@@ -1,11 +1,12 @@
 package org.vertexium.inmemory.mutations;
 
 import org.vertexium.Visibility;
+import org.vertexium.util.IncreasingTime;
 
 import java.io.Serializable;
 
 public abstract class Mutation implements Comparable<Mutation>, Serializable {
-    private final long objectCreationTimestamp = System.currentTimeMillis();
+    private final long objectCreationTimestamp = IncreasingTime.currentTimeMillis();
     private final long timestamp;
     private final Visibility visibility;
 
