@@ -1,10 +1,9 @@
 package org.vertexium;
 
-public interface ElementLocation {
-    ElementType getElementType();
-
-    String getId();
-
+public interface ElementLocation extends ElementId {
+    /**
+     * the visibility of the element.
+     */
     Visibility getVisibility();
 
     static EdgeElementLocation edge(

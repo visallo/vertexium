@@ -240,9 +240,4 @@ public class ElasticsearchVertex extends ElasticsearchElement implements Vertex 
     public Iterable<EdgeVertexPair> getEdgeVertexPairs(Direction direction, String[] labels, FetchHints fetchHints, Authorizations authorizations) {
         throw new VertexiumNotSupportedException("getEdgeVertexPairs is not supported on " + className);
     }
-
-    @Override
-    public ElementType getElementType() {
-        return ElementType.VERTEX;
-    }
 }

@@ -463,4 +463,9 @@ public interface Vertex extends Element {
      * @return An Iterable of edge/vertex pairs.
      */
     Iterable<EdgeVertexPair> getEdgeVertexPairs(Direction direction, String[] labels, FetchHints fetchHints, Authorizations authorizations);
+
+    @Override
+    default ElementType getElementType() {
+        return ElementType.VERTEX;
+    }
 }

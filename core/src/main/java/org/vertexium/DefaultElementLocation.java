@@ -1,24 +1,11 @@
 package org.vertexium;
 
-abstract class DefaultElementLocation implements ElementLocation {
-    private final ElementType elementType;
-    private final String id;
+abstract class DefaultElementLocation extends DefaultElementId implements ElementLocation {
     private final Visibility visibility;
 
     protected DefaultElementLocation(ElementType elementType, String id, Visibility visibility) {
-        this.elementType = elementType;
-        this.id = id;
+        super(elementType, id);
         this.visibility = visibility;
-    }
-
-    @Override
-    public ElementType getElementType() {
-        return elementType;
-    }
-
-    @Override
-    public String getId() {
-        return id;
     }
 
     @Override

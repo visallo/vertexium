@@ -618,9 +618,4 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
     private Iterable<EdgeVertexPair> getEdgeVertexPairs(Iterable<EdgeInfo> edgeInfos, FetchHints fetchHints, Long endTime, Authorizations authorizations) {
         return EdgeVertexPair.getEdgeVertexPairs(getGraph(), getId(), edgeInfos, fetchHints, endTime, authorizations);
     }
-
-    @Override
-    public ElementType getElementType() {
-        return ElementType.VERTEX;
-    }
 }

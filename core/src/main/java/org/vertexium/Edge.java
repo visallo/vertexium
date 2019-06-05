@@ -112,4 +112,9 @@ public interface Edge extends Element, EdgeElementLocation {
      * @return The mutation builder.
      */
     ExistingEdgeMutation prepareMutation();
+
+    @Override
+    default ElementType getElementType() {
+        return ElementType.EDGE;
+    }
 }

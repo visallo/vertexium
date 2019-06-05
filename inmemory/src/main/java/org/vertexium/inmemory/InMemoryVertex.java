@@ -32,11 +32,6 @@ public class InMemoryVertex extends InMemoryElement<InMemoryVertex> implements V
     }
 
     @Override
-    public ElementType getElementType() {
-        return ElementType.VERTEX;
-    }
-
-    @Override
     public Iterable<Edge> getEdges(Direction direction, Authorizations authorizations) {
         return getEdges(direction, getGraph().getDefaultFetchHints(), authorizations);
     }

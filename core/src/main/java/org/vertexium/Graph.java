@@ -116,9 +116,9 @@ public interface Graph {
     default Element getElement(ElementId elementId, FetchHints fetchHints, Authorizations authorizations) {
         switch (elementId.getElementType()) {
             case VERTEX:
-                return getVertex(elementId.getElementId(), fetchHints, authorizations);
+                return getVertex(elementId.getId(), fetchHints, authorizations);
             case EDGE:
-                return getEdge(elementId.getElementId(), fetchHints, authorizations);
+                return getEdge(elementId.getId(), fetchHints, authorizations);
             default:
                 throw new VertexiumException("Unhandled element type: " + elementId.getElementType());
         }

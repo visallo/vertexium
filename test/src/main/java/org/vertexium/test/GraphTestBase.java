@@ -5748,7 +5748,6 @@ public abstract class GraphTestBase {
             .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
-        IncreasingTime.advanceTime(1);
         long beforeAlterTimestamp = IncreasingTime.currentTimeMillis();
 
         Vertex v1 = graph.getVertex("v1", FetchHints.ALL, AUTHORIZATIONS_A);

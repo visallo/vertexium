@@ -1001,7 +1001,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                 .collect(Collectors.groupingBy(ElementId::getElementType));
             return fetchHints.applyToResults(elementIdsByType.entrySet().stream()
                 .flatMap(entry -> {
-                    Set<String> ids = entry.getValue().stream().map(ElementId::getElementId).collect(Collectors.toSet());
+                    Set<String> ids = entry.getValue().stream().map(ElementId::getId).collect(Collectors.toSet());
                     return getHistoricalEvents(entry.getKey(), ids, after, fetchHints, authorizations);
                 }), after);
         } finally {

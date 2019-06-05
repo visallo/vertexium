@@ -197,7 +197,7 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
         Authorizations authorizations
     ) {
         return getGraph().getHistoricalEvents(
-            Lists.newArrayList(new ElementId(ElementType.getTypeFromElement(this), getId())),
+            Lists.newArrayList(this),
             after,
             fetchHints,
             authorizations
