@@ -76,7 +76,7 @@ public abstract class AccumuloGraphTestBase extends GraphTestBase {
     @Test
     public void testDefinePropertiesMultipleGraphs() {
         Graph graph1 = graph;
-        Graph graph2 = AccumuloGraph.create(new AccumuloGraphConfiguration(getAccumuloResource().createConfig()));
+        Graph graph2 = createGraph();
 
         graph1.defineProperty("p1").dataType(String.class).sortable(true).textIndexHint(TextIndexHint.ALL).define();
 
