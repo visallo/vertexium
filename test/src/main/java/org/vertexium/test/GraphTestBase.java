@@ -5203,6 +5203,30 @@ public abstract class GraphTestBase {
 
         vertex = graph.getVertex("v1", AUTHORIZATIONS_A);
         assertEquals("value3", vertex.getProperty("propBmeta").getMetadata().getEntry("meta1").getValue());
+
+        fetchHints = new FetchHintsBuilder()
+            .setPropertyNamesToInclude("propBmeta")
+            .setIncludeAllPropertyMetadata(true)
+            .build();
+        vertex = graph.getVertex("v1", fetchHints, AUTHORIZATIONS_A);
+        Property prop = vertex.getProperty("propBmeta");
+        m = vertex.prepareMutation();
+        newMetadata = Metadata.create(prop.getMetadata());
+        newMetadata.add("meta2", "value4", VISIBILITY_A);
+        m.addPropertyValue(
+            prop.getKey(),
+            prop.getName(),
+            prop.getValue(),
+            newMetadata,
+            prop.getTimestamp(),
+            prop.getVisibility()
+        );
+        m.save(AUTHORIZATIONS_ALL);
+        graph.flush();
+
+        vertex = graph.getVertex("v1", AUTHORIZATIONS_A);
+        assertEquals("value3", vertex.getProperty("propBmeta").getMetadata().getEntry("meta1").getValue());
+        assertEquals("value4", vertex.getProperty("propBmeta").getMetadata().getEntry("meta2").getValue());
     }
 
     @Test
