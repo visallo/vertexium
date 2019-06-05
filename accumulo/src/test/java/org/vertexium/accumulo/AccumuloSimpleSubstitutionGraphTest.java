@@ -2,7 +2,9 @@ package org.vertexium.accumulo;
 
 import com.google.common.base.Joiner;
 import org.junit.ClassRule;
+import org.vertexium.GraphConfiguration;
 import org.vertexium.id.SimpleNameSubstitutionStrategy;
+import org.vertexium.inmemory.search.DefaultSearchIndex;
 
 import java.util.HashMap;
 
@@ -26,6 +28,7 @@ public class AccumuloSimpleSubstitutionGraphTest extends AccumuloGraphTestBase {
             put(Joiner.on('.').join(new String[]{SUBSTITUTION_MAP_PREFIX, "4", VALUE_IDENTIFIER}), "l2");
             put(Joiner.on('.').join(new String[]{SUBSTITUTION_MAP_PREFIX, "5", KEY_IDENTIFIER}), LABEL_LABEL3);
             put(Joiner.on('.').join(new String[]{SUBSTITUTION_MAP_PREFIX, "5", VALUE_IDENTIFIER}), "l3");
+            put(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX, DefaultSearchIndex.class.getName());
         }
     });
 
