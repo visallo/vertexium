@@ -7814,7 +7814,7 @@ public abstract class GraphTestBase {
         queryResults = graph.query(AUTHORIZATIONS_A).vertices(fetchHints);
         assertVertexIdsAnyOrder(queryResults, "v1");
 
-        // add c
+        // add c (should have b and c)
         graph.prepareVertex("v1", VISIBILITY_A)
             .addAdditionalVisibility(VISIBILITY_C_STRING)
             .save(AUTHORIZATIONS_A_AND_B_AND_C);
@@ -7841,7 +7841,7 @@ public abstract class GraphTestBase {
         queryResults = graph.query(AUTHORIZATIONS_A).vertices(fetchHints);
         assertVertexIdsAnyOrder(queryResults, "v1");
 
-        // remove c
+        // remove c (should have b)
         graph.prepareVertex("v1", VISIBILITY_A)
             .deleteAdditionalVisibility(VISIBILITY_C_STRING)
             .save(AUTHORIZATIONS_A_AND_B_AND_C);
@@ -7868,7 +7868,7 @@ public abstract class GraphTestBase {
         queryResults = graph.query(AUTHORIZATIONS_A).vertices(fetchHints);
         assertVertexIdsAnyOrder(queryResults, "v1");
 
-        // remove b
+        // remove b (should have no additional visibilities)
         graph.prepareVertex("v1", VISIBILITY_A)
             .deleteAdditionalVisibility(VISIBILITY_B_STRING)
             .save(AUTHORIZATIONS_A_AND_B_AND_C);

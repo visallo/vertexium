@@ -7,6 +7,8 @@ import org.vertexium.mutation.ExistingElementMutation;
 import org.vertexium.mutation.ExtendedDataMutation;
 import org.vertexium.query.*;
 
+import java.util.Set;
+
 import static org.vertexium.util.Preconditions.checkNotNull;
 
 public class DefaultSearchIndex implements SearchIndex {
@@ -16,7 +18,13 @@ public class DefaultSearchIndex implements SearchIndex {
     }
 
     @Override
-    public void addElement(Graph graph, Element element, Authorizations authorizations) {
+    public void addElement(
+        Graph graph,
+        Element element,
+        Set<String> additionalVisibilities,
+        Set<String> additionalVisibilitiesToDelete,
+        Authorizations authorizations
+    ) {
         checkNotNull(element, "element cannot be null");
     }
 
@@ -93,7 +101,7 @@ public class DefaultSearchIndex implements SearchIndex {
     @Override
     public void addElements(Graph graph, Iterable<? extends Element> elements, Authorizations authorizations) {
         for (Element element : elements) {
-            addElement(graph, element, authorizations);
+            addElement(graph, element, element.getAdditionalVisibilities(), null, authorizations);
         }
     }
 
@@ -201,14 +209,6 @@ public class DefaultSearchIndex implements SearchIndex {
         checkNotNull(row, "row cannot be null");
         checkNotNull(columnName, "columnName cannot be null");
         checkNotNull(visibility, "visibility cannot be null");
-    }
-
-    @Override
-    public void addAdditionalVisibility(Graph graph, Element element, String visibility, Object eventData, Authorizations authorizations) {
-    }
-
-    @Override
-    public void deleteAdditionalVisibility(Graph graph, Element element, String visibility, Object eventData, Authorizations authorizations) {
     }
 
     @Override

@@ -183,7 +183,7 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> extends 
     public void addPropertyValue(String key, String name, Object value, Metadata metadata, Visibility visibility, Long timestamp, boolean indexAfterAdd, Authorizations authorizations) {
         getGraph().addPropertyValue(this, inMemoryTableElement, key, name, value, metadata, visibility, timestamp, authorizations);
         if (indexAfterAdd) {
-            getGraph().getSearchIndex().addElement(getGraph(), this, authorizations);
+            getGraph().getSearchIndex().addElement(getGraph(), this, null, null, authorizations);
         }
     }
 

@@ -8,9 +8,16 @@ import org.vertexium.mutation.ExtendedDataMutation;
 import org.vertexium.query.*;
 
 import java.util.Collection;
+import java.util.Set;
 
 public interface SearchIndex {
-    void addElement(Graph graph, Element element, Authorizations authorizations);
+    void addElement(
+        Graph graph,
+        Element element,
+        Set<String> additionalVisibilities,
+        Set<String> additionalVisibilitiesToDelete,
+        Authorizations authorizations
+    );
 
     <TElement extends Element> void updateElement(Graph graph, ExistingElementMutation<TElement> mutation, Authorizations authorizations);
 
@@ -127,8 +134,4 @@ public interface SearchIndex {
         Visibility visibility,
         Authorizations authorizations
     );
-
-    void addAdditionalVisibility(Graph graph, Element element, String visibility, Object eventData, Authorizations authorizations);
-
-    void deleteAdditionalVisibility(Graph graph, Element element, String visibility, Object eventData, Authorizations authorizations);
 }

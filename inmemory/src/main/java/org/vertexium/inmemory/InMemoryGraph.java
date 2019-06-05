@@ -165,7 +165,17 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
         if (elementMutation instanceof ExistingElementMutation) {
             getSearchIndex().updateElement(this, (ExistingElementMutation<? extends Element>) elementMutation, authorizations);
         } else {
-            getSearchIndex().addElement(this, element, authorizations);
+            getSearchIndex().addElement(
+                this,
+                element,
+                stream(elementMutation.getAdditionalVisibilities())
+                    .map(AdditionalVisibilityAddMutation::getAdditionalVisibility)
+                    .collect(Collectors.toSet()),
+                stream(elementMutation.getAdditionalVisibilityDeletes())
+                    .map(AdditionalVisibilityDeleteMutation::getAdditionalVisibility)
+                    .collect(Collectors.toSet()),
+                authorizations
+            );
         }
         getSearchIndex().addElementExtendedData(
             InMemoryGraph.this,

@@ -332,7 +332,17 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                     AccumuloVertex vertex = createVertex(authorizations);
 
                     if (getIndexHint() != IndexHint.DO_NOT_INDEX) {
-                        getSearchIndex().addElement(AccumuloGraph.this, vertex, authorizations);
+                        getSearchIndex().addElement(
+                            AccumuloGraph.this,
+                            vertex,
+                            getAdditionalVisibilities().stream()
+                                .map(AdditionalVisibilityAddMutation::getAdditionalVisibility)
+                                .collect(Collectors.toSet()),
+                            getAdditionalVisibilityDeletes().stream()
+                                .map(AdditionalVisibilityDeleteMutation::getAdditionalVisibility)
+                                .collect(Collectors.toSet()),
+                            authorizations
+                        );
                         getSearchIndex().addElementExtendedData(
                             AccumuloGraph.this,
                             vertex,
@@ -918,7 +928,17 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         }
 
         if (edgeBuilder.getIndexHint() != IndexHint.DO_NOT_INDEX) {
-            getSearchIndex().addElement(AccumuloGraph.this, edge, authorizations);
+            getSearchIndex().addElement(
+                AccumuloGraph.this,
+                edge,
+                edgeBuilder.getAdditionalVisibilities().stream()
+                    .map(AdditionalVisibilityAddMutation::getAdditionalVisibility)
+                    .collect(Collectors.toSet()),
+                edgeBuilder.getAdditionalVisibilityDeletes().stream()
+                    .map(AdditionalVisibilityDeleteMutation::getAdditionalVisibility)
+                    .collect(Collectors.toSet()),
+                authorizations
+            );
             getSearchIndex().addElementExtendedData(
                 AccumuloGraph.this,
                 edge,
