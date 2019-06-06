@@ -3,7 +3,7 @@ package org.vertexium.elasticsearch5.utils;
 import org.elasticsearch.action.ActionRequestBuilder;
 import org.elasticsearch.action.update.UpdateRequestBuilder;
 import org.elasticsearch.index.engine.DocumentMissingException;
-import org.vertexium.ElementType;
+import org.vertexium.ElementLocation;
 import org.vertexium.VertexiumException;
 import org.vertexium.elasticsearch5.Elasticsearch5SearchIndex;
 import org.vertexium.util.VertexiumLogger;
@@ -96,8 +96,7 @@ public class FlushObjectQueue {
         );
         long nextRetryTime = System.currentTimeMillis() + timeToWait;
         queue.add(new FlushObject(
-            flushObject.getElementType(),
-            flushObject.getElementId(),
+            flushObject.getElementLocation(),
             flushObject.getExtendedDataTableName(),
             flushObject.getExtendedDataRowId(),
             flushObject.getActionRequestBuilder(),
@@ -108,19 +107,18 @@ public class FlushObjectQueue {
     }
 
     public void add(
-        ElementType elementType,
-        String elementId,
+        ElementLocation elementLocation,
         String extendedDataTableName,
         String rowId,
         UpdateRequestBuilder updateRequestBuilder,
         Future future
     ) {
-        queue.add(new FlushObject(elementType, elementId, extendedDataTableName, rowId, updateRequestBuilder, future));
+        queue.add(new FlushObject(elementLocation, extendedDataTableName, rowId, updateRequestBuilder, future));
     }
 
     public boolean containsElementId(String elementId) {
         for (FlushObject flushObject : queue) {
-            if (flushObject.getElementId().equals(elementId)) {
+            if (flushObject.getElementLocation().getId().equals(elementId)) {
                 return true;
             }
         }
@@ -128,8 +126,7 @@ public class FlushObjectQueue {
     }
 
     public static class FlushObject {
-        private final ElementType elementType;
-        private final String elementId;
+        private final ElementLocation elementLocation;
         private final String extendedDataTableName;
         private final String extendedDataRowId;
         private final ActionRequestBuilder actionRequestBuilder;
@@ -138,19 +135,17 @@ public class FlushObjectQueue {
         private final long nextRetryTime;
 
         FlushObject(
-            ElementType elementType,
-            String elementId,
+            ElementLocation elementLocation,
             String extendedDataTableName,
             String extendedDataRowId,
             UpdateRequestBuilder updateRequestBuilder,
             Future future
         ) {
-            this(elementType, elementId, extendedDataTableName, extendedDataRowId, updateRequestBuilder, future, 0, 0);
+            this(elementLocation, extendedDataTableName, extendedDataRowId, updateRequestBuilder, future, 0, 0);
         }
 
         FlushObject(
-            ElementType elementType,
-            String elementId,
+            ElementLocation elementLocation,
             String extendedDataTableName,
             String extendedDataRowId,
             ActionRequestBuilder actionRequestBuilder,
@@ -158,8 +153,7 @@ public class FlushObjectQueue {
             int retryCount,
             long nextRetryTime
         ) {
-            this.elementType = elementType;
-            this.elementId = elementId;
+            this.elementLocation = elementLocation;
             this.extendedDataTableName = extendedDataTableName;
             this.extendedDataRowId = extendedDataRowId;
             this.actionRequestBuilder = actionRequestBuilder;
@@ -170,6 +164,7 @@ public class FlushObjectQueue {
 
         @Override
         public String toString() {
+            String elementId = getElementLocation().getId();
             if (extendedDataRowId == null) {
                 return String.format("Element \"%s\"", elementId);
             } else {
@@ -177,12 +172,8 @@ public class FlushObjectQueue {
             }
         }
 
-        public ElementType getElementType() {
-            return elementType;
-        }
-
-        public String getElementId() {
-            return elementId;
+        public ElementLocation getElementLocation() {
+            return elementLocation;
         }
 
         public String getExtendedDataTableName() {

@@ -9,4 +9,12 @@
 
     <artifactId>vertexium-security</artifactId>
     <name>Vertexium: Security</name>
+
+    <dependencies>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
 </project>

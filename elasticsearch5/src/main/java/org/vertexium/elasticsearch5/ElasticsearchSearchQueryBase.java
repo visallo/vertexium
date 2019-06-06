@@ -156,7 +156,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
         List<QueryBuilder> filters = getFilters(elementType, fetchHints);
         QueryBuilder query = createQuery(getParameters());
 
-        QueryBuilder filterBuilder = getFilterBuilder(filters);
+        QueryBuilder filterBuilder = getFilterBuilder(filters, fetchHints);
         String[] indicesToQuery = getIndexSelectionStrategy().getIndicesToQuery(this, elementType);
         if (QUERY_LOGGER.isTraceEnabled()) {
             QUERY_LOGGER.trace("indicesToQuery: %s", Joiner.on(", ").join(indicesToQuery));
@@ -506,7 +506,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
             }
         }
         if (ids.getExtendedDataIds().size() > 0) {
-            Iterable<? extends VertexiumObject> extendedDataRows = getGraph().getExtendedData(ids.getExtendedDataIds(), authorizations);
+            Iterable<? extends VertexiumObject> extendedDataRows = getGraph().getExtendedData(ids.getExtendedDataIds(), fetchHints, authorizations);
             items.add(extendedDataRows);
         }
         Iterable<VertexiumObject> vertexiumObjects = new JoinIterable<>(items);
@@ -1201,12 +1201,19 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
         );
     }
 
-    protected QueryBuilder getFilterBuilder(List<QueryBuilder> filters) {
+    protected QueryBuilder getFilterBuilder(List<QueryBuilder> filters, FetchHints fetchHints) {
         BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
         for (QueryBuilder filter : filters) {
             boolQuery.must(filter);
         }
+        if (!fetchHints.isIgnoreAdditionalVisibilities()) {
+            boolQuery.must(getAdditionalVisibilitiesFilter());
+        }
         return boolQuery;
+    }
+
+    private QueryBuilder getAdditionalVisibilitiesFilter() {
+        return getSearchIndex().getAdditionalVisibilitiesFilter(getParameters().getAuthorizations());
     }
 
     private String[] splitStringIntoTerms(String value) {

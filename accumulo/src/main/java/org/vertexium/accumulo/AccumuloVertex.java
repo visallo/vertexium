@@ -46,6 +46,7 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
         Iterable<PropertyDeleteMutation> propertyDeleteMutations,
         Iterable<PropertySoftDeleteMutation> propertySoftDeleteMutations,
         Iterable<Visibility> hiddenVisibilities,
+        Iterable<String> additionalVisibilities,
         ImmutableSet<String> extendedDataTableNames,
         long timestamp,
         FetchHints fetchHints,
@@ -59,6 +60,7 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
             propertyDeleteMutations,
             propertySoftDeleteMutations,
             hiddenVisibilities,
+            additionalVisibilities,
             extendedDataTableNames,
             new EdgesWithEdgeInfo(),
             new EdgesWithEdgeInfo(),
@@ -76,6 +78,7 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
         Iterable<PropertyDeleteMutation> propertyDeleteMutations,
         Iterable<PropertySoftDeleteMutation> propertySoftDeleteMutations,
         Iterable<Visibility> hiddenVisibilities,
+        Iterable<String> additionalVisibilities,
         ImmutableSet<String> extendedDataTableNames,
         Edges inEdges,
         Edges outEdges,
@@ -91,6 +94,7 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
             propertyDeleteMutations,
             propertySoftDeleteMutations,
             hiddenVisibilities,
+            additionalVisibilities,
             extendedDataTableNames,
             timestamp,
             fetchHints,
@@ -128,6 +132,8 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
                 hiddenVisibilityStrings.stream().map(Visibility::new).collect(Collectors.toSet()) :
                 null;
 
+            ImmutableSet<String> additionalVisibilities = DataInputStreamUtils.decodeStringSet(in);
+
             List<MetadataEntry> metadataEntries = DataInputStreamUtils.decodeMetadataEntries(in);
             properties = DataInputStreamUtils.decodeProperties(graph, in, metadataEntries, fetchHints);
 
@@ -143,6 +149,7 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
                 null,
                 null,
                 hiddenVisibilities,
+                additionalVisibilities,
                 extendedDataTableNames,
                 inEdges,
                 outEdges,
@@ -610,5 +617,10 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
 
     private Iterable<EdgeVertexPair> getEdgeVertexPairs(Iterable<EdgeInfo> edgeInfos, FetchHints fetchHints, Long endTime, Authorizations authorizations) {
         return EdgeVertexPair.getEdgeVertexPairs(getGraph(), getId(), edgeInfos, fetchHints, endTime, authorizations);
+    }
+
+    @Override
+    public ElementType getElementType() {
+        return ElementType.VERTEX;
     }
 }

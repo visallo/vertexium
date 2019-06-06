@@ -1,14 +1,23 @@
 package org.vertexium.search;
 
 import org.vertexium.*;
+import org.vertexium.mutation.AdditionalExtendedDataVisibilityAddMutation;
+import org.vertexium.mutation.AdditionalExtendedDataVisibilityDeleteMutation;
 import org.vertexium.mutation.ExistingElementMutation;
 import org.vertexium.mutation.ExtendedDataMutation;
 import org.vertexium.query.*;
 
 import java.util.Collection;
+import java.util.Set;
 
 public interface SearchIndex {
-    void addElement(Graph graph, Element element, Authorizations authorizations);
+    void addElement(
+        Graph graph,
+        Element element,
+        Set<String> additionalVisibilities,
+        Set<String> additionalVisibilitiesToDelete,
+        Authorizations authorizations
+    );
 
     <TElement extends Element> void updateElement(Graph graph, ExistingElementMutation<TElement> mutation, Authorizations authorizations);
 
@@ -16,11 +25,28 @@ public interface SearchIndex {
 
     void markElementHidden(Graph graph, Element element, Visibility visibility, Authorizations authorizations);
 
-    void markElementVisible(Graph graph, Element element, Visibility visibility, Authorizations authorizations);
+    void markElementVisible(
+        Graph graph,
+        ElementLocation elementLocation,
+        Visibility visibility,
+        Authorizations authorizations
+    );
 
-    void markPropertyHidden(Graph graph, Element element, Property property, Visibility visibility, Authorizations authorizations);
+    void markPropertyHidden(
+        Graph graph,
+        ElementLocation elementLocation,
+        Property property,
+        Visibility visibility,
+        Authorizations authorizations
+    );
 
-    void markPropertyVisible(Graph graph, Element element, Property property, Visibility visibility, Authorizations authorizations);
+    void markPropertyVisible(
+        Graph graph,
+        ElementLocation elementLocation,
+        Property property,
+        Visibility visibility,
+        Authorizations authorizations
+    );
 
     /**
      * Default delete property simply calls deleteProperty in a loop. It is up to the SearchIndex implementation to decide
@@ -72,17 +98,35 @@ public interface SearchIndex {
 
     boolean isFieldLevelSecuritySupported();
 
-    void alterElementVisibility(Graph graph, Element element, Visibility oldVisibility, Visibility newVisibility, Authorizations authorizations);
+    <T extends Element> void alterElementVisibility(
+        Graph graph,
+        ExistingElementMutation<T> elementMutation,
+        Visibility oldVisibility,
+        Visibility newVisibility,
+        Authorizations authorizations
+    );
 
-    void addElementExtendedData(Graph graph, Element element, Iterable<ExtendedDataMutation> extendedDatas, Authorizations authorizations);
+    void addElementExtendedData(
+        Graph graph,
+        ElementLocation elementLocation,
+        Iterable<ExtendedDataMutation> extendedDatas,
+        Iterable<AdditionalExtendedDataVisibilityAddMutation> additionalExtendedDataVisibilities,
+        Iterable<AdditionalExtendedDataVisibilityDeleteMutation> additionalExtendedDataVisibilityDeletes,
+        Authorizations authorizations
+    );
 
-    void addExtendedData(Graph graph, Iterable<ExtendedDataRow> extendedDatas, Authorizations authorizations);
+    void addExtendedData(
+        Graph graph,
+        ElementLocation elementLocation,
+        Iterable<ExtendedDataRow> extendedDatas,
+        Authorizations authorizations
+    );
 
     void deleteExtendedData(Graph graph, ExtendedDataRowId extendedDataRowId, Authorizations authorizations);
 
     void deleteExtendedData(
         Graph graph,
-        Element element,
+        ElementLocation elementLocation,
         String tableName,
         String row,
         String columnName,

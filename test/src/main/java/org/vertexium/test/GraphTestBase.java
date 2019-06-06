@@ -55,11 +55,13 @@ public abstract class GraphTestBase {
     public static final String VISIBILITY_A_STRING = "a";
     public static final String VISIBILITY_B_STRING = "b";
     public static final String VISIBILITY_C_STRING = "c";
+    public static final String VISIBILITY_D_STRING = "d";
     public static final String VISIBILITY_MIXED_CASE_STRING = "MIXED_CASE_a";
     public static final Visibility VISIBILITY_A = new Visibility(VISIBILITY_A_STRING);
     public static final Visibility VISIBILITY_A_AND_B = new Visibility("a&b");
     public static final Visibility VISIBILITY_B = new Visibility(VISIBILITY_B_STRING);
     public static final Visibility VISIBILITY_C = new Visibility(VISIBILITY_C_STRING);
+    public static final Visibility VISIBILITY_D = new Visibility(VISIBILITY_D_STRING);
     public static final Visibility VISIBILITY_MIXED_CASE_a = new Visibility("((MIXED_CASE_a))|b");
     public static final Visibility VISIBILITY_EMPTY = new Visibility("");
     public static final String LABEL_LABEL1 = "label1";
@@ -1262,15 +1264,15 @@ public abstract class GraphTestBase {
 
         v1 = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B);
         v1.markPropertyHidden("key1", "firstName", VISIBILITY_A, t, VISIBILITY_B, AUTHORIZATIONS_A_AND_B);
-        t += 10;
+        t += 100;
         List<Property> properties = IterableUtils.toList(graph.getVertex("v1", FetchHints.ALL_INCLUDING_HIDDEN, AUTHORIZATIONS_A_AND_B).getProperties());
         assertEquals(1, count(properties));
 
         long beforeMarkPropertyVisibleTimestamp = t;
-        t += 10;
+        t += 100;
 
         v1.markPropertyVisible("key1", "firstName", VISIBILITY_A, t, VISIBILITY_B, AUTHORIZATIONS_A_AND_B);
-        t += 10;
+        t += 100;
         properties = IterableUtils.toList(graph.getVertex("v1", AUTHORIZATIONS_A_AND_B).getProperties());
         assertEquals(1, count(properties));
         graph.flush();
@@ -1331,8 +1333,9 @@ public abstract class GraphTestBase {
             searchIndex.truncate(graph);
             searchIndex.flush(graph);
 
+            ElementMutation<? extends Element> mutation = graph.getVertex("v1", AUTHORIZATIONS_A).prepareMutation();
             Iterable<ExtendedDataRow> extendedData = graph.getExtendedData(ElementType.VERTEX, "v1", "table1", AUTHORIZATIONS_A);
-            searchIndex.addExtendedData(graph, extendedData, AUTHORIZATIONS_A);
+            searchIndex.addExtendedData(graph, mutation, extendedData, AUTHORIZATIONS_A);
             graph.flush();
         }
 
@@ -2615,7 +2618,7 @@ public abstract class GraphTestBase {
 
     @Test
     public void testSaveElementMutations() {
-        List<ElementMutation> mutations = new ArrayList<>();
+        List<ElementMutation<? extends Element>> mutations = new ArrayList<>();
         for (int i = 0; i < 2; i++) {
             ElementBuilder<Vertex> m = graph.prepareVertex("v" + i, VISIBILITY_A)
                 .addPropertyValue("k1", "name", "joe", VISIBILITY_A)
@@ -5647,6 +5650,9 @@ public abstract class GraphTestBase {
         assertNull(v1.getProperty("prop1"));
         assertNotNull(v1.getProperty("prop2"));
 
+        toList(graph.query(AUTHORIZATIONS_A).has("prop1", "value1").vertices());
+        toList(graph.query(AUTHORIZATIONS_B).has("prop1", "value1").vertices());
+
         assertResultsCount(0, 0, graph.query(AUTHORIZATIONS_A).has("prop1", "value1").vertices());
         assertResultsCount(1, 1, graph.query(AUTHORIZATIONS_B).has("prop1", "value1").vertices());
 
@@ -5742,6 +5748,7 @@ public abstract class GraphTestBase {
             .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
+        IncreasingTime.advanceTime(1);
         long beforeAlterTimestamp = IncreasingTime.currentTimeMillis();
 
         Vertex v1 = graph.getVertex("v1", FetchHints.ALL, AUTHORIZATIONS_A);
@@ -7780,6 +7787,263 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    public void testAdditionalVisibilities() {
+        graph.prepareVertex("v1", VISIBILITY_A)
+            .addAdditionalVisibility(VISIBILITY_B_STRING)
+            .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        List<Vertex> vertices = toList(graph.getVertices(AUTHORIZATIONS_A));
+        assertEquals(0, vertices.size());
+
+        QueryResultsIterable<Vertex> queryResults = graph.query(AUTHORIZATIONS_A).vertices();
+        assertVertexIdsAnyOrder(queryResults);
+
+        vertices = toList(graph.getVertices(AUTHORIZATIONS_A_AND_B));
+        assertVertexIdsAnyOrder(vertices, "v1");
+
+        queryResults = graph.query(AUTHORIZATIONS_A_AND_B).vertices();
+        assertVertexIdsAnyOrder(queryResults, "v1");
+
+        FetchHints fetchHints = new FetchHintsBuilder(FetchHints.ALL)
+            .setIgnoreAdditionalVisibilities(true)
+            .build();
+        vertices = toList(graph.getVertices(fetchHints, AUTHORIZATIONS_A));
+        assertVertexIdsAnyOrder(vertices, "v1");
+
+        queryResults = graph.query(AUTHORIZATIONS_A).vertices(fetchHints);
+        assertVertexIdsAnyOrder(queryResults, "v1");
+
+        // add c (should have b and c)
+        graph.prepareVertex("v1", VISIBILITY_A)
+            .addAdditionalVisibility(VISIBILITY_C_STRING)
+            .save(AUTHORIZATIONS_A_AND_B_AND_C);
+        graph.flush();
+
+        vertices = toList(graph.getVertices(AUTHORIZATIONS_A_AND_B));
+        assertEquals(0, vertices.size());
+
+        queryResults = graph.query(AUTHORIZATIONS_A_AND_B).vertices();
+        assertVertexIdsAnyOrder(queryResults);
+
+        vertices = toList(graph.getVertices(AUTHORIZATIONS_A_AND_B_AND_C));
+        assertVertexIdsAnyOrder(vertices, "v1");
+
+        queryResults = graph.query(AUTHORIZATIONS_A_AND_B_AND_C).vertices();
+        assertVertexIdsAnyOrder(queryResults, "v1");
+
+        fetchHints = new FetchHintsBuilder(FetchHints.ALL)
+            .setIgnoreAdditionalVisibilities(true)
+            .build();
+        vertices = toList(graph.getVertices(fetchHints, AUTHORIZATIONS_A));
+        assertVertexIdsAnyOrder(vertices, "v1");
+
+        queryResults = graph.query(AUTHORIZATIONS_A).vertices(fetchHints);
+        assertVertexIdsAnyOrder(queryResults, "v1");
+
+        // remove c (should have b)
+        graph.prepareVertex("v1", VISIBILITY_A)
+            .deleteAdditionalVisibility(VISIBILITY_C_STRING)
+            .save(AUTHORIZATIONS_A_AND_B_AND_C);
+        graph.flush();
+
+        vertices = toList(graph.getVertices(AUTHORIZATIONS_A));
+        assertEquals(0, vertices.size());
+
+        queryResults = graph.query(AUTHORIZATIONS_A).vertices();
+        assertVertexIdsAnyOrder(queryResults);
+
+        vertices = toList(graph.getVertices(AUTHORIZATIONS_A_AND_B));
+        assertVertexIdsAnyOrder(vertices, "v1");
+
+        queryResults = graph.query(AUTHORIZATIONS_A_AND_B).vertices();
+        assertVertexIdsAnyOrder(queryResults, "v1");
+
+        fetchHints = new FetchHintsBuilder(FetchHints.ALL)
+            .setIgnoreAdditionalVisibilities(true)
+            .build();
+        vertices = toList(graph.getVertices(fetchHints, AUTHORIZATIONS_A));
+        assertVertexIdsAnyOrder(vertices, "v1");
+
+        queryResults = graph.query(AUTHORIZATIONS_A).vertices(fetchHints);
+        assertVertexIdsAnyOrder(queryResults, "v1");
+
+        // remove b (should have no additional visibilities)
+        graph.prepareVertex("v1", VISIBILITY_A)
+            .deleteAdditionalVisibility(VISIBILITY_B_STRING)
+            .save(AUTHORIZATIONS_A_AND_B_AND_C);
+        graph.flush();
+
+        vertices = toList(graph.getVertices(AUTHORIZATIONS_A));
+        assertVertexIdsAnyOrder(vertices, "v1");
+
+        queryResults = graph.query(AUTHORIZATIONS_A).vertices();
+        assertVertexIdsAnyOrder(queryResults, "v1");
+
+        fetchHints = new FetchHintsBuilder(FetchHints.ALL)
+            .setIgnoreAdditionalVisibilities(true)
+            .build();
+        vertices = toList(graph.getVertices(fetchHints, AUTHORIZATIONS_A));
+        assertVertexIdsAnyOrder(vertices, "v1");
+
+        queryResults = graph.query(AUTHORIZATIONS_A).vertices(fetchHints);
+        assertVertexIdsAnyOrder(queryResults, "v1");
+    }
+
+    @Test
+    public void testAdditionalVisibilitiesOnExtendedData() {
+        graph.prepareVertex("v1", VISIBILITY_A)
+            .addExtendedData("table1", "row1", "column1", "key1", "value1", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        getGraph().getVertex("v1", AUTHORIZATIONS_A)
+            .prepareMutation()
+            .addExtendedDataAdditionalVisibility("table1", "row1", VISIBILITY_B_STRING)
+            .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        Vertex v = getGraph().getVertex("v1", AUTHORIZATIONS_A);
+        List<ExtendedDataRow> rows = toList(v.getExtendedData("table1"));
+        assertRowIdsAnyOrder(rows);
+
+        QueryResultsIterable<ExtendedDataRow> queryResults = graph.query(AUTHORIZATIONS_A).extendedDataRows();
+        assertRowIdsAnyOrder(queryResults);
+
+        v = getGraph().getVertex("v1", AUTHORIZATIONS_A_AND_B);
+        rows = toList(v.getExtendedData("table1"));
+        assertSet(rows.get(0).getAdditionalVisibilities(), VISIBILITY_B_STRING);
+        assertRowIdsAnyOrder(rows, "row1");
+
+        queryResults = graph.query(AUTHORIZATIONS_A_AND_B).extendedDataRows();
+        assertRowIdsAnyOrder(queryResults, "row1");
+
+        FetchHints fetchHints = new FetchHintsBuilder(FetchHints.ALL)
+            .setIgnoreAdditionalVisibilities(true)
+            .build();
+        v = getGraph().getVertex("v1", fetchHints, AUTHORIZATIONS_A);
+        rows = toList(v.getExtendedData("table1"));
+        assertRowIdsAnyOrder(rows, "row1");
+
+        queryResults = graph.query(AUTHORIZATIONS_A).extendedDataRows(fetchHints);
+        assertRowIdsAnyOrder(queryResults, "row1");
+
+        // add c
+        graph.prepareVertex("v1", VISIBILITY_A)
+            .addExtendedDataAdditionalVisibility("table1", "row1", VISIBILITY_C_STRING)
+            .save(AUTHORIZATIONS_A_AND_B_AND_C);
+        graph.flush();
+
+        v = getGraph().getVertex("v1", AUTHORIZATIONS_A_AND_B);
+        rows = toList(v.getExtendedData("table1"));
+        assertRowIdsAnyOrder(rows);
+
+        queryResults = graph.query(AUTHORIZATIONS_A_AND_B).extendedDataRows();
+        assertRowIdsAnyOrder(queryResults);
+
+        v = getGraph().getVertex("v1", AUTHORIZATIONS_A_AND_B_AND_C);
+        rows = toList(v.getExtendedData("table1"));
+        assertSet(rows.get(0).getAdditionalVisibilities(), VISIBILITY_B_STRING, VISIBILITY_C_STRING);
+        assertRowIdsAnyOrder(rows, "row1");
+
+        queryResults = graph.query(AUTHORIZATIONS_A_AND_B_AND_C).extendedDataRows();
+        assertRowIdsAnyOrder(queryResults, "row1");
+
+        fetchHints = new FetchHintsBuilder(FetchHints.ALL)
+            .setIgnoreAdditionalVisibilities(true)
+            .build();
+        v = getGraph().getVertex("v1", fetchHints, AUTHORIZATIONS_A);
+        rows = toList(v.getExtendedData("table1"));
+        assertRowIdsAnyOrder(rows, "row1");
+
+        queryResults = graph.query(AUTHORIZATIONS_A).extendedDataRows(fetchHints);
+        assertRowIdsAnyOrder(queryResults, "row1");
+
+        // remove c
+        graph.prepareVertex("v1", VISIBILITY_A)
+            .deleteExtendedDataAdditionalVisibility("table1", "row1", VISIBILITY_C_STRING)
+            .save(AUTHORIZATIONS_A_AND_B_AND_C);
+        graph.flush();
+
+        v = getGraph().getVertex("v1", AUTHORIZATIONS_A);
+        rows = toList(v.getExtendedData("table1"));
+        assertRowIdsAnyOrder(rows);
+
+        queryResults = graph.query(AUTHORIZATIONS_A).extendedDataRows();
+        assertRowIdsAnyOrder(queryResults);
+
+        v = getGraph().getVertex("v1", AUTHORIZATIONS_A_AND_B);
+        rows = toList(v.getExtendedData("table1"));
+        assertRowIdsAnyOrder(rows, "row1");
+
+        queryResults = graph.query(AUTHORIZATIONS_A_AND_B).extendedDataRows();
+        assertRowIdsAnyOrder(queryResults, "row1");
+
+        fetchHints = new FetchHintsBuilder(FetchHints.ALL)
+            .setIgnoreAdditionalVisibilities(true)
+            .build();
+        v = getGraph().getVertex("v1", fetchHints, AUTHORIZATIONS_A);
+        rows = toList(v.getExtendedData("table1"));
+        assertRowIdsAnyOrder(rows, "row1");
+
+        queryResults = graph.query(AUTHORIZATIONS_A).extendedDataRows(fetchHints);
+        assertRowIdsAnyOrder(queryResults, "row1");
+
+        // remove b
+        graph.prepareVertex("v1", VISIBILITY_A)
+            .deleteExtendedDataAdditionalVisibility("table1", "row1", VISIBILITY_B_STRING)
+            .save(AUTHORIZATIONS_A_AND_B_AND_C);
+        graph.flush();
+
+        v = getGraph().getVertex("v1", AUTHORIZATIONS_A);
+        rows = toList(v.getExtendedData("table1"));
+        assertSet(rows.get(0).getAdditionalVisibilities());
+        assertRowIdsAnyOrder(rows, "row1");
+
+        queryResults = graph.query(AUTHORIZATIONS_A).extendedDataRows();
+        assertRowIdsAnyOrder(queryResults, "row1");
+
+        fetchHints = new FetchHintsBuilder(FetchHints.ALL)
+            .setIgnoreAdditionalVisibilities(true)
+            .build();
+        v = getGraph().getVertex("v1", fetchHints, AUTHORIZATIONS_A);
+        rows = toList(v.getExtendedData("table1"));
+        assertRowIdsAnyOrder(rows, "row1");
+
+        queryResults = graph.query(AUTHORIZATIONS_A).extendedDataRows(fetchHints);
+        assertRowIdsAnyOrder(queryResults, "row1");
+    }
+
+    @Test
+    public void testAdditionalVisibilitiesWithNot() {
+        addAuthorizations(VISIBILITY_C_STRING, VISIBILITY_D_STRING);
+        Authorizations authorizationABD = createAuthorizations(VISIBILITY_A_STRING, VISIBILITY_B_STRING, VISIBILITY_D_STRING);
+        Authorizations authorizationABCD = createAuthorizations(VISIBILITY_A_STRING, VISIBILITY_B_STRING, VISIBILITY_C_STRING, VISIBILITY_D_STRING);
+
+        graph.prepareVertex("v1", VISIBILITY_A)
+            .addAdditionalVisibility(VISIBILITY_B_STRING + "&!" + VISIBILITY_C_STRING)
+            .addAdditionalVisibility(VISIBILITY_B_STRING + "&!" + VISIBILITY_D_STRING)
+            .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        assertNull(getGraph().getVertex("v1", AUTHORIZATIONS_A));
+        assertVertexIdsAnyOrder(getGraph().query(AUTHORIZATIONS_A).vertices());
+
+        assertNotNull(getGraph().getVertex("v1", AUTHORIZATIONS_A_AND_B));
+        assertVertexIdsAnyOrder(getGraph().query(AUTHORIZATIONS_A_AND_B).vertices(), "v1");
+
+        assertNull(getGraph().getVertex("v1", AUTHORIZATIONS_A_AND_B_AND_C));
+        assertVertexIdsAnyOrder(getGraph().query(AUTHORIZATIONS_A_AND_B_AND_C).vertices());
+
+        assertNull(getGraph().getVertex("v1", authorizationABD));
+        assertVertexIdsAnyOrder(getGraph().query(authorizationABD).vertices());
+
+        assertNull(getGraph().getVertex("v1", authorizationABCD));
+        assertVertexIdsAnyOrder(getGraph().query(authorizationABCD).vertices());
+
+    }
+
+    @Test
     public void testExtendedData() {
         Date date1 = new Date(1487083490000L);
         Date date2 = new Date(1487083480000L);
@@ -9040,7 +9304,7 @@ public abstract class GraphTestBase {
 
     private void benchmarkAddVerticesSaveElementMutations(int vertexCount) {
         double startTime = System.currentTimeMillis();
-        List<ElementMutation> mutations = new ArrayList<>();
+        List<ElementMutation<? extends Element>> mutations = new ArrayList<>();
         for (int i = 0; i < vertexCount; i++) {
             String vertexId = "v" + i;
             ElementBuilder<Vertex> m = graph.prepareVertex(vertexId, VISIBILITY_A)

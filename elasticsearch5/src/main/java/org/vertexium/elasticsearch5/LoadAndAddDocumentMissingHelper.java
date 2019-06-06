@@ -30,17 +30,23 @@ public class LoadAndAddDocumentMissingHelper implements Elasticsearch5ExceptionH
         Authorizations authorizations
     ) {
         Element element;
-        switch (flushObject.getElementType()) {
+        switch (flushObject.getElementLocation().getElementType()) {
             case VERTEX:
-                element = graph.getVertex(flushObject.getElementId(), authorizations);
+                element = graph.getVertex(flushObject.getElementLocation().getId(), authorizations);
                 break;
             case EDGE:
-                element = graph.getEdge(flushObject.getElementId(), authorizations);
+                element = graph.getEdge(flushObject.getElementLocation().getId(), authorizations);
                 break;
             default:
-                throw new VertexiumException("Invalid element type: " + flushObject.getElementType());
+                throw new VertexiumException("Invalid element type: " + flushObject.getElementLocation().getElementType());
         }
-        elasticsearch5SearchIndex.addElement(graph, element, authorizations);
+        elasticsearch5SearchIndex.addElement(
+            graph,
+            element,
+            element.getAdditionalVisibilities(),
+            null,
+            authorizations
+        );
     }
 
     protected static void handleExtendedDataRow(
@@ -50,12 +56,17 @@ public class LoadAndAddDocumentMissingHelper implements Elasticsearch5ExceptionH
         Authorizations authorizations
     ) {
         ExtendedDataRowId id = new ExtendedDataRowId(
-            flushObject.getElementType(),
-            flushObject.getElementId(),
+            flushObject.getElementLocation().getElementType(),
+            flushObject.getElementLocation().getId(),
             flushObject.getExtendedDataTableName(),
             flushObject.getExtendedDataRowId()
         );
         ExtendedDataRow row = graph.getExtendedData(id, authorizations);
-        elasticsearch5SearchIndex.addExtendedData(graph, Collections.singletonList(row), authorizations);
+        elasticsearch5SearchIndex.addExtendedData(
+            graph,
+            flushObject.getElementLocation(),
+            Collections.singletonList(row),
+            authorizations
+        );
     }
 }

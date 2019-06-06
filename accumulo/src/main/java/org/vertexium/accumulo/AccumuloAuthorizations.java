@@ -1,11 +1,11 @@
 package org.vertexium.accumulo;
 
-import org.apache.accumulo.core.security.ColumnVisibility;
-import org.apache.accumulo.core.security.VisibilityEvaluator;
-import org.apache.accumulo.core.security.VisibilityParseException;
 import org.vertexium.Authorizations;
 import org.vertexium.VertexiumException;
 import org.vertexium.Visibility;
+import org.vertexium.security.ColumnVisibility;
+import org.vertexium.security.VisibilityEvaluator;
+import org.vertexium.security.VisibilityParseException;
 import org.vertexium.util.ArrayUtils;
 import org.vertexium.util.Preconditions;
 
@@ -44,7 +44,7 @@ public class AccumuloAuthorizations implements Authorizations, Serializable {
             return true;
         }
 
-        VisibilityEvaluator visibilityEvaluator = new VisibilityEvaluator(new org.apache.accumulo.core.security.Authorizations(this.getAuthorizations()));
+        VisibilityEvaluator visibilityEvaluator = new VisibilityEvaluator(new org.vertexium.security.Authorizations(this.getAuthorizations()));
         ColumnVisibility columnVisibility = new ColumnVisibility(visibility.getVisibilityString());
         try {
             return visibilityEvaluator.evaluate(columnVisibility);

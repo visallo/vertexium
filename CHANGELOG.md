@@ -1,3 +1,6 @@
+# v5.0.0
+* Added: Element/Extended Data Row additional visibilities
+
 # v4.6.0
 * Added: History for vertices, edges, and properties
 * Changed: Accumulo use a thread pool when doing batch scans 

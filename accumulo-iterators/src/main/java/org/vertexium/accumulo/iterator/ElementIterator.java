@@ -9,9 +9,14 @@ import org.apache.accumulo.core.iterators.user.RowDeletingIterator;
 import org.apache.hadoop.io.Text;
 import org.vertexium.accumulo.iterator.model.*;
 import org.vertexium.accumulo.iterator.util.OptionsUtils;
+import org.vertexium.security.Authorizations;
+import org.vertexium.security.ColumnVisibility;
+import org.vertexium.security.VisibilityEvaluator;
+import org.vertexium.security.VisibilityParseException;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.regex.Pattern;
 
 public abstract class ElementIterator<T extends ElementData> implements SortedKeyValueIterator<Key, Value>, OptionDescriber {
     public static final String CF_PROPERTY_STRING = "PROP";
@@ -37,6 +42,10 @@ public abstract class ElementIterator<T extends ElementData> implements SortedKe
     public static final Text CQ_HIDDEN = new Text("H");
     public static final byte[] CQ_HIDDEN_BYTES = CQ_HIDDEN.getBytes();
 
+    public static final String CF_ADDITIONAL_VISIBILITY_STRING = "AV";
+    public static final Text CF_ADDITIONAL_VISIBILITY = new Text(CF_ADDITIONAL_VISIBILITY_STRING);
+    public static final byte[] CF_ADDITIONAL_VISIBILITY_BYTES = CF_ADDITIONAL_VISIBILITY.getBytes();
+
     public static final String CF_SOFT_DELETE_STRING = "D";
     public static final Text CF_SOFT_DELETE = new Text(CF_SOFT_DELETE_STRING);
     public static final byte[] CF_SOFT_DELETE_BYTES = CF_SOFT_DELETE.getBytes();
@@ -53,6 +62,9 @@ public abstract class ElementIterator<T extends ElementData> implements SortedKe
 
     public static final Value HIDDEN_VALUE = new Value("".getBytes());
     public static final Value HIDDEN_VALUE_DELETED = new Value("X".getBytes());
+
+    public static final Value ADDITIONAL_VISIBILITY_VALUE = new Value("".getBytes());
+    public static final Value ADDITIONAL_VISIBILITY_VALUE_DELETED = new Value("X".getBytes());
 
     public static final Value SIGNAL_VALUE_DELETED = new Value("X".getBytes());
 
@@ -75,14 +87,30 @@ public abstract class ElementIterator<T extends ElementData> implements SortedKe
     private static final String SETTING_FETCH_HINTS_PREFIX = "fetchHints.";
     private SortedKeyValueIterator<Key, Value> sourceIterator;
     private IteratorFetchHints fetchHints;
+    private Authorizations authorizations;
+    private VisibilityEvaluator visibilityEvaluator;
     private T elementData;
     private Key topKey;
     private Value topValue;
 
-    public ElementIterator(SortedKeyValueIterator<Key, Value> source, IteratorFetchHints fetchHints) {
+    public ElementIterator(
+        SortedKeyValueIterator<Key, Value> source,
+        IteratorFetchHints fetchHints,
+        String[] authorizations
+    ) {
+        this(
+            source,
+            fetchHints,
+            authorizations == null ? new Authorizations() : new Authorizations(authorizations)
+        );
+    }
+
+    public ElementIterator(SortedKeyValueIterator<Key, Value> source, IteratorFetchHints fetchHints, Authorizations authorizations) {
         this.sourceIterator = source;
         this.fetchHints = fetchHints;
+        this.authorizations = authorizations;
         this.elementData = createElementData();
+        this.visibilityEvaluator = new VisibilityEvaluator(authorizations);
     }
 
     @Override
@@ -174,7 +202,26 @@ public abstract class ElementIterator<T extends ElementData> implements SortedKe
             return null;
         }
 
+        if (!getFetchHints().isIgnoreAdditionalVisibilities()) {
+            if (!hasAllAuthorizations(elementData.additionalVisibilities)) {
+                return null;
+            }
+        }
+
         return currentRow;
+    }
+
+    private boolean hasAllAuthorizations(Set<Text> visibilities) {
+        for (Text visibility : visibilities) {
+            try {
+                if (!visibilityEvaluator.evaluate(new ColumnVisibility(visibility.getBytes()))) {
+                    return false;
+                }
+            } catch (VisibilityParseException ex) {
+                throw new VertexiumAccumuloIteratorException("Could not evaluate expression: " + visibility.toString(), ex);
+            }
+        }
+        return true;
     }
 
     private void processKeyValue(KeyValue keyValue) {
@@ -238,6 +285,15 @@ public abstract class ElementIterator<T extends ElementData> implements SortedKe
                 elementData.hidden = keyValue.isHidden();
                 return;
             }
+        }
+
+        if (keyValue.columnFamilyEquals(CF_ADDITIONAL_VISIBILITY_BYTES)) {
+            if (keyValue.isAdditionalVisibilityDeleted()) {
+                this.elementData.additionalVisibilities.remove(keyValue.takeColumnQualifier());
+            } else {
+                this.elementData.additionalVisibilities.add(keyValue.takeColumnQualifier());
+            }
+            return;
         }
 
         if (keyValue.columnFamilyEquals(CF_PROPERTY_HIDDEN_BYTES)) {
@@ -361,6 +417,7 @@ public abstract class ElementIterator<T extends ElementData> implements SortedKe
         namedOptions.put(SETTING_FETCH_HINTS_PREFIX + "includeAllEdgeRefs", "true to include all edge refs");
         namedOptions.put(SETTING_FETCH_HINTS_PREFIX + "includeOutEdgeRefs", "true to include out edge refs");
         namedOptions.put(SETTING_FETCH_HINTS_PREFIX + "includeInEdgeRefs", "true to include in edge refs");
+        namedOptions.put(SETTING_FETCH_HINTS_PREFIX + "ignoreAdditionalVisibilities", "true to ignore additional visibilities");
         namedOptions.put(SETTING_FETCH_HINTS_PREFIX + "edgeLabelsOfEdgeRefsToInclude", "Set of edge labels to include separated by \\u001f");
         namedOptions.put(SETTING_FETCH_HINTS_PREFIX + "includeEdgeLabelsAndCounts", "true to include edge labels with counts");
         namedOptions.put(SETTING_FETCH_HINTS_PREFIX + "includeExtendedDataTableNames", "true to include extended data table names");
@@ -377,7 +434,7 @@ public abstract class ElementIterator<T extends ElementData> implements SortedKe
     @Override
     public void init(SortedKeyValueIterator<Key, Value> source, Map<String, String> options, IteratorEnvironment env) {
         this.sourceIterator = source;
-        fetchHints = new IteratorFetchHints(
+        this.fetchHints = new IteratorFetchHints(
             Boolean.parseBoolean(options.get(SETTING_FETCH_HINTS_PREFIX + "includeAllProperties")),
             OptionsUtils.parseTextSet(options.get(SETTING_FETCH_HINTS_PREFIX + "propertyNamesToInclude")),
             Boolean.parseBoolean(options.get(SETTING_FETCH_HINTS_PREFIX + "includeAllPropertyMetadata")),
@@ -386,11 +443,16 @@ public abstract class ElementIterator<T extends ElementData> implements SortedKe
             Boolean.parseBoolean(options.get(SETTING_FETCH_HINTS_PREFIX + "includeAllEdgeRefs")),
             Boolean.parseBoolean(options.get(SETTING_FETCH_HINTS_PREFIX + "includeOutEdgeRefs")),
             Boolean.parseBoolean(options.get(SETTING_FETCH_HINTS_PREFIX + "includeInEdgeRefs")),
+            Boolean.parseBoolean(options.get(SETTING_FETCH_HINTS_PREFIX + "ignoreAdditionalVisibilities")),
             OptionsUtils.parseSet(options.get(SETTING_FETCH_HINTS_PREFIX + "edgeLabelsOfEdgeRefsToInclude")),
             Boolean.parseBoolean(options.get(SETTING_FETCH_HINTS_PREFIX + "includeEdgeLabelsAndCounts")),
             Boolean.parseBoolean(options.get(SETTING_FETCH_HINTS_PREFIX + "includeExtendedDataTableNames"))
         );
-        elementData = createElementData();
+        String authString = options.get("authorizations").trim();
+        String[] authorizationsArray = authString.length() == 0 ? new String[0] : authString.split(Pattern.quote("\u001f"));
+        this.authorizations = new Authorizations(authorizationsArray);
+        this.visibilityEvaluator = new VisibilityEvaluator(this.authorizations);
+        this.elementData = createElementData();
     }
 
     public SortedKeyValueIterator<Key, Value> getSourceIterator() {
@@ -408,13 +470,22 @@ public abstract class ElementIterator<T extends ElementData> implements SortedKe
         OptionsUtils.addOption(iteratorSettings, SETTING_FETCH_HINTS_PREFIX + "includeAllEdgeRefs", Boolean.toString(fetchHints.isIncludeAllEdgeRefs()));
         OptionsUtils.addOption(iteratorSettings, SETTING_FETCH_HINTS_PREFIX + "includeOutEdgeRefs", Boolean.toString(fetchHints.isIncludeOutEdgeRefs()));
         OptionsUtils.addOption(iteratorSettings, SETTING_FETCH_HINTS_PREFIX + "includeInEdgeRefs", Boolean.toString(fetchHints.isIncludeInEdgeRefs()));
+        OptionsUtils.addOption(iteratorSettings, SETTING_FETCH_HINTS_PREFIX + "ignoreAdditionalVisibilities", Boolean.toString(fetchHints.isIgnoreAdditionalVisibilities()));
         OptionsUtils.addOption(iteratorSettings, SETTING_FETCH_HINTS_PREFIX + "edgeLabelsOfEdgeRefsToInclude", OptionsUtils.setToString(fetchHints.getEdgeLabelsOfEdgeRefsToInclude()));
         OptionsUtils.addOption(iteratorSettings, SETTING_FETCH_HINTS_PREFIX + "includeEdgeLabelsAndCounts", Boolean.toString(fetchHints.isIncludeEdgeLabelsAndCounts()));
         OptionsUtils.addOption(iteratorSettings, SETTING_FETCH_HINTS_PREFIX + "includeExtendedDataTableNames", Boolean.toString(fetchHints.isIncludeExtendedDataTableNames()));
     }
 
+    public static void setAuthorizations(IteratorSetting iteratorSettings, String[] authorizations) {
+        iteratorSettings.addOption("authorizations", String.join("\u001f", authorizations));
+    }
+
     public IteratorFetchHints getFetchHints() {
         return fetchHints;
+    }
+
+    public Authorizations getAuthorizations() {
+        return authorizations;
     }
 
     protected boolean populateElementData(List<Key> keys, List<Value> values) {

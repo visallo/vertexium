@@ -7,6 +7,7 @@ import org.apache.accumulo.core.iterators.SortedKeyValueIterator;
 import org.apache.hadoop.io.Text;
 import org.vertexium.accumulo.iterator.model.EdgeElementData;
 import org.vertexium.accumulo.iterator.model.IteratorFetchHints;
+import org.vertexium.security.Authorizations;
 
 public class EdgeIterator extends ElementIterator<EdgeElementData> {
     public static final String CF_SIGNAL_STRING = "E";
@@ -22,15 +23,19 @@ public class EdgeIterator extends ElementIterator<EdgeElementData> {
     public static final byte[] CF_IN_VERTEX_BYTES = CF_IN_VERTEX.getBytes();
 
     public EdgeIterator() {
-        this(null);
+        this(null, (String[]) null);
     }
 
-    public EdgeIterator(IteratorFetchHints fetchHints) {
-        super(null, fetchHints);
+    public EdgeIterator(IteratorFetchHints fetchHints, String[] authorizations) {
+        super(null, fetchHints, authorizations);
     }
 
-    public EdgeIterator(SortedKeyValueIterator<Key, Value> source, IteratorFetchHints fetchHints) {
-        super(source, fetchHints);
+    public EdgeIterator(SortedKeyValueIterator<Key, Value> source, IteratorFetchHints fetchHints, Authorizations authorizations) {
+        super(source, fetchHints, authorizations);
+    }
+
+    public EdgeIterator(IteratorFetchHints fetchHints, Authorizations authorizations) {
+        super(null, fetchHints, authorizations);
     }
 
     @Override
@@ -66,9 +71,9 @@ public class EdgeIterator extends ElementIterator<EdgeElementData> {
     @Override
     public SortedKeyValueIterator<Key, Value> deepCopy(IteratorEnvironment env) {
         if (getSourceIterator() != null) {
-            return new EdgeIterator(getSourceIterator().deepCopy(env), getFetchHints());
+            return new EdgeIterator(getSourceIterator().deepCopy(env), getFetchHints(), getAuthorizations());
         }
-        return new EdgeIterator(getFetchHints());
+        return new EdgeIterator(getFetchHints(), getAuthorizations());
     }
 
     @Override

@@ -30,6 +30,11 @@ public class EdgeInfoEdge extends ElementBase implements Edge {
     }
 
     @Override
+    public ElementType getElementType() {
+        return ElementType.EDGE;
+    }
+
+    @Override
     public String getLabel() {
         return edgeInfo.getLabel();
     }
@@ -117,13 +122,18 @@ public class EdgeInfoEdge extends ElementBase implements Edge {
     }
 
     @Override
+    public ImmutableSet<String> getAdditionalVisibilities() {
+        return getEdge().getAdditionalVisibilities();
+    }
+
+    @Override
     public ImmutableSet<String> getExtendedDataTableNames() {
         return getEdge().getExtendedDataTableNames();
     }
 
     @Override
-    public QueryableIterable<ExtendedDataRow> getExtendedData(String tableName) {
-        return getEdge().getExtendedData(tableName);
+    public QueryableIterable<ExtendedDataRow> getExtendedData(String tableName, FetchHints fetchHints) {
+        return getEdge().getExtendedData(tableName, fetchHints);
     }
 
     @Override

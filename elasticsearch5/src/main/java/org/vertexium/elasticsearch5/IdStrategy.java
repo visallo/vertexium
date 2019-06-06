@@ -2,7 +2,7 @@ package org.vertexium.elasticsearch5;
 
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHitField;
-import org.vertexium.Element;
+import org.vertexium.ElementLocation;
 import org.vertexium.ElementType;
 import org.vertexium.ExtendedDataRowId;
 import org.vertexium.VertexiumException;
@@ -17,8 +17,8 @@ public class IdStrategy {
         return ELEMENT_TYPE;
     }
 
-    public String createExtendedDataDocId(Element element, String tableName, String rowId) {
-        return createExtendedDataDocId(element.getId(), tableName, rowId);
+    public String createExtendedDataDocId(ElementLocation elementLocation, String tableName, String rowId) {
+        return createExtendedDataDocId(elementLocation.getId(), tableName, rowId);
     }
 
     public String createExtendedDataDocId(ExtendedDataRowId rowId) {
@@ -29,8 +29,8 @@ public class IdStrategy {
         return createDocId(elementId + EXTENDED_DATA_FIELD_SEPARATOR + tableName + EXTENDED_DATA_FIELD_SEPARATOR + rowId);
     }
 
-    public String createElementDocId(Element element) {
-        return createDocId(element.getId());
+    public String createElementDocId(ElementLocation elementLocation) {
+        return createDocId(elementLocation.getId());
     }
 
     private String createDocId(String s) {

@@ -7,21 +7,24 @@ import org.vertexium.security.VisibilityEvaluator;
 import org.vertexium.util.IterableUtils;
 import org.vertexium.util.StreamUtils;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.TreeSet;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class MapInMemoryExtendedDataTable extends InMemoryExtendedDataTable {
     private Map<ElementType, ElementTypeData> elementTypeData = new HashMap<>();
 
     @Override
-    public ImmutableSet<String> getTableNames(ElementType elementType, String elementId, Authorizations authorizations) {
+    public ImmutableSet<String> getTableNames(
+        ElementType elementType,
+        String elementId,
+        FetchHints fetchHints,
+        Authorizations authorizations
+    ) {
         ElementTypeData data = elementTypeData.get(elementType);
         if (data == null) {
             return ImmutableSet.of();
         }
-        return data.getTableNames(elementId, authorizations);
+        return data.getTableNames(elementId, fetchHints, authorizations);
     }
 
     @Override
@@ -36,7 +39,7 @@ public class MapInMemoryExtendedDataTable extends InMemoryExtendedDataTable {
         if (data == null) {
             return ImmutableList.of();
         }
-        return data.getTable(elementId, tableName, authorizations);
+        return data.getTable(elementId, tableName, fetchHints, authorizations);
     }
 
     @Override
@@ -68,27 +71,46 @@ public class MapInMemoryExtendedDataTable extends InMemoryExtendedDataTable {
         }
     }
 
+    @Override
+    public void addAdditionalVisibility(
+        ExtendedDataRowId rowId,
+        String additionalVisibility
+    ) {
+        ElementTypeData data = elementTypeData.computeIfAbsent(rowId.getElementType(), k -> new ElementTypeData());
+        data.addAdditionalVisibility(rowId, additionalVisibility);
+    }
+
+    @Override
+    public void deleteAdditionalVisibility(
+        ExtendedDataRowId rowId,
+        String additionalVisibility
+    ) {
+        ElementTypeData data = elementTypeData.computeIfAbsent(rowId.getElementType(), k -> new ElementTypeData());
+        data.deleteAdditionalVisibility(rowId, additionalVisibility);
+    }
+
     private static class ElementTypeData {
         Map<String, ElementData> elementData = new HashMap<>();
 
-        public ImmutableSet<String> getTableNames(String elementId, Authorizations authorizations) {
+        public ImmutableSet<String> getTableNames(String elementId, FetchHints fetchHints, Authorizations authorizations) {
             ElementData data = elementData.get(elementId);
             if (data == null) {
                 return ImmutableSet.of();
             }
-            return data.getTableNames(authorizations);
+            return data.getTableNames(fetchHints, authorizations);
         }
 
         public Iterable<ExtendedDataRow> getTable(
             String elementId,
             String tableName,
+            FetchHints fetchHints,
             Authorizations authorizations
         ) {
             ElementData data = elementData.get(elementId);
             if (data == null) {
                 return ImmutableList.of();
             }
-            return data.getTable(tableName, authorizations);
+            return data.getTable(tableName, fetchHints, authorizations);
         }
 
         public synchronized void addData(
@@ -116,28 +138,42 @@ public class MapInMemoryExtendedDataTable extends InMemoryExtendedDataTable {
                 data.removeColumn(rowId, columnName, key, visibility);
             }
         }
+
+        public void addAdditionalVisibility(ExtendedDataRowId rowId, String additionalVisibility) {
+            ElementData data = elementData.get(rowId.getElementId());
+            if (data != null) {
+                data.addAdditionalVisibility(rowId, additionalVisibility);
+            }
+        }
+
+        public void deleteAdditionalVisibility(ExtendedDataRowId rowId, String additionalVisibility) {
+            ElementData data = elementData.get(rowId.getElementId());
+            if (data != null) {
+                data.deleteAdditionalVisibility(rowId, additionalVisibility);
+            }
+        }
     }
 
     private static class ElementData {
         private final Map<String, Table> tables = new HashMap<>();
 
-        public ImmutableSet<String> getTableNames(Authorizations authorizations) {
+        public ImmutableSet<String> getTableNames(FetchHints fetchHints, Authorizations authorizations) {
             VisibilityEvaluator visibilityEvaluator = new VisibilityEvaluator(new org.vertexium.security.Authorizations(authorizations.getAuthorizations()));
             return tables.entrySet().stream()
-                .filter(entry -> entry.getValue().canRead(visibilityEvaluator))
+                .filter(entry -> entry.getValue().canRead(visibilityEvaluator, fetchHints))
                 .map(Map.Entry::getKey)
                 .collect(StreamUtils.toImmutableSet());
         }
 
-        public Iterable<ExtendedDataRow> getTable(String tableName, Authorizations authorizations) {
+        public Iterable<ExtendedDataRow> getTable(String tableName, FetchHints fetchHints, Authorizations authorizations) {
             VisibilityEvaluator visibilityEvaluator = new VisibilityEvaluator(new org.vertexium.security.Authorizations(authorizations.getAuthorizations()));
             Table table = tables.get(tableName);
             if (table == null) {
                 throw new VertexiumException("Invalid table '" + tableName + "'");
             }
-            Iterable<ExtendedDataRow> rows = table.getRows(visibilityEvaluator);
+            Iterable<ExtendedDataRow> rows = table.getRows(visibilityEvaluator, fetchHints);
             if (!rows.iterator().hasNext()) {
-                throw new VertexiumException("Invalid table '" + tableName + "'");
+                return Collections.emptyList();
             }
             return rows;
         }
@@ -168,18 +204,33 @@ public class MapInMemoryExtendedDataTable extends InMemoryExtendedDataTable {
             }
         }
 
+        public void addAdditionalVisibility(ExtendedDataRowId rowId, String additionalVisibility) {
+            Table table = tables.get(rowId.getTableName());
+            if (table != null) {
+                table.addAdditionalVisibility(rowId, additionalVisibility);
+            }
+        }
+
+        public void deleteAdditionalVisibility(ExtendedDataRowId rowId, String additionalVisibility) {
+            Table table = tables.get(rowId.getTableName());
+            if (table != null) {
+                table.deleteAdditionalVisibility(rowId, additionalVisibility);
+            }
+        }
+
         private class Table {
             private final TreeSet<InMemoryExtendedDataRow> rows = new TreeSet<>();
 
-            public Iterable<ExtendedDataRow> getRows(VisibilityEvaluator visibilityEvaluator) {
+            public Iterable<ExtendedDataRow> getRows(VisibilityEvaluator visibilityEvaluator, FetchHints fetchHints) {
                 return rows.stream()
-                    .map(row -> row.toReadable(visibilityEvaluator))
+                    .map(row -> row.toReadable(visibilityEvaluator, fetchHints))
+                    .filter(Objects::nonNull)
                     .filter(row -> IterableUtils.count(row.getProperties()) > 0)
                     .collect(Collectors.toList());
             }
 
-            public boolean canRead(VisibilityEvaluator visibilityEvaluator) {
-                return rows.stream().anyMatch(r -> r.canRead(visibilityEvaluator));
+            public boolean canRead(VisibilityEvaluator visibilityEvaluator, FetchHints fetchHints) {
+                return rows.stream().anyMatch(r -> r.canRead(visibilityEvaluator, fetchHints));
             }
 
             public void addData(
@@ -223,6 +274,22 @@ public class MapInMemoryExtendedDataTable extends InMemoryExtendedDataTable {
                     return;
                 }
                 row.removeColumn(columnName, key, visibility);
+            }
+
+            public void addAdditionalVisibility(ExtendedDataRowId rowId, String additionalVisibility) {
+                InMemoryExtendedDataRow row = findRow(rowId);
+                if (row == null) {
+                    return;
+                }
+                row.addAdditionalVisibility(additionalVisibility);
+            }
+
+            public void deleteAdditionalVisibility(ExtendedDataRowId rowId, String additionalVisibility) {
+                InMemoryExtendedDataRow row = findRow(rowId);
+                if (row == null) {
+                    return;
+                }
+                row.deleteAdditionalVisibility(additionalVisibility);
             }
         }
     }

@@ -16,6 +16,10 @@ public abstract class ExistingElementMutationImpl<T extends Element> implements 
     private final List<SetPropertyMetadata> setPropertyMetadatas = new ArrayList<>();
     private final List<ExtendedDataMutation> extendedDatas = new ArrayList<>();
     private final List<ExtendedDataDeleteMutation> extendedDataDeletes = new ArrayList<>();
+    private final List<AdditionalVisibilityAddMutation> additionalVisibilityAddMutations = new ArrayList<>();
+    private final List<AdditionalVisibilityDeleteMutation> additionalVisibilityDeleteMutations = new ArrayList<>();
+    private final List<AdditionalExtendedDataVisibilityAddMutation> additionalExtendedDataVisibilities = new ArrayList<>();
+    private final List<AdditionalExtendedDataVisibilityDeleteMutation> additionalExtendedDataVisibilityDeletes = new ArrayList<>();
     private final T element;
     private Visibility newElementVisibility;
     private Object newElementVisibilityData;
@@ -27,6 +31,21 @@ public abstract class ExistingElementMutationImpl<T extends Element> implements 
         if (element != null) {
             this.oldElementVisibility = element.getVisibility();
         }
+    }
+
+    @Override
+    public ElementType getElementType() {
+        return ElementType.getTypeFromElement(getElement());
+    }
+
+    @Override
+    public String getId() {
+        return getElement().getId();
+    }
+
+    @Override
+    public Visibility getVisibility() {
+        return getElement().getVisibility();
     }
 
     public abstract T save(Authorizations authorizations);
@@ -215,6 +234,50 @@ public abstract class ExistingElementMutationImpl<T extends Element> implements 
     }
 
     @Override
+    public ElementMutation<T> addAdditionalVisibility(String visibility, Object eventData) {
+        this.additionalVisibilityAddMutations.add(new AdditionalVisibilityAddMutation(visibility, eventData));
+        return this;
+    }
+
+    @Override
+    public ElementMutation<T> deleteAdditionalVisibility(String visibility, Object eventData) {
+        this.additionalVisibilityDeleteMutations.add(new AdditionalVisibilityDeleteMutation(visibility, eventData));
+        return this;
+    }
+
+    @Override
+    public ElementMutation<T> addExtendedDataAdditionalVisibility(
+        String tableName,
+        String row,
+        String additionalVisibility,
+        Object eventData
+    ) {
+        this.additionalExtendedDataVisibilities.add(new AdditionalExtendedDataVisibilityAddMutation(
+            tableName,
+            row,
+            additionalVisibility,
+            eventData
+        ));
+        return this;
+    }
+
+    @Override
+    public ElementMutation<T> deleteExtendedDataAdditionalVisibility(
+        String tableName,
+        String row,
+        String additionalVisibility,
+        Object eventData
+    ) {
+        this.additionalExtendedDataVisibilityDeletes.add(new AdditionalExtendedDataVisibilityDeleteMutation(
+            tableName,
+            row,
+            additionalVisibility,
+            eventData
+        ));
+        return this;
+    }
+
+    @Override
     public ExistingElementMutation<T> addExtendedData(String tableName, String row, String column, Object value, Visibility visibility) {
         return addExtendedData(tableName, row, column, null, value, null, visibility);
     }
@@ -240,6 +303,7 @@ public abstract class ExistingElementMutationImpl<T extends Element> implements 
         return deleteExtendedData(tableName, row, column, null, visibility);
     }
 
+    @Override
     public ExistingElementMutation<T> deleteExtendedData(String tableName, String row, String column, String key, Visibility visibility) {
         extendedDataDeletes.add(new ExtendedDataDeleteMutation(tableName, row, column, key, visibility));
         return this;
@@ -265,16 +329,39 @@ public abstract class ExistingElementMutationImpl<T extends Element> implements 
         return oldElementVisibility;
     }
 
+    @Override
     public List<AlterPropertyVisibility> getAlterPropertyVisibilities() {
         return alterPropertyVisibilities;
     }
 
+    @Override
     public List<SetPropertyMetadata> getSetPropertyMetadatas() {
         return setPropertyMetadatas;
     }
 
+    @Override
     public IndexHint getIndexHint() {
         return indexHint;
+    }
+
+    @Override
+    public Iterable<AdditionalVisibilityAddMutation> getAdditionalVisibilities() {
+        return additionalVisibilityAddMutations;
+    }
+
+    @Override
+    public Iterable<AdditionalVisibilityDeleteMutation> getAdditionalVisibilityDeletes() {
+        return additionalVisibilityDeleteMutations;
+    }
+
+    @Override
+    public List<AdditionalExtendedDataVisibilityAddMutation> getAdditionalExtendedDataVisibilities() {
+        return additionalExtendedDataVisibilities;
+    }
+
+    @Override
+    public List<AdditionalExtendedDataVisibilityDeleteMutation> getAdditionalExtendedDataVisibilityDeletes() {
+        return additionalExtendedDataVisibilityDeletes;
     }
 
     @Override

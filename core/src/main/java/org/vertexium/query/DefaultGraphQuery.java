@@ -48,6 +48,7 @@ public class DefaultGraphQuery extends GraphQueryBase {
     protected QueryResultsIterable<? extends VertexiumObject> extendedData(FetchHints extendedDataFetchHints) {
         FetchHints extendedDataTableNamesFetchHints = FetchHints.builder()
             .setIncludeExtendedDataTableNames(true)
+            .setIgnoreAdditionalVisibilities(extendedDataFetchHints.isIgnoreAdditionalVisibilities())
             .build();
         return extendedData(extendedDataFetchHints, new JoinIterable<>(
             getIterableFromElementType(ElementType.VERTEX, extendedDataTableNamesFetchHints),

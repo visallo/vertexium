@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-public interface Edge extends Element {
+public interface Edge extends Element, EdgeElementLocation {
     /**
      * Meta property name used for queries, sorting, and aggregations
      */

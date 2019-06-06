@@ -1,5 +1,6 @@
 package org.vertexium.mutation;
 
+import org.vertexium.Direction;
 import org.vertexium.Edge;
 import org.vertexium.util.IncreasingTime;
 
@@ -9,6 +10,19 @@ public abstract class ExistingEdgeMutation extends ExistingElementMutationImpl<E
 
     public ExistingEdgeMutation(Edge edge) {
         super(edge);
+    }
+
+    @Override
+    public String getVertexId(Direction direction) {
+        return getElement().getVertexId(direction);
+    }
+
+    @Override
+    public String getEdgeLabel() {
+        if (getNewEdgeLabel() != null) {
+            return getNewEdgeLabel();
+        }
+        return getElement().getLabel();
     }
 
     @Override

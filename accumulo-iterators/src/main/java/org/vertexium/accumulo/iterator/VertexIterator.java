@@ -9,6 +9,7 @@ import org.vertexium.accumulo.iterator.model.EdgeInfo;
 import org.vertexium.accumulo.iterator.model.IteratorFetchHints;
 import org.vertexium.accumulo.iterator.model.SoftDeleteEdgeInfo;
 import org.vertexium.accumulo.iterator.model.VertexElementData;
+import org.vertexium.security.Authorizations;
 
 import java.io.IOException;
 import java.util.List;
@@ -44,15 +45,19 @@ public class VertexIterator extends ElementIterator<VertexElementData> {
     public static final byte[] CF_IN_EDGE_SOFT_DELETE_BYTES = CF_IN_EDGE_SOFT_DELETE.getBytes();
 
     public VertexIterator() {
-        this(null);
+        this(null, (String[]) null);
     }
 
-    public VertexIterator(IteratorFetchHints fetchHints) {
-        super(null, fetchHints);
+    public VertexIterator(IteratorFetchHints fetchHints, String[] authorizations) {
+        super(null, fetchHints, authorizations);
     }
 
-    public VertexIterator(SortedKeyValueIterator<Key, Value> source, IteratorFetchHints fetchHints) {
-        super(source, fetchHints);
+    public VertexIterator(IteratorFetchHints fetchHints, Authorizations authorizations) {
+        super(null, fetchHints, authorizations);
+    }
+
+    public VertexIterator(SortedKeyValueIterator<Key, Value> source, IteratorFetchHints fetchHints, Authorizations authorizations) {
+        super(source, fetchHints, authorizations);
     }
 
     @Override
@@ -179,9 +184,13 @@ public class VertexIterator extends ElementIterator<VertexElementData> {
     @Override
     public SortedKeyValueIterator<Key, Value> deepCopy(IteratorEnvironment env) {
         if (getSourceIterator() != null) {
-            return new VertexIterator(getSourceIterator().deepCopy(env), getFetchHints());
+            return new VertexIterator(
+                getSourceIterator().deepCopy(env),
+                getFetchHints(),
+                getAuthorizations()
+            );
         }
-        return new VertexIterator(getFetchHints());
+        return new VertexIterator(getFetchHints(), getAuthorizations());
     }
 
     @Override

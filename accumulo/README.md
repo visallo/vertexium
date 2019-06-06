@@ -18,6 +18,7 @@ The graph is stored in a hand full of tables with the following schema.
 <tr><td>V[id]</td>                                        <td>V</td>          <td>-</td>                                             <td>-</td>               <td>Vertex id</td></tr>
 <tr><td>V[id]</td>                                        <td>H</td>          <td>H</td>                                             <td>-</td>               <td>Vertex hidden marker</td></tr>
 <tr><td>V[id]</td>                                        <td>D</td>          <td>D</td>                                             <td>-</td>               <td>Vertex soft delete marker</td></tr>
+<tr><td>V[id]</td>                                        <td>AV</td>         <td>[visibility_string]</td>                           <td>-</td>               <td>Additional visibility to apply to the element</td></tr>
 <tr><td>V[id]</td>                                        <td>EOUT</td>       <td>[e id]</td>                                        <td>[e label]</td>       <td>Vertex out-edge</td></tr>
 <tr><td>V[id]</td>                                        <td>EOUTH</td>      <td>[e id]</td>                                        <td>-</td>               <td>Vertex out-edge hidden marker</td></tr>
 <tr><td>V[id]</td>                                        <td>EOUTD</td>      <td>[e id]</td>                                        <td>-</td>               <td>Vertex out-edge soft delete marker</td></tr>
@@ -39,6 +40,7 @@ The graph is stored in a hand full of tables with the following schema.
 <tr><td>E[id]</td>                                        <td>E</td>          <td>[e label]</td>                                     <td>-</td>               <td>Edge id</td></tr>
 <tr><td>E[id]</td>                                        <td>H</td>          <td>H</td>                                             <td>-</td>               <td>Edge hidden marker</td></tr>
 <tr><td>E[id]</td>                                        <td>D</td>          <td>D</td>                                             <td>-</td>               <td>Edge soft delete marker</td></tr>
+<tr><td>E[id]</td>                                        <td>AV</td>         <td>[visibility_string]</td>                           <td>-</td>               <td>Additional visibility to apply to the element</td></tr>
 <tr><td>E[id]</td>                                        <td>VOUT</td>       <td>[v id]</td>                                        <td>-</td>               <td>Edge out-vertex</td></tr>
 <tr><td>E[id]</td>                                        <td>VIN</td>        <td>[v id]</td>                                        <td>-</td>               <td>Edge in-vertex</td></tr>
 <tr><td>E[id]</td>                                        <td>PROP</td>       <td>[pname\x1fpkey]</td>                               <td>[pval]</td>          <td>Element property</td></tr>

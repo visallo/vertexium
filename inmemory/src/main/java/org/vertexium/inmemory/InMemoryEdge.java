@@ -22,6 +22,11 @@ public class InMemoryEdge extends InMemoryElement<InMemoryEdge> implements Edge 
     }
 
     @Override
+    public ElementType getElementType() {
+        return ElementType.EDGE;
+    }
+
+    @Override
     public String getLabel() {
         return getInMemoryTableElement().findLastMutation(AlterEdgeLabelMutation.class).getNewEdgeLabel();
     }
@@ -91,7 +96,7 @@ public class InMemoryEdge extends InMemoryElement<InMemoryEdge> implements Edge 
                 saveExistingElementMutation(this, indexHint, authorizations);
                 Edge edge = getElement();
                 if (indexHint != IndexHint.DO_NOT_INDEX) {
-                    getGraph().getSearchIndex().updateElement(getGraph(), this, authorizations);
+                    getGraph().updateElementAndExtendedDataInSearchIndex(edge, this, authorizations);
                 }
                 return edge;
             }
