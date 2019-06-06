@@ -1,11 +1,7 @@
 package org.vertexium.search;
 
 import org.vertexium.*;
-import org.vertexium.mutation.AdditionalExtendedDataVisibilityAddMutation;
-import org.vertexium.mutation.AdditionalExtendedDataVisibilityDeleteMutation;
-import org.vertexium.mutation.ExistingElementMutation;
-import org.vertexium.mutation.ExtendedDataMutation;
-import org.vertexium.query.*;
+import org.vertexium.mutation.*;
 import org.vertexium.util.FutureDeprecation;
 
 import java.util.Collection;

@@ -27,7 +27,7 @@ public class DeleteClauseExecutionStep extends ExecutionStepWithChildren {
             }
             if (value instanceof Vertex) {
                 Vertex vertex = (Vertex) value;
-                if (!detach && vertex.getEdgesSummary(ctx.getAuthorizations()).getCountOfEdges() > 0) {
+                if (!detach && vertex.getEdgesSummary(ctx.getUser()).getCountOfEdges() > 0) {
                     throw new VertexiumCypherException("Cannot delete vertex with edges unless you specify detach");
                 }
                 ctx.deleteVertex(vertex);

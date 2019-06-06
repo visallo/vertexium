@@ -10,6 +10,7 @@ import org.vertexium.elasticsearch5.utils.FlushObjectQueue;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.vertexium.elasticsearch5.Elasticsearch5SearchIndex.*;
 
@@ -37,7 +38,11 @@ class AddElementService {
         this.propertyNameService = propertyNameService;
     }
 
-    public void addElement(Element element) {
+    public void addElement(
+        Element element,
+        Set<String> additionalVisibilities,
+        Set<String> additionalVisibilitiesToDelete
+    ) {
         if (MUTATION_LOGGER.isTraceEnabled()) {
             MUTATION_LOGGER.trace("addElement: %s", element.getId());
         }

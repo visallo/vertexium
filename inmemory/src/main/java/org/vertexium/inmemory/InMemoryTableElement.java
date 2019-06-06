@@ -2,7 +2,6 @@ package org.vertexium.inmemory;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Maps;
 import org.vertexium.*;
 import org.vertexium.historicalEvent.*;
 import org.vertexium.inmemory.mutations.*;

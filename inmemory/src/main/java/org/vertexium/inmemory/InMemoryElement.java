@@ -54,69 +54,6 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> extends 
         return user;
     }
 
-    protected void softDeleteProperty(String key, String name, Long timestamp, Visibility visibility, Object data, IndexHint indexHint, User user) {
-        Property property = getProperty(key, name, visibility);
-        if (property != null) {
-            getGraph().softDeleteProperty(inMemoryTableElement, property, timestamp, data, indexHint, user);
-        }
-    }
-
-    protected void addAdditionalVisibility(
-        String additionalVisibility,
-        Object eventData,
-        User user
-    ) {
-        getGraph().addAdditionalVisibility(inMemoryTableElement, additionalVisibility, eventData, user);
-    }
-
-    protected void deleteAdditionalVisibility(
-        String additionalVisibility,
-        Object eventData,
-        User user
-    ) {
-        getGraph().deleteAdditionalVisibility(inMemoryTableElement, additionalVisibility, eventData, user);
-    }
-
-    private void addAdditionalExtendedDataVisibility(
-        String tableName,
-        String row,
-        String additionalVisibility
-    ) {
-        getGraph().addAdditionalExtendedDataVisibility(
-            this,
-            tableName,
-            row,
-            additionalVisibility
-        );
-    }
-
-    private void deleteAdditionalExtendedDataVisibility(
-        String tableName,
-        String row,
-        String additionalVisibility
-    ) {
-        getGraph().deleteAdditionalExtendedDataVisibility(
-            this,
-            tableName,
-            row,
-            additionalVisibility
-        );
-    }
-
-    private void deleteExtendedData(String tableName, String row, String columnName, String key, Visibility visibility) {
-        getGraph().deleteExtendedData(this, tableName, row, columnName, key, visibility, user);
-    }
-
-    protected void extendedData(ExtendedDataMutation extendedData, User user) {
-        ExtendedDataRowId extendedDataRowId = new ExtendedDataRowId(
-            ElementType.getTypeFromElement(this),
-            getId(),
-            extendedData.getTableName(),
-            extendedData.getRow()
-        );
-        getGraph().extendedData(this, extendedDataRowId, extendedData, user);
-    }
-
     @Override
     public Object getPropertyValue(String name) {
         Property p = getProperty(name);
@@ -127,22 +64,6 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> extends 
     public Object getPropertyValue(String key, String name) {
         Property p = getProperty(key, name);
         return p == null ? null : p.getValue();
-    }
-
-    public void addPropertyValue(
-        String key,
-        String name,
-        Object value,
-        Metadata metadata,
-        Visibility visibility,
-        Long timestamp,
-        boolean indexAfterAdd,
-        User user
-    ) {
-        getGraph().addPropertyValue(this, inMemoryTableElement, key, name, value, metadata, visibility, timestamp, user);
-        if (indexAfterAdd) {
-            getGraph().getSearchIndex().addElement(getGraph(), this, null, null, user);
-        }
     }
 
     @Override

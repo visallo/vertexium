@@ -1317,7 +1317,7 @@ public abstract class GraphTestBase {
 
         if (graph instanceof GraphWithSearchIndex) {
             for (Vertex vertex : vertices) {
-                ((GraphWithSearchIndex) graph).getSearchIndex().addElement(graph, vertex, AUTHORIZATIONS_A_AND_B.getUser());
+                ((GraphWithSearchIndex) graph).getSearchIndex().addElement(graph, vertex, null, null, AUTHORIZATIONS_A_AND_B.getUser());
             }
             assertVertexIds(graph.query(AUTHORIZATIONS_A_AND_B).has("prop1", "v1").vertices(), "v1");
             assertVertexIds(graph.query(AUTHORIZATIONS_A_AND_B).has("prop1", "v2").vertices(), "v2");

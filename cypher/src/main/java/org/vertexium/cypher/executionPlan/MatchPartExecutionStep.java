@@ -5,16 +5,14 @@ import org.vertexium.cypher.CypherResultRow;
 import org.vertexium.cypher.SingleRowVertexiumCypherResult;
 import org.vertexium.cypher.VertexiumCypherQueryContext;
 import org.vertexium.cypher.VertexiumCypherResult;
-import org.vertexium.query.GraphQuery;
-import org.vertexium.query.Query;
-import org.vertexium.query.QueryResultsIterable;
+import org.vertexium.search.GraphQuery;
+import org.vertexium.search.Query;
+import org.vertexium.search.QueryResults;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import static org.vertexium.util.StreamUtils.stream;
 
 public abstract class MatchPartExecutionStep<TC extends MatchPartExecutionStep>
     extends ExecutionStepWithChildren
@@ -72,7 +70,7 @@ public abstract class MatchPartExecutionStep<TC extends MatchPartExecutionStep>
     }
 
     protected Stream<CypherResultRow> executeInitialQuery(VertexiumCypherQueryContext ctx, CypherResultRow row) {
-        GraphQuery q = ctx.getGraph().query(ctx.getAuthorizations());
+        GraphQuery q = ctx.getGraph().query(ctx.getUser());
         for (String propertyResultName : propertyResultNames) {
             String propertyName = ctx.normalizePropertyName(propertyResultName);
             Object value = row.get(propertyResultName);
@@ -82,14 +80,14 @@ public abstract class MatchPartExecutionStep<TC extends MatchPartExecutionStep>
             q.has(propertyName, value);
         }
 
-        QueryResultsIterable<? extends Element> elements = getElements(ctx, q);
+        QueryResults<? extends Element> elements = getElements(ctx, q);
         if (elements.getTotalHits() == 0 && isOptional()) {
             CypherResultRow newRow = row.clone()
                 .set(getResultName(), null);
             return new SingleRowVertexiumCypherResult(newRow);
         }
 
-        return stream(elements)
+        return elements.getHits()
             .map(element -> {
                 CypherResultRow newRow = row.clone();
                 newRow.set(getResultName(), element);
@@ -97,7 +95,7 @@ public abstract class MatchPartExecutionStep<TC extends MatchPartExecutionStep>
             });
     }
 
-    protected abstract QueryResultsIterable<? extends Element> getElements(VertexiumCypherQueryContext ctx, Query q);
+    protected abstract QueryResults<? extends Element> getElements(VertexiumCypherQueryContext ctx, Query q);
 
     public VertexiumCypherResult executeConnectedQuery(VertexiumCypherQueryContext ctx, VertexiumCypherResult source) {
         return source.flatMapCypherResult(row -> executeConnectedGetElements(ctx, row));

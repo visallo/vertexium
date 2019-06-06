@@ -1897,10 +1897,10 @@ public interface Graph {
     @Deprecated
     default void reindex(Authorizations authorizations) {
         for (Vertex vertex : getVertices(authorizations)) {
-            getSearchIndex().addElement(this, vertex, authorizations.getUser());
+            getSearchIndex().addElement(this, vertex, null, null, authorizations.getUser());
         }
         for (Edge edge : getEdges(authorizations)) {
-            getSearchIndex().addElement(this, edge, authorizations.getUser());
+            getSearchIndex().addElement(this, edge, null, null, authorizations.getUser());
         }
     }
 

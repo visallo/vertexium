@@ -91,7 +91,7 @@ public class TestVertexiumCypherQueryContext extends VertexiumCypherQueryContext
         ExistingElementMutation<Element> m = element.prepareMutation();
         m.setProperty(propertyName, value, VISIBILITY);
         plusPropertyCount++;
-        m.save(getAuthorizations());
+        m.save(getUser());
     }
 
     @Override
@@ -99,7 +99,7 @@ public class TestVertexiumCypherQueryContext extends VertexiumCypherQueryContext
         ExistingElementMutation<Element> m = element.prepareMutation();
         m.deleteProperty(prop);
         minusPropertyCount++;
-        m.save(getAuthorizations());
+        m.save(getUser());
     }
 
     @Override
@@ -107,7 +107,7 @@ public class TestVertexiumCypherQueryContext extends VertexiumCypherQueryContext
         ExistingElementMutation<Element> m = element.prepareMutation();
         m.deleteProperties(propName);
         minusPropertyCount++;
-        m.save(getAuthorizations());
+        m.save(getUser());
     }
 
     @Override

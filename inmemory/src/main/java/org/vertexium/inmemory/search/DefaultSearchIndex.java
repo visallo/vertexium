@@ -7,7 +7,6 @@ import org.vertexium.search.SearchIndex;
 
 import java.util.Set;
 
-import static org.vertexium.util.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 public class DefaultSearchIndex implements SearchIndex {

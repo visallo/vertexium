@@ -53,9 +53,6 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static org.vertexium.elasticsearch5.utils.SearchResponseUtils.checkForFailures;
-import static org.vertexium.util.IterableUtils.toList;
-import static org.vertexium.util.Preconditions.checkNotNull;
-import static org.vertexium.util.StreamUtils.stream;
 
 public class Elasticsearch5SearchIndex implements SearchIndex {
     private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(Elasticsearch5SearchIndex.class);
@@ -371,7 +368,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex {
         String oldFieldName = propertyNameService.addVisibilityToPropertyName(graph, ELEMENT_TYPE_FIELD_NAME, oldVisibility);
         removeFieldsFromDocument(graph, elementMutation, oldFieldName);
 
-        addOrUpdateElement(graph, elementMutation, null, null, user);
+        addOrUpdateElement(graph, elementMutation, user);
     }
 
     @Override

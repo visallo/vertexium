@@ -8,8 +8,6 @@ import org.vertexium.security.VisibilityParseException;
 import org.vertexium.util.StreamUtils;
 
 import java.nio.charset.StandardCharsets;
-import java.io.UnsupportedEncodingException;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;

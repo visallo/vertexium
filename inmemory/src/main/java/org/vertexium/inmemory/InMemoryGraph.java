@@ -5,6 +5,7 @@ import org.vertexium.*;
 import org.vertexium.event.GraphEvent;
 import org.vertexium.id.IdGenerator;
 import org.vertexium.inmemory.mutations.EdgeSetupMutation;
+import org.vertexium.mutation.*;
 import org.vertexium.property.StreamingPropertyValue;
 import org.vertexium.search.SearchIndex;
 import org.vertexium.util.ConvertingIterable;
@@ -155,7 +156,7 @@ public class InMemoryGraph extends GraphBase {
         User user
     ) {
         if (elementMutation instanceof ExistingElementMutation) {
-            getSearchIndex().updateElement(this, (ExistingElementMutation<? extends Element>) elementMutation, user);
+            getSearchIndex().addOrUpdateElement(this, elementMutation, user);
         } else {
             getSearchIndex().addElement(
                 this,
