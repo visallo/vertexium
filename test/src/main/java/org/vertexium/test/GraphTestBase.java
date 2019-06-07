@@ -671,7 +671,6 @@ public abstract class GraphTestBase {
         Property prop1_propid1b = v.getProperty("propid1b", "prop1");
         v.deleteProperties("prop1", AUTHORIZATIONS_A_AND_B);
         graph.flush();
-        Assert.assertEquals(2, count(v.getProperties()));
 
         v = graph.getVertex("v1", FetchHints.ALL, AUTHORIZATIONS_A);
         Assert.assertEquals(2, count(v.getProperties()));
@@ -687,7 +686,6 @@ public abstract class GraphTestBase {
         Property prop2_propid2a = v.getProperty("propid2a", "prop2");
         v.deleteProperty("propid2a", "prop2", AUTHORIZATIONS_A_AND_B);
         graph.flush();
-        Assert.assertEquals(1, count(v.getProperties()));
 
         v = graph.getVertex("v1", AUTHORIZATIONS_A);
         Assert.assertEquals(1, count(v.getProperties()));
@@ -701,7 +699,6 @@ public abstract class GraphTestBase {
             v.deleteProperty(property, AUTHORIZATIONS_A);
         }
         graph.flush();
-        Assert.assertEquals(0, count(v.getProperties()));
         v = graph.getVertex("v1", AUTHORIZATIONS_A);
         Assert.assertEquals(0, count(v.getProperties()));
         assertEquals(0, count(graph.query(AUTHORIZATIONS_A_AND_B).has("prop3").vertices()));
@@ -730,7 +727,6 @@ public abstract class GraphTestBase {
             .deleteProperties("prop1")
             .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
-        Assert.assertEquals(2, count(v1.getProperties()));
 
         v1 = graph.getVertex("v1", FetchHints.ALL, AUTHORIZATIONS_A);
         Assert.assertEquals(2, count(v1.getProperties()));
@@ -749,7 +745,6 @@ public abstract class GraphTestBase {
             .deleteProperties("propid2a", "prop2")
             .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
-        Assert.assertEquals(1, count(v1.getProperties()));
 
         v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
         Assert.assertEquals(1, count(v1.getProperties()));
