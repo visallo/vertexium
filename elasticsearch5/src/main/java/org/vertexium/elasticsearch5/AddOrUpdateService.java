@@ -191,12 +191,17 @@ class AddOrUpdateService {
 
         if (mutation instanceof ExistingElementMutation) {
             TElement element = ((ExistingElementMutation<TElement>) mutation).getElement();
+
+            Set<PropertyDescriptor> propertiesToRemove = new HashSet<>();
+            mutation.getPropertyDeletes().forEach(p -> propertiesToRemove.add(PropertyDescriptor.fromPropertyDeleteMutation(p)));
+            mutation.getPropertySoftDeletes().forEach(p -> propertiesToRemove.add(PropertyDescriptor.fromPropertySoftDeleteMutation(p)));
+
             mutation.getProperties().forEach(p ->
-                indexService.addExistingValuesToFieldMap(graph, element, p.getName(), p.getVisibility(), fieldsToSet));
+                indexService.addExistingValuesToFieldMap(graph, element, p.getName(), p.getVisibility(), fieldsToSet, propertiesToRemove));
             mutation.getPropertyDeletes().forEach(p ->
-                indexService.addExistingValuesToFieldMap(graph, element, p.getName(), p.getVisibility(), fieldsToSet));
+                indexService.addExistingValuesToFieldMap(graph, element, p.getName(), p.getVisibility(), fieldsToSet, propertiesToRemove));
             mutation.getPropertySoftDeletes().forEach(p ->
-                indexService.addExistingValuesToFieldMap(graph, element, p.getName(), p.getVisibility(), fieldsToSet));
+                indexService.addExistingValuesToFieldMap(graph, element, p.getName(), p.getVisibility(), fieldsToSet, propertiesToRemove));
         } else {
             fieldsToSet.putAll(indexService.getPropertiesAsFields(graph, mutation.getProperties()));
             // TODO deletes?
@@ -224,22 +229,26 @@ class AddOrUpdateService {
 
     private <TElement extends Element> List<String> getFieldsToRemove(Graph graph, ElementMutation<TElement> mutation) {
         List<String> fieldsToRemove = new ArrayList<>();
-        mutation.getPropertyDeletes().forEach(p -> {
-            String propertyName = propertyNameService.addVisibilityToPropertyName(graph, p.getName(), p.getVisibility());
-            fieldsToRemove.add(propertyName);
-
-            PropertyDefinition propertyDefinition = indexService.getPropertyDefinition(graph, p.getName());
-            if (GeoShape.class.isAssignableFrom(propertyDefinition.getDataType())) {
-                fieldsToRemove.add(propertyName + GEO_PROPERTY_NAME_SUFFIX);
-
-                if (GeoPoint.class.isAssignableFrom(propertyDefinition.getDataType())) {
-                    fieldsToRemove.add(propertyName + GEO_POINT_PROPERTY_NAME_SUFFIX);
-                }
-            }
-        });
-        mutation.getPropertySoftDeletes().forEach(p ->
-            fieldsToRemove.add(propertyNameService.addVisibilityToPropertyName(graph, p.getName(), p.getVisibility())));
+        mutation.getPropertyDeletes().forEach(p -> fieldsToRemove.addAll(getRelatedFieldNames(graph, p.getName(), p.getVisibility())));
+        mutation.getPropertySoftDeletes().forEach(p -> fieldsToRemove.addAll(getRelatedFieldNames(graph, p.getName(), p.getVisibility())));
         return fieldsToRemove;
+    }
+
+    private List<String> getRelatedFieldNames(Graph graph, String name, Visibility visibility) {
+        String propertyName = propertyNameService.addVisibilityToPropertyName(graph, name, visibility);
+
+        List<String> fieldNames = new ArrayList<>();
+        fieldNames.add(propertyName);
+
+        PropertyDefinition propertyDefinition = indexService.getPropertyDefinition(graph, name);
+        if (GeoShape.class.isAssignableFrom(propertyDefinition.getDataType())) {
+            fieldNames.add(propertyName + GEO_PROPERTY_NAME_SUFFIX);
+
+            if (GeoPoint.class.isAssignableFrom(propertyDefinition.getDataType())) {
+                fieldNames.add(propertyName + GEO_POINT_PROPERTY_NAME_SUFFIX);
+            }
+        }
+        return fieldNames;
     }
 
     public <T extends Element> void alterExtendedDataElementTypeVisibility(

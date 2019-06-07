@@ -1029,10 +1029,11 @@ public class IndexService {
         Element element,
         String propertyName,
         Visibility propertyVisibility,
-        Map<String, Object> fieldsToSet
+        Map<String, Object> fieldsToSet,
+        Set<PropertyDescriptor> propertiesToRemove
     ) {
         Iterable<Property> properties = stream(element.getProperties(propertyName))
-            .filter(p -> p.getVisibility().equals(propertyVisibility))
+            .filter(p -> p.getVisibility().equals(propertyVisibility) && !propertiesToRemove.contains(PropertyDescriptor.fromProperty(p)))
             .collect(Collectors.toList());
         Map<String, Object> remainingProperties = getPropertiesAsFields(graph, properties);
         for (Map.Entry<String, Object> remainingPropertyEntry : remainingProperties.entrySet()) {

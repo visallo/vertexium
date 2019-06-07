@@ -685,10 +685,12 @@ public class Elasticsearch5SearchIndex implements SearchIndex {
     public void deleteProperties(Graph graph, Element element, Collection<PropertyDescriptor> propertyList, User user) {
         List<String> fieldsToRemove = new ArrayList<>();
         Map<String, Object> fieldsToSet = new HashMap<>();
+        Set<PropertyDescriptor> propertyValuesToRemove = new HashSet<>();
         propertyList.forEach(p -> {
             String fieldName = propertyNameService.addVisibilityToPropertyName(graph, p.getName(), p.getVisibility());
             fieldsToRemove.add(fieldName);
-            indexService.addExistingValuesToFieldMap(graph, element, p.getName(), p.getVisibility(), fieldsToSet);
+            propertyValuesToRemove.add(p);
+            indexService.addExistingValuesToFieldMap(graph, element, p.getName(), p.getVisibility(), fieldsToSet, propertyValuesToRemove);
         });
 
         String documentId = getIdStrategy().createElementDocId(element);
