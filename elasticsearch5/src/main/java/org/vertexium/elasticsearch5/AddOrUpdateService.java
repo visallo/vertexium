@@ -187,25 +187,25 @@ class AddOrUpdateService {
         Graph graph,
         ElementMutation<TElement> mutation
     ) {
-        Map<String, Object> fieldsToSet = new HashMap<>();
+        Map<String, Object> fieldsToSet = new HashMap<>(indexService.getPropertiesAsFields(graph, mutation.getProperties()));
 
         if (mutation instanceof ExistingElementMutation) {
             TElement element = ((ExistingElementMutation<TElement>) mutation).getElement();
 
-            Set<PropertyDescriptor> propertiesToRemove = new HashSet<>();
-            mutation.getPropertyDeletes().forEach(p -> propertiesToRemove.add(PropertyDescriptor.fromPropertyDeleteMutation(p)));
-            mutation.getPropertySoftDeletes().forEach(p -> propertiesToRemove.add(PropertyDescriptor.fromPropertySoftDeleteMutation(p)));
+            Set<PropertyDescriptor> propertyValuesToSkip = new HashSet<>();
+            mutation.getProperties().forEach(p -> propertyValuesToSkip.add(PropertyDescriptor.fromProperty(p)));
+            mutation.getPropertyDeletes().forEach(p -> propertyValuesToSkip.add(PropertyDescriptor.fromPropertyDeleteMutation(p)));
+            mutation.getPropertySoftDeletes().forEach(p -> propertyValuesToSkip.add(PropertyDescriptor.fromPropertySoftDeleteMutation(p)));
 
             mutation.getProperties().forEach(p ->
-                indexService.addExistingValuesToFieldMap(graph, element, p.getName(), p.getVisibility(), fieldsToSet, propertiesToRemove));
+                indexService.addExistingValuesToFieldMap(graph, element, p.getName(), p.getVisibility(), fieldsToSet, propertyValuesToSkip));
             mutation.getPropertyDeletes().forEach(p ->
-                indexService.addExistingValuesToFieldMap(graph, element, p.getName(), p.getVisibility(), fieldsToSet, propertiesToRemove));
+                indexService.addExistingValuesToFieldMap(graph, element, p.getName(), p.getVisibility(), fieldsToSet, propertyValuesToSkip));
             mutation.getPropertySoftDeletes().forEach(p ->
-                indexService.addExistingValuesToFieldMap(graph, element, p.getName(), p.getVisibility(), fieldsToSet, propertiesToRemove));
+                indexService.addExistingValuesToFieldMap(graph, element, p.getName(), p.getVisibility(), fieldsToSet, propertyValuesToSkip));
         } else {
-            fieldsToSet.putAll(indexService.getPropertiesAsFields(graph, mutation.getProperties()));
-            // TODO deletes?
-            // TODO soft deletes?
+            // TODO blind deletes?
+            // TODO blind soft deletes?
         }
 
         return fieldsToSet;

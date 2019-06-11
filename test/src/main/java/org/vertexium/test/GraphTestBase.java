@@ -2677,6 +2677,7 @@ public abstract class GraphTestBase {
 
         assertIdsAnyOrder(getGraph().query(AUTHORIZATIONS_ALL).has("p1", "val1").vertexIds(), "v1");
 
+        v1 = graph.getVertex("v1", AUTHORIZATIONS_ALL);
         v1.addPropertyValue("k2", "p1", "val2", VISIBILITY_A, AUTHORIZATIONS_ALL);
         getGraph().flush();
 
@@ -2684,6 +2685,7 @@ public abstract class GraphTestBase {
         assertIdsAnyOrder(getGraph().query(AUTHORIZATIONS_ALL).has("p1", "val2").vertexIds(), "v1");
         assertResultsCount(0, 0, getGraph().query(AUTHORIZATIONS_ALL).has("p1", "val3").vertexIds());
 
+        v1 = graph.getVertex("v1", AUTHORIZATIONS_ALL);
         v1.addPropertyValue("k1", "p1", "val3", VISIBILITY_A, AUTHORIZATIONS_ALL);
         getGraph().flush();
 
