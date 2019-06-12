@@ -256,6 +256,54 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    public void testReAddingStreamingPropertyValue() throws IOException {
+        PropertyValue propSmall = StreamingPropertyValue.create(new ByteArrayInputStream("value1".getBytes()), String.class, 6L);
+
+        graph.prepareVertex("v1", VISIBILITY_A)
+            .setProperty("propSmall", propSmall, VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        List<Vertex> vertexHits = toList(graph.query(AUTHORIZATIONS_A_AND_B)
+            .has("propSmall", "value1")
+            .vertices());
+        assertEquals(1, vertexHits.size());
+        assertEquals("v1", vertexHits.get(0).getId());
+
+        Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B);
+        Iterable<Object> propSmallValues = v1.getPropertyValues("propSmall");
+        Assert.assertEquals(1, count(propSmallValues));
+        Object propSmallValue = propSmallValues.iterator().next();
+        assertTrue("propSmallValue was " + propSmallValue.getClass().getName(), propSmallValue instanceof StreamingPropertyValue);
+        StreamingPropertyValue value = (StreamingPropertyValue) propSmallValue;
+        assertEquals(String.class, value.getValueType());
+        assertEquals("value1".getBytes().length, (long) value.getLength());
+        assertEquals("value1", IOUtils.toString(value.getInputStream()));
+
+        propSmall = StreamingPropertyValue.create(new ByteArrayInputStream("value2".getBytes()), String.class, 6L);
+        v1 = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B);
+        v1.prepareMutation()
+            .setProperty("propSmall", propSmall, VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        vertexHits = toList(graph.query(AUTHORIZATIONS_A_AND_B)
+            .has("propSmall", "value2")
+            .vertices());
+        assertEquals(1, vertexHits.size());
+        assertEquals("v1", vertexHits.get(0).getId());
+        v1 = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B);
+        propSmallValues = v1.getPropertyValues("propSmall");
+        Assert.assertEquals(1, count(propSmallValues));
+        propSmallValue = propSmallValues.iterator().next();
+        assertTrue("propSmallValue was " + propSmallValue.getClass().getName(), propSmallValue instanceof StreamingPropertyValue);
+        value = (StreamingPropertyValue) propSmallValue;
+        assertEquals(String.class, value.getValueType());
+        assertEquals("value2".getBytes().length, (long) value.getLength());
+        assertEquals("value2", IOUtils.toString(value.getInputStream()));
+    }
+
+    @Test
     public void testStreamingPropertyValueLargeReads() throws IOException {
         String expectedLargeValue = IOUtils.toString(new LargeStringInputStream(LARGE_PROPERTY_VALUE_SIZE));
         byte[] expectedLargeValueBytes = expectedLargeValue.getBytes();
