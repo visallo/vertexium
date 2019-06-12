@@ -190,13 +190,12 @@ class AddOrUpdateService {
         Map<String, Object> fieldsToSet = new HashMap<>(indexService.getPropertiesAsFields(graph, mutation.getProperties()));
 
         if (mutation instanceof ExistingElementMutation) {
-            TElement element = ((ExistingElementMutation<TElement>) mutation).getElement();
-
             Set<PropertyDescriptor> propertyValuesToSkip = new HashSet<>();
             mutation.getProperties().forEach(p -> propertyValuesToSkip.add(PropertyDescriptor.fromProperty(p)));
             mutation.getPropertyDeletes().forEach(p -> propertyValuesToSkip.add(PropertyDescriptor.fromPropertyDeleteMutation(p)));
             mutation.getPropertySoftDeletes().forEach(p -> propertyValuesToSkip.add(PropertyDescriptor.fromPropertySoftDeleteMutation(p)));
 
+            TElement element = ((ExistingElementMutation<TElement>) mutation).getElement();
             mutation.getProperties().forEach(p ->
                 indexService.addExistingValuesToFieldMap(graph, element, p.getName(), p.getVisibility(), fieldsToSet, propertyValuesToSkip));
             mutation.getPropertyDeletes().forEach(p ->
@@ -207,6 +206,16 @@ class AddOrUpdateService {
             // TODO blind deletes?
             // TODO blind soft deletes?
         }
+
+        mutation.getMarkPropertyHiddenData().forEach(p -> {
+            String hiddenVisibilityPropertyName = propertyNameService.addVisibilityToPropertyName(graph, HIDDEN_PROPERTY_FIELD_NAME, p.getVisibility());
+            if (!indexService.isPropertyInIndex(graph, HIDDEN_PROPERTY_FIELD_NAME, p.getVisibility())) {
+                String indexName = indexService.getIndexName(mutation);
+                IndexInfo indexInfo = indexService.ensureIndexCreatedAndInitialized(indexName);
+                indexService.addPropertyToIndex(graph, indexInfo, hiddenVisibilityPropertyName, p.getVisibility(), Boolean.class, false, false, false);
+            }
+            fieldsToSet.put(hiddenVisibilityPropertyName, true);
+        });
 
         return fieldsToSet;
     }
@@ -231,6 +240,14 @@ class AddOrUpdateService {
         List<String> fieldsToRemove = new ArrayList<>();
         mutation.getPropertyDeletes().forEach(p -> fieldsToRemove.addAll(getRelatedFieldNames(graph, p.getName(), p.getVisibility())));
         mutation.getPropertySoftDeletes().forEach(p -> fieldsToRemove.addAll(getRelatedFieldNames(graph, p.getName(), p.getVisibility())));
+
+        mutation.getMarkPropertyVisibleData().forEach(p -> {
+            String hiddenVisibilityPropertyName = propertyNameService.addVisibilityToPropertyName(graph, HIDDEN_PROPERTY_FIELD_NAME, p.getVisibility());
+            if (indexService.isPropertyInIndex(graph, HIDDEN_PROPERTY_FIELD_NAME, p.getVisibility())) {
+                fieldsToRemove.add(hiddenVisibilityPropertyName);
+            }
+        });
+
         return fieldsToRemove;
     }
 

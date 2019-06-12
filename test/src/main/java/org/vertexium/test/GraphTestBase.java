@@ -6384,7 +6384,7 @@ public abstract class GraphTestBase {
             .save(AUTHORIZATIONS_A);
         graph.prepareVertex("v2", VISIBILITY_A)
             .setProperty("text", "Mary had a little tiger, His fleece was white as snow.", VISIBILITY_B)
-            .save(AUTHORIZATIONS_B);
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.prepareVertex("v3", VISIBILITY_A)
             .setProperty("text", "Mary had a little lamb.", VISIBILITY_A)
             .save(AUTHORIZATIONS_A);
