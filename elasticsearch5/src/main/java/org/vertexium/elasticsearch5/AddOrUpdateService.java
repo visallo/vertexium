@@ -155,6 +155,14 @@ class AddOrUpdateService {
 
     private <TElement extends Element> IndexInfo addMutationPropertiesToIndex(Graph graph, ElementMutation<TElement> mutation) {
         IndexInfo indexInfo = indexService.addPropertiesToIndex(graph, mutation, mutation.getProperties());
+
+        mutation.getMarkPropertyHiddenData().forEach(p -> {
+            String hiddenVisibilityPropertyName = propertyNameService.addVisibilityToPropertyName(graph, HIDDEN_PROPERTY_FIELD_NAME, p.getVisibility());
+            if (!indexService.isPropertyInIndex(graph, HIDDEN_PROPERTY_FIELD_NAME, p.getVisibility())) {
+                indexService.addPropertyToIndex(graph, indexInfo, hiddenVisibilityPropertyName, p.getVisibility(), Boolean.class, false, false, false);
+            }
+        });
+
         stream(mutation.getAlterPropertyVisibilities())
             .filter(p -> p.getExistingVisibility() != null && !p.getExistingVisibility().equals(p.getVisibility()))
             .forEach(p -> {
@@ -209,11 +217,6 @@ class AddOrUpdateService {
 
         mutation.getMarkPropertyHiddenData().forEach(p -> {
             String hiddenVisibilityPropertyName = propertyNameService.addVisibilityToPropertyName(graph, HIDDEN_PROPERTY_FIELD_NAME, p.getVisibility());
-            if (!indexService.isPropertyInIndex(graph, HIDDEN_PROPERTY_FIELD_NAME, p.getVisibility())) {
-                String indexName = indexService.getIndexName(mutation);
-                IndexInfo indexInfo = indexService.ensureIndexCreatedAndInitialized(indexName);
-                indexService.addPropertyToIndex(graph, indexInfo, hiddenVisibilityPropertyName, p.getVisibility(), Boolean.class, false, false, false);
-            }
             fieldsToSet.put(hiddenVisibilityPropertyName, true);
         });
 
