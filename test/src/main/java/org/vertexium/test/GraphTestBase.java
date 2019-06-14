@@ -3864,6 +3864,7 @@ public abstract class GraphTestBase {
             .alterElementVisibility(VISIBILITY_EMPTY)
             .save(AUTHORIZATIONS_A);
         graph.flush();
+        v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
         Assert.assertEquals(VISIBILITY_EMPTY, v1.getVisibility());
 
         vertices = graph.query(AUTHORIZATIONS_A).vertices();
@@ -5213,8 +5214,9 @@ public abstract class GraphTestBase {
 
         ExistingElementMutation<Vertex> m = vertex.prepareMutation();
         m.setPropertyMetadata("propBmeta", "meta1", "meta2", VISIBILITY_A);
-        vertex = m.save(AUTHORIZATIONS_ALL);
+        m.save(AUTHORIZATIONS_ALL);
 
+        vertex = graph.getVertex("v1", AUTHORIZATIONS_ALL);
         assertEquals("meta2", vertex.getProperty("propBmeta").getMetadata().getEntry("meta1").getValue());
     }
 
@@ -5229,8 +5231,9 @@ public abstract class GraphTestBase {
 
         ExistingElementMutation<Edge> m = edge.prepareMutation();
         m.setPropertyMetadata("propBmeta", "meta1", "meta2", VISIBILITY_A);
-        edge = m.save(AUTHORIZATIONS_ALL);
+        m.save(AUTHORIZATIONS_ALL);
 
+        edge = graph.getEdge(edge.getId(), AUTHORIZATIONS_ALL);
         assertEquals("meta2", edge.getProperty("propBmeta").getMetadata().getEntry("meta1").getValue());
     }
 
@@ -6048,11 +6051,12 @@ public abstract class GraphTestBase {
         graph.flush();
 
         Vertex v1 = graph.getVertex("v1", FetchHints.ALL, AUTHORIZATIONS_A);
+        assertEquals("valueOld", v1.getProperty("prop1").getMetadata().getEntry("prop1_key1", VISIBILITY_EMPTY).getValue());
+
         v1.prepareMutation()
             .setPropertyMetadata("prop1", "prop1_key1", "valueNew", VISIBILITY_EMPTY)
             .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
-        assertEquals("valueNew", v1.getProperty("prop1").getMetadata().getEntry("prop1_key1", VISIBILITY_EMPTY).getValue());
 
         v1 = graph.getVertex("v1", FetchHints.ALL, AUTHORIZATIONS_A);
         assertEquals("valueNew", v1.getProperty("prop1").getMetadata().getEntry("prop1_key1", VISIBILITY_EMPTY).getValue());
@@ -6062,7 +6066,6 @@ public abstract class GraphTestBase {
             .setPropertyMetadata("prop2", "prop2_key1", "valueNew", VISIBILITY_EMPTY)
             .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
-        assertEquals("valueNew", v1.getProperty("prop2").getMetadata().getEntry("prop2_key1", VISIBILITY_EMPTY).getValue());
 
         v1 = graph.getVertex("v1", FetchHints.ALL, AUTHORIZATIONS_A);
         assertEquals("valueNew", v1.getProperty("prop2").getMetadata().getEntry("prop2_key1", VISIBILITY_EMPTY).getValue());

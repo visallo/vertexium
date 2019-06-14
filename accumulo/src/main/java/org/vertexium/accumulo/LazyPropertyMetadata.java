@@ -138,7 +138,7 @@ public class LazyPropertyMetadata implements Metadata {
         }
 
         try {
-            Metadata.Entry entry = entries.get(toMapKey(key, visibility));
+            Metadata.Entry entry = entries.get(mapKey);
             if (entry != null) {
                 return entry;
             }

@@ -4,6 +4,7 @@ import com.google.common.collect.ImmutableSet;
 import org.vertexium.*;
 import org.vertexium.property.MutablePropertyImpl;
 import org.vertexium.search.IndexHint;
+import org.vertexium.util.IncreasingTime;
 import org.vertexium.util.StreamUtils;
 
 import java.util.ArrayList;
@@ -137,8 +138,14 @@ public abstract class ElementMutationBase<T extends Element, TResult extends Ele
 
     @SuppressWarnings("unchecked")
     public TResult setPropertyMetadata(Property property, String metadataName, Object newValue, Visibility visibility) {
-        this.setPropertyMetadata.add(new SetPropertyMetadata(property.getKey(), property.getName(), property.getVisibility(), metadataName, newValue, visibility));
-        return (TResult) this;
+        return setPropertyMetadata(
+            property.getKey(),
+            property.getName(),
+            property.getVisibility(),
+            metadataName,
+            newValue,
+            visibility
+        );
     }
 
     public TResult setPropertyMetadata(String propertyName, String metadataName, Object newValue, Visibility visibility) {
@@ -147,11 +154,22 @@ public abstract class ElementMutationBase<T extends Element, TResult extends Ele
 
     @SuppressWarnings("unchecked")
     public TResult setPropertyMetadata(String propertyKey, String propertyName, String metadataName, Object newValue, Visibility visibility) {
-        this.setPropertyMetadata.add(new SetPropertyMetadata(propertyKey, propertyName, null, metadataName, newValue, visibility));
+        return setPropertyMetadata(propertyKey, propertyName, null, metadataName, newValue, visibility);
+    }
+
+    public TResult setPropertyMetadata(
+        String propertyKey,
+        String propertyName,
+        Visibility propertyVisibility,
+        String metadataName,
+        Object newValue,
+        Visibility visibility
+    ) {
+        this.setPropertyMetadata.add(new SetPropertyMetadata(propertyKey, propertyName, propertyVisibility, metadataName, newValue, visibility));
         return (TResult) this;
     }
 
-    @SuppressWarnings("unchecked")
+        @SuppressWarnings("unchecked")
     @Override
     public TResult addExtendedDataAdditionalVisibility(
         String tableName,

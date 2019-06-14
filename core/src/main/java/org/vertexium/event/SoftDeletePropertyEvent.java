@@ -22,6 +22,15 @@ public class SoftDeletePropertyEvent extends GraphEvent {
         this.data = data;
     }
 
+    public SoftDeletePropertyEvent(Graph graph, Element element, String key, String name, Visibility visibility, Object data) {
+        super(graph);
+        this.element = element;
+        this.key = key;
+        this.name = name;
+        this.visibility = visibility;
+        this.data = data;
+    }
+
     public SoftDeletePropertyEvent(Graph graph, Element element, PropertySoftDeleteMutation propertySoftDeleteMutation) {
         super(graph);
         this.element = element;

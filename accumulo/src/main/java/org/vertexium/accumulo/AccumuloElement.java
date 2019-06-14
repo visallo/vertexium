@@ -101,30 +101,12 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
         return (AccumuloGraph) graph;
     }
 
+    @SuppressWarnings("unchecked")
     protected <TElement extends Element> void saveExistingElementMutation(ExistingElementMutation<TElement> mutation, User user) {
-        // Order matters a lot in this method
-        AccumuloElement element = (AccumuloElement) mutation.getElement();
-
-        // metadata must be altered first because the lookup of a property can include visibility which will be altered by alterElementPropertyVisibilities
-        getGraph().alterPropertyMetadatas(element, mutation.getSetPropertyMetadata());
-
-        // altering properties comes next because alterElementVisibility may alter the vertex and we won't find it
-        getGraph().alterElementPropertyVisibilities(element, mutation.getAlterPropertyVisibilities());
-
         if (mutation instanceof EdgeMutation) {
             getGraph().elementMutationBuilder.saveEdgeMutation((EdgeMutation) mutation, IncreasingTime.currentTimeMillis(), user);
         } else {
             getGraph().elementMutationBuilder.saveVertexMutation((ElementMutation<Vertex>) mutation, IncreasingTime.currentTimeMillis(), user);
-        }
-
-        if (mutation.getNewElementVisibility() != null) {
-            // TODO: does this mess up the extended data? I suspect it does.
-
-            getGraph().alterElementVisibility(element, mutation.getNewElementVisibility(), mutation.getNewElementVisibilityData());
-
-            if (mutation.getIndexHint() != IndexHint.DO_NOT_INDEX) {
-                getGraph().getSearchIndex().addOrUpdateElement(graph, mutation, user);
-            }
         }
     }
 
