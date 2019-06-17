@@ -50,6 +50,9 @@ public class ScriptService {
 
         mutations.addMutations(elementUpdateToMutation(mutation, timestamp));
 
+        for (SetPropertyMetadata setPropertyMetadata : mutation.getSetPropertyMetadata()) {
+            mutations.addMutations(setPropertyMetadataToMutation(setPropertyMetadata, timestamp));
+        }
         for (AlterPropertyVisibility alterPropertyVisibility : mutation.getAlterPropertyVisibilities()) {
             mutations.addMutations(alterPropertyVisibilityToMutation(alterPropertyVisibility, timestamp));
         }
@@ -85,9 +88,6 @@ public class ScriptService {
         }
         for (PropertyDeleteMutation propertyDelete : mutation.getPropertyDeletes()) {
             mutations.addMutations(propertyDeleteToMutation(propertyDelete, timestamp));
-        }
-        for (SetPropertyMetadata setPropertyMetadata : mutation.getSetPropertyMetadata()) {
-            mutations.addMutations(setPropertyMetadataToMutation(setPropertyMetadata, timestamp));
         }
         if (mutation instanceof EdgeMutation && ((EdgeMutation) mutation).getNewEdgeLabel() != null) {
             mutations.addMutations(alterEdgeLabelMutationToMutation((EdgeMutation) mutation));

@@ -387,7 +387,7 @@ public abstract class VertexiumNativeScriptBase implements ExecutableScript {
             mutation.hasPropertyVisibility() ? mutation.getPropertyVisibility() : null
         );
         if (property == null) {
-            throw new VertexiumElasticsearchException("Could not find property: " + property);
+            throw new VertexiumElasticsearchException("Could not find property: " + mutation);
         }
         removePropertyFromSource(property.getName(), property.getVisibility());
         sourceProperties.remove(property);
