@@ -15,18 +15,15 @@ import org.vertexium.accumulo.keys.KeyHelper;
 import org.vertexium.accumulo.util.StreamingPropertyValueStorageStrategy;
 import org.vertexium.id.NameSubstitutionStrategy;
 import org.vertexium.mutation.*;
-import org.vertexium.property.MutablePropertyImpl;
+import org.vertexium.property.MutableProperty;
 import org.vertexium.property.StreamingPropertyValue;
 import org.vertexium.property.StreamingPropertyValueRef;
 import org.vertexium.search.IndexHint;
 import org.vertexium.util.ArrayUtils;
 import org.vertexium.util.ExtendedDataMutationUtils;
 import org.vertexium.util.IncreasingTime;
-import org.vertexium.util.IterableUtils;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.vertexium.mutation.ElementMutationBase.*;
 import static org.vertexium.util.IncreasingTime.currentTimeMillis;
@@ -305,8 +302,8 @@ public abstract class ElementMutationBuilder {
             for (SetPropertyMetadata propertyMetadata : elementMutation.getSetPropertyMetadata()) {
                 if (
                     property.getKey().equals(propertyMetadata.getPropertyKey()) &&
-                    property.getName().equals(propertyMetadata.getPropertyName()) &&
-                    (propertyMetadata.getPropertyVisibility() == null || propertyMetadata.getPropertyVisibility().equals(property.getVisibility()))
+                        property.getName().equals(propertyMetadata.getPropertyName()) &&
+                        (propertyMetadata.getPropertyVisibility() == null || propertyMetadata.getPropertyVisibility().equals(property.getVisibility()))
                 ) {
                     mutableProperty.getMetadata().add(propertyMetadata.getMetadataName(), propertyMetadata.getNewValue(), propertyMetadata.getMetadataVisibility());
                     handledMetadata.add(propertyMetadata);
@@ -335,7 +332,7 @@ public abstract class ElementMutationBuilder {
         for (SetPropertyMetadata propertyMetadata : elementMutation.getSetPropertyMetadata()) {
             if (
                 handledMetadata.contains(propertyMetadata) ||
-                isPropertyDeleted(deletedProperties, propertyMetadata.getPropertyKey(), propertyMetadata.getPropertyName(), propertyMetadata.getPropertyVisibility())
+                    isPropertyDeleted(deletedProperties, propertyMetadata.getPropertyKey(), propertyMetadata.getPropertyName(), propertyMetadata.getPropertyVisibility())
             ) {
                 continue;
             }
@@ -403,10 +400,10 @@ public abstract class ElementMutationBuilder {
         List<PropertyDeleteMutation> propertyDeleteMutations = deletedProperties.get(name);
         return propertyDeleteMutations != null && propertyDeleteMutations.stream()
             .anyMatch(deletedMutation ->
-               (deletedMutation.getKey() == null && deletedMutation.getVisibility() == null) ||
-                   (Objects.equals(deletedMutation.getKey(), key) && Objects.equals(deletedMutation.getVisibility(), visibility)) ||
-                   (deletedMutation.getVisibility() == null && Objects.equals(deletedMutation.getKey(), key)) ||
-                   (deletedMutation.getKey() == null && Objects.equals(deletedMutation.getVisibility(), visibility))
+                (deletedMutation.getKey() == null && deletedMutation.getVisibility() == null) ||
+                    (Objects.equals(deletedMutation.getKey(), key) && Objects.equals(deletedMutation.getVisibility(), visibility)) ||
+                    (deletedMutation.getVisibility() == null && Objects.equals(deletedMutation.getKey(), key)) ||
+                    (deletedMutation.getKey() == null && Objects.equals(deletedMutation.getVisibility(), visibility))
             );
     }
 

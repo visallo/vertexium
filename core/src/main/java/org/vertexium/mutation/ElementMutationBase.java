@@ -4,7 +4,6 @@ import com.google.common.collect.ImmutableSet;
 import org.vertexium.*;
 import org.vertexium.property.MutablePropertyImpl;
 import org.vertexium.search.IndexHint;
-import org.vertexium.util.IncreasingTime;
 import org.vertexium.util.StreamUtils;
 
 import java.util.ArrayList;
@@ -169,7 +168,7 @@ public abstract class ElementMutationBase<T extends Element, TResult extends Ele
         return (TResult) this;
     }
 
-        @SuppressWarnings("unchecked")
+    @SuppressWarnings("unchecked")
     @Override
     public TResult addExtendedDataAdditionalVisibility(
         String tableName,

@@ -13,7 +13,6 @@ import org.vertexium.mutation.*;
 import org.vertexium.property.MutableProperty;
 import org.vertexium.query.ExtendedDataQueryableIterable;
 import org.vertexium.query.QueryableIterable;
-import org.vertexium.search.IndexHint;
 import org.vertexium.util.IncreasingTime;
 import org.vertexium.util.PropertyCollection;
 

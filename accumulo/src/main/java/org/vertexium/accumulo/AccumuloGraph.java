@@ -35,8 +35,6 @@ import org.vertexium.accumulo.keys.KeyHelper;
 import org.vertexium.accumulo.util.*;
 import org.vertexium.historicalEvent.HistoricalEvent;
 import org.vertexium.historicalEvent.HistoricalEventId;
-import org.vertexium.mutation.AlterPropertyVisibility;
-import org.vertexium.mutation.SetPropertyMetadata;
 import org.vertexium.property.MutableProperty;
 import org.vertexium.property.StreamingPropertyValue;
 import org.vertexium.property.StreamingPropertyValueRef;

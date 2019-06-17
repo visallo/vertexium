@@ -2,7 +2,6 @@ package org.vertexium.property;
 
 import org.vertexium.*;
 import org.vertexium.util.IncreasingTime;
-import org.vertexium.util.IterableUtils;
 
 import java.util.ArrayList;
 import java.util.Collection;
