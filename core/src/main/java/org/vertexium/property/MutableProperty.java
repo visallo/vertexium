@@ -2,6 +2,7 @@ package org.vertexium.property;
 
 import org.vertexium.Property;
 import org.vertexium.Visibility;
+import org.vertexium.util.IterableUtils;
 
 public abstract class MutableProperty extends Property {
     public abstract void setValue(Object value);
@@ -26,5 +27,18 @@ public abstract class MutableProperty extends Property {
         setValue(property.getValue());
         setTimestamp(property.getTimestamp());
         updateMetadata(property);
+    }
+
+    public static MutableProperty fromProperty(Property property) {
+        return new MutablePropertyImpl(
+            property.getKey(),
+            property.getName(),
+            property.getValue(),
+            property.getMetadata(),
+            property.getTimestamp(),
+            IterableUtils.toSet(property.getHiddenVisibilities()),
+            property.getVisibility(),
+            property.getFetchHints()
+        );
     }
 }

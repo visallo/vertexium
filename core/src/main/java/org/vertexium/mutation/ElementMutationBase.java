@@ -601,7 +601,7 @@ public abstract class ElementMutationBase<T extends Element, TResult extends Ele
     public static class MarkPropertyHiddenData {
         private final String key;
         private final String name;
-        private final Visibility propertyVisibility;
+        private Visibility propertyVisibility;
         private final Long timestamp;
         private final Visibility visibility;
         private final Object eventData;
@@ -634,6 +634,10 @@ public abstract class ElementMutationBase<T extends Element, TResult extends Ele
             return propertyVisibility;
         }
 
+        public void setPropertyVisibility(Visibility propertyVisibility) {
+            this.propertyVisibility = propertyVisibility;
+        }
+
         public Long getTimestamp() {
             return timestamp;
         }
@@ -650,7 +654,7 @@ public abstract class ElementMutationBase<T extends Element, TResult extends Ele
     public static class MarkPropertyVisibleData {
         private final String key;
         private final String name;
-        private final Visibility propertyVisibility;
+        private Visibility propertyVisibility;
         private final Long timestamp;
         private final Visibility visibility;
         private final Object eventData;
@@ -681,6 +685,10 @@ public abstract class ElementMutationBase<T extends Element, TResult extends Ele
 
         public Visibility getPropertyVisibility() {
             return propertyVisibility;
+        }
+
+        public void setPropertyVisibility(Visibility propertyVisibility) {
+            this.propertyVisibility = propertyVisibility;
         }
 
         public Long getTimestamp() {

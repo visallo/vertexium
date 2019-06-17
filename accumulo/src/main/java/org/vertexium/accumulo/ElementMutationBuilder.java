@@ -275,36 +275,103 @@ public abstract class ElementMutationBuilder {
             return;
         }
 
+        Map<String, List<PropertyDeleteMutation>> deletedProperties = new HashMap<>();
         for (PropertyDeleteMutation propertyDeleteMutation : elementMutation.getPropertyDeletes()) {
             addPropertyDeleteToMutation(m, propertyDeleteMutation);
-        }
-        for (PropertySoftDeleteMutation propertySoftDeleteMutation : elementMutation.getPropertySoftDeletes()) {
-            addPropertySoftDeleteToMutation(m, propertySoftDeleteMutation);
-        }
-        for (Property property : elementMutation.getProperties()) {
-            addPropertyToMutation(m, rowKey, property);
+            deletedProperties.computeIfAbsent(propertyDeleteMutation.getName(), name -> new ArrayList<>());
+            deletedProperties.get(propertyDeleteMutation.getName()).add(propertyDeleteMutation);
         }
 
         Supplier<Element> element = Suppliers.memoize(() -> getElementFromMutation(elementMutation));
+        Map<String, List<AlterPropertyVisibility>> visibilityChanges = new HashMap<>();
+        List<SetPropertyMetadata> handledMetadata = new ArrayList<>();
+        for (AlterPropertyVisibility apv : elementMutation.getAlterPropertyVisibilities()) {
+            if (isPropertyDeleted(deletedProperties, apv.getKey(), apv.getName(), apv.getExistingVisibility())) {
+                continue;
+            }
+            Property property = element.get().getProperty(apv.getKey(), apv.getName(), apv.getExistingVisibility());
+            if (property == null) {
+                throw new VertexiumException("Unable to load existing property for AlterPropertyVisibility:" + apv);
+            }
+            if (apv.getExistingVisibility() == null) {
+                apv.setExistingVisibility(property.getVisibility());
+            }
+            addPropertySoftDeleteToMutation(
+                m,
+                apv.getKey(),
+                apv.getName(),
+                apv.getExistingVisibility(),
+                apv.getTimestamp() - 1,
+                apv.getData()
+            );
+
+            MutableProperty mutableProperty = MutableProperty.fromProperty(property);
+            mutableProperty.setVisibility(apv.getVisibility());
+            mutableProperty.setTimestamp(apv.getTimestamp());
+            for (SetPropertyMetadata propertyMetadata : elementMutation.getSetPropertyMetadata()) {
+                if (
+                    property.getKey().equals(propertyMetadata.getPropertyKey()) &&
+                    property.getName().equals(propertyMetadata.getPropertyName()) &&
+                    (propertyMetadata.getPropertyVisibility() == null || propertyMetadata.getPropertyVisibility().equals(property.getVisibility()))
+                ) {
+                    mutableProperty.getMetadata().add(propertyMetadata.getMetadataName(), propertyMetadata.getNewValue(), propertyMetadata.getMetadataVisibility());
+                    handledMetadata.add(propertyMetadata);
+                }
+            }
+            addPropertyToMutation(m, rowKey, mutableProperty);
+
+            visibilityChanges.computeIfAbsent(apv.getName(), name -> new ArrayList<>());
+            visibilityChanges.get(apv.getName()).add(apv);
+        }
+
+        for (PropertySoftDeleteMutation psd : elementMutation.getPropertySoftDeletes()) {
+            if (!isPropertyDeleted(deletedProperties, psd.getKey(), psd.getName(), psd.getVisibility())) {
+                Visibility effectiveVisibility = getEffectiveVisibility(visibilityChanges, psd.getKey(), psd.getName(), psd.getVisibility());
+                addPropertySoftDeleteToMutation(m, psd, effectiveVisibility);
+            }
+        }
+        for (Property property : elementMutation.getProperties()) {
+            if (!isPropertyDeleted(deletedProperties, property.getKey(), property.getName(), property.getVisibility())) {
+                Visibility effectiveVisibility = getEffectiveVisibility(visibilityChanges, property.getKey(), property.getName(), property.getVisibility());
+                MutableProperty mutableProperty = MutableProperty.fromProperty(property);
+                mutableProperty.setVisibility(effectiveVisibility);
+                addPropertyToMutation(m, rowKey, property);
+            }
+        }
         for (SetPropertyMetadata propertyMetadata : elementMutation.getSetPropertyMetadata()) {
+            if (
+                handledMetadata.contains(propertyMetadata) ||
+                isPropertyDeleted(deletedProperties, propertyMetadata.getPropertyKey(), propertyMetadata.getPropertyName(), propertyMetadata.getPropertyVisibility())
+            ) {
+                continue;
+            }
             Property property = element.get().getProperty(propertyMetadata.getPropertyKey(), propertyMetadata.getPropertyName(), propertyMetadata.getPropertyVisibility());
             if (property == null) {
                 throw new VertexiumException("Unable to load existing property for AlterPropertyVisibility:" + propertyMetadata);
             }
-            Visibility propertyVisibility = propertyMetadata.getPropertyVisibility();
-            if (propertyVisibility == null) {
-                propertyVisibility = property.getVisibility();
-            }
+            Visibility effectiveVisibility = getEffectiveVisibility(visibilityChanges, property.getKey(), property.getName(), property.getVisibility());
             addPropertyMetadataItemToMutation(
                 m,
                 propertyMetadata.getPropertyName(),
                 propertyMetadata.getPropertyKey(),
-                propertyVisibility,
+                effectiveVisibility,
                 propertyMetadata.getMetadataName(),
                 propertyMetadata.getNewValue(),
                 property.getTimestamp(),
                 propertyMetadata.getMetadataVisibility()
             );
+        }
+        for (MarkPropertyVisibleData mpv : elementMutation.getMarkPropertyVisibleData()) {
+            if (!isPropertyDeleted(deletedProperties, mpv.getKey(), mpv.getName(), mpv.getPropertyVisibility())) {
+                mpv.setPropertyVisibility(getEffectiveVisibility(visibilityChanges, mpv.getKey(), mpv.getName(), mpv.getPropertyVisibility()));
+                addMarkPropertyVisibleToMutation(m, mpv);
+            }
+        }
+        for (MarkPropertyHiddenData mph : elementMutation.getMarkPropertyHiddenData()) {
+            if (!isPropertyDeleted(deletedProperties, mph.getKey(), mph.getName(), mph.getPropertyVisibility())) {
+                mph.setPropertyVisibility(getEffectiveVisibility(visibilityChanges, mph.getKey(), mph.getName(), mph.getPropertyVisibility()));
+                addMarkPropertyHiddenToMutation(m, mph);
+            }
         }
         for (AdditionalVisibilityAddMutation additionalVisibility : elementMutation.getAdditionalVisibilities()) {
             addAdditionalVisibilityToMutation(m, additionalVisibility);
@@ -313,50 +380,40 @@ public abstract class ElementMutationBuilder {
             addAdditionalVisibilityDeleteToMutation(m, additionalVisibilityDelete);
         }
 
-        for (AlterPropertyVisibility alterPropertyVisibility : elementMutation.getAlterPropertyVisibilities()) {
-            Property property = element.get().getProperty(alterPropertyVisibility.getKey(), alterPropertyVisibility.getName(), alterPropertyVisibility.getExistingVisibility());
-            if (property == null) {
-                throw new VertexiumException("Unable to load existing property for AlterPropertyVisibility:" + alterPropertyVisibility);
-            }
-            addPropertySoftDeleteToMutation(
-                m,
-                alterPropertyVisibility.getKey(),
-                alterPropertyVisibility.getName(),
-                property.getVisibility(),
-                alterPropertyVisibility.getTimestamp() - 1,
-                alterPropertyVisibility.getData()
-            );
-
-            MutablePropertyImpl newProperty = new MutablePropertyImpl(
-                property.getKey(),
-                property.getName(),
-                property.getValue(),
-                property.getMetadata(),
-                alterPropertyVisibility.getTimestamp(),
-                IterableUtils.toSet(property.getHiddenVisibilities()),
-                alterPropertyVisibility.getVisibility(),
-                property.getFetchHints()
-            );
-            addPropertyToMutation(m, rowKey, newProperty);
-        }
-
         // TODO: handle cleaning up the extended data markers for extended data deletions. need to elevate to do this properly
 
         Iterable<ExtendedDataMutation> extendedData = elementMutation.getExtendedData();
         saveExtendedDataMarkers(m, extendedData);
 
-        for (MarkPropertyVisibleData markPropertyVisibleData : elementMutation.getMarkPropertyVisibleData()) {
-            addMarkPropertyVisibleToMutation(m, markPropertyVisibleData);
-        }
-        for (MarkPropertyHiddenData markPropertyHiddenData : elementMutation.getMarkPropertyHiddenData()) {
-            addMarkPropertyHiddenToMutation(m, markPropertyHiddenData);
-        }
         for (MarkVisibleData markVisibleData : elementMutation.getMarkVisibleData()) {
             addMarkVisibleToMutation(m, markVisibleData);
         }
         for (MarkHiddenData markHiddenData : elementMutation.getMarkHiddenData()) {
             addMarkHiddenToMutation(m, markHiddenData);
         }
+    }
+
+    private Visibility getEffectiveVisibility(Map<String, List<AlterPropertyVisibility>> visibilityChanges, String key, String name, Visibility visibility) {
+        if (!visibilityChanges.containsKey(name)) {
+            return visibility;
+        }
+        return visibilityChanges.get(name).stream()
+            .filter(visibilityChange -> Objects.equals(key, visibilityChange.getKey()) && Objects.equals(name, visibilityChange.getName()) && Objects.equals(visibility, visibilityChange.getExistingVisibility()))
+            .map(visibilityChange -> visibilityChange.getVisibility())
+            .findFirst()
+            .orElse(visibility);
+
+    }
+
+    private boolean isPropertyDeleted(Map<String, List<PropertyDeleteMutation>> deletedProperties, String key, String name, Visibility visibility) {
+        List<PropertyDeleteMutation> propertyDeleteMutations = deletedProperties.get(name);
+        return propertyDeleteMutations != null && propertyDeleteMutations.stream()
+            .anyMatch(deletedMutation ->
+               (deletedMutation.getKey() == null && deletedMutation.getVisibility() == null) ||
+                   (Objects.equals(deletedMutation.getKey(), key) && Objects.equals(deletedMutation.getVisibility(), visibility)) ||
+                   (deletedMutation.getVisibility() == null && Objects.equals(deletedMutation.getKey(), key)) ||
+                   (deletedMutation.getKey() == null && Objects.equals(deletedMutation.getVisibility(), visibility))
+            );
     }
 
     private <T extends Element>  Element getElementFromMutation(ElementMutation<T> elementMutation) {
@@ -783,12 +840,12 @@ public abstract class ElementMutationBuilder {
         );
     }
 
-    private void addPropertySoftDeleteToMutation(Mutation m, PropertySoftDeleteMutation propertySoftDelete) {
+    private void addPropertySoftDeleteToMutation(Mutation m, PropertySoftDeleteMutation propertySoftDelete, Visibility visibility) {
         addPropertySoftDeleteToMutation(
             m,
             propertySoftDelete.getKey(),
             propertySoftDelete.getName(),
-            propertySoftDelete.getVisibility(),
+            visibility,
             propertySoftDelete.getTimestamp(),
             propertySoftDelete.getData()
         );

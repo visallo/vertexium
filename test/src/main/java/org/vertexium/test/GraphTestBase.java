@@ -1778,7 +1778,7 @@ public abstract class GraphTestBase {
 
     @Test
     public void testMarkPropertyHidden() {
-        Vertex v1 = graph.prepareVertex("v1", VISIBILITY_A)
+        graph.prepareVertex("v1", VISIBILITY_A)
             .addPropertyValue("key1", "prop1", "value1", VISIBILITY_A)
             .addPropertyValue("key1", "prop1", "value1", VISIBILITY_B)
             .addPropertyValue("key2", "prop1", "value1", VISIBILITY_A)
@@ -1787,6 +1787,7 @@ public abstract class GraphTestBase {
 
         Assert.assertEquals(3, count(graph.getVertex("v1", AUTHORIZATIONS_A_AND_B).getProperties("prop1")));
 
+        Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_ALL);
         v1.markPropertyHidden("key1", "prop1", VISIBILITY_A, VISIBILITY_A_AND_B, AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
