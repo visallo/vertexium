@@ -22,11 +22,6 @@ public class InMemoryEdge extends InMemoryElement<InMemoryEdge> implements Edge 
     }
 
     @Override
-    public ElementType getElementType() {
-        return ElementType.EDGE;
-    }
-
-    @Override
     public String getLabel() {
         return getInMemoryTableElement().findLastMutation(AlterEdgeLabelMutation.class).getNewEdgeLabel();
     }

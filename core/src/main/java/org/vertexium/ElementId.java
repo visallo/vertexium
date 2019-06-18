@@ -1,32 +1,25 @@
 package org.vertexium;
 
-public class ElementId {
-    private final ElementType elementType;
-    private final String elementId;
-
-    public ElementId(ElementType elementType, String elementId) {
-        this.elementType = elementType;
-        this.elementId = elementId;
+public interface ElementId {
+    static ElementId vertex(String id) {
+        return new DefaultElementId(ElementType.VERTEX, id);
     }
 
-    public static ElementId vertex(String id) {
-        return new ElementId(ElementType.VERTEX, id);
+    static ElementId edge(String id) {
+        return new DefaultElementId(ElementType.EDGE, id);
     }
 
-    public static ElementId edge(String id) {
-        return new ElementId(ElementType.EDGE, id);
+    static ElementId create(ElementType elementType, String id) {
+        return new DefaultElementId(elementType, id);
     }
 
-    public ElementType getElementType() {
-        return elementType;
-    }
+    /**
+     * the type of the element.
+     */
+    ElementType getElementType();
 
-    public String getElementId() {
-        return elementId;
-    }
-
-    @Override
-    public String toString() {
-        return String.format("ElementId{elementType=%s, elementId='%s'}", elementType, elementId);
-    }
+    /**
+     * id of the element.
+     */
+    String getId();
 }

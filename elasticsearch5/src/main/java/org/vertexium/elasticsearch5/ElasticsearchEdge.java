@@ -80,9 +80,4 @@ public class ElasticsearchEdge extends ElasticsearchElement implements Edge {
     public ExistingEdgeMutation prepareMutation() {
         throw new VertexiumNotSupportedException("prepareMutation is not supported");
     }
-
-    @Override
-    public ElementType getElementType() {
-        return ElementType.EDGE;
-    }
 }
