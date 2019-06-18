@@ -1,19 +1,20 @@
 package org.vertexium.cypher.functions.scalar;
 
 import org.vertexium.cypher.VertexiumCypherQueryContext;
-import org.vertexium.cypher.ast.model.CypherAstBase;
 import org.vertexium.cypher.exceptions.VertexiumCypherTypeErrorException;
-import org.vertexium.cypher.executor.ExpressionScope;
-import org.vertexium.cypher.functions.CypherFunction;
+import org.vertexium.cypher.functions.SimpleCypherFunction;
 
+import java.lang.reflect.Array;
 import java.util.Collection;
 import java.util.stream.Stream;
 
-public class SizeFunction extends CypherFunction {
+import static org.vertexium.cypher.functions.FunctionUtils.assertArgumentCount;
+
+public class SizeFunction extends SimpleCypherFunction {
     @Override
-    public Object invoke(VertexiumCypherQueryContext ctx, CypherAstBase[] arguments, ExpressionScope scope) {
+    protected Object executeFunction(VertexiumCypherQueryContext ctx, Object[] arguments) {
         assertArgumentCount(arguments, 1);
-        Object arg = ctx.getExpressionExecutor().executeExpression(ctx, arguments[0], scope);
+        Object arg = arguments[0];
 
         if (arg instanceof Collection) {
             return ((Collection) arg).size();
@@ -23,6 +24,10 @@ public class SizeFunction extends CypherFunction {
             return ((Stream) arg).count();
         }
 
-        throw new VertexiumCypherTypeErrorException(arg, Collection.class, Stream.class);
+        if (arg != null && arg.getClass().isArray()) {
+            return Array.getLength(arg);
+        }
+
+        throw new VertexiumCypherTypeErrorException(arg, Collection.class, Stream.class, Object[].class);
     }
 }

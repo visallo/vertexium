@@ -1,14 +1,13 @@
 package org.vertexium.cypher;
 
-import org.vertexium.Edge;
-import org.vertexium.Element;
-import org.vertexium.Property;
-import org.vertexium.Vertex;
+import org.vertexium.*;
 
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -32,23 +31,84 @@ public class CypherResultWriter {
             return columnEdgeToString(ctx, (Edge) o);
         } else if (o instanceof String) {
             return columnStringToString(o);
-        } else if (o instanceof VertexiumCypherScope.PathItem) {
-            return columnPathResultToString(ctx, (VertexiumCypherScope.PathItem) o);
+        } else if (o instanceof CypherDuration) {
+            return columnCypherDurationToString((CypherDuration) o);
+        } else if (o instanceof PathResultBase) {
+            return columnPathResultToString(ctx, (PathResultBase) o);
         } else if (o instanceof Stream) {
-            return columnValueIterableToString(ctx, ((Stream<?>) o).collect(Collectors.toList()));
+            return columnValueIterableToString(ctx, (Stream<?>) o);
         } else if (o instanceof Iterable) {
-            return columnValueIterableToString(ctx, (Iterable<?>) o);
+            return columnValueIterableToString(ctx, stream((Iterable<?>) o));
+        } else if (o.getClass().isArray()) {
+            return columnValueIterableToString(ctx, Arrays.stream((Object[]) o));
         } else {
             return columnUnknownToString(o);
         }
     }
 
-    private String columnPathResultToString(VertexiumCypherQueryContext ctx, VertexiumCypherScope.PathItem pathResult) {
-        return pathResult.toString(ctx);
+    private String columnCypherDurationToString(CypherDuration duration) {
+        return "'" + duration + "'";
     }
 
-    private String columnValueIterableToString(VertexiumCypherQueryContext ctx, Iterable<?> list) {
-        return "[" + stream(list).map(item -> columnValueToString(ctx, item)).collect(Collectors.joining(", ")) + "]";
+    private String columnPathResultToString(VertexiumCypherQueryContext ctx, PathResultBase pathResult) {
+        if (pathResult instanceof RelationshipRangePathResult) {
+            return String.format(
+                "[%s]",
+                pathResult.getEdges()
+                    .map(e -> columnValueToString(ctx, e))
+                    .collect(Collectors.joining(", "))
+            );
+        }
+
+        StringBuilder result = new StringBuilder();
+        result.append("<");
+        AtomicReference<Vertex> previousVertex = new AtomicReference<>();
+        AtomicReference<Element> previousElement = new AtomicReference<>();
+        pathResult.getElements().forEach(element -> {
+            if (element == null) {
+                // do nothing
+            } else if (element instanceof Edge) {
+                Edge edge = (Edge) element;
+                Direction direction = null;
+                if (previousVertex.get() != null) {
+                    direction = getDirection(previousVertex.get().getId(), edge);
+                }
+                if (direction == Direction.IN) {
+                    result.append("<");
+                }
+                result.append("-");
+                result.append(columnValueToString(ctx, element));
+                result.append("-");
+                if (direction == Direction.OUT) {
+                    result.append(">");
+                }
+            } else if (element instanceof Vertex) {
+                Vertex vertex = (Vertex) element;
+                if (previousElement.get() == null && vertex.equals(previousVertex.get())) {
+                    // this is a result of a zero length path
+                } else {
+                    result.append(columnValueToString(ctx, element));
+                    previousVertex.set(vertex);
+                }
+            } else {
+                throw new VertexiumException("unexpected element type: " + element.getClass().getName());
+            }
+            previousElement.set(element);
+        });
+        result.append(">");
+        return result.toString();
+    }
+
+    private Direction getDirection(String previousVertexId, Edge element) {
+        if (element.getVertexId(Direction.OUT).equals(previousVertexId)) {
+            return Direction.OUT;
+        } else {
+            return Direction.IN;
+        }
+    }
+
+    private String columnValueIterableToString(VertexiumCypherQueryContext ctx, Stream<?> list) {
+        return "[" + list.map(item -> columnValueToString(ctx, item)).collect(Collectors.joining(", ")) + "]";
     }
 
     private String columnUnknownToString(Object o) {

@@ -6,7 +6,7 @@ import java.util.stream.Stream;
 import static org.vertexium.util.StreamUtils.stream;
 
 public abstract class CypherElementPattern extends CypherAstBase {
-    private final String name;
+    private String name;
     private final CypherMapLiteral<String, CypherAstBase> propertiesMap;
 
     public CypherElementPattern(String name, CypherMapLiteral<String, CypherAstBase> propertiesMap) {
@@ -19,6 +19,10 @@ public abstract class CypherElementPattern extends CypherAstBase {
 
     public String getName() {
         return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 
     public CypherMapLiteral<String, CypherAstBase> getPropertiesMap() {

@@ -378,6 +378,7 @@ Feature: MergeNodeAcceptance
       | +nodes  | 1 |
       | +labels | 3 |
 
+  @todo
   Scenario: Should support updates while merging
     Given an empty graph
     And having executed:
@@ -460,6 +461,7 @@ Feature: MergeNodeAcceptance
       | +nodes      | 4 |
       | +properties | 4 |
 
+  @todo
   Scenario: Merges should not be able to match on deleted nodes
     Given an empty graph
     And having executed:

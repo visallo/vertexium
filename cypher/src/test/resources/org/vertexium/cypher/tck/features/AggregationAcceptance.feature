@@ -302,6 +302,7 @@ Feature: AggregationAcceptance
       | 10 |
     And no side effects
 
+  @todo
   Scenario: Aggregates ordered by arithmetics
     Given an empty graph
     And having executed:

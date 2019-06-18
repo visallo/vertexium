@@ -2,27 +2,38 @@ package org.vertexium.cypher.functions.list;
 
 import org.vertexium.Element;
 import org.vertexium.cypher.VertexiumCypherQueryContext;
-import org.vertexium.cypher.ast.model.CypherAstBase;
+import org.vertexium.cypher.exceptions.VertexiumCypherNotImplemented;
 import org.vertexium.cypher.exceptions.VertexiumCypherTypeErrorException;
-import org.vertexium.cypher.executor.ExpressionScope;
+import org.vertexium.cypher.executionPlan.ExecutionStepWithResultName;
+import org.vertexium.cypher.executionPlan.FunctionInvocationExecutionStep;
 import org.vertexium.cypher.functions.CypherFunction;
 
 import java.util.Map;
 
-public class KeysFunction extends CypherFunction {
+import static org.vertexium.cypher.functions.FunctionUtils.assertArgumentCount;
+
+public class KeysFunction implements CypherFunction {
     @Override
-    public Object invoke(VertexiumCypherQueryContext ctx, CypherAstBase[] arguments, ExpressionScope scope) {
-        assertArgumentCount(arguments, 1);
-        Object arg0 = ctx.getExpressionExecutor().executeExpression(ctx, arguments[0], scope);
-
-        if (arg0 instanceof Element) {
-            return ctx.getKeys((Element) arg0);
+    public ExecutionStepWithResultName create(String resultName, boolean distinct, ExecutionStepWithResultName[] argumentsExecutionStep) {
+        if (distinct) {
+            throw new VertexiumCypherNotImplemented("distinct");
         }
+        return new FunctionInvocationExecutionStep(getClass().getSimpleName(), resultName, argumentsExecutionStep) {
+            @Override
+            protected Object executeFunction(VertexiumCypherQueryContext ctx, Object[] arguments) {
+                assertArgumentCount(arguments, 1);
+                Object arg0 = arguments[0];
 
-        if (arg0 instanceof Map) {
-            return ((Map) arg0).keySet();
-        }
+                if (arg0 instanceof Element) {
+                    return ctx.getKeys((Element) arg0);
+                }
 
-        throw new VertexiumCypherTypeErrorException(arg0, Element.class, Map.class);
+                if (arg0 instanceof Map) {
+                    return ((Map) arg0).keySet();
+                }
+
+                throw new VertexiumCypherTypeErrorException(arg0, Element.class, Map.class);
+            }
+        };
     }
 }

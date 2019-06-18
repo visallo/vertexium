@@ -1,12 +1,15 @@
 package org.vertexium.cypher;
 
 import org.vertexium.*;
-import org.vertexium.cypher.ast.model.*;
-import org.vertexium.cypher.executor.ExpressionScope;
+import org.vertexium.cypher.ast.model.CypherAstBase;
+import org.vertexium.cypher.executionPlan.CreateNodePatternExecutionStep;
+import org.vertexium.cypher.executionPlan.CreateRelationshipPatternExecutionStep;
 import org.vertexium.mutation.ElementMutation;
 import org.vertexium.mutation.ExistingElementMutation;
 import org.vertexium.query.QueryResultsIterable;
 
+import java.time.ZonedDateTime;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -26,16 +29,18 @@ public class TestVertexiumCypherQueryContext extends VertexiumCypherQueryContext
     private int minusPropertyCount;
     private int nextVertexId;
     private int nextEdgeId;
+    private final ZonedDateTime now;
 
     public TestVertexiumCypherQueryContext(Graph graph, Authorizations authorizations) {
         super(graph, authorizations);
+        now = super.getNow();
         getGraph().defineProperty(getLabelPropertyName())
             .dataType(String.class)
             .define();
     }
 
     @Override
-    public Visibility calculateVertexVisibility(CypherNodePattern nodePattern, ExpressionScope scope) {
+    public Visibility calculateVertexVisibility(CreateNodePatternExecutionStep nodePattern, CypherResultRow row) {
         return VISIBILITY;
     }
 
@@ -69,35 +74,56 @@ public class TestVertexiumCypherQueryContext extends VertexiumCypherQueryContext
         if (value instanceof CypherAstBase) {
             throw new VertexiumException("Cannot set a value of type " + CypherAstBase.class.getName() + " into property");
         }
+        if (m instanceof ExistingElementMutation) {
+            if (((ExistingElementMutation<T>) m).getElement().getProperty(propertyName) != null) {
+                minusPropertyCount++;
+            }
+        }
         m.setProperty(propertyName, value, VISIBILITY);
         plusPropertyCount++;
     }
 
     @Override
-    public void removeProperty(ElementMutation<Element> m, String propertyName) {
-        if (m instanceof ExistingElementMutation) {
-            if (((ExistingElementMutation) m).getElement().getProperty(propertyName) == null) {
-                return;
-            }
+    public void setProperty(Element element, String propertyName, Object value) {
+        if (element.getProperty(propertyName) != null) {
+            minusPropertyCount++;
         }
-        m.deleteProperty(propertyName, VISIBILITY);
-        minusPropertyCount++;
+        ExistingElementMutation<Element> m = element.prepareMutation();
+        m.setProperty(propertyName, value, VISIBILITY);
+        plusPropertyCount++;
+        m.save(getAuthorizations());
     }
 
     @Override
-    public String calculateEdgeLabel(CypherRelationshipPattern relationshipPattern, Vertex outVertex, Vertex inVertex, ExpressionScope scope) {
-        CypherListLiteral<CypherRelTypeName> relTypeNames = relationshipPattern.getRelTypeNames();
+    public void removeProperty(Element element, Property prop) {
+        ExistingElementMutation<Element> m = element.prepareMutation();
+        m.deleteProperty(prop);
+        minusPropertyCount++;
+        m.save(getAuthorizations());
+    }
+
+    @Override
+    public void removeProperty(Element element, String propName) {
+        ExistingElementMutation<Element> m = element.prepareMutation();
+        m.deleteProperties(propName);
+        minusPropertyCount++;
+        m.save(getAuthorizations());
+    }
+
+    @Override
+    public String calculateEdgeLabel(CreateRelationshipPatternExecutionStep relationshipPattern, Vertex outVertex, Vertex inVertex, CypherResultRow row) {
+        List<String> relTypeNames = relationshipPattern.getRelTypeNames();
         if (relTypeNames == null || relTypeNames.size() == 0) {
             return DEFAULT_EDGE_LABEL;
         }
         if (relTypeNames.size() == 1) {
-            return relTypeNames.get(0).getValue();
+            return normalizeLabelName(relTypeNames.get(0));
         }
         throw new VertexiumException("too many labels specified. expected 0 or 1 found " + relTypeNames.size());
     }
 
     @Override
-    public Visibility calculateEdgeVisibility(CypherRelationshipPattern relationshipPattern, Vertex outVertex, Vertex inVertex, ExpressionScope scope) {
+    public Visibility calculateEdgeVisibility(CreateRelationshipPatternExecutionStep relationshipPattern, Vertex outVertex, Vertex inVertex, CypherResultRow row) {
         return VISIBILITY;
     }
 
@@ -129,11 +155,6 @@ public class TestVertexiumCypherQueryContext extends VertexiumCypherQueryContext
             plusNodeCount++;
         }
         return vertex;
-    }
-
-    @Override
-    public int getMaxUnboundedRange() {
-        return 100;
     }
 
     @Override
@@ -236,12 +257,12 @@ public class TestVertexiumCypherQueryContext extends VertexiumCypherQueryContext
     }
 
     @Override
-    public String calculateVertexId(CypherNodePattern nodePattern, ExpressionScope scope) {
+    public String calculateVertexId(CreateNodePatternExecutionStep nodePattern, CypherResultRow row) {
         return String.format("%08x", nextVertexId++);
     }
 
     @Override
-    public String calculateEdgeId(CypherRelationshipPattern relationshipPattern, ExpressionScope scope) {
+    public String calculateEdgeId(CreateRelationshipPatternExecutionStep relationshipPattern, CypherResultRow row) {
         return String.format("e%08x", nextEdgeId++);
     }
 
@@ -259,5 +280,16 @@ public class TestVertexiumCypherQueryContext extends VertexiumCypherQueryContext
             return "propertyName";
         }
         return super.normalizePropertyName(propertyName);
+    }
+
+    @Override
+    public void defineProperty(String propertyName, Object value) {
+        PropertyDefinition propertyDefinition = new PropertyDefinition(propertyName, value.getClass(), TextIndexHint.ALL);
+        getGraph().savePropertyDefinition(propertyDefinition);
+    }
+
+    @Override
+    public ZonedDateTime getNow() {
+        return now;
     }
 }

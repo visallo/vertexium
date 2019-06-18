@@ -47,6 +47,7 @@ Feature: FunctionsAcceptance
       | 'Nobody'                  |
     And no side effects
 
+  @todo
   Scenario: Functions should return null if they get path containing unbound
     Given any graph
     When executing query:

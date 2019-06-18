@@ -1,36 +1,44 @@
 package org.vertexium.cypher.functions.aggregate;
 
+import org.vertexium.cypher.CypherResultRow;
 import org.vertexium.cypher.VertexiumCypherQueryContext;
-import org.vertexium.cypher.VertexiumCypherScope;
-import org.vertexium.cypher.ast.model.CypherAstBase;
-import org.vertexium.cypher.exceptions.VertexiumCypherTypeErrorException;
-import org.vertexium.cypher.executor.ExpressionScope;
+import org.vertexium.cypher.exceptions.VertexiumCypherException;
+import org.vertexium.cypher.executionPlan.AggregationFunctionInvocationExecutionStep;
+import org.vertexium.cypher.executionPlan.ExecutionStepWithResultName;
 import org.vertexium.cypher.utils.ObjectUtils;
 
-import java.util.Collection;
 import java.util.stream.Stream;
 
-public class SumFunction extends AggregationFunction {
+public class SumFunction implements AggregationFunction {
     @Override
-    public Object invoke(VertexiumCypherQueryContext ctx, CypherAstBase[] arguments, ExpressionScope scope) {
-        assertArgumentCount(arguments, 1);
+    public ExecutionStepWithResultName create(String resultName, boolean distinct, ExecutionStepWithResultName[] argumentsExecutionStep) {
+        return new AggregationFunctionInvocationExecutionStep(getClass().getSimpleName(), resultName, distinct, argumentsExecutionStep) {
+            @Override
+            protected CypherResultRow executeAggregation(VertexiumCypherQueryContext ctx, CypherResultRow group, Stream<RowWithArguments> rows) {
+                if (rows == null) {
+                    return group.clone()
+                        .pushScope(getResultName(), null);
+                }
 
-        if (scope instanceof VertexiumCypherScope) {
-            return ObjectUtils.sumNumbers(((VertexiumCypherScope) scope).stream()
-                .map(item -> ctx.getExpressionExecutor().executeExpression(ctx, arguments[0], item)));
-        }
-
-        Object arg0 = ctx.getExpressionExecutor().executeExpression(ctx, arguments[0], scope);
-
-        if (arg0 instanceof Collection) {
-            arg0 = ((Collection) arg0).stream();
-        }
-
-        if (arg0 instanceof Stream) {
-            Stream<?> stream = (Stream<?>) arg0;
-            return ObjectUtils.sumNumbers(stream);
-        }
-
-        throw new VertexiumCypherTypeErrorException(arg0, Collection.class, Stream.class);
+                Number sumValue = rows
+                    .filter(r -> r.arguments[0] != null)
+                    .reduce(
+                        null,
+                        (number, row) -> {
+                            if (number == null) {
+                                number = 0L;
+                            }
+                            Object rowValue = row.arguments[0];
+                            if (!(rowValue instanceof Number)) {
+                                throw new VertexiumCypherException("Expected number. Found " + rowValue.getClass().getName());
+                            }
+                            return ObjectUtils.addNumbers(number, (Number) rowValue);
+                        },
+                        ObjectUtils::addNumbers
+                    );
+                return group.clone()
+                    .pushScope(resultName, sumValue);
+            }
+        };
     }
 }

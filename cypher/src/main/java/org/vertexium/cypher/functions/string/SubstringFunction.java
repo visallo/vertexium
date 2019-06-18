@@ -1,18 +1,18 @@
 package org.vertexium.cypher.functions.string;
 
 import org.vertexium.cypher.VertexiumCypherQueryContext;
-import org.vertexium.cypher.ast.model.CypherAstBase;
 import org.vertexium.cypher.exceptions.VertexiumCypherTypeErrorException;
-import org.vertexium.cypher.executor.ExpressionScope;
-import org.vertexium.cypher.functions.CypherFunction;
+import org.vertexium.cypher.functions.SimpleCypherFunction;
 
-public class SubstringFunction extends CypherFunction {
+import static org.vertexium.cypher.functions.FunctionUtils.assertArgumentCount;
+
+public class SubstringFunction extends SimpleCypherFunction {
     @Override
-    public Object invoke(VertexiumCypherQueryContext ctx, CypherAstBase[] arguments, ExpressionScope scope) {
+    protected Object executeFunction(VertexiumCypherQueryContext ctx, Object[] arguments) {
         assertArgumentCount(arguments, 2, 3);
-        Object originalObj = ctx.getExpressionExecutor().executeExpression(ctx, arguments[0], scope);
-        Object startObj = ctx.getExpressionExecutor().executeExpression(ctx, arguments[1], scope);
-        Object lengthObj = arguments.length > 2 ? ctx.getExpressionExecutor().executeExpression(ctx, arguments[2], scope) : null;
+        Object originalObj = arguments[0];
+        Object startObj = arguments[1];
+        Object lengthObj = arguments.length > 2 ? arguments[2] : null;
 
         int start;
         if (startObj instanceof Number) {

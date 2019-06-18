@@ -17,4 +17,9 @@ public class CypherStatement extends CypherAstBase {
     public Stream<? extends CypherAstBase> getChildren() {
         return Stream.of(query);
     }
+
+    @Override
+    public String toString() {
+        return getQuery().toString();
+    }
 }

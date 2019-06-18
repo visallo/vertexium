@@ -82,6 +82,7 @@ Feature: OptionalMatchAcceptance
       | (:A {prop: 42}) |
     And no side effects
 
+  @todo
   Scenario: Returning label predicate on null node
     When executing query:
       """
@@ -121,6 +122,7 @@ Feature: OptionalMatchAcceptance
       | (:A {prop: 42}) | (:B {prop: 46}) |
     And no side effects
 
+  @todo
   Scenario: Named paths in optional matches
     When executing query:
       """
@@ -133,6 +135,7 @@ Feature: OptionalMatchAcceptance
       | null |
     And no side effects
 
+  @todo
   Scenario: OPTIONAL MATCH and bound nodes
     When executing query:
       """
@@ -207,6 +210,7 @@ Feature: OptionalMatchAcceptance
       | null |
     And no side effects
 
+  @todo
   Scenario: Optionally matching self-loops
     When executing query:
       """
@@ -219,6 +223,7 @@ Feature: OptionalMatchAcceptance
       | [:LOOP] |
     And no side effects
 
+  @todo
   Scenario: Optionally matching self-loops without matches
     When executing query:
       """
@@ -234,6 +239,7 @@ Feature: OptionalMatchAcceptance
       | null |
     And no side effects
 
+  @todo
   Scenario: Variable length optional relationships with bound nodes
     When executing query:
       """
@@ -259,6 +265,7 @@ Feature: OptionalMatchAcceptance
       | null |
     And no side effects
 
+  @todo
   Scenario: Longer pattern with bound nodes
     When executing query:
       """
@@ -327,6 +334,7 @@ Feature: OptionalMatchAcceptance
       | null | null | null |
     And no side effects
 
+  @todo
   Scenario: OPTIONAL MATCH and `collect()`
     And having executed:
       """

@@ -446,14 +446,15 @@ public class CypherCstToAstVisitor extends CypherBaseVisitor<CypherAstBase> {
         CypherAstBase left = visitOC_AddOrSubtractExpression(ctx.oC_AddOrSubtractExpression());
         String op = partialComparisonExpressions.get(0).children.get(0).getText();
         CypherAstBase right = visitOC_AddOrSubtractExpression(partialComparisonExpressions.get(0).oC_AddOrSubtractExpression());
-        return new CypherBinaryExpression(
-            new CypherComparisonExpression(left, op, right),
-            CypherBinaryExpression.Op.AND,
-            visitOC_PartialComparisonExpression(right, 1, partialComparisonExpressions)
-        );
+        CypherComparisonExpression leftExpression = new CypherComparisonExpression(left, op, right);
+        CypherAstBase rightExpression = visitOC_PartialComparisonExpression(right, 1, partialComparisonExpressions);
+        if (rightExpression instanceof CypherTrueExpression) {
+            return leftExpression;
+        }
+        return new CypherBinaryExpression(leftExpression, CypherBinaryExpression.Op.AND, rightExpression);
     }
 
-    private CypherExpression visitOC_PartialComparisonExpression(
+    private CypherAstBase visitOC_PartialComparisonExpression(
         CypherAstBase left,
         int partialComparisonExpressionIndex,
         List<CypherParser.OC_PartialComparisonExpressionContext> partialComparisonExpressions
@@ -464,7 +465,7 @@ public class CypherCstToAstVisitor extends CypherBaseVisitor<CypherAstBase> {
         String op = partialComparisonExpressions.get(partialComparisonExpressionIndex).children.get(0).getText();
         CypherAstBase right = visitOC_AddOrSubtractExpression(partialComparisonExpressions.get(partialComparisonExpressionIndex).oC_AddOrSubtractExpression());
         CypherComparisonExpression binLeft = new CypherComparisonExpression(left, op, right);
-        CypherExpression binRight = visitOC_PartialComparisonExpression(right, partialComparisonExpressionIndex + 1, partialComparisonExpressions);
+        CypherAstBase binRight = visitOC_PartialComparisonExpression(right, partialComparisonExpressionIndex + 1, partialComparisonExpressions);
         if (binRight instanceof CypherTrueExpression) {
             return binLeft;
         }
@@ -657,6 +658,9 @@ public class CypherCstToAstVisitor extends CypherBaseVisitor<CypherAstBase> {
         if (ctx.StringLiteral() != null) {
             String text = ctx.StringLiteral().getText();
             return new CypherString(text.substring(1, text.length() - 1));
+        }
+        if (ctx.NULL() != null) {
+            return new CypherNull();
         }
         return (CypherLiteral) super.visitOC_Literal(ctx);
     }
@@ -883,7 +887,6 @@ public class CypherCstToAstVisitor extends CypherBaseVisitor<CypherAstBase> {
         boolean distinct = ctx.DISTINCT() != null;
         CypherListLiteral<CypherAstBase> argumentsList = visitExpressions(ctx.oC_Expression());
         CypherAstBase[] arguments = argumentsList.toArray(new CypherAstBase[argumentsList.size()]);
-        fn.compile(compilerContext, arguments);
         return new CypherFunctionInvocation(functionName, distinct, arguments);
     }
 
@@ -932,7 +935,7 @@ public class CypherCstToAstVisitor extends CypherBaseVisitor<CypherAstBase> {
         } else {
             direction = CypherSortItem.Direction.ASCENDING;
         }
-        return new CypherSortItem(expr, direction);
+        return new CypherSortItem(expr, direction, ctx.oC_Expression().getText());
     }
 
     @Override
