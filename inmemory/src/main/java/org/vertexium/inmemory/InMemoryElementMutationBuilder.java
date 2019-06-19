@@ -494,7 +494,7 @@ class InMemoryElementMutationBuilder {
             user
         );
 
-        graph.getSearchIndex().markPropertyVisible(graph, element, property, visibility, user);
+        graph.getSearchIndex().addOrUpdateElement(graph, element.prepareMutation().markPropertyVisible(property, visibility), user);
     }
 
     private void markPropertyHidden(
@@ -522,7 +522,7 @@ class InMemoryElementMutationBuilder {
             user
         );
 
-        graph.getSearchIndex().markPropertyHidden(graph, element, hiddenProperty, visibility, user);
+        graph.getSearchIndex().addOrUpdateElement(graph, element.prepareMutation().markPropertyHidden(hiddenProperty, visibility), user);
     }
 
     private <T extends InMemoryElement> void markElementHidden(
@@ -544,7 +544,7 @@ class InMemoryElementMutationBuilder {
             checkNotNull(outVertex, "Could not find out vertex \"" + edge.getVertexId(Direction.OUT) + "\" on edge \"" + edge.getId() + "\"");
 
             edges.getTableElement(edge.getId()).appendMarkHiddenMutation(visibility, eventData);
-            graph.getSearchIndex().markElementHidden(graph, edge, visibility, user);
+            graph.getSearchIndex().addOrUpdateElement(graph, edge.prepareMutation().markElementHidden(visibility), user);
         } else if (element instanceof Vertex) {
             Vertex vertex = (Vertex) element;
 
@@ -553,7 +553,7 @@ class InMemoryElementMutationBuilder {
 
             vertices.getTableElement(vertex.getId()).appendMarkHiddenMutation(visibility, eventData);
             refreshVertexInMemoryTableElement(vertex);
-            graph.getSearchIndex().markElementHidden(graph, vertex, visibility, user);
+            graph.getSearchIndex().addOrUpdateElement(graph, vertex.prepareMutation().markElementHidden(visibility), user);
         } else {
             throw new VertexiumException("Unhandled element type: " + element);
         }
@@ -578,7 +578,7 @@ class InMemoryElementMutationBuilder {
             checkNotNull(outVertex, "Could not find out vertex \"" + edge.getVertexId(Direction.OUT) + "\" on edge \"" + edge.getId() + "\"");
 
             edges.getTableElement(edge.getId()).appendMarkVisibleMutation(visibility, eventData);
-            graph.getSearchIndex().markElementVisible(graph, edge, visibility, user);
+            graph.getSearchIndex().addOrUpdateElement(graph, edge.prepareMutation().markElementVisible(visibility), user);
         } else if (element instanceof Vertex) {
             Vertex vertex = (Vertex) element;
 
@@ -587,7 +587,7 @@ class InMemoryElementMutationBuilder {
 
             vertices.getTableElement(vertex.getId()).appendMarkVisibleMutation(visibility, eventData);
             refreshVertexInMemoryTableElement(vertex);
-            graph.getSearchIndex().markElementVisible(graph, vertex, visibility, user);
+            graph.getSearchIndex().addOrUpdateElement(graph, vertex.prepareMutation().markElementVisible(visibility), user);
         } else {
             throw new VertexiumException("Unhandled element type: " + element);
         }
@@ -625,7 +625,7 @@ class InMemoryElementMutationBuilder {
 
             edges.getTableElement(edge.getId()).appendSoftDeleteMutation(timestamp, eventData);
 
-            graph.getSearchIndex().deleteElement(graph, edge, user);
+            graph.getSearchIndex().addOrUpdateElement(graph, edge.prepareMutation().deleteElement(), user);
         } else if (element instanceof Vertex) {
             Vertex vertex = (Vertex) element;
             if (!((InMemoryVertex) vertex).canRead(user)) {
@@ -637,7 +637,7 @@ class InMemoryElementMutationBuilder {
 
             vertices.getTableElement(vertex.getId()).appendSoftDeleteMutation(timestamp, eventData);
 
-            graph.getSearchIndex().deleteElement(graph, vertex, user);
+            graph.getSearchIndex().addOrUpdateElement(graph, vertex.prepareMutation().deleteElement(), user);
         } else {
             throw new VertexiumException("Unhandled element type: " + element);
         }
@@ -655,7 +655,7 @@ class InMemoryElementMutationBuilder {
             deleteAllExtendedDataForElement(edge, user);
 
             edges.remove(edge.getId());
-            graph.getSearchIndex().deleteElement(graph, edge, user);
+            graph.getSearchIndex().addOrUpdateElement(graph, edge.prepareMutation().deleteElement(), user);
         } else if (element instanceof Vertex) {
             Vertex vertex = (Vertex) element;
             if (!((InMemoryVertex) vertex).canRead(user)) {
@@ -668,7 +668,7 @@ class InMemoryElementMutationBuilder {
             deleteAllExtendedDataForElement(vertex, user);
 
             vertices.remove(vertex.getId());
-            graph.getSearchIndex().deleteElement(graph, vertex, user);
+            graph.getSearchIndex().addOrUpdateElement(graph, vertex.prepareMutation().deleteElement(), user);
         } else {
             throw new VertexiumException("Unhandled element type: " + element);
         }

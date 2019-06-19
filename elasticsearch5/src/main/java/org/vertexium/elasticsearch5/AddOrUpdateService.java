@@ -157,9 +157,16 @@ class AddOrUpdateService {
         IndexInfo indexInfo = indexService.addPropertiesToIndex(graph, mutation, mutation.getProperties());
 
         mutation.getMarkPropertyHiddenData().forEach(p -> {
-            String hiddenVisibilityPropertyName = propertyNameService.addVisibilityToPropertyName(graph, HIDDEN_PROPERTY_FIELD_NAME, p.getVisibility());
             if (!indexService.isPropertyInIndex(graph, HIDDEN_PROPERTY_FIELD_NAME, p.getVisibility())) {
+                String hiddenVisibilityPropertyName = propertyNameService.addVisibilityToPropertyName(graph, HIDDEN_PROPERTY_FIELD_NAME, p.getVisibility());
                 indexService.addPropertyToIndex(graph, indexInfo, hiddenVisibilityPropertyName, p.getVisibility(), Boolean.class, false, false, false);
+            }
+        });
+
+        mutation.getMarkHiddenData().forEach(h -> {
+            String hiddenVisibilityPropertyName = propertyNameService.addVisibilityToPropertyName(graph, HIDDEN_VERTEX_FIELD_NAME, h.getVisibility());
+            if (!indexService.isPropertyInIndex(graph, hiddenVisibilityPropertyName, h.getVisibility())) {
+                indexService.addPropertyToIndex(graph, indexInfo, hiddenVisibilityPropertyName, h.getVisibility(), Boolean.class, false, false, false);
             }
         });
 
@@ -220,6 +227,11 @@ class AddOrUpdateService {
             fieldsToSet.put(hiddenVisibilityPropertyName, true);
         });
 
+        mutation.getMarkHiddenData().forEach(h -> {
+            String hiddenVisibilityPropertyName = propertyNameService.addVisibilityToPropertyName(graph, HIDDEN_VERTEX_FIELD_NAME, h.getVisibility());
+            fieldsToSet.put(hiddenVisibilityPropertyName, true);
+        });
+
         return fieldsToSet;
     }
 
@@ -247,6 +259,13 @@ class AddOrUpdateService {
         mutation.getMarkPropertyVisibleData().forEach(p -> {
             String hiddenVisibilityPropertyName = propertyNameService.addVisibilityToPropertyName(graph, HIDDEN_PROPERTY_FIELD_NAME, p.getVisibility());
             if (indexService.isPropertyInIndex(graph, HIDDEN_PROPERTY_FIELD_NAME, p.getVisibility())) {
+                fieldsToRemove.add(hiddenVisibilityPropertyName);
+            }
+        });
+
+        mutation.getMarkVisibleData().forEach(v -> {
+            String hiddenVisibilityPropertyName = propertyNameService.addVisibilityToPropertyName(graph, HIDDEN_VERTEX_FIELD_NAME, v.getVisibility());
+            if (indexService.isPropertyInIndex(graph, hiddenVisibilityPropertyName, v.getVisibility())) {
                 fieldsToRemove.add(hiddenVisibilityPropertyName);
             }
         });

@@ -32,32 +32,6 @@ public class DefaultSearchIndex implements SearchIndex {
     }
 
     @Override
-    public void markElementHidden(Graph graph, Element element, Visibility visibility, User user) {
-        checkNotNull(element, "element cannot be null");
-        checkNotNull(visibility, "visibility cannot be null");
-    }
-
-    @Override
-    public void markElementVisible(Graph graph, ElementLocation elementLocation, Visibility visibility, User user) {
-        checkNotNull(elementLocation, "elementLocation cannot be null");
-        checkNotNull(visibility, "visibility cannot be null");
-    }
-
-    @Override
-    public void markPropertyHidden(Graph graph, ElementLocation elementLocation, Property property, Visibility visibility, User user) {
-        checkNotNull(elementLocation, "elementLocation cannot be null");
-        checkNotNull(property, "property cannot be null");
-        checkNotNull(visibility, "visibility cannot be null");
-    }
-
-    @Override
-    public void markPropertyVisible(Graph graph, ElementLocation elementLocation, Property property, Visibility visibility, User user) {
-        checkNotNull(elementLocation, "elementLocation cannot be null");
-        checkNotNull(property, "property cannot be null");
-        checkNotNull(visibility, "visibility cannot be null");
-    }
-
-    @Override
     public <T extends Element> void alterElementVisibility(
         Graph graph,
         ExistingElementMutation<T> elementMutation,
@@ -67,11 +41,6 @@ public class DefaultSearchIndex implements SearchIndex {
     ) {
         checkNotNull(elementMutation, "elementMutation cannot be null");
         checkNotNull(newVisibility, "newVisibility cannot be null");
-    }
-
-    @Override
-    public void deleteElement(Graph graph, Element element, User user) {
-        checkNotNull(element, "element cannot be null");
     }
 
     @Override

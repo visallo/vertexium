@@ -26,31 +26,6 @@ public class Elasticsearch5GraphSearchIndex implements SearchIndex {
     }
 
     @Override
-    public void deleteElement(Graph graph, Element element, User user) {
-        throw new VertexiumException("not implemented");
-    }
-
-    @Override
-    public void markElementHidden(Graph graph, Element element, Visibility visibility, User user) {
-        throw new VertexiumException("not implemented");
-    }
-
-    @Override
-    public void markElementVisible(Graph graph, ElementLocation elementLocation, Visibility visibility, User user) {
-        throw new VertexiumException("not implemented");
-    }
-
-    @Override
-    public void markPropertyHidden(Graph graph, ElementLocation elementLocation, Property property, Visibility visibility, User user) {
-        throw new VertexiumException("not implemented");
-    }
-
-    @Override
-    public void markPropertyVisible(Graph graph, ElementLocation elementLocation, Property property, Visibility visibility, User user) {
-        throw new VertexiumException("not implemented");
-    }
-
-    @Override
     public void deleteProperty(Graph graph, Element element, PropertyDescriptor property, User user) {
         throw new VertexiumException("not implemented");
     }

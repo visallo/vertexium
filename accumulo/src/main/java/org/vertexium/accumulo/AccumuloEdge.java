@@ -155,17 +155,15 @@ public class AccumuloEdge extends AccumuloElement implements Edge {
         return new ExistingEdgeMutation(this) {
             @Override
             public String save(User user) {
-                return saveEdge(user).getId();
+                saveExistingElementMutation(this, user);
+                return getId();
             }
 
             @Override
             public Edge save(Authorizations authorizations) {
-                return saveEdge(authorizations.getUser());
-            }
-
-            private Edge saveEdge(User user) {
-                saveExistingElementMutation(this, user);
-                return getElement();
+                saveExistingElementMutation(this, authorizations.getUser());
+                getGraph().flush();
+                return getGraph().getEdge(getId(), getElement().getFetchHints(), authorizations);
             }
         };
     }

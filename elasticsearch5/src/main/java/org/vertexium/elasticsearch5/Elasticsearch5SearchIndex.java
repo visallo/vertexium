@@ -20,7 +20,6 @@ import org.elasticsearch.common.bytes.BytesArray;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -276,7 +275,11 @@ public class Elasticsearch5SearchIndex implements SearchIndex {
 
     @Override
     public <TElement extends Element> void addOrUpdateElement(Graph graph, ElementMutation<TElement> mutation, User user) {
-        addOrUpdateService.addOrUpdateElement(mutation);
+        if (mutation.isDeleteElement() || mutation.getSoftDeleteData() != null) {
+            deleteElement(graph, mutation, user);
+        } else {
+            addOrUpdateService.addOrUpdateElement(mutation);
+        }
     }
 
     @Override
@@ -431,91 +434,6 @@ public class Elasticsearch5SearchIndex implements SearchIndex {
         }
     }
 
-    @Override
-    public void markElementHidden(Graph graph, Element element, Visibility visibility, User user) {
-        try {
-            String hiddenVisibilityPropertyName = propertyNameService.addVisibilityToPropertyName(graph, HIDDEN_VERTEX_FIELD_NAME, visibility);
-            String indexName = indexService.getIndexName(element);
-            if (!indexService.isPropertyInIndex(graph, HIDDEN_VERTEX_FIELD_NAME, visibility)) {
-                IndexInfo indexInfo = indexService.ensureIndexCreatedAndInitialized(indexName);
-                indexService.addPropertyToIndex(graph, indexInfo, hiddenVisibilityPropertyName, visibility, Boolean.class, false, false, false);
-            }
-
-            XContentBuilder jsonBuilder = XContentFactory.jsonBuilder().startObject();
-            jsonBuilder.field(hiddenVisibilityPropertyName, true);
-            jsonBuilder.endObject();
-
-            indexService.pushChange(indexName);
-            getClient()
-                .prepareUpdate(indexName, getIdStrategy().getType(), getIdStrategy().createElementDocId(element))
-                .setDoc(jsonBuilder)
-                .setRetryOnConflict(FlushObjectQueue.MAX_RETRIES)
-                .get();
-            indexService.pushChange(indexName);
-        } catch (IOException e) {
-            throw new VertexiumException("Could not mark element hidden", e);
-        }
-    }
-
-    @Override
-    public void markElementVisible(
-        Graph graph,
-        ElementLocation elementLocation,
-        Visibility visibility,
-        User user
-    ) {
-        String hiddenVisibilityPropertyName = propertyNameService.addVisibilityToPropertyName(graph, HIDDEN_VERTEX_FIELD_NAME, visibility);
-        if (indexService.isPropertyInIndex(graph, HIDDEN_VERTEX_FIELD_NAME, visibility)) {
-            removeFieldsFromDocument(graph, elementLocation, hiddenVisibilityPropertyName);
-        }
-    }
-
-    @Override
-    public void markPropertyHidden(
-        Graph graph,
-        ElementLocation elementLocation,
-        Property property,
-        Visibility visibility,
-        User user
-    ) {
-        try {
-            String hiddenVisibilityPropertyName = propertyNameService.addVisibilityToPropertyName(graph, HIDDEN_PROPERTY_FIELD_NAME, visibility);
-            String indexName = indexService.getIndexName(elementLocation);
-            if (!indexService.isPropertyInIndex(graph, HIDDEN_PROPERTY_FIELD_NAME, visibility)) {
-                IndexInfo indexInfo = indexService.ensureIndexCreatedAndInitialized(indexName);
-                indexService.addPropertyToIndex(graph, indexInfo, hiddenVisibilityPropertyName, visibility, Boolean.class, false, false, false);
-            }
-
-            XContentBuilder jsonBuilder = XContentFactory.jsonBuilder().startObject();
-            jsonBuilder.field(hiddenVisibilityPropertyName, true);
-            jsonBuilder.endObject();
-
-            getClient()
-                .prepareUpdate(indexName, getIdStrategy().getType(), getIdStrategy().createElementDocId(elementLocation))
-                .setDoc(jsonBuilder)
-                .setRetryOnConflict(FlushObjectQueue.MAX_RETRIES)
-                .get();
-            indexService.pushChange(indexName);
-        } catch (IOException e) {
-            throw new VertexiumException("Could not mark element hidden", e);
-        }
-    }
-
-    @Override
-    public void markPropertyVisible(
-        Graph graph,
-        ElementLocation elementLocation,
-        Property property,
-        Visibility visibility,
-        User user
-    ) {
-        String hiddenVisibilityPropertyName = propertyNameService.addVisibilityToPropertyName(graph, HIDDEN_PROPERTY_FIELD_NAME, visibility);
-        if (indexService.isPropertyInIndex(graph, HIDDEN_PROPERTY_FIELD_NAME, visibility)) {
-            removeFieldsFromDocument(graph, elementLocation, hiddenVisibilityPropertyName);
-        }
-    }
-
-
     public boolean isServerPluginInstalled() {
         return serverPluginInstalled;
     }
@@ -540,14 +458,13 @@ public class Elasticsearch5SearchIndex implements SearchIndex {
         throw new VertexiumException("Could not get aggregation name from: " + name);
     }
 
-    @Override
-    public void deleteElement(Graph graph, Element element, User user) {
-        deleteExtendedDataForElement(element);
+    private void deleteElement(Graph graph, ElementLocation elementLocation, User user) {
+        deleteExtendedDataForElement(elementLocation);
 
-        String indexName = indexService.getIndexName(element);
-        String docId = getIdStrategy().createElementDocId(element);
+        String indexName = indexService.getIndexName(elementLocation);
+        String docId = getIdStrategy().createElementDocId(elementLocation);
         if (MUTATION_LOGGER.isTraceEnabled()) {
-            LOGGER.trace("deleting document %s (docId: %s)", element.getId(), docId);
+            LOGGER.trace("deleting document %s (docId: %s)", elementLocation.getId(), docId);
         }
         indexService.pushChange(indexName);
         getClient().delete(
@@ -557,9 +474,9 @@ public class Elasticsearch5SearchIndex implements SearchIndex {
         ).actionGet();
     }
 
-    private void deleteExtendedDataForElement(Element element) {
+    private void deleteExtendedDataForElement(ElementLocation elementLocatiaon) {
         try {
-            QueryBuilder filter = QueryBuilders.termQuery(ELEMENT_ID_FIELD_NAME, element.getId());
+            QueryBuilder filter = QueryBuilders.termQuery(ELEMENT_ID_FIELD_NAME, elementLocatiaon.getId());
 
             SearchRequestBuilder s = getClient().prepareSearch(indexService.getIndicesToQuery())
                 .setTypes(getIdStrategy().getType())
@@ -578,7 +495,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex {
                 getClient().prepareDelete(hit.getIndex(), hit.getType(), hit.getId()).execute().actionGet();
             }
         } catch (Exception ex) {
-            throw new VertexiumException("Could not delete extended data for element: " + element.getId());
+            throw new VertexiumException("Could not delete extended data for element: " + elementLocatiaon.getId());
         }
     }
 

@@ -322,6 +322,7 @@ public class AccumuloGraph extends GraphBase implements Traceable {
             @Override
             public Vertex save(Authorizations authorizations) {
                 getElementMutationBuilder().saveVertexMutation(this, timestampLong, authorizations.getUser());
+                AccumuloGraph.this.flush();
                 return createVertex(authorizations.getUser());
             }
 
@@ -450,6 +451,7 @@ public class AccumuloGraph extends GraphBase implements Traceable {
             @Override
             public Edge save(Authorizations authorizations) {
                 elementMutationBuilder.saveEdgeMutation(this, timestampLong, authorizations.getUser());
+                AccumuloGraph.this.flush();
                 return createEdge(authorizations.getUser());
             }
 
@@ -484,6 +486,7 @@ public class AccumuloGraph extends GraphBase implements Traceable {
             @Override
             public Edge save(Authorizations authorizations) {
                 elementMutationBuilder.saveEdgeMutation(this, timestampLong, authorizations.getUser());
+                AccumuloGraph.this.flush();
                 return AccumuloGraph.this.getEdge(getId(), authorizations.getUser());
             }
         };

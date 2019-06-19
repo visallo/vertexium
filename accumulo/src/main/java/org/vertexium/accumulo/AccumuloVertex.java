@@ -413,17 +413,15 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
         return new ExistingElementMutationBase<Vertex>(this) {
             @Override
             public String save(User user) {
-                return saveVertex(user).getId();
+                saveExistingElementMutation(this, user);
+                return getId();
             }
 
             @Override
             public Vertex save(Authorizations authorizations) {
-                return saveVertex(authorizations.getUser());
-            }
-
-            private Vertex saveVertex(User user) {
-                saveExistingElementMutation(this, user);
-                return getElement();
+                saveExistingElementMutation(this, authorizations.getUser());
+                getGraph().flush();
+                return getGraph().getVertex(getId(), getElement().getFetchHints(), authorizations);
             }
         };
     }

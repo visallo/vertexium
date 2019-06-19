@@ -38,38 +38,28 @@ public interface SearchIndex {
 
     @FutureDeprecation
     default void deleteElement(Graph graph, Element element, Authorizations authorizations) {
-        deleteElement(graph, element, authorizations.getUser());
+        addOrUpdateElement(graph, element.prepareMutation().deleteElement(), authorizations.getUser());
     }
-
-    void deleteElement(Graph graph, Element element, User user);
 
     @FutureDeprecation
     default void markElementHidden(Graph graph, Element element, Visibility visibility, Authorizations authorizations) {
-        markElementHidden(graph, element, visibility, authorizations.getUser());
+        addOrUpdateElement(graph, element.prepareMutation().markElementHidden(visibility), authorizations.getUser());
     }
-
-    void markElementHidden(Graph graph, Element element, Visibility visibility, User user);
 
     @FutureDeprecation
-    default void markElementVisible(Graph graph, ElementLocation elementLocation, Visibility visibility, Authorizations authorizations) {
-        markElementVisible(graph, elementLocation, visibility, authorizations.getUser());
+    default void markElementVisible(Graph graph, Element element, Visibility visibility, Authorizations authorizations) {
+        addOrUpdateElement(graph, element.prepareMutation().markElementVisible(visibility), authorizations.getUser());
     }
-
-    void markElementVisible(Graph graph, ElementLocation elementLocation, Visibility visibility, User user);
 
     @FutureDeprecation
-    default void markPropertyHidden(Graph graph, ElementLocation elementLocation, Property property, Visibility visibility, Authorizations authorizations) {
-        markPropertyHidden(graph, elementLocation, property, visibility, authorizations.getUser());
+    default void markPropertyHidden(Graph graph, Element element, Property property, Visibility visibility, Authorizations authorizations) {
+        addOrUpdateElement(graph, element.prepareMutation().markPropertyHidden(property, visibility), authorizations.getUser());
     }
-
-    void markPropertyHidden(Graph graph, ElementLocation elementLocation, Property property, Visibility visibility, User user);
 
     @FutureDeprecation
-    default void markPropertyVisible(Graph graph, ElementLocation elementLocation, Property property, Visibility visibility, Authorizations authorizations) {
-        markPropertyVisible(graph, elementLocation, property, visibility, authorizations.getUser());
+    default void markPropertyVisible(Graph graph, Element element, Property property, Visibility visibility, Authorizations authorizations) {
+        addOrUpdateElement(graph, element.prepareMutation().markPropertyVisible(property, visibility), authorizations.getUser());
     }
-
-    void markPropertyVisible(Graph graph, ElementLocation elementLocation, Property property, Visibility visibility, User user);
 
     /**
      * Default delete property simply calls deleteProperty in a loop. It is up to the SearchIndex implementation to decide
