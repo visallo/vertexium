@@ -44,11 +44,7 @@ public class AccumuloFindPathStrategy {
         if (labels == null) {
             return null;
         }
-        Set<String> results = new HashSet<>();
-        for (int i = 0; i < labels.length; i++) {
-            results.add(labels[i]);
-        }
-        return results;
+        return new HashSet<>(Arrays.asList(labels));
     }
 
     public Stream<Path> findPaths() {

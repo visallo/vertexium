@@ -45,11 +45,6 @@ public abstract class AccumuloVertexBuilder extends VertexBuilder implements Ver
         return results;
     }
 
-    @Override
-    public abstract Vertex save(Authorizations authorizations);
-
-    protected abstract AccumuloVertex createVertex(User user);
-
     public ElementMutationBuilder getElementMutationBuilder() {
         return elementMutationBuilder;
     }

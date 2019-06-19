@@ -51,7 +51,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static org.vertexium.VertexiumObjectType.getTypeFromElement;
 import static org.vertexium.util.IterableUtils.singleOrDefault;
 import static org.vertexium.util.IterableUtils.toList;
 import static org.vertexium.util.StreamUtils.stream;
@@ -326,15 +325,10 @@ public class AccumuloGraph extends GraphBase implements Traceable {
                 return createVertex(authorizations.getUser());
             }
 
-            @Override
             protected AccumuloVertex createVertex(User user) {
                 return (AccumuloVertex) AccumuloGraph.this.getVertex(getId(), user);
             }
         };
-    }
-
-    protected void addMutations(Element element, Mutation... mutations) {
-        addMutations(getTypeFromElement(element), mutations);
     }
 
     protected void addMutations(VertexiumObjectType objectType, Mutation... mutations) {

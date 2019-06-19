@@ -11,8 +11,6 @@ import org.vertexium.accumulo.iterator.EdgeIterator;
 import org.vertexium.accumulo.iterator.model.ElementData;
 import org.vertexium.accumulo.util.DataInputStreamUtils;
 import org.vertexium.mutation.ExistingEdgeMutation;
-import org.vertexium.mutation.PropertyDeleteMutation;
-import org.vertexium.mutation.PropertySoftDeleteMutation;
 
 import javax.annotation.Nullable;
 import java.io.ByteArrayInputStream;
@@ -27,7 +25,6 @@ public class AccumuloEdge extends AccumuloElement implements Edge {
     private final String outVertexId;
     private final String inVertexId;
     private final String label;
-    private final String newEdgeLabel;
 
     public AccumuloEdge(
         Graph graph,
@@ -35,11 +32,8 @@ public class AccumuloEdge extends AccumuloElement implements Edge {
         String outVertexId,
         String inVertexId,
         String label,
-        String newEdgeLabel,
         Visibility visibility,
         Iterable<Property> properties,
-        Iterable<PropertyDeleteMutation> propertyDeleteMutations,
-        Iterable<PropertySoftDeleteMutation> propertySoftDeleteMutations,
         Iterable<Visibility> hiddenVisibilities,
         Iterable<String> additionalVisibilities,
         ImmutableSet<String> extendedDataTableNames,
@@ -52,8 +46,6 @@ public class AccumuloEdge extends AccumuloElement implements Edge {
             id,
             visibility,
             properties,
-            propertyDeleteMutations,
-            propertySoftDeleteMutations,
             hiddenVisibilities,
             additionalVisibilities,
             extendedDataTableNames,
@@ -64,7 +56,6 @@ public class AccumuloEdge extends AccumuloElement implements Edge {
         this.outVertexId = outVertexId;
         this.inVertexId = inVertexId;
         this.label = label;
-        this.newEdgeLabel = newEdgeLabel;
     }
 
     public static Edge createFromIteratorValue(
@@ -111,11 +102,8 @@ public class AccumuloEdge extends AccumuloElement implements Edge {
                 outVertexId,
                 inVertexId,
                 label,
-                null,
                 vertexVisibility,
                 properties,
-                null,
-                null,
                 hiddenVisibilities,
                 additionalVisibilities,
                 extendedDataTableNames,
@@ -126,10 +114,6 @@ public class AccumuloEdge extends AccumuloElement implements Edge {
         } catch (IOException ex) {
             throw new VertexiumException("Could not read vertex", ex);
         }
-    }
-
-    String getNewEdgeLabel() {
-        return newEdgeLabel;
     }
 
     @Override

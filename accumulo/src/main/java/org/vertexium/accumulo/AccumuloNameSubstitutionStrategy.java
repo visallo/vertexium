@@ -25,7 +25,6 @@ public class AccumuloNameSubstitutionStrategy implements NameSubstitutionStrateg
 
     @Override
     public void setup(Map config) {
-        return;
     }
 
     @Override

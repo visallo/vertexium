@@ -399,11 +399,6 @@ public class InMemoryGraph extends GraphBase {
     }
 
     @Override
-    public boolean isVisibilityValid(Visibility visibility, Authorizations authorizations) {
-        return authorizations.canRead(visibility);
-    }
-
-    @Override
     public boolean isVisibilityValid(Visibility visibility, User user) {
         return user.canRead(visibility);
     }

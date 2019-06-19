@@ -45,9 +45,6 @@ public class DataTableRowKey extends KeyBase {
     }
 
     public static boolean isLegacy(String dataRowKey) {
-        if (StringUtils.countMatches(dataRowKey, "" + VALUE_SEPARATOR) == LEGACY_VALUE_SEPARATOR_COUNT) {
-            return true;
-        }
-        return false;
+        return StringUtils.countMatches(dataRowKey, "" + VALUE_SEPARATOR) == LEGACY_VALUE_SEPARATOR_COUNT;
     }
 }

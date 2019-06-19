@@ -18,7 +18,6 @@ import org.vertexium.util.PropertyCollection;
 
 import java.io.Serializable;
 import java.util.Set;
-import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.stream.Stream;
 
 import static org.vertexium.util.StreamUtils.toIterable;
@@ -57,8 +56,6 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
 
     private final PropertyCollection properties;
     private final ImmutableSet<String> extendedDataTableNames;
-    private ConcurrentSkipListSet<PropertyDeleteMutation> propertyDeleteMutations;
-    private ConcurrentSkipListSet<PropertySoftDeleteMutation> propertySoftDeleteMutations;
     private final User user;
 
     protected AccumuloElement(
@@ -66,8 +63,6 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
         String id,
         Visibility visibility,
         Iterable<Property> properties,
-        Iterable<PropertyDeleteMutation> propertyDeleteMutations,
-        Iterable<PropertySoftDeleteMutation> propertySoftDeleteMutations,
         Iterable<Visibility> hiddenVisibilities,
         Iterable<String> additionalVisibilities,
         ImmutableSet<String> extendedDataTableNames,
@@ -92,7 +87,9 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
         }
         this.hiddenVisibilities = hiddenVisibilityBuilder.build();
         this.additionalVisibilities = Sets.newHashSet(additionalVisibilities);
-        updatePropertiesInternal(properties, propertyDeleteMutations, propertySoftDeleteMutations);
+        for (Property property : properties) {
+            addPropertyInternal(property);
+        }
     }
 
     @Override
@@ -167,10 +164,6 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
         return timestamp;
     }
 
-    protected void setVisibility(Visibility visibility) {
-        this.visibility = visibility;
-    }
-
     @Override
     public Iterable<Property> getProperties() {
         if (!getFetchHints().isIncludeProperties()) {
@@ -179,56 +172,7 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
         return this.properties.getProperties();
     }
 
-    public Iterable<PropertyDeleteMutation> getPropertyDeleteMutations() {
-        return this.propertyDeleteMutations;
-    }
-
-    public Iterable<PropertySoftDeleteMutation> getPropertySoftDeleteMutations() {
-        return this.propertySoftDeleteMutations;
-    }
-
-    // this method differs setProperties in that it only updates the in memory representation of the properties
-    protected void updatePropertiesInternal(
-        Iterable<Property> properties,
-        Iterable<PropertyDeleteMutation> propertyDeleteMutations,
-        Iterable<PropertySoftDeleteMutation> propertySoftDeleteMutations
-    ) {
-        if (propertyDeleteMutations != null) {
-            this.propertyDeleteMutations = new ConcurrentSkipListSet<>();
-            for (PropertyDeleteMutation propertyDeleteMutation : propertyDeleteMutations) {
-                removePropertyInternal(
-                    propertyDeleteMutation.getKey(),
-                    propertyDeleteMutation.getName(),
-                    propertyDeleteMutation.getVisibility()
-                );
-                this.propertyDeleteMutations.add(propertyDeleteMutation);
-            }
-        }
-        if (propertySoftDeleteMutations != null) {
-            this.propertySoftDeleteMutations = new ConcurrentSkipListSet<>();
-            for (PropertySoftDeleteMutation propertySoftDeleteMutation : propertySoftDeleteMutations) {
-                removePropertyInternal(
-                    propertySoftDeleteMutation.getKey(),
-                    propertySoftDeleteMutation.getName(),
-                    propertySoftDeleteMutation.getVisibility()
-                );
-                this.propertySoftDeleteMutations.add(propertySoftDeleteMutation);
-            }
-        }
-
-        for (Property property : properties) {
-            addPropertyInternal(property);
-        }
-    }
-
-    protected void removePropertyInternal(String key, String name, Visibility visibility) {
-        Property property = getProperty(key, name, visibility);
-        if (property != null) {
-            this.properties.removeProperty(property);
-        }
-    }
-
-    protected void addPropertyInternal(Property property) {
+    private void addPropertyInternal(Property property) {
         if (property.getKey() == null) {
             throw new IllegalArgumentException("key is required for property");
         }

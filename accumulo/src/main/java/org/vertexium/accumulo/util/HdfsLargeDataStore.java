@@ -48,7 +48,7 @@ public class HdfsLargeDataStore extends LimitOutputStream.LargeDataStore {
         return relativeFileName;
     }
 
-    private String createHdfsFileName(String rowKey, Property property) throws IOException {
+    private String createHdfsFileName(String rowKey, Property property) {
         String fileName = HdfsLargeDataStore.encodeFileName(property.getName() + "_" + property.getKey() + "_" + property.getTimestamp());
         return rowKey + "/" + fileName;
     }

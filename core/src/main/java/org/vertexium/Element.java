@@ -23,16 +23,6 @@ public interface Element extends VertexiumObject, ElementLocation {
     String ID_PROPERTY_NAME = "__ID__";
 
     /**
-     * id of the element.
-     */
-    String getId();
-
-    /**
-     * the visibility of the element.
-     */
-    Visibility getVisibility();
-
-    /**
      * The timestamp of when this element was updated.
      */
     long getTimestamp();

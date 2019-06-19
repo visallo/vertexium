@@ -29,19 +29,6 @@ public interface Edge extends Element, EdgeElementLocation {
     String IN_OR_OUT_VERTEX_ID_PROPERTY_NAME = "__inOrOutVertexId";
 
     /**
-     * The edge label.
-     */
-    String getLabel();
-
-    /**
-     * Get the attach vertex id on either side of the edge.
-     *
-     * @param direction The side of the edge to get the vertex id from (IN or OUT).
-     * @return The id of the vertex.
-     */
-    String getVertexId(Direction direction);
-
-    /**
      * Get the attach vertex on either side of the edge.
      *
      * @param direction The side of the edge to get the vertex from (IN or OUT).
