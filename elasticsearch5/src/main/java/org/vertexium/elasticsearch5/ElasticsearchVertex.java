@@ -26,22 +26,24 @@ public class ElasticsearchVertex extends ElasticsearchElement implements Vertex 
     }
 
     @Override
+    public Stream<Edge> getEdges(
+        Vertex otherVertex,
+        Direction direction,
+        String[] labels,
+        FetchHints fetchHints,
+        Long endTime,
+        User user
+    ) {
+        throw new VertexiumNotSupportedException("not supported on " + getClass().getSimpleName());
+    }
+
+    @Override
     public EdgesSummary getEdgesSummary(User user) {
         throw new VertexiumNotSupportedException("not supported on " + getClass().getSimpleName());
     }
 
     @Override
-    public Stream<EdgeInfo> getEdgeInfos(Direction direction, String[] labels, User user) {
-        throw new VertexiumNotSupportedException("not supported on " + getClass().getSimpleName());
-    }
-
-    @Override
-    public Stream<Edge> getEdges(Direction direction, String[] labels, FetchHints fetchHints, Long endTime, User user) {
-        throw new VertexiumNotSupportedException("not supported on " + getClass().getSimpleName());
-    }
-
-    @Override
-    public Stream<Edge> getEdges(Vertex otherVertex, Direction direction, String[] labels, FetchHints fetchHints, User user) {
+    public Stream<EdgeInfo> getEdgeInfos(Direction direction, String[] labels, Long endTime, User user) {
         throw new VertexiumNotSupportedException("not supported on " + getClass().getSimpleName());
     }
 }

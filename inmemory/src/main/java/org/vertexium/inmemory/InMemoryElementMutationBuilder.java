@@ -99,27 +99,26 @@ class InMemoryElementMutationBuilder {
     }
 
     public Edge savePreparedEdge(EdgeBuilderBase edgeBuilder, String outVertexId, String inVertexId, long timestamp, User user) {
-        long incrementingTimestamp = timestamp;
         InMemoryTableElement edgeTableElement = this.edges.getTableElement(edgeBuilder.getId());
         if (edgeTableElement == null) {
             edges.append(
                 edgeBuilder.getId(),
-                new AlterVisibilityMutation(incrementingTimestamp++, edgeBuilder.getVisibility(), null),
-                new ElementTimestampMutation(incrementingTimestamp++),
-                new AlterEdgeLabelMutation(incrementingTimestamp++, edgeBuilder.getEdgeLabel()),
-                new EdgeSetupMutation(incrementingTimestamp++, outVertexId, inVertexId)
+                new AlterVisibilityMutation(timestamp, edgeBuilder.getVisibility(), null),
+                new ElementTimestampMutation(timestamp),
+                new AlterEdgeLabelMutation(timestamp, edgeBuilder.getEdgeLabel()),
+                new EdgeSetupMutation(timestamp, outVertexId, inVertexId)
             );
         } else {
-            edges.append(edgeBuilder.getId(), new ElementTimestampMutation(incrementingTimestamp++));
+            edges.append(edgeBuilder.getId(), new ElementTimestampMutation(timestamp));
             if (edgeBuilder.getNewEdgeLabel() == null) {
                 AlterEdgeLabelMutation alterEdgeLabelMutation = (AlterEdgeLabelMutation) edgeTableElement.findLastMutation(AlterEdgeLabelMutation.class);
                 if (alterEdgeLabelMutation != null && !alterEdgeLabelMutation.getNewEdgeLabel().equals(edgeBuilder.getEdgeLabel())) {
-                    edges.append(edgeBuilder.getId(), new AlterEdgeLabelMutation(incrementingTimestamp++, edgeBuilder.getEdgeLabel()));
+                    edges.append(edgeBuilder.getId(), new AlterEdgeLabelMutation(timestamp, edgeBuilder.getEdgeLabel()));
                 }
             }
         }
         if (edgeBuilder.getNewEdgeLabel() != null) {
-            edges.append(edgeBuilder.getId(), new AlterEdgeLabelMutation(incrementingTimestamp, edgeBuilder.getNewEdgeLabel()));
+            edges.append(edgeBuilder.getId(), new AlterEdgeLabelMutation(timestamp, edgeBuilder.getNewEdgeLabel()));
         }
 
         InMemoryEdge edge = this.edges.get(graph, edgeBuilder.getId(), FetchHints.ALL_INCLUDING_HIDDEN, user);

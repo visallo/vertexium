@@ -126,18 +126,6 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
     }
 
     @Override
-    public Stream<String> getEdgeIds(Direction direction, String[] labels, User user) {
-        getFetchHints().validateHasEdgeFetchHints(direction, labels);
-        return getEdgeIdsWithOtherVertexId(null, direction, labels);
-    }
-
-    @Override
-    public Stream<Edge> getEdges(Vertex otherVertex, Direction direction, String[] labels, FetchHints fetchHints, User user) {
-        getFetchHints().validateHasEdgeFetchHints(direction, labels);
-        return getGraph().getEdges(toIterable(getEdgeIdsWithOtherVertexId(otherVertex.getId(), direction, labels)), fetchHints, user);
-    }
-
-    @Override
     public Stream<String> getEdgeIds(Vertex otherVertex, Direction direction, String[] labels, User user) {
         getFetchHints().validateHasEdgeFetchHints(direction, labels);
         return getEdgeIdsWithOtherVertexId(otherVertex.getId(), direction, labels);
@@ -199,8 +187,18 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
     }
 
     private Iterable<Map.Entry<Text, org.vertexium.accumulo.iterator.model.EdgeInfo>> getEdgeInfos(Direction direction) {
+        return getEdgeInfos(direction, (Long) null);
+    }
+
+    private Iterable<Map.Entry<Text, org.vertexium.accumulo.iterator.model.EdgeInfo>> getEdgeInfos(
+        Direction direction,
+        Long endTime
+    ) {
         if (!getFetchHints().isIncludeEdgeRefs()) {
             throw new VertexiumException("getEdgeInfos called without including any edge infos");
+        }
+        if (endTime == null) {
+            throw new VertexiumException("not implemented"); // TODO if vertex timestamp is same use the inEdges/outEdges if different re-query?
         }
         switch (direction) {
             case IN:
@@ -220,24 +218,24 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
                 }
                 throw new VertexiumException("Cannot get edge info");
             case BOTH:
-                return new JoinIterable<>(getEdgeInfos(Direction.IN), getEdgeInfos(Direction.OUT));
+                return new JoinIterable<>(getEdgeInfos(Direction.IN, endTime), getEdgeInfos(Direction.OUT, endTime));
             default:
                 throw new VertexiumException("Unexpected direction: " + direction);
         }
     }
 
     @Override
-    public Stream<org.vertexium.EdgeInfo> getEdgeInfos(Direction direction, String[] labels, User user) {
+    public Stream<org.vertexium.EdgeInfo> getEdgeInfos(Direction direction, String[] labels, Long endTime, User user) {
         if (!getFetchHints().isIncludeEdgeRefs()) {
             throw new VertexiumException("getEdgeInfos called without including any edge infos");
         }
         switch (direction) {
             case IN:
-                return filterEdgeInfosByLabel(accumuloEdgeInfosToEdgeInfos(getEdgeInfos(direction), Direction.IN), labels);
+                return filterEdgeInfosByLabel(accumuloEdgeInfosToEdgeInfos(getEdgeInfos(direction, endTime), Direction.IN), labels);
             case OUT:
-                return filterEdgeInfosByLabel(accumuloEdgeInfosToEdgeInfos(getEdgeInfos(direction), Direction.OUT), labels);
+                return filterEdgeInfosByLabel(accumuloEdgeInfosToEdgeInfos(getEdgeInfos(direction, endTime), Direction.OUT), labels);
             case BOTH:
-                return Stream.concat(getEdgeInfos(Direction.IN, labels, user), getEdgeInfos(Direction.OUT, labels, user));
+                return Stream.concat(getEdgeInfos(Direction.IN, labels, endTime, user), getEdgeInfos(Direction.OUT, labels, endTime, user));
             default:
                 throw new VertexiumException("Unexpected direction: " + direction);
         }
@@ -347,9 +345,21 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
     }
 
     @Override
-    public Stream<Edge> getEdges(Direction direction, String[] labels, FetchHints fetchHints, Long endTime, User user) {
+    public Stream<Edge> getEdges(
+        Vertex otherVertex,
+        Direction direction,
+        String[] labels,
+        FetchHints fetchHints,
+        Long endTime,
+        User user
+    ) {
         getFetchHints().validateHasEdgeFetchHints(direction, labels);
-        return getGraph().getEdges(toIterable(getEdgeIdsWithOtherVertexId(null, direction, labels)), fetchHints, endTime, user);
+        Iterable<String> ids = toIterable(getEdgeIdsWithOtherVertexId(
+            otherVertex == null ? null : otherVertex.getId(),
+            direction,
+            labels
+        ));
+        return getGraph().getEdges(ids, fetchHints, endTime, user);
     }
 
     @Override

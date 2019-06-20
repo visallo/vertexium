@@ -297,6 +297,9 @@ public class IndexService {
                     .startObject(FieldNames.MUTATION_TIMESTAMP).field("type", "date").field("store", "true").endObject()
                     .startObject(FieldNames.MUTATION_ELEMENT_TYPE).field("type", "keyword").field("store", "true").endObject()
                     .startObject(FieldNames.MUTATION_ELEMENT_ID).field("type", "keyword").field("store", "true").endObject()
+                    .startObject(FieldNames.MUTATION_OUT_VERTEX_ID).field("type", "keyword").field("store", "true").endObject()
+                    .startObject(FieldNames.MUTATION_IN_VERTEX_ID).field("type", "keyword").field("store", "true").endObject()
+                    .startObject(FieldNames.MUTATION_EDGE_LABEL).field("type", "keyword").field("store", "true").endObject()
                     .startObject(FieldNames.MUTATION_TYPE).field("type", "keyword").field("store", "true").endObject()
                     .startObject(FieldNames.MUTATION_DATA).field("type", "binary").field("store", "true").endObject();
                 XContentBuilder mapping = mappingBuilder.endObject()

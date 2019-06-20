@@ -29,6 +29,9 @@ public class FieldNames {
     public static final String MUTATION_ELEMENT_TYPE = "__mutElementType";
     public static final String MUTATION_ELEMENT_ID = "__mutElementId";
     public static final String MUTATION_TIMESTAMP = "__mutTimestamp";
+    public static final String MUTATION_OUT_VERTEX_ID = "__mutOutVertexId";
+    public static final String MUTATION_IN_VERTEX_ID = "__mutInVertexId";
+    public static final String MUTATION_EDGE_LABEL = "__mutEdgeLabel";
     public static final String MUTATION_TYPE = "__mutType";
     public static final String MUTATION_DATA = "__mutData";
 }

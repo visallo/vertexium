@@ -33,9 +33,9 @@ public class InMemoryVertex extends InMemoryElement<InMemoryVertex> implements V
     }
 
     @Override
-    public Stream<EdgeInfo> getEdgeInfos(Direction direction, String[] labels, User user) {
+    public Stream<EdgeInfo> getEdgeInfos(Direction direction, String[] labels, Long endTime, User user) {
         getFetchHints().validateHasEdgeFetchHints(direction, labels);
-        return internalGetEdgeInfo(direction, getFetchHints(), user)
+        return internalGetEdgeInfo(direction, endTime, getFetchHints(), user)
             .filter(o -> {
                 if (!getFetchHints().isIncludeEdgeRefLabel(o.getLabel())) {
                     return false;
@@ -53,8 +53,8 @@ public class InMemoryVertex extends InMemoryElement<InMemoryVertex> implements V
             });
     }
 
-    private Stream<EdgeInfo> internalGetEdgeInfo(Direction direction, FetchHints fetchHints, User user) {
-        return internalGetEdges(direction, null, fetchHints, null, user)
+    private Stream<EdgeInfo> internalGetEdgeInfo(Direction direction, Long endTime, FetchHints fetchHints, User user) {
+        return internalGetEdges(direction, null, fetchHints, endTime, user)
             .map(edge -> new EdgeInfo() {
                 @Override
                 public String getEdgeId() {
@@ -85,12 +85,6 @@ public class InMemoryVertex extends InMemoryElement<InMemoryVertex> implements V
             });
     }
 
-    @Override
-    public Stream<Edge> getEdges(Direction direction, String[] labels, FetchHints fetchHints, Long endTime, User user) {
-        getFetchHints().validateHasEdgeFetchHints(direction, labels);
-        return internalGetEdges(direction, labels, fetchHints, endTime, user);
-    }
-
     private Stream<Edge> internalGetEdges(Direction direction, String[] labels, FetchHints fetchHints, Long endTime, User user) {
         return getGraph().getEdgesFromVertex(getId(), fetchHints, endTime, user)
             .filter(edge -> {
@@ -117,9 +111,20 @@ public class InMemoryVertex extends InMemoryElement<InMemoryVertex> implements V
     }
 
     @Override
-    public Stream<Edge> getEdges(Vertex otherVertex, Direction direction, String[] labels, FetchHints fetchHints, User user) {
-        return getEdges(direction, labels, fetchHints, user)
-            .filter(edge -> edge.getOtherVertexId(getId()).equals(otherVertex.getId()));
+    public Stream<Edge> getEdges(
+        Vertex otherVertex,
+        Direction direction,
+        String[] labels,
+        FetchHints fetchHints,
+        Long endTime,
+        User user
+    ) {
+        getFetchHints().validateHasEdgeFetchHints(direction, labels);
+        Stream<Edge> edges = internalGetEdges(direction, labels, fetchHints, endTime, user);
+        if (otherVertex == null) {
+            return edges;
+        }
+        return edges.filter(edge -> edge.getOtherVertexId(getId()).equals(otherVertex.getId()));
     }
 
     @Override
@@ -129,13 +134,13 @@ public class InMemoryVertex extends InMemoryElement<InMemoryVertex> implements V
 
         FetchHints fetchHints = getFetchHints();
 
-        internalGetEdgeInfo(Direction.IN, fetchHints, user).forEach(entry -> {
+        internalGetEdgeInfo(Direction.IN, null, fetchHints, user).forEach(entry -> {
             String label = entry.getLabel();
             Integer c = inEdgeCountsByLabels.getOrDefault(label, 0);
             inEdgeCountsByLabels.put(label, c + 1);
         });
 
-        internalGetEdgeInfo(Direction.OUT, fetchHints, user).forEach(entry -> {
+        internalGetEdgeInfo(Direction.OUT, null, fetchHints, user).forEach(entry -> {
             String label = entry.getLabel();
             Integer c = outEdgeCountsByLabels.getOrDefault(label, 0);
             outEdgeCountsByLabels.put(label, c + 1);

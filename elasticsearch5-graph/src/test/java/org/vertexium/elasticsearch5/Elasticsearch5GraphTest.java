@@ -6,6 +6,8 @@ import org.elasticsearch.action.admin.cluster.node.stats.NodesStatsResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.io.stream.NotSerializableExceptionWrapper;
 import org.elasticsearch.index.search.stats.SearchStats;
+import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.SearchHitField;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -17,7 +19,10 @@ import org.vertexium.query.QueryResultsIterable;
 import org.vertexium.scoring.ScoringStrategy;
 import org.vertexium.test.GraphTestBase;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Stream;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -299,5 +304,32 @@ public class Elasticsearch5GraphTest extends GraphTestBase {
     @Override
     protected boolean isAddWithoutIndexingSupported() {
         return false;
+    }
+
+    public SourceAndFields[] getElementsInSearchIndex() {
+        Client client = ((Elasticsearch5Graph) getGraph()).getClient();
+        Stream<SearchHit> stream = Arrays.stream(client
+            .prepareSearch("vertexium-test-edges", "vertexium-test-vertices")
+            .setFetchSource(true)
+            .storedFields("*")
+            .get()
+            .getHits()
+            .getHits());
+        return stream.map(sh -> new SourceAndFields(sh.getSource(), sh.getFields())).toArray(SourceAndFields[]::new);
+    }
+
+    public static class SourceAndFields {
+        private final Map<String, Object> source;
+        private final Map<String, SearchHitField> fields;
+
+        public SourceAndFields(Map<String, Object> source, Map<String, SearchHitField> fields) {
+            this.source = source;
+            this.fields = fields;
+        }
+
+        @Override
+        public String toString() {
+            return source.get(FieldNames.ELEMENT_TYPE) + ": " + source.get(FieldNames.ELEMENT_ID);
+        }
     }
 }

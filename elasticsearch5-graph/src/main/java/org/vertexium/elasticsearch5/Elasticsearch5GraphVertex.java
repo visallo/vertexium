@@ -135,29 +135,25 @@ public class Elasticsearch5GraphVertex extends Elasticsearch5GraphElement implem
 
     @Override
     public Stream<Edge> getEdges(
+        Vertex otherVertex,
         Direction direction,
         String[] labels,
         FetchHints fetchHints,
         Long endTime,
         User user
     ) {
-        return getEdges(
-            null,
-            direction,
-            labels,
-            fetchHints,
-            user
-        );
-    }
+        if (endTime != null) {
+            return getGraph().getMutationStore().getEdges(
+                getId(),
+                otherVertex == null ? null : otherVertex.getId(),
+                direction,
+                labels,
+                fetchHints,
+                endTime,
+                user
+            );
+        }
 
-    @Override
-    public Stream<Edge> getEdges(
-        Vertex otherVertex,
-        Direction direction,
-        String[] labels,
-        FetchHints fetchHints,
-        User user
-    ) {
         // TODO we don't actually need this fetch hint since this call results in a query. How should this be handled?
         getFetchHints().validateHasEdgeFetchHints(direction, labels);
 
@@ -222,9 +218,9 @@ public class Elasticsearch5GraphVertex extends Elasticsearch5GraphElement implem
     }
 
     @Override
-    public Stream<EdgeInfo> getEdgeInfos(Direction direction, String[] labels, User user) {
+    public Stream<EdgeInfo> getEdgeInfos(Direction direction, String[] labels, Long endTime, User user) {
         getFetchHints().validateHasEdgeFetchHints(direction, labels);
-        return internalGetEdgeInfo(direction, labels, getFetchHints(), user)
+        return internalGetEdgeInfo(direction, labels, getFetchHints(), endTime, user)
             .filter(o -> {
                 if (!getFetchHints().isIncludeEdgeRefLabel(o.getLabel())) {
                     return false;
@@ -242,9 +238,15 @@ public class Elasticsearch5GraphVertex extends Elasticsearch5GraphElement implem
             });
     }
 
-    private Stream<EdgeInfo> internalGetEdgeInfo(Direction direction, String[] labels, FetchHints fetchHints, User user) {
-        // TODO faster way to do this?
-        return getEdges(direction, labels, fetchHints, user)
+    private Stream<EdgeInfo> internalGetEdgeInfo(
+        Direction direction,
+        String[] labels,
+        FetchHints fetchHints,
+        Long endTime,
+        User user
+    ) {
+        // TODO faster way to do this? Store edge info in vertex?
+        return getEdges(direction, labels, fetchHints, endTime, user)
             .map(edge -> new EdgeInfo() {
                 @Override
                 public String getEdgeId() {

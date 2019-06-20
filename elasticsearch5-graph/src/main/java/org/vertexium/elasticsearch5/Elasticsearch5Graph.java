@@ -199,13 +199,21 @@ public class Elasticsearch5Graph extends GraphBase {
                 indexService.ensureMutationIndexCreatedAndInitialized(mutationIndexName);
 
                 // TODO should we store extended data mutation separately?
-                XContentBuilder doc = XContentFactory.jsonBuilder()
+                XContentBuilder docBuilder = XContentFactory.jsonBuilder()
                     .startObject()
                     .field(FieldNames.MUTATION_ELEMENT_TYPE, elementLocation.getElementType().name())
                     .field(FieldNames.MUTATION_ELEMENT_ID, elementLocation.getId())
                     .field(FieldNames.MUTATION_TIMESTAMP, mutation.getTimestamp())
                     .field(FieldNames.MUTATION_TYPE, mutation.getMutationCase().name())
-                    .field(FieldNames.MUTATION_DATA, mutation.toByteArray())
+                    .field(FieldNames.MUTATION_DATA, mutation.toByteArray());
+                if (elementLocation.getElementType() == ElementType.EDGE) {
+                    EdgeElementLocation edgeElementLocation = (EdgeElementLocation) elementLocation;
+                    docBuilder = docBuilder
+                        .field(FieldNames.MUTATION_OUT_VERTEX_ID, edgeElementLocation.getVertexId(Direction.OUT))
+                        .field(FieldNames.MUTATION_IN_VERTEX_ID, edgeElementLocation.getVertexId(Direction.IN))
+                        .field(FieldNames.MUTATION_EDGE_LABEL, edgeElementLocation.getLabel());
+                }
+                XContentBuilder doc = docBuilder
                     .endObject();
                 IndexRequestBuilder indexRequest = getClient().prepareIndex() // TODO: should we handle updates?
                     .setIndex(mutationIndexName)
@@ -634,7 +642,7 @@ public class Elasticsearch5Graph extends GraphBase {
     public Edge getEdge(String edgeId, FetchHints fetchHints, Long endTime, User user) {
         validateAuthorizations(user);
         if (endTime != null) {
-            return mutationStore.getEdge(edgeId, fetchHints, endTime, user);
+            return mutationStore.getEdges(edgeId, fetchHints, endTime, user);
         }
         // TODO switch to new query api
         return stream(query(new Elasticsearch5GraphAuthorizations(user.getAuthorizations()))
@@ -938,5 +946,9 @@ public class Elasticsearch5Graph extends GraphBase {
             return;
         }
         exceptionHandler.handleDocumentMissingException(this, flushObject, ex);
+    }
+
+    MutationStore getMutationStore() {
+        return mutationStore;
     }
 }
