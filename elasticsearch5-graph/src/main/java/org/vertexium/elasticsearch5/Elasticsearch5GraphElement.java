@@ -250,7 +250,7 @@ public abstract class Elasticsearch5GraphElement extends ElementBase implements 
 
     @Override
     public Stream<HistoricalEvent> getHistoricalEvents(HistoricalEventId after, HistoricalEventsFetchHints fetchHints, User user) {
-        throw new VertexiumException("not implemented");
+        return graph.getMutationStore().getHistoricalEvents(after, fetchHints, user);
     }
 
     @Override

@@ -9,6 +9,8 @@ import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.sort.SortOrder;
 import org.vertexium.*;
 import org.vertexium.elasticsearch5.utils.SearchResponseUtils;
+import org.vertexium.historicalEvent.HistoricalEvent;
+import org.vertexium.historicalEvent.HistoricalEventId;
 
 import java.util.List;
 import java.util.Map;
@@ -155,5 +157,9 @@ public class MutationStore {
             .setQuery(query)
             .get();
         return SearchResponseUtils.scrollToIterable(graph.getClient(), response);
+    }
+
+    public Stream<HistoricalEvent> getHistoricalEvents(HistoricalEventId after, HistoricalEventsFetchHints fetchHints, User user) {
+        throw new VertexiumException("not implemented");
     }
 }

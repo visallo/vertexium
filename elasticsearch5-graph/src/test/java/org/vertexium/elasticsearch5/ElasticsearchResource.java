@@ -103,6 +103,7 @@ public class ElasticsearchResource extends ExternalResource {
                 runner.admin().indices().prepareDelete(index).execute().actionGet();
             }
         }
+        runner.admin().indices().prepareRefresh().get();
     }
 
     public void clearIndices(Elasticsearch5Graph graph) throws Exception {
