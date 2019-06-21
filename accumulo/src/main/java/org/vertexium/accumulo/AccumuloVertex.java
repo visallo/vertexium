@@ -198,7 +198,14 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
             throw new VertexiumException("getEdgeInfos called without including any edge infos");
         }
         if (endTime != null && endTime != getTimestamp()) {
-            throw new VertexiumException("not implemented"); // TODO if vertex timestamp is same use the inEdges/outEdges if different re-query?
+            FetchHints edgeRefFetchHints = new FetchHintsBuilder()
+                .setIncludeAllEdgeRefs(getFetchHints().isIncludeAllEdgeRefs())
+                .setIncludeInEdgeRefs(getFetchHints().isIncludeInEdgeRefs())
+                .setIncludeOutEdgeRefs(getFetchHints().isIncludeOutEdgeRefs())
+                .setEdgeLabelsOfEdgeRefsToInclude(getFetchHints().getEdgeLabelsOfEdgeRefsToInclude())
+                .build();
+            AccumuloVertex vertexAtEndTime = (AccumuloVertex) getGraph().getVertex(getId(), edgeRefFetchHints, endTime, getUser());
+            return vertexAtEndTime.getEdgeInfos(direction, endTime);
         }
         switch (direction) {
             case IN:
