@@ -6,6 +6,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import org.vertexium.*;
 import org.vertexium.scoring.ScoringStrategy;
+import org.vertexium.sorting.SortingStrategy;
 import org.vertexium.type.GeoShape;
 import org.vertexium.util.IterableUtils;
 import org.vertexium.util.SelectManyIterable;
@@ -278,7 +279,13 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
 
     @Override
     public Query sort(String propertyName, SortDirection direction) {
-        this.parameters.addSortContainer(new SortContainer(propertyName, direction));
+        this.parameters.addSortContainer(new PropertySortContainer(propertyName, direction));
+        return this;
+    }
+
+    @Override
+    public Query sort(SortingStrategy sortingStrategy, SortDirection direction) {
+        this.parameters.addSortContainer(new SortingStrategySortContainer(sortingStrategy, direction));
         return this;
     }
 
@@ -419,11 +426,15 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
         }
     }
 
-    public static class SortContainer {
+    public interface SortContainer {
+
+    }
+
+    public static class PropertySortContainer implements SortContainer {
         public final String propertyName;
         public final SortDirection direction;
 
-        public SortContainer(String propertyName, SortDirection direction) {
+        public PropertySortContainer(String propertyName, SortDirection direction) {
             this.propertyName = propertyName;
             this.direction = direction;
         }
@@ -432,6 +443,24 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
         public String toString() {
             return this.getClass().getName() + "{" +
                 "propertyName='" + propertyName + '\'' +
+                ", direction=" + direction +
+                '}';
+        }
+    }
+
+    public static class SortingStrategySortContainer implements SortContainer {
+        public final SortingStrategy sortingStrategy;
+        public final SortDirection direction;
+
+        public SortingStrategySortContainer(SortingStrategy sortingStrategy, SortDirection direction) {
+            this.sortingStrategy = sortingStrategy;
+            this.direction = direction;
+        }
+
+        @Override
+        public String toString() {
+            return "SortingStrategySortContainer{" +
+                "sortingStrategy=" + sortingStrategy +
                 ", direction=" + direction +
                 '}';
         }

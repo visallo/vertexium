@@ -24,6 +24,8 @@ import org.vertexium.scoring.ScoringStrategy;
 import org.vertexium.search.DefaultSearchIndex;
 import org.vertexium.search.IndexHint;
 import org.vertexium.search.SearchIndex;
+import org.vertexium.sorting.LengthOfStringSortingStrategy;
+import org.vertexium.sorting.SortingStrategy;
 import org.vertexium.test.util.LargeStringInputStream;
 import org.vertexium.type.*;
 import org.vertexium.util.*;
@@ -10098,6 +10100,51 @@ public abstract class GraphTestBase {
 
     protected ScoringStrategy getHammingDistanceScoringStrategy(String field, String hash) {
         return new HammingDistanceScoringStrategy(field, hash);
+    }
+
+    @Test
+    public void testGetLengthOfStringSortingStrategy() {
+        getGraph().defineProperty("prop1")
+            .dataType(String.class)
+            .sortable(true)
+            .textIndexHint(TextIndexHint.ALL)
+            .define();
+
+        getGraph().prepareVertex("v1", VISIBILITY_A)
+            .setProperty("prop1", "aaaaa", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
+        getGraph().prepareVertex("v2", VISIBILITY_A)
+            .setProperty("prop1", "bbb", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
+        getGraph().prepareVertex("v3", VISIBILITY_A)
+            .addPropertyValue("k1", "prop1", "zzzzzzz", VISIBILITY_A)
+            .addPropertyValue("k2", "prop1", "z", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
+        getGraph().prepareVertex("v4", VISIBILITY_A)
+            .setProperty("prop1", "cccc", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
+        getGraph().prepareVertex("v5", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
+        getGraph().prepareVertex("v6", VISIBILITY_A)
+            .addPropertyValue("k1", "prop1", "aaaaaaaaaaaaaaaaaaaaaa", VISIBILITY_B)
+            .addPropertyValue("k2", "prop1", "a", VISIBILITY_B)
+            .addPropertyValue("k3","prop1", "ddddd", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
+        getGraph().flush();
+
+        QueryResultsIterable<Vertex> vertices = getGraph().query(AUTHORIZATIONS_A)
+            .sort(getLengthOfStringSortingStrategy("prop1"), SortDirection.ASCENDING)
+            .vertices();
+        assertVertexIds(vertices, "v3", "v2", "v4", "v1", "v6", "v5");
+
+        vertices = getGraph().query(AUTHORIZATIONS_A)
+            .sort(getLengthOfStringSortingStrategy("prop1"), SortDirection.DESCENDING)
+            .vertices();
+        assertVertexIds(vertices, "v3", "v1", "v6", "v4", "v2", "v5");
+    }
+
+    protected SortingStrategy getLengthOfStringSortingStrategy(String propertyName) {
+        return new LengthOfStringSortingStrategy(propertyName);
     }
 
     @Test

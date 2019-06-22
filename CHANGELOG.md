@@ -1,5 +1,6 @@
-# v5.0.0
+# v4.7.0
 * Added: Element/Extended Data Row additional visibilities
+* Added: Sorting strategy
 
 # v4.6.0
 * Added: History for vertices, edges, and properties

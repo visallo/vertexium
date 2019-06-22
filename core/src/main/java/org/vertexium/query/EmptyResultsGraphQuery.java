@@ -2,6 +2,7 @@ package org.vertexium.query;
 
 import org.vertexium.*;
 import org.vertexium.scoring.ScoringStrategy;
+import org.vertexium.sorting.SortingStrategy;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -243,6 +244,11 @@ public class EmptyResultsGraphQuery implements Query {
 
     @Override
     public Query sort(String propertyName, SortDirection direction) {
+        return this;
+    }
+
+    @Override
+    public Query sort(SortingStrategy sortingStrategy, SortDirection direction) {
         return this;
     }
 

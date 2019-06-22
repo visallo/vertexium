@@ -42,11 +42,13 @@ import org.elasticsearch.search.sort.SortOrder;
 import org.joda.time.DateTime;
 import org.vertexium.*;
 import org.vertexium.elasticsearch5.scoring.ElasticsearchScoringStrategy;
+import org.vertexium.elasticsearch5.sorting.ElasticsearchSortingStrategy;
 import org.vertexium.elasticsearch5.utils.ElasticsearchTypes;
 import org.vertexium.elasticsearch5.utils.InfiniteScrollIterable;
 import org.vertexium.elasticsearch5.utils.PagingIterable;
 import org.vertexium.query.*;
 import org.vertexium.scoring.ScoringStrategy;
+import org.vertexium.sorting.SortingStrategy;
 import org.vertexium.type.*;
 import org.vertexium.util.IterableUtils;
 import org.vertexium.util.JoinIterable;
@@ -57,6 +59,7 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
@@ -294,105 +297,132 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
     }
 
     protected void applySort(SearchRequestBuilder q) {
-        boolean sortedById = false;
+        AtomicBoolean sortedById = new AtomicBoolean(false);
         for (SortContainer sortContainer : getParameters().getSortContainers()) {
-            SortOrder esOrder = sortContainer.direction == SortDirection.ASCENDING ? SortOrder.ASC : SortOrder.DESC;
-            if (Element.ID_PROPERTY_NAME.equals(sortContainer.propertyName)) {
-                q.addSort(Elasticsearch5SearchIndex.ELEMENT_ID_FIELD_NAME, esOrder);
-                sortedById = true;
-            } else if (Edge.LABEL_PROPERTY_NAME.equals(sortContainer.propertyName)) {
-                q.addSort(
-                    SortBuilders.fieldSort(Elasticsearch5SearchIndex.EDGE_LABEL_FIELD_NAME)
-                        .unmappedType(KEYWORD_UNMAPPED_TYPE)
-                        .order(esOrder)
-                );
-            } else if (Edge.OUT_VERTEX_ID_PROPERTY_NAME.equals(sortContainer.propertyName)) {
-                q.addSort(
-                    SortBuilders.fieldSort(Elasticsearch5SearchIndex.OUT_VERTEX_ID_FIELD_NAME)
-                        .unmappedType(KEYWORD_UNMAPPED_TYPE)
-                        .order(esOrder)
-                );
-            } else if (Edge.IN_VERTEX_ID_PROPERTY_NAME.equals(sortContainer.propertyName)) {
-                q.addSort(
-                    SortBuilders.fieldSort(Elasticsearch5SearchIndex.IN_VERTEX_ID_FIELD_NAME)
-                        .unmappedType(KEYWORD_UNMAPPED_TYPE)
-                        .order(esOrder)
-                );
-            } else if (Edge.IN_OR_OUT_VERTEX_ID_PROPERTY_NAME.equals(sortContainer.propertyName)) {
-                throw new VertexiumException("Cannot sort by " + Edge.IN_OR_OUT_VERTEX_ID_PROPERTY_NAME);
-            } else if (ExtendedDataRow.TABLE_NAME.equals(sortContainer.propertyName)) {
-                q.addSort(
-                    SortBuilders.fieldSort(Elasticsearch5SearchIndex.EXTENDED_DATA_TABLE_NAME_FIELD_NAME)
-                        .unmappedType(KEYWORD_UNMAPPED_TYPE)
-                        .order(esOrder)
-                );
-            } else if (ExtendedDataRow.ROW_ID.equals(sortContainer.propertyName)) {
-                q.addSort(
-                    SortBuilders.fieldSort(Elasticsearch5SearchIndex.EXTENDED_DATA_TABLE_ROW_ID_FIELD_NAME)
-                        .unmappedType(KEYWORD_UNMAPPED_TYPE)
-                        .order(esOrder)
-                );
-            } else if (ExtendedDataRow.ELEMENT_ID.equals(sortContainer.propertyName)) {
-                q.addSort(
-                    SortBuilders.fieldSort(Elasticsearch5SearchIndex.ELEMENT_ID_FIELD_NAME)
-                        .unmappedType(KEYWORD_UNMAPPED_TYPE)
-                        .order(esOrder)
-                );
-            } else if (ExtendedDataRow.ELEMENT_TYPE.equals(sortContainer.propertyName)) {
-                q.addSort(
-                    SortBuilders.fieldSort(Elasticsearch5SearchIndex.ELEMENT_TYPE_FIELD_NAME)
-                        .unmappedType(KEYWORD_UNMAPPED_TYPE)
-                        .order(esOrder)
-                );
+            if (sortContainer instanceof PropertySortContainer) {
+                applySortProperty(q, (PropertySortContainer) sortContainer, sortedById);
+            } else if (sortContainer instanceof SortingStrategySortContainer) {
+                applySortStrategy(q, (SortingStrategySortContainer) sortContainer);
             } else {
-                PropertyDefinition propertyDefinition = getGraph().getPropertyDefinition(sortContainer.propertyName);
-                if (propertyDefinition == null) {
-                    continue;
-                }
-                if (!getSearchIndex().isPropertyInIndex(getGraph(), sortContainer.propertyName)) {
-                    continue;
-                }
-                if (!propertyDefinition.isSortable()) {
-                    throw new VertexiumException("Cannot sort on non-sortable fields");
-                }
-
-                String[] propertyNames = getPropertyNames(propertyDefinition.getPropertyName());
-                if (propertyNames.length > 1) {
-                    String scriptSrc = "def fieldValues = []; for (def fieldName : params.fieldNames) { fieldValues.addAll(doc[fieldName].values); } " +
-                        "if (params.esOrder == 'asc') { Collections.sort(fieldValues); } else { Collections.sort(fieldValues, Collections.reverseOrder()); }" +
-                        "if (params.dataType == 'String') { return fieldValues; } else { return fieldValues.length > 0 ? fieldValues[0] : (params.esOrder == 'asc' ? Integer.MAX_VALUE : Integer.MIN_VALUE); }";
-
-                    List<String> fieldNames = Arrays.stream(propertyNames).map(propertyName ->
-                        propertyName + (propertyDefinition.getDataType() == String.class ? Elasticsearch5SearchIndex.EXACT_MATCH_PROPERTY_NAME_SUFFIX : "")
-                    ).collect(Collectors.toList());
-                    HashMap<String, Object> scriptParams = new HashMap<>();
-                    scriptParams.put("fieldNames", fieldNames);
-                    scriptParams.put("esOrder", esOrder == SortOrder.DESC ? "desc" : "asc");
-                    scriptParams.put("dataType", propertyDefinition.getDataType().getSimpleName());
-                    Script script = new Script(ScriptType.INLINE, "painless", scriptSrc, scriptParams);
-                    ScriptSortBuilder.ScriptSortType sortType = propertyDefinition.getDataType() == String.class ? ScriptSortBuilder.ScriptSortType.STRING : ScriptSortBuilder.ScriptSortType.NUMBER;
-                    q.addSort(SortBuilders.scriptSort(script, sortType)
-                        .order(esOrder)
-                        .sortMode(esOrder == SortOrder.DESC ? SortMode.MAX : SortMode.MIN));
-                } else {
-                    String sortField = propertyNames[0];
-                    String unmappedType = ElasticsearchTypes.fromJavaClass(propertyDefinition.getDataType());
-                    if (propertyDefinition.getDataType() == String.class) {
-                        sortField += Elasticsearch5SearchIndex.EXACT_MATCH_PROPERTY_NAME_SUFFIX;
-                        unmappedType = KEYWORD_UNMAPPED_TYPE;
-                    }
-                    q.addSort(
-                        SortBuilders.fieldSort(sortField)
-                            .unmappedType(unmappedType)
-                            .order(esOrder)
-                    );
-                }
+                throw new VertexiumException("Unexpected sorting type: " + sortContainer.getClass().getName());
             }
         }
         q.addSort("_score", SortOrder.DESC);
-        if (!sortedById) {
+        if (!sortedById.get()) {
             // If an id sort isn't specified, default is to sort by score and then sort id by ascending order after specified sorts
             q.addSort("_uid", SortOrder.ASC);
+        }
+    }
+
+    private void applySortStrategy(SearchRequestBuilder q, SortingStrategySortContainer sortContainer) {
+        SortingStrategy sortingStrategy = sortContainer.sortingStrategy;
+        if (!(sortingStrategy instanceof ElasticsearchSortingStrategy)) {
+            throw new VertexiumException(String.format(
+                "sorting strategies must implement %s to work with Elasticsearch",
+                ElasticsearchSortingStrategy.class.getName()
+            ));
+        }
+        ((ElasticsearchSortingStrategy) sortingStrategy).updateElasticsearchQuery(
+            getGraph(),
+            getSearchIndex(),
+            q,
+            getParameters(),
+            sortContainer.direction
+        );
+    }
+
+    protected void applySortProperty(SearchRequestBuilder q, PropertySortContainer sortContainer, AtomicBoolean sortedById) {
+        SortOrder esOrder = sortContainer.direction == SortDirection.ASCENDING ? SortOrder.ASC : SortOrder.DESC;
+        if (Element.ID_PROPERTY_NAME.equals(sortContainer.propertyName)) {
+            q.addSort(Elasticsearch5SearchIndex.ELEMENT_ID_FIELD_NAME, esOrder);
+            sortedById.set(true);
+        } else if (Edge.LABEL_PROPERTY_NAME.equals(sortContainer.propertyName)) {
+            q.addSort(
+                SortBuilders.fieldSort(Elasticsearch5SearchIndex.EDGE_LABEL_FIELD_NAME)
+                    .unmappedType(KEYWORD_UNMAPPED_TYPE)
+                    .order(esOrder)
+            );
+        } else if (Edge.OUT_VERTEX_ID_PROPERTY_NAME.equals(sortContainer.propertyName)) {
+            q.addSort(
+                SortBuilders.fieldSort(Elasticsearch5SearchIndex.OUT_VERTEX_ID_FIELD_NAME)
+                    .unmappedType(KEYWORD_UNMAPPED_TYPE)
+                    .order(esOrder)
+            );
+        } else if (Edge.IN_VERTEX_ID_PROPERTY_NAME.equals(sortContainer.propertyName)) {
+            q.addSort(
+                SortBuilders.fieldSort(Elasticsearch5SearchIndex.IN_VERTEX_ID_FIELD_NAME)
+                    .unmappedType(KEYWORD_UNMAPPED_TYPE)
+                    .order(esOrder)
+            );
+        } else if (Edge.IN_OR_OUT_VERTEX_ID_PROPERTY_NAME.equals(sortContainer.propertyName)) {
+            throw new VertexiumException("Cannot sort by " + Edge.IN_OR_OUT_VERTEX_ID_PROPERTY_NAME);
+        } else if (ExtendedDataRow.TABLE_NAME.equals(sortContainer.propertyName)) {
+            q.addSort(
+                SortBuilders.fieldSort(Elasticsearch5SearchIndex.EXTENDED_DATA_TABLE_NAME_FIELD_NAME)
+                    .unmappedType(KEYWORD_UNMAPPED_TYPE)
+                    .order(esOrder)
+            );
+        } else if (ExtendedDataRow.ROW_ID.equals(sortContainer.propertyName)) {
+            q.addSort(
+                SortBuilders.fieldSort(Elasticsearch5SearchIndex.EXTENDED_DATA_TABLE_ROW_ID_FIELD_NAME)
+                    .unmappedType(KEYWORD_UNMAPPED_TYPE)
+                    .order(esOrder)
+            );
+        } else if (ExtendedDataRow.ELEMENT_ID.equals(sortContainer.propertyName)) {
+            q.addSort(
+                SortBuilders.fieldSort(Elasticsearch5SearchIndex.ELEMENT_ID_FIELD_NAME)
+                    .unmappedType(KEYWORD_UNMAPPED_TYPE)
+                    .order(esOrder)
+            );
+        } else if (ExtendedDataRow.ELEMENT_TYPE.equals(sortContainer.propertyName)) {
+            q.addSort(
+                SortBuilders.fieldSort(Elasticsearch5SearchIndex.ELEMENT_TYPE_FIELD_NAME)
+                    .unmappedType(KEYWORD_UNMAPPED_TYPE)
+                    .order(esOrder)
+            );
+        } else {
+            PropertyDefinition propertyDefinition = getGraph().getPropertyDefinition(sortContainer.propertyName);
+            if (propertyDefinition == null) {
+                return;
+            }
+            if (!getSearchIndex().isPropertyInIndex(getGraph(), sortContainer.propertyName)) {
+                return;
+            }
+            if (!propertyDefinition.isSortable()) {
+                throw new VertexiumException("Cannot sort on non-sortable fields");
+            }
+
+            String[] propertyNames = getPropertyNames(propertyDefinition.getPropertyName());
+            if (propertyNames.length > 1) {
+                String scriptSrc = "def fieldValues = []; for (def fieldName : params.fieldNames) { fieldValues.addAll(doc[fieldName].values); } " +
+                    "if (params.esOrder == 'asc') { Collections.sort(fieldValues); } else { Collections.sort(fieldValues, Collections.reverseOrder()); }" +
+                    "if (params.dataType == 'String') { return fieldValues; } else { return fieldValues.length > 0 ? fieldValues[0] : (params.esOrder == 'asc' ? Integer.MAX_VALUE : Integer.MIN_VALUE); }";
+
+                List<String> fieldNames = Arrays.stream(propertyNames).map(propertyName ->
+                    propertyName + (propertyDefinition.getDataType() == String.class ? Elasticsearch5SearchIndex.EXACT_MATCH_PROPERTY_NAME_SUFFIX : "")
+                ).collect(Collectors.toList());
+                HashMap<String, Object> scriptParams = new HashMap<>();
+                scriptParams.put("fieldNames", fieldNames);
+                scriptParams.put("esOrder", esOrder == SortOrder.DESC ? "desc" : "asc");
+                scriptParams.put("dataType", propertyDefinition.getDataType().getSimpleName());
+                Script script = new Script(ScriptType.INLINE, "painless", scriptSrc, scriptParams);
+                ScriptSortBuilder.ScriptSortType sortType = propertyDefinition.getDataType() == String.class ? ScriptSortBuilder.ScriptSortType.STRING : ScriptSortBuilder.ScriptSortType.NUMBER;
+                q.addSort(SortBuilders.scriptSort(script, sortType)
+                    .order(esOrder)
+                    .sortMode(esOrder == SortOrder.DESC ? SortMode.MAX : SortMode.MIN));
+            } else {
+                String sortField = propertyNames[0];
+                String unmappedType = ElasticsearchTypes.fromJavaClass(propertyDefinition.getDataType());
+                if (propertyDefinition.getDataType() == String.class) {
+                    sortField += Elasticsearch5SearchIndex.EXACT_MATCH_PROPERTY_NAME_SUFFIX;
+                    unmappedType = KEYWORD_UNMAPPED_TYPE;
+                }
+                q.addSort(
+                    SortBuilders.fieldSort(sortField)
+                        .unmappedType(unmappedType)
+                        .order(esOrder)
+                );
+            }
         }
     }
 
