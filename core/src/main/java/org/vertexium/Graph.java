@@ -244,7 +244,7 @@ public interface Graph {
      * @param authorizations The authorizations required to load the vertex.
      * @return The vertices in the range.
      */
-    Iterable<Vertex> getVerticesInRange(Range idRange, Authorizations authorizations);
+    Iterable<Vertex> getVerticesInRange(IdRange idRange, Authorizations authorizations);
 
     /**
      * Gets vertices from the graph in the given range.
@@ -254,7 +254,7 @@ public interface Graph {
      * @param authorizations The authorizations required to load the vertex.
      * @return The vertices in the range.
      */
-    Iterable<Vertex> getVerticesInRange(Range idRange, FetchHints fetchHints, Authorizations authorizations);
+    Iterable<Vertex> getVerticesInRange(IdRange idRange, FetchHints fetchHints, Authorizations authorizations);
 
     /**
      * Gets vertices from the graph in the given range.
@@ -265,7 +265,7 @@ public interface Graph {
      * @param authorizations The authorizations required to load the vertex.
      * @return The vertices in the range.
      */
-    Iterable<Vertex> getVerticesInRange(Range idRange, FetchHints fetchHints, Long endTime, Authorizations authorizations);
+    Iterable<Vertex> getVerticesInRange(IdRange idRange, FetchHints fetchHints, Long endTime, Authorizations authorizations);
 
     /**
      * Gets all vertices on the graph.
@@ -657,7 +657,7 @@ public interface Graph {
      * @param authorizations The authorizations required to load the vertex.
      * @return The edges in the range.
      */
-    Iterable<Edge> getEdgesInRange(Range idRange, Authorizations authorizations);
+    Iterable<Edge> getEdgesInRange(IdRange idRange, Authorizations authorizations);
 
     /**
      * Gets edges from the graph in the given range.
@@ -667,7 +667,7 @@ public interface Graph {
      * @param authorizations The authorizations required to load the vertex.
      * @return The edges in the range.
      */
-    Iterable<Edge> getEdgesInRange(Range idRange, FetchHints fetchHints, Authorizations authorizations);
+    Iterable<Edge> getEdgesInRange(IdRange idRange, FetchHints fetchHints, Authorizations authorizations);
 
     /**
      * Gets edges from the graph in the given range.
@@ -678,7 +678,7 @@ public interface Graph {
      * @param authorizations The authorizations required to load the vertex.
      * @return The edges in the range.
      */
-    Iterable<Edge> getEdgesInRange(Range idRange, FetchHints fetchHints, Long endTime, Authorizations authorizations);
+    Iterable<Edge> getEdgesInRange(IdRange idRange, FetchHints fetchHints, Long endTime, Authorizations authorizations);
 
     /**
      * Filters a collection of edge ids by the authorizations of that edge, properties, etc. If
@@ -1421,7 +1421,7 @@ public interface Graph {
      * @param authorizations The authorizations required to load the vertex.
      * @return The extended data rows for the element ids in the range.
      */
-    Iterable<ExtendedDataRow> getExtendedDataInRange(ElementType elementType, Range elementIdRange, Authorizations authorizations);
+    Iterable<ExtendedDataRow> getExtendedDataInRange(ElementType elementType, IdRange elementIdRange, Authorizations authorizations);
 
     /**
      * Gets a list of historical events.

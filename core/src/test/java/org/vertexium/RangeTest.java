@@ -8,45 +8,65 @@ import static org.junit.Assert.assertTrue;
 public class RangeTest {
     @Test
     public void testIsInRange() throws Exception {
-        Range range = new Range("b", "c");
+        IdRange range = new IdRange("b", "c");
         assertTrue(range.isInRange("b"));
         assertTrue(range.isInRange("ba"));
         assertFalse(range.isInRange("c"));
 
-        range = new Range(null, "c");
+        range = new IdRange(null, "c");
         assertTrue(range.isInRange("b"));
         assertFalse(range.isInRange("c"));
 
-        range = new Range("b", null);
+        range = new IdRange("b", null);
         assertFalse(range.isInRange("az"));
         assertTrue(range.isInRange("b"));
+
+        range = new IdRange("b", true, "c", true);
+        assertTrue(range.isInRange("b"));
+        assertTrue(range.isInRange("ba"));
+        assertTrue(range.isInRange("c"));
+
+        range = new IdRange("b", false, "c", false);
+        assertFalse(range.isInRange("b"));
+        assertTrue(range.isInRange("ba"));
+        assertFalse(range.isInRange("c"));
+
+        range = new IdRange("b", true, "c", false);
+        assertTrue(range.isInRange("b"));
+        assertTrue(range.isInRange("ba"));
+        assertFalse(range.isInRange("c"));
+
+        range = new IdRange("b", false, "c", true);
+        assertFalse(range.isInRange("b"));
+        assertTrue(range.isInRange("ba"));
+        assertTrue(range.isInRange("c"));
     }
 
     @SuppressWarnings("ResultOfMethodCallIgnored")
     @Test
     public void testHashCode() {
-        Range range = new Range(null, null);
+        IdRange range = new IdRange(null, null);
         range.hashCode();
 
-        range = new Range("a", null);
+        range = new IdRange("a", null);
         range.hashCode();
 
-        range = new Range(null, "a");
+        range = new IdRange(null, "a");
         range.hashCode();
 
-        range = new Range("a", "a");
+        range = new IdRange("a", "a");
         range.hashCode();
     }
 
     @Test
     public void testEquals() {
-        assertTrue(new Range(null, null).equals(new Range(null, null)));
-        assertTrue(new Range("a", null).equals(new Range("a", null)));
-        assertTrue(new Range(null, "a").equals(new Range(null, "a")));
-        assertTrue(new Range("a", "b").equals(new Range("a", "b")));
+        assertTrue(new IdRange(null, null).equals(new IdRange(null, null)));
+        assertTrue(new IdRange("a", null).equals(new IdRange("a", null)));
+        assertTrue(new IdRange(null, "a").equals(new IdRange(null, "a")));
+        assertTrue(new IdRange("a", "b").equals(new IdRange("a", "b")));
 
-        assertFalse(new Range(null, null).equals(new Range("a", "c")));
-        assertFalse(new Range("a", null).equals(new Range(null, "a")));
-        assertFalse(new Range("a", "b").equals(new Range("a", "c")));
+        assertFalse(new IdRange(null, null).equals(new IdRange("a", "c")));
+        assertFalse(new IdRange("a", null).equals(new IdRange(null, "a")));
+        assertFalse(new IdRange("a", "b").equals(new IdRange("a", "c")));
     }
 }

@@ -1,3 +1,7 @@
+# v4.7.1
+* Changed: Range renamed to IdRange
+* Added: Compare.RANGE to query
+
 # v4.7.0
 * Added: Element/Extended Data Row additional visibilities
 * Added: Sorting strategy
