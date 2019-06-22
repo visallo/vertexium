@@ -30,26 +30,40 @@ public class SortContainersComparator<T> implements Comparator<T> {
         if (vertexiumObject1 instanceof VertexiumObject && vertexiumObject2 instanceof VertexiumObject) {
             VertexiumObject elem1 = (VertexiumObject) vertexiumObject1;
             VertexiumObject elem2 = (VertexiumObject) vertexiumObject2;
-            List<Object> elem1PropertyValues = toList(elem1.getPropertyValues(sortContainer.propertyName));
-            List<Object> elem2PropertyValues = toList(elem2.getPropertyValues(sortContainer.propertyName));
-            if (elem1PropertyValues.size() > 0 && elem2PropertyValues.size() == 0) {
-                return -1;
-            } else if (elem2PropertyValues.size() > 0 && elem1PropertyValues.size() == 0) {
-                return 1;
+            if (sortContainer instanceof QueryBase.PropertySortContainer) {
+                return compareProperty((QueryBase.PropertySortContainer) sortContainer, elem1, elem2);
+            } else if (sortContainer instanceof QueryBase.SortingStrategySortContainer) {
+                return compareSortingStrategy((QueryBase.SortingStrategySortContainer) sortContainer, elem1, elem2);
             } else {
-                for (Object elem1PropertyValue : elem1PropertyValues) {
-                    for (Object elem2PropertyValue : elem2PropertyValues) {
-                        int result = comparePropertyValues(elem1PropertyValue, elem2PropertyValue);
-                        if (result != 0) {
-                            return sortContainer.direction == SortDirection.ASCENDING ? result : -result;
-                        }
-                    }
-                }
+                throw new VertexiumException("Unexpected sort container type: " + sortContainer.getClass().getName());
             }
-            return 0;
         } else {
             throw new VertexiumException("unexpected searchable item combination: " + vertexiumObject1.getClass().getName() + ", " + vertexiumObject2.getClass().getName());
         }
+    }
+
+    private int compareSortingStrategy(QueryBase.SortingStrategySortContainer sortContainer, VertexiumObject elem1, VertexiumObject elem2) {
+        return sortContainer.sortingStrategy.compare(elem1, elem2, sortContainer.direction);
+    }
+
+    private int compareProperty(QueryBase.PropertySortContainer sortContainer, VertexiumObject elem1, VertexiumObject elem2) {
+        List<Object> elem1PropertyValues = toList(elem1.getPropertyValues(sortContainer.propertyName));
+        List<Object> elem2PropertyValues = toList(elem2.getPropertyValues(sortContainer.propertyName));
+        if (elem1PropertyValues.size() > 0 && elem2PropertyValues.size() == 0) {
+            return -1;
+        } else if (elem2PropertyValues.size() > 0 && elem1PropertyValues.size() == 0) {
+            return 1;
+        } else {
+            for (Object elem1PropertyValue : elem1PropertyValues) {
+                for (Object elem2PropertyValue : elem2PropertyValues) {
+                    int result = comparePropertyValues(elem1PropertyValue, elem2PropertyValue);
+                    if (result != 0) {
+                        return sortContainer.direction == SortDirection.ASCENDING ? result : -result;
+                    }
+                }
+            }
+        }
+        return 0;
     }
 
     @SuppressWarnings("unchecked")

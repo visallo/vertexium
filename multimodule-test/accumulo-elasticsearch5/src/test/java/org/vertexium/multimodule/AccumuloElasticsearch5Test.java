@@ -19,10 +19,12 @@ import org.vertexium.elasticsearch5.ElasticsearchResource;
 import org.vertexium.elasticsearch5.TestElasticsearch5ExceptionHandler;
 import org.vertexium.elasticsearch5.scoring.ElasticsearchFieldValueScoringStrategy;
 import org.vertexium.elasticsearch5.scoring.ElasticsearchHammingDistanceScoringStrategy;
+import org.vertexium.elasticsearch5.sorting.ElasticsearchLengthOfStringSortingStrategy;
 import org.vertexium.id.SimpleNameSubstitutionStrategy;
 import org.vertexium.mutation.ExistingElementMutation;
 import org.vertexium.scoring.ScoringStrategy;
 import org.vertexium.serializer.kryo.QuickKryoVertexiumSerializer;
+import org.vertexium.sorting.SortingStrategy;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -124,6 +126,11 @@ public class AccumuloElasticsearch5Test extends AccumuloGraphTestBase {
     @Override
     protected ScoringStrategy getFieldValueScoringStrategy(String field) {
         return new ElasticsearchFieldValueScoringStrategy(field);
+    }
+
+    @Override
+    protected SortingStrategy getLengthOfStringSortingStrategy(String propertyName) {
+        return new ElasticsearchLengthOfStringSortingStrategy(propertyName);
     }
 
     @Test

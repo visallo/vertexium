@@ -13,12 +13,14 @@ import org.junit.Test;
 import org.vertexium.*;
 import org.vertexium.elasticsearch5.scoring.ElasticsearchFieldValueScoringStrategy;
 import org.vertexium.elasticsearch5.scoring.ElasticsearchHammingDistanceScoringStrategy;
+import org.vertexium.elasticsearch5.sorting.ElasticsearchLengthOfStringSortingStrategy;
 import org.vertexium.inmemory.InMemoryAuthorizations;
 import org.vertexium.inmemory.InMemoryGraph;
 import org.vertexium.inmemory.InMemoryGraphConfiguration;
 import org.vertexium.query.QueryResultsIterable;
 import org.vertexium.query.SortDirection;
 import org.vertexium.scoring.ScoringStrategy;
+import org.vertexium.sorting.SortingStrategy;
 import org.vertexium.test.GraphTestBase;
 
 import java.util.List;
@@ -279,6 +281,11 @@ public class Elasticsearch5SearchIndexTest extends GraphTestBase {
     @Override
     protected ScoringStrategy getHammingDistanceScoringStrategy(String field, String hash) {
         return new ElasticsearchHammingDistanceScoringStrategy(field, hash);
+    }
+
+    @Override
+    protected SortingStrategy getLengthOfStringSortingStrategy(String propertyName) {
+        return new ElasticsearchLengthOfStringSortingStrategy(propertyName);
     }
 
     @Override

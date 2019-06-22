@@ -2,6 +2,7 @@ package org.vertexium.query;
 
 import org.vertexium.*;
 import org.vertexium.scoring.ScoringStrategy;
+import org.vertexium.sorting.SortingStrategy;
 
 import java.util.Collection;
 import java.util.EnumSet;
@@ -351,6 +352,15 @@ public interface Query {
      * @return The query object, allowing you to chain methods.
      */
     Query sort(String propertyName, SortDirection direction);
+
+    /**
+     * Sort the results by the given {@link SortingStrategy}.
+     *
+     * @param sortingStrategy The {@link SortingStrategy} to sort by.
+     * @param direction       The direction to sort.
+     * @return The query object, allowing you to chain methods.
+     */
+    Query sort(SortingStrategy sortingStrategy, SortDirection direction);
 
     /**
      * Test to see if aggregation is supported.

@@ -12,7 +12,6 @@ import java.util.stream.Collectors;
 
 import static junit.framework.TestCase.fail;
 import static org.junit.Assert.*;
-import static org.vertexium.util.IterableUtils.toList;
 import static org.vertexium.util.StreamUtils.stream;
 
 public class VertexiumAssert {
@@ -76,11 +75,9 @@ public class VertexiumAssert {
     }
 
     public static void assertElementIds(Iterable<? extends Element> elements, String... ids) {
-        List<Element> elementList = toList(elements);
-        assertEquals("ids length mismatch", ids.length, elementList.size());
-        for (int i = 0; i < ids.length; i++) {
-            assertEquals("at offset: " + i, ids[i], elementList.get(i).getId());
-        }
+        String found = stream(elements).map(ElementId::getId).collect(Collectors.joining(", "));
+        String expected = Joiner.on(", ").join(ids);
+        assertEquals(expected, found);
     }
 
 
