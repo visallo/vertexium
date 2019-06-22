@@ -1,14 +1,14 @@
 package org.vertexium.query;
 
 import org.vertexium.*;
-import org.vertexium.property.StreamingPropertyValue;
 import org.vertexium.type.GeoShape;
+import org.vertexium.util.ObjectUtils;
 
 import java.util.Collection;
 import java.util.Date;
 
 public enum Compare implements Predicate {
-    EQUAL, NOT_EQUAL, GREATER_THAN, GREATER_THAN_EQUAL, LESS_THAN, LESS_THAN_EQUAL, STARTS_WITH;
+    EQUAL, NOT_EQUAL, GREATER_THAN, GREATER_THAN_EQUAL, LESS_THAN, LESS_THAN_EQUAL, STARTS_WITH, RANGE;
 
     @Override
     public boolean evaluate(final Iterable<Property> properties, final Object second, Collection<PropertyDefinition> propertyDefinitions) {
@@ -68,32 +68,32 @@ public enum Compare implements Predicate {
                 if (propertyDefinition != null && propertyDefinition.getTextIndexHints().size() > 0 && !propertyDefinition.getTextIndexHints().contains(TextIndexHint.EXACT_MATCH)) {
                     return false;
                 }
-                return compare(first, second) == 0;
+                return ObjectUtils.compare(first, second) == 0;
             case NOT_EQUAL:
                 if (null == first) {
                     return second != null;
                 }
-                return compare(first, second) != 0;
+                return ObjectUtils.compare(first, second) != 0;
             case GREATER_THAN:
                 if (null == first || second == null) {
                     return false;
                 }
-                return compare(first, second) >= 1;
+                return ObjectUtils.compare(first, second) >= 1;
             case LESS_THAN:
                 if (null == first || second == null) {
                     return false;
                 }
-                return compare(first, second) <= -1;
+                return ObjectUtils.compare(first, second) <= -1;
             case GREATER_THAN_EQUAL:
                 if (null == first || second == null) {
                     return false;
                 }
-                return compare(first, second) >= 0;
+                return ObjectUtils.compare(first, second) >= 0;
             case LESS_THAN_EQUAL:
                 if (null == first || second == null) {
                     return false;
                 }
-                return compare(first, second) <= 0;
+                return ObjectUtils.compare(first, second) <= 0;
             case STARTS_WITH:
                 if (!(second instanceof String)) {
                     throw new VertexiumException("STARTS_WITH may only be used to query String values");
@@ -108,69 +108,16 @@ public enum Compare implements Predicate {
                     return ((GeoShape) first).getDescription().startsWith((String) second);
                 }
                 return first.toString().startsWith((String) second);
+            case RANGE:
+                if (first instanceof Range) {
+                    return ((Range) first).isInRange(second);
+                } else if (second instanceof Range) {
+                    return ((Range) second).isInRange(first);
+                } else {
+                    throw new IllegalArgumentException("Invalid range values: " + first + ", " + second);
+                }
             default:
                 throw new IllegalArgumentException("Invalid compare: " + comparePredicate);
         }
-    }
-
-    private static int compare(Object first, Object second) {
-        if (first instanceof StreamingPropertyValue && ((StreamingPropertyValue) first).getValueType() == String.class) {
-            first = ((StreamingPropertyValue) first).readToString();
-        }
-        if (second instanceof StreamingPropertyValue && ((StreamingPropertyValue) second).getValueType() == String.class) {
-            second = ((StreamingPropertyValue) second).readToString();
-        }
-
-        if (first instanceof String) {
-            first = ((String) first).toLowerCase();
-        }
-        if (second instanceof String) {
-            second = ((String) second).toLowerCase();
-        }
-
-        if (first instanceof Long && second instanceof Long) {
-            long firstLong = (long) first;
-            long secondLong = (long) second;
-            return Long.compare(firstLong, secondLong);
-        }
-        if (first instanceof Integer && second instanceof Integer) {
-            int firstInt = (int) first;
-            int secondInt = (int) second;
-            return Integer.compare(firstInt, secondInt);
-        }
-        if (first instanceof Number && second instanceof Number) {
-            double firstDouble = ((Number) first).doubleValue();
-            double secondDouble = ((Number) second).doubleValue();
-            return Double.compare(firstDouble, secondDouble);
-        }
-        if (first instanceof Number && second instanceof String) {
-            try {
-                double firstDouble = ((Number) first).doubleValue();
-                double secondDouble = Double.parseDouble(second.toString());
-                return Double.compare(firstDouble, secondDouble);
-            } catch (NumberFormatException ex) {
-                return -1;
-            }
-        }
-        if (first instanceof String && second instanceof Number) {
-            try {
-                double firstDouble = Double.parseDouble(first.toString());
-                double secondDouble = ((Number) second).doubleValue();
-                return Double.compare(firstDouble, secondDouble);
-            } catch (NumberFormatException ex) {
-                return 1;
-            }
-        }
-        if (first instanceof GeoShape && second instanceof String) {
-            String description = ((GeoShape) first).getDescription();
-            return description == null ? -1 : description.toLowerCase().compareTo((String) second);
-        }
-        if (first instanceof Comparable) {
-            return ((Comparable) first).compareTo(second);
-        }
-        if (second instanceof Comparable) {
-            return ((Comparable) second).compareTo(first);
-        }
-        return first.equals(second) ? 0 : 1;
     }
 }

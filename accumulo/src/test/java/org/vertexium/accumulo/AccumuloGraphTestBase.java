@@ -344,26 +344,26 @@ public abstract class AccumuloGraphTestBase extends GraphTestBase {
         keys.add(new Text("l"));
         getGraph().getConnector().tableOperations().addSplits(getGraph().getDataTableName(), keys);
 
-        List<org.vertexium.Range> verticesTableSplits = toList(getGraph().listVerticesTableSplits());
+        List<IdRange> verticesTableSplits = toList(getGraph().listVerticesTableSplits());
         assertEquals(2, verticesTableSplits.size());
-        assertEquals(null, verticesTableSplits.get(0).getInclusiveStart());
-        assertEquals("j", verticesTableSplits.get(0).getExclusiveEnd());
-        assertEquals("j", verticesTableSplits.get(1).getInclusiveStart());
-        assertEquals(null, verticesTableSplits.get(1).getExclusiveEnd());
+        assertEquals(null, verticesTableSplits.get(0).getStart());
+        assertEquals("j", verticesTableSplits.get(0).getEnd());
+        assertEquals("j", verticesTableSplits.get(1).getStart());
+        assertEquals(null, verticesTableSplits.get(1).getEnd());
 
-        List<org.vertexium.Range> edgesTableSplits = toList(getGraph().listEdgesTableSplits());
+        List<IdRange> edgesTableSplits = toList(getGraph().listEdgesTableSplits());
         assertEquals(2, edgesTableSplits.size());
-        assertEquals(null, edgesTableSplits.get(0).getInclusiveStart());
-        assertEquals("k", edgesTableSplits.get(0).getExclusiveEnd());
-        assertEquals("k", edgesTableSplits.get(1).getInclusiveStart());
-        assertEquals(null, edgesTableSplits.get(1).getExclusiveEnd());
+        assertEquals(null, edgesTableSplits.get(0).getStart());
+        assertEquals("k", edgesTableSplits.get(0).getEnd());
+        assertEquals("k", edgesTableSplits.get(1).getStart());
+        assertEquals(null, edgesTableSplits.get(1).getEnd());
 
-        List<org.vertexium.Range> dataTableSplits = toList(getGraph().listDataTableSplits());
+        List<IdRange> dataTableSplits = toList(getGraph().listDataTableSplits());
         assertEquals(2, dataTableSplits.size());
-        assertEquals(null, dataTableSplits.get(0).getInclusiveStart());
-        assertEquals("l", dataTableSplits.get(0).getExclusiveEnd());
-        assertEquals("l", dataTableSplits.get(1).getInclusiveStart());
-        assertEquals(null, dataTableSplits.get(1).getExclusiveEnd());
+        assertEquals(null, dataTableSplits.get(0).getStart());
+        assertEquals("l", dataTableSplits.get(0).getEnd());
+        assertEquals("l", dataTableSplits.get(1).getStart());
+        assertEquals(null, dataTableSplits.get(1).getEnd());
     }
 
     @Test

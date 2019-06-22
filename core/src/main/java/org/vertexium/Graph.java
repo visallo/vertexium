@@ -367,7 +367,7 @@ public interface Graph {
      * @return The vertices in the range.
      */
     @FutureDeprecation
-    default Iterable<Vertex> getVerticesInRange(Range idRange, Authorizations authorizations) {
+    default Iterable<Vertex> getVerticesInRange(IdRange idRange, Authorizations authorizations) {
         return toIterable(getVerticesInRange(idRange, authorizations.getUser()));
     }
 
@@ -378,7 +378,7 @@ public interface Graph {
      * @param user    The user required to load the vertex.
      * @return The vertices in the range.
      */
-    default Stream<Vertex> getVerticesInRange(Range idRange, User user) {
+    default Stream<Vertex> getVerticesInRange(IdRange idRange, User user) {
         return getVerticesInRange(idRange, getDefaultFetchHints(), user);
     }
 
@@ -391,7 +391,7 @@ public interface Graph {
      * @return The vertices in the range.
      */
     @FutureDeprecation
-    default Iterable<Vertex> getVerticesInRange(Range idRange, FetchHints fetchHints, Authorizations authorizations) {
+    default Iterable<Vertex> getVerticesInRange(IdRange idRange, FetchHints fetchHints, Authorizations authorizations) {
         return toIterable(getVerticesInRange(idRange, fetchHints, authorizations.getUser()));
     }
 
@@ -403,7 +403,7 @@ public interface Graph {
      * @param user       The user required to load the vertex.
      * @return The vertices in the range.
      */
-    default Stream<Vertex> getVerticesInRange(Range idRange, FetchHints fetchHints, User user) {
+    default Stream<Vertex> getVerticesInRange(IdRange idRange, FetchHints fetchHints, User user) {
         return getVerticesInRange(idRange, fetchHints, null, user);
     }
 
@@ -417,7 +417,7 @@ public interface Graph {
      * @return The vertices in the range.
      */
     @FutureDeprecation
-    default Iterable<Vertex> getVerticesInRange(Range idRange, FetchHints fetchHints, Long endTime, Authorizations authorizations) {
+    default Iterable<Vertex> getVerticesInRange(IdRange idRange, FetchHints fetchHints, Long endTime, Authorizations authorizations) {
         return toIterable(getVerticesInRange(idRange, fetchHints, endTime, authorizations.getUser()));
     }
 
@@ -430,7 +430,7 @@ public interface Graph {
      * @param user       The user required to load the vertex.
      * @return The vertices in the range.
      */
-    Stream<Vertex> getVerticesInRange(Range idRange, FetchHints fetchHints, Long endTime, User user);
+    Stream<Vertex> getVerticesInRange(IdRange idRange, FetchHints fetchHints, Long endTime, User user);
 
     /**
      * Gets all vertices on the graph.
@@ -1164,7 +1164,7 @@ public interface Graph {
      * @return The edges in the range.
      */
     @FutureDeprecation
-    default Iterable<Edge> getEdgesInRange(Range idRange, Authorizations authorizations) {
+    default Iterable<Edge> getEdgesInRange(IdRange idRange, Authorizations authorizations) {
         return toIterable(getEdgesInRange(idRange, authorizations.getUser()));
     }
 
@@ -1175,7 +1175,7 @@ public interface Graph {
      * @param user    The user required to load the vertex.
      * @return The edges in the range.
      */
-    default Stream<Edge> getEdgesInRange(Range idRange, User user) {
+    default Stream<Edge> getEdgesInRange(IdRange idRange, User user) {
         return getEdgesInRange(idRange, getDefaultFetchHints(), user);
     }
 
@@ -1188,7 +1188,7 @@ public interface Graph {
      * @return The edges in the range.
      */
     @FutureDeprecation
-    default Iterable<Edge> getEdgesInRange(Range idRange, FetchHints fetchHints, Authorizations authorizations) {
+    default Iterable<Edge> getEdgesInRange(IdRange idRange, FetchHints fetchHints, Authorizations authorizations) {
         return toIterable(getEdgesInRange(idRange, fetchHints, authorizations.getUser()));
     }
 
@@ -1200,7 +1200,7 @@ public interface Graph {
      * @param user       The user required to load the vertex.
      * @return The edges in the range.
      */
-    default Stream<Edge> getEdgesInRange(Range idRange, FetchHints fetchHints, User user) {
+    default Stream<Edge> getEdgesInRange(IdRange idRange, FetchHints fetchHints, User user) {
         return getEdgesInRange(idRange, fetchHints, null, user);
     }
 
@@ -1214,7 +1214,7 @@ public interface Graph {
      * @return The edges in the range.
      */
     @FutureDeprecation
-    default Iterable<Edge> getEdgesInRange(Range idRange, FetchHints fetchHints, Long endTime, Authorizations authorizations) {
+    default Iterable<Edge> getEdgesInRange(IdRange idRange, FetchHints fetchHints, Long endTime, Authorizations authorizations) {
         return toIterable(getEdgesInRange(idRange, fetchHints, endTime, authorizations.getUser()));
     }
 
@@ -1227,7 +1227,7 @@ public interface Graph {
      * @param user       The user required to load the vertex.
      * @return The edges in the range.
      */
-    Stream<Edge> getEdgesInRange(Range idRange, FetchHints fetchHints, Long endTime, User user);
+    Stream<Edge> getEdgesInRange(IdRange idRange, FetchHints fetchHints, Long endTime, User user);
 
     /**
      * Tests the existence of edges with the given authorizations.
@@ -2413,7 +2413,7 @@ public interface Graph {
      * @return The extended data rows for the element ids in the range.
      */
     @FutureDeprecation
-    default Iterable<ExtendedDataRow> getExtendedDataInRange(ElementType elementType, Range elementIdRange, Authorizations authorizations) {
+    default Iterable<ExtendedDataRow> getExtendedDataInRange(ElementType elementType, IdRange elementIdRange, Authorizations authorizations) {
         return toIterable(getExtendedDataInRange(elementType, elementIdRange, authorizations.getUser()));
     }
 
@@ -2425,7 +2425,7 @@ public interface Graph {
      * @param user           The user required to load the vertex.
      * @return The extended data rows for the element ids in the range.
      */
-    Stream<ExtendedDataRow> getExtendedDataInRange(ElementType elementType, Range elementIdRange, User user);
+    Stream<ExtendedDataRow> getExtendedDataInRange(ElementType elementType, IdRange elementIdRange, User user);
 
     /**
      * Gets a list of historical events.

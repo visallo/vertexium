@@ -4,7 +4,7 @@ import org.vertexium.cypher.CypherResultRow;
 import org.vertexium.cypher.VertexiumCypherQueryContext;
 import org.vertexium.cypher.executionPlan.AggregationFunctionInvocationExecutionStep;
 import org.vertexium.cypher.executionPlan.ExecutionStepWithResultName;
-import org.vertexium.cypher.utils.ObjectUtils;
+import org.vertexium.util.ObjectUtils;
 
 import java.util.stream.Stream;
 
