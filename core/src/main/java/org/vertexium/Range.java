@@ -1,41 +1,68 @@
 package org.vertexium;
 
-import java.io.Serializable;
+import org.vertexium.util.ObjectUtils;
 
-public class Range implements Serializable {
-    private static final long serialVersionUID = -4491252292678133754L;
-    private final String inclusiveStart;
-    private final String exclusiveEnd;
+import java.util.Objects;
+
+public class Range<T> {
+    private final T start;
+    private final boolean inclusiveStart;
+    private final T end;
+    private final boolean inclusiveEnd;
 
     /**
      * Creates a range object.
      *
-     * @param inclusiveStart The inclusive start id. null if the start of all keys
-     * @param exclusiveEnd   The exclusive end id. null if the end of all keys
+     * @param start          The start value. null if the start of all.
+     * @param inclusiveStart true, if the start value should be included.
+     * @param end            The end value. null if the end of all.
+     * @param inclusiveEnd   true, if the end value should be included.
      */
-    public Range(String inclusiveStart, String exclusiveEnd) {
+    public Range(T start, boolean inclusiveStart, T end, boolean inclusiveEnd) {
+        this.start = start;
         this.inclusiveStart = inclusiveStart;
-        this.exclusiveEnd = exclusiveEnd;
+        this.end = end;
+        this.inclusiveEnd = inclusiveEnd;
     }
 
-    public String getInclusiveStart() {
+    public T getStart() {
+        return start;
+    }
+
+    public boolean isInclusiveStart() {
         return inclusiveStart;
     }
 
-    public String getExclusiveEnd() {
-        return exclusiveEnd;
+    public T getEnd() {
+        return end;
     }
 
-    public boolean isInRange(String str) {
-        if (getInclusiveStart() != null) {
-            if (getInclusiveStart().compareTo(str) > 0) {
-                return false;
+    public boolean isInclusiveEnd() {
+        return inclusiveEnd;
+    }
+
+    public boolean isInRange(Object obj) {
+        if (getStart() != null) {
+            if (isInclusiveStart()) {
+                if (ObjectUtils.compare(getStart(), obj) > 0) {
+                    return false;
+                }
+            } else {
+                if (ObjectUtils.compare(getStart(), obj) >= 0) {
+                    return false;
+                }
             }
         }
 
-        if (getExclusiveEnd() != null) {
-            if (str.compareTo(getExclusiveEnd()) >= 0) {
-                return false;
+        if (getEnd() != null) {
+            if (isInclusiveEnd()) {
+                if (ObjectUtils.compare(obj, getEnd()) > 0) {
+                    return false;
+                }
+            } else {
+                if (ObjectUtils.compare(obj, getEnd()) >= 0) {
+                    return false;
+                }
             }
         }
 
@@ -44,10 +71,14 @@ public class Range implements Serializable {
 
     @Override
     public String toString() {
-        return "Range{" +
-            "inclusiveStart='" + getInclusiveStart() + '\'' +
-            ", exclusiveEnd='" + getExclusiveEnd() + '\'' +
-            '}';
+        return String.format(
+            "%s{start=%s, inclusiveStart=%s, end=%s, inclusiveEnd=%s}",
+            this.getClass().getSimpleName(),
+            start,
+            inclusiveStart,
+            end,
+            inclusiveEnd
+        );
     }
 
     @Override
@@ -55,26 +86,20 @@ public class Range implements Serializable {
         if (this == o) {
             return true;
         }
-        if (o == null || getClass() != o.getClass()) {
+        if (!(o instanceof Range)) {
             return false;
         }
 
         Range range = (Range) o;
 
-        if (inclusiveStart != null ? !inclusiveStart.equals(range.inclusiveStart) : range.inclusiveStart != null) {
-            return false;
-        }
-        if (exclusiveEnd != null ? !exclusiveEnd.equals(range.exclusiveEnd) : range.exclusiveEnd != null) {
-            return false;
-        }
-
-        return true;
+        return inclusiveStart == range.inclusiveStart
+            && inclusiveEnd == range.inclusiveEnd
+            && Objects.equals(start, range.start)
+            && Objects.equals(end, range.end);
     }
 
     @Override
     public int hashCode() {
-        int result = inclusiveStart != null ? inclusiveStart.hashCode() : 0;
-        result = 31 * result + (exclusiveEnd != null ? exclusiveEnd.hashCode() : 0);
-        return result;
+        return Objects.hash(start, inclusiveStart, end, inclusiveEnd);
     }
 }

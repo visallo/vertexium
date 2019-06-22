@@ -24,7 +24,6 @@ import org.apache.curator.framework.recipes.cache.TreeCacheEvent;
 import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.hadoop.io.Text;
 import org.apache.zookeeper.CreateMode;
-import org.vertexium.Range;
 import org.vertexium.*;
 import org.vertexium.accumulo.iterator.*;
 import org.vertexium.accumulo.iterator.model.EdgeInfo;
@@ -610,15 +609,15 @@ public class AccumuloGraph extends GraphBase implements Traceable {
     }
 
     @Override
-    public Stream<ExtendedDataRow> getExtendedDataInRange(ElementType elementType, Range elementIdRange, User user) {
-        Range extendedDataRowKeyRange = KeyHelper.createExtendedDataRowKeyRange(elementType, elementIdRange);
+    public Stream<ExtendedDataRow> getExtendedDataInRange(ElementType elementType, IdRange elementIdRange, User user) {
+        IdRange extendedDataRowKeyRange = KeyHelper.createExtendedDataRowKeyRange(elementType, elementIdRange);
         return getExtendedDataInRange(extendedDataRowKeyRange, user);
     }
 
-    public Stream<ExtendedDataRow> getExtendedDataInRange(Range extendedDataRowKeyRange, User user) {
+    public Stream<ExtendedDataRow> getExtendedDataInRange(IdRange extendedDataRowKeyRange, User user) {
         Span trace = Trace.start("getExtendedDataInRange");
-        trace.data("rangeInclusiveStart", extendedDataRowKeyRange.getInclusiveStart());
-        trace.data("rangeExclusiveStart", extendedDataRowKeyRange.getExclusiveEnd());
+        trace.data("rangeStart", extendedDataRowKeyRange.getStart());
+        trace.data("rangeEnd", extendedDataRowKeyRange.getEnd());
 
         org.apache.accumulo.core.data.Range range = vertexiumRangeToAccumuloRange(extendedDataRowKeyRange);
         return getExtendedDataRowsInRange(trace, Collections.singletonList(range), FetchHints.ALL, user);
@@ -724,10 +723,10 @@ public class AccumuloGraph extends GraphBase implements Traceable {
     }
 
     @Override
-    public Stream<Vertex> getVerticesInRange(Range idRange, FetchHints fetchHints, Long endTime, User user) {
+    public Stream<Vertex> getVerticesInRange(IdRange idRange, FetchHints fetchHints, Long endTime, User user) {
         Span trace = Trace.start("getVerticesInRange");
-        trace.data("rangeInclusiveStart", idRange.getInclusiveStart());
-        trace.data("rangeExclusiveStart", idRange.getExclusiveEnd());
+        trace.data("rangeStart", idRange.getStart());
+        trace.data("rangeEnd", idRange.getEnd());
         traceDataFetchHints(trace, fetchHints);
         org.apache.accumulo.core.data.Range range = vertexiumRangeToAccumuloRange(idRange);
         return getVerticesInRange(trace, range, fetchHints, endTime, user);
@@ -1206,31 +1205,31 @@ public class AccumuloGraph extends GraphBase implements Traceable {
         return connector;
     }
 
-    public Iterable<Range> listVerticesTableSplits() {
+    public Iterable<IdRange> listVerticesTableSplits() {
         return listTableSplits(getVerticesTableName());
     }
 
-    public Iterable<Range> listHistoryVerticesTableSplits() {
+    public Iterable<IdRange> listHistoryVerticesTableSplits() {
         return listTableSplits(getHistoryVerticesTableName());
     }
 
-    public Iterable<Range> listEdgesTableSplits() {
+    public Iterable<IdRange> listEdgesTableSplits() {
         return listTableSplits(getEdgesTableName());
     }
 
-    public Iterable<Range> listHistoryEdgesTableSplits() {
+    public Iterable<IdRange> listHistoryEdgesTableSplits() {
         return listTableSplits(getHistoryEdgesTableName());
     }
 
-    public Iterable<Range> listDataTableSplits() {
+    public Iterable<IdRange> listDataTableSplits() {
         return listTableSplits(getDataTableName());
     }
 
-    public Iterable<Range> listExtendedDataTableSplits() {
+    public Iterable<IdRange> listExtendedDataTableSplits() {
         return listTableSplits(getExtendedDataTableName());
     }
 
-    private Iterable<Range> listTableSplits(String tableName) {
+    private Iterable<IdRange> listTableSplits(String tableName) {
         try {
             return splitsIterableToRangeIterable(getConnector().tableOperations().listSplits(tableName));
         } catch (Exception ex) {
@@ -1238,15 +1237,15 @@ public class AccumuloGraph extends GraphBase implements Traceable {
         }
     }
 
-    private Iterable<Range> splitsIterableToRangeIterable(final Iterable<Text> splits) {
+    private Iterable<IdRange> splitsIterableToRangeIterable(final Iterable<Text> splits) {
         String inclusiveStart = null;
-        List<Range> ranges = new ArrayList<>();
+        List<IdRange> ranges = new ArrayList<>();
         for (Text split : splits) {
             String exclusiveEnd = new Key(split).getRow().toString();
-            ranges.add(new Range(inclusiveStart, exclusiveEnd));
+            ranges.add(new IdRange(inclusiveStart, exclusiveEnd));
             inclusiveStart = exclusiveEnd;
         }
-        ranges.add(new Range(inclusiveStart, null));
+        ranges.add(new IdRange(inclusiveStart, null));
         return ranges;
     }
 
@@ -1681,23 +1680,23 @@ public class AccumuloGraph extends GraphBase implements Traceable {
     }
 
     @Override
-    public Stream<Edge> getEdgesInRange(Range idRange, FetchHints fetchHints, Long endTime, User user) {
+    public Stream<Edge> getEdgesInRange(IdRange idRange, FetchHints fetchHints, Long endTime, User user) {
         Span trace = Trace.start("getEdgesInRange");
-        trace.data("rangeInclusiveStart", idRange.getInclusiveStart());
-        trace.data("rangeExclusiveStart", idRange.getExclusiveEnd());
+        trace.data("rangeStart", idRange.getStart());
+        trace.data("rangeEnd", idRange.getEnd());
         traceDataFetchHints(trace, fetchHints);
         org.apache.accumulo.core.data.Range range = vertexiumRangeToAccumuloRange(idRange);
         return getEdgesInRange(trace, range, fetchHints, endTime, user);
     }
 
-    private org.apache.accumulo.core.data.Range vertexiumRangeToAccumuloRange(Range range) {
-        Key inclusiveStartRow = range.getInclusiveStart() == null ? null : new Key(range.getInclusiveStart());
-        Key exclusiveEndRow = range.getExclusiveEnd() == null ? null : new Key(range.getExclusiveEnd());
-        boolean startKeyInclusive = true;
-        boolean endKeyInclusive = false;
+    private org.apache.accumulo.core.data.Range vertexiumRangeToAccumuloRange(IdRange range) {
+        Key startRow = range.getStart() == null ? null : new Key(range.getStart());
+        Key endRow = range.getEnd() == null ? null : new Key(range.getEnd());
         return new org.apache.accumulo.core.data.Range(
-            inclusiveStartRow, startKeyInclusive,
-            exclusiveEndRow, endKeyInclusive
+            startRow,
+            range.isInclusiveStart(),
+            endRow,
+            range.isInclusiveEnd()
         );
     }
 

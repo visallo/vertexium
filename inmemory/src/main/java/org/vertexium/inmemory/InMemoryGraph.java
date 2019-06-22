@@ -449,13 +449,13 @@ public class InMemoryGraph extends GraphBase {
     }
 
     @Override
-    public Stream<Vertex> getVerticesInRange(Range idRange, FetchHints fetchHints, Long endTime, User user) {
+    public Stream<Vertex> getVerticesInRange(IdRange idRange, FetchHints fetchHints, Long endTime, User user) {
         return getVertices(fetchHints, endTime, user)
             .filter(v -> idRange.isInRange(v.getId()));
     }
 
     @Override
-    public Stream<Edge> getEdgesInRange(Range idRange, FetchHints fetchHints, Long endTime, User user) {
+    public Stream<Edge> getEdgesInRange(IdRange idRange, FetchHints fetchHints, Long endTime, User user) {
         return getEdges(fetchHints, endTime, user)
             .filter(e -> idRange.isInRange(e.getId()));
     }
@@ -515,7 +515,7 @@ public class InMemoryGraph extends GraphBase {
     }
 
     @Override
-    public Stream<ExtendedDataRow> getExtendedDataInRange(ElementType elementType, Range elementIdRange, User user) {
+    public Stream<ExtendedDataRow> getExtendedDataInRange(ElementType elementType, IdRange elementIdRange, User user) {
         return getAllExtendedData(FetchHints.ALL, user)
             .filter(row -> {
                 ExtendedDataRowId rowId = row.getId();

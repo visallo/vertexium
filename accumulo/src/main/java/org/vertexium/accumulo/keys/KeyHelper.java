@@ -149,21 +149,21 @@ public class KeyHelper {
         }
     }
 
-    public static Range createExtendedDataRowKeyRange(ElementType elementType, Range elementIdRange) {
+    public static IdRange createExtendedDataRowKeyRange(ElementType elementType, IdRange elementIdRange) {
         String elementTypePrefix = getExtendedDataRowKeyElementTypePrefix(elementType);
-        String inclusiveStart = elementIdRange.getInclusiveStart();
-        if (inclusiveStart == null) {
-            inclusiveStart = "";
+        String start = elementIdRange.getStart();
+        if (start == null) {
+            start = "";
         }
-        inclusiveStart = elementTypePrefix + inclusiveStart;
+        start = elementTypePrefix + start;
 
-        String exclusiveEnd = elementIdRange.getExclusiveEnd();
-        if (exclusiveEnd != null) {
-            exclusiveEnd = elementTypePrefix + exclusiveEnd;
+        String end = elementIdRange.getEnd();
+        if (end != null) {
+            end = elementTypePrefix + end;
         } else if (elementType == ElementType.EDGE) {
-            exclusiveEnd = getExtendedDataRowKeyElementTypePrefix(ElementType.VERTEX);
+            end = getExtendedDataRowKeyElementTypePrefix(ElementType.VERTEX);
         }
-        return new Range(inclusiveStart, exclusiveEnd);
+        return new IdRange(start, elementIdRange.isInclusiveStart(), end, elementIdRange.isInclusiveEnd());
     }
 
     private static String getExtendedDataRowKeyElementTypePrefix(ElementType elementType) {

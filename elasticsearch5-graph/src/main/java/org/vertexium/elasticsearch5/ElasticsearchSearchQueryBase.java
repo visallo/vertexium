@@ -1110,6 +1110,42 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
                     throw new VertexiumException("STARTS_WITH may only be used to query String values");
                 }
                 return QueryBuilders.prefixQuery(propertyName, (String) value);
+            case RANGE:
+                if (!(value instanceof Range)) {
+                    throw new VertexiumException("RANGE may only be used to query Range values");
+                }
+                Range range = (Range) value;
+
+                Object startValue = convertQueryValue(range.getStart());
+                if (range.getStart() instanceof DateOnly) {
+                    startValue = ((DateTime) startValue).withTime(0, 0, 0, 0);
+                }
+
+                Object endValue = convertQueryValue(range.getEnd());
+                if (range.getEnd() instanceof DateOnly) {
+                    endValue = ((DateTime) endValue).withTime(23, 59, 59, 999);
+                }
+
+                if (startValue instanceof String || endValue instanceof String) {
+                    propertyName = propertyName + FieldNames.EXACT_MATCH_PROPERTY_NAME_SUFFIX;
+                }
+
+                RangeQueryBuilder rangeQueryBuilder = QueryBuilders.rangeQuery(propertyName);
+                if (startValue != null) {
+                    if (range.isInclusiveStart()) {
+                        rangeQueryBuilder = rangeQueryBuilder.gte(startValue);
+                    } else {
+                        rangeQueryBuilder = rangeQueryBuilder.gt(startValue);
+                    }
+                }
+                if (endValue != null) {
+                    if (range.isInclusiveEnd()) {
+                        rangeQueryBuilder = rangeQueryBuilder.lte(endValue);
+                    } else {
+                        rangeQueryBuilder = rangeQueryBuilder.lt(endValue);
+                    }
+                }
+                return rangeQueryBuilder;
             default:
                 throw new VertexiumException("Unexpected Compare predicate " + has.predicate);
         }

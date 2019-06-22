@@ -5,8 +5,8 @@ import org.vertexium.cypher.SingleRowVertexiumCypherResult;
 import org.vertexium.cypher.VertexiumCypherQueryContext;
 import org.vertexium.cypher.VertexiumCypherResult;
 import org.vertexium.cypher.exceptions.VertexiumCypherNotImplemented;
-import org.vertexium.cypher.utils.ObjectUtils;
 import org.vertexium.cypher.utils.PredicateWithIndex;
+import org.vertexium.util.ObjectUtils;
 
 import java.util.ArrayList;
 import java.util.HashMap;
