@@ -1,5 +1,7 @@
 # v5.0.0
 * Added: Element/Extended Data Row additional visibilities
+* Changed: Range renamed to IdRange
+* Added: Compare.RANGE to query
 
 # v4.6.0
 * Added: History for vertices, edges, and properties

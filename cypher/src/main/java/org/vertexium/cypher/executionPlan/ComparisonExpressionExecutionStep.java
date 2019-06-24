@@ -3,7 +3,7 @@ package org.vertexium.cypher.executionPlan;
 import org.vertexium.cypher.VertexiumCypherQueryContext;
 import org.vertexium.cypher.VertexiumCypherResult;
 import org.vertexium.cypher.exceptions.VertexiumCypherNotImplemented;
-import org.vertexium.cypher.utils.ObjectUtils;
+import org.vertexium.util.ObjectUtils;
 
 public class ComparisonExpressionExecutionStep extends ExecutionStepWithChildren implements ExecutionStepWithResultName {
     private final String resultName;

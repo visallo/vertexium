@@ -5,7 +5,7 @@ import org.vertexium.cypher.VertexiumCypherQueryContext;
 import org.vertexium.cypher.exceptions.VertexiumCypherException;
 import org.vertexium.cypher.executionPlan.AggregationFunctionInvocationExecutionStep;
 import org.vertexium.cypher.executionPlan.ExecutionStepWithResultName;
-import org.vertexium.cypher.utils.ObjectUtils;
+import org.vertexium.cypher.utils.CypherObjectUtils;
 
 import java.util.stream.Stream;
 
@@ -32,9 +32,9 @@ public class SumFunction implements AggregationFunction {
                             if (!(rowValue instanceof Number)) {
                                 throw new VertexiumCypherException("Expected number. Found " + rowValue.getClass().getName());
                             }
-                            return ObjectUtils.addNumbers(number, (Number) rowValue);
+                            return CypherObjectUtils.addNumbers(number, (Number) rowValue);
                         },
-                        ObjectUtils::addNumbers
+                        CypherObjectUtils::addNumbers
                     );
                 return group.clone()
                     .pushScope(resultName, sumValue);

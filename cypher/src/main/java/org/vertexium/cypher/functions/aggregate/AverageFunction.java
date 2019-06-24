@@ -4,7 +4,7 @@ import org.vertexium.cypher.CypherResultRow;
 import org.vertexium.cypher.VertexiumCypherQueryContext;
 import org.vertexium.cypher.executionPlan.AggregationFunctionInvocationExecutionStep;
 import org.vertexium.cypher.executionPlan.ExecutionStepWithResultName;
-import org.vertexium.cypher.utils.ObjectUtils;
+import org.vertexium.cypher.utils.CypherObjectUtils;
 
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
@@ -25,12 +25,12 @@ public class AverageFunction implements AggregationFunction {
                     .filter(row -> row.arguments[0] != null)
                     .peek(row -> count.incrementAndGet())
                     .map(row -> (Number) row.arguments[0])
-                    .reduce(0, ObjectUtils::addNumbers);
+                    .reduce(0, CypherObjectUtils::addNumbers);
                 Object result;
                 if (count.get() == 0) {
                     result = null;
                 } else {
-                    result = ObjectUtils.divideNumbers(sum, (double) count.get());
+                    result = CypherObjectUtils.divideNumbers(sum, (double) count.get());
                 }
                 return group.clone()
                     .pushScope(getResultName(), result);

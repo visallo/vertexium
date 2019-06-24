@@ -1,4 +1,4 @@
-package org.vertexium.cypher.utils;
+package org.vertexium.util;
 
 import com.google.common.collect.Lists;
 import org.junit.Test;

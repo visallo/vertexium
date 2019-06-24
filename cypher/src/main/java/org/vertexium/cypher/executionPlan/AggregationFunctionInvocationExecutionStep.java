@@ -1,7 +1,7 @@
 package org.vertexium.cypher.executionPlan;
 
 import org.vertexium.cypher.*;
-import org.vertexium.cypher.utils.ObjectUtils;
+import org.vertexium.cypher.utils.CypherObjectUtils;
 
 import java.util.HashMap;
 import java.util.LinkedHashSet;
@@ -48,7 +48,7 @@ public abstract class AggregationFunctionInvocationExecutionStep extends Functio
                 Stream<CypherResultRow> rows = super.execute(ctx, rowsResult);
                 Stream<RowWithArguments> rowsWithArguments = getRowsWithArguments(rows, getExpectedArgumentCount());
                 if (distinct) {
-                    rowsWithArguments = rowsWithArguments.filter(ObjectUtils.distinctByDeep(row -> row.arguments[0]));
+                    rowsWithArguments = rowsWithArguments.filter(CypherObjectUtils.distinctByDeep(row -> row.arguments[0]));
                 }
                 CypherResultRow group = entry.getValue().size() > 0 ? entry.getValue().get(0) : entry.getKey();
                 CypherResultRow newRow = executeAggregation(ctx, group, rowsWithArguments);

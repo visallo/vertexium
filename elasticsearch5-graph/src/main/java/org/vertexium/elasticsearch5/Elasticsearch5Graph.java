@@ -557,19 +557,14 @@ public class Elasticsearch5Graph extends GraphBase {
     }
 
     @Override
-    public Stream<Vertex> getVerticesInRange(Range idRange, FetchHints fetchHints, Long endTime, User user) {
+    public Stream<Vertex> getVerticesInRange(IdRange idRange, FetchHints fetchHints, Long endTime, User user) {
         validateAuthorizations(user);
         if (endTime != null) {
             throw new VertexiumException("not implemented");
         }
         Query q = query(new Elasticsearch5GraphAuthorizations(user.getAuthorizations())) // TODO switch to new query
+            .has(Element.ID_PROPERTY_NAME, Compare.RANGE, idRange)
             .sort(Element.ID_PROPERTY_NAME, SortDirection.ASCENDING);
-        if (idRange.getInclusiveStart() != null) {
-            q = q.has(Element.ID_PROPERTY_NAME, Compare.GREATER_THAN_EQUAL, idRange.getInclusiveStart());
-        }
-        if (idRange.getExclusiveEnd() != null) {
-            q = q.has(Element.ID_PROPERTY_NAME, Compare.LESS_THAN, idRange.getExclusiveEnd());
-        }
         return stream(q.vertices(fetchHints));
 
     }
@@ -664,19 +659,14 @@ public class Elasticsearch5Graph extends GraphBase {
     }
 
     @Override
-    public Stream<Edge> getEdgesInRange(Range idRange, FetchHints fetchHints, Long endTime, User user) {
+    public Stream<Edge> getEdgesInRange(IdRange idRange, FetchHints fetchHints, Long endTime, User user) {
         validateAuthorizations(user);
         if (endTime != null) {
             throw new VertexiumException("not implemented");
         }
         Query q = query(new Elasticsearch5GraphAuthorizations(user.getAuthorizations())) // TODO switch to new query
+            .has(Element.ID_PROPERTY_NAME, Compare.RANGE, idRange)
             .sort(Element.ID_PROPERTY_NAME, SortDirection.ASCENDING);
-        if (idRange.getInclusiveStart() != null) {
-            q = q.has(Element.ID_PROPERTY_NAME, Compare.GREATER_THAN_EQUAL, idRange.getInclusiveStart());
-        }
-        if (idRange.getExclusiveEnd() != null) {
-            q = q.has(Element.ID_PROPERTY_NAME, Compare.LESS_THAN, idRange.getExclusiveEnd());
-        }
         return stream(q.edges(fetchHints));
     }
 
@@ -782,17 +772,12 @@ public class Elasticsearch5Graph extends GraphBase {
     }
 
     @Override
-    public Stream<ExtendedDataRow> getExtendedDataInRange(ElementType elementType, Range elementIdRange, User user) {
+    public Stream<ExtendedDataRow> getExtendedDataInRange(ElementType elementType, IdRange elementIdRange, User user) {
         validateAuthorizations(user);
         Query q = query(new Elasticsearch5GraphAuthorizations(user.getAuthorizations())) // TODO switch to new query
             .has(ExtendedDataRow.ELEMENT_TYPE, elementType)
+            .has(ExtendedDataRow.ELEMENT_ID, Compare.RANGE, elementIdRange)
             .sort(ExtendedDataRow.ELEMENT_ID, SortDirection.ASCENDING);
-        if (elementIdRange.getInclusiveStart() != null) {
-            q = q.has(ExtendedDataRow.ELEMENT_ID, Compare.GREATER_THAN_EQUAL, elementIdRange.getInclusiveStart());
-        }
-        if (elementIdRange.getExclusiveEnd() != null) {
-            q = q.has(ExtendedDataRow.ELEMENT_ID, Compare.LESS_THAN, elementIdRange.getExclusiveEnd());
-        }
         return stream(q.extendedDataRows());
     }
 
