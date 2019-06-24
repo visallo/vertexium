@@ -24,7 +24,7 @@ public interface VertexiumObject extends Comparable {
     /**
      * Set of all additional visibilities on this object
      */
-    ImmutableSet<String> getAdditionalVisibilities();
+    ImmutableSet<Visibility> getAdditionalVisibilities();
 
     /**
      * Gets a property by name. This assumes a single valued property. If multiple property values exists this will only return the first one.

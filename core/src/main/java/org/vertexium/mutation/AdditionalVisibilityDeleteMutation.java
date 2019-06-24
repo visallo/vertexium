@@ -1,15 +1,17 @@
 package org.vertexium.mutation;
 
+import org.vertexium.Visibility;
+
 public class AdditionalVisibilityDeleteMutation {
-    private final String additionalVisibility;
+    private final Visibility additionalVisibility;
     private final Object eventData;
 
-    public AdditionalVisibilityDeleteMutation(String additionalVisibility, Object eventData) {
+    public AdditionalVisibilityDeleteMutation(Visibility additionalVisibility, Object eventData) {
         this.additionalVisibility = additionalVisibility;
         this.eventData = eventData;
     }
 
-    public String getAdditionalVisibility() {
+    public Visibility getAdditionalVisibility() {
         return additionalVisibility;
     }
 

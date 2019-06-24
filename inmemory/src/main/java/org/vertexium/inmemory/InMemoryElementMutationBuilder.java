@@ -361,7 +361,7 @@ class InMemoryElementMutationBuilder {
 
     private void addAdditionalVisibility(
         InMemoryTableElement inMemoryTableElement,
-        String visibility,
+        Visibility visibility,
         Object eventData
     ) {
         inMemoryTableElement.appendAddAdditionalVisibilityMutation(visibility, eventData);
@@ -369,7 +369,7 @@ class InMemoryElementMutationBuilder {
 
     private void deleteAdditionalVisibility(
         InMemoryTableElement inMemoryTableElement,
-        String visibility,
+        Visibility visibility,
         Object eventData
     ) {
         inMemoryTableElement.appendDeleteAdditionalVisibilityMutation(visibility, eventData);
@@ -422,7 +422,7 @@ class InMemoryElementMutationBuilder {
         InMemoryElement element,
         String tableName,
         String row,
-        String additionalVisibility
+        Visibility additionalVisibility
     ) {
         extendedDataTable.addAdditionalVisibility(
             new ExtendedDataRowId(ElementType.getTypeFromElement(element), element.getId(), tableName, row),
@@ -434,7 +434,7 @@ class InMemoryElementMutationBuilder {
         InMemoryElement element,
         String tableName,
         String row,
-        String additionalVisibility
+        Visibility additionalVisibility
     ) {
         extendedDataTable.deleteAdditionalVisibility(
             new ExtendedDataRowId(ElementType.getTypeFromElement(element), element.getId(), tableName, row),

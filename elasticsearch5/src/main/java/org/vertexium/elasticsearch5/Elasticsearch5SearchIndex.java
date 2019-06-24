@@ -76,7 +76,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex {
     public static final String LOWERCASER_NORMALIZER_NAME = "visallo_lowercaser";
     public static final int EXACT_MATCH_IGNORE_ABOVE_LIMIT = 10000;
     public static final String FIELDNAME_DOT_REPLACEMENT = "-_-";
-    private final Set<String> additionalVisibilitiesCache = new ConcurrentSet<>();
+    private final Set<Visibility> additionalVisibilitiesCache = new ConcurrentSet<>();
     private final Client client;
     private final ElasticsearchSearchIndexConfiguration config;
     private final Graph graph;
@@ -262,8 +262,8 @@ public class Elasticsearch5SearchIndex implements SearchIndex {
     public void addElement(
         Graph graph,
         Element element,
-        Set<String> additionalVisibilities,
-        Set<String> additionalVisibilitiesToDelete,
+        Set<Visibility> additionalVisibilities,
+        Set<Visibility> additionalVisibilitiesToDelete,
         User user
     ) {
         addElementService.addElement(
@@ -378,7 +378,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex {
     public void addAdditionalVisibility(
         Graph graph,
         Element element,
-        String visibility,
+        Visibility visibility,
         Object eventData,
         User user
     ) {
@@ -408,7 +408,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex {
     public void deleteAdditionalVisibility(
         Graph graph,
         Element element,
-        String visibility,
+        Visibility visibility,
         Object eventData,
         User user
     ) {
@@ -755,16 +755,24 @@ public class Elasticsearch5SearchIndex implements SearchIndex {
         Map<String, Object> fieldsToSet,
         Collection<String> fieldsToRemove,
         Map<String, String> fieldsToRename,
-        Set<String> additionalVisibilities,
-        Set<String> additionalVisibilitiesToDelete
+        Set<Visibility> additionalVisibilities,
+        Set<Visibility> additionalVisibilitiesToDelete
     ) {
         fieldsToSet = fieldsToSet == null ? Collections.emptyMap() : fieldsToSet.entrySet().stream()
             .collect(Collectors.toMap(e -> propertyNameService.replaceFieldnameDots(e.getKey()), Map.Entry::getValue));
-        fieldsToRemove = fieldsToRemove == null ? Collections.emptyList() : fieldsToRemove.stream().map(propertyNameService::replaceFieldnameDots).collect(Collectors.toList());
-        fieldsToRename = fieldsToRename == null ? Collections.emptyMap() : fieldsToRename.entrySet().stream()
+        fieldsToRemove = fieldsToRemove == null
+            ? Collections.emptyList()
+            : fieldsToRemove.stream().map(propertyNameService::replaceFieldnameDots).collect(Collectors.toList());
+        fieldsToRename = fieldsToRename == null
+            ? Collections.emptyMap()
+            : fieldsToRename.entrySet().stream()
             .collect(Collectors.toMap(e -> propertyNameService.replaceFieldnameDots(e.getKey()), e -> propertyNameService.replaceFieldnameDots(e.getValue())));
-        List<String> additionalVisibilitiesParam = additionalVisibilities == null ? Collections.emptyList() : new ArrayList<>(additionalVisibilities);
-        List<String> additionalVisibilitiesToDeleteParam = additionalVisibilitiesToDelete == null ? Collections.emptyList() : new ArrayList<>(additionalVisibilitiesToDelete);
+        List<Visibility> additionalVisibilitiesParam = additionalVisibilities == null
+            ? Collections.emptyList()
+            : new ArrayList<>(additionalVisibilities);
+        List<Visibility> additionalVisibilitiesToDeleteParam = additionalVisibilitiesToDelete == null
+            ? Collections.emptyList()
+            : new ArrayList<>(additionalVisibilitiesToDelete);
         ensureAdditionalVisibilitiesDefined(additionalVisibilitiesParam);
 
         XContentBuilder jsonBuilder;
@@ -788,8 +796,8 @@ public class Elasticsearch5SearchIndex implements SearchIndex {
                     "fieldsToSet", fieldsToSet,
                     "fieldsToRemove", fieldsToRemove,
                     "fieldsToRename", fieldsToRename,
-                    "additionalVisibilities", additionalVisibilitiesParam,
-                    "additionalVisibilitiesToDelete", additionalVisibilitiesToDeleteParam
+                    "additionalVisibilities", additionalVisibilitiesParam.stream().map(Visibility::getVisibilityString).collect(Collectors.toList()),
+                    "additionalVisibilitiesToDelete", additionalVisibilitiesToDeleteParam.stream().map(Visibility::getVisibilityString).collect(Collectors.toList())
                 )
             ))
             .setRetryOnConflict(FlushObjectQueue.MAX_RETRIES);
@@ -843,9 +851,9 @@ public class Elasticsearch5SearchIndex implements SearchIndex {
     public QueryBuilder getAdditionalVisibilitiesFilter(User user) {
         BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
         for (GraphMetadataEntry metadata : graph.getMetadataWithPrefix(ADDITIONAL_VISIBILITY_METADATA_PREFIX)) {
-            String visibilityString = (String) metadata.getValue();
-            if (!user.canRead(new Visibility(visibilityString))) {
-                boolQuery.mustNot(QueryBuilders.termQuery(ADDITIONAL_VISIBILITY_FIELD_NAME, visibilityString));
+            Visibility visibility = (Visibility) metadata.getValue();
+            if (!user.canRead(visibility)) {
+                boolQuery.mustNot(QueryBuilders.termQuery(ADDITIONAL_VISIBILITY_FIELD_NAME, visibility.getVisibilityString()));
             }
         }
         return boolQuery;
@@ -933,8 +941,8 @@ public class Elasticsearch5SearchIndex implements SearchIndex {
         }
     }
 
-    void ensureAdditionalVisibilitiesDefined(Iterable<String> additionalVisibilities) {
-        for (String additionalVisibility : additionalVisibilities) {
+    void ensureAdditionalVisibilitiesDefined(Iterable<Visibility> additionalVisibilities) {
+        for (Visibility additionalVisibility : additionalVisibilities) {
             if (!additionalVisibilitiesCache.contains(additionalVisibility)) {
                 String key = ADDITIONAL_VISIBILITY_METADATA_PREFIX + additionalVisibility;
                 if (graph.getMetadata(key) == null) {

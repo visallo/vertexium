@@ -36,11 +36,11 @@ public abstract class InMemoryExtendedDataTable {
 
     public abstract void addAdditionalVisibility(
         ExtendedDataRowId extendedDataRowId,
-        String additionalVisibility
+        Visibility additionalVisibility
     );
 
     public abstract void deleteAdditionalVisibility(
         ExtendedDataRowId extendedDataRowId,
-        String additionalVisibility
+        Visibility additionalVisibility
     );
 }

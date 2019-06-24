@@ -87,7 +87,7 @@ public class EdgeInfoEdge extends ElementBase implements Edge {
     }
 
     @Override
-    public ImmutableSet<String> getAdditionalVisibilities() {
+    public ImmutableSet<Visibility> getAdditionalVisibilities() {
         return getEdge().getAdditionalVisibilities();
     }
 

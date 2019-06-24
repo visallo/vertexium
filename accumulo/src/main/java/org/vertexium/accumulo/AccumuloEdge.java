@@ -1,8 +1,6 @@
 package org.vertexium.accumulo;
 
-import com.google.common.base.Function;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
 import org.apache.accumulo.core.data.Key;
 import org.apache.accumulo.core.data.Value;
 import org.apache.hadoop.io.Text;
@@ -11,12 +9,13 @@ import org.vertexium.accumulo.iterator.EdgeIterator;
 import org.vertexium.accumulo.iterator.model.ElementData;
 import org.vertexium.accumulo.util.DataInputStreamUtils;
 import org.vertexium.mutation.ExistingEdgeMutation;
+import org.vertexium.util.StreamUtils;
 
-import javax.annotation.Nullable;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class AccumuloEdge extends AccumuloElement implements Edge {
     public static final Text CF_SIGNAL = EdgeIterator.CF_SIGNAL;
@@ -35,7 +34,7 @@ public class AccumuloEdge extends AccumuloElement implements Edge {
         Visibility visibility,
         Iterable<Property> properties,
         Iterable<Visibility> hiddenVisibilities,
-        Iterable<String> additionalVisibilities,
+        Iterable<Visibility> additionalVisibilities,
         ImmutableSet<String> extendedDataTableNames,
         long timestamp,
         FetchHints fetchHints,
@@ -79,15 +78,13 @@ public class AccumuloEdge extends AccumuloElement implements Edge {
             timestamp = in.readLong();
             vertexVisibility = new Visibility(DataInputStreamUtils.decodeString(in));
 
-            hiddenVisibilities = Iterables.transform(DataInputStreamUtils.decodeStringSet(in), new Function<String, Visibility>() {
-                @Nullable
-                @Override
-                public Visibility apply(String input) {
-                    return new Visibility(input);
-                }
-            });
+            hiddenVisibilities = DataInputStreamUtils.decodeStringSet(in).stream()
+                .map(Visibility::new)
+                .collect(Collectors.toSet());
 
-            ImmutableSet<String> additionalVisibilities = DataInputStreamUtils.decodeStringSet(in);
+            ImmutableSet<Visibility> additionalVisibilities = DataInputStreamUtils.decodeStringSet(in).stream()
+                .map(Visibility::new)
+                .collect(StreamUtils.toImmutableSet());
 
             List<MetadataEntry> metadataEntries = DataInputStreamUtils.decodeMetadataEntries(in);
             properties = DataInputStreamUtils.decodeProperties(graph, in, metadataEntries, fetchHints);

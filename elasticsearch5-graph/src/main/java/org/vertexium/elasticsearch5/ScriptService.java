@@ -184,7 +184,7 @@ public class ScriptService {
     ) {
         org.vertexium.elasticsearch5.models.AdditionalVisibilityAddMutation.Builder additionalVisibilityAddMutation
             = org.vertexium.elasticsearch5.models.AdditionalVisibilityAddMutation.newBuilder()
-            .setVisibility(additionalExtendedDataVisibility.getAdditionalVisibility());
+            .setVisibility(additionalExtendedDataVisibility.getAdditionalVisibility().getVisibilityString());
         if (additionalExtendedDataVisibility.getEventData() != null) {
             Value value = objectToValue(additionalExtendedDataVisibility.getEventData());
             additionalVisibilityAddMutation.setEventData(value);
@@ -198,7 +198,7 @@ public class ScriptService {
     private Mutation additionalVisibilityAddToMutation(AdditionalVisibilityAddMutation additionalVisibility, long timestamp) {
         org.vertexium.elasticsearch5.models.AdditionalVisibilityAddMutation.Builder additionalVisibilityAddMutation
             = org.vertexium.elasticsearch5.models.AdditionalVisibilityAddMutation.newBuilder()
-            .setVisibility(additionalVisibility.getAdditionalVisibility());
+            .setVisibility(additionalVisibility.getAdditionalVisibility().getVisibilityString());
         if (additionalVisibility.getEventData() != null) {
             Value value = objectToValue(additionalVisibility.getEventData());
             additionalVisibilityAddMutation.setEventData(value);
@@ -215,7 +215,7 @@ public class ScriptService {
     ) {
         org.vertexium.elasticsearch5.models.AdditionalVisibilityDeleteMutation.Builder additionalVisibilityDeleteMutation
             = org.vertexium.elasticsearch5.models.AdditionalVisibilityDeleteMutation.newBuilder()
-            .setVisibility(additionalExtendedDataVisibilityDelete.getAdditionalVisibility());
+            .setVisibility(additionalExtendedDataVisibilityDelete.getAdditionalVisibility().getVisibilityString());
         if (additionalExtendedDataVisibilityDelete.getEventData() != null) {
             Value value = objectToValue(additionalExtendedDataVisibilityDelete.getEventData());
             additionalVisibilityDeleteMutation.setEventData(value);
@@ -229,7 +229,7 @@ public class ScriptService {
     private Mutation additionalVisibilityDeleteToMutation(AdditionalVisibilityDeleteMutation additionalVisibilityDelete, long timestamp) {
         org.vertexium.elasticsearch5.models.AdditionalVisibilityDeleteMutation.Builder additionalVisibilityDeleteMutation
             = org.vertexium.elasticsearch5.models.AdditionalVisibilityDeleteMutation.newBuilder()
-            .setVisibility(additionalVisibilityDelete.getAdditionalVisibility());
+            .setVisibility(additionalVisibilityDelete.getAdditionalVisibility().getVisibilityString());
         if (additionalVisibilityDelete.getEventData() != null) {
             Value value = objectToValue(additionalVisibilityDelete.getEventData());
             additionalVisibilityDeleteMutation.setEventData(value);

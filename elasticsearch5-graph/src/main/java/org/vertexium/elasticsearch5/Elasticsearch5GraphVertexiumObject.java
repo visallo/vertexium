@@ -3,10 +3,7 @@ package org.vertexium.elasticsearch5;
 import com.google.common.collect.ImmutableSet;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHitField;
-import org.vertexium.FetchHints;
-import org.vertexium.User;
-import org.vertexium.VertexiumException;
-import org.vertexium.VertexiumObject;
+import org.vertexium.*;
 import org.vertexium.util.StreamUtils;
 
 class Elasticsearch5GraphVertexiumObject {
@@ -25,13 +22,13 @@ class Elasticsearch5GraphVertexiumObject {
         }
     }
 
-    static ImmutableSet<String> readAdditionalVisibilitiesFromSearchHit(SearchHit hit) {
+    static ImmutableSet<Visibility> readAdditionalVisibilitiesFromSearchHit(SearchHit hit) {
         SearchHitField field = hit.getField(FieldNames.ADDITIONAL_VISIBILITY);
         if (field == null) {
             return ImmutableSet.of();
         }
         return field.getValues().stream()
-            .map(s -> (String) s)
+            .map(s -> new Visibility((String) s))
             .collect(StreamUtils.toImmutableSet());
     }
 }

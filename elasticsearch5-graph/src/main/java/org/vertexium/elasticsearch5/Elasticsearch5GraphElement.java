@@ -26,7 +26,7 @@ public abstract class Elasticsearch5GraphElement extends ElementBase implements 
     private final Elasticsearch5Graph graph;
     private final FetchHints fetchHints;
     private final User user;
-    private final ImmutableSet<String> additionalVisibilities;
+    private final ImmutableSet<Visibility> additionalVisibilities;
     private final Iterable<? extends Property> properties;
     private final String id;
     private final Visibility visibility;
@@ -57,7 +57,7 @@ public abstract class Elasticsearch5GraphElement extends ElementBase implements 
         String id,
         FetchHints fetchHints,
         Iterable<? extends Property> properties,
-        ImmutableSet<String> additionalVisibilities,
+        ImmutableSet<Visibility> additionalVisibilities,
         Set<Visibility> hiddenVisibilities,
         Visibility visibility,
         User user
@@ -77,7 +77,7 @@ public abstract class Elasticsearch5GraphElement extends ElementBase implements 
         Mutation mutation,
         AtomicBoolean created,
         AtomicReference<Visibility> visibility,
-        Set<String> additionalVisibilities,
+        Set<Visibility> additionalVisibilities,
         Set<Visibility> hiddenVisibilities,
         List<MutablePropertyImpl> properties,
         FetchHints fetchHints,
@@ -299,7 +299,7 @@ public abstract class Elasticsearch5GraphElement extends ElementBase implements 
     }
 
     @Override
-    public ImmutableSet<String> getAdditionalVisibilities() {
+    public ImmutableSet<Visibility> getAdditionalVisibilities() {
         return additionalVisibilities;
     }
 

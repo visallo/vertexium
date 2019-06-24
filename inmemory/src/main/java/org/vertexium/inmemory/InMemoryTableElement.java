@@ -600,12 +600,12 @@ public abstract class InMemoryTableElement<TElement extends InMemoryElement> imp
         addMutation(new SoftDeletePropertyMutation(timestamp, key, name, propertyVisibility, data));
     }
 
-    public void appendAddAdditionalVisibilityMutation(String visibility, Object eventData) {
+    public void appendAddAdditionalVisibilityMutation(Visibility visibility, Object eventData) {
         long timestamp = IncreasingTime.currentTimeMillis();
         addMutation(new AddAdditionalVisibilityMutation(timestamp, visibility, eventData));
     }
 
-    public void appendDeleteAdditionalVisibilityMutation(String visibility, Object eventData) {
+    public void appendDeleteAdditionalVisibilityMutation(Visibility visibility, Object eventData) {
         long timestamp = IncreasingTime.currentTimeMillis();
         addMutation(new DeleteAdditionalVisibilityMutation(timestamp, visibility, eventData));
     }
@@ -687,7 +687,7 @@ public abstract class InMemoryTableElement<TElement extends InMemoryElement> imp
     }
 
     private Visibility getAdditionalVisibilitiesAsVisibility() {
-        Set<String> additionalVisibilities = getAdditionalVisibilities();
+        Set<Visibility> additionalVisibilities = getAdditionalVisibilities();
         if (additionalVisibilities.size() == 0) {
             return null;
         }
@@ -699,8 +699,8 @@ public abstract class InMemoryTableElement<TElement extends InMemoryElement> imp
         return new Visibility(visibilityString);
     }
 
-    public ImmutableSet<String> getAdditionalVisibilities() {
-        Set<String> results = new HashSet<>();
+    public ImmutableSet<Visibility> getAdditionalVisibilities() {
+        Set<Visibility> results = new HashSet<>();
 
         mutationLock.readLock().lock();
         try {

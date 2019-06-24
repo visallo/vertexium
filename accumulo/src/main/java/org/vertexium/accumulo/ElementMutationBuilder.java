@@ -207,7 +207,7 @@ public abstract class ElementMutationBuilder {
                     Value value = toAddAdditionalVisibilityValue(add.getEventData());
                     m.put(
                         AccumuloElement.CF_ADDITIONAL_VISIBILITY,
-                        new Text(add.getAdditionalVisibility()),
+                        new Text(add.getAdditionalVisibility().getVisibilityString()),
                         new ColumnVisibility(),
                         value
                     );
@@ -217,7 +217,7 @@ public abstract class ElementMutationBuilder {
                     Value value = toDeleteAdditionalVisibilityValue(del.getEventData());
                     m.put(
                         AccumuloElement.CF_ADDITIONAL_VISIBILITY,
-                        new Text(del.getAdditionalVisibility()),
+                        new Text(del.getAdditionalVisibility().getVisibilityString()),
                         new ColumnVisibility(),
                         value
                     );
@@ -393,7 +393,7 @@ public abstract class ElementMutationBuilder {
         }
         return visibilityChanges.get(name).stream()
             .filter(visibilityChange -> Objects.equals(key, visibilityChange.getKey()) && Objects.equals(name, visibilityChange.getName()) && Objects.equals(visibility, visibilityChange.getExistingVisibility()))
-            .map(visibilityChange -> visibilityChange.getVisibility())
+            .map(AlterPropertyVisibility::getVisibility)
             .findFirst()
             .orElse(visibility);
 
@@ -594,7 +594,12 @@ public abstract class ElementMutationBuilder {
         AdditionalVisibilityAddMutation additionalVisibility
     ) {
         Value value = toAddAdditionalVisibilityValue(additionalVisibility.getEventData());
-        m.put(AccumuloElement.CF_ADDITIONAL_VISIBILITY, new Text(additionalVisibility.getAdditionalVisibility()), new ColumnVisibility(), value);
+        m.put(
+            AccumuloElement.CF_ADDITIONAL_VISIBILITY,
+            new Text(additionalVisibility.getAdditionalVisibility().getVisibilityString()),
+            new ColumnVisibility(),
+            value
+        );
     }
 
     public void addAdditionalVisibilityDeleteToMutation(
@@ -602,7 +607,12 @@ public abstract class ElementMutationBuilder {
         AdditionalVisibilityDeleteMutation additionalVisibilityDelete
     ) {
         Value value = toDeleteAdditionalVisibilityValue(additionalVisibilityDelete.getEventData());
-        m.put(AccumuloElement.CF_ADDITIONAL_VISIBILITY, new Text(additionalVisibilityDelete.getAdditionalVisibility()), new ColumnVisibility(), value);
+        m.put(
+            AccumuloElement.CF_ADDITIONAL_VISIBILITY,
+            new Text(additionalVisibilityDelete.getAdditionalVisibility().getVisibilityString()),
+            new ColumnVisibility(),
+            value
+        );
     }
 
     public void addMarkPropertyHiddenToMutation(Mutation m, MarkPropertyHiddenData markPropertyHiddenData) {

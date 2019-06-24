@@ -13,8 +13,8 @@ public interface SearchIndex {
     default void addElement(
         Graph graph,
         Element element,
-        Set<String> additionalVisibilities,
-        Set<String> additionalVisibilitiesToDelete,
+        Set<Visibility> additionalVisibilities,
+        Set<Visibility> additionalVisibilitiesToDelete,
         Authorizations authorizations
     ) {
         addElement(
@@ -29,8 +29,8 @@ public interface SearchIndex {
     void addElement(
         Graph graph,
         Element element,
-        Set<String> additionalVisibilities,
-        Set<String> additionalVisibilitiesToDelete,
+        Set<Visibility> additionalVisibilities,
+        Set<Visibility> additionalVisibilitiesToDelete,
         User user
     );
 
@@ -221,16 +221,16 @@ public interface SearchIndex {
     );
 
     @FutureDeprecation
-    default void addAdditionalVisibility(Graph graph, Element element, String visibility, Object eventData, Authorizations authorizations) {
+    default void addAdditionalVisibility(Graph graph, Element element, Visibility visibility, Object eventData, Authorizations authorizations) {
         addAdditionalVisibility(graph, element, visibility, eventData, authorizations.getUser());
     }
 
-    void addAdditionalVisibility(Graph graph, Element element, String visibility, Object eventData, User user);
+    void addAdditionalVisibility(Graph graph, Element element, Visibility visibility, Object eventData, User user);
 
     @FutureDeprecation
-    default void deleteAdditionalVisibility(Graph graph, Element element, String visibility, Object eventData, Authorizations authorizations) {
+    default void deleteAdditionalVisibility(Graph graph, Element element, Visibility visibility, Object eventData, Authorizations authorizations) {
         deleteAdditionalVisibility(graph, element, visibility, eventData, authorizations.getUser());
     }
 
-    void deleteAdditionalVisibility(Graph graph, Element element, String visibility, Object eventData, User user);
+    void deleteAdditionalVisibility(Graph graph, Element element, Visibility visibility, Object eventData, User user);
 }

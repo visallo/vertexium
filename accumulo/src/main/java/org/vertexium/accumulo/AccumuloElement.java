@@ -9,7 +9,9 @@ import org.vertexium.*;
 import org.vertexium.accumulo.iterator.ElementIterator;
 import org.vertexium.historicalEvent.HistoricalEvent;
 import org.vertexium.historicalEvent.HistoricalEventId;
-import org.vertexium.mutation.*;
+import org.vertexium.mutation.EdgeMutation;
+import org.vertexium.mutation.ElementMutation;
+import org.vertexium.mutation.ExistingElementMutation;
 import org.vertexium.property.MutableProperty;
 import org.vertexium.query.ExtendedDataQueryableIterable;
 import org.vertexium.query.QueryableIterable;
@@ -52,7 +54,7 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
     private final long timestamp;
     private final FetchHints fetchHints;
     private final Set<Visibility> hiddenVisibilities;
-    private final Set<String> additionalVisibilities;
+    private final Set<Visibility> additionalVisibilities;
 
     private final PropertyCollection properties;
     private final ImmutableSet<String> extendedDataTableNames;
@@ -64,7 +66,7 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
         Visibility visibility,
         Iterable<Property> properties,
         Iterable<Visibility> hiddenVisibilities,
-        Iterable<String> additionalVisibilities,
+        Iterable<Visibility> additionalVisibilities,
         ImmutableSet<String> extendedDataTableNames,
         long timestamp,
         FetchHints fetchHints,
@@ -199,7 +201,7 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
     }
 
     @Override
-    public ImmutableSet<String> getAdditionalVisibilities() {
+    public ImmutableSet<Visibility> getAdditionalVisibilities() {
         return ImmutableSet.copyOf(additionalVisibilities);
     }
 

@@ -43,7 +43,7 @@ public class Elasticsearch5Graph extends GraphBase {
     public static final int EXACT_MATCH_IGNORE_ABOVE_LIMIT = 10000;
     public static final String LOWERCASER_NORMALIZER_NAME = "visallo_lowercaser";
     public static final String ADDITIONAL_VISIBILITY_METADATA_PREFIX = "elasticsearch_additionalVisibility_";
-    private final Set<String> additionalVisibilitiesCache = new ConcurrentSet<>();
+    private final Set<Visibility> additionalVisibilitiesCache = new ConcurrentSet<>();
 
     private final Client client;
     private final Elasticsearch5GraphMetadataStore graphMetadataStore;
@@ -818,25 +818,25 @@ public class Elasticsearch5Graph extends GraphBase {
     }
 
     void ensureAdditionalVisibilitiesDefinedExtendedData(Iterable<AdditionalExtendedDataVisibilityAddMutation> additionalVisibilities) {
-        ensureAdditionalVisibilitiesDefined(new ConvertingIterable<AdditionalExtendedDataVisibilityAddMutation, String>(additionalVisibilities) {
+        ensureAdditionalVisibilitiesDefined(new ConvertingIterable<AdditionalExtendedDataVisibilityAddMutation, Visibility>(additionalVisibilities) {
             @Override
-            protected String convert(AdditionalExtendedDataVisibilityAddMutation o) {
+            protected Visibility convert(AdditionalExtendedDataVisibilityAddMutation o) {
                 return o.getAdditionalVisibility();
             }
         });
     }
 
     void ensureAdditionalVisibilitiesDefinedMutations(Iterable<AdditionalVisibilityAddMutation> additionalVisibilities) {
-        ensureAdditionalVisibilitiesDefined(new ConvertingIterable<AdditionalVisibilityAddMutation, String>(additionalVisibilities) {
+        ensureAdditionalVisibilitiesDefined(new ConvertingIterable<AdditionalVisibilityAddMutation, Visibility>(additionalVisibilities) {
             @Override
-            protected String convert(AdditionalVisibilityAddMutation o) {
+            protected Visibility convert(AdditionalVisibilityAddMutation o) {
                 return o.getAdditionalVisibility();
             }
         });
     }
 
-    void ensureAdditionalVisibilitiesDefined(Iterable<String> additionalVisibilities) {
-        for (String additionalVisibility : additionalVisibilities) {
+    void ensureAdditionalVisibilitiesDefined(Iterable<Visibility> additionalVisibilities) {
+        for (Visibility additionalVisibility : additionalVisibilities) {
             if (!additionalVisibilitiesCache.contains(additionalVisibility)) {
                 String key = ADDITIONAL_VISIBILITY_METADATA_PREFIX + additionalVisibility;
                 if (getMetadata(key) == null) {

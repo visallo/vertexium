@@ -45,7 +45,7 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
         Visibility vertexVisibility,
         Iterable<Property> properties,
         Iterable<Visibility> hiddenVisibilities,
-        Iterable<String> additionalVisibilities,
+        Iterable<Visibility> additionalVisibilities,
         ImmutableSet<String> extendedDataTableNames,
         Edges inEdges,
         Edges outEdges,
@@ -97,7 +97,9 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
                 hiddenVisibilityStrings.stream().map(Visibility::new).collect(Collectors.toSet()) :
                 null;
 
-            ImmutableSet<String> additionalVisibilities = DataInputStreamUtils.decodeStringSet(in);
+            ImmutableSet<Visibility> additionalVisibilities = DataInputStreamUtils.decodeStringSet(in).stream()
+                .map(Visibility::new)
+                .collect(StreamUtils.toImmutableSet());
 
             List<MetadataEntry> metadataEntries = DataInputStreamUtils.decodeMetadataEntries(in);
             properties = DataInputStreamUtils.decodeProperties(graph, in, metadataEntries, fetchHints);

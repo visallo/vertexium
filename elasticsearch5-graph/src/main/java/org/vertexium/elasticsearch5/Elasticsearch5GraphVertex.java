@@ -29,7 +29,7 @@ public class Elasticsearch5GraphVertex extends Elasticsearch5GraphElement implem
         String id,
         FetchHints fetchHints,
         Iterable<? extends Property> properties,
-        ImmutableSet<String> additionalVisibilities,
+        ImmutableSet<Visibility> additionalVisibilities,
         Set<Visibility> hiddenVisibilities,
         Visibility visibility,
         User user
@@ -45,7 +45,7 @@ public class Elasticsearch5GraphVertex extends Elasticsearch5GraphElement implem
         User user,
         ScriptService scriptService
     ) {
-        Set<String> additionalVisibilities = new HashSet<>();
+        Set<Visibility> additionalVisibilities = new HashSet<>();
         Set<Visibility> hiddenVisibilities = new HashSet<>();
         List<MutablePropertyImpl> properties = new ArrayList<>();
         AtomicReference<Visibility> visibility = new AtomicReference<>();
@@ -87,7 +87,7 @@ public class Elasticsearch5GraphVertex extends Elasticsearch5GraphElement implem
         Mutation mutation,
         AtomicBoolean created,
         AtomicReference<Visibility> visibility,
-        Set<String> additionalVisibilities,
+        Set<Visibility> additionalVisibilities,
         Set<Visibility> hiddenVisibilities,
         List<MutablePropertyImpl> properties,
         FetchHints fetchHints,

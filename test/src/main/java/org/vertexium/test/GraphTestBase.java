@@ -7485,7 +7485,7 @@ public abstract class GraphTestBase {
     @Test
     public void testAdditionalVisibilities() {
         graph.prepareVertex("v1", VISIBILITY_A)
-            .addAdditionalVisibility(VISIBILITY_B_STRING)
+            .addAdditionalVisibility(VISIBILITY_B)
             .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
@@ -7512,7 +7512,7 @@ public abstract class GraphTestBase {
 
         // add c (should have b and c)
         graph.prepareVertex("v1", VISIBILITY_A)
-            .addAdditionalVisibility(VISIBILITY_C_STRING)
+            .addAdditionalVisibility(VISIBILITY_C)
             .save(AUTHORIZATIONS_A_AND_B_AND_C);
         graph.flush();
 
@@ -7539,7 +7539,7 @@ public abstract class GraphTestBase {
 
         // remove c (should have b)
         graph.prepareVertex("v1", VISIBILITY_A)
-            .deleteAdditionalVisibility(VISIBILITY_C_STRING)
+            .deleteAdditionalVisibility(VISIBILITY_C)
             .save(AUTHORIZATIONS_A_AND_B_AND_C);
         graph.flush();
 
@@ -7566,7 +7566,7 @@ public abstract class GraphTestBase {
 
         // remove b (should have no additional visibilities)
         graph.prepareVertex("v1", VISIBILITY_A)
-            .deleteAdditionalVisibility(VISIBILITY_B_STRING)
+            .deleteAdditionalVisibility(VISIBILITY_B)
             .save(AUTHORIZATIONS_A_AND_B_AND_C);
         graph.flush();
 
@@ -7595,7 +7595,7 @@ public abstract class GraphTestBase {
 
         getGraph().getVertex("v1", AUTHORIZATIONS_A)
             .prepareMutation()
-            .addExtendedDataAdditionalVisibility("table1", "row1", VISIBILITY_B_STRING)
+            .addExtendedDataAdditionalVisibility("table1", "row1", VISIBILITY_B)
             .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
@@ -7608,7 +7608,7 @@ public abstract class GraphTestBase {
 
         v = getGraph().getVertex("v1", AUTHORIZATIONS_A_AND_B);
         rows = toList(v.getExtendedData("table1"));
-        assertSet(rows.get(0).getAdditionalVisibilities(), VISIBILITY_B_STRING);
+        assertSet(rows.get(0).getAdditionalVisibilities(), VISIBILITY_B);
         assertRowIdsAnyOrder(rows, "row1");
 
         queryResults = graph.query(AUTHORIZATIONS_A_AND_B).extendedDataRows();
@@ -7626,7 +7626,7 @@ public abstract class GraphTestBase {
 
         // add c
         graph.prepareVertex("v1", VISIBILITY_A)
-            .addExtendedDataAdditionalVisibility("table1", "row1", VISIBILITY_C_STRING)
+            .addExtendedDataAdditionalVisibility("table1", "row1", VISIBILITY_C)
             .save(AUTHORIZATIONS_A_AND_B_AND_C);
         graph.flush();
 
@@ -7639,7 +7639,7 @@ public abstract class GraphTestBase {
 
         v = getGraph().getVertex("v1", AUTHORIZATIONS_A_AND_B_AND_C);
         rows = toList(v.getExtendedData("table1"));
-        assertSet(rows.get(0).getAdditionalVisibilities(), VISIBILITY_B_STRING, VISIBILITY_C_STRING);
+        assertSet(rows.get(0).getAdditionalVisibilities(), VISIBILITY_B, VISIBILITY_C);
         assertRowIdsAnyOrder(rows, "row1");
 
         queryResults = graph.query(AUTHORIZATIONS_A_AND_B_AND_C).extendedDataRows();
@@ -7657,7 +7657,7 @@ public abstract class GraphTestBase {
 
         // remove c
         graph.prepareVertex("v1", VISIBILITY_A)
-            .deleteExtendedDataAdditionalVisibility("table1", "row1", VISIBILITY_C_STRING)
+            .deleteExtendedDataAdditionalVisibility("table1", "row1", VISIBILITY_C)
             .save(AUTHORIZATIONS_A_AND_B_AND_C);
         graph.flush();
 
@@ -7687,7 +7687,7 @@ public abstract class GraphTestBase {
 
         // remove b
         graph.prepareVertex("v1", VISIBILITY_A)
-            .deleteExtendedDataAdditionalVisibility("table1", "row1", VISIBILITY_B_STRING)
+            .deleteExtendedDataAdditionalVisibility("table1", "row1", VISIBILITY_B)
             .save(AUTHORIZATIONS_A_AND_B_AND_C);
         graph.flush();
 
@@ -7717,8 +7717,8 @@ public abstract class GraphTestBase {
         Authorizations authorizationABCD = createAuthorizations(VISIBILITY_A_STRING, VISIBILITY_B_STRING, VISIBILITY_C_STRING, VISIBILITY_D_STRING);
 
         graph.prepareVertex("v1", VISIBILITY_A)
-            .addAdditionalVisibility(VISIBILITY_B_STRING + "&!" + VISIBILITY_C_STRING)
-            .addAdditionalVisibility(VISIBILITY_B_STRING + "&!" + VISIBILITY_D_STRING)
+            .addAdditionalVisibility(new Visibility(VISIBILITY_B_STRING + "&!" + VISIBILITY_C_STRING))
+            .addAdditionalVisibility(new Visibility(VISIBILITY_B_STRING + "&!" + VISIBILITY_D_STRING))
             .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 

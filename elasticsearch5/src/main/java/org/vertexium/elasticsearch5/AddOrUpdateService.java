@@ -101,8 +101,8 @@ class AddOrUpdateService {
         Map<String, String> fieldVisibilityChanges = getFieldVisibilityChanges(graph, mutation);
         List<String> fieldsToRemove = getFieldsToRemove(graph, mutation);
         Map<String, Object> fieldsToSet = getFieldsToSet(graph, mutation);
-        Set<String> additionalVisibilities = getAdditionalVisibilities(mutation);
-        Set<String> additionalVisibilitiesToDelete = getAdditionalVisibilitiesToDelete(mutation);
+        Set<Visibility> additionalVisibilities = getAdditionalVisibilities(mutation);
+        Set<Visibility> additionalVisibilitiesToDelete = getAdditionalVisibilitiesToDelete(mutation);
         searchIndex.ensureAdditionalVisibilitiesDefined(additionalVisibilities);
 
         String documentId = idStrategy.createElementDocId(mutation);
@@ -235,16 +235,16 @@ class AddOrUpdateService {
         return fieldsToSet;
     }
 
-    private <TElement extends Element> Set<String> getAdditionalVisibilities(ElementMutation<TElement> mutation) {
-        Set<String> results = new HashSet<>();
+    private <TElement extends Element> Set<Visibility> getAdditionalVisibilities(ElementMutation<TElement> mutation) {
+        Set<Visibility> results = new HashSet<>();
         for (AdditionalVisibilityAddMutation additionalVisibility : mutation.getAdditionalVisibilities()) {
             results.add(additionalVisibility.getAdditionalVisibility());
         }
         return results;
     }
 
-    private <TElement extends Element> Set<String> getAdditionalVisibilitiesToDelete(ElementMutation<TElement> mutation) {
-        Set<String> results = new HashSet<>();
+    private <TElement extends Element> Set<Visibility> getAdditionalVisibilitiesToDelete(ElementMutation<TElement> mutation) {
+        Set<Visibility> results = new HashSet<>();
         for (AdditionalVisibilityDeleteMutation additionalVisibilityDelete : mutation.getAdditionalVisibilityDeletes()) {
             results.add(additionalVisibilityDelete.getAdditionalVisibility());
         }

@@ -72,7 +72,7 @@ public abstract class ElasticsearchElement extends ElementBase {
     }
 
     @Override
-    public ImmutableSet<String> getAdditionalVisibilities() {
+    public ImmutableSet<Visibility> getAdditionalVisibilities() {
         throw new VertexiumNotSupportedException("getAdditionalVisibilities is not supported");
     }
 

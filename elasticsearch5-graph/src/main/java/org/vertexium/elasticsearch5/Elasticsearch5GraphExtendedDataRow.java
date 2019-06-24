@@ -7,7 +7,7 @@ import org.vertexium.elasticsearch5.models.LazyProperties;
 
 public class Elasticsearch5GraphExtendedDataRow extends ExtendedDataRowBase implements ExtendedDataRow {
     private final ExtendedDataRowId id;
-    private final ImmutableSet<String> additionalVisibilities;
+    private final ImmutableSet<Visibility> additionalVisibilities;
     private final LazyProperties properties;
 
     Elasticsearch5GraphExtendedDataRow(Elasticsearch5Graph graph, SearchHit hit, FetchHints fetchHints, User user) {
@@ -53,7 +53,7 @@ public class Elasticsearch5GraphExtendedDataRow extends ExtendedDataRowBase impl
     }
 
     @Override
-    public ImmutableSet<String> getAdditionalVisibilities() {
+    public ImmutableSet<Visibility> getAdditionalVisibilities() {
         return additionalVisibilities;
     }
 

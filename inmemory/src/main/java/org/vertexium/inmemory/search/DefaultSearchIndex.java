@@ -19,8 +19,8 @@ public class DefaultSearchIndex implements SearchIndex {
     public void addElement(
         Graph graph,
         Element element,
-        Set<String> additionalVisibilities,
-        Set<String> additionalVisibilitiesToDelete,
+        Set<Visibility> additionalVisibilities,
+        Set<Visibility> additionalVisibilitiesToDelete,
         User user
     ) {
         checkNotNull(element, "element cannot be null");
@@ -166,11 +166,11 @@ public class DefaultSearchIndex implements SearchIndex {
     }
 
     @Override
-    public void addAdditionalVisibility(Graph graph, Element element, String visibility, Object eventData, User user) {
+    public void addAdditionalVisibility(Graph graph, Element element, Visibility visibility, Object eventData, User user) {
     }
 
     @Override
-    public void deleteAdditionalVisibility(Graph graph, Element element, String visibility, Object eventData, User user) {
+    public void deleteAdditionalVisibility(Graph graph, Element element, Visibility visibility, Object eventData, User user) {
     }
 
     @Override

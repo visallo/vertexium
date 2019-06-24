@@ -167,7 +167,7 @@ public interface ElementMutation<T extends Element> extends ElementLocation {
      *
      * @param visibility The additional visibility to be applied
      */
-    default ElementMutation<T> addAdditionalVisibility(String visibility) {
+    default ElementMutation<T> addAdditionalVisibility(Visibility visibility) {
         return addAdditionalVisibility(visibility, null);
     }
 
@@ -178,14 +178,14 @@ public interface ElementMutation<T extends Element> extends ElementLocation {
      * @param visibility The additional visibility to be applied
      * @param eventData  Data to store with the mutation
      */
-    ElementMutation<T> addAdditionalVisibility(String visibility, Object eventData);
+    ElementMutation<T> addAdditionalVisibility(Visibility visibility, Object eventData);
 
     /**
      * Deletes a previously set additional visibility.
      *
      * @param visibility The additional visibility to be deleted
      */
-    default ElementMutation<T> deleteAdditionalVisibility(String visibility) {
+    default ElementMutation<T> deleteAdditionalVisibility(Visibility visibility) {
         return deleteAdditionalVisibility(visibility, null);
     }
 
@@ -195,7 +195,7 @@ public interface ElementMutation<T extends Element> extends ElementLocation {
      * @param visibility The additional visibility to be deleted
      * @param eventData  Data to store with the mutation
      */
-    ElementMutation<T> deleteAdditionalVisibility(String visibility, Object eventData);
+    ElementMutation<T> deleteAdditionalVisibility(Visibility visibility, Object eventData);
 
     /**
      * Adds additional visibilities to the row column. These visibilities will not effect the Visibility returned from
@@ -208,7 +208,7 @@ public interface ElementMutation<T extends Element> extends ElementLocation {
     default ElementMutation<T> addExtendedDataAdditionalVisibility(
         String tableName,
         String row,
-        String additionalVisibility
+        Visibility additionalVisibility
     ) {
         return addExtendedDataAdditionalVisibility(tableName, row, additionalVisibility, null);
     }
@@ -225,7 +225,7 @@ public interface ElementMutation<T extends Element> extends ElementLocation {
     ElementMutation<T> addExtendedDataAdditionalVisibility(
         String tableName,
         String row,
-        String additionalVisibility,
+        Visibility additionalVisibility,
         Object eventData
     );
 
@@ -239,7 +239,7 @@ public interface ElementMutation<T extends Element> extends ElementLocation {
     default ElementMutation<T> deleteExtendedDataAdditionalVisibility(
         String tableName,
         String row,
-        String additionalVisibility
+        Visibility additionalVisibility
     ) {
         return deleteExtendedDataAdditionalVisibility(tableName, row, additionalVisibility, null);
     }
@@ -255,7 +255,7 @@ public interface ElementMutation<T extends Element> extends ElementLocation {
     ElementMutation<T> deleteExtendedDataAdditionalVisibility(
         String tableName,
         String row,
-        String additionalVisibility,
+        Visibility additionalVisibility,
         Object eventData
     );
 

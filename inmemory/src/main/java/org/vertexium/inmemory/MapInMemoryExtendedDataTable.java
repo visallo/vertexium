@@ -76,7 +76,7 @@ public class MapInMemoryExtendedDataTable extends InMemoryExtendedDataTable {
     @Override
     public void addAdditionalVisibility(
         ExtendedDataRowId rowId,
-        String additionalVisibility
+        Visibility additionalVisibility
     ) {
         ElementTypeData data = elementTypeData.computeIfAbsent(rowId.getElementType(), k -> new ElementTypeData());
         data.addAdditionalVisibility(rowId, additionalVisibility);
@@ -85,7 +85,7 @@ public class MapInMemoryExtendedDataTable extends InMemoryExtendedDataTable {
     @Override
     public void deleteAdditionalVisibility(
         ExtendedDataRowId rowId,
-        String additionalVisibility
+        Visibility additionalVisibility
     ) {
         ElementTypeData data = elementTypeData.computeIfAbsent(rowId.getElementType(), k -> new ElementTypeData());
         data.deleteAdditionalVisibility(rowId, additionalVisibility);
@@ -143,14 +143,14 @@ public class MapInMemoryExtendedDataTable extends InMemoryExtendedDataTable {
             }
         }
 
-        public void addAdditionalVisibility(ExtendedDataRowId rowId, String additionalVisibility) {
+        public void addAdditionalVisibility(ExtendedDataRowId rowId, Visibility additionalVisibility) {
             ElementData data = elementData.get(rowId.getElementId());
             if (data != null) {
                 data.addAdditionalVisibility(rowId, additionalVisibility);
             }
         }
 
-        public void deleteAdditionalVisibility(ExtendedDataRowId rowId, String additionalVisibility) {
+        public void deleteAdditionalVisibility(ExtendedDataRowId rowId, Visibility additionalVisibility) {
             ElementData data = elementData.get(rowId.getElementId());
             if (data != null) {
                 data.deleteAdditionalVisibility(rowId, additionalVisibility);
@@ -210,14 +210,14 @@ public class MapInMemoryExtendedDataTable extends InMemoryExtendedDataTable {
             }
         }
 
-        public void addAdditionalVisibility(ExtendedDataRowId rowId, String additionalVisibility) {
+        public void addAdditionalVisibility(ExtendedDataRowId rowId, Visibility additionalVisibility) {
             Table table = tables.get(rowId.getTableName());
             if (table != null) {
                 table.addAdditionalVisibility(rowId, additionalVisibility);
             }
         }
 
-        public void deleteAdditionalVisibility(ExtendedDataRowId rowId, String additionalVisibility) {
+        public void deleteAdditionalVisibility(ExtendedDataRowId rowId, Visibility additionalVisibility) {
             Table table = tables.get(rowId.getTableName());
             if (table != null) {
                 table.deleteAdditionalVisibility(rowId, additionalVisibility);
@@ -284,7 +284,7 @@ public class MapInMemoryExtendedDataTable extends InMemoryExtendedDataTable {
                 row.removeColumn(columnName, key, visibility);
             }
 
-            public void addAdditionalVisibility(ExtendedDataRowId rowId, String additionalVisibility) {
+            public void addAdditionalVisibility(ExtendedDataRowId rowId, Visibility additionalVisibility) {
                 InMemoryExtendedDataRow row = findRow(rowId);
                 if (row == null) {
                     return;
@@ -292,7 +292,7 @@ public class MapInMemoryExtendedDataTable extends InMemoryExtendedDataTable {
                 row.addAdditionalVisibility(additionalVisibility);
             }
 
-            public void deleteAdditionalVisibility(ExtendedDataRowId rowId, String additionalVisibility) {
+            public void deleteAdditionalVisibility(ExtendedDataRowId rowId, Visibility additionalVisibility) {
                 InMemoryExtendedDataRow row = findRow(rowId);
                 if (row == null) {
                     return;

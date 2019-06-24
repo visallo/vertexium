@@ -37,7 +37,7 @@ public class Elasticsearch5GraphEdge extends Elasticsearch5GraphElement implemen
         String label,
         FetchHints fetchHints,
         Iterable<? extends Property> properties,
-        ImmutableSet<String> additionalVisibilities,
+        ImmutableSet<Visibility> additionalVisibilities,
         Set<Visibility> hiddenVisibilities,
         Visibility visibility,
         User user
@@ -59,7 +59,7 @@ public class Elasticsearch5GraphEdge extends Elasticsearch5GraphElement implemen
         AtomicReference<String> outVertexId = new AtomicReference<>();
         AtomicReference<String> inVertexId = new AtomicReference<>();
         AtomicReference<String> label = new AtomicReference<>();
-        Set<String> additionalVisibilities = new HashSet<>();
+        Set<Visibility> additionalVisibilities = new HashSet<>();
         Set<Visibility> hiddenVisibilities = new HashSet<>();
         List<MutablePropertyImpl> properties = new ArrayList<>();
         AtomicReference<Visibility> visibility = new AtomicReference<>();
@@ -110,7 +110,7 @@ public class Elasticsearch5GraphEdge extends Elasticsearch5GraphElement implemen
         AtomicReference<String> inVertexId,
         AtomicReference<String> label,
         AtomicReference<Visibility> visibility,
-        Set<String> additionalVisibilities,
+        Set<Visibility> additionalVisibilities,
         Set<Visibility> hiddenVisibilities,
         List<MutablePropertyImpl> properties,
         FetchHints fetchHints,

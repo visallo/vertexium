@@ -1,15 +1,17 @@
 package org.vertexium.mutation;
 
+import org.vertexium.Visibility;
+
 public class AdditionalExtendedDataVisibilityAddMutation {
     private final String tableName;
     private final String row;
-    private final String additionalVisibility;
+    private final Visibility additionalVisibility;
     private final Object eventData;
 
     public AdditionalExtendedDataVisibilityAddMutation(
         String tableName,
         String row,
-        String additionalVisibility,
+        Visibility additionalVisibility,
         Object eventData
     ) {
         this.tableName = tableName;
@@ -26,7 +28,7 @@ public class AdditionalExtendedDataVisibilityAddMutation {
         return row;
     }
 
-    public String getAdditionalVisibility() {
+    public Visibility getAdditionalVisibility() {
         return additionalVisibility;
     }
 

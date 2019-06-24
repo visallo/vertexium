@@ -1551,12 +1551,12 @@ public class AccumuloGraph extends GraphBase implements Traceable {
                 }
             }).filter(row -> {
                 if (!fetchHints.isIgnoreAdditionalVisibilities()) {
-                    Set<String> additionalVisibilities = row.getAdditionalVisibilities();
+                    Set<Visibility> additionalVisibilities = row.getAdditionalVisibilities();
                     if (additionalVisibilities.size() == 0) {
                         return true;
                     }
-                    for (String additionalVisibility : additionalVisibilities) {
-                        if (!user.canRead(new Visibility(additionalVisibility))) {
+                    for (Visibility additionalVisibility : additionalVisibilities) {
+                        if (!user.canRead(additionalVisibility)) {
                             return false;
                         }
                     }

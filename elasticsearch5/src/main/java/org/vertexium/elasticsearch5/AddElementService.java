@@ -40,8 +40,8 @@ class AddElementService {
 
     public void addElement(
         Element element,
-        Set<String> additionalVisibilities,
-        Set<String> additionalVisibilitiesToDelete
+        Set<Visibility> additionalVisibilities,
+        Set<Visibility> additionalVisibilitiesToDelete
     ) {
         if (MUTATION_LOGGER.isTraceEnabled()) {
             MUTATION_LOGGER.trace("addElement: %s", element.getId());

@@ -107,10 +107,10 @@ public class ExtendedDataService {
                 );
             }
 
-            List<String> additionalVisibilities = additionalExtendedDataVisibilities == null
+            List<Visibility> additionalVisibilities = additionalExtendedDataVisibilities == null
                 ? Collections.emptyList()
                 : stream(additionalExtendedDataVisibilities).map(AdditionalExtendedDataVisibilityAddMutation::getAdditionalVisibility).collect(Collectors.toList());
-            List<String> additionalVisibilitiesToDelete = additionalExtendedDataVisibilityDeletes == null
+            List<Visibility> additionalVisibilitiesToDelete = additionalExtendedDataVisibilityDeletes == null
                 ? Collections.emptyList()
                 : stream(additionalExtendedDataVisibilityDeletes).map(AdditionalExtendedDataVisibilityDeleteMutation::getAdditionalVisibility).collect(Collectors.toList());
             searchIndex.ensureAdditionalVisibilitiesDefined(additionalVisibilities);
@@ -127,8 +127,8 @@ public class ExtendedDataService {
                         "fieldsToSet", fieldsToSet,
                         "fieldsToRemove", Collections.emptyList(),
                         "fieldsToRename", Collections.emptyMap(),
-                        "additionalVisibilities", additionalVisibilities,
-                        "additionalVisibilitiesToDelete", additionalVisibilitiesToDelete
+                        "additionalVisibilities", additionalVisibilities.stream().map(Visibility::getVisibilityString).collect(Collectors.toList()),
+                        "additionalVisibilitiesToDelete", additionalVisibilitiesToDelete.stream().map(Visibility::getVisibilityString).collect(Collectors.toList())
                     )))
                 .setRetryOnConflict(FlushObjectQueue.MAX_RETRIES);
         } catch (IOException e) {

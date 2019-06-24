@@ -113,19 +113,19 @@ public class InMemoryExtendedDataRow extends ExtendedDataRowBase {
         }
     }
 
-    public void addAdditionalVisibility(String additionalVisibility) {
+    public void addAdditionalVisibility(Visibility additionalVisibility) {
         propertiesLock.writeLock().lock();
         try {
-            additionalVisibilities.add(new ColumnVisibility(additionalVisibility));
+            additionalVisibilities.add(new ColumnVisibility(additionalVisibility.getVisibilityString()));
         } finally {
             propertiesLock.writeLock().unlock();
         }
     }
 
-    public void deleteAdditionalVisibility(String additionalVisibility) {
+    public void deleteAdditionalVisibility(Visibility additionalVisibility) {
         propertiesLock.writeLock().lock();
         try {
-            additionalVisibilities.remove(new ColumnVisibility(additionalVisibility));
+            additionalVisibilities.remove(new ColumnVisibility(additionalVisibility.getVisibilityString()));
         } finally {
             propertiesLock.writeLock().unlock();
         }
@@ -142,9 +142,9 @@ public class InMemoryExtendedDataRow extends ExtendedDataRowBase {
     }
 
     @Override
-    public ImmutableSet<String> getAdditionalVisibilities() {
+    public ImmutableSet<Visibility> getAdditionalVisibilities() {
         return additionalVisibilities.stream()
-            .map(av -> new String(av.getExpression(), StandardCharsets.UTF_8))
+            .map(av -> new Visibility(new String(av.getExpression(), StandardCharsets.UTF_8)))
             .collect(StreamUtils.toImmutableSet());
     }
 

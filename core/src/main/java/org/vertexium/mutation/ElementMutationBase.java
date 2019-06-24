@@ -85,8 +85,8 @@ public abstract class ElementMutationBase<T extends Element, TResult extends Ele
         return extendedDataDeletes;
     }
 
-    public Set<String> getAdditionalVisibilitiesAsStringSet() {
-        Set<String> results = additionalVisibilities.stream()
+    public Set<Visibility> getAdditionalVisibilitiesAsStringSet() {
+        Set<Visibility> results = additionalVisibilities.stream()
             .map(AdditionalVisibilityAddMutation::getAdditionalVisibility)
             .collect(Collectors.toSet());
         results.removeAll(
@@ -173,7 +173,7 @@ public abstract class ElementMutationBase<T extends Element, TResult extends Ele
     public TResult addExtendedDataAdditionalVisibility(
         String tableName,
         String row,
-        String additionalVisibility,
+        Visibility additionalVisibility,
         Object eventData
     ) {
         this.additionalExtendedDataVisibilities.add(new AdditionalExtendedDataVisibilityAddMutation(
@@ -190,7 +190,7 @@ public abstract class ElementMutationBase<T extends Element, TResult extends Ele
     public TResult deleteExtendedDataAdditionalVisibility(
         String tableName,
         String row,
-        String additionalVisibility,
+        Visibility additionalVisibility,
         Object eventData
     ) {
         this.additionalExtendedDataVisibilityDeletes.add(new AdditionalExtendedDataVisibilityDeleteMutation(
@@ -253,14 +253,14 @@ public abstract class ElementMutationBase<T extends Element, TResult extends Ele
 
     @SuppressWarnings("unchecked")
     @Override
-    public TResult addAdditionalVisibility(String visibility, Object eventData) {
+    public TResult addAdditionalVisibility(Visibility visibility, Object eventData) {
         this.additionalVisibilities.add(new AdditionalVisibilityAddMutation(visibility, eventData));
         return (TResult) this;
     }
 
     @SuppressWarnings("unchecked")
     @Override
-    public TResult deleteAdditionalVisibility(String visibility, Object eventData) {
+    public TResult deleteAdditionalVisibility(Visibility visibility, Object eventData) {
         this.additionalVisibilityDeletes.add(new AdditionalVisibilityDeleteMutation(visibility, eventData));
         return (TResult) this;
     }
