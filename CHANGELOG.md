@@ -1,6 +1,7 @@
 # v4.7.0
 * Added: Element/Extended Data Row additional visibilities
 * Added: Sorting strategy
+* Added: Fetch hints to get old metadata
 
 # v4.6.0
 * Added: History for vertices, edges, and properties

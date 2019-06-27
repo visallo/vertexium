@@ -5176,7 +5176,12 @@ public abstract class GraphTestBase {
 
     @Test
     public void testMetadataUpdate() {
+        FetchHints includePreviousMetadataFetchHints = new FetchHintsBuilder(FetchHints.ALL)
+            .setIncludePreviousMetadata(true)
+            .build();
+
         Metadata metadataPropB = Metadata.create();
+        metadataPropB.add("meta0", "value0", VISIBILITY_A);
         metadataPropB.add("meta1", "value1", VISIBILITY_A);
         graph.prepareVertex("v1", VISIBILITY_A)
             .setProperty("propBmeta", "propBmeta", metadataPropB, VISIBILITY_A)
@@ -5193,6 +5198,7 @@ public abstract class GraphTestBase {
         graph.flush();
 
         vertex = graph.getVertex("v1", AUTHORIZATIONS_A);
+        assertEquals("value0", vertex.getProperty("propBmeta").getMetadata().getEntry("meta0").getValue());
         assertEquals("value2", vertex.getProperty("propBmeta").getMetadata().getEntry("meta1").getValue());
 
         fetchHints = new FetchHintsBuilder()
@@ -5207,6 +5213,11 @@ public abstract class GraphTestBase {
         graph.flush();
 
         vertex = graph.getVertex("v1", AUTHORIZATIONS_A);
+        assertNull(vertex.getProperty("propBmeta").getMetadata().getEntry("meta0"));
+        assertEquals("value3", vertex.getProperty("propBmeta").getMetadata().getEntry("meta1").getValue());
+
+        vertex = graph.getVertex("v1", includePreviousMetadataFetchHints, AUTHORIZATIONS_A);
+        assertEquals("value0", vertex.getProperty("propBmeta").getMetadata().getEntry("meta0").getValue());
         assertEquals("value3", vertex.getProperty("propBmeta").getMetadata().getEntry("meta1").getValue());
 
         fetchHints = new FetchHintsBuilder()
@@ -10128,7 +10139,7 @@ public abstract class GraphTestBase {
         getGraph().prepareVertex("v6", VISIBILITY_A)
             .addPropertyValue("k1", "prop1", "aaaaaaaaaaaaaaaaaaaaaa", VISIBILITY_B)
             .addPropertyValue("k2", "prop1", "a", VISIBILITY_B)
-            .addPropertyValue("k3","prop1", "ddddd", VISIBILITY_A)
+            .addPropertyValue("k3", "prop1", "ddddd", VISIBILITY_A)
             .save(AUTHORIZATIONS_A_AND_B);
         getGraph().flush();
 

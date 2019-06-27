@@ -21,6 +21,7 @@ public class IteratorFetchHints implements Serializable {
     private final Set<String> edgeLabelsOfEdgeRefsToInclude;
     private final boolean includeEdgeLabelsAndCounts;
     private final boolean includeExtendedDataTableNames;
+    private final boolean includePreviousMetadata;
 
     public IteratorFetchHints() {
         this.includeAllProperties = false;
@@ -35,6 +36,7 @@ public class IteratorFetchHints implements Serializable {
         this.edgeLabelsOfEdgeRefsToInclude = null;
         this.includeEdgeLabelsAndCounts = false;
         this.includeExtendedDataTableNames = false;
+        this.includePreviousMetadata = false;
     }
 
     public IteratorFetchHints(
@@ -49,7 +51,8 @@ public class IteratorFetchHints implements Serializable {
         boolean ignoreAdditionalVisibilities,
         Set<String> edgeLabelsOfEdgeRefsToInclude,
         boolean includeEdgeLabelsAndCounts,
-        boolean includeExtendedDataTableNames
+        boolean includeExtendedDataTableNames,
+        boolean includePreviousMetadata
     ) {
         this.includeAllProperties = includeAllProperties;
         this.propertyNamesToInclude = propertyNamesToInclude;
@@ -63,6 +66,7 @@ public class IteratorFetchHints implements Serializable {
         this.edgeLabelsOfEdgeRefsToInclude = edgeLabelsOfEdgeRefsToInclude;
         this.includeEdgeLabelsAndCounts = includeEdgeLabelsAndCounts;
         this.includeExtendedDataTableNames = includeExtendedDataTableNames;
+        this.includePreviousMetadata = includePreviousMetadata;
     }
 
     public boolean isIncludeAllProperties() {
@@ -113,6 +117,10 @@ public class IteratorFetchHints implements Serializable {
         return ignoreAdditionalVisibilities;
     }
 
+    public boolean isIncludePreviousMetadata() {
+        return includePreviousMetadata;
+    }
+
     @Override
     public String toString() {
         return "IteratorFetchHints{" +
@@ -128,6 +136,7 @@ public class IteratorFetchHints implements Serializable {
             ", edgeLabelsOfEdgeRefsToInclude=" + setToString(edgeLabelsOfEdgeRefsToInclude) +
             ", includeEdgeLabelsAndCounts=" + includeEdgeLabelsAndCounts +
             ", includeExtendedDataTableNames=" + includeExtendedDataTableNames +
+            ", includePreviousMetadata=" + includePreviousMetadata +
             '}';
     }
 
