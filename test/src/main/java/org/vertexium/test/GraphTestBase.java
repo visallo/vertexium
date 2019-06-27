@@ -9124,6 +9124,73 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    public void testBadVertexId() {
+        try {
+            getGraph().prepareVertex("v" + KeyUtils.VALUE_SEPARATOR, VISIBILITY_EMPTY)
+                .save(AUTHORIZATIONS_EMPTY);
+            fail("should throw exception");
+        } catch (VertexiumException ex) {
+            assertTrue(ex.getMessage(), ex.getMessage().contains("Invalid elementId"));
+        }
+    }
+
+    @Test
+    public void testBadEdgeId() {
+        getGraph().prepareVertex("v1", VISIBILITY_EMPTY)
+            .save(AUTHORIZATIONS_EMPTY);
+        getGraph().prepareVertex("v2", VISIBILITY_EMPTY)
+            .save(AUTHORIZATIONS_EMPTY);
+        getGraph().flush();
+        try {
+            getGraph().prepareEdge("e" + KeyUtils.VALUE_SEPARATOR, "v1", "v2", "label", VISIBILITY_EMPTY)
+                .save(AUTHORIZATIONS_EMPTY);
+            fail("should throw exception");
+        } catch (VertexiumException ex) {
+            assertTrue(ex.getMessage(), ex.getMessage().contains("Invalid elementId"));
+        }
+    }
+
+    @Test
+    public void testBadExtendedDataKey() {
+        getGraph().prepareVertex("v1", VISIBILITY_EMPTY)
+            .save(AUTHORIZATIONS_EMPTY);
+        getGraph().flush();
+        Vertex v1 = getGraph().getVertex("v1", AUTHORIZATIONS_EMPTY);
+
+        try {
+            v1.prepareMutation()
+                .addExtendedData("table" + KeyUtils.VALUE_SEPARATOR, "row1", "column1", "value1", VISIBILITY_EMPTY);
+            fail("should throw exception");
+        } catch (VertexiumException ex) {
+            assertTrue(ex.getMessage(), ex.getMessage().contains("Invalid tableName"));
+        }
+
+        try {
+            v1.prepareMutation()
+                .addExtendedData("table1", "row" + KeyUtils.VALUE_SEPARATOR, "column1", "value1", VISIBILITY_EMPTY);
+            fail("should throw exception");
+        } catch (VertexiumException ex) {
+            assertTrue(ex.getMessage(), ex.getMessage().contains("Invalid row"));
+        }
+
+        try {
+            v1.prepareMutation()
+                .addExtendedData("table1", "row1", "column" + KeyUtils.VALUE_SEPARATOR, "value1", VISIBILITY_EMPTY);
+            fail("should throw exception");
+        } catch (VertexiumException ex) {
+            assertTrue(ex.getMessage(), ex.getMessage().contains("Invalid columnName"));
+        }
+
+        try {
+            v1.prepareMutation()
+                .addExtendedData("table1", "row1", "column1", "key" + KeyUtils.VALUE_SEPARATOR, "value1", VISIBILITY_EMPTY);
+            fail("should throw exception");
+        } catch (VertexiumException ex) {
+            assertTrue(ex.getMessage(), ex.getMessage().contains("Invalid key"));
+        }
+    }
+
+    @Test
     public void benchmarkLotsOfProperties() {
         assumeTrue(benchmarkEnabled());
 
@@ -10128,7 +10195,7 @@ public abstract class GraphTestBase {
         getGraph().prepareVertex("v6", VISIBILITY_A)
             .addPropertyValue("k1", "prop1", "aaaaaaaaaaaaaaaaaaaaaa", VISIBILITY_B)
             .addPropertyValue("k2", "prop1", "a", VISIBILITY_B)
-            .addPropertyValue("k3","prop1", "ddddd", VISIBILITY_A)
+            .addPropertyValue("k3", "prop1", "ddddd", VISIBILITY_A)
             .save(AUTHORIZATIONS_A_AND_B);
         getGraph().flush();
 
