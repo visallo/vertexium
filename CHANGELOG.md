@@ -2,6 +2,7 @@
 * Added: Element/Extended Data Row additional visibilities
 * Added: Sorting strategy
 * Added: Element#getExtendedData - without table name, to get all extended data rows for that element 
+* Added: Fetch hints to get old metadata
 
 # v4.6.0
 * Added: History for vertices, edges, and properties

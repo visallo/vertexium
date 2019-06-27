@@ -561,11 +561,11 @@ public abstract class InMemoryTableElement<TElement extends InMemoryElement> imp
             if (m instanceof AddPropertyValueMutation) {
                 AddPropertyValueMutation apvm = (AddPropertyValueMutation) m;
                 value = apvm.getValue();
-                metadata = apvm.getMetadata(fetchHints);
+                metadata = mergeMetadata(metadata, apvm.getMetadata(fetchHints), fetchHints);
                 softDeleted = false;
             } else if (m instanceof AddPropertyMetadataMutation) {
                 AddPropertyMetadataMutation apmm = (AddPropertyMetadataMutation) m;
-                metadata = apmm.getMetadata(fetchHints);
+                metadata = mergeMetadata(metadata, apmm.getMetadata(fetchHints), fetchHints);
             } else if (m instanceof SoftDeletePropertyMutation) {
                 softDeleted = true;
             } else if (m instanceof MarkPropertyHiddenMutation) {
@@ -589,6 +589,20 @@ public abstract class InMemoryTableElement<TElement extends InMemoryElement> imp
         }
         value = loadIfStreamingPropertyValue(value, timestamp);
         return new MutablePropertyImpl(propertyKey, propertyName, value, metadata, timestamp, hiddenVisibilities, visibility, fetchHints);
+    }
+
+    private Metadata mergeMetadata(Metadata metadata, Metadata metadataToMerge, FetchHints fetchHints) {
+        if (metadata == null) {
+            return metadataToMerge;
+        }
+        if (!fetchHints.isIncludePreviousMetadata()) {
+            return metadataToMerge;
+        }
+        metadata = Metadata.create(metadata);
+        for (Metadata.Entry entry : metadataToMerge.entrySet()) {
+            metadata.add(entry.getKey(), entry.getValue(), entry.getVisibility());
+        }
+        return metadata;
     }
 
     private Object loadIfStreamingPropertyValue(Object value, long timestamp) {

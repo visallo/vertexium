@@ -131,7 +131,11 @@ public abstract class ElementData {
             if (isPropertyDeleted(propertyKey, propertyName, propertyTimestamp, propertyVisibility)) {
                 continue;
             }
-            List<Integer> metadata = propertyMetadata.get(key);
+            ByteSequence metadataKey = key;
+            if (fetchHints.isIncludePreviousMetadata()) {
+                metadataKey = KeyBaseByteSequence.discriminatorWithoutTimestamp(metadataKey);
+            }
+            List<Integer> metadata = propertyMetadata.get(metadataKey);
             propertyDataHandler.handle(
                 propertyKey,
                 propertyName,

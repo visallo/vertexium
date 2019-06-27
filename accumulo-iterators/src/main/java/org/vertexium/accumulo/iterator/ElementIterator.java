@@ -339,6 +339,9 @@ public abstract class ElementIterator<T extends ElementData> implements SortedKe
             new PropertyMetadataColumnQualifierByteSequence(keyValue.takeColumnQualifierByteSequence());
         if (shouldIncludeMetadata(propertyMetadataColumnQualifier)) {
             ByteSequence discriminator = propertyMetadataColumnQualifier.getPropertyDiscriminator(keyValue.getTimestamp());
+            if (fetchHints.isIncludePreviousMetadata()) {
+                discriminator = KeyBaseByteSequence.discriminatorWithoutTimestamp(discriminator);
+            }
             List<Integer> propertyMetadata = elementData.propertyMetadata.computeIfAbsent(discriminator, k -> new ArrayList<>());
             IteratorMetadataEntry pme = new IteratorMetadataEntry(
                 propertyMetadataColumnQualifier.getMetadataKey(),
@@ -421,6 +424,7 @@ public abstract class ElementIterator<T extends ElementData> implements SortedKe
         namedOptions.put(SETTING_FETCH_HINTS_PREFIX + "edgeLabelsOfEdgeRefsToInclude", "Set of edge labels to include separated by \\u001f");
         namedOptions.put(SETTING_FETCH_HINTS_PREFIX + "includeEdgeLabelsAndCounts", "true to include edge labels with counts");
         namedOptions.put(SETTING_FETCH_HINTS_PREFIX + "includeExtendedDataTableNames", "true to include extended data table names");
+        namedOptions.put(SETTING_FETCH_HINTS_PREFIX + "includePreviousMetadata", "true to include metadata from previous property values");
         return new IteratorOptions(getClass().getSimpleName(), getDescription(), namedOptions, null);
     }
 
@@ -446,7 +450,8 @@ public abstract class ElementIterator<T extends ElementData> implements SortedKe
             Boolean.parseBoolean(options.get(SETTING_FETCH_HINTS_PREFIX + "ignoreAdditionalVisibilities")),
             OptionsUtils.parseSet(options.get(SETTING_FETCH_HINTS_PREFIX + "edgeLabelsOfEdgeRefsToInclude")),
             Boolean.parseBoolean(options.get(SETTING_FETCH_HINTS_PREFIX + "includeEdgeLabelsAndCounts")),
-            Boolean.parseBoolean(options.get(SETTING_FETCH_HINTS_PREFIX + "includeExtendedDataTableNames"))
+            Boolean.parseBoolean(options.get(SETTING_FETCH_HINTS_PREFIX + "includeExtendedDataTableNames")),
+            Boolean.parseBoolean(options.get(SETTING_FETCH_HINTS_PREFIX + "includePreviousMetadata"))
         );
         String authString = options.get("authorizations").trim();
         String[] authorizationsArray = authString.length() == 0 ? new String[0] : authString.split(Pattern.quote("\u001f"));
@@ -474,6 +479,7 @@ public abstract class ElementIterator<T extends ElementData> implements SortedKe
         OptionsUtils.addOption(iteratorSettings, SETTING_FETCH_HINTS_PREFIX + "edgeLabelsOfEdgeRefsToInclude", OptionsUtils.setToString(fetchHints.getEdgeLabelsOfEdgeRefsToInclude()));
         OptionsUtils.addOption(iteratorSettings, SETTING_FETCH_HINTS_PREFIX + "includeEdgeLabelsAndCounts", Boolean.toString(fetchHints.isIncludeEdgeLabelsAndCounts()));
         OptionsUtils.addOption(iteratorSettings, SETTING_FETCH_HINTS_PREFIX + "includeExtendedDataTableNames", Boolean.toString(fetchHints.isIncludeExtendedDataTableNames()));
+        OptionsUtils.addOption(iteratorSettings, SETTING_FETCH_HINTS_PREFIX + "includePreviousMetadata", Boolean.toString(fetchHints.isIncludePreviousMetadata()));
     }
 
     public static void setAuthorizations(IteratorSetting iteratorSettings, String[] authorizations) {

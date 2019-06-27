@@ -51,7 +51,7 @@ public abstract class KeyBaseByteSequence {
         assertNoValueSeparator(propertyName);
         assertNoValueSeparator(propertyKey);
         assertNoValueSeparator(visibilityString);
-        int length = propertyName.length() + propertyKey.length() + visibilityString.length() + 8;
+        int length = propertyName.length() + propertyKey.length() + visibilityString.length() + Long.BYTES;
         byte[] bytes = new byte[length];
         ByteBuffer bb = ByteBuffer.wrap(bytes);
         ByteSequenceUtils.putIntoByteBuffer(propertyName, bb);
@@ -59,6 +59,10 @@ public abstract class KeyBaseByteSequence {
         ByteSequenceUtils.putIntoByteBuffer(visibilityString, bb);
         bb.putLong(timestamp);
         return new ArrayByteSequence(bytes);
+    }
+
+    public static ByteSequence discriminatorWithoutTimestamp(ByteSequence discriminator) {
+        return discriminator.subSequence(0, discriminator.length() - Long.BYTES);
     }
 }
 
