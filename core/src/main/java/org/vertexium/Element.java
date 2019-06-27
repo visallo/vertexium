@@ -623,6 +623,25 @@ public interface Element extends VertexiumObject, ElementLocation {
     QueryableIterable<ExtendedDataRow> getExtendedData(String tableName, FetchHints fetchHints);
 
     /**
+     * Gets all the rows from all the extended data tables.
+     *
+     * @return Iterable of all the rows.
+     */
+    default QueryableIterable<ExtendedDataRow> getExtendedData() {
+        return getExtendedData(getFetchHints());
+    }
+
+    /**
+     * Gets all the rows from all the extended data tables.
+     *
+     * @param fetchHints Fetch hints to filter extended data rows
+     * @return Iterable of all the rows.
+     */
+    default QueryableIterable<ExtendedDataRow> getExtendedData(FetchHints fetchHints) {
+        return getExtendedData((String) null, fetchHints);
+    }
+
+    /**
      * Fetch hints used when fetching this element.
      */
     FetchHints getFetchHints();
