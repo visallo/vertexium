@@ -10,6 +10,8 @@ import org.vertexium.util.StreamUtils;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.vertexium.util.StreamUtils.stream;
+
 public class MapInMemoryExtendedDataTable extends InMemoryExtendedDataTable {
     private Map<ElementType, ElementTypeData> elementTypeData = new HashMap<>();
 
@@ -166,6 +168,11 @@ public class MapInMemoryExtendedDataTable extends InMemoryExtendedDataTable {
         }
 
         public Iterable<ExtendedDataRow> getTable(String tableName, FetchHints fetchHints, Authorizations authorizations) {
+            if (tableName == null) {
+                return getTableNames(fetchHints, authorizations).stream()
+                    .flatMap(t -> stream(getTable(t, fetchHints, authorizations)))
+                    .collect(Collectors.toList());
+            }
             VisibilityEvaluator visibilityEvaluator = new VisibilityEvaluator(new org.vertexium.security.Authorizations(authorizations.getAuthorizations()));
             Table table = tables.get(tableName);
             if (table == null) {
