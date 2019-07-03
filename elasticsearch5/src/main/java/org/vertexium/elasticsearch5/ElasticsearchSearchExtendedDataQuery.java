@@ -1,6 +1,7 @@
 package org.vertexium.elasticsearch5;
 
 import org.elasticsearch.client.Client;
+import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.vertexium.Authorizations;
@@ -32,16 +33,17 @@ public class ElasticsearchSearchExtendedDataQuery extends ElasticsearchSearchQue
     @Override
     protected List<QueryBuilder> getFilters(EnumSet<ElasticsearchDocumentType> elementTypes, FetchHints fetchHints) {
         List<QueryBuilder> filters = super.getFilters(elementTypes, fetchHints);
-        filters.add(
-            QueryBuilders.boolQuery()
-                .must(QueryBuilders.termsQuery(
-                    Elasticsearch5SearchIndex.ELEMENT_TYPE_FIELD_NAME,
-                    ElasticsearchDocumentType.VERTEX_EXTENDED_DATA.getKey(),
-                    ElasticsearchDocumentType.EDGE_EXTENDED_DATA.getKey()
-                ))
-                .must(QueryBuilders.termQuery(Elasticsearch5SearchIndex.ELEMENT_ID_FIELD_NAME, elementId))
-                .must(QueryBuilders.termQuery(Elasticsearch5SearchIndex.EXTENDED_DATA_TABLE_NAME_FIELD_NAME, tableName))
-        );
+        BoolQueryBuilder filter = QueryBuilders.boolQuery()
+            .must(QueryBuilders.termsQuery(
+                Elasticsearch5SearchIndex.ELEMENT_TYPE_FIELD_NAME,
+                ElasticsearchDocumentType.VERTEX_EXTENDED_DATA.getKey(),
+                ElasticsearchDocumentType.EDGE_EXTENDED_DATA.getKey()
+            ))
+            .must(QueryBuilders.termQuery(Elasticsearch5SearchIndex.ELEMENT_ID_FIELD_NAME, elementId));
+        if (tableName != null) {
+            filter = filter.must(QueryBuilders.termQuery(Elasticsearch5SearchIndex.EXTENDED_DATA_TABLE_NAME_FIELD_NAME, tableName));
+        }
+        filters.add(filter);
         return filters;
     }
 

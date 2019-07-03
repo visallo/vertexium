@@ -6923,6 +6923,21 @@ public abstract class GraphTestBase {
         assertEquals(2, vertexPropertyCountByValue.get("Sam").size());
         assertEquals(1L, (long) vertexPropertyCountByValue.get("Sam").get("male"));
         assertEquals(2L, (long) vertexPropertyCountByValue.get("Sam").get("female"));
+
+        q = v1.getExtendedData().query(AUTHORIZATIONS_A_AND_B).limit(0);
+        agg = new TermsAggregation("terms-count", "name");
+        agg.addNestedAggregation(new TermsAggregation("nested", "gender"));
+        assumeTrue("terms aggregation not supported", q.isAggregationSupported(agg));
+        q.addAggregation(agg);
+        aggregationResult = q.extendedDataRows().getAggregationResult("terms-count", TermsResult.class);
+        vertexPropertyCountByValue = nestedTermsBucketToMap(aggregationResult.getBuckets(), "nested");
+
+        assertEquals(2, vertexPropertyCountByValue.size());
+        assertEquals(1, vertexPropertyCountByValue.get("Joe").size());
+        assertEquals(1L, (long) vertexPropertyCountByValue.get("Joe").get("male"));
+        assertEquals(2, vertexPropertyCountByValue.get("Sam").size());
+        assertEquals(1L, (long) vertexPropertyCountByValue.get("Sam").get("male"));
+        assertEquals(2L, (long) vertexPropertyCountByValue.get("Sam").get("female"));
     }
 
     @Test
@@ -8162,6 +8177,7 @@ public abstract class GraphTestBase {
         assertEquals(5, count(graph.getExtendedData(ElementType.VERTEX, "v1", null, AUTHORIZATIONS_A)));
         assertEquals(5, count(graph.getExtendedData(ElementType.VERTEX, null, null, AUTHORIZATIONS_A)));
         assertEquals(5, count(graph.getExtendedData(null, null, null, AUTHORIZATIONS_A)));
+        assertEquals(5, count(v1.getExtendedData()));
         try {
             count(graph.getExtendedData(null, null, "table1", AUTHORIZATIONS_A));
             fail("nulls to the left of a value is not allowed");
@@ -9132,6 +9148,73 @@ public abstract class GraphTestBase {
         assertTrue(edgeInfos.stream().anyMatch(e -> e.getEdgeId().equals("e2")));
         assertTrue(edgeInfos.stream().anyMatch(e -> e.getEdgeId().equals("e3")));
         assertTrue(edgeInfos.stream().anyMatch(e -> e.getEdgeId().equals("e4")));
+    }
+
+    @Test
+    public void testBadVertexId() {
+        try {
+            getGraph().prepareVertex("v" + KeyUtils.VALUE_SEPARATOR, VISIBILITY_EMPTY)
+                .save(AUTHORIZATIONS_EMPTY);
+            fail("should throw exception");
+        } catch (VertexiumException ex) {
+            assertTrue(ex.getMessage(), ex.getMessage().contains("Invalid elementId"));
+        }
+    }
+
+    @Test
+    public void testBadEdgeId() {
+        getGraph().prepareVertex("v1", VISIBILITY_EMPTY)
+            .save(AUTHORIZATIONS_EMPTY);
+        getGraph().prepareVertex("v2", VISIBILITY_EMPTY)
+            .save(AUTHORIZATIONS_EMPTY);
+        getGraph().flush();
+        try {
+            getGraph().prepareEdge("e" + KeyUtils.VALUE_SEPARATOR, "v1", "v2", "label", VISIBILITY_EMPTY)
+                .save(AUTHORIZATIONS_EMPTY);
+            fail("should throw exception");
+        } catch (VertexiumException ex) {
+            assertTrue(ex.getMessage(), ex.getMessage().contains("Invalid elementId"));
+        }
+    }
+
+    @Test
+    public void testBadExtendedDataKey() {
+        getGraph().prepareVertex("v1", VISIBILITY_EMPTY)
+            .save(AUTHORIZATIONS_EMPTY);
+        getGraph().flush();
+        Vertex v1 = getGraph().getVertex("v1", AUTHORIZATIONS_EMPTY);
+
+        try {
+            v1.prepareMutation()
+                .addExtendedData("table" + KeyUtils.VALUE_SEPARATOR, "row1", "column1", "value1", VISIBILITY_EMPTY);
+            fail("should throw exception");
+        } catch (VertexiumException ex) {
+            assertTrue(ex.getMessage(), ex.getMessage().contains("Invalid tableName"));
+        }
+
+        try {
+            v1.prepareMutation()
+                .addExtendedData("table1", "row" + KeyUtils.VALUE_SEPARATOR, "column1", "value1", VISIBILITY_EMPTY);
+            fail("should throw exception");
+        } catch (VertexiumException ex) {
+            assertTrue(ex.getMessage(), ex.getMessage().contains("Invalid row"));
+        }
+
+        try {
+            v1.prepareMutation()
+                .addExtendedData("table1", "row1", "column" + KeyUtils.VALUE_SEPARATOR, "value1", VISIBILITY_EMPTY);
+            fail("should throw exception");
+        } catch (VertexiumException ex) {
+            assertTrue(ex.getMessage(), ex.getMessage().contains("Invalid columnName"));
+        }
+
+        try {
+            v1.prepareMutation()
+                .addExtendedData("table1", "row1", "column1", "key" + KeyUtils.VALUE_SEPARATOR, "value1", VISIBILITY_EMPTY);
+            fail("should throw exception");
+        } catch (VertexiumException ex) {
+            assertTrue(ex.getMessage(), ex.getMessage().contains("Invalid key"));
+        }
     }
 
     @Test

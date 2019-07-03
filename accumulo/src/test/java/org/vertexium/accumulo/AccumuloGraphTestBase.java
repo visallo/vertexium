@@ -1,5 +1,6 @@
 package org.vertexium.accumulo;
 
+import org.apache.accumulo.core.client.Scanner;
 import org.apache.accumulo.core.client.*;
 import org.apache.accumulo.core.data.Key;
 import org.apache.accumulo.core.data.Mutation;
@@ -491,5 +492,60 @@ public abstract class AccumuloGraphTestBase extends GraphTestBase {
     @Override
     public AccumuloGraph getGraph() {
         return (AccumuloGraph) super.getGraph();
+    }
+
+    /**
+     * Add this into the watch window to print the vertices table in time sorted order
+     *
+     * ((AccumuloGraphTest)this).printVerticesTable(AUTHORIZATIONS_ALL)
+     */
+    public void printVerticesTable(Authorizations authorizations) {
+        String tableName = getGraph().getVerticesTableName();
+        printTable(tableName, authorizations);
+    }
+
+    public void printTable(String tableName, Authorizations authorizations) {
+        System.out.println(tableName);
+        try {
+            Scanner scanner = getGraph().getConnector().createScanner(
+                tableName,
+                getGraph().toAccumuloAuthorizations(authorizations)
+            );
+            Text currentRow = null;
+            List<Map.Entry<Key, Value>> rowEntries = new ArrayList<>();
+            for (Map.Entry<Key, Value> entry : scanner) {
+                if (!entry.getKey().getRow().equals(currentRow)) {
+                    printRowEntries(rowEntries);
+                    rowEntries.clear();
+                    currentRow = entry.getKey().getRow();
+                }
+                rowEntries.add(entry);
+            }
+            printRowEntries(rowEntries);
+        } catch (TableNotFoundException ex) {
+            throw new VertexiumException("Could not print table", ex);
+        }
+    }
+
+    private void printRowEntries(List<Map.Entry<Key, Value>> rowEntries) {
+        if (rowEntries.size() == 0) {
+            return;
+        }
+        rowEntries.sort(Comparator.comparingLong(o -> o.getKey().getTimestamp()));
+        for (Map.Entry<Key, Value> rowEntry : rowEntries) {
+            printRow(rowEntry);
+        }
+    }
+
+    private void printRow(Map.Entry<Key, Value> rowEntry) {
+        System.out.println(String.format(
+            "%s:%d:%s:%s[%s] => %s",
+            rowEntry.getKey().getRow(),
+            rowEntry.getKey().getTimestamp(),
+            rowEntry.getKey().getColumnFamily(),
+            rowEntry.getKey().getColumnQualifier(),
+            rowEntry.getKey().getColumnVisibility(),
+            rowEntry.getValue()
+        ));
     }
 }
