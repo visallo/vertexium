@@ -15,7 +15,6 @@ import org.vertexium.util.StreamUtils;
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 
 public abstract class QueryBase implements Query, SimilarToGraphQuery {
     private final Graph graph;
@@ -400,28 +399,11 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
         public String toString() {
             return this.getClass().getName() + "{}";
         }
-    }
 
-    private static abstract class HasContainerSplitElementExtendedDataRows extends HasContainer {
-        @Override
-        public boolean isMatch(VertexiumObject vertexiumObject) {
-            if (vertexiumObject instanceof Element) {
-                return isMatch((Element) vertexiumObject);
-            } else if (vertexiumObject instanceof ExtendedDataRow) {
-                return isMatch((ExtendedDataRow) vertexiumObject);
-            } else {
-                throw new VertexiumException("Unhandled VertexiumObject type: " + vertexiumObject.getClass().getName());
-            }
-        }
-
-        protected abstract boolean isMatch(Element element);
-
-        protected abstract boolean isMatch(ExtendedDataRow row);
-
+        @SuppressWarnings("unchecked")
         protected boolean isPropertyOfType(PropertyDefinition propertyDefinition, Class dataType) {
             boolean propertyIsDate = DateOnly.class.isAssignableFrom(propertyDefinition.getDataType()) || Date.class.isAssignableFrom(propertyDefinition.getDataType());
             boolean dataTypeIsDate = DateOnly.class.isAssignableFrom(dataType) || Date.class.isAssignableFrom(dataType);
-
             return dataType.isAssignableFrom(propertyDefinition.getDataType()) || (propertyIsDate && dataTypeIsDate);
         }
     }
@@ -466,7 +448,7 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
         }
     }
 
-    public static class HasAuthorizationContainer extends HasContainerSplitElementExtendedDataRows {
+    public static class HasAuthorizationContainer extends HasContainer {
         public final Set<String> authorizations;
 
         public HasAuthorizationContainer(Iterable<String> authorizations) {
@@ -474,19 +456,23 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
         }
 
         @Override
-        protected boolean isMatch(Element element) {
+        public boolean isMatch(VertexiumObject vertexiumObject) {
             for (String authorization : authorizations) {
-                if (element.getVisibility().hasAuthorization(authorization)) {
-                    return true;
+                if (vertexiumObject instanceof Element) {
+                    Element element = (Element) vertexiumObject;
+
+                    if (element.getVisibility().hasAuthorization(authorization)) {
+                        return true;
+                    }
+
+                    boolean hiddenVisibilityMatches = StreamUtils.stream(element.getHiddenVisibilities())
+                        .anyMatch(visibility -> visibility.hasAuthorization(authorization));
+                    if (hiddenVisibilityMatches) {
+                        return true;
+                    }
                 }
 
-                boolean hiddenVisibilityMatches = StreamUtils.stream(element.getHiddenVisibilities())
-                    .anyMatch(visibility -> visibility.hasAuthorization(authorization));
-                if (hiddenVisibilityMatches) {
-                    return true;
-                }
-
-                boolean propertyMatches = StreamUtils.stream(element.getProperties())
+                boolean propertyMatches = StreamUtils.stream(vertexiumObject.getProperties())
                     .anyMatch(property -> {
                         if (property.getVisibility().hasAuthorization(authorization)) {
                             return true;
@@ -494,18 +480,6 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
                         return StreamUtils.stream(property.getHiddenVisibilities())
                             .anyMatch(visibility -> visibility.hasAuthorization(authorization));
                     });
-                if (propertyMatches) {
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        @Override
-        protected boolean isMatch(ExtendedDataRow row) {
-            for (String authorization : authorizations) {
-                boolean propertyMatches = StreamSupport.stream(row.getProperties().spliterator(), false)
-                    .anyMatch(property -> property.getVisibility().hasAuthorization(authorization));
                 if (propertyMatches) {
                     return true;
                 }
@@ -525,7 +499,7 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
         }
     }
 
-    public static class HasValueContainer extends HasContainerSplitElementExtendedDataRows {
+    public static class HasValueContainer extends HasContainer {
         public final Set<String> keys;
         public final Object value;
         public final Predicate predicate;
@@ -576,24 +550,9 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
         }
 
         @Override
-        protected boolean isMatch(ExtendedDataRow extendedDataRow) {
-            for (Property property : extendedDataRow.getProperties()) {
-                if (this.keys.contains(property.getName())) {
-                    PropertyDefinition propertyDefinition = PropertyDefinition.findPropertyDefinition(this.propertyDefinitions, property.getName());
-                    Object columnValue = extendedDataRow.getPropertyValue(property.getName());
-                    if (this.predicate.evaluate(columnValue, this.value, propertyDefinition)) {
-                        return true;
-                    }
-                }
-            }
-
-            return false;
-        }
-
-        @Override
-        protected boolean isMatch(Element element) {
+        public boolean isMatch(VertexiumObject vertexiumObject) {
             for (String key : this.keys) {
-                if (this.predicate.evaluate(element.getProperties(key), this.value, this.propertyDefinitions)) {
+                if (this.predicate.evaluate(vertexiumObject.getProperties(key), this.value, this.propertyDefinitions)) {
                     return true;
                 }
             }
@@ -644,7 +603,7 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
         }
     }
 
-    public static class HasPropertyContainer extends HasContainerSplitElementExtendedDataRows {
+    public static class HasPropertyContainer extends HasContainer {
         private Set<String> keys;
 
         public HasPropertyContainer(String key) {
@@ -667,18 +626,8 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
         }
 
         @Override
-        protected boolean isMatch(ExtendedDataRow row) {
-            for (Property prop : row.getProperties()) {
-                if (this.keys.contains(prop.getName())) {
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        @Override
-        protected boolean isMatch(Element element) {
-            for (Property prop : element.getProperties()) {
+        public boolean isMatch(VertexiumObject vertexiumObject) {
+            for (Property prop : vertexiumObject.getProperties()) {
                 if (this.keys.contains(prop.getName())) {
                     return true;
                 }
@@ -698,7 +647,7 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
         }
     }
 
-    public static class HasNotPropertyContainer extends HasContainerSplitElementExtendedDataRows {
+    public static class HasNotPropertyContainer extends HasContainer {
         private Set<String> keys;
 
         public HasNotPropertyContainer(String key) {
@@ -721,18 +670,8 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
         }
 
         @Override
-        protected boolean isMatch(ExtendedDataRow row) {
-            for (Property prop : row.getProperties()) {
-                if (this.keys.contains(prop.getName())) {
-                    return false;
-                }
-            }
-            return true;
-        }
-
-        @Override
-        protected boolean isMatch(Element element) {
-            for (Property prop : element.getProperties()) {
+        public boolean isMatch(VertexiumObject vertexiumObject) {
+            for (Property prop : vertexiumObject.getProperties()) {
                 if (this.keys.contains(prop.getName())) {
                     return false;
                 }

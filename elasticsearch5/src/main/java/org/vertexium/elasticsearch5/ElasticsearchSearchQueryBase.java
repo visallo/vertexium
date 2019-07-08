@@ -1089,6 +1089,15 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
                 .should(getFilterForProperty(contains, has, Edge.OUT_VERTEX_ID_PROPERTY_NAME, value))
                 .should(getFilterForProperty(contains, has, Edge.IN_VERTEX_ID_PROPERTY_NAME, value))
                 .minimumShouldMatch(1);
+        } else if (ExtendedDataRow.TABLE_NAME.equals(propertyName)) {
+            propertyName = Elasticsearch5SearchIndex.EXTENDED_DATA_TABLE_NAME_FIELD_NAME;
+        } else if (ExtendedDataRow.ROW_ID.equals(propertyName)) {
+            propertyName = Elasticsearch5SearchIndex.EXTENDED_DATA_TABLE_ROW_ID_FIELD_NAME;
+        } else if (ExtendedDataRow.ELEMENT_ID.equals(propertyName)) {
+            propertyName = Elasticsearch5SearchIndex.ELEMENT_ID_FIELD_NAME;
+        } else if (ExtendedDataRow.ELEMENT_TYPE.equals(propertyName)) {
+            propertyName = Elasticsearch5SearchIndex.ELEMENT_TYPE_FIELD_NAME;
+            value = ElasticsearchDocumentType.getExtendedDataDocumentTypeFromElementType(ElementType.parse(value)).getKey();
         } else if (value instanceof String
             || value instanceof String[]
             || (value instanceof Object[] && ((Object[]) value).length > 0 && ((Object[]) value)[0] instanceof String)
@@ -1143,6 +1152,15 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
                 .should(getFilterForProperty(compare, has, Edge.OUT_VERTEX_ID_PROPERTY_NAME, value))
                 .should(getFilterForProperty(compare, has, Edge.IN_VERTEX_ID_PROPERTY_NAME, value))
                 .minimumShouldMatch(1);
+        } else if (ExtendedDataRow.TABLE_NAME.equals(propertyName)) {
+            propertyName = Elasticsearch5SearchIndex.EXTENDED_DATA_TABLE_NAME_FIELD_NAME;
+        } else if (ExtendedDataRow.ROW_ID.equals(propertyName)) {
+            propertyName = Elasticsearch5SearchIndex.EXTENDED_DATA_TABLE_ROW_ID_FIELD_NAME;
+        } else if (ExtendedDataRow.ELEMENT_ID.equals(propertyName)) {
+            propertyName = Elasticsearch5SearchIndex.ELEMENT_ID_FIELD_NAME;
+        } else if (ExtendedDataRow.ELEMENT_TYPE.equals(propertyName)) {
+            propertyName = Elasticsearch5SearchIndex.ELEMENT_TYPE_FIELD_NAME;
+            value = ElasticsearchDocumentType.getExtendedDataDocumentTypeFromElementType(ElementType.parse(value)).getKey();
         } else if (has.value instanceof IpV4Address) {
             // this value is converted to a string and should not use the exact match field
         } else if (value instanceof String || value instanceof String[]) {

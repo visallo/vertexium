@@ -230,17 +230,6 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
 
     @Override
     public Property getProperty(String name) {
-        if (ID_PROPERTY_NAME.equals(name)) {
-            return getIdProperty();
-        } else if (Edge.LABEL_PROPERTY_NAME.equals(name) && this instanceof Edge) {
-            return getEdgeLabelProperty();
-        } else if (Edge.OUT_VERTEX_ID_PROPERTY_NAME.equals(name) && this instanceof Edge) {
-            return getOutVertexIdProperty();
-        } else if (Edge.IN_VERTEX_ID_PROPERTY_NAME.equals(name) && this instanceof Edge) {
-            return getInVertexIdProperty();
-        } else if (Edge.IN_OR_OUT_VERTEX_ID_PROPERTY_NAME.equals(name) && this instanceof Edge) {
-            return getInOrOutVertexIdProperty();
-        }
         Iterator<Property> propertiesWithName = getProperties(name).iterator();
         if (propertiesWithName.hasNext()) {
             return propertiesWithName.next();
@@ -250,38 +239,16 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
 
     @Override
     public Object getPropertyValue(String name, int index) {
-        if (ID_PROPERTY_NAME.equals(name)) {
-            return getIdProperty();
-        } else if (Edge.LABEL_PROPERTY_NAME.equals(name) && this instanceof Edge) {
-            return getEdgeLabelProperty();
-        } else if (Edge.OUT_VERTEX_ID_PROPERTY_NAME.equals(name) && this instanceof Edge) {
-            return getOutVertexIdProperty();
-        } else if (Edge.IN_VERTEX_ID_PROPERTY_NAME.equals(name) && this instanceof Edge) {
-            return getInVertexIdProperty();
-        } else if (Edge.IN_OR_OUT_VERTEX_ID_PROPERTY_NAME.equals(name) && this instanceof Edge) {
-            return getInOrOutVertexIdProperty();
-        }
-        getFetchHints().assertPropertyIncluded(name);
-        Property property = this.properties.getProperty(name, index);
-        if (property == null) {
-            return null;
-        }
-        return property.getValue();
+        return getPropertyValue(null, name, index);
     }
 
     @Override
     public Object getPropertyValue(String key, String name, int index) {
-        if (ID_PROPERTY_NAME.equals(name)) {
-            return getIdProperty();
-        } else if (Edge.LABEL_PROPERTY_NAME.equals(name) && this instanceof Edge) {
-            return getEdgeLabelProperty();
-        } else if (Edge.OUT_VERTEX_ID_PROPERTY_NAME.equals(name) && this instanceof Edge) {
-            return getOutVertexIdProperty();
-        } else if (Edge.IN_VERTEX_ID_PROPERTY_NAME.equals(name) && this instanceof Edge) {
-            return getInVertexIdProperty();
-        } else if (Edge.IN_OR_OUT_VERTEX_ID_PROPERTY_NAME.equals(name) && this instanceof Edge) {
-            return getInOrOutVertexIdProperty();
+        Property reservedProperty = getReservedProperty(name);
+        if (reservedProperty != null) {
+            return reservedProperty.getValue();
         }
+        getFetchHints().assertPropertyIncluded(name);
         Property property = this.properties.getProperty(key, name, index);
         if (property == null) {
             return null;
@@ -325,14 +292,12 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
     }
 
     @Override
-    public Iterable<Property> getProperties(final String key, final String name) {
-        if (ID_PROPERTY_NAME.equals(name)
-            || (Edge.LABEL_PROPERTY_NAME.equals(name) && this instanceof Edge)
-            || (Edge.OUT_VERTEX_ID_PROPERTY_NAME.equals(name) && this instanceof Edge)
-            || (Edge.IN_VERTEX_ID_PROPERTY_NAME.equals(name) && this instanceof Edge)
-            || (Edge.IN_OR_OUT_VERTEX_ID_PROPERTY_NAME.equals(name) && this instanceof Edge)) {
-            return getProperties(name);
+    public Iterable<Property> getProperties(String key, String name) {
+        Property reservedProperty = getReservedProperty(name);
+        if (reservedProperty != null) {
+            return Lists.newArrayList(reservedProperty);
         }
+        getFetchHints().assertPropertyIncluded(name);
         return this.properties.getProperties(key, name);
     }
 

@@ -8219,6 +8219,53 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    public void testExtendedDataQuery() {
+        graph.prepareVertex("v1", VISIBILITY_A)
+            .addExtendedData("table1", "row1", "name", "value1", VISIBILITY_A)
+            .addExtendedData("table1", "row2", "name", "value1", VISIBILITY_A)
+            .addExtendedData("table2", "row3", "name", "value1", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
+        graph.prepareVertex("v2", VISIBILITY_A)
+            .addExtendedData("table1", "row4", "name", "value1", VISIBILITY_A)
+            .addExtendedData("table1", "row5", "name", "value1", VISIBILITY_A)
+            .addExtendedData("table2", "row6", "name", "value1", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
+        graph.prepareEdge("e1", "v1", "v2", "label1", VISIBILITY_A)
+            .addExtendedData("table1", "row7", "name", "value1", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
+        graph.flush();
+
+        QueryResultsIterable<ExtendedDataRow> rows = graph.query(AUTHORIZATIONS_A)
+            .extendedDataRows();
+        assertRowIdsAnyOrder(rows, "row1", "row2", "row3", "row4", "row5", "row6", "row7");
+
+        rows = graph.query(AUTHORIZATIONS_A)
+            .has(ExtendedDataRow.ROW_ID, "row1")
+            .extendedDataRows();
+        assertRowIdsAnyOrder(rows, "row1");
+
+        rows = graph.query(AUTHORIZATIONS_A)
+            .has(ExtendedDataRow.ELEMENT_TYPE, ElementType.VERTEX)
+            .extendedDataRows();
+        assertRowIdsAnyOrder(rows, "row1", "row2", "row3", "row4", "row5", "row6");
+
+        rows = graph.query(AUTHORIZATIONS_A)
+            .has(ExtendedDataRow.ELEMENT_TYPE, "VERTEX")
+            .extendedDataRows();
+        assertRowIdsAnyOrder(rows, "row1", "row2", "row3", "row4", "row5", "row6");
+
+        rows = graph.query(AUTHORIZATIONS_A)
+            .has(ExtendedDataRow.ELEMENT_ID, "v1")
+            .extendedDataRows();
+        assertRowIdsAnyOrder(rows, "row1", "row2", "row3");
+
+        rows = graph.query(AUTHORIZATIONS_A)
+            .has(ExtendedDataRow.TABLE_NAME, "table1")
+            .extendedDataRows();
+        assertRowIdsAnyOrder(rows, "row1", "row2", "row4", "row5", "row7");
+    }
+
+    @Test
     public void testExtendedDataInRange() {
         graph.prepareVertex("a", VISIBILITY_A)
             .addExtendedData("table1", "row1", "name", "value1", VISIBILITY_A)

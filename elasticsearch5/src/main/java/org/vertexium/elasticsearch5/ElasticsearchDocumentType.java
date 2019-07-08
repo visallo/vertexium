@@ -2,7 +2,6 @@ package org.vertexium.elasticsearch5;
 
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHitField;
-import org.vertexium.Element;
 import org.vertexium.ElementType;
 import org.vertexium.VertexiumException;
 import org.vertexium.VertexiumObjectType;
@@ -80,19 +79,6 @@ public enum ElasticsearchDocumentType {
             return null;
         }
         return ElasticsearchDocumentType.parse(elementType.getValue().toString());
-    }
-
-    public static <T extends Element> ElasticsearchDocumentType getExtendedDataDocumentTypeFromElement(
-        ElementType elementType
-    ) {
-        switch (elementType) {
-            case VERTEX:
-                return ElasticsearchDocumentType.VERTEX_EXTENDED_DATA;
-            case EDGE:
-                return ElasticsearchDocumentType.EDGE_EXTENDED_DATA;
-            default:
-                throw new VertexiumException("Unhandled element type: " + elementType);
-        }
     }
 
     public static ElasticsearchDocumentType getExtendedDataDocumentTypeFromElementType(ElementType elementType) {
