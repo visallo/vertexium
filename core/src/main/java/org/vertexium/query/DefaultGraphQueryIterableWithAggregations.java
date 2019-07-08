@@ -122,8 +122,6 @@ public class DefaultGraphQueryIterableWithAggregations<T extends VertexiumObject
             );
         }
         return results;
-
-
     }
 
     private Object findBestKey(List<Map.Entry<Object, List<T>>> value) {

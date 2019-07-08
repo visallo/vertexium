@@ -128,6 +128,8 @@ public class VertexiumAssert {
     }
 
     public static void assertRowIdsAnyOrder(Iterable<ExtendedDataRow> rows, String... expectedRowIds) {
+        List<String> foundRowIds = getRowIds(rows);
+        assertEquals(idsToStringSorted(Lists.newArrayList(expectedRowIds)), idsToStringSorted(foundRowIds));
         if (rows instanceof QueryResultsIterable) {
             assertEquals(
                 "search index total hits mismatch",
@@ -135,8 +137,6 @@ public class VertexiumAssert {
                 ((QueryResultsIterable<ExtendedDataRow>) rows).getTotalHits()
             );
         }
-        List<String> foundRowIds = getRowIds(rows);
-        assertEquals(idsToStringSorted(Lists.newArrayList(expectedRowIds)), idsToStringSorted(foundRowIds));
     }
 
     public static void assertRowIdsAnyOrder(Iterable<String> expectedRowIds, Iterable<? extends VertexiumObject> searchResults) {

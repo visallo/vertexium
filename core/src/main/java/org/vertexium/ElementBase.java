@@ -12,19 +12,16 @@ public abstract class ElementBase implements Element {
     private transient Property outVertexIdProperty;
     private transient Property inVertexIdProperty;
     private transient Property inOrOutVertexIdProperty;
+    private transient Property tableNameProperty;
+    private transient Property rowIdProperty;
+    private transient Property elementTypeProperty;
+    private transient Property elementIdProperty;
 
     @Override
     public Property getProperty(String key, String name, Visibility visibility) {
-        if (ID_PROPERTY_NAME.equals(name)) {
-            return getIdProperty();
-        } else if (Edge.LABEL_PROPERTY_NAME.equals(name) && this instanceof Edge) {
-            return getEdgeLabelProperty();
-        } else if (Edge.OUT_VERTEX_ID_PROPERTY_NAME.equals(name) && this instanceof Edge) {
-            return getOutVertexIdProperty();
-        } else if (Edge.IN_VERTEX_ID_PROPERTY_NAME.equals(name) && this instanceof Edge) {
-            return getInVertexIdProperty();
-        } else if (Edge.IN_OR_OUT_VERTEX_ID_PROPERTY_NAME.equals(name) && this instanceof Edge) {
-            return getInOrOutVertexIdProperty();
+        Property reservedProperty = getReservedProperty(name);
+        if (reservedProperty != null) {
+            return reservedProperty;
         }
         for (Property p : internalGetProperties(key, name)) {
             if (visibility == null) {
@@ -38,6 +35,29 @@ public abstract class ElementBase implements Element {
         return null;
     }
 
+    protected Property getReservedProperty(String name) {
+        if (ID_PROPERTY_NAME.equals(name)) {
+            return getIdProperty();
+        } else if (Edge.LABEL_PROPERTY_NAME.equals(name) && this instanceof Edge) {
+            return getEdgeLabelProperty();
+        } else if (Edge.OUT_VERTEX_ID_PROPERTY_NAME.equals(name) && this instanceof Edge) {
+            return getOutVertexIdProperty();
+        } else if (Edge.IN_VERTEX_ID_PROPERTY_NAME.equals(name) && this instanceof Edge) {
+            return getInVertexIdProperty();
+        } else if (Edge.IN_OR_OUT_VERTEX_ID_PROPERTY_NAME.equals(name) && this instanceof Edge) {
+            return getInOrOutVertexIdProperty();
+        } else if (ExtendedDataRow.TABLE_NAME.equals(name) && this instanceof ExtendedDataRow) {
+            return getTableNameProperty();
+        } else if (ExtendedDataRow.ROW_ID.equals(name) && this instanceof ExtendedDataRow) {
+            return getRowIdProperty();
+        } else if (ExtendedDataRow.ELEMENT_ID.equals(name) && this instanceof ExtendedDataRow) {
+            return getElementIdProperty();
+        } else if (ExtendedDataRow.ELEMENT_TYPE.equals(name) && this instanceof ExtendedDataRow) {
+            return getElementTypeProperty();
+        }
+        return null;
+    }
+
     @Override
     public Property getProperty(String name, Visibility visibility) {
         return getProperty(ElementMutation.DEFAULT_KEY, name, visibility);
@@ -45,28 +65,7 @@ public abstract class ElementBase implements Element {
 
     @Override
     public Iterable<Property> getProperties(String name) {
-        if (ID_PROPERTY_NAME.equals(name)) {
-            ArrayList<Property> result = new ArrayList<>();
-            result.add(getIdProperty());
-            return result;
-        } else if (Edge.LABEL_PROPERTY_NAME.equals(name) && this instanceof Edge) {
-            ArrayList<Property> result = new ArrayList<>();
-            result.add(getEdgeLabelProperty());
-            return result;
-        } else if (Edge.OUT_VERTEX_ID_PROPERTY_NAME.equals(name) && this instanceof Edge) {
-            ArrayList<Property> result = new ArrayList<>();
-            result.add(getOutVertexIdProperty());
-            return result;
-        } else if (Edge.IN_VERTEX_ID_PROPERTY_NAME.equals(name) && this instanceof Edge) {
-            ArrayList<Property> result = new ArrayList<>();
-            result.add(getInVertexIdProperty());
-            return result;
-        } else if (Edge.IN_OR_OUT_VERTEX_ID_PROPERTY_NAME.equals(name) && this instanceof Edge) {
-            ArrayList<Property> result = new ArrayList<>();
-            result.add(getInOrOutVertexIdProperty());
-            return result;
-        }
-        return internalGetProperties(null, name);
+        return getProperties(null, name);
     }
 
     protected Iterable<Property> internalGetProperties(String key, String name) {
@@ -83,26 +82,11 @@ public abstract class ElementBase implements Element {
     }
 
     @Override
-    public Iterable<Property> getProperties(final String key, final String name) {
-        if (ID_PROPERTY_NAME.equals(name)) {
+    public Iterable<Property> getProperties(String key, String name) {
+        Property reservedProperty = getReservedProperty(name);
+        if (reservedProperty != null) {
             ArrayList<Property> result = new ArrayList<>();
-            result.add(getIdProperty());
-            return result;
-        } else if (Edge.LABEL_PROPERTY_NAME.equals(name) && this instanceof Edge) {
-            ArrayList<Property> result = new ArrayList<>();
-            result.add(getEdgeLabelProperty());
-            return result;
-        } else if (Edge.OUT_VERTEX_ID_PROPERTY_NAME.equals(name) && this instanceof Edge) {
-            ArrayList<Property> result = new ArrayList<>();
-            result.add(getOutVertexIdProperty());
-            return result;
-        } else if (Edge.IN_VERTEX_ID_PROPERTY_NAME.equals(name) && this instanceof Edge) {
-            ArrayList<Property> result = new ArrayList<>();
-            result.add(getInVertexIdProperty());
-            return result;
-        } else if (Edge.IN_OR_OUT_VERTEX_ID_PROPERTY_NAME.equals(name) && this instanceof Edge) {
-            ArrayList<Property> result = new ArrayList<>();
-            result.add(getInOrOutVertexIdProperty());
+            result.add(reservedProperty);
             return result;
         }
         getFetchHints().assertPropertyIncluded(name);
@@ -191,5 +175,73 @@ public abstract class ElementBase implements Element {
             );
         }
         return inOrOutVertexIdProperty;
+    }
+
+    protected Property getTableNameProperty() {
+        if (tableNameProperty == null && this instanceof ExtendedDataRow) {
+            String tableName = ((ExtendedDataRow) this).getId().getTableName();
+            tableNameProperty = new MutablePropertyImpl(
+                ElementMutation.DEFAULT_KEY,
+                ExtendedDataRow.TABLE_NAME,
+                tableName,
+                null,
+                getTimestamp(),
+                null,
+                null,
+                getFetchHints()
+            );
+        }
+        return tableNameProperty;
+    }
+
+    protected Property getRowIdProperty() {
+        if (rowIdProperty == null && this instanceof ExtendedDataRow) {
+            String rowId = ((ExtendedDataRow) this).getId().getRowId();
+            rowIdProperty = new MutablePropertyImpl(
+                ElementMutation.DEFAULT_KEY,
+                ExtendedDataRow.ROW_ID,
+                rowId,
+                null,
+                getTimestamp(),
+                null,
+                null,
+                getFetchHints()
+            );
+        }
+        return rowIdProperty;
+    }
+
+    protected Property getElementTypeProperty() {
+        if (elementTypeProperty == null && this instanceof ExtendedDataRow) {
+            String elementType = ((ExtendedDataRow) this).getId().getElementType().name();
+            elementTypeProperty = new MutablePropertyImpl(
+                ElementMutation.DEFAULT_KEY,
+                ExtendedDataRow.ELEMENT_TYPE,
+                elementType,
+                null,
+                getTimestamp(),
+                null,
+                null,
+                getFetchHints()
+            );
+        }
+        return elementTypeProperty;
+    }
+
+    protected Property getElementIdProperty() {
+        if (elementIdProperty == null && this instanceof ExtendedDataRow) {
+            String elementId = ((ExtendedDataRow) this).getId().getElementId();
+            elementIdProperty = new MutablePropertyImpl(
+                ElementMutation.DEFAULT_KEY,
+                ExtendedDataRow.ELEMENT_ID,
+                elementId,
+                null,
+                getTimestamp(),
+                null,
+                null,
+                getFetchHints()
+            );
+        }
+        return elementIdProperty;
     }
 }

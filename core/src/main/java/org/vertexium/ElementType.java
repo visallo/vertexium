@@ -13,4 +13,17 @@ public enum ElementType {
         }
         throw new VertexiumException("Unhandled element type: " + element);
     }
+
+    public static ElementType parse(Object value) {
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof ElementType) {
+            return (ElementType) value;
+        }
+        if (value instanceof String) {
+            return ElementType.valueOf(((String) value).toUpperCase());
+        }
+        throw new VertexiumException("Could not parse element type: " + value);
+    }
 }

@@ -999,11 +999,12 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         try {
             Map<ElementType, List<ElementId>> elementIdsByType = stream(elementIds)
                 .collect(Collectors.groupingBy(ElementId::getElementType));
-            return fetchHints.applyToResults(elementIdsByType.entrySet().stream()
+            Stream<HistoricalEvent> events = elementIdsByType.entrySet().stream()
                 .flatMap(entry -> {
                     Set<String> ids = entry.getValue().stream().map(ElementId::getId).collect(Collectors.toSet());
                     return getHistoricalEvents(entry.getKey(), ids, after, fetchHints, authorizations);
-                }), after);
+                });
+            return fetchHints.applyToResults(events, after);
         } finally {
             trace.stop();
         }

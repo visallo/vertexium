@@ -59,6 +59,12 @@ public enum Compare implements Predicate {
                 first = new DateOnly((Date) first).getDate();
             }
         }
+        if (first instanceof ElementType) {
+            first = ((ElementType) first).name();
+        }
+        if (second instanceof ElementType) {
+            second = ((ElementType) second).name();
+        }
 
         switch (comparePredicate) {
             case EQUAL:

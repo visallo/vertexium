@@ -62,6 +62,9 @@ public class PropertyCollection {
     }
 
     public synchronized Property getProperty(String key, String name, int index) {
+        if (key == null) {
+            return getProperty(name, index);
+        }
         Map<String, ConcurrentSkipListSet<Property>> propertiesByKey = propertiesByNameAndKey.get(name);
         if (propertiesByKey == null) {
             return null;

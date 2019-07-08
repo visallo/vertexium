@@ -929,7 +929,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
         XContentBuilder jsonBuilder;
         jsonBuilder = XContentFactory.jsonBuilder().startObject();
 
-        String elementTypeString = ElasticsearchDocumentType.getExtendedDataDocumentTypeFromElement(
+        String elementTypeString = ElasticsearchDocumentType.getExtendedDataDocumentTypeFromElementType(
             elementLocation.getElementType()
         ).getKey();
         jsonBuilder.field(ELEMENT_ID_FIELD_NAME, elementLocation.getId());
@@ -1405,7 +1405,11 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
             || Edge.LABEL_PROPERTY_NAME.equals(propertyName)
             || Edge.OUT_VERTEX_ID_PROPERTY_NAME.equals(propertyName)
             || Edge.IN_VERTEX_ID_PROPERTY_NAME.equals(propertyName)
-            || Edge.IN_OR_OUT_VERTEX_ID_PROPERTY_NAME.equals(propertyName)) {
+            || Edge.IN_OR_OUT_VERTEX_ID_PROPERTY_NAME.equals(propertyName)
+            || ExtendedDataRow.ELEMENT_ID.equals(propertyName)
+            || ExtendedDataRow.ELEMENT_TYPE.equals(propertyName)
+            || ExtendedDataRow.ROW_ID.equals(propertyName)
+            || ExtendedDataRow.TABLE_NAME.equals(propertyName)) {
             return new String[]{propertyName};
         }
         Collection<String> hashes = this.propertyNameVisibilitiesStore.getHashes(graph, propertyName, authorizations);
