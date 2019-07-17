@@ -1059,11 +1059,24 @@ public abstract class GraphBase implements Graph {
     }
 
     protected void deleteAllExtendedDataForElement(Element element, Authorizations authorizations) {
-        if (!element.getFetchHints().isIncludeExtendedDataTableNames() || element.getExtendedDataTableNames().size() <= 0) {
+        if (!element.getFetchHints().isIncludeExtendedDataTableNames()) {
+            throw new VertexiumMissingFetchHintException(element.getFetchHints(), "includeExtendedDataTableNames");
+        }
+        if (element.getExtendedDataTableNames().size() == 0) {
             return;
         }
 
-        for (ExtendedDataRow row : getExtendedData(ElementType.getTypeFromElement(element), element.getId(), null, authorizations)) {
+        FetchHints fetchHints = new FetchHintsBuilder()
+            .setIncludeExtendedDataTableNames(true)
+            .build();
+        Iterable<ExtendedDataRow> rows = getExtendedData(
+            ElementType.getTypeFromElement(element),
+            element.getId(),
+            null,
+            fetchHints,
+            authorizations
+        );
+        for (ExtendedDataRow row : rows) {
             deleteExtendedDataRow(row.getId(), authorizations);
         }
     }
