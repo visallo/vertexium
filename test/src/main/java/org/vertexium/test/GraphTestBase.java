@@ -8344,12 +8344,22 @@ public abstract class GraphTestBase {
             .save(AUTHORIZATIONS_A);
         graph.flush();
 
+        QueryResultsIterable<? extends VertexiumObject> searchResults = graph.query("value", AUTHORIZATIONS_A)
+            .search();
+        assertResultsCount(1, 1, searchResults);
+
+        List<ExtendedDataRow> rows = toList(graph.getExtendedData(ElementType.VERTEX, "v1", "table1", AUTHORIZATIONS_A));
+        assertEquals(1, rows.size());
+
         graph.deleteVertex("v1", AUTHORIZATIONS_A);
         graph.flush();
 
-        QueryResultsIterable<? extends VertexiumObject> searchResults = graph.query("value", AUTHORIZATIONS_A)
+        searchResults = graph.query("value", AUTHORIZATIONS_A)
             .search();
-        assertEquals(0, searchResults.getTotalHits());
+        assertResultsCount(0, 0, searchResults);
+
+        rows = toList(graph.getExtendedData(ElementType.VERTEX, "v1", "table1", AUTHORIZATIONS_A));
+        assertEquals(0, rows.size());
     }
 
     @Test

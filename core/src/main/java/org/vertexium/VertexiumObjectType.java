@@ -19,4 +19,15 @@ public enum VertexiumObjectType {
         }
         throw new VertexiumException("Unhandled element type: " + element);
     }
+
+    public static VertexiumObjectType getTypeFromElementType(ElementType elementType) {
+        switch (elementType) {
+            case VERTEX:
+                return VERTEX;
+            case EDGE:
+                return EDGE;
+            default:
+                throw new VertexiumException("Unhandled element type: " + elementType);
+        }
+    }
 }

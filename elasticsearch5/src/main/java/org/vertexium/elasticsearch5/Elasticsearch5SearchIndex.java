@@ -898,6 +898,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
                 : stream(additionalExtendedDataVisibilityDeletes).map(AdditionalExtendedDataVisibilityDeleteMutation::getAdditionalVisibility).collect(Collectors.toList());
             ensureAdditionalVisibilitiesDefined(additionalVisibilities);
 
+            getIndexRefreshTracker().pushChange(indexInfo.getIndexName());
             return getClient()
                 .prepareUpdate(indexInfo.getIndexName(), getIdStrategy().getType(), extendedDataDocId)
                 .setScriptedUpsert(true)
