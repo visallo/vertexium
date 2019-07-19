@@ -1,3 +1,6 @@
+# v4.6.2
+* Fixed: Elasticsearch query strings with field names - handling of values other than constants
+
 # v4.6.1
 * Fixed: Elasticsearch Compare.NOT_EQUAL and Contains.NOT_IN with multiple visibilities
 

@@ -1,14 +1,17 @@
 package org.vertexium.elasticsearch5.plugin;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.classic.MapperQueryParser;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.search.DisjunctionMaxQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.util.BytesRef;
 import org.elasticsearch.index.query.QueryShardContext;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -26,18 +29,66 @@ public class VertexiumMapperQueryParser extends MapperQueryParser {
     }
 
     @Override
+    protected Query newRegexpQuery(Term regexp) {
+        return createQuery(regexp, (term) -> super.newRegexpQuery(term));
+    }
+
+    @Override
+    protected Query newWildcardQuery(Term t) {
+        return createQuery(t, (term) -> super.newWildcardQuery(term));
+    }
+
+    @Override
+    protected Query newPrefixQuery(Term prefix) {
+        return createQuery(prefix, (term) -> super.newPrefixQuery(term));
+    }
+
+    @Override
+    protected Query newFuzzyQuery(Term term, float minimumSimilarity, int prefixLength) {
+        return createQuery(term, (t) -> super.newFuzzyQuery(t, minimumSimilarity, prefixLength));
+    }
+
+    @Override
+    protected Query newRangeQuery(String field, String part1, String part2, boolean startInclusive, boolean endInclusive) {
+        return createQuery(field, (fieldName) -> super.newRangeQuery(fieldName, part1, part2, startInclusive, endInclusive));
+    }
+
+    @Override
     protected Query newFieldQuery(Analyzer analyzer, String field, String queryText, boolean quoted) throws ParseException {
+        try {
+            return createQuery(field, (fieldName) -> {
+                try {
+                    return super.newFieldQuery(analyzer, fieldName, queryText, quoted);
+                } catch (ParseException e) {
+                    throw new RuntimeException("could not create field query", e);
+                }
+            });
+        } catch (RuntimeException ex) {
+            if (ex.getCause() != null && ex.getCause() instanceof ParseException) {
+                throw (ParseException) ex.getCause();
+            }
+            throw ex;
+        }
+    }
+
+    private Query createQuery(Term term, Function<Term, Query> fn) {
+        String field = term.field();
+        BytesRef value = term.bytes();
+        return createQuery(field, (fieldName) -> fn.apply(new Term(fieldName, value)));
+    }
+
+    private Query createQuery(String field, Function<String, Query> fn) {
         field = field.replace(".", FIELDNAME_DOT_REPLACEMENT);
 
         if (field.length() == 0) {
-            return super.newFieldQuery(analyzer, field, queryText, quoted);
+            return fn.apply(field);
         }
 
         Matcher m = PROPERTY_NAME_PATTERN.matcher(field);
         if (m.matches() && m.group(2) != null) {
             String visibility = fieldNameToVisibilityMap.getFieldVisibility(field);
             if (visibility != null && VisibilityUtils.canRead(visibility, authorizations)) {
-                return super.newFieldQuery(analyzer, field, queryText, quoted);
+                return fn.apply(field);
             }
             return null;
         }
@@ -48,7 +99,7 @@ public class VertexiumMapperQueryParser extends MapperQueryParser {
             if (fieldName.startsWith(fieldPrefix)) {
                 String visibility = fieldNameToVisibilityMap.getFieldVisibility(fieldName);
                 if (visibility != null && VisibilityUtils.canRead(visibility, authorizations)) {
-                    Query termQuery = super.newFieldQuery(analyzer, fieldName, queryText, quoted);
+                    Query termQuery = fn.apply(fieldName);
                     disjucts.add(termQuery);
                 }
             }
@@ -56,7 +107,7 @@ public class VertexiumMapperQueryParser extends MapperQueryParser {
         DisjunctionMaxQuery query = new DisjunctionMaxQuery(disjucts, 0.0f);
 
         if (query.getDisjuncts().size() == 0) {
-            return super.newFieldQuery(analyzer, field, queryText, quoted);
+            return fn.apply(field);
         }
 
         return query;

@@ -4080,6 +4080,26 @@ public abstract class GraphTestBase {
         vertices = graph.query("http\\:\\/\\/vertexium.org#name:\"Joe Ferner\"", AUTHORIZATIONS_A)
             .vertices();
         Assert.assertEquals(1, count(vertices));
+
+        vertices = graph.query("http\\:\\/\\/vertexium.org#name:Fer*", AUTHORIZATIONS_A)
+            .vertices();
+        Assert.assertEquals(1, count(vertices));
+
+        vertices = graph.query("http\\:\\/\\/vertexium.org#name:Fer*er", AUTHORIZATIONS_A)
+            .vertices();
+        Assert.assertEquals(1, count(vertices));
+
+        vertices = graph.query("http\\:\\/\\/vertexium.org#name:/f.*r/", AUTHORIZATIONS_A)
+            .vertices();
+        Assert.assertEquals(1, count(vertices));
+
+        vertices = graph.query("http\\:\\/\\/vertexium.org#name:terner~", AUTHORIZATIONS_A)
+            .vertices();
+        Assert.assertEquals(1, count(vertices));
+
+        vertices = graph.query("http\\:\\/\\/vertexium.org#name:{Fern TO Gern}", AUTHORIZATIONS_A)
+            .vertices();
+        Assert.assertEquals(1, count(vertices));
     }
 
     protected boolean isFieldNamesInQuerySupported() {
