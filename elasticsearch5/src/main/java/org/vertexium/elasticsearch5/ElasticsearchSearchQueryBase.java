@@ -1041,6 +1041,9 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
         for (String propertyName : propertyNames) {
             filters.add(getFilterForProperty(contains, has, propertyName, value));
         }
+        if (contains == Contains.NOT_IN) {
+            return getSingleFilterOrAndTheFilters(filters, has);
+        }
         return getSingleFilterOrOrTheFilters(filters, has);
     }
 
@@ -1091,6 +1094,9 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
         List<QueryBuilder> filters = new ArrayList<>();
         for (String propertyName : propertyNames) {
             filters.add(getFilterForProperty(compare, has, propertyName, value));
+        }
+        if (compare == Compare.NOT_EQUAL) {
+            return getSingleFilterOrAndTheFilters(filters, has);
         }
         return getSingleFilterOrOrTheFilters(filters, has);
     }

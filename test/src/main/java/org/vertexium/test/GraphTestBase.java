@@ -2766,7 +2766,7 @@ public abstract class GraphTestBase {
         String agePropertyName = "age.property";
         graph.prepareVertex("v1", VISIBILITY_A)
             .setProperty("text", "hello", VISIBILITY_A)
-            .setProperty(agePropertyName, 25, VISIBILITY_A)
+            .setProperty(agePropertyName, 25, VISIBILITY_EMPTY)
             .setProperty("birthDate", new DateOnly(1989, 1, 5), VISIBILITY_A)
             .setProperty("lastAccessed", createDate(2014, 2, 24, 13, 0, 5), VISIBILITY_A)
             .save(AUTHORIZATIONS_A_AND_B);
