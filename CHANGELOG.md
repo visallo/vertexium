@@ -6,6 +6,9 @@
 * Fixed: Elasticsearch query strings with field names - handling of values other than constants
 * Changed: Speed up element delete when no extended data rows are present
 
+# v4.6.1
+* Fixed: Elasticsearch Compare.NOT_EQUAL and Contains.NOT_IN with multiple visibilities
+
 # v4.6.0
 * Added: History for vertices, edges, and properties
 * Changed: Accumulo use a thread pool when doing batch scans 
