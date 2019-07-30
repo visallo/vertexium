@@ -3,8 +3,10 @@
 * Added: Sorting strategy
 * Added: Element#getExtendedData - without table name, to get all extended data rows for that element 
 * Added: Fetch hints to get old metadata
-* Fixed: Elasticsearch query strings with field names - handling of values other than constants
 * Changed: Speed up element delete when no extended data rows are present
+
+# v4.6.2
+* Fixed: Elasticsearch query strings with field names - handling of values other than constants
 
 # v4.6.1
 * Fixed: Elasticsearch Compare.NOT_EQUAL and Contains.NOT_IN with multiple visibilities
