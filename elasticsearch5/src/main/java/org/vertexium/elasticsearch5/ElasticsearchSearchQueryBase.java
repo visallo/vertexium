@@ -283,16 +283,14 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
             filters.add(QueryBuilders.termsQuery(ELEMENT_ID_FIELD_NAME, idsArray));
         }
 
-        if (getParameters() instanceof QueryStringQueryParameters) {
-            Elasticsearch5SearchIndex es = (Elasticsearch5SearchIndex) ((GraphWithSearchIndex) getGraph()).getSearchIndex();
-            Collection<String> fields = es.getQueryableElementTypeVisibilityPropertyNames(getGraph(), getParameters().getAuthorizations());
-            BoolQueryBuilder atLeastOneFieldExistsFilter = QueryBuilders.boolQuery();
-            for (String field : fields) {
-                atLeastOneFieldExistsFilter.should(new ExistsQueryBuilder(field));
-            }
-            atLeastOneFieldExistsFilter.minimumShouldMatch(1);
-            filters.add(atLeastOneFieldExistsFilter);
+        Elasticsearch5SearchIndex es = (Elasticsearch5SearchIndex) ((GraphWithSearchIndex) getGraph()).getSearchIndex();
+        Collection<String> fields = es.getQueryableElementTypeVisibilityPropertyNames(getGraph(), getParameters().getAuthorizations());
+        BoolQueryBuilder atLeastOneFieldExistsFilter = QueryBuilders.boolQuery();
+        for (String field : fields) {
+            atLeastOneFieldExistsFilter.should(new ExistsQueryBuilder(field));
         }
+        atLeastOneFieldExistsFilter.minimumShouldMatch(1);
+        filters.add(atLeastOneFieldExistsFilter);
         return filters;
     }
 
