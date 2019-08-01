@@ -5,6 +5,9 @@
 * Added: Fetch hints to get old metadata
 * Changed: Speed up element delete when no extended data rows are present
 
+# v4.6.3
+* Fixed: Elasticsearch query string not taking account element visibility in total hit count
+
 # v4.6.2
 * Fixed: Elasticsearch query strings with field names - handling of values other than constants
 
