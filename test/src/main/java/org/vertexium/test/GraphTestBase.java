@@ -6317,41 +6317,47 @@ public abstract class GraphTestBase {
         graph.prepareVertex("v2", VISIBILITY_A)
             .setProperty("text", "Mary had a little tiger, His fleece was white as snow.", VISIBILITY_B)
             .save(AUTHORIZATIONS_B);
-        graph.prepareVertex("v3", VISIBILITY_A)
+        graph.prepareVertex("v3", VISIBILITY_B)
+            .setProperty("text", "Mary had a little lamb, His fleece was white as snow", VISIBILITY_A)
+            .save(AUTHORIZATIONS_B);
+        graph.prepareVertex("v4", VISIBILITY_A)
             .setProperty("text", "Mary had a little lamb.", VISIBILITY_A)
             .save(AUTHORIZATIONS_A);
-        graph.prepareVertex("v4", VISIBILITY_A)
+        graph.prepareVertex("v5", VISIBILITY_A)
             .setProperty("text", "His fleece was white as snow.", VISIBILITY_A)
             .save(AUTHORIZATIONS_A);
-        graph.prepareVertex("v5", VISIBILITY_A)
+        graph.prepareVertex("v6", VISIBILITY_A)
             .setProperty("text", "Mary had a little lamb, His fleece was black as snow.", VISIBILITY_A)
             .save(AUTHORIZATIONS_A);
-        graph.prepareVertex("v5", VISIBILITY_A)
+        graph.prepareVertex("v6", VISIBILITY_A)
             .setProperty("text", "Jack and Jill went up the hill to fetch a pail of water.", VISIBILITY_A)
             .save(AUTHORIZATIONS_A);
         graph.flush();
 
-        List<Vertex> vertices = toList(
-            graph.querySimilarTo(new String[]{"text"}, "Mary had a little lamb, His fleece was white as snow", AUTHORIZATIONS_A_AND_B)
+        GraphQuery query = graph.querySimilarTo(new String[]{"text"}, "Mary had a little lamb, His fleece was white as snow", AUTHORIZATIONS_A_AND_B)
                 .minTermFrequency(1)
                 .maxQueryTerms(25)
                 .minDocFrequency(1)
                 .maxDocFrequency(10)
-                .boost(2.0f)
-                .vertices()
-        );
-        assertTrue(vertices.size() > 0);
+                .boost(2.0f);
+        QueryResultsIterable<? extends VertexiumObject> searchResults = query.search();
+        List<Vertex> vertices = toList(query.vertices());
 
-        vertices = toList(
-            graph.querySimilarTo(new String[]{"text"}, "Mary had a little lamb, His fleece was white as snow", AUTHORIZATIONS_A)
+        assertTrue(vertices.size() > 0);
+        assertEquals(vertices.size(), searchResults.getTotalHits());
+
+        query = graph.querySimilarTo(new String[]{"text"}, "Mary had a little lamb, His fleece was white as snow", AUTHORIZATIONS_A)
                 .minTermFrequency(1)
                 .maxQueryTerms(25)
                 .minDocFrequency(1)
                 .maxDocFrequency(10)
-                .boost(2.0f)
-                .vertices()
-        );
+                .boost(2.0f);
+        searchResults = query.search();
+        vertices = toList(query.vertices());
+
         assertTrue(vertices.size() > 0);
+        assertTrue(vertices.stream().noneMatch(vertex -> vertex.getId().equals("v3")));
+        assertEquals(vertices.size(), searchResults.getTotalHits());
     }
 
     @Test
