@@ -21,7 +21,13 @@ public interface SearchIndex {
 
     <TElement extends Element> void updateElement(Graph graph, ExistingElementMutation<TElement> mutation, Authorizations authorizations);
 
-    void deleteElement(Graph graph, Element element, Authorizations authorizations);
+    void deleteElement(Graph graph, ElementId elementId, Authorizations authorizations);
+
+    default void deleteElements(Graph graph, Iterable<? extends ElementId> elementIds, Authorizations authorizations) {
+        for (ElementId elementId : elementIds) {
+            deleteElement(graph, elementId, authorizations);
+        }
+    }
 
     void markElementHidden(Graph graph, Element element, Visibility visibility, Authorizations authorizations);
 

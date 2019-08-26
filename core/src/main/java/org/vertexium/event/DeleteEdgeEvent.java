@@ -1,17 +1,17 @@
 package org.vertexium.event;
 
-import org.vertexium.Edge;
+import org.vertexium.EdgeElementLocation;
 import org.vertexium.Graph;
 
 public class DeleteEdgeEvent extends GraphEvent {
-    private final Edge edge;
+    private final EdgeElementLocation edge;
 
-    public DeleteEdgeEvent(Graph graph, Edge edge) {
+    public DeleteEdgeEvent(Graph graph, EdgeElementLocation edge) {
         super(graph);
         this.edge = edge;
     }
 
-    public Edge getEdge() {
+    public EdgeElementLocation getEdge() {
         return edge;
     }
 

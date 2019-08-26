@@ -307,4 +307,111 @@ public class FetchHints {
         }
         throw new VertexiumMissingFetchHintException(this, "metadata:" + key);
     }
+
+    /**
+     * Tests that these fetch hints have at least the requested fetch hints
+     *
+     * @return true if this has all or more fetch hints then those passed in.
+     */
+    public boolean hasFetchHints(FetchHints fetchHints) {
+        if (fetchHints.ignoreAdditionalVisibilities != this.ignoreAdditionalVisibilities) {
+            return false;
+        }
+        if (fetchHints.includeHidden != this.includeHidden) {
+            return false;
+        }
+
+        if (fetchHints.includeEdgeLabelsAndCounts && !this.includeEdgeLabelsAndCounts) {
+            return false;
+        }
+
+        if (fetchHints.includeAllEdgeRefs && !this.includeAllEdgeRefs) {
+            return false;
+        }
+
+        if (fetchHints.includeOutEdgeRefs && !(this.includeOutEdgeRefs || this.includeAllEdgeRefs)) {
+            return false;
+        }
+
+        if (fetchHints.includeInEdgeRefs && !(this.includeInEdgeRefs || this.includeAllEdgeRefs)) {
+            return false;
+        }
+
+        if (fetchHints.includeExtendedDataTableNames && !this.includeExtendedDataTableNames) {
+            return false;
+        }
+
+        if (fetchHints.includeAllPropertyMetadata && !this.includeAllPropertyMetadata) {
+            return false;
+        }
+
+        if (fetchHints.includeAllProperties && !this.includeAllProperties) {
+            return false;
+        }
+
+        if (fetchHints.edgeLabelsOfEdgeRefsToInclude != null
+            && fetchHints.edgeLabelsOfEdgeRefsToInclude.size() > 0
+            && !isEdgeLabelsOfEdgeRefsIncluded(fetchHints.edgeLabelsOfEdgeRefsToInclude)) {
+            return false;
+        }
+
+        if (fetchHints.propertyNamesToInclude != null
+            && fetchHints.propertyNamesToInclude.size() > 0
+            && !isPropertyNamesIncluded(fetchHints.propertyNamesToInclude)) {
+            return false;
+        }
+
+        if (fetchHints.metadataKeysToInclude != null
+            && fetchHints.metadataKeysToInclude.size() > 0
+            && !isMetadataKeysIncluded(fetchHints.metadataKeysToInclude)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    private boolean isMetadataKeysIncluded(ImmutableSet<String> metadataKeysToInclude) {
+        if (includeAllPropertyMetadata) {
+            return true;
+        }
+        if (this.metadataKeysToInclude == null) {
+            return false;
+        }
+        for (String metadataKey : metadataKeysToInclude) {
+            if (!this.metadataKeysToInclude.contains(metadataKey)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private boolean isPropertyNamesIncluded(ImmutableSet<String> propertyNamesToInclude) {
+        if (includeAllProperties) {
+            return true;
+        }
+        if (this.propertyNamesToInclude == null) {
+            return false;
+        }
+        for (String propertyName : propertyNamesToInclude) {
+            if (!this.propertyNamesToInclude.contains(propertyName)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private boolean isEdgeLabelsOfEdgeRefsIncluded(ImmutableSet<String> edgeLabelsOfEdgeRefsToInclude) {
+        if (includeAllEdgeRefs) {
+            return true;
+        }
+        if (this.edgeLabelsOfEdgeRefsToInclude == null) {
+            return false;
+        }
+        for (String edgeLabel : edgeLabelsOfEdgeRefsToInclude) {
+            if (!this.edgeLabelsOfEdgeRefsToInclude.contains(edgeLabel)) {
+                return false;
+            }
+        }
+        return true;
+    }
 }

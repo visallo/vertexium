@@ -811,14 +811,50 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    public void testDeleteElements() {
+        graph.prepareVertex("v1", VISIBILITY_A)
+            .setProperty("prop1", "value1", VISIBILITY_A)
+            .addExtendedData("table1", "row1", "column1", "value1", VISIBILITY_A)
+            .save(AUTHORIZATIONS_ALL);
+        graph.prepareVertex("v2", VISIBILITY_A)
+            .setProperty("prop1", "value1", VISIBILITY_A)
+            .save(AUTHORIZATIONS_ALL);
+        graph.prepareEdge("e1", "v1", "v2", "label1", VISIBILITY_A)
+            .addExtendedData("table1", "row1", "column1", "value1", VISIBILITY_A)
+            .save(AUTHORIZATIONS_ALL);
+        graph.flush();
+
+        List<ElementId> elements = new ArrayList<>();
+        FetchHints fetchHints = new FetchHintsBuilder(FetchHints.EDGE_REFS)
+            .setIncludeExtendedDataTableNames(true)
+            .build();
+        elements.add(graph.getVertex("v1", fetchHints, AUTHORIZATIONS_A));
+        elements.add(ElementId.vertex("v2"));
+        graph.deleteElements(elements.stream(), AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        assertNull(graph.getVertex("v1", AUTHORIZATIONS_A));
+        assertNull(graph.getVertex("v2", AUTHORIZATIONS_A));
+        assertNull(graph.getEdge("e1", AUTHORIZATIONS_A));
+        assertResultsCount(0, 0, graph.query(AUTHORIZATIONS_A_AND_B).has("prop1", "value1").vertices());
+        assertResultsCount(0, 0, graph.query(AUTHORIZATIONS_A_AND_B).vertices());
+        assertResultsCount(0, 0, graph.query(AUTHORIZATIONS_A_AND_B).edges());
+        assertResultsCount(0, 0, graph.query(AUTHORIZATIONS_A_AND_B).extendedDataRows());
+    }
+
+    @Test
     public void testDeleteVertex() {
         graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.addEdge("e1", "v1", "v2", "label1", VISIBILITY_A, AUTHORIZATIONS_A);
         graph.flush();
-        Assert.assertEquals(1, count(graph.getVertices(AUTHORIZATIONS_A)));
+        assertVertexIds(graph.getVertices(AUTHORIZATIONS_A), "v1", "v2");
+        assertEdgeIds(graph.getEdges(AUTHORIZATIONS_A), "e1");
 
         graph.deleteVertex("v1", AUTHORIZATIONS_A);
         graph.flush();
-        Assert.assertEquals(0, count(graph.getVertices(AUTHORIZATIONS_A)));
+        assertVertexIds(graph.getVertices(AUTHORIZATIONS_A), "v2");
+        assertEdgeIds(graph.getEdges(AUTHORIZATIONS_A));
     }
 
     @Test
@@ -2219,6 +2255,25 @@ public abstract class GraphTestBase {
             new AddEdgeEvent(graph, addedEdge),
             new DeleteEdgeEvent(graph, addedEdge)
         );
+    }
+
+    @Test
+    public void testDeleteElementEdge() {
+        graph.prepareVertex("v1", VISIBILITY_A)
+            .save(AUTHORIZATIONS_ALL);
+        graph.prepareVertex("v2", VISIBILITY_A)
+            .save(AUTHORIZATIONS_ALL);
+        graph.prepareEdge("e1", "v1", "v2", "label1", VISIBILITY_A)
+            .addExtendedData("table1", "row1", "column1", "value1", VISIBILITY_A)
+            .save(AUTHORIZATIONS_ALL);
+        graph.flush();
+
+        graph.deleteElement(ElementId.edge("e1"), AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        assertNull(graph.getEdge("e1", AUTHORIZATIONS_A));
+        assertResultsCount(0, 0, graph.query(AUTHORIZATIONS_A_AND_B).edges());
+        assertResultsCount(0, 0, graph.query(AUTHORIZATIONS_A_AND_B).extendedDataRows());
     }
 
     @Test
@@ -5782,6 +5837,7 @@ public abstract class GraphTestBase {
         graph.flush();
 
         long beforeAlterTimestamp = IncreasingTime.currentTimeMillis();
+        IncreasingTime.catchUp();
 
         Vertex v1 = graph.getVertex("v1", FetchHints.ALL, AUTHORIZATIONS_A);
         v1.prepareMutation()
@@ -6378,11 +6434,11 @@ public abstract class GraphTestBase {
         graph.flush();
 
         GraphQuery query = graph.querySimilarTo(new String[]{"text"}, "Mary had a little lamb, His fleece was white as snow", AUTHORIZATIONS_A_AND_B)
-                .minTermFrequency(1)
-                .maxQueryTerms(25)
-                .minDocFrequency(1)
-                .maxDocFrequency(10)
-                .boost(2.0f);
+            .minTermFrequency(1)
+            .maxQueryTerms(25)
+            .minDocFrequency(1)
+            .maxDocFrequency(10)
+            .boost(2.0f);
         QueryResultsIterable<? extends VertexiumObject> searchResults = query.search();
         List<Vertex> vertices = toList(query.vertices());
 
@@ -6390,11 +6446,11 @@ public abstract class GraphTestBase {
         assertEquals(vertices.size(), searchResults.getTotalHits());
 
         query = graph.querySimilarTo(new String[]{"text"}, "Mary had a little lamb, His fleece was white as snow", AUTHORIZATIONS_A)
-                .minTermFrequency(1)
-                .maxQueryTerms(25)
-                .minDocFrequency(1)
-                .maxDocFrequency(10)
-                .boost(2.0f);
+            .minTermFrequency(1)
+            .maxQueryTerms(25)
+            .minDocFrequency(1)
+            .maxDocFrequency(10)
+            .boost(2.0f);
         searchResults = query.search();
         vertices = toList(query.vertices());
 
@@ -8202,7 +8258,7 @@ public abstract class GraphTestBase {
 
         assertEquals(5, count(graph.getExtendedData(ElementType.VERTEX, "v1", null, AUTHORIZATIONS_A)));
         assertEquals(5, count(graph.getExtendedData(ElementType.VERTEX, null, null, AUTHORIZATIONS_A)));
-        assertEquals(5, count(graph.getExtendedData(null, null, null, AUTHORIZATIONS_A)));
+        assertEquals(5, count(graph.getExtendedData((ElementType) null, null, null, AUTHORIZATIONS_A)));
         assertEquals(5, count(v1.getExtendedData()));
         try {
             count(graph.getExtendedData(null, null, "table1", AUTHORIZATIONS_A));
@@ -8211,7 +8267,7 @@ public abstract class GraphTestBase {
             // expected
         }
         try {
-            count(graph.getExtendedData(null, "v1", null, AUTHORIZATIONS_A));
+            count(graph.getExtendedData((ElementType) null, "v1", null, AUTHORIZATIONS_A));
             fail("nulls to the left of a value is not allowed");
         } catch (Exception ex) {
             // expected
@@ -9341,6 +9397,31 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    public void benchmarkDeletes() {
+        assumeTrue(benchmarkEnabled());
+        Random random = new Random(1);
+        int vertexCount = 10000;
+        int edgeCount = 10000;
+        int extendedDataRowCount = 10000;
+
+        benchmarkAddVertices(vertexCount);
+        benchmarkAddEdges(random, vertexCount, edgeCount);
+        benchmarkAddExtendedDataRows(random, vertexCount, extendedDataRowCount);
+
+        double startTime = System.currentTimeMillis();
+        List<ElementId> elementIds = new ArrayList<>();
+        for (int i = 0; i < vertexCount; i++) {
+            String vertexId = "v" + i;
+            elementIds.add(ElementId.vertex(vertexId));
+        }
+        graph.deleteElements(elementIds.stream(), AUTHORIZATIONS_A);
+        ;
+        graph.flush();
+        double endTime = System.currentTimeMillis();
+        LOGGER.info("delete vertices in %.3fs", (endTime - startTime) / 1000.0);
+    }
+
+    @Test
     public void benchmark() {
         assumeTrue(benchmarkEnabled());
         Random random = new Random(1);
@@ -9516,6 +9597,20 @@ public abstract class GraphTestBase {
         graph.flush();
         double endTime = System.currentTimeMillis();
         LOGGER.info("add edges in %.3fs", (endTime - startTime) / 1000);
+    }
+
+    private void benchmarkAddExtendedDataRows(Random random, int vertexCount, int extendedDataRowCount) {
+        double startTime = System.currentTimeMillis();
+        for (int i = 0; i < extendedDataRowCount; i++) {
+            String row = "row" + i;
+            String vertexId = "v" + random.nextInt(vertexCount);
+            graph.prepareVertex(vertexId, VISIBILITY_A)
+                .addExtendedData("table1", row, "column1", "value1", VISIBILITY_A)
+                .save(AUTHORIZATIONS_ALL);
+        }
+        graph.flush();
+        double endTime = System.currentTimeMillis();
+        LOGGER.info("add rows in %.3fs", (endTime - startTime) / 1000);
     }
 
     private void benchmarkFindVerticesById(Random random, int vertexCount, int findVerticesByIdCount) {

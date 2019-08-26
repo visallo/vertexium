@@ -1,5 +1,6 @@
 package org.vertexium;
 
+import com.google.common.collect.Lists;
 import org.vertexium.event.GraphEventListener;
 import org.vertexium.historicalEvent.HistoricalEvent;
 import org.vertexium.historicalEvent.HistoricalEventId;
@@ -17,6 +18,8 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
+
+import static org.vertexium.util.Preconditions.checkNotNull;
 
 public interface Graph {
     /**
@@ -114,11 +117,61 @@ public interface Graph {
      * @return The vertex if successful. null if the element is not found or the required authorizations were not provided.
      */
     default Element getElement(ElementId elementId, FetchHints fetchHints, Authorizations authorizations) {
+        if (elementId instanceof Element) {
+            Element element = (Element) elementId;
+            if (element.getFetchHints().hasFetchHints(fetchHints)) {
+                return element;
+            }
+        }
         switch (elementId.getElementType()) {
             case VERTEX:
                 return getVertex(elementId.getId(), fetchHints, authorizations);
             case EDGE:
                 return getEdge(elementId.getId(), fetchHints, authorizations);
+            default:
+                throw new VertexiumException("Unhandled element type: " + elementId.getElementType());
+        }
+    }
+
+    /**
+     * Deletes multiple elements
+     *
+     * @param elementIds     The element ids to delete
+     * @param authorizations The authorizations required to delete the elements
+     */
+    default void deleteElements(Stream<? extends ElementId> elementIds, Authorizations authorizations) {
+        elementIds.forEach(elementId -> deleteElement(elementId, authorizations));
+    }
+
+    /**
+     * Deletes an element
+     *
+     * @param elementId      The element to delete
+     * @param authorizations The authorizations required to delete the element
+     */
+    default void deleteElement(ElementId elementId, Authorizations authorizations) {
+        checkNotNull(elementId, "element is required");
+        switch (elementId.getElementType()) {
+            case VERTEX:
+                if (elementId instanceof Vertex) {
+                    deleteVertex((Vertex) elementId, authorizations);
+                } else {
+                    FetchHints fetchHints = new FetchHintsBuilder(FetchHints.EDGE_REFS)
+                        .setIncludeExtendedDataTableNames(true)
+                        .build();
+                    deleteVertex((Vertex) getElement(elementId, fetchHints, authorizations), authorizations);
+                }
+                break;
+            case EDGE:
+                if (elementId instanceof Edge) {
+                    deleteEdge((Edge) elementId, authorizations);
+                } else {
+                    FetchHints fetchHints = new FetchHintsBuilder()
+                        .setIncludeExtendedDataTableNames(true)
+                        .build();
+                    deleteEdge(getEdge(elementId.getId(), fetchHints, authorizations), authorizations);
+                }
+                break;
             default:
                 throw new VertexiumException("Unhandled element type: " + elementId.getElementType());
         }
@@ -1247,6 +1300,22 @@ public interface Graph {
     /**
      * Gets the specified extended data rows.
      *
+     * @param elementId      The element id to get the rows from
+     * @param tableName      The name of the table within the element to get the rows from
+     * @param authorizations The authorizations used to get the rows
+     * @return Rows
+     */
+    default Iterable<ExtendedDataRow> getExtendedData(
+        ElementId elementId,
+        String tableName,
+        Authorizations authorizations
+    ) {
+        return getExtendedData(elementId, tableName, FetchHints.ALL, authorizations);
+    }
+
+    /**
+     * Gets the specified extended data rows.
+     *
      * @param elementType    The type of element to get the rows from
      * @param elementId      The element id to get the rows from
      * @param tableName      The name of the table within the element to get the rows from
@@ -1254,9 +1323,91 @@ public interface Graph {
      * @param authorizations The authorizations used to get the rows
      * @return Rows
      */
-    Iterable<ExtendedDataRow> getExtendedData(
+    default Iterable<ExtendedDataRow> getExtendedData(
         ElementType elementType,
         String elementId,
+        String tableName,
+        FetchHints fetchHints,
+        Authorizations authorizations
+    ) {
+        return getExtendedData(ElementId.create(elementType, elementId), tableName, fetchHints, authorizations);
+    }
+
+    /**
+     * Gets the specified extended data rows.
+     *
+     * @param elementId      The element id to get the rows from
+     * @param tableName      The name of the table within the element to get the rows from
+     * @param fetchHints     Fetch hints to filter extended data
+     * @param authorizations The authorizations used to get the rows
+     * @return Rows
+     */
+    default Iterable<ExtendedDataRow> getExtendedData(
+        ElementId elementId,
+        String tableName,
+        FetchHints fetchHints,
+        Authorizations authorizations
+    ) {
+        return getExtendedDataForElements(Lists.newArrayList(elementId), tableName, fetchHints, authorizations);
+    }
+
+    /**
+     * Gets the specified extended data rows.
+     *
+     * @param elementIds     The element ids of the elements to get the rows from
+     * @param authorizations The authorizations used to get the rows
+     * @return Rows
+     */
+    default Iterable<ExtendedDataRow> getExtendedDataForElements(
+        Iterable<? extends ElementId> elementIds,
+        Authorizations authorizations
+    ) {
+        return getExtendedDataForElements(elementIds, FetchHints.ALL, authorizations);
+    }
+
+    /**
+     * Gets the specified extended data rows.
+     *
+     * @param elementIds     The element ids of the elements to get the rows from
+     * @param tableName      The name of the table within the element to get the rows from
+     * @param authorizations The authorizations used to get the rows
+     * @return Rows
+     */
+    default Iterable<ExtendedDataRow> getExtendedDataForElements(
+        Iterable<? extends ElementId> elementIds,
+        String tableName,
+        Authorizations authorizations
+    ) {
+        return getExtendedDataForElements(elementIds, tableName, FetchHints.ALL, authorizations);
+    }
+
+    /**
+     * Gets the specified extended data rows.
+     *
+     * @param elementIds     The element ids of the elements to get the rows from
+     * @param fetchHints     Fetch hints to filter extended data
+     * @param authorizations The authorizations used to get the rows
+     * @return Rows
+     */
+    default Iterable<ExtendedDataRow> getExtendedDataForElements(
+        Iterable<? extends ElementId> elementIds,
+        FetchHints fetchHints,
+        Authorizations authorizations
+    ) {
+        return getExtendedDataForElements(elementIds, null, fetchHints, authorizations);
+    }
+
+    /**
+     * Gets the specified extended data rows.
+     *
+     * @param elementIds     The element ids of the elements to get the rows from
+     * @param tableName      The name of the table within the element to get the rows from
+     * @param fetchHints     Fetch hints to filter extended data
+     * @param authorizations The authorizations used to get the rows
+     * @return Rows
+     */
+    Iterable<ExtendedDataRow> getExtendedDataForElements(
+        Iterable<? extends ElementId> elementIds,
         String tableName,
         FetchHints fetchHints,
         Authorizations authorizations

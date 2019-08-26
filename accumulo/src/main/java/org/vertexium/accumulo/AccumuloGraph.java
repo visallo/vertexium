@@ -1,5 +1,6 @@
 package org.vertexium.accumulo;
 
+import com.google.common.base.Joiner;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
@@ -53,6 +54,7 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.locks.StampedLock;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -680,28 +682,117 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
     }
 
     @Override
-    public void deleteVertex(Vertex vertex, Authorizations authorizations) {
-        checkNotNull(vertex, "vertex cannot be null");
-        Span trace = Trace.start("deleteVertex");
-        trace.data("vertexId", vertex.getId());
-        try {
-            getSearchIndex().deleteElement(this, vertex, authorizations);
+    public void deleteElements(Stream<? extends ElementId> elementIds, Authorizations authorizations) {
+        DeleteElementsConsumer consumer = new DeleteElementsConsumer(authorizations);
+        elementIds.forEach(consumer);
+        consumer.processBatches(true);
+    }
 
-            // Delete all edges that this vertex participates.
-            for (Edge edge : vertex.getEdges(Direction.BOTH, authorizations)) {
-                deleteEdge(edge, authorizations);
-            }
+    private class DeleteElementsConsumer implements Consumer<ElementId> {
+        private final Authorizations authorizations;
+        private final Set<String> verticesToFetch = new HashSet<>();
+        private final Set<String> edgesToFetch = new HashSet<>();
+        private final Set<Vertex> verticesToDelete = new HashSet<>();
+        private final Set<EdgeElementLocation> edgesToDelete = new HashSet<>();
 
-            deleteAllExtendedDataForElement(vertex, authorizations);
-
-            addMutations(VertexiumObjectType.VERTEX, elementMutationBuilder.getDeleteRowMutation(vertex.getId()));
-
-            if (hasEventListeners()) {
-                queueEvent(new DeleteVertexEvent(this, vertex));
-            }
-        } finally {
-            trace.stop();
+        public DeleteElementsConsumer(Authorizations authorizations) {
+            this.authorizations = authorizations;
         }
+
+        @Override
+        public void accept(ElementId elementId) {
+            if (elementId instanceof Vertex) {
+                verticesToDelete.add((Vertex) elementId);
+            } else if (elementId instanceof EdgeElementLocation) {
+                edgesToDelete.add((EdgeElementLocation) elementId);
+            } else if (elementId.getElementType() == ElementType.VERTEX) {
+                verticesToFetch.add(elementId.getId());
+            } else if (elementId.getElementType() == ElementType.EDGE) {
+                edgesToFetch.add(elementId.getId());
+            } else {
+                throw new VertexiumException("unhandled element type: " + elementId.getElementType());
+            }
+            processBatches(false);
+        }
+
+        public void processBatches(boolean finalBatch) {
+            if (finalBatch || verticesToFetch.size() > 100) {
+                verticesToDelete.addAll(toList(getVertices(verticesToFetch, FetchHints.EDGE_REFS, authorizations)));
+                verticesToFetch.clear();
+            }
+
+            if (finalBatch || verticesToDelete.size() > 100) {
+                for (Vertex vertexToDelete : verticesToDelete) {
+                    edgesToFetch.addAll(toList(vertexToDelete.getEdgeIds(Direction.BOTH, authorizations)));
+                }
+                deleteVertices(verticesToDelete);
+                verticesToDelete.clear();
+            }
+
+            if (finalBatch || edgesToFetch.size() > 100) {
+                edgesToDelete.addAll(toList(getEdges(edgesToFetch, FetchHints.NONE, authorizations)));
+                edgesToFetch.clear();
+            }
+
+            if (finalBatch || edgesToDelete.size() > 100) {
+                deleteEdges(edgesToDelete);
+                edgesToDelete.clear();
+            }
+        }
+
+        private void deleteVertices(Set<Vertex> verticesToDelete) {
+            getSearchIndex().deleteElements(AccumuloGraph.this, verticesToDelete, authorizations);
+
+            deleteAllExtendedDataForElements(verticesToDelete, authorizations);
+
+            for (Vertex vertex : verticesToDelete) {
+                addMutations(VertexiumObjectType.VERTEX, elementMutationBuilder.getDeleteRowMutation(vertex.getId()));
+
+                queueEvent(new DeleteVertexEvent(AccumuloGraph.this, vertex));
+            }
+        }
+
+        private void deleteEdges(Set<EdgeElementLocation> edgesToDelete) {
+            getSearchIndex().deleteElements(AccumuloGraph.this, edgesToDelete, authorizations);
+
+            deleteAllExtendedDataForElements(edgesToDelete, authorizations);
+
+            for (EdgeElementLocation edgeLocation : edgesToDelete) {
+                ColumnVisibility visibility = visibilityToAccumuloVisibility(edgeLocation.getVisibility());
+
+                Mutation outMutation = new Mutation(edgeLocation.getVertexId(Direction.OUT));
+                outMutation.putDelete(AccumuloVertex.CF_OUT_EDGE, new Text(edgeLocation.getId()), visibility);
+
+                Mutation inMutation = new Mutation(edgeLocation.getVertexId(Direction.IN));
+                inMutation.putDelete(AccumuloVertex.CF_IN_EDGE, new Text(edgeLocation.getId()), visibility);
+
+                addMutations(VertexiumObjectType.VERTEX, outMutation, inMutation);
+
+                // Deletes everything else related to edge.
+                addMutations(VertexiumObjectType.EDGE, elementMutationBuilder.getDeleteRowMutation(edgeLocation.getId()));
+
+                queueEvent(new DeleteEdgeEvent(AccumuloGraph.this, edgeLocation));
+            }
+        }
+
+        private void deleteAllExtendedDataForElements(Iterable<? extends ElementId> elementIds, Authorizations authorizations) {
+            FetchHints fetchHints = new FetchHintsBuilder()
+                .setIncludeExtendedDataTableNames(true)
+                .build();
+            Iterable<ExtendedDataRow> rows = getExtendedDataForElements(
+                elementIds,
+                fetchHints,
+                authorizations
+            );
+            for (ExtendedDataRow row : rows) {
+                deleteExtendedDataRow(row.getId(), authorizations);
+            }
+        }
+    }
+
+    @Override
+    public void deleteVertex(Vertex vertex, Authorizations authorizations) {
+        deleteElements(Stream.of(vertex), authorizations);
     }
 
     private Mutation[] getDeleteExtendedDataMutations(ExtendedDataRowId rowId) {
@@ -1234,25 +1325,32 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
     }
 
     @Override
-    public Iterable<ExtendedDataRow> getExtendedData(
-        ElementType elementType,
-        String elementId,
+    public Iterable<ExtendedDataRow> getExtendedDataForElements(
+        Iterable<? extends ElementId> elementIdsArg,
         String tableName,
         FetchHints fetchHints,
         Authorizations authorizations
     ) {
+        List<? extends ElementId> elementIds = toList(elementIdsArg);
         try {
-            Span trace = Trace.start("getExtendedData");
-            trace.data("elementType", elementType == null ? null : elementType.name());
-            trace.data("elementId", elementId);
-            trace.data("tableName", tableName);
-            org.apache.accumulo.core.data.Range range = org.apache.accumulo.core.data.Range.prefix(KeyHelper.createExtendedDataRowKey(elementType, elementId, tableName, null));
-            return getExtendedDataRowsInRange(trace, Lists.newArrayList(range), fetchHints, authorizations);
+            Span trace = Trace.start("getExtendedDataForElements");
+            List<org.apache.accumulo.core.data.Range> ranges = elementIds.stream()
+                .map(elementId -> org.apache.accumulo.core.data.Range.prefix(
+                    KeyHelper.createExtendedDataRowKey(elementId.getElementType(),
+                        elementId.getId(),
+                        tableName,
+                        null
+                    )))
+                .collect(Collectors.toList());
+            if (ranges.size() == 0) {
+                return Collections.emptyList();
+            }
+            return getExtendedDataRowsInRange(trace, ranges, fetchHints, authorizations);
         } catch (IllegalStateException ex) {
-            throw new VertexiumException("Failed to get extended data: " + elementType + ":" + elementId + ":" + tableName, ex);
+            throw new VertexiumException("Failed to get extended data: " + Joiner.on(", ").join(elementIds) + ":" + tableName, ex);
         } catch (RuntimeException ex) {
             if (ex.getCause() instanceof AccumuloSecurityException) {
-                throw new SecurityVertexiumException("Could not get extended data " + elementType + ":" + elementId + ":" + tableName + " with authorizations: " + authorizations, authorizations, ex.getCause());
+                throw new SecurityVertexiumException("Could not get extended data " + Joiner.on(", ").join(elementIds) + ":" + tableName + " with authorizations: " + authorizations, authorizations, ex.getCause());
             }
             throw ex;
         }
@@ -1356,33 +1454,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
 
     @Override
     public void deleteEdge(Edge edge, Authorizations authorizations) {
-        checkNotNull(edge);
-        Span trace = Trace.start("deleteEdge");
-        trace.data("edgeId", edge.getId());
-        try {
-            getSearchIndex().deleteElement(this, edge, authorizations);
-
-            ColumnVisibility visibility = visibilityToAccumuloVisibility(edge.getVisibility());
-
-            Mutation outMutation = new Mutation(edge.getVertexId(Direction.OUT));
-            outMutation.putDelete(AccumuloVertex.CF_OUT_EDGE, new Text(edge.getId()), visibility);
-
-            Mutation inMutation = new Mutation(edge.getVertexId(Direction.IN));
-            inMutation.putDelete(AccumuloVertex.CF_IN_EDGE, new Text(edge.getId()), visibility);
-
-            addMutations(VertexiumObjectType.VERTEX, outMutation, inMutation);
-
-            deleteAllExtendedDataForElement(edge, authorizations);
-
-            // Deletes everything else related to edge.
-            addMutations(VertexiumObjectType.EDGE, elementMutationBuilder.getDeleteRowMutation(edge.getId()));
-
-            if (hasEventListeners()) {
-                queueEvent(new DeleteEdgeEvent(this, edge));
-            }
-        } finally {
-            trace.stop();
-        }
+        deleteElements(Stream.of(edge), authorizations);
     }
 
     @Override

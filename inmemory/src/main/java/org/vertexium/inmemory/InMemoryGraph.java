@@ -471,9 +471,6 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
     @Override
     public void deleteEdge(Edge edge, Authorizations authorizations) {
         checkNotNull(edge, "Edge cannot be null");
-        if (!((InMemoryEdge) edge).canRead(authorizations)) {
-            return;
-        }
 
         deleteAllExtendedDataForElement(edge, authorizations);
 
