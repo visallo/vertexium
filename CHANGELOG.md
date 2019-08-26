@@ -5,6 +5,7 @@
 * Added: Fetch hints to get old metadata
 * Fixed: "Scanner already closed" exception in ScannerStreamUtils
 * Changed: Speed up element delete when no extended data rows are present
+* Fixed: Accumulo decoding input streams that end with zero length byte arrays
 
 # v4.6.3
 * Fixed: Elasticsearch query string not taking account element visibility in total hit count
