@@ -3,7 +3,6 @@ package org.vertexium.accumulo.util;
 import org.apache.accumulo.core.client.ScannerBase;
 import org.apache.accumulo.core.data.Key;
 import org.apache.accumulo.core.data.Value;
-import org.vertexium.VertexiumException;
 import org.vertexium.util.DelegatingStream;
 
 import java.util.Iterator;
@@ -28,7 +27,7 @@ public class ScannerStreamUtils {
             @Override
             public boolean tryAdvance(Consumer<? super Map.Entry<Key, Value>> action) {
                 if (scannerClosed.get()) {
-                    throw new VertexiumException("Scanner already closed");
+                    return false;
                 }
                 if (it.hasNext()) {
                     Map.Entry<Key, Value> row = it.next();
