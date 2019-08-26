@@ -1,5 +1,6 @@
 package org.vertexium.elasticsearch5;
 
+import org.vertexium.ElementId;
 import org.vertexium.ElementLocation;
 import org.vertexium.ExtendedDataRowId;
 import org.vertexium.PropertyDefinition;
@@ -9,7 +10,7 @@ import java.util.EnumSet;
 public interface IndexSelectionStrategy {
     String[] getIndicesToQuery(Elasticsearch5SearchIndex es);
 
-    String getIndexName(Elasticsearch5SearchIndex es, ElementLocation elementLocation);
+    String getIndexName(Elasticsearch5SearchIndex es, ElementId elementId);
 
     String[] getIndexNames(Elasticsearch5SearchIndex es, PropertyDefinition propertyDefinition);
 

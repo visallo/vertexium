@@ -1008,25 +1008,38 @@ public abstract class GraphBase implements Graph {
     }
 
     @Override
-    public Iterable<ExtendedDataRow> getExtendedData(
-        ElementType elementType,
-        String elementId,
+    public Iterable<ExtendedDataRow> getExtendedDataForElements(
+        Iterable<? extends ElementId> elementIdsArg,
         String tableName,
         FetchHints fetchHints,
         Authorizations authorizations
     ) {
-        if ((elementType == null && (elementId != null || tableName != null))
-            || (elementType != null && elementId == null && tableName != null)) {
-            throw new VertexiumException("Cannot create partial key with missing inner value");
+        List<ElementId> elementIds = Lists.newArrayList(elementIdsArg);
+        for (ElementId elementId : elementIds) {
+            if ((elementId.getElementType() == null && (elementId.getId() != null || tableName != null))
+                || (elementId.getElementType() != null && elementId.getId() == null && tableName != null)) {
+                throw new VertexiumException("Cannot create partial key with missing inner value");
+            }
         }
 
         return new FilterIterable<ExtendedDataRow>(getAllExtendedData(fetchHints, authorizations)) {
             @Override
             protected boolean isIncluded(ExtendedDataRow row) {
                 ExtendedDataRowId rowId = row.getId();
-                return (elementType == null || elementType.equals(rowId.getElementType()))
-                    && (elementId == null || elementId.equals(rowId.getElementId()))
-                    && (tableName == null || tableName.equals(rowId.getTableName()));
+                if (tableName != null && !tableName.equals(rowId.getTableName())) {
+                    return false;
+                }
+                return elementIds.stream().anyMatch(
+                    elementId -> {
+                        if (elementId.getElementType() != null && !elementId.getElementType().equals(rowId.getElementType())) {
+                            return false;
+                        }
+                        if (elementId.getId() != null && !elementId.getId().equals(rowId.getElementId())) {
+                            return false;
+                        }
+                        return true;
+                    }
+                );
             }
         };
     }
@@ -1070,7 +1083,7 @@ public abstract class GraphBase implements Graph {
             .setIncludeExtendedDataTableNames(true)
             .build();
         Iterable<ExtendedDataRow> rows = getExtendedData(
-            ElementType.getTypeFromElement(element),
+            element.getElementType(),
             element.getId(),
             null,
             fetchHints,

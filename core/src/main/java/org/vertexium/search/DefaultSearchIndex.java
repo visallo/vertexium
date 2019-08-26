@@ -89,8 +89,13 @@ public class DefaultSearchIndex implements SearchIndex {
     }
 
     @Override
-    public void deleteElement(Graph graph, Element element, Authorizations authorizations) {
+    public void deleteElement(Graph graph, ElementId element, Authorizations authorizations) {
         checkNotNull(element, "element cannot be null");
+    }
+
+    @Override
+    public void deleteElements(Graph graph, Iterable<? extends ElementId> elementIds, Authorizations authorizations) {
+        checkNotNull(elementIds, "element cannot be null");
     }
 
     @Override

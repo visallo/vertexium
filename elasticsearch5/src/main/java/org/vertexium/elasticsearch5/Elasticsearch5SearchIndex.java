@@ -39,7 +39,6 @@ import org.elasticsearch.plugins.Plugin;
 import org.elasticsearch.plugins.PluginInfo;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
-import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.aggregations.Aggregation;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
@@ -1487,45 +1486,16 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
     }
 
     @Override
-    public void deleteElement(Graph graph, Element element, Authorizations authorizations) {
-        deleteExtendedDataForElement(element);
-
-        String indexName = getIndexName(element);
-        String docId = getIdStrategy().createElementDocId(element);
+    public void deleteElement(Graph graph, ElementId elementId, Authorizations authorizations) {
+        String indexName = getIndexName(elementId);
+        String docId = getIdStrategy().createElementDocId(elementId);
         if (MUTATION_LOGGER.isTraceEnabled()) {
-            LOGGER.trace("deleting document %s (docId: %s)", element.getId(), docId);
+            LOGGER.trace("deleting document %s (docId: %s)", elementId.getId(), docId);
         }
         getIndexRefreshTracker().pushChange(indexName);
-        getClient().delete(
-            getClient()
-                .prepareDelete(indexName, getIdStrategy().getType(), docId)
-                .request()
-        ).actionGet();
-    }
-
-    private void deleteExtendedDataForElement(Element element) {
-        try {
-            QueryBuilder filter = QueryBuilders.termQuery(ELEMENT_ID_FIELD_NAME, element.getId());
-
-            SearchRequestBuilder s = getClient().prepareSearch(getIndicesToQuery())
-                .setTypes(getIdStrategy().getType())
-                .setQuery(QueryBuilders.boolQuery().must(QueryBuilders.matchAllQuery()).filter(filter))
-                .storedFields(
-                    ELEMENT_ID_FIELD_NAME,
-                    EXTENDED_DATA_TABLE_NAME_FIELD_NAME,
-                    EXTENDED_DATA_TABLE_ROW_ID_FIELD_NAME
-                );
-            SearchResponse searchResponse = checkForFailures(s.execute().get());
-            for (SearchHit hit : searchResponse.getHits()) {
-                if (MUTATION_LOGGER.isTraceEnabled()) {
-                    LOGGER.trace("deleting extended data document %s", hit.getId());
-                }
-                getIndexRefreshTracker().pushChange(hit.getIndex());
-                getClient().prepareDelete(hit.getIndex(), hit.getType(), hit.getId()).execute().actionGet();
-            }
-        } catch (Exception ex) {
-            throw new VertexiumException("Could not delete extended data for element: " + element.getId());
-        }
+        getClient()
+            .prepareDelete(indexName, getIdStrategy().getType(), docId)
+            .get();
     }
 
     @Override
@@ -2221,8 +2191,8 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
         return indexSelectionStrategy.getIndexNames(this, propertyDefinition);
     }
 
-    protected String getIndexName(ElementLocation elementLocation) {
-        return indexSelectionStrategy.getIndexName(this, elementLocation);
+    protected String getIndexName(ElementId elementId) {
+        return indexSelectionStrategy.getIndexName(this, elementId);
     }
 
     protected String getExtendedDataIndexName(
