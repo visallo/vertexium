@@ -3,6 +3,7 @@
 * Added: Sorting strategy
 * Added: Element#getExtendedData - without table name, to get all extended data rows for that element 
 * Added: Fetch hints to get old metadata
+* Fixed: "Scanner already closed" exception in ScannerStreamUtils
 * Changed: Speed up element delete when no extended data rows are present
 
 # v4.6.3
