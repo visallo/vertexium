@@ -6,6 +6,7 @@
 * Fixed: "Scanner already closed" exception in ScannerStreamUtils
 * Fixed: Query on Extended Data reserved field names (ELEMENT_TYPE, ELEMENT_ID, TABLE_NAME, ROW_ID)
 * Changed: Speed up element delete when no extended data rows are present
+* Fixed: Accumulo decoding input streams that end with zero length byte arrays
 
 # v4.6.3
 * Fixed: Elasticsearch query string not taking account element visibility in total hit count

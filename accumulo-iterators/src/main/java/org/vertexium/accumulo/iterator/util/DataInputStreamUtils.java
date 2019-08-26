@@ -51,6 +51,9 @@ public class DataInputStreamUtils {
         if (len == -1) {
             return null;
         }
+        if (len == 0) {
+            return new byte[0];
+        }
         byte[] data = new byte[len];
         int read = in.read(data);
         if (read != len) {
@@ -104,6 +107,9 @@ public class DataInputStreamUtils {
         int length = in.readInt();
         if (length == -1) {
             return null;
+        }
+        if (length == 0) {
+            return new ArrayByteSequence(new byte[0]);
         }
         byte[] data = new byte[length];
         int read = in.read(data);
