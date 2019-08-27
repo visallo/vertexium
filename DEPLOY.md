@@ -1,4 +1,4 @@
-1. `mvn release:clean release:prepare -Dtag=vertexium-root-4.1.2 -DreleaseVersion=4.1.2 -DdevelopmentVersion=4.1.3-SNAPSHOT`
+1. `mvn release:clean release:prepare -Dtag=vertexium-root-4.7.1 -DreleaseVersion=4.7.1 -DdevelopmentVersion=4.7.2-SNAPSHOT`
 1. Change `multimodule-test` poms to next version
 1. `mvn release:perform`
 1. Go to https://oss.sonatype.org/#welcome and click "Staging Repositories" on the left
