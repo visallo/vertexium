@@ -1,6 +1,7 @@
 # v4.7.1
-* Changed: Range renamed to IdRange
 * Added: Compare.RANGE to query
+* Added: Support to build on JDK 11
+* Changed: Range renamed to IdRange
 
 # v4.7.0
 * Added: Element/Extended Data Row additional visibilities

@@ -143,7 +143,7 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
     }
 
     /**
-     * This method should be overridden if {@link #search(EnumSet, EnumSet)} is not overridden.
+     * This method should be overridden if {@link #search(EnumSet, FetchHints)} is not overridden.
      */
     protected QueryResultsIterable<? extends VertexiumObject> extendedData(FetchHints fetchHints) {
         throw new VertexiumException("not implemented");

@@ -7,8 +7,8 @@ public interface SortingStrategy {
     /**
      * Compares two {@link VertexiumObject}.
      *
-     * @return 0 if both objects are equal. If direction is {@link SortDirection#ASCENDING}: >0 if o1 > o2 or <0 if
-     * o1 < o2. If direction is {@link SortDirection#DESCENDING}: <0 if o1 > o2 or >0 if o1 < o2.
+     * @return 0 if both objects are equal. If direction is {@link SortDirection#ASCENDING}: &gt;0 if o1 &gt; o2 or &lt;0 if
+     * o1 &lt; o2. If direction is {@link SortDirection#DESCENDING}: &lt;0 if o1 &gt; o2 or &gt;0 if o1 &lt; o2.
      */
     int compare(VertexiumObject o1, VertexiumObject o2, SortDirection direction);
 }
