@@ -122,17 +122,17 @@ public abstract class GraphBase implements Graph {
     }
 
     @Override
-    public Iterable<Vertex> getVerticesInRange(Range idRange, Authorizations authorizations) {
+    public Iterable<Vertex> getVerticesInRange(IdRange idRange, Authorizations authorizations) {
         return getVerticesInRange(idRange, getDefaultFetchHints(), authorizations);
     }
 
     @Override
-    public Iterable<Vertex> getVerticesInRange(Range idRange, FetchHints fetchHints, Authorizations authorizations) {
+    public Iterable<Vertex> getVerticesInRange(IdRange idRange, FetchHints fetchHints, Authorizations authorizations) {
         return getVerticesInRange(idRange, fetchHints, null, authorizations);
     }
 
     @Override
-    public Iterable<Vertex> getVerticesInRange(final Range idRange, FetchHints fetchHints, Long endTime, Authorizations authorizations) {
+    public Iterable<Vertex> getVerticesInRange(IdRange idRange, FetchHints fetchHints, Long endTime, Authorizations authorizations) {
         Iterable<Vertex> vertices = getVertices(fetchHints, endTime, authorizations);
         return new FilterIterable<Vertex>(vertices) {
             @Override
@@ -476,17 +476,17 @@ public abstract class GraphBase implements Graph {
     public abstract Iterable<Edge> getEdges(FetchHints fetchHints, Long endTime, Authorizations authorizations);
 
     @Override
-    public Iterable<Edge> getEdgesInRange(Range idRange, Authorizations authorizations) {
+    public Iterable<Edge> getEdgesInRange(IdRange idRange, Authorizations authorizations) {
         return getEdgesInRange(idRange, getDefaultFetchHints(), authorizations);
     }
 
     @Override
-    public Iterable<Edge> getEdgesInRange(Range idRange, FetchHints fetchHints, Authorizations authorizations) {
+    public Iterable<Edge> getEdgesInRange(IdRange idRange, FetchHints fetchHints, Authorizations authorizations) {
         return getEdgesInRange(idRange, fetchHints, null, authorizations);
     }
 
     @Override
-    public Iterable<Edge> getEdgesInRange(final Range idRange, FetchHints fetchHints, Long endTime, Authorizations authorizations) {
+    public Iterable<Edge> getEdgesInRange(IdRange idRange, FetchHints fetchHints, Long endTime, Authorizations authorizations) {
         Iterable<Edge> edges = getEdges(fetchHints, endTime, authorizations);
         return new FilterIterable<Edge>(edges) {
             @Override
@@ -1045,7 +1045,7 @@ public abstract class GraphBase implements Graph {
     }
 
     @Override
-    public Iterable<ExtendedDataRow> getExtendedDataInRange(ElementType elementType, Range elementIdRange, Authorizations authorizations) {
+    public Iterable<ExtendedDataRow> getExtendedDataInRange(ElementType elementType, IdRange elementIdRange, Authorizations authorizations) {
         return new FilterIterable<ExtendedDataRow>(getAllExtendedData(FetchHints.ALL, authorizations)) {
             @Override
             protected boolean isIncluded(ExtendedDataRow row) {

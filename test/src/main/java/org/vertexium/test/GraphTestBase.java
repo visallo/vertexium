@@ -1467,16 +1467,16 @@ public abstract class GraphTestBase {
         graph.addVertex("b", VISIBILITY_EMPTY, AUTHORIZATIONS_ALL);
         graph.flush();
 
-        List<Vertex> vertices = toList(graph.getVerticesInRange(new Range(null, "a"), AUTHORIZATIONS_ALL));
+        List<Vertex> vertices = toList(graph.getVerticesInRange(new IdRange(null, "a"), AUTHORIZATIONS_ALL));
         assertVertexIds(vertices);
 
-        vertices = toList(graph.getVerticesInRange(new Range(null, "b"), AUTHORIZATIONS_ALL));
+        vertices = toList(graph.getVerticesInRange(new IdRange(null, "b"), AUTHORIZATIONS_ALL));
         assertVertexIds(vertices, "a", "aa", "az");
 
-        vertices = toList(graph.getVerticesInRange(new Range(null, "bb"), AUTHORIZATIONS_ALL));
+        vertices = toList(graph.getVerticesInRange(new IdRange(null, "bb"), AUTHORIZATIONS_ALL));
         assertVertexIds(vertices, "a", "aa", "az", "b");
 
-        vertices = toList(graph.getVerticesInRange(new Range(null, null), AUTHORIZATIONS_ALL));
+        vertices = toList(graph.getVerticesInRange(new IdRange(null, null), AUTHORIZATIONS_ALL));
         assertVertexIds(vertices, "a", "aa", "az", "b");
     }
 
@@ -1490,16 +1490,16 @@ public abstract class GraphTestBase {
         graph.addEdge("b", "v1", "v2", LABEL_LABEL1, VISIBILITY_EMPTY, AUTHORIZATIONS_ALL);
         graph.flush();
 
-        List<Edge> edges = toList(graph.getEdgesInRange(new Range(null, "a"), AUTHORIZATIONS_ALL));
+        List<Edge> edges = toList(graph.getEdgesInRange(new IdRange(null, "a"), AUTHORIZATIONS_ALL));
         assertEdgeIds(edges);
 
-        edges = toList(graph.getEdgesInRange(new Range(null, "b"), AUTHORIZATIONS_ALL));
+        edges = toList(graph.getEdgesInRange(new IdRange(null, "b"), AUTHORIZATIONS_ALL));
         assertEdgeIds(edges, "a", "aa", "az");
 
-        edges = toList(graph.getEdgesInRange(new Range(null, "bb"), AUTHORIZATIONS_ALL));
+        edges = toList(graph.getEdgesInRange(new IdRange(null, "bb"), AUTHORIZATIONS_ALL));
         assertEdgeIds(edges, "a", "aa", "az", "b");
 
-        edges = toList(graph.getEdgesInRange(new Range(null, null), AUTHORIZATIONS_ALL));
+        edges = toList(graph.getEdgesInRange(new IdRange(null, null), AUTHORIZATIONS_ALL));
         assertEdgeIds(edges, "a", "aa", "az", "b");
     }
 
@@ -2955,6 +2955,49 @@ public abstract class GraphTestBase {
             .has(agePropertyName, Contains.IN, new Integer[]{25, 30})
             .vertices();
         Assert.assertEquals(2, count(vertices));
+    }
+
+    @Test
+    public void testRangeQuery() {
+        getGraph().defineProperty("string").dataType(String.class).textIndexHint(TextIndexHint.EXACT_MATCH).define();
+
+        getGraph().prepareVertex("v1", VISIBILITY_A)
+            .addPropertyValue("k1", "string", "b_1", VISIBILITY_A)
+            .addPropertyValue("k1", "number", 5, VISIBILITY_A)
+            .addPropertyValue("k1", "date", createDate(2019, 8, 5), VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
+        getGraph().prepareVertex("v2", VISIBILITY_A)
+            .addPropertyValue("k1", "string", "b_5", VISIBILITY_A)
+            .addPropertyValue("k2", "string", "a_5", VISIBILITY_A)
+            .addPropertyValue("k1", "number", 10, VISIBILITY_A)
+            .addPropertyValue("k2", "number", 1, VISIBILITY_A)
+            .addPropertyValue("k1", "date", createDate(2019, 8, 10), VISIBILITY_A)
+            .addPropertyValue("k2", "date", createDate(2019, 8, 1), VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
+        getGraph().prepareVertex("v3", VISIBILITY_A)
+            .addPropertyValue("k1", "string", "b_9", VISIBILITY_A)
+            .addPropertyValue("k2", "string", "a_9", VISIBILITY_A)
+            .addPropertyValue("k1", "number", 15, VISIBILITY_A)
+            .addPropertyValue("k2", "number", 2, VISIBILITY_A)
+            .addPropertyValue("k1", "date", createDate(2019, 8, 15), VISIBILITY_A)
+            .addPropertyValue("k2", "date", createDate(2019, 8, 2), VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
+        getGraph().flush();
+
+        QueryResultsIterable<Vertex> vertices = getGraph().query(AUTHORIZATIONS_A)
+            .has("string", Compare.RANGE, new Range<>("b_4", true, "b_6", true))
+            .vertices();
+        assertVertexIdsAnyOrder(vertices, "v2");
+
+        vertices = getGraph().query(AUTHORIZATIONS_A)
+            .has("number", Compare.RANGE, new Range<>(9, true, 11, true))
+            .vertices();
+        assertVertexIdsAnyOrder(vertices, "v2");
+
+        vertices = getGraph().query(AUTHORIZATIONS_A)
+            .has("date", Compare.RANGE, new Range<>(createDate(2019, 8, 9), true, createDate(2019, 8, 11), true))
+            .vertices();
+        assertVertexIdsAnyOrder(vertices, "v2");
     }
 
     @Test
@@ -8340,43 +8383,43 @@ public abstract class GraphTestBase {
             .save(AUTHORIZATIONS_A);
         graph.flush();
 
-        List<ExtendedDataRow> rows = toList(graph.getExtendedDataInRange(ElementType.VERTEX, new Range(null, "a"), AUTHORIZATIONS_A));
+        List<ExtendedDataRow> rows = toList(graph.getExtendedDataInRange(ElementType.VERTEX, new IdRange(null, "a"), AUTHORIZATIONS_A));
         assertEquals(0, rows.size());
 
-        rows = toList(graph.getExtendedDataInRange(ElementType.VERTEX, new Range(null, "b"), AUTHORIZATIONS_A));
+        rows = toList(graph.getExtendedDataInRange(ElementType.VERTEX, new IdRange(null, "b"), AUTHORIZATIONS_A));
         assertEquals(3, rows.size());
         List<String> rowValues = rows.stream().map(row -> row.getPropertyValue("name").toString()).collect(Collectors.toList());
         assertIdsAnyOrder(rowValues, "value1", "value2", "value3");
 
-        rows = toList(graph.getExtendedDataInRange(ElementType.VERTEX, new Range(null, "bb"), AUTHORIZATIONS_A));
+        rows = toList(graph.getExtendedDataInRange(ElementType.VERTEX, new IdRange(null, "bb"), AUTHORIZATIONS_A));
         assertEquals(4, rows.size());
         rowValues = rows.stream().map(row -> row.getPropertyValue("name").toString()).collect(Collectors.toList());
         assertIdsAnyOrder(rowValues, "value1", "value2", "value3", "value4");
 
-        rows = toList(graph.getExtendedDataInRange(ElementType.VERTEX, new Range("aa", "b"), AUTHORIZATIONS_A));
+        rows = toList(graph.getExtendedDataInRange(ElementType.VERTEX, new IdRange("aa", "b"), AUTHORIZATIONS_A));
         assertEquals(2, rows.size());
         rowValues = rows.stream().map(row -> row.getPropertyValue("name").toString()).collect(Collectors.toList());
         assertIdsAnyOrder(rowValues, "value2", "value3");
 
-        rows = toList(graph.getExtendedDataInRange(ElementType.VERTEX, new Range(null, null), AUTHORIZATIONS_A));
+        rows = toList(graph.getExtendedDataInRange(ElementType.VERTEX, new IdRange(null, null), AUTHORIZATIONS_A));
         assertEquals(4, rows.size());
         rowValues = rows.stream().map(row -> row.getPropertyValue("name").toString()).collect(Collectors.toList());
         assertIdsAnyOrder(rowValues, "value1", "value2", "value3", "value4");
 
-        rows = toList(graph.getExtendedDataInRange(ElementType.EDGE, new Range(null, "a"), AUTHORIZATIONS_A));
+        rows = toList(graph.getExtendedDataInRange(ElementType.EDGE, new IdRange(null, "a"), AUTHORIZATIONS_A));
         assertEquals(0, rows.size());
 
-        rows = toList(graph.getExtendedDataInRange(ElementType.EDGE, new Range(null, "b"), AUTHORIZATIONS_A));
+        rows = toList(graph.getExtendedDataInRange(ElementType.EDGE, new IdRange(null, "b"), AUTHORIZATIONS_A));
         assertEquals(1, rows.size());
         rowValues = rows.stream().map(row -> row.getPropertyValue("name").toString()).collect(Collectors.toList());
         assertIdsAnyOrder(rowValues, "value5");
 
-        rows = toList(graph.getExtendedDataInRange(ElementType.EDGE, new Range("aa", "b"), AUTHORIZATIONS_A));
+        rows = toList(graph.getExtendedDataInRange(ElementType.EDGE, new IdRange("aa", "b"), AUTHORIZATIONS_A));
         assertEquals(1, rows.size());
         rowValues = rows.stream().map(row -> row.getPropertyValue("name").toString()).collect(Collectors.toList());
         assertIdsAnyOrder(rowValues, "value5");
 
-        rows = toList(graph.getExtendedDataInRange(ElementType.EDGE, new Range(null, null), AUTHORIZATIONS_A));
+        rows = toList(graph.getExtendedDataInRange(ElementType.EDGE, new IdRange(null, null), AUTHORIZATIONS_A));
         assertEquals(1, rows.size());
         rowValues = rows.stream().map(row -> row.getPropertyValue("name").toString()).collect(Collectors.toList());
         assertIdsAnyOrder(rowValues, "value5");
