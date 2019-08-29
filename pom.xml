@@ -98,7 +98,7 @@
         <log4j2.version>2.9.0</log4j2.version> <!-- used during testing to run the embedded ES server -->
 
         <!-- used by: accumulo* -->
-        <accumulo.version>1.9.2</accumulo.version>
+        <accumulo.version>1.9.3</accumulo.version>
         <zookeeper.version>3.4.12</zookeeper.version>
         <curator.version>2.12.0</curator.version>
         <hadoop.version>2.9.0</hadoop.version>
