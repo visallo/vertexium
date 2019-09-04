@@ -979,7 +979,8 @@ public abstract class GraphTestBase {
         graph.flush();
 
         Edge e1 = graph.getEdge("e1", AUTHORIZATIONS_A_AND_B);
-        graph.softDeleteEdge(e1, AUTHORIZATIONS_A_AND_B);
+        String eventData = "e1 soft delete event data";
+        graph.softDeleteEdge(e1, eventData, AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         v1 = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B);
@@ -1011,6 +1012,15 @@ public abstract class GraphTestBase {
         assertEquals(1, count(v3.getEdgeIds(Direction.BOTH, AUTHORIZATIONS_A_AND_B)));
         assertEquals(1, count(v3.getEdges(Direction.BOTH, AUTHORIZATIONS_A_AND_B)));
         assertEquals(1, count(v3.getVertexIds(Direction.BOTH, AUTHORIZATIONS_A_AND_B)));
+
+        e1 = graph.getEdge("e1", AUTHORIZATIONS_A_AND_B);
+        assertNull(e1);
+
+        graph.addEdge("e1", v1, v2, LABEL_LABEL1, VISIBILITY_B, AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        e1 = graph.getEdge("e1", AUTHORIZATIONS_A_AND_B);
+        assertNotNull(e1);
     }
 
     @Test
