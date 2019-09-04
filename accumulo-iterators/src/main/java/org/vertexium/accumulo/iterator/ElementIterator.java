@@ -262,8 +262,7 @@ public abstract class ElementIterator<T extends ElementData> implements SortedKe
         }
 
         if (keyValue.columnFamilyEquals(CF_SOFT_DELETE_BYTES)
-            && keyValue.columnQualifierEquals(CQ_SOFT_DELETE_BYTES)
-            && SOFT_DELETE_VALUE.equals(keyValue.peekValue())) {
+            && keyValue.columnQualifierEquals(CQ_SOFT_DELETE_BYTES)) {
             elementData.softDeleteTimestamp = keyValue.getTimestamp();
             return;
         }

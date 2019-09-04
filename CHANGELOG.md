@@ -1,3 +1,6 @@
+# v4.7.2
+* Fixed: Soft delete with event data cannot be un-soft deleted
+
 # v4.7.1
 * Added: Compare.RANGE to query
 * Added: Support to build on JDK 11
