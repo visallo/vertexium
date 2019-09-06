@@ -1,23 +1,32 @@
 package org.vertexium.elasticsearch5;
 
+import org.elasticsearch.action.bulk.BulkItemResponse;
+import org.elasticsearch.rest.RestStatus;
 import org.vertexium.Authorizations;
 import org.vertexium.Graph;
-import org.vertexium.elasticsearch5.utils.FlushObjectQueue;
+import org.vertexium.elasticsearch5.bulk.BulkItem;
 import org.vertexium.util.VertexiumLogger;
 import org.vertexium.util.VertexiumLoggerFactory;
+
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class TestElasticsearch5ExceptionHandler implements Elasticsearch5ExceptionHandler {
     private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(LoadAndAddDocumentMissingHelper.class);
     public static Authorizations authorizations;
 
     @Override
-    public void handleDocumentMissingException(
+    public void handleBulkFailure(
         Graph graph,
         Elasticsearch5SearchIndex elasticsearch5SearchIndex,
-        FlushObjectQueue.FlushObject flushObject,
-        Exception ex
+        BulkItem bulkItem,
+        BulkItemResponse bulkItemResponse,
+        AtomicBoolean retry
     ) {
-        LOGGER.warn("document missing %s, attempting to add document", flushObject, ex);
-        LoadAndAddDocumentMissingHelper.handleDocumentMissingException(graph, elasticsearch5SearchIndex, flushObject, ex, authorizations);
+        LOGGER.warn("bulk failure on item %s: %s", bulkItem, bulkItemResponse);
+        if (bulkItemResponse.getFailure().getStatus() == RestStatus.NOT_FOUND) {
+            LoadAndAddDocumentMissingHelper.handleDocumentMissingException(graph, elasticsearch5SearchIndex, bulkItem, authorizations);
+        } else {
+            retry.set(true);
+        }
     }
 }

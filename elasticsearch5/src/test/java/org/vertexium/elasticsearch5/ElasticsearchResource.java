@@ -125,7 +125,7 @@ public class ElasticsearchResource extends ExternalResource {
     @SuppressWarnings("unchecked")
     public Map createConfig() {
         Map configMap = new HashMap();
-        configMap.put(AUTO_FLUSH, true);
+        configMap.put(AUTO_FLUSH, false);
         configMap.put(SEARCH_INDEX_PROP_PREFIX, Elasticsearch5SearchIndex.class.getName());
         configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + CONFIG_INDEX_NAME, ES_INDEX_NAME);
         configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + CONFIG_EXTENDED_DATA_INDEX_NAME_PREFIX, ES_EXTENDED_DATA_INDEX_NAME_PREFIX);

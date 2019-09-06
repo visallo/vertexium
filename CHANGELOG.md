@@ -1,5 +1,6 @@
-# v4.7.2
+# v4.8.0
 * Fixed: Soft delete with event data cannot be un-soft deleted
+* Changed: Elasticsearch to use bulk updates
 
 # v4.7.1
 * Added: Compare.RANGE to query
