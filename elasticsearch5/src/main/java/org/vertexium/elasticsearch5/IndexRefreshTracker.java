@@ -2,6 +2,8 @@ package org.vertexium.elasticsearch5;
 
 import com.google.common.collect.Lists;
 import org.elasticsearch.client.Client;
+import org.vertexium.util.VertexiumLogger;
+import org.vertexium.util.VertexiumLoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -12,6 +14,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
 
 public class IndexRefreshTracker {
+    private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(IndexRefreshTracker.class);
     private final ReadWriteLock indexToMaxRefreshTimeLock = new ReentrantReadWriteLock();
     private final Map<String, Long> indexToMaxRefreshTime = new HashMap<>();
     private final Lock readLock = indexToMaxRefreshTimeLock.readLock();
@@ -20,6 +23,7 @@ public class IndexRefreshTracker {
     public void pushChange(String indexName) {
         writeLock.lock();
         try {
+            LOGGER.debug("index added for refresh: %s", indexName);
             indexToMaxRefreshTime.put(indexName, getTime());
         } finally {
             writeLock.unlock();
@@ -52,6 +56,9 @@ public class IndexRefreshTracker {
     }
 
     protected void refresh(Client client, Set<String> indexNamesNeedingRefresh) {
+        if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("refreshing: %s", String.join(", ", indexNamesNeedingRefresh));
+        }
         client.admin().indices().prepareRefresh(indexNamesNeedingRefresh.toArray(new String[0])).execute().actionGet();
     }
 

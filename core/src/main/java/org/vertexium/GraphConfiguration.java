@@ -6,7 +6,11 @@ import org.vertexium.search.DefaultSearchIndex;
 import org.vertexium.search.SearchIndex;
 import org.vertexium.util.ConfigurationUtils;
 
+import java.time.Duration;
+import java.time.format.DateTimeParseException;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class GraphConfiguration {
     public static final String IDGENERATOR_PROP_PREFIX = "idgenerator";
@@ -118,6 +122,32 @@ public class GraphConfiguration {
             return (int) obj;
         }
         return Integer.valueOf(obj.toString());
+    }
+
+    public Duration getDuration(String key, String defaultValue) {
+        String value = getString(key, defaultValue);
+        try {
+            return Duration.parse(value);
+        } catch (DateTimeParseException ex) {
+            Matcher m = Pattern.compile("(\\d+)(\\D+)").matcher(value);
+            if (!m.matches()) {
+                throw ex;
+            }
+            long digits = Long.parseLong(m.group(1));
+            String units = m.group(2);
+            switch (units) {
+                case "ms":
+                    return Duration.ofMillis(digits);
+                case "s":
+                    return Duration.ofSeconds(digits);
+                case "m":
+                    return Duration.ofMinutes(digits);
+                case "h":
+                    return Duration.ofHours(digits);
+                default:
+                    throw new VertexiumException("unhandled duration units: " + value);
+            }
+        }
     }
 
     public long getConfigLong(String key, long defaultValue) {

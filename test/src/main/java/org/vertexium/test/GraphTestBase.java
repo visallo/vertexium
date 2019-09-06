@@ -1312,6 +1312,7 @@ public abstract class GraphTestBase {
 
         v1 = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B);
         v1.markPropertyHidden("key1", "firstName", VISIBILITY_A, t, VISIBILITY_B, AUTHORIZATIONS_A_AND_B);
+        graph.flush();
         t += 100;
         List<Property> properties = IterableUtils.toList(graph.getVertex("v1", FetchHints.ALL_INCLUDING_HIDDEN, AUTHORIZATIONS_A_AND_B).getProperties());
         assertEquals(1, count(properties));
@@ -1320,10 +1321,10 @@ public abstract class GraphTestBase {
         t += 100;
 
         v1.markPropertyVisible("key1", "firstName", VISIBILITY_A, t, VISIBILITY_B, AUTHORIZATIONS_A_AND_B);
+        graph.flush();
         t += 100;
         properties = IterableUtils.toList(graph.getVertex("v1", AUTHORIZATIONS_A_AND_B).getProperties());
         assertEquals(1, count(properties));
-        graph.flush();
 
         v1 = graph.getVertex("v1", graph.getDefaultFetchHints(), beforeMarkPropertyVisibleTimestamp, AUTHORIZATIONS_A_AND_B);
         assertNotNull("could not find v1 before timestamp " + beforeMarkPropertyVisibleTimestamp + " current time " + t, v1);
@@ -4183,6 +4184,7 @@ public abstract class GraphTestBase {
         graph.prepareVertex("v2", VISIBILITY_A)
             .setProperty("http://vertexium.org#name", "Joe Smith", VISIBILITY_A)
             .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
 
         assumeTrue("lucene queries", isLuceneQueriesSupported());
 
@@ -9478,9 +9480,9 @@ public abstract class GraphTestBase {
     public void benchmark() {
         assumeTrue(benchmarkEnabled());
         Random random = new Random(1);
-        int vertexCount = 10000;
-        int edgeCount = 10000;
-        int findVerticesByIdCount = 10000;
+        int vertexCount = 200;
+        int edgeCount = 200;
+        int findVerticesByIdCount = 200;
 
         benchmarkAddVertices(vertexCount);
         benchmarkAddEdges(random, vertexCount, edgeCount);
@@ -10532,5 +10534,71 @@ public abstract class GraphTestBase {
             .filter(id -> !(id.equals("v2") || id.equals("v3")))
             .count()
         );
+    }
+
+    @Test
+    public void testThreadedInserts() throws InterruptedException {
+        AtomicInteger completedThreads = new AtomicInteger();
+        new Thread(() -> {
+            getGraph().addVertex("v1", VISIBILITY_EMPTY, AUTHORIZATIONS_EMPTY);
+            getGraph().flush();
+            completedThreads.incrementAndGet();
+        }).start();
+        new Thread(() -> {
+            getGraph().addVertex("v2", VISIBILITY_EMPTY, AUTHORIZATIONS_EMPTY);
+            getGraph().flush();
+            completedThreads.incrementAndGet();
+        }).start();
+
+        while (completedThreads.get() < 2) {
+            Thread.sleep(100);
+        }
+
+        assertVertexIdsAnyOrder(
+            getGraph().getVertices(AUTHORIZATIONS_EMPTY),
+            "v1", "v2"
+        );
+        assertVertexIdsAnyOrder(
+            getGraph().query(AUTHORIZATIONS_EMPTY).vertices(),
+            "v1", "v2"
+        );
+    }
+
+    @Test
+    public void testThreadedInsertsNoFlushesInThreads() throws InterruptedException {
+        AtomicInteger completedThreads = new AtomicInteger();
+        new Thread(() -> {
+            getGraph().addVertex("v1", VISIBILITY_EMPTY, AUTHORIZATIONS_EMPTY);
+            completedThreads.incrementAndGet();
+        }).start();
+        new Thread(() -> {
+            getGraph().addVertex("v2", VISIBILITY_EMPTY, AUTHORIZATIONS_EMPTY);
+            completedThreads.incrementAndGet();
+        }).start();
+
+        while (completedThreads.get() < 2) {
+            Thread.sleep(100);
+        }
+        getGraph().flush();
+
+        for (int i = 0; i <= 10; i++) {
+            try {
+                assertVertexIdsAnyOrder(
+                    getGraph().getVertices(AUTHORIZATIONS_EMPTY),
+                    "v1", "v2"
+                );
+                assertVertexIdsAnyOrder(
+                    getGraph().query(AUTHORIZATIONS_EMPTY).vertices(),
+                    "v1", "v2"
+                );
+                break;
+            } catch (AssertionError ex) {
+                if (i == 10) {
+                    throw ex;
+                }
+                // try again
+                Thread.sleep(500);
+            }
+        }
     }
 }

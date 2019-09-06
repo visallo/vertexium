@@ -1,7 +1,8 @@
 package org.vertexium.elasticsearch5;
 
 import org.vertexium.*;
-import org.vertexium.elasticsearch5.utils.FlushObjectQueue;
+import org.vertexium.elasticsearch5.bulk.BulkItem;
+import org.vertexium.elasticsearch5.bulk.UpdateBulkItem;
 
 import java.util.Collections;
 
@@ -9,36 +10,38 @@ public class LoadAndAddDocumentMissingHelper implements Elasticsearch5ExceptionH
     public static void handleDocumentMissingException(
         Graph graph,
         Elasticsearch5SearchIndex elasticsearch5SearchIndex,
-        FlushObjectQueue.FlushObject flushObject,
-        Exception ex,
+        BulkItem bulkItem,
         Authorizations authorizations
     ) {
-        graph.flush();
+        if (bulkItem instanceof UpdateBulkItem) {
+            UpdateBulkItem updateBulkItem = (UpdateBulkItem) bulkItem;
+            if (updateBulkItem.getExtendedDataRowId() != null) {
+                handleExtendedDataRow(graph, elasticsearch5SearchIndex, updateBulkItem, authorizations);
+                return;
+            }
 
-        if (flushObject.getExtendedDataRowId() != null) {
-            handleExtendedDataRow(graph, elasticsearch5SearchIndex, flushObject, authorizations);
-            return;
+            handleElement(graph, elasticsearch5SearchIndex, updateBulkItem, authorizations);
+        } else {
+            throw new VertexiumException("unhandled bulk item type: " + bulkItem.getClass().getName());
         }
-
-        handleElement(graph, elasticsearch5SearchIndex, flushObject, authorizations);
     }
 
     protected static void handleElement(
         Graph graph,
         Elasticsearch5SearchIndex elasticsearch5SearchIndex,
-        FlushObjectQueue.FlushObject flushObject,
+        UpdateBulkItem bulkItem,
         Authorizations authorizations
     ) {
         Element element;
-        switch (flushObject.getElementLocation().getElementType()) {
+        switch (bulkItem.getElementId().getElementType()) {
             case VERTEX:
-                element = graph.getVertex(flushObject.getElementLocation().getId(), authorizations);
+                element = graph.getVertex(bulkItem.getElementId().getId(), authorizations);
                 break;
             case EDGE:
-                element = graph.getEdge(flushObject.getElementLocation().getId(), authorizations);
+                element = graph.getEdge(bulkItem.getElementId().getId(), authorizations);
                 break;
             default:
-                throw new VertexiumException("Invalid element type: " + flushObject.getElementLocation().getElementType());
+                throw new VertexiumException("Invalid element type: " + bulkItem.getElementId().getElementType());
         }
         elasticsearch5SearchIndex.addElement(
             graph,
@@ -52,19 +55,19 @@ public class LoadAndAddDocumentMissingHelper implements Elasticsearch5ExceptionH
     protected static void handleExtendedDataRow(
         Graph graph,
         Elasticsearch5SearchIndex elasticsearch5SearchIndex,
-        FlushObjectQueue.FlushObject flushObject,
+        UpdateBulkItem bulkItem,
         Authorizations authorizations
     ) {
         ExtendedDataRowId id = new ExtendedDataRowId(
-            flushObject.getElementLocation().getElementType(),
-            flushObject.getElementLocation().getId(),
-            flushObject.getExtendedDataTableName(),
-            flushObject.getExtendedDataRowId()
+            bulkItem.getElementId().getElementType(),
+            bulkItem.getElementId().getId(),
+            bulkItem.getExtendedDataTableName(),
+            bulkItem.getExtendedDataRowId()
         );
         ExtendedDataRow row = graph.getExtendedData(id, authorizations);
         elasticsearch5SearchIndex.addExtendedData(
             graph,
-            flushObject.getElementLocation(),
+            bulkItem.getElementLocation(),
             Collections.singletonList(row),
             authorizations
         );
