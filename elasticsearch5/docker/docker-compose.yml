@@ -1,0 +1,13 @@
+version: '3'
+services:
+  elasticsearch:
+    build: .
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    environment:
+      - "discovery.zen.ping.unicast.hosts=elasticsearch1,elasticsearch2,elasticsearch3"
+  cerebro:
+    image: lmenezes/cerebro
+    ports:
+      - "9000:9000"

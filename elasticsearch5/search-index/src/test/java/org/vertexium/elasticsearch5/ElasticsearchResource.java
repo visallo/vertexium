@@ -1,12 +1,18 @@
 package org.vertexium.elasticsearch5;
 
 import net.lingala.zip4j.core.ZipFile;
+import org.apache.logging.log4j.util.Strings;
 import org.codelibs.elasticsearch.runner.ElasticsearchClusterRunner;
 import org.elasticsearch.action.admin.cluster.state.ClusterStateResponse;
+import org.elasticsearch.client.AdminClient;
+import org.elasticsearch.client.Client;
 import org.elasticsearch.common.logging.LogConfigurator;
+import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
+import org.elasticsearch.common.transport.TransportAddress;
 import org.elasticsearch.index.reindex.BulkByScrollResponse;
 import org.elasticsearch.index.reindex.DeleteByQueryAction;
+import org.elasticsearch.transport.client.PreBuiltTransportClient;
 import org.junit.rules.ExternalResource;
 import org.vertexium.Graph;
 import org.vertexium.GraphWithSearchIndex;
@@ -16,9 +22,12 @@ import org.vertexium.util.VertexiumLogger;
 import org.vertexium.util.VertexiumLoggerFactory;
 
 import java.io.*;
+import java.net.InetAddress;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.IntFunction;
 
 import static org.codelibs.elasticsearch.runner.ElasticsearchClusterRunner.newConfigs;
 import static org.vertexium.GraphConfiguration.AUTO_FLUSH;
@@ -35,6 +44,7 @@ public class ElasticsearchResource extends ExternalResource {
 
     private ElasticsearchClusterRunner runner;
     private String clusterName;
+    private Client remoteClient;
 
     private Map extraConfig = null;
 
@@ -59,15 +69,26 @@ public class ElasticsearchResource extends ExternalResource {
 
         LogConfigurator.registerErrorListener();
 
-        runner = new ElasticsearchClusterRunner();
-        runner.onBuild((i, builder) ->
-            builder.put("script.inline", "true")
-                .put("cluster.name", clusterName)
-                .put("http.type", "netty3")
-                .put("transport.type", "netty3")
-        ).build(newConfigs().basePath(basePath.getAbsolutePath()).numOfNode(1));
+        if (shouldUseRemoteElasticsearch()) {
+            runner = null;
+        } else {
+            runner = new ElasticsearchClusterRunner();
+            runner.onBuild((i, builder) ->
+                    builder.put("script.inline", "true")
+                            .put("cluster.name", clusterName)
+                            .put("http.type", "netty3")
+                            .put("transport.type", "netty3")
+            ).build(newConfigs().basePath(basePath.getAbsolutePath()).numOfNode(1));
+            runner.ensureGreen();
+        }
+    }
 
-        runner.ensureGreen();
+    private boolean shouldUseRemoteElasticsearch() {
+        return Strings.isNotEmpty(getRemoteEsAddresses());
+    }
+
+    private String getRemoteEsAddresses() {
+        return System.getProperty("REMOTE_ES_ADDRESSES");
     }
 
     private void expandVertexiumPlugin(File vertexiumPluginDir) {
@@ -99,24 +120,50 @@ public class ElasticsearchResource extends ExternalResource {
         }
     }
 
+    public Client getRemoteClient() {
+        if (remoteClient == null) {
+            Settings settings = Settings.builder()
+                    .put("cluster.name", System.getProperty("REMOTE_ES_CLUSTER_NAME", "elasticsearch"))
+                    .build();
+            TransportAddress[] transportAddresses = Arrays.stream(getRemoteEsAddresses().split(","))
+                    .map(address -> {
+                        String[] parts = address.split(":");
+                        try {
+                            InetAddress inetAddress = InetAddress.getByName(parts[0]);
+                            int port = parts.length > 1 ? Integer.parseInt(parts[1]) : 9300;
+                            return new InetSocketTransportAddress(inetAddress, port);
+                        } catch (Exception ex) {
+                            throw new VertexiumException("cannot find host: " + address, ex);
+                        }
+                    })
+                    .toArray(TransportAddress[]::new);
+            remoteClient = new PreBuiltTransportClient(settings)
+                    .addTransportAddresses(transportAddresses);
+        }
+        return remoteClient;
+    }
+
     public void dropIndices() throws Exception {
-        String[] indices = runner.admin().indices().prepareGetIndex().execute().get().indices();
+        AdminClient client = shouldUseRemoteElasticsearch()
+                ? getRemoteClient().admin()
+                : runner.admin();
+        String[] indices = client.indices().prepareGetIndex().execute().get().indices();
         for (String index : indices) {
             if (index.startsWith(ES_INDEX_NAME) || index.startsWith(ES_EXTENDED_DATA_INDEX_NAME_PREFIX)) {
                 LOGGER.info("deleting test index: %s", index);
-                runner.admin().indices().prepareDelete(index).execute().actionGet();
+                client.indices().prepareDelete(index).execute().actionGet();
             }
         }
     }
 
     public void clearIndices(Elasticsearch5SearchIndex searchIndex) throws Exception {
-        String[] indices = runner.admin().indices().prepareGetIndex().execute().get().indices();
+        String[] indices = searchIndex.getClient().admin().indices().prepareGetIndex().execute().get().indices();
         for (String index : indices) {
             if (index.startsWith(ES_INDEX_NAME) || index.startsWith(ES_EXTENDED_DATA_INDEX_NAME_PREFIX)) {
                 LOGGER.info("clearing test index: %s", index);
                 BulkByScrollResponse response = DeleteByQueryAction.INSTANCE.newRequestBuilder(searchIndex.getClient())
-                    .source(index)
-                    .get();
+                        .source(index)
+                        .get();
                 LOGGER.info("removed %d documents", response.getDeleted());
             }
         }
@@ -129,10 +176,15 @@ public class ElasticsearchResource extends ExternalResource {
         configMap.put(SEARCH_INDEX_PROP_PREFIX, Elasticsearch5SearchIndex.class.getName());
         configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + CONFIG_INDEX_NAME, ES_INDEX_NAME);
         configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + CONFIG_EXTENDED_DATA_INDEX_NAME_PREFIX, ES_EXTENDED_DATA_INDEX_NAME_PREFIX);
-        configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + CLUSTER_NAME, clusterName);
-        configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + ES_LOCATIONS, getLocation());
-        configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + NUMBER_OF_SHARDS, 1);
-        configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + NUMBER_OF_REPLICAS, 0);
+        if (shouldUseRemoteElasticsearch()) {
+            configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + CLUSTER_NAME, System.getProperty("REMOTE_ES_CLUSTER_NAME", "elasticsearch"));
+            configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + ES_LOCATIONS, System.getProperty("REMOTE_ES_ADDRESSES"));
+        } else {
+            configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + CLUSTER_NAME, clusterName);
+            configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + ES_LOCATIONS, getLocation());
+        }
+        configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + NUMBER_OF_SHARDS, Integer.parseInt(System.getProperty("ES_NUMBER_OF_SHARDS", "1")));
+        configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + NUMBER_OF_REPLICAS, Integer.parseInt(System.getProperty("ES_NUMBER_OF_REPLICAS", "0")));
         configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + ERROR_ON_MISSING_VERTEXIUM_PLUGIN, true);
         configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + DefaultIndexSelectionStrategy.CONFIG_SPLIT_EDGES_AND_VERTICES, true);
         configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + LOG_REQUEST_SIZE_LIMIT, 10000);
@@ -155,7 +207,7 @@ public class ElasticsearchResource extends ExternalResource {
     private String getLocation() {
         ClusterStateResponse responsee = runner.node().client().admin().cluster().prepareState().execute().actionGet();
         InetSocketTransportAddress address = (InetSocketTransportAddress)
-            responsee.getState().getNodes().getNodes().values().iterator().next().value.getAddress();
+                responsee.getState().getNodes().getNodes().values().iterator().next().value.getAddress();
         return "localhost:" + address.address().getPort();
     }
 

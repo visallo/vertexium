@@ -54,7 +54,7 @@ public class Elasticsearch5SearchIndexTest extends GraphTestBase {
     }
 
     @Override
-    protected Graph createGraph() throws Exception {
+    protected Graph createGraph() {
         InMemoryGraphConfiguration configuration = new InMemoryGraphConfiguration(elasticsearchResource.createConfig());
         return InMemoryGraph.create(configuration);
     }
@@ -261,8 +261,7 @@ public class Elasticsearch5SearchIndexTest extends GraphTestBase {
     }
 
     private long getNumQueries() {
-        Client client = elasticsearchResource.getRunner().client();
-        NodesStatsResponse nodeStats = NodesStatsAction.INSTANCE.newRequestBuilder(client).get();
+        NodesStatsResponse nodeStats = NodesStatsAction.INSTANCE.newRequestBuilder(getSearchIndex().getClient()).get();
 
         List<NodeStats> nodes = nodeStats.getNodes();
         assertEquals(1, nodes.size());

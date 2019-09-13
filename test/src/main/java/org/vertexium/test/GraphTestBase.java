@@ -9480,9 +9480,9 @@ public abstract class GraphTestBase {
     public void benchmark() {
         assumeTrue(benchmarkEnabled());
         Random random = new Random(1);
-        int vertexCount = 200;
-        int edgeCount = 200;
-        int findVerticesByIdCount = 200;
+        int vertexCount = 10000;
+        int edgeCount = 10000;
+        int findVerticesByIdCount = 10000;
 
         benchmarkAddVertices(vertexCount);
         benchmarkAddEdges(random, vertexCount, edgeCount);
