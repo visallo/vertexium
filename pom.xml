@@ -407,7 +407,6 @@
         <module>accumulo-migrations</module>
 
         <module>elasticsearch5</module>
-        <module>elasticsearch5-plugin</module>
 
         <module>inmemory</module>
 

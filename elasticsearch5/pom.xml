@@ -1,162 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
         <artifactId>vertexium-root</artifactId>
         <groupId>org.vertexium</groupId>
         <version>4.7.2-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
+    <packaging>pom</packaging>
 
-    <artifactId>vertexium-elasticsearch5</artifactId>
-    <name>Vertexium: Elasticsearch5</name>
+    <artifactId>vertexium-elasticsearch5-root</artifactId>
+    <name>Vertexium: Elasticsearch5: Root</name>
 
-    <dependencies>
-        <dependency>
-            <groupId>org.vertexium</groupId>
-            <artifactId>vertexium-core</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.elasticsearch</groupId>
-            <artifactId>elasticsearch</artifactId>
-            <version>${elasticsearch5.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.elasticsearch.client</groupId>
-            <artifactId>transport</artifactId>
-            <version>${elasticsearch5.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.vividsolutions</groupId>
-            <artifactId>jts</artifactId>
-            <version>${jts.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.locationtech.spatial4j</groupId>
-            <artifactId>spatial4j</artifactId>
-            <version>${spatial4j.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>net.jodah</groupId>
-            <artifactId>recurrent</artifactId>
-            <version>${recurrent.version}</version>
-        </dependency>
-
-        <!-- test dependencies -->
-        <dependency>
-            <groupId>org.vertexium</groupId>
-            <artifactId>vertexium-elasticsearch5-plugin</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.codelibs</groupId>
-            <artifactId>elasticsearch-cluster-runner</artifactId>
-            <version>${elasticsearch-cluster-runner.version}</version>
-            <scope>test</scope>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.ow2.asm</groupId>
-                    <artifactId>asm</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.ow2.asm</groupId>
-                    <artifactId>asm-commons</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.ow2.asm</groupId>
-                    <artifactId>asm-tree</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.codelibs.elasticsearch.module</groupId>
-                    <artifactId>lang-mustache</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.codelibs.elasticsearch.module</groupId>
-                    <artifactId>percolator</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.codelibs.elasticsearch.module</groupId>
-                    <artifactId>reindex</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.codelibs.elasticsearch.module</groupId>
-                    <artifactId>transport-netty3</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.codelibs.elasticsearch.module</groupId>
-                    <artifactId>transport-netty4</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-log4j12</artifactId>
-            <version>${slf4j.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-api</artifactId>
-            <version>${log4j2.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-core</artifactId>
-            <version>${log4j2.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>net.lingala.zip4j</groupId>
-            <artifactId>zip4j</artifactId>
-            <version>1.3.2</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>commons-io</groupId>
-            <artifactId>commons-io</artifactId>
-            <version>${commons-io.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.vertexium</groupId>
-            <artifactId>vertexium-test</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.vertexium</groupId>
-            <artifactId>vertexium-inmemory</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>log4j</groupId>
-            <artifactId>log4j</artifactId>
-            <scope>test</scope>
-        </dependency>
-    </dependencies>
-
-    <build>
-        <plugins>
-            <plugin>
-                <artifactId>maven-jar-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>test-jar</goal>
-                        </goals>
-                        <phase>test-compile</phase>
-                    </execution>
-                </executions>
-                <configuration>
-                    <outputDirectory>${basedir}\target</outputDirectory>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
+    <modules>
+        <module>plugin</module>
+        <module>search-index</module>
+    </modules>
 </project>

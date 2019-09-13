@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <artifactId>vertexium-root</artifactId>
+        <artifactId>vertexium-elasticsearch5-root</artifactId>
         <groupId>org.vertexium</groupId>
         <version>4.7.2-SNAPSHOT</version>
     </parent>
@@ -51,7 +51,7 @@
                         <configuration>
                             <finalName>vertexium-elasticsearch5-plugin</finalName>
                             <appendAssemblyId>false</appendAssemblyId>
-                            <outputDirectory>${basedir}/../elasticsearch5/src/test/resources/
+                            <outputDirectory>${basedir}/../search-index/src/test/resources/
                             </outputDirectory>
                             <descriptors>
                                 <descriptor>${basedir}/src/main/assemblies/plugin.xml</descriptor>
