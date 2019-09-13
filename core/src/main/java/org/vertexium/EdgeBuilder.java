@@ -19,5 +19,5 @@ public abstract class EdgeBuilder extends EdgeBuilderBase {
     }
 
     @Override
-    public abstract Edge save(Authorizations authorizations);
+    public abstract String save(Authorizations authorizations);
 }

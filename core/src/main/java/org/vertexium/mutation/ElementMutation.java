@@ -13,7 +13,7 @@ public interface ElementMutation<T extends Element> extends ElementLocation {
      * @return the element which was mutated.
      */
     @FutureDeprecation
-    T save(Authorizations authorizations);
+    String save(Authorizations authorizations);
 
     /**
      * saves the element to the graph.

@@ -90,7 +90,7 @@ public class ExistingElementMutationBaseTest {
         }
 
         @Override
-        public T save(Authorizations authorizations) {
+        public String save(Authorizations authorizations) {
             return null;
         }
 

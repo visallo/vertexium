@@ -11,5 +11,5 @@ public abstract class VertexBuilder extends ElementBuilder<Vertex> {
      * @return The newly created vertex.
      */
     @Override
-    public abstract Vertex save(Authorizations authorizations);
+    public abstract String save(Authorizations authorizations);
 }

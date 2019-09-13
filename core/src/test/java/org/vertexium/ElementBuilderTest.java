@@ -43,7 +43,7 @@ public class ElementBuilderTest {
         }
 
         @Override
-        public T save(Authorizations authorizations) {
+        public String save(Authorizations authorizations) {
             return null;
         }
 

@@ -75,7 +75,7 @@ public abstract class EdgeBuilderBase extends ElementBuilder<Edge> implements Ed
      * @return The newly created edge.
      */
     @Override
-    public abstract Edge save(Authorizations authorizations);
+    public abstract String save(Authorizations authorizations);
 
     @Override
     public boolean hasChanges() {

@@ -34,7 +34,7 @@ public class ExistingEdgeMutationTest {
         }
 
         @Override
-        public Edge save(Authorizations authorizations) {
+        public String save(Authorizations authorizations) {
             return null;
         }
 

@@ -30,11 +30,11 @@ public interface Graph {
      *
      * @param visibility     The visibility to assign to the new vertex.
      * @param authorizations The authorizations required to add and retrieve the new vertex.
-     * @return The newly added vertex.
+     * @return The newly added vertex id.
      * @deprecated Use {@link #prepareVertex(Visibility)}
      */
     @Deprecated
-    default Vertex addVertex(Visibility visibility, Authorizations authorizations) {
+    default String addVertex(Visibility visibility, Authorizations authorizations) {
         return prepareVertex(visibility).save(authorizations);
     }
 
@@ -44,11 +44,11 @@ public interface Graph {
      * @param vertexId       The id to assign the new vertex.
      * @param visibility     The visibility to assign to the new vertex.
      * @param authorizations The authorizations required to add and retrieve the new vertex.
-     * @return The newly added vertex.
+     * @return The newly added vertex id.
      * @deprecated Use {@link #prepareVertex(String, Visibility)}
      */
     @Deprecated
-    default Vertex addVertex(String vertexId, Visibility visibility, Authorizations authorizations) {
+    default String addVertex(String vertexId, Visibility visibility, Authorizations authorizations) {
         return prepareVertex(vertexId, visibility).save(authorizations);
     }
 
@@ -60,8 +60,8 @@ public interface Graph {
      * @return The vertices.
      */
     @FutureDeprecation
-    default Iterable<Vertex> addVertices(Iterable<ElementBuilder<Vertex>> vertices, Authorizations authorizations) {
-        List<Vertex> addedVertices = new ArrayList<>();
+    default Iterable<String> addVertices(Iterable<ElementBuilder<Vertex>> vertices, Authorizations authorizations) {
+        List<String> addedVertices = new ArrayList<>();
         for (ElementBuilder<Vertex> vertexBuilder : vertices) {
             addedVertices.add(vertexBuilder.save(authorizations));
         }
@@ -897,11 +897,11 @@ public interface Graph {
      * @param label          The label to assign to the edge. eg knows, works at, etc.
      * @param visibility     The visibility to assign to the new edge.
      * @param authorizations The authorizations required to add and retrieve the new edge.
-     * @return The newly created edge.
+     * @return The newly created edge id.
      * @deprecated Use {@link #prepareEdge(Vertex, Vertex, String, Visibility)}
      */
     @Deprecated
-    default Edge addEdge(Vertex outVertex, Vertex inVertex, String label, Visibility visibility, Authorizations authorizations) {
+    default String addEdge(Vertex outVertex, Vertex inVertex, String label, Visibility visibility, Authorizations authorizations) {
         return prepareEdge(outVertex, inVertex, label, visibility).save(authorizations);
     }
 
@@ -914,11 +914,11 @@ public interface Graph {
      * @param label          The label to assign to the edge. eg knows, works at, etc.
      * @param visibility     The visibility to assign to the new edge.
      * @param authorizations The authorizations required to add and retrieve the new edge.
-     * @return The newly created edge.
+     * @return The newly created edge id.
      * @deprecated Use {@link #prepareEdge(String, Vertex, Vertex, String, Visibility)}
      */
     @Deprecated
-    default Edge addEdge(String edgeId, Vertex outVertex, Vertex inVertex, String label, Visibility visibility, Authorizations authorizations) {
+    default String addEdge(String edgeId, Vertex outVertex, Vertex inVertex, String label, Visibility visibility, Authorizations authorizations) {
         return prepareEdge(edgeId, outVertex, inVertex, label, visibility).save(authorizations);
     }
 
@@ -930,11 +930,11 @@ public interface Graph {
      * @param label          The label to assign to the edge. eg knows, works at, etc.
      * @param visibility     The visibility to assign to the new edge.
      * @param authorizations The authorizations required to add and retrieve the new edge.
-     * @return The newly created edge.
+     * @return The newly created edge id.
      * @deprecated Use {@link #prepareEdge(String, String, String, Visibility)}
      */
     @Deprecated
-    default Edge addEdge(String outVertexId, String inVertexId, String label, Visibility visibility, Authorizations authorizations) {
+    default String addEdge(String outVertexId, String inVertexId, String label, Visibility visibility, Authorizations authorizations) {
         return prepareEdge(outVertexId, inVertexId, label, visibility).save(authorizations);
     }
 
@@ -947,11 +947,11 @@ public interface Graph {
      * @param label          The label to assign to the edge. eg knows, works at, etc.
      * @param visibility     The visibility to assign to the new edge.
      * @param authorizations The authorizations required to add and retrieve the new edge.
-     * @return The newly created edge.
+     * @return The newly created edge id.
      * @deprecated Use {@link #prepareEdge(String, String, String, String, Visibility)}
      */
     @Deprecated
-    default Edge addEdge(String edgeId, String outVertexId, String inVertexId, String label, Visibility visibility, Authorizations authorizations) {
+    default String addEdge(String edgeId, String outVertexId, String inVertexId, String label, Visibility visibility, Authorizations authorizations) {
         return prepareEdge(edgeId, outVertexId, inVertexId, label, visibility).save(authorizations);
     }
 
@@ -2267,19 +2267,19 @@ public interface Graph {
      * @return the elements which were saved
      */
     @FutureDeprecation
-    default Iterable<Element> saveElementMutations(
+    default Iterable<String> saveElementMutations(
         Iterable<ElementMutation<? extends Element>> mutations,
         Authorizations authorizations
     ) {
-        List<Element> elements = new ArrayList<>();
+        List<String> elements = new ArrayList<>();
         for (ElementMutation<? extends Element> m : mutations) {
             if (m instanceof ExistingElementMutation && !m.hasChanges()) {
-                elements.add(((ExistingElementMutation) m).getElement());
+                elements.add(m.getId());
                 continue;
             }
 
-            Element element = m.save(authorizations);
-            elements.add(element);
+            String elementId = m.save(authorizations);
+            elements.add(elementId);
         }
         for (ElementMutation<? extends Element> m : mutations) {
             if (m.getIndexHint() == IndexHint.INDEX) {
