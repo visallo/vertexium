@@ -13,6 +13,7 @@ import org.vertexium.ElementLocation;
 import org.vertexium.VertexiumException;
 import org.vertexium.elasticsearch5.Elasticsearch5SearchIndex;
 import org.vertexium.elasticsearch5.IndexRefreshTracker;
+import org.vertexium.elasticsearch5.utils.LimitedLinkedBlockingQueue;
 import org.vertexium.util.VertexiumLogger;
 import org.vertexium.util.VertexiumLoggerFactory;
 
@@ -25,7 +26,7 @@ public class BulkUpdateService {
     private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(BulkUpdateService.class);
     private final Elasticsearch5SearchIndex searchIndex;
     private final BulkUpdateQueue bulkUpdateQueue;
-    private final Executor threadPool;
+    private final ExecutorService threadPool;
     private final Duration bulkRequestTimeout;
 
     public BulkUpdateService(
@@ -34,7 +35,7 @@ public class BulkUpdateService {
         BulkUpdateServiceConfiguration configuration
     ) {
         this.searchIndex = searchIndex;
-        BlockingQueue<Runnable> workQueue = new LinkedBlockingQueue<>(configuration.getQueueDepth());
+        BlockingQueue<Runnable> workQueue = new LimitedLinkedBlockingQueue<>(configuration.getQueueDepth());
         this.threadPool = new ThreadPoolExecutor(
             configuration.getCorePoolSize(),
             configuration.getMaximumPoolSize(),
@@ -93,7 +94,7 @@ public class BulkUpdateService {
 
     CompletableFuture<FlushBatchResult> submitBatch(List<BulkItem> batch) {
         CompletableFuture<FlushBatchResult> future = new CompletableFuture<>();
-        this.threadPool.execute(() -> {
+        this.threadPool.submit(() -> {
             try {
                 BulkRequest bulkRequest = flushObjectToBulkRequest(batch);
                 if (LOGGER.isTraceEnabled()) {
