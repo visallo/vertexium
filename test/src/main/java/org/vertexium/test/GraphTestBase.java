@@ -9600,6 +9600,15 @@ public abstract class GraphTestBase {
     }
 
     private void benchmarkAddVertices(int vertexCount) {
+        graph.prepareVertex("warm_up", VISIBILITY_A)
+            .addPropertyValue("k1", "prop1", "value1", VISIBILITY_A)
+            .addPropertyValue("k1", "prop2", "value2", VISIBILITY_A)
+            .addPropertyValue("k1", "prop3", "value3", VISIBILITY_A)
+            .addPropertyValue("k1", "prop4", "value4", VISIBILITY_A)
+            .addPropertyValue("k1", "prop5", "value5", VISIBILITY_A)
+            .save(AUTHORIZATIONS_ALL);
+        graph.flush();
+
         double startTime = System.currentTimeMillis();
         for (int i = 0; i < vertexCount; i++) {
             String vertexId = "v" + i;
@@ -9612,6 +9621,7 @@ public abstract class GraphTestBase {
                 .save(AUTHORIZATIONS_ALL);
         }
         graph.flush();
+        assertEquals(vertexCount + 1, graph.query(AUTHORIZATIONS_ALL).limit(0L).vertices().getTotalHits());
         double endTime = System.currentTimeMillis();
         LOGGER.info("add vertices in %.3fs", (endTime - startTime) / 1000);
     }
