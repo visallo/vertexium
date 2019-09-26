@@ -75,7 +75,9 @@ public class BulkItemList {
         });
     }
 
-    public int size() {
-        return lock.executeInReadLock(items::size);
+    public long size(long beforeTime) {
+        return lock.executeInReadLock(() -> items.stream()
+            .filter(item -> item.getCreatedTime() <= beforeTime)
+            .count());
     }
 }

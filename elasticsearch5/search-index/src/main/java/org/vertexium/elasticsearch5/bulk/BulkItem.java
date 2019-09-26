@@ -9,6 +9,7 @@ public class BulkItem {
     private final ElementId elementId;
     private final int size;
     private final ActionRequest actionRequest;
+    private final long createdTime;
     private long createdOrLastTriedTime;
     private int failCount;
 
@@ -21,7 +22,7 @@ public class BulkItem {
         this.elementId = elementId;
         this.size = ElasticsearchRequestUtils.getSize(actionRequest);
         this.actionRequest = actionRequest;
-        this.createdOrLastTriedTime = System.currentTimeMillis();
+        this.createdOrLastTriedTime = this.createdTime = System.currentTimeMillis();
     }
 
     public String getIndexName() {
@@ -38,6 +39,10 @@ public class BulkItem {
 
     public ActionRequest getActionRequest() {
         return actionRequest;
+    }
+
+    public long getCreatedTime() {
+        return createdTime;
     }
 
     public long getCreatedOrLastTriedTime() {

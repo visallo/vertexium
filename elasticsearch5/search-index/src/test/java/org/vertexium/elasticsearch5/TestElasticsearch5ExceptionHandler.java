@@ -22,7 +22,7 @@ public class TestElasticsearch5ExceptionHandler implements Elasticsearch5Excepti
         BulkItemResponse bulkItemResponse,
         AtomicBoolean retry
     ) {
-        LOGGER.warn("bulk failure on item %s: %s", bulkItem, bulkItemResponse);
+        LOGGER.warn("bulk failure on item %s: %s", bulkItem, bulkItemResponse == null ? null : bulkItemResponse.getFailure());
         if (bulkItemResponse.getFailure().getStatus() == RestStatus.NOT_FOUND) {
             LoadAndAddDocumentMissingHelper.handleDocumentMissingException(graph, elasticsearch5SearchIndex, bulkItem, authorizations);
         } else {
