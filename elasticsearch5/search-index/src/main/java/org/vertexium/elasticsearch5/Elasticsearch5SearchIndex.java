@@ -49,6 +49,7 @@ import org.vertexium.elasticsearch5.bulk.BulkItem;
 import org.vertexium.elasticsearch5.bulk.BulkUpdateService;
 import org.vertexium.elasticsearch5.bulk.BulkUpdateServiceConfiguration;
 import org.vertexium.elasticsearch5.utils.ElasticsearchRequestUtils;
+import org.vertexium.metric.VertexiumMetricRegistry;
 import org.vertexium.mutation.*;
 import org.vertexium.property.StreamingPropertyValue;
 import org.vertexium.query.*;
@@ -121,13 +122,14 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
     private final String geoShapeErrorPct;
     private boolean serverPluginInstalled;
     private final IdStrategy idStrategy = new IdStrategy();
-    private final IndexRefreshTracker indexRefreshTracker = new IndexRefreshTracker();
+    private final IndexRefreshTracker indexRefreshTracker;
     private Integer logRequestSizeLimit;
     private final Elasticsearch5ExceptionHandler exceptionHandler;
     private final boolean refreshIndexOnFlush;
 
     public Elasticsearch5SearchIndex(Graph graph, GraphConfiguration config) {
         this.graph = graph;
+        this.indexRefreshTracker = new IndexRefreshTracker(graph.getMetricsRegistry());
         this.config = new ElasticsearchSearchIndexConfiguration(graph, config);
         this.indexSelectionStrategy = this.config.getIndexSelectionStrategy();
         this.allFieldEnabled = this.config.isAllFieldEnabled(false);
@@ -1313,7 +1315,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
 
     public void handleBulkFailure(BulkItem bulkItem, BulkItemResponse bulkItemResponse, AtomicBoolean retry) throws Exception {
         if (exceptionHandler == null) {
-            LOGGER.error("bulk failure: " + bulkItem, bulkItemResponse);
+            LOGGER.error("bulk failure: %s: %s", bulkItem, bulkItemResponse.getFailureMessage());
             return;
         }
         if (LOGGER.isTraceEnabled()) {
@@ -1324,6 +1326,10 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
 
     public boolean supportsExactMatchSearch(PropertyDefinition propertyDefinition) {
         return propertyDefinition.getTextIndexHints().contains(TextIndexHint.EXACT_MATCH) || propertyDefinition.isSortable();
+    }
+
+    public VertexiumMetricRegistry getMetricsRegistry() {
+        return graph.getMetricsRegistry();
     }
 
     private static class StreamingPropertyString {

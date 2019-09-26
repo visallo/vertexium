@@ -106,6 +106,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
 
     protected AccumuloGraph(AccumuloGraphConfiguration config, Connector connector) {
         super(config);
+
         this.connector = connector;
         this.vertexiumSerializer = config.createSerializer(this);
         this.nameSubstitutionStrategy = AccumuloNameSubstitutionStrategy.create(config.createSubstitutionStrategy(this));
@@ -1680,14 +1681,16 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
 
     @Override
     public void flush() {
-        if (hasEventListeners()) {
-            synchronized (this.graphEventQueue) {
+        flushTimer.time(() -> {
+            if (hasEventListeners()) {
+                synchronized (graphEventQueue) {
+                    flushWritersAndSuper();
+                    flushGraphEventQueue();
+                }
+            } else {
                 flushWritersAndSuper();
-                flushGraphEventQueue();
             }
-        } else {
-            flushWritersAndSuper();
-        }
+        });
     }
 
     private void flushWritersAndSuper() {

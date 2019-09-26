@@ -3,6 +3,7 @@ package org.vertexium.accumulo.mapreduce;
 import org.vertexium.*;
 import org.vertexium.accumulo.AccumuloAuthorizations;
 import org.vertexium.id.IdGenerator;
+import org.vertexium.metric.NullMetricRegistry;
 import org.vertexium.query.GraphQuery;
 import org.vertexium.query.MultiVertexQuery;
 
@@ -11,7 +12,7 @@ public class ElementMapperGraph extends GraphBase {
     private ElementMapper elementMapper;
 
     public ElementMapperGraph(ElementMapper elementMapper) {
-        super(STRICT_TYPING);
+        super(STRICT_TYPING, new NullMetricRegistry());
         this.elementMapper = elementMapper;
     }
 

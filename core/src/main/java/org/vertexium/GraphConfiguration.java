@@ -2,6 +2,8 @@ package org.vertexium;
 
 import org.vertexium.id.IdGenerator;
 import org.vertexium.id.UUIDIdGenerator;
+import org.vertexium.metric.DropWizardMetricRegistry;
+import org.vertexium.metric.VertexiumMetricRegistry;
 import org.vertexium.search.DefaultSearchIndex;
 import org.vertexium.search.SearchIndex;
 import org.vertexium.util.ConfigurationUtils;
@@ -24,6 +26,8 @@ public class GraphConfiguration {
     public static final String DEFAULT_TABLE_NAME_PREFIX = "vertexium";
     public static final String SERIALIZER = "serializer";
     public static final String DEFAULT_SERIALIZER = JavaVertexiumSerializer.class.getName();
+    public static final String METRICS_REGISTRY = "metricsRegistry";
+    public static final String DEFAULT_METRICS_REGISTRY = DropWizardMetricRegistry.class.getName();
     public static final String STRICT_TYPING = "strictTyping";
     public static final boolean DEFAULT_STRICT_TYPING = false;
     public static final String CREATE_TABLES = "createTables";
@@ -66,6 +70,10 @@ public class GraphConfiguration {
 
     public VertexiumSerializer createSerializer() throws VertexiumException {
         return ConfigurationUtils.createProvider(null, this, SERIALIZER, DEFAULT_SERIALIZER);
+    }
+
+    public VertexiumMetricRegistry createMetricsRegistry() {
+        return ConfigurationUtils.createProvider(null, this, METRICS_REGISTRY, DEFAULT_METRICS_REGISTRY);
     }
 
     public boolean getBoolean(String configKey, boolean defaultValue) {
