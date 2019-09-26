@@ -5,6 +5,7 @@ import org.vertexium.event.GraphEventListener;
 import org.vertexium.historicalEvent.HistoricalEvent;
 import org.vertexium.historicalEvent.HistoricalEventId;
 import org.vertexium.id.IdGenerator;
+import org.vertexium.metric.VertexiumMetricRegistry;
 import org.vertexium.mutation.ElementMutation;
 import org.vertexium.property.StreamingPropertyValue;
 import org.vertexium.query.Aggregation;
@@ -1495,4 +1496,9 @@ public interface Graph {
      * Visits elements using the supplied elements and visitor
      */
     void visit(Iterable<? extends Element> elements, GraphVisitor visitor);
+
+    /**
+     * Gets the metrics registry to record internal Vertexium metrics
+     */
+    VertexiumMetricRegistry getMetricsRegistry();
 }

@@ -54,7 +54,12 @@ public class BulkUpdateService {
             .setMaxBatchSize(configuration.getMaxBatchSize())
             .setMaxBatchSizeInBytes(configuration.getMaxBatchSizeInBytes())
             .setMaxFailCount(configuration.getMaxFailCount());
-        this.bulkUpdateQueue = new BulkUpdateQueue(indexRefreshTracker, this, bulkUpdateQueueConfiguration);
+        this.bulkUpdateQueue = new BulkUpdateQueue(
+            indexRefreshTracker,
+            this,
+            bulkUpdateQueueConfiguration,
+            searchIndex.getMetricsRegistry()
+        );
     }
 
     private boolean containsElementId(String elementId) {

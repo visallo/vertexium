@@ -49,6 +49,7 @@ import org.vertexium.elasticsearch5.bulk.BulkItem;
 import org.vertexium.elasticsearch5.bulk.BulkUpdateService;
 import org.vertexium.elasticsearch5.bulk.BulkUpdateServiceConfiguration;
 import org.vertexium.elasticsearch5.utils.ElasticsearchRequestUtils;
+import org.vertexium.metric.VertexiumMetricRegistry;
 import org.vertexium.mutation.*;
 import org.vertexium.property.StreamingPropertyValue;
 import org.vertexium.query.*;
@@ -1322,6 +1323,10 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
 
     public boolean supportsExactMatchSearch(PropertyDefinition propertyDefinition) {
         return propertyDefinition.getTextIndexHints().contains(TextIndexHint.EXACT_MATCH) || propertyDefinition.isSortable();
+    }
+
+    public VertexiumMetricRegistry getMetricsRegistry() {
+        return graph.getMetricsRegistry();
     }
 
     private static class StreamingPropertyString {

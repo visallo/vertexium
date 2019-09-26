@@ -3,6 +3,9 @@ package org.vertexium.elasticsearch5.bulk;
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.vertexium.VertexiumException;
 import org.vertexium.elasticsearch5.IndexRefreshTracker;
+import org.vertexium.metric.Counter;
+import org.vertexium.metric.Timer;
+import org.vertexium.metric.VertexiumMetricRegistry;
 import org.vertexium.util.VertexiumLogger;
 import org.vertexium.util.VertexiumLoggerFactory;
 import org.vertexium.util.VertexiumReentrantReadWriteLock;
@@ -28,17 +31,27 @@ public class BulkUpdateQueue {
     private final int maxBatchSize;
     private final int maxBatchSizeInBytes;
     private final int maxFailCount;
+    private final Timer flushTimer;
+    private final Timer flushSingleBatchTimer;
+    private final Counter failureCounter;
 
     public BulkUpdateQueue(
         IndexRefreshTracker indexRefreshTracker,
         BulkUpdateService bulkUpdateService,
-        BulkUpdateQueueConfiguration configuration
+        BulkUpdateQueueConfiguration configuration,
+        VertexiumMetricRegistry metricRegistry
     ) {
         this.indexRefreshTracker = indexRefreshTracker;
         this.bulkUpdateService = bulkUpdateService;
         this.maxBatchSize = configuration.getMaxBatchSize();
         this.maxBatchSizeInBytes = configuration.getMaxBatchSizeInBytes();
         this.maxFailCount = configuration.getMaxFailCount();
+        this.flushTimer = metricRegistry.getTimer(BulkUpdateQueue.class, "flush", "timer");
+        this.flushSingleBatchTimer = metricRegistry.getTimer(BulkUpdateQueue.class, "flushSingleBatch", "timer");
+        this.failureCounter = metricRegistry.getCounter(BulkUpdateQueue.class, "failure", "counter");
+        metricRegistry.registerGauage(metricRegistry.createName(BulkUpdateQueue.class, "todo", "size"), todoItems::size);
+        metricRegistry.registerGauage(metricRegistry.createName(BulkUpdateQueue.class, "pendingFutures", "size"), pendingFutures::size);
+        metricRegistry.registerGauage(metricRegistry.createName(BulkUpdateQueue.class, "failures", "size"), failures::size);
     }
 
     public boolean containsElementId(String elementId) {
@@ -59,47 +72,50 @@ public class BulkUpdateQueue {
         if (LOGGER.isTraceEnabled()) {
             LOGGER.trace("flushing single batch (size: %d)", batch.size());
         }
-        AtomicReference<CompletableFuture<FlushBatchResult>> future = new AtomicReference<>();
-        future.set(bulkUpdateService.submitBatch(batch)
-            .whenComplete((flushBatchResult, throwable) -> {
-                AtomicBoolean oneOrMoreItemsFailed = new AtomicBoolean();
-                lock.executeInWriteLock(() -> {
-                    pendingFutures.remove(future.get());
-                    if (throwable != null) {
-                        submittedItems.removeAll(batch);
-                        todoItems.addAll(batch);
-                    }
-                    if (flushBatchResult != null) {
-                        int i = 0;
-                        for (BulkItemResponse bulkItemResponse : flushBatchResult.getBulkResponse().getItems()) {
-                            BulkItemResponse.Failure failure = bulkItemResponse.getFailure();
-                            BulkItem bulkItem = batch.get(i++);
-                            submittedItems.remove(bulkItem);
-                            if (failure != null) {
-                                bulkItem.incrementFailCount();
-                                if (bulkItem.getFailCount() >= maxFailCount) {
-                                    LOGGER.error("bulk item failed %d times: %s", bulkItem.getFailCount(), bulkItem);
-                                    oneOrMoreItemsFailed.set(true);
-                                    continue;
-                                }
-                                failures.add(new BulkItemFailure(bulkItem, bulkItemResponse));
-                            }
-                        }
+        return this.flushSingleBatchTimer.time(() -> {
+            AtomicReference<CompletableFuture<FlushBatchResult>> future = new AtomicReference<>();
+            future.set(bulkUpdateService.submitBatch(batch)
+                .whenComplete((flushBatchResult, throwable) -> {
+                    AtomicBoolean oneOrMoreItemsFailed = new AtomicBoolean();
+                    lock.executeInWriteLock(() -> {
                         pendingFutures.remove(future.get());
+                        if (throwable != null) {
+                            submittedItems.removeAll(batch);
+                            todoItems.addAll(batch);
+                        }
+                        if (flushBatchResult != null) {
+                            int i = 0;
+                            for (BulkItemResponse bulkItemResponse : flushBatchResult.getBulkResponse().getItems()) {
+                                BulkItemResponse.Failure failure = bulkItemResponse.getFailure();
+                                BulkItem bulkItem = batch.get(i++);
+                                submittedItems.remove(bulkItem);
+                                if (failure != null) {
+                                    bulkItem.incrementFailCount();
+                                    if (bulkItem.getFailCount() >= maxFailCount) {
+                                        LOGGER.error("bulk item failed %d times: %s", bulkItem.getFailCount(), bulkItem);
+                                        oneOrMoreItemsFailed.set(true);
+                                        continue;
+                                    }
+                                    failureCounter.increment();
+                                    failures.add(new BulkItemFailure(bulkItem, bulkItemResponse));
+                                }
+                            }
+                            pendingFutures.remove(future.get());
+                        }
+                    });
+
+                    Set<String> indexNames = batch.stream().map(BulkItem::getIndexName).collect(Collectors.toSet());
+                    for (String indexName : indexNames) {
+                        indexRefreshTracker.pushChange(indexName);
                     }
-                });
 
-                Set<String> indexNames = batch.stream().map(BulkItem::getIndexName).collect(Collectors.toSet());
-                for (String indexName : indexNames) {
-                    indexRefreshTracker.pushChange(indexName);
-                }
-
-                if (oneOrMoreItemsFailed.get()) {
-                    throw new VertexiumException("One or more items failed");
-                }
-            }));
-        pendingFutures.add(future.get());
-        return future.get();
+                    if (oneOrMoreItemsFailed.get()) {
+                        throw new VertexiumException("One or more items failed");
+                    }
+                }));
+            pendingFutures.add(future.get());
+            return future.get();
+        });
     }
 
     private void handleFailures() {
@@ -166,30 +182,32 @@ public class BulkUpdateQueue {
 
     public void flush() {
         LOGGER.trace("flushing");
-        while (hasItemsToFlushOrWaitingForItemsToFlush()) {
-            if (failures.size() > 0) {
-                handleFailures();
-            } else if (todoItems.size() > 0) {
-                flushSingleBatch();
-            } else if (pendingFutures.size() > 0) {
-                CompletableFuture<FlushBatchResult> pendingFuture = pendingFutures.peek();
-                if (pendingFuture == null) {
-                    continue;
-                }
-                try {
-                    LOGGER.trace("waiting for pending future");
-                    pendingFuture.get();
-                } catch (Exception ex) {
-                    throw new VertexiumException(ex);
-                }
-            } else {
-                try {
-                    Thread.sleep(100);
-                } catch (InterruptedException e) {
-                    throw new VertexiumException(e);
+        flushTimer.time(() -> {
+            while (hasItemsToFlushOrWaitingForItemsToFlush()) {
+                if (failures.size() > 0) {
+                    handleFailures();
+                } else if (todoItems.size() > 0) {
+                    flushSingleBatch();
+                } else if (pendingFutures.size() > 0) {
+                    CompletableFuture<FlushBatchResult> pendingFuture = pendingFutures.peek();
+                    if (pendingFuture == null) {
+                        continue;
+                    }
+                    try {
+                        LOGGER.trace("waiting for pending future");
+                        pendingFuture.get();
+                    } catch (Exception ex) {
+                        throw new VertexiumException(ex);
+                    }
+                } else {
+                    try {
+                        Thread.sleep(100);
+                    } catch (InterruptedException e) {
+                        throw new VertexiumException(e);
+                    }
                 }
             }
-        }
+        });
     }
 
     private boolean hasItemsToFlushOrWaitingForItemsToFlush() {
