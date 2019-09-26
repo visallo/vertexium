@@ -5,6 +5,7 @@ import org.vertexium.util.IterableUtils;
 
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 public class EdgeVertexPair {
@@ -40,24 +41,14 @@ public class EdgeVertexPair {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-
         EdgeVertexPair that = (EdgeVertexPair) o;
-
-        if (!edge.equals(that.edge)) {
-            return false;
-        }
-        if (!vertex.equals(that.vertex)) {
-            return false;
-        }
-
-        return true;
+        return edge.equals(that.edge)
+            && Objects.equals(vertex, that.vertex);
     }
 
     @Override
     public int hashCode() {
-        int result = edge.hashCode();
-        result = 31 * result + vertex.hashCode();
-        return result;
+        return Objects.hash(edge, vertex);
     }
 
     public static Iterable<EdgeVertexPair> getEdgeVertexPairs(
@@ -81,9 +72,6 @@ public class EdgeVertexPair {
             protected EdgeVertexPair convert(Edge edge) {
                 String otherVertexId = edge.getOtherVertexId(sourceVertexId);
                 Vertex otherVertex = vertices.get(otherVertexId);
-                if (otherVertex == null) {
-                    throw new VertexiumException("Found an edge " + edge.getId() + ", but could not find the vertex on the other end: " + otherVertexId);
-                }
                 return new EdgeVertexPair(edge, otherVertex);
             }
         };
