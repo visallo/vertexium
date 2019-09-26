@@ -17,6 +17,10 @@ public class FailureList {
         return failures.peek();
     }
 
+    public int size() {
+        return failures.size();
+    }
+
     public long size(long beforeTime) {
         return failures.stream()
             .filter(failure -> failure.getBulkItem().getCreatedTime() <= beforeTime)

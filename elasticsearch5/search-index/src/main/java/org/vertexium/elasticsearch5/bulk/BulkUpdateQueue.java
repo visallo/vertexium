@@ -3,6 +3,7 @@ package org.vertexium.elasticsearch5.bulk;
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.vertexium.VertexiumException;
 import org.vertexium.elasticsearch5.IndexRefreshTracker;
+import org.vertexium.metric.*;
 import org.vertexium.util.VertexiumLogger;
 import org.vertexium.util.VertexiumLoggerFactory;
 import org.vertexium.util.VertexiumReentrantReadWriteLock;
@@ -26,17 +27,29 @@ public class BulkUpdateQueue {
     private final int maxBatchSize;
     private final int maxBatchSizeInBytes;
     private final int maxFailCount;
+    private final Timer flushTimer;
+    private final StackTraceTracker flushStackTraceTracker;
+    private final Counter failureCounter;
+    private final Histogram batchSizeHistogram;
 
     public BulkUpdateQueue(
         IndexRefreshTracker indexRefreshTracker,
         BulkUpdateService bulkUpdateService,
-        BulkUpdateQueueConfiguration configuration
+        BulkUpdateQueueConfiguration configuration,
+        VertexiumMetricRegistry metricRegistry
     ) {
         this.indexRefreshTracker = indexRefreshTracker;
         this.bulkUpdateService = bulkUpdateService;
         this.maxBatchSize = configuration.getMaxBatchSize();
         this.maxBatchSizeInBytes = configuration.getMaxBatchSizeInBytes();
         this.maxFailCount = configuration.getMaxFailCount();
+        this.flushTimer = metricRegistry.getTimer(BulkUpdateQueue.class, "flush", "timer");
+        this.flushStackTraceTracker = metricRegistry.getStackTraceTracker(BulkUpdateQueue.class, "flush", "stack");
+        this.failureCounter = metricRegistry.getCounter(BulkUpdateQueue.class, "failure", "counter");
+        this.batchSizeHistogram = metricRegistry.getHistogram(BulkUpdateQueue.class, "batch", "histogram");
+        metricRegistry.getGauge(BulkUpdateQueue.class, "todo", "size", todoItems::size);
+        metricRegistry.getGauge(BulkUpdateQueue.class, "pendingFutures", "size", pendingFutures::size);
+        metricRegistry.getGauge(BulkUpdateQueue.class, "failures", "size", failures::size);
     }
 
     public boolean containsElementId(String elementId) {
@@ -57,6 +70,7 @@ public class BulkUpdateQueue {
         if (LOGGER.isTraceEnabled()) {
             LOGGER.trace("flushing single batch (size: %d)", batch.size());
         }
+        batchSizeHistogram.update(batch.size());
         CompletableFuture<FlushBatchResult> future = new CompletableFuture<>();
         pendingFutures.add(batch, future);
         bulkUpdateService.submitBatch(future, batch)
@@ -85,6 +99,7 @@ public class BulkUpdateQueue {
                                     failCount++;
                                     continue;
                                 }
+                                failureCounter.increment();
                                 failures.add(new BulkItemFailure(bulkItem, bulkItemResponse));
                             }
                         }
@@ -170,44 +185,47 @@ public class BulkUpdateQueue {
 
     public void flush() {
         LOGGER.trace("flushing");
-        long flushStartTime = System.currentTimeMillis();
-        while (hasItemsToFlushOrWaitingForItemsToFlush(flushStartTime)) {
-            if (failures.size(flushStartTime) > 0) {
-                if (handleFailures(flushStartTime)) {
-                    flushStartTime = System.currentTimeMillis();
-                }
-            } else if (todoItems.size(flushStartTime) > 0) {
-                flushSingleBatch();
-            } else if (pendingFutures.size(flushStartTime) > 0) {
-                CompletableFuture<FlushBatchResult> pendingFuture = pendingFutures.peek();
-                if (pendingFuture == null) {
-                    continue;
-                }
-                try {
-                    if (pendingFuture.isDone()) {
-                        LOGGER.trace("pending future is complete waiting for it to clear");
-                        synchronized (pendingFutures) {
-                            // there could be a race condition where the item is already removed from the list but
-                            // we already peeked it so we might miss the notify. So wait a short amount of time and
-                            // the completion thread will either grab the write lock in which
-                            // hasItemsToFlushOrWaitingForItemsToFlush will wait or the item will be removed.
-                            pendingFutures.wait(1);
-                        }
-                    } else {
-                        LOGGER.trace("waiting for pending future");
-                        pendingFuture.get();
+        flushStackTraceTracker.addStackTrace();
+        flushTimer.time(() -> {
+            long flushStartTime = System.currentTimeMillis();
+            while (hasItemsToFlushOrWaitingForItemsToFlush(flushStartTime)) {
+                if (failures.size(flushStartTime) > 0) {
+                    if (handleFailures(flushStartTime)) {
+                        flushStartTime = System.currentTimeMillis();
                     }
-                } catch (Exception ex) {
-                    throw new VertexiumException(ex);
-                }
-            } else {
-                try {
-                    Thread.sleep(100);
-                } catch (InterruptedException e) {
-                    throw new VertexiumException(e);
+                } else if (todoItems.size(flushStartTime) > 0) {
+                    flushSingleBatch();
+                } else if (pendingFutures.size(flushStartTime) > 0) {
+                    CompletableFuture<FlushBatchResult> pendingFuture = pendingFutures.peek();
+                    if (pendingFuture == null) {
+                        continue;
+                    }
+                    try {
+                        if (pendingFuture.isDone()) {
+                            LOGGER.trace("pending future is complete waiting for it to clear");
+                            synchronized (pendingFutures) {
+                                // there could be a race condition where the item is already removed from the list but
+                                // we already peeked it so we might miss the notify. So wait a short amount of time and
+                                // the completion thread will either grab the write lock in which
+                                // hasItemsToFlushOrWaitingForItemsToFlush will wait or the item will be removed.
+                                pendingFutures.wait(1);
+                            }
+                        } else {
+                            LOGGER.trace("waiting for pending future");
+                            pendingFuture.get();
+                        }
+                    } catch (Exception ex) {
+                        throw new VertexiumException(ex);
+                    }
+                } else {
+                    try {
+                        Thread.sleep(100);
+                    } catch (InterruptedException e) {
+                        throw new VertexiumException(e);
+                    }
                 }
             }
-        }
+        });
     }
 
     private boolean hasItemsToFlushOrWaitingForItemsToFlush(long flushStartTime) {

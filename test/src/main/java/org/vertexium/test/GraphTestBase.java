@@ -13,6 +13,7 @@ import org.junit.runners.JUnit4;
 import org.vertexium.*;
 import org.vertexium.event.*;
 import org.vertexium.historicalEvent.*;
+import org.vertexium.metric.StackTraceTracker;
 import org.vertexium.mutation.ElementMutation;
 import org.vertexium.mutation.ExistingElementMutation;
 import org.vertexium.property.PropertyValue;
@@ -10655,5 +10656,38 @@ public abstract class GraphTestBase {
                 Thread.sleep(500);
             }
         }
+    }
+
+    @Test
+    public void testMetricsRepositoryStackTraceTracker() {
+        StackTraceTracker flushStackTraceTracker = graph.getMetricsRegistry().getStackTraceTracker(Graph.class, "flush", "stack");
+        graph.addVertex("vPrimer", VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.flush();
+        flushStackTraceTracker.reset();
+        assertStackTraceTrackerCount(flushStackTraceTracker, path -> {
+            StackTraceTracker.StackTraceItem item = path.get(path.size() - 1);
+            assertEquals("count mismatch: " + item, 0, item.getCount());
+        });
+
+        graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.flush();
+
+        assertStackTraceTrackerCount(flushStackTraceTracker, path -> {
+            StackTraceTracker.StackTraceItem item = path.get(path.size() - 1);
+            assertEquals("count mismatch: " + item, 1, item.getCount());
+        });
+
+        graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.flush();
+
+        assertStackTraceTrackerCount(flushStackTraceTracker, path -> {
+            int expectedCount = 2;
+            for (StackTraceTracker.StackTraceItem item : path) {
+                if (item.toString().contains("testMetricsRepositoryStackTraceTracker")) {
+                    expectedCount = 1;
+                }
+                assertEquals("count mismatch: " + item, expectedCount, item.getCount());
+            }
+        });
     }
 }

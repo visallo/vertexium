@@ -16,7 +16,7 @@ public interface Elasticsearch5ExceptionHandler {
         AtomicBoolean retry
     ) throws Exception {
         VertexiumLoggerFactory.getLogger(Elasticsearch5ExceptionHandler.class)
-            .error("bulk failure: " + bulkItem, bulkItemResponse);
+            .error("bulk failure: %s: %s", bulkItem, bulkItemResponse.getFailureMessage());
         retry.set(true);
     }
 }

@@ -4,10 +4,12 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
 import org.vertexium.*;
 import org.vertexium.event.GraphEvent;
+import org.vertexium.metric.StackTraceTracker;
 import org.vertexium.query.IterableWithTotalHits;
 import org.vertexium.query.QueryResultsIterable;
 
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import static junit.framework.TestCase.fail;
@@ -163,5 +165,22 @@ public class VertexiumAssert {
             return;
         }
         fail("Should have thrown an exception");
+    }
+
+    public static void assertStackTraceTrackerCount(StackTraceTracker tracker, Consumer<List<StackTraceTracker.StackTraceItem>> validate) {
+        assertStackTraceTrackerCount(tracker.getRoots(), new ArrayList<>(), validate);
+    }
+
+    public static void assertStackTraceTrackerCount(
+        Set<StackTraceTracker.StackTraceItem> roots,
+        List<StackTraceTracker.StackTraceItem> path,
+        Consumer<List<StackTraceTracker.StackTraceItem>> validate
+    ) {
+        for (StackTraceTracker.StackTraceItem item : roots) {
+            List<StackTraceTracker.StackTraceItem> newPath = new ArrayList<>(path);
+            newPath.add(item);
+            validate.accept(newPath);
+            assertStackTraceTrackerCount(item.getChildren(), newPath, validate);
+        }
     }
 }

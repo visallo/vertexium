@@ -2,6 +2,9 @@ package org.vertexium.elasticsearch5;
 
 import com.google.common.collect.Lists;
 import org.elasticsearch.client.Client;
+import org.vertexium.metric.Counter;
+import org.vertexium.metric.Timer;
+import org.vertexium.metric.VertexiumMetricRegistry;
 import org.vertexium.util.VertexiumLogger;
 import org.vertexium.util.VertexiumLoggerFactory;
 
@@ -19,8 +22,16 @@ public class IndexRefreshTracker {
     private final Map<String, Long> indexToMaxRefreshTime = new HashMap<>();
     private final Lock readLock = indexToMaxRefreshTimeLock.readLock();
     private final Lock writeLock = indexToMaxRefreshTimeLock.writeLock();
+    private final Counter pushCounter;
+    private final Timer refreshTimer;
+
+    public IndexRefreshTracker(VertexiumMetricRegistry metricRegistry) {
+        this.pushCounter = metricRegistry.getCounter(IndexRefreshTracker.class, "push", "counter");
+        this.refreshTimer = metricRegistry.getTimer(IndexRefreshTracker.class, "refresh", "timer");
+    }
 
     public void pushChange(String indexName) {
+        pushCounter.increment();
         writeLock.lock();
         try {
             LOGGER.debug("index added for refresh: %s", indexName);
@@ -59,7 +70,9 @@ public class IndexRefreshTracker {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("refreshing: %s", String.join(", ", indexNamesNeedingRefresh));
         }
-        client.admin().indices().prepareRefresh(indexNamesNeedingRefresh.toArray(new String[0])).execute().actionGet();
+        refreshTimer.time(() -> {
+            client.admin().indices().prepareRefresh(indexNamesNeedingRefresh.toArray(new String[0])).execute().actionGet();
+        });
     }
 
     private Set<String> getIndexNamesNeedingRefresh(long time) {

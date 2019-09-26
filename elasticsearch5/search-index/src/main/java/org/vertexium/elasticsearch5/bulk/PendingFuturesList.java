@@ -32,6 +32,10 @@ public class PendingFuturesList {
         return result.future;
     }
 
+    public int size() {
+        return pendingFutures.size();
+    }
+
     public long size(long beforeTime) {
         return pendingFutures.stream()
             .filter(item -> item.isBeforeTime(beforeTime))

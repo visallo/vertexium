@@ -5,6 +5,7 @@ import com.google.common.collect.Sets;
 import org.elasticsearch.client.Client;
 import org.junit.Before;
 import org.junit.Test;
+import org.vertexium.metric.NullMetricRegistry;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -21,7 +22,7 @@ public class IndexRefreshTrackerTest {
 
     @Before
     public void before() {
-        this.indexRefreshTracker = new IndexRefreshTracker() {
+        this.indexRefreshTracker = new IndexRefreshTracker(new NullMetricRegistry()) {
             @Override
             protected long getTime() {
                 return time;

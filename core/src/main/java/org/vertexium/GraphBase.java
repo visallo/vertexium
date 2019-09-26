@@ -7,6 +7,9 @@ import org.vertexium.event.GraphEventListener;
 import org.vertexium.historicalEvent.HistoricalEvent;
 import org.vertexium.historicalEvent.HistoricalEventId;
 import org.vertexium.id.IdGenerator;
+import org.vertexium.metric.StackTraceTracker;
+import org.vertexium.metric.Timer;
+import org.vertexium.metric.VertexiumMetricRegistry;
 import org.vertexium.mutation.ElementMutation;
 import org.vertexium.mutation.ExistingElementMutation;
 import org.vertexium.property.StreamingPropertyValue;
@@ -33,9 +36,15 @@ public abstract class GraphBase implements Graph {
     private final List<GraphEventListener> graphEventListeners = new ArrayList<>();
     private Map<String, PropertyDefinition> propertyDefinitionCache = new ConcurrentHashMap<>();
     private final boolean strictTyping;
+    private final VertexiumMetricRegistry metricRegistry;
+    protected final Timer flushTimer;
+    protected final StackTraceTracker flushStackTraceTracker;
 
-    protected GraphBase(boolean strictTyping) {
+    protected GraphBase(boolean strictTyping, VertexiumMetricRegistry metricRegistry) {
         this.strictTyping = strictTyping;
+        this.metricRegistry = metricRegistry;
+        this.flushTimer = metricRegistry.getTimer(Graph.class, "flush", "timer");
+        this.flushStackTraceTracker = metricRegistry.getStackTraceTracker(Graph.class, "flush", "stack");
     }
 
     @Override
@@ -1170,5 +1179,10 @@ public abstract class GraphBase implements Graph {
                 }
                 return element.getHistoricalEvents(after, fetchHints, authorizations);
             }), after);
+    }
+
+    @Override
+    public VertexiumMetricRegistry getMetricsRegistry() {
+        return metricRegistry;
     }
 }
