@@ -3,7 +3,6 @@ package org.vertexium.elasticsearch5;
 import org.elasticsearch.action.admin.cluster.node.stats.NodeStats;
 import org.elasticsearch.action.admin.cluster.node.stats.NodesStatsAction;
 import org.elasticsearch.action.admin.cluster.node.stats.NodesStatsResponse;
-import org.elasticsearch.client.Client;
 import org.elasticsearch.common.io.stream.NotSerializableExceptionWrapper;
 import org.elasticsearch.index.search.stats.SearchStats;
 import org.junit.Assert;
@@ -24,6 +23,8 @@ import org.vertexium.sorting.SortingStrategy;
 import org.vertexium.test.GraphTestBase;
 
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -258,6 +259,85 @@ public class Elasticsearch5SearchIndexTest extends GraphTestBase {
         results = toList(graph.query("bob", AUTHORIZATIONS_A).vertexIds());
         assertEquals(1, results.size());
         assertEquals("v1", results.get(0));
+    }
+
+    @Test
+    public void testMultipleThreadsFlushing() throws InterruptedException {
+        AtomicBoolean startSignal = new AtomicBoolean();
+        AtomicBoolean run = new AtomicBoolean(true);
+        AtomicBoolean writing = new AtomicBoolean(false);
+        AtomicBoolean writeThenFlushComplete = new AtomicBoolean(false);
+        CountDownLatch threadsReadyCountdown = new CountDownLatch(2);
+        Runnable waitForStart = () -> {
+            try {
+                while (!startSignal.get()) {
+                    synchronized (startSignal) {
+                        threadsReadyCountdown.countDown();
+                        startSignal.wait();
+                    }
+                }
+            } catch (Exception ex) {
+                throw new VertexiumException("thread failed", ex);
+            }
+        };
+
+        Thread constantWriteThread = new Thread(() -> {
+            waitForStart.run();
+
+            int i = 0;
+            while (run.get()) {
+                graph.prepareVertex("v" + i, new Visibility(""))
+                    .addPropertyValue("k1", "name1", "value1", new Visibility(""))
+                    .save(AUTHORIZATIONS_ALL);
+                writing.set(true);
+                i++;
+            }
+        });
+
+        Thread writeThenFlushThread = new Thread(() -> {
+            try {
+                waitForStart.run();
+                while (!writing.get()) {
+                    Thread.sleep(10); // wait for other thread to start
+                }
+
+                for (int i = 0; i < 5; i++) {
+                    graph.prepareVertex("vWriteTheFlush", new Visibility(""))
+                        .addPropertyValue("k1", "name1", "value1", new Visibility(""))
+                        .save(AUTHORIZATIONS_ALL);
+                    graph.flush();
+                }
+                writeThenFlushComplete.set(true);
+            } catch (Exception ex) {
+                throw new VertexiumException("thread failed", ex);
+            }
+        });
+
+        // synchronize thread start
+        constantWriteThread.start();
+        writeThenFlushThread.start();
+        threadsReadyCountdown.await();
+        Thread.sleep(100);
+        synchronized (startSignal) {
+            startSignal.set(true);
+            startSignal.notifyAll();
+        }
+
+        // wait to finish
+        int timeout = 5000;
+        long startTime = System.currentTimeMillis();
+        while (!writeThenFlushComplete.get() && (System.currentTimeMillis() - startTime < timeout)) {
+            Thread.sleep(10);
+        }
+        long endTime = System.currentTimeMillis();
+        run.set(false);
+        constantWriteThread.join();
+        writeThenFlushThread.join();
+
+        // check results
+        if (endTime - startTime > timeout) {
+            fail("timeout waiting for flush");
+        }
     }
 
     private long getNumQueries() {
