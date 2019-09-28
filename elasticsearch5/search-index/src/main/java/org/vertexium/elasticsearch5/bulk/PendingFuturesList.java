@@ -12,10 +12,16 @@ public class PendingFuturesList {
 
     public void remove(CompletableFuture<FlushBatchResult> future) {
         pendingFutures.remove(new Item(null, future));
+        synchronized (this) {
+            notifyAll();
+        }
     }
 
     public void add(List<BulkItem> batch, CompletableFuture<FlushBatchResult> future) {
         pendingFutures.add(new Item(batch, future));
+        synchronized (this) {
+            notifyAll();
+        }
     }
 
     public CompletableFuture<FlushBatchResult> peek() {

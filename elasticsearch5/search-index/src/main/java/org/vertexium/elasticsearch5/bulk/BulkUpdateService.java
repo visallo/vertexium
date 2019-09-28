@@ -92,8 +92,7 @@ public class BulkUpdateService {
         bulkUpdateQueue.add(new DeleteBulkItem(elementId, docId, deleteRequest));
     }
 
-    CompletableFuture<FlushBatchResult> submitBatch(List<BulkItem> batch) {
-        CompletableFuture<FlushBatchResult> future = new CompletableFuture<>();
+    CompletableFuture<FlushBatchResult> submitBatch(CompletableFuture<FlushBatchResult> future, List<BulkItem> batch) {
         this.threadPool.submit(() -> {
             try {
                 BulkRequest bulkRequest = flushObjectToBulkRequest(batch);

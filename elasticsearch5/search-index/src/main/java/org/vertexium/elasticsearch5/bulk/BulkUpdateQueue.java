@@ -12,7 +12,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 public class BulkUpdateQueue {
@@ -58,49 +57,50 @@ public class BulkUpdateQueue {
         if (LOGGER.isTraceEnabled()) {
             LOGGER.trace("flushing single batch (size: %d)", batch.size());
         }
-        AtomicReference<CompletableFuture<FlushBatchResult>> future = new AtomicReference<>();
-        lock.executeInWriteLock(() -> {
-            future.set(bulkUpdateService.submitBatch(batch)
-                .whenComplete((flushBatchResult, throwable) -> {
-                    AtomicBoolean oneOrMoreItemsFailed = new AtomicBoolean();
-                    lock.executeInWriteLock(() -> {
-                        pendingFutures.remove(future.get());
-                        if (throwable != null) {
-                            submittedItems.removeAll(batch);
-                            todoItems.addAll(batch);
-                        }
-                        if (flushBatchResult != null) {
-                            int i = 0;
-                            for (BulkItemResponse bulkItemResponse : flushBatchResult.getBulkResponse().getItems()) {
-                                BulkItemResponse.Failure failure = bulkItemResponse.getFailure();
-                                BulkItem bulkItem = batch.get(i++);
-                                submittedItems.remove(bulkItem);
-                                if (failure != null) {
-                                    bulkItem.incrementFailCount();
-                                    if (bulkItem.getFailCount() >= maxFailCount) {
-                                        LOGGER.error("bulk item failed %d times: %s", bulkItem.getFailCount(), bulkItem);
-                                        oneOrMoreItemsFailed.set(true);
-                                        continue;
-                                    }
-                                    failures.add(new BulkItemFailure(bulkItem, bulkItemResponse));
+        CompletableFuture<FlushBatchResult> future = new CompletableFuture<>();
+        pendingFutures.add(batch, future);
+        bulkUpdateService.submitBatch(future, batch)
+            .whenComplete((flushBatchResult, throwable) -> {
+                lock.executeInWriteLock(() -> {
+                    // safe to remove this here since we are in a write lock. hasItemsToFlushOrWaitingForItemsToFlush
+                    // will wait for a read lock before proceeding
+                    pendingFutures.remove(future);
+
+                    if (throwable != null) {
+                        submittedItems.removeAll(batch);
+                        todoItems.addAll(batch);
+                    }
+
+                    int failCount = 0;
+                    if (flushBatchResult != null) {
+                        int i = 0;
+                        for (BulkItemResponse bulkItemResponse : flushBatchResult.getBulkResponse().getItems()) {
+                            BulkItemResponse.Failure failure = bulkItemResponse.getFailure();
+                            BulkItem bulkItem = batch.get(i++);
+                            submittedItems.remove(bulkItem);
+                            if (failure != null) {
+                                bulkItem.incrementFailCount();
+                                if (bulkItem.getFailCount() >= maxFailCount) {
+                                    LOGGER.error("bulk item failed %d times: %s", bulkItem.getFailCount(), bulkItem);
+                                    failCount++;
+                                    continue;
                                 }
+                                failures.add(new BulkItemFailure(bulkItem, bulkItemResponse));
                             }
-                            pendingFutures.remove(future.get());
                         }
-                    });
+                    }
 
                     Set<String> indexNames = batch.stream().map(BulkItem::getIndexName).collect(Collectors.toSet());
                     for (String indexName : indexNames) {
                         indexRefreshTracker.pushChange(indexName);
                     }
 
-                    if (oneOrMoreItemsFailed.get()) {
-                        throw new VertexiumException("One or more items failed");
+                    if (failCount > 0) {
+                        throw new VertexiumException(failCount + " failed");
                     }
-                }));
-            pendingFutures.add(batch, future.get());
-        });
-        return future.get();
+                });
+            });
+        return future;
     }
 
     private boolean handleFailures(long beforeTime) {
@@ -184,8 +184,19 @@ public class BulkUpdateQueue {
                     continue;
                 }
                 try {
-                    LOGGER.trace("waiting for pending future");
-                    pendingFuture.get();
+                    if (pendingFuture.isDone()) {
+                        LOGGER.trace("pending future is complete waiting for it to clear");
+                        synchronized (pendingFutures) {
+                            // there could be a race condition where the item is already removed from the list but
+                            // we already peeked it so we might miss the notify. So wait a short amount of time and
+                            // the completion thread will either grab the write lock in which
+                            // hasItemsToFlushOrWaitingForItemsToFlush will wait or the item will be removed.
+                            pendingFutures.wait(1);
+                        }
+                    } else {
+                        LOGGER.trace("waiting for pending future");
+                        pendingFuture.get();
+                    }
                 } catch (Exception ex) {
                     throw new VertexiumException(ex);
                 }
