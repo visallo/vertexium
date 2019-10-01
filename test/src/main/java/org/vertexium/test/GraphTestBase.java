@@ -1554,6 +1554,46 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    public void testGetElements() {
+        Vertex v1 = graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
+        Vertex v2 = graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.prepareEdge("e1", v1, v2, LABEL_LABEL1, VISIBILITY_A)
+            .setProperty("prop1", "e1", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        ArrayList<ElementId> elementIds = Lists.newArrayList(
+            ElementId.edge("e1"),
+            ElementId.vertex("v1"),
+            ElementId.vertex("v2")
+        );
+        assertElementIdsAnyOrder(
+            graph.getElements(elementIds, AUTHORIZATIONS_A),
+            "e1", "v1", "v2"
+        );
+
+        elementIds = Lists.newArrayList(
+            ElementId.edge("e1")
+        );
+        assertElementIdsAnyOrder(
+            graph.getElements(elementIds, AUTHORIZATIONS_A),
+            "e1"
+        );
+
+        elementIds = Lists.newArrayList(
+            ElementId.vertex("v1"),
+            ElementId.vertex("v2")
+        );
+        assertElementIdsAnyOrder(
+            graph.getElements(elementIds, AUTHORIZATIONS_A),
+            "v1", "v2"
+        );
+
+        elementIds = Lists.newArrayList();
+        assertElementIdsAnyOrder(graph.getElements(elementIds, AUTHORIZATIONS_A));
+    }
+
+    @Test
     public void testMarkVertexAndPropertiesHidden() {
         graph.prepareVertex("v1", VISIBILITY_EMPTY)
             .addPropertyValue("k1", "age", 25, VISIBILITY_EMPTY)

@@ -1,5 +1,6 @@
 # v4.8.0
 * Added: Option to refresh on flush as opposed to flushing at query time
+* Added: Graph.getElements - get multiple elements (vertices and edges) with one call
 * Fixed: Soft delete with event data cannot be un-soft deleted
 * Changed: Elasticsearch to use bulk updates
 * Changed: EdgeVertexPairs can now have null vertex ids if user can see the edge but not the vertex
