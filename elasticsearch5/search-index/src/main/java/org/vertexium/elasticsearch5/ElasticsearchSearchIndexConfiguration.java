@@ -73,6 +73,8 @@ public class ElasticsearchSearchIndexConfiguration {
     public static final int BULK_MAX_BATCH_SIZE_IN_BYTES_DEFAULT = BulkUpdateServiceConfiguration.MAX_BATCH_SIZE_IN_BYTES_DEFAULT;
     public static final int BULK_MAX_FAIL_COUNT_DEFAULT = BulkUpdateServiceConfiguration.MAX_FAIL_COUNT_DEFAULT;
     public static final String BULK_REQUEST_TIMEOUT_DEFAULT = "30m";
+    public static final String REFRESH_INDEX_ON_FLUSH = "refreshIndexOnFlush";
+    public static final boolean REFRESH_INDEX_ON_FLUSH_DEFAULT = false;
 
     private GraphConfiguration graphConfiguration;
     private IndexSelectionStrategy indexSelectionStrategy;
@@ -273,5 +275,9 @@ public class ElasticsearchSearchIndexConfiguration {
 
     public Duration getBulkRequestTimeout() {
         return graphConfiguration.getDuration(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + BULK_REQUEST_TIMEOUT, BULK_REQUEST_TIMEOUT_DEFAULT);
+    }
+
+    public boolean getRefreshIndexOnFlush() {
+        return graphConfiguration.getBoolean(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + REFRESH_INDEX_ON_FLUSH, REFRESH_INDEX_ON_FLUSH_DEFAULT);
     }
 }

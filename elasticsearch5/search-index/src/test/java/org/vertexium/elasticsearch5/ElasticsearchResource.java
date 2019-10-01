@@ -27,7 +27,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import java.util.function.IntFunction;
 
 import static org.codelibs.elasticsearch.runner.ElasticsearchClusterRunner.newConfigs;
 import static org.vertexium.GraphConfiguration.AUTO_FLUSH;
@@ -74,10 +73,10 @@ public class ElasticsearchResource extends ExternalResource {
         } else {
             runner = new ElasticsearchClusterRunner();
             runner.onBuild((i, builder) ->
-                    builder.put("script.inline", "true")
-                            .put("cluster.name", clusterName)
-                            .put("http.type", "netty3")
-                            .put("transport.type", "netty3")
+                builder.put("script.inline", "true")
+                    .put("cluster.name", clusterName)
+                    .put("http.type", "netty3")
+                    .put("transport.type", "netty3")
             ).build(newConfigs().basePath(basePath.getAbsolutePath()).numOfNode(1));
             runner.ensureGreen();
         }
@@ -123,30 +122,30 @@ public class ElasticsearchResource extends ExternalResource {
     public Client getRemoteClient() {
         if (remoteClient == null) {
             Settings settings = Settings.builder()
-                    .put("cluster.name", System.getProperty("REMOTE_ES_CLUSTER_NAME", "elasticsearch"))
-                    .build();
+                .put("cluster.name", System.getProperty("REMOTE_ES_CLUSTER_NAME", "elasticsearch"))
+                .build();
             TransportAddress[] transportAddresses = Arrays.stream(getRemoteEsAddresses().split(","))
-                    .map(address -> {
-                        String[] parts = address.split(":");
-                        try {
-                            InetAddress inetAddress = InetAddress.getByName(parts[0]);
-                            int port = parts.length > 1 ? Integer.parseInt(parts[1]) : 9300;
-                            return new InetSocketTransportAddress(inetAddress, port);
-                        } catch (Exception ex) {
-                            throw new VertexiumException("cannot find host: " + address, ex);
-                        }
-                    })
-                    .toArray(TransportAddress[]::new);
+                .map(address -> {
+                    String[] parts = address.split(":");
+                    try {
+                        InetAddress inetAddress = InetAddress.getByName(parts[0]);
+                        int port = parts.length > 1 ? Integer.parseInt(parts[1]) : 9300;
+                        return new InetSocketTransportAddress(inetAddress, port);
+                    } catch (Exception ex) {
+                        throw new VertexiumException("cannot find host: " + address, ex);
+                    }
+                })
+                .toArray(TransportAddress[]::new);
             remoteClient = new PreBuiltTransportClient(settings)
-                    .addTransportAddresses(transportAddresses);
+                .addTransportAddresses(transportAddresses);
         }
         return remoteClient;
     }
 
     public void dropIndices() throws Exception {
         AdminClient client = shouldUseRemoteElasticsearch()
-                ? getRemoteClient().admin()
-                : runner.admin();
+            ? getRemoteClient().admin()
+            : runner.admin();
         String[] indices = client.indices().prepareGetIndex().execute().get().indices();
         for (String index : indices) {
             if (index.startsWith(ES_INDEX_NAME) || index.startsWith(ES_EXTENDED_DATA_INDEX_NAME_PREFIX)) {
@@ -162,8 +161,8 @@ public class ElasticsearchResource extends ExternalResource {
             if (index.startsWith(ES_INDEX_NAME) || index.startsWith(ES_EXTENDED_DATA_INDEX_NAME_PREFIX)) {
                 LOGGER.info("clearing test index: %s", index);
                 BulkByScrollResponse response = DeleteByQueryAction.INSTANCE.newRequestBuilder(searchIndex.getClient())
-                        .source(index)
-                        .get();
+                    .source(index)
+                    .get();
                 LOGGER.info("removed %d documents", response.getDeleted());
             }
         }
@@ -191,6 +190,7 @@ public class ElasticsearchResource extends ExternalResource {
         configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + MAX_QUERY_STRING_TERMS, 20);
         configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + EXCEPTION_HANDLER, TestElasticsearch5ExceptionHandler.class.getName());
         configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + INDEX_REFRESH_INTERVAL, -1);
+        configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + REFRESH_INDEX_ON_FLUSH, false);
 
         // transport-5.3.3.jar!/org/elasticsearch/transport/client/PreBuiltTransportClient.class:61 likes to sleep on
         // connection close if default or netty4. This speeds up the test by skipping that
@@ -207,7 +207,7 @@ public class ElasticsearchResource extends ExternalResource {
     private String getLocation() {
         ClusterStateResponse responsee = runner.node().client().admin().cluster().prepareState().execute().actionGet();
         InetSocketTransportAddress address = (InetSocketTransportAddress)
-                responsee.getState().getNodes().getNodes().values().iterator().next().value.getAddress();
+            responsee.getState().getNodes().getNodes().values().iterator().next().value.getAddress();
         return "localhost:" + address.address().getPort();
     }
 

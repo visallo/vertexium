@@ -1,4 +1,5 @@
 # v4.8.0
+* Added: Option to refresh on flush as opposed to flushing at query time
 * Fixed: Soft delete with event data cannot be un-soft deleted
 * Changed: Elasticsearch to use bulk updates
 
