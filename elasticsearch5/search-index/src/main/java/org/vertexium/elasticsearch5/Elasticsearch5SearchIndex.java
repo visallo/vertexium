@@ -124,6 +124,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
     private final IndexRefreshTracker indexRefreshTracker = new IndexRefreshTracker();
     private Integer logRequestSizeLimit;
     private final Elasticsearch5ExceptionHandler exceptionHandler;
+    private final boolean refreshIndexOnFlush;
 
     public Elasticsearch5SearchIndex(Graph graph, GraphConfiguration config) {
         this.graph = graph;
@@ -137,6 +138,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
         this.geoShapeErrorPct = this.config.getGeoShapeErrorPct();
         this.logRequestSizeLimit = this.config.getLogRequestSizeLimit();
         this.exceptionHandler = this.config.getExceptionHandler(graph);
+        this.refreshIndexOnFlush = this.config.getRefreshIndexOnFlush();
         BulkUpdateServiceConfiguration bulkUpdateServiceConfiguration = new BulkUpdateServiceConfiguration()
             .setQueueDepth(this.config.getBulkQueueDepth())
             .setCorePoolSize(this.config.getBulkCorePoolSize())
@@ -1794,7 +1796,9 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
     @Override
     @Deprecated
     public Map<Object, Long> getVertexPropertyCountByValue(Graph graph, String propertyName, Authorizations authorizations) {
-        indexRefreshTracker.refresh(client);
+        if (shouldRefreshIndexOnQuery()) {
+            indexRefreshTracker.refresh(client);
+        }
 
         TermQueryBuilder elementTypeFilterBuilder = new TermQueryBuilder(ELEMENT_TYPE_FIELD_NAME, ElasticsearchDocumentType.VERTEX.getKey());
         BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery()
@@ -2003,6 +2007,9 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
     @Override
     public void flush(Graph graph) {
         bulkUpdateService.flush();
+        if (shouldRefreshIndexOnFlush()) {
+            indexRefreshTracker.refresh(client);
+        }
     }
 
     private void removeFieldsFromDocument(Graph graph, ElementLocation elementLocation, String field) {
@@ -2512,5 +2519,13 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
             .map(this::replaceFieldnameDots)
             .collect(Collectors.toList())
             .toArray(new String[allMatchingPropertyNames.length]);
+    }
+
+    boolean shouldRefreshIndexOnQuery() {
+        return !shouldRefreshIndexOnFlush();
+    }
+
+    boolean shouldRefreshIndexOnFlush() {
+        return refreshIndexOnFlush;
     }
 }
