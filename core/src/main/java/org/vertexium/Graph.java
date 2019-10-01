@@ -11,12 +11,10 @@ import org.vertexium.query.Aggregation;
 import org.vertexium.query.GraphQuery;
 import org.vertexium.query.MultiVertexQuery;
 import org.vertexium.query.SimilarToGraphQuery;
+import org.vertexium.util.JoinIterable;
 
 import java.io.InputStream;
-import java.util.Collection;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Stream;
 
 import static org.vertexium.util.Preconditions.checkNotNull;
@@ -131,6 +129,66 @@ public interface Graph {
             default:
                 throw new VertexiumException("Unhandled element type: " + elementId.getElementType());
         }
+    }
+
+    /**
+     * Gets elements from the graph
+     *
+     * @param elementIds     The element ids to retrieve from the graph.
+     * @param authorizations The authorizations required to load the elements.
+     * @return The found elements, if an element is not found it will not be returned.
+     */
+    default Iterable<? extends Element> getElements(
+        Iterable<ElementId> elementIds,
+        Authorizations authorizations
+    ) {
+        return getElements(elementIds, FetchHints.ALL, authorizations);
+    }
+
+    /**
+     * Gets elements from the graph
+     *
+     * @param elementIds     The element ids to retrieve from the graph.
+     * @param fetchHints     Hint at what parts of the elements to fetch.
+     * @param authorizations The authorizations required to load the elements.
+     * @return The found elements, if an element is not found it will not be returned.
+     */
+    default Iterable<? extends Element> getElements(
+        Iterable<ElementId> elementIds,
+        FetchHints fetchHints,
+        Authorizations authorizations
+    ) {
+        Set<String> vertexIds = new HashSet<>();
+        Set<String> edgeIds = new HashSet<>();
+        for (ElementId elementId : elementIds) {
+            switch (elementId.getElementType()) {
+                case VERTEX:
+                    vertexIds.add(elementId.getId());
+                    break;
+                case EDGE:
+                    edgeIds.add(elementId.getId());
+                    break;
+                default:
+                    throw new VertexiumException("unhandled element type: " + elementId.getElementType());
+            }
+        }
+
+        if (vertexIds.size() == 0 && edgeIds.size() == 0) {
+            return Collections.emptyList();
+        }
+
+        if (vertexIds.size() == 0) {
+            return getEdges(edgeIds, fetchHints, authorizations);
+        }
+
+        if (edgeIds.size() == 0) {
+            return getVertices(vertexIds, fetchHints, authorizations);
+        }
+
+        return new JoinIterable<>(
+            getVertices(vertexIds, fetchHints, authorizations),
+            getEdges(edgeIds, fetchHints, authorizations)
+        );
     }
 
     /**
