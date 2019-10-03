@@ -10,8 +10,8 @@ import java.util.Queue;
 public class JoinIterable<T> implements Iterable<T> {
     private final Iterable<? extends T>[] iterables;
 
+    @SuppressWarnings("unchecked")
     public JoinIterable(Iterable<? extends Iterable<? extends T>> iterables) {
-        //noinspection unchecked
         this(Iterables.toArray(iterables, Iterable.class));
     }
 

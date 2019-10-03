@@ -40,6 +40,7 @@ public class ListComprehensionExecutionStep extends ExecutionStepWithChildren im
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public VertexiumCypherResult execute(VertexiumCypherQueryContext ctx, VertexiumCypherResult source) {
         source = super.execute(ctx, source);
         return source.peek(row -> {

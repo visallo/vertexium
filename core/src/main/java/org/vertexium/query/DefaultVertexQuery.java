@@ -71,7 +71,7 @@ public class DefaultVertexQuery extends VertexQueryBase implements VertexQuery {
         FetchHints fetchHints = FetchHints.builder()
             .setIncludeExtendedDataTableNames(true)
             .build();
-        return extendedData(extendedDataFetchHints, new JoinIterable<>(
+        return extendedData(extendedDataFetchHints, new JoinIterable<Element>(
             allVertices(fetchHints),
             allEdges(fetchHints)
         ));

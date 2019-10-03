@@ -12,6 +12,7 @@ import java.util.List;
 public class CreateNodePatternExecutionStep extends CreateElementPatternExecutionStep {
     private final List<String> labelNames;
 
+    @SuppressWarnings("unchecked")
     public CreateNodePatternExecutionStep(
         String name,
         List<String> labelNames,

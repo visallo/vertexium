@@ -44,6 +44,7 @@ public class SetItemExecutionStep extends ExecutionStepWithChildren {
         });
     }
 
+    @SuppressWarnings("unchecked")
     private void executeEquals(VertexiumCypherQueryContext ctx, CypherResultRow row, Object left, Object right) {
         Element leftElement = (Element) row.get(leftResultName + LookupExecutionStep.SCOPE_ELEMENT_SUFFIX);
         Property leftProperty = (Property) row.get(leftResultName + LookupExecutionStep.SCOPE_PROPERTY_SUFFIX);
@@ -112,6 +113,7 @@ public class SetItemExecutionStep extends ExecutionStepWithChildren {
         throw new VertexiumCypherNotImplemented(String.format("set {left: %s, right: %s}", left, right));
     }
 
+    @SuppressWarnings("unchecked")
     private void executePlusEquals(VertexiumCypherQueryContext ctx, CypherResultRow row, Object left, Object right) {
         if (left instanceof Element) {
             Element leftElement = (Element) left;

@@ -52,11 +52,7 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> extends 
     }
 
     @Override
-    public void deleteProperty(String key, String name, Visibility visibility, Authorizations authorizations) {
-        getGraph().deleteProperty(this, inMemoryTableElement, key, name, visibility, authorizations);
-    }
-
-    @Override
+    @Deprecated
     public void softDeleteProperty(String key, String name, Visibility visibility, Object eventData, Authorizations authorizations) {
         softDeleteProperty(key, name, null, visibility, eventData, IndexHint.INDEX, authorizations);
     }
@@ -129,6 +125,7 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> extends 
     }
 
     @Override
+    @Deprecated
     public void markPropertyHidden(
         Property property,
         Long timestamp,
@@ -143,27 +140,6 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> extends 
             null,
             visibility,
             data,
-            authorizations
-        );
-    }
-
-    @Override
-    public void markPropertyVisible(
-        Property property,
-        Long timestamp,
-        Visibility visibility,
-        Object eventData,
-        Authorizations authorizations
-    ) {
-        getGraph().markPropertyVisible(
-            this,
-            inMemoryTableElement,
-            property.getKey(),
-            property.getName(),
-            property.getVisibility(),
-            timestamp,
-            visibility,
-            eventData,
             authorizations
         );
     }
@@ -188,6 +164,7 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> extends 
     }
 
     @Override
+    @Deprecated
     public void markPropertyVisible(
         String key,
         String name,
@@ -256,6 +233,8 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> extends 
             vertexBuilder.getProperties(),
             vertexBuilder.getPropertyDeletes(),
             vertexBuilder.getPropertySoftDeletes(),
+            vertexBuilder.getMarkPropertyHiddenMutations(),
+            vertexBuilder.getMarkPropertyVisibleMutations(),
             vertexBuilder.getAdditionalVisibilities(),
             vertexBuilder.getAdditionalVisibilityDeletes(),
             vertexBuilder.getExtendedData(),
@@ -271,6 +250,8 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> extends 
             edgeBuilder.getProperties(),
             edgeBuilder.getPropertyDeletes(),
             edgeBuilder.getPropertySoftDeletes(),
+            edgeBuilder.getMarkPropertyHiddenMutations(),
+            edgeBuilder.getMarkPropertyVisibleMutations(),
             edgeBuilder.getAdditionalVisibilities(),
             edgeBuilder.getAdditionalVisibilityDeletes(),
             edgeBuilder.getExtendedData(),
@@ -281,10 +262,13 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> extends 
         );
     }
 
+    @SuppressWarnings("deprecation")
     protected void updatePropertiesInternal(
         Iterable<Property> properties,
         Iterable<PropertyDeleteMutation> propertyDeleteMutations,
         Iterable<PropertySoftDeleteMutation> propertySoftDeleteMutations,
+        List<MarkPropertyHiddenMutation> markPropertyHiddenMutations,
+        List<MarkPropertyVisibleMutation> markPropertyVisibleMutations,
         Iterable<AdditionalVisibilityAddMutation> additionalVisibilities,
         Iterable<AdditionalVisibilityDeleteMutation> additionalVisibilityDeletes,
         Iterable<ExtendedDataMutation> extendedDatas,
@@ -306,7 +290,14 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> extends 
             );
         }
         for (PropertyDeleteMutation propertyDeleteMutation : propertyDeleteMutations) {
-            deleteProperty(propertyDeleteMutation.getKey(), propertyDeleteMutation.getName(), propertyDeleteMutation.getVisibility(), authorizations);
+            getGraph().deleteProperty(
+                this,
+                this.inMemoryTableElement,
+                propertyDeleteMutation.getKey(),
+                propertyDeleteMutation.getName(),
+                propertyDeleteMutation.getVisibility(),
+                authorizations
+            );
         }
         for (PropertySoftDeleteMutation propertySoftDeleteMutation : propertySoftDeleteMutations) {
             softDeleteProperty(
@@ -330,6 +321,35 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> extends 
             deleteAdditionalVisibility(
                 additionalVisibilityDelete.getAdditionalVisibility(),
                 additionalVisibilityDelete.getEventData(),
+                authorizations
+            );
+        }
+        for (MarkPropertyHiddenMutation markPropertyHidden : markPropertyHiddenMutations) {
+            Property property = getProperty(
+                markPropertyHidden.getPropertyKey(),
+                markPropertyHidden.getPropertyName(),
+                markPropertyHidden.getPropertyVisibility()
+            );
+            getGraph().markPropertyHidden(
+                this,
+                this.inMemoryTableElement,
+                property,
+                markPropertyHidden.getTimestamp(),
+                markPropertyHidden.getVisibility(),
+                markPropertyHidden.getEventData(),
+                authorizations
+            );
+        }
+        for (MarkPropertyVisibleMutation markPropertyVisible : markPropertyVisibleMutations) {
+            getGraph().markPropertyVisible(
+                this,
+                this.inMemoryTableElement,
+                markPropertyVisible.getPropertyKey(),
+                markPropertyVisible.getPropertyName(),
+                markPropertyVisible.getPropertyVisibility(),
+                markPropertyVisible.getTimestamp(),
+                markPropertyVisible.getVisibility(),
+                markPropertyVisible.getEventData(),
                 authorizations
             );
         }
@@ -382,14 +402,12 @@ public abstract class InMemoryElement<TElement extends InMemoryElement> extends 
             authorizations
         );
 
-        Iterable<Property> properties = mutation.getProperties();
-        Iterable<PropertyDeleteMutation> propertyDeleteMutations = mutation.getPropertyDeletes();
-        Iterable<PropertySoftDeleteMutation> propertySoftDeleteMutations = mutation.getPropertySoftDeletes();
-
         updatePropertiesInternal(
-            properties,
-            propertyDeleteMutations,
-            propertySoftDeleteMutations,
+            mutation.getProperties(),
+            mutation.getPropertyDeletes(),
+            mutation.getPropertySoftDeletes(),
+            mutation.getMarkPropertyHiddenMutations(),
+            mutation.getMarkPropertyVisibleMutations(),
             mutation.getAdditionalVisibilities(),
             mutation.getAdditionalVisibilityDeletes(),
             mutation.getExtendedData(),

@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
+@SuppressWarnings("unchecked")
 public class AccumuloVertex extends AccumuloElement implements Vertex {
     public static final Text CF_SIGNAL = VertexIterator.CF_SIGNAL;
     public static final Text CF_OUT_EDGE = VertexIterator.CF_OUT_EDGE;
@@ -368,7 +369,10 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
                 }
                 throw new VertexiumException("Cannot get edge info");
             case BOTH:
-                return new JoinIterable<>(getEdgeInfos(Direction.IN), getEdgeInfos(Direction.OUT));
+                return new JoinIterable<Map.Entry<Text, org.vertexium.accumulo.iterator.model.EdgeInfo>>(
+                    getEdgeInfos(Direction.IN),
+                    getEdgeInfos(Direction.OUT)
+                );
             default:
                 throw new VertexiumException("Unexpected direction: " + direction);
         }
@@ -396,7 +400,7 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
             case OUT:
                 return filterEdgeInfosByLabel(accumuloEdgeInfosToEdgeInfos(getEdgeInfos(direction), Direction.OUT), labels);
             case BOTH:
-                return new JoinIterable<>(getEdgeInfos(Direction.IN, labels, authorizations), getEdgeInfos(Direction.OUT, labels, authorizations));
+                return new JoinIterable<EdgeInfo>(getEdgeInfos(Direction.IN, labels, authorizations), getEdgeInfos(Direction.OUT, labels, authorizations));
             default:
                 throw new VertexiumException("Unexpected direction: " + direction);
         }
@@ -506,7 +510,7 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
             case BOTH:
                 Iterable<String> inVertexIds = getVertexIds(Direction.IN, labels, authorizations);
                 Iterable<String> outVertexIds = getVertexIds(Direction.OUT, labels, authorizations);
-                return new JoinIterable<>(inVertexIds, outVertexIds);
+                return new JoinIterable<String>(inVertexIds, outVertexIds);
             case IN:
                 if (this.inEdges instanceof EdgesWithEdgeInfo) {
                     return new GetVertexIdsIterable(((EdgesWithEdgeInfo) this.inEdges).getEdgeInfos(), labels);
@@ -565,7 +569,6 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public ExistingElementMutation<Vertex> prepareMutation() {
         return new ExistingElementMutationImpl<Vertex>(this) {
             @Override

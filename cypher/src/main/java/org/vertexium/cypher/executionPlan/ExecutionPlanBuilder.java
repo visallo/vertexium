@@ -188,6 +188,7 @@ public class ExecutionPlanBuilder {
         return visitExpression(ctx, UUID.randomUUID().toString(), expression);
     }
 
+    @SuppressWarnings("unchecked")
     public ExecutionStepWithResultName visitExpression(VertexiumCypherQueryContext ctx, String resultName, CypherAstBase expression) {
         if (expression instanceof CypherVariable) {
             return visitVariable(ctx, resultName, (CypherVariable) expression);
@@ -338,6 +339,7 @@ public class ExecutionPlanBuilder {
         return new ListLiteralExecutionStep(resultName, elements);
     }
 
+    @SuppressWarnings("unchecked")
     private ExecutionStepWithResultName visitLiteral(VertexiumCypherQueryContext ctx, String resultName, CypherLiteral expression) {
         Object value = expression.getValue();
         if (value instanceof Map) {
@@ -392,6 +394,7 @@ public class ExecutionPlanBuilder {
         );
     }
 
+    @SuppressWarnings("unchecked")
     private PatternPartExecutionStep visitPatternPart(VertexiumCypherQueryContext ctx, boolean optional, CypherPatternPart patternPart) {
         CypherListLiteral<CypherElementPattern> elementPatterns = patternPart.getElementPatterns();
         List<MatchPartExecutionStep> steps = elementPatterns.stream()

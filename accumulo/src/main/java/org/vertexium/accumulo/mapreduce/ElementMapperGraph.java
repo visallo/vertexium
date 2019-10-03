@@ -7,6 +7,7 @@ import org.vertexium.metric.NullMetricRegistry;
 import org.vertexium.query.GraphQuery;
 import org.vertexium.query.MultiVertexQuery;
 
+@Deprecated
 public class ElementMapperGraph extends GraphBase {
     private static final boolean STRICT_TYPING = false;
     private ElementMapper elementMapper;

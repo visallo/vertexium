@@ -12,6 +12,7 @@ import org.vertexium.util.FilterIterable;
 import java.util.HashMap;
 import java.util.Map;
 
+@SuppressWarnings("unchecked")
 public class InMemoryVertex extends InMemoryElement<InMemoryVertex> implements Vertex {
     public InMemoryVertex(
         InMemoryGraph graph,
@@ -335,7 +336,6 @@ public class InMemoryVertex extends InMemoryElement<InMemoryVertex> implements V
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public ExistingElementMutation<Vertex> prepareMutation() {
         return new ExistingElementMutationImpl<Vertex>(this) {
             @Override

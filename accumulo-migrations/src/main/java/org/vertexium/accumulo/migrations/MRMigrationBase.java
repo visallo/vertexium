@@ -20,6 +20,7 @@ import org.vertexium.util.VertexiumLoggerFactory;
 
 import java.io.IOException;
 
+@Deprecated
 public abstract class MRMigrationBase extends Configured implements Tool {
     private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(MRMigrationBase.class);
 
@@ -108,6 +109,7 @@ public abstract class MRMigrationBase extends Configured implements Tool {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public int run(String[] args) throws Exception {
         Opts opts = createOpts();
         opts.parseArgs(getClass().getName(), args);

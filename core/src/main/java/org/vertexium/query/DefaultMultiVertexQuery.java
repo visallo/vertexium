@@ -33,7 +33,7 @@ public class DefaultMultiVertexQuery extends QueryBase implements MultiVertexQue
         Iterable<Vertex> vertices = getGraph().getVertices(IterableUtils.toIterable(getVertexIds()), fetchHints, getParameters().getAuthorizations());
         Iterable<String> edgeIds = new VerticesToEdgeIdsIterable(vertices, getParameters().getAuthorizations());
         Iterable<Edge> edges = getGraph().getEdges(edgeIds, fetchHints, getParameters().getAuthorizations());
-        return extendedData(fetchHints, new JoinIterable<>(vertices, edges));
+        return extendedData(fetchHints, new JoinIterable<Element>(vertices, edges));
     }
 
     public String[] getVertexIds() {

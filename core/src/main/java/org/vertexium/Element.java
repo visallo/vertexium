@@ -145,7 +145,9 @@ public interface Element extends VertexiumObject, ElementLocation {
      * this method.
      *
      * @param property The property to delete.
+     * @deprecated Use {@link org.vertexium.mutation.ElementMutation#deleteProperty(Property)}
      */
+    @Deprecated
     default void deleteProperty(Property property, Authorizations authorizations) {
         deleteProperty(property.getKey(), property.getName(), property.getVisibility(), authorizations);
     }
@@ -156,7 +158,9 @@ public interface Element extends VertexiumObject, ElementLocation {
      *
      * @param key  The property key.
      * @param name The property name.
+     * @deprecated Use {@link org.vertexium.mutation.ExistingElementMutation#deleteProperties(String, String)}
      */
+    @Deprecated
     default void deleteProperty(String key, String name, Authorizations authorizations) {
         deleteProperty(key, name, null, authorizations);
     }
@@ -168,15 +172,21 @@ public interface Element extends VertexiumObject, ElementLocation {
      * @param key        The property key.
      * @param name       The property name.
      * @param visibility The property visibility.
+     * @deprecated Use {@link org.vertexium.mutation.ElementMutation#deleteProperty(String, String, Visibility)}
      */
-    void deleteProperty(String key, String name, Visibility visibility, Authorizations authorizations);
+    @Deprecated
+    default void deleteProperty(String key, String name, Visibility visibility, Authorizations authorizations) {
+        prepareMutation().deleteProperty(key, name, visibility).save(authorizations);
+    }
 
     /**
      * Permanently deletes all properties with the given name that you have access to. Only properties which you have
      * access to will be deleted.
      *
      * @param name The name of the property to delete.
+     * @deprecated Use {@link org.vertexium.mutation.ExistingElementMutation#deleteProperties(String)}
      */
+    @Deprecated
     default void deleteProperties(String name, Authorizations authorizations) {
         for (Property p : getProperties(name)) {
             deleteProperty(p.getKey(), p.getName(), p.getVisibility(), authorizations);
@@ -189,7 +199,9 @@ public interface Element extends VertexiumObject, ElementLocation {
      *
      * @param key  The property key.
      * @param name The property name.
+     * @deprecated Use {@link org.vertexium.mutation.ExistingElementMutation#softDeleteProperties(String, String)}
      */
+    @Deprecated
     default void softDeleteProperty(String key, String name, Authorizations authorizations) {
         softDeleteProperty(key, name, null, authorizations);
     }
@@ -201,7 +213,9 @@ public interface Element extends VertexiumObject, ElementLocation {
      * @param key       The property key.
      * @param name      The property name.
      * @param eventData Data to store with the soft delete
+     * @deprecated Use {@link org.vertexium.mutation.ExistingElementMutation#softDeleteProperties(String, String, Object)}
      */
+    @Deprecated
     default void softDeleteProperty(String key, String name, Object eventData, Authorizations authorizations) {
         softDeleteProperty(key, name, null, eventData, authorizations);
     }
@@ -213,7 +227,9 @@ public interface Element extends VertexiumObject, ElementLocation {
      * @param key        The property key.
      * @param name       The property name.
      * @param visibility The visibility string of the property to soft delete.
+     * @deprecated Use {@link org.vertexium.mutation.ElementMutation#softDeleteProperty(String, String, Visibility)}
      */
+    @Deprecated
     default void softDeleteProperty(String key, String name, Visibility visibility, Authorizations authorizations) {
         softDeleteProperty(key, name, visibility, null, authorizations);
     }
@@ -226,7 +242,9 @@ public interface Element extends VertexiumObject, ElementLocation {
      * @param name       The property name.
      * @param visibility The visibility string of the property to soft delete.
      * @param eventData  Data to store with the soft delete
+     * @deprecated Use {@link org.vertexium.mutation.ElementMutation#softDeleteProperty(String, String, Visibility, Object)}
      */
+    @Deprecated
     void softDeleteProperty(String key, String name, Visibility visibility, Object eventData, Authorizations authorizations);
 
     /**
@@ -234,7 +252,9 @@ public interface Element extends VertexiumObject, ElementLocation {
      * access to will be soft deleted.
      *
      * @param name The name of the property to delete.
+     * @deprecated Use {@link org.vertexium.mutation.ExistingElementMutation#softDeleteProperties(String)}
      */
+    @Deprecated
     default void softDeleteProperties(String name, Authorizations authorizations) {
         softDeleteProperties(name, null, authorizations);
     }
@@ -245,7 +265,9 @@ public interface Element extends VertexiumObject, ElementLocation {
      *
      * @param name      The name of the property to delete.
      * @param eventData Data to store with the soft delete
+     * @deprecated Use {@link org.vertexium.mutation.ExistingElementMutation#softDeleteProperties(String, Object)}
      */
+    @Deprecated
     default void softDeleteProperties(String name, Object eventData, Authorizations authorizations) {
         for (Property property : getProperties(name)) {
             softDeleteProperty(property.getKey(), property.getName(), property.getVisibility(), eventData, authorizations);
@@ -264,7 +286,9 @@ public interface Element extends VertexiumObject, ElementLocation {
      * @param name       The name of the property.
      * @param value      The value of the property.
      * @param visibility The visibility to give this property.
+     * @deprecated Use {@link org.vertexium.mutation.ElementMutation#addPropertyValue(String, String, Object, Visibility)}
      */
+    @Deprecated
     default void addPropertyValue(String key, String name, Object value, Visibility visibility, Authorizations authorizations) {
         prepareMutation().addPropertyValue(key, name, value, visibility).save(authorizations);
     }
@@ -277,7 +301,9 @@ public interface Element extends VertexiumObject, ElementLocation {
      * @param value      The value of the property.
      * @param metadata   The metadata to assign to this property.
      * @param visibility The visibility to give this property.
+     * @deprecated Use {@link org.vertexium.mutation.ElementMutation#addPropertyValue(String, String, Object, Metadata, Visibility)}
      */
+    @Deprecated
     default void addPropertyValue(String key, String name, Object value, Metadata metadata, Visibility visibility, Authorizations authorizations) {
         prepareMutation().addPropertyValue(key, name, value, metadata, visibility).save(authorizations);
     }
@@ -291,7 +317,9 @@ public interface Element extends VertexiumObject, ElementLocation {
      * @param name       The name of the property.
      * @param value      The value of the property.
      * @param visibility The visibility to give this property.
+     * @deprecated Use {@link org.vertexium.mutation.ElementMutation#setProperty(String, Object, Visibility)}
      */
+    @Deprecated
     default void setProperty(String name, Object value, Visibility visibility, Authorizations authorizations) {
         prepareMutation().setProperty(name, value, visibility).save(authorizations);
     }
@@ -306,7 +334,9 @@ public interface Element extends VertexiumObject, ElementLocation {
      * @param value      The value of the property.
      * @param metadata   The metadata to assign to this property.
      * @param visibility The visibility to give this property.
+     * @deprecated Use {@link org.vertexium.mutation.ElementMutation#setProperty(String, Object, Metadata, Visibility)}
      */
+    @Deprecated
     default void setProperty(String name, Object value, Metadata metadata, Visibility visibility, Authorizations authorizations) {
         prepareMutation().setProperty(name, value, metadata, visibility).save(authorizations);
     }
@@ -326,7 +356,9 @@ public interface Element extends VertexiumObject, ElementLocation {
      *                           This visibility can be a superset of the property visibility to mark
      *                           it as hidden for only a subset of authorizations.
      * @param authorizations     The authorizations used.
+     * @deprecated Use {@link org.vertexium.mutation.ElementMutation#markPropertyHidden(String, String, Visibility, Visibility)}
      */
+    @Deprecated
     default void markPropertyHidden(String key, String name, Visibility propertyVisibility, Visibility visibility, Authorizations authorizations) {
         markPropertyHidden(key, name, propertyVisibility, null, visibility, null, authorizations);
     }
@@ -342,7 +374,9 @@ public interface Element extends VertexiumObject, ElementLocation {
      *                           it as hidden for only a subset of authorizations.
      * @param eventData          Data to store with the hidden
      * @param authorizations     The authorizations used.
+     * @deprecated Use {@link org.vertexium.mutation.ElementMutation#markPropertyHidden(String, String, Visibility, Visibility, Object)}
      */
+    @Deprecated
     default void markPropertyHidden(String key, String name, Visibility propertyVisibility, Visibility visibility, Object eventData, Authorizations authorizations) {
         markPropertyHidden(key, name, propertyVisibility, null, visibility, eventData, authorizations);
     }
@@ -358,7 +392,9 @@ public interface Element extends VertexiumObject, ElementLocation {
      *                           This visibility can be a superset of the property visibility to mark
      *                           it as hidden for only a subset of authorizations.
      * @param authorizations     The authorizations used.
+     * @deprecated Use {@link org.vertexium.mutation.ElementMutation#markPropertyHidden(String, String, Visibility, Long, Visibility)}
      */
+    @Deprecated
     default void markPropertyHidden(
         String key,
         String name,
@@ -382,7 +418,9 @@ public interface Element extends VertexiumObject, ElementLocation {
      *                           it as hidden for only a subset of authorizations.
      * @param eventData          Data to store with the hidden
      * @param authorizations     The authorizations used.
+     * @deprecated Use {@link org.vertexium.mutation.ElementMutation#markPropertyHidden(String, String, Visibility, Long, Visibility, Object)}
      */
+    @Deprecated
     default void markPropertyHidden(
         String key,
         String name,
@@ -410,7 +448,9 @@ public interface Element extends VertexiumObject, ElementLocation {
      *                       This visibility can be a superset of the property visibility to mark
      *                       it as hidden for only a subset of authorizations.
      * @param authorizations The authorizations used.
+     * @deprecated Use {@link org.vertexium.mutation.ElementMutation#markPropertyHidden(Property, Visibility)}
      */
+    @Deprecated
     default void markPropertyHidden(Property property, Visibility visibility, Authorizations authorizations) {
         markPropertyHidden(property, null, visibility, null, authorizations);
     }
@@ -424,7 +464,9 @@ public interface Element extends VertexiumObject, ElementLocation {
      *                       it as hidden for only a subset of authorizations.
      * @param eventData      Data to store with the hidden
      * @param authorizations The authorizations used.
+     * @deprecated Use {@link org.vertexium.mutation.ElementMutation#markPropertyHidden(Property, Visibility, Object)}
      */
+    @Deprecated
     default void markPropertyHidden(Property property, Visibility visibility, Object eventData, Authorizations authorizations) {
         markPropertyHidden(property, null, visibility, eventData, authorizations);
     }
@@ -438,7 +480,9 @@ public interface Element extends VertexiumObject, ElementLocation {
      *                       This visibility can be a superset of the property visibility to mark
      *                       it as hidden for only a subset of authorizations.
      * @param authorizations The authorizations used.
+     * @deprecated Use {@link org.vertexium.mutation.ElementMutation#markPropertyHidden(Property, Long, Visibility)}
      */
+    @Deprecated
     default void markPropertyHidden(Property property, Long timestamp, Visibility visibility, Authorizations authorizations) {
         markPropertyHidden(property, timestamp, visibility, null, authorizations);
     }
@@ -452,7 +496,9 @@ public interface Element extends VertexiumObject, ElementLocation {
      *                       This visibility can be a superset of the property visibility to mark
      *                       it as hidden for only a subset of authorizations.
      * @param authorizations The authorizations used.
+     * @deprecated Use {@link org.vertexium.mutation.ElementMutation#markPropertyHidden(Property, Long, Visibility, Object)}
      */
+    @Deprecated
     void markPropertyHidden(Property property, Long timestamp, Visibility visibility, Object data, Authorizations authorizations);
 
     /**
@@ -463,7 +509,9 @@ public interface Element extends VertexiumObject, ElementLocation {
      * @param propertyVisibility The visibility of the property.
      * @param visibility         The visibility string under which this property is now visible.
      * @param authorizations     The authorizations used.
+     * @deprecated Use {@link org.vertexium.mutation.ElementMutation#markPropertyVisible(String, String, Visibility, Visibility)}
      */
+    @Deprecated
     default void markPropertyVisible(String key, String name, Visibility propertyVisibility, Visibility visibility, Authorizations authorizations) {
         markPropertyVisible(key, name, propertyVisibility, null, visibility, null, authorizations);
     }
@@ -477,7 +525,9 @@ public interface Element extends VertexiumObject, ElementLocation {
      * @param visibility         The visibility string under which this property is now visible.
      * @param eventData          Data to store with the visible
      * @param authorizations     The authorizations used.
+     * @deprecated Use {@link org.vertexium.mutation.ElementMutation#markPropertyVisible(String, String, Visibility, Visibility, Object)}
      */
+    @Deprecated
     default void markPropertyVisible(String key, String name, Visibility propertyVisibility, Visibility visibility, Object eventData, Authorizations authorizations) {
         markPropertyVisible(key, name, propertyVisibility, null, visibility, eventData, authorizations);
     }
@@ -491,7 +541,9 @@ public interface Element extends VertexiumObject, ElementLocation {
      * @param timestamp          The timestamp.
      * @param visibility         The visibility string under which this property is now visible.
      * @param authorizations     The authorizations used.
+     * @deprecated Use {@link org.vertexium.mutation.ElementMutation#markPropertyVisible(String, String, Visibility, Long, Visibility)}
      */
+    @Deprecated
     default void markPropertyVisible(
         String key,
         String name,
@@ -513,7 +565,9 @@ public interface Element extends VertexiumObject, ElementLocation {
      * @param visibility         The visibility string under which this property is now visible.
      * @param eventData          Data to store with the visible
      * @param authorizations     The authorizations used.
+     * @deprecated Use {@link org.vertexium.mutation.ElementMutation#markPropertyVisible(String, String, Visibility, Long, Visibility, Object)}
      */
+    @Deprecated
     default void markPropertyVisible(
         String key,
         String name,
@@ -539,7 +593,9 @@ public interface Element extends VertexiumObject, ElementLocation {
      * @param property       The property.
      * @param visibility     The visibility string under which this property is now visible.
      * @param authorizations The authorizations used.
+     * @deprecated Use {@link org.vertexium.mutation.ElementMutation#markPropertyVisible(Property, Visibility)}
      */
+    @Deprecated
     default void markPropertyVisible(Property property, Visibility visibility, Authorizations authorizations) {
         markPropertyVisible(property, null, visibility, null, authorizations);
     }
@@ -551,7 +607,9 @@ public interface Element extends VertexiumObject, ElementLocation {
      * @param visibility     The visibility string under which this property is now visible.
      * @param eventData      Data to store with the visible
      * @param authorizations The authorizations used.
+     * @deprecated Use {@link org.vertexium.mutation.ElementMutation#markPropertyVisible(Property, Visibility, Object)}
      */
+    @Deprecated
     default void markPropertyVisible(Property property, Visibility visibility, Object eventData, Authorizations authorizations) {
         markPropertyVisible(property, null, visibility, eventData, authorizations);
     }
@@ -563,7 +621,9 @@ public interface Element extends VertexiumObject, ElementLocation {
      * @param timestamp      The timestamp.
      * @param visibility     The visibility string under which this property is now visible.
      * @param authorizations The authorizations used.
+     * @deprecated Use {@link org.vertexium.mutation.ElementMutation#markPropertyVisible(Property, Long, Visibility)}
      */
+    @Deprecated
     default void markPropertyVisible(Property property, Long timestamp, Visibility visibility, Authorizations authorizations) {
         markPropertyVisible(property, timestamp, visibility, null, authorizations);
     }
@@ -576,8 +636,12 @@ public interface Element extends VertexiumObject, ElementLocation {
      * @param visibility     The visibility string under which this property is now visible.
      * @param eventData      Data to store with the visible
      * @param authorizations The authorizations used.
+     * @deprecated Use {@link org.vertexium.mutation.ElementMutation#markPropertyVisible(Property, Long, Visibility, Object)}
      */
-    void markPropertyVisible(Property property, Long timestamp, Visibility visibility, Object eventData, Authorizations authorizations);
+    @Deprecated
+    default void markPropertyVisible(Property property, Long timestamp, Visibility visibility, Object eventData, Authorizations authorizations) {
+        prepareMutation().markPropertyVisible(property, timestamp, visibility, eventData).save(authorizations);
+    }
 
     /**
      * Given the supplied authorizations is this element hidden?

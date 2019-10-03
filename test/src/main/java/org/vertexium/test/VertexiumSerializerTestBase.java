@@ -278,7 +278,7 @@ public abstract class VertexiumSerializerTestBase {
     protected abstract byte[] getGeoPolygonBytes();
 
     protected <T> void testValue(T value, byte[] bytes, TestValueCallback<T> fn) {
-        SerializableObject serializableObject = new SerializableObject<T>();
+        SerializableObject<T> serializableObject = new SerializableObject<>();
         serializableObject.a_start = "START";
         serializableObject.b_value = value;
         serializableObject.z_end = "END";

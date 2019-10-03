@@ -37,8 +37,8 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public QueryResultsIterable<Vertex> vertices(FetchHints fetchHints) {
-        //noinspection unchecked
         return (QueryResultsIterable<Vertex>) search(EnumSet.of(VertexiumObjectType.VERTEX), fetchHints);
     }
 
@@ -59,8 +59,8 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public QueryResultsIterable<Edge> edges(FetchHints fetchHints) {
-        //noinspection unchecked
         return (QueryResultsIterable<Edge>) search(EnumSet.of(VertexiumObjectType.EDGE), fetchHints);
     }
 
@@ -81,8 +81,8 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public QueryResultsIterable<ExtendedDataRow> extendedDataRows(FetchHints fetchHints) {
-        //noinspection unchecked
         return (QueryResultsIterable<ExtendedDataRow>) search(EnumSet.of(VertexiumObjectType.EXTENDED_DATA), fetchHints);
     }
 
@@ -244,8 +244,8 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public QueryResultsIterable<Element> elements(FetchHints fetchHints) {
-        //noinspection unchecked
         return (QueryResultsIterable<Element>) search(VertexiumObjectType.ELEMENTS, fetchHints);
     }
 

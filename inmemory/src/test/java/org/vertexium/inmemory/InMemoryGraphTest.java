@@ -63,6 +63,7 @@ public class InMemoryGraphTest extends GraphTestBase {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     public void testStrictTyping() {
         Map<String, String> config = createConfig();
         config.put(GraphConfiguration.STRICT_TYPING, "true");
@@ -70,10 +71,13 @@ public class InMemoryGraphTest extends GraphTestBase {
 
         g.defineProperty("prop1").dataType(String.class).define();
 
-        Vertex v = g.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
-        v.addPropertyValue("k1", "prop1", "value1", VISIBILITY_A, AUTHORIZATIONS_A);
+        Vertex v = g.prepareVertex("v1", VISIBILITY_A)
+            .addPropertyValue("k1", "prop1", "value1", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
         try {
-            v.addPropertyValue("k1", "prop2", "value1", VISIBILITY_A, AUTHORIZATIONS_A);
+            v.prepareMutation()
+                .addPropertyValue("k1", "prop2", "value1", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
             throw new RuntimeException("Expected a type exception");
         } catch (VertexiumTypeException ex) {
             assertEquals("prop2", ex.getName());

@@ -20,6 +20,8 @@ public abstract class ExistingElementMutationImpl<T extends Element> implements 
     private final List<AdditionalVisibilityDeleteMutation> additionalVisibilityDeleteMutations = new ArrayList<>();
     private final List<AdditionalExtendedDataVisibilityAddMutation> additionalExtendedDataVisibilities = new ArrayList<>();
     private final List<AdditionalExtendedDataVisibilityDeleteMutation> additionalExtendedDataVisibilityDeletes = new ArrayList<>();
+    private final List<MarkPropertyHiddenMutation> markPropertyHiddenMutations = new ArrayList<>();
+    private final List<MarkPropertyVisibleMutation> markPropertyVisibleMutations = new ArrayList<>();
     private final T element;
     private Visibility newElementVisibility;
     private Object newElementVisibilityData;
@@ -310,6 +312,32 @@ public abstract class ExistingElementMutationImpl<T extends Element> implements 
     }
 
     @Override
+    public ElementMutation<T> markPropertyHidden(
+        String key,
+        String name,
+        Visibility propertyVisibility,
+        Long timestamp,
+        Visibility visibility,
+        Object eventData
+    ) {
+        markPropertyHiddenMutations.add(new MarkPropertyHiddenMutation(key, name, propertyVisibility, timestamp, visibility, eventData));
+        return this;
+    }
+
+    @Override
+    public ElementMutation<T> markPropertyVisible(
+        String key,
+        String name,
+        Visibility propertyVisibility,
+        Long timestamp,
+        Visibility visibility,
+        Object eventData
+    ) {
+        markPropertyVisibleMutations.add(new MarkPropertyVisibleMutation(key, name, propertyVisibility, timestamp, visibility, eventData));
+        return this;
+    }
+
+    @Override
     public T getElement() {
         return element;
     }
@@ -365,6 +393,16 @@ public abstract class ExistingElementMutationImpl<T extends Element> implements 
     }
 
     @Override
+    public List<MarkPropertyHiddenMutation> getMarkPropertyHiddenMutations() {
+        return markPropertyHiddenMutations;
+    }
+
+    @Override
+    public List<MarkPropertyVisibleMutation> getMarkPropertyVisibleMutations() {
+        return markPropertyVisibleMutations;
+    }
+
+    @Override
     public ElementMutation<T> setIndexHint(IndexHint indexHint) {
         this.indexHint = indexHint;
         return this;
@@ -401,6 +439,14 @@ public abstract class ExistingElementMutationImpl<T extends Element> implements 
         }
 
         if (extendedDataDeletes.size() > 0) {
+            return true;
+        }
+
+        if (markPropertyHiddenMutations.size() > 0) {
+            return true;
+        }
+
+        if (markPropertyVisibleMutations.size() > 0) {
             return true;
         }
 

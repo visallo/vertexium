@@ -392,6 +392,7 @@ public class HistoricalEventsIteratorConverter {
         return results;
     }
 
+    @SuppressWarnings("unchecked")
     private static Object valueToObject(
         AccumuloGraph graph,
         ElementType elementType,
@@ -404,7 +405,6 @@ public class HistoricalEventsIteratorConverter {
         }
         Object propertyValue = graph.getVertexiumSerializer().bytesToObject(elementType, elementId, value.get());
         if (propertyValue instanceof StreamingPropertyValueRef) {
-            //noinspection unchecked
             propertyValue = ((StreamingPropertyValueRef) propertyValue).toStreamingPropertyValue(graph, timestamp);
         }
         return propertyValue;

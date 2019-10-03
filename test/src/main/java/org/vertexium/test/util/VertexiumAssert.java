@@ -122,6 +122,7 @@ public class VertexiumAssert {
         graphEvents.clear();
     }
 
+    @SuppressWarnings("unchecked")
     public static <T> void assertSet(Set<T> set, T... values) {
         assertEquals("size mismatch", values.length, set.size());
         for (T value : values) {

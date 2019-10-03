@@ -48,16 +48,6 @@ public abstract class GraphBase implements Graph {
     }
 
     @Override
-    public Vertex addVertex(Visibility visibility, Authorizations authorizations) {
-        return prepareVertex(visibility).save(authorizations);
-    }
-
-    @Override
-    public Vertex addVertex(String vertexId, Visibility visibility, Authorizations authorizations) {
-        return prepareVertex(vertexId, visibility).save(authorizations);
-    }
-
-    @Override
     public Iterable<Vertex> addVertices(Iterable<ElementBuilder<Vertex>> vertices, Authorizations authorizations) {
         List<Vertex> addedVertices = new ArrayList<>();
         for (ElementBuilder<Vertex> vertexBuilder : vertices) {
@@ -222,26 +212,6 @@ public abstract class GraphBase implements Graph {
 
     @Override
     public abstract Iterable<Vertex> getVertices(FetchHints fetchHints, Long endTime, Authorizations authorizations);
-
-    @Override
-    public Edge addEdge(Vertex outVertex, Vertex inVertex, String label, Visibility visibility, Authorizations authorizations) {
-        return prepareEdge(outVertex, inVertex, label, visibility).save(authorizations);
-    }
-
-    @Override
-    public Edge addEdge(String edgeId, Vertex outVertex, Vertex inVertex, String label, Visibility visibility, Authorizations authorizations) {
-        return prepareEdge(edgeId, outVertex, inVertex, label, visibility).save(authorizations);
-    }
-
-    @Override
-    public Edge addEdge(String outVertexId, String inVertexId, String label, Visibility visibility, Authorizations authorizations) {
-        return prepareEdge(outVertexId, inVertexId, label, visibility).save(authorizations);
-    }
-
-    @Override
-    public Edge addEdge(String edgeId, String outVertexId, String inVertexId, String label, Visibility visibility, Authorizations authorizations) {
-        return prepareEdge(edgeId, outVertexId, inVertexId, label, visibility).save(authorizations);
-    }
 
     @Override
     public EdgeBuilderByVertexId prepareEdge(String outVertexId, String inVertexId, String label, Visibility visibility) {
@@ -1066,7 +1036,7 @@ public abstract class GraphBase implements Graph {
     }
 
     protected Iterable<ExtendedDataRow> getAllExtendedData(FetchHints fetchHints, Authorizations authorizations) {
-        JoinIterable<Element> allElements = new JoinIterable<>(getVertices(fetchHints, authorizations), getEdges(fetchHints, authorizations));
+        JoinIterable<Element> allElements = new JoinIterable<Element>(getVertices(fetchHints, authorizations), getEdges(fetchHints, authorizations));
         return new SelectManyIterable<Element, ExtendedDataRow>(allElements) {
             @Override
             protected Iterable<? extends ExtendedDataRow> getIterable(Element element) {
@@ -1104,22 +1074,26 @@ public abstract class GraphBase implements Graph {
     }
 
     @Override
+    @Deprecated
     public void visitElements(GraphVisitor graphVisitor, Authorizations authorizations) {
         visitVertices(graphVisitor, authorizations);
         visitEdges(graphVisitor, authorizations);
     }
 
     @Override
+    @Deprecated
     public void visitVertices(GraphVisitor graphVisitor, Authorizations authorizations) {
         visit(getVertices(authorizations), graphVisitor);
     }
 
     @Override
+    @Deprecated
     public void visitEdges(GraphVisitor graphVisitor, Authorizations authorizations) {
         visit(getEdges(authorizations), graphVisitor);
     }
 
     @Override
+    @Deprecated
     public void visit(Iterable<? extends Element> elements, GraphVisitor visitor) {
         int i = 0;
         for (Element element : elements) {

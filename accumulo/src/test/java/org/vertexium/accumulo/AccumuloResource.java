@@ -1,7 +1,5 @@
 package org.vertexium.accumulo;
 
-import org.apache.accumulo.core.client.AccumuloException;
-import org.apache.accumulo.core.client.AccumuloSecurityException;
 import org.apache.accumulo.core.client.Connector;
 import org.apache.accumulo.core.security.Authorizations;
 import org.apache.accumulo.minicluster.MiniAccumuloCluster;
@@ -126,7 +124,8 @@ public class AccumuloResource extends ExternalResource {
         return configMap;
     }
 
-    public Connector createConnector() throws AccumuloSecurityException, AccumuloException {
+    @SuppressWarnings("unchecked")
+    public Connector createConnector() {
         return new AccumuloGraphConfiguration(createConfig()).createConnector();
     }
 

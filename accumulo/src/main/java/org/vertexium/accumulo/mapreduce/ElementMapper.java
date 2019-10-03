@@ -12,6 +12,7 @@ import org.vertexium.util.IncreasingTime;
 
 import java.io.IOException;
 
+@Deprecated
 public abstract class ElementMapper<KEYIN, VALUEIN, KEYOUT, VALUEOUT> extends Mapper<KEYIN, VALUEIN, KEYOUT, VALUEOUT> {
     public static final String GRAPH_CONFIG_PREFIX = "graphConfigPrefix";
     private ElementMutationBuilder elementMutationBuilder;

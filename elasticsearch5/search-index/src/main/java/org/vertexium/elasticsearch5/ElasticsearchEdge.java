@@ -3,6 +3,7 @@ package org.vertexium.elasticsearch5;
 import org.vertexium.*;
 import org.vertexium.mutation.ExistingEdgeMutation;
 
+@SuppressWarnings("unchecked")
 public class ElasticsearchEdge extends ElasticsearchElement implements Edge {
     private String label;
     private String inVertexId;

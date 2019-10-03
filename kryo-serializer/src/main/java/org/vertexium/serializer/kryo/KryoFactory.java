@@ -85,6 +85,7 @@ public class KryoFactory {
         }
 
         @Override
+        @SuppressWarnings("unchecked")
         public Object read(Kryo kryo, Input input, Class<Object> type) {
             OldGeoPoint old = (OldGeoPoint) defaultSerializer.read(kryo, input, type);
             return new GeoPoint(old.latitude, old.longitude, old.altitude, old.description);

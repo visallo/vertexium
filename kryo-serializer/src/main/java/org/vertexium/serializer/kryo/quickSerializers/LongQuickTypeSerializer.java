@@ -22,6 +22,7 @@ public class LongQuickTypeSerializer implements QuickTypeSerializer {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public <T> T valueToObject(byte[] data) {
         long l = ((((long) data[1]) << 56)
             | (((long) data[2] & 0xff) << 48)

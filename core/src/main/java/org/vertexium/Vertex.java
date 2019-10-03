@@ -3,6 +3,7 @@ package org.vertexium;
 import org.vertexium.mutation.ExistingElementMutation;
 import org.vertexium.query.VertexQuery;
 
+@SuppressWarnings("unchecked")
 public interface Vertex extends Element {
     /**
      * Gets all edges attached to this vertex.
@@ -390,6 +391,7 @@ public interface Vertex extends Element {
      *
      * @return The mutation builder.
      */
+    @Override
     ExistingElementMutation<Vertex> prepareMutation();
 
     /**

@@ -76,6 +76,7 @@ public class VertexiumQueryStringQueryBuilder extends QueryStringQueryBuilder {
         throw new RuntimeException("not implemented");
     }
 
+    @SuppressWarnings("unchecked")
     protected FieldNameToVisibilityMap getFieldNameToVisibilityMap(QueryShardContext context) {
         try {
             Map<String, String> results = new HashMap<>();
@@ -90,7 +91,6 @@ public class VertexiumQueryStringQueryBuilder extends QueryStringQueryBuilder {
                 if (elementMetadata == null) {
                     continue;
                 }
-                //noinspection unchecked
                 Map<String, Map<String, String>> meta = (Map<String, Map<String, String>>) elementMetadata.getSourceAsMap().get("_meta");
                 if (meta == null) {
                     continue;

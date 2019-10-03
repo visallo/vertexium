@@ -1,9 +1,10 @@
 package org.vertexium.serializer.kryo.quickSerializers;
 
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 public class StringQuickTypeSerializer implements QuickTypeSerializer {
-    private Charset charset = Charset.forName("utf8");
+    private Charset charset = StandardCharsets.UTF_8;
 
     @Override
     public byte[] objectToBytes(Object value) {
@@ -15,6 +16,7 @@ public class StringQuickTypeSerializer implements QuickTypeSerializer {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public <T> T valueToObject(byte[] data) {
         return (T) new String(data, 1, data.length - 1, charset);
     }

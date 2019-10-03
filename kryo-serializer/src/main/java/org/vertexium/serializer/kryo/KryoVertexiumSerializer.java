@@ -24,6 +24,7 @@ public class KryoVertexiumSerializer implements VertexiumSerializer {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public <T> T bytesToObject(byte[] bytes) {
         if (bytes == null || bytes.length == 0) {
             return null;

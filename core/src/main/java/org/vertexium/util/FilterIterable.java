@@ -15,6 +15,7 @@ public abstract class FilterIterable<T> extends LookAheadIterable<T, T> implemen
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     protected Iterator<T> createIterator() {
         return (Iterator<T>) this.iterable.iterator();
     }

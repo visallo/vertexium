@@ -19,6 +19,7 @@ public class CypherLiteral<T> extends CypherAstBase implements Comparable {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public int compareTo(Object o) {
         if (!(getValue() instanceof Comparable)) {
             throw new VertexiumException("Literal value is not comparable (type: " + getValue().getClass().getName() + ")");
@@ -69,6 +70,7 @@ public class CypherLiteral<T> extends CypherAstBase implements Comparable {
         return Stream.of();
     }
 
+    @SuppressWarnings("unchecked")
     public static Object toJava(Object value) {
         if (value instanceof Iterable) {
             value = stream((Iterable<Object>) value)

@@ -4,6 +4,13 @@
 * Fixed: Soft delete with event data cannot be un-soft deleted
 * Changed: Elasticsearch to use bulk updates
 * Changed: EdgeVertexPairs can now have null vertex ids if user can see the edge but not the vertex
+* Deprecated: the following methods have been deprecated in favor of methods on mutations.
+  - Graph.addVertex
+  - Graph.addEdge
+  - Element.deleteProperty
+  - Element.setProperty
+  - Element.markPropertyHidden
+  - Element.markPropertyVisible
 
 # v4.7.1
 * Added: Compare.RANGE to query

@@ -10,6 +10,7 @@ import static java.util.Collections.singletonList;
 
 public class VertexiumElasticsearchPlugin extends Plugin implements SearchPlugin {
     @Override
+    @SuppressWarnings("unchecked")
     public List<QuerySpec<?>> getQueries() {
         return singletonList(new QuerySpec<>(
             VertexiumQueryStringQueryBuilder.NAME,

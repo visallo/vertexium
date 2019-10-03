@@ -10,6 +10,7 @@ public class ArrayIterable<T> implements Iterable<T> {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public Iterator<T> iterator() {
         return new ArrayIterator(this.items);
     }

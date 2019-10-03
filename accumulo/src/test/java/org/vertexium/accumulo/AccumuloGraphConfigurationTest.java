@@ -15,8 +15,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 @RunWith(JUnit4.class)
 public class AccumuloGraphConfigurationTest {
-
     @Test
+    @SuppressWarnings("unchecked")
     public void testBatchWriterConfigUsesDefaultWithNoParameters() {
         Map configMap = Maps.newHashMap();
         AccumuloGraphConfiguration accumuloGraphConfiguration = new AccumuloGraphConfiguration(configMap);
@@ -29,6 +29,7 @@ public class AccumuloGraphConfigurationTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     public void testBatchWriterConfigIsSetToValuesWithParameters() {
         int numThreads = 2;
         long timeout = 3;

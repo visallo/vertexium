@@ -21,6 +21,7 @@ public class AccumuloGraphLogger {
         this.queryLogger = queryLogger;
     }
 
+    @SuppressWarnings("unchecked")
     public void logStartIterator(String table, ScannerBase scanner) {
         if (!queryLogger.isTraceEnabled()) {
             return;

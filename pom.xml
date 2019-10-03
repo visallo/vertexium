@@ -53,7 +53,6 @@
     </developers>
 
     <properties>
-        <java.compiler.showWarnings>true</java.compiler.showWarnings>
         <java.source.version>1.8</java.source.version>
         <java.target.version>1.8</java.target.version>
         <java.release.version>1.8</java.release.version>
@@ -236,7 +235,14 @@
                 <configuration>
                     <source>${java.source.version}</source>
                     <target>${java.target.version}</target>
-                    <showWarnings>${java.compiler.showWarnings}</showWarnings>
+                    <showWarnings>true</showWarnings>
+                    <failOnWarning>true</failOnWarning>
+                    <!-- Maven doesn't detect deprecation warnings without this set to true -->
+                    <showDeprecation>true</showDeprecation>
+                    <compilerArgs>
+                        <!-- Maven doesn't detect unchecked warnings without this lint argument -->
+                        <arg>-Xlint:unchecked</arg>
+                    </compilerArgs>
                 </configuration>
             </plugin>
             <plugin>
