@@ -20,6 +20,7 @@ public class ObjectUtils {
         return compare(leftObj, rightObj) == 0;
     }
 
+    @SuppressWarnings("unchecked")
     public static int compare(Object leftObj, Object rightObj) {
         if (leftObj == null && rightObj == null) {
             return 0;

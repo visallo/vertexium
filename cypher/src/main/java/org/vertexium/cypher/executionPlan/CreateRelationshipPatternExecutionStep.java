@@ -16,6 +16,7 @@ public class CreateRelationshipPatternExecutionStep extends CreateElementPattern
     private final String leftNodeName;
     private final String rightNodeName;
 
+    @SuppressWarnings("unchecked")
     public CreateRelationshipPatternExecutionStep(
         String name,
         List<String> relTypeNames,

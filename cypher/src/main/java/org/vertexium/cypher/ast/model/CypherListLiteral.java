@@ -67,6 +67,7 @@ public class CypherListLiteral<TItem> extends CypherLiteral<List<TItem>> impleme
         return stream().map(o -> o == null ? "null" : o.toString()).collect(Collectors.joining(delimiter));
     }
 
+    @SuppressWarnings("unchecked")
     public static <T> CypherListLiteral<T> of(T... items) {
         return new CypherListLiteral<>(Lists.newArrayList(items));
     }

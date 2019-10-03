@@ -503,6 +503,15 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
             addExistingValuesToFieldMap(graph, element, p.getName(), p.getVisibility(), fieldsToSet));
         mutation.getPropertySoftDeletes().forEach(p ->
             addExistingValuesToFieldMap(graph, element, p.getName(), p.getVisibility(), fieldsToSet));
+        mutation.getMarkPropertyHiddenMutations().forEach(p -> {
+            String hiddenVisibilityPropertyName = addVisibilityToPropertyName(graph, HIDDEN_PROPERTY_FIELD_NAME, p.getVisibility());
+            String indexName = getIndexName(mutation);
+            if (!isPropertyInIndex(graph, HIDDEN_PROPERTY_FIELD_NAME, p.getVisibility())) {
+                IndexInfo indexInfo = ensureIndexCreatedAndInitialized(indexName);
+                addPropertyToIndex(graph, indexInfo, hiddenVisibilityPropertyName, p.getVisibility(), Boolean.class, false, false, false);
+            }
+            fieldsToSet.put(hiddenVisibilityPropertyName, true);
+        });
 
         return fieldsToSet;
     }
@@ -527,6 +536,12 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
         List<String> fieldsToRemove = new ArrayList<>();
         mutation.getPropertyDeletes().forEach(p -> fieldsToRemove.addAll(getFieldsToRemove(graph, p.getName(), p.getVisibility())));
         mutation.getPropertySoftDeletes().forEach(p -> fieldsToRemove.addAll(getFieldsToRemove(graph, p.getName(), p.getVisibility())));
+        mutation.getMarkPropertyVisibleMutations().forEach(p -> {
+            String hiddenVisibilityPropertyName = addVisibilityToPropertyName(graph, HIDDEN_PROPERTY_FIELD_NAME, p.getVisibility());
+            if (isPropertyInIndex(graph, HIDDEN_PROPERTY_FIELD_NAME, p.getVisibility())) {
+                fieldsToRemove.add(hiddenVisibilityPropertyName);
+            }
+        });
         return fieldsToRemove;
     }
 
@@ -1744,6 +1759,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
         }
     }
 
+    @SuppressWarnings("unchecked")
     private void updateMetadata(Graph graph, IndexInfo indexInfo) {
         try {
             indexRefreshTracker.refresh(client, indexInfo.getIndexName());
@@ -1764,7 +1780,6 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
 
             mapping = mapping.startObject("_meta")
                 .startObject("vertexium");
-            //noinspection unchecked
             Map<String, Object> properties = (Map<String, Object>) existingElementData.get("properties");
             for (String propertyName : properties.keySet()) {
                 ElasticsearchPropertyNameInfo p = ElasticsearchPropertyNameInfo.parse(graph, propertyNameVisibilitiesStore, propertyName);

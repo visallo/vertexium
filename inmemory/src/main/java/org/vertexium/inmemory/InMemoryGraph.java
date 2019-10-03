@@ -244,6 +244,7 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
     }
 
     @Override
+    @SuppressWarnings("deprecation")
     public void softDeleteVertex(Vertex vertex, Long timestamp, Object eventData, Authorizations authorizations) {
         if (!((InMemoryVertex) vertex).canRead(authorizations)) {
             return;
@@ -408,6 +409,7 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
         };
     }
 
+    @SuppressWarnings("unchecked")
     private Edge savePreparedEdge(final EdgeBuilderBase edgeBuilder, final String outVertexId, final String inVertexId, Long timestamp, Authorizations authorizations) {
         if (timestamp == null) {
             timestamp = IncreasingTime.currentTimeMillis();

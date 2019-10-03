@@ -18,6 +18,7 @@ import org.vertexium.property.StreamingPropertyValue;
 import org.vertexium.property.StreamingPropertyValueRef;
 import org.vertexium.util.ArrayUtils;
 import org.vertexium.util.ExtendedDataMutationUtils;
+import org.vertexium.util.IncreasingTime;
 import org.vertexium.util.Preconditions;
 
 import java.util.ArrayList;
@@ -167,8 +168,56 @@ public abstract class ElementMutationBuilder {
         for (AdditionalVisibilityDeleteMutation additionalVisibilityDelete : elementBuilder.getAdditionalVisibilityDeletes()) {
             addAdditionalVisibilityDeleteToMutation(m, additionalVisibilityDelete);
         }
+        for (MarkPropertyHiddenMutation markPropertyHidden : elementBuilder.getMarkPropertyHiddenMutations()) {
+            addMarkPropertyHiddenToMutation(m, markPropertyHidden);
+        }
+        for (MarkPropertyVisibleMutation markPropertyVisible : elementBuilder.getMarkPropertyVisibleMutations()) {
+            addMarkPropertyVisibleToMutation(m, markPropertyVisible);
+        }
         Iterable<ExtendedDataMutation> extendedData = elementBuilder.getExtendedData();
         saveExtendedDataMarkers(m, extendedData);
+    }
+
+    public void addMarkPropertyVisibleToMutation(Mutation m, MarkPropertyVisibleMutation markPropertyVisible) {
+        Long timestamp = markPropertyVisible.getTimestamp();
+        if (timestamp == null) {
+            timestamp = IncreasingTime.currentTimeMillis();
+        }
+        Text columnQualifier = KeyHelper.getColumnQualifierFromPropertyHiddenColumnQualifier(
+            markPropertyVisible.getPropertyKey(),
+            markPropertyVisible.getPropertyName(),
+            markPropertyVisible.getPropertyVisibility().toString(),
+            getNameSubstitutionStrategy()
+        );
+        ColumnVisibility columnVisibility = visibilityToAccumuloVisibility(markPropertyVisible.getVisibility());
+        m.put(
+            AccumuloElement.CF_PROPERTY_HIDDEN,
+            columnQualifier,
+            columnVisibility,
+            timestamp,
+            toHiddenDeletedValue(markPropertyVisible.getEventData())
+        );
+    }
+
+    public void addMarkPropertyHiddenToMutation(Mutation m, MarkPropertyHiddenMutation markPropertyHidden) {
+        Long timestamp = markPropertyHidden.getTimestamp();
+        if (timestamp == null) {
+            timestamp = IncreasingTime.currentTimeMillis();
+        }
+        Text columnQualifier = KeyHelper.getColumnQualifierFromPropertyHiddenColumnQualifier(
+            markPropertyHidden.getPropertyKey(),
+            markPropertyHidden.getPropertyName(),
+            markPropertyHidden.getPropertyVisibility().toString(),
+            getNameSubstitutionStrategy()
+        );
+        ColumnVisibility columnVisibility = visibilityToAccumuloVisibility(markPropertyHidden.getVisibility());
+        m.put(
+            AccumuloElement.CF_PROPERTY_HIDDEN,
+            columnQualifier,
+            columnVisibility,
+            timestamp,
+            toHiddenValue(markPropertyHidden.getEventData())
+        );
     }
 
     public void saveExtendedDataMarkers(

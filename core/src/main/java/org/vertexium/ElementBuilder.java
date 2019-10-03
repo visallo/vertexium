@@ -23,6 +23,8 @@ public abstract class ElementBuilder<T extends Element> implements ElementMutati
     private final List<AdditionalVisibilityDeleteMutation> additionalVisibilityDeletes = new ArrayList<>();
     private final List<AdditionalExtendedDataVisibilityAddMutation> additionalExtendedDataVisibilities = new ArrayList<>();
     private final List<AdditionalExtendedDataVisibilityDeleteMutation> additionalExtendedDataVisibilityDeletes = new ArrayList<>();
+    private final List<MarkPropertyHiddenMutation> markPropertyHiddenMutations = new ArrayList<>();
+    private final List<MarkPropertyVisibleMutation> markPropertyVisibleMutations = new ArrayList<>();
     private final ElementType elementType;
     private final String elementId;
     private final Visibility elementVisibility;
@@ -257,6 +259,32 @@ public abstract class ElementBuilder<T extends Element> implements ElementMutati
         return this;
     }
 
+    @Override
+    public ElementMutation<T> markPropertyHidden(
+        String key,
+        String name,
+        Visibility propertyVisibility,
+        Long timestamp,
+        Visibility visibility,
+        Object eventData
+    ) {
+        markPropertyHiddenMutations.add(new MarkPropertyHiddenMutation(key, name, propertyVisibility, timestamp, visibility, eventData));
+        return this;
+    }
+
+    @Override
+    public ElementMutation<T> markPropertyVisible(
+        String key,
+        String name,
+        Visibility propertyVisibility,
+        Long timestamp,
+        Visibility visibility,
+        Object eventData
+    ) {
+        markPropertyVisibleMutations.add(new MarkPropertyVisibleMutation(key, name, propertyVisibility, timestamp, visibility, eventData));
+        return this;
+    }
+
     /**
      * saves the element to the graph.
      *
@@ -309,6 +337,16 @@ public abstract class ElementBuilder<T extends Element> implements ElementMutati
         return additionalExtendedDataVisibilityDeletes;
     }
 
+    @Override
+    public List<MarkPropertyHiddenMutation> getMarkPropertyHiddenMutations() {
+        return markPropertyHiddenMutations;
+    }
+
+    @Override
+    public List<MarkPropertyVisibleMutation> getMarkPropertyVisibleMutations() {
+        return markPropertyVisibleMutations;
+    }
+
     public Set<String> getAdditionalVisibilitiesAsStringSet() {
         Set<String> results = getAdditionalVisibilities().stream()
             .map(AdditionalVisibilityAddMutation::getAdditionalVisibility)
@@ -357,6 +395,14 @@ public abstract class ElementBuilder<T extends Element> implements ElementMutati
         }
 
         if (extendedDataDeletes.size() > 0) {
+            return true;
+        }
+
+        if (markPropertyHiddenMutations.size() > 0) {
+            return true;
+        }
+
+        if (markPropertyVisibleMutations.size() > 0) {
             return true;
         }
 

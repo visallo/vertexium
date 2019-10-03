@@ -47,18 +47,20 @@ public abstract class InMemoryTableElement<TElement extends InMemoryElement> imp
         return findFirstMutation(ElementTimestampMutation.class).getTimestamp();
     }
 
+    @SuppressWarnings("unchecked")
     protected <T extends Mutation> T findLastMutation(Class<T> clazz) {
         List<Mutation> filteredMutations = getFilteredMutations(m -> clazz.isAssignableFrom(m.getClass()));
-        //noinspection unchecked
         return filteredMutations.isEmpty() ? null : (T) filteredMutations.get(filteredMutations.size() - 1);
     }
 
+    @SuppressWarnings("unchecked")
     protected <T extends Mutation> T findFirstMutation(Class<T> clazz) {
         List<Mutation> filteredMutations = getFilteredMutations(m -> clazz.isAssignableFrom(m.getClass()));
         //noinspection unchecked
         return filteredMutations.isEmpty() ? null : (T) filteredMutations.get(0);
     }
 
+    @SuppressWarnings("unchecked")
     protected <T extends Mutation> Iterable<T> findMutations(Class<T> clazz) {
         //noinspection unchecked
         return (Iterable<T>) getFilteredMutations(m -> clazz.isAssignableFrom(m.getClass()));
@@ -106,6 +108,7 @@ public abstract class InMemoryTableElement<TElement extends InMemoryElement> imp
         }
     }
 
+    @SuppressWarnings("unchecked")
     public Stream<HistoricalEvent> getHistoricalEvents(
         InMemoryGraph graph,
         HistoricalEventId after,
@@ -163,7 +166,6 @@ public abstract class InMemoryTableElement<TElement extends InMemoryElement> imp
                 if (historicalEventsFetchHints.isIncludePropertyValues()) {
                     value = addPropertyValueMutation.getValue();
                     if (value instanceof StreamingPropertyValueRef) {
-                        //noinspection unchecked
                         value = ((StreamingPropertyValueRef) value).toStreamingPropertyValue(graph, timestamp);
                     }
                 } else {

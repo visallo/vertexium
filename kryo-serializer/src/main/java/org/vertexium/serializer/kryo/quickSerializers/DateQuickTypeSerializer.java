@@ -12,6 +12,7 @@ public class DateQuickTypeSerializer implements QuickTypeSerializer {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public <T> T valueToObject(byte[] data) {
         return (T) new Date((long) longQuickTypeSerializer.valueToObject(data));
     }

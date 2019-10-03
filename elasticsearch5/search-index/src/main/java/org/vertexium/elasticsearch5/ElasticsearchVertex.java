@@ -4,6 +4,7 @@ import org.vertexium.*;
 import org.vertexium.mutation.ExistingElementMutation;
 import org.vertexium.query.VertexQuery;
 
+@SuppressWarnings("unchecked")
 public class ElasticsearchVertex extends ElasticsearchElement implements Vertex {
     private String className = ElasticsearchElement.class.getSimpleName();
 

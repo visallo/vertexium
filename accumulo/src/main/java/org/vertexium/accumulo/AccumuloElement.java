@@ -91,19 +91,17 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
         }
         this.hiddenVisibilities = hiddenVisibilityBuilder.build();
         this.additionalVisibilities = Sets.newHashSet(additionalVisibilities);
-        updatePropertiesInternal(properties, propertyDeleteMutations, propertySoftDeleteMutations);
+        updatePropertiesInternal(
+            properties,
+            propertyDeleteMutations,
+            propertySoftDeleteMutations,
+            null,
+            null
+        );
     }
 
     @Override
-    public void deleteProperty(String key, String name, Visibility visibility, Authorizations authorizations) {
-        Property property = getProperty(key, name, visibility);
-        if (property != null) {
-            this.properties.removeProperty(property);
-            getGraph().deleteProperty(this, property, authorizations);
-        }
-    }
-
-    @Override
+    @Deprecated
     public void softDeleteProperty(String key, String name, Visibility visibility, Object eventData, Authorizations authorizations) {
         Property property = getProperty(key, name, visibility);
         if (property != null) {
@@ -113,13 +111,9 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
     }
 
     @Override
+    @Deprecated
     public void markPropertyHidden(Property property, Long timestamp, Visibility visibility, Object data, Authorizations authorizations) {
         getGraph().markPropertyHidden(this, property, timestamp, visibility, data, authorizations);
-    }
-
-    @Override
-    public void markPropertyVisible(Property property, Long timestamp, Visibility visibility, Object eventData, Authorizations authorizations) {
-        getGraph().markPropertyVisible(this, property, timestamp, visibility, eventData, authorizations);
     }
 
     @Override
@@ -142,8 +136,16 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
         Iterable<Property> properties = mutation.getProperties();
         Iterable<AdditionalVisibilityAddMutation> additionalVisibilities = mutation.getAdditionalVisibilities();
         Iterable<AdditionalVisibilityDeleteMutation> additionalVisibilityDeletes = mutation.getAdditionalVisibilityDeletes();
+        Iterable<MarkPropertyHiddenMutation> markPropertyHiddenMutations = mutation.getMarkPropertyHiddenMutations();
+        Iterable<MarkPropertyVisibleMutation> markPropertyVisibleMutations = mutation.getMarkPropertyVisibleMutations();
 
-        updatePropertiesInternal(properties, propertyDeletes, propertySoftDeletes);
+        updatePropertiesInternal(
+            properties,
+            propertyDeletes,
+            propertySoftDeletes,
+            markPropertyHiddenMutations,
+            markPropertyVisibleMutations
+        );
         updateAdditionalVisibilitiesInternal(additionalVisibilities, additionalVisibilityDeletes);
         getGraph().savePropertiesAndAdditionalVisibilities(
             element,
@@ -151,7 +153,9 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
             propertyDeletes,
             propertySoftDeletes,
             additionalVisibilities,
-            additionalVisibilityDeletes
+            additionalVisibilityDeletes,
+            markPropertyHiddenMutations,
+            markPropertyVisibleMutations
         );
 
         if (mutation.getNewElementVisibility() != null) {
@@ -318,7 +322,9 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
     protected void updatePropertiesInternal(
         Iterable<Property> properties,
         Iterable<PropertyDeleteMutation> propertyDeleteMutations,
-        Iterable<PropertySoftDeleteMutation> propertySoftDeleteMutations
+        Iterable<PropertySoftDeleteMutation> propertySoftDeleteMutations,
+        Iterable<MarkPropertyHiddenMutation> markPropertyHiddenMutations,
+        Iterable<MarkPropertyVisibleMutation> markPropertyVisibleMutations
     ) {
         if (propertyDeleteMutations != null) {
             this.propertyDeleteMutations = new ConcurrentSkipListSet<>();
@@ -345,6 +351,40 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
 
         for (Property property : properties) {
             addPropertyInternal(property);
+        }
+
+        if (markPropertyHiddenMutations != null) {
+            for (MarkPropertyHiddenMutation markPropertyHiddenMutation : markPropertyHiddenMutations) {
+                markPropertyHiddenInternal(markPropertyHiddenMutation);
+            }
+        }
+
+        if (markPropertyVisibleMutations != null) {
+            for (MarkPropertyVisibleMutation markPropertyVisibleMutation : markPropertyVisibleMutations) {
+                markPropertyVisibleInternal(markPropertyVisibleMutation);
+            }
+        }
+    }
+
+    private void markPropertyVisibleInternal(MarkPropertyVisibleMutation mutation) {
+        Property property = getProperty(
+            mutation.getPropertyKey(),
+            mutation.getPropertyName(),
+            mutation.getPropertyVisibility()
+        );
+        if (property instanceof MutableProperty) {
+            ((MutableProperty) property).removeHiddenVisibility(mutation.getVisibility());
+        }
+    }
+
+    private void markPropertyHiddenInternal(MarkPropertyHiddenMutation mutation) {
+        Property property = getProperty(
+            mutation.getPropertyKey(),
+            mutation.getPropertyName(),
+            mutation.getPropertyVisibility()
+        );
+        if (property instanceof MutableProperty) {
+            ((MutableProperty) property).addHiddenVisibility(mutation.getVisibility());
         }
     }
 

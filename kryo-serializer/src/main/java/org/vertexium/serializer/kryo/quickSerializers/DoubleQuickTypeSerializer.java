@@ -13,6 +13,7 @@ public class DoubleQuickTypeSerializer implements QuickTypeSerializer {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public <T> T valueToObject(byte[] data) {
         ByteBuffer buffer = ByteBuffer.wrap(data);
         buffer.get();

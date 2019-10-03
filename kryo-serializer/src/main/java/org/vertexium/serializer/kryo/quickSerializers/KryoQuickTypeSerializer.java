@@ -24,6 +24,7 @@ public class KryoQuickTypeSerializer implements QuickTypeSerializer {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public <T> T valueToObject(byte[] data) {
         Input input = new UnsafeInput(data);
         input.read();

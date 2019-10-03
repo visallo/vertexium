@@ -22,6 +22,7 @@ import javax.annotation.Nullable;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+@Deprecated
 public class AccumuloEdgeInputFormat extends AccumuloElementInputFormatBase<Edge> {
     private static EdgeIterator edgeIterator;
 

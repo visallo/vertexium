@@ -20,6 +20,7 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.util.List;
 
+@SuppressWarnings("unchecked")
 public class AccumuloEdge extends AccumuloElement implements Edge {
     public static final Text CF_SIGNAL = EdgeIterator.CF_SIGNAL;
     public static final Text CF_OUT_VERTEX = EdgeIterator.CF_OUT_VERTEX;
@@ -185,7 +186,6 @@ public class AccumuloEdge extends AccumuloElement implements Edge {
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public ExistingEdgeMutation prepareMutation() {
         return new ExistingEdgeMutation(this) {
             @Override

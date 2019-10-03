@@ -25,6 +25,7 @@ public class JavaSerializableUtils {
         }
     }
 
+    @SuppressWarnings("unchecked")
     public static <T> T copy(T value) {
         return (T) bytesToObject(objectToBytes(value));
     }

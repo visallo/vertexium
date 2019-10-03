@@ -5,6 +5,7 @@ import org.apache.hadoop.io.Text;
 
 import java.io.IOException;
 
+@Deprecated
 public abstract class AccumuloMutationElementMapper<KEYIN, VALUEIN> extends ElementMapper<KEYIN, VALUEIN, Text, Mutation> {
     @Override
     protected void saveDataMutation(Context context, Text dataTableName, Mutation m) throws IOException, InterruptedException {

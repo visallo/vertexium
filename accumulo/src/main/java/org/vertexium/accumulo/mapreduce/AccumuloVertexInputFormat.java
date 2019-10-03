@@ -23,6 +23,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+@Deprecated
 public class AccumuloVertexInputFormat extends AccumuloElementInputFormatBase<Vertex> {
     private static VertexIterator vertexIterator;
 

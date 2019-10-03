@@ -277,11 +277,11 @@ public class CypherCstToAstVisitor extends CypherBaseVisitor<CypherAstBase> {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public CypherMapLiteral<String, CypherAstBase> visitOC_Properties(CypherParser.OC_PropertiesContext ctx) {
         if (ctx == null) {
             return null;
         }
-        //noinspection unchecked
         return (CypherMapLiteral<String, CypherAstBase>) super.visitOC_Properties(ctx);
     }
 
@@ -396,6 +396,7 @@ public class CypherCstToAstVisitor extends CypherBaseVisitor<CypherAstBase> {
         return toBinaryExpressions(ctx.children, this::visitOC_NotExpression);
     }
 
+    @SuppressWarnings("unchecked")
     private <T extends ParseTree> CypherBinaryExpression toBinaryExpressions(List<ParseTree> children, Function<T, CypherAstBase> itemTransform) {
         CypherAstBase left = null;
         CypherBinaryExpression.Op op = null;
@@ -411,7 +412,6 @@ public class CypherCstToAstVisitor extends CypherBaseVisitor<CypherAstBase> {
                     }
                 }
             } else {
-                //noinspection unchecked
                 CypherAstBase childObj = itemTransform.apply((T) child);
                 if (left == null) {
                     left = childObj;

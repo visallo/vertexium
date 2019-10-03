@@ -27,8 +27,12 @@ public interface Graph {
      * @param visibility     The visibility to assign to the new vertex.
      * @param authorizations The authorizations required to add and retrieve the new vertex.
      * @return The newly added vertex.
+     * @deprecated Use {@link #prepareVertex(Visibility)}
      */
-    Vertex addVertex(Visibility visibility, Authorizations authorizations);
+    @Deprecated
+    default Vertex addVertex(Visibility visibility, Authorizations authorizations) {
+        return prepareVertex(visibility).save(authorizations);
+    }
 
     /**
      * Adds a vertex to the graph.
@@ -37,8 +41,12 @@ public interface Graph {
      * @param visibility     The visibility to assign to the new vertex.
      * @param authorizations The authorizations required to add and retrieve the new vertex.
      * @return The newly added vertex.
+     * * @deprecated Use {@link #prepareVertex(String, Visibility)}
      */
-    Vertex addVertex(String vertexId, Visibility visibility, Authorizations authorizations);
+    @Deprecated
+    default Vertex addVertex(String vertexId, Visibility visibility, Authorizations authorizations) {
+        return prepareVertex(vertexId, visibility).save(authorizations);
+    }
 
     /**
      * Adds the vertices to the graph.
@@ -186,7 +194,7 @@ public interface Graph {
             return getVertices(vertexIds, fetchHints, authorizations);
         }
 
-        return new JoinIterable<>(
+        return new JoinIterable<Element>(
             getVertices(vertexIds, fetchHints, authorizations),
             getEdges(edgeIds, fetchHints, authorizations)
         );
@@ -524,8 +532,12 @@ public interface Graph {
      * @param visibility     The visibility to assign to the new edge.
      * @param authorizations The authorizations required to add and retrieve the new edge.
      * @return The newly created edge.
+     * @deprecated Use {@link #prepareEdge(Vertex, Vertex, String, Visibility)}
      */
-    Edge addEdge(Vertex outVertex, Vertex inVertex, String label, Visibility visibility, Authorizations authorizations);
+    @Deprecated
+    default Edge addEdge(Vertex outVertex, Vertex inVertex, String label, Visibility visibility, Authorizations authorizations) {
+        return prepareEdge(outVertex, inVertex, label, visibility).save(authorizations);
+    }
 
     /**
      * Adds an edge between two vertices.
@@ -537,8 +549,12 @@ public interface Graph {
      * @param visibility     The visibility to assign to the new edge.
      * @param authorizations The authorizations required to add and retrieve the new edge.
      * @return The newly created edge.
+     * @deprecated Use {@link #prepareEdge(String, Vertex, Vertex, String, Visibility)}
      */
-    Edge addEdge(String edgeId, Vertex outVertex, Vertex inVertex, String label, Visibility visibility, Authorizations authorizations);
+    @Deprecated
+    default Edge addEdge(String edgeId, Vertex outVertex, Vertex inVertex, String label, Visibility visibility, Authorizations authorizations) {
+        return prepareEdge(edgeId, outVertex, inVertex, label, visibility).save(authorizations);
+    }
 
     /**
      * Adds an edge between two vertices.
@@ -549,8 +565,12 @@ public interface Graph {
      * @param visibility     The visibility to assign to the new edge.
      * @param authorizations The authorizations required to add and retrieve the new edge.
      * @return The newly created edge.
+     * @deprecated Use {@link #prepareEdge(String, String, String, Visibility)}
      */
-    Edge addEdge(String outVertexId, String inVertexId, String label, Visibility visibility, Authorizations authorizations);
+    @Deprecated
+    default Edge addEdge(String outVertexId, String inVertexId, String label, Visibility visibility, Authorizations authorizations) {
+        return prepareEdge(outVertexId, inVertexId, label, visibility).save(authorizations);
+    }
 
     /**
      * Adds an edge between two vertices.
@@ -562,8 +582,12 @@ public interface Graph {
      * @param visibility     The visibility to assign to the new edge.
      * @param authorizations The authorizations required to add and retrieve the new edge.
      * @return The newly created edge.
+     * @deprecated Use {@link #prepareEdge(String, String, String, String, Visibility)}
      */
-    Edge addEdge(String edgeId, String outVertexId, String inVertexId, String label, Visibility visibility, Authorizations authorizations);
+    @Deprecated
+    default Edge addEdge(String edgeId, String outVertexId, String inVertexId, String label, Visibility visibility, Authorizations authorizations) {
+        return prepareEdge(edgeId, outVertexId, inVertexId, label, visibility).save(authorizations);
+    }
 
     /**
      * Prepare an edge to be added to the graph. This method provides a way to build up an edge with it's properties to be inserted
@@ -1538,21 +1562,25 @@ public interface Graph {
     /**
      * Visits all elements on the graph
      */
+    @Deprecated
     void visitElements(GraphVisitor graphVisitor, Authorizations authorizations);
 
     /**
      * Visits all vertices on the graph
      */
+    @Deprecated
     void visitVertices(GraphVisitor graphVisitor, Authorizations authorizations);
 
     /**
      * Visits all edges on the graph
      */
+    @Deprecated
     void visitEdges(GraphVisitor graphVisitor, Authorizations authorizations);
 
     /**
      * Visits elements using the supplied elements and visitor
      */
+    @Deprecated
     void visit(Iterable<? extends Element> elements, GraphVisitor visitor);
 
     /**

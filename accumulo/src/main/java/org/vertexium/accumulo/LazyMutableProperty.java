@@ -106,6 +106,7 @@ public class LazyMutableProperty extends MutableProperty {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public Object getValue() {
         if (cachedPropertyValue == null) {
             if (propertyValue == null || propertyValue.length == 0) {
@@ -113,7 +114,6 @@ public class LazyMutableProperty extends MutableProperty {
             }
             cachedPropertyValue = this.vertexiumSerializer.bytesToObject(propertyValue);
             if (cachedPropertyValue instanceof StreamingPropertyValueRef) {
-                //noinspection unchecked
                 cachedPropertyValue = ((StreamingPropertyValueRef) cachedPropertyValue).toStreamingPropertyValue(this.graph, getTimestamp());
             }
         }

@@ -50,7 +50,7 @@ public class DefaultGraphQuery extends GraphQueryBase {
             .setIncludeExtendedDataTableNames(true)
             .setIgnoreAdditionalVisibilities(extendedDataFetchHints.isIgnoreAdditionalVisibilities())
             .build();
-        return extendedData(extendedDataFetchHints, new JoinIterable<>(
+        return extendedData(extendedDataFetchHints, new JoinIterable<Element>(
             getIterableFromElementType(ElementType.VERTEX, extendedDataTableNamesFetchHints),
             getIterableFromElementType(ElementType.EDGE, extendedDataTableNamesFetchHints)
         ));

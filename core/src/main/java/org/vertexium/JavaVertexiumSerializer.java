@@ -14,6 +14,7 @@ public class JavaVertexiumSerializer implements VertexiumSerializer {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public <T> T bytesToObject(byte[] bytes) {
         if (bytes == null || bytes.length == 0) {
             return null;

@@ -6,6 +6,7 @@ import org.vertexium.inmemory.mutations.EdgeSetupMutation;
 import org.vertexium.mutation.ExistingEdgeMutation;
 import org.vertexium.search.IndexHint;
 
+@SuppressWarnings("unchecked")
 public class InMemoryEdge extends InMemoryElement<InMemoryEdge> implements Edge {
     private final EdgeSetupMutation edgeSetupMutation;
 
@@ -82,7 +83,6 @@ public class InMemoryEdge extends InMemoryElement<InMemoryEdge> implements Edge 
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public ExistingEdgeMutation prepareMutation() {
         return new ExistingEdgeMutation(this) {
             @Override

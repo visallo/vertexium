@@ -48,6 +48,7 @@ public class PropertiesFunction extends SimpleCypherFunction {
         throw new VertexiumException("not implemented");
     }
 
+    @SuppressWarnings("unchecked")
     private Map<String, Object> getPropertiesFromMap(VertexiumCypherQueryContext ctx, Map map) {
         return map;
     }

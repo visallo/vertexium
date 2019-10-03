@@ -108,7 +108,9 @@ public abstract class LazyProperty extends ModelBase {
     }
 
     public void delete() {
-        getE().deleteProperty(getKey(), getName(), getVisibility(), getAuthorizations());
+        getE().prepareMutation()
+            .deleteProperty(getKey(), getName(), getVisibility())
+            .save(getAuthorizations());
         getGraph().flush();
     }
 }

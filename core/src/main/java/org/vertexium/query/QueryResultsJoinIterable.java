@@ -7,11 +7,13 @@ import org.vertexium.util.JoinIterable;
 import java.io.IOException;
 
 public class QueryResultsJoinIterable<T extends Element> extends JoinIterable<T> implements QueryResultsIterable<T> {
+    @SuppressWarnings("unchecked")
     public QueryResultsJoinIterable(Iterable<T>... iterables) {
         super(iterables);
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public <TResult extends AggregationResult> TResult getAggregationResult(String name, Class<? extends TResult> resultType) {
         for (Iterable<? extends T> iterable : getIterables()) {
             if (iterable instanceof QueryResultsIterable) {

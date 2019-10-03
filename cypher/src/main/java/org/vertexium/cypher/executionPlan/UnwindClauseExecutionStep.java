@@ -30,6 +30,7 @@ public class UnwindClauseExecutionStep extends ExecutionStepWithChildren {
         return source.flatMapCypherResult(this::executeOnRow);
     }
 
+    @SuppressWarnings("unchecked")
     private Stream<CypherResultRow> executeOnRow(CypherResultRow row) {
         Object expressionResult = row.get(expressionResultName);
         row.popScope();

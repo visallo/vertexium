@@ -138,8 +138,10 @@ public class AccumuloElasticsearch5Test extends AccumuloGraphTestBase {
     public void testDocumentMissingHandler() throws Exception {
         TestElasticsearch5ExceptionHandler.authorizations = AUTHORIZATIONS_ALL;
 
-        graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
-        graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.prepareVertex("v1", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
+        graph.prepareVertex("v2", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
         graph.flush();
 
         elasticsearchResource.clearIndices(getSearchIndex());

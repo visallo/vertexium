@@ -28,6 +28,7 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.*;
 
+@Deprecated
 public abstract class AccumuloElementInputFormatBase<TValue extends Element> extends InputFormat<Text, TValue> {
     private final AccumuloRowInputFormat accumuloInputFormat;
 
@@ -68,6 +69,7 @@ public abstract class AccumuloElementInputFormatBase<TValue extends Element> ext
             public Authorizations authorizations;
 
             @Override
+            @SuppressWarnings("unchecked")
             public void initialize(InputSplit inputSplit, TaskAttemptContext ctx) throws IOException, InterruptedException {
                 reader.initialize(inputSplit, ctx);
 

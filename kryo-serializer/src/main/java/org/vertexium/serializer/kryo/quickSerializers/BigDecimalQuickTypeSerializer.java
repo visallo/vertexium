@@ -14,6 +14,7 @@ public class BigDecimalQuickTypeSerializer implements QuickTypeSerializer {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public <T> T valueToObject(byte[] data) {
         return (T) new BigDecimal(new String(data, 1, data.length - 1));
     }

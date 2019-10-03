@@ -8,6 +8,7 @@ import org.vertexium.query.QueryableIterable;
 
 import java.util.stream.Stream;
 
+@SuppressWarnings("unchecked")
 public class EdgeInfoEdge extends ElementBase implements Edge {
     private final Graph graph;
     private final String sourceVertexId;
@@ -82,11 +83,13 @@ public class EdgeInfoEdge extends ElementBase implements Edge {
     }
 
     @Override
+    @Deprecated
     public void deleteProperty(String key, String name, Visibility visibility, Authorizations authorizations) {
         getEdge().deleteProperty(key, name, visibility, authorizations);
     }
 
     @Override
+    @Deprecated
     public void softDeleteProperty(String key, String name, Visibility visibility, Object eventData, Authorizations authorizations) {
         getEdge().softDeleteProperty(key, name, visibility, eventData, authorizations);
     }
@@ -102,11 +105,13 @@ public class EdgeInfoEdge extends ElementBase implements Edge {
     }
 
     @Override
+    @Deprecated
     public void markPropertyHidden(Property property, Long timestamp, Visibility visibility, Object data, Authorizations authorizations) {
         getEdge().markPropertyHidden(property, timestamp, visibility, data, authorizations);
     }
 
     @Override
+    @Deprecated
     public void markPropertyVisible(Property property, Long timestamp, Visibility visibility, Object eventData, Authorizations authorizations) {
         getEdge().markPropertyVisible(property, timestamp, visibility, eventData, authorizations);
     }

@@ -55,6 +55,7 @@ public class Elasticsearch5SearchIndexTest extends GraphTestBase {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     protected Graph createGraph() {
         InMemoryGraphConfiguration configuration = new InMemoryGraphConfiguration(elasticsearchResource.createConfig());
         return InMemoryGraph.create(configuration);
@@ -99,7 +100,7 @@ public class Elasticsearch5SearchIndexTest extends GraphTestBase {
     @Test
     public void testQueryExecutionCountWhenPaging() {
         graph.prepareVertex("v1", VISIBILITY_A).save(AUTHORIZATIONS_A);
-        graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.prepareVertex("v2", VISIBILITY_A).save(AUTHORIZATIONS_A);
         graph.flush();
 
         long startingNumQueries = getNumQueries();
@@ -128,8 +129,8 @@ public class Elasticsearch5SearchIndexTest extends GraphTestBase {
         Elasticsearch5SearchIndex searchIndex = (Elasticsearch5SearchIndex) ((GraphWithSearchIndex) graph).getSearchIndex();
         searchIndex.getConfig().getGraphConfiguration().set(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + ElasticsearchSearchIndexConfiguration.QUERY_PAGE_SIZE, 1);
 
-        graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
-        graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.prepareVertex("v1", VISIBILITY_A).save(AUTHORIZATIONS_A);
+        graph.prepareVertex("v2", VISIBILITY_A).save(AUTHORIZATIONS_A);
         graph.flush();
 
         long startingNumQueries = getNumQueries();
@@ -141,7 +142,7 @@ public class Elasticsearch5SearchIndexTest extends GraphTestBase {
         searchIndex = (Elasticsearch5SearchIndex) ((GraphWithSearchIndex) graph).getSearchIndex();
         searchIndex.getConfig().getGraphConfiguration().set(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + ElasticsearchSearchIndexConfiguration.QUERY_PAGE_SIZE, 2);
 
-        graph.addVertex("v3", VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.prepareVertex("v3", VISIBILITY_A).save(AUTHORIZATIONS_A);
         graph.flush();
 
         vertices = graph.query(AUTHORIZATIONS_A).vertices();
@@ -188,9 +189,9 @@ public class Elasticsearch5SearchIndexTest extends GraphTestBase {
 
     @Test
     public void testQueryReturningElasticsearchEdge() {
-        graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
-        graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_A);
-        graph.addEdge("e1", "v1", "v2", LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.prepareVertex("v1", VISIBILITY_A).save(AUTHORIZATIONS_A);
+        graph.prepareVertex("v2", VISIBILITY_A).save(AUTHORIZATIONS_A);
+        graph.prepareEdge("e1", "v1", "v2", LABEL_LABEL1, VISIBILITY_A).save(AUTHORIZATIONS_A);
         graph.flush();
 
         QueryResultsIterable<Edge> edges = graph.query(AUTHORIZATIONS_A)
@@ -206,9 +207,9 @@ public class Elasticsearch5SearchIndexTest extends GraphTestBase {
 
     @Test
     public void testQueryReturningElasticsearchVertex() {
-        graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
-        graph.addVertex("v2", VISIBILITY_B, AUTHORIZATIONS_B);
-        graph.addEdge("e1", "v1", "v2", LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.prepareVertex("v1", VISIBILITY_A).save(AUTHORIZATIONS_A);
+        graph.prepareVertex("v2", VISIBILITY_B).save(AUTHORIZATIONS_B);
+        graph.prepareEdge("e1", "v1", "v2", LABEL_LABEL1, VISIBILITY_A).save(AUTHORIZATIONS_A);
         graph.flush();
 
         QueryResultsIterable<Vertex> vertices = graph.query(AUTHORIZATIONS_B)
@@ -221,9 +222,9 @@ public class Elasticsearch5SearchIndexTest extends GraphTestBase {
 
     @Test(expected = VertexiumNotSupportedException.class)
     public void testRetrievingVerticesFromElasticsearchEdge() {
-        graph.addVertex("v1", VISIBILITY_A, AUTHORIZATIONS_A);
-        graph.addVertex("v2", VISIBILITY_A, AUTHORIZATIONS_A);
-        graph.addEdge("e1", "v1", "v2", LABEL_LABEL1, VISIBILITY_A, AUTHORIZATIONS_A);
+        graph.prepareVertex("v1", VISIBILITY_A).save(AUTHORIZATIONS_A);
+        graph.prepareVertex("v2", VISIBILITY_A).save(AUTHORIZATIONS_A);
+        graph.prepareEdge("e1", "v1", "v2", LABEL_LABEL1, VISIBILITY_A).save(AUTHORIZATIONS_A);
         graph.flush();
 
         QueryResultsIterable<Edge> edges = graph.query(AUTHORIZATIONS_A)

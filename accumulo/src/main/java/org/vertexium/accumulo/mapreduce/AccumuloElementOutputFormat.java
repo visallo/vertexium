@@ -10,6 +10,7 @@ import org.apache.hadoop.mapreduce.*;
 
 import java.io.IOException;
 
+@Deprecated
 public class AccumuloElementOutputFormat extends OutputFormat<Text, Mutation> {
     private AccumuloOutputFormat accumuloOutputFormat = new AccumuloOutputFormat();
 

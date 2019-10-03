@@ -72,6 +72,7 @@ public abstract class AccumuloGraphTestBase extends GraphTestBase {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     public void testDefinePropertiesMultipleGraphs() {
         Graph graph1 = graph;
         Graph graph2 = AccumuloGraph.create(new AccumuloGraphConfiguration(getAccumuloResource().createConfig()));
@@ -112,14 +113,19 @@ public abstract class AccumuloGraphTestBase extends GraphTestBase {
 
     @Test
     public void testStoringEmptyMetadata() {
-        Vertex v1 = graph.addVertex("v1", VISIBILITY_EMPTY, AUTHORIZATIONS_EMPTY);
+        Vertex v1 = graph.prepareVertex("v1", VISIBILITY_EMPTY).save(AUTHORIZATIONS_EMPTY);
         Metadata metadata = Metadata.create();
-        v1.addPropertyValue("prop1", "prop1", "val1", metadata, VISIBILITY_EMPTY, AUTHORIZATIONS_A_AND_B);
+        v1.prepareMutation()
+            .addPropertyValue("prop1", "prop1", "val1", metadata, VISIBILITY_EMPTY)
+            .save(AUTHORIZATIONS_A_AND_B);
 
-        Vertex v2 = graph.addVertex("v2", VISIBILITY_EMPTY, AUTHORIZATIONS_EMPTY);
+        Vertex v2 = graph.prepareVertex("v2", VISIBILITY_EMPTY)
+            .save(AUTHORIZATIONS_EMPTY);
         metadata = Metadata.create();
         metadata.add("meta1", "metavalue1", VISIBILITY_EMPTY);
-        v2.addPropertyValue("prop1", "prop1", "val1", metadata, VISIBILITY_EMPTY, AUTHORIZATIONS_A_AND_B);
+        v2.prepareMutation()
+            .addPropertyValue("prop1", "prop1", "val1", metadata, VISIBILITY_EMPTY)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         v1 = graph.getVertex("v1", FetchHints.ALL, AUTHORIZATIONS_EMPTY);
@@ -442,8 +448,9 @@ public abstract class AccumuloGraphTestBase extends GraphTestBase {
 
         addLegacySPVData(vertexId, timestamp - 100, propertyKey, propertyName, propertyValue1);
         StreamingPropertyValue newSpv = StreamingPropertyValue.create(propertyValue2);
-        getGraph().getVertex("v1", AUTHORIZATIONS_EMPTY)
-            .addPropertyValue(propertyKey, propertyName, newSpv, VISIBILITY_EMPTY, AUTHORIZATIONS_EMPTY);
+        getGraph().getVertex("v1", AUTHORIZATIONS_EMPTY).prepareMutation()
+            .addPropertyValue(propertyKey, propertyName, newSpv, VISIBILITY_EMPTY)
+            .save(AUTHORIZATIONS_EMPTY);
 
         getGraph().flush();
 
@@ -496,7 +503,7 @@ public abstract class AccumuloGraphTestBase extends GraphTestBase {
 
     /**
      * Add this into the watch window to print the vertices table in time sorted order
-     *
+     * <p>
      * ((AccumuloGraphTest)this).printVerticesTable(AUTHORIZATIONS_ALL)
      */
     public void printVerticesTable(Authorizations authorizations) {

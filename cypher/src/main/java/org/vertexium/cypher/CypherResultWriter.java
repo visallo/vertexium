@@ -15,13 +15,13 @@ import static org.vertexium.util.IterableUtils.count;
 import static org.vertexium.util.StreamUtils.stream;
 
 public class CypherResultWriter {
+    @SuppressWarnings("unchecked")
     public String columnValueToString(VertexiumCypherQueryContext ctx, Object o) {
         if (o == null) {
             return columnNullValueToString();
         } else if (o instanceof Optional) {
             return columnValueToString(ctx, ((Optional<?>) o).orElse(null));
         } else if (o instanceof Map) {
-            //noinspection unchecked
             return columnMapValueToString(ctx, (Map<String, Object>) o);
         } else if (o instanceof Double) {
             return columnDoubleValueToString((double) o);

@@ -377,6 +377,8 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                             getPropertySoftDeletes(),
                             getAdditionalVisibilities(),
                             getAdditionalVisibilityDeletes(),
+                            getMarkPropertyHiddenMutations(),
+                            getMarkPropertyVisibleMutations(),
                             getExtendedData(),
                             getExtendedDataDeletes(),
                             getAdditionalExtendedDataVisibilities(),
@@ -418,6 +420,8 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         Iterable<PropertySoftDeleteMutation> propertySoftDeletes,
         Iterable<AdditionalVisibilityAddMutation> additionalVisibilities,
         Iterable<AdditionalVisibilityDeleteMutation> additionalVisibilityDeletes,
+        Iterable<MarkPropertyHiddenMutation> markPropertyHiddenMutations,
+        Iterable<MarkPropertyVisibleMutation> markPropertyVisibleMutations,
         Iterable<ExtendedDataMutation> extendedData,
         Iterable<ExtendedDataDeleteMutation> extendedDataDeletes,
         Iterable<AdditionalExtendedDataVisibilityAddMutation> additionalExtendedDataVisibilities,
@@ -496,6 +500,36 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                 ));
             }
         }
+        if (markPropertyHiddenMutations != null) {
+            for (MarkPropertyHiddenMutation markPropertyHidden : markPropertyHiddenMutations) {
+                queueEvent(new MarkHiddenPropertyEvent(
+                    this,
+                    element,
+                    element.getProperty(
+                        markPropertyHidden.getPropertyKey(),
+                        markPropertyHidden.getPropertyName(),
+                        markPropertyHidden.getPropertyVisibility()
+                    ),
+                    markPropertyHidden.getVisibility(),
+                    markPropertyHidden.getEventData()
+                ));
+            }
+        }
+        if (markPropertyVisibleMutations != null) {
+            for (MarkPropertyVisibleMutation markPropertyVisible : markPropertyVisibleMutations) {
+                queueEvent(new MarkVisiblePropertyEvent(
+                    this,
+                    element,
+                    element.getProperty(
+                        markPropertyVisible.getPropertyKey(),
+                        markPropertyVisible.getPropertyName(),
+                        markPropertyVisible.getPropertyVisibility()
+                    ),
+                    markPropertyVisible.getVisibility(),
+                    markPropertyVisible.getEventData()
+                ));
+            }
+        }
     }
 
     private void queueEvent(GraphEvent graphEvent) {
@@ -510,31 +544,36 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         Iterable<PropertyDeleteMutation> propertyDeletes,
         Iterable<PropertySoftDeleteMutation> propertySoftDeletes,
         Iterable<AdditionalVisibilityAddMutation> additionalVisibilities,
-        Iterable<AdditionalVisibilityDeleteMutation> additionalVisibilityDeletes
+        Iterable<AdditionalVisibilityDeleteMutation> additionalVisibilityDeletes,
+        Iterable<MarkPropertyHiddenMutation> markPropertyHiddenMutations,
+        Iterable<MarkPropertyVisibleMutation> markPropertyVisibleMutations
     ) {
         String elementRowKey = element.getId();
         Mutation m = new Mutation(elementRowKey);
-        boolean hasProperty = false;
         for (PropertyDeleteMutation propertyDelete : propertyDeletes) {
-            hasProperty = true;
             elementMutationBuilder.addPropertyDeleteToMutation(m, propertyDelete);
         }
         for (PropertySoftDeleteMutation propertySoftDelete : propertySoftDeletes) {
-            hasProperty = true;
             elementMutationBuilder.addPropertySoftDeleteToMutation(m, propertySoftDelete);
         }
         for (Property property : properties) {
-            hasProperty = true;
             elementMutationBuilder.addPropertyToMutation(this, m, elementRowKey, property);
-        }
-        if (hasProperty) {
-            addMutations(element, m);
         }
         for (AdditionalVisibilityAddMutation additionalVisibility : additionalVisibilities) {
             elementMutationBuilder.addAdditionalVisibilityToMutation(m, additionalVisibility);
         }
         for (AdditionalVisibilityDeleteMutation additionalVisibilityDelete : additionalVisibilityDeletes) {
             elementMutationBuilder.addAdditionalVisibilityDeleteToMutation(m, additionalVisibilityDelete);
+        }
+        for (MarkPropertyHiddenMutation markPropertyHidden : markPropertyHiddenMutations) {
+            elementMutationBuilder.addMarkPropertyHiddenToMutation(m, markPropertyHidden);
+        }
+        for (MarkPropertyVisibleMutation markPropertyVisible : markPropertyVisibleMutations) {
+            elementMutationBuilder.addMarkPropertyVisibleToMutation(m, markPropertyVisible);
+        }
+
+        if (m.getUpdates().size() > 0) {
+            addMutations(element, m);
         }
 
         if (hasEventListeners()) {
@@ -545,6 +584,8 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                 propertySoftDeletes,
                 additionalVisibilities,
                 additionalVisibilityDeletes,
+                markPropertyHiddenMutations,
+                markPropertyVisibleMutations,
                 null,
                 null,
                 null,
@@ -1061,6 +1102,8 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                 edgeBuilder.getPropertySoftDeletes(),
                 edgeBuilder.getAdditionalVisibilities(),
                 edgeBuilder.getAdditionalVisibilityDeletes(),
+                edgeBuilder.getMarkPropertyHiddenMutations(),
+                edgeBuilder.getMarkPropertyVisibleMutations(),
                 edgeBuilder.getExtendedData(),
                 edgeBuilder.getExtendedDataDeletes(),
                 edgeBuilder.getAdditionalExtendedDataVisibilities(),
@@ -1155,7 +1198,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             });
     }
 
-    @SuppressWarnings("deprecation")
+    @SuppressWarnings("unchecked")
     public Iterable<HistoricalPropertyValue> getHistoricalPropertyValues(Element element, String key, String name, Visibility visibility, Long startTime, Long endTime, Authorizations authorizations) {
         Span trace = Trace.start("getHistoricalPropertyValues");
         if (Trace.isTracing()) {
@@ -1213,7 +1256,6 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                         Metadata metadata = Metadata.create();
                         Set<Visibility> hiddenVisibilities = null; // TODO should we preserve these over time
                         if (value instanceof StreamingPropertyValueRef) {
-                            //noinspection unchecked
                             value = ((StreamingPropertyValueRef) value).toStreamingPropertyValue(this, timestamp);
                         }
                         String propertyKey = propertyColumnQualifier.getPropertyKey();
@@ -1429,6 +1471,8 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         if (hasEventListeners()) {
             queueEvents(
                 element,
+                null,
+                null,
                 null,
                 null,
                 null,
