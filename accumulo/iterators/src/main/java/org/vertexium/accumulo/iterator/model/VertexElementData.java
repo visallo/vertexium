@@ -39,9 +39,4 @@ public class VertexElementData extends ElementData {
             inEdges,
             fetchHints.isIncludeEdgeLabelsAndCounts() && !(fetchHints.isIncludeAllEdgeRefs() || fetchHints.isIncludeInEdgeRefs()));
     }
-
-    @Override
-    protected byte getTypeId() {
-        return TYPE_ID_VERTEX;
-    }
 }

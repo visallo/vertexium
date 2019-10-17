@@ -11,13 +11,6 @@ import java.io.IOException;
 import java.util.*;
 
 public abstract class ElementData {
-    public static final byte[] HEADER = new byte[]{'V', 'E', 'R', 'T', '1'};
-    public static final byte TYPE_ID_VERTEX = 1;
-    public static final byte TYPE_ID_EDGE = 2;
-    public static final int PROP_START = 1;
-    public static final int PROP_END = 2;
-    public static final int METADATA_START = 3;
-    public static final int METADATA_END = 4;
     public Text id;
     public long timestamp;
     public Text visibility;
@@ -74,13 +67,6 @@ public abstract class ElementData {
         encodeProperties(out, fetchHints);
         DataOutputStreamUtils.encodeStringSet(out, extendedTableNames);
     }
-
-    private void encodeHeader(DataOutputStream out) throws IOException {
-        out.write(HEADER);
-        out.write(getTypeId());
-    }
-
-    protected abstract byte getTypeId();
 
     private void encodePropertyMetadataLookup(DataOutputStream out) throws IOException {
         out.write(METADATA_START);
