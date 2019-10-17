@@ -3299,14 +3299,20 @@ public abstract class GraphTestBase {
         Vertex v1 = graph.addVertex("v1", Visibility.EMPTY, AUTHORIZATIONS_A);
         Vertex v2 = graph.addVertex("v2", Visibility.EMPTY, AUTHORIZATIONS_A);
         Vertex v3 = graph.prepareVertex("v3", VISIBILITY_EMPTY)
-            .addPropertyValue("junit", "name", "value", VISIBILITY_B)
+            .addPropertyValue("junit", "name1", "value", VISIBILITY_B)
+            .addPropertyValue("junit", "name2", "value", VISIBILITY_B)
             .save(AUTHORIZATIONS_B_AND_C);
         Edge e1 = graph.addEdge("e1", v1.getId(), v2.getId(), "junit edge", Visibility.EMPTY, AUTHORIZATIONS_A);
         graph.flush();
 
         graph.markEdgeHidden(e1, VISIBILITY_A, AUTHORIZATIONS_A);
         graph.markVertexHidden(v1, VISIBILITY_A, AUTHORIZATIONS_A);
-        v3.markPropertyHidden("junit", "name", VISIBILITY_B, VISIBILITY_C, AUTHORIZATIONS_B_AND_C);
+        v3.markPropertyHidden("junit", "name1", VISIBILITY_B, VISIBILITY_C, AUTHORIZATIONS_B_AND_C);
+        v3.markPropertyHidden("junit", "name2", VISIBILITY_B, VISIBILITY_C, AUTHORIZATIONS_B_AND_C);
+        graph.flush();
+
+        v3 = graph.getVertex("v3", AUTHORIZATIONS_A_AND_B);
+        v3.markPropertyVisible(v3.getProperty("junit", "name2", VISIBILITY_B), VISIBILITY_C, AUTHORIZATIONS_B_AND_C);
         graph.flush();
 
         QueryResultsIterable<Vertex> vertices = graph.query(AUTHORIZATIONS_A).hasAuthorization(VISIBILITY_A_STRING).vertices(FetchHints.ALL);
