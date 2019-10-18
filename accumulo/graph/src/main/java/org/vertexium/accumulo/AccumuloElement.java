@@ -128,8 +128,8 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
                 return new LazyMutableProperty(
                     graph,
                     graph.getVertexiumSerializer(),
-                    property.getKey().toStringUtf8(),
-                    property.getName().toStringUtf8(),
+                    graph.getNameSubstitutionStrategy().inflate(property.getKey()),
+                    graph.getNameSubstitutionStrategy().inflate(property.getName()),
                     property.getValue().toByteArray(),
                     new MetadataRef(metadataEntries, property.getMetadataList().stream().mapToInt(i -> i).toArray()),
                     hiddenVisibilities,
