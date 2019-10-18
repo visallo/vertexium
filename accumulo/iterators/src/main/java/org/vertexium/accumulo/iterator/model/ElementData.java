@@ -1,13 +1,14 @@
 package org.vertexium.accumulo.iterator.model;
 
+import com.google.protobuf.ByteArrayByteString;
+import com.google.protobuf.ByteSequenceByteString;
+import com.google.protobuf.TextByteString;
 import org.apache.accumulo.core.data.ByteSequence;
 import org.apache.accumulo.core.data.Value;
 import org.apache.hadoop.io.Text;
-import org.vertexium.accumulo.iterator.util.DataOutputStreamUtils;
+import org.vertexium.accumulo.iterator.model.proto.Element;
+import org.vertexium.accumulo.iterator.model.proto.MetadataEntry;
 
-import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
 import java.util.*;
 
 public abstract class ElementData {
@@ -49,32 +50,36 @@ public abstract class ElementData {
         extendedTableNames.clear();
     }
 
-    public final Value encode(IteratorFetchHints fetchHints) throws IOException {
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        DataOutputStream dout = new DataOutputStream(out);
-        encode(dout, fetchHints);
-        return new Value(out.toByteArray());
+    public abstract Value encode(IteratorFetchHints fetchHints);
+
+    protected Element encodeElement(IteratorFetchHints fetchHints) {
+        Element.Builder builder = Element.newBuilder();
+        builder.setId(new TextByteString(id));
+        builder.setTimestamp(timestamp);
+        builder.setVisibility(new TextByteString(visibility));
+        for (Text hiddenVisibility : hiddenVisibilities) {
+            builder.addHiddenVisibilities(new TextByteString(hiddenVisibility));
+        }
+        for (Text additionalVisibility : additionalVisibilities) {
+            builder.addAdditionalVisibilities(new TextByteString(additionalVisibility));
+        }
+        encodePropertyMetadataLookup(builder);
+        encodeProperties(builder, fetchHints);
+        builder.addAllExtendedTableNames(extendedTableNames);
+        return builder.build();
     }
 
-    protected void encode(DataOutputStream out, IteratorFetchHints fetchHints) throws IOException {
-        encodeHeader(out);
-        DataOutputStreamUtils.encodeText(out, id);
-        out.writeLong(timestamp);
-        DataOutputStreamUtils.encodeText(out, visibility);
-        DataOutputStreamUtils.encodeTextList(out, hiddenVisibilities);
-        DataOutputStreamUtils.encodeTextList(out, additionalVisibilities);
-        encodePropertyMetadataLookup(out);
-        encodeProperties(out, fetchHints);
-        DataOutputStreamUtils.encodeStringSet(out, extendedTableNames);
+    private void encodePropertyMetadataLookup(Element.Builder builder) {
+        for (IteratorMetadataEntry metadataEntry : metadataEntries) {
+            builder.addMetadataEntries(MetadataEntry.newBuilder()
+                .setKey(new ByteSequenceByteString(metadataEntry.metadataKey))
+                .setVisibility(new ByteSequenceByteString(metadataEntry.metadataVisibility))
+                .setValue(new ByteArrayByteString(metadataEntry.value))
+                .build());
+        }
     }
 
-    private void encodePropertyMetadataLookup(DataOutputStream out) throws IOException {
-        out.write(METADATA_START);
-        DataOutputStreamUtils.encodePropertyMetadataEntry(out, metadataEntries);
-        out.write(METADATA_END);
-    }
-
-    private void encodeProperties(final DataOutputStream out, IteratorFetchHints fetchHints) throws IOException {
+    private void encodeProperties(Element.Builder builder, IteratorFetchHints fetchHints) {
         iterateProperties((
             propertyKey,
             propertyName,
@@ -84,20 +89,25 @@ public abstract class ElementData {
             propertyHiddenVisibilities,
             metadata
         ) -> {
-            out.write(PROP_START);
-            DataOutputStreamUtils.encodeByteSequence(out, propertyKey);
-            DataOutputStreamUtils.encodeByteSequence(out, propertyName);
-            DataOutputStreamUtils.encodeByteSequence(out, propertyVisibility);
-            out.writeLong(propertyTimestamp);
-            out.writeInt(propertyValue.length);
-            out.write(propertyValue);
-            DataOutputStreamUtils.encodeByteSequenceList(out, propertyHiddenVisibilities);
-            DataOutputStreamUtils.encodeIntArray(out, metadata);
+            org.vertexium.accumulo.iterator.model.proto.Property.Builder propBuilder = org.vertexium.accumulo.iterator.model.proto.Property.newBuilder()
+                .setKey(new ByteSequenceByteString(propertyKey))
+                .setName(new ByteSequenceByteString(propertyName))
+                .setVisibility(new ByteSequenceByteString(propertyVisibility))
+                .setTimestamp(propertyTimestamp)
+                .setValue(new ByteArrayByteString(propertyValue));
+            if (metadata != null) {
+                propBuilder.addAllMetadata(metadata);
+            }
+            if (propertyHiddenVisibilities != null) {
+                for (ByteSequence propertyHiddenVisibility : propertyHiddenVisibilities) {
+                    propBuilder.addHiddenVisibilities(new ByteSequenceByteString(propertyHiddenVisibility));
+                }
+            }
+            builder.addProperties(propBuilder.build());
         }, fetchHints);
-        out.write(PROP_END);
     }
 
-    private void iterateProperties(PropertyDataHandler propertyDataHandler, IteratorFetchHints fetchHints) throws IOException {
+    private void iterateProperties(PropertyDataHandler propertyDataHandler, IteratorFetchHints fetchHints) {
         boolean includeHidden = fetchHints.isIncludeHidden();
         for (Map.Entry<ByteSequence, byte[]> propertyValueEntry : propertyValues.entrySet()) {
             ByteSequence key = propertyValueEntry.getKey();
@@ -135,28 +145,24 @@ public abstract class ElementData {
     }
 
     public Iterable<Property> getProperties(IteratorFetchHints fetchHints) {
-        final List<Property> results = new ArrayList<>();
-        try {
-            iterateProperties((
-                propertyKey,
-                propertyName,
-                propertyValue,
-                propertyVisibility,
-                propertyTimestamp,
-                propertyHiddenVisibilities,
-                metadata
-            ) -> results.add(new Property(
-                propertyKey,
-                propertyName,
-                propertyValue,
-                propertyVisibility,
-                propertyTimestamp,
-                propertyHiddenVisibilities,
-                metadata
-            )), fetchHints);
-        } catch (IOException ex) {
-            throw new VertexiumAccumuloIteratorException("Could not get properties", ex);
-        }
+        List<Property> results = new ArrayList<>();
+        iterateProperties((
+            propertyKey,
+            propertyName,
+            propertyValue,
+            propertyVisibility,
+            propertyTimestamp,
+            propertyHiddenVisibilities,
+            metadata
+        ) -> results.add(new Property(
+            propertyKey,
+            propertyName,
+            propertyValue,
+            propertyVisibility,
+            propertyTimestamp,
+            propertyHiddenVisibilities,
+            metadata
+        )), fetchHints);
         return results;
     }
 
@@ -173,7 +179,7 @@ public abstract class ElementData {
             long propertyTimestamp,
             Set<ByteSequence> propertyHiddenVisibilities,
             List<Integer> metadata
-        ) throws IOException;
+        );
     }
 
     private Set<ByteSequence> getPropertyHiddenVisibilities(

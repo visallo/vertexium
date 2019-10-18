@@ -3,6 +3,72 @@ option java_multiple_files = true;
 option java_package = "org.vertexium.accumulo.iterator.model.proto";
 package vertexium;
 
-message Element {
+message Vertex {
+    required Element element = 1;
+    oneof out_edge {
+        EdgeCounts out_edge_counts = 2;
+        EdgeRefs out_edge_refs = 3;
+    }
+    oneof in_edge {
+        EdgeCounts in_edge_counts = 4;
+        EdgeRefs in_edge_refs = 5;
+    }
+}
 
+message Edge {
+    required bytes in_vertex_id = 1;
+    required bytes out_vertex_id = 2;
+    required bytes label = 3;
+    required Element element = 4;
+}
+
+message Element {
+    required bytes id = 1;
+    required uint64 timestamp = 2;
+    required bytes visibility = 3;
+    repeated bytes hidden_visibilities = 4;
+    repeated bytes additional_visibilities = 5;
+    repeated string extended_table_names = 6;
+    repeated MetadataEntry metadata_entries = 7;
+    repeated Property properties = 8;
+}
+
+message MetadataEntry {
+    required bytes key = 1;
+    required bytes visibility = 2;
+    required bytes value = 3;
+}
+
+message Property {
+    required bytes key = 1;
+    required bytes name = 2;
+    required bytes visibility = 3;
+    required uint64 timestamp = 4;
+    required bytes value = 5;
+    repeated bytes hidden_visibilities = 6;
+    repeated uint32 metadata = 7;
+}
+
+message EdgeCounts {
+    repeated LabelEdgeCounts edges = 1;
+}
+
+message LabelEdgeCounts {
+    required bytes label = 1;
+    required uint32 count = 2;
+}
+
+message EdgeRefs {
+    repeated LabelEdgeRefs edges = 1;
+}
+
+message LabelEdgeRefs {
+    required bytes label = 1;
+    repeated EdgeRef edge_ref = 2;
+}
+
+message EdgeRef {
+    required bytes edge_id = 1;
+    required string vertex_id = 2;
+    required uint64 timestamp = 3;
 }

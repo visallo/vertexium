@@ -1,14 +1,13 @@
 package org.vertexium.accumulo.iterator.model;
 
+import com.google.protobuf.ByteArrayByteString;
+import com.google.protobuf.TextByteString;
+import org.apache.accumulo.core.data.Value;
 import org.apache.hadoop.io.Text;
-import org.vertexium.accumulo.iterator.util.DataOutputStreamUtils;
+import org.vertexium.accumulo.iterator.model.proto.*;
+import org.vertexium.accumulo.iterator.util.ByteArrayWrapper;
 
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 public class VertexElementData extends ElementData {
     public final EdgesWithEdgeInfo outEdges = new EdgesWithEdgeInfo();
@@ -28,15 +27,59 @@ public class VertexElementData extends ElementData {
     }
 
     @Override
-    protected void encode(DataOutputStream out, IteratorFetchHints fetchHints) throws IOException {
-        super.encode(out, fetchHints);
-        DataOutputStreamUtils.encodeEdges(
-            out,
-            outEdges,
-            fetchHints.isIncludeEdgeLabelsAndCounts() && !(fetchHints.isIncludeAllEdgeRefs() || fetchHints.isIncludeOutEdgeRefs()));
-        DataOutputStreamUtils.encodeEdges(
-            out,
-            inEdges,
-            fetchHints.isIncludeEdgeLabelsAndCounts() && !(fetchHints.isIncludeAllEdgeRefs() || fetchHints.isIncludeInEdgeRefs()));
+    public Value encode(IteratorFetchHints fetchHints) {
+        Vertex.Builder builder = Vertex.newBuilder()
+            .setElement(encodeElement(fetchHints));
+        if (fetchHints.isIncludeEdgeLabelsAndCounts() && !(fetchHints.isIncludeAllEdgeRefs() || fetchHints.isIncludeOutEdgeRefs())) {
+            builder.setOutEdgeCounts(encodeEdgeCounts(outEdges));
+        } else {
+            builder.setOutEdgeRefs(encodeEdgeRefs(outEdges));
+        }
+        if (fetchHints.isIncludeEdgeLabelsAndCounts() && !(fetchHints.isIncludeAllEdgeRefs() || fetchHints.isIncludeInEdgeRefs())) {
+            builder.setOutEdgeCounts(encodeEdgeCounts(inEdges));
+        } else {
+            builder.setOutEdgeRefs(encodeEdgeRefs(inEdges));
+        }
+        return new Value(builder.build().toByteArray());
+    }
+
+    private EdgeCounts encodeEdgeCounts(EdgesWithEdgeInfo edges) {
+        EdgeCounts.Builder edgeCounts = EdgeCounts.newBuilder();
+        Map<ByteArrayWrapper, List<Map.Entry<Text, EdgeInfo>>> edgesByLabels = getEdgesByLabel(edges);
+        for (Map.Entry<ByteArrayWrapper, List<Map.Entry<Text, EdgeInfo>>> entry : edgesByLabels.entrySet()) {
+            edgeCounts.addEdges(LabelEdgeCounts.newBuilder()
+                .setLabel(new ByteArrayByteString(entry.getKey().getData()))
+                .setCount(entry.getValue().size())
+                .build());
+        }
+        return edgeCounts.build();
+    }
+
+    private EdgeRefs encodeEdgeRefs(EdgesWithEdgeInfo edges) {
+        EdgeRefs.Builder edgeRefs = EdgeRefs.newBuilder();
+        Map<ByteArrayWrapper, List<Map.Entry<Text, EdgeInfo>>> edgesByLabels = getEdgesByLabel(edges);
+        for (Map.Entry<ByteArrayWrapper, List<Map.Entry<Text, EdgeInfo>>> entry : edgesByLabels.entrySet()) {
+            LabelEdgeRefs.Builder labelEdgeRefs = LabelEdgeRefs.newBuilder()
+                .setLabel(new ByteArrayByteString(entry.getKey().getData()));
+            for (Map.Entry<Text, EdgeInfo> edgeEntry : entry.getValue()) {
+                labelEdgeRefs.addEdgeRef(EdgeRef.newBuilder()
+                    .setEdgeId(new TextByteString(edgeEntry.getKey()))
+                    .setTimestamp(edgeEntry.getValue().getTimestamp())
+                    .setVertexId(edgeEntry.getValue().getVertexId())
+                    .build());
+            }
+            edgeRefs.addEdges(labelEdgeRefs.build());
+        }
+        return edgeRefs.build();
+    }
+
+    private static Map<ByteArrayWrapper, List<Map.Entry<Text, EdgeInfo>>> getEdgesByLabel(EdgesWithEdgeInfo edges) {
+        Map<ByteArrayWrapper, List<Map.Entry<Text, EdgeInfo>>> edgesByLabels = new HashMap<>();
+        for (Map.Entry<Text, EdgeInfo> edgeEntry : edges.getEntries()) {
+            ByteArrayWrapper label = new ByteArrayWrapper(edgeEntry.getValue().getLabelBytes());
+            List<Map.Entry<Text, EdgeInfo>> edgesByLabel = edgesByLabels.computeIfAbsent(label, k -> new ArrayList<>());
+            edgesByLabel.add(edgeEntry);
+        }
+        return edgesByLabels;
     }
 }

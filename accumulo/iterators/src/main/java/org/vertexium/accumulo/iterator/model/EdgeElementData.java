@@ -1,10 +1,9 @@
 package org.vertexium.accumulo.iterator.model;
 
+import com.google.protobuf.TextByteString;
+import org.apache.accumulo.core.data.Value;
 import org.apache.hadoop.io.Text;
-import org.vertexium.accumulo.iterator.util.DataOutputStreamUtils;
-
-import java.io.DataOutputStream;
-import java.io.IOException;
+import org.vertexium.accumulo.iterator.model.proto.Edge;
 
 public class EdgeElementData extends ElementData {
     public Text inVertexId;
@@ -20,15 +19,13 @@ public class EdgeElementData extends ElementData {
     }
 
     @Override
-    protected void encode(DataOutputStream out, IteratorFetchHints fetchHints) throws IOException {
-        super.encode(out, fetchHints);
-        DataOutputStreamUtils.encodeText(out, inVertexId);
-        DataOutputStreamUtils.encodeText(out, outVertexId);
-        DataOutputStreamUtils.encodeText(out, label);
-    }
-
-    @Override
-    protected byte getTypeId() {
-        return TYPE_ID_EDGE;
+    public Value encode(IteratorFetchHints fetchHints) {
+        Edge edge = Edge.newBuilder()
+            .setInVertexId(new TextByteString(inVertexId))
+            .setOutVertexId(new TextByteString(outVertexId))
+            .setLabel(new TextByteString(label))
+            .setElement(encodeElement(fetchHints))
+            .build();
+        return new Value(edge.toByteArray());
     }
 }

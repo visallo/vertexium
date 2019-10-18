@@ -18,6 +18,7 @@ import org.vertexium.util.PropertyCollection;
 
 import java.io.Serializable;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.stream.Stream;
@@ -98,6 +99,21 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
             null,
             null
         );
+    }
+
+    protected static List<MetadataEntry> createMetadataEntryFromIteratorValue(
+        List<org.vertexium.accumulo.iterator.model.proto.MetadataEntry> metadataEntries
+    ) {
+        throw new VertexiumException("not implemented");
+    }
+
+    protected static Iterable<Property> createPropertiesFromIteratorValue(
+        AccumuloGraph graph,
+        List<org.vertexium.accumulo.iterator.model.proto.Property> properties,
+        List<MetadataEntry> metadataEntries,
+        FetchHints fetchHints
+    ) {
+        throw new VertexiumException("not implemented");
     }
 
     @Override

@@ -1,24 +1,20 @@
 package org.vertexium.accumulo;
 
-import com.google.common.base.Function;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
+import com.google.protobuf.ByteString;
 import org.apache.accumulo.core.data.Key;
 import org.apache.accumulo.core.data.Value;
 import org.apache.hadoop.io.Text;
 import org.vertexium.*;
 import org.vertexium.accumulo.iterator.EdgeIterator;
-import org.vertexium.accumulo.iterator.model.ElementData;
-import org.vertexium.accumulo.util.DataInputStreamUtils;
 import org.vertexium.mutation.ExistingEdgeMutation;
 import org.vertexium.mutation.PropertyDeleteMutation;
 import org.vertexium.mutation.PropertySoftDeleteMutation;
+import org.vertexium.util.StreamUtils;
 
-import javax.annotation.Nullable;
-import java.io.ByteArrayInputStream;
-import java.io.DataInputStream;
 import java.io.IOException;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @SuppressWarnings("unchecked")
 public class AccumuloEdge extends AccumuloElement implements Edge {
@@ -76,35 +72,24 @@ public class AccumuloEdge extends AccumuloElement implements Edge {
         Authorizations authorizations
     ) {
         try {
-            String edgeId;
-            Visibility vertexVisibility;
-            Iterable<Property> properties;
-            Iterable<Visibility> hiddenVisibilities;
-            long timestamp;
-
-            ByteArrayInputStream bain = new ByteArrayInputStream(value.get());
-            final DataInputStream in = new DataInputStream(bain);
-            DataInputStreamUtils.decodeHeader(in, ElementData.TYPE_ID_EDGE);
-            edgeId = DataInputStreamUtils.decodeString(in);
-            timestamp = in.readLong();
-            vertexVisibility = new Visibility(DataInputStreamUtils.decodeString(in));
-
-            hiddenVisibilities = Iterables.transform(DataInputStreamUtils.decodeStringSet(in), new Function<String, Visibility>() {
-                @Nullable
-                @Override
-                public Visibility apply(String input) {
-                    return new Visibility(input);
-                }
-            });
-
-            ImmutableSet<String> additionalVisibilities = DataInputStreamUtils.decodeStringSet(in);
-
-            List<MetadataEntry> metadataEntries = DataInputStreamUtils.decodeMetadataEntries(in);
-            properties = DataInputStreamUtils.decodeProperties(graph, in, metadataEntries, fetchHints);
-            ImmutableSet<String> extendedDataTableNames = DataInputStreamUtils.decodeStringSet(in);
-            String inVertexId = DataInputStreamUtils.decodeString(in);
-            String outVertexId = DataInputStreamUtils.decodeString(in);
-            String label = graph.getNameSubstitutionStrategy().inflate(DataInputStreamUtils.decodeString(in));
+            org.vertexium.accumulo.iterator.model.proto.Edge protoEdge =
+                org.vertexium.accumulo.iterator.model.proto.Edge.parseFrom(value.get());
+            String edgeId = protoEdge.getElement().getId().toStringUtf8();
+            long timestamp = protoEdge.getElement().getTimestamp();
+            Visibility edgeVisibility = new Visibility(protoEdge.getElement().getVisibility().toStringUtf8());
+            Iterable<Visibility> hiddenVisibilities = protoEdge.getElement().getHiddenVisibilitiesList().stream()
+                .map(hiddenVisibility -> new Visibility(hiddenVisibility.toStringUtf8()))
+                .collect(Collectors.toSet());
+            ImmutableSet<String> additionalVisibilities = protoEdge.getElement().getAdditionalVisibilitiesList().stream()
+                .map(ByteString::toStringUtf8)
+                .collect(StreamUtils.toImmutableSet());
+            List<MetadataEntry> metadataEntries = createMetadataEntryFromIteratorValue(protoEdge.getElement().getMetadataEntriesList());
+            Iterable<Property> properties = createPropertiesFromIteratorValue(graph, protoEdge.getElement().getPropertiesList(), metadataEntries, fetchHints);
+            ImmutableSet<String> extendedDataTableNames = protoEdge.getElement().getExtendedTableNamesList().stream()
+                .collect(StreamUtils.toImmutableSet());
+            String inVertexId = protoEdge.getInVertexId().toStringUtf8();
+            String outVertexId = protoEdge.getOutVertexId().toStringUtf8();
+            String label = graph.getNameSubstitutionStrategy().inflate(protoEdge.getLabel().toStringUtf8());
 
             return new AccumuloEdge(
                 graph,
@@ -113,7 +98,7 @@ public class AccumuloEdge extends AccumuloElement implements Edge {
                 inVertexId,
                 label,
                 null,
-                vertexVisibility,
+                edgeVisibility,
                 properties,
                 null,
                 null,

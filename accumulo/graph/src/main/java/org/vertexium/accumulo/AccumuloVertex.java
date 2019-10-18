@@ -1,6 +1,7 @@
 package org.vertexium.accumulo;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.protobuf.ByteString;
 import org.apache.accumulo.core.data.Key;
 import org.apache.accumulo.core.data.Value;
 import org.apache.hadoop.io.Text;
@@ -9,22 +10,20 @@ import org.vertexium.accumulo.iterator.VertexIterator;
 import org.vertexium.accumulo.iterator.model.Edges;
 import org.vertexium.accumulo.iterator.model.EdgesWithCount;
 import org.vertexium.accumulo.iterator.model.EdgesWithEdgeInfo;
-import org.vertexium.accumulo.iterator.model.ElementData;
-import org.vertexium.accumulo.util.DataInputStreamUtils;
+import org.vertexium.accumulo.iterator.model.proto.EdgeCounts;
+import org.vertexium.accumulo.iterator.model.proto.EdgeRefs;
 import org.vertexium.mutation.ExistingElementMutation;
 import org.vertexium.mutation.ExistingElementMutationImpl;
 import org.vertexium.mutation.PropertyDeleteMutation;
 import org.vertexium.mutation.PropertySoftDeleteMutation;
 import org.vertexium.query.VertexQuery;
-import org.vertexium.util.ConvertingIterable;
-import org.vertexium.util.FilterIterable;
-import org.vertexium.util.JoinIterable;
-import org.vertexium.util.LookAheadIterable;
+import org.vertexium.util.*;
 
-import java.io.ByteArrayInputStream;
-import java.io.DataInputStream;
 import java.io.IOException;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @SuppressWarnings("unchecked")
@@ -113,34 +112,28 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
         Authorizations authorizations
     ) {
         try {
-            String vertexId;
-            Visibility vertexVisibility;
-            Iterable<Property> properties;
-            Set<Visibility> hiddenVisibilities;
-            Edges inEdges;
-            Edges outEdges;
-            long timestamp;
+            org.vertexium.accumulo.iterator.model.proto.Vertex protoVertex =
+                org.vertexium.accumulo.iterator.model.proto.Vertex.parseFrom(value.get());
+            String vertexId = protoVertex.getElement().getId().toStringUtf8();
+            long timestamp = protoVertex.getElement().getTimestamp();
+            Visibility vertexVisibility = new Visibility(protoVertex.getElement().getVisibility().toStringUtf8());
+            Iterable<Visibility> hiddenVisibilities = protoVertex.getElement().getHiddenVisibilitiesList().stream()
+                .map(hiddenVisibility -> new Visibility(hiddenVisibility.toStringUtf8()))
+                .collect(Collectors.toSet());
+            ImmutableSet<String> additionalVisibilities = protoVertex.getElement().getAdditionalVisibilitiesList().stream()
+                .map(ByteString::toStringUtf8)
+                .collect(StreamUtils.toImmutableSet());
+            List<MetadataEntry> metadataEntries = createMetadataEntryFromIteratorValue(protoVertex.getElement().getMetadataEntriesList());
+            Iterable<Property> properties = createPropertiesFromIteratorValue(graph, protoVertex.getElement().getPropertiesList(), metadataEntries, fetchHints);
+            ImmutableSet<String> extendedDataTableNames = protoVertex.getElement().getExtendedTableNamesList().stream()
+                .collect(StreamUtils.toImmutableSet());
 
-            ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(value.get());
-            DataInputStream in = new DataInputStream(byteArrayInputStream);
-            DataInputStreamUtils.decodeHeader(in, ElementData.TYPE_ID_VERTEX);
-            vertexId = DataInputStreamUtils.decodeString(in);
-            timestamp = in.readLong();
-            vertexVisibility = new Visibility(DataInputStreamUtils.decodeString(in));
-
-            ImmutableSet<String> hiddenVisibilityStrings = DataInputStreamUtils.decodeStringSet(in);
-            hiddenVisibilities = hiddenVisibilityStrings != null ?
-                hiddenVisibilityStrings.stream().map(Visibility::new).collect(Collectors.toSet()) :
-                null;
-
-            ImmutableSet<String> additionalVisibilities = DataInputStreamUtils.decodeStringSet(in);
-
-            List<MetadataEntry> metadataEntries = DataInputStreamUtils.decodeMetadataEntries(in);
-            properties = DataInputStreamUtils.decodeProperties(graph, in, metadataEntries, fetchHints);
-
-            ImmutableSet<String> extendedDataTableNames = DataInputStreamUtils.decodeStringSet(in);
-            outEdges = DataInputStreamUtils.decodeEdges(in, graph.getNameSubstitutionStrategy());
-            inEdges = DataInputStreamUtils.decodeEdges(in, graph.getNameSubstitutionStrategy());
+            Edges outEdges = protoVertex.hasOutEdgeCounts()
+                ? createEdgesFromIteratorValue(protoVertex.getOutEdgeCounts())
+                : createEdgesFromIteratorValue(protoVertex.getOutEdgeRefs());
+            Edges inEdges = protoVertex.hasInEdgeCounts()
+                ? createEdgesFromIteratorValue(protoVertex.getInEdgeCounts())
+                : createEdgesFromIteratorValue(protoVertex.getInEdgeRefs());
 
             return new AccumuloVertex(
                 graph,
@@ -161,6 +154,14 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
         } catch (IOException ex) {
             throw new VertexiumException("Could not read vertex", ex);
         }
+    }
+
+    private static Edges createEdgesFromIteratorValue(EdgeCounts edgeCounts) {
+        throw new VertexiumException("not implemented");
+    }
+
+    private static Edges createEdgesFromIteratorValue(EdgeRefs edgeRefs) {
+        throw new VertexiumException("not implemented");
     }
 
     @Override
