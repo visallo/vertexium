@@ -19,12 +19,12 @@ public class ByteSequenceByteString extends ByteString {
 
     @Override
     public byte byteAt(int i) {
-        throw new VertexiumAccumuloIteratorException("not implemented");
+        return byteSequence.byteAt(i);
     }
 
     @Override
     byte internalByteAt(int i) {
-        throw new VertexiumAccumuloIteratorException("not implemented");
+        return byteSequence.byteAt(i);
     }
 
     @Override

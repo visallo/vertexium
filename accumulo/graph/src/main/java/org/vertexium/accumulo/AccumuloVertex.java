@@ -129,11 +129,11 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
                 .collect(StreamUtils.toImmutableSet());
 
             Edges outEdges = protoVertex.hasOutEdgeCounts()
-                ? createEdgesFromIteratorValue(protoVertex.getOutEdgeCounts())
-                : createEdgesFromIteratorValue(protoVertex.getOutEdgeRefs());
+                ? createEdgesFromIteratorValue(graph.getNameSubstitutionStrategy(), protoVertex.getOutEdgeCounts())
+                : createEdgesFromIteratorValue(graph.getNameSubstitutionStrategy(), protoVertex.getOutEdgeRefs());
             Edges inEdges = protoVertex.hasInEdgeCounts()
-                ? createEdgesFromIteratorValue(protoVertex.getInEdgeCounts())
-                : createEdgesFromIteratorValue(protoVertex.getInEdgeRefs());
+                ? createEdgesFromIteratorValue(graph.getNameSubstitutionStrategy(), protoVertex.getInEdgeCounts())
+                : createEdgesFromIteratorValue(graph.getNameSubstitutionStrategy(), protoVertex.getInEdgeRefs());
 
             return new AccumuloVertex(
                 graph,
@@ -156,21 +156,21 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
         }
     }
 
-    private static Edges createEdgesFromIteratorValue(EdgeCounts edgeCounts) {
+    private static Edges createEdgesFromIteratorValue(AccumuloNameSubstitutionStrategy nameSubstitutionStrategy, EdgeCounts edgeCounts) {
         EdgesWithCount results = new EdgesWithCount();
         edgeCounts.getEdgesList().forEach(labelEdgeCounts -> {
             results.add(
-                labelEdgeCounts.getLabel().toStringUtf8(),
+                nameSubstitutionStrategy.inflate(labelEdgeCounts.getLabel()),
                 labelEdgeCounts.getCount()
             );
         });
         return results;
     }
 
-    private static Edges createEdgesFromIteratorValue(EdgeRefs edgeRefs) {
+    private static Edges createEdgesFromIteratorValue(AccumuloNameSubstitutionStrategy nameSubstitutionStrategy, EdgeRefs edgeRefs) {
         EdgesWithEdgeInfo results = new EdgesWithEdgeInfo();
         edgeRefs.getEdgesList().forEach(labelEdgeRefs -> {
-            String label = labelEdgeRefs.getLabel().toStringUtf8();
+            String label = nameSubstitutionStrategy.inflate(labelEdgeRefs.getLabel());
             labelEdgeRefs.getEdgeRefList().forEach(edgeRef -> {
                 results.add(
                     edgeRef.getEdgeId().toStringUtf8(),

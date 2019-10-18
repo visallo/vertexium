@@ -36,9 +36,9 @@ public class VertexElementData extends ElementData {
             builder.setOutEdgeRefs(encodeEdgeRefs(outEdges));
         }
         if (fetchHints.isIncludeEdgeLabelsAndCounts() && !(fetchHints.isIncludeAllEdgeRefs() || fetchHints.isIncludeInEdgeRefs())) {
-            builder.setOutEdgeCounts(encodeEdgeCounts(inEdges));
+            builder.setInEdgeCounts(encodeEdgeCounts(inEdges));
         } else {
-            builder.setOutEdgeRefs(encodeEdgeRefs(inEdges));
+            builder.setInEdgeRefs(encodeEdgeRefs(inEdges));
         }
         return new Value(builder.build().toByteArray());
     }
@@ -59,9 +59,11 @@ public class VertexElementData extends ElementData {
         EdgeRefs.Builder edgeRefs = EdgeRefs.newBuilder();
         Map<ByteArrayWrapper, List<Map.Entry<Text, EdgeInfo>>> edgesByLabels = getEdgesByLabel(edges);
         for (Map.Entry<ByteArrayWrapper, List<Map.Entry<Text, EdgeInfo>>> entry : edgesByLabels.entrySet()) {
+            byte[] label = entry.getKey().getData();
+            List<Map.Entry<Text, EdgeInfo>> edgeData = entry.getValue();
             LabelEdgeRefs.Builder labelEdgeRefs = LabelEdgeRefs.newBuilder()
-                .setLabel(new ByteArrayByteString(entry.getKey().getData()));
-            for (Map.Entry<Text, EdgeInfo> edgeEntry : entry.getValue()) {
+                .setLabel(new ByteArrayByteString(label));
+            for (Map.Entry<Text, EdgeInfo> edgeEntry : edgeData) {
                 labelEdgeRefs.addEdgeRef(EdgeRef.newBuilder()
                     .setEdgeId(new TextByteString(edgeEntry.getKey()))
                     .setTimestamp(edgeEntry.getValue().getTimestamp())

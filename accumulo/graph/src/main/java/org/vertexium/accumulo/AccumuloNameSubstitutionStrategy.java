@@ -1,5 +1,6 @@
 package org.vertexium.accumulo;
 
+import com.google.protobuf.ByteString;
 import org.apache.accumulo.core.data.ByteSequence;
 import org.cache2k.Cache;
 import org.cache2k.CacheBuilder;
@@ -36,6 +37,10 @@ public class AccumuloNameSubstitutionStrategy implements NameSubstitutionStrateg
     @Override
     public String inflate(String value) {
         return this.nameSubstitutionStrategy.inflate(value);
+    }
+
+    public String inflate(ByteString value) {
+        return this.nameSubstitutionStrategy.inflate(value.toStringUtf8());
     }
 
     public String inflate(ByteSequence text) {
