@@ -157,11 +157,32 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
     }
 
     private static Edges createEdgesFromIteratorValue(EdgeCounts edgeCounts) {
-        throw new VertexiumException("not implemented");
+        EdgesWithCount results = new EdgesWithCount();
+        edgeCounts.getEdgesList().forEach(labelEdgeCounts -> {
+            results.add(
+                labelEdgeCounts.getLabel().toStringUtf8(),
+                labelEdgeCounts.getCount()
+            );
+        });
+        return results;
     }
 
     private static Edges createEdgesFromIteratorValue(EdgeRefs edgeRefs) {
-        throw new VertexiumException("not implemented");
+        EdgesWithEdgeInfo results = new EdgesWithEdgeInfo();
+        edgeRefs.getEdgesList().forEach(labelEdgeRefs -> {
+            String label = labelEdgeRefs.getLabel().toStringUtf8();
+            labelEdgeRefs.getEdgeRefList().forEach(edgeRef -> {
+                results.add(
+                    edgeRef.getEdgeId().toStringUtf8(),
+                    new org.vertexium.accumulo.iterator.model.EdgeInfo(
+                        label,
+                        edgeRef.getVertexId(),
+                        edgeRef.getTimestamp()
+                    )
+                );
+            });
+        });
+        return results;
     }
 
     @Override

@@ -21,6 +21,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public abstract class AccumuloElement extends ElementBase implements Serializable, HasTimestamp {
@@ -104,7 +105,13 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
     protected static List<MetadataEntry> createMetadataEntryFromIteratorValue(
         List<org.vertexium.accumulo.iterator.model.proto.MetadataEntry> metadataEntries
     ) {
-        throw new VertexiumException("not implemented");
+        return metadataEntries.stream()
+            .map(me -> new MetadataEntry(
+                me.getKey().toStringUtf8(),
+                me.getVisibility().toStringUtf8(),
+                me.getValue().toByteArray()
+            ))
+            .collect(Collectors.toList());
     }
 
     protected static Iterable<Property> createPropertiesFromIteratorValue(
@@ -113,7 +120,25 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
         List<MetadataEntry> metadataEntries,
         FetchHints fetchHints
     ) {
-        throw new VertexiumException("not implemented");
+        return properties.stream()
+            .map(property -> {
+                Set<Visibility> hiddenVisibilities = property.getHiddenVisibilitiesList().stream()
+                    .map(hv -> new Visibility(hv.toStringUtf8()))
+                    .collect(Collectors.toSet());
+                return new LazyMutableProperty(
+                    graph,
+                    graph.getVertexiumSerializer(),
+                    property.getKey().toStringUtf8(),
+                    property.getName().toStringUtf8(),
+                    property.getValue().toByteArray(),
+                    new MetadataRef(metadataEntries, property.getMetadataList().stream().mapToInt(i -> i).toArray()),
+                    hiddenVisibilities,
+                    new Visibility(property.getVisibility().toStringUtf8()),
+                    property.getTimestamp(),
+                    fetchHints
+                );
+            })
+            .collect(Collectors.toList());
     }
 
     @Override
