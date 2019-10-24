@@ -23,7 +23,7 @@ public class VertexiumAssert {
         List<String> sortedIds = stream(ids).sorted().collect(Collectors.toList());
         Arrays.sort(expectedIds);
 
-        String idsString = idsToString(sortedIds.toArray(new String[sortedIds.size()]));
+        String idsString = idsToString(sortedIds.toArray(new String[0]));
         String expectedIdsString = idsToString(expectedIds);
         assertEquals("ids length mismatch found:[" + idsString + "] expected:[" + expectedIdsString + "]", expectedIds.length, sortedIds.size());
         for (int i = 0; i < expectedIds.length; i++) {
@@ -31,15 +31,28 @@ public class VertexiumAssert {
         }
     }
 
-    public static void assertVertexIdsAnyOrder(Iterable<Vertex> vertices, String... expectedIds) {
-        if (vertices instanceof QueryResultsIterable) {
-            assertEquals(expectedIds.length, ((QueryResultsIterable<Vertex>) vertices).getTotalHits());
-        }
-        assertElementIdsAnyOrder(vertices, expectedIds);
+    public static void assertVertexIdsAnyOrder(Iterable<? extends Vertex> vertices, String... expectedIds) {
+        assertVertexiumObjectIdsAnyOrder(vertices, (Object[]) expectedIds);
     }
 
-    public static void assertVertexIds(Iterable<Vertex> vertices, String... expectedIds) {
-        assertElementIds(vertices, expectedIds);
+    public static void assertEdgeIdsAnyOrder(Iterable<? extends Edge> edges, String... expectedIds) {
+        assertVertexiumObjectIdsAnyOrder(edges, (Object[]) expectedIds);
+    }
+
+    public static void assertElementIdsAnyOrder(Iterable<? extends Element> elements, String... expectedIds) {
+        assertVertexiumObjectIdsAnyOrder(elements, (Object[]) expectedIds);
+    }
+
+    public static void assertVertexIds(Iterable<? extends Vertex> vertices, String... expectedIds) {
+        assertVertexiumObjectIds(vertices, (Object[]) expectedIds);
+    }
+
+    public static void assertEdgeIds(Iterable<? extends Edge> edges, String... expectedIds) {
+        assertVertexiumObjectIds(edges, (Object[]) expectedIds);
+    }
+
+    public static void assertElementIds(Iterable<? extends Element> elements, String... expectedIds) {
+        assertVertexiumObjectIds(elements, (Object[]) expectedIds);
     }
 
     public static String idsToString(String[] ids) {
@@ -60,28 +73,45 @@ public class VertexiumAssert {
         }
     }
 
-    public static void assertEdgeIdsAnyOrder(Iterable<Edge> edges, String... expectedIds) {
-        assertElementIdsAnyOrder(edges, expectedIds);
-    }
+    public static void assertVertexiumObjectIdsAnyOrder(Iterable<? extends VertexiumObject> vertexiumObjects, Object... ids) {
+        if (vertexiumObjects instanceof QueryResultsIterable) {
+            assertEquals(ids.length, ((QueryResultsIterable) vertexiumObjects).getTotalHits());
+        }
 
-    public static void assertEdgeIds(Iterable<Edge> edges, String... ids) {
-        assertElementIds(edges, ids);
-    }
-
-    public static void assertElementIdsAnyOrder(Iterable<? extends Element> elements, String... expectedIds) {
-        List<Element> sortedElements = stream(elements)
-            .sorted(Comparator.comparing(Element::getId))
+        Comparator<Object> idCompare = (o1, o2) -> {
+            if (o1 instanceof String && o2 instanceof String) {
+                return ((String) o1).compareTo((String) o2);
+            }
+            throw new VertexiumException("Unhandled compare");
+        };
+        List<Object> foundIds = stream(vertexiumObjects)
+            .map(VertexiumObject::getId)
+            .sorted(idCompare)
             .collect(Collectors.toList());
-        Arrays.sort(expectedIds);
-        assertElementIds(sortedElements, expectedIds);
+        List<Object> expectedIds = Arrays.stream(ids)
+            .sorted(idCompare)
+            .collect(Collectors.toList());
+        assertEquals(
+            Joiner.on(", ").join(expectedIds),
+            Joiner.on(", ").join(foundIds)
+        );
     }
 
-    public static void assertElementIds(Iterable<? extends Element> elements, String... ids) {
-        String found = stream(elements).map(ElementId::getId).collect(Collectors.joining(", "));
-        String expected = Joiner.on(", ").join(ids);
-        assertEquals(expected, found);
-    }
+    public static void assertVertexiumObjectIds(Iterable<? extends VertexiumObject> vertexiumObjects, Object... ids) {
+        if (vertexiumObjects instanceof QueryResultsIterable) {
+            assertEquals(ids.length, ((QueryResultsIterable) vertexiumObjects).getTotalHits());
+        }
 
+        List<Object> foundIds = stream(vertexiumObjects)
+            .map(VertexiumObject::getId)
+            .collect(Collectors.toList());
+        List<Object> expectedIds = Arrays.stream(ids)
+            .collect(Collectors.toList());
+        assertEquals(
+            Joiner.on(", ").join(expectedIds),
+            Joiner.on(", ").join(foundIds)
+        );
+    }
 
     public static void assertResultsCount(int expectedCountAndTotalHits, QueryResultsIterable<? extends Element> results) {
         assertEquals(expectedCountAndTotalHits, results.getTotalHits());
