@@ -34,7 +34,7 @@ public class IndexRefreshTracker {
         pushCounter.increment();
         writeLock.lock();
         try {
-            LOGGER.debug("index added for refresh: %s", indexName);
+            LOGGER.trace("index added for refresh: %s", indexName);
             indexToMaxRefreshTime.put(indexName, getTime());
         } finally {
             writeLock.unlock();
@@ -67,8 +67,8 @@ public class IndexRefreshTracker {
     }
 
     protected void refresh(Client client, Set<String> indexNamesNeedingRefresh) {
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("refreshing: %s", String.join(", ", indexNamesNeedingRefresh));
+        if (LOGGER.isTraceEnabled()) {
+            LOGGER.trace("refreshing: %s", String.join(", ", indexNamesNeedingRefresh));
         }
         refreshTimer.time(() -> {
             client.admin().indices().prepareRefresh(indexNamesNeedingRefresh.toArray(new String[0])).execute().actionGet();
