@@ -105,18 +105,18 @@ public class DropWizardMetricRegistry implements VertexiumMetricRegistry {
         }
 
         @Override
-        public void increment() {
-            counter.inc();
+        public void increment(long amount) {
+            counter.inc(amount);
         }
 
         @Override
-        public void decrement() {
-            counter.dec();
+        public void decrement(long amount) {
+            counter.dec(amount);
         }
 
         @Override
-        public void getCount() {
-            counter.getCount();
+        public long getCount() {
+            return counter.getCount();
         }
     }
 
