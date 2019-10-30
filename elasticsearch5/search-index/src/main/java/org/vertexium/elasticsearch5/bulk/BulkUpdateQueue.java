@@ -6,7 +6,8 @@ import org.vertexium.elasticsearch5.IndexRefreshTracker;
 import org.vertexium.metric.*;
 import org.vertexium.util.VertexiumLogger;
 import org.vertexium.util.VertexiumLoggerFactory;
-import org.vertexium.util.VertexiumReentrantReadWriteLock;
+import org.vertexium.util.VertexiumReadWriteLock;
+import org.vertexium.util.VertexiumStampedLock;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -23,7 +24,7 @@ public class BulkUpdateQueue {
     private final BulkItemList submittedItems = new BulkItemList();
     private final PendingFuturesList pendingFutures = new PendingFuturesList();
     private final FailureList failures = new FailureList();
-    private final VertexiumReentrantReadWriteLock lock = new VertexiumReentrantReadWriteLock();
+    private final VertexiumReadWriteLock lock = new VertexiumStampedLock();
     private final int maxBatchSize;
     private final int maxBatchSizeInBytes;
     private final int maxFailCount;
@@ -50,6 +51,7 @@ public class BulkUpdateQueue {
         metricRegistry.getGauge(BulkUpdateQueue.class, "todo", "size", todoItems::size);
         metricRegistry.getGauge(BulkUpdateQueue.class, "pendingFutures", "size", pendingFutures::size);
         metricRegistry.getGauge(BulkUpdateQueue.class, "failures", "size", failures::size);
+        metricRegistry.getGauge(BulkUpdateQueue.class, "submittedItems", "size", submittedItems::size);
     }
 
     public boolean containsElementId(String elementId) {
@@ -60,6 +62,11 @@ public class BulkUpdateQueue {
 
     public Long getOldestTodoItemTime() {
         return lock.executeInReadLock(todoItems::getOldestItemTime);
+    }
+
+    public CompletableFuture<FlushBatchResult> flushFailuresAndSingleBatch() {
+        handleFailures(System.currentTimeMillis());
+        return flushSingleBatch();
     }
 
     public CompletableFuture<FlushBatchResult> flushSingleBatch() {
@@ -156,7 +163,7 @@ public class BulkUpdateQueue {
         return hadFailures;
     }
 
-    private synchronized List<BulkItem> getBatch() {
+    private List<BulkItem> getBatch() {
         return lock.executeInWriteLock(() -> {
             int batchSizeInBytes = 0;
             List<BulkItem> results = new ArrayList<>();

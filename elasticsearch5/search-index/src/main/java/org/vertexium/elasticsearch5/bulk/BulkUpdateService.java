@@ -66,10 +66,6 @@ public class BulkUpdateService {
         return bulkUpdateQueue.containsElementId(elementId);
     }
 
-    private CompletableFuture<FlushBatchResult> flushSingleBatch() {
-        return bulkUpdateQueue.flushSingleBatch();
-    }
-
     public void flush() {
         bulkUpdateQueue.flush();
     }
@@ -143,7 +139,11 @@ public class BulkUpdateService {
     public void flushUntilElementIdIsComplete(String elementId) {
         while (containsElementId(elementId)) {
             try {
-                flushSingleBatch().get();
+                FlushBatchResult result = bulkUpdateQueue.flushFailuresAndSingleBatch().get();
+                if (result == null) {
+                    LOGGER.info("result was empty waiting for %s. sleeping", elementId);
+                    Thread.sleep(1000);
+                }
             } catch (Exception ex) {
                 throw new VertexiumException(ex);
             }
