@@ -21,16 +21,21 @@ public class NullMetricRegistry implements VertexiumMetricRegistry {
     @Override
     public Counter getCounter(String name) {
         return countersByName.computeIfAbsent(name, s -> new Counter() {
+            long count;
+
             @Override
-            public void increment() {
+            public void increment(long amount) {
+                count += amount;
             }
 
             @Override
-            public void decrement() {
+            public void decrement(long amount) {
+                count += amount;
             }
 
             @Override
-            public void getCount() {
+            public long getCount() {
+                return count;
             }
         });
     }

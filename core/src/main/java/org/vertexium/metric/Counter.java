@@ -1,9 +1,17 @@
 package org.vertexium.metric;
 
 public interface Counter {
-    void increment();
+    default void increment() {
+        increment(1);
+    }
 
-    void decrement();
+    void increment(long amount);
 
-    void getCount();
+    default void decrement() {
+        decrement(1);
+    }
+
+    void decrement(long i);
+
+    long getCount();
 }
