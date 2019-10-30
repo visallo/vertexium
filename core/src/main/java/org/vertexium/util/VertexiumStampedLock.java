@@ -1,53 +1,52 @@
 package org.vertexium.util;
 
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.concurrent.locks.StampedLock;
 import java.util.function.Supplier;
 
-public class VertexiumReentrantReadWriteLock implements VertexiumReadWriteLock {
-    private final ReadWriteLock lock = new ReentrantReadWriteLock();
+public class VertexiumStampedLock implements VertexiumReadWriteLock {
+    private final StampedLock lock = new StampedLock();
 
-    public ReadWriteLock getLock() {
+    public StampedLock getLock() {
         return lock;
     }
 
     @Override
     public <T> T executeInReadLock(Supplier<T> fn) {
-        lock.readLock().lock();
+        long stamp = lock.readLock();
         try {
             return fn.get();
         } finally {
-            lock.readLock().unlock();
+            lock.unlockRead(stamp);
         }
     }
 
     @Override
     public void executeInReadLock(Runnable fn) {
-        lock.readLock().lock();
+        long stamp = lock.readLock();
         try {
             fn.run();
         } finally {
-            lock.readLock().unlock();
+            lock.unlockRead(stamp);
         }
     }
 
     @Override
     public <T> T executeInWriteLock(Supplier<T> fn) {
-        lock.writeLock().lock();
+        long stamp = lock.writeLock();
         try {
             return fn.get();
         } finally {
-            lock.writeLock().unlock();
+            lock.unlockWrite(stamp);
         }
     }
 
     @Override
     public void executeInWriteLock(Runnable fn) {
-        lock.writeLock().lock();
+        long stamp = lock.writeLock();
         try {
             fn.run();
         } finally {
-            lock.writeLock().unlock();
+            lock.unlockWrite(stamp);
         }
     }
 }

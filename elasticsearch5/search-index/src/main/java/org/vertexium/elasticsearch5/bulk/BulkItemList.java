@@ -1,12 +1,13 @@
 package org.vertexium.elasticsearch5.bulk;
 
-import org.vertexium.util.VertexiumReentrantReadWriteLock;
+import org.vertexium.util.VertexiumReadWriteLock;
+import org.vertexium.util.VertexiumStampedLock;
 
 import java.util.LinkedList;
 import java.util.List;
 
 public class BulkItemList {
-    private final VertexiumReentrantReadWriteLock lock = new VertexiumReentrantReadWriteLock();
+    private final VertexiumReadWriteLock lock = new VertexiumStampedLock();
     private final LinkedList<BulkItem> items = new LinkedList<>();
 
     public void add(BulkItem bulkItem) {
