@@ -5776,7 +5776,8 @@ public abstract class GraphTestBase {
         assertEquals(1, count(graph.query(AUTHORIZATIONS_B).has("prop1", "value1").vertices()));
         assertEquals(0, count(graph.query(AUTHORIZATIONS_A).has("prop1", "value1").vertices()));
 
-        Map<Object, Long> propertyCountByValue = queryGraphQueryWithTermsAggregation("prop1", ElementType.VERTEX, AUTHORIZATIONS_A);
+        TermsResult aggregationResult = queryGraphQueryWithTermsAggregationResult("prop1", ElementType.VERTEX, AUTHORIZATIONS_A);
+        Map<Object, Long> propertyCountByValue = termsBucketToMap(aggregationResult.getBuckets());
         if (propertyCountByValue != null) {
             assertEquals(null, propertyCountByValue.get("value1"));
         }
@@ -6863,11 +6864,16 @@ public abstract class GraphTestBase {
             .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
-        Map<Object, Long> vertexPropertyCountByValue = queryGraphQueryWithTermsAggregation("name", ElementType.VERTEX, AUTHORIZATIONS_EMPTY);
+        TermsResult aggregationResult = queryGraphQueryWithTermsAggregationResult(null, "name", ElementType.VERTEX, 10, AUTHORIZATIONS_EMPTY);
+        assertEquals(0, aggregationResult.getSumOfOtherDocCounts());
+        Map<Object, Long> vertexPropertyCountByValue = termsBucketToMap(aggregationResult.getBuckets());
         assumeTrue("terms aggregation not supported", vertexPropertyCountByValue != null);
         assertEquals(2, vertexPropertyCountByValue.size());
         assertEquals(2L, (long) vertexPropertyCountByValue.get("Joe"));
         assertEquals(searchIndexFieldLevelSecurity ? 1L : 2L, (long) vertexPropertyCountByValue.get("Joseph"));
+
+        aggregationResult = queryGraphQueryWithTermsAggregationResult(null, "name", ElementType.VERTEX, 1, AUTHORIZATIONS_EMPTY);
+        assertEquals(1, aggregationResult.getSumOfOtherDocCounts());
 
         vertexPropertyCountByValue = queryGraphQueryWithTermsAggregation("emptyField", ElementType.VERTEX, AUTHORIZATIONS_EMPTY);
         assumeTrue("terms aggregation not supported", vertexPropertyCountByValue != null);
@@ -6991,16 +6997,28 @@ public abstract class GraphTestBase {
     }
 
     private Map<Object, Long> queryGraphQueryWithTermsAggregation(String queryString, String propertyName, ElementType elementType, Authorizations authorizations) {
+        TermsResult aggregationResult = queryGraphQueryWithTermsAggregationResult(queryString, propertyName, elementType, null, authorizations);
+        return termsBucketToMap(aggregationResult.getBuckets());
+    }
+
+    private TermsResult queryGraphQueryWithTermsAggregationResult(String propertyName, ElementType elementType, Authorizations authorizations) {
+        return queryGraphQueryWithTermsAggregationResult(null, propertyName, elementType, null, authorizations);
+    }
+
+    private TermsResult queryGraphQueryWithTermsAggregationResult(String queryString, String propertyName, ElementType elementType, Integer buckets, Authorizations authorizations) {
         Query q = (queryString == null ? graph.query(authorizations) : graph.query(queryString, authorizations)).limit(0);
         TermsAggregation agg = new TermsAggregation("terms-count", propertyName);
+        if (buckets != null) {
+            agg.setSize(buckets);
+        }
         if (!q.isAggregationSupported(agg)) {
             LOGGER.warn("%s unsupported", agg.getClass().getName());
             return null;
         }
         q.addAggregation(agg);
         QueryResultsIterable<? extends Element> elements = elementType == ElementType.VERTEX ? q.vertices() : q.edges();
-        TermsResult aggregationResult = elements.getAggregationResult("terms-count", TermsResult.class);
-        return termsBucketToMap(aggregationResult.getBuckets());
+        return elements.getAggregationResult("terms-count", TermsResult.class);
+
     }
 
     @Test
