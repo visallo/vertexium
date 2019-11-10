@@ -1,3 +1,6 @@
+# v4.8.1
+* Added: Term aggregation result includes `sum_other_doc_count` and `doc_count_error_upper_bound`
+
 # v4.8.0
 * Added: Option to refresh on flush as opposed to flushing at query time
 * Added: Graph.getElements - get multiple elements (vertices and edges) with one call

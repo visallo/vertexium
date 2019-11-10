@@ -87,14 +87,19 @@ public class DefaultGraphQueryIterableWithAggregations<T extends VertexiumObject
         Map<Object, List<T>> elementsByProperty = getElementsByProperty(it, propertyName, o -> o);
         elementsByProperty = collapseBucketsByCase(elementsByProperty);
 
+        long other = 0;
         List<TermsBucket> buckets = new ArrayList<>();
         for (Map.Entry<Object, List<T>> entry : elementsByProperty.entrySet()) {
             Object key = entry.getKey();
             int count = entry.getValue().size();
-            Map<String, AggregationResult> nestedResults = getNestedResults(agg.getNestedAggregations(), entry.getValue());
-            buckets.add(new TermsBucket(key, count, nestedResults));
+            if (agg.getSize() == null || buckets.size() < agg.getSize()) {
+                Map<String, AggregationResult> nestedResults = getNestedResults(agg.getNestedAggregations(), entry.getValue());
+                buckets.add(new TermsBucket(key, count, nestedResults));
+            } else {
+                other += count;
+            }
         }
-        return new TermsResult(buckets);
+        return new TermsResult(buckets, other, 0);
     }
 
     private Map<Object, List<T>> collapseBucketsByCase(Map<Object, List<T>> elementsByProperty) {
