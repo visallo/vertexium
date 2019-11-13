@@ -115,7 +115,8 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
     private String[] indexNamesAsArray;
     private IndexSelectionStrategy indexSelectionStrategy;
     private boolean allFieldEnabled;
-    public static final Pattern AGGREGATION_NAME_PATTERN = Pattern.compile("(.*?)_([0-9a-f]+)");
+    public static final String AGGREGATION_HAS_NOT_SUFFIX = "HAS_NOT_FILTER";
+    public static final Pattern AGGREGATION_NAME_PATTERN = Pattern.compile("(.*?)_([0-9a-f]+|" + AGGREGATION_HAS_NOT_SUFFIX + ")");
     private final PropertyNameVisibilitiesStore propertyNameVisibilitiesStore;
     private final BulkUpdateService bulkUpdateService;
     private final String geoShapePrecision;

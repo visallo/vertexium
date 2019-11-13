@@ -5,6 +5,7 @@ import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.aggregations.Aggregation;
 import org.elasticsearch.search.aggregations.bucket.MultiBucketsAggregation;
+import org.elasticsearch.search.aggregations.bucket.filter.Filter;
 import org.elasticsearch.search.aggregations.bucket.geogrid.GeoHashGrid;
 import org.elasticsearch.search.aggregations.bucket.geogrid.InternalGeoHashGrid;
 import org.elasticsearch.search.aggregations.bucket.histogram.Histogram;
@@ -28,6 +29,9 @@ import org.vertexium.type.GeoRect;
 import org.vertexium.util.StreamUtils;
 
 import java.util.*;
+
+import static org.vertexium.elasticsearch5.Elasticsearch5SearchIndex.AGGREGATION_HAS_NOT_SUFFIX;
+import static org.vertexium.query.TermsResult.NOT_COMPUTED;
 
 public class ElasticsearchGraphQueryIterable<T> extends DefaultGraphQueryIterable<T> implements
     IterableWithTotalHits<T>,
@@ -127,6 +131,14 @@ public class ElasticsearchGraphQueryIterable<T> extends DefaultGraphQueryIterabl
             throw new VertexiumException("Cannot reduce zero sized aggregation list");
         }
         Aggregation first = aggs.get(0);
+        if (first.getName().endsWith(AGGREGATION_HAS_NOT_SUFFIX)) {
+            if (aggs.size() > 1) {
+                first = aggs.get(1);
+            } else {
+                throw new VertexiumException("Unhandled aggregation. Found HasNot filter with no associated aggregations.");
+            }
+        }
+
         if (first instanceof HistogramAggregation || first instanceof InternalHistogram || first instanceof InternalDateHistogram) {
             return reduceHistogramResults(query, aggs);
         }
@@ -244,6 +256,7 @@ public class ElasticsearchGraphQueryIterable<T> extends DefaultGraphQueryIterabl
         Map<Object, List<MultiBucketsAggregation.Bucket>> bucketsByKey = new HashMap<>();
         long sumOther = 0;
         long error = 0;
+        long hasNot = NOT_COMPUTED;
         for (Aggregation agg : aggs) {
             if (agg instanceof Terms) {
                 Terms h = (Terms) agg;
@@ -266,6 +279,9 @@ public class ElasticsearchGraphQueryIterable<T> extends DefaultGraphQueryIterabl
                     List<MultiBucketsAggregation.Bucket> existingBucketByName = bucketsByKey.computeIfAbsent(mapKey, k -> new ArrayList<>());
                     existingBucketByName.add(b);
                 }
+            } else if (agg instanceof Filter && agg.getName().endsWith(AGGREGATION_HAS_NOT_SUFFIX)) {
+                Filter filter = (Filter) agg;
+                hasNot = filter.getDocCount();
             } else {
                 throw new VertexiumException("Aggregation is not a terms: " + agg.getClass().getName());
             }
@@ -273,6 +289,7 @@ public class ElasticsearchGraphQueryIterable<T> extends DefaultGraphQueryIterabl
 
         final long sumOfOtherDocCounts = sumOther;
         final long docCountErrorUpperBound = error;
+        final long hasNotCount = hasNot;
 
         return new MultiBucketsAggregationReducer<TermsResult, TermsBucket>() {
             @Override
@@ -282,7 +299,7 @@ public class ElasticsearchGraphQueryIterable<T> extends DefaultGraphQueryIterabl
 
             @Override
             protected TermsResult bucketsToResults(List<TermsBucket> buckets) {
-                return new TermsResult(buckets, sumOfOtherDocCounts, docCountErrorUpperBound);
+                return new TermsResult(buckets, sumOfOtherDocCounts, docCountErrorUpperBound, hasNotCount);
             }
         }.reduce(query, bucketsByKey);
     }

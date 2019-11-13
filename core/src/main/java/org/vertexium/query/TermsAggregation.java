@@ -8,6 +8,7 @@ public class TermsAggregation extends Aggregation implements SupportsNestedAggre
     private final String propertyName;
     private final List<Aggregation> nestedAggregations = new ArrayList<>();
     private Integer size;
+    private boolean includeHasNotCount;
 
     public TermsAggregation(String aggregationName, String propertyName) {
         this.aggregationName = aggregationName;
@@ -38,5 +39,13 @@ public class TermsAggregation extends Aggregation implements SupportsNestedAggre
 
     public void setSize(Integer size) {
         this.size = size;
+    }
+
+    public boolean isIncludeHasNotCount() {
+        return includeHasNotCount;
+    }
+
+    public void setIncludeHasNotCount(boolean includeHasNotCount) {
+        this.includeHasNotCount = includeHasNotCount;
     }
 }

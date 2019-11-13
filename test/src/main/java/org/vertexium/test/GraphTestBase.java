@@ -47,6 +47,7 @@ import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
 import static org.junit.Assume.assumeTrue;
+import static org.vertexium.query.TermsResult.NOT_COMPUTED;
 import static org.vertexium.test.util.VertexiumAssert.*;
 import static org.vertexium.util.IterableUtils.count;
 import static org.vertexium.util.IterableUtils.toList;
@@ -6855,6 +6856,8 @@ public abstract class GraphTestBase {
             .addPropertyValue("k2", "name", "Joseph", VISIBILITY_B)
             .addPropertyValue("", "age", 20, VISIBILITY_EMPTY)
             .save(AUTHORIZATIONS_A_AND_B);
+        graph.prepareVertex("v3", VISIBILITY_EMPTY)
+            .save(AUTHORIZATIONS_A_AND_B);
         graph.prepareEdge("e1", "v1", "v2", LABEL_LABEL1, VISIBILITY_EMPTY)
             .addPropertyValue("k1", "name", "Joe", VISIBILITY_EMPTY)
             .save(AUTHORIZATIONS_A_AND_B);
@@ -6864,16 +6867,18 @@ public abstract class GraphTestBase {
             .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
-        TermsResult aggregationResult = queryGraphQueryWithTermsAggregationResult(null, "name", ElementType.VERTEX, 10, AUTHORIZATIONS_EMPTY);
+        TermsResult aggregationResult = queryGraphQueryWithTermsAggregationResult(null, "name", ElementType.VERTEX, 10, true, AUTHORIZATIONS_EMPTY);
         assertEquals(0, aggregationResult.getSumOfOtherDocCounts());
+        assertEquals(1, aggregationResult.getHasNotCount());
         Map<Object, Long> vertexPropertyCountByValue = termsBucketToMap(aggregationResult.getBuckets());
         assumeTrue("terms aggregation not supported", vertexPropertyCountByValue != null);
         assertEquals(2, vertexPropertyCountByValue.size());
         assertEquals(2L, (long) vertexPropertyCountByValue.get("Joe"));
         assertEquals(searchIndexFieldLevelSecurity ? 1L : 2L, (long) vertexPropertyCountByValue.get("Joseph"));
 
-        aggregationResult = queryGraphQueryWithTermsAggregationResult(null, "name", ElementType.VERTEX, 1, AUTHORIZATIONS_EMPTY);
+        aggregationResult = queryGraphQueryWithTermsAggregationResult(null, "name", ElementType.VERTEX, 1, false, AUTHORIZATIONS_EMPTY);
         assertEquals(1, aggregationResult.getSumOfOtherDocCounts());
+        assertEquals(NOT_COMPUTED, aggregationResult.getHasNotCount());
 
         vertexPropertyCountByValue = queryGraphQueryWithTermsAggregation("emptyField", ElementType.VERTEX, AUTHORIZATIONS_EMPTY);
         assumeTrue("terms aggregation not supported", vertexPropertyCountByValue != null);
@@ -6997,17 +7002,18 @@ public abstract class GraphTestBase {
     }
 
     private Map<Object, Long> queryGraphQueryWithTermsAggregation(String queryString, String propertyName, ElementType elementType, Authorizations authorizations) {
-        TermsResult aggregationResult = queryGraphQueryWithTermsAggregationResult(queryString, propertyName, elementType, null, authorizations);
+        TermsResult aggregationResult = queryGraphQueryWithTermsAggregationResult(queryString, propertyName, elementType, null, false, authorizations);
         return termsBucketToMap(aggregationResult.getBuckets());
     }
 
     private TermsResult queryGraphQueryWithTermsAggregationResult(String propertyName, ElementType elementType, Authorizations authorizations) {
-        return queryGraphQueryWithTermsAggregationResult(null, propertyName, elementType, null, authorizations);
+        return queryGraphQueryWithTermsAggregationResult(null, propertyName, elementType, null, false, authorizations);
     }
 
-    private TermsResult queryGraphQueryWithTermsAggregationResult(String queryString, String propertyName, ElementType elementType, Integer buckets, Authorizations authorizations) {
+    private TermsResult queryGraphQueryWithTermsAggregationResult(String queryString, String propertyName, ElementType elementType, Integer buckets, boolean includeHasNotCount, Authorizations authorizations) {
         Query q = (queryString == null ? graph.query(authorizations) : graph.query(queryString, authorizations)).limit(0);
         TermsAggregation agg = new TermsAggregation("terms-count", propertyName);
+        agg.setIncludeHasNotCount(includeHasNotCount);
         if (buckets != null) {
             agg.setSize(buckets);
         }
