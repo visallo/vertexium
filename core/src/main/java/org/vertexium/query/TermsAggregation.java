@@ -45,6 +45,11 @@ public class TermsAggregation extends Aggregation implements SupportsNestedAggre
         return includeHasNotCount;
     }
 
+    /**
+     * Setting this parameter to true will cause the aggregation to compute
+     * the number of elements that do not have a value for the property
+     * being aggregated on.
+     */
     public void setIncludeHasNotCount(boolean includeHasNotCount) {
         this.includeHasNotCount = includeHasNotCount;
     }

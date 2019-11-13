@@ -33,6 +33,11 @@ public class TermsResult extends AggregationResult {
         return docCountErrorUpperBound;
     }
 
+    /**
+     * @return If the parameter includeHasNotCount was set to true on the TermsAggregation, this will
+     *         return the number of elements that do not have a value for the property being aggregated.
+     *         If that parameter was false, this will return NOT_COMPUTED (-1).
+     */
     public long getHasNotCount() {
         return hasNotCount;
     }
