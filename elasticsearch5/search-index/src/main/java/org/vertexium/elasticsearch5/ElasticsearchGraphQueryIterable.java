@@ -242,9 +242,13 @@ public class ElasticsearchGraphQueryIterable<T> extends DefaultGraphQueryIterabl
 
     private static TermsResult reduceTermsResults(ElasticsearchSearchQueryBase query, List<Aggregation> aggs) {
         Map<Object, List<MultiBucketsAggregation.Bucket>> bucketsByKey = new HashMap<>();
+        long sumOther = 0;
+        long error = 0;
         for (Aggregation agg : aggs) {
             if (agg instanceof Terms) {
                 Terms h = (Terms) agg;
+                sumOther += h.getSumOfOtherDocCounts();
+                error += h.getDocCountError();
                 for (Terms.Bucket b : h.getBuckets()) {
                     TopHits exactMatchTopHits = b.getAggregations().get(ElasticsearchSearchQueryBase.TOP_HITS_AGGREGATION_NAME);
                     String mapKey = bucketKeyToString(b.getKey(), exactMatchTopHits);
@@ -266,6 +270,10 @@ public class ElasticsearchGraphQueryIterable<T> extends DefaultGraphQueryIterabl
                 throw new VertexiumException("Aggregation is not a terms: " + agg.getClass().getName());
             }
         }
+
+        final long sumOfOtherDocCounts = sumOther;
+        final long docCountErrorUpperBound = error;
+
         return new MultiBucketsAggregationReducer<TermsResult, TermsBucket>() {
             @Override
             protected TermsBucket createBucket(Object key, long count, Map<String, AggregationResult> nestedResults, List<MultiBucketsAggregation.Bucket> buckets) {
@@ -274,7 +282,7 @@ public class ElasticsearchGraphQueryIterable<T> extends DefaultGraphQueryIterabl
 
             @Override
             protected TermsResult bucketsToResults(List<TermsBucket> buckets) {
-                return new TermsResult(buckets);
+                return new TermsResult(buckets, sumOfOtherDocCounts, docCountErrorUpperBound);
             }
         }.reduce(query, bucketsByKey);
     }
