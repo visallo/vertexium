@@ -5,6 +5,8 @@ import org.vertexium.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.vertexium.query.TermsResult.NOT_COMPUTED;
+
 public class DefaultGraphQueryIterableWithAggregations<T extends VertexiumObject> extends DefaultGraphQueryIterable<T> {
     private final Collection<Aggregation> aggregations;
 
@@ -84,8 +86,15 @@ public class DefaultGraphQueryIterableWithAggregations<T extends VertexiumObject
 
     private TermsResult getTermsAggregationResult(TermsAggregation agg, Iterator<T> it) {
         String propertyName = agg.getPropertyName();
-        Map<Object, List<T>> elementsByProperty = getElementsByProperty(it, propertyName, o -> o);
+        String missingFlag = "PROPERTY_MISSING";
+        Map<Object, List<T>> elementsByProperty = getElementsByProperty(it, propertyName, o -> o, missingFlag);
         elementsByProperty = collapseBucketsByCase(elementsByProperty);
+
+        long hasNotCount = NOT_COMPUTED;
+        if (agg.isIncludeHasNotCount()) {
+            hasNotCount = elementsByProperty.containsKey(missingFlag) ? elementsByProperty.get(missingFlag).size() : 0;
+        }
+        elementsByProperty.remove(missingFlag);
 
         long other = 0;
         List<TermsBucket> buckets = new ArrayList<>();
@@ -99,7 +108,7 @@ public class DefaultGraphQueryIterableWithAggregations<T extends VertexiumObject
                 other += count;
             }
         }
-        return new TermsResult(buckets, other, 0);
+        return new TermsResult(buckets, other, 0, hasNotCount);
     }
 
     private Map<Object, List<T>> collapseBucketsByCase(Map<Object, List<T>> elementsByProperty) {
@@ -149,7 +158,7 @@ public class DefaultGraphQueryIterableWithAggregations<T extends VertexiumObject
             calendar.setTime(d);
             //noinspection MagicConstant
             return calendar.get(agg.getCalendarField());
-        });
+        }, null);
 
         Map<Integer, HistogramBucket> buckets = new HashMap<>(24);
         for (Map.Entry<Integer, List<T>> entry : elementsByProperty.entrySet()) {
@@ -170,15 +179,21 @@ public class DefaultGraphQueryIterableWithAggregations<T extends VertexiumObject
         return results;
     }
 
-    private <TKey> Map<TKey, List<T>> getElementsByProperty(Iterator<T> it, String propertyName, ValueConverter<TKey> valueConverter) {
+    private <TKey> Map<TKey, List<T>> getElementsByProperty(Iterator<T> it, String propertyName, ValueConverter<TKey> valueConverter, TKey missingFlag) {
         Map<TKey, List<T>> elementsByProperty = new HashMap<>();
         while (it.hasNext()) {
             T vertexiumObject = it.next();
             Iterable<Object> values = vertexiumObject.getPropertyValues(propertyName);
+            boolean hasValues = false;
             for (Object value : values) {
+                hasValues = true;
                 TKey convertedValue = valueConverter.convert(value);
                 elementsByProperty.computeIfAbsent(convertedValue, k -> new ArrayList<>())
                     .add(vertexiumObject);
+            }
+
+            if (!hasValues && missingFlag != null) {
+                elementsByProperty.computeIfAbsent(missingFlag, k -> new ArrayList<>()).add(vertexiumObject);
             }
         }
         return elementsByProperty;

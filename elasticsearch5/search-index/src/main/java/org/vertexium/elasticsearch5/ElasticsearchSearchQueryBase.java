@@ -24,6 +24,7 @@ import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.aggregations.AbstractAggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
+import org.elasticsearch.search.aggregations.bucket.filter.FilterAggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.geogrid.GeoGridAggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramAggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramInterval;
@@ -1559,7 +1560,15 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
 
                 termsAggs.add(termsAgg);
             }
+
+            if (agg.isIncludeHasNotCount()) {
+                QueryBuilder hasNotQuery = getFilterForHasNotPropertyContainer(new HasNotPropertyContainer(fieldName));
+                String aggregationName = createAggregationName(agg.getAggregationName(), AGGREGATION_HAS_NOT_SUFFIX);
+                FilterAggregationBuilder filterAgg = AggregationBuilders.filter(aggregationName, hasNotQuery);
+                termsAggs.add(filterAgg);
+            }
         }
+
         return termsAggs;
     }
 
