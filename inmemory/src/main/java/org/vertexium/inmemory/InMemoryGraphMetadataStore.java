@@ -28,6 +28,11 @@ public class InMemoryGraphMetadataStore extends GraphMetadataStore implements Se
     }
 
     @Override
+    public void reloadMetadata() {
+        // Nothing to do here
+    }
+
+    @Override
     public Object getMetadata(String key) {
         metadataLock.readLock().lock();
         try {

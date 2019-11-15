@@ -32,11 +32,17 @@ public class AccumuloResource extends ExternalResource {
     private MiniAccumuloCluster accumulo;
 
     private Map extraConfig = null;
+    private String instanceName = null;
 
     public AccumuloResource() {
     }
 
     public AccumuloResource(Map extraConfig) {
+        this.extraConfig = extraConfig;
+    }
+
+    public AccumuloResource(String instanceName, Map extraConfig) {
+        this.instanceName = instanceName;
         this.extraConfig = extraConfig;
     }
 
@@ -160,6 +166,9 @@ public class AccumuloResource extends ExternalResource {
 
         MiniAccumuloConfig miniAccumuloConfig = new MiniAccumuloConfig(tempDir, ACCUMULO_PASSWORD);
         miniAccumuloConfig.setZooKeeperStartupTime(60000);
+        if (instanceName != null) {
+            miniAccumuloConfig.setInstanceName(instanceName);
+        }
         accumulo = new MiniAccumuloCluster(miniAccumuloConfig);
         accumulo.start();
 

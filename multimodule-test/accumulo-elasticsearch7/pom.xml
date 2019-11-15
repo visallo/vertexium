@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.vertexium</groupId>
+        <artifactId>vertexium-multimodule-test</artifactId>
+        <version>4.8.2-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>vertexium-accumulo-elasticsearch7-multimodule-test</artifactId>
+    <name>Vertexium: Multi-module tests: Accumulo and Elasticsearch7</name>
+
+    <properties>
+        <elasticsearch-cluster-runner.version>7.5.0.0</elasticsearch-cluster-runner.version>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.vertexium</groupId>
+            <artifactId>vertexium-test</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.vertexium</groupId>
+            <artifactId>vertexium-accumulo</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.vertexium</groupId>
+            <artifactId>vertexium-accumulo</artifactId>
+            <version>${project.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.accumulo</groupId>
+            <artifactId>accumulo-minicluster</artifactId>
+            <version>${accumulo.version}</version>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>asm</groupId>
+                    <artifactId>asm</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>org.vertexium</groupId>
+            <artifactId>vertexium-kryo-serializer</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.vertexium</groupId>
+            <artifactId>vertexium-elasticsearch7-index</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.vertexium</groupId>
+            <artifactId>vertexium-elasticsearch7-index</artifactId>
+            <version>${project.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.codelibs</groupId>
+            <artifactId>elasticsearch-cluster-runner</artifactId>
+            <version>${elasticsearch-cluster-runner.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+    </dependencies>
+</project>

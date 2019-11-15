@@ -55,7 +55,9 @@
     <properties>
         <java.source.version>1.8</java.source.version>
         <java.target.version>1.8</java.target.version>
-        <java.release.version>1.8</java.release.version>
+        <java.release.version>8</java.release.version>
+
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
         <junit.version>4.11</junit.version>
         <slf4j.version>1.7.5</slf4j.version>
@@ -84,18 +86,6 @@
         <maven.plugin.buildnumber.version>1.2</maven.plugin.buildnumber.version>
         <maven.plugin.jarjar.version>1.9</maven.plugin.jarjar.version>
         <maven.plugin.deploy.version>2.8.2</maven.plugin.deploy.version>
-
-        <!-- used by: elasticsearch main for dynamic scripting, and test for boost formulas -->
-        <groovy.version>2.4.5</groovy.version>
-
-        <!-- used by: elasticsearch geo_shape type -->
-        <jts.version>1.13</jts.version>
-        <spatial4j.version>0.6</spatial4j.version>
-
-        <!-- used by: elasticsearch5* -->
-        <elasticsearch5.version>5.6.10</elasticsearch5.version>
-        <elasticsearch-cluster-runner.version>5.6.9.0</elasticsearch-cluster-runner.version>
-        <log4j2.version>2.9.0</log4j2.version> <!-- used during testing to run the embedded ES server -->
 
         <!-- used by: accumulo* -->
         <accumulo.version>1.9.3</accumulo.version>
@@ -185,12 +175,6 @@
                 <version>${jcommander.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.codehaus.groovy</groupId>
-                <artifactId>groovy</artifactId>
-                <version>${groovy.version}</version>
-                <scope>test</scope>
-            </dependency>
-            <dependency>
                 <groupId>org.apache.curator</groupId>
                 <artifactId>curator-framework</artifactId>
                 <version>${curator.version}</version>
@@ -232,18 +216,6 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>${maven.plugin.compiler.version}</version>
-                <configuration>
-                    <source>${java.source.version}</source>
-                    <target>${java.target.version}</target>
-                    <showWarnings>true</showWarnings>
-                    <failOnWarning>true</failOnWarning>
-                    <!-- Maven doesn't detect deprecation warnings without this set to true -->
-                    <showDeprecation>true</showDeprecation>
-                    <compilerArgs>
-                        <!-- Maven doesn't detect unchecked warnings without this lint argument -->
-                        <arg>-Xlint:unchecked</arg>
-                    </compilerArgs>
-                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -371,7 +343,7 @@
                     <consoleOutput>true</consoleOutput>
                     <violationSeverity>warning</violationSeverity>
                     <failsOnError>true</failsOnError>
-                    <failOnViolaton>true</failOnViolaton>
+                    <failOnViolation>true</failOnViolation>
                 </configuration>
                 <dependencies>
                     <dependency>
@@ -415,14 +387,74 @@
         <module>security</module>
         <module>accumulo</module>
         <module>elasticsearch5</module>
+        <module>elasticsearch7</module>
         <module>inmemory</module>
         <module>cypher</module>
         <module>kryo-serializer</module>
         <module>xstream-serializer</module>
-
     </modules>
 
     <profiles>
+        <profile>
+
+            <id>build-jdk8</id>
+            <activation>
+              <jdk>(,9)</jdk>
+            </activation>
+            <build>
+                <pluginManagement>
+                    <plugins>
+                        <plugin>
+                            <groupId>org.apache.maven.plugins</groupId>
+                            <artifactId>maven-compiler-plugin</artifactId>
+                            <version>${maven.plugin.compiler.version}</version>
+                            <configuration>
+                                <source>${java.source.version}</source>
+                                <target>${java.target.version}</target>
+                                <showWarnings>true</showWarnings>
+                                <failOnWarning>true</failOnWarning>
+                                <!-- Maven doesn't detect deprecation warnings without this set to true -->
+                                <showDeprecation>true</showDeprecation>
+                                <compilerArgs>
+                                    <!-- Maven doesn't detect unchecked warnings without this lint argument -->
+                                    <arg>-Xlint:unchecked</arg>
+                                </compilerArgs>
+                            </configuration>
+                        </plugin>
+                    </plugins>
+                </pluginManagement>
+            </build>
+        </profile>
+        <profile>
+            <id>build-jdk11</id>
+            <activation>
+              <jdk>[9,)</jdk>
+            </activation>
+            <build>
+                <pluginManagement>
+                    <plugins>
+                        <plugin>
+                            <groupId>org.apache.maven.plugins</groupId>
+                            <artifactId>maven-compiler-plugin</artifactId>
+                            <version>${maven.plugin.compiler.version}</version>
+                            <configuration>
+                                <release>${java.release.version}</release>
+                                <source>${java.source.version}</source>
+                                <target>${java.target.version}</target>
+                                <showWarnings>true</showWarnings>
+                                <failOnWarning>true</failOnWarning>
+                                <!-- Maven doesn't detect deprecation warnings without this set to true -->
+                                <showDeprecation>true</showDeprecation>
+                                <compilerArgs>
+                                    <!-- Maven doesn't detect unchecked warnings without this lint argument -->
+                                    <arg>-Xlint:unchecked</arg>
+                                </compilerArgs>
+                            </configuration>
+                        </plugin>
+                    </plugins>
+                </pluginManagement>
+            </build>
+        </profile>
         <profile>
             <id>release-tasks</id>
             <activation>
@@ -558,6 +590,29 @@
                             <skipTests>false</skipTests>
                             <includes>
                                 <include>%regex[.*(multimodule).*Elasticsearch5Test.*]</include>
+                            </includes>
+                            <excludes>
+                                <exclude>%regex[.*(elasticsearch|cypher|accumulo).*]</exclude>
+                            </excludes>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+            <modules>
+                <module>multimodule-test</module>
+            </modules>
+        </profile>
+        <profile>
+            <id>es7-multimodule-test</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <skipTests>false</skipTests>
+                            <includes>
+                                <include>%regex[.*(multimodule).*Elasticsearch7Test.*]</include>
                             </includes>
                             <excludes>
                                 <exclude>%regex[.*(elasticsearch|cypher|accumulo).*]</exclude>

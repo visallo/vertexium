@@ -1,0 +1,26 @@
+
+double calculate(def doc, def fieldNames, String direction) {
+    def length = (direction == "ASC") ? Integer.MAX_VALUE : 0;
+
+    for (def fieldName : fieldNames) {
+        if (!doc.containsKey(fieldName)) {
+            continue;
+        }
+
+        def values = doc[fieldName];
+        for (def value : values) {
+            def valueLength = value.length();
+            if (direction == "ASC") {
+                length = (valueLength < length) ? valueLength : length;
+            } else {
+                length = (valueLength > length) ? valueLength : length;
+            }
+        }
+    }
+    if (direction == "DESC") {
+        length = -length;
+    }
+    return length;
+}
+
+return calculate(doc, params.fieldNames, params.direction);

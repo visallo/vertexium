@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>vertexium-root</artifactId>
+        <groupId>org.vertexium</groupId>
+        <version>4.8.2-SNAPSHOT</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+    <packaging>pom</packaging>
+
+    <artifactId>vertexium-elasticsearch7-root</artifactId>
+    <name>Vertexium: Elasticsearch7: Root</name>
+
+    <properties>
+        <jts.version>1.15.0</jts.version>
+        <spatial4j.version>0.7</spatial4j.version>
+        <elasticsearch.version>7.5.0</elasticsearch.version>
+        <elasticsearch-cluster-runner.version>7.5.0.0</elasticsearch-cluster-runner.version>
+        <log4j2.version>2.11.1</log4j2.version>
+    </properties>
+
+    <modules>
+        <module>search-index</module>
+    </modules>
+</project>

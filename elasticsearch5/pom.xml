@@ -11,6 +11,12 @@
     <artifactId>vertexium-elasticsearch5-root</artifactId>
     <name>Vertexium: Elasticsearch5: Root</name>
 
+    <properties>
+        <jts.version>1.13</jts.version>
+        <spatial4j.version>0.6</spatial4j.version>
+        <elasticsearch.version>5.6.10</elasticsearch.version>
+        <elasticsearch-cluster-runner.version>5.6.9.0</elasticsearch-cluster-runner.version>
+    </properties>
     <modules>
         <module>plugin</module>
         <module>search-index</module>

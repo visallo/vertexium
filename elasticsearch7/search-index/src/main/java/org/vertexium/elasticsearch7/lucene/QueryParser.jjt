@@ -1,0 +1,217 @@
+
+options {
+  STATIC=false;
+  JAVA_UNICODE_ESCAPE=true;
+  USER_CHAR_STREAM=true;
+  NODE_USES_PARSER=false;
+  NODE_PACKAGE="org.vertexium.elasticsearch7.lucene";
+  NODE_PREFIX="";
+  TRACK_TOKENS=true;
+  NODE_CLASS="VertexiumSimpleNode";
+}
+
+PARSER_BEGIN(QueryParser)
+
+package org.vertexium.elasticsearch7.lucene;
+
+import java.io.StringReader;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Set;
+
+public abstract class QueryParser {
+  private static Set<Integer> disallowedPostMultiTerm
+    = new HashSet<Integer>(Arrays.asList(COLON, STAR, FUZZY_SLOP, CARAT, AND, OR));
+  private static boolean allowedPostMultiTerm(int tokenKind) {
+    return disallowedPostMultiTerm.contains(tokenKind) == false;
+  }
+
+  protected abstract String discardEscapeChar(String str);
+}
+
+PARSER_END(QueryParser)
+
+/* ***************** */
+/* Token Definitions */
+/* ***************** */
+
+<*> TOKEN : {
+  <#_NUM_CHAR:        ["0"-"9"] >
+| <#_ESCAPED_CHAR:    "\\" ~[] >  // every character that follows a backslash is considered as an escaped character
+| <#_TERM_START_CHAR: ( ~[ " ", "\t", "\n", "\r", "\u3000", "+", "-", "!", "(", ")", ":", "^",
+                           "[", "]", "\"", "{", "}", "~", "*", "?", "\\", "/" ]
+                        | <_ESCAPED_CHAR> ) >
+| <#_TERM_CHAR:       ( <_TERM_START_CHAR> | "-" | "+" ) >
+| <#_WHITESPACE:      ( " " | "\t" | "\n" | "\r" | "\u3000") >
+| <#_QUOTED_CHAR:     ( ~[ "\"", "\\" ] | <_ESCAPED_CHAR> ) >
+}
+
+<DEFAULT, Range> SKIP : {
+  < <_WHITESPACE>>
+}
+
+<DEFAULT> TOKEN : {
+  <AND:           ("AND" | "&&") >
+| <OR:            ("OR" | "||") >
+| <NOT:           ("NOT" | "!") >
+| <PLUS:          "+" >
+| <MINUS:         "-" >
+| <BAREOPER:      ("+"|"-"|"!") <_WHITESPACE> >
+| <LPAREN:        "(" >
+| <RPAREN:        ")" >
+| <COLON:         ":" >
+| <STAR:          "*" >
+| <CARAT:         "^" > : Boost
+| <QUOTED:        "\"" (<_QUOTED_CHAR>)* "\"">
+| <TERM:          <_TERM_START_CHAR> (<_TERM_CHAR>)*  >
+| <FUZZY_SLOP:    "~" ((<_NUM_CHAR>)+ (( "." (<_NUM_CHAR>)+ )? (<_TERM_CHAR>)*) | (<_TERM_CHAR>)*) >
+| <PREFIXTERM:    ("*") | ( <_TERM_START_CHAR> (<_TERM_CHAR>)* "*" ) >
+| <WILDTERM:      (<_TERM_START_CHAR> | [ "*", "?" ]) (<_TERM_CHAR> | ( [ "*", "?" ] ))* >
+| <REGEXPTERM:    "/" (~[ "/" ] | "\\/" )* "/" >
+| <RANGEIN_START: "[" > : Range
+| <RANGEEX_START: "{" > : Range
+}
+
+<Boost> TOKEN : {
+  <NUMBER: (<_NUM_CHAR>)+ ( "." (<_NUM_CHAR>)+ )? > : DEFAULT
+}
+
+<Range> TOKEN : {
+  <RANGE_TO:     "TO">
+| <RANGEIN_END:  "]"> : DEFAULT
+| <RANGEEX_END:  "}"> : DEFAULT
+| <RANGE_QUOTED: "\"" (~["\""] | "\\\"")+ "\"">
+| <RANGE_GOOP:   (~[ " ", "]", "}" ])+ >
+}
+
+// *   Query  ::= ( Clause )*
+// *   Clause ::= ["+", "-"] [<TERM> ":"] ( <TERM> | "(" Query ")" )
+
+String Conjunction() : {
+  Token a;
+  String ret=null;
+}
+{
+  [
+    a=<AND> { ret=a.image; }
+    | a=<OR> { ret=a.image; }
+  ]
+  { return ret; }
+}
+
+String Modifiers() : {
+  String ret=null;
+}
+{
+  [
+    <PLUS> { ret="+"; }
+    | <MINUS> { ret="-"; }
+    | <NOT> { ret="!"; }
+  ]
+  { return ret; }
+}
+
+// This makes sure that there is no garbage after the query string
+QueryStringNode TopLevelQuery() : {
+  QueryStringNode ret=null;
+}
+{
+  ret=Query() <EOF>
+  { return ret; }
+}
+
+ListQueryStringNode Query() : {
+  String conj, mods;
+  MultiTermQueryStringNode multi;
+  ClauseQueryStringNode c;
+  ListQueryStringNode ret = new ListQueryStringNode();
+}
+{
+  (
+    LOOKAHEAD(2)
+    multi=MultiTerm() { ret.add(multi); }
+    | mods=Modifiers() c=Clause() { ret.add(new BooleanQueryStringNode(null, mods, c)); }
+  )
+  (
+    LOOKAHEAD(2)
+    multi=MultiTerm() { ret.add(multi); }
+    | conj=Conjunction() mods=Modifiers() c=Clause() { ret.add(new BooleanQueryStringNode(conj, mods, c)); }
+  )*
+  { return ret; }
+}
+
+ClauseQueryStringNode Clause() : {
+  Token field = null;
+  QueryStringNode a;
+  Token boost = null;
+  ClauseQueryStringNode ret;
+}
+{
+  [
+    LOOKAHEAD(2)
+    (
+      field=<QUOTED> <COLON>
+      | field=<TERM> <COLON>
+      | field=<STAR> <COLON>
+    )
+  ]
+  (
+    a=Term() { ret=new ClauseQueryStringNode(field, a); }
+    | <LPAREN> a=Query() <RPAREN> [ <CARAT> boost=<NUMBER> ] { ret=new ClauseQueryStringNode(field, a, boost, true); }
+  )
+  { return ret; }
+}
+
+VertexiumSimpleNode Term() : {}
+{
+  (
+    (
+      <TERM>
+      | <STAR>
+      | <PREFIXTERM>
+      | <WILDTERM>
+      | <REGEXPTERM>
+      | <NUMBER>
+      | <BAREOPER>
+    )
+    [
+      <CARAT> <NUMBER> [ <FUZZY_SLOP> ]
+      | <FUZZY_SLOP> [ <CARAT> <NUMBER> ]
+    ]
+
+  | ( <RANGEIN_START> | <RANGEEX_START> )
+    ( <RANGE_GOOP> | <RANGE_QUOTED> | <RANGE_TO> )
+    ( <RANGE_TO> )
+    ( <RANGE_GOOP> | <RANGE_QUOTED> | <RANGE_TO> )
+    ( <RANGEIN_END> | <RANGEEX_END> )
+    [ <CARAT> <NUMBER> ]
+
+  | <QUOTED>
+    [
+      <CARAT> <NUMBER> [ <FUZZY_SLOP> ]
+      | <FUZZY_SLOP> [ <CARAT> <NUMBER> ]
+    ]
+  )
+  {
+    return jjtThis;
+  }
+}
+
+/** Returns the first query if splitOnWhitespace=true or otherwise the entire produced query */
+MultiTermQueryStringNode MultiTerm() : {
+  MultiTermQueryStringNode ret = new MultiTermQueryStringNode();
+  Token a;
+}
+{
+  a=<TERM> { ret.add(a); }
+  // Both lookaheads are required; the first lookahead vets the first following term and the second lookahead vets the rest
+  LOOKAHEAD({ getToken(1).kind == TERM && allowedPostMultiTerm(getToken(2).kind) })
+  (
+    LOOKAHEAD({ getToken(1).kind == TERM && allowedPostMultiTerm(getToken(2).kind) })
+    a=<TERM> { ret.add(a); }
+  )+
+  { return ret; }
+}

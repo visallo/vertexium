@@ -12,6 +12,10 @@
     <artifactId>vertexium-accumulo-elasticsearch5-multimodule-test</artifactId>
     <name>Vertexium: Multi-module tests: Accumulo and Elasticsearch5</name>
 
+    <properties>
+        <elasticsearch-cluster-runner.version>5.6.9.0</elasticsearch-cluster-runner.version>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>org.vertexium</groupId>

@@ -7,6 +7,8 @@ public abstract class GraphMetadataStore {
 
     public abstract void setMetadata(String key, Object value);
 
+    public abstract void reloadMetadata();
+
     public Object getMetadata(String key) {
         for (GraphMetadataEntry e : getMetadata()) {
             if (e.getKey().equals(key)) {

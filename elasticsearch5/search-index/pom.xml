@@ -10,6 +10,10 @@
     <artifactId>vertexium-elasticsearch5</artifactId>
     <name>Vertexium: Elasticsearch5: Search Index</name>
 
+    <properties>
+        <log4j2.version>2.9.1</log4j2.version>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>org.vertexium</groupId>
@@ -20,12 +24,12 @@
         <dependency>
             <groupId>org.elasticsearch</groupId>
             <artifactId>elasticsearch</artifactId>
-            <version>${elasticsearch5.version}</version>
+            <version>${elasticsearch.version}</version>
         </dependency>
         <dependency>
             <groupId>org.elasticsearch.client</groupId>
             <artifactId>transport</artifactId>
-            <version>${elasticsearch5.version}</version>
+            <version>${elasticsearch.version}</version>
         </dependency>
         <dependency>
             <groupId>com.vividsolutions</groupId>

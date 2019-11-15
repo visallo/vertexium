@@ -1,5 +1,7 @@
 # v4.8.2
 * Added: FetchHints.union
+* Added: Support for Elasticsearch 7. Switching an existing project from Elasticsearch 5 to Elasticsearch 7 will require the Vertexium data to be re-indexed. If using SSL, there is a known issue with the bulk index service in this version.
+* Deprecated: Support for Elasticsearch 5.
 * Fixed: InMemory search failing to query correctly when just the table name is provided
 * Fixed: InMemory concurrency issues with extended data simultaneous deletes and adds
 * Fixed: getExtendedData single row with multiple matching row id prefixes

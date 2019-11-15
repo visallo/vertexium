@@ -52,6 +52,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.StampedLock;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -3255,7 +3256,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         private final CuratorFramework curatorFramework;
         private final String zkPath;
         private final TreeCache treeCache;
-        private final Map<String, GraphMetadataEntry> entries = new HashMap<>();
+        private final Map<String, GraphMetadataEntry> entries = new ConcurrentHashMap<>();
         private final StampedLock stampedLock = new StampedLock();
 
         public AccumuloGraphMetadataStore(CuratorFramework curatorFramework, String zkPath) {
@@ -3302,6 +3303,15 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             for (GraphMetadataEntry graphMetadataEntry : metadata) {
                 entries.put(graphMetadataEntry.getKey(), graphMetadataEntry);
             }
+        }
+
+        @Override
+        public void reloadMetadata() {
+            LOGGER.trace("forcing immediate reload of metadata");
+            writeValues(() -> {
+                entries.clear();
+                ensureMetadataLoaded();
+            });
         }
 
         @Override

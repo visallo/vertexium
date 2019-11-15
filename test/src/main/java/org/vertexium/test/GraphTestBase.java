@@ -39,6 +39,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.*;
 import java.util.*;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -3672,6 +3673,20 @@ public abstract class GraphTestBase {
         assertTrue(vertices.get(3).getId().equals("v2") || vertices.get(3).getId().equals("v1"));
         assertTrue(vertices.get(4).getId().equals("v3") || vertices.get(4).getId().equals("v4"));
         assertTrue(vertices.get(5).getId().equals("v3") || vertices.get(5).getId().equals("v4"));
+
+        vertices = toList(graph.query(AUTHORIZATIONS_A_AND_B)
+            .sort(namePropertyName, SortDirection.ASCENDING)
+            .sort(agePropertyName, SortDirection.ASCENDING)
+            .sort(genderPropertyName, SortDirection.ASCENDING)
+            .vertices());
+        assertVertexIds(vertices, "v2", "v1", "v3", "v4", "v5", "v6");
+
+        vertices = toList(graph.query(AUTHORIZATIONS_A_AND_B)
+            .sort(namePropertyName, SortDirection.DESCENDING)
+            .sort(agePropertyName, SortDirection.DESCENDING)
+            .sort(genderPropertyName, SortDirection.DESCENDING)
+            .vertices());
+        assertVertexIds(vertices, "v4", "v3", "v1", "v2", "v6", "v5");
     }
 
     @Test
@@ -4300,6 +4315,11 @@ public abstract class GraphTestBase {
         graph.flush();
 
         List<Vertex> vertices = toList(graph.query(AUTHORIZATIONS_A)
+            .has("location")
+            .vertices());
+        Assert.assertEquals(2, count(vertices));
+
+        vertices = toList(graph.query(AUTHORIZATIONS_A)
             .has("location", GeoCompare.WITHIN, new GeoCircle(38.9186, -77.2297, 1))
             .vertices());
         Assert.assertEquals(1, count(vertices));
@@ -4308,8 +4328,12 @@ public abstract class GraphTestBase {
         assertEquals(-77.2297, geoPoint.getLongitude(), 0.001);
         assertEquals("Reston, VA", geoPoint.getDescription());
 
-        Vertex v3 = graph.prepareVertex("v3", VISIBILITY_A).save(AUTHORIZATIONS_A_AND_B);
-        v3.prepareMutation()
+        vertices = toList(graph.query(AUTHORIZATIONS_A)
+            .has("location", GeoCompare.DISJOINT, new GeoCircle(38.9186, -77.2297, 1))
+            .vertices());
+        assertVertexIds(vertices, "v2");
+
+        graph.prepareVertex("v3", VISIBILITY_A)
             .setProperty("location", new GeoPoint(39.0299, -77.5121, "Ashburn, VA"), VISIBILITY_A)
             .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
@@ -4524,11 +4548,11 @@ public abstract class GraphTestBase {
     }
 
     private Date createDate(int year, int month, int day) {
-        return new GregorianCalendar(year, month, day).getTime();
+        return Date.from(LocalDate.of(year, month, day).atStartOfDay(ZoneOffset.UTC).toInstant());
     }
 
     private Date createDate(int year, int month, int day, int hour, int min, int sec) {
-        return new GregorianCalendar(year, month, day, hour, min, sec).getTime();
+        return Date.from(ZonedDateTime.of(year, month, day, hour, min, sec, 0, ZoneOffset.UTC).toInstant());
     }
 
     @Test
@@ -6065,9 +6089,12 @@ public abstract class GraphTestBase {
             .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
-        // NOTE: Now that the field has multiple values, WITHIN really means that all values must be within the circle
         vertices = graph.query(AUTHORIZATIONS_A).has("prop1", GeoCompare.WITHIN, new GeoCircle(38.9186, -77.2297, 1)).vertices();
-        assertResultsCount(0, 0, vertices);
+        if (multivalueGeopointQueryWithinMeansAny()) {
+            assertResultsCount(0, 0, vertices);
+        } else {
+            assertResultsCount(1, 1, vertices);
+        }
 
         vertices = graph.query(AUTHORIZATIONS_A).has("prop1", GeoCompare.INTERSECTS, new GeoCircle(38.9186, -77.2297, 1)).vertices();
         assertVertexIdsAnyOrder(vertices, "v1");
@@ -6077,9 +6104,12 @@ public abstract class GraphTestBase {
         assertVertexIdsAnyOrder(vertices, "v1");
         assertResultsCount(1, 1, vertices);
 
-        // NOTE: Now that the field has multiple values, WITHIN really means that all values must be within the circle
         vertices = graph.query(AUTHORIZATIONS_A).has("prop1", GeoCompare.WITHIN, new GeoCircle(38.6270, -90.1994, 1)).vertices();
-        assertResultsCount(0, 0, vertices);
+        if (multivalueGeopointQueryWithinMeansAny()) {
+            assertResultsCount(0, 0, vertices);
+        } else {
+            assertResultsCount(1, 1, vertices);
+        }
 
         vertices = graph.query(AUTHORIZATIONS_A).has("prop1", GeoCompare.INTERSECTS, new GeoCircle(38.6270, -90.1994, 1)).vertices();
         assertVertexIdsAnyOrder(vertices, "v1");
@@ -6088,6 +6118,12 @@ public abstract class GraphTestBase {
         vertices = graph.query(AUTHORIZATIONS_A).has("prop1", "st louis, mo").vertices();
         assertVertexIdsAnyOrder(vertices, "v1");
         assertResultsCount(1, 1, vertices);
+    }
+
+    // In Elasticsearch 5, searching WITHIN a geo shape on a GeoPoint field meant that ALL points in a multi-valued field must fall inside the shape to be a match
+    // In Elasticsearch 7, searching WITHIN a geo shape on a GeoPoint field means that ANY points in a multi-valued field that fall inside the shape are a match
+    protected boolean multivalueGeopointQueryWithinMeansAny() {
+        return true;
     }
 
     @Test
@@ -7561,19 +7597,19 @@ public abstract class GraphTestBase {
         percentiles.sort(Comparator.comparing(Percentile::getPercentile));
         assertEquals(7, percentiles.size());
         assertEquals(1.0, percentiles.get(0).getPercentile(), 0.1);
-        assertEquals(1.0, percentiles.get(0).getValue(), 0.1);
+        assertEquals(1.0, percentiles.get(0).getValue(), 0.5);
         assertEquals(5.0, percentiles.get(1).getPercentile(), 0.1);
-        assertEquals(5.0, percentiles.get(1).getValue(), 0.1);
+        assertEquals(5.0, percentiles.get(1).getValue(), 0.5);
         assertEquals(25.0, percentiles.get(2).getPercentile(), 0.1);
-        assertEquals(25.0, percentiles.get(2).getValue(), 0.1);
+        assertEquals(25.0, percentiles.get(2).getValue(), 0.5);
         assertEquals(50.0, percentiles.get(3).getPercentile(), 0.1);
-        assertEquals(50.0, percentiles.get(3).getValue(), 0.1);
+        assertEquals(50.0, percentiles.get(3).getValue(), 0.5);
         assertEquals(75.0, percentiles.get(4).getPercentile(), 0.1);
-        assertEquals(75.0, percentiles.get(4).getValue(), 0.1);
+        assertEquals(75.0, percentiles.get(4).getValue(), 0.5);
         assertEquals(95.0, percentiles.get(5).getPercentile(), 0.1);
-        assertEquals(95.0, percentiles.get(5).getValue(), 0.1);
+        assertEquals(95.0, percentiles.get(5).getValue(), 0.5);
         assertEquals(99.0, percentiles.get(6).getPercentile(), 0.1);
-        assertEquals(99.0, percentiles.get(6).getValue(), 0.1);
+        assertEquals(99.0, percentiles.get(6).getValue(), 0.5);
 
         percentilesResult = queryGraphQueryWithPercentilesAggregation("age", VISIBILITY_EMPTY, AUTHORIZATIONS_EMPTY, 60, 99.99);
         assumeTrue("statistics aggregation not supported", percentilesResult != null);
@@ -7670,31 +7706,32 @@ public abstract class GraphTestBase {
     public void testGraphQueryWithCalendarFieldAggregation() {
         String dateFieldName = "agg_date_field";
         graph.prepareVertex("v0", VISIBILITY_EMPTY)
-            .addPropertyValue("", "other_field", createDate(2016, Calendar.APRIL, 27, 10, 18, 56), VISIBILITY_A)
+            .addPropertyValue("", "other_field", createDate(2016, Month.APRIL.getValue(), 27, 10, 18, 56), VISIBILITY_A)
             .save(AUTHORIZATIONS_ALL);
         graph.prepareVertex("v1", VISIBILITY_EMPTY)
-            .addPropertyValue("", dateFieldName, createDate(2016, Calendar.APRIL, 27, 10, 18, 56), VISIBILITY_A)
+            .addPropertyValue("", dateFieldName, createDate(2016, Month.APRIL.getValue(), 27, 10, 18, 56), VISIBILITY_A)
             .save(AUTHORIZATIONS_ALL);
         graph.prepareVertex("v2", VISIBILITY_EMPTY)
-            .addPropertyValue("", dateFieldName, createDate(2017, Calendar.MAY, 26, 10, 18, 56), VISIBILITY_EMPTY)
+            .addPropertyValue("", dateFieldName, createDate(2017, Month.MAY.getValue(), 26, 10, 18, 56), VISIBILITY_EMPTY)
             .save(AUTHORIZATIONS_ALL);
         graph.prepareVertex("v3", VISIBILITY_A_AND_B)
-            .addPropertyValue("", dateFieldName, createDate(2016, Calendar.APRIL, 27, 12, 18, 56), VISIBILITY_EMPTY)
+            .addPropertyValue("", dateFieldName, createDate(2016, Month.APRIL.getValue(), 27, 12, 18, 56), VISIBILITY_EMPTY)
             .save(AUTHORIZATIONS_ALL);
         graph.prepareVertex("v4", VISIBILITY_A_AND_B)
-            .addPropertyValue("", dateFieldName, createDate(2016, Calendar.APRIL, 24, 12, 18, 56), VISIBILITY_EMPTY)
+            .addPropertyValue("", dateFieldName, createDate(2016, Month.APRIL.getValue(), 24, 12, 18, 56), VISIBILITY_EMPTY)
             .save(AUTHORIZATIONS_ALL);
         graph.prepareVertex("v5", VISIBILITY_A_AND_B)
-            .addPropertyValue("", dateFieldName, createDate(2016, Calendar.APRIL, 25, 12, 18, 56), VISIBILITY_EMPTY)
+            .addPropertyValue("", dateFieldName, createDate(2016, Month.APRIL.getValue(), 25, 12, 18, 56), VISIBILITY_EMPTY)
             .save(AUTHORIZATIONS_ALL);
         graph.prepareVertex("v6", VISIBILITY_A_AND_B)
-            .addPropertyValue("", dateFieldName, createDate(2016, Calendar.APRIL, 30, 12, 18, 56), VISIBILITY_EMPTY)
+            .addPropertyValue("", dateFieldName, createDate(2016, Month.APRIL.getValue(), 30, 12, 18, 56), VISIBILITY_EMPTY)
             .save(AUTHORIZATIONS_ALL);
         graph.flush();
 
         // hour of day
+        TimeZone timeZone = TimeZone.getTimeZone(ZoneOffset.UTC);
         QueryResultsIterable<Vertex> results = graph.query(AUTHORIZATIONS_ALL)
-            .addAggregation(new CalendarFieldAggregation("agg1", dateFieldName, null, TimeZone.getDefault(), Calendar.HOUR_OF_DAY))
+            .addAggregation(new CalendarFieldAggregation("agg1", dateFieldName, null, timeZone, Calendar.HOUR_OF_DAY))
             .limit(0)
             .vertices();
 
@@ -7705,7 +7742,7 @@ public abstract class GraphTestBase {
 
         // day of week
         results = graph.query(AUTHORIZATIONS_ALL)
-            .addAggregation(new CalendarFieldAggregation("agg1", dateFieldName, null, TimeZone.getDefault(), Calendar.DAY_OF_WEEK))
+            .addAggregation(new CalendarFieldAggregation("agg1", dateFieldName, null, timeZone, Calendar.DAY_OF_WEEK))
             .limit(0)
             .vertices();
 
@@ -7719,7 +7756,7 @@ public abstract class GraphTestBase {
 
         // day of month
         results = graph.query(AUTHORIZATIONS_ALL)
-            .addAggregation(new CalendarFieldAggregation("agg1", dateFieldName, null, TimeZone.getDefault(), Calendar.DAY_OF_MONTH))
+            .addAggregation(new CalendarFieldAggregation("agg1", dateFieldName, null, timeZone, Calendar.DAY_OF_MONTH))
             .limit(0)
             .vertices();
 
@@ -7733,7 +7770,7 @@ public abstract class GraphTestBase {
 
         // month
         results = graph.query(AUTHORIZATIONS_ALL)
-            .addAggregation(new CalendarFieldAggregation("agg1", dateFieldName, null, TimeZone.getDefault(), Calendar.MONTH))
+            .addAggregation(new CalendarFieldAggregation("agg1", dateFieldName, null, timeZone, Calendar.MONTH))
             .limit(0)
             .vertices();
 
@@ -7744,7 +7781,7 @@ public abstract class GraphTestBase {
 
         // year
         results = graph.query(AUTHORIZATIONS_ALL)
-            .addAggregation(new CalendarFieldAggregation("agg1", dateFieldName, null, TimeZone.getDefault(), Calendar.YEAR))
+            .addAggregation(new CalendarFieldAggregation("agg1", dateFieldName, null, timeZone, Calendar.YEAR))
             .limit(0)
             .vertices();
 
@@ -7755,7 +7792,7 @@ public abstract class GraphTestBase {
 
         // week of year
         results = graph.query(AUTHORIZATIONS_ALL)
-            .addAggregation(new CalendarFieldAggregation("agg1", dateFieldName, null, TimeZone.getDefault(), Calendar.WEEK_OF_YEAR))
+            .addAggregation(new CalendarFieldAggregation("agg1", dateFieldName, null, timeZone, Calendar.WEEK_OF_YEAR))
             .limit(0)
             .vertices();
 
@@ -7786,21 +7823,21 @@ public abstract class GraphTestBase {
     @Test
     public void testGraphQueryWithCalendarFieldAggregationNested() {
         graph.prepareVertex("v1", VISIBILITY_EMPTY)
-            .addPropertyValue("", "date", createDate(2016, Calendar.APRIL, 27, 10, 18, 56), VISIBILITY_EMPTY)
+            .addPropertyValue("", "date", createDate(2016, Month.APRIL.getValue(), 27, 10, 18, 56), VISIBILITY_EMPTY)
             .save(AUTHORIZATIONS_ALL);
         graph.prepareVertex("v2", VISIBILITY_EMPTY)
-            .addPropertyValue("", "date", createDate(2016, Calendar.APRIL, 27, 10, 18, 56), VISIBILITY_EMPTY)
+            .addPropertyValue("", "date", createDate(2016, Month.APRIL.getValue(), 27, 10, 18, 56), VISIBILITY_EMPTY)
             .save(AUTHORIZATIONS_ALL);
         graph.prepareVertex("v3", VISIBILITY_EMPTY)
-            .addPropertyValue("", "date", createDate(2016, Calendar.APRIL, 27, 12, 18, 56), VISIBILITY_EMPTY)
+            .addPropertyValue("", "date", createDate(2016, Month.APRIL.getValue(), 27, 12, 18, 56), VISIBILITY_EMPTY)
             .save(AUTHORIZATIONS_A);
         graph.prepareVertex("v4", VISIBILITY_EMPTY)
-            .addPropertyValue("", "date", createDate(2016, Calendar.APRIL, 28, 10, 18, 56), VISIBILITY_EMPTY)
+            .addPropertyValue("", "date", createDate(2016, Month.APRIL.getValue(), 28, 10, 18, 56), VISIBILITY_EMPTY)
             .save(AUTHORIZATIONS_A);
         graph.flush();
 
-        CalendarFieldAggregation agg = new CalendarFieldAggregation("agg1", "date", null, TimeZone.getDefault(), Calendar.DAY_OF_WEEK);
-        agg.addNestedAggregation(new CalendarFieldAggregation("aggNested", "date", null, TimeZone.getDefault(), Calendar.HOUR_OF_DAY));
+        CalendarFieldAggregation agg = new CalendarFieldAggregation("agg1", "date", null, TimeZone.getTimeZone(ZoneOffset.UTC), Calendar.DAY_OF_WEEK);
+        agg.addNestedAggregation(new CalendarFieldAggregation("aggNested", "date", null, TimeZone.getTimeZone(ZoneOffset.UTC), Calendar.HOUR_OF_DAY));
         QueryResultsIterable<Vertex> results = graph.query(AUTHORIZATIONS_ALL)
             .addAggregation(agg)
             .limit(0)
