@@ -35,7 +35,7 @@ import static org.vertexium.id.SimpleSubstitutionUtils.*;
 
 public class AccumuloElasticsearch5Test extends AccumuloGraphTestBase {
     @ClassRule
-    public static final AccumuloResource accumuloResource = new AccumuloResource(new HashMap<String, String>() {{
+    public static final AccumuloResource accumuloResource = new AccumuloResource("accumulo-es5-multimodule-test", new HashMap<String, String>() {{
         put(AccumuloGraphConfiguration.NAME_SUBSTITUTION_STRATEGY_PROP_PREFIX, SimpleNameSubstitutionStrategy.class.getName());
         put(AccumuloGraphConfiguration.SERIALIZER, QuickKryoVertexiumSerializer.class.getName());
         put(AccumuloGraphConfiguration.AUTO_FLUSH, "false");

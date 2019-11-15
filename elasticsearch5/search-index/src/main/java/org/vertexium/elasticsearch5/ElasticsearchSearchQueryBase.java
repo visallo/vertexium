@@ -41,6 +41,7 @@ import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortMode;
 import org.elasticsearch.search.sort.SortOrder;
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.vertexium.*;
 import org.vertexium.elasticsearch5.scoring.ElasticsearchScoringStrategy;
 import org.vertexium.elasticsearch5.sorting.ElasticsearchSortingStrategy;
@@ -396,8 +397,13 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
             String[] propertyNames = getPropertyNames(propertyDefinition.getPropertyName());
             if (propertyNames.length > 1) {
                 String scriptSrc = "def fieldValues = []; for (def fieldName : params.fieldNames) { fieldValues.addAll(doc[fieldName].values); } " +
-                    "if (params.esOrder == 'asc') { Collections.sort(fieldValues); } else { Collections.sort(fieldValues, Collections.reverseOrder()); }" +
-                    "if (params.dataType == 'String') { return fieldValues; } else { return fieldValues.length > 0 ? fieldValues[0] : (params.esOrder == 'asc' ? Integer.MAX_VALUE : Integer.MIN_VALUE); }";
+                    "if (params.esOrder == 'asc') { Collections.sort(fieldValues); } else { Collections.sort(fieldValues, Collections.reverseOrder()); }";
+
+                if (propertyDefinition.getDataType() == String.class) {
+                    scriptSrc += "return fieldValues.length > 0 ? fieldValues : (params.esOrder == 'asc' ? [Character.toString(Character.MAX_VALUE)] : '');";
+                } else {
+                    scriptSrc += "return fieldValues.length > 0 ? fieldValues[0] : (params.esOrder == 'asc' ? Integer.MAX_VALUE : Integer.MIN_VALUE);";
+                }
 
                 List<String> fieldNames = Arrays.stream(propertyNames).map(propertyName ->
                     propertyName + (propertyDefinition.getDataType() == String.class ? Elasticsearch5SearchIndex.EXACT_MATCH_PROPERTY_NAME_SUFFIX : "")
@@ -1253,7 +1259,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
             value = ((DateOnly) value).getDate();
         }
         if (value instanceof Date) {
-            return new DateTime(((Date) value).getTime());
+            return new DateTime(((Date) value).getTime(), DateTimeZone.UTC);
         }
         if (value instanceof BigInteger) {
             return ((BigInteger) value).intValue();

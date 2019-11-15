@@ -1095,6 +1095,11 @@ public interface Graph {
     Object getMetadata(String key);
 
     /**
+     * Force a reload of graph metadata.
+     */
+    void reloadMetadata();
+
+    /**
      * Gets all metadata.
      *
      * @return Iterable of all metadata.

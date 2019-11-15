@@ -11,6 +11,10 @@
     <name>Vertexium: Cypher</name>
     <packaging>jar</packaging>
 
+    <properties>
+        <log4j2.version>2.9.1</log4j2.version>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>org.vertexium</groupId>

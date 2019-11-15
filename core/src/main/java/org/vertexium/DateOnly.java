@@ -1,15 +1,17 @@
 package org.vertexium;
 
 import java.io.Serializable;
-import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.GregorianCalendar;
 
 public class DateOnly implements Serializable {
     static final long serialVersionUID = 42L;
-    private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd");
-    private final Date date;
+    private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    private final LocalDate date;
 
     public DateOnly(Date date) {
         Calendar cal = Calendar.getInstance();
@@ -17,19 +19,23 @@ public class DateOnly implements Serializable {
         int year = cal.get(Calendar.YEAR);
         int month = cal.get(Calendar.MONTH);
         int day = cal.get(Calendar.DATE);
-        this.date = new GregorianCalendar(year, month, day).getTime();
+        this.date = LocalDate.of(year, month, day);
     }
 
     public DateOnly(int year, int month, int day) {
-        this.date = new GregorianCalendar(year, month, day).getTime();
+        this.date = LocalDate.of(year, month, day);
     }
 
     @Override
     public String toString() {
-        return DATE_FORMAT.format(this.date);
+        return this.date.format(DATE_FORMAT);
+    }
+
+    public ZonedDateTime getUtcDate() {
+        return this.date.atStartOfDay(ZoneOffset.UTC);
     }
 
     public Date getDate() {
-        return this.date;
+        return Date.from(this.date.atStartOfDay(ZoneOffset.UTC).toInstant());
     }
 }

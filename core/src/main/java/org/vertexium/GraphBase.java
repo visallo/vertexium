@@ -712,6 +712,10 @@ public abstract class GraphBase implements Graph {
         getGraphMetadataStore().setMetadata(key, value);
     }
 
+    public void reloadMetadata() {
+        getGraphMetadataStore().reloadMetadata();
+    }
+
     @Override
     public final Object getMetadata(String key) {
         return getGraphMetadataStore().getMetadata(key);
