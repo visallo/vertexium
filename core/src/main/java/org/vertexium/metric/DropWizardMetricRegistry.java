@@ -2,17 +2,17 @@ package org.vertexium.metric;
 
 import com.codahale.metrics.MetricRegistry;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
 public class DropWizardMetricRegistry implements VertexiumMetricRegistry {
     private final MetricRegistry metricRegistry;
-    private final Map<String, Counter> countersByName = new HashMap<>();
-    private final Map<String, Timer> timersByName = new HashMap<>();
-    private final Map<String, Histogram> histogramsByName = new HashMap<>();
-    private final Map<String, Gauge> gaugesByName = new HashMap<>();
-    private final Map<String, StackTraceTracker> stackTraceTrackersByName = new HashMap<>();
+    private final Map<String, Counter> countersByName = new ConcurrentHashMap<>();
+    private final Map<String, Timer> timersByName = new ConcurrentHashMap<>();
+    private final Map<String, Histogram> histogramsByName = new ConcurrentHashMap<>();
+    private final Map<String, Gauge> gaugesByName = new ConcurrentHashMap<>();
+    private final Map<String, StackTraceTracker> stackTraceTrackersByName = new ConcurrentHashMap<>();
 
     public DropWizardMetricRegistry() {
         this(new MetricRegistry());
@@ -79,6 +79,15 @@ public class DropWizardMetricRegistry implements VertexiumMetricRegistry {
     @Override
     public Iterable<? extends StackTraceTracker> getStackTraceTrackers() {
         return stackTraceTrackersByName.values();
+    }
+
+    @Override
+    public void shutdown() {
+        countersByName.keySet().forEach(metricRegistry::remove);
+        timersByName.keySet().forEach(metricRegistry::remove);
+        histogramsByName.keySet().forEach(metricRegistry::remove);
+        gaugesByName.keySet().forEach(metricRegistry::remove);
+        stackTraceTrackersByName.keySet().forEach(metricRegistry::remove);
     }
 
     public static class Gauge<T> implements org.vertexium.metric.Gauge<T> {

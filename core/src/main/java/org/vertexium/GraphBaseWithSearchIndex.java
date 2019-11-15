@@ -143,6 +143,7 @@ public abstract class GraphBaseWithSearchIndex extends GraphBase implements Grap
             this.searchIndex.shutdown();
             this.searchIndex = null;
         }
+        getMetricsRegistry().shutdown();
     }
 
     @Override

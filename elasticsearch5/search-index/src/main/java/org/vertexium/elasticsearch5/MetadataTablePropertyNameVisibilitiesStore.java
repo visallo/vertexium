@@ -9,14 +9,18 @@ import org.vertexium.util.VertexiumLogger;
 import org.vertexium.util.VertexiumLoggerFactory;
 
 import java.nio.charset.Charset;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class MetadataTablePropertyNameVisibilitiesStore extends PropertyNameVisibilitiesStore {
     private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(MetadataTablePropertyNameVisibilitiesStore.class);
     public static final String PROPERTY_NAME_VISIBILITY_TO_HASH_PREFIX = "propertyNameVisibility.";
     public static final String HASH_TO_VISIBILITY = "visibilityHash.";
     private static final Charset UTF8 = Charset.forName("utf8");
-    private Map<String, Visibility> visibilityCache = new HashMap<>();
+    private Map<String, Visibility> visibilityCache = new ConcurrentHashMap<>();
 
     public Collection<String> getHashesWithAuthorization(Graph graph, String authorization, Authorizations authorizations) {
         List<String> hashes = new ArrayList<>();
