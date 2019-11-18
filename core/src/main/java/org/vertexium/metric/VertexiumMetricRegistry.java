@@ -48,4 +48,6 @@ public interface VertexiumMetricRegistry {
     StackTraceTracker getStackTraceTracker(String name);
 
     Iterable<? extends StackTraceTracker> getStackTraceTrackers();
+
+    void shutdown();
 }

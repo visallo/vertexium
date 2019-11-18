@@ -99,4 +99,13 @@ public class NullMetricRegistry implements VertexiumMetricRegistry {
     public Iterable<? extends StackTraceTracker> getStackTraceTrackers() {
         return stackTraceTrackersByName.values();
     }
+
+    @Override
+    public void shutdown() {
+        countersByName.clear();
+        timersByName.clear();
+        histogramsByName.clear();
+        gaugesByName.clear();
+        stackTraceTrackersByName.clear();
+    }
 }
