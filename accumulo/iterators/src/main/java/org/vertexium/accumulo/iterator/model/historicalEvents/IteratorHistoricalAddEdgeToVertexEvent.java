@@ -1,13 +1,14 @@
 package org.vertexium.accumulo.iterator.model.historicalEvents;
 
+import com.google.protobuf.ByteSequenceByteString;
 import org.apache.accumulo.core.data.ByteSequence;
 import org.vertexium.accumulo.iterator.model.Direction;
 import org.vertexium.accumulo.iterator.model.ElementType;
+import org.vertexium.accumulo.iterator.model.proto.HistoricalAddEdgeToVertexEvent;
+import org.vertexium.accumulo.iterator.model.proto.HistoricalEventsItem;
 import org.vertexium.accumulo.iterator.util.DataInputStreamUtils;
-import org.vertexium.accumulo.iterator.util.DataOutputStreamUtils;
 
 import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
 
 public class IteratorHistoricalAddEdgeToVertexEvent extends IteratorHistoricalEvent {
@@ -72,17 +73,18 @@ public class IteratorHistoricalAddEdgeToVertexEvent extends IteratorHistoricalEv
     }
 
     @Override
-    protected void encode(DataOutputStream out) throws IOException {
-        super.encode(out);
-        DataOutputStreamUtils.encodeByteSequence(out, getEdgeId());
-        DataOutputStreamUtils.encodeDirection(out, getEdgeDirection());
-        DataOutputStreamUtils.encodeString(out, getEdgeLabel());
-        DataOutputStreamUtils.encodeString(out, getOtherVertexId());
-        DataOutputStreamUtils.encodeByteSequence(out, getEdgeVisibility());
-    }
-
-    @Override
-    protected byte getTypeId() {
-        return TYPE_ID_ADD_EDGE_TO_VERTEX;
+    protected HistoricalEventsItem encode() {
+        return HistoricalEventsItem.newBuilder()
+            .setAddEdgeToVertex(
+                HistoricalAddEdgeToVertexEvent.newBuilder()
+                    .setEvent(encodeEvent())
+                    .setEdgeId(new ByteSequenceByteString(getEdgeId()))
+                    .setEdgeDirection(getEdgeDirection())
+                    .setEdgeLabel(getEdgeLabel())
+                    .setOtherVertexId(getOtherVertexId())
+                    .setEdgeVisibility(new ByteSequenceByteString(getEdgeVisibility()))
+                    .build()
+            )
+            .build();
     }
 }

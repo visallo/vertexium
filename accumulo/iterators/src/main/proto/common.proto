@@ -1,0 +1,14 @@
+syntax = "proto2";
+option java_multiple_files = true;
+option java_package = "org.vertexium.accumulo.iterator.model";
+package vertexium;
+
+enum ElementType {
+    VERTEX = 1;
+    EDGE = 2;
+}
+
+enum Direction {
+    OUT = 1;
+    IN = 2;
+}

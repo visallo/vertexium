@@ -2,33 +2,19 @@ package org.vertexium.accumulo.iterator.model.historicalEvents;
 
 import org.apache.accumulo.core.data.Value;
 import org.vertexium.accumulo.iterator.model.ElementType;
+import org.vertexium.accumulo.iterator.model.proto.HistoricalEvent;
+import org.vertexium.accumulo.iterator.model.proto.HistoricalEvents;
+import org.vertexium.accumulo.iterator.model.proto.HistoricalEventsItem;
 import org.vertexium.accumulo.iterator.util.DataInputStreamUtils;
-import org.vertexium.accumulo.iterator.util.DataOutputStreamUtils;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.DataInputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 public abstract class IteratorHistoricalEvent implements Comparable<IteratorHistoricalEvent> {
-    private static final byte[] HEADER = {'I', 'H', 'E'};
-    protected static final byte TYPE_ID_ADD_EDGE = 0x01;
-    protected static final byte TYPE_ID_ADD_EDGE_TO_VERTEX = 0x02;
-    protected static final byte TYPE_ID_ADD_PROPERTY = 0x03;
-    protected static final byte TYPE_ID_ADD_VERTEX = 0x04;
-    protected static final byte TYPE_ID_ALTER_EDGE_LABEL = 0x05;
-    protected static final byte TYPE_ID_MARK_HIDDEN = 0x06;
-    protected static final byte TYPE_ID_MARK_PROPERTY_HIDDEN = 0x07;
-    protected static final byte TYPE_ID_MARK_PROPERTY_VISIBLE = 0x08;
-    protected static final byte TYPE_ID_MARK_VISIBLE = 0x09;
-    protected static final byte TYPE_ID_SOFT_DELETE_EDGE_TO_VERTEX = 0x0a;
-    protected static final byte TYPE_ID_SOFT_DELETE_VERTEX = 0x0b;
-    protected static final byte TYPE_ID_SOFT_DELETE_EDGE = 0x0c;
-    protected static final byte TYPE_ID_SOFT_DELETE_PROPERTY = 0x0d;
-    protected static final byte TYPE_ID_DELETE_VERTEX = 0x0e;
-    protected static final byte TYPE_ID_DELETE_EDGE = 0x0f;
-    protected static final byte TYPE_ID_ALTER_VERTEX_VISIBILITY = 0x10;
-    protected static final byte TYPE_ID_ALTER_EDGE_VISIBILITY = 0x11;
     private final String elementId;
     private final ElementType elementType;
     private final long timestamp;
@@ -44,14 +30,11 @@ public abstract class IteratorHistoricalEvent implements Comparable<IteratorHist
     }
 
     public static Value encode(List<IteratorHistoricalEvent> events) throws IOException {
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        DataOutputStream dout = new DataOutputStream(out);
-        dout.write(HEADER);
-        dout.writeInt(events.size());
+        HistoricalEvents.Builder results = HistoricalEvents.newBuilder();
         for (IteratorHistoricalEvent event : events) {
-            event.encode(dout);
+            results.addEvents(event.encode());
         }
-        return new Value(out.toByteArray());
+        return new Value(results.build().toByteArray());
     }
 
     public static List<IteratorHistoricalEvent> decode(Value value, String elementId) throws IOException {
@@ -76,10 +59,16 @@ public abstract class IteratorHistoricalEvent implements Comparable<IteratorHist
         return results;
     }
 
-    protected void encode(DataOutputStream out) throws IOException {
-        out.writeByte(getTypeId());
-        DataOutputStreamUtils.encodeElementType(out, getElementType());
-        out.writeLong(getTimestamp());
+    protected abstract HistoricalEventsItem encode();
+
+    protected HistoricalEvent encodeEvent() {
+        return HistoricalEvent.newBuilder()
+            .setElementType(getElementType() == ElementType.VERTEX
+                ? org.vertexium.accumulo.iterator.model.proto.ElementType.VERTEX
+                : org.vertexium.accumulo.iterator.model.proto.ElementType.EDGE
+            )
+            .setTimestamp(getTimestamp())
+            .build();
     }
 
     private static IteratorHistoricalEvent decodeEvent(DataInputStream in, String elementId) throws IOException {
@@ -125,8 +114,6 @@ public abstract class IteratorHistoricalEvent implements Comparable<IteratorHist
                 throw new IOException("Unexpected type: " + typeId);
         }
     }
-
-    protected abstract byte getTypeId();
 
     public String getElementId() {
         return elementId;

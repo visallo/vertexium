@@ -16,10 +16,10 @@ message Vertex {
 }
 
 message Edge {
-    required bytes in_vertex_id = 1;
-    required bytes out_vertex_id = 2;
-    required bytes label = 3;
-    required Element element = 4;
+    required Element element = 1;
+    required bytes in_vertex_id = 2;
+    required bytes out_vertex_id = 3;
+    required bytes label = 4;
 }
 
 message Element {

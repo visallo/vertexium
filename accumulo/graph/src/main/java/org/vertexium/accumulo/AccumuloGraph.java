@@ -34,7 +34,6 @@ import org.vertexium.accumulo.iterator.model.EdgeInfo;
 import org.vertexium.accumulo.iterator.model.IteratorFetchHints;
 import org.vertexium.accumulo.iterator.model.PropertyColumnQualifier;
 import org.vertexium.accumulo.iterator.model.PropertyMetadataColumnQualifier;
-import org.vertexium.accumulo.iterator.util.ByteArrayWrapper;
 import org.vertexium.accumulo.iterator.util.ByteSequenceUtils;
 import org.vertexium.accumulo.keys.KeyHelper;
 import org.vertexium.accumulo.util.*;
@@ -2559,9 +2558,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                 List<String> edgeIds = new ArrayList<>();
                 while (it.hasNext()) {
                     Map.Entry<Key, Value> c = it.next();
-                    for (ByteArrayWrapper edgeId : VertexEdgeIdIterator.decodeValue(c.getValue())) {
-                        edgeIds.add(new Text(edgeId.getData()).toString());
-                    }
+                    edgeIds.addAll(VertexEdgeIdIterator.decodeValue(c.getValue()));
                 }
                 return edgeIds;
             } finally {

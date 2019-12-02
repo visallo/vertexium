@@ -9,9 +9,10 @@ import org.vertexium.accumulo.iterator.model.VertexiumAccumuloIteratorException;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 public class DataOutputStreamUtils {
-    public static final Charset CHARSET = Charset.forName("utf8");
+    public static final Charset CHARSET = StandardCharsets.UTF_8;
 
     public static void encodeByteSequence(DataOutputStream out, ByteSequence byteSequence) throws IOException {
         if (byteSequence == null) {

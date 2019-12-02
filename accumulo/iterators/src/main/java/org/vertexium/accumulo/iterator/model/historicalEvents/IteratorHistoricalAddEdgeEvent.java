@@ -1,12 +1,13 @@
 package org.vertexium.accumulo.iterator.model.historicalEvents;
 
+import com.google.protobuf.ByteSequenceByteString;
 import org.apache.accumulo.core.data.ByteSequence;
 import org.vertexium.accumulo.iterator.model.ElementType;
+import org.vertexium.accumulo.iterator.model.proto.HistoricalAddEdgeEvent;
+import org.vertexium.accumulo.iterator.model.proto.HistoricalEventsItem;
 import org.vertexium.accumulo.iterator.util.DataInputStreamUtils;
-import org.vertexium.accumulo.iterator.util.DataOutputStreamUtils;
 
 import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
 
 public class IteratorHistoricalAddEdgeEvent extends IteratorHistoricalAddElementEvent {
@@ -62,16 +63,17 @@ public class IteratorHistoricalAddEdgeEvent extends IteratorHistoricalAddElement
     }
 
     @Override
-    protected void encode(DataOutputStream out) throws IOException {
-        super.encode(out);
-        DataOutputStreamUtils.encodeByteSequence(out, getOutVertexId());
-        DataOutputStreamUtils.encodeByteSequence(out, getInVertexId());
-        DataOutputStreamUtils.encodeByteSequence(out, getEdgeLabel());
-        DataOutputStreamUtils.encodeByteSequence(out, getVisibility());
-    }
-
-    @Override
-    protected byte getTypeId() {
-        return TYPE_ID_ADD_EDGE;
+    protected HistoricalEventsItem encode() {
+        return HistoricalEventsItem.newBuilder()
+            .setAddEdgeEvent(
+                HistoricalAddEdgeEvent.newBuilder()
+                    .setEvent(encodeEvent())
+                    .setOutVertexId(new ByteSequenceByteString(getOutVertexId()))
+                    .setInVertexId(new ByteSequenceByteString(getInVertexId()))
+                    .setEdgeLabel(new ByteSequenceByteString(getEdgeLabel()))
+                    .setVisibility(new ByteSequenceByteString(getVisibility()))
+                    .build()
+            )
+            .build();
     }
 }

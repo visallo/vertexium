@@ -43,14 +43,6 @@ public class DataInputStreamUtils {
         return data;
     }
 
-    public static ByteArrayWrapper decodeByteArrayWrapper(DataInputStream in) throws IOException {
-        byte[] result = decodeByteArray(in);
-        if (result == null) {
-            return null;
-        }
-        return new ByteArrayWrapper(result);
-    }
-
     public static ElementType decodeElementType(DataInputStream in) throws IOException {
         byte type = in.readByte();
         switch (type) {

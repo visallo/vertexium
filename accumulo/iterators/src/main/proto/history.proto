@@ -1,0 +1,48 @@
+syntax = "proto2";
+option java_multiple_files = true;
+option java_package = "org.vertexium.accumulo.iterator.model.proto";
+package vertexium;
+
+import "common.proto";
+
+message HistoricalEvents {
+    repeated HistoricalEventsItem events = 1;
+}
+
+message HistoricalEventsItem {
+    oneof event {
+        HistoricalAddEdgeEvent add_edge_event = 1;
+        HistoricalDeleteEdgeEvent delete_edge_event = 2;
+        HistoricalAddEdgeToVertexEvent add_edge_to_vertex = 3;
+    }
+}
+
+message HistoricalEvent {
+    required ElementType element_type = 1;
+    required uint64 timestamp = 2;
+}
+
+message HistoricalAddEdgeEvent {
+    required HistoricalEvent event = 1;
+    required bytes out_vertex_id = 2;
+    required bytes in_vertex_id = 3;
+    required bytes edge_label = 4;
+    required bytes visibility = 5;
+}
+
+message HistoricalDeleteEdgeEvent {
+    required HistoricalEvent event = 1;
+    required bytes out_vertex_id = 2;
+    required bytes in_vertex_id = 3;
+    required bytes edge_label = 4;
+    required bytes visibility = 5;
+}
+
+message HistoricalAddEdgeToVertexEvent {
+    required HistoricalEvent event = 1;
+    required bytes edge_id = 2;
+    required Direction edge_direction = 3;
+    required string edge_label = 4;
+    required string other_vertex_id = 5;
+    required bytes edge_visibility = 6;
+}
