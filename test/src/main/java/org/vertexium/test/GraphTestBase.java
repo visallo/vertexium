@@ -8647,7 +8647,8 @@ public abstract class GraphTestBase {
     public void testExtendedDataQueryVertices() {
         Date date1 = new Date(1487083490000L);
         Date date2 = new Date(1487083480000L);
-        String tableName = "table.one";
+        String tableOneName = "table.one";
+        String tableTwoName = "table.two";
         String rowOneName = "row.one";
         String rowTwoName = "row.two";
         String dateColumnName = "date.column";
@@ -8657,10 +8658,11 @@ public abstract class GraphTestBase {
         graph.defineProperty(nameColumnName).sortable(true).textIndexHint(TextIndexHint.values()).dataType(String.class).define();
 
         graph.prepareVertex("v1", VISIBILITY_A)
-            .addExtendedData(tableName, rowOneName, dateColumnName, date1, VISIBILITY_A)
-            .addExtendedData(tableName, rowOneName, nameColumnName, "value 1", VISIBILITY_A)
-            .addExtendedData(tableName, rowTwoName, dateColumnName, date2, VISIBILITY_A)
-            .addExtendedData(tableName, rowTwoName, nameColumnName, "value 2", VISIBILITY_A)
+            .addExtendedData(tableOneName, rowOneName, dateColumnName, date1, VISIBILITY_A)
+            .addExtendedData(tableOneName, rowOneName, nameColumnName, "value 1", VISIBILITY_A)
+            .addExtendedData(tableOneName, rowTwoName, dateColumnName, date2, VISIBILITY_A)
+            .addExtendedData(tableOneName, rowTwoName, nameColumnName, "value 2", VISIBILITY_A)
+            .addExtendedData(tableTwoName, rowOneName, nameColumnName, "table two value 1", VISIBILITY_A)
             .save(AUTHORIZATIONS_A);
         graph.prepareVertex("v2", VISIBILITY_A)
             .save(AUTHORIZATIONS_A);
@@ -8686,13 +8688,13 @@ public abstract class GraphTestBase {
 
         searchResults = graph.query("value", AUTHORIZATIONS_A)
             .search();
-        assertEquals(2, searchResults.getTotalHits());
+        assertEquals(3, searchResults.getTotalHits());
         searchResultsList = toList(searchResults);
-        assertEquals(2, searchResultsList.size());
-        assertRowIdsAnyOrder(Lists.newArrayList(rowOneName, rowTwoName), searchResultsList);
+        assertEquals(3, searchResultsList.size());
+        assertRowIdsAnyOrder(Lists.newArrayList(rowOneName, rowOneName, rowTwoName), searchResultsList);
 
         searchResults = graph.query("value", AUTHORIZATIONS_A)
-            .hasExtendedData(ElementType.VERTEX, "v1", tableName)
+            .hasExtendedData(ElementType.VERTEX, "v1", tableOneName)
             .search();
         assertEquals(2, searchResults.getTotalHits());
         searchResultsList = toList(searchResults);
@@ -8700,7 +8702,7 @@ public abstract class GraphTestBase {
         assertRowIdsAnyOrder(Lists.newArrayList(rowOneName, rowTwoName), searchResultsList);
 
         searchResults = graph.query("value", AUTHORIZATIONS_A)
-            .hasExtendedData(tableName)
+            .hasExtendedData(tableOneName)
             .search();
         assertEquals(2, searchResults.getTotalHits());
         searchResultsList = toList(searchResults);
