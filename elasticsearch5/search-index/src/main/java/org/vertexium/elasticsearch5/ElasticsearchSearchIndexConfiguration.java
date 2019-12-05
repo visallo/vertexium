@@ -59,18 +59,18 @@ public class ElasticsearchSearchIndexConfiguration {
     public static final Integer LOG_REQUEST_SIZE_LIMIT_DEFAULT = null;
     public static final String MAX_QUERY_STRING_TERMS = "maxQueryStringTerms";
     public static final int MAX_QUERY_STRING_TERMS_DEFAULT = 100;
-    public static final String BULK_QUEUE_DEPTH = "bulk.queueDepth";
     public static final String BULK_CORE_POOL_SIZE = "bulk.corePoolSize";
     public static final String BULK_MAX_POOL_SIZE = "bulk.maxPoolSize";
     public static final String BULK_MAX_BATCH_SIZE = "bulk.maxBatchSize";
     public static final String BULK_MAX_BATCH_SIZE_IN_BYTES = "bulk.maxBatchSizeInBytes";
+    public static final String BULK_BATCH_WINDOW_TIME = "bulk.batchWindowTime";
     public static final String BULK_MAX_FAIL_COUNT = "bulk.maxFailCount";
     public static final String BULK_REQUEST_TIMEOUT = "bulk.requestTimeout";
-    public static final int BULK_QUEUE_DEPTH_DEFAULT = BulkUpdateServiceConfiguration.QUEUE_DEPTH_DEFAULT;
     public static final int BULK_CORE_POOL_SIZE_DEFAULT = BulkUpdateServiceConfiguration.CORE_POOL_SIZE_DEFAULT;
     public static final int BULK_MAX_POOL_SIZE_DEFAULT = BulkUpdateServiceConfiguration.MAX_POOL_SIZE_DEFAULT;
     public static final int BULK_MAX_BATCH_SIZE_DEFAULT = BulkUpdateServiceConfiguration.MAX_BATCH_SIZE_DEFAULT;
     public static final int BULK_MAX_BATCH_SIZE_IN_BYTES_DEFAULT = BulkUpdateServiceConfiguration.MAX_BATCH_SIZE_IN_BYTES_DEFAULT;
+    public static final Duration BULK_BATCH_WINDOW_TIME_DEFAULT = BulkUpdateServiceConfiguration.BATCH_WINDOW_TIME_DEFAULT;
     public static final int BULK_MAX_FAIL_COUNT_DEFAULT = BulkUpdateServiceConfiguration.MAX_FAIL_COUNT_DEFAULT;
     public static final String BULK_REQUEST_TIMEOUT_DEFAULT = "30m";
     public static final String REFRESH_INDEX_ON_FLUSH = "refreshIndexOnFlush";
@@ -249,10 +249,6 @@ public class ElasticsearchSearchIndexConfiguration {
         return graphConfiguration.getInt(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + MAX_QUERY_STRING_TERMS, MAX_QUERY_STRING_TERMS_DEFAULT);
     }
 
-    public int getBulkQueueDepth() {
-        return graphConfiguration.getInt(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + BULK_QUEUE_DEPTH, BULK_QUEUE_DEPTH_DEFAULT);
-    }
-
     public int getBulkCorePoolSize() {
         return graphConfiguration.getInt(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + BULK_CORE_POOL_SIZE, BULK_CORE_POOL_SIZE_DEFAULT);
     }
@@ -267,6 +263,10 @@ public class ElasticsearchSearchIndexConfiguration {
 
     public int getBulkMaxBatchSizeInBytes() {
         return graphConfiguration.getInt(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + BULK_MAX_BATCH_SIZE_IN_BYTES, BULK_MAX_BATCH_SIZE_IN_BYTES_DEFAULT);
+    }
+
+    public Duration getBulkBatchWindowTime() {
+        return graphConfiguration.getDuration(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + BULK_BATCH_WINDOW_TIME, BULK_BATCH_WINDOW_TIME_DEFAULT);
     }
 
     public int getBulkMaxFailCount() {

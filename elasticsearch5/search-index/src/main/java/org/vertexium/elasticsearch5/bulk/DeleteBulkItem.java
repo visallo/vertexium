@@ -18,4 +18,9 @@ public class DeleteBulkItem extends BulkItem {
     public String getDocId() {
         return docId;
     }
+
+    @Override
+    public String toString() {
+        return String.format("DeleteBulkItem {docId='%s'}", docId);
+    }
 }

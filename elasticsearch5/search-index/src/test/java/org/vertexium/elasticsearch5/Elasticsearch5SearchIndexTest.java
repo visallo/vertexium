@@ -253,6 +253,10 @@ public class Elasticsearch5SearchIndexTest extends GraphTestBase {
             .save(AUTHORIZATIONS_A);
         graph.flush();
 
+        // Missing documents are treated as new documents (see BulkUpdateService#handleFailure) and thus are not part
+        // of the initial flush.
+        graph.flush();
+
         List<String> results = toList(graph.query("joe", AUTHORIZATIONS_A).vertexIds());
         assertEquals(1, results.size());
         assertEquals("v1", results.get(0));

@@ -132,6 +132,10 @@ public class GraphConfiguration {
         return Integer.valueOf(obj.toString());
     }
 
+    public Duration getDuration(String key, Duration defaultValue) {
+        return getDuration(key, defaultValue.toMillis() + "ms");
+    }
+
     public Duration getDuration(String key, String defaultValue) {
         String value = getString(key, defaultValue);
         try {

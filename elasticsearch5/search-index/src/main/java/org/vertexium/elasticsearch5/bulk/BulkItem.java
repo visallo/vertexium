@@ -4,12 +4,15 @@ import org.elasticsearch.action.ActionRequest;
 import org.vertexium.ElementId;
 import org.vertexium.elasticsearch5.utils.ElasticsearchRequestUtils;
 
+import java.util.concurrent.CompletableFuture;
+
 public class BulkItem {
     private final String indexName;
     private final ElementId elementId;
     private final int size;
     private final ActionRequest actionRequest;
     private final long createdTime;
+    private final CompletableFuture<Void> future = new CompletableFuture<>();
     private long createdOrLastTriedTime;
     private int failCount;
 
@@ -49,7 +52,7 @@ public class BulkItem {
         return createdOrLastTriedTime;
     }
 
-    public void updateCreatedOrLastTriedTime() {
+    public void updateLastTriedTime() {
         this.createdOrLastTriedTime = System.currentTimeMillis();
     }
 
@@ -59,6 +62,10 @@ public class BulkItem {
 
     public int getFailCount() {
         return failCount;
+    }
+
+    public CompletableFuture<Void> getFuture() {
+        return future;
     }
 
     @Override

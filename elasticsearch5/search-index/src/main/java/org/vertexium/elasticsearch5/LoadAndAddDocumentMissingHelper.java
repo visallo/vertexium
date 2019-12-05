@@ -53,6 +53,7 @@ public class LoadAndAddDocumentMissingHelper implements Elasticsearch5ExceptionH
             element,
             element.getAdditionalVisibilities(),
             null,
+            false,
             authorizations
         );
     }
