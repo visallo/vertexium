@@ -229,15 +229,19 @@ public class MapInMemoryExtendedDataTable extends InMemoryExtendedDataTable {
             private final TreeSet<InMemoryExtendedDataRow> rows = new TreeSet<>();
 
             public Iterable<ExtendedDataRow> getRows(VisibilityEvaluator visibilityEvaluator, FetchHints fetchHints) {
-                return rows.stream()
-                    .map(row -> row.toReadable(visibilityEvaluator, fetchHints))
-                    .filter(Objects::nonNull)
-                    .filter(row -> IterableUtils.count(row.getProperties()) > 0)
-                    .collect(Collectors.toList());
+                synchronized (rows) {
+                    return rows.stream()
+                        .map(row -> row.toReadable(visibilityEvaluator, fetchHints))
+                        .filter(Objects::nonNull)
+                        .filter(row -> IterableUtils.count(row.getProperties()) > 0)
+                        .collect(Collectors.toList());
+                }
             }
 
             public boolean canRead(VisibilityEvaluator visibilityEvaluator, FetchHints fetchHints) {
-                return rows.stream().anyMatch(r -> r.canRead(visibilityEvaluator, fetchHints));
+                synchronized (rows) {
+                    return rows.stream().anyMatch(r -> r.canRead(visibilityEvaluator, fetchHints));
+                }
             }
 
             public void addData(
@@ -258,21 +262,27 @@ public class MapInMemoryExtendedDataTable extends InMemoryExtendedDataTable {
                     return row;
                 }
                 row = new InMemoryExtendedDataRow(rowId, FetchHints.ALL);
-                rows.add(row);
+                synchronized (rows) {
+                    rows.add(row);
+                }
                 return row;
             }
 
             private InMemoryExtendedDataRow findRow(ExtendedDataRowId rowId) {
-                for (InMemoryExtendedDataRow row : rows) {
-                    if (row.getId().equals(rowId)) {
-                        return row;
+                synchronized (rows) {
+                    for (InMemoryExtendedDataRow row : rows) {
+                        if (row.getId().equals(rowId)) {
+                            return row;
+                        }
                     }
+                    return null;
                 }
-                return null;
             }
 
             public void removeData(ExtendedDataRowId rowId) {
-                rows.removeIf(row -> row.getId().equals(rowId));
+                synchronized (rows) {
+                    rows.removeIf(row -> row.getId().equals(rowId));
+                }
             }
 
             public void removeColumn(ExtendedDataRowId rowId, String columnName, String key, Visibility visibility) {
