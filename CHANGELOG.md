@@ -1,5 +1,6 @@
 # v4.8.2
 * Fixed: InMemory search failing to query correctly when just the table name is provided
+* Fixed: InMemory concurrency issues with extended data simultaneous deletes and adds
 
 # v4.8.1
 * Added: Term aggregation result includes `sum_other_doc_count` and `doc_count_error_upper_bound`
