@@ -1,4 +1,5 @@
 # v4.8.2
+* Added: FetchHints.union
 * Fixed: InMemory search failing to query correctly when just the table name is provided
 
 # v4.8.1

@@ -3,7 +3,10 @@ package org.vertexium;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableSet;
 
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Objects;
+import java.util.Set;
 
 public class FetchHints {
     private final boolean includeAllProperties;
@@ -67,14 +70,14 @@ public class FetchHints {
         boolean includePreviousMetadata
     ) {
         this.includeAllProperties = includeAllProperties;
-        this.propertyNamesToInclude = propertyNamesToInclude;
+        this.propertyNamesToInclude = includeAllProperties ? null : propertyNamesToInclude;
         this.includeAllPropertyMetadata = includeAllPropertyMetadata;
-        this.metadataKeysToInclude = metadataKeysToInclude;
+        this.metadataKeysToInclude = includeAllPropertyMetadata ? null : metadataKeysToInclude;
         this.includeHidden = includeHidden;
         this.includeAllEdgeRefs = includeAllEdgeRefs;
         this.includeOutEdgeRefs = includeOutEdgeRefs;
         this.includeInEdgeRefs = includeInEdgeRefs;
-        this.edgeLabelsOfEdgeRefsToInclude = edgeLabelsOfEdgeRefsToInclude;
+        this.edgeLabelsOfEdgeRefsToInclude = includeAllEdgeRefs ? null : edgeLabelsOfEdgeRefsToInclude;
         this.includeEdgeLabelsAndCounts = includeEdgeLabelsAndCounts;
         this.includeExtendedDataTableNames = includeExtendedDataTableNames;
         this.ignoreAdditionalVisibilities = ignoreAdditionalVisibilities;
@@ -413,5 +416,104 @@ public class FetchHints {
             }
         }
         return true;
+    }
+
+    public static FetchHints union(FetchHints... fetchHints) {
+        return union(Arrays.asList(fetchHints));
+    }
+
+    public static FetchHints union(Iterable<FetchHints> fetchHints) {
+        boolean includeAllProperties = false;
+        Set<String> propertyNamesToInclude = null;
+        boolean includeAllPropertyMetadata = false;
+        Set<String> metadataKeysToInclude = null;
+        Boolean includeHidden = null;
+        boolean includeAllEdgeRefs = false;
+        boolean includeOutEdgeRefs = false;
+        boolean includeInEdgeRefs = false;
+        boolean includeEdgeLabelsAndCounts = false;
+        boolean includeExtendedDataTableNames = false;
+        Boolean ignoreAdditionalVisibilities = null;
+        Boolean includePreviousMetadata = null;
+        Set<String> edgeLabelsOfEdgeRefsToInclude = null;
+
+        for (FetchHints fetchHint : fetchHints) {
+            if (fetchHint.isIncludeAllProperties()) {
+                includeAllProperties = true;
+            }
+            if (fetchHint.isIncludeAllPropertyMetadata()) {
+                includeAllPropertyMetadata = true;
+            }
+            if (fetchHint.isIncludeAllEdgeRefs()) {
+                includeAllEdgeRefs = true;
+            }
+            if (fetchHint.isIncludeOutEdgeRefs()) {
+                includeOutEdgeRefs = true;
+            }
+            if (fetchHint.isIncludeInEdgeRefs()) {
+                includeInEdgeRefs = true;
+            }
+            if (fetchHint.isIncludeEdgeLabelsAndCounts()) {
+                includeEdgeLabelsAndCounts = true;
+            }
+            if (fetchHint.isIncludeExtendedDataTableNames()) {
+                includeExtendedDataTableNames = true;
+            }
+
+            if (includeHidden != null && includeHidden != fetchHint.isIncludeHidden()) {
+                throw new VertexiumException("Incompatible fetch hints to combine (includeHidden).");
+            }
+            includeHidden = fetchHint.isIncludeHidden();
+
+            if (ignoreAdditionalVisibilities != null && ignoreAdditionalVisibilities != fetchHint.isIgnoreAdditionalVisibilities()) {
+                throw new VertexiumException("Incompatible fetch hints to combine (ignoreAdditionalVisibilities).");
+            }
+            ignoreAdditionalVisibilities = fetchHint.isIgnoreAdditionalVisibilities();
+
+            if (includePreviousMetadata != null && includePreviousMetadata != fetchHint.isIncludePreviousMetadata()) {
+                throw new VertexiumException("Incompatible fetch hints to combine (includePreviousMetadata).");
+            }
+            includePreviousMetadata = fetchHint.isIncludePreviousMetadata();
+
+            if (fetchHint.getPropertyNamesToInclude() != null) {
+                if (propertyNamesToInclude == null) {
+                    propertyNamesToInclude = new HashSet<>(fetchHint.getPropertyNamesToInclude());
+                } else {
+                    propertyNamesToInclude.addAll(fetchHint.getPropertyNamesToInclude());
+                }
+            }
+
+            if (fetchHint.getMetadataKeysToInclude() != null) {
+                if (metadataKeysToInclude == null) {
+                    metadataKeysToInclude = new HashSet<>(fetchHint.getMetadataKeysToInclude());
+                } else {
+                    metadataKeysToInclude.addAll(fetchHint.getMetadataKeysToInclude());
+                }
+            }
+
+            if (fetchHint.getEdgeLabelsOfEdgeRefsToInclude() != null) {
+                if (edgeLabelsOfEdgeRefsToInclude == null) {
+                    edgeLabelsOfEdgeRefsToInclude = new HashSet<>(fetchHint.getEdgeLabelsOfEdgeRefsToInclude());
+                } else {
+                    edgeLabelsOfEdgeRefsToInclude.addAll(fetchHint.getEdgeLabelsOfEdgeRefsToInclude());
+                }
+            }
+        }
+
+        return new FetchHints(
+            includeAllProperties,
+            propertyNamesToInclude == null ? null : ImmutableSet.copyOf(propertyNamesToInclude),
+            includeAllPropertyMetadata,
+            metadataKeysToInclude == null ? null : ImmutableSet.copyOf(metadataKeysToInclude),
+            includeHidden == null ? false : includeHidden,
+            includeAllEdgeRefs,
+            includeOutEdgeRefs,
+            includeInEdgeRefs,
+            edgeLabelsOfEdgeRefsToInclude == null ? null : ImmutableSet.copyOf(edgeLabelsOfEdgeRefsToInclude),
+            includeEdgeLabelsAndCounts,
+            includeExtendedDataTableNames,
+            ignoreAdditionalVisibilities == null ? false : ignoreAdditionalVisibilities,
+            includePreviousMetadata == null ? false : includePreviousMetadata
+        );
     }
 }

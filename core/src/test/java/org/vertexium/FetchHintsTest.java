@@ -2,6 +2,7 @@ package org.vertexium;
 
 import org.junit.Test;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 public class FetchHintsTest {
@@ -293,6 +294,167 @@ public class FetchHintsTest {
         assertDoesNotHaveFetchHints(
             new FetchHintsBuilder().setMetadataKeysToInclude("prop1").build(),
             new FetchHintsBuilder().setMetadataKeysToInclude("prop1", "prop2").build()
+        );
+    }
+
+    @Test
+    public void testUnion() {
+        assertEquals(
+            FetchHints.builder().build(),
+            FetchHints.union(
+                FetchHints.builder().build(),
+                FetchHints.builder().build()
+            )
+        );
+
+        assertEquals(
+            FetchHints.builder()
+                .setIncludeAllProperties(true)
+                .setIncludeAllPropertyMetadata(true)
+                .setIncludeAllEdgeRefs(true)
+                .setIncludeOutEdgeRefs(true)
+                .setIncludeInEdgeRefs(true)
+                .setIncludeEdgeLabelsAndCounts(true)
+                .setIncludeExtendedDataTableNames(true)
+                .build(),
+            FetchHints.union(
+                FetchHints.builder()
+                    .setIncludeAllProperties(true)
+                    .setIncludeAllPropertyMetadata(true)
+                    .setIncludeAllEdgeRefs(true)
+                    .setIncludeOutEdgeRefs(true)
+                    .setIncludeInEdgeRefs(true)
+                    .setIncludeEdgeLabelsAndCounts(true)
+                    .setIncludeExtendedDataTableNames(true)
+                    .build(),
+                FetchHints.builder().build()
+            )
+        );
+
+        try {
+            FetchHints.union(
+                FetchHints.builder()
+                    .setIncludeHidden(true)
+                    .build(),
+                FetchHints.builder()
+                    .setIncludeHidden(false)
+                    .build()
+            );
+            fail("should throw");
+        } catch (VertexiumException ex) {
+            // expected
+        }
+
+        try {
+            FetchHints.union(
+                FetchHints.builder()
+                    .setIgnoreAdditionalVisibilities(true)
+                    .build(),
+                FetchHints.builder()
+                    .setIgnoreAdditionalVisibilities(false)
+                    .build()
+            );
+            fail("should throw");
+        } catch (VertexiumException ex) {
+            // expected
+        }
+
+        try {
+            FetchHints.union(
+                FetchHints.builder()
+                    .setIncludePreviousMetadata(true)
+                    .build(),
+                FetchHints.builder()
+                    .setIncludePreviousMetadata(false)
+                    .build()
+            );
+            fail("should throw");
+        } catch (VertexiumException ex) {
+            // expected
+        }
+
+        assertEquals(
+            FetchHints.builder()
+                .setPropertyNamesToInclude("a", "b")
+                .build(),
+            FetchHints.union(
+                FetchHints.builder()
+                    .setPropertyNamesToInclude("a")
+                    .build(),
+                FetchHints.builder()
+                    .setPropertyNamesToInclude("b")
+                    .build()
+            )
+        );
+
+        assertEquals(
+            FetchHints.builder()
+                .setIncludeAllProperties(true)
+                .build(),
+            FetchHints.union(
+                FetchHints.builder()
+                    .setPropertyNamesToInclude("a")
+                    .build(),
+                FetchHints.builder()
+                    .setIncludeAllProperties(true)
+                    .build()
+            )
+        );
+
+        assertEquals(
+            FetchHints.builder()
+                .setMetadataKeysToInclude("a", "b")
+                .build(),
+            FetchHints.union(
+                FetchHints.builder()
+                    .setMetadataKeysToInclude("a")
+                    .build(),
+                FetchHints.builder()
+                    .setMetadataKeysToInclude("b")
+                    .build()
+            )
+        );
+
+        assertEquals(
+            FetchHints.builder()
+                .setIncludeAllPropertyMetadata(true)
+                .build(),
+            FetchHints.union(
+                FetchHints.builder()
+                    .setMetadataKeysToInclude("a")
+                    .build(),
+                FetchHints.builder()
+                    .setIncludeAllPropertyMetadata(true)
+                    .build()
+            )
+        );
+
+        assertEquals(
+            FetchHints.builder()
+                .setEdgeLabelsOfEdgeRefsToInclude("a", "b")
+                .build(),
+            FetchHints.union(
+                FetchHints.builder()
+                    .setEdgeLabelsOfEdgeRefsToInclude("a")
+                    .build(),
+                FetchHints.builder()
+                    .setEdgeLabelsOfEdgeRefsToInclude("b")
+                    .build()
+            )
+        );
+
+        assertEquals(
+            FetchHints.builder()
+                .setIncludeAllEdgeRefs(true)
+                .build(),
+            FetchHints.union(
+                FetchHints.builder()
+                    .setEdgeLabelsOfEdgeRefsToInclude("a")
+                    .build(),
+                FetchHints.builder()
+                    .setIncludeAllEdgeRefs(true)
+                    .build()
+            )
         );
     }
 
