@@ -1,3 +1,6 @@
+# v4.8.2
+* Fixed: InMemory search failing to query correctly when just the table name is provided
+
 # v4.8.1
 * Added: Term aggregation result includes `sum_other_doc_count` and `doc_count_error_upper_bound`
 * Added: Term aggregation parameter named `includeHasNotCount` to include a count of the number of element missing the aggregated property. This is false by default.

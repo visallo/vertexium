@@ -593,7 +593,7 @@ public abstract class QueryBase implements Query, SimilarToGraphQuery {
             ExtendedDataRow row = (ExtendedDataRow) elem;
             ExtendedDataRowId rowId = row.getId();
             for (HasExtendedDataFilter filter : filters) {
-                if (filter.getElementType() == null || rowId.getElementType().equals(filter.getElementType())
+                if ((filter.getElementType() == null || rowId.getElementType().equals(filter.getElementType()))
                     && (filter.getElementId() == null || rowId.getElementId().equals(filter.getElementId()))
                     && (filter.getTableName() == null || rowId.getTableName().equals(filter.getTableName()))) {
                     return true;
