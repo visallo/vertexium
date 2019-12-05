@@ -143,12 +143,12 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
         this.exceptionHandler = this.config.getExceptionHandler(graph);
         this.refreshIndexOnFlush = this.config.getRefreshIndexOnFlush();
         BulkUpdateServiceConfiguration bulkUpdateServiceConfiguration = new BulkUpdateServiceConfiguration()
-            .setQueueDepth(this.config.getBulkQueueDepth())
             .setCorePoolSize(this.config.getBulkCorePoolSize())
             .setMaximumPoolSize(this.config.getBulkMaxPoolSize())
             .setBulkRequestTimeout(this.config.getBulkRequestTimeout())
             .setMaxBatchSize(this.config.getBulkMaxBatchSize())
             .setMaxBatchSizeInBytes(this.config.getBulkMaxBatchSizeInBytes())
+            .setBatchWindowTime(this.config.getBulkBatchWindowTime())
             .setMaxFailCount(this.config.getBulkMaxFailCount());
         this.bulkUpdateService = new BulkUpdateService(this, indexRefreshTracker, bulkUpdateServiceConfiguration);
 
@@ -370,6 +370,24 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
         Set<String> additionalVisibilitiesToDelete,
         Authorizations authorizations
     ) {
+        addElement(
+            graph,
+            element,
+            additionalVisibilities,
+            additionalVisibilitiesToDelete,
+            true,
+            authorizations
+        );
+    }
+
+    void addElement(
+        Graph graph,
+        Element element,
+        Set<String> additionalVisibilities,
+        Set<String> additionalVisibilitiesToDelete,
+        boolean waitUntilFlushed,
+        Authorizations authorizations
+    ) {
         if (MUTATION_LOGGER.isTraceEnabled()) {
             MUTATION_LOGGER.trace("addElement: %s", element.getId());
         }
@@ -378,7 +396,9 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
             return;
         }
 
-        bulkUpdateService.flushUntilElementIdIsComplete(element.getId());
+        if (waitUntilFlushed) {
+            bulkUpdateService.flushUntilElementIdIsComplete(element.getId());
+        }
 
         UpdateRequestBuilder updateRequestBuilder = prepareUpdate(
             graph,

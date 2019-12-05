@@ -1,4 +1,4 @@
-package org.vertexium.elasticsearch5.utils;
+package org.vertexium.util;
 
 import java.util.Collection;
 import java.util.concurrent.LinkedBlockingQueue;

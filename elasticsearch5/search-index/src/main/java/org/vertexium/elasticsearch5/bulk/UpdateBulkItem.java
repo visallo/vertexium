@@ -9,6 +9,13 @@ public class UpdateBulkItem extends BulkItem {
 
     public UpdateBulkItem(
         ElementLocation elementLocation,
+        UpdateRequest updateRequest
+    ) {
+        this(elementLocation, null, null, updateRequest);
+    }
+
+    public UpdateBulkItem(
+        ElementLocation elementLocation,
         String extendedDataTableName,
         String extendedDataRowId,
         UpdateRequest updateRequest
@@ -22,21 +29,22 @@ public class UpdateBulkItem extends BulkItem {
         return (ElementLocation) getElementId();
     }
 
-    @Override
-    public String toString() {
-        String elementId = getElementId().getId();
-        if (extendedDataRowId == null) {
-            return String.format("Element \"%s\"", elementId);
-        } else {
-            return String.format("Extended data row \"%s\":\"%s\":\"%s\"", elementId, extendedDataTableName, extendedDataRowId);
-        }
-    }
-
     public String getExtendedDataTableName() {
         return extendedDataTableName;
     }
 
     public String getExtendedDataRowId() {
         return extendedDataRowId;
+    }
+
+    @Override
+    public String toString() {
+        return String.format(
+            "%s {%s:%s%s}",
+            UpdateBulkItem.class.getSimpleName(),
+            getElementId().getElementType(),
+            getElementId().getId(),
+            getExtendedDataTableName() == null ? "" : String.format(" (%s:%s)", getExtendedDataTableName(), getExtendedDataRowId())
+        );
     }
 }

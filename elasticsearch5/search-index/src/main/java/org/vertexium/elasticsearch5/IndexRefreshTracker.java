@@ -7,21 +7,18 @@ import org.vertexium.metric.Timer;
 import org.vertexium.metric.VertexiumMetricRegistry;
 import org.vertexium.util.VertexiumLogger;
 import org.vertexium.util.VertexiumLoggerFactory;
+import org.vertexium.util.VertexiumReadWriteLock;
+import org.vertexium.util.VertexiumStampedLock;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
 
 public class IndexRefreshTracker {
     private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(IndexRefreshTracker.class);
-    private final ReadWriteLock indexToMaxRefreshTimeLock = new ReentrantReadWriteLock();
+    private final VertexiumReadWriteLock lock = new VertexiumStampedLock();
     private final Map<String, Long> indexToMaxRefreshTime = new HashMap<>();
-    private final Lock readLock = indexToMaxRefreshTimeLock.readLock();
-    private final Lock writeLock = indexToMaxRefreshTimeLock.writeLock();
     private final Counter pushCounter;
     private final Timer refreshTimer;
 
@@ -31,14 +28,21 @@ public class IndexRefreshTracker {
     }
 
     public void pushChange(String indexName) {
-        pushCounter.increment();
-        writeLock.lock();
-        try {
+        lock.executeInWriteLock(() -> {
+            pushCounter.increment();
             LOGGER.trace("index added for refresh: %s", indexName);
             indexToMaxRefreshTime.put(indexName, getTime());
-        } finally {
-            writeLock.unlock();
-        }
+        });
+    }
+
+    public void pushChanges(Set<String> indexNames) {
+        lock.executeInWriteLock(() -> {
+            for (String indexName : indexNames) {
+                pushCounter.increment();
+                LOGGER.trace("index added for refresh: %s", indexName);
+                indexToMaxRefreshTime.put(indexName, getTime());
+            }
+        });
     }
 
     public void refresh(Client client) {
@@ -76,27 +80,21 @@ public class IndexRefreshTracker {
     }
 
     private Set<String> getIndexNamesNeedingRefresh(long time) {
-        readLock.lock();
-        try {
-            return indexToMaxRefreshTime.entrySet().stream()
+        return lock.executeInReadLock(() ->
+            indexToMaxRefreshTime.entrySet().stream()
                 .filter(e -> e.getValue() <= time)
                 .map(Map.Entry::getKey)
-                .collect(Collectors.toSet());
-        } finally {
-            readLock.unlock();
-        }
+                .collect(Collectors.toSet())
+        );
     }
 
     private void removeRefreshedIndexNames(Set<String> indexNamesNeedingRefresh, long time) {
-        writeLock.lock();
-        try {
+        lock.executeInWriteLock(() -> {
             for (String indexName : indexNamesNeedingRefresh) {
                 if (indexToMaxRefreshTime.getOrDefault(indexName, Long.MAX_VALUE) <= time) {
                     indexToMaxRefreshTime.remove(indexName);
                 }
             }
-        } finally {
-            writeLock.unlock();
-        }
+        });
     }
 }
