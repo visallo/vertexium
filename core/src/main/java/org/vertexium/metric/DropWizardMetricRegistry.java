@@ -22,6 +22,10 @@ public class DropWizardMetricRegistry implements VertexiumMetricRegistry {
         this.metricRegistry = metricRegistry;
     }
 
+    public MetricRegistry getMetricRegistry() {
+        return metricRegistry;
+    }
+
     @Override
     public String createName(Class clazz, String... nameParts) {
         return MetricRegistry.name(clazz, nameParts);
