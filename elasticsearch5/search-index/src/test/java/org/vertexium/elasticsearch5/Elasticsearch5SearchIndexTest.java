@@ -267,6 +267,30 @@ public class Elasticsearch5SearchIndexTest extends GraphTestBase {
     }
 
     @Test
+    public void testQueryPagingVsScrollApi() {
+        for (int i = 0; i < ElasticsearchResource.TEST_QUERY_PAGING_LIMIT * 2; i++) {
+            graph.prepareVertex("v" + i, VISIBILITY_A)
+                .addPropertyValue("k1", "prop1", "joe", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
+        }
+        graph.flush();
+
+        int resultCount = count(graph.query(AUTHORIZATIONS_A)
+            .limit(ElasticsearchResource.TEST_QUERY_PAGING_LIMIT - 1)
+            .vertices());
+        assertEquals(ElasticsearchResource.TEST_QUERY_PAGING_LIMIT - 1, resultCount);
+
+        resultCount = count(graph.query(AUTHORIZATIONS_A)
+            .limit(ElasticsearchResource.TEST_QUERY_PAGING_LIMIT + 1)
+            .vertices());
+        assertEquals(ElasticsearchResource.TEST_QUERY_PAGING_LIMIT + 1, resultCount);
+
+        resultCount = count(graph.query(AUTHORIZATIONS_A)
+            .vertices());
+        assertEquals(ElasticsearchResource.TEST_QUERY_PAGING_LIMIT * 2, resultCount);
+    }
+
+    @Test
     public void testMultipleThreadsFlushing() throws InterruptedException {
         AtomicBoolean startSignal = new AtomicBoolean();
         AtomicBoolean run = new AtomicBoolean(true);
