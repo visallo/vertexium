@@ -15,10 +15,15 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 public abstract class InfiniteScrollIterable<T> implements QueryResultsIterable<T>, IterableWithScores<T> {
+    private final Long limit;
     private QueryResultsIterable<T> firstIterable;
     private boolean initCalled;
     private boolean firstCall;
     private SearchResponse response;
+
+    protected InfiniteScrollIterable(Long limit) {
+        this.limit = limit;
+    }
 
     protected abstract SearchResponse getInitialSearchResponse();
 
@@ -139,14 +144,15 @@ public abstract class InfiniteScrollIterable<T> implements QueryResultsIterable<
                 return;
             }
 
-            if (it.hasNext()) {
+            boolean isUnderLimit = limit == null || currentResultNumber < limit;
+            if (isUnderLimit && it.hasNext()) {
                 this.next = it.next();
                 currentResultNumber++;
             } else {
                 CloseableUtils.closeQuietly(it);
                 it = null;
 
-                if (getTotalHits() > currentResultNumber) {
+                if (isUnderLimit && getTotalHits() > currentResultNumber) {
                     QueryResultsIterable<T> iterable = searchResponseToIterable(getNextSearchResponse(scrollId));
                     it = iterable.iterator();
                     if (!it.hasNext()) {

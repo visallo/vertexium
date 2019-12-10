@@ -459,7 +459,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
     }
 
     private QueryResultsIterable<? extends VertexiumObject> searchScroll(EnumSet<VertexiumObjectType> objectTypes, FetchHints fetchHints) {
-        return new QueryInfiniteScrollIterable<VertexiumObject>(objectTypes, fetchHints) {
+        return new QueryInfiniteScrollIterable<VertexiumObject>(objectTypes, fetchHints, getParameters().getLimit()) {
             @Override
             protected ElasticsearchGraphQueryIterable<VertexiumObject> searchResponseToIterable(SearchResponse searchResponse) {
                 return ElasticsearchSearchQueryBase.this.searchResponseToVertexiumObjectIterable(searchResponse, fetchHints);
@@ -555,7 +555,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
     }
 
     private QueryInfiniteScrollIterable<SearchHit> searchScrollHits(EnumSet<VertexiumObjectType> objectTypes, FetchHints fetchHints) {
-        return new QueryInfiniteScrollIterable<SearchHit>(objectTypes, fetchHints) {
+        return new QueryInfiniteScrollIterable<SearchHit>(objectTypes, fetchHints, getParameters().getLimit()) {
             @Override
             protected ElasticsearchGraphQueryIterable<SearchHit> searchResponseToIterable(SearchResponse searchResponse) {
                 return ElasticsearchSearchQueryBase.this.searchResponseToSearchHitsIterable(searchResponse);
@@ -1836,7 +1836,8 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
         private final EnumSet<VertexiumObjectType> objectTypes;
         private final FetchHints fetchHints;
 
-        public QueryInfiniteScrollIterable(EnumSet<VertexiumObjectType> objectTypes, FetchHints fetchHints) {
+        public QueryInfiniteScrollIterable(EnumSet<VertexiumObjectType> objectTypes, FetchHints fetchHints, Long limit) {
+            super(limit);
             this.objectTypes = objectTypes;
             this.fetchHints = fetchHints;
         }
