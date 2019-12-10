@@ -2,6 +2,7 @@
 * Added: FetchHints.union
 * Fixed: InMemory search failing to query correctly when just the table name is provided
 * Fixed: InMemory concurrency issues with extended data simultaneous deletes and adds
+* Fixed: getExtendedData single row with multiple matching row id prefixes
 * Fixed: Elasticsearch limit while using scroll API 
 
 # v4.8.1

@@ -8414,6 +8414,38 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    public void testExtendedDataGetById() {
+        graph.prepareVertex("v1", VISIBILITY_A)
+            .addExtendedData("table1", "row00", "name", "row00-value", VISIBILITY_A)
+            .addExtendedData("table1", "row00123", "name", "row00123-value", VISIBILITY_A)
+            .addExtendedData("table1", "row000", "name", "row000-value", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
+        graph.flush();
+
+        assertEquals(
+            "row00-value",
+            graph.getExtendedData(
+                new ExtendedDataRowId(ElementType.VERTEX, "v1", "table1", "row00"),
+                AUTHORIZATIONS_A
+            ).getPropertyValue("name")
+        );
+        assertEquals(
+            "row00123-value",
+            graph.getExtendedData(
+                new ExtendedDataRowId(ElementType.VERTEX, "v1", "table1", "row00123"),
+                AUTHORIZATIONS_A
+            ).getPropertyValue("name")
+        );
+        assertEquals(
+            "row000-value",
+            graph.getExtendedData(
+                new ExtendedDataRowId(ElementType.VERTEX, "v1", "table1", "row000"),
+                AUTHORIZATIONS_A
+            ).getPropertyValue("name")
+        );
+    }
+
+    @Test
     public void testExtendedDataQuery() {
         graph.prepareVertex("v1", VISIBILITY_A)
             .addExtendedData("table1", "row1", "name", "value1", VISIBILITY_A)

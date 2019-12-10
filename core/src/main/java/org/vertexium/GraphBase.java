@@ -983,7 +983,7 @@ public abstract class GraphBase implements Graph {
         if (rows.size() == 1) {
             return rows.get(0);
         }
-        throw new VertexiumException("Expected 0 or 1 rows found " + rows.size());
+        throw new VertexiumException("Expected 0 or 1 rows found " + rows.size() + " (id: " + id + ")");
     }
 
     @Override
