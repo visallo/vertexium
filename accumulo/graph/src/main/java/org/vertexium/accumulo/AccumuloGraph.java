@@ -1415,7 +1415,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
 
     private List<org.apache.accumulo.core.data.Range> extendedDataRowIdToRange(Iterable<ExtendedDataRowId> ids) {
         return stream(ids)
-            .map(id -> org.apache.accumulo.core.data.Range.prefix(KeyHelper.createExtendedDataRowKey(id)))
+            .map(id -> org.apache.accumulo.core.data.Range.exact(KeyHelper.createExtendedDataRowKey(id)))
             .collect(Collectors.toList());
     }
 

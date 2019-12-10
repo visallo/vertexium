@@ -2,6 +2,7 @@
 * Added: FetchHints.union
 * Fixed: InMemory search failing to query correctly when just the table name is provided
 * Fixed: InMemory concurrency issues with extended data simultaneous deletes and adds
+* Fixed: getExtendedData single row with multiple matching row id prefixes
 
 # v4.8.1
 * Added: Term aggregation result includes `sum_other_doc_count` and `doc_count_error_upper_bound`
