@@ -4,6 +4,7 @@ import com.codahale.metrics.MetricRegistry;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 public class DropWizardMetricRegistry implements VertexiumMetricRegistry {
@@ -152,6 +153,11 @@ public class DropWizardMetricRegistry implements VertexiumMetricRegistry {
             } finally {
                 ctx.stop();
             }
+        }
+
+        @Override
+        public void update(long duration, TimeUnit unit) {
+            timer.update(duration, unit);
         }
     }
 

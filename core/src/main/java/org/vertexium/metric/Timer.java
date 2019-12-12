@@ -1,5 +1,6 @@
 package org.vertexium.metric;
 
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 public interface Timer {
@@ -11,4 +12,6 @@ public interface Timer {
     }
 
     <T> T time(Supplier<T> supplier);
+
+    void update(long duration, TimeUnit unit);
 }
