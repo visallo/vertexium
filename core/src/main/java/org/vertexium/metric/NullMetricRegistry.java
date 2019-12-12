@@ -4,6 +4,7 @@ import com.google.common.base.Joiner;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 public class NullMetricRegistry implements VertexiumMetricRegistry {
@@ -51,6 +52,10 @@ public class NullMetricRegistry implements VertexiumMetricRegistry {
             @Override
             public <T> T time(Supplier<T> supplier) {
                 return supplier.get();
+            }
+
+            @Override
+            public void update(long duration, TimeUnit unit) {
             }
         });
     }
