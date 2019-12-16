@@ -28,6 +28,8 @@ public class GraphConfiguration {
     public static final String DEFAULT_SERIALIZER = JavaVertexiumSerializer.class.getName();
     public static final String METRICS_REGISTRY = "metricsRegistry";
     public static final String DEFAULT_METRICS_REGISTRY = DropWizardMetricRegistry.class.getName();
+    public static final String METADATA_PLUGIN = "metadataPlugin";
+    public static final String DEFAULT_METADATA_PLUGIN = DefaultMetadataPlugin.class.getName();
     public static final String STRICT_TYPING = "strictTyping";
     public static final boolean DEFAULT_STRICT_TYPING = false;
     public static final String CREATE_TABLES = "createTables";
@@ -74,6 +76,10 @@ public class GraphConfiguration {
 
     public VertexiumMetricRegistry createMetricsRegistry() {
         return ConfigurationUtils.createProvider(null, this, METRICS_REGISTRY, DEFAULT_METRICS_REGISTRY);
+    }
+
+    public MetadataPlugin createMetadataPlugin() {
+        return ConfigurationUtils.createProvider(null, this, METADATA_PLUGIN, DEFAULT_METADATA_PLUGIN);
     }
 
     public boolean getBoolean(String configKey, boolean defaultValue) {

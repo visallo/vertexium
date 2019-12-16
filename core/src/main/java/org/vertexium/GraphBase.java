@@ -37,12 +37,14 @@ public abstract class GraphBase implements Graph {
     private Map<String, PropertyDefinition> propertyDefinitionCache = new ConcurrentHashMap<>();
     private final boolean strictTyping;
     private final VertexiumMetricRegistry metricRegistry;
+    private final MetadataPlugin metadataPlugin;
     protected final Timer flushTimer;
     protected final StackTraceTracker flushStackTraceTracker;
 
-    protected GraphBase(boolean strictTyping, VertexiumMetricRegistry metricRegistry) {
+    protected GraphBase(boolean strictTyping, VertexiumMetricRegistry metricRegistry, MetadataPlugin metadataPlugin) {
         this.strictTyping = strictTyping;
         this.metricRegistry = metricRegistry;
+        this.metadataPlugin = metadataPlugin;
         this.flushTimer = metricRegistry.getTimer(Graph.class, "flush", "timer");
         this.flushStackTraceTracker = metricRegistry.getStackTraceTracker(Graph.class, "flush", "stack");
     }
@@ -1162,5 +1164,9 @@ public abstract class GraphBase implements Graph {
     @Override
     public VertexiumMetricRegistry getMetricsRegistry() {
         return metricRegistry;
+    }
+
+    public MetadataPlugin getMetadataPlugin() {
+        return metadataPlugin;
     }
 }

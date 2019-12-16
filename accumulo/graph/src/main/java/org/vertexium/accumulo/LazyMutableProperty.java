@@ -137,8 +137,10 @@ public class LazyMutableProperty extends MutableProperty {
                 cachedMetadata = new LazyPropertyMetadata(
                     metadataRef.getMetadataEntries(),
                     metadataRef.getMetadataIndexes(),
+                    getTimestamp(),
                     this.vertexiumSerializer,
                     graph.getNameSubstitutionStrategy(),
+                    graph.getMetadataPlugin(),
                     fetchHints
                 );
             }

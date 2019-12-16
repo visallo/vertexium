@@ -9,6 +9,7 @@ import org.vertexium.*;
 import org.vertexium.id.UUIDIdGenerator;
 import org.vertexium.search.DefaultSearchIndex;
 import org.vertexium.test.GraphTestBase;
+import org.vertexium.test.TestMetadataPlugin;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -28,6 +29,7 @@ public class InMemoryGraphTest extends GraphTestBase {
         config.put("", InMemoryGraph.class.getName());
         config.put(GraphConfiguration.IDGENERATOR_PROP_PREFIX, UUIDIdGenerator.class.getName());
         config.put(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX, DefaultSearchIndex.class.getName());
+        config.put(GraphConfiguration.METADATA_PLUGIN, TestMetadataPlugin.class.getName());
         return config;
     }
 

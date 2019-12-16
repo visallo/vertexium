@@ -2,6 +2,7 @@ package org.vertexium.inmemory;
 
 import org.vertexium.Authorizations;
 import org.vertexium.FetchHints;
+import org.vertexium.MetadataPlugin;
 import org.vertexium.inmemory.mutations.Mutation;
 import org.vertexium.util.StreamUtils;
 
@@ -13,15 +14,17 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
 
 public abstract class InMemoryTable<TElement extends InMemoryElement> {
-    private ReadWriteLock rowsLock = new ReentrantReadWriteLock();
-    private Map<String, InMemoryTableElement<TElement>> rows;
+    private final ReadWriteLock rowsLock = new ReentrantReadWriteLock();
+    private final Map<String, InMemoryTableElement<TElement>> rows;
+    private final MetadataPlugin metadataPlugin;
 
-    protected InMemoryTable(Map<String, InMemoryTableElement<TElement>> rows) {
+    protected InMemoryTable(Map<String, InMemoryTableElement<TElement>> rows, MetadataPlugin metadataPlugin) {
         this.rows = rows;
+        this.metadataPlugin = metadataPlugin;
     }
 
-    protected InMemoryTable() {
-        this(new ConcurrentSkipListMap<>());
+    protected InMemoryTable(MetadataPlugin metadataPlugin) {
+        this(new ConcurrentSkipListMap<>(), metadataPlugin);
     }
 
     public TElement get(InMemoryGraph graph, String id, FetchHints fetchHints, Authorizations authorizations) {
@@ -46,7 +49,7 @@ public abstract class InMemoryTable<TElement extends InMemoryElement> {
         try {
             InMemoryTableElement<TElement> inMemoryTableElement = rows.get(id);
             if (inMemoryTableElement == null) {
-                inMemoryTableElement = createInMemoryTableElement(id);
+                inMemoryTableElement = createInMemoryTableElement(id, metadataPlugin);
                 rows.put(id, inMemoryTableElement);
             }
             inMemoryTableElement.addAll(newMutations);
@@ -55,7 +58,7 @@ public abstract class InMemoryTable<TElement extends InMemoryElement> {
         }
     }
 
-    protected abstract InMemoryTableElement<TElement> createInMemoryTableElement(String id);
+    protected abstract InMemoryTableElement<TElement> createInMemoryTableElement(String id, MetadataPlugin metadataPlugin);
 
     public void remove(String id) {
         rowsLock.writeLock().lock();

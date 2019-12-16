@@ -21,15 +21,18 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public abstract class InMemoryTableElement<TElement extends InMemoryElement> implements Serializable {
+public abstract class InMemoryTableElement<TElement extends InMemoryElement> implements Serializable, ElementId {
+    private final ReadWriteLock mutationLock = new ReentrantReadWriteLock();
     private final String id;
-    private ReadWriteLock mutationLock = new ReentrantReadWriteLock();
+    private final MetadataPlugin metadataPlugin;
     protected final TreeSet<Mutation> mutations = new TreeSet<>();
 
-    protected InMemoryTableElement(String id) {
+    protected InMemoryTableElement(String id, MetadataPlugin metadataPlugin) {
         this.id = id;
+        this.metadataPlugin = metadataPlugin;
     }
 
+    @Override
     public String getId() {
         return id;
     }
@@ -410,8 +413,6 @@ public abstract class InMemoryTableElement<TElement extends InMemoryElement> imp
         throw new VertexiumException("Unhandled Mutation: " + m.getClass().getName());
     }
 
-    protected abstract ElementType getElementType();
-
     private List<PropertyMutation> findPropertyMutations(String key, String name, Visibility visibility) {
         return getFilteredMutations(m ->
             m instanceof PropertyMutation &&
@@ -510,7 +511,7 @@ public abstract class InMemoryTableElement<TElement extends InMemoryElement> imp
         return true;
     }
 
-    public Iterable<Property> getProperties(final FetchHints fetchHints, Long endTime, final Authorizations authorizations) {
+    public Iterable<Property> getProperties(FetchHints fetchHints, Long endTime, Authorizations authorizations) {
         final TreeMap<String, List<PropertyMutation>> propertiesMutations = new TreeMap<>();
         for (PropertyMutation m : findMutations(PropertyMutation.class)) {
             if (endTime != null && m.getTimestamp() > endTime) {
@@ -590,7 +591,21 @@ public abstract class InMemoryTableElement<TElement extends InMemoryElement> imp
             return null;
         }
         value = loadIfStreamingPropertyValue(value, timestamp);
+        if (metadata != null) {
+            metadata = applyMetadataPlugin(metadata, timestamp);
+        }
         return new MutablePropertyImpl(propertyKey, propertyName, value, metadata, timestamp, hiddenVisibilities, visibility, fetchHints);
+    }
+
+    private Metadata applyMetadataPlugin(Metadata metadata, long propertyTimestamp) {
+        Metadata results = Metadata.create(metadata.getFetchHints());
+        for (Metadata.Entry entry : metadataPlugin.getAllDefaultEntries(propertyTimestamp, metadata.getFetchHints())) {
+            results.add(entry.getKey(), entry.getValue(), entry.getVisibility());
+        }
+        for (Metadata.Entry entry : metadata.entrySet()) {
+            results.add(entry.getKey(), entry.getValue(), entry.getVisibility());
+        }
+        return results;
     }
 
     private Metadata mergeMetadata(Metadata metadata, Metadata metadataToMerge, FetchHints fetchHints) {

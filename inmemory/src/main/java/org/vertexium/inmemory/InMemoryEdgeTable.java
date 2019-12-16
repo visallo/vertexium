@@ -1,20 +1,22 @@
 package org.vertexium.inmemory;
 
+import org.vertexium.MetadataPlugin;
 import org.vertexium.util.ConvertingIterable;
 
 import java.util.Map;
 
 public class InMemoryEdgeTable extends InMemoryTable<InMemoryEdge> {
-    public InMemoryEdgeTable(Map<String, InMemoryTableElement<InMemoryEdge>> rows) {
-        super(rows);
+    public InMemoryEdgeTable(Map<String, InMemoryTableElement<InMemoryEdge>> rows, MetadataPlugin metadataPlugin) {
+        super(rows, metadataPlugin);
     }
 
-    public InMemoryEdgeTable() {
+    public InMemoryEdgeTable(MetadataPlugin metadataPlugin) {
+        super(metadataPlugin);
     }
 
     @Override
-    protected InMemoryTableElement<InMemoryEdge> createInMemoryTableElement(String id) {
-        return new InMemoryTableEdge(id);
+    protected InMemoryTableElement<InMemoryEdge> createInMemoryTableElement(String id, MetadataPlugin metadataPlugin) {
+        return new InMemoryTableEdge(id, metadataPlugin);
     }
 
     public Iterable<InMemoryTableEdge> getAllTableElements() {

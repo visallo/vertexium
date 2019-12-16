@@ -3,14 +3,15 @@ package org.vertexium.inmemory;
 import org.vertexium.Authorizations;
 import org.vertexium.ElementType;
 import org.vertexium.FetchHints;
+import org.vertexium.MetadataPlugin;
 
 public class InMemoryTableVertex extends InMemoryTableElement<InMemoryVertex> {
-    public InMemoryTableVertex(String id) {
-        super(id);
+    public InMemoryTableVertex(String id, MetadataPlugin metadataPlugin) {
+        super(id, metadataPlugin);
     }
 
     @Override
-    protected ElementType getElementType() {
+    public ElementType getElementType() {
         return ElementType.VERTEX;
     }
 

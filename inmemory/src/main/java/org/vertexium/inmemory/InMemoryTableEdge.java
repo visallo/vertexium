@@ -11,12 +11,12 @@ import java.util.List;
 import java.util.stream.Stream;
 
 public class InMemoryTableEdge extends InMemoryTableElement<InMemoryEdge> {
-    public InMemoryTableEdge(String id) {
-        super(id);
+    public InMemoryTableEdge(String id, MetadataPlugin metadataPlugin) {
+        super(id, metadataPlugin);
     }
 
     @Override
-    protected ElementType getElementType() {
+    public ElementType getElementType() {
         return ElementType.EDGE;
     }
 

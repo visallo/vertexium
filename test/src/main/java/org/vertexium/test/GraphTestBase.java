@@ -112,6 +112,7 @@ public abstract class GraphTestBase {
 
     @Before
     public void before() throws Exception {
+        TestMetadataPlugin.clear();
         graph = createGraph();
         clearGraphEvents();
         graph.addGraphEventListener(new GraphEventListener() {
@@ -10699,6 +10700,124 @@ public abstract class GraphTestBase {
             .filter(id -> !(id.equals("v2") || id.equals("v3")))
             .count()
         );
+    }
+
+    @Test
+    public void testMetadataPlugin() {
+        TestMetadataPlugin.enable(true);
+
+        long vertexTimestamp = 1576503530169L;
+        long propertyKey1Timestamp = 1576503530170L;
+        long propertyKey2Timestamp = 1576503530171L;
+
+        Metadata metadata1 = Metadata.create();
+        metadata1.add("metadataKey1", "defaultValue", VISIBILITY_EMPTY);
+        metadata1.add("metadataKey2", "otherValue", VISIBILITY_EMPTY);
+        metadata1.add("modifiedDate", propertyKey1Timestamp, VISIBILITY_EMPTY);
+
+        Metadata metadata2 = Metadata.create();
+        metadata2.add("metadataKey1", "nonDefaultValue", VISIBILITY_EMPTY);
+        metadata2.add("modifiedDate", propertyKey2Timestamp + 1, VISIBILITY_EMPTY);
+
+        graph.prepareVertex("v1", vertexTimestamp, VISIBILITY_A)
+            .addPropertyValue("key1", "name", "value", metadata1, propertyKey1Timestamp, VISIBILITY_A)
+            .addPropertyValue("key2", "name", "value", metadata2, propertyKey2Timestamp, VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        assertEquals(
+            "metadataKey1 (defaultValue) + modifiedDate (propertyKey1Timestamp)",
+            2,
+            TestMetadataPlugin.getSkippedMetadataEntriesCount()
+        );
+
+        Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
+
+        Property prop = v1.getProperty("key1", "name");
+        assertEquals("defaultValue", prop.getMetadata().getValue("metadataKey1"));
+        assertEquals("otherValue", prop.getMetadata().getValue("metadataKey2"));
+        assertEquals(
+            "if property timestamp and metadata modified date values are equal, the metadata will not be " +
+                "written but should still return the correct value",
+            propertyKey1Timestamp,
+            prop.getMetadata().getValue("modifiedDate")
+        );
+
+        prop = v1.getProperty("key2", "name");
+        assertEquals("nonDefaultValue", prop.getMetadata().getValue("metadataKey1"));
+        assertEquals(
+            "if property timestamp and metadata modified date values differ make sure we get the set value back",
+            propertyKey2Timestamp + 1,
+            prop.getMetadata().getValue("modifiedDate")
+        );
+    }
+
+    @Test
+    public void testMetadataPlugin_nonDefaultToDefault() {
+        TestMetadataPlugin.enable(true);
+
+        Metadata metadata1 = Metadata.create();
+        metadata1.add("metadataKey1", "nonDefaultValue", VISIBILITY_EMPTY);
+        graph.prepareVertex("v1", VISIBILITY_A)
+            .addPropertyValue("key1", "name", "value1", metadata1, VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        assertEquals(0, TestMetadataPlugin.getSkippedMetadataEntriesCount());
+
+        metadata1 = Metadata.create();
+        metadata1.add("metadataKey1", "defaultValue", VISIBILITY_EMPTY);
+        graph.prepareVertex("v1", VISIBILITY_A)
+            .addPropertyValue("key1", "name", "value2", metadata1, VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        assertEquals(1, TestMetadataPlugin.getSkippedMetadataEntriesCount());
+
+        Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
+
+        Property prop = v1.getProperty("key1", "name");
+        assertEquals("defaultValue", prop.getMetadata().getValue("metadataKey1"));
+        assertEquals(prop.getTimestamp(), prop.getMetadata().getValue("modifiedDate"));
+    }
+
+    @Test
+    public void testMetadataPlugin_fetchHints() {
+        TestMetadataPlugin.enable(true);
+
+        graph.prepareVertex("v1", VISIBILITY_A)
+            .addPropertyValue("key1", "name", "value1", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        assertEquals(0, TestMetadataPlugin.getSkippedMetadataEntriesCount());
+
+        Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
+        Property prop = v1.getProperty("key1", "name");
+        assertEquals("defaultValue", prop.getMetadata().getValue("metadataKey1"));
+        assertEquals(prop.getTimestamp(), prop.getMetadata().getValue("modifiedDate"));
+
+        FetchHints fetchHints = FetchHints.builder()
+            .setMetadataKeysToInclude("metadataKey1", "modifiedDate")
+            .build();
+        v1 = graph.getVertex("v1", fetchHints, AUTHORIZATIONS_A);
+        prop = v1.getProperty("key1", "name");
+        assertEquals("defaultValue", prop.getMetadata().getValue("metadataKey1"));
+        assertEquals(prop.getTimestamp(), prop.getMetadata().getValue("modifiedDate"));
+
+        fetchHints = FetchHints.builder()
+            .setMetadataKeysToInclude("metadataKey1")
+            .build();
+        v1 = graph.getVertex("v1", fetchHints, AUTHORIZATIONS_A);
+        prop = v1.getProperty("key1", "name");
+        assertEquals("defaultValue", prop.getMetadata().getValue("metadataKey1"));
+        for (Metadata.Entry entry : prop.getMetadata().entrySet()) {
+            if (entry.getKey().equals("metadataKey1")) {
+                // OK
+            } else {
+                fail("metadata should not exist: " + entry.getKey());
+            }
+        }
     }
 
     @Test

@@ -112,7 +112,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         this.vertexiumSerializer = config.createSerializer(this);
         this.nameSubstitutionStrategy = AccumuloNameSubstitutionStrategy.create(config.createSubstitutionStrategy(this));
         this.streamingPropertyValueStorageStrategy = config.createStreamingPropertyValueStorageStrategy(this);
-        this.elementMutationBuilder = new ElementMutationBuilder(streamingPropertyValueStorageStrategy, vertexiumSerializer) {
+        this.elementMutationBuilder = new ElementMutationBuilder(getMetadataPlugin(), streamingPropertyValueStorageStrategy, vertexiumSerializer) {
             @Override
             protected void saveVertexMutation(Mutation m) {
                 addMutations(VertexiumObjectType.VERTEX, m);
@@ -558,7 +558,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             elementMutationBuilder.addPropertySoftDeleteToMutation(m, propertySoftDelete);
         }
         for (Property property : properties) {
-            elementMutationBuilder.addPropertyToMutation(this, m, elementRowKey, property);
+            elementMutationBuilder.addPropertyToMutation(this, m, element, elementRowKey, property);
         }
         for (AdditionalVisibilityAddMutation additionalVisibility : additionalVisibilities) {
             elementMutationBuilder.addAdditionalVisibilityToMutation(m, additionalVisibility);
@@ -2416,7 +2416,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             elementMutationBuilder.addPropertySoftDeleteToMutation(m, property, apv.getTimestamp() - 1, apv.getData());
             property.setVisibility(apv.getVisibility());
             property.setTimestamp(apv.getTimestamp());
-            elementMutationBuilder.addPropertyToMutation(this, m, elementRowKey, property);
+            elementMutationBuilder.addPropertyToMutation(this, m, element, elementRowKey, property);
 
             // Keep track of properties that need to be removed from indices
             propertyList.add(PropertyDescriptor.from(apv.getKey(), apv.getName(), apv.getExistingVisibility()));
@@ -2445,6 +2445,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             }
             elementMutationBuilder.addPropertyMetadataItemToMutation(
                 m,
+                element,
                 property,
                 apm.getMetadataName(),
                 apm.getNewValue(),

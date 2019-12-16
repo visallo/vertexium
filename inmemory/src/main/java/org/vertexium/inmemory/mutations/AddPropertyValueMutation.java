@@ -20,7 +20,7 @@ public class AddPropertyValueMutation extends PropertyMutation {
     ) {
         super(timestamp, key, name, visibility, visibility);
         this.value = value;
-        this.metadata = Metadata.create(metadata);
+        this.metadata = metadata;
         this.data = data;
     }
 
