@@ -37,34 +37,17 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
     private final GraphMetadataStore graphMetadataStore;
 
     protected InMemoryGraph(InMemoryGraphConfiguration configuration) {
-        this(
-            configuration,
-            new InMemoryVertexTable(),
-            new InMemoryEdgeTable(),
-            new MapInMemoryExtendedDataTable()
-        );
+        this(configuration, new MapInMemoryExtendedDataTable());
     }
 
     protected InMemoryGraph(InMemoryGraphConfiguration configuration, IdGenerator idGenerator, SearchIndex searchIndex) {
-        this(
-            configuration,
-            idGenerator,
-            searchIndex,
-            new InMemoryVertexTable(),
-            new InMemoryEdgeTable(),
-            new MapInMemoryExtendedDataTable()
-        );
+        this(configuration, idGenerator, searchIndex, new MapInMemoryExtendedDataTable());
     }
 
-    protected InMemoryGraph(
-        InMemoryGraphConfiguration configuration,
-        InMemoryVertexTable vertices,
-        InMemoryEdgeTable edges,
-        InMemoryExtendedDataTable extendedDataTable
-    ) {
+    protected InMemoryGraph(InMemoryGraphConfiguration configuration, InMemoryExtendedDataTable extendedDataTable) {
         super(configuration);
-        this.vertices = vertices;
-        this.edges = edges;
+        this.vertices = new InMemoryVertexTable(getMetadataPlugin());
+        this.edges = new InMemoryEdgeTable(getMetadataPlugin());
         this.extendedDataTable = extendedDataTable;
         this.graphMetadataStore = newGraphMetadataStore(configuration);
     }
@@ -73,13 +56,11 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
         InMemoryGraphConfiguration configuration,
         IdGenerator idGenerator,
         SearchIndex searchIndex,
-        InMemoryVertexTable vertices,
-        InMemoryEdgeTable edges,
         InMemoryExtendedDataTable extendedDataTable
     ) {
         super(configuration, idGenerator, searchIndex);
-        this.vertices = vertices;
-        this.edges = edges;
+        this.vertices = new InMemoryVertexTable(getMetadataPlugin());
+        this.edges = new InMemoryEdgeTable(getMetadataPlugin());
         this.extendedDataTable = extendedDataTable;
         this.graphMetadataStore = newGraphMetadataStore(configuration);
     }
@@ -814,8 +795,17 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
                 (StreamingPropertyValue) value
             );
         }
-        inMemoryTableElement.appendAddPropertyValueMutation(key, name, value, metadata, visibility, timestamp, null);
         Property property = inMemoryTableElement.getProperty(key, name, visibility, FetchHints.ALL_INCLUDING_HIDDEN, authorizations);
+        inMemoryTableElement.appendAddPropertyValueMutation(
+            key,
+            name,
+            value,
+            applyMetadataPlugin(inMemoryTableElement, property, metadata, timestamp),
+            visibility,
+            timestamp,
+            null
+        );
+        property = inMemoryTableElement.getProperty(key, name, visibility, FetchHints.ALL_INCLUDING_HIDDEN, authorizations);
 
         if (hasEventListeners()) {
             fireGraphEvent(new AddPropertyEvent(this, element, property));
@@ -871,12 +861,27 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
                 apv.getKey(),
                 apv.getName(),
                 value,
-                metadata,
+                applyMetadataPlugin(inMemoryTableElement, property, metadata, newTimestamp),
                 apv.getVisibility(),
                 newTimestamp,
                 apv.getData()
             );
         }
+    }
+
+    private Metadata applyMetadataPlugin(
+        InMemoryTableElement inMemoryTableElement,
+        Property property,
+        Metadata metadata,
+        long propertyTimestamp
+    ) {
+        Metadata results = Metadata.create();
+        for (Metadata.Entry entry : metadata.entrySet()) {
+            if (getMetadataPlugin().shouldWriteMetadata(inMemoryTableElement, property, entry.getKey(), entry.getVisibility(), entry.getValue(), propertyTimestamp)) {
+                results.add(entry.getKey(), entry.getValue(), entry.getVisibility());
+            }
+        }
+        return results;
     }
 
     protected void alterElementPropertyMetadata(
@@ -900,7 +905,12 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
 
             long newTimestamp = IncreasingTime.currentTimeMillis();
             inMemoryTableElement.appendAddPropertyMetadataMutation(
-                property.getKey(), property.getName(), metadata, property.getVisibility(), newTimestamp);
+                property.getKey(),
+                property.getName(),
+                metadata,
+                property.getVisibility(),
+                newTimestamp
+            );
         }
     }
 

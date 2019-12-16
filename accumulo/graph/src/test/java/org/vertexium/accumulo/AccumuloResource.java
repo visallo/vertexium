@@ -9,6 +9,7 @@ import org.vertexium.GraphConfiguration;
 import org.vertexium.VertexiumException;
 import org.vertexium.accumulo.util.DataInDataTableStreamingPropertyValueStorageStrategy;
 import org.vertexium.test.GraphTestBase;
+import org.vertexium.test.TestMetadataPlugin;
 import org.vertexium.util.VertexiumLogger;
 import org.vertexium.util.VertexiumLoggerFactory;
 
@@ -113,6 +114,7 @@ public class AccumuloResource extends ExternalResource {
     @SuppressWarnings("unchecked")
     public Map createConfig() {
         Map configMap = new HashMap();
+        configMap.put(GraphConfiguration.METADATA_PLUGIN, TestMetadataPlugin.class.getName());
         configMap.put(AccumuloGraphConfiguration.ZOOKEEPER_SERVERS, accumulo.getZooKeepers());
         configMap.put(AccumuloGraphConfiguration.ACCUMULO_INSTANCE_NAME, accumulo.getInstanceName());
         configMap.put(AccumuloGraphConfiguration.ACCUMULO_USERNAME, ACCUMULO_USERNAME);

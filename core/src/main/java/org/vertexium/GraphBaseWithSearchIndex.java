@@ -23,7 +23,7 @@ public abstract class GraphBaseWithSearchIndex extends GraphBase implements Grap
     private boolean foundIdGeneratorClassnameInMetadata;
 
     protected GraphBaseWithSearchIndex(GraphConfiguration configuration) {
-        super(configuration.isStrictTyping(), configuration.createMetricsRegistry());
+        super(configuration.isStrictTyping(), configuration.createMetricsRegistry(), configuration.createMetadataPlugin());
         this.configuration = configuration;
         this.searchIndex = configuration.createSearchIndex(this);
         this.idGenerator = configuration.createIdGenerator(this);
@@ -31,7 +31,7 @@ public abstract class GraphBaseWithSearchIndex extends GraphBase implements Grap
     }
 
     protected GraphBaseWithSearchIndex(GraphConfiguration configuration, IdGenerator idGenerator, SearchIndex searchIndex) {
-        super(configuration.isStrictTyping(), configuration.createMetricsRegistry());
+        super(configuration.isStrictTyping(), configuration.createMetricsRegistry(), configuration.createMetadataPlugin());
         this.configuration = configuration;
         this.searchIndex = searchIndex;
         this.idGenerator = idGenerator;

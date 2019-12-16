@@ -13,21 +13,27 @@ public class LazyPropertyMetadata implements Metadata {
     private final List<MetadataEntry> metadataEntries;
     private int[] metadataIndexes;
     private final Set<String> removedEntries = new HashSet<>();
+    private final long propertyTimestamp;
     private final VertexiumSerializer vertexiumSerializer;
     private final AccumuloNameSubstitutionStrategy nameSubstitutionStrategy;
+    private final MetadataPlugin metadataPlugin;
     private final FetchHints fetchHints;
 
     public LazyPropertyMetadata(
         List<MetadataEntry> metadataEntries,
         int[] metadataIndexes,
+        long propertyTimestamp,
         VertexiumSerializer vertexiumSerializer,
         AccumuloNameSubstitutionStrategy nameSubstitutionStrategy,
+        MetadataPlugin metadataPlugin,
         FetchHints fetchHints
     ) {
         this.metadataEntries = metadataEntries;
         this.metadataIndexes = metadataIndexes;
+        this.propertyTimestamp = propertyTimestamp;
         this.vertexiumSerializer = vertexiumSerializer;
         this.nameSubstitutionStrategy = nameSubstitutionStrategy;
+        this.metadataPlugin = metadataPlugin;
         this.fetchHints = fetchHints;
     }
 
@@ -37,7 +43,7 @@ public class LazyPropertyMetadata implements Metadata {
         try {
             String mapKey = toMapKey(key, visibility);
             removedEntries.remove(mapKey);
-            entries.put(mapKey, new Entry(key, value, visibility));
+            entries.put(mapKey, new Metadata.Entry(key, value, visibility));
             return this;
         } finally {
             getEntriesLock().writeLock().unlock();
@@ -96,30 +102,30 @@ public class LazyPropertyMetadata implements Metadata {
         }
     }
 
-    private void loadAll() {
-        if (metadataEntries != null && metadataIndexes != null) {
-            for (int metadataIndex : metadataIndexes) {
-                MetadataEntry metadataEntry = metadataEntries.get(metadataIndex);
-                String metadataKey = metadataEntry.getMetadataKey(nameSubstitutionStrategy);
-                Visibility metadataVisibility = metadataEntry.getVisibility();
-                String mapKey = toMapKey(metadataKey, metadataVisibility);
-                if (removedEntries.contains(mapKey)) {
-                    continue;
-                }
-                if (entries.containsKey(mapKey)) {
-                    continue;
-                }
-                LazyEntry lazyEntry = new LazyEntry(metadataKey, metadataVisibility, metadataEntry);
-                entries.put(mapKey, lazyEntry);
-            }
-        }
-    }
-
     @Override
     public Collection<Metadata.Entry> entrySet() {
         getEntriesLock().readLock().lock();
         try {
-            loadAll();
+            for (Metadata.Entry entry : metadataPlugin.getAllDefaultEntries(propertyTimestamp, getFetchHints())) {
+                String mapKey = toMapKey(entry.getKey(), entry.getVisibility());
+                entries.put(mapKey, entry);
+            }
+            if (metadataEntries != null && metadataIndexes != null) {
+                for (int metadataIndex : metadataIndexes) {
+                    MetadataEntry metadataEntry = metadataEntries.get(metadataIndex);
+                    String metadataKey = metadataEntry.getMetadataKey(nameSubstitutionStrategy);
+                    Visibility metadataVisibility = metadataEntry.getVisibility();
+                    String mapKey = toMapKey(metadataKey, metadataVisibility);
+                    if (removedEntries.contains(mapKey)) {
+                        continue;
+                    }
+                    if (entries.containsKey(mapKey)) {
+                        continue;
+                    }
+                    LazyEntry lazyEntry = new LazyEntry(metadataKey, metadataEntry, metadataVisibility);
+                    entries.put(mapKey, lazyEntry);
+                }
+            }
             return new ArrayList<>(entries.values());
         } finally {
             getEntriesLock().readLock().unlock();
@@ -150,7 +156,7 @@ public class LazyPropertyMetadata implements Metadata {
                     if (metadataKey.equals(key)) {
                         Visibility metadataVisibility = metadataEntry.getVisibility();
                         if (metadataVisibility.equals(visibility)) {
-                            LazyEntry lazyEntry = new LazyEntry(metadataKey, metadataVisibility, metadataEntry);
+                            LazyEntry lazyEntry = new LazyEntry(metadataKey, metadataEntry, metadataVisibility);
                             entries.put(mapKey, lazyEntry);
                             return lazyEntry;
                         }
@@ -158,7 +164,7 @@ public class LazyPropertyMetadata implements Metadata {
                 }
             }
 
-            return null;
+            return metadataPlugin.getDefaultEntryForKeyAndVisibility(key, visibility, propertyTimestamp);
         } finally {
             getEntriesLock().readLock().unlock();
         }
@@ -193,10 +199,14 @@ public class LazyPropertyMetadata implements Metadata {
                         if (entry != null) {
                             throw new VertexiumException("Multiple matching entries for key: " + key);
                         }
-                        entry = new LazyEntry(metadataKey, metadataVisibility, metadataEntry);
+                        entry = new LazyEntry(metadataKey, metadataEntry, metadataVisibility);
                         entries.put(mapKey, entry);
                     }
                 }
+            }
+
+            if (entry == null) {
+                entry = metadataPlugin.getDefaultEntryForKey(key, propertyTimestamp);
             }
 
             return entry;
@@ -211,6 +221,11 @@ public class LazyPropertyMetadata implements Metadata {
         getEntriesLock().readLock().lock();
         try {
             Map<String, Metadata.Entry> results = new HashMap<>();
+
+            for (Metadata.Entry entry : metadataPlugin.getDefaultEntriesForKey(key, propertyTimestamp)) {
+                String mapKey = toMapKey(entry.getKey(), entry.getVisibility());
+                results.put(mapKey, entry);
+            }
 
             for (Map.Entry<String, Metadata.Entry> e : entries.entrySet()) {
                 if (e.getValue().getKey().equals(key)) {
@@ -227,7 +242,7 @@ public class LazyPropertyMetadata implements Metadata {
                         Visibility metadataVisibility = metadataEntry.getVisibility();
                         String mapKey = toMapKey(metadataKey, metadataVisibility);
                         if (!results.containsKey(mapKey)) {
-                            LazyEntry entry = new LazyEntry(metadataKey, metadataVisibility, metadataEntry);
+                            LazyEntry entry = new LazyEntry(metadataKey, metadataEntry, metadataVisibility);
                             entries.put(mapKey, entry);
                             results.put(mapKey, entry);
                         }
@@ -258,48 +273,13 @@ public class LazyPropertyMetadata implements Metadata {
         return key + KEY_SEPARATOR + visibility.getVisibilityString();
     }
 
-    private static class Entry implements Metadata.Entry {
-        private final String key;
-        private final Object value;
-        private final Visibility visibility;
-
-        public Entry(String key, Object value, Visibility visibility) {
-            this.key = key;
-            this.value = value;
-            this.visibility = visibility;
-        }
-
-        @Override
-        public String getKey() {
-            return key;
-        }
-
-        @Override
-        public Object getValue() {
-            return value;
-        }
-
-        @Override
-        public Visibility getVisibility() {
-            return visibility;
-        }
-    }
-
-    private class LazyEntry implements Metadata.Entry {
-        private final String key;
-        private final Visibility visibility;
+    private class LazyEntry extends Entry {
         private final MetadataEntry metadataEntry;
         private Object metadataValue;
 
-        public LazyEntry(String key, Visibility visibility, MetadataEntry metadataEntry) {
-            this.key = key;
-            this.visibility = visibility;
+        public LazyEntry(String key, MetadataEntry metadataEntry, Visibility visibility) {
+            super(key, null, visibility);
             this.metadataEntry = metadataEntry;
-        }
-
-        @Override
-        public String getKey() {
-            return key;
         }
 
         @Override
@@ -311,11 +291,6 @@ public class LazyPropertyMetadata implements Metadata {
                 }
             }
             return metadataValue;
-        }
-
-        @Override
-        public Visibility getVisibility() {
-            return visibility;
         }
     }
 }

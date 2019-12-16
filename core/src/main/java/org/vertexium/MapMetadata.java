@@ -1,6 +1,5 @@
 package org.vertexium;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -40,7 +39,7 @@ public class MapMetadata implements Metadata {
     public Metadata add(String key, Object value, Visibility visibility) {
         getEntriesLock().writeLock().lock();
         try {
-            entries.put(toMapKey(key, visibility), new Entry(key, value, visibility));
+            entries.put(toMapKey(key, visibility), new Metadata.Entry(key, value, visibility));
             return this;
         } finally {
             getEntriesLock().writeLock().unlock();
@@ -171,39 +170,5 @@ public class MapMetadata implements Metadata {
     @Override
     public FetchHints getFetchHints() {
         return fetchHints;
-    }
-
-    class Entry implements Metadata.Entry, Serializable {
-        static final long serialVersionUID = 42L;
-        private final String key;
-        private final Object value;
-        private final Visibility visibility;
-
-        protected Entry(String key, Object value, Visibility visibility) {
-            this.key = key;
-            this.value = value;
-            this.visibility = visibility;
-        }
-
-        public String getKey() {
-            return key;
-        }
-
-        public Object getValue() {
-            return value;
-        }
-
-        public Visibility getVisibility() {
-            return visibility;
-        }
-
-        @Override
-        public String toString() {
-            return "Entry{" +
-                "key='" + key + '\'' +
-                ", value=" + value +
-                ", visibility=" + visibility +
-                '}';
-        }
     }
 }

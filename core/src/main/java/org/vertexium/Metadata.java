@@ -1,5 +1,6 @@
 package org.vertexium;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 
@@ -71,11 +72,37 @@ public interface Metadata {
         return getEntry(key, visibility) != null;
     }
 
-    interface Entry {
-        String getKey();
+    class Entry implements Serializable {
+        static final long serialVersionUID = 42L;
+        private final String key;
+        private final Object value;
+        private final Visibility visibility;
 
-        Object getValue();
+        public Entry(String key, Object value, Visibility visibility) {
+            this.key = key;
+            this.value = value;
+            this.visibility = visibility;
+        }
 
-        Visibility getVisibility();
+        public String getKey() {
+            return key;
+        }
+
+        public Object getValue() {
+            return value;
+        }
+
+        public Visibility getVisibility() {
+            return visibility;
+        }
+
+        @Override
+        public String toString() {
+            return "Entry{" +
+                "key='" + getKey() + '\'' +
+                ", value=" + getValue() +
+                ", visibility=" + getVisibility() +
+                '}';
+        }
     }
 }

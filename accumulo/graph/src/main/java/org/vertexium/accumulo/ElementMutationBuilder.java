@@ -32,6 +32,7 @@ public abstract class ElementMutationBuilder {
     public static final Text EMPTY_TEXT = new Text("");
     public static final Value EMPTY_VALUE = new Value("".getBytes());
 
+    private final MetadataPlugin metadataPlugin;
     private final StreamingPropertyValueStorageStrategy streamingPropertyValueStorageStrategy;
     private final VertexiumSerializer vertexiumSerializer;
     private static final Cache<String, Text> propertyMetadataColumnQualifierTextCache = CacheBuilder
@@ -41,9 +42,11 @@ public abstract class ElementMutationBuilder {
         .build();
 
     protected ElementMutationBuilder(
+        MetadataPlugin metadataPlugin,
         StreamingPropertyValueStorageStrategy streamingPropertyValueStorageStrategy,
         VertexiumSerializer vertexiumSerializer
     ) {
+        this.metadataPlugin = metadataPlugin;
         this.streamingPropertyValueStorageStrategy = streamingPropertyValueStorageStrategy;
         this.vertexiumSerializer = vertexiumSerializer;
     }
@@ -160,7 +163,7 @@ public abstract class ElementMutationBuilder {
             addPropertySoftDeleteToMutation(m, propertySoftDeleteMutation);
         }
         for (Property property : elementBuilder.getProperties()) {
-            addPropertyToMutation(graph, m, rowKey, property);
+            addPropertyToMutation(graph, m, elementBuilder, rowKey, property);
         }
         for (AdditionalVisibilityAddMutation additionalVisibility : elementBuilder.getAdditionalVisibilities()) {
             addAdditionalVisibilityToMutation(m, additionalVisibility);
@@ -521,7 +524,7 @@ public abstract class ElementMutationBuilder {
         m.put(AccumuloElement.CF_ADDITIONAL_VISIBILITY, new Text(additionalVisibilityDelete.getAdditionalVisibility()), new ColumnVisibility(), value);
     }
 
-    public void addPropertyToMutation(AccumuloGraph graph, Mutation m, String rowKey, Property property) {
+    public void addPropertyToMutation(AccumuloGraph graph, Mutation m, ElementId elementId, String rowKey, Property property) {
         Text columnQualifier = KeyHelper.getColumnQualifierFromPropertyColumnQualifier(property, getNameSubstitutionStrategy());
         ColumnVisibility columnVisibility = visibilityToAccumuloVisibility(property.getVisibility());
         Object propertyValue = transformValue(property.getValue(), rowKey, property);
@@ -533,7 +536,7 @@ public abstract class ElementMutationBuilder {
 
         Value value = new Value(vertexiumSerializer.objectToBytes(propertyValue));
         m.put(AccumuloElement.CF_PROPERTY, columnQualifier, columnVisibility, property.getTimestamp(), value);
-        addPropertyMetadataToMutation(m, property);
+        addPropertyMetadataToMutation(m, elementId, property);
     }
 
     protected abstract NameSubstitutionStrategy getNameSubstitutionStrategy();
@@ -545,11 +548,12 @@ public abstract class ElementMutationBuilder {
         addPropertyDeleteMetadataToMutation(m, propertyDelete);
     }
 
-    public void addPropertyMetadataToMutation(Mutation m, Property property) {
+    public void addPropertyMetadataToMutation(Mutation m, ElementId elementId, Property property) {
         Metadata metadata = property.getMetadata();
         for (Metadata.Entry metadataItem : metadata.entrySet()) {
             addPropertyMetadataItemToMutation(
                 m,
+                elementId,
                 property,
                 metadataItem.getKey(),
                 metadataItem.getValue(),
@@ -560,6 +564,7 @@ public abstract class ElementMutationBuilder {
 
     public void addPropertyMetadataItemToMutation(
         Mutation m,
+        ElementId elementId,
         Property property,
         String metadataKey,
         Object metadataValue,
@@ -570,13 +575,34 @@ public abstract class ElementMutationBuilder {
         if (metadataValue == null) {
             addPropertyMetadataItemDeleteToMutation(m, columnQualifier, metadataVisibility);
         } else {
-            addPropertyMetadataItemAddToMutation(m, columnQualifier, metadataVisibility, property.getTimestamp(), metadataValue);
+            addPropertyMetadataItemAddToMutation(
+                m,
+                elementId,
+                property,
+                columnQualifier,
+                metadataVisibility,
+                metadataKey,
+                visibility,
+                metadataValue
+            );
         }
     }
 
-    private void addPropertyMetadataItemAddToMutation(Mutation m, Text columnQualifier, ColumnVisibility metadataVisibility, long propertyTimestamp, Object value) {
+    private void addPropertyMetadataItemAddToMutation(
+        Mutation m,
+        ElementId elementId,
+        Property property,
+        Text columnQualifier,
+        ColumnVisibility metadataVisibility,
+        String metadataKey,
+        Visibility visibility,
+        Object value
+    ) {
+        if (!metadataPlugin.shouldWriteMetadata(elementId, property, metadataKey, visibility, value, property.getTimestamp())) {
+            return;
+        }
         Value metadataValue = new Value(vertexiumSerializer.objectToBytes(value));
-        m.put(AccumuloElement.CF_PROPERTY_METADATA, columnQualifier, metadataVisibility, propertyTimestamp, metadataValue);
+        m.put(AccumuloElement.CF_PROPERTY_METADATA, columnQualifier, metadataVisibility, property.getTimestamp(), metadataValue);
     }
 
     private void addPropertyMetadataItemDeleteToMutation(Mutation m, Text columnQualifier, ColumnVisibility metadataVisibility) {
