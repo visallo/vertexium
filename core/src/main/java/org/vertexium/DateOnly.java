@@ -5,7 +5,6 @@ import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Calendar;
 import java.util.Date;
 
 public class DateOnly implements Serializable {
@@ -14,12 +13,7 @@ public class DateOnly implements Serializable {
     private final LocalDate date;
 
     public DateOnly(Date date) {
-        Calendar cal = Calendar.getInstance();
-        cal.setTime(date);
-        int year = cal.get(Calendar.YEAR);
-        int month = cal.get(Calendar.MONTH);
-        int day = cal.get(Calendar.DATE);
-        this.date = LocalDate.of(year, month, day);
+        this.date = date.toInstant().atZone(ZoneOffset.UTC).toLocalDate();
     }
 
     public DateOnly(int year, int month, int day) {

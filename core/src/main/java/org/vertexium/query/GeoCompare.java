@@ -38,7 +38,7 @@ public enum GeoCompare implements Predicate {
             case INTERSECTS:
                 return StreamUtils.stream(properties).anyMatch(property -> evaluate(property.getValue(), second));
             case DISJOINT:
-                return StreamUtils.stream(properties).noneMatch(property -> evaluate(property.getValue(), second));
+                return StreamUtils.stream(properties).allMatch(property -> evaluate(property.getValue(), second));
             default:
                 throw new IllegalArgumentException("Invalid compare: " + this);
         }
