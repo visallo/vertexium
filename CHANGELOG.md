@@ -1,4 +1,4 @@
-# v4.8.2
+# v4.9.0
 * Added: FetchHints.union
 * Added: Support for Elasticsearch 7. Switching an existing project from Elasticsearch 5 to Elasticsearch 7 will require the Vertexium data to be re-indexed. If using SSL, there is a known issue with the bulk index service in this version.
 * Deprecated: Support for Elasticsearch 5.
