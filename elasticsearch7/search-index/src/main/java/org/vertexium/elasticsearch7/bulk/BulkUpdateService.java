@@ -22,6 +22,7 @@ import org.vertexium.util.VertexiumLogger;
 import org.vertexium.util.VertexiumLoggerFactory;
 
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -32,6 +33,7 @@ import java.util.stream.Collectors;
 
 public class BulkUpdateService {
     private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(BulkUpdateService.class);
+    static final VertexiumLogger LOGGER_STACK_TRACE = VertexiumLoggerFactory.getLogger(BulkUpdateService.class.getName() + ".STACK_TRACE");
     private final Elasticsearch7SearchIndex searchIndex;
     private final IndexRefreshTracker indexRefreshTracker;
     private final LimitedLinkedBlockingQueue<BulkItem> incomingItems = new LimitedLinkedBlockingQueue<>();
@@ -275,11 +277,13 @@ public class BulkUpdateService {
 
     public void flushUntilElementIdIsComplete(String elementId) {
         long startTime = System.currentTimeMillis();
+        BulkItemCompletableFuture lastFuture = null;
         while (true) {
-            CompletableFuture<Void> future = outstandingItems.getFutureForElementId(elementId);
+            BulkItemCompletableFuture future = outstandingItems.getFutureForElementId(elementId);
             if (future == null) {
                 break;
             }
+            lastFuture = future;
             try {
                 future.get();
             } catch (Exception ex) {
@@ -297,6 +301,28 @@ public class BulkUpdateService {
             } else {
                 LOGGER.info("%s", message);
             }
+            if (LOGGER_STACK_TRACE.isInfoEnabled()) {
+                logStackTrace("Current stack trace", Thread.currentThread().getStackTrace());
+                if (lastFuture != null) {
+                    StackTraceElement[] stackTrace = lastFuture.getBulkItem().getStackTrace();
+                    if (stackTrace != null) {
+                        logStackTrace("Other stack trace causing the delay", stackTrace);
+                    }
+                }
+            }
         }
+    }
+
+    private void logStackTrace(String message, StackTraceElement[] stackTrace) {
+        if (!LOGGER_STACK_TRACE.isInfoEnabled()) {
+            return;
+        }
+        LOGGER_STACK_TRACE.info(
+            "%s",
+            message + "\n" +
+                Arrays.stream(stackTrace)
+                    .map(e -> "   " + e.toString())
+                    .collect(Collectors.joining("\n"))
+        );
     }
 }
