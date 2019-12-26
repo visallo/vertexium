@@ -1,7 +1,5 @@
 package org.vertexium;
 
-import java.util.Objects;
-
 public class DefaultElementId implements ElementId {
     private final ElementType elementType;
     private final String id;
@@ -22,25 +20,25 @@ public class DefaultElementId implements ElementId {
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        DefaultElementId that = (DefaultElementId) o;
-        return elementType == that.elementType
-            && id.equals(that.id);
+    public int hashCode() {
+        return getId().hashCode();
     }
 
     @Override
-    public int hashCode() {
-        return Objects.hash(elementType, id);
+    public boolean equals(Object obj) {
+        if (obj instanceof ElementId) {
+            ElementId objElementId = (ElementId) obj;
+            return getId().equals(objElementId.getId()) && getElementType().equals(objElementId.getElementType());
+        }
+        return super.equals(obj);
     }
 
     @Override
     public String toString() {
-        return String.format("ElementId{elementType=%s, id='%s'}", elementType, id);
+        if (this instanceof Edge) {
+            Edge edge = (Edge) this;
+            return getId() + ":[" + edge.getVertexId(Direction.OUT) + "-" + edge.getLabel() + "->" + edge.getVertexId(Direction.IN) + "]";
+        }
+        return getId();
     }
 }

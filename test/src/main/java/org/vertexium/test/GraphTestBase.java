@@ -39,7 +39,10 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.time.*;
+import java.time.LocalDate;
+import java.time.Month;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -138,6 +141,24 @@ public abstract class GraphTestBase {
             System.out.println("Starting test: " + description.getMethodName());
         }
     };
+
+    @Test
+    public void testElementId() {
+        graph.prepareVertex("v1", VISIBILITY_A).save(AUTHORIZATIONS_A);
+        graph.prepareVertex("v2", VISIBILITY_A).save(AUTHORIZATIONS_A);
+        graph.prepareEdge("e1", "v1", "v2", "label", VISIBILITY_A).save(AUTHORIZATIONS_A);
+        graph.flush();
+
+        Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
+        assertTrue(v1.equals(ElementId.vertex("v1")));
+        assertTrue(ElementId.vertex("v1").equals(v1));
+        assertEquals(v1.hashCode(), ElementId.vertex("v1").hashCode());
+
+        Edge e1 = graph.getEdge("e1", AUTHORIZATIONS_A);
+        assertTrue(e1.equals(ElementId.edge("e1")));
+        assertTrue(ElementId.edge("e1").equals(e1));
+        assertEquals(e1.hashCode(), ElementId.vertex("e1").hashCode());
+    }
 
     @Test
     public void testAddVertexWithId() {
