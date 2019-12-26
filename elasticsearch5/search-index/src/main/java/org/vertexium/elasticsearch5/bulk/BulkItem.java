@@ -4,15 +4,14 @@ import org.elasticsearch.action.ActionRequest;
 import org.vertexium.ElementId;
 import org.vertexium.elasticsearch5.utils.ElasticsearchRequestUtils;
 
-import java.util.concurrent.CompletableFuture;
-
 public class BulkItem {
     private final String indexName;
     private final ElementId elementId;
     private final int size;
     private final ActionRequest actionRequest;
     private final long createdTime;
-    private final CompletableFuture<Void> future = new CompletableFuture<>();
+    private final BulkItemCompletableFuture future;
+    private final StackTraceElement[] stackTrace;
     private long createdOrLastTriedTime;
     private int failCount;
 
@@ -21,11 +20,17 @@ public class BulkItem {
         ElementId elementId,
         ActionRequest actionRequest
     ) {
+        this.future = new BulkItemCompletableFuture(this);
         this.indexName = indexName;
         this.elementId = elementId;
         this.size = ElasticsearchRequestUtils.getSize(actionRequest);
         this.actionRequest = actionRequest;
         this.createdOrLastTriedTime = this.createdTime = System.currentTimeMillis();
+        if (BulkUpdateService.LOGGER_STACK_TRACE.isInfoEnabled()) {
+            this.stackTrace = Thread.currentThread().getStackTrace();
+        } else {
+            this.stackTrace = null;
+        }
     }
 
     public String getIndexName() {
@@ -64,8 +69,12 @@ public class BulkItem {
         return failCount;
     }
 
-    public CompletableFuture<Void> getFuture() {
+    public BulkItemCompletableFuture getFuture() {
         return future;
+    }
+
+    public StackTraceElement[] getStackTrace() {
+        return stackTrace;
     }
 
     @Override

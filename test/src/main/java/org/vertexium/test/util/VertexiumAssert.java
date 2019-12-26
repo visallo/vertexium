@@ -145,7 +145,9 @@ public class VertexiumAssert {
     }
 
     public static void addGraphEvent(GraphEvent graphEvent) {
-        graphEvents.add(graphEvent);
+        synchronized (graphEvents) {
+            graphEvents.add(graphEvent);
+        }
     }
 
     public static void clearGraphEvents() {

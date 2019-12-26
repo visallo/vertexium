@@ -18,6 +18,7 @@
         <Logger name="org.vertexium.query.Query.QUERY" level="trace" />
         <Logger name="org.vertexium.Graph.QUERY" level="trace" />
         <Logger name="org.vertexium.search.SearchIndex.MUTATION" level="trace" />
+        <Logger name="org.vertexium.elasticsearch5.bulk.BulkUpdateService.STACK_TRACE" level="info" />
         <Root level="warn">
             <AppenderRef ref="Console"/>
         </Root>

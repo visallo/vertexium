@@ -26,7 +26,7 @@ public class OutstandingItemsList {
         );
     }
 
-    public CompletableFuture<Void> getFutureForElementId(String elementId) {
+    public BulkItemCompletableFuture getFutureForElementId(String elementId) {
         return lock.executeInReadLock(() ->
             outstandingItems.stream()
                 .filter(item -> elementId.equals(item.getElementId().getId()))
