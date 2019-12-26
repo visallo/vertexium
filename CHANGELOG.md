@@ -1,5 +1,6 @@
 # v4.9.1
 * Added: MetadataPlugin which allows filtering common values from being written to the data store
+* Fixed: Element/ElementId hashCode and equals
 
 # v4.9.0
 * Added: FetchHints.union
