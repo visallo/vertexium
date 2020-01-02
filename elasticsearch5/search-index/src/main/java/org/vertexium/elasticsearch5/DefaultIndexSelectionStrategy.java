@@ -74,27 +74,27 @@ public class DefaultIndexSelectionStrategy implements IndexSelectionStrategy {
     }
 
     private void loadIndicesToQuery(Elasticsearch5SearchIndex es) {
+        Set<String> newIndicesToQuery = new HashSet<>();
+        if (splitEdgesAndVertices) {
+            newIndicesToQuery.add(defaultIndexName + VERTICES_INDEX_SUFFIX_NAME);
+            newIndicesToQuery.add(defaultIndexName + EDGES_INDEX_SUFFIX_NAME);
+        } else {
+            newIndicesToQuery.add(defaultIndexName);
+        }
+        Set<String> indexNames = es.getIndexNamesFromElasticsearch();
+        for (String indexName : indexNames) {
+            if (indexName.startsWith(extendedDataIndexNamePrefix)) {
+                newIndicesToQuery.add(indexName);
+            }
+        }
+
+        for (String indexName : newIndicesToQuery) {
+            es.ensureIndexCreatedAndInitialized(indexName);
+        }
+
         Lock writeLock = indicesToQueryLock.writeLock();
         writeLock.lock();
         try {
-            Set<String> newIndicesToQuery = new HashSet<>();
-            if (splitEdgesAndVertices) {
-                newIndicesToQuery.add(defaultIndexName + VERTICES_INDEX_SUFFIX_NAME);
-                newIndicesToQuery.add(defaultIndexName + EDGES_INDEX_SUFFIX_NAME);
-            } else {
-                newIndicesToQuery.add(defaultIndexName);
-            }
-            Set<String> indexNames = es.getIndexNamesFromElasticsearch();
-            for (String indexName : indexNames) {
-                if (indexName.startsWith(extendedDataIndexNamePrefix)) {
-                    newIndicesToQuery.add(indexName);
-                }
-            }
-
-            for (String indexName : newIndicesToQuery) {
-                es.ensureIndexCreatedAndInitialized(indexName);
-            }
-
             indicesToQueryArray = newIndicesToQuery.toArray(new String[0]);
             nextUpdateTime = new Date().getTime() + INDEX_UPDATE_MS;
         } finally {
