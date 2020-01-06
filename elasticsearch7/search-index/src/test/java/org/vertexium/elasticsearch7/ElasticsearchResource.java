@@ -15,6 +15,7 @@ import org.junit.rules.ExternalResource;
 import org.vertexium.Graph;
 import org.vertexium.GraphConfiguration;
 import org.vertexium.GraphWithSearchIndex;
+import org.vertexium.test.TestMetadataPlugin;
 import org.vertexium.util.VertexiumLogger;
 import org.vertexium.util.VertexiumLoggerFactory;
 
@@ -127,6 +128,7 @@ public class ElasticsearchResource extends ExternalResource {
     public Map createConfig() {
         Map configMap = new HashMap();
         configMap.put(AUTO_FLUSH, false);
+        configMap.put(GraphConfiguration.METADATA_PLUGIN, TestMetadataPlugin.class.getName());
         configMap.put(SEARCH_INDEX_PROP_PREFIX, Elasticsearch7SearchIndexWithSharedClient.class.getName());
         configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + CONFIG_INDEX_NAME, ES_INDEX_NAME);
         configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + CONFIG_EXTENDED_DATA_INDEX_NAME_PREFIX, ES_EXTENDED_DATA_INDEX_NAME_PREFIX);
