@@ -139,8 +139,8 @@ public class Elasticsearch7SearchIndex implements SearchIndex, SearchIndexWithVe
         this.exceptionHandler = this.config.getExceptionHandler(graph);
         this.refreshIndexOnFlush = this.config.getRefreshIndexOnFlush();
         BulkUpdateServiceConfiguration bulkUpdateServiceConfiguration = new BulkUpdateServiceConfiguration()
-            .setCorePoolSize(this.config.getBulkCorePoolSize())
-            .setMaximumPoolSize(this.config.getBulkMaxPoolSize())
+            .setPoolSize(this.config.getBulkPoolSize())
+            .setBacklogSize(this.config.getBulkBacklogSize())
             .setBulkRequestTimeout(this.config.getBulkRequestTimeout())
             .setMaxBatchSize(this.config.getBulkMaxBatchSize())
             .setMaxBatchSizeInBytes(this.config.getBulkMaxBatchSizeInBytes())

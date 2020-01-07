@@ -12,4 +12,9 @@ public class BulkItemCompletableFuture extends CompletableFuture<Void> {
     public BulkItem getBulkItem() {
         return bulkItem;
     }
+
+    @Override
+    public String toString() {
+        return String.format("BulkItemCompletableFuture{bulkItem=%s,%s}", bulkItem, super.toString());
+    }
 }

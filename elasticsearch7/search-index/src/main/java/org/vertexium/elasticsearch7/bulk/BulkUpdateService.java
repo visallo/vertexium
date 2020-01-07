@@ -41,6 +41,8 @@ public class BulkUpdateService {
     private final Thread processItemsThread;
     private final Timer flushTimer;
     private final Histogram batchSizeHistogram;
+    private final Timer flushUntilElementIdIsCompleteTimer;
+    private final Timer processBatchTimer;
     private final Duration bulkRequestTimeout;
     private final ThreadPoolExecutor ioExecutor;
     private final int maxFailCount;
@@ -56,11 +58,11 @@ public class BulkUpdateService {
         this.indexRefreshTracker = indexRefreshTracker;
 
         this.ioExecutor = new ThreadPoolExecutor(
-            configuration.getCorePoolSize(),
-            configuration.getMaximumPoolSize(),
+            configuration.getPoolSize(),
+            configuration.getPoolSize(),
             10,
             TimeUnit.SECONDS,
-            new LimitedLinkedBlockingQueue<>(),
+            new LimitedLinkedBlockingQueue<>(configuration.getBacklogSize()),
             r -> {
                 Thread thread = new Thread(r);
                 thread.setDaemon(true);
@@ -69,7 +71,7 @@ public class BulkUpdateService {
             }
         );
 
-        this.processItemsThread = new Thread(this::processItems);
+        this.processItemsThread = new Thread(this::processIncomingItemsIntoBatches);
         this.processItemsThread.setName("vertexium-es-processItems");
         this.processItemsThread.setDaemon(true);
         this.processItemsThread.start();
@@ -84,11 +86,13 @@ public class BulkUpdateService {
 
         VertexiumMetricRegistry metricRegistry = searchIndex.getMetricsRegistry();
         this.flushTimer = metricRegistry.getTimer(BulkUpdateService.class, "flush", "timer");
+        this.processBatchTimer = metricRegistry.getTimer(BulkUpdateService.class, "processBatch", "timer");
         this.batchSizeHistogram = metricRegistry.getHistogram(BulkUpdateService.class, "batch", "histogram");
+        this.flushUntilElementIdIsCompleteTimer = metricRegistry.getTimer(BulkUpdateService.class, "flushUntilElementIdIsComplete", "timer");
         metricRegistry.getGauge(metricRegistry.createName(BulkUpdateService.class, "outstandingItems", "size"), outstandingItems::size);
     }
 
-    private void processItems() {
+    private void processIncomingItemsIntoBatches() {
         while (true) {
             try {
                 if (shutdown) {
@@ -106,6 +110,7 @@ public class BulkUpdateService {
                     while (!batch.add(item)) {
                         flushBatch();
                     }
+                    item.getAddedToBatchFuture().complete(null);
                 }
             } catch (InterruptedException ex) {
                 // we are shutting down so return
@@ -138,40 +143,42 @@ public class BulkUpdateService {
     }
 
     private void processBatch(List<BulkItem> bulkItems) {
-        try {
-            batchSizeHistogram.update(bulkItems.size());
+        processBatchTimer.time(() -> {
+            try {
+                batchSizeHistogram.update(bulkItems.size());
 
-            BulkRequest bulkRequest = bulkItemsToBulkRequest(bulkItems);
-            BulkResponse bulkResponse = searchIndex.getClient()
-                .bulk(bulkRequest)
-                .get(bulkRequestTimeout.toMillis(), TimeUnit.MILLISECONDS);
+                BulkRequest bulkRequest = bulkItemsToBulkRequest(bulkItems);
+                BulkResponse bulkResponse = searchIndex.getClient()
+                    .bulk(bulkRequest)
+                    .get(bulkRequestTimeout.toMillis(), TimeUnit.MILLISECONDS);
 
-            Set<String> indexNames = bulkItems.stream()
-                .peek(BulkItem::updateLastTriedTime)
-                .map(BulkItem::getIndexName)
-                .collect(Collectors.toSet());
-            indexRefreshTracker.pushChanges(indexNames);
+                Set<String> indexNames = bulkItems.stream()
+                    .peek(BulkItem::updateLastTriedTime)
+                    .map(BulkItem::getIndexName)
+                    .collect(Collectors.toSet());
+                indexRefreshTracker.pushChanges(indexNames);
 
-            int itemIndex = 0;
-            for (BulkItemResponse bulkItemResponse : bulkResponse.getItems()) {
-                BulkItem bulkItem = bulkItems.get(itemIndex++);
-                if (bulkItemResponse.isFailed()) {
-                    handleFailure(bulkItem, bulkItemResponse);
+                int itemIndex = 0;
+                for (BulkItemResponse bulkItemResponse : bulkResponse.getItems()) {
+                    BulkItem bulkItem = bulkItems.get(itemIndex++);
+                    if (bulkItemResponse.isFailed()) {
+                        handleFailure(bulkItem, bulkItemResponse);
+                    } else {
+                        handleSuccess(bulkItem);
+                    }
+                }
+            } catch (Exception ex) {
+                LOGGER.error("bulk request failed", ex);
+                // if bulk failed try each item individually
+                if (bulkItems.size() > 1) {
+                    for (BulkItem bulkItem : bulkItems) {
+                        processBatch(Lists.newArrayList(bulkItem));
+                    }
                 } else {
-                    handleSuccess(bulkItem);
+                    complete(bulkItems.get(0), ex);
                 }
             }
-        } catch (Exception ex) {
-            LOGGER.error("bulk request failed", ex);
-            // if bulk failed try each item individually
-            if (bulkItems.size() > 1) {
-                for (BulkItem bulkItem : bulkItems) {
-                    processBatch(Lists.newArrayList(bulkItem));
-                }
-            } else {
-                complete(bulkItems.get(0), ex);
-            }
-        }
+        });
     }
 
     private void handleSuccess(BulkItem bulkItem) {
@@ -202,9 +209,9 @@ public class BulkUpdateService {
     private void complete(BulkItem bulkItem, Exception exception) {
         outstandingItems.remove(bulkItem);
         if (exception == null) {
-            bulkItem.getFuture().complete(null);
+            bulkItem.getCompletedFuture().complete(null);
         } else {
-            bulkItem.getFuture().completeExceptionally(exception);
+            bulkItem.getCompletedFuture().completeExceptionally(exception);
         }
     }
 
@@ -227,12 +234,27 @@ public class BulkUpdateService {
 
     public void flush() {
         flushTimer.time(() -> {
-            List<CompletableFuture<Void>> futures = outstandingItems.getFutures();
-            flushBatch();
             try {
-                CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).get();
+                List<BulkItem> items = outstandingItems.getItems();
+
+                // wait for the items to be added to batches
+                CompletableFuture.allOf(
+                    items.stream()
+                        .map(BulkItem::getAddedToBatchFuture)
+                        .toArray(CompletableFuture[]::new)
+                ).get();
+
+                // flush the current batch
+                flushBatch();
+
+                // wait for the items to complete
+                CompletableFuture.allOf(
+                    items.stream()
+                        .map(BulkItem::getCompletedFuture)
+                        .toArray(CompletableFuture[]::new)
+                ).get();
             } catch (Exception ex) {
-                throw new VertexiumException("failed to wait for flush", ex);
+                throw new VertexiumException("failed to flush", ex);
             }
         });
     }
@@ -261,7 +283,7 @@ public class BulkUpdateService {
     private CompletableFuture<Void> add(BulkItem bulkItem) {
         outstandingItems.add(bulkItem);
         incomingItems.add(bulkItem);
-        return bulkItem.getFuture();
+        return bulkItem.getCompletedFuture();
     }
 
     public void shutdown() {
@@ -292,6 +314,7 @@ public class BulkUpdateService {
         }
         long endTime = System.currentTimeMillis();
         long delta = endTime - startTime;
+        flushUntilElementIdIsCompleteTimer.update(delta, TimeUnit.MILLISECONDS);
         if (delta > 1_000) {
             String message = String.format("flush of %s got stuck for %dms", elementId, delta);
             if (delta > 60_000) {

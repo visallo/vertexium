@@ -10,7 +10,8 @@ public class BulkItem {
     private final int size;
     private final ActionRequest actionRequest;
     private final long createdTime;
-    private final BulkItemCompletableFuture future;
+    private final BulkItemCompletableFuture addedToBatchFuture;
+    private final BulkItemCompletableFuture completedFuture;
     private final StackTraceElement[] stackTrace;
     private long createdOrLastTriedTime;
     private int failCount;
@@ -20,7 +21,8 @@ public class BulkItem {
         ElementId elementId,
         ActionRequest actionRequest
     ) {
-        this.future = new BulkItemCompletableFuture(this);
+        this.addedToBatchFuture = new BulkItemCompletableFuture(this);
+        this.completedFuture = new BulkItemCompletableFuture(this);
         this.indexName = indexName;
         this.elementId = elementId;
         this.size = ElasticsearchRequestUtils.getSize(actionRequest);
@@ -69,8 +71,12 @@ public class BulkItem {
         return failCount;
     }
 
-    public BulkItemCompletableFuture getFuture() {
-        return future;
+    public BulkItemCompletableFuture getAddedToBatchFuture() {
+        return addedToBatchFuture;
+    }
+
+    public BulkItemCompletableFuture getCompletedFuture() {
+        return completedFuture;
     }
 
     public StackTraceElement[] getStackTrace() {

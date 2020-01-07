@@ -4,27 +4,36 @@ package org.vertexium.elasticsearch5.bulk;
 import java.time.Duration;
 
 public class BulkUpdateServiceConfiguration {
-    public static final int MAX_POOL_SIZE_DEFAULT = Runtime.getRuntime().availableProcessors() * 2;
-    public static final int CORE_POOL_SIZE_DEFAULT = Math.min(2, MAX_POOL_SIZE_DEFAULT / 2);
+    public static final int POOL_SIZE_DEFAULT = 10;
+    public static final int BACKLOG_SIZE_DEFAULT = 100;
     public static final Duration BULK_REQUEST_TIMEOUT_DEFAULT = Duration.ofMinutes(30);
     public static final int MAX_BATCH_SIZE_DEFAULT = 100;
     public static final int MAX_BATCH_SIZE_IN_BYTES_DEFAULT = 10 * 1024 * 1024;
-    public static final Duration BATCH_WINDOW_TIME_DEFAULT = Duration.ofMillis(100);
+    public static final Duration BATCH_WINDOW_TIME_DEFAULT = Duration.ofMillis(1000);
     public static final int MAX_FAIL_COUNT_DEFAULT = 10;
-    private int corePoolSize = CORE_POOL_SIZE_DEFAULT;
-    private int maximumPoolSize = MAX_POOL_SIZE_DEFAULT;
+    private int poolSize = POOL_SIZE_DEFAULT;
+    private int backlogSize = BACKLOG_SIZE_DEFAULT;
     private Duration bulkRequestTimeout = BULK_REQUEST_TIMEOUT_DEFAULT;
     private int maxBatchSize = MAX_BATCH_SIZE_DEFAULT;
     private int maxBatchSizeInBytes = MAX_BATCH_SIZE_IN_BYTES_DEFAULT;
     private Duration batchWindowTime = BATCH_WINDOW_TIME_DEFAULT;
     private int maxFailCount = MAX_FAIL_COUNT_DEFAULT;
 
-    public int getCorePoolSize() {
-        return corePoolSize;
+    public int getPoolSize() {
+        return poolSize;
     }
 
-    public BulkUpdateServiceConfiguration setCorePoolSize(int corePoolSize) {
-        this.corePoolSize = corePoolSize;
+    public BulkUpdateServiceConfiguration setPoolSize(int poolSize) {
+        this.poolSize = poolSize;
+        return this;
+    }
+
+    public int getBacklogSize() {
+        return backlogSize;
+    }
+
+    public BulkUpdateServiceConfiguration setBacklogSize(int backlogSize) {
+        this.backlogSize = backlogSize;
         return this;
     }
 
@@ -34,15 +43,6 @@ public class BulkUpdateServiceConfiguration {
 
     public BulkUpdateServiceConfiguration setBulkRequestTimeout(Duration bulkRequestTimeout) {
         this.bulkRequestTimeout = bulkRequestTimeout;
-        return this;
-    }
-
-    public int getMaximumPoolSize() {
-        return maximumPoolSize;
-    }
-
-    public BulkUpdateServiceConfiguration setMaximumPoolSize(int maximumPoolSize) {
-        this.maximumPoolSize = maximumPoolSize;
         return this;
     }
 
