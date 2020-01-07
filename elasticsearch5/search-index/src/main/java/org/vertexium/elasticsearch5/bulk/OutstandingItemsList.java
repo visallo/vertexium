@@ -23,11 +23,10 @@ public class OutstandingItemsList {
         );
     }
 
-    public BulkItemCompletableFuture getFutureForElementId(String elementId) {
+    public BulkItem getItemForElementId(String elementId) {
         return lock.executeInReadLock(() ->
             outstandingItems.stream()
                 .filter(item -> elementId.equals(item.getElementId().getId()))
-                .map(BulkItem::getCompletedFuture)
                 .findFirst().orElse(null)
         );
     }

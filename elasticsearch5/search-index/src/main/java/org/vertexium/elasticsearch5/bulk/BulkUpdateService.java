@@ -302,13 +302,17 @@ public class BulkUpdateService {
         long startTime = System.currentTimeMillis();
         BulkItemCompletableFuture lastFuture = null;
         while (true) {
-            BulkItemCompletableFuture future = outstandingItems.getFutureForElementId(elementId);
-            if (future == null) {
+            BulkItem item = outstandingItems.getItemForElementId(elementId);
+            if (item == null) {
                 break;
             }
-            lastFuture = future;
+            lastFuture = item.getCompletedFuture();
             try {
-                future.get();
+                if (!item.getCompletedFuture().isDone()) {
+                    item.getAddedToBatchFuture().get();
+                    flushBatch();
+                }
+                item.getCompletedFuture().get();
             } catch (Exception ex) {
                 throw new VertexiumException("Failed to flushUntilElementIdIsComplete: " + elementId, ex);
             }
