@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE log4j:configuration SYSTEM "log4j.dtd" [
+    <!ENTITY logDir "/opt/visallo/logs">
+
+    <!-- Pattern: %d{yyyy-MM-dd HH:mm:ss.SSS/zzz} %-5p [%X{userId}:%X{userName}] [%c{3}] %m%n -->
+    <!ENTITY pattern "&#37;d{yyyy-MM-dd HH:mm:ss.SSS/zzz} &#37;-5p [&#37;X{userId}:&#37;X{userName}] [&#37;c{3}] &#37;m&#37;n">
+]
+>
+
+<Configuration status="WARN">
+    <Appenders>
+        <Console name="Console" target="SYSTEM_OUT">
+            <PatternLayout pattern="&pattern;"/>
+        </Console>
+    </Appenders>
+    <Loggers>
+        <Logger name="org.vertexium" level="debug" />
+        <Logger name="org.vertexium.cypher" level="trace" />
+        <Logger name="org.vertexium.query.Query.QUERY" level="trace" />
+        <Logger name="org.vertexium.Graph.QUERY" level="trace" />
+        <Logger name="org.vertexium.search.SearchIndex.MUTATION" level="trace" />
+        <Logger name="org.vertexium.elasticsearch5.bulk.BulkUpdateService.STACK_TRACE" level="info" />
+        <Root level="warn">
+            <AppenderRef ref="Console"/>
+        </Root>
+    </Loggers>
+</Configuration>
