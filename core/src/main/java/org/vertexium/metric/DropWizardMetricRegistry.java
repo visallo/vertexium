@@ -1,6 +1,8 @@
 package org.vertexium.metric;
 
+import com.codahale.metrics.ConsoleReporter;
 import com.codahale.metrics.MetricRegistry;
+import org.vertexium.VertexiumException;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -14,6 +16,8 @@ public class DropWizardMetricRegistry implements VertexiumMetricRegistry {
     private final Map<String, Histogram> histogramsByName = new ConcurrentHashMap<>();
     private final Map<String, Gauge> gaugesByName = new ConcurrentHashMap<>();
     private final Map<String, StackTraceTracker> stackTraceTrackersByName = new ConcurrentHashMap<>();
+    private boolean consoleReporterStarted;
+    private ConsoleReporter consoleReporter;
 
     public DropWizardMetricRegistry() {
         this(new MetricRegistry());
@@ -25,6 +29,38 @@ public class DropWizardMetricRegistry implements VertexiumMetricRegistry {
 
     public MetricRegistry getMetricRegistry() {
         return metricRegistry;
+    }
+
+    public void startConsoleReporter(long periodMillis) {
+        startConsoleReporter(periodMillis, TimeUnit.MILLISECONDS);
+    }
+
+    public void startConsoleReporter(long period, TimeUnit timeUnit) {
+        if (consoleReporterStarted) {
+            throw new VertexiumException("console reporter already started");
+        }
+        getConsoleReporter().start(period, timeUnit);
+        consoleReporterStarted = true;
+    }
+
+    public void stopConsoleReporter() {
+        if (!consoleReporterStarted) {
+            throw new VertexiumException("console reporter not started");
+        }
+        getConsoleReporter().stop();
+        consoleReporterStarted = false;
+    }
+
+    private ConsoleReporter getConsoleReporter() {
+        if (consoleReporter == null) {
+            consoleReporter = ConsoleReporter.forRegistry(getMetricRegistry())
+                .build();
+        }
+        return consoleReporter;
+    }
+
+    public boolean isConsoleReporterStarted() {
+        return consoleReporterStarted;
     }
 
     @Override
@@ -88,6 +124,9 @@ public class DropWizardMetricRegistry implements VertexiumMetricRegistry {
 
     @Override
     public void shutdown() {
+        if (consoleReporter != null && consoleReporterStarted) {
+            consoleReporter.report();
+        }
         countersByName.keySet().forEach(metricRegistry::remove);
         timersByName.keySet().forEach(metricRegistry::remove);
         histogramsByName.keySet().forEach(metricRegistry::remove);
