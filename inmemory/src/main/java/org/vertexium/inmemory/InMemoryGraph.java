@@ -391,7 +391,13 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
     }
 
     @SuppressWarnings("unchecked")
-    private Edge savePreparedEdge(final EdgeBuilderBase edgeBuilder, final String outVertexId, final String inVertexId, Long timestamp, Authorizations authorizations) {
+    private Edge savePreparedEdge(
+        EdgeBuilderBase edgeBuilder,
+        String outVertexId,
+        String inVertexId,
+        Long timestamp,
+        Authorizations authorizations
+    ) {
         if (timestamp == null) {
             timestamp = IncreasingTime.currentTimeMillis();
 
@@ -399,7 +405,7 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
             IncreasingTime.advanceTime(10);
         }
         long incrementingTimestamp = timestamp;
-        InMemoryTableElement edgeTableElement = this.edges.getTableElement(edgeBuilder.getId());
+        InMemoryTableEdge edgeTableElement = (InMemoryTableEdge) this.edges.getTableElement(edgeBuilder.getId());
         boolean isNew = false;
         if (edgeTableElement == null) {
             isNew = true;
@@ -411,6 +417,13 @@ public class InMemoryGraph extends GraphBaseWithSearchIndex {
                 new EdgeSetupMutation(incrementingTimestamp++, outVertexId, inVertexId)
             );
         } else {
+            if (!outVertexId.equals(edgeTableElement.getOutVertexId()) || !inVertexId.equals(edgeTableElement.getInVertexId())) {
+                edges.append(
+                    edgeBuilder.getId(),
+                    new EdgeSetupMutation(incrementingTimestamp++, outVertexId, inVertexId)
+                );
+            }
+
             edges.append(edgeBuilder.getId(), new ElementTimestampMutation(incrementingTimestamp++));
             if (edgeBuilder.getNewEdgeLabel() == null) {
                 AlterEdgeLabelMutation alterEdgeLabelMutation = (AlterEdgeLabelMutation) edgeTableElement.findLastMutation(AlterEdgeLabelMutation.class);

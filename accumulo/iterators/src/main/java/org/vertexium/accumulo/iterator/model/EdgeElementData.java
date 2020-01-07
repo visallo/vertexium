@@ -10,6 +10,8 @@ public class EdgeElementData extends ElementData {
     public Text inVertexId;
     public Text outVertexId;
     public Text label;
+    public Long inVertexIdTimestamp;
+    public Long outVertexIdTimestamp;
 
     @Override
     public void clear() {
@@ -17,6 +19,8 @@ public class EdgeElementData extends ElementData {
         inVertexId = null;
         outVertexId = null;
         label = null;
+        inVertexIdTimestamp = null;
+        outVertexIdTimestamp = null;
     }
 
     @Override

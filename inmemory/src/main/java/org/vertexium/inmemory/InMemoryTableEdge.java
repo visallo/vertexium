@@ -5,6 +5,7 @@ import org.vertexium.historicalEvent.HistoricalAddEdgeToVertexEvent;
 import org.vertexium.historicalEvent.HistoricalEvent;
 import org.vertexium.historicalEvent.HistoricalSoftDeleteEdgeToVertexEvent;
 import org.vertexium.inmemory.mutations.*;
+import org.vertexium.util.IterableUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -84,5 +85,21 @@ public class InMemoryTableEdge extends InMemoryTableElement<InMemoryEdge> {
             }
         }
         return results.stream();
+    }
+
+    public String getOutVertexId() {
+        EdgeSetupMutation m = IterableUtils.last(findMutations(EdgeSetupMutation.class));
+        if (m == null) {
+            return null;
+        }
+        return m.getOutVertexId();
+    }
+
+    public String getInVertexId() {
+        EdgeSetupMutation m = IterableUtils.last(findMutations(EdgeSetupMutation.class));
+        if (m == null) {
+            return null;
+        }
+        return m.getInVertexId();
     }
 }

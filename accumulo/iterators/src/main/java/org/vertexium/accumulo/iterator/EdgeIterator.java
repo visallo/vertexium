@@ -41,12 +41,18 @@ public class EdgeIterator extends ElementIterator<EdgeElementData> {
     @Override
     protected boolean processColumn(KeyValue keyValue) {
         if (keyValue.columnFamilyEquals(CF_IN_VERTEX_BYTES)) {
-            getElementData().inVertexId = keyValue.takeColumnQualifier();
+            if (getElementData().inVertexIdTimestamp == null || keyValue.getTimestamp() > getElementData().inVertexIdTimestamp) {
+                getElementData().inVertexId = keyValue.takeColumnQualifier();
+                getElementData().inVertexIdTimestamp = keyValue.getTimestamp();
+            }
             return true;
         }
 
         if (keyValue.columnFamilyEquals(CF_OUT_VERTEX_BYTES)) {
-            getElementData().outVertexId = keyValue.takeColumnQualifier();
+            if (getElementData().outVertexIdTimestamp == null || keyValue.getTimestamp() > getElementData().outVertexIdTimestamp) {
+                getElementData().outVertexId = keyValue.takeColumnQualifier();
+                getElementData().outVertexIdTimestamp = keyValue.getTimestamp();
+            }
             return true;
         }
 

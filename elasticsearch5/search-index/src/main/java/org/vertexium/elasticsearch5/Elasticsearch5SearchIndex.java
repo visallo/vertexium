@@ -652,6 +652,12 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
                 : toList(additionalVisibilitiesToDelete);
 
             Map<String, Object> fieldsToSet = getPropertiesAsFields(graph, element.getProperties());
+            if (element instanceof Edge) {
+                Edge edge = (Edge) element;
+                fieldsToSet.put(IN_VERTEX_ID_FIELD_NAME, edge.getVertexId(Direction.IN));
+                fieldsToSet.put(OUT_VERTEX_ID_FIELD_NAME, edge.getVertexId(Direction.OUT));
+                fieldsToSet.put(EDGE_LABEL_FIELD_NAME, edge.getLabel());
+            }
 
             for (Visibility hiddenVisibility : element.getHiddenVisibilities()) {
                 String hiddenVisibilityPropertyName = addVisibilityToPropertyName(graph, HIDDEN_VERTEX_FIELD_NAME, hiddenVisibility);

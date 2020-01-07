@@ -178,4 +178,17 @@ public class IterableUtils {
         }
         return result;
     }
+
+    public static <T> T last(Iterable<T> iterable) {
+        Iterator<T> iterator = iterable.iterator();
+        try {
+            T last = null;
+            while (iterator.hasNext()) {
+                last = iterator.next();
+            }
+            return last;
+        } finally {
+            closeQuietly(iterator);
+        }
+    }
 }
