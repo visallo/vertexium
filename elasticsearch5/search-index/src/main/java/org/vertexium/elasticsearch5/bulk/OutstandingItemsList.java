@@ -3,10 +3,9 @@ package org.vertexium.elasticsearch5.bulk;
 import org.vertexium.util.VertexiumReadWriteLock;
 import org.vertexium.util.VertexiumStampedLock;
 
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
 
 public class OutstandingItemsList {
     private final LinkedList<BulkItem> outstandingItems = new LinkedList<>();
@@ -18,11 +17,9 @@ public class OutstandingItemsList {
         });
     }
 
-    public List<CompletableFuture<Void>> getFutures() {
+    public List<BulkItem> getItems() {
         return lock.executeInReadLock(() ->
-            outstandingItems.stream()
-                .map(BulkItem::getFuture)
-                .collect(Collectors.toList())
+            new ArrayList<>(outstandingItems)
         );
     }
 
@@ -30,7 +27,7 @@ public class OutstandingItemsList {
         return lock.executeInReadLock(() ->
             outstandingItems.stream()
                 .filter(item -> elementId.equals(item.getElementId().getId()))
-                .map(BulkItem::getFuture)
+                .map(BulkItem::getCompletedFuture)
                 .findFirst().orElse(null)
         );
     }
