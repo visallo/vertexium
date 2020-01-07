@@ -18,7 +18,7 @@
         <level value="TRACE" />
         <appender-ref ref="console" />
     </logger>
-    <logger name="org.vertexium.elasticsearch5.bulk.BulkUpdateService.STACK_TRACE" additivity="false">
+    <logger name="org.vertexium.elasticsearch7.bulk.BulkUpdateService.STACK_TRACE" additivity="false">
         <level value="TRACE" />
         <appender-ref ref="console" />
     </logger>

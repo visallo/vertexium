@@ -28,7 +28,7 @@ public class BulkItem {
         this.size = ElasticsearchRequestUtils.getSize(actionRequest);
         this.actionRequest = actionRequest;
         this.createdOrLastTriedTime = this.createdTime = System.currentTimeMillis();
-        if (BulkUpdateService.LOGGER_STACK_TRACE.isInfoEnabled()) {
+        if (BulkUpdateService.LOGGER_STACK_TRACE.isTraceEnabled()) {
             this.stackTrace = Thread.currentThread().getStackTrace();
         } else {
             this.stackTrace = null;
