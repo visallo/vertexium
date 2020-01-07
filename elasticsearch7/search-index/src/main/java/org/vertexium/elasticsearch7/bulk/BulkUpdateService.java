@@ -33,7 +33,8 @@ import java.util.stream.Collectors;
 
 public class BulkUpdateService {
     private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(BulkUpdateService.class);
-    static final VertexiumLogger LOGGER_STACK_TRACE = VertexiumLoggerFactory.getLogger(BulkUpdateService.class.getName() + ".STACK_TRACE");
+    private static final String LOGGER_STACK_TRACE_NAME = BulkUpdateService.class.getName() + ".STACK_TRACE";
+    static final VertexiumLogger LOGGER_STACK_TRACE = VertexiumLoggerFactory.getLogger(LOGGER_STACK_TRACE_NAME);
     private final Elasticsearch7SearchIndex searchIndex;
     private final IndexRefreshTracker indexRefreshTracker;
     private final LimitedLinkedBlockingQueue<BulkItem> incomingItems = new LimitedLinkedBlockingQueue<>();
@@ -316,7 +317,14 @@ public class BulkUpdateService {
         long delta = endTime - startTime;
         flushUntilElementIdIsCompleteTimer.update(delta, TimeUnit.MILLISECONDS);
         if (delta > 1_000) {
-            String message = String.format("flush of %s got stuck for %dms", elementId, delta);
+            String message = String.format(
+                "flush of %s got stuck for %dms%s",
+                elementId,
+                delta,
+                LOGGER_STACK_TRACE.isTraceEnabled()
+                    ? ""
+                    : String.format(" (for more information enable trace level on \"%s\")", LOGGER_STACK_TRACE_NAME)
+            );
             if (delta > 60_000) {
                 LOGGER.error("%s", message);
             } else if (delta > 10_000) {
@@ -324,7 +332,7 @@ public class BulkUpdateService {
             } else {
                 LOGGER.info("%s", message);
             }
-            if (LOGGER_STACK_TRACE.isInfoEnabled()) {
+            if (LOGGER_STACK_TRACE.isTraceEnabled()) {
                 logStackTrace("Current stack trace", Thread.currentThread().getStackTrace());
                 if (lastFuture != null) {
                     StackTraceElement[] stackTrace = lastFuture.getBulkItem().getStackTrace();
@@ -337,10 +345,10 @@ public class BulkUpdateService {
     }
 
     private void logStackTrace(String message, StackTraceElement[] stackTrace) {
-        if (!LOGGER_STACK_TRACE.isInfoEnabled()) {
+        if (!LOGGER_STACK_TRACE.isTraceEnabled()) {
             return;
         }
-        LOGGER_STACK_TRACE.info(
+        LOGGER_STACK_TRACE.trace(
             "%s",
             message + "\n" +
                 Arrays.stream(stackTrace)
