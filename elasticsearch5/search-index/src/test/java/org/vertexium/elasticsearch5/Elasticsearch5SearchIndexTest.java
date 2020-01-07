@@ -397,6 +397,33 @@ public class Elasticsearch5SearchIndexTest extends GraphTestBase {
     }
 
     @Test
+    public void testManyWritesToSameElementNoFlushTillEnd() throws InterruptedException {
+        int threadCount = 5;
+        int numberOfTimerToWrite = 20;
+
+        Thread[] threads = new Thread[threadCount];
+        for (int i = 0; i < threads.length; i++) {
+            threads[i] = new Thread(() -> {
+                for (int write = 0; write < numberOfTimerToWrite; write++) {
+                    String keyAndValue = Thread.currentThread().getId() + "-" + write;
+                    getGraph().prepareVertex("v1", VISIBILITY_EMPTY)
+                        .addPropertyValue(keyAndValue, "name", keyAndValue, VISIBILITY_EMPTY)
+                        .save(AUTHORIZATIONS_EMPTY);
+                }
+                getGraph().flush();
+            });
+        }
+        for (Thread thread : threads) {
+            thread.start();
+        }
+        for (Thread thread : threads) {
+            thread.join();
+        }
+        Vertex v1 = getGraph().getVertex("v1", AUTHORIZATIONS_EMPTY);
+        assertEquals(threadCount * numberOfTimerToWrite, count(v1.getProperties("name")));
+    }
+
+    @Test
     public void testUnclosedScrollApi() {
         int verticesToCreate = ElasticsearchResource.TEST_QUERY_PAGE_SIZE * 2;
         for (int i = 0; i < verticesToCreate; i++) {
