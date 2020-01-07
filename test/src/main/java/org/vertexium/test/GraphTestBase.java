@@ -1050,6 +1050,28 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    public void testBlindWriteEdgeBothDirections() {
+        graph.prepareVertex("v1", VISIBILITY_A).save(AUTHORIZATIONS_A);
+        graph.prepareVertex("v2", VISIBILITY_A).save(AUTHORIZATIONS_A);
+        graph.prepareEdge("e1", "v1", "v2", LABEL_LABEL1, VISIBILITY_A)
+            .addPropertyValue("k1", "name1", "value1", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
+        graph.flush();
+        graph.prepareEdge("e1", "v2", "v1", LABEL_LABEL1, VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
+        graph.flush();
+
+        Edge e1 = graph.getEdge("e1", AUTHORIZATIONS_A);
+        assertEquals("v2", e1.getVertexId(Direction.OUT));
+        assertEquals("v1", e1.getVertexId(Direction.IN));
+
+        assertEdgeIdsAnyOrder(graph.query(AUTHORIZATIONS_A).has(Edge.OUT_VERTEX_ID_PROPERTY_NAME, "v2").edges(), "e1");
+        assertEdgeIdsAnyOrder(graph.query(AUTHORIZATIONS_A).has(Edge.OUT_VERTEX_ID_PROPERTY_NAME, "v1").edges());
+        assertEdgeIdsAnyOrder(graph.query(AUTHORIZATIONS_A).has(Edge.IN_VERTEX_ID_PROPERTY_NAME, "v1").edges(), "e1");
+        assertEdgeIdsAnyOrder(graph.query(AUTHORIZATIONS_A).has(Edge.IN_VERTEX_ID_PROPERTY_NAME, "v2").edges());
+    }
+
+    @Test
     public void testReAddingSoftDeletedEdge() {
         Vertex v1 = graph.prepareVertex("v1", VISIBILITY_A).save(AUTHORIZATIONS_A);
         Vertex v2 = graph.prepareVertex("v2", VISIBILITY_A).save(AUTHORIZATIONS_A);

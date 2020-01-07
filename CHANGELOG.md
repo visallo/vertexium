@@ -3,6 +3,7 @@
 * Added: Elasticsearch detect and close open scrolls
 * Fixed: Element/ElementId hashCode and equals
 * Fixed: Elasticsearch Bulk service race condition
+* Fixed: Blind writing of edges with flipped in/out vertex ids returning incorrect results
 
 # v4.9.0
 * Added: FetchHints.union

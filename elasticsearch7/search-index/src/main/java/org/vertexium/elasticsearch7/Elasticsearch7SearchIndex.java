@@ -637,6 +637,13 @@ public class Elasticsearch7SearchIndex implements SearchIndex, SearchIndexWithVe
             fieldsToSet = fieldsToSet == null ? Collections.emptyMap() : fieldsToSet.entrySet().stream()
                 .collect(Collectors.toMap(e -> replaceFieldnameDots(e.getKey()), Map.Entry::getValue));
 
+            if (element instanceof Edge) {
+                Edge edge = (Edge) element;
+                fieldsToSet.put(IN_VERTEX_ID_FIELD_NAME, edge.getVertexId(Direction.IN));
+                fieldsToSet.put(OUT_VERTEX_ID_FIELD_NAME, edge.getVertexId(Direction.OUT));
+                fieldsToSet.put(EDGE_LABEL_FIELD_NAME, edge.getLabel());
+            }
+
             return getClient()
                 .prepareUpdate(indexInfo.getIndexName(), getIdStrategy().getType(), getIdStrategy().createElementDocId(element))
                 .setScriptedUpsert(true)
