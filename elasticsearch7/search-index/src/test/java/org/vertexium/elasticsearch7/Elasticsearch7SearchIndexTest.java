@@ -24,12 +24,12 @@ import org.vertexium.scoring.ScoringStrategy;
 import org.vertexium.sorting.SortingStrategy;
 import org.vertexium.test.GraphTestBase;
 
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 import static org.vertexium.test.util.VertexiumAssert.assertResultsCount;
 import static org.vertexium.util.IterableUtils.count;
 import static org.vertexium.util.IterableUtils.toList;
@@ -447,6 +447,30 @@ public class Elasticsearch7SearchIndexTest extends GraphTestBase {
         }
         Vertex v1 = getGraph().getVertex("v1", AUTHORIZATIONS_EMPTY);
         assertEquals(threadCount * numberOfTimerToWrite, count(v1.getProperties("name")));
+    }
+
+    @Test
+    public void testUnclosedScrollApi() {
+        int verticesToCreate = ElasticsearchResource.TEST_QUERY_PAGE_SIZE * 2;
+        for (int i = 0; i < verticesToCreate; i++) {
+            getGraph().prepareVertex("v" + i, VISIBILITY_EMPTY)
+                .addPropertyValue("k1", "name", "value1", VISIBILITY_EMPTY)
+                .save(AUTHORIZATIONS_EMPTY);
+        }
+        getGraph().flush();
+
+        QueryResultsIterable<Vertex> vertices = getGraph().query(AUTHORIZATIONS_EMPTY)
+            .has("name", "value1")
+            .limit((Long) null)
+            .vertices();
+        assertEquals(verticesToCreate, vertices.getTotalHits());
+        Iterator<Vertex> it = vertices.iterator();
+        assertTrue(it.hasNext());
+        it.next();
+        it = null;
+
+        System.gc();
+        System.gc();
     }
 
     private long getNumQueries() {

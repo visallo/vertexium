@@ -1,5 +1,6 @@
 # v4.9.1
 * Added: MetadataPlugin which allows filtering common values from being written to the data store
+* Added: Elasticsearch detect and close open scrolls
 * Fixed: Element/ElementId hashCode and equals
 * Fixed: Elasticsearch Bulk service race condition
 
