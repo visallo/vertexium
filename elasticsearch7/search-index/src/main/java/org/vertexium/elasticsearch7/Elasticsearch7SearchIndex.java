@@ -1777,7 +1777,8 @@ public class Elasticsearch7SearchIndex implements SearchIndex, SearchIndexWithVe
             .filter(elementTypeFilterBuilder);
         SearchRequestBuilder q = getClient().prepareSearch(getIndexNamesAsArray(graph))
             .setQuery(queryBuilder)
-            .setSize(0);
+            .setSize(0)
+            .setTrackTotalHits(true);
 
         for (String p : getAllMatchingPropertyNames(graph, propertyName, authorizations)) {
             String countAggName = "count-" + p;

@@ -707,14 +707,15 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
     private SearchResponse getSearchResponse(EnumSet<ElasticsearchDocumentType> elementType, FetchHints fetchHints, int skip, int limit, boolean includeAggregations) {
         SearchRequestBuilder q = buildQuery(elementType, fetchHints, includeAggregations)
             .setFrom(skip)
-            .setSize(limit);
+            .setSize(limit)
+            .setTrackTotalHits(true);
         if (QUERY_LOGGER.isTraceEnabled()) {
             QUERY_LOGGER.trace("query: %s", q);
         }
 
         SearchResponse searchResponse = checkForFailures(q.execute().actionGet());
-        SearchHits hits = searchResponse.getHits();
         if (LOGGER.isDebugEnabled()) {
+            SearchHits hits = searchResponse.getHits();
             LOGGER.debug(
                 "elasticsearch results %d of %d (time: %dms)",
                 hits.getHits().length,
@@ -1886,7 +1887,8 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
             try {
                 SearchRequestBuilder q = buildQuery(ElasticsearchDocumentType.fromVertexiumObjectTypes(objectTypes), fetchHints, true)
                     .setSize(pageSize)
-                    .setScroll(scrollKeepAlive);
+                    .setScroll(scrollKeepAlive)
+                    .setTrackTotalHits(true);
                 if (QUERY_LOGGER.isTraceEnabled()) {
                     QUERY_LOGGER.trace("query: %s", q);
                 }

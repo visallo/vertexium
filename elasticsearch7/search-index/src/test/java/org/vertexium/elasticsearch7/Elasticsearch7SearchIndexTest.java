@@ -31,6 +31,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.Assert.*;
 import static org.vertexium.test.util.VertexiumAssert.assertResultsCount;
+import static org.vertexium.util.CloseableUtils.closeQuietly;
 import static org.vertexium.util.IterableUtils.count;
 import static org.vertexium.util.IterableUtils.toList;
 
@@ -498,6 +499,36 @@ public class Elasticsearch7SearchIndexTest extends GraphTestBase {
 
         System.gc();
         System.gc();
+    }
+
+    @Test
+    public void testLargeTotalHitsPaged() throws InterruptedException {
+        int vertexCount = 10_045;
+        for (int write = 0; write < vertexCount; write++) {
+            getGraph().prepareVertex("v" + write, VISIBILITY_EMPTY).save(AUTHORIZATIONS_EMPTY);
+        }
+        getGraph().flush();
+        QueryResultsIterable<String> queryResults = getGraph()
+            .query("*", AUTHORIZATIONS_EMPTY)
+            .limit(0)
+            .vertexIds();
+        assertEquals(vertexCount, queryResults.getTotalHits());
+        closeQuietly(queryResults);
+    }
+
+    @Test
+    public void testLargeTotalHitsScroll() throws InterruptedException {
+        int vertexCount = 10_045;
+        for (int write = 0; write < vertexCount; write++) {
+            getGraph().prepareVertex("v" + write, VISIBILITY_EMPTY).save(AUTHORIZATIONS_EMPTY);
+        }
+        getGraph().flush();
+        QueryResultsIterable<String> queryResults = getGraph()
+            .query("*", AUTHORIZATIONS_EMPTY)
+            .limit((Long) null)
+            .vertexIds();
+        assertEquals(vertexCount, queryResults.getTotalHits());
+        closeQuietly(queryResults);
     }
 
     private long getNumQueries() {
