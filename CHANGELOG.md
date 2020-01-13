@@ -1,3 +1,6 @@
+# v4.9.2
+* Fixed: Elasticsearch 7 query string transformation was improperly stripping escape characters from fields that could not be found in the search index.
+
 # v4.9.1
 * Added: MetadataPlugin which allows filtering common values from being written to the data store
 * Added: Elasticsearch detect and close open scrolls
