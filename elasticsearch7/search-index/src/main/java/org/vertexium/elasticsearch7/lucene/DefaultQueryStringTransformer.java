@@ -86,7 +86,7 @@ public class DefaultQueryStringTransformer implements QueryStringTransformer {
 
             String[] fieldNames = expandFieldName(fieldName, authorizations);
             if (fieldNames == null || fieldNames.length == 0) {
-                ret.append(fieldName).append(":");
+                ret.append(clauseQueryStringNode.getField().image).append(":");
             } else if (fieldNames.length == 1) {
                 ret.append(EscapeQuerySyntax.escapeTerm(fieldNames[0], Locale.getDefault())).append(":");
             } else {

@@ -4334,6 +4334,10 @@ public abstract class GraphTestBase {
         vertices = graph.query("http\\:\\/\\/vertexium.org#name:{Fern TO Gern}", AUTHORIZATIONS_A)
             .vertices();
         Assert.assertEquals(1, count(vertices));
+
+        vertices = graph.query("(http\\:\\/\\/vertexium.org\\/custom#notFoundProperty:Joe OR http\\:\\/\\/vertexium.org#name:Joe)", AUTHORIZATIONS_A)
+            .vertices();
+        Assert.assertEquals(2, count(vertices));
     }
 
     protected boolean isFieldNamesInQuerySupported() {
