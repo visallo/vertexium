@@ -3,11 +3,13 @@ package org.vertexium.elasticsearch5;
 import org.elasticsearch.action.admin.cluster.node.stats.NodeStats;
 import org.elasticsearch.action.admin.cluster.node.stats.NodesStatsAction;
 import org.elasticsearch.action.admin.cluster.node.stats.NodesStatsResponse;
+import org.elasticsearch.action.admin.indices.stats.IndicesStatsResponse;
 import org.elasticsearch.common.io.stream.NotSerializableExceptionWrapper;
 import org.elasticsearch.index.search.stats.SearchStats;
 import org.junit.*;
 import org.junit.rules.TestRule;
 import org.junit.runners.model.Statement;
+import org.junit.*;
 import org.vertexium.*;
 import org.vertexium.elasticsearch5.scoring.ElasticsearchFieldValueScoringStrategy;
 import org.vertexium.elasticsearch5.scoring.ElasticsearchHammingDistanceScoringStrategy;
@@ -31,11 +33,13 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.Assert.*;
+import static org.junit.Assume.assumeTrue;
 import static org.vertexium.test.util.VertexiumAssert.assertResultsCount;
 import static org.vertexium.util.IterableUtils.count;
 import static org.vertexium.util.IterableUtils.toList;
 
 public class Elasticsearch5SearchIndexTest extends GraphTestBase {
+    private int expectedTestElasticsearchExceptionHandlerNumberOfTimesCalled = 0;
 
     @ClassRule
     public static ElasticsearchResource elasticsearchResource = new ElasticsearchResource(Elasticsearch5SearchIndexTest.class.getName());
@@ -53,8 +57,20 @@ public class Elasticsearch5SearchIndexTest extends GraphTestBase {
     @Before
     @Override
     public void before() throws Exception {
+        expectedTestElasticsearchExceptionHandlerNumberOfTimesCalled = 0;
+        TestElasticsearch5ExceptionHandler.clearNumberOfTimesCalled();
         elasticsearchResource.dropIndices();
         super.before();
+    }
+
+    @After
+    @Override
+    public void after() throws Exception {
+        assertEquals(
+            expectedTestElasticsearchExceptionHandlerNumberOfTimesCalled,
+            TestElasticsearch5ExceptionHandler.getNumberOfTimesCalled()
+        );
+        super.after();
     }
 
     @Rule
@@ -273,6 +289,7 @@ public class Elasticsearch5SearchIndexTest extends GraphTestBase {
 
     @Test
     public void testUpdateVertexWithDeletedElasticsearchDocument() {
+        expectedTestElasticsearchExceptionHandlerNumberOfTimesCalled = 1;
         TestElasticsearch5ExceptionHandler.authorizations = AUTHORIZATIONS_A;
 
         graph.prepareVertex("v1", VISIBILITY_A)
@@ -329,6 +346,7 @@ public class Elasticsearch5SearchIndexTest extends GraphTestBase {
 
     @Test
     public void testMultipleThreadsFlushing() throws InterruptedException {
+        assumeTrue(benchmarkEnabled());
         AtomicBoolean startSignal = new AtomicBoolean();
         AtomicBoolean run = new AtomicBoolean(true);
         AtomicBoolean writing = new AtomicBoolean(false);
@@ -422,6 +440,7 @@ public class Elasticsearch5SearchIndexTest extends GraphTestBase {
                     getGraph().flush();
                 }
             });
+            threads[i].setName("testManyWritesToSameElement-" + threads[i].getId());
         }
         for (Thread thread : threads) {
             thread.start();
@@ -449,6 +468,7 @@ public class Elasticsearch5SearchIndexTest extends GraphTestBase {
                 }
                 getGraph().flush();
             });
+            threads[i].setName("testManyWritesToSameElementNoFlushTillEnd-" + threads[i].getId());
         }
         for (Thread thread : threads) {
             thread.start();
@@ -489,6 +509,62 @@ public class Elasticsearch5SearchIndexTest extends GraphTestBase {
         assertEquals(2, getCurrentScrolls());
         System.gc();
         System.gc();
+    }
+
+    @Test
+    public void testNumberOfRefreshes() throws InterruptedException {
+        getGraph().prepareVertex("vPRIME", VISIBILITY_EMPTY)
+            .addPropertyValue("k1", "name", "value1", VISIBILITY_EMPTY)
+            .save(AUTHORIZATIONS_EMPTY);
+        getGraph().flush();
+
+        int verticesToCreate = 100;
+        int insertIterations = 50;
+        int queryIterations = 10;
+
+        long startRefreshes = getRefreshCount();
+        Thread insertThread = new Thread(() -> {
+            for (int it = 0; it < insertIterations; it++) {
+                System.out.println("update " + it);
+                for (int i = 0; i < verticesToCreate; i++) {
+                    getGraph().prepareVertex("v", VISIBILITY_EMPTY)
+                        .addPropertyValue("k" + i, "name", "value" + i, VISIBILITY_EMPTY)
+                        .save(AUTHORIZATIONS_EMPTY);
+                }
+                getGraph().flush();
+            }
+        });
+        Thread queryThread = new Thread(() -> {
+            for (int it = 0; it < queryIterations; it++) {
+                System.out.println("query " + it);
+                for (int i = 0; i < verticesToCreate; i++) {
+                    toList(getGraph().query(AUTHORIZATIONS_EMPTY)
+                        .has("name", "value" + i)
+                        .vertices());
+                }
+            }
+        });
+        long startTime = System.currentTimeMillis();
+        queryThread.start();
+        insertThread.start();
+        queryThread.join();
+        insertThread.join();
+        long endTime = System.currentTimeMillis();
+        System.out.println("time: " + (endTime - startTime));
+
+        long endRefreshCount = getRefreshCount();
+        long totalRefreshes = endRefreshCount - startRefreshes;
+        System.out.println("refreshes: " + totalRefreshes);
+
+        assertTrue(
+            "total refreshes should be well below insert iterations times the number of vertices inserted",
+            totalRefreshes < insertIterations * 2
+        );
+    }
+
+    private long getRefreshCount() {
+        IndicesStatsResponse resp = getSearchIndex().getClient().admin().indices().prepareStats().get();
+        return resp.getTotal().getRefresh().getTotal();
     }
 
     @Test

@@ -2,7 +2,7 @@ package org.vertexium;
 
 import java.io.Serializable;
 
-public class ExtendedDataRowId implements Serializable, Comparable<ExtendedDataRowId> {
+public class ExtendedDataRowId implements Serializable, Comparable<ExtendedDataRowId>, VertexiumObjectId {
     private static final long serialVersionUID = 6419674145598605844L;
     private final ElementType elementType;
     private final String elementId;

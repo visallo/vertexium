@@ -3,7 +3,6 @@ package org.vertexium.elasticsearch7;
 import com.carrotsearch.hppc.cursors.ObjectCursor;
 import com.google.common.base.Joiner;
 import com.google.common.base.Throwables;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
@@ -11,11 +10,8 @@ import org.elasticsearch.action.admin.indices.create.CreateIndexResponse;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.admin.indices.mapping.get.GetMappingsResponse;
 import org.elasticsearch.action.bulk.BulkItemResponse;
-import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.action.update.UpdateRequest;
-import org.elasticsearch.action.update.UpdateRequestBuilder;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.cluster.metadata.MappingMetaData;
 import org.elasticsearch.common.Strings;
@@ -32,8 +28,6 @@ import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.plugins.Plugin;
-import org.elasticsearch.script.Script;
-import org.elasticsearch.script.ScriptType;
 import org.elasticsearch.search.aggregations.Aggregation;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
@@ -43,7 +37,6 @@ import org.vertexium.elasticsearch7.bulk.BulkItem;
 import org.vertexium.elasticsearch7.bulk.BulkUpdateService;
 import org.vertexium.elasticsearch7.bulk.BulkUpdateServiceConfiguration;
 import org.vertexium.elasticsearch7.lucene.QueryStringTransformer;
-import org.vertexium.elasticsearch7.utils.ElasticsearchRequestUtils;
 import org.vertexium.metric.VertexiumMetricRegistry;
 import org.vertexium.mutation.*;
 import org.vertexium.property.StreamingPropertyValue;
@@ -101,7 +94,7 @@ public class Elasticsearch7SearchIndex implements SearchIndex, SearchIndexWithVe
     public static final String LOWERCASER_NORMALIZER_NAME = "visallo_lowercaser";
     public static final int EXACT_MATCH_IGNORE_ABOVE_LIMIT = 10000;
     public static final String FIELDNAME_DOT_REPLACEMENT = "-_-";
-    private static final int MAX_RETRIES = 10;
+    public static final int MAX_RETRIES = 10;
     private final Client client;
     private final ElasticsearchSearchIndexConfiguration config;
     private final Graph graph;
@@ -119,7 +112,6 @@ public class Elasticsearch7SearchIndex implements SearchIndex, SearchIndexWithVe
     private final String geoShapeErrorPct;
     private final IdStrategy idStrategy = new IdStrategy();
     private final IndexRefreshTracker indexRefreshTracker;
-    private Integer logRequestSizeLimit;
     private final Elasticsearch7ExceptionHandler exceptionHandler;
     private final boolean refreshIndexOnFlush;
 
@@ -132,7 +124,6 @@ public class Elasticsearch7SearchIndex implements SearchIndex, SearchIndexWithVe
         this.client = createClient(this.config);
         this.geoShapePrecision = this.config.getGeoShapePrecision();
         this.geoShapeErrorPct = this.config.getGeoShapeErrorPct();
-        this.logRequestSizeLimit = this.config.getLogRequestSizeLimit();
         this.exceptionHandler = this.config.getExceptionHandler(graph);
         this.refreshIndexOnFlush = this.config.getRefreshIndexOnFlush();
         BulkUpdateServiceConfiguration bulkUpdateServiceConfiguration = new BulkUpdateServiceConfiguration()
@@ -142,10 +133,10 @@ public class Elasticsearch7SearchIndex implements SearchIndex, SearchIndexWithVe
             .setMaxBatchSize(this.config.getBulkMaxBatchSize())
             .setMaxBatchSizeInBytes(this.config.getBulkMaxBatchSizeInBytes())
             .setBatchWindowTime(this.config.getBulkBatchWindowTime())
-            .setMaxFailCount(this.config.getBulkMaxFailCount());
+            .setMaxFailCount(this.config.getBulkMaxFailCount())
+            .setLogRequestSizeLimit(this.config.getLogRequestSizeLimit());
         this.bulkUpdateService = new BulkUpdateService(this, indexRefreshTracker, bulkUpdateServiceConfiguration);
 
-        storePainlessScript("deleteFieldsFromDocumentScript", "remove-fields-from-document.painless");
         storePainlessScript("updateFieldsOnDocumentScript", "update-fields-on-document.painless");
     }
 
@@ -344,9 +335,7 @@ public class Elasticsearch7SearchIndex implements SearchIndex, SearchIndexWithVe
             graph,
             element,
             additionalVisibilities,
-            additionalVisibilitiesToDelete,
-            true,
-            authorizations
+            additionalVisibilitiesToDelete
         );
     }
 
@@ -354,9 +343,7 @@ public class Elasticsearch7SearchIndex implements SearchIndex, SearchIndexWithVe
         Graph graph,
         Element element,
         Set<String> additionalVisibilities,
-        Set<String> additionalVisibilitiesToDelete,
-        boolean waitUntilFlushed,
-        Authorizations authorizations
+        Set<String> additionalVisibilitiesToDelete
     ) {
         if (MUTATION_LOGGER.isTraceEnabled()) {
             MUTATION_LOGGER.trace("addElement: %s", element.getId());
@@ -366,17 +353,68 @@ public class Elasticsearch7SearchIndex implements SearchIndex, SearchIndexWithVe
             return;
         }
 
-        if (waitUntilFlushed) {
-            bulkUpdateService.flushUntilElementIdIsComplete(element.getId());
+        IndexInfo indexInfo = addPropertiesToIndex(graph, element, element.getProperties());
+        if (additionalVisibilities != null) {
+            ensureAdditionalVisibilitiesDefined(additionalVisibilities);
+        }
+        Map<String, String> source = buildSourceFromElement(graph, element);
+        if (MUTATION_LOGGER.isTraceEnabled()) {
+            MUTATION_LOGGER.trace(
+                "addElement json: %s: %s",
+                element.getId(),
+                Joiner.on(",").withKeyValueSeparator("=").join(source)
+            );
         }
 
-        UpdateRequestBuilder updateRequestBuilder = prepareUpdate(
-            graph,
+        List<String> additionalVisibilitiesParam = additionalVisibilities == null
+            ? Collections.emptyList()
+            : toList(additionalVisibilities);
+        List<String> additionalVisibilitiesToDeleteParam = additionalVisibilitiesToDelete == null
+            ? Collections.emptyList()
+            : toList(additionalVisibilitiesToDelete);
+
+        Map<String, Object> fieldsToSet = getPropertiesAsFields(graph, element.getProperties());
+        if (element instanceof Edge) {
+            Edge edge = (Edge) element;
+            fieldsToSet.put(IN_VERTEX_ID_FIELD_NAME, edge.getVertexId(Direction.IN));
+            fieldsToSet.put(OUT_VERTEX_ID_FIELD_NAME, edge.getVertexId(Direction.OUT));
+            fieldsToSet.put(EDGE_LABEL_FIELD_NAME, edge.getLabel());
+        }
+
+        for (Property property : element.getProperties()) {
+            for (Visibility hiddenVisibility : property.getHiddenVisibilities()) {
+                String hiddenVisibilityPropertyName = addVisibilityToPropertyName(graph, HIDDEN_PROPERTY_FIELD_NAME, hiddenVisibility);
+                if (!isPropertyInIndex(graph, HIDDEN_PROPERTY_FIELD_NAME, hiddenVisibility)) {
+                    addPropertyToIndex(graph, indexInfo, hiddenVisibilityPropertyName, hiddenVisibility, Boolean.class, false, false, false);
+                }
+                fieldsToSet.put(hiddenVisibilityPropertyName, true);
+            }
+        }
+
+        for (Visibility hiddenVisibility : element.getHiddenVisibilities()) {
+            String hiddenVisibilityPropertyName = addVisibilityToPropertyName(graph, HIDDEN_VERTEX_FIELD_NAME, hiddenVisibility);
+            if (!isPropertyInIndex(graph, HIDDEN_VERTEX_FIELD_NAME, hiddenVisibility)) {
+                addPropertyToIndex(graph, indexInfo, hiddenVisibilityPropertyName, hiddenVisibility, Boolean.class, false, false, false);
+            }
+            fieldsToSet.put(hiddenVisibilityPropertyName, true);
+        }
+
+        fieldsToSet = fieldsToSet == null ? Collections.emptyMap() : fieldsToSet.entrySet().stream()
+            .collect(Collectors.toMap(e -> replaceFieldnameDots(e.getKey()), Map.Entry::getValue));
+
+        bulkUpdateService.addElementUpdate(
+            indexInfo.getIndexName(),
+            getIdStrategy().getType(),
+            getIdStrategy().createElementDocId(element),
             element,
-            additionalVisibilities,
-            additionalVisibilitiesToDelete
+            source,
+            fieldsToSet,
+            Collections.emptyList(),
+            Collections.emptyMap(),
+            additionalVisibilitiesParam,
+            additionalVisibilitiesToDeleteParam,
+            false
         );
-        addActionRequestBuilderForFlush(element, updateRequestBuilder.request());
 
         if (getConfig().isAutoFlush()) {
             flush(graph);
@@ -399,35 +437,29 @@ public class Elasticsearch7SearchIndex implements SearchIndex, SearchIndexWithVe
             return;
         }
 
-        bulkUpdateService.flushUntilElementIdIsComplete(elementMutation.getId());
+        addMutationPropertiesToIndex(graph, elementMutation);
+        addUpdateForMutationToBulk(graph, elementMutation);
 
-        UpdateRequestBuilder updateRequestBuilder = prepareUpdateForMutation(graph, elementMutation);
-
-        if (updateRequestBuilder != null) {
-            addMutationPropertiesToIndex(graph, elementMutation);
-            addActionRequestBuilderForFlush(element, updateRequestBuilder.request());
-
-            if (elementMutation.getNewElementVisibility() != null && element.getFetchHints().isIncludeExtendedDataTableNames()) {
-                ImmutableSet<String> extendedDataTableNames = element.getExtendedDataTableNames();
-                if (extendedDataTableNames != null && !extendedDataTableNames.isEmpty()) {
-                    extendedDataTableNames.forEach(tableName ->
-                        alterExtendedDataElementTypeVisibility(
-                            graph,
-                            elementMutation,
-                            element.getExtendedData(tableName),
-                            elementMutation.getOldElementVisibility(),
-                            elementMutation.getNewElementVisibility()
-                        ));
-                }
+        if (elementMutation.getNewElementVisibility() != null && element.getFetchHints().isIncludeExtendedDataTableNames()) {
+            ImmutableSet<String> extendedDataTableNames = element.getExtendedDataTableNames();
+            if (extendedDataTableNames != null && !extendedDataTableNames.isEmpty()) {
+                extendedDataTableNames.forEach(tableName ->
+                    alterExtendedDataElementTypeVisibility(
+                        graph,
+                        elementMutation,
+                        element.getExtendedData(tableName),
+                        elementMutation.getOldElementVisibility(),
+                        elementMutation.getNewElementVisibility()
+                    ));
             }
+        }
 
-            if (getConfig().isAutoFlush()) {
-                flush(graph);
-            }
+        if (getConfig().isAutoFlush()) {
+            flush(graph);
         }
     }
 
-    private <TElement extends Element> IndexInfo addMutationPropertiesToIndex(Graph graph, ExistingElementMutation<TElement> mutation) {
+    private <TElement extends Element> void addMutationPropertiesToIndex(Graph graph, ExistingElementMutation<TElement> mutation) {
         TElement element = mutation.getElement();
         IndexInfo indexInfo = addPropertiesToIndex(graph, element, mutation.getProperties());
         mutation.getAlterPropertyVisibilities().stream()
@@ -450,10 +482,9 @@ public class Elasticsearch7SearchIndex implements SearchIndex, SearchIndexWithVe
                 throw new VertexiumException("Unable to add new element type visibility to index", e);
             }
         }
-        return indexInfo;
     }
 
-    private <TElement extends Element> UpdateRequestBuilder prepareUpdateForMutation(
+    private <TElement extends Element> void addUpdateForMutationToBulk(
         Graph graph,
         ExistingElementMutation<TElement> mutation
     ) {
@@ -469,9 +500,10 @@ public class Elasticsearch7SearchIndex implements SearchIndex, SearchIndexWithVe
         String documentId = getIdStrategy().createElementDocId(element);
         String indexName = getIndexName(element);
         IndexInfo indexInfo = ensureIndexCreatedAndInitialized(indexName);
-        return prepareUpdateFieldsOnDocument(
+        addUpdateToBulk(
             indexInfo.getIndexName(),
             documentId,
+            element,
             fieldsToSet,
             fieldsToRemove,
             fieldVisibilityChanges,
@@ -596,101 +628,10 @@ public class Elasticsearch7SearchIndex implements SearchIndex, SearchIndexWithVe
                 addPropertyValueToPropertiesMap(fieldsToSet, remainingField, remainingValue);
             }
         }
-    }
 
-    private UpdateRequestBuilder prepareUpdate(
-        Graph graph,
-        Element element,
-        Set<String> additionalVisibilities,
-        Set<String> additionalVisibilitiesToDelete
-    ) {
-        try {
-            IndexInfo indexInfo = addPropertiesToIndex(graph, element, element.getProperties());
-            if (additionalVisibilities != null) {
-                ensureAdditionalVisibilitiesDefined(additionalVisibilities);
-            }
-            XContentBuilder source = buildJsonContentFromElement(graph, element);
-            if (MUTATION_LOGGER.isTraceEnabled()) {
-                MUTATION_LOGGER.trace("addElement json: %s: %s", element.getId(), Strings.toString(source));
-            }
-
-            List<String> additionalVisibilitiesParam = additionalVisibilities == null
-                ? Collections.emptyList()
-                : toList(additionalVisibilities);
-            List<String> additionalVisibilitiesToDeleteParam = additionalVisibilitiesToDelete == null
-                ? Collections.emptyList()
-                : toList(additionalVisibilitiesToDelete);
-
-            Map<String, Object> fieldsToSet = getPropertiesAsFields(graph, element.getProperties());
-
-            for (Property property : element.getProperties()) {
-                for (Visibility hiddenVisibility : property.getHiddenVisibilities()) {
-                    String hiddenVisibilityPropertyName = addVisibilityToPropertyName(graph, HIDDEN_PROPERTY_FIELD_NAME, hiddenVisibility);
-                    if (!isPropertyInIndex(graph, HIDDEN_PROPERTY_FIELD_NAME, hiddenVisibility)) {
-                        addPropertyToIndex(graph, indexInfo, hiddenVisibilityPropertyName, hiddenVisibility, Boolean.class, false, false, false);
-                    }
-                    fieldsToSet.put(hiddenVisibilityPropertyName, true);
-                }
-            }
-            for (Visibility hiddenVisibility : element.getHiddenVisibilities()) {
-                String hiddenVisibilityPropertyName = addVisibilityToPropertyName(graph, HIDDEN_VERTEX_FIELD_NAME, hiddenVisibility);
-                if (!isPropertyInIndex(graph, HIDDEN_VERTEX_FIELD_NAME, hiddenVisibility)) {
-                    addPropertyToIndex(graph, indexInfo, hiddenVisibilityPropertyName, hiddenVisibility, Boolean.class, false, false, false);
-                }
-                fieldsToSet.put(hiddenVisibilityPropertyName, true);
-            }
-
-            fieldsToSet = fieldsToSet == null ? Collections.emptyMap() : fieldsToSet.entrySet().stream()
-                .collect(Collectors.toMap(e -> replaceFieldnameDots(e.getKey()), Map.Entry::getValue));
-
-            if (element instanceof Edge) {
-                Edge edge = (Edge) element;
-                fieldsToSet.put(IN_VERTEX_ID_FIELD_NAME, edge.getVertexId(Direction.IN));
-                fieldsToSet.put(OUT_VERTEX_ID_FIELD_NAME, edge.getVertexId(Direction.OUT));
-                fieldsToSet.put(EDGE_LABEL_FIELD_NAME, edge.getLabel());
-            }
-
-            return getClient()
-                .prepareUpdate(indexInfo.getIndexName(), getIdStrategy().getType(), getIdStrategy().createElementDocId(element))
-                .setScriptedUpsert(true)
-                .setUpsert(source)
-                .setScript(new Script(
-                    ScriptType.STORED,
-                    null,
-                    "updateFieldsOnDocumentScript",
-                    ImmutableMap.of(
-                        "fieldsToSet", fieldsToSet,
-                        "fieldsToRemove", Collections.emptyList(),
-                        "fieldsToRename", Collections.emptyMap(),
-                        "additionalVisibilities", additionalVisibilitiesParam,
-                        "additionalVisibilitiesToDelete", additionalVisibilitiesToDeleteParam
-                    )))
-                .setRetryOnConflict(MAX_RETRIES);
-        } catch (IOException e) {
-            throw new VertexiumException("Could not add element", e);
+        if (getConfig().isAutoFlush()) {
+            flush(graph);
         }
-    }
-
-    private void addActionRequestBuilderForFlush(
-        ElementLocation elementLocation,
-        UpdateRequest updateRequest
-    ) {
-        addActionRequestBuilderForFlush(
-            elementLocation,
-            null,
-            null,
-            updateRequest
-        );
-    }
-
-    private void addActionRequestBuilderForFlush(
-        ElementLocation elementLocation,
-        String extendedDataTableName,
-        String rowId,
-        UpdateRequest updateRequest
-    ) {
-        logRequestSize(elementLocation.getId(), updateRequest);
-        bulkUpdateService.addUpdate(elementLocation, extendedDataTableName, rowId, updateRequest);
     }
 
     @Override
@@ -717,9 +658,8 @@ public class Elasticsearch7SearchIndex implements SearchIndex, SearchIndexWithVe
                 ExtendedDataMutationUtils.Mutations mutations = byRowEntry.getValue();
                 addElementExtendedData(
                     graph,
+                    new ExtendedDataRowId(elementLocation.getElementType(), elementLocation.getId(), tableName, rowId),
                     elementLocation,
-                    tableName,
-                    rowId,
                     mutations.getExtendedData(),
                     mutations.getAdditionalExtendedDataVisibilities(),
                     mutations.getAdditionalExtendedDataVisibilityDeletes()
@@ -733,9 +673,10 @@ public class Elasticsearch7SearchIndex implements SearchIndex, SearchIndexWithVe
         String indexName = getExtendedDataIndexName(rowId);
         String docId = getIdStrategy().createExtendedDataDocId(rowId);
         bulkUpdateService.addDelete(
-            ElementId.create(rowId.getElementType(), rowId.getElementId()),
+            indexName,
+            getIdStrategy().getType(),
             docId,
-            getClient().prepareDelete(indexName, getIdStrategy().getType(), docId).request()
+            ElementId.create(rowId.getElementType(), rowId.getElementId())
         );
     }
 
@@ -764,27 +705,24 @@ public class Elasticsearch7SearchIndex implements SearchIndex, SearchIndexWithVe
 
     private void addElementExtendedData(
         Graph graph,
-        ElementLocation elementLocation,
-        String tableName,
-        String rowId,
+        ExtendedDataRowId extendedDataRowId,
+        ElementLocation sourceElementLocation,
         Iterable<ExtendedDataMutation> extendedData,
         Iterable<AdditionalExtendedDataVisibilityAddMutation> additionalExtendedDataVisibilities,
         Iterable<AdditionalExtendedDataVisibilityDeleteMutation> additionalExtendedDataVisibilityDeletes
     ) {
         if (MUTATION_LOGGER.isTraceEnabled()) {
-            MUTATION_LOGGER.trace("addElementExtendedData: %s:%s:%s", elementLocation.getId(), tableName, rowId);
+            MUTATION_LOGGER.trace("addElementExtendedData: %s", extendedDataRowId);
         }
 
-        UpdateRequestBuilder updateRequestBuilder = prepareUpdate(
+        addExtendedDataUpdateToBulk(
             graph,
-            elementLocation,
-            tableName,
-            rowId,
+            extendedDataRowId,
+            sourceElementLocation,
             extendedData,
             additionalExtendedDataVisibilities,
             additionalExtendedDataVisibilityDeletes
         );
-        addActionRequestBuilderForFlush(elementLocation, tableName, rowId, updateRequestBuilder.request());
 
         if (getConfig().isAutoFlush()) {
             flush(graph);
@@ -820,30 +758,27 @@ public class Elasticsearch7SearchIndex implements SearchIndex, SearchIndexWithVe
             String newElementTypeVisibilityPropertyName = addVisibilityToPropertyName(graph, ELEMENT_TYPE_FIELD_NAME, newVisibility);
             Map<String, String> fieldsToRename = Collections.singletonMap(oldElementTypeVisibilityPropertyName, newElementTypeVisibilityPropertyName);
 
-            UpdateRequest updateRequest = getClient()
-                .prepareUpdate(indexInfo.getIndexName(), getIdStrategy().getType(), extendedDataDocId)
-                .setScript(new Script(
-                    ScriptType.STORED,
-                    null,
-                    "updateFieldsOnDocumentScript",
-                    ImmutableMap.of(
-                        "fieldsToSet", Collections.emptyMap(),
-                        "fieldsToRemove", Collections.emptyList(),
-                        "fieldsToRename", fieldsToRename,
-                        "additionalVisibilities", Collections.emptyList(),
-                        "additionalVisibilitiesToDelete", Collections.emptyList()
-                    )
-                ))
-                .setRetryOnConflict(MAX_RETRIES)
-                .request();
-            bulkUpdateService.addUpdate(elementMutation, row.getId().getTableName(), row.getId().getRowId(), updateRequest);
+            bulkUpdateService.addExtendedDataUpdate(
+                indexInfo.getIndexName(),
+                getIdStrategy().getType(),
+                extendedDataDocId,
+                row.getId(),
+                elementMutation,
+                Collections.emptyMap(),
+                Collections.emptyMap(),
+                Collections.emptyList(),
+                fieldsToRename,
+                Collections.emptyList(),
+                Collections.emptyList(),
+                true
+            );
         }
     }
 
     @Override
     public void addExtendedData(
         Graph graph,
-        ElementLocation elementLocation,
+        ElementLocation sourceElementLocation,
         Iterable<ExtendedDataRow> extendedDatas,
         Authorizations authorizations
     ) {
@@ -863,103 +798,96 @@ public class Elasticsearch7SearchIndex implements SearchIndex, SearchIndexWithVe
                             property.getTimestamp(),
                             property.getVisibility()
                         )).collect(Collectors.toList());
-                    UpdateRequest updateRequest = prepareUpdate(
+                    addExtendedDataUpdateToBulk(
                         graph,
-                        elementLocation,
-                        tableName,
-                        rowId,
+                        new ExtendedDataRowId(
+                            sourceElementLocation.getElementType(),
+                            sourceElementLocation.getId(),
+                            tableName,
+                            rowId
+                        ),
+                        sourceElementLocation,
                         columns,
                         Collections.emptyList(),
                         Collections.emptyList()
-                    ).request();
-                    bulkUpdateService.addUpdate(elementLocation, tableName, rowId, updateRequest);
+                    );
                 });
             });
         });
     }
 
-    private UpdateRequestBuilder prepareUpdate(
+    private void addExtendedDataUpdateToBulk(
         Graph graph,
-        ElementLocation elementLocation,
-        String tableName,
-        String rowId,
+        ExtendedDataRowId extendedDataRowId,
+        ElementLocation sourceElementLocation,
         Iterable<ExtendedDataMutation> extendedData,
         Iterable<AdditionalExtendedDataVisibilityAddMutation> additionalExtendedDataVisibilities,
         Iterable<AdditionalExtendedDataVisibilityDeleteMutation> additionalExtendedDataVisibilityDeletes
     ) {
-        try {
-            IndexInfo indexInfo = addExtendedDataColumnsToIndex(graph, elementLocation, tableName, rowId, extendedData);
-            String extendedDataDocId = getIdStrategy().createExtendedDataDocId(elementLocation, tableName, rowId);
+        IndexInfo indexInfo = addExtendedDataColumnsToIndex(graph, sourceElementLocation, extendedDataRowId.getTableName(), extendedDataRowId.getRowId(), extendedData);
+        String extendedDataDocId = getIdStrategy().createExtendedDataDocId(sourceElementLocation, extendedDataRowId.getTableName(), extendedDataRowId.getRowId());
 
-            Map<String, Object> fieldsToSet =
-                getExtendedDataColumnsAsFields(graph, extendedData).entrySet().stream()
-                    .collect(Collectors.toMap(e -> replaceFieldnameDots(e.getKey()), Map.Entry::getValue));
+        Map<String, Object> fieldsToSet =
+            getExtendedDataColumnsAsFields(graph, extendedData).entrySet().stream()
+                .collect(Collectors.toMap(e -> replaceFieldnameDots(e.getKey()), Map.Entry::getValue));
 
-            XContentBuilder source = buildJsonContentForExtendedDataUpsert(graph, elementLocation, tableName, rowId);
-            if (MUTATION_LOGGER.isTraceEnabled()) {
-                String fieldsDebug = Joiner.on(", ").withKeyValueSeparator(": ").join(fieldsToSet);
-                MUTATION_LOGGER.trace(
-                    "addElementExtendedData json: %s:%s:%s: %s {%s}",
-                    elementLocation.getId(),
-                    tableName,
-                    rowId,
-                    Strings.toString(source),
-                    fieldsDebug
-                );
-            }
-
-            List<String> additionalVisibilities = additionalExtendedDataVisibilities == null
-                ? Collections.emptyList()
-                : stream(additionalExtendedDataVisibilities).map(AdditionalExtendedDataVisibilityAddMutation::getAdditionalVisibility).collect(Collectors.toList());
-            List<String> additionalVisibilitiesToDelete = additionalExtendedDataVisibilityDeletes == null
-                ? Collections.emptyList()
-                : stream(additionalExtendedDataVisibilityDeletes).map(AdditionalExtendedDataVisibilityDeleteMutation::getAdditionalVisibility).collect(Collectors.toList());
-            ensureAdditionalVisibilitiesDefined(additionalVisibilities);
-
-            return getClient()
-                .prepareUpdate(indexInfo.getIndexName(), getIdStrategy().getType(), extendedDataDocId)
-                .setScriptedUpsert(true)
-                .setUpsert(source)
-                .setScript(new Script(
-                    ScriptType.STORED,
-                    null,
-                    "updateFieldsOnDocumentScript",
-                    ImmutableMap.of(
-                        "fieldsToSet", fieldsToSet,
-                        "fieldsToRemove", Collections.emptyList(),
-                        "fieldsToRename", Collections.emptyMap(),
-                        "additionalVisibilities", additionalVisibilities,
-                        "additionalVisibilitiesToDelete", additionalVisibilitiesToDelete
-                    )))
-                .setRetryOnConflict(MAX_RETRIES);
-        } catch (IOException e) {
-            throw new VertexiumException("Could not add element extended data", e);
+        Map<String, String> source = buildSourceForExtendedDataUpsert(graph, sourceElementLocation, extendedDataRowId.getTableName(), extendedDataRowId.getRowId());
+        if (MUTATION_LOGGER.isTraceEnabled()) {
+            String fieldsDebug = Joiner.on(", ").withKeyValueSeparator(": ").join(fieldsToSet);
+            MUTATION_LOGGER.trace(
+                "addElementExtendedData json: %s: %s {%s}",
+                extendedDataRowId,
+                Joiner.on(",").withKeyValueSeparator("=").join(source),
+                fieldsDebug
+            );
         }
+
+        List<String> additionalVisibilities = additionalExtendedDataVisibilities == null
+            ? Collections.emptyList()
+            : stream(additionalExtendedDataVisibilities).map(AdditionalExtendedDataVisibilityAddMutation::getAdditionalVisibility).collect(Collectors.toList());
+        List<String> additionalVisibilitiesToDelete = additionalExtendedDataVisibilityDeletes == null
+            ? Collections.emptyList()
+            : stream(additionalExtendedDataVisibilityDeletes).map(AdditionalExtendedDataVisibilityDeleteMutation::getAdditionalVisibility).collect(Collectors.toList());
+        ensureAdditionalVisibilitiesDefined(additionalVisibilities);
+
+        bulkUpdateService.addExtendedDataUpdate(
+            indexInfo.getIndexName(),
+            getIdStrategy().getType(),
+            extendedDataDocId,
+            extendedDataRowId,
+            sourceElementLocation,
+            source,
+            fieldsToSet,
+            Collections.emptyList(),
+            Collections.emptyMap(),
+            additionalVisibilities,
+            additionalVisibilitiesToDelete,
+            false
+        );
     }
 
-    private XContentBuilder buildJsonContentForExtendedDataUpsert(
+    private Map<String, String> buildSourceForExtendedDataUpsert(
         Graph graph,
         ElementLocation elementLocation,
         String tableName,
         String rowId
-    ) throws IOException {
-        XContentBuilder jsonBuilder;
-        jsonBuilder = XContentFactory.jsonBuilder().startObject();
+    ) {
+        Map<String, String> source = new HashMap<>();
 
         String elementTypeString = ElasticsearchDocumentType.getExtendedDataDocumentTypeFromElementType(
             elementLocation.getElementType()
         ).getKey();
-        jsonBuilder.field(ELEMENT_ID_FIELD_NAME, elementLocation.getId());
-        jsonBuilder.field(ELEMENT_TYPE_FIELD_NAME, elementTypeString);
+        source.put(ELEMENT_ID_FIELD_NAME, elementLocation.getId());
+        source.put(ELEMENT_TYPE_FIELD_NAME, elementTypeString);
         String elementTypeVisibilityPropertyName = addElementTypeVisibilityPropertyToExtendedDataIndex(
             graph,
             elementLocation,
             tableName,
             rowId
         );
-        jsonBuilder.field(elementTypeVisibilityPropertyName, elementTypeString);
-        jsonBuilder.field(EXTENDED_DATA_TABLE_NAME_FIELD_NAME, tableName);
-        jsonBuilder.field(EXTENDED_DATA_TABLE_ROW_ID_FIELD_NAME, rowId);
+        source.put(elementTypeVisibilityPropertyName, elementTypeString);
+        source.put(EXTENDED_DATA_TABLE_NAME_FIELD_NAME, tableName);
+        source.put(EXTENDED_DATA_TABLE_ROW_ID_FIELD_NAME, rowId);
         if (elementLocation.getElementType() == ElementType.EDGE) {
             if (!(elementLocation instanceof EdgeElementLocation)) {
                 throw new VertexiumException(String.format(
@@ -969,14 +897,12 @@ public class Elasticsearch7SearchIndex implements SearchIndex, SearchIndexWithVe
                 ));
             }
             EdgeElementLocation edgeElementLocation = (EdgeElementLocation) elementLocation;
-            jsonBuilder.field(IN_VERTEX_ID_FIELD_NAME, edgeElementLocation.getVertexId(Direction.IN));
-            jsonBuilder.field(OUT_VERTEX_ID_FIELD_NAME, edgeElementLocation.getVertexId(Direction.OUT));
-            jsonBuilder.field(EDGE_LABEL_FIELD_NAME, edgeElementLocation.getLabel());
+            source.put(IN_VERTEX_ID_FIELD_NAME, edgeElementLocation.getVertexId(Direction.IN));
+            source.put(OUT_VERTEX_ID_FIELD_NAME, edgeElementLocation.getVertexId(Direction.OUT));
+            source.put(EDGE_LABEL_FIELD_NAME, edgeElementLocation.getLabel());
         }
 
-        jsonBuilder.endObject();
-
-        return jsonBuilder;
+        return source;
     }
 
     private Map<String, Object> getExtendedDataColumnsAsFields(Graph graph, Iterable<ExtendedDataMutation> columns) {
@@ -1052,54 +978,51 @@ public class Elasticsearch7SearchIndex implements SearchIndex, SearchIndexWithVe
         addElement(graph, elementMutation.getElement(), null, null, authorizations);
     }
 
-    private XContentBuilder buildJsonContentFromElement(Graph graph, Element element) throws IOException {
-        XContentBuilder jsonBuilder;
-        jsonBuilder = XContentFactory.jsonBuilder()
-            .startObject();
-
+    private Map<String, String> buildSourceFromElement(Graph graph, Element element) {
+        Map<String, String> source = new HashMap<>();
         String elementTypeVisibilityPropertyName = addElementTypeVisibilityPropertyToIndex(graph, element);
 
-        jsonBuilder.field(ELEMENT_ID_FIELD_NAME, element.getId());
-        jsonBuilder.field(ELEMENT_TYPE_FIELD_NAME, getElementTypeValueFromElement(element));
+        source.put(ELEMENT_ID_FIELD_NAME, element.getId());
+        source.put(ELEMENT_TYPE_FIELD_NAME, getElementTypeValueFromElement(element));
         if (element instanceof Vertex) {
-            jsonBuilder.field(elementTypeVisibilityPropertyName, ElasticsearchDocumentType.VERTEX.getKey());
+            source.put(elementTypeVisibilityPropertyName, ElasticsearchDocumentType.VERTEX.getKey());
         } else if (element instanceof Edge) {
             Edge edge = (Edge) element;
-            jsonBuilder.field(elementTypeVisibilityPropertyName, ElasticsearchDocumentType.EDGE.getKey());
-            jsonBuilder.field(IN_VERTEX_ID_FIELD_NAME, edge.getVertexId(Direction.IN));
-            jsonBuilder.field(OUT_VERTEX_ID_FIELD_NAME, edge.getVertexId(Direction.OUT));
-            jsonBuilder.field(EDGE_LABEL_FIELD_NAME, edge.getLabel());
+            source.put(elementTypeVisibilityPropertyName, ElasticsearchDocumentType.EDGE.getKey());
+            source.put(IN_VERTEX_ID_FIELD_NAME, edge.getVertexId(Direction.IN));
+            source.put(OUT_VERTEX_ID_FIELD_NAME, edge.getVertexId(Direction.OUT));
+            source.put(EDGE_LABEL_FIELD_NAME, edge.getLabel());
         } else {
             throw new VertexiumException("Unexpected element type " + element.getClass().getName());
         }
 
-        jsonBuilder.endObject();
-        return jsonBuilder;
+        return source;
     }
 
     @Override
     public void markElementHidden(Graph graph, Element element, Visibility visibility, Authorizations authorizations) {
-        try {
-            String hiddenVisibilityPropertyName = addVisibilityToPropertyName(graph, HIDDEN_VERTEX_FIELD_NAME, visibility);
-            String indexName = getIndexName(element);
-            if (!isPropertyInIndex(graph, HIDDEN_VERTEX_FIELD_NAME, visibility)) {
-                IndexInfo indexInfo = ensureIndexCreatedAndInitialized(indexName);
-                addPropertyToIndex(graph, indexInfo, hiddenVisibilityPropertyName, visibility, Boolean.class, false, false, false);
-            }
-
-            XContentBuilder jsonBuilder = XContentFactory.jsonBuilder().startObject();
-            jsonBuilder.field(hiddenVisibilityPropertyName, true);
-            jsonBuilder.endObject();
-
-            UpdateRequest updateRequest = getClient()
-                .prepareUpdate(indexName, getIdStrategy().getType(), getIdStrategy().createElementDocId(element))
-                .setDoc(jsonBuilder)
-                .setRetryOnConflict(MAX_RETRIES)
-                .request();
-            bulkUpdateService.addUpdate(element, updateRequest);
-        } catch (IOException e) {
-            throw new VertexiumException("Could not mark element hidden", e);
+        String hiddenVisibilityPropertyName = addVisibilityToPropertyName(graph, HIDDEN_VERTEX_FIELD_NAME, visibility);
+        String indexName = getIndexName(element);
+        if (!isPropertyInIndex(graph, HIDDEN_VERTEX_FIELD_NAME, visibility)) {
+            IndexInfo indexInfo = ensureIndexCreatedAndInitialized(indexName);
+            addPropertyToIndex(graph, indexInfo, hiddenVisibilityPropertyName, visibility, Boolean.class, false, false, false);
         }
+
+        Map<String, Object> fieldsToSet = new HashMap<>();
+        fieldsToSet.put(hiddenVisibilityPropertyName, true);
+        bulkUpdateService.addElementUpdate(
+            indexName,
+            getIdStrategy().getType(),
+            getIdStrategy().createElementDocId(element),
+            element,
+            Collections.emptyMap(),
+            fieldsToSet,
+            Collections.emptyList(),
+            Collections.emptyMap(),
+            Collections.emptyList(),
+            Collections.emptyList(),
+            true
+        );
     }
 
     @Override
@@ -1123,27 +1046,28 @@ public class Elasticsearch7SearchIndex implements SearchIndex, SearchIndexWithVe
         Visibility visibility,
         Authorizations authorizations
     ) {
-        try {
-            String hiddenVisibilityPropertyName = addVisibilityToPropertyName(graph, HIDDEN_PROPERTY_FIELD_NAME, visibility);
-            String indexName = getIndexName(elementLocation);
-            if (!isPropertyInIndex(graph, HIDDEN_PROPERTY_FIELD_NAME, visibility)) {
-                IndexInfo indexInfo = ensureIndexCreatedAndInitialized(indexName);
-                addPropertyToIndex(graph, indexInfo, hiddenVisibilityPropertyName, visibility, Boolean.class, false, false, false);
-            }
-
-            XContentBuilder jsonBuilder = XContentFactory.jsonBuilder().startObject();
-            jsonBuilder.field(hiddenVisibilityPropertyName, true);
-            jsonBuilder.endObject();
-
-            UpdateRequest updateRequest = getClient()
-                .prepareUpdate(indexName, getIdStrategy().getType(), getIdStrategy().createElementDocId(elementLocation))
-                .setDoc(jsonBuilder)
-                .setRetryOnConflict(MAX_RETRIES)
-                .request();
-            bulkUpdateService.addUpdate(elementLocation, updateRequest);
-        } catch (IOException e) {
-            throw new VertexiumException("Could not mark element hidden", e);
+        String hiddenVisibilityPropertyName = addVisibilityToPropertyName(graph, HIDDEN_PROPERTY_FIELD_NAME, visibility);
+        String indexName = getIndexName(elementLocation);
+        if (!isPropertyInIndex(graph, HIDDEN_PROPERTY_FIELD_NAME, visibility)) {
+            IndexInfo indexInfo = ensureIndexCreatedAndInitialized(indexName);
+            addPropertyToIndex(graph, indexInfo, hiddenVisibilityPropertyName, visibility, Boolean.class, false, false, false);
         }
+
+        Map<String, Object> fieldsToSet = new HashMap<>();
+        fieldsToSet.put(hiddenVisibilityPropertyName, true);
+        bulkUpdateService.addElementUpdate(
+            indexName,
+            getIdStrategy().getType(),
+            getIdStrategy().createElementDocId(elementLocation),
+            elementLocation,
+            Collections.emptyMap(),
+            fieldsToSet,
+            Collections.emptyList(),
+            Collections.emptyMap(),
+            Collections.emptyList(),
+            Collections.emptyList(),
+            true
+        );
     }
 
     @Override
@@ -1331,7 +1255,7 @@ public class Elasticsearch7SearchIndex implements SearchIndex, SearchIndexWithVe
         }
     }
 
-    public void handleBulkFailure(BulkItem bulkItem, BulkItemResponse bulkItemResponse, AtomicBoolean retry) throws Exception {
+    public void handleBulkFailure(BulkItem<?> bulkItem, BulkItemResponse bulkItemResponse, AtomicBoolean retry) throws Exception {
         if (exceptionHandler == null) {
             LOGGER.error("bulk failure: %s: %s", bulkItem, bulkItemResponse.getFailureMessage());
             return;
@@ -1514,10 +1438,7 @@ public class Elasticsearch7SearchIndex implements SearchIndex, SearchIndexWithVe
         if (MUTATION_LOGGER.isTraceEnabled()) {
             LOGGER.trace("deleting document %s (docId: %s)", elementId.getId(), docId);
         }
-        DeleteRequest deleteRequest = getClient()
-            .prepareDelete(indexName, getIdStrategy().getType(), docId)
-            .request();
-        bulkUpdateService.addDelete(elementId, docId, deleteRequest);
+        bulkUpdateService.addDelete(indexName, getIdStrategy().getType(), docId, elementId);
     }
 
     @Override
@@ -1927,21 +1848,19 @@ public class Elasticsearch7SearchIndex implements SearchIndex, SearchIndexWithVe
         String documentId = getIdStrategy().createElementDocId(element);
         String indexName = getIndexName(element);
         IndexInfo indexInfo = ensureIndexCreatedAndInitialized(indexName);
-        UpdateRequestBuilder updateRequestBuilder = prepareUpdateFieldsOnDocument(
+        addUpdateToBulk(
             indexInfo.getIndexName(),
             documentId,
+            element,
             fieldsToSet,
             fieldsToRemove,
             null,
             null,
             null
         );
-        if (updateRequestBuilder != null) {
-            addActionRequestBuilderForFlush(element, updateRequestBuilder.request());
 
-            if (getConfig().isAutoFlush()) {
-                flush(graph);
-            }
+        if (getConfig().isAutoFlush()) {
+            flush(graph);
         }
     }
 
@@ -1949,16 +1868,6 @@ public class Elasticsearch7SearchIndex implements SearchIndex, SearchIndexWithVe
     public void addElements(Graph graph, Iterable<? extends Element> elements, Authorizations authorizations) {
         for (Element element : elements) {
             addElement(graph, element, null, null, authorizations);
-        }
-    }
-
-    private void logRequestSize(String elementId, UpdateRequest request) {
-        if (logRequestSizeLimit == null) {
-            return;
-        }
-        int sizeInBytes = ElasticsearchRequestUtils.getSize(request);
-        if (sizeInBytes > logRequestSizeLimit) {
-            LOGGER.warn("Large document detected (id: %s). Size in bytes: %d", elementId, sizeInBytes);
         }
     }
 
@@ -2015,36 +1924,34 @@ public class Elasticsearch7SearchIndex implements SearchIndex, SearchIndexWithVe
             return;
         }
 
-        UpdateRequestBuilder updateRequestBuilder = prepareRemoveFieldsFromDocument(indexName, documentId, fields);
-        addActionRequestBuilderForFlush(elementLocation, updateRequestBuilder.request());
+        List<String> fieldNames = fields.stream().map(this::replaceFieldnameDots).collect(Collectors.toList());
+        if (fieldNames.isEmpty()) {
+            return;
+        }
+
+        bulkUpdateService.addElementUpdate(
+            indexName,
+            getIdStrategy().getType(),
+            documentId,
+            elementLocation,
+            Collections.emptyMap(),
+            Collections.emptyMap(),
+            fieldNames,
+            Collections.emptyMap(),
+            Collections.emptyList(),
+            Collections.emptyList(),
+            true
+        );
 
         if (getConfig().isAutoFlush()) {
             flush(graph);
         }
     }
 
-    private UpdateRequestBuilder prepareRemoveFieldsFromDocument(String indexName, String documentId, Collection<String> fields) {
-        List<String> fieldNames = fields.stream().map(this::replaceFieldnameDots).collect(Collectors.toList());
-        if (fieldNames.isEmpty()) {
-            return null;
-        }
-
-        return getClient().prepareUpdate()
-            .setIndex(indexName)
-            .setId(documentId)
-            .setType(getIdStrategy().getType())
-            .setScript(new Script(
-                ScriptType.STORED,
-                null,
-                "deleteFieldsFromDocumentScript",
-                ImmutableMap.of("fieldNames", fieldNames)
-            ))
-            .setRetryOnConflict(MAX_RETRIES);
-    }
-
-    private UpdateRequestBuilder prepareUpdateFieldsOnDocument(
+    private void addUpdateToBulk(
         String indexName,
         String documentId,
+        ElementLocation elementLocation,
         Map<String, Object> fieldsToSet,
         Collection<String> fieldsToRemove,
         Map<String, String> fieldsToRename,
@@ -2056,7 +1963,7 @@ public class Elasticsearch7SearchIndex implements SearchIndex, SearchIndexWithVe
             (fieldsToRename == null || fieldsToRename.isEmpty()) &&
             (additionalVisibilities == null || additionalVisibilities.isEmpty()) &&
             (additionalVisibilitiesToDelete == null || additionalVisibilitiesToDelete.isEmpty())) {
-            return null;
+            return;
         }
 
         fieldsToSet = fieldsToSet == null ? Collections.emptyMap() : fieldsToSet.entrySet().stream()
@@ -2068,23 +1975,19 @@ public class Elasticsearch7SearchIndex implements SearchIndex, SearchIndexWithVe
         List<String> additionalVisibilitiesToDeleteParam = additionalVisibilitiesToDelete == null ? Collections.emptyList() : new ArrayList<>(additionalVisibilitiesToDelete);
         ensureAdditionalVisibilitiesDefined(additionalVisibilitiesParam);
 
-        return getClient().prepareUpdate()
-            .setIndex(indexName)
-            .setId(documentId)
-            .setType(getIdStrategy().getType())
-            .setScript(new Script(
-                ScriptType.STORED,
-                null,
-                "updateFieldsOnDocumentScript",
-                ImmutableMap.of(
-                    "fieldsToSet", fieldsToSet,
-                    "fieldsToRemove", fieldsToRemove,
-                    "fieldsToRename", fieldsToRename,
-                    "additionalVisibilities", additionalVisibilitiesParam,
-                    "additionalVisibilitiesToDelete", additionalVisibilitiesToDeleteParam
-                )
-            ))
-            .setRetryOnConflict(MAX_RETRIES);
+        bulkUpdateService.addElementUpdate(
+            indexName,
+            getIdStrategy().getType(),
+            documentId,
+            elementLocation,
+            Collections.emptyMap(),
+            fieldsToSet,
+            fieldsToRemove,
+            fieldsToRename,
+            additionalVisibilitiesParam,
+            additionalVisibilitiesToDeleteParam,
+            true
+        );
     }
 
     protected String[] getIndexNamesAsArray(Graph graph) {

@@ -11,7 +11,7 @@ public interface Elasticsearch7ExceptionHandler {
     default void handleBulkFailure(
         Graph graph,
         Elasticsearch7SearchIndex elasticsearch7SearchIndex,
-        BulkItem bulkItem,
+        BulkItem<?> bulkItem,
         BulkItemResponse bulkItemResponse,
         AtomicBoolean retry
     ) throws Exception {
