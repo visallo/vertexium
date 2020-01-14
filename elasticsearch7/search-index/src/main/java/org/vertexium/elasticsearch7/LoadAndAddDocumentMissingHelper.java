@@ -2,7 +2,7 @@ package org.vertexium.elasticsearch7;
 
 import org.vertexium.*;
 import org.vertexium.elasticsearch7.bulk.BulkItem;
-import org.vertexium.elasticsearch7.bulk.UpdateBulkItem;
+import org.vertexium.elasticsearch7.bulk.BulkUpdateItem;
 import org.vertexium.util.VertexiumLogger;
 import org.vertexium.util.VertexiumLoggerFactory;
 
@@ -13,19 +13,21 @@ public class LoadAndAddDocumentMissingHelper implements Elasticsearch7ExceptionH
 
     public static void handleDocumentMissingException(
         Graph graph,
-        Elasticsearch7SearchIndex elasticsearch7SearchIndex,
+        Elasticsearch7SearchIndex searchIndex,
         BulkItem bulkItem,
         Authorizations authorizations
     ) {
         LOGGER.info("handleDocumentMissingException (bulkItem: %s)", bulkItem);
-        if (bulkItem instanceof UpdateBulkItem) {
-            UpdateBulkItem updateBulkItem = (UpdateBulkItem) bulkItem;
-            if (updateBulkItem.getExtendedDataRowId() != null) {
-                handleExtendedDataRow(graph, elasticsearch7SearchIndex, updateBulkItem, authorizations);
-                return;
+        if (bulkItem instanceof BulkUpdateItem) {
+            BulkUpdateItem updateBulkItem = (BulkUpdateItem) bulkItem;
+            VertexiumObjectId vertexiumObjectId = updateBulkItem.getVertexiumObjectId();
+            if (vertexiumObjectId instanceof ExtendedDataRowId) {
+                handleExtendedDataRow(graph, searchIndex, updateBulkItem, authorizations);
+            } else if (vertexiumObjectId instanceof ElementId) {
+                handleElement(graph, searchIndex, updateBulkItem, authorizations);
+            } else {
+                throw new VertexiumException("unhandled VertexiumObjectId: " + vertexiumObjectId.getClass().getName());
             }
-
-            handleElement(graph, elasticsearch7SearchIndex, updateBulkItem, authorizations);
         } else {
             throw new VertexiumException("unhandled bulk item type: " + bulkItem.getClass().getName());
         }
@@ -33,47 +35,47 @@ public class LoadAndAddDocumentMissingHelper implements Elasticsearch7ExceptionH
 
     protected static void handleElement(
         Graph graph,
-        Elasticsearch7SearchIndex elasticsearch7SearchIndex,
-        UpdateBulkItem bulkItem,
+        Elasticsearch7SearchIndex searchIndex,
+        BulkUpdateItem bulkItem,
         Authorizations authorizations
     ) {
+        ElementId elementId = (ElementId) bulkItem.getVertexiumObjectId();
         Element element;
-        switch (bulkItem.getElementId().getElementType()) {
+        switch (elementId.getElementType()) {
             case VERTEX:
-                element = graph.getVertex(bulkItem.getElementId().getId(), authorizations);
+                element = graph.getVertex(elementId.getId(), authorizations);
                 break;
             case EDGE:
-                element = graph.getEdge(bulkItem.getElementId().getId(), authorizations);
+                element = graph.getEdge(elementId.getId(), authorizations);
                 break;
             default:
-                throw new VertexiumException("Invalid element type: " + bulkItem.getElementId().getElementType());
+                throw new VertexiumException("Invalid element type: " + elementId.getElementType());
         }
-        elasticsearch7SearchIndex.addElement(
+        searchIndex.addElement(
             graph,
             element,
             element.getAdditionalVisibilities(),
-            null,
-            false,
-            authorizations
+            null
         );
     }
 
     protected static void handleExtendedDataRow(
         Graph graph,
-        Elasticsearch7SearchIndex elasticsearch7SearchIndex,
-        UpdateBulkItem bulkItem,
+        Elasticsearch7SearchIndex searchIndex,
+        BulkUpdateItem bulkItem,
         Authorizations authorizations
     ) {
+        ExtendedDataRowId extendedDataRowId = (ExtendedDataRowId) bulkItem.getVertexiumObjectId();
         ExtendedDataRowId id = new ExtendedDataRowId(
-            bulkItem.getElementId().getElementType(),
-            bulkItem.getElementId().getId(),
-            bulkItem.getExtendedDataTableName(),
-            bulkItem.getExtendedDataRowId()
+            extendedDataRowId.getElementType(),
+            extendedDataRowId.getElementId(),
+            extendedDataRowId.getTableName(),
+            extendedDataRowId.getRowId()
         );
         ExtendedDataRow row = graph.getExtendedData(id, authorizations);
-        elasticsearch7SearchIndex.addExtendedData(
+        searchIndex.addExtendedData(
             graph,
-            bulkItem.getElementLocation(),
+            bulkItem.getSourceElementLocation(),
             Collections.singletonList(row),
             authorizations
         );

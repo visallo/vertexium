@@ -11,7 +11,7 @@ public interface Elasticsearch5ExceptionHandler {
     default void handleBulkFailure(
         Graph graph,
         Elasticsearch5SearchIndex elasticsearch5SearchIndex,
-        BulkItem bulkItem,
+        BulkItem<?> bulkItem,
         BulkItemResponse bulkItemResponse,
         AtomicBoolean retry
     ) throws Exception {

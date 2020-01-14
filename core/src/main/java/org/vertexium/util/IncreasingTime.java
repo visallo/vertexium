@@ -23,7 +23,7 @@ public class IncreasingTime {
         advanceTime(1);
         while (last > System.currentTimeMillis()) {
             try {
-                Thread.sleep(last - System.currentTimeMillis());
+                Thread.sleep(Math.max(0, last - System.currentTimeMillis()));
             } catch (InterruptedException e) {
                 throw new VertexiumException("Interrupted waiting for catch up", e);
             }

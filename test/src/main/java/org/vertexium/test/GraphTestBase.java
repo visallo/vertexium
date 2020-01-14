@@ -2621,6 +2621,88 @@ public abstract class GraphTestBase {
         }
     }
 
+    /**
+     * Tests that the Elasticsearch batching handles multiple properties with the same name in the same batch
+     */
+    @Test
+    public void testAddVertexMultipleTimesInSameBatch() {
+        graph.prepareVertex("v1", VISIBILITY_EMPTY)
+            .addPropertyValue("keyJoe", "name", "Joe", VISIBILITY_EMPTY)
+            .addPropertyValue("keyJanet", "name", "Janet", VISIBILITY_EMPTY)
+            .addPropertyValue("keyBob", "name", "Bob", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
+        graph.prepareVertex("v1", VISIBILITY_EMPTY)
+            .addPropertyValue("keyTom", "name", "Tom", VISIBILITY_EMPTY)
+            .save(AUTHORIZATIONS_A);
+        graph.flush();
+
+        assertIdsAnyOrder(graph.query(AUTHORIZATIONS_EMPTY).vertexIds(), "v1");
+        assertIdsAnyOrder(graph.query(AUTHORIZATIONS_A).vertexIds(), "v1");
+
+        assertIdsAnyOrder(graph.query(AUTHORIZATIONS_EMPTY).has("name", "Joe").vertexIds(), "v1");
+        assertIdsAnyOrder(graph.query(AUTHORIZATIONS_EMPTY).has("name", "Tom").vertexIds(), "v1");
+        assertIdsAnyOrder(graph.query(AUTHORIZATIONS_EMPTY).has("name", "Janet").vertexIds(), "v1");
+        assertIdsAnyOrder(graph.query(AUTHORIZATIONS_EMPTY).has("name", "Bob").vertexIds());
+
+        assertIdsAnyOrder(graph.query(AUTHORIZATIONS_A).has("name", "Joe").vertexIds(), "v1");
+        assertIdsAnyOrder(graph.query(AUTHORIZATIONS_A).has("name", "Tom").vertexIds(), "v1");
+        assertIdsAnyOrder(graph.query(AUTHORIZATIONS_A).has("name", "Janet").vertexIds(), "v1");
+        assertIdsAnyOrder(graph.query(AUTHORIZATIONS_A).has("name", "Bob").vertexIds(), "v1");
+    }
+
+    /**
+     * Tests that the Elasticsearch batching handles multiple property visibility changes with the same name in the same batch
+     */
+    @Test
+    public void testChangePropertyVisibilityMultipleTimesInSameBatch() {
+        graph.prepareVertex("v1", VISIBILITY_EMPTY)
+            .addPropertyValue("k1", "name", "Joe", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        Vertex v1a = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B);
+        Vertex v1b = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B);
+
+        v1a.prepareMutation()
+            .alterPropertyVisibility("k1", "name", VISIBILITY_B)
+            .save(AUTHORIZATIONS_A_AND_B);
+        v1b.prepareMutation()
+            .alterPropertyVisibility("k1", "name", VISIBILITY_B)
+            .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        assertIdsAnyOrder(graph.query(AUTHORIZATIONS_A).has("name", "Joe").vertexIds());
+        assertIdsAnyOrder(graph.query(AUTHORIZATIONS_B).has("name", "Joe").vertexIds(), "v1");
+    }
+
+    /**
+     * Tests that the Elasticsearch batching handles multiple property visibility changes with the same name in the same batch
+     */
+    @Test
+    public void testChangePropertyVisibilityMultipleTimesInSameBatchDifferentVisibilities() {
+        graph.prepareVertex("v1", VISIBILITY_EMPTY)
+            .addPropertyValue("k1", "name", "Joe", VISIBILITY_EMPTY)
+            .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        Vertex v1a = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B);
+        Vertex v1b = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B);
+
+        try {
+            v1a.prepareMutation()
+                .alterPropertyVisibility("k1", "name", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A_AND_B);
+            v1b.prepareMutation()
+                .alterPropertyVisibility("k1", "name", VISIBILITY_B)
+                .save(AUTHORIZATIONS_A_AND_B);
+            graph.flush();
+            // If this isn't caught it's also ok, it could be supported by the search index/graph or it could be
+            // in different batches
+        } catch (Exception ex) {
+            // OK
+        }
+    }
+
     @Test
     public void testGraphQueryForEdgesUsingInOutVertexIds() {
         Vertex v1 = graph.prepareVertex("v1", VISIBILITY_A).save(AUTHORIZATIONS_A);
@@ -6210,7 +6292,7 @@ public abstract class GraphTestBase {
         List<HistoricalPropertyValue> historicalPropertyValues = toList(v1.getHistoricalPropertyValues(AUTHORIZATIONS_A_AND_B));
         assertEquals(3, historicalPropertyValues.size());
         assertEquals("metadata1New", historicalPropertyValues.get(0).getMetadata().getValue("prop1_key1"));
-        assumeTrue(historicalPropertyValues.get(1).isDeleted());
+        assertTrue(historicalPropertyValues.get(1).isDeleted());
         assertEquals("metadata1", historicalPropertyValues.get(2).getMetadata().getValue("prop1_key1"));
     }
 
@@ -8292,6 +8374,7 @@ public abstract class GraphTestBase {
         graph.prepareVertex("v1", VISIBILITY_A)
             .setProperty("text", "Joe", VISIBILITY_A)
             .save(AUTHORIZATIONS_A);
+        graph.flush(); // Not sure why this needs to be here
         graph.prepareVertex("v2", VISIBILITY_A)
             .setProperty("text", "joe", VISIBILITY_A)
             .save(AUTHORIZATIONS_A);
@@ -10101,7 +10184,7 @@ public abstract class GraphTestBase {
         LOGGER.info("find connected vertices in %.3fs", (endTime - startTime) / 1000);
     }
 
-    private boolean benchmarkEnabled() {
+    protected boolean benchmarkEnabled() {
         return Boolean.parseBoolean(System.getProperty("benchmark", "false"));
     }
 
