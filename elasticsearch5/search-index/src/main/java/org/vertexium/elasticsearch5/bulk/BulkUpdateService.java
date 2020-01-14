@@ -1,16 +1,12 @@
 package org.vertexium.elasticsearch5.bulk;
 
 import com.google.common.collect.Lists;
-import org.elasticsearch.action.ActionRequest;
 import org.elasticsearch.action.bulk.BulkItemResponse;
-import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.bulk.BulkResponse;
-import org.elasticsearch.action.delete.DeleteRequest;
-import org.elasticsearch.action.index.IndexRequest;
-import org.elasticsearch.action.update.UpdateRequest;
 import org.vertexium.ElementId;
 import org.vertexium.ElementLocation;
+import org.vertexium.ExtendedDataRowId;
 import org.vertexium.VertexiumException;
 import org.vertexium.elasticsearch5.Elasticsearch5SearchIndex;
 import org.vertexium.elasticsearch5.IndexRefreshTracker;
@@ -22,8 +18,9 @@ import org.vertexium.util.VertexiumLogger;
 import org.vertexium.util.VertexiumLoggerFactory;
 
 import java.time.Duration;
-import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -31,18 +28,25 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
+/**
+ * All updates to Elasticsearch are sent using bulk requests to speed up indexing.
+ * <p>
+ * Duplicate element updates are collapsed into single updates to reduce the number of refreshes Elasticsearch
+ * has to perform. See
+ * - https://github.com/elastic/elasticsearch/issues/23792#issuecomment-296149685
+ * - https://github.com/debadair/elasticsearch/commit/54cdf40bc5fdecce180ba2e242abca59c7bd1f11
+ */
 public class BulkUpdateService {
     private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(BulkUpdateService.class);
     private static final String LOGGER_STACK_TRACE_NAME = BulkUpdateService.class.getName() + ".STACK_TRACE";
     static final VertexiumLogger LOGGER_STACK_TRACE = VertexiumLoggerFactory.getLogger(LOGGER_STACK_TRACE_NAME);
     private final Elasticsearch5SearchIndex searchIndex;
     private final IndexRefreshTracker indexRefreshTracker;
-    private final LimitedLinkedBlockingQueue<BulkItem> incomingItems = new LimitedLinkedBlockingQueue<>();
+    private final LimitedLinkedBlockingQueue<Item> incomingItems = new LimitedLinkedBlockingQueue<>();
     private final OutstandingItemsList outstandingItems = new OutstandingItemsList();
     private final Thread processItemsThread;
     private final Timer flushTimer;
     private final Histogram batchSizeHistogram;
-    private final Timer flushUntilElementIdIsCompleteTimer;
     private final Timer processBatchTimer;
     private final Duration bulkRequestTimeout;
     private final ThreadPoolExecutor ioExecutor;
@@ -82,54 +86,101 @@ public class BulkUpdateService {
         this.batch = new BulkItemBatch(
             configuration.getMaxBatchSize(),
             configuration.getMaxBatchSizeInBytes(),
-            configuration.getBatchWindowTime()
+            configuration.getBatchWindowTime(),
+            configuration.getLogRequestSizeLimit()
         );
 
         VertexiumMetricRegistry metricRegistry = searchIndex.getMetricsRegistry();
         this.flushTimer = metricRegistry.getTimer(BulkUpdateService.class, "flush", "timer");
         this.processBatchTimer = metricRegistry.getTimer(BulkUpdateService.class, "processBatch", "timer");
         this.batchSizeHistogram = metricRegistry.getHistogram(BulkUpdateService.class, "batch", "histogram");
-        this.flushUntilElementIdIsCompleteTimer = metricRegistry.getTimer(BulkUpdateService.class, "flushUntilElementIdIsComplete", "timer");
         metricRegistry.getGauge(metricRegistry.createName(BulkUpdateService.class, "outstandingItems", "size"), outstandingItems::size);
     }
 
-    private void processIncomingItemsIntoBatches() {
-        while (true) {
-            try {
-                if (shutdown) {
-                    return;
-                }
+    public CompletableFuture<Void> addDelete(
+        String indexName,
+        String type,
+        String docId,
+        ElementId elementId
+    ) {
+        return add(new DeleteItem(indexName, type, docId, elementId));
+    }
 
-                BulkItem item = incomingItems.poll(100, TimeUnit.MILLISECONDS);
-                if (batch.shouldFlushByTime()) {
-                    flushBatch();
-                }
-                if (item == null) {
-                    continue;
-                }
-                if (filterByRetryTime(item)) {
-                    while (!batch.add(item)) {
-                        flushBatch();
-                    }
-                    item.getAddedToBatchFuture().complete(null);
-                }
-            } catch (InterruptedException ex) {
-                // we are shutting down so return
-                return;
-            } catch (Exception ex) {
-                LOGGER.error("process items failed", ex);
-            }
+    public CompletableFuture<Void> addElementUpdate(
+        String indexName,
+        String type,
+        String docId,
+        ElementLocation elementLocation,
+        Map<String, String> source,
+        Map<String, Object> fieldsToSet,
+        Collection<String> fieldsToRemove,
+        Map<String, String> fieldsToRename,
+        Collection<String> additionalVisibilities,
+        Collection<String> additionalVisibilitiesToDelete,
+        boolean existingElement
+    ) {
+        return add(new UpdateItem(
+            indexName,
+            type,
+            docId,
+            elementLocation,
+            elementLocation,
+            source,
+            fieldsToSet,
+            fieldsToRemove,
+            fieldsToRename,
+            additionalVisibilities,
+            additionalVisibilitiesToDelete,
+            existingElement
+        ));
+    }
+
+    private CompletableFuture<Void> add(Item bulkItem) {
+        outstandingItems.add(bulkItem);
+        incomingItems.add(bulkItem);
+        return bulkItem.getCompletedFuture();
+    }
+
+    public CompletableFuture<Void> addExtendedDataUpdate(
+        String indexName,
+        String type,
+        String docId,
+        ExtendedDataRowId extendedDataRowId,
+        ElementLocation sourceElementLocation,
+        Map<String, String> source,
+        Map<String, Object> fieldsToSet,
+        Collection<String> fieldsToRemove,
+        Map<String, String> fieldsToRename,
+        Collection<String> additionalVisibilities,
+        Collection<String> additionalVisibilitiesToDelete,
+        boolean existingElement
+    ) {
+        return add(new UpdateItem(
+            indexName,
+            type,
+            docId,
+            extendedDataRowId,
+            sourceElementLocation,
+            source,
+            fieldsToSet,
+            fieldsToRemove,
+            fieldsToRename,
+            additionalVisibilities,
+            additionalVisibilitiesToDelete,
+            existingElement
+        ));
+    }
+
+    private void complete(BulkItem<?> bulkItem, Exception exception) {
+        outstandingItems.removeAll(bulkItem.getItems());
+        if (exception == null) {
+            bulkItem.complete();
+        } else {
+            bulkItem.completeExceptionally(exception);
         }
     }
 
-    private void flushBatch() {
-        List<BulkItem> batchItems = batch.getItemsAndClear();
-        if (batchItems.size() > 0) {
-            ioExecutor.execute(() -> processBatch(batchItems));
-        }
-    }
-
-    private boolean filterByRetryTime(BulkItem bulkItem) {
+    private boolean filterByRetryTime(Item bulkItem) {
         if (bulkItem.getFailCount() == 0) {
             return true;
         }
@@ -143,50 +194,41 @@ public class BulkUpdateService {
         return true;
     }
 
-    private void processBatch(List<BulkItem> bulkItems) {
-        processBatchTimer.time(() -> {
+    public void flush() {
+        flushTimer.time(() -> {
             try {
-                batchSizeHistogram.update(bulkItems.size());
+                List<Item> items = outstandingItems.getCopyOfItems();
 
-                BulkRequest bulkRequest = bulkItemsToBulkRequest(bulkItems);
-                BulkResponse bulkResponse = searchIndex.getClient()
-                    .bulk(bulkRequest)
-                    .get(bulkRequestTimeout.toMillis(), TimeUnit.MILLISECONDS);
+                // wait for the items to be added to batches
+                CompletableFuture.allOf(
+                    items.stream()
+                        .map(Item::getAddedToBatchFuture)
+                        .toArray(CompletableFuture[]::new)
+                ).get();
 
-                Set<String> indexNames = bulkItems.stream()
-                    .peek(BulkItem::updateLastTriedTime)
-                    .map(BulkItem::getIndexName)
-                    .collect(Collectors.toSet());
-                indexRefreshTracker.pushChanges(indexNames);
+                // flush the current batch
+                flushBatch();
 
-                int itemIndex = 0;
-                for (BulkItemResponse bulkItemResponse : bulkResponse.getItems()) {
-                    BulkItem bulkItem = bulkItems.get(itemIndex++);
-                    if (bulkItemResponse.isFailed()) {
-                        handleFailure(bulkItem, bulkItemResponse);
-                    } else {
-                        handleSuccess(bulkItem);
-                    }
-                }
+                // wait for the items to complete
+                CompletableFuture.allOf(
+                    items.stream()
+                        .map(Item::getCompletedFuture)
+                        .toArray(CompletableFuture[]::new)
+                ).get();
             } catch (Exception ex) {
-                LOGGER.error("bulk request failed", ex);
-                // if bulk failed try each item individually
-                if (bulkItems.size() > 1) {
-                    for (BulkItem bulkItem : bulkItems) {
-                        processBatch(Lists.newArrayList(bulkItem));
-                    }
-                } else {
-                    complete(bulkItems.get(0), ex);
-                }
+                throw new VertexiumException("failed to flush", ex);
             }
         });
     }
 
-    private void handleSuccess(BulkItem bulkItem) {
-        complete(bulkItem, null);
+    private void flushBatch() {
+        List<BulkItem<?>> batchItems = batch.getItemsAndClear();
+        if (batchItems.size() > 0) {
+            ioExecutor.execute(() -> processBatch(batchItems));
+        }
     }
 
-    private void handleFailure(BulkItem bulkItem, BulkItemResponse bulkItemResponse) {
+    private void handleFailure(BulkItem<?> bulkItem, BulkItemResponse bulkItemResponse) {
         BulkItemResponse.Failure failure = bulkItemResponse.getFailure();
         bulkItem.incrementFailCount();
         if (bulkItem.getFailCount() >= maxFailCount) {
@@ -200,91 +242,99 @@ public class BulkUpdateService {
                 return;
             }
             if (retry.get()) {
-                incomingItems.add(bulkItem);
+                incomingItems.addAll(bulkItem.getItems());
             } else {
                 complete(bulkItem, null);
             }
         }
     }
 
-    private void complete(BulkItem bulkItem, Exception exception) {
-        outstandingItems.remove(bulkItem);
-        if (exception == null) {
-            bulkItem.getCompletedFuture().complete(null);
-        } else {
-            bulkItem.getCompletedFuture().completeExceptionally(exception);
-        }
+    private void handleSuccess(BulkItem<?> bulkItem) {
+        complete(bulkItem, null);
     }
 
-    private BulkRequest bulkItemsToBulkRequest(List<BulkItem> bulkItems) {
-        BulkRequestBuilder builder = searchIndex.getClient().prepareBulk();
-        for (BulkItem bulkItem : bulkItems) {
-            ActionRequest actionRequest = bulkItem.getActionRequest();
-            if (actionRequest instanceof IndexRequest) {
-                builder.add((IndexRequest) actionRequest);
-            } else if (actionRequest instanceof UpdateRequest) {
-                builder.add((UpdateRequest) actionRequest);
-            } else if (actionRequest instanceof DeleteRequest) {
-                builder.add((DeleteRequest) actionRequest);
-            } else {
-                throw new VertexiumException("unhandled request type: " + actionRequest.getClass().getName());
-            }
-        }
-        return builder.request();
-    }
-
-    public void flush() {
-        flushTimer.time(() -> {
+    private void processBatch(List<BulkItem<?>> bulkItems) {
+        processBatchTimer.time(() -> {
             try {
-                List<BulkItem> items = outstandingItems.getItems();
+                batchSizeHistogram.update(bulkItems.size());
 
-                // wait for the items to be added to batches
-                CompletableFuture.allOf(
-                    items.stream()
-                        .map(BulkItem::getAddedToBatchFuture)
-                        .toArray(CompletableFuture[]::new)
-                ).get();
+                BulkRequestBuilder bulkRequestBuilder = searchIndex.getClient().prepareBulk();
+                for (BulkItem<?> bulkItem : bulkItems) {
+                    bulkItem.addToBulkRequest(searchIndex.getClient(), bulkRequestBuilder);
+                }
 
-                // flush the current batch
-                flushBatch();
+                outstandingItems.waitForItemToNotBeInflightAndMarkThemAsInflight(bulkItems);
+                BulkResponse bulkResponse;
+                try {
+                    bulkResponse = searchIndex.getClient()
+                        .bulk(bulkRequestBuilder.request())
+                        .get(bulkRequestTimeout.toMillis(), TimeUnit.MILLISECONDS);
+                } finally {
+                    outstandingItems.markItemsAsNotInflight(bulkItems);
+                }
 
-                // wait for the items to complete
-                CompletableFuture.allOf(
-                    items.stream()
-                        .map(BulkItem::getCompletedFuture)
-                        .toArray(CompletableFuture[]::new)
-                ).get();
+                Set<String> indexNames = bulkItems.stream()
+                    .peek(BulkItem::updateLastTriedTime)
+                    .map(BulkItem::getIndexName)
+                    .collect(Collectors.toSet());
+                indexRefreshTracker.pushChanges(indexNames);
+
+                int itemIndex = 0;
+                for (BulkItemResponse bulkItemResponse : bulkResponse.getItems()) {
+                    BulkItem<?> bulkItem = bulkItems.get(itemIndex++);
+                    if (bulkItemResponse.isFailed()) {
+                        handleFailure(bulkItem, bulkItemResponse);
+                    } else {
+                        handleSuccess(bulkItem);
+                    }
+                }
             } catch (Exception ex) {
-                throw new VertexiumException("failed to flush", ex);
+                LOGGER.error("bulk request failed", ex);
+                // if bulk failed try each item individually
+                if (bulkItems.size() > 1) {
+                    for (BulkItem<?> bulkItem : bulkItems) {
+                        processBatch(Lists.newArrayList(bulkItem));
+                    }
+                } else {
+                    complete(bulkItems.get(0), ex);
+                }
             }
         });
     }
 
-    public CompletableFuture<Void> addUpdate(ElementLocation elementLocation, UpdateRequest updateRequest) {
-        return add(new UpdateBulkItem(elementLocation, updateRequest));
-    }
+    private void processIncomingItemsIntoBatches() {
+        while (true) {
+            try {
+                if (shutdown) {
+                    return;
+                }
 
-    public CompletableFuture<Void> addUpdate(
-        ElementLocation elementLocation,
-        String extendedDataTableName,
-        String rowId,
-        UpdateRequest updateRequest
-    ) {
-        return add(new UpdateBulkItem(elementLocation, extendedDataTableName, rowId, updateRequest));
-    }
-
-    public CompletableFuture<Void> addDelete(
-        ElementId elementId,
-        String docId,
-        DeleteRequest deleteRequest
-    ) {
-        return add(new DeleteBulkItem(elementId, docId, deleteRequest));
-    }
-
-    private CompletableFuture<Void> add(BulkItem bulkItem) {
-        outstandingItems.add(bulkItem);
-        incomingItems.add(bulkItem);
-        return bulkItem.getCompletedFuture();
+                Item item = incomingItems.poll(100, TimeUnit.MILLISECONDS);
+                if (batch.shouldFlushByTime()) {
+                    flushBatch();
+                }
+                if (item == null) {
+                    continue;
+                }
+                try {
+                    if (filterByRetryTime(item)) {
+                        while (!batch.add(item)) {
+                            flushBatch();
+                        }
+                        item.getAddedToBatchFuture().complete(null);
+                    }
+                } catch (Exception ex) {
+                    LOGGER.error("process item (%s) failed", item, ex);
+                    outstandingItems.remove(item);
+                    item.completeExceptionally(new VertexiumException("Failed to process item", ex));
+                }
+            } catch (InterruptedException ex) {
+                // we are shutting down so return
+                return;
+            } catch (Exception ex) {
+                LOGGER.error("process items failed", ex);
+            }
+        }
     }
 
     public void shutdown() {
@@ -296,68 +346,5 @@ public class BulkUpdateService {
         }
 
         ioExecutor.shutdown();
-    }
-
-    public void flushUntilElementIdIsComplete(String elementId) {
-        long startTime = System.currentTimeMillis();
-        BulkItemCompletableFuture lastFuture = null;
-        while (true) {
-            BulkItem item = outstandingItems.getItemForElementId(elementId);
-            if (item == null) {
-                break;
-            }
-            lastFuture = item.getCompletedFuture();
-            try {
-                if (!item.getCompletedFuture().isDone()) {
-                    item.getAddedToBatchFuture().get();
-                    flushBatch();
-                }
-                item.getCompletedFuture().get();
-            } catch (Exception ex) {
-                throw new VertexiumException("Failed to flushUntilElementIdIsComplete: " + elementId, ex);
-            }
-        }
-        long endTime = System.currentTimeMillis();
-        long delta = endTime - startTime;
-        flushUntilElementIdIsCompleteTimer.update(delta, TimeUnit.MILLISECONDS);
-        if (delta > 1_000) {
-            String message = String.format(
-                "flush of %s got stuck for %dms%s",
-                elementId,
-                delta,
-                LOGGER_STACK_TRACE.isTraceEnabled()
-                    ? ""
-                    : String.format(" (for more information enable trace level on \"%s\")", LOGGER_STACK_TRACE_NAME)
-            );
-            if (delta > 60_000) {
-                LOGGER.error("%s", message);
-            } else if (delta > 10_000) {
-                LOGGER.warn("%s", message);
-            } else {
-                LOGGER.info("%s", message);
-            }
-            if (LOGGER_STACK_TRACE.isTraceEnabled()) {
-                logStackTrace("Current stack trace", Thread.currentThread().getStackTrace());
-                if (lastFuture != null) {
-                    StackTraceElement[] stackTrace = lastFuture.getBulkItem().getStackTrace();
-                    if (stackTrace != null) {
-                        logStackTrace("Other stack trace causing the delay", stackTrace);
-                    }
-                }
-            }
-        }
-    }
-
-    private void logStackTrace(String message, StackTraceElement[] stackTrace) {
-        if (!LOGGER_STACK_TRACE.isTraceEnabled()) {
-            return;
-        }
-        LOGGER_STACK_TRACE.trace(
-            "%s",
-            message + "\n" +
-                Arrays.stream(stackTrace)
-                    .map(e -> "   " + e.toString())
-                    .collect(Collectors.joining("\n"))
-        );
     }
 }

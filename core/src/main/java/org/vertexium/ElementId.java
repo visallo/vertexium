@@ -1,6 +1,6 @@
 package org.vertexium;
 
-public interface ElementId {
+public interface ElementId extends VertexiumObjectId {
     static ElementId vertex(String id) {
         return new DefaultElementId(ElementType.VERTEX, id);
     }
