@@ -174,6 +174,11 @@ public class DefaultSearchIndex implements SearchIndex {
     }
 
     @Override
+    public boolean isDeleteElementSupported() {
+        return false;
+    }
+
+    @Override
     public void addElementExtendedData(
         Graph graph,
         ElementLocation elementLocation,

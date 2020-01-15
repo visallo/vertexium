@@ -659,6 +659,15 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
                 fieldsToSet.put(EDGE_LABEL_FIELD_NAME, edge.getLabel());
             }
 
+            for (Property property : element.getProperties()) {
+                for (Visibility hiddenVisibility : property.getHiddenVisibilities()) {
+                    String hiddenVisibilityPropertyName = addVisibilityToPropertyName(graph, HIDDEN_PROPERTY_FIELD_NAME, hiddenVisibility);
+                    if (!isPropertyInIndex(graph, HIDDEN_PROPERTY_FIELD_NAME, hiddenVisibility)) {
+                        addPropertyToIndex(graph, indexInfo, hiddenVisibilityPropertyName, hiddenVisibility, Boolean.class, false, false, false);
+                    }
+                    fieldsToSet.put(hiddenVisibilityPropertyName, true);
+                }
+            }
             for (Visibility hiddenVisibility : element.getHiddenVisibilities()) {
                 String hiddenVisibilityPropertyName = addVisibilityToPropertyName(graph, HIDDEN_VERTEX_FIELD_NAME, hiddenVisibility);
                 if (!isPropertyInIndex(graph, HIDDEN_VERTEX_FIELD_NAME, hiddenVisibility)) {
@@ -1621,6 +1630,11 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
 
     @Override
     public boolean isFieldLevelSecuritySupported() {
+        return true;
+    }
+
+    @Override
+    public boolean isDeleteElementSupported() {
         return true;
     }
 

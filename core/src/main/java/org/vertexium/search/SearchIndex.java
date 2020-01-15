@@ -104,6 +104,8 @@ public interface SearchIndex {
 
     boolean isFieldLevelSecuritySupported();
 
+    boolean isDeleteElementSupported();
+
     <T extends Element> void alterElementVisibility(
         Graph graph,
         ExistingElementMutation<T> elementMutation,
