@@ -2,7 +2,6 @@ package org.vertexium.accumulo.util;
 
 import org.apache.accumulo.core.client.ScannerBase;
 import org.apache.accumulo.core.data.Key;
-import org.apache.accumulo.core.data.Mutation;
 import org.apache.accumulo.core.data.Value;
 import org.apache.accumulo.core.trace.Span;
 import org.apache.accumulo.core.trace.Trace;
@@ -154,7 +153,7 @@ public class OverflowIntoHdfsStreamingPropertyValueStorageStrategy implements St
         StreamingPropertyValue propertyValue
     ) {
         String dataTableRowKey = new DataTableRowKey(rowKey, property).getRowKey();
-        Mutation dataMutation = new Mutation(dataTableRowKey);
+        CompletableMutation dataMutation = new CompletableMutation(dataTableRowKey);
         dataMutation.put(EMPTY_TEXT, EMPTY_TEXT, property.getTimestamp(), new Value(data));
         elementMutationBuilder.saveDataMutation(dataMutation);
         return new StreamingPropertyValueTableRef(dataTableRowKey, propertyValue, data);

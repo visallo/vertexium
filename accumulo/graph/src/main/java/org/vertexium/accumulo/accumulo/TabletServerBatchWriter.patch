@@ -1,0 +1,116 @@
+--- AccumuloTabletServerBatchWriter.java	2020-01-14 22:21:24.520021961 -0500
++++ VertexiumTabletServerBatchWriter.java	2020-01-14 23:04:29.796712778 -0500
+@@ -14,7 +14,7 @@
+  * See the License for the specific language governing permissions and
+  * limitations under the License.
+  */
+-package org.apache.accumulo.core.client.impl;
++package org.vertexium.accumulo.accumulo;
+ 
+ import java.io.IOException;
+ import java.lang.management.CompilationMXBean;
+@@ -48,7 +48,15 @@
+ import org.apache.accumulo.core.client.TableNotFoundException;
+ import org.apache.accumulo.core.client.TableOfflineException;
+ import org.apache.accumulo.core.client.TimedOutException;
++import org.apache.accumulo.core.client.impl.AccumuloServerException;
++import org.apache.accumulo.core.client.impl.ClientContext;
++import org.apache.accumulo.core.client.impl.DurabilityImpl;
++import org.apache.accumulo.core.client.impl.Tables;
++import org.apache.accumulo.core.client.impl.TabletLocator;
+ import org.apache.accumulo.core.client.impl.TabletLocator.TabletServerMutations;
++import org.apache.accumulo.core.client.impl.TimeoutTabletLocator;
++import org.apache.accumulo.core.client.impl.Translator;
++import org.apache.accumulo.core.client.impl.Translators;
+ import org.apache.accumulo.core.client.impl.thrift.SecurityErrorCode;
+ import org.apache.accumulo.core.client.impl.thrift.ThriftSecurityException;
+ import org.apache.accumulo.core.constraints.Violations;
+@@ -79,6 +87,7 @@
+ import org.slf4j.LoggerFactory;
+ 
+ import com.google.common.base.Joiner;
++import org.vertexium.accumulo.CompletableMutation;
+ 
+ /*
+  * Differences from previous TabletServerBatchWriter
+@@ -102,9 +111,9 @@
+  *
+  */
+ 
+-public class TabletServerBatchWriter {
++public class VertexiumTabletServerBatchWriter {
+ 
+-  private static final Logger log = LoggerFactory.getLogger(TabletServerBatchWriter.class);
++  private static final Logger log = LoggerFactory.getLogger(VertexiumTabletServerBatchWriter.class);
+ 
+   // basic configuration
+   private final ClientContext context;
+@@ -124,7 +133,7 @@
+   // latency timers
+   private final Timer jtimer = new Timer("BatchWriterLatencyTimer", true);
+   private final Map<String,TimeoutTracker> timeoutTrackers = Collections
+-      .synchronizedMap(new HashMap<String,TabletServerBatchWriter.TimeoutTracker>());
++      .synchronizedMap(new HashMap<String,VertexiumTabletServerBatchWriter.TimeoutTracker>());
+ 
+   // stats
+   private long totalMemUsed = 0;
+@@ -195,7 +204,7 @@
+     }
+   }
+ 
+-  public TabletServerBatchWriter(ClientContext context, BatchWriterConfig config) {
++  public VertexiumTabletServerBatchWriter(ClientContext context, BatchWriterConfig config) {
+     this.context = context;
+     this.maxMem = config.getMaxMemory();
+     this.maxLatency = config.getMaxLatency(TimeUnit.MILLISECONDS) <= 0 ? Long.MAX_VALUE
+@@ -212,9 +221,9 @@
+         @Override
+         public void run() {
+           try {
+-            synchronized (TabletServerBatchWriter.this) {
++            synchronized (VertexiumTabletServerBatchWriter.this) {
+               if ((System.currentTimeMillis()
+-                  - lastProcessingStartTime) > TabletServerBatchWriter.this.maxLatency)
++                  - lastProcessingStartTime) > VertexiumTabletServerBatchWriter.this.maxLatency)
+                 startProcessing();
+             }
+           } catch (Throwable t) {
+@@ -285,7 +294,7 @@
+     // is important for the case where a mutation is passed from map to reduce
+     // to batch writer... the map reduce code will keep passing the same mutation
+     // object into the reduce method
+-    m = new Mutation(m);
++    m = new CompletableMutation(m);
+ 
+     totalMemUsed += m.estimatedMemoryUsed();
+     mutations.addMutation(table, m);
+@@ -915,6 +924,13 @@
+             updateSendStats(count, st2 - st1);
+             decrementMemUsed(successBytes);
+ 
++            for (Map.Entry<KeyExtent, List<Mutation>> mutationBatchEntry : mutationBatch.entrySet()) {
++              for (Mutation mutation : mutationBatchEntry.getValue()) {
++                if (!failures.hasMutation(mutation)) {
++                  ((CompletableMutation) mutation).getFuture().complete(null);
++                }
++              }
++            }
+           } finally {
+             span.stop();
+           }
+@@ -1104,5 +1120,15 @@
+       return memoryUsed;
+     }
+ 
++    public boolean hasMutation(Mutation mutation) {
++      for (Map.Entry<String, List<Mutation>> entry : mutations.entrySet()) {
++        for (Mutation m : entry.getValue()) {
++          if (m.equals(mutation)) {
++            return true;
++          }
++        }
++      }
++      return false;
++    }
+   }
+ }

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
         <artifactId>vertexium-accumulo-root</artifactId>
         <groupId>org.vertexium</groupId>
@@ -32,6 +33,13 @@
             <groupId>org.apache.accumulo</groupId>
             <artifactId>accumulo-core</artifactId>
             <version>${accumulo.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.accumulo</groupId>
+            <artifactId>accumulo-core</artifactId>
+            <classifier>sources</classifier>
+            <version>${accumulo.version}</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.accumulo</groupId>
@@ -71,6 +79,51 @@
 
     <build>
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>1.8</version>
+                <executions>
+                    <execution>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <target>
+                                <unzip src="${org.apache.accumulo:accumulo-core:jar:sources}"
+                                       dest="${project.build.directory}/accumulo-source"/>
+                                <mkdir dir="${project.build.directory}/generated-sources/org/vertexium/accumulo/accumulo/"/>
+                                <patch patchfile="${project.basedir}/src/main/java/org/vertexium/accumulo/accumulo/TabletServerBatchWriter.patch"
+                                       originalfile="${project.build.directory}/accumulo-source/org/apache/accumulo/core/client/impl/TabletServerBatchWriter.java"
+                                       destfile="${project.build.directory}/generated-sources/org/vertexium/accumulo/accumulo/VertexiumTabletServerBatchWriter.java"/>
+                                <patch patchfile="${project.basedir}/src/main/java/org/vertexium/accumulo/accumulo/MultiTableBatchWriter.patch"
+                                       originalfile="${project.build.directory}/accumulo-source/org/apache/accumulo/core/client/impl/MultiTableBatchWriterImpl.java"
+                                       destfile="${project.build.directory}/generated-sources/org/vertexium/accumulo/accumulo/VertexiumMultiTableBatchWriter.java"/>
+                            </target>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>add-source</goal>
+                        </goals>
+                        <configuration>
+                            <sources>
+                                <source>${project.build.directory}/generated-sources</source>
+                            </sources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
             <plugin>
                 <artifactId>maven-jar-plugin</artifactId>
                 <executions>

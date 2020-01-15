@@ -14,6 +14,16 @@ public interface ElementMutation<T extends Element> extends ElementLocation {
     T save(Authorizations authorizations);
 
     /**
+     * saves the properties to the graph. The future will be complete when the element is completely saved to the data
+     * stores.
+     *
+     * @return the results of the save.
+     */
+    default SaveResult<T> saveAsync(Authorizations authorizations) {
+        return SaveResult.completed(save(authorizations));
+    }
+
+    /**
      * Sets or updates a property value. The property key will be set to a constant. This is a convenience method
      * which allows treating the multi-valued nature of properties as only containing a single value. Care must be
      * taken when using this method because properties are not only uniquely identified by just key and name but also

@@ -1,7 +1,6 @@
 package org.vertexium.accumulo;
 
 import org.apache.accumulo.core.data.Key;
-import org.apache.accumulo.core.data.Mutation;
 import org.apache.accumulo.core.data.Value;
 import org.apache.accumulo.core.iterators.user.RowDeletingIterator;
 import org.apache.accumulo.core.security.ColumnVisibility;
@@ -16,15 +15,13 @@ import org.vertexium.id.NameSubstitutionStrategy;
 import org.vertexium.mutation.*;
 import org.vertexium.property.StreamingPropertyValue;
 import org.vertexium.property.StreamingPropertyValueRef;
-import org.vertexium.util.ArrayUtils;
-import org.vertexium.util.ExtendedDataMutationUtils;
-import org.vertexium.util.IncreasingTime;
-import org.vertexium.util.Preconditions;
+import org.vertexium.util.*;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 
 import static org.vertexium.util.IncreasingTime.currentTimeMillis;
 
@@ -51,14 +48,16 @@ public abstract class ElementMutationBuilder {
         this.vertexiumSerializer = vertexiumSerializer;
     }
 
-    public void saveVertexBuilder(AccumuloGraph graph, VertexBuilder vertexBuilder, long timestamp) {
-        Mutation m = createMutationForVertexBuilder(graph, vertexBuilder, timestamp);
-        saveVertexMutation(m);
-        saveExtendedDataMutations(graph, ElementType.VERTEX, vertexBuilder);
+    public CompletableFuture<Void> saveVertexBuilder(AccumuloGraph graph, VertexBuilder vertexBuilder, long timestamp) {
+        CompletableMutation m = createMutationForVertexBuilder(graph, vertexBuilder, timestamp);
+        return CompletableFuture.allOf(
+            saveVertexMutation(m),
+            saveExtendedDataMutations(graph, ElementType.VERTEX, vertexBuilder)
+        );
     }
 
-    private <T extends Element> void saveExtendedDataMutations(AccumuloGraph graph, ElementType elementType, ElementBuilder<T> elementBuilder) {
-        saveExtendedData(
+    private <T extends Element> CompletableFuture<Void> saveExtendedDataMutations(AccumuloGraph graph, ElementType elementType, ElementBuilder<T> elementBuilder) {
+        return saveExtendedData(
             graph,
             elementBuilder.getId(),
             elementType,
@@ -69,7 +68,7 @@ public abstract class ElementMutationBuilder {
         );
     }
 
-    void saveExtendedData(
+    CompletableFuture<Void> saveExtendedData(
         AccumuloGraph graph,
         String elementId,
         ElementType elementType,
@@ -78,6 +77,7 @@ public abstract class ElementMutationBuilder {
         Iterable<AdditionalExtendedDataVisibilityAddMutation> additionalExtendedDataVisibilities,
         Iterable<AdditionalExtendedDataVisibilityDeleteMutation> additionalExtendedDataVisibilityDeletes
     ) {
+        List<CompletableFuture<Void>> futures = new ArrayList<>();
         Map<String, Map<String, ExtendedDataMutationUtils.Mutations>> byTableThenRowId = ExtendedDataMutationUtils.getByTableThenRowId(
             extendedData,
             extendedDataDeletes,
@@ -92,7 +92,7 @@ public abstract class ElementMutationBuilder {
                 String row = byRowIdEntry.getKey();
                 ExtendedDataMutationUtils.Mutations mutations = byRowIdEntry.getValue();
 
-                Mutation m = new Mutation(KeyHelper.createExtendedDataRowKey(elementType, elementId, tableName, row));
+                CompletableMutation m = new CompletableMutation(KeyHelper.createExtendedDataRowKey(elementType, elementId, tableName, row));
 
                 for (ExtendedDataMutation edm : mutations.getExtendedData()) {
                     Object value = transformValue(edm.getValue(), null, null);
@@ -138,24 +138,25 @@ public abstract class ElementMutationBuilder {
                     );
                 }
 
-                saveExtendedDataMutation(elementType, m);
+                futures.add(saveExtendedDataMutation(elementType, m));
             }
         }
+        return CompletableFutureUtils.allOf(futures);
     }
 
-    protected abstract void saveExtendedDataMutation(ElementType elementType, Mutation m);
+    protected abstract CompletableFuture<Void> saveExtendedDataMutation(ElementType elementType, CompletableMutation m);
 
-    protected abstract void saveVertexMutation(Mutation m);
+    protected abstract CompletableFuture<Void> saveVertexMutation(CompletableMutation m);
 
-    private Mutation createMutationForVertexBuilder(AccumuloGraph graph, VertexBuilder vertexBuilder, long timestamp) {
+    private CompletableMutation createMutationForVertexBuilder(AccumuloGraph graph, VertexBuilder vertexBuilder, long timestamp) {
         String vertexRowKey = vertexBuilder.getId();
-        Mutation m = new Mutation(vertexRowKey);
+        CompletableMutation m = new CompletableMutation(vertexRowKey);
         m.put(AccumuloVertex.CF_SIGNAL, EMPTY_TEXT, visibilityToAccumuloVisibility(vertexBuilder.getVisibility()), timestamp, EMPTY_VALUE);
         createMutationForElementBuilder(graph, vertexBuilder, vertexRowKey, m);
         return m;
     }
 
-    private <T extends Element> void createMutationForElementBuilder(AccumuloGraph graph, ElementBuilder<T> elementBuilder, String rowKey, Mutation m) {
+    private <T extends Element> void createMutationForElementBuilder(AccumuloGraph graph, ElementBuilder<T> elementBuilder, String rowKey, CompletableMutation m) {
         for (PropertyDeleteMutation propertyDeleteMutation : elementBuilder.getPropertyDeletes()) {
             addPropertyDeleteToMutation(m, propertyDeleteMutation);
         }
@@ -181,7 +182,7 @@ public abstract class ElementMutationBuilder {
         saveExtendedDataMarkers(m, extendedData);
     }
 
-    public void addMarkPropertyVisibleToMutation(Mutation m, MarkPropertyVisibleMutation markPropertyVisible) {
+    public void addMarkPropertyVisibleToMutation(CompletableMutation m, MarkPropertyVisibleMutation markPropertyVisible) {
         Long timestamp = markPropertyVisible.getTimestamp();
         if (timestamp == null) {
             timestamp = IncreasingTime.currentTimeMillis();
@@ -202,7 +203,7 @@ public abstract class ElementMutationBuilder {
         );
     }
 
-    public void addMarkPropertyHiddenToMutation(Mutation m, MarkPropertyHiddenMutation markPropertyHidden) {
+    public void addMarkPropertyHiddenToMutation(CompletableMutation m, MarkPropertyHiddenMutation markPropertyHidden) {
         Long timestamp = markPropertyHidden.getTimestamp();
         if (timestamp == null) {
             timestamp = IncreasingTime.currentTimeMillis();
@@ -232,14 +233,14 @@ public abstract class ElementMutationBuilder {
         if (uniquePairs.size() == 0) {
             return;
         }
-        Mutation m = new Mutation(elementId);
+        CompletableMutation m = new CompletableMutation(elementId);
         for (TableNameVisibilityPair pair : uniquePairs) {
             addExtendedDataMarkerToElementMutation(m, pair);
         }
         saveElementMutation(elementType, m);
     }
 
-    private void saveElementMutation(ElementType elementType, Mutation m) {
+    private void saveElementMutation(ElementType elementType, CompletableMutation m) {
         switch (elementType) {
             case VERTEX:
                 saveVertexMutation(m);
@@ -252,13 +253,13 @@ public abstract class ElementMutationBuilder {
         }
     }
 
-    private void saveExtendedDataMarkers(Mutation m, Iterable<ExtendedDataMutation> extendedData) {
+    private void saveExtendedDataMarkers(CompletableMutation m, Iterable<ExtendedDataMutation> extendedData) {
         for (TableNameVisibilityPair pair : TableNameVisibilityPair.getUniquePairs(extendedData)) {
             addExtendedDataMarkerToElementMutation(m, pair);
         }
     }
 
-    private void addExtendedDataMarkerToElementMutation(Mutation m, TableNameVisibilityPair pair) {
+    private void addExtendedDataMarkerToElementMutation(CompletableMutation m, TableNameVisibilityPair pair) {
         m.put(
             AccumuloElement.CF_EXTENDED_DATA,
             new Text(pair.getTableName()),
@@ -385,7 +386,7 @@ public abstract class ElementMutationBuilder {
 
     public void saveEdgeBuilder(AccumuloGraph graph, EdgeBuilderBase edgeBuilder, long timestamp) {
         ColumnVisibility edgeColumnVisibility = visibilityToAccumuloVisibility(edgeBuilder.getVisibility());
-        Mutation m = createMutationForEdgeBuilder(graph, edgeBuilder, edgeColumnVisibility, timestamp);
+        CompletableMutation m = createMutationForEdgeBuilder(graph, edgeBuilder, edgeColumnVisibility, timestamp);
         saveEdgeMutation(m);
 
         String edgeLabel = edgeBuilder.getNewEdgeLabel() != null ? edgeBuilder.getNewEdgeLabel() : edgeBuilder.getEdgeLabel();
@@ -404,13 +405,13 @@ public abstract class ElementMutationBuilder {
         Text edgeIdText = new Text(edgeId);
 
         // Update out vertex.
-        Mutation addEdgeToOutMutation = new Mutation(outVertexId);
+        CompletableMutation addEdgeToOutMutation = new CompletableMutation(outVertexId);
         EdgeInfo edgeInfo = new EdgeInfo(getNameSubstitutionStrategy().deflate(edgeLabel), inVertexId);
         addEdgeToOutMutation.put(AccumuloVertex.CF_OUT_EDGE, edgeIdText, edgeColumnVisibility, edgeInfo.toValue());
         saveVertexMutation(addEdgeToOutMutation);
 
         // Update in vertex.
-        Mutation addEdgeToInMutation = new Mutation(inVertexId);
+        CompletableMutation addEdgeToInMutation = new CompletableMutation(inVertexId);
         edgeInfo = new EdgeInfo(getNameSubstitutionStrategy().deflate(edgeLabel), outVertexId);
         addEdgeToInMutation.put(AccumuloVertex.CF_IN_EDGE, edgeIdText, edgeColumnVisibility, edgeInfo.toValue());
         saveVertexMutation(addEdgeToInMutation);
@@ -418,7 +419,7 @@ public abstract class ElementMutationBuilder {
 
     public void alterEdgeLabel(Edge edge, String newEdgeLabel) {
         ColumnVisibility edgeColumnVisibility = visibilityToAccumuloVisibility(edge.getVisibility());
-        Mutation m = createAlterEdgeLabelMutation(edge, newEdgeLabel, edgeColumnVisibility);
+        CompletableMutation m = createAlterEdgeLabelMutation(edge, newEdgeLabel, edgeColumnVisibility);
         saveEdgeMutation(m);
 
         saveEdgeInfoOnVertex(
@@ -434,11 +435,11 @@ public abstract class ElementMutationBuilder {
         return new ColumnVisibility(visibility.getVisibilityString());
     }
 
-    protected abstract void saveEdgeMutation(Mutation m);
+    protected abstract CompletableFuture<Void> saveEdgeMutation(CompletableMutation m);
 
-    private Mutation createMutationForEdgeBuilder(AccumuloGraph graph, EdgeBuilderBase edgeBuilder, ColumnVisibility edgeColumnVisibility, long timestamp) {
+    private CompletableMutation createMutationForEdgeBuilder(AccumuloGraph graph, EdgeBuilderBase edgeBuilder, ColumnVisibility edgeColumnVisibility, long timestamp) {
         String edgeRowKey = edgeBuilder.getId();
-        Mutation m = new Mutation(edgeRowKey);
+        CompletableMutation m = new CompletableMutation(edgeRowKey);
         String edgeLabel = edgeBuilder.getEdgeLabel();
         if (edgeBuilder.getNewEdgeLabel() != null) {
             edgeLabel = edgeBuilder.getNewEdgeLabel();
@@ -451,14 +452,14 @@ public abstract class ElementMutationBuilder {
         return m;
     }
 
-    private Mutation createAlterEdgeLabelMutation(Edge edge, String newEdgeLabel, ColumnVisibility edgeColumnVisibility) {
+    private CompletableMutation createAlterEdgeLabelMutation(Edge edge, String newEdgeLabel, ColumnVisibility edgeColumnVisibility) {
         String edgeRowKey = edge.getId();
-        Mutation m = new Mutation(edgeRowKey);
+        CompletableMutation m = new CompletableMutation(edgeRowKey);
         m.put(AccumuloEdge.CF_SIGNAL, new Text(newEdgeLabel), edgeColumnVisibility, currentTimeMillis(), ElementMutationBuilder.EMPTY_VALUE);
         return m;
     }
 
-    public boolean alterElementVisibility(Mutation m, AccumuloElement element, Visibility newVisibility, Object data) {
+    public boolean alterElementVisibility(CompletableMutation m, AccumuloElement element, Visibility newVisibility, Object data) {
         ColumnVisibility currentColumnVisibility = visibilityToAccumuloVisibility(element.getVisibility());
         ColumnVisibility newColumnVisibility = visibilityToAccumuloVisibility(newVisibility);
         if (currentColumnVisibility.equals(newColumnVisibility)) {
@@ -484,7 +485,7 @@ public abstract class ElementMutationBuilder {
         return true;
     }
 
-    public boolean alterEdgeVertexOutVertex(Mutation vertexOutMutation, Edge edge, Visibility newVisibility) {
+    public boolean alterEdgeVertexOutVertex(CompletableMutation vertexOutMutation, Edge edge, Visibility newVisibility) {
         ColumnVisibility currentColumnVisibility = visibilityToAccumuloVisibility(edge.getVisibility());
         ColumnVisibility newColumnVisibility = visibilityToAccumuloVisibility(newVisibility);
         if (currentColumnVisibility.equals(newColumnVisibility)) {
@@ -496,7 +497,7 @@ public abstract class ElementMutationBuilder {
         return true;
     }
 
-    public boolean alterEdgeVertexInVertex(Mutation vertexInMutation, Edge edge, Visibility newVisibility) {
+    public boolean alterEdgeVertexInVertex(CompletableMutation vertexInMutation, Edge edge, Visibility newVisibility) {
         ColumnVisibility currentColumnVisibility = visibilityToAccumuloVisibility(edge.getVisibility());
         ColumnVisibility newColumnVisibility = visibilityToAccumuloVisibility(newVisibility);
         if (currentColumnVisibility.equals(newColumnVisibility)) {
@@ -509,7 +510,7 @@ public abstract class ElementMutationBuilder {
     }
 
     public void addAdditionalVisibilityToMutation(
-        Mutation m,
+        CompletableMutation m,
         AdditionalVisibilityAddMutation additionalVisibility
     ) {
         Value value = toAddAdditionalVisibilityValue(additionalVisibility.getEventData());
@@ -517,20 +518,20 @@ public abstract class ElementMutationBuilder {
     }
 
     public void addAdditionalVisibilityDeleteToMutation(
-        Mutation m,
+        CompletableMutation m,
         AdditionalVisibilityDeleteMutation additionalVisibilityDelete
     ) {
         Value value = toDeleteAdditionalVisibilityValue(additionalVisibilityDelete.getEventData());
         m.put(AccumuloElement.CF_ADDITIONAL_VISIBILITY, new Text(additionalVisibilityDelete.getAdditionalVisibility()), new ColumnVisibility(), value);
     }
 
-    public void addPropertyToMutation(AccumuloGraph graph, Mutation m, ElementId elementId, String rowKey, Property property) {
+    public void addPropertyToMutation(AccumuloGraph graph, CompletableMutation m, ElementId elementId, String rowKey, Property property) {
         addPropertyToMutation(graph, m, elementId, rowKey, property, property.getValue());
     }
 
     public void addPropertyToMutation(
         AccumuloGraph graph,
-        Mutation m,
+        CompletableMutation m,
         ElementId elementId,
         String rowKey,
         Property property,
@@ -552,14 +553,14 @@ public abstract class ElementMutationBuilder {
 
     protected abstract NameSubstitutionStrategy getNameSubstitutionStrategy();
 
-    public void addPropertyDeleteToMutation(Mutation m, PropertyDeleteMutation propertyDelete) {
+    public void addPropertyDeleteToMutation(CompletableMutation m, PropertyDeleteMutation propertyDelete) {
         Text columnQualifier = KeyHelper.getColumnQualifierFromPropertyColumnQualifier(propertyDelete.getKey(), propertyDelete.getName(), getNameSubstitutionStrategy());
         ColumnVisibility columnVisibility = visibilityToAccumuloVisibility(propertyDelete.getVisibility());
         m.putDelete(AccumuloElement.CF_PROPERTY, columnQualifier, columnVisibility, currentTimeMillis());
         addPropertyDeleteMetadataToMutation(m, propertyDelete);
     }
 
-    public void addPropertyMetadataToMutation(Mutation m, ElementId elementId, Property property) {
+    public void addPropertyMetadataToMutation(CompletableMutation m, ElementId elementId, Property property) {
         Metadata metadata = property.getMetadata();
         for (Metadata.Entry metadataItem : metadata.entrySet()) {
             addPropertyMetadataItemToMutation(
@@ -574,7 +575,7 @@ public abstract class ElementMutationBuilder {
     }
 
     public void addPropertyMetadataItemToMutation(
-        Mutation m,
+        CompletableMutation m,
         ElementId elementId,
         Property property,
         String metadataKey,
@@ -600,7 +601,7 @@ public abstract class ElementMutationBuilder {
     }
 
     private void addPropertyMetadataItemAddToMutation(
-        Mutation m,
+        CompletableMutation m,
         ElementId elementId,
         Property property,
         Text columnQualifier,
@@ -616,7 +617,7 @@ public abstract class ElementMutationBuilder {
         m.put(AccumuloElement.CF_PROPERTY_METADATA, columnQualifier, metadataVisibility, property.getTimestamp(), metadataValue);
     }
 
-    private void addPropertyMetadataItemDeleteToMutation(Mutation m, Text columnQualifier, ColumnVisibility metadataVisibility) {
+    private void addPropertyMetadataItemDeleteToMutation(CompletableMutation m, Text columnQualifier, ColumnVisibility metadataVisibility) {
         m.putDelete(AccumuloElement.CF_PROPERTY_METADATA, columnQualifier, metadataVisibility, currentTimeMillis());
     }
 
@@ -643,7 +644,7 @@ public abstract class ElementMutationBuilder {
         );
     }
 
-    public void addPropertyDeleteMetadataToMutation(Mutation m, PropertyDeleteMutation propertyDeleteMutation) {
+    public void addPropertyDeleteMetadataToMutation(CompletableMutation m, PropertyDeleteMutation propertyDeleteMutation) {
         if (propertyDeleteMutation instanceof PropertyPropertyDeleteMutation) {
             Property property = ((PropertyPropertyDeleteMutation) propertyDeleteMutation).getProperty();
             Metadata metadata = property.getMetadata();
@@ -659,7 +660,7 @@ public abstract class ElementMutationBuilder {
         return streamingPropertyValueStorageStrategy.saveStreamingPropertyValue(this, rowKey, property, propertyValue);
     }
 
-    public void addPropertyDeleteToMutation(Mutation m, Property property) {
+    public void addPropertyDeleteToMutation(CompletableMutation m, Property property) {
         Preconditions.checkNotNull(m, "mutation cannot be null");
         Preconditions.checkNotNull(property, "property cannot be null");
         Text columnQualifier = KeyHelper.getColumnQualifierFromPropertyColumnQualifier(property, getNameSubstitutionStrategy());
@@ -672,7 +673,7 @@ public abstract class ElementMutationBuilder {
         }
     }
 
-    public void addPropertySoftDeleteToMutation(Mutation m, Property property, long timestamp, Object data) {
+    public void addPropertySoftDeleteToMutation(CompletableMutation m, Property property, long timestamp, Object data) {
         Preconditions.checkNotNull(m, "mutation cannot be null");
         Preconditions.checkNotNull(property, "property cannot be null");
         Text columnQualifier = KeyHelper.getColumnQualifierFromPropertyColumnQualifier(property, getNameSubstitutionStrategy());
@@ -680,13 +681,13 @@ public abstract class ElementMutationBuilder {
         m.put(AccumuloElement.CF_PROPERTY_SOFT_DELETE, columnQualifier, columnVisibility, timestamp, toSoftDeleteDataToValue(data));
     }
 
-    public void addPropertySoftDeleteToMutation(Mutation m, PropertySoftDeleteMutation propertySoftDelete) {
+    public void addPropertySoftDeleteToMutation(CompletableMutation m, PropertySoftDeleteMutation propertySoftDelete) {
         Text columnQualifier = KeyHelper.getColumnQualifierFromPropertyColumnQualifier(propertySoftDelete.getKey(), propertySoftDelete.getName(), getNameSubstitutionStrategy());
         ColumnVisibility columnVisibility = visibilityToAccumuloVisibility(propertySoftDelete.getVisibility());
         m.put(AccumuloElement.CF_PROPERTY_SOFT_DELETE, columnQualifier, columnVisibility, propertySoftDelete.getTimestamp(), toSoftDeleteDataToValue(propertySoftDelete.getData()));
     }
 
-    public abstract void saveDataMutation(Mutation dataMutation);
+    public abstract CompletableFuture<Void> saveDataMutation(CompletableMutation dataMutation);
 
     public Value toSoftDeleteDataToValue(Object data) {
         if (data == null) {
@@ -701,39 +702,39 @@ public abstract class ElementMutationBuilder {
         return new Value(dataArray);
     }
 
-    public Mutation getDeleteRowMutation(String rowKey) {
-        Mutation m = new Mutation(rowKey);
+    public CompletableMutation getDeleteRowMutation(String rowKey) {
+        CompletableMutation m = new CompletableMutation(rowKey);
         m.put(AccumuloElement.DELETE_ROW_COLUMN_FAMILY, AccumuloElement.DELETE_ROW_COLUMN_QUALIFIER, RowDeletingIterator.DELETE_ROW_VALUE);
         return m;
     }
 
-    public Mutation getSoftDeleteRowMutation(String rowKey, long timestamp, Object data) {
-        Mutation m = new Mutation(rowKey);
+    public CompletableMutation getSoftDeleteRowMutation(String rowKey, long timestamp, Object data) {
+        CompletableMutation m = new CompletableMutation(rowKey);
         m.put(AccumuloElement.CF_SOFT_DELETE, AccumuloElement.CQ_SOFT_DELETE, timestamp, toSoftDeleteDataToValue(data));
         return m;
     }
 
-    public Mutation getMarkHiddenRowMutation(String rowKey, ColumnVisibility visibility, Object data) {
-        Mutation m = new Mutation(rowKey);
+    public CompletableMutation getMarkHiddenRowMutation(String rowKey, ColumnVisibility visibility, Object data) {
+        CompletableMutation m = new CompletableMutation(rowKey);
         m.put(AccumuloElement.CF_HIDDEN, AccumuloElement.CQ_HIDDEN, visibility, toHiddenValue(data));
         return m;
     }
 
-    public Mutation getMarkVisibleRowMutation(String rowKey, ColumnVisibility visibility, Object data) {
-        Mutation m = new Mutation(rowKey);
+    public CompletableMutation getMarkVisibleRowMutation(String rowKey, ColumnVisibility visibility, Object data) {
+        CompletableMutation m = new CompletableMutation(rowKey);
         m.put(AccumuloElement.CF_HIDDEN, AccumuloElement.CQ_HIDDEN, visibility, toHiddenDeletedValue(data));
         return m;
     }
 
-    public Mutation getMarkHiddenPropertyMutation(String rowKey, Property property, long timestamp, ColumnVisibility visibility, Object data) {
-        Mutation m = new Mutation(rowKey);
+    public CompletableMutation getMarkHiddenPropertyMutation(String rowKey, Property property, long timestamp, ColumnVisibility visibility, Object data) {
+        CompletableMutation m = new CompletableMutation(rowKey);
         Text columnQualifier = KeyHelper.getColumnQualifierFromPropertyHiddenColumnQualifier(property, getNameSubstitutionStrategy());
         m.put(AccumuloElement.CF_PROPERTY_HIDDEN, columnQualifier, visibility, timestamp, toHiddenValue(data));
         return m;
     }
 
-    public Mutation getMarkVisiblePropertyMutation(String rowKey, Property property, long timestamp, ColumnVisibility visibility, Object data) {
-        Mutation m = new Mutation(rowKey);
+    public CompletableMutation getMarkVisiblePropertyMutation(String rowKey, Property property, long timestamp, ColumnVisibility visibility, Object data) {
+        CompletableMutation m = new CompletableMutation(rowKey);
         Text columnQualifier = KeyHelper.getColumnQualifierFromPropertyHiddenColumnQualifier(property, getNameSubstitutionStrategy());
         m.put(AccumuloElement.CF_PROPERTY_HIDDEN, columnQualifier, visibility, timestamp, toHiddenDeletedValue(data));
         return m;
@@ -811,26 +812,26 @@ public abstract class ElementMutationBuilder {
         return new Value(dataArray);
     }
 
-    public Mutation getMarkHiddenOutEdgeMutation(Vertex out, Edge edge, ColumnVisibility columnVisibility, Object data) {
-        Mutation m = new Mutation(out.getId());
+    public CompletableMutation getMarkHiddenOutEdgeMutation(Vertex out, Edge edge, ColumnVisibility columnVisibility, Object data) {
+        CompletableMutation m = new CompletableMutation(out.getId());
         m.put(AccumuloVertex.CF_OUT_EDGE_HIDDEN, new Text(edge.getId()), columnVisibility, toHiddenValue(data));
         return m;
     }
 
-    public Mutation getMarkHiddenInEdgeMutation(Vertex in, Edge edge, ColumnVisibility columnVisibility, Object data) {
-        Mutation m = new Mutation(in.getId());
+    public CompletableMutation getMarkHiddenInEdgeMutation(Vertex in, Edge edge, ColumnVisibility columnVisibility, Object data) {
+        CompletableMutation m = new CompletableMutation(in.getId());
         m.put(AccumuloVertex.CF_IN_EDGE_HIDDEN, new Text(edge.getId()), columnVisibility, toHiddenValue(data));
         return m;
     }
 
-    public Mutation getMarkVisibleOutEdgeMutation(Vertex out, Edge edge, ColumnVisibility columnVisibility, Object data) {
-        Mutation m = new Mutation(out.getId());
+    public CompletableMutation getMarkVisibleOutEdgeMutation(Vertex out, Edge edge, ColumnVisibility columnVisibility, Object data) {
+        CompletableMutation m = new CompletableMutation(out.getId());
         m.put(AccumuloVertex.CF_OUT_EDGE_HIDDEN, new Text(edge.getId()), columnVisibility, toHiddenDeletedValue(data));
         return m;
     }
 
-    public Mutation getMarkVisibleInEdgeMutation(Vertex in, Edge edge, ColumnVisibility columnVisibility, Object data) {
-        Mutation m = new Mutation(in.getId());
+    public CompletableMutation getMarkVisibleInEdgeMutation(Vertex in, Edge edge, ColumnVisibility columnVisibility, Object data) {
+        CompletableMutation m = new CompletableMutation(in.getId());
         m.put(AccumuloVertex.CF_IN_EDGE_HIDDEN, new Text(edge.getId()), columnVisibility, toHiddenDeletedValue(data));
         return m;
     }

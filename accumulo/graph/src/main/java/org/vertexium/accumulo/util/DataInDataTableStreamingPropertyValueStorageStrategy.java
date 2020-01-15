@@ -1,7 +1,6 @@
 package org.vertexium.accumulo.util;
 
 import com.google.common.primitives.Longs;
-import org.apache.accumulo.core.data.Mutation;
 import org.apache.accumulo.core.data.Value;
 import org.apache.hadoop.io.Text;
 import org.vertexium.*;
@@ -54,7 +53,7 @@ public class DataInDataTableStreamingPropertyValueStorageStrategy implements Str
                 if (read <= 0) {
                     break;
                 }
-                Mutation dataMutation = new Mutation(dataTableRowKey);
+                CompletableMutation dataMutation = new CompletableMutation(dataTableRowKey);
                 Text columnQualifier = new Text(String.format("%08x", offset));
                 dataMutation.put(DATA_COLUMN_FAMILY, columnQualifier, property.getTimestamp(), new Value(buffer, 0, read));
                 elementMutationBuilder.saveDataMutation(dataMutation);
@@ -69,7 +68,7 @@ public class DataInDataTableStreamingPropertyValueStorageStrategy implements Str
                 ));
             }
 
-            Mutation dataMutation = new Mutation(dataTableRowKey);
+            CompletableMutation dataMutation = new CompletableMutation(dataTableRowKey);
             dataMutation.put(METADATA_COLUMN_FAMILY, METADATA_LENGTH_COLUMN_QUALIFIER, property.getTimestamp(), new Value(Longs.toByteArray(offset)));
             elementMutationBuilder.saveDataMutation(dataMutation);
 

@@ -4,11 +4,11 @@ import org.apache.accumulo.core.client.BatchWriter;
 import org.apache.accumulo.core.client.MutationsRejectedException;
 import org.apache.accumulo.core.client.Scanner;
 import org.apache.accumulo.core.data.Key;
-import org.apache.accumulo.core.data.Mutation;
 import org.apache.accumulo.core.data.Value;
 import org.vertexium.Authorizations;
 import org.vertexium.VertexiumException;
 import org.vertexium.accumulo.AccumuloGraph;
+import org.vertexium.accumulo.CompletableMutation;
 import org.vertexium.accumulo.keys.DataTableRowKey;
 import org.vertexium.util.VertexiumLogger;
 import org.vertexium.util.VertexiumLoggerFactory;
@@ -101,7 +101,7 @@ public class DeleteHistoricalLegacyStreamingPropertyValueData {
             if (i < rowsToDelete.size() - options.getVersionsToKeep()) {
                 LOGGER.debug("deleting row: %s", key.getRow().toString());
                 if (!options.isDryRun()) {
-                    Mutation mutation = new Mutation(key.getRow());
+                    CompletableMutation mutation = new CompletableMutation(key.getRow());
                     mutation.putDelete(
                         key.getColumnFamily(),
                         key.getColumnQualifier(),
