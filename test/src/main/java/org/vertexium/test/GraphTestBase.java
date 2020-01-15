@@ -1686,6 +1686,42 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    public void testReindexHiddenProperties() {
+        assumeTrue(isSearchIndexDeleteElementSupported());
+
+        graph.prepareVertex("v1", VISIBILITY_EMPTY)
+            .addPropertyValue("k1", "age", 25, VISIBILITY_EMPTY)
+            .save(AUTHORIZATIONS_ALL);
+        graph.flush();
+
+        graph.getVertex("v1", AUTHORIZATIONS_ALL).prepareMutation()
+            .markPropertyHidden("k1", "age", VISIBILITY_EMPTY, VISIBILITY_A)
+            .save(AUTHORIZATIONS_ALL);
+        graph.flush();
+
+        assertIdsAnyOrder(graph.query(AUTHORIZATIONS_ALL).hasAuthorization(VISIBILITY_A_STRING).vertexIds(IdFetchHint.ALL_INCLUDING_HIDDEN), "v1");
+
+        Vertex v1 = graph.getVertex("v1", FetchHints.ALL_INCLUDING_HIDDEN, AUTHORIZATIONS_ALL);
+        SearchIndex searchIndex = ((GraphWithSearchIndex) graph).getSearchIndex();
+        searchIndex.deleteElement(graph, v1, AUTHORIZATIONS_ALL);
+        graph.flush();
+
+        assertResultsCount(0, 0, graph.query(AUTHORIZATIONS_ALL).hasAuthorization(VISIBILITY_A_STRING).vertexIds(IdFetchHint.ALL_INCLUDING_HIDDEN));
+
+        searchIndex.addElements(graph, Collections.singletonList(v1), AUTHORIZATIONS_ALL);
+        graph.flush();
+
+        assertIdsAnyOrder(graph.query(AUTHORIZATIONS_ALL).hasAuthorization(VISIBILITY_A_STRING).vertexIds(IdFetchHint.ALL_INCLUDING_HIDDEN), "v1");
+    }
+
+    private boolean isSearchIndexDeleteElementSupported() {
+        if (graph instanceof GraphWithSearchIndex) {
+            return ((GraphWithSearchIndex) graph).getSearchIndex().isDeleteElementSupported();
+        }
+        return true;
+    }
+
+    @Test
     public void testMarkVertexHidden() {
         Vertex v1 = graph.prepareVertex("v1", VISIBILITY_A).save(AUTHORIZATIONS_ALL);
         Vertex v2 = graph.prepareVertex("v2", VISIBILITY_A).save(AUTHORIZATIONS_ALL);

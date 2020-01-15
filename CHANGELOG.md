@@ -1,5 +1,6 @@
 # v4.9.2
 * Fixed: Elasticsearch 7 query string transformation was improperly stripping escape characters from fields that could not be found in the search index.
+* Fixed: When re-indexing an element with hidden properties in Elasticsearch, the hidden property field was not being included in the list of fields to add.
 
 # v4.9.1
 * Added: MetadataPlugin which allows filtering common values from being written to the data store
