@@ -1,7 +1,6 @@
 package org.vertexium.accumulo;
 
 import org.vertexium.Authorizations;
-import org.vertexium.Edge;
 import org.vertexium.EdgeBuilderByVertexId;
 import org.vertexium.Visibility;
 
@@ -19,9 +18,6 @@ public abstract class AccumuloEdgeBuilderByVertexId extends EdgeBuilderByVertexI
         super(edgeId, outVertexId, inVertexId, label, visibility);
         this.elementMutationBuilder = elementMutationBuilder;
     }
-
-    @Override
-    public abstract Edge save(Authorizations authorizations);
 
     @Override
     public Iterable<KeyValuePair> getEdgeTableKeyValuePairs() {

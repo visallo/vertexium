@@ -64,14 +64,6 @@ public abstract class EdgeBuilderBase extends ElementBuilder<Edge> implements Ed
         return newEdgeLabel;
     }
 
-    /**
-     * Save the edge along with any properties that were set to the graph.
-     *
-     * @return The newly created edge.
-     */
-    @Override
-    public abstract Edge save(Authorizations authorizations);
-
     @Override
     public boolean hasChanges() {
         if (newEdgeLabel != null) {

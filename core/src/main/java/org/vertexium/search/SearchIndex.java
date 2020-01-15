@@ -9,9 +9,10 @@ import org.vertexium.query.*;
 
 import java.util.Collection;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 
 public interface SearchIndex {
-    void addElement(
+    CompletableFuture<Void> addElement(
         Graph graph,
         Element element,
         Set<String> additionalVisibilities,
@@ -19,7 +20,7 @@ public interface SearchIndex {
         Authorizations authorizations
     );
 
-    <TElement extends Element> void updateElement(Graph graph, ExistingElementMutation<TElement> mutation, Authorizations authorizations);
+    <TElement extends Element> CompletableFuture<Void> updateElement(Graph graph, ExistingElementMutation<TElement> mutation, Authorizations authorizations);
 
     void deleteElement(Graph graph, ElementId elementId, Authorizations authorizations);
 
@@ -114,7 +115,7 @@ public interface SearchIndex {
         Authorizations authorizations
     );
 
-    void addElementExtendedData(
+    CompletableFuture<Void> addElementExtendedData(
         Graph graph,
         ElementLocation elementLocation,
         Iterable<ExtendedDataMutation> extendedDatas,
@@ -132,7 +133,7 @@ public interface SearchIndex {
 
     void deleteExtendedData(Graph graph, ExtendedDataRowId extendedDataRowId, Authorizations authorizations);
 
-    void deleteExtendedData(
+    CompletableFuture<Void> deleteExtendedData(
         Graph graph,
         ElementLocation elementLocation,
         String tableName,

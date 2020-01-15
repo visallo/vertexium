@@ -4,6 +4,7 @@
 * Added: Accumulo: Logging of large rows coming from Accumulo custom iterators
 * Added: Accumulo: Option to compress transfers from iterator to client
 * Added: methods to read multiple Streaming Property Values in one request
+* Added: saveAsync methods to mutation
 * Changed: Elasticsearch: Throw better exceptions when elements are missing in missing document helper
 * Changed: Elasticsearch: bulk to squash multiple updates to same element into a single update
 * Changed: Accumulo: use a string lookup to store label strings to reduce memory usage when reading vertices with large number of edges

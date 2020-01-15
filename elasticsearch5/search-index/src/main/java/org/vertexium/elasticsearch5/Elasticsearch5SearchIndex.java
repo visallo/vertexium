@@ -57,6 +57,7 @@ import java.math.BigInteger;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -351,14 +352,14 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
     }
 
     @Override
-    public void addElement(
+    public CompletableFuture<Void> addElement(
         Graph graph,
         Element element,
         Set<String> additionalVisibilities,
         Set<String> additionalVisibilitiesToDelete,
         Authorizations authorizations
     ) {
-        addElement(
+        return addElement(
             graph,
             element,
             additionalVisibilities,
@@ -366,7 +367,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
         );
     }
 
-    void addElement(
+    CompletableFuture<Void> addElement(
         Graph graph,
         Element element,
         Set<String> additionalVisibilities,
@@ -377,7 +378,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
         }
 
         if (!getConfig().isIndexEdges() && element instanceof Edge) {
-            return;
+            return CompletableFuture.completedFuture(null);
         }
 
         IndexInfo indexInfo = addPropertiesToIndex(graph, element, element.getProperties());
@@ -429,7 +430,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
         fieldsToSet = fieldsToSet == null ? Collections.emptyMap() : fieldsToSet.entrySet().stream()
             .collect(Collectors.toMap(e -> replaceFieldnameDots(e.getKey()), Map.Entry::getValue));
 
-        bulkUpdateService.addElementUpdate(
+        CompletableFuture<Void> result = bulkUpdateService.addElementUpdate(
             indexInfo.getIndexName(),
             getIdStrategy().getType(),
             getIdStrategy().createElementDocId(element),
@@ -446,10 +447,12 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
         if (getConfig().isAutoFlush()) {
             flush(graph);
         }
+
+        return result;
     }
 
     @Override
-    public <TElement extends Element> void updateElement(
+    public <TElement extends Element> CompletableFuture<Void> updateElement(
         Graph graph,
         ExistingElementMutation<TElement> elementMutation,
         Authorizations authorizations
@@ -461,29 +464,33 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
         }
 
         if (!getConfig().isIndexEdges() && elementMutation.getElementType() == ElementType.EDGE) {
-            return;
+            return CompletableFuture.completedFuture(null);
         }
 
+        List<CompletableFuture<Void>> futures = new ArrayList<>();
+
         addMutationPropertiesToIndex(graph, elementMutation);
-        addUpdateForMutationToBulk(graph, elementMutation);
+        futures.add(addUpdateForMutationToBulk(graph, elementMutation));
 
         if (elementMutation.getNewElementVisibility() != null && element.getFetchHints().isIncludeExtendedDataTableNames()) {
             ImmutableSet<String> extendedDataTableNames = element.getExtendedDataTableNames();
             if (extendedDataTableNames != null && !extendedDataTableNames.isEmpty()) {
                 extendedDataTableNames.forEach(tableName ->
-                    alterExtendedDataElementTypeVisibility(
+                    futures.add(alterExtendedDataElementTypeVisibility(
                         graph,
                         elementMutation,
                         element.getExtendedData(tableName),
                         elementMutation.getOldElementVisibility(),
                         elementMutation.getNewElementVisibility()
-                    ));
+                    )));
             }
         }
 
         if (getConfig().isAutoFlush()) {
             flush(graph);
         }
+
+        return CompletableFutureUtils.allOf(futures);
     }
 
     private <TElement extends Element> void addMutationPropertiesToIndex(Graph graph, ExistingElementMutation<TElement> mutation) {
@@ -511,7 +518,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
         }
     }
 
-    private <TElement extends Element> void addUpdateForMutationToBulk(
+    private <TElement extends Element> CompletableFuture<Void> addUpdateForMutationToBulk(
         Graph graph,
         ExistingElementMutation<TElement> mutation
     ) {
@@ -527,7 +534,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
         String documentId = getIdStrategy().createElementDocId(element);
         String indexName = getIndexName(element);
         IndexInfo indexInfo = ensureIndexCreatedAndInitialized(indexName);
-        addUpdateToBulk(
+        return addUpdateToBulk(
             indexInfo.getIndexName(),
             documentId,
             element,
@@ -662,7 +669,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
     }
 
     @Override
-    public void addElementExtendedData(
+    public CompletableFuture<Void> addElementExtendedData(
         Graph graph,
         ElementLocation elementLocation,
         Iterable<ExtendedDataMutation> extendedData,
@@ -677,22 +684,26 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
             additionalExtendedDataVisibilityDeletes
         );
 
+        List<CompletableFuture<Void>> futures = new ArrayList<>();
         for (Map.Entry<String, Map<String, ExtendedDataMutationUtils.Mutations>> byTableThenRowIdEntry : byTableThenRowId.entrySet()) {
             String tableName = byTableThenRowIdEntry.getKey();
             Map<String, ExtendedDataMutationUtils.Mutations> byRow = byTableThenRowIdEntry.getValue();
             for (Map.Entry<String, ExtendedDataMutationUtils.Mutations> byRowEntry : byRow.entrySet()) {
                 String rowId = byRowEntry.getKey();
                 ExtendedDataMutationUtils.Mutations mutations = byRowEntry.getValue();
-                addElementExtendedData(
-                    graph,
-                    new ExtendedDataRowId(elementLocation.getElementType(), elementLocation.getId(), tableName, rowId),
-                    elementLocation,
-                    mutations.getExtendedData(),
-                    mutations.getAdditionalExtendedDataVisibilities(),
-                    mutations.getAdditionalExtendedDataVisibilityDeletes()
+                futures.add(
+                    addElementExtendedData(
+                        graph,
+                        new ExtendedDataRowId(elementLocation.getElementType(), elementLocation.getId(), tableName, rowId),
+                        elementLocation,
+                        mutations.getExtendedData(),
+                        mutations.getAdditionalExtendedDataVisibilities(),
+                        mutations.getAdditionalExtendedDataVisibilityDeletes()
+                    )
                 );
             }
         }
+        return CompletableFutureUtils.allOf(futures);
     }
 
     @Override
@@ -708,7 +719,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
     }
 
     @Override
-    public void deleteExtendedData(
+    public CompletableFuture<Void> deleteExtendedData(
         Graph graph,
         ElementLocation elementLocation,
         String tableName,
@@ -721,7 +732,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
         String extendedDataDocId = getIdStrategy().createExtendedDataDocId(elementLocation, tableName, row);
         String fieldName = addVisibilityToPropertyName(graph, columnName, visibility);
         String indexName = getExtendedDataIndexName(elementLocation, tableName, row);
-        removeFieldsFromDocument(
+        return removeFieldsFromDocument(
             graph,
             indexName,
             elementLocation,
@@ -730,7 +741,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
         );
     }
 
-    private void addElementExtendedData(
+    private CompletableFuture<Void> addElementExtendedData(
         Graph graph,
         ExtendedDataRowId extendedDataRowId,
         ElementLocation sourceElementLocation,
@@ -742,7 +753,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
             MUTATION_LOGGER.trace("addElementExtendedData: %s", extendedDataRowId);
         }
 
-        addExtendedDataUpdateToBulk(
+        CompletableFuture<Void> result = addExtendedDataUpdateToBulk(
             graph,
             extendedDataRowId,
             sourceElementLocation,
@@ -754,15 +765,18 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
         if (getConfig().isAutoFlush()) {
             flush(graph);
         }
+
+        return result;
     }
 
-    public <T extends Element> void alterExtendedDataElementTypeVisibility(
+    public <T extends Element> CompletableFuture<Void> alterExtendedDataElementTypeVisibility(
         Graph graph,
         ElementMutation<T> elementMutation,
         Iterable<ExtendedDataRow> rows,
         Visibility oldVisibility,
         Visibility newVisibility
     ) {
+        List<CompletableFuture<Void>> futures = new ArrayList<>();
         for (ExtendedDataRow row : rows) {
             String tableName = (String) row.getPropertyValue(ExtendedDataRow.TABLE_NAME);
             String rowId = (String) row.getPropertyValue(ExtendedDataRow.ROW_ID);
@@ -785,7 +799,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
             String newElementTypeVisibilityPropertyName = addVisibilityToPropertyName(graph, ELEMENT_TYPE_FIELD_NAME, newVisibility);
             Map<String, String> fieldsToRename = Collections.singletonMap(oldElementTypeVisibilityPropertyName, newElementTypeVisibilityPropertyName);
 
-            bulkUpdateService.addExtendedDataUpdate(
+            futures.add(bulkUpdateService.addExtendedDataUpdate(
                 indexInfo.getIndexName(),
                 getIdStrategy().getType(),
                 extendedDataDocId,
@@ -798,8 +812,9 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
                 Collections.emptyList(),
                 Collections.emptyList(),
                 true
-            );
+            ));
         }
+        return CompletableFutureUtils.allOf(futures);
     }
 
     @Override
@@ -843,7 +858,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
         });
     }
 
-    private void addExtendedDataUpdateToBulk(
+    private CompletableFuture<Void> addExtendedDataUpdateToBulk(
         Graph graph,
         ExtendedDataRowId extendedDataRowId,
         ElementLocation sourceElementLocation,
@@ -877,7 +892,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
             : stream(additionalExtendedDataVisibilityDeletes).map(AdditionalExtendedDataVisibilityDeleteMutation::getAdditionalVisibility).collect(Collectors.toList());
         ensureAdditionalVisibilitiesDefined(additionalVisibilities);
 
-        bulkUpdateService.addExtendedDataUpdate(
+        return bulkUpdateService.addExtendedDataUpdate(
             indexInfo.getIndexName(),
             getIdStrategy().getType(),
             extendedDataDocId,
@@ -1993,7 +2008,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
         removeFieldsFromDocument(graph, indexName, elementLocation, documentId, fields);
     }
 
-    private void removeFieldsFromDocument(
+    private CompletableFuture<Void> removeFieldsFromDocument(
         Graph graph,
         String indexName,
         ElementLocation elementLocation,
@@ -2001,15 +2016,15 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
         Collection<String> fields
     ) {
         if (fields == null || fields.isEmpty()) {
-            return;
+            return CompletableFuture.completedFuture(null);
         }
 
         List<String> fieldNames = fields.stream().map(this::replaceFieldnameDots).collect(Collectors.toList());
         if (fieldNames.isEmpty()) {
-            return;
+            return CompletableFuture.completedFuture(null);
         }
 
-        bulkUpdateService.addElementUpdate(
+        CompletableFuture<Void> result = bulkUpdateService.addElementUpdate(
             indexName,
             getIdStrategy().getType(),
             documentId,
@@ -2026,9 +2041,11 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
         if (getConfig().isAutoFlush()) {
             flush(graph);
         }
+
+        return result;
     }
 
-    private void addUpdateToBulk(
+    private CompletableFuture<Void> addUpdateToBulk(
         String indexName,
         String documentId,
         ElementLocation elementLocation,
@@ -2043,7 +2060,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
             (fieldsToRename == null || fieldsToRename.isEmpty()) &&
             (additionalVisibilities == null || additionalVisibilities.isEmpty()) &&
             (additionalVisibilitiesToDelete == null || additionalVisibilitiesToDelete.isEmpty())) {
-            return;
+            return CompletableFuture.completedFuture(null);
         }
 
         fieldsToSet = fieldsToSet == null ? Collections.emptyMap() : fieldsToSet.entrySet().stream()
@@ -2055,7 +2072,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
         List<String> additionalVisibilitiesToDeleteParam = additionalVisibilitiesToDelete == null ? Collections.emptyList() : new ArrayList<>(additionalVisibilitiesToDelete);
         ensureAdditionalVisibilitiesDefined(additionalVisibilitiesParam);
 
-        bulkUpdateService.addElementUpdate(
+        return bulkUpdateService.addElementUpdate(
             indexName,
             getIdStrategy().getType(),
             documentId,

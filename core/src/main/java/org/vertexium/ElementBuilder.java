@@ -285,13 +285,6 @@ public abstract class ElementBuilder<T extends Element> implements ElementMutati
         return this;
     }
 
-    /**
-     * saves the element to the graph.
-     *
-     * @return either the vertex or edge just saved.
-     */
-    public abstract T save(Authorizations authorizations);
-
     @Override
     public Iterable<Property> getProperties() {
         return properties;

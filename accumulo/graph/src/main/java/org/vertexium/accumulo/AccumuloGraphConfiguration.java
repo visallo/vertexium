@@ -72,8 +72,8 @@ public class AccumuloGraphConfiguration extends GraphConfiguration {
     public static final String HADOOP_CONF_DIR = HDFS_CONFIG_PREFIX + ".confDir";
     public static final String DEFAULT_DATA_DIR = "/accumuloGraph";
     private static final String DEFAULT_NAME_SUBSTITUTION_STRATEGY = IdentityNameSubstitutionStrategy.class.getName();
-    public static final Long DEFAULT_BATCHWRITER_MAX_MEMORY = 50 * 1024 * 1024l;
-    public static final Long DEFAULT_BATCHWRITER_MAX_LATENCY = 2 * 60 * 1000l;
+    public static final Long DEFAULT_BATCHWRITER_MAX_MEMORY = 50 * 1024 * 1024L;
+    public static final Long DEFAULT_BATCHWRITER_MAX_LATENCY = 1000L;
     public static final Long DEFAULT_BATCHWRITER_TIMEOUT = Long.MAX_VALUE;
     public static final Integer DEFAULT_BATCHWRITER_MAX_WRITE_THREADS = 3;
     public static final Integer DEFAULT_ACCUMULO_MAX_VERSIONS = null;

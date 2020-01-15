@@ -189,9 +189,8 @@ public class AccumuloEdge extends AccumuloElement implements Edge {
     public ExistingEdgeMutation prepareMutation() {
         return new ExistingEdgeMutation(this) {
             @Override
-            public Edge save(Authorizations authorizations) {
-                saveExistingElementMutation(this, authorizations);
-                return getElement();
+            public SaveResult<Edge> saveAsync(Authorizations authorizations) {
+                return saveExistingElementMutation(this, authorizations);
             }
         };
     }

@@ -74,9 +74,9 @@ import static org.vertexium.util.StreamUtils.stream;
 public class ElasticsearchSearchQueryBase extends QueryBase {
     private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(ElasticsearchSearchQueryBase.class);
     public static final VertexiumLogger QUERY_LOGGER = VertexiumLoggerFactory.getQueryLogger(Query.class);
-    public static final String TOP_HITS_AGGREGATION_NAME = "__visallo_top_hits";
-    public static final String KEYWORD_UNMAPPED_TYPE = "keyword";
-    public static final String AGGREGATION_METADATA_FIELD_NAME_KEY = "fieldName";
+    static final String TOP_HITS_AGGREGATION_NAME = "__vertexium_top_hits";
+    static final String AGGREGATION_METADATA_FIELD_NAME_KEY = "fieldName";
+    private static final String KEYWORD_UNMAPPED_TYPE = "keyword";
     private final Client client;
     private final StandardAnalyzer analyzer;
     private final IndexSelectionStrategy indexSelectionStrategy;

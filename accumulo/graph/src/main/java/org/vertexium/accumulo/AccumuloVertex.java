@@ -585,9 +585,8 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
     public ExistingElementMutation<Vertex> prepareMutation() {
         return new ExistingElementMutationImpl<Vertex>(this) {
             @Override
-            public Vertex save(Authorizations authorizations) {
-                saveExistingElementMutation(this, authorizations);
-                return getElement();
+            public SaveResult<Vertex> saveAsync(Authorizations authorizations) {
+                return saveExistingElementMutation(this, authorizations);
             }
         };
     }

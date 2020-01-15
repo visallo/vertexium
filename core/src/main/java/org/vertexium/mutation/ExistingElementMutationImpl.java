@@ -50,8 +50,6 @@ public abstract class ExistingElementMutationImpl<T extends Element> implements 
         return getElement().getVisibility();
     }
 
-    public abstract T save(Authorizations authorizations);
-
     public ElementMutation<T> setProperty(String name, Object value, Visibility visibility) {
         return setProperty(name, value, Metadata.create(FetchHints.ALL), visibility);
     }

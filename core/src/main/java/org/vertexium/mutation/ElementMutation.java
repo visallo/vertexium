@@ -7,11 +7,24 @@ public interface ElementMutation<T extends Element> extends ElementLocation {
     String DEFAULT_KEY = "";
 
     /**
-     * saves the properties to the graph.
+     * saves the element and properties to the graph.
      *
      * @return the element which was mutated.
      */
-    T save(Authorizations authorizations);
+    default T save(Authorizations authorizations) {
+        SaveResult<T> result = saveAsync(authorizations);
+        return result.getElementReadyFuture().join();
+    }
+
+    /**
+     * saves the properties to the graph. The future will be complete when the element is completely saved to the data
+     * stores.
+     *
+     * @return the results of the save.
+     */
+    default SaveResult<T> saveAsync(Authorizations authorizations) {
+        return SaveResult.completed(save(authorizations));
+    }
 
     /**
      * Sets or updates a property value. The property key will be set to a constant. This is a convenience method

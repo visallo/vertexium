@@ -60,9 +60,9 @@ public class DefaultQueryStringTransformer implements QueryStringTransformer {
         return ret.toString();
     }
 
-    protected String visitVertexiumSimpleNode(VertexiumSimpleNode visalloSimpleNode) {
+    protected String visitVertexiumSimpleNode(VertexiumSimpleNode vertexiumSimpleNode) {
         StringBuilder ret = new StringBuilder();
-        for (Token t = visalloSimpleNode.jjtGetFirstToken(); ; t = t.next) {
+        for (Token t = vertexiumSimpleNode.jjtGetFirstToken(); ; t = t.next) {
             if (t == null) {
                 break;
             }
@@ -71,7 +71,7 @@ public class DefaultQueryStringTransformer implements QueryStringTransformer {
             } else {
                 ret.append(t.image);
             }
-            if (t == visalloSimpleNode.jjtGetLastToken()) {
+            if (t == vertexiumSimpleNode.jjtGetLastToken()) {
                 break;
             }
         }

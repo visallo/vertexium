@@ -17,7 +17,4 @@ public abstract class EdgeBuilder extends EdgeBuilderBase {
     protected Vertex getInVertex() {
         return inVertex;
     }
-
-    @Override
-    public abstract Edge save(Authorizations authorizations);
 }

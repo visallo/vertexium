@@ -14,11 +14,15 @@ import org.vertexium.property.MutableProperty;
 import org.vertexium.query.ExtendedDataQueryableIterable;
 import org.vertexium.query.QueryableIterable;
 import org.vertexium.search.IndexHint;
+import org.vertexium.util.CompletableFutureUtils;
 import org.vertexium.util.PropertyCollection;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.stream.Stream;
 
@@ -121,15 +125,21 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
         return (AccumuloGraph) graph;
     }
 
-    protected <TElement extends Element> void saveExistingElementMutation(ExistingElementMutation<TElement> mutation, Authorizations authorizations) {
+    protected <TElement extends Element> SaveResult<TElement> saveExistingElementMutation(
+        ExistingElementMutation<TElement> mutation,
+        Authorizations authorizations
+    ) {
+        List<CompletableFuture<Void>> futures = new ArrayList<>();
+
         // Order matters a lot in this method
         AccumuloElement element = (AccumuloElement) mutation.getElement();
+        SaveResult<TElement> result = new SaveResult<>(mutation.getElement());
 
         // metadata must be altered first because the lookup of a property can include visibility which will be altered by alterElementPropertyVisibilities
-        getGraph().alterPropertyMetadatas(element, mutation.getSetPropertyMetadatas());
+        futures.add(getGraph().alterPropertyMetadatas(element, mutation.getSetPropertyMetadatas()));
 
         // altering properties comes next because alterElementVisibility may alter the vertex and we won't find it
-        getGraph().alterElementPropertyVisibilities(element, mutation.getAlterPropertyVisibilities());
+        futures.add(getGraph().alterElementPropertyVisibilities(element, mutation.getAlterPropertyVisibilities()));
 
         Iterable<PropertyDeleteMutation> propertyDeletes = mutation.getPropertyDeletes();
         Iterable<PropertySoftDeleteMutation> propertySoftDeletes = mutation.getPropertySoftDeletes();
@@ -147,7 +157,7 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
             markPropertyVisibleMutations
         );
         updateAdditionalVisibilitiesInternal(additionalVisibilities, additionalVisibilityDeletes);
-        getGraph().savePropertiesAndAdditionalVisibilities(
+        futures.add(getGraph().savePropertiesAndAdditionalVisibilities(
             element,
             properties,
             propertyDeletes,
@@ -156,10 +166,10 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
             additionalVisibilityDeletes,
             markPropertyHiddenMutations,
             markPropertyVisibleMutations
-        );
+        ));
 
         if (mutation.getNewElementVisibility() != null) {
-            getGraph().alterElementVisibility(element, mutation.getNewElementVisibility(), mutation.getNewElementVisibilityData());
+            futures.add(getGraph().alterElementVisibility(element, mutation.getNewElementVisibility(), mutation.getNewElementVisibilityData()));
         }
 
         if (mutation instanceof EdgeMutation) {
@@ -167,16 +177,16 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
 
             String newEdgeLabel = edgeMutation.getNewEdgeLabel();
             if (newEdgeLabel != null) {
-                getGraph().alterEdgeLabel((AccumuloEdge) mutation.getElement(), newEdgeLabel);
+                futures.add(getGraph().alterEdgeLabel((AccumuloEdge) mutation.getElement(), newEdgeLabel));
             }
         }
 
         if (mutation.getIndexHint() != IndexHint.DO_NOT_INDEX) {
-            getGraph().getSearchIndex().updateElement(graph, mutation, authorizations);
+            futures.add(getGraph().getSearchIndex().updateElement(graph, mutation, authorizations));
         }
 
         ElementType elementType = ElementType.getTypeFromElement(mutation.getElement());
-        getGraph().saveExtendedDataMutations(
+        futures.add(getGraph().saveExtendedDataMutations(
             mutation.getElement(),
             elementType,
             mutation.getIndexHint(),
@@ -185,7 +195,12 @@ public abstract class AccumuloElement extends ElementBase implements Serializabl
             mutation.getAdditionalExtendedDataVisibilities(),
             mutation.getAdditionalExtendedDataVisibilityDeletes(),
             authorizations
-        );
+        ));
+
+        CompletableFutureUtils.allOf(futures)
+            .thenRun(result::complete);
+
+        return result;
     }
 
     @Override
