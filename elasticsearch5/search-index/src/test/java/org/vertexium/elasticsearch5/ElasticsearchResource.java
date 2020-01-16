@@ -196,7 +196,7 @@ public class ElasticsearchResource extends ExternalResource {
         configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + QUERY_PAGING_LIMIT, TEST_QUERY_PAGING_LIMIT);
         configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + MAX_QUERY_STRING_TERMS, 20);
         configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + EXCEPTION_HANDLER, TestElasticsearch5ExceptionHandler.class.getName());
-        configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + INDEX_REFRESH_INTERVAL, -1);
+        configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + INDEX_REFRESH_INTERVAL, "30s");
         configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + REFRESH_INDEX_ON_FLUSH, false);
 
         // transport-5.3.3.jar!/org/elasticsearch/transport/client/PreBuiltTransportClient.class:61 likes to sleep on
