@@ -4,12 +4,14 @@ import com.codahale.metrics.ConsoleReporter;
 import com.codahale.metrics.MetricRegistry;
 import org.vertexium.VertexiumException;
 
+import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 public class DropWizardMetricRegistry implements VertexiumMetricRegistry {
+    private static final String START_CONSOLE_REPORTER_PROPERTY_NAME = "metricRegistryStartConsoleReporter";
     private final MetricRegistry metricRegistry;
     private final Map<String, Counter> countersByName = new ConcurrentHashMap<>();
     private final Map<String, Timer> timersByName = new ConcurrentHashMap<>();
@@ -25,10 +27,42 @@ public class DropWizardMetricRegistry implements VertexiumMetricRegistry {
 
     public DropWizardMetricRegistry(MetricRegistry metricRegistry) {
         this.metricRegistry = metricRegistry;
+        startConsoleReporterUsingSystemProperty();
+    }
+
+    private void startConsoleReporterUsingSystemProperty() {
+        String startConsoleReporter = System.getProperty(START_CONSOLE_REPORTER_PROPERTY_NAME, "false").trim();
+        if (startConsoleReporter.equalsIgnoreCase("false")) {
+            return;
+        }
+
+        if (startConsoleReporter.equalsIgnoreCase("true") || startConsoleReporter.length() == 0) {
+            startConsoleReporter(10, TimeUnit.SECONDS);
+        }
+
+        startConsoleReporter(startConsoleReporter);
     }
 
     public MetricRegistry getMetricRegistry() {
         return metricRegistry;
+    }
+
+    private void startConsoleReporter(String period) {
+        try {
+            Duration duration = parseDuration(period);
+            startConsoleReporter(duration.toMillis(), TimeUnit.MILLISECONDS);
+        } catch (Exception ex) {
+            throw new VertexiumException("Could not parse period: " + period, ex);
+        }
+    }
+
+    static Duration parseDuration(String period) {
+        period = period.trim();
+        try {
+            return Duration.parse(period.toUpperCase());
+        } catch (Exception ex) {
+            return Duration.parse("PT" + period.toUpperCase());
+        }
     }
 
     public void startConsoleReporter(long periodMillis) {
