@@ -46,7 +46,7 @@ public class ElasticsearchSearchIndexConfiguration {
     public static final String INDEX_MAPPING_TOTAL_FIELDS_LIMIT = "indexMappingTotalFieldsLimit";
     public static final int INDEX_MAPPING_TOTAL_FIELDS_LIMIT_DEFAULT = 100000;
     public static final String INDEX_REFRESH_INTERVAL = "indexRefreshInterval";
-    public static final Integer INDEX_REFRESH_INTERVAL_DEFAULT = null;
+    public static final String INDEX_REFRESH_INTERVAL_DEFAULT = null;
     public static final String PROPERTY_NAME_VISIBILITIES_STORE = "propertyNameVisibilitiesStore";
     public static final Class<? extends PropertyNameVisibilitiesStore> PROPERTY_NAME_VISIBILITIES_STORE_DEFAULT = MetadataTablePropertyNameVisibilitiesStore.class;
     public static final String EXCEPTION_HANDLER = "exceptionHandler";
@@ -143,8 +143,8 @@ public class ElasticsearchSearchIndexConfiguration {
         return graphConfiguration.getInt(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + INDEX_MAPPING_TOTAL_FIELDS_LIMIT, INDEX_MAPPING_TOTAL_FIELDS_LIMIT_DEFAULT);
     }
 
-    public Integer getIndexRefreshInterval() {
-        return graphConfiguration.getInteger(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + INDEX_REFRESH_INTERVAL, INDEX_REFRESH_INTERVAL_DEFAULT);
+    public String getIndexRefreshInterval() {
+        return graphConfiguration.getString(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + INDEX_REFRESH_INTERVAL, INDEX_REFRESH_INTERVAL_DEFAULT);
     }
 
     public int getTermAggregationShardSize() {
