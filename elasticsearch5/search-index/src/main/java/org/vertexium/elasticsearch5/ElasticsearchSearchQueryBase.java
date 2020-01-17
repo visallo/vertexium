@@ -417,7 +417,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
                 q.addSort(SortBuilders.scriptSort(script, sortType)
                     .order(esOrder)
                     .sortMode(esOrder == SortOrder.DESC ? SortMode.MAX : SortMode.MIN));
-            } else {
+            } else if (propertyNames.length == 1) {
                 String sortField = propertyNames[0];
                 String unmappedType = ElasticsearchTypes.fromJavaClass(propertyDefinition.getDataType());
                 if (propertyDefinition.getDataType() == String.class) {
