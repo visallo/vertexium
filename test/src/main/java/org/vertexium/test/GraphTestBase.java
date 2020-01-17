@@ -1685,6 +1685,46 @@ public abstract class GraphTestBase {
         assertEquals(30, v1.getPropertyValue("k2", "age"));
     }
 
+    /**
+     * This test is to verify a bug found after rebuilding the search index. Since the visibility of the property was
+     * changed before the index was rebuilt, both the new and old visibility were in the metadata table. With no
+     * data left in the system using the old visibility, the rebuilt search index didn't have a mapping for it.
+     * This resulted in an error when sorting by that property because the Painless script for sorting was trying to sort on a field
+     * that didn't have a mapping.
+     */
+    @Test
+    public void testRebuildIndexAfterPropertyVisibilityChange() {
+        String propertyName = "first.name";
+        graph.defineProperty(propertyName).dataType(String.class).sortable(true).textIndexHint(TextIndexHint.ALL).define();
+
+        String vertexId = "v1";
+        String propertyKey = "k1";
+        graph.prepareVertex(vertexId, VISIBILITY_EMPTY)
+            .addPropertyValue(propertyKey, propertyName, "Joe", VISIBILITY_A)
+            .save(AUTHORIZATIONS_ALL);
+        graph.flush();
+
+        QueryResultsIterable<String> results = graph.query(AUTHORIZATIONS_ALL).has(propertyName, "joe").sort(propertyName, SortDirection.ASCENDING).vertexIds();
+        assertIdsAnyOrder(results, vertexId);
+
+        graph.getVertex(vertexId, AUTHORIZATIONS_ALL).prepareMutation()
+            .alterPropertyVisibility(propertyKey, propertyName, VISIBILITY_EMPTY)
+            .save(AUTHORIZATIONS_ALL);
+        graph.flush();
+
+        results = graph.query(AUTHORIZATIONS_ALL).has(propertyName, "joe").sort(propertyName, SortDirection.ASCENDING).vertexIds();
+        assertIdsAnyOrder(results, vertexId);
+
+        SearchIndex searchIndex = ((GraphWithSearchIndex) graph).getSearchIndex();
+        searchIndex.drop(graph);
+
+        searchIndex.addElements(graph, Collections.singletonList(graph.getVertex(vertexId, AUTHORIZATIONS_ALL)), AUTHORIZATIONS_ALL);
+        graph.flush();
+
+        results = graph.query(AUTHORIZATIONS_ALL).has(propertyName, "joe").sort(propertyName, SortDirection.ASCENDING).vertexIds();
+        assertIdsAnyOrder(results, vertexId);
+    }
+
     @Test
     public void testReindexHiddenProperties() {
         assumeTrue(isSearchIndexDeleteElementSupported());

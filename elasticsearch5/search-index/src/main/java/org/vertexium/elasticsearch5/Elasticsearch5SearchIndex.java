@@ -1465,7 +1465,9 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
             return new String[]{propertyName};
         }
         Collection<String> hashes = this.propertyNameVisibilitiesStore.getHashes(graph, propertyName, authorizations);
-        return addHashesToPropertyName(propertyName, hashes);
+        return Arrays.stream(addHashesToPropertyName(propertyName, hashes))
+            .filter(matchedPropertyName -> isPropertyInIndex(graph, matchedPropertyName))
+            .toArray(String[]::new);
     }
 
     public String[] addHashesToPropertyName(String propertyName, Collection<String> hashes) {
