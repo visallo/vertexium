@@ -34,7 +34,6 @@ public class ElasticsearchSearchIndexConfiguration {
     public static final Class<? extends IndexSelectionStrategy> INDEX_SELECTION_STRATEGY_CLASS_NAME_DEFAULT = DefaultIndexSelectionStrategy.class;
     public static final String QUERY_STRING_TRANSFORMER_CLASS_NAME = "queryStringParser";
     public static final Class<? extends QueryStringTransformer> QUERY_STRING_TRANSFORMER_CLASS_NAME_DEFAULT = DefaultQueryStringTransformer.class;
-    public static final String ALL_FIELD_ENABLED = "allFieldEnabled";
     public static final String ES_SETTINGS_CONFIG_PREFIX = GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + "esSettings.";
     public static final String ES_TRANSPORT_CLIENT_PLUGIN_CONFIG_PREFIX = GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + "esTransportClientPlugin.";
     public static final String QUERY_PAGE_SIZE = "queryPageSize";
@@ -45,6 +44,8 @@ public class ElasticsearchSearchIndexConfiguration {
     public static final String QUERY_SCROLL_KEEP_ALIVE_DEFAULT = "5m";
     public static final String ES_CONFIG_FILE = "elasticsearch.configFile";
     public static final String ES_CONFIG_FILE_DEFAULT = null;
+    public static final String ENABLE_SIZE_FIELD = "enableSizeField";
+    private static final boolean ENABLE_SIZE_FIELD_DEFAULT = false;
     public static final String INDEX_MAPPING_TOTAL_FIELDS_LIMIT = "indexMappingTotalFieldsLimit";
     public static final int INDEX_MAPPING_TOTAL_FIELDS_LIMIT_DEFAULT = 100000;
     public static final String INDEX_REFRESH_INTERVAL = "indexRefreshInterval";
@@ -208,6 +209,10 @@ public class ElasticsearchSearchIndexConfiguration {
 
     public int getGeocircleToPolygonMaxNumSides() {
         return graphConfiguration.getInt(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + GEOCIRCLE_TO_POLYGON_MAX_NUM_SIDES, GEOCIRCLE_TO_POLYGON_MAX_NUM_SIDES_DEFAULT);
+    }
+
+    public boolean isSizeFieldEnabled() {
+        return graphConfiguration.getBoolean(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + ENABLE_SIZE_FIELD, ENABLE_SIZE_FIELD_DEFAULT);
     }
 
     public PropertyNameVisibilitiesStore createPropertyNameVisibilitiesStore(Graph graph) {

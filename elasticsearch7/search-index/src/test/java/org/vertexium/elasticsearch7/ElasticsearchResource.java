@@ -1,5 +1,7 @@
 package org.vertexium.elasticsearch7;
 
+import net.lingala.zip4j.core.ZipFile;
+import net.lingala.zip4j.model.FileHeader;
 import org.apache.logging.log4j.util.Strings;
 import org.codelibs.elasticsearch.runner.ElasticsearchClusterRunner;
 import org.elasticsearch.action.admin.cluster.state.ClusterStateResponse;
@@ -15,13 +17,15 @@ import org.junit.rules.ExternalResource;
 import org.vertexium.Graph;
 import org.vertexium.GraphConfiguration;
 import org.vertexium.GraphWithSearchIndex;
+import org.vertexium.VertexiumException;
 import org.vertexium.test.TestMetadataPlugin;
+import org.vertexium.util.IOUtils;
 import org.vertexium.util.VertexiumLogger;
 import org.vertexium.util.VertexiumLoggerFactory;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -61,17 +65,20 @@ public class ElasticsearchResource extends ExternalResource {
         File basePath = new File(tempDir, "vertexium-test-" + UUID.randomUUID().toString());
         LOGGER.info("base path: %s", basePath);
 
+        expandMapperSizePlugin(basePath);
+
         LogConfigurator.registerErrorListener();
 
         if (shouldUseRemoteElasticsearch()) {
             runner = null;
         } else {
             runner = new ElasticsearchClusterRunner();
+            ElasticsearchClusterRunner.Configs configs = newConfigs().basePath(basePath.getAbsolutePath()).numOfNode(1);
             runner.onBuild((i, builder) ->
                 builder.put("cluster.name", clusterName)
                     .put("http.type", "netty4")
                     .put("transport.type", "netty4")
-            ).build(newConfigs().basePath(basePath.getAbsolutePath()).numOfNode(1));
+            ).build(configs);
             runner.ensureGreen();
         }
     }
@@ -82,6 +89,40 @@ public class ElasticsearchResource extends ExternalResource {
 
     private String getRemoteEsAddresses() {
         return System.getProperty("REMOTE_ES_ADDRESSES");
+    }
+
+    private void expandMapperSizePlugin(File basePath) {
+        File mapperPluginDir = new File(basePath, "node_1/plugins/mapper-size");
+        mapperPluginDir.mkdirs();
+        expandPlugin(mapperPluginDir, "mapper-size-7.5.0.zip");
+    }
+
+    private void expandPlugin(File pluginDir, String pluginZipName, String... filesToExtract) {
+        InputStream zipIn = getClass().getResourceAsStream("/" + pluginZipName);
+        File pluginZip = new File(pluginDir.getParentFile(), pluginZipName);
+        try (OutputStream zipOut = new FileOutputStream(pluginZip)) {
+            IOUtils.copy(zipIn, zipOut);
+        } catch (Exception ex) {
+            throw new VertexiumException("Could not write plugin zip file", ex);
+        }
+        try {
+            ZipFile zipFile = new ZipFile(pluginZip);
+            if (filesToExtract == null || filesToExtract.length == 0) {
+                List<FileHeader> fileHeaders = zipFile.getFileHeaders();
+                filesToExtract = fileHeaders.stream()
+                    .filter(fileHeader -> !fileHeader.isDirectory())
+                    .map(FileHeader::getFileName)
+                    .toArray(String[]::new);
+            }
+
+            for (int i = 0; i < filesToExtract.length; i++) {
+                String fileName = filesToExtract[i].replace("elasticsearch/", "");
+                zipFile.extractFile(filesToExtract[i], pluginDir.getAbsolutePath(), null, fileName);
+            }
+        } catch (Exception ex) {
+            throw new VertexiumException("Could not extract plugin", ex);
+        }
+        pluginZip.delete();
     }
 
     @Override
@@ -142,6 +183,7 @@ public class ElasticsearchResource extends ExternalResource {
         }
         configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + NUMBER_OF_SHARDS, Integer.parseInt(System.getProperty("ES_NUMBER_OF_SHARDS", "1")));
         configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + NUMBER_OF_REPLICAS, Integer.parseInt(System.getProperty("ES_NUMBER_OF_REPLICAS", "0")));
+        configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + ENABLE_SIZE_FIELD, true);
         configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + DefaultIndexSelectionStrategy.CONFIG_SPLIT_EDGES_AND_VERTICES, true);
         configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + LOG_REQUEST_SIZE_LIMIT, 10000);
         configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + QUERY_PAGE_SIZE, TEST_QUERY_PAGE_SIZE);

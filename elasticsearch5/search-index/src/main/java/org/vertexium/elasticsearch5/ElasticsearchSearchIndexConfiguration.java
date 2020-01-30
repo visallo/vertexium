@@ -43,6 +43,8 @@ public class ElasticsearchSearchIndexConfiguration {
     public static final boolean ERROR_ON_MISSING_VERTEXIUM_PLUGIN_DEFAULT = false;
     public static final String FORCE_DISABLE_VERTEXIUM_PLUGIN = "forceDisableVertexiumPlugin";
     private static final boolean FORCE_DISABLE_VERTEXIUM_PLUGIN_DEFAULT = false;
+    public static final String ENABLE_SIZE_FIELD = "enableSizeField";
+    private static final boolean ENABLE_SIZE_FIELD_DEFAULT = false;
     public static final String INDEX_MAPPING_TOTAL_FIELDS_LIMIT = "indexMappingTotalFieldsLimit";
     public static final int INDEX_MAPPING_TOTAL_FIELDS_LIMIT_DEFAULT = 100000;
     public static final String INDEX_REFRESH_INTERVAL = "indexRefreshInterval";
@@ -187,6 +189,10 @@ public class ElasticsearchSearchIndexConfiguration {
 
     public boolean isForceDisableVertexiumPlugin() {
         return graphConfiguration.getBoolean(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + FORCE_DISABLE_VERTEXIUM_PLUGIN, FORCE_DISABLE_VERTEXIUM_PLUGIN_DEFAULT);
+    }
+
+    public boolean isSizeFieldEnabled() {
+        return graphConfiguration.getBoolean(GraphConfiguration.SEARCH_INDEX_PROP_PREFIX + "." + ENABLE_SIZE_FIELD, ENABLE_SIZE_FIELD_DEFAULT);
     }
 
     public PropertyNameVisibilitiesStore createPropertyNameVisibilitiesStore(Graph graph) {

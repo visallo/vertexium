@@ -1,6 +1,7 @@
 package org.vertexium.elasticsearch5;
 
 import net.lingala.zip4j.core.ZipFile;
+import net.lingala.zip4j.model.FileHeader;
 import org.apache.logging.log4j.util.Strings;
 import org.codelibs.elasticsearch.runner.ElasticsearchClusterRunner;
 import org.elasticsearch.action.admin.cluster.state.ClusterStateResponse;
@@ -25,10 +26,9 @@ import org.vertexium.util.VertexiumLoggerFactory;
 
 import java.io.*;
 import java.net.InetAddress;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.nio.file.Paths;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.codelibs.elasticsearch.runner.ElasticsearchClusterRunner.newConfigs;
 import static org.vertexium.GraphConfiguration.AUTO_FLUSH;
@@ -66,9 +66,8 @@ public class ElasticsearchResource extends ExternalResource {
         File basePath = new File(tempDir, "vertexium-test-" + UUID.randomUUID().toString());
         LOGGER.info("base path: %s", basePath);
 
-        File vertexiumPluginDir = new File(basePath, "plugins/vertexium");
-        vertexiumPluginDir.mkdirs();
-        expandVertexiumPlugin(vertexiumPluginDir);
+        expandVertexiumPlugin(basePath);
+        expandMapperSizePlugin(basePath);
 
         LogConfigurator.registerErrorListener();
 
@@ -94,9 +93,21 @@ public class ElasticsearchResource extends ExternalResource {
         return System.getProperty("REMOTE_ES_ADDRESSES");
     }
 
-    private void expandVertexiumPlugin(File vertexiumPluginDir) {
-        InputStream zipIn = getClass().getResourceAsStream("/vertexium-elasticsearch5-plugin.zip");
-        File pluginZip = new File(vertexiumPluginDir.getParentFile(), "vertexium-elasticsearch5-plugin.zip");
+    private void expandVertexiumPlugin(File basePath) {
+        File vertexiumPluginDir = new File(basePath, "plugins/vertexium");
+        vertexiumPluginDir.mkdirs();
+        expandPlugin(vertexiumPluginDir, "vertexium-elasticsearch5-plugin.zip", "elasticsearch/plugin-descriptor.properties");
+    }
+
+    private void expandMapperSizePlugin(File basePath) {
+        File mapperPluginDir = new File(basePath, "plugins/mapper-size");
+        mapperPluginDir.mkdirs();
+        expandPlugin(mapperPluginDir, "mapper-size-5.6.10.zip");
+    }
+
+    private void expandPlugin(File pluginDir, String pluginZipName, String... filesToExtract) {
+        InputStream zipIn = getClass().getResourceAsStream("/" + pluginZipName);
+        File pluginZip = new File(pluginDir.getParentFile(), pluginZipName);
         try (OutputStream zipOut = new FileOutputStream(pluginZip)) {
             IOUtils.copy(zipIn, zipOut);
         } catch (Exception ex) {
@@ -104,7 +115,18 @@ public class ElasticsearchResource extends ExternalResource {
         }
         try {
             ZipFile zipFile = new ZipFile(pluginZip);
-            zipFile.extractFile("elasticsearch/plugin-descriptor.properties", vertexiumPluginDir.getAbsolutePath(), null, "plugin-descriptor.properties");
+            if (filesToExtract == null || filesToExtract.length == 0) {
+                List<FileHeader> fileHeaders = zipFile.getFileHeaders();
+                filesToExtract = fileHeaders.stream()
+                    .filter(fileHeader ->  !fileHeader.isDirectory())
+                    .map(FileHeader::getFileName)
+                    .toArray(String[]::new);
+            }
+
+            for (int i = 0; i < filesToExtract.length; i++) {
+                String fileName = filesToExtract[i].replace("elasticsearch/", "");
+                zipFile.extractFile(filesToExtract[i], pluginDir.getAbsolutePath(), null, fileName);
+            }
         } catch (Exception ex) {
             throw new VertexiumException("Could not extract plugin", ex);
         }
@@ -190,6 +212,7 @@ public class ElasticsearchResource extends ExternalResource {
         configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + NUMBER_OF_SHARDS, Integer.parseInt(System.getProperty("ES_NUMBER_OF_SHARDS", "1")));
         configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + NUMBER_OF_REPLICAS, Integer.parseInt(System.getProperty("ES_NUMBER_OF_REPLICAS", "0")));
         configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + ERROR_ON_MISSING_VERTEXIUM_PLUGIN, true);
+        configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + ENABLE_SIZE_FIELD, true);
         configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + DefaultIndexSelectionStrategy.CONFIG_SPLIT_EDGES_AND_VERTICES, true);
         configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + LOG_REQUEST_SIZE_LIMIT, 10000);
         configMap.put(SEARCH_INDEX_PROP_PREFIX + "." + QUERY_PAGE_SIZE, TEST_QUERY_PAGE_SIZE);

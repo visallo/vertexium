@@ -92,6 +92,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
     public static final String OUT_VERTEX_ID_FIELD_NAME = "__outVertexId";
     public static final String IN_VERTEX_ID_FIELD_NAME = "__inVertexId";
     public static final String EDGE_LABEL_FIELD_NAME = "__edgeLabel";
+    public static final String DOC_SIZE_FIELD_NAME = "_size";
     public static final String EXTENDED_DATA_TABLE_NAME_FIELD_NAME = "__extendedDataTableName";
     public static final String EXTENDED_DATA_TABLE_ROW_ID_FIELD_NAME = "__extendedDataRowId";
     public static final String EXTENDED_DATA_TABLE_COLUMN_VISIBILITIES_FIELD_NAME = "__extendedDataColumnVisibilities";
@@ -122,6 +123,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
     private final String geoShapePrecision;
     private final String geoShapeErrorPct;
     private boolean serverPluginInstalled;
+    private boolean sizeFieldEnabled;
     private final IdStrategy idStrategy = new IdStrategy();
     private final IndexRefreshTracker indexRefreshTracker;
     private Integer logRequestSizeLimit;
@@ -136,7 +138,8 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
         this.allFieldEnabled = this.config.isAllFieldEnabled(false);
         this.propertyNameVisibilitiesStore = this.config.createPropertyNameVisibilitiesStore(graph);
         this.client = createClient(this.config);
-        this.serverPluginInstalled = checkPluginInstalled(this.client);
+        this.serverPluginInstalled = checkVertexiumPluginInstalled(this.client);
+        this.sizeFieldEnabled = checkSizePluginInstalled(client);
         this.geoShapePrecision = this.config.getGeoShapePrecision();
         this.geoShapeErrorPct = this.config.getGeoShapeErrorPct();
         this.logRequestSizeLimit = this.config.getLogRequestSizeLimit();
@@ -246,24 +249,42 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
         }
     }
 
-    private boolean checkPluginInstalled(Client client) {
+    private boolean checkVertexiumPluginInstalled(Client client) {
         if (config.isForceDisableVertexiumPlugin()) {
             LOGGER.info("Forcing the vertexium plugin off. Running without the server side Vertexium plugin will disable some features.");
             return false;
         }
+        boolean pluginInstalled = checkPluginInstalled(client, "vertexium");
+        if (!pluginInstalled) {
+            if (config.isErrorOnMissingVertexiumPlugin()) {
+                throw new VertexiumException("Vertexium plugin cannot be found");
+            }
+            LOGGER.warn("Running without the server side Vertexium plugin will disable some features.");
+        }
+        return pluginInstalled;
+    }
 
+    private boolean checkSizePluginInstalled(Client client) {
+        if (!config.isSizeFieldEnabled()) {
+            LOGGER.info("Size field is not enabled for Vertexium indices.");
+            return false;
+        }
+        boolean pluginInstalled = checkPluginInstalled(client, "mapper-size");
+        if (!pluginInstalled) {
+            throw new VertexiumException("Size field should be enabled but the mapper-size plugin is not installed. Please install the plugin in your Elasticsearch cluster or disable this feature.");
+        }
+        return true;
+    }
+
+    private boolean checkPluginInstalled(Client client, String pluginName) {
         NodesInfoResponse nodesInfoResponse = client.admin().cluster().prepareNodesInfo().setPlugins(true).get();
         for (NodeInfo nodeInfo : nodesInfoResponse.getNodes()) {
             for (PluginInfo pluginInfo : nodeInfo.getPlugins().getPluginInfos()) {
-                if ("vertexium".equals(pluginInfo.getName())) {
+                if (pluginName.equals(pluginInfo.getName())) {
                     return true;
                 }
             }
         }
-        if (config.isErrorOnMissingVertexiumPlugin()) {
-            throw new VertexiumException("Vertexium plugin cannot be found");
-        }
-        LOGGER.warn("Running without the server side Vertexium plugin will disable some features.");
         return false;
     }
 
@@ -1961,12 +1982,15 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
                     .startObject("_all").field("enabled", isAllFieldEnabled()).endObject()
                     .startObject("properties");
                 createIndexAddFieldsToElementType(mappingBuilder);
-                XContentBuilder mapping = mappingBuilder.endObject()
-                    .endObject();
+                mappingBuilder.endObject();
+                if (config.isSizeFieldEnabled()) {
+                    mappingBuilder.startObject(DOC_SIZE_FIELD_NAME).field("enabled", true).endObject();
+                }
+                mappingBuilder.endObject();
 
                 client.admin().indices().preparePutMapping(indexInfo.getIndexName())
                     .setType(getIdStrategy().getType())
-                    .setSource(mapping)
+                    .setSource(mappingBuilder)
                     .execute()
                     .actionGet();
                 indexInfo.setElementTypeDefined(true);

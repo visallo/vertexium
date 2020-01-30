@@ -7,6 +7,8 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
+import org.elasticsearch.action.admin.cluster.node.info.NodeInfo;
+import org.elasticsearch.action.admin.cluster.node.info.NodesInfoResponse;
 import org.elasticsearch.action.admin.indices.create.CreateIndexResponse;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.admin.indices.mapping.get.GetMappingsResponse;
@@ -32,6 +34,7 @@ import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.plugins.Plugin;
+import org.elasticsearch.plugins.PluginInfo;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
 import org.elasticsearch.search.aggregations.Aggregation;
@@ -92,6 +95,7 @@ public class Elasticsearch7SearchIndex implements SearchIndex, SearchIndexWithVe
     public static final String OUT_VERTEX_ID_FIELD_NAME = "__outVertexId";
     public static final String IN_VERTEX_ID_FIELD_NAME = "__inVertexId";
     public static final String EDGE_LABEL_FIELD_NAME = "__edgeLabel";
+    public static final String DOC_SIZE_FIELD_NAME = "_size";
     public static final String EXTENDED_DATA_TABLE_NAME_FIELD_NAME = "__extendedDataTableName";
     public static final String EXTENDED_DATA_TABLE_ROW_ID_FIELD_NAME = "__extendedDataRowId";
     public static final String EXTENDED_DATA_TABLE_COLUMN_VISIBILITIES_FIELD_NAME = "__extendedDataColumnVisibilities";
@@ -125,6 +129,7 @@ public class Elasticsearch7SearchIndex implements SearchIndex, SearchIndexWithVe
     private Integer logRequestSizeLimit;
     private final Elasticsearch7ExceptionHandler exceptionHandler;
     private final boolean refreshIndexOnFlush;
+    private boolean sizeFieldEnabled;
 
     public Elasticsearch7SearchIndex(Graph graph, GraphConfiguration config) {
         this.graph = graph;
@@ -133,6 +138,7 @@ public class Elasticsearch7SearchIndex implements SearchIndex, SearchIndexWithVe
         this.indexSelectionStrategy = this.config.getIndexSelectionStrategy();
         this.propertyNameVisibilitiesStore = this.config.createPropertyNameVisibilitiesStore(graph);
         this.client = createClient(this.config);
+        this.sizeFieldEnabled = checkSizePluginInstalled(client);
         this.geoShapePrecision = this.config.getGeoShapePrecision();
         this.geoShapeErrorPct = this.config.getGeoShapeErrorPct();
         this.logRequestSizeLimit = this.config.getLogRequestSizeLimit();
@@ -242,6 +248,30 @@ public class Elasticsearch7SearchIndex implements SearchIndex, SearchIndexWithVe
         } catch (IOException e) {
             throw new VertexiumException("Could not read ES config file: " + esConfigFile.getAbsolutePath(), e);
         }
+    }
+
+    private boolean checkSizePluginInstalled(Client client) {
+        if (!config.isSizeFieldEnabled()) {
+            LOGGER.info("Size field is not enabled for Vertexium indices.");
+            return false;
+        }
+        boolean pluginInstalled = checkPluginInstalled(client, "mapper-size");
+        if (!pluginInstalled) {
+            throw new VertexiumException("Size field should be enabled but the mapper-size plugin is not installed. Please install the plugin in your Elasticsearch cluster or disable this feature.");
+        }
+        return true;
+    }
+
+    private boolean checkPluginInstalled(Client client, String pluginName) {
+        NodesInfoResponse nodesInfoResponse = client.admin().cluster().prepareNodesInfo().setPlugins(true).get();
+        for (NodeInfo nodeInfo : nodesInfoResponse.getNodes()) {
+            for (PluginInfo pluginInfo : nodeInfo.getPlugins().getPluginInfos()) {
+                if (pluginName.equals(pluginInfo.getName())) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     public Set<String> getIndexNamesFromElasticsearch() {
@@ -1884,12 +1914,15 @@ public class Elasticsearch7SearchIndex implements SearchIndex, SearchIndexWithVe
                     .startObject("_source").field("enabled", true).endObject()
                     .startObject("properties");
                 createIndexAddFieldsToElementType(mappingBuilder);
-                XContentBuilder mapping = mappingBuilder.endObject()
-                    .endObject();
+                mappingBuilder.endObject();
+                if (config.isSizeFieldEnabled()) {
+                    mappingBuilder.startObject(DOC_SIZE_FIELD_NAME).field("enabled", true).endObject();
+                }
+                mappingBuilder.endObject();
 
                 client.admin().indices().preparePutMapping(indexInfo.getIndexName())
                     .setType(getIdStrategy().getType())
-                    .setSource(mapping)
+                    .setSource(mappingBuilder)
                     .execute()
                     .actionGet();
                 indexInfo.setElementTypeDefined(true);
