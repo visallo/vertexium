@@ -121,46 +121,52 @@ public class ElasticsearchGraphQueryIterable<T> extends DefaultGraphQueryIterabl
     private static Map<String, AggregationResult> reduceAggregationResults(ElasticsearchSearchQueryBase query, Map<String, List<Aggregation>> aggsByName) {
         Map<String, AggregationResult> results = new HashMap<>();
         for (Map.Entry<String, List<Aggregation>> entry : aggsByName.entrySet()) {
-            results.put(entry.getKey(), reduceAggregationResults(query, entry.getValue()));
+            results.put(entry.getKey(), reduceAggregationResults(query, query.getAggregationByName(entry.getKey()), entry.getValue()));
         }
         return results;
     }
 
-    private static AggregationResult reduceAggregationResults(ElasticsearchSearchQueryBase query, List<Aggregation> aggs) {
-        if (aggs.size() == 0) {
+    private static AggregationResult reduceAggregationResults(ElasticsearchSearchQueryBase query, org.vertexium.query.Aggregation queryAgg, List<Aggregation> resultAggs) {
+        if (resultAggs.size() == 0) {
             throw new VertexiumException("Cannot reduce zero sized aggregation list");
         }
-        Aggregation first = aggs.get(0);
-        if (first.getName().endsWith(AGGREGATION_HAS_NOT_SUFFIX)) {
-            if (aggs.size() > 1) {
-                first = aggs.get(1);
-            } else {
-                throw new VertexiumException("Unhandled aggregation. Found HasNot filter with no associated aggregations.");
+
+        Object aggType = queryAgg;
+        if (queryAgg == null) {
+            Aggregation first = resultAggs.get(0);
+            if (first.getName().endsWith(AGGREGATION_HAS_NOT_SUFFIX)) {
+                if (resultAggs.size() > 1) {
+                    first = resultAggs.get(1);
+                } else {
+                    throw new VertexiumException("Unhandled aggregation. Found HasNot filter with no associated aggregations and no query aggregation.");
+                }
             }
+            aggType = first;
         }
 
-        if (first instanceof HistogramAggregation || first instanceof InternalHistogram || first instanceof InternalDateHistogram) {
-            return reduceHistogramResults(query, aggs);
+        if (aggType instanceof HistogramAggregation || aggType instanceof CalendarFieldAggregation ||
+            aggType instanceof InternalHistogram || aggType instanceof InternalDateHistogram) {
+            return reduceHistogramResults(query, resultAggs);
         }
-        if (first instanceof RangeAggregation || first instanceof InternalRange) {
-            return reduceRangeResults(query, aggs);
+        if (aggType instanceof RangeAggregation || aggType instanceof InternalRange) {
+            return reduceRangeResults(query, resultAggs);
         }
-        if (first instanceof PercentilesAggregation || first instanceof Percentiles) {
-            return reducePercentilesResults(query, aggs);
+        if (aggType instanceof PercentilesAggregation || aggType instanceof Percentiles) {
+            return reducePercentilesResults(query, resultAggs);
         }
-        if (first instanceof TermsAggregation || first instanceof InternalTerms) {
-            return reduceTermsResults(query, aggs);
+        if (aggType instanceof TermsAggregation || aggType instanceof InternalTerms) {
+            return reduceTermsResults(query, resultAggs);
         }
-        if (first instanceof GeohashAggregation || first instanceof InternalGeoHashGrid) {
-            return reduceGeohashResults(query, aggs);
+        if (aggType instanceof GeohashAggregation || aggType instanceof InternalGeoHashGrid) {
+            return reduceGeohashResults(query, resultAggs);
         }
-        if (first instanceof StatisticsAggregation || first instanceof InternalExtendedStats) {
-            return reduceStatisticsResults(aggs);
+        if (aggType instanceof StatisticsAggregation || aggType instanceof InternalExtendedStats) {
+            return reduceStatisticsResults(resultAggs);
         }
-        if (first instanceof CardinalityAggregation || first instanceof InternalCardinality) {
-            return reduceCardinalityResults(query, aggs);
+        if (aggType instanceof CardinalityAggregation || aggType instanceof InternalCardinality) {
+            return reduceCardinalityResults(query, resultAggs);
         }
-        throw new VertexiumException("Unhandled aggregation type: " + first.getClass().getName());
+        throw new VertexiumException("Unhandled aggregation type: " + aggType.getClass().getName());
     }
 
     private static HistogramResult reduceHistogramResults(ElasticsearchSearchQueryBase query, List<Aggregation> aggs) {

@@ -3827,6 +3827,32 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    public void testGraphQueryAggregateOnPropertyThatHasNoValuesInTheIndex() {
+        graph.defineProperty("alias").dataType(String.class).sortable(true).define();
+
+        graph.prepareVertex("v1", VISIBILITY_A)
+            .setProperty("name", "joe", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
+        graph.prepareVertex("v2", VISIBILITY_A)
+            .setProperty("name", "bob", VISIBILITY_B)
+            .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        TermsAggregation aliasAggregation = new TermsAggregation("alias-agg", "alias");
+        aliasAggregation.setIncludeHasNotCount(true);
+        QueryResultsIterable<Vertex> vertices = graph.query(AUTHORIZATIONS_A)
+            .addAggregation(aliasAggregation)
+            .limit(0)
+            .vertices();
+
+        Assert.assertEquals(0, count(vertices));
+
+        TermsResult aliasAggResult = vertices.getAggregationResult(aliasAggregation.getAggregationName(), TermsResult.class);
+        assertEquals(2, aliasAggResult.getHasNotCount());
+        assertEquals(0, count(aliasAggResult.getBuckets()));
+    }
+
+    @Test
     public void testGraphQuerySortOnPropertyWhichIsFullTextAndExactMatchIndexed() {
         graph.defineProperty("name")
             .dataType(String.class)

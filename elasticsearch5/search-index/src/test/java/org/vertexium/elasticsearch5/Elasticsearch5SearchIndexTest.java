@@ -18,6 +18,8 @@ import org.vertexium.inmemory.InMemoryGraph;
 import org.vertexium.inmemory.InMemoryGraphConfiguration;
 import org.vertexium.query.QueryResultsIterable;
 import org.vertexium.query.SortDirection;
+import org.vertexium.query.TermsAggregation;
+import org.vertexium.query.TermsResult;
 import org.vertexium.scoring.ScoringStrategy;
 import org.vertexium.sorting.SortingStrategy;
 import org.vertexium.test.GraphTestBase;
@@ -90,6 +92,26 @@ public class Elasticsearch5SearchIndexTest extends GraphTestBase {
 
         QueryResultsIterable<Vertex> vertices = graph.query(AUTHORIZATIONS_A).sort("age", SortDirection.ASCENDING).vertices();
         Assert.assertEquals(2, count(vertices));
+    }
+
+    @Test
+    public void testGraphQueryAggregateOnPropertyThatHasNoValuesInTheIndex() {
+        super.testGraphQueryAggregateOnPropertyThatHasNoValuesInTheIndex();
+
+        getSearchIndex().clearCache();
+
+        TermsAggregation aliasAggregation = new TermsAggregation("alias-agg", "alias");
+        aliasAggregation.setIncludeHasNotCount(true);
+        QueryResultsIterable<Vertex> vertices = graph.query(AUTHORIZATIONS_A)
+            .addAggregation(aliasAggregation)
+            .limit(0)
+            .vertices();
+
+        Assert.assertEquals(0, count(vertices));
+
+        TermsResult aliasAggResult = vertices.getAggregationResult(aliasAggregation.getAggregationName(), TermsResult.class);
+        assertEquals(2, aliasAggResult.getHasNotCount());
+        assertEquals(0, count(aliasAggResult.getBuckets()));
     }
 
     @Override
