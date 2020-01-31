@@ -97,6 +97,7 @@ public class ElasticsearchResource extends ExternalResource {
         expandPlugin(mapperPluginDir, "mapper-size-7.5.0.zip");
     }
 
+    @SuppressWarnings("unchecked")
     private void expandPlugin(File pluginDir, String pluginZipName, String... filesToExtract) {
         InputStream zipIn = getClass().getResourceAsStream("/" + pluginZipName);
         File pluginZip = new File(pluginDir.getParentFile(), pluginZipName);
@@ -115,9 +116,9 @@ public class ElasticsearchResource extends ExternalResource {
                     .toArray(String[]::new);
             }
 
-            for (int i = 0; i < filesToExtract.length; i++) {
-                String fileName = filesToExtract[i].replace("elasticsearch/", "");
-                zipFile.extractFile(filesToExtract[i], pluginDir.getAbsolutePath(), null, fileName);
+            for (String s : filesToExtract) {
+                String fileName = s.replace("elasticsearch/", "");
+                zipFile.extractFile(s, pluginDir.getAbsolutePath(), null, fileName);
             }
         } catch (Exception ex) {
             throw new VertexiumException("Could not extract plugin", ex);
