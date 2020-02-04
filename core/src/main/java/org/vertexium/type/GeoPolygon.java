@@ -1,6 +1,6 @@
 package org.vertexium.type;
 
-import org.vertexium.VertexiumException;
+import org.vertexium.util.GeoUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -64,31 +64,31 @@ public class GeoPolygon extends GeoShapeBase {
     }
 
     @Override
-    public boolean intersects(GeoShape geoShape) {
-        throw new VertexiumException("Not implemented for argument type " + geoShape.getClass().getName());
-    }
-
-    @Override
-    public boolean within(GeoShape geoShape) {
-        throw new VertexiumException("Not implemented for argument type " + geoShape.getClass().getName());
-    }
-
-    @Override
     public void validate() {
-        if (this.outerBoundary.size() < 4) {
-            throw new VertexiumException("A polygon must specify at least 4 points for its outer boundary.");
+        GeoUtils.toJtsPolygon(this.outerBoundary, this.holeBoundaries, false);
+    }
+
+    public static GeoShape createLenient(List<GeoPoint> outerBoundary) {
+        return createLenient(outerBoundary, null, null);
+    }
+
+    public static GeoShape createLenient(List<GeoPoint> outerBoundary, String description) {
+        return createLenient(outerBoundary, null, description);
+    }
+
+    public static GeoShape createLenient(List<GeoPoint> outerBoundary, List<List<GeoPoint>> holeBoundaries) {
+        return createLenient(outerBoundary, holeBoundaries, null);
+    }
+
+    /**
+     * Try to make a polygon with the coordinates provided. If that fails validation, attempt to automatically correct the errors.
+     */
+    public static GeoShape createLenient(List<GeoPoint> outerBoundary, List<List<GeoPoint>> holeBoundaries, String description) {
+        try {
+            return new GeoPolygon(outerBoundary, holeBoundaries, description);
+        } catch (VertexiumInvalidShapeException ve) {
+            return GeoUtils.toGeoShape(GeoUtils.toJtsPolygon(outerBoundary, holeBoundaries, true), description);
         }
-        if (!this.outerBoundary.get(0).equals(this.outerBoundary.get(this.outerBoundary.size() - 1))) {
-            throw new VertexiumException("A polygon outer boundary must begin and end at the same point.");
-        }
-        this.holeBoundaries.forEach(holeBoundary -> {
-            if (holeBoundary.size() < 4) {
-                throw new VertexiumException("A polygon hole must specify at least 4 points.");
-            }
-            if (!holeBoundary.get(0).equals(holeBoundary.get(holeBoundary.size() - 1))) {
-                throw new VertexiumException("A polygon hole must begin and end at the same point.");
-            }
-        });
     }
 
     public List<GeoPoint> getOuterBoundary() {

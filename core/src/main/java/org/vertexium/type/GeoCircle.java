@@ -1,7 +1,5 @@
 package org.vertexium.type;
 
-import org.vertexium.VertexiumException;
-
 public class GeoCircle extends GeoShapeBase {
     private static final long serialVersionUID = 1L;
     private final double latitude;
@@ -40,73 +38,6 @@ public class GeoCircle extends GeoShapeBase {
 
     public double getRadius() {
         return radius;
-    }
-
-    @Override
-    public boolean intersects(GeoShape geoShape) {
-        if (geoShape instanceof GeoPoint) {
-            return within(geoShape);
-        } else if (geoShape instanceof GeoCircle) {
-            GeoCircle circle = (GeoCircle) geoShape;
-            double centerDistance = distanceBetween(latitude, longitude, circle.latitude, circle.longitude);
-            return centerDistance < (radius + circle.radius);
-        }
-        throw new VertexiumException("Not implemented for argument type " + geoShape.getClass().getName());
-    }
-
-    @Override
-    public boolean within(GeoShape geoShape) {
-        if (geoShape instanceof GeoPoint) {
-            GeoPoint pt = (GeoPoint) geoShape;
-            return distanceBetween(getLatitude(), getLongitude(), pt.getLatitude(), pt.getLongitude()) <= getRadius();
-        } else if (geoShape instanceof GeoCircle) {
-            GeoCircle circle = (GeoCircle) geoShape;
-            double distance = distanceBetween(getLatitude(), getLongitude(), circle.getLatitude(), circle.getLongitude());
-            return distance <= getRadius() + circle.getRadius();
-        } else if (geoShape instanceof GeoRect) {
-            GeoRect rect = (GeoRect) geoShape;
-            return within(rect.getNorthWest()) && within(rect.getSouthEast());
-        } else if (geoShape instanceof GeoHash) {
-            return within(((GeoHash) geoShape).toGeoRect());
-        } else if (geoShape instanceof GeoLine) {
-            return ((GeoLine) geoShape).getGeoPoints().stream().allMatch(this::within);
-        }
-        throw new VertexiumException("Not implemented for argument type " + geoShape.getClass().getName());
-    }
-
-    // see http://janmatuschek.de/LatitudeLongitudeBoundingCoordinates
-    public GeoRect getBoundingBox() {
-        double radDist = radius / EARTH_RADIUS;
-        double radLat = Math.toRadians(latitude);
-        double radLon = Math.toRadians(longitude);
-
-        double minLat = radLat - radDist;
-        double maxLat = radLat + radDist;
-
-        double minLon, maxLon;
-        if (minLat > MIN_LAT && maxLat < MAX_LAT) {
-            double deltaLon = Math.asin(Math.sin(radDist) /
-                Math.cos(radLat));
-            minLon = radLon - deltaLon;
-            if (minLon < MIN_LON) {
-                minLon += 2d * Math.PI;
-            }
-            maxLon = radLon + deltaLon;
-            if (maxLon > MAX_LON) {
-                maxLon -= 2d * Math.PI;
-            }
-        } else {
-            // a pole is within the distance
-            minLat = Math.max(minLat, MIN_LAT);
-            maxLat = Math.min(maxLat, MAX_LAT);
-            minLon = MIN_LON;
-            maxLon = MAX_LON;
-        }
-
-        return new GeoRect(
-            new GeoPoint(Math.toDegrees(maxLat), Math.toDegrees(minLon)),
-            new GeoPoint(Math.toDegrees(minLat), Math.toDegrees(maxLon))
-        );
     }
 
     @Override

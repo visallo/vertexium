@@ -981,7 +981,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
         DistanceCalculator distanceCalculator = spatialContext.getDistCalc();
         Point centerPoint = spatialContext.getShapeFactory().pointXY(DistanceUtils.normLonDEG(geoCircle.getLongitude()), DistanceUtils.normLatDEG(geoCircle.getLatitude()));
         ArrayList<GeoPoint> points = new ArrayList<>();
-        for (float angle = 0; angle < 360; angle += 360.0 / numberOfPoints) {
+        for (float angle = 360; angle > 0; angle -= 360.0 / numberOfPoints) {
             Point point = distanceCalculator.pointOnBearing(centerPoint, geoCircle.getRadius() * KM_TO_DEG, angle, spatialContext, null);
             points.add(new GeoPoint(point.getY(), point.getX()));
         }

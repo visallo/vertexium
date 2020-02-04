@@ -1,6 +1,6 @@
 package org.vertexium.type;
 
-import org.vertexium.VertexiumException;
+import org.vertexium.util.GeoUtils;
 
 import java.util.List;
 import java.util.regex.Matcher;
@@ -108,11 +108,6 @@ public class GeoPoint extends GeoShapeBase implements Comparable<GeoPoint> {
     }
 
     @Override
-    public boolean within(GeoShape geoShape) {
-        throw new VertexiumException("Not implemented for argument type " + geoShape.getClass().getName());
-    }
-
-    @Override
     public int hashCode() {
         int hash = 3;
         hash = 47 * hash + (int) (Double.doubleToLongBits(this.latitude) ^ (Double.doubleToLongBits(this.latitude) >>> 32));
@@ -160,7 +155,7 @@ public class GeoPoint extends GeoShapeBase implements Comparable<GeoPoint> {
     }
 
     public double distanceFrom(GeoPoint geoPoint) {
-        return distanceBetween(
+        return GeoUtils.distanceBetween(
             this.getLatitude(), this.getLongitude(),
             geoPoint.getLatitude(), geoPoint.getLongitude()
         );
@@ -212,10 +207,10 @@ public class GeoPoint extends GeoShapeBase implements Comparable<GeoPoint> {
 
         String[] parts = str.split(",");
         if (parts.length < 2) {
-            throw new VertexiumException("Too few parts to GeoPoint string. Expected at least 2 found " + parts.length + " for string: " + str);
+            throw new VertexiumInvalidShapeException("Too few parts to GeoPoint string. Expected at least 2 found " + parts.length + " for string: " + str);
         }
         if (parts.length >= 5) {
-            throw new VertexiumException("Too many parts to GeoPoint string. Expected less than or equal to 4 found " + parts.length + " for string: " + str);
+            throw new VertexiumInvalidShapeException("Too many parts to GeoPoint string. Expected less than or equal to 4 found " + parts.length + " for string: " + str);
         }
         int part = 0;
         double latitude = parsePart(parts[part++]);
@@ -226,12 +221,12 @@ public class GeoPoint extends GeoShapeBase implements Comparable<GeoPoint> {
             String p = parts[part].trim();
             if (p.startsWith("~")) {
                 if (accuracy != null) {
-                    throw new VertexiumException("Cannot specify two accuracies (~) in GeoPoint string.");
+                    throw new VertexiumInvalidShapeException("Cannot specify two accuracies (~) in GeoPoint string.");
                 }
                 accuracy = Double.parseDouble(p.substring(1));
             } else {
                 if (altitude != null) {
-                    throw new VertexiumException("Cannot specify two altitudes in GeoPoint string.");
+                    throw new VertexiumInvalidShapeException("Cannot specify two altitudes in GeoPoint string.");
                 }
                 altitude = Double.parseDouble(p);
             }

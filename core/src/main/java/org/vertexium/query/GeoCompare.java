@@ -56,11 +56,10 @@ public enum GeoCompare implements Predicate {
         }
     }
 
-
     private boolean evaluate(Object testValue, Object second) {
         switch (this) {
             case WITHIN:
-                return ((GeoShape) second).within((GeoShape) testValue);
+                return ((GeoShape) testValue).within((GeoShape) second);
             case INTERSECTS:
                 return ((GeoShape) second).intersects((GeoShape) testValue);
             case DISJOINT:

@@ -10,15 +10,15 @@ public interface GeoShape {
     boolean intersects(GeoShape geoShape);
 
     /**
-     * Calculate whether the given GeoShape is completely within the geometry of this object.
+     * Calculate whether this shape is completely within the geometry of the given object.
      *
      * @param geoShape The other shape
-     * @return True if the provided shape is completely within the geometry of this shape.
+     * @return True if this shape is completely within the geometry of the provided shape.
      */
     boolean within(GeoShape geoShape);
 
     /**
-     * Throw a VertexiumException if the requirements for this shape are not met.
+     * Throw a VertexiumInvalidShapeException if the requirements for this shape are not met.
      */
     void validate();
 

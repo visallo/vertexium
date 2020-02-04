@@ -2,6 +2,7 @@ package org.vertexium.test;
 
 import org.junit.Test;
 import org.vertexium.Graph;
+import org.vertexium.VertexiumException;
 import org.vertexium.VertexiumSerializer;
 import org.vertexium.property.DefaultStreamingPropertyValue;
 import org.vertexium.property.PropertyValue;
@@ -229,25 +230,19 @@ public abstract class VertexiumSerializerTestBase {
         GeoPolygon geoPolygon = new GeoPolygon(
             Arrays.asList(
                 new GeoPoint(12.123, 23.234),
-                new GeoPoint(34.345, 45.456),
+                new GeoPoint(34.345, 80.456),
                 new GeoPoint(56.567, 67.678),
                 new GeoPoint(12.123, 23.234)
             ),
             Arrays.asList(
                 Arrays.asList(
-                    new GeoPoint(78.789, 89.890),
-                    new GeoPoint(65.654, 54.543),
-                    new GeoPoint(43.432, 32.321),
-                    new GeoPoint(78.789, 89.890)
-                ),
-                Arrays.asList(
-                    new GeoPoint(21.210, 10.109),
-                    new GeoPoint(87.876, 76.765),
-                    new GeoPoint(65.654, 54.543),
-                    new GeoPoint(21.210, 10.109)
+                    new GeoPoint(45.451, 60.601),
+                    new GeoPoint(38.382, 70.702),
+                    new GeoPoint(35.353, 56.563),
+                    new GeoPoint(45.451, 60.601)
                 )
             ),
-            "Geo collection with description"
+            "GeoPolygon to test serialization"
         );
 
         testValue(
@@ -256,38 +251,99 @@ public abstract class VertexiumSerializerTestBase {
             (givenValue, deserializedValue) -> {
                 assertNotNull(deserializedValue);
 
-                assertEquals(givenValue.getOuterBoundary().size(), deserializedValue.getOuterBoundary().size());
-                for (int i = 0; i < givenValue.getOuterBoundary().size(); i++) {
-                    assertEquals(givenValue.getOuterBoundary().get(i), deserializedValue.getOuterBoundary().get(i));
+                assertEquals(geoPolygon.getOuterBoundary().size(), deserializedValue.getOuterBoundary().size());
+                for (int i = 0; i < geoPolygon.getOuterBoundary().size(); i++) {
+                    assertEquals(geoPolygon.getOuterBoundary().get(i), deserializedValue.getOuterBoundary().get(i));
                 }
 
-                assertEquals(givenValue.getHoles().size(), deserializedValue.getHoles().size());
-                for (int i = 0; i < givenValue.getHoles().size(); i++) {
-                    List<GeoPoint> givenHole = givenValue.getHoles().get(i);
+                assertEquals(geoPolygon.getHoles().size(), deserializedValue.getHoles().size());
+                for (int i = 0; i < geoPolygon.getHoles().size(); i++) {
+                    List<GeoPoint> givenHole = geoPolygon.getHoles().get(i);
                     List<GeoPoint> deserializedHole = deserializedValue.getHoles().get(i);
                     for (int j = 0; j < givenHole.size(); j++) {
                         assertEquals(givenHole.get(j), deserializedHole.get(j));
                     }
                 }
 
-                assertEquals(givenValue.getDescription(), deserializedValue.getDescription());
+                assertEquals(geoPolygon.getDescription(), deserializedValue.getDescription());
+            }
+        );
+    }
+
+    @Test
+    public void testLegacyInvalidGeoPolygon() {
+        // The serialized bytes represent an invalid GeoPolygon with these coordinates
+        List<GeoPoint> expectedDeserializedOuterBoundary = Arrays.asList(
+            new GeoPoint(12.123, 23.234),
+            new GeoPoint(34.345, 45.456),
+            new GeoPoint(56.567, 67.678),
+            new GeoPoint(12.123, 23.234)
+        );
+        List<List<GeoPoint>> expectedDeserialzedHoles = Arrays.asList(
+            Arrays.asList(
+                new GeoPoint(78.789, 89.890),
+                new GeoPoint(65.654, 54.543),
+                new GeoPoint(43.432, 32.321),
+                new GeoPoint(78.789, 89.890)
+            ),
+            Arrays.asList(
+                new GeoPoint(21.210, 10.109),
+                new GeoPoint(87.876, 76.765),
+                new GeoPoint(65.654, 54.543),
+                new GeoPoint(21.210, 10.109)
+            )
+        );
+        String expectedDeserializedDescription = "Geo collection with description";
+
+        testValue(
+            (GeoPolygon) null,
+            getLegacyGeoPolygonBytes(),
+            (givenValue, deserializedValue) -> {
+                assertNotNull(deserializedValue);
+
+                try {
+                    deserializedValue.validate();
+                    fail("deserialized polygon should have been invalid");
+                }catch (VertexiumException expected) {
+                    // expected
+                }
+
+                assertEquals(expectedDeserializedOuterBoundary.size(), deserializedValue.getOuterBoundary().size());
+                for (int i = 0; i < expectedDeserializedOuterBoundary.size(); i++) {
+                    assertEquals(expectedDeserializedOuterBoundary.get(i), deserializedValue.getOuterBoundary().get(i));
+                }
+
+                assertEquals(expectedDeserialzedHoles.size(), deserializedValue.getHoles().size());
+                for (int i = 0; i < expectedDeserialzedHoles.size(); i++) {
+                    List<GeoPoint> givenHole = expectedDeserialzedHoles.get(i);
+                    List<GeoPoint> deserializedHole = deserializedValue.getHoles().get(i);
+                    for (int j = 0; j < givenHole.size(); j++) {
+                        assertEquals(givenHole.get(j), deserializedHole.get(j));
+                    }
+                }
+
+                assertEquals(expectedDeserializedDescription, deserializedValue.getDescription());
             }
         );
     }
 
     protected abstract byte[] getGeoPolygonBytes();
 
-    protected <T> void testValue(T value, byte[] bytes, TestValueCallback<T> fn) {
-        SerializableObject<T> serializableObject = new SerializableObject<>();
-        serializableObject.a_start = "START";
-        serializableObject.b_value = value;
-        serializableObject.z_end = "END";
+    protected abstract byte[] getLegacyGeoPolygonBytes();
 
-        printSerializedObject(serializableObject);
+    protected <T> void testValue(T value, byte[] bytes, TestValueCallback<T> fn) {
+        if (value != null) {
+            SerializableObject<T> serializableObject = new SerializableObject<>();
+            serializableObject.a_start = "START";
+            serializableObject.b_value = value;
+            serializableObject.z_end = "END";
+
+            printSerializedObject(serializableObject);
+        }
 
         SerializableObject<T> deserializableObject = getVertexiumSerializer().bytesToObject(bytes);
-        assertEquals("START", serializableObject.a_start);
-        assertEquals("END", serializableObject.z_end);
+        assertEquals("START", deserializableObject.a_start);
+        assertEquals("END", deserializableObject.z_end);
 
         fn.apply(value, deserializableObject.b_value);
     }

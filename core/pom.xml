@@ -10,6 +10,10 @@
     <artifactId>vertexium-core</artifactId>
     <name>Vertexium: Core</name>
 
+    <properties>
+        <jts.version>1.15.0</jts.version>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>org.slf4j</groupId>
@@ -34,6 +38,11 @@
         <dependency>
             <groupId>io.dropwizard.metrics</groupId>
             <artifactId>metrics-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.locationtech.jts</groupId>
+            <artifactId>jts-core</artifactId>
+            <version>${jts.version}</version>
         </dependency>
         <dependency>
             <groupId>junit</groupId>

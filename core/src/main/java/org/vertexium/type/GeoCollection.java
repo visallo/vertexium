@@ -32,7 +32,7 @@ public class GeoCollection extends GeoShapeBase {
 
     @Override
     public boolean within(GeoShape geoShape) {
-        return geoShapes.stream().anyMatch(shape -> shape.within(geoShape));
+        return geoShapes.stream().allMatch(shape -> shape.within(geoShape));
     }
 
     public GeoCollection addShape(GeoShape geoShape) {

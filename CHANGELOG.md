@@ -1,5 +1,8 @@
 # v4.9.3
 * Fixed: Term aggregations that included the HasNot count and had no documents with the actual field were throwing an exception. This version now returns the proper count of documents (all of them) in the hasNot count.
+* Changed: Updated the validation logic in the GeoShape classes to more strictly adhere to the GeoJSON specification.
+* Changed: A new `GeoUtils` class provides helper methods for validating and automatically cleaning up GeoShape instances as well as methods that performing intersection and within checks.
+* Changed: Inverted the meaning of the `GeoShape.within` method. Previously, the code `shape1.within(shape2)` was asking if shape 2 was within shape 1 which is not intuitive. Moving forward, that same code means "is shape 1 within shape 2", which reads more naturally. 
 
 # v4.9.2
 * Changed: Elasticsearch: search.indexRefreshInterval configuration to be a string to be in line with what Elasticsearch expects
