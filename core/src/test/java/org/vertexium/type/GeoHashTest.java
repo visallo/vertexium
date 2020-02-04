@@ -14,6 +14,6 @@ public class GeoHashTest {
         assertEquals(-4.3505859375, hash.toGeoRect().getNorthWest().getLongitude(), 0.001);
         assertEquals(48.6474609375, hash.toGeoRect().getSouthEast().getLatitude(), 0.001);
         assertEquals(-4.306640625, hash.toGeoRect().getSouthEast().getLongitude(), 0.001);
-        assertTrue(hash.toGeoRect().within(new GeoPoint(48.669, -4.329)));
+        assertTrue(new GeoPoint(48.669, -4.329).within(hash));
     }
 }

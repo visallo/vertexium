@@ -3,6 +3,7 @@ package org.vertexium.type;
 import com.google.common.collect.Lists;
 import org.junit.Test;
 import org.vertexium.VertexiumException;
+import org.vertexium.util.GeoUtils;
 
 import static org.junit.Assert.*;
 
@@ -63,7 +64,7 @@ public class GeoPointTest {
     public void testDistanceFromOppositeSidesOfEarth() {
         GeoPoint p1 = new GeoPoint(0.0, 0.0);
         GeoPoint p2 = new GeoPoint(0.0, 180.0);
-        assertEquals(GeoPoint.EARTH_CIRCUMFERENCE / 2.0, p1.distanceFrom(p2), 0.01d);
+        assertEquals(GeoUtils.EARTH_CIRCUMFERENCE / 2.0, p1.distanceFrom(p2), 0.01d);
     }
 
     @Test
@@ -191,5 +192,13 @@ public class GeoPointTest {
         bottomRight = new GeoPoint(0.0, 170);
         assertTrue(topLeft.isNorthWestOf(bottomRight));
         assertFalse(bottomRight.isNorthWestOf(topLeft));
+    }
+
+    @Test
+    public void testWithin() {
+        GeoRect rect1 = new GeoRect(new GeoPoint(10, 0), new GeoPoint(0, 10));
+
+        assertTrue(new GeoPoint(5, 5).within(rect1));
+        assertFalse(new GeoPoint(11, 11).within(rect1));
     }
 }

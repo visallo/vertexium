@@ -56,10 +56,7 @@ import org.vertexium.query.*;
 import org.vertexium.search.SearchIndex;
 import org.vertexium.search.SearchIndexWithVertexPropertyCountByValue;
 import org.vertexium.type.*;
-import org.vertexium.util.ExtendedDataMutationUtils;
-import org.vertexium.util.IOUtils;
-import org.vertexium.util.VertexiumLogger;
-import org.vertexium.util.VertexiumLoggerFactory;
+import org.vertexium.util.*;
 
 import java.io.*;
 import java.math.BigDecimal;
@@ -2383,7 +2380,12 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
     }
 
     protected void convertGeoShape(Map<String, Object> propertiesMap, String propertyNameWithVisibility, GeoShape geoShape) {
-        geoShape.validate();
+        try {
+            geoShape.validate();
+        } catch (VertexiumInvalidShapeException ve) {
+            LOGGER.warn("Attempting to repair invalid GeoShape", ve);
+            geoShape = GeoUtils.repair(geoShape);
+        }
 
         Map<String, Object> propertyValueMap;
         if (geoShape instanceof GeoPoint) {

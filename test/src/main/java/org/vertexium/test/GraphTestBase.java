@@ -4633,6 +4633,102 @@ public abstract class GraphTestBase {
         assertEquals(within.getDescription(), geoCollection.getDescription());
     }
 
+    /**
+     * As the rules for GeoShapes evolve, Vertexium needs to gracefully handle the legacy data by doing
+     * a best effort to index invalid shapes.
+     */
+    @Test
+    public void testUpdateVertexWithLegacyInvalidGeoShape() {
+        String locationProp = "location";
+        String nameProp = "name";
+        graph.defineProperty(locationProp).dataType(GeoShape.class).define();
+        graph.defineProperty(nameProp).dataType(String.class).textIndexHint(TextIndexHint.EXACT_MATCH).define();
+
+        graph.prepareVertex("v1", VISIBILITY_A).save(AUTHORIZATIONS_A);
+        graph.flush();
+
+        // Vertexium prevents us from directly making an invalid shape, so use a serialized shape to circumvent that
+        GeoPolygon invalidGeoPolygon = (GeoPolygon) JavaSerializableUtils.bytesToObject(new byte[]{
+            -84, -19, 0, 5, 115, 114, 0, 29, 111, 114, 103, 46, 118, 101, 114, 116,
+            101, 120, 105, 117, 109, 46, 116, 121, 112, 101, 46, 71, 101, 111, 80, 111,
+            108, 121, 103, 111, 110, 18, -99, -85, 126, 16, 37, 86, -68, 2, 0, 2,
+            76, 0, 14, 104, 111, 108, 101, 66, 111, 117, 110, 100, 97, 114, 105, 101,
+            115, 116, 0, 16, 76, 106, 97, 118, 97, 47, 117, 116, 105, 108, 47, 76,
+            105, 115, 116, 59, 76, 0, 13, 111, 117, 116, 101, 114, 66, 111, 117, 110,
+            100, 97, 114, 121, 113, 0, 126, 0, 1, 120, 114, 0, 31, 111, 114, 103,
+            46, 118, 101, 114, 116, 101, 120, 105, 117, 109, 46, 116, 121, 112, 101, 46,
+            71, 101, 111, 83, 104, 97, 112, 101, 66, 97, 115, 101, 97, 12, -56, -22,
+            28, -2, -3, 64, 2, 0, 1, 76, 0, 11, 100, 101, 115, 99, 114, 105,
+            112, 116, 105, 111, 110, 116, 0, 18, 76, 106, 97, 118, 97, 47, 108, 97,
+            110, 103, 47, 83, 116, 114, 105, 110, 103, 59, 120, 112, 116, 0, 28, 71,
+            101, 111, 32, 112, 111, 108, 121, 103, 111, 110, 32, 119, 105, 116, 104, 32,
+            100, 101, 115, 99, 114, 105, 112, 116, 105, 111, 110, 115, 114, 0, 19, 106,
+            97, 118, 97, 46, 117, 116, 105, 108, 46, 65, 114, 114, 97, 121, 76, 105,
+            115, 116, 120, -127, -46, 29, -103, -57, 97, -99, 3, 0, 1, 73, 0, 4,
+            115, 105, 122, 101, 120, 112, 0, 0, 0, 1, 119, 4, 0, 0, 0, 1,
+            115, 113, 0, 126, 0, 6, 0, 0, 0, 4, 119, 4, 0, 0, 0, 4,
+            115, 114, 0, 27, 111, 114, 103, 46, 118, 101, 114, 116, 101, 120, 105, 117,
+            109, 46, 116, 121, 112, 101, 46, 71, 101, 111, 80, 111, 105, 110, 116, 0,
+            0, 0, 0, 0, 0, 0, 1, 2, 0, 4, 68, 0, 8, 108, 97, 116,
+            105, 116, 117, 100, 101, 68, 0, 9, 108, 111, 110, 103, 105, 116, 117, 100,
+            101, 76, 0, 8, 97, 99, 99, 117, 114, 97, 99, 121, 116, 0, 18, 76,
+            106, 97, 118, 97, 47, 108, 97, 110, 103, 47, 68, 111, 117, 98, 108, 101,
+            59, 76, 0, 8, 97, 108, 116, 105, 116, 117, 100, 101, 113, 0, 126, 0,
+            10, 120, 113, 0, 126, 0, 2, 112, 64, 83, -78, 126, -7, -37, 34, -47,
+            64, 86, 120, -11, -62, -113, 92, 41, 112, 112, 115, 113, 0, 126, 0, 9,
+            112, 64, 80, 105, -37, 34, -48, -27, 96, 64, 75, 69, -127, 6, 36, -35,
+            47, 112, 112, 115, 113, 0, 126, 0, 9, 112, 64, 69, -73, 75, -58, -89,
+            -17, -98, 64, 64, 41, 22, -121, 43, 2, 12, 112, 112, 115, 113, 0, 126,
+            0, 9, 112, 64, 83, -78, 126, -7, -37, 34, -47, 64, 86, 120, -11, -62,
+            -113, 92, 41, 112, 112, 120, 120, 115, 113, 0, 126, 0, 6, 0, 0, 0,
+            4, 119, 4, 0, 0, 0, 4, 115, 113, 0, 126, 0, 9, 112, 64, 40,
+            62, -7, -37, 34, -48, -27, 64, 55, 59, -25, 108, -117, 67, -106, 112, 112,
+            115, 113, 0, 126, 0, 9, 112, 64, 65, 44, 40, -11, -62, -113, 92, 64,
+            70, -70, 94, 53, 63, 124, -18, 112, 112, 115, 113, 0, 126, 0, 9, 112,
+            64, 76, 72, -109, 116, -68, 106, 127, 64, 80, -21, 100, 90, 28, -84, 8,
+            112, 112, 115, 113, 0, 126, 0, 9, 112, 64, 40, 62, -7, -37, 34, -48,
+            -27, 64, 55, 59, -25, 108, -117, 67, -106, 112, 112, 120
+        });
+        try {
+            invalidGeoPolygon.validate();
+            fail("Polygon should be invalid");
+        } catch (VertexiumException expected) {
+        }
+
+        graph.getVertex("v1", AUTHORIZATIONS_A).prepareMutation()
+            .setProperty(locationProp, invalidGeoPolygon, VISIBILITY_A)
+            .setIndexHint(IndexHint.DO_NOT_INDEX)
+            .save(AUTHORIZATIONS_A);
+        graph.flush();
+
+        Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
+        assertEquals(invalidGeoPolygon, v1.getPropertyValue(locationProp));
+
+        // Now that we have a saved vertex with an invalid GeoPolygon, try updating it
+        v1.prepareMutation().setProperty(nameProp, "Invalid GeoPolygon", VISIBILITY_A).save(AUTHORIZATIONS_A);
+        graph.flush();
+
+        // make sure both properties are in Accumulo as expected
+        v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
+        assertEquals("Invalid GeoPolygon", v1.getPropertyValue(nameProp));
+        assertEquals(invalidGeoPolygon, v1.getPropertyValue(locationProp));
+
+        // make sure we can query for the vertex as expected
+        QueryResultsIterable<Vertex> queryResults = graph.query(AUTHORIZATIONS_A).has(nameProp, "Invalid GeoPolygon").vertices();
+        assertEquals(1, queryResults.getTotalHits());
+
+        // try re-indexing the vertex. we expect that the search index will auto-repair the element
+        if (graph instanceof GraphWithSearchIndex) {
+            ((GraphWithSearchIndex) graph).getSearchIndex().addElements(graph, Collections.singletonList(v1), AUTHORIZATIONS_A);
+            graph.flush();
+
+            queryResults = graph.query(AUTHORIZATIONS_A).has(nameProp, "Invalid GeoPolygon").vertices();
+            assertEquals(1, queryResults.getTotalHits());
+            queryResults = graph.query(AUTHORIZATIONS_A).has(locationProp).vertices();
+            assertEquals(1, queryResults.getTotalHits());
+        }
+    }
+
     // See https://jsfiddle.net/mwizeman/do5ufpa9/ for a handy way to visualize the layout of the inputs and all of the search areas
     private void doALLGeoshapeTestQueries(GeoShape intersects, GeoShape disjoint, GeoShape within, GeoShape contains) {
         graph.defineProperty("location").dataType(GeoShape.class).define();

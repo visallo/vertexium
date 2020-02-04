@@ -39,16 +39,6 @@ public class GeoLine extends GeoShapeBase {
     }
 
     @Override
-    public boolean intersects(GeoShape geoShape) {
-        throw new VertexiumException("Not implemented for argument type " + geoShape.getClass().getName());
-    }
-
-    @Override
-    public boolean within(GeoShape geoShape) {
-        throw new VertexiumException("Not implemented for argument type " + geoShape.getClass().getName());
-    }
-
-    @Override
     public void validate() {
         if (geoPoints.size() < 2) {
             throw new VertexiumException("A GeoLine must have at least two points.");

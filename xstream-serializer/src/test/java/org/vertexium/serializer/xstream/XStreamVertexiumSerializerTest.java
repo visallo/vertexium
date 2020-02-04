@@ -176,6 +176,55 @@ public class XStreamVertexiumSerializerTest extends VertexiumSerializerTestBase 
         return ("<org.vertexium.test.VertexiumSerializerTestBase_-SerializableObject>\n" +
             "  <a__start>START</a__start>\n" +
             "  <b__value class=\"org.vertexium.type.GeoPolygon\">\n" +
+            "    <description>GeoPolygon to test serialization</description>\n" +
+            "    <outerBoundary>\n" +
+            "      <org.vertexium.type.GeoPoint>\n" +
+            "        <latitude>12.123</latitude>\n" +
+            "        <longitude>23.234</longitude>\n" +
+            "      </org.vertexium.type.GeoPoint>\n" +
+            "      <org.vertexium.type.GeoPoint>\n" +
+            "        <latitude>34.345</latitude>\n" +
+            "        <longitude>80.456</longitude>\n" +
+            "      </org.vertexium.type.GeoPoint>\n" +
+            "      <org.vertexium.type.GeoPoint>\n" +
+            "        <latitude>56.567</latitude>\n" +
+            "        <longitude>67.678</longitude>\n" +
+            "      </org.vertexium.type.GeoPoint>\n" +
+            "      <org.vertexium.type.GeoPoint>\n" +
+            "        <latitude>12.123</latitude>\n" +
+            "        <longitude>23.234</longitude>\n" +
+            "      </org.vertexium.type.GeoPoint>\n" +
+            "    </outerBoundary>\n" +
+            "    <holeBoundaries>\n" +
+            "      <list>\n" +
+            "        <org.vertexium.type.GeoPoint>\n" +
+            "          <latitude>45.451</latitude>\n" +
+            "          <longitude>60.601</longitude>\n" +
+            "        </org.vertexium.type.GeoPoint>\n" +
+            "        <org.vertexium.type.GeoPoint>\n" +
+            "          <latitude>38.382</latitude>\n" +
+            "          <longitude>70.702</longitude>\n" +
+            "        </org.vertexium.type.GeoPoint>\n" +
+            "        <org.vertexium.type.GeoPoint>\n" +
+            "          <latitude>35.353</latitude>\n" +
+            "          <longitude>56.563</longitude>\n" +
+            "        </org.vertexium.type.GeoPoint>\n" +
+            "        <org.vertexium.type.GeoPoint>\n" +
+            "          <latitude>45.451</latitude>\n" +
+            "          <longitude>60.601</longitude>\n" +
+            "        </org.vertexium.type.GeoPoint>\n" +
+            "      </list>\n" +
+            "    </holeBoundaries>\n" +
+            "  </b__value>\n" +
+            "  <z__end>END</z__end>\n" +
+            "</org.vertexium.test.VertexiumSerializerTestBase_-SerializableObject>").getBytes();
+    }
+
+    @Override
+    protected byte[] getLegacyGeoPolygonBytes() {
+        return ("<org.vertexium.test.VertexiumSerializerTestBase_-SerializableObject>\n" +
+            "  <a__start>START</a__start>\n" +
+            "  <b__value class=\"org.vertexium.type.GeoPolygon\">\n" +
             "    <description>Geo collection with description</description>\n" +
             "    <outerBoundary>\n" +
             "      <org.vertexium.type.GeoPoint>\n" +

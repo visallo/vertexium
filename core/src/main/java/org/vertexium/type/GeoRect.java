@@ -1,7 +1,5 @@
 package org.vertexium.type;
 
-import org.vertexium.VertexiumException;
-
 import static org.vertexium.util.Preconditions.checkNotNull;
 
 public class GeoRect extends GeoShapeBase {
@@ -22,40 +20,6 @@ public class GeoRect extends GeoShapeBase {
         checkNotNull(southEast, "southEast is required");
         this.northWest = northWest;
         this.southEast = southEast;
-    }
-
-    @Override
-    public boolean intersects(GeoShape geoShape) {
-        if (geoShape instanceof GeoPoint) {
-            return within(geoShape);
-        } else if (geoShape instanceof GeoRect) {
-            GeoRect rect = (GeoRect) geoShape;
-            return getNorthWest().isNorthWestOf(rect.getSouthEast())
-                && getSouthEast().isSouthEastOf(rect.getNorthWest());
-        } else if (geoShape instanceof GeoHash) {
-            return intersects(((GeoHash) geoShape).toGeoRect());
-        }
-        throw new VertexiumException("Not implemented for argument type " + geoShape.getClass().getName());
-    }
-
-    @Override
-    public boolean within(GeoShape geoShape) {
-        if (geoShape instanceof GeoPoint) {
-            GeoPoint pt = (GeoPoint) geoShape;
-            return pt.isSouthEastOf(getNorthWest())
-                && pt.isNorthWestOf(getSouthEast());
-        } else if (geoShape instanceof GeoRect) {
-            GeoRect rect = (GeoRect) geoShape;
-            return getNorthWest().isNorthWestOf(rect.getNorthWest())
-                && getSouthEast().isSouthEastOf(rect.getSouthEast());
-        } else if (geoShape instanceof GeoHash) {
-            return within(((GeoHash) geoShape).toGeoRect());
-        } else if (geoShape instanceof GeoCircle) {
-            return within(((GeoCircle) geoShape).getBoundingBox());
-        } else if (geoShape instanceof GeoLine) {
-            return ((GeoLine) geoShape).getGeoPoints().stream().allMatch(this::within);
-        }
-        throw new VertexiumException("Not implemented for argument type " + geoShape.getClass().getName());
     }
 
     public GeoPoint getNorthWest() {
