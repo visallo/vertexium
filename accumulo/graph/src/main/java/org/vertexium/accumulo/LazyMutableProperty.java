@@ -113,6 +113,7 @@ public class LazyMutableProperty extends MutableProperty {
                 return null;
             }
             cachedPropertyValue = this.vertexiumSerializer.bytesToObject(propertyValue);
+            propertyValue = null;
             if (cachedPropertyValue instanceof StreamingPropertyValueRef) {
                 cachedPropertyValue = ((StreamingPropertyValueRef) cachedPropertyValue).toStreamingPropertyValue(this.graph, getTimestamp());
             }
@@ -143,6 +144,7 @@ public class LazyMutableProperty extends MutableProperty {
                     graph.getMetadataPlugin(),
                     fetchHints
                 );
+                metadataRef = null;
             }
         }
         return cachedMetadata;
