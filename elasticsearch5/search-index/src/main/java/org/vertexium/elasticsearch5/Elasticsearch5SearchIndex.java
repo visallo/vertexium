@@ -2383,7 +2383,7 @@ public class Elasticsearch5SearchIndex implements SearchIndex, SearchIndexWithVe
         try {
             geoShape.validate();
         } catch (VertexiumInvalidShapeException ve) {
-            LOGGER.warn("Attempting to repair invalid GeoShape", ve);
+            LOGGER.warn("Attempting to repair invalid GeoShape for property " + propertyNameWithVisibility, ve);
             geoShape = GeoUtils.repair(geoShape);
         }
 
