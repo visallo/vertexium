@@ -1,4 +1,4 @@
-1. `mvn release:clean release:prepare -Dtag=vertexium-root-4.8.0 -DreleaseVersion=4.8.0 -DdevelopmentVersion=4.8.1-SNAPSHOT`
+1. `mvn release:clean release:prepare -Dtag=vertexium-root-4.9.4 -DreleaseVersion=4.9.4 -DdevelopmentVersion=4.9.5-SNAPSHOT`
 1. `mvn release:perform`
 1. Go to https://oss.sonatype.org/#welcome and click "Staging Repositories" on the left
 1. Find `orgvertexium...` and click "Close"
