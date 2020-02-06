@@ -3,8 +3,7 @@ package org.vertexium.id;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.cache2k.Cache;
-import org.cache2k.CacheBuilder;
-import org.cache2k.CacheSource;
+import org.cache2k.Cache2kBuilder;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -22,18 +21,32 @@ public class SimpleNameSubstitutionStrategy implements NameSubstitutionStrategy 
     public static final String SUBS_DELIM = "\u0002";
 
     public SimpleNameSubstitutionStrategy() {
-        deflateCache = CacheBuilder
-            .newCache(String.class, String.class)
+        deflateCache = Cache2kBuilder.of(String.class, String.class)
             .name(SimpleNameSubstitutionStrategy.class, "deflateCache-" + System.identityHashCode(this))
-            .maxSize(10000)
-            .source(new DeflateCacheSource())
+            .entryCapacity(10000)
+            .eternal(true)
+            .loader(value -> {
+                deflateCacheMisses++;
+                String deflatedVal = value;
+                for (DeflateItem deflateItem : deflateSubstitutionList) {
+                    deflatedVal = deflateItem.deflate(deflatedVal);
+                }
+                return deflatedVal;
+            })
             .build();
 
-        inflateCache = CacheBuilder
-            .newCache(String.class, String.class)
+        inflateCache = Cache2kBuilder.of(String.class, String.class)
             .name(SimpleNameSubstitutionStrategy.class, "inflateCache-" + System.identityHashCode(this))
-            .maxSize(10000)
-            .source(new InflateCacheSource())
+            .entryCapacity(10000)
+            .eternal(true)
+            .loader(value -> {
+                inflateCacheMisses++;
+                String inflatedValue = value;
+                for (InflateItem inflateItem : inflateSubstitutionList) {
+                    inflatedValue = inflateItem.inflate(inflatedValue);
+                }
+                return inflatedValue;
+            })
             .build();
     }
 
@@ -97,18 +110,6 @@ public class SimpleNameSubstitutionStrategy implements NameSubstitutionStrategy 
         }
     }
 
-    private class InflateCacheSource implements CacheSource<String, String> {
-        @Override
-        public String get(String value) throws Throwable {
-            inflateCacheMisses++;
-            String inflatedValue = value;
-            for (InflateItem inflateItem : inflateSubstitutionList) {
-                inflatedValue = inflateItem.inflate(inflatedValue);
-            }
-            return inflatedValue;
-        }
-    }
-
     private static class DeflateItem {
         private final String pattern;
         private final String replacement;
@@ -120,18 +121,6 @@ public class SimpleNameSubstitutionStrategy implements NameSubstitutionStrategy 
 
         public String deflate(String value) {
             return StringUtils.replace(value, pattern, replacement);
-        }
-    }
-
-    private class DeflateCacheSource implements CacheSource<String, String> {
-        @Override
-        public String get(String value) throws Throwable {
-            deflateCacheMisses++;
-            String deflatedVal = value;
-            for (DeflateItem deflateItem : deflateSubstitutionList) {
-                deflatedVal = deflateItem.deflate(deflatedVal);
-            }
-            return deflatedVal;
         }
     }
 }

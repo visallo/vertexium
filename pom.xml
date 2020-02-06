@@ -65,7 +65,7 @@
         <commons-io.version>2.4</commons-io.version>
         <commons-codec.version>1.8</commons-codec.version>
         <jcommander.version>1.35</jcommander.version>
-        <cache2k.version>0.23.1</cache2k.version>
+        <cache2k.version>1.2.4.Final</cache2k.version>
         <metrics.version>4.1.0</metrics.version>
         <google-guava.version>18.0</google-guava.version>
         <commons-lang3.version>3.1</commons-lang3.version>
