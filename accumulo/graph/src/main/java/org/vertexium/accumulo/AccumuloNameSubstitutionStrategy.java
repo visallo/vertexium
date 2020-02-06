@@ -2,7 +2,7 @@ package org.vertexium.accumulo;
 
 import org.apache.accumulo.core.data.ByteSequence;
 import org.cache2k.Cache;
-import org.cache2k.CacheBuilder;
+import org.cache2k.Cache2kBuilder;
 import org.vertexium.accumulo.iterator.util.ByteSequenceUtils;
 import org.vertexium.id.IdentityNameSubstitutionStrategy;
 import org.vertexium.id.NameSubstitutionStrategy;
@@ -15,11 +15,11 @@ public class AccumuloNameSubstitutionStrategy implements NameSubstitutionStrateg
 
     protected AccumuloNameSubstitutionStrategy(NameSubstitutionStrategy nameSubstitutionStrategy) {
         this.nameSubstitutionStrategy = nameSubstitutionStrategy;
-        inflateTextCache = CacheBuilder
-            .newCache(ByteSequence.class, String.class)
+        inflateTextCache = Cache2kBuilder.of(ByteSequence.class, String.class)
             .name(AccumuloNameSubstitutionStrategy.class, "inflateTextCache-" + System.identityHashCode(this))
-            .maxSize(10000)
-            .source(byteSequence -> inflate(ByteSequenceUtils.toString(byteSequence)))
+            .entryCapacity(10000)
+            .eternal(true)
+            .loader(byteSequence -> inflate(ByteSequenceUtils.toString(byteSequence)))
             .build();
     }
 

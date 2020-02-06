@@ -7,7 +7,7 @@ import org.apache.accumulo.core.iterators.user.RowDeletingIterator;
 import org.apache.accumulo.core.security.ColumnVisibility;
 import org.apache.hadoop.io.Text;
 import org.cache2k.Cache;
-import org.cache2k.CacheBuilder;
+import org.cache2k.Cache2kBuilder;
 import org.vertexium.*;
 import org.vertexium.accumulo.iterator.model.EdgeInfo;
 import org.vertexium.accumulo.keys.KeyHelper;
@@ -35,10 +35,10 @@ public abstract class ElementMutationBuilder {
     private final MetadataPlugin metadataPlugin;
     private final StreamingPropertyValueStorageStrategy streamingPropertyValueStorageStrategy;
     private final VertexiumSerializer vertexiumSerializer;
-    private static final Cache<String, Text> propertyMetadataColumnQualifierTextCache = CacheBuilder
-        .newCache(String.class, Text.class)
+    private static final Cache<String, Text> propertyMetadataColumnQualifierTextCache = Cache2kBuilder.of(String.class, Text.class)
         .name(ElementMutationBuilder.class, "propertyMetadataColumnQualifierTextCache")
-        .maxSize(10000)
+        .entryCapacity(10000)
+        .eternal(true)
         .build();
 
     protected ElementMutationBuilder(
@@ -620,12 +620,16 @@ public abstract class ElementMutationBuilder {
         keyBuilder.append(visibilityString);
         keyBuilder.append(getNameSubstitutionStrategy().deflate(metadataKey));
         String key = keyBuilder.toString();
-        Text r = propertyMetadataColumnQualifierTextCache.peek(key);
-        if (r == null) {
-            r = KeyHelper.getColumnQualifierFromPropertyMetadataColumnQualifier(propertyName, propertyKey, visibilityString, metadataKey, getNameSubstitutionStrategy());
-            propertyMetadataColumnQualifierTextCache.put(key, r);
-        }
-        return r;
+        return propertyMetadataColumnQualifierTextCache.computeIfAbsent(
+            key,
+            () -> KeyHelper.getColumnQualifierFromPropertyMetadataColumnQualifier(
+                propertyName,
+                propertyKey,
+                visibilityString,
+                metadataKey,
+                getNameSubstitutionStrategy()
+            )
+        );
     }
 
     public void addPropertyDeleteMetadataToMutation(Mutation m, PropertyDeleteMutation propertyDeleteMutation) {
