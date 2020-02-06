@@ -12,7 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class GeoUtils {
-    private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(CloseableUtils.class);
+    private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(GeoUtils.class);
     private static final GeometryFactory GEOMETRY_FACTORY = new GeometryFactory();
 
     public static double EARTH_RADIUS = 6371; // km
