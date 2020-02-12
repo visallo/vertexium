@@ -1,3 +1,6 @@
+# v4.9.4
+* Added: Add a specialized version of StreamingPropertyValue to be more performant in the case where the value is a String already in memory
+
 # v4.9.3
 * Fixed: Term aggregations that included the HasNot count and had no documents with the actual field were throwing an exception. This version now returns the proper count of documents (all of them) in the hasNot count.
 * Changed: Updated the validation logic in the GeoShape classes to more strictly adhere to the GeoJSON specification.

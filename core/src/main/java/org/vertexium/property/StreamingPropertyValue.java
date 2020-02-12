@@ -3,7 +3,6 @@ package org.vertexium.property;
 import org.vertexium.VertexiumException;
 import org.vertexium.util.IOUtils;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serializable;
@@ -41,8 +40,7 @@ public abstract class StreamingPropertyValue extends PropertyValue implements Se
     }
 
     public static StreamingPropertyValue create(String value) {
-        InputStream data = new ByteArrayInputStream(value.getBytes());
-        return new DefaultStreamingPropertyValue(data, String.class);
+        return new StringStreamingPropertyValue(value);
     }
 
     public static StreamingPropertyValue create(InputStream inputStream, Class type, Long length) {
