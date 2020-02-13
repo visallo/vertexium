@@ -1,3 +1,6 @@
+# v4.9.4
+* Changed: Elasticsearch bulk to squash multiple updates to same element into a single update
+
 # v4.9.3
 * Fixed: Term aggregations that included the HasNot count and had no documents with the actual field were throwing an exception. This version now returns the proper count of documents (all of them) in the hasNot count.
 * Changed: Updated the validation logic in the GeoShape classes to more strictly adhere to the GeoJSON specification.
@@ -6,7 +9,6 @@
 
 # v4.9.2
 * Changed: Elasticsearch: search.indexRefreshInterval configuration to be a string to be in line with what Elasticsearch expects
-* Changed: Elasticsearch bulk to squash multiple updates to same element into a single update
 * Fixed: Elasticsearch 7 query string transformation was improperly stripping escape characters from fields that could not be found in the search index.
 * Fixed: When re-indexing an element with hidden properties in Elasticsearch, the hidden property field was not being included in the list of fields to add.
 
