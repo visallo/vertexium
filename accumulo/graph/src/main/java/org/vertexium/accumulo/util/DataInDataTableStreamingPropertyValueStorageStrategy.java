@@ -11,11 +11,9 @@ import org.vertexium.VertexiumException;
 import org.vertexium.accumulo.AccumuloGraphConfiguration;
 import org.vertexium.accumulo.ElementMutationBuilder;
 import org.vertexium.accumulo.StreamingPropertyValueTableDataRef;
-import org.vertexium.accumulo.StringStreamingPropertyValueRef;
 import org.vertexium.accumulo.keys.DataTableRowKey;
 import org.vertexium.property.StreamingPropertyValue;
 import org.vertexium.property.StreamingPropertyValueRef;
-import org.vertexium.property.StringStreamingPropertyValue;
 
 import java.io.InputStream;
 import java.util.List;
@@ -63,9 +61,6 @@ public class DataInDataTableStreamingPropertyValueStorageStrategy implements Str
             dataMutation.put(METADATA_COLUMN_FAMILY, METADATA_LENGTH_COLUMN_QUALIFIER, property.getTimestamp(), new Value(Longs.toByteArray(offset)));
             elementMutationBuilder.saveDataMutation(dataMutation);
 
-            if (streamingPropertyValue instanceof StringStreamingPropertyValue) {
-                return new StringStreamingPropertyValueRef((StringStreamingPropertyValue) streamingPropertyValue);
-            }
             return new StreamingPropertyValueTableDataRef(dataTableRowKey, streamingPropertyValue, offset);
         } catch (Exception ex) {
             throw new VertexiumException("Could not store streaming property value", ex);

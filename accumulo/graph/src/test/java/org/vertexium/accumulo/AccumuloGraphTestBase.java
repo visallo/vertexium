@@ -17,21 +17,27 @@ import org.vertexium.accumulo.iterator.model.VertexiumInvalidKeyException;
 import org.vertexium.accumulo.keys.DataTableRowKey;
 import org.vertexium.accumulo.keys.KeyHelper;
 import org.vertexium.accumulo.tools.DeleteHistoricalLegacyStreamingPropertyValueData;
+import org.vertexium.accumulo.util.DataInDataTableStreamingPropertyValueStorageStrategy;
 import org.vertexium.property.MutablePropertyImpl;
 import org.vertexium.property.StreamingPropertyValue;
 import org.vertexium.test.GraphTestBase;
 import org.vertexium.util.VertexiumLogger;
 import org.vertexium.util.VertexiumLoggerFactory;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static junit.framework.TestCase.fail;
 import static org.junit.Assert.*;
+import static org.junit.Assume.assumeTrue;
 import static org.vertexium.accumulo.ElementMutationBuilder.EMPTY_TEXT;
 import static org.vertexium.accumulo.iterator.model.KeyBase.VALUE_SEPARATOR;
+import static org.vertexium.accumulo.keys.KeyHelper.getColumnQualifierFromPropertyColumnQualifier;
 import static org.vertexium.util.IterableUtils.toList;
+import static org.vertexium.util.StreamUtils.stream;
 
 public abstract class AccumuloGraphTestBase extends GraphTestBase {
     private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(AccumuloGraphTestBase.class);
@@ -320,6 +326,64 @@ public abstract class AccumuloGraphTestBase extends GraphTestBase {
         assertEquals(edgeInfo.toValue(), pair.getValue());
     }
 
+    @Test
+    public void testDataTableStreamingPropertyValuesStoreRefInElementTable() throws Exception {
+        assumeTrue(getGraph().getStreamingPropertyValueStorageStrategy() instanceof DataInDataTableStreamingPropertyValueStorageStrategy);
+
+        VertexBuilder m = graph.prepareVertex("v1", 100L, VISIBILITY_A);
+
+        StreamingPropertyValue stringSpv = StreamingPropertyValue.create("This is a string SPV");
+        m.addPropertyValue("key1", "author", stringSpv, null, 200L, VISIBILITY_A);
+
+        StreamingPropertyValue inputStreamSpv = StreamingPropertyValue.create(new ByteArrayInputStream("This is an input stream SPV".getBytes()), String.class);
+        m.addPropertyValue("key2", "author", inputStreamSpv, null, 300L, VISIBILITY_A);
+
+        m.save(AUTHORIZATIONS_A);
+        getGraph().flush();
+
+        // Check that the entries in Accumulo contain instances of StreamingPropertyValueTableDataRef
+        Scanner scanner = null;
+        try {
+            scanner = getGraph().getConnector().createScanner(
+                getGraph().getVerticesTableName(),
+                getGraph().toAccumuloAuthorizations(AUTHORIZATIONS_ALL)
+            );
+            List<Map.Entry<Key, Value>> entries = toList(scanner.iterator());
+            assertEquals(3, entries.size());
+
+            Map.Entry<Key, Value> stringSpvEntry = entries.get(0);
+            assertEquals("v1", stringSpvEntry.getKey().getRow().toString());
+            assertEquals("PROP", stringSpvEntry.getKey().getColumnFamily().toString());
+            assertEquals(
+                getColumnQualifierFromPropertyColumnQualifier("key1", "author", getGraph().getNameSubstitutionStrategy()),
+                stringSpvEntry.getKey().getColumnQualifier());
+            Object stringSpvValueEntry = getGraph().getVertexiumSerializer().bytesToObject(stringSpvEntry.getValue().get());
+            assertEquals(StreamingPropertyValueTableDataRef.class, stringSpvValueEntry.getClass());
+
+            Map.Entry<Key, Value> inputStreamSpvEntry = entries.get(1);
+            assertEquals("v1", inputStreamSpvEntry.getKey().getRow().toString());
+            assertEquals("PROP", inputStreamSpvEntry.getKey().getColumnFamily().toString());
+            assertEquals(
+                getColumnQualifierFromPropertyColumnQualifier("key2", "author", getGraph().getNameSubstitutionStrategy()),
+                inputStreamSpvEntry.getKey().getColumnQualifier());
+            Object inputStreamSpvValueEntry = getGraph().getVertexiumSerializer().bytesToObject(inputStreamSpvEntry.getValue().get());
+            assertEquals(StreamingPropertyValueTableDataRef.class, inputStreamSpvValueEntry.getClass());
+        } finally {
+            if (scanner != null) {
+                scanner.close();
+            }
+        }
+
+        Vertex v1 = getGraph().getVertex("v1", AUTHORIZATIONS_A);
+        Property stringProperty = v1.getProperty("key1", "author");
+        assertEquals(StreamingPropertyValueTableData.class, stringProperty.getValue().getClass());
+        assertEquals("This is a string SPV", ((StreamingPropertyValue) stringProperty.getValue()).readToString());
+
+        Property inputStreamProperty = v1.getProperty("key2", "author");
+        assertEquals(StreamingPropertyValueTableData.class, inputStreamProperty.getValue().getClass());
+        assertEquals("This is an input stream SPV", ((StreamingPropertyValue) inputStreamProperty.getValue()).readToString());
+    }
+
     protected abstract String substitutionDeflate(String str);
 
     @Test
@@ -485,7 +549,7 @@ public abstract class AccumuloGraphTestBase extends GraphTestBase {
         StreamingPropertyValueTableRef spvValue = new StreamingPropertyValueTableRef(dataRowKey, spv, data);
         Metadata metadata = Metadata.create();
         Property property = new MutablePropertyImpl(propertyKey, propertyName, spvValue, metadata, timestamp, new HashSet<>(), new Visibility(""), FetchHints.ALL);
-        Text columnQualifier = KeyHelper.getColumnQualifierFromPropertyColumnQualifier(property, getGraph().getNameSubstitutionStrategy());
+        Text columnQualifier = getColumnQualifierFromPropertyColumnQualifier(property, getGraph().getNameSubstitutionStrategy());
         addPropertyMutation.put(AccumuloElement.CF_PROPERTY, columnQualifier, new Value(getGraph().getVertexiumSerializer().objectToBytes(spvValue)));
         getGraph().getVerticesWriter().addMutation(addPropertyMutation);
 
