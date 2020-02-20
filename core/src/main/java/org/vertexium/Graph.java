@@ -1335,7 +1335,9 @@ public interface Graph {
      *
      * @param streamingPropertyValues list of StreamingPropertyValues to get input streams for
      * @return InputStreams in the same order as the input list
+     * @deprecated Use {@link StreamingPropertyValue#getInputStream()}
      */
+    @Deprecated
     List<InputStream> getStreamingPropertyValueInputStreams(List<StreamingPropertyValue> streamingPropertyValues);
 
     /**

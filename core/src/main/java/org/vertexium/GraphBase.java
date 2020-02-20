@@ -963,6 +963,7 @@ public abstract class GraphBase implements Graph {
     }
 
     @Override
+    @Deprecated
     public List<InputStream> getStreamingPropertyValueInputStreams(List<StreamingPropertyValue> streamingPropertyValues) {
         return streamingPropertyValues.stream()
             .map(StreamingPropertyValue::getInputStream)

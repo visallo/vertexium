@@ -1,5 +1,6 @@
 package org.vertexium.accumulo;
 
+import com.google.common.primitives.Longs;
 import org.apache.accumulo.core.client.Scanner;
 import org.apache.accumulo.core.client.*;
 import org.apache.accumulo.core.data.Key;
@@ -34,6 +35,7 @@ import static junit.framework.TestCase.fail;
 import static org.junit.Assert.*;
 import static org.junit.Assume.assumeTrue;
 import static org.vertexium.accumulo.ElementMutationBuilder.EMPTY_TEXT;
+import static org.vertexium.accumulo.StreamingPropertyValueTableData.*;
 import static org.vertexium.accumulo.iterator.model.KeyBase.VALUE_SEPARATOR;
 import static org.vertexium.accumulo.keys.KeyHelper.getColumnQualifierFromPropertyColumnQualifier;
 import static org.vertexium.util.IterableUtils.toList;
@@ -341,7 +343,7 @@ public abstract class AccumuloGraphTestBase extends GraphTestBase {
         m.save(AUTHORIZATIONS_A);
         getGraph().flush();
 
-        // Check that the entries in Accumulo contain instances of StreamingPropertyValueTableDataRef
+        // Check that the entries in Accumulo vertex table contain instances of StreamingPropertyValueTableDataRef
         Scanner scanner = null;
         try {
             scanner = getGraph().getConnector().createScanner(
@@ -368,6 +370,44 @@ public abstract class AccumuloGraphTestBase extends GraphTestBase {
                 inputStreamSpvEntry.getKey().getColumnQualifier());
             Object inputStreamSpvValueEntry = getGraph().getVertexiumSerializer().bytesToObject(inputStreamSpvEntry.getValue().get());
             assertEquals(StreamingPropertyValueTableDataRef.class, inputStreamSpvValueEntry.getClass());
+        } finally {
+            if (scanner != null) {
+                scanner.close();
+            }
+        }
+
+        // Check that the entries in Accumulo data table contain instances of byte array
+        try {
+            scanner = getGraph().getConnector().createScanner(
+                getGraph().getDataTableName(),
+                getGraph().toAccumuloAuthorizations(AUTHORIZATIONS_ALL)
+            );
+            List<Map.Entry<Key, Value>> entries = toList(scanner.iterator());
+            assertEquals(4, entries.size());
+
+            Map.Entry<Key, Value> stringSpvLengthEntry = entries.get(0);
+            assertEquals(new DataTableRowKey("v1", "key1", "author").getRowKey(), stringSpvLengthEntry.getKey().getRow().toString());
+            assertEquals(METADATA_COLUMN_FAMILY, stringSpvLengthEntry.getKey().getColumnFamily());
+            assertEquals(METADATA_LENGTH_COLUMN_QUALIFIER, stringSpvLengthEntry.getKey().getColumnQualifier());
+            assertEquals(20L, Longs.fromByteArray(stringSpvLengthEntry.getValue().get()));
+
+            Map.Entry<Key, Value> stringSpvValueEntry = entries.get(1);
+            assertEquals(new DataTableRowKey("v1", "key1", "author").getRowKey(), stringSpvValueEntry.getKey().getRow().toString());
+            assertEquals(DATA_COLUMN_FAMILY, stringSpvValueEntry.getKey().getColumnFamily());
+            assertEquals("00000000", stringSpvValueEntry.getKey().getColumnQualifier().toString()); // offset
+            assertEquals("This is a string SPV", new String(stringSpvValueEntry.getValue().get()));
+
+            Map.Entry<Key, Value> inputStreamSpvLengthEntry = entries.get(2);
+            assertEquals(new DataTableRowKey("v1", "key2", "author").getRowKey(), inputStreamSpvLengthEntry.getKey().getRow().toString());
+            assertEquals(METADATA_COLUMN_FAMILY, inputStreamSpvLengthEntry.getKey().getColumnFamily());
+            assertEquals(METADATA_LENGTH_COLUMN_QUALIFIER, inputStreamSpvLengthEntry.getKey().getColumnQualifier());
+            assertEquals(27L, Longs.fromByteArray(inputStreamSpvLengthEntry.getValue().get()));
+
+            Map.Entry<Key, Value> inputStreamSpvValueEntry = entries.get(3);
+            assertEquals(new DataTableRowKey("v1", "key2", "author").getRowKey(), inputStreamSpvValueEntry.getKey().getRow().toString());
+            assertEquals(DATA_COLUMN_FAMILY, inputStreamSpvValueEntry.getKey().getColumnFamily());
+            assertEquals("00000000", inputStreamSpvValueEntry.getKey().getColumnQualifier().toString()); // offset
+            assertEquals("This is an input stream SPV", new String(inputStreamSpvValueEntry.getValue().get()));
         } finally {
             if (scanner != null) {
                 scanner.close();

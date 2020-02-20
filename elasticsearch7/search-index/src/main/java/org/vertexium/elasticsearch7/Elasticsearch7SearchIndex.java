@@ -936,14 +936,9 @@ public class Elasticsearch7SearchIndex implements SearchIndex, SearchIndexWithVe
             })
             .collect(Collectors.toList());
 
-        List<InputStream> inputStreams = graph.getStreamingPropertyValueInputStreams(streamingPropertyValues);
         for (int i = 0; i < columns.size(); i++) {
-            try {
-                String propertyValue = IOUtils.toString(inputStreams.get(i));
-                addExtendedDataColumnToFieldMap(graph, columns.get(i), new StreamingPropertyString(propertyValue), fieldsMap);
-            } catch (IOException ex) {
-                throw new VertexiumException("could not convert streaming property to string", ex);
-            }
+            String propertyValue = streamingPropertyValues.get(i).readToString();
+            addExtendedDataColumnToFieldMap(graph, columns.get(i), new StreamingPropertyString(propertyValue), fieldsMap);
         }
     }
 
@@ -1232,26 +1227,27 @@ public class Elasticsearch7SearchIndex implements SearchIndex, SearchIndexWithVe
     }
 
     private void addStreamingPropertyValuesToFieldMap(Graph graph, List<Property> properties, Map<String, Object> propertiesMap) {
+        AtomicBoolean requiresFlush = new AtomicBoolean();
         List<StreamingPropertyValue> streamingPropertyValues = properties.stream()
             .map((property) -> {
                 if (!(property.getValue() instanceof StreamingPropertyValue)) {
                     throw new VertexiumException("property with a value that is not a StreamingPropertyValue passed to addStreamingPropertyValuesToFieldMap");
                 }
-                return (StreamingPropertyValue) property.getValue();
+                StreamingPropertyValue propertyValue = (StreamingPropertyValue) property.getValue();
+                if (propertyValue.isDirty()) {
+                    LOGGER.debug("Indexing dirty StreamingPropertyValue for property " + property.getKey() + ":" + property.getName());
+                    requiresFlush.set(true);
+                }
+                return propertyValue;
             })
             .collect(Collectors.toList());
-        if (streamingPropertyValues.size() > 0 && graph instanceof GraphWithSearchIndex) {
+        if (requiresFlush.get() && graph instanceof GraphWithSearchIndex) {
             ((GraphWithSearchIndex) graph).flushGraph();
         }
 
-        List<InputStream> inputStreams = graph.getStreamingPropertyValueInputStreams(streamingPropertyValues);
         for (int i = 0; i < properties.size(); i++) {
-            try {
-                String propertyValue = IOUtils.toString(inputStreams.get(i));
-                addPropertyToFieldMap(graph, properties.get(i), new StreamingPropertyString(propertyValue), propertiesMap);
-            } catch (IOException ex) {
-                throw new VertexiumException("could not convert streaming property to string", ex);
-            }
+            String propertyValue = streamingPropertyValues.get(i).readToString();
+            addPropertyToFieldMap(graph, properties.get(i), new StreamingPropertyString(propertyValue), propertiesMap);
         }
     }
 

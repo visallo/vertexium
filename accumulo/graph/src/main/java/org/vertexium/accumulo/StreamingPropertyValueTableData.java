@@ -32,19 +32,27 @@ public class StreamingPropertyValueTableData extends StreamingPropertyValue {
     private final String dataRowKey;
     private Long length;
     private final long timestamp;
+    private final transient boolean dirty;
 
     public StreamingPropertyValueTableData(
         AccumuloGraph graph,
         String dataRowKey,
         Class valueType,
         Long length,
-        long timestamp
+        long timestamp,
+        boolean dirty
     ) {
         super(valueType);
         this.graph = graph;
         this.dataRowKey = dataRowKey;
         this.length = length;
         this.timestamp = timestamp;
+        this.dirty = dirty;
+    }
+
+    @Override
+    public boolean isDirty() {
+        return this.dirty;
     }
 
     @Override

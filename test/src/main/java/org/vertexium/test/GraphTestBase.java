@@ -5928,11 +5928,9 @@ public abstract class GraphTestBase {
         assertEquals(12L, (long) spvA.getLength());
         StreamingPropertyValue spvC = (StreamingPropertyValue) v1.getPropertyValue("c");
         assertEquals(12L, (long) spvA.getLength());
-        ArrayList<StreamingPropertyValue> spvs = Lists.newArrayList(spvA, spvB, spvC);
-        List<InputStream> streams = graph.getStreamingPropertyValueInputStreams(spvs);
-        assertEquals("Test Value A", IOUtils.toString(streams.get(0)));
-        assertEquals("Test Value B", IOUtils.toString(streams.get(1)));
-        assertEquals("Test Value C", IOUtils.toString(streams.get(2)));
+        assertEquals("Test Value A", IOUtils.toString(spvA.getInputStream()));
+        assertEquals("Test Value B", IOUtils.toString(spvB.getInputStream()));
+        assertEquals("Test Value C", IOUtils.toString(spvC.getInputStream()));
     }
 
     @Test

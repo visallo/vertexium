@@ -1353,6 +1353,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
     }
 
     @Override
+    @Deprecated
     public List<InputStream> getStreamingPropertyValueInputStreams(List<StreamingPropertyValue> streamingPropertyValues) {
         if (streamingPropertyValues.size() == 0) {
             return Collections.emptyList();
