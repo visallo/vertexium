@@ -8,6 +8,7 @@ import com.vividsolutions.jts.geom.Coordinate;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.elasticsearch.action.search.ClearScrollResponse;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
@@ -480,9 +481,12 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
 
     private void closeScroll(String scrollId) {
         try {
-            client.prepareClearScroll()
+            ClearScrollResponse clearScrollResponse = client.prepareClearScroll()
                 .addScrollId(scrollId)
                 .execute().actionGet();
+            if (!clearScrollResponse.isSucceeded()) {
+                LOGGER.warn("Unable to clear scroll " + scrollId);
+            }
         } catch (Exception ex) {
             throw new VertexiumException("Could not close iterator " + scrollId, ex);
         }

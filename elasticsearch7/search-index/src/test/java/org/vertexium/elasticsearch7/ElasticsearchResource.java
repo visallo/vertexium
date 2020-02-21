@@ -6,6 +6,7 @@ import org.elasticsearch.action.admin.cluster.state.ClusterStateResponse;
 import org.elasticsearch.client.AdminClient;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.logging.LogConfigurator;
+import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.TransportAddress;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.reindex.BulkByScrollResponse;
@@ -15,12 +16,16 @@ import org.junit.rules.ExternalResource;
 import org.vertexium.Graph;
 import org.vertexium.GraphConfiguration;
 import org.vertexium.GraphWithSearchIndex;
+import org.vertexium.VertexiumException;
 import org.vertexium.test.TestMetadataPlugin;
 import org.vertexium.util.VertexiumLogger;
 import org.vertexium.util.VertexiumLoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -71,7 +76,7 @@ public class ElasticsearchResource extends ExternalResource {
                 builder.put("cluster.name", clusterName)
                     .put("http.type", "netty4")
                     .put("transport.type", "netty4")
-            ).build(newConfigs().basePath(basePath.getAbsolutePath()).numOfNode(1));
+            ).build(newConfigs().basePath(basePath.getAbsolutePath()).numOfNode(1).disableESLogger());
             runner.ensureGreen();
         }
     }
@@ -82,6 +87,35 @@ public class ElasticsearchResource extends ExternalResource {
 
     private String getRemoteEsAddresses() {
         return System.getProperty("REMOTE_ES_ADDRESSES");
+    }
+
+    @SuppressWarnings("deprecation")
+    private Client getRemoteClient() {
+        if (!shouldUseRemoteElasticsearch()) {
+            throw new VertexiumException("The ES test resource is not configured to use a remote ES instance.");
+        }
+
+        if (sharedClient == null) {
+            Settings settings = Settings.builder()
+                .put("cluster.name", System.getProperty("REMOTE_ES_CLUSTER_NAME", "elasticsearch"))
+                .build();
+            sharedClient = new org.elasticsearch.transport.client.PreBuiltTransportClient(settings, Collections.emptyList());
+            for (String address : getRemoteEsAddresses().split(",")) {
+                String[] parts = address.split(":");
+                try {
+                    InetAddress inetAddress = InetAddress.getByName(parts[0]);
+                    int port = parts.length > 1 ? Integer.parseInt(parts[1]) : 9300;
+                    ((org.elasticsearch.client.transport.TransportClient) sharedClient).addTransportAddress(new TransportAddress(new InetSocketAddress(inetAddress, port)));
+                } catch (Exception ex) {
+                    throw new VertexiumException("cannot find host: " + address, ex);
+                }
+            }
+        }
+        return sharedClient;
+    }
+
+    public Client getClient() {
+        return shouldUseRemoteElasticsearch() ? getRemoteClient() : runner.client();
     }
 
     @Override
@@ -101,7 +135,7 @@ public class ElasticsearchResource extends ExternalResource {
     }
 
     public void dropIndices() throws Exception {
-        AdminClient client = runner.admin();
+        AdminClient client = getClient().admin();
         String[] indices = client.indices().prepareGetIndex().execute().get().indices();
         for (String index : indices) {
             if (index.startsWith(ES_INDEX_NAME) || index.startsWith(ES_EXTENDED_DATA_INDEX_NAME_PREFIX)) {

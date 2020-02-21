@@ -123,7 +123,7 @@ public class ElasticsearchResource extends ExternalResource {
         }
     }
 
-    public Client getRemoteClient() {
+    private Client getRemoteClient() {
         if (remoteClient == null) {
             Settings settings = Settings.builder()
                 .put("cluster.name", System.getProperty("REMOTE_ES_CLUSTER_NAME", "elasticsearch"))
@@ -146,10 +146,12 @@ public class ElasticsearchResource extends ExternalResource {
         return remoteClient;
     }
 
+    public Client getClient() {
+        return shouldUseRemoteElasticsearch() ? getRemoteClient() : runner.client();
+    }
+
     public void dropIndices() throws Exception {
-        AdminClient client = shouldUseRemoteElasticsearch()
-            ? getRemoteClient().admin()
-            : runner.admin();
+        AdminClient client = getClient().admin();
         String[] indices = client.indices().prepareGetIndex().execute().get().indices();
         for (String index : indices) {
             if (index.startsWith(ES_INDEX_NAME) || index.startsWith(ES_EXTENDED_DATA_INDEX_NAME_PREFIX)) {
