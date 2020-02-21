@@ -599,7 +599,7 @@ public class Elasticsearch7SearchIndexTest extends GraphTestBase {
         assertEquals(6, getCurrentScrolls());
 
         // iterating completely should close the scroll for just that iterator
-        iterator1.forEachRemaining(vertex -> System.out.println());
+        iterator1.forEachRemaining(vertex -> {});
         assertEquals(4, getCurrentScrolls());
 
         // closing the iterator should close for just that iterator
