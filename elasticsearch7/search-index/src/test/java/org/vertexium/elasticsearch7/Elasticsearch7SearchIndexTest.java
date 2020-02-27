@@ -6,10 +6,9 @@ import org.elasticsearch.action.admin.cluster.node.stats.NodesStatsRequestBuilde
 import org.elasticsearch.action.admin.cluster.node.stats.NodesStatsResponse;
 import org.elasticsearch.common.io.stream.NotSerializableExceptionWrapper;
 import org.elasticsearch.index.search.stats.SearchStats;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.*;
+import org.junit.rules.TestRule;
+import org.junit.runners.model.Statement;
 import org.vertexium.*;
 import org.vertexium.elasticsearch7.lucene.DefaultQueryStringTransformer;
 import org.vertexium.elasticsearch7.scoring.ElasticsearchFieldValueScoringStrategy;
@@ -25,7 +24,9 @@ import org.vertexium.query.TermsResult;
 import org.vertexium.scoring.ScoringStrategy;
 import org.vertexium.sorting.SortingStrategy;
 import org.vertexium.test.GraphTestBase;
+import org.vertexium.util.CloseableUtils;
 
+import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -58,6 +59,20 @@ public class Elasticsearch7SearchIndexTest extends GraphTestBase {
         elasticsearchResource.dropIndices();
         super.before();
     }
+
+    @Rule
+    public TestRule esOrphanScrollCheck = (base, description) -> new Statement() {
+        @Override
+        public void evaluate() throws Throwable {
+            long beforeScrollCount = getCurrentScrolls();
+            base.evaluate();
+            if ((getCurrentScrolls() - beforeScrollCount) > 0) {
+                System.gc();
+                System.gc();
+                fail("Leaked Elasticsearch scrolls detected.");
+            }
+        }
+    };
 
     @Override
     @SuppressWarnings("unchecked")
@@ -252,7 +267,7 @@ public class Elasticsearch7SearchIndexTest extends GraphTestBase {
         }
 
         // should succeed
-        graph.query(q.toString(), AUTHORIZATIONS_A).search().getTotalHits();
+        graph.query(q.toString(), AUTHORIZATIONS_A).limit(0).search().getTotalHits();
 
         try {
             q.append("done");
@@ -509,18 +524,98 @@ public class Elasticsearch7SearchIndexTest extends GraphTestBase {
         }
         getGraph().flush();
 
+        assertEquals(0, getCurrentScrolls());
+
         QueryResultsIterable<Vertex> vertices = getGraph().query(AUTHORIZATIONS_EMPTY)
             .has("name", "value1")
             .limit((Long) null)
             .vertices();
+        assertEquals(0, getCurrentScrolls());
         assertEquals(verticesToCreate, vertices.getTotalHits());
+        assertEquals(2, getCurrentScrolls()); // (number of scroll requests) * (number of shards)
         Iterator<Vertex> it = vertices.iterator();
+        assertEquals(2, getCurrentScrolls());
         assertTrue(it.hasNext());
         it.next();
         it = null;
+        vertices = null;
 
+        assertEquals(2, getCurrentScrolls());
         System.gc();
         System.gc();
+    }
+
+    @Test
+    public void testCloseIterableClearsScrollWithNoIterators() throws IOException {
+        int verticesToCreate = ElasticsearchResource.TEST_QUERY_PAGE_SIZE * 2;
+        for (int i = 0; i < verticesToCreate; i++) {
+            getGraph().prepareVertex("v" + i, VISIBILITY_EMPTY)
+                .addPropertyValue("k1", "name", "value1", VISIBILITY_EMPTY)
+                .save(AUTHORIZATIONS_EMPTY);
+        }
+        getGraph().flush();
+
+        assertEquals(0, getCurrentScrolls());
+
+        QueryResultsIterable<Vertex> vertices = getGraph().query(AUTHORIZATIONS_EMPTY)
+            .has("name", "value1")
+            .limit((Long) null)
+            .vertices();
+        assertEquals(0, getCurrentScrolls());
+        assertEquals(verticesToCreate, vertices.getTotalHits());
+        assertEquals(2, getCurrentScrolls()); // (number of scroll requests) * (number of shards)
+        vertices.close();
+        assertEquals(0, getCurrentScrolls());
+    }
+
+    @Test
+    public void testCompleteIteratorsClearsScroll() throws IOException {
+        int verticesToCreate = ElasticsearchResource.TEST_QUERY_PAGE_SIZE * 2;
+        for (int i = 0; i < verticesToCreate; i++) {
+            getGraph().prepareVertex("v" + i, VISIBILITY_EMPTY)
+                .addPropertyValue("k1", "name", "value1", VISIBILITY_EMPTY)
+                .save(AUTHORIZATIONS_EMPTY);
+        }
+        getGraph().flush();
+
+        assertEquals(0, getCurrentScrolls());
+
+        QueryResultsIterable<Vertex> vertices = getGraph().query(AUTHORIZATIONS_EMPTY)
+            .has("name", "value1")
+            .limit((Long) null)
+            .vertices();
+        assertEquals(0, getCurrentScrolls());
+        assertEquals(verticesToCreate, vertices.getTotalHits());
+        assertEquals(2, getCurrentScrolls()); // (number of scroll requests) * (number of shards)
+
+        // Open three iterators for a total of 6 scrolls. The first iterator will
+        // use the existing scroll id from the iterable. The second and third will
+        // begin new scrolls with their own scroll ids.
+        Iterator<Vertex> iterator1 = vertices.iterator();
+        assertEquals(2, getCurrentScrolls());
+        Iterator<Vertex> iterator2 = vertices.iterator();
+        assertEquals(4, getCurrentScrolls());
+        Iterator<Vertex> iterator3 = vertices.iterator();
+        assertEquals(6, getCurrentScrolls());
+
+        // iterating completely should close the scroll for just that iterator
+        iterator1.forEachRemaining(vertex -> {});
+        assertEquals(4, getCurrentScrolls());
+
+        // closing the iterator should close for just that iterator
+        CloseableUtils.closeQuietly(iterator2);
+        assertEquals(2, getCurrentScrolls());
+
+        // closing the iterable that produced the iterators should close all remaining iterators
+        vertices.close();
+        assertEquals(0, getCurrentScrolls());
+    }
+
+    private long getCurrentScrolls() {
+        NodesStatsResponse nodeStats = new NodesStatsRequestBuilder(elasticsearchResource.getClient(), NodesStatsAction.INSTANCE).get();
+        return nodeStats.getNodes().stream()
+            .mapToLong(node -> node.getIndices().getSearch().getTotal().getScrollCurrent())
+            .sum();
     }
 
     @Test
@@ -554,7 +649,7 @@ public class Elasticsearch7SearchIndexTest extends GraphTestBase {
     }
 
     private long getNumQueries() {
-        NodesStatsResponse nodeStats = new NodesStatsRequestBuilder(getSearchIndex().getClient(), NodesStatsAction.INSTANCE).get();
+        NodesStatsResponse nodeStats = new NodesStatsRequestBuilder(elasticsearchResource.getClient(), NodesStatsAction.INSTANCE).get();
 
         List<NodeStats> nodes = nodeStats.getNodes();
         assertEquals(1, nodes.size());

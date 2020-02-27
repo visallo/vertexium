@@ -12,10 +12,7 @@ import org.vertexium.util.CloseableUtils;
 import org.vertexium.util.VertexiumLogger;
 import org.vertexium.util.VertexiumLoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.NoSuchElementException;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public abstract class InfiniteScrollIterable<T> implements QueryResultsIterable<T>, IterableWithScores<T> {
@@ -27,6 +24,8 @@ public abstract class InfiniteScrollIterable<T> implements QueryResultsIterable<
     private boolean initCalled;
     private boolean firstCall;
     private SearchResponse response;
+    private List<String> scrollIds = new ArrayList<>();
+    private Map<String, StackTraceElement[]> stackTraces = new HashMap<>();
 
     protected InfiniteScrollIterable(Long limit) {
         this.limit = limit;
@@ -44,6 +43,9 @@ public abstract class InfiniteScrollIterable<T> implements QueryResultsIterable<
 
     @Override
     public void close() {
+        scrollIds.forEach(this::closeScroll);
+        scrollIds.clear();
+        stackTraces.clear();
     }
 
     private void init() {
@@ -55,6 +57,10 @@ public abstract class InfiniteScrollIterable<T> implements QueryResultsIterable<
             firstIterable = null;
         } else {
             firstIterable = searchResponseToIterable(response);
+            scrollIds.add(response.getScrollId());
+            if (SCROLL_API_STACK_TRACE_LOGGER.isTraceEnabled()) {
+                stackTraces.put(response.getScrollId(), Thread.currentThread().getStackTrace());
+            }
         }
         firstCall = true;
         initCalled = true;
@@ -99,7 +105,7 @@ public abstract class InfiniteScrollIterable<T> implements QueryResultsIterable<
     public Iterator<T> iterator() {
         init();
         if (response == null) {
-            return new ArrayList<T>().iterator();
+            return Collections.emptyIterator();
         }
 
         Iterator<T> it;
@@ -108,16 +114,40 @@ public abstract class InfiniteScrollIterable<T> implements QueryResultsIterable<
             firstCall = false;
         } else {
             response = getInitialSearchResponse();
+            scrollIds.add(response.getScrollId());
+            if (SCROLL_API_STACK_TRACE_LOGGER.isTraceEnabled()) {
+                stackTraces.put(response.getScrollId(), Thread.currentThread().getStackTrace());
+            }
             it = searchResponseToIterable(response).iterator();
         }
-        String scrollId = response.getScrollId();
-        return new InfiniteIterator(scrollId, it);
+        return new InfiniteIterator(response.getScrollId(), it);
+    }
+
+    @Override
+    protected void finalize() throws Throwable {
+        if (!scrollIds.isEmpty()) {
+            LOGGER.warn(
+                "Elasticsearch scroll not closed. This can occur if you do not iterate completely or did not call close on the iterable.%s",
+                !stackTraces.isEmpty() && SCROLL_API_STACK_TRACE_LOGGER.isTraceEnabled()
+                    ? ""
+                    : String.format(" To enable stack traces enable trace logging on \"%s\"", SCROLL_API_STACK_TRACE_LOGGER_NAME)
+            );
+            if (!stackTraces.isEmpty()) {
+                stackTraces.forEach((key, stackTrace) ->
+                    SCROLL_API_STACK_TRACE_LOGGER.trace(
+                        "Source of unclosed iterable:\n  %s",
+                        Arrays.stream(stackTrace)
+                            .map(StackTraceElement::toString)
+                            .collect(Collectors.joining("\n  "))
+                    ));
+            }
+            close();
+        }
+        super.finalize();
     }
 
     private class InfiniteIterator implements CloseableIterator<T> {
         private final String scrollId;
-        private final StackTraceElement[] stackTrace;
-        private boolean scrollIdClosed;
         private Iterator<T> it;
         private T next;
         private T current;
@@ -126,11 +156,6 @@ public abstract class InfiniteScrollIterable<T> implements QueryResultsIterable<
         public InfiniteIterator(String scrollId, Iterator<T> it) {
             this.scrollId = scrollId;
             this.it = it;
-            if (SCROLL_API_STACK_TRACE_LOGGER.isTraceEnabled()) {
-                stackTrace = Thread.currentThread().getStackTrace();
-            } else {
-                stackTrace = null;
-            }
         }
 
         @Override
@@ -186,32 +211,10 @@ public abstract class InfiniteScrollIterable<T> implements QueryResultsIterable<
 
         @Override
         public void close() {
-            closeScroll(scrollId);
-            scrollIdClosed = true;
             CloseableUtils.closeQuietly(it);
-            InfiniteScrollIterable.this.close();
-        }
-
-        @Override
-        protected void finalize() throws Throwable {
-            if (!scrollIdClosed) {
-                LOGGER.warn(
-                    "Elasticsearch scroll not closed. This can occur if you do not iterate completly or did not call close on the iterable.%s",
-                    stackTrace != null && SCROLL_API_STACK_TRACE_LOGGER.isTraceEnabled()
-                        ? ""
-                        : String.format(" To enable stack traces enable trace logging on \"%s\"", SCROLL_API_STACK_TRACE_LOGGER_NAME)
-                );
-                if (stackTrace != null) {
-                    SCROLL_API_STACK_TRACE_LOGGER.trace(
-                        "Source of unclosed iterable:\n  %s",
-                        Arrays.stream(stackTrace)
-                            .map(StackTraceElement::toString)
-                            .collect(Collectors.joining("\n  "))
-                    );
-                }
-                close();
-            }
-            super.finalize();
+            closeScroll(this.scrollId);
+            scrollIds.remove(this.scrollId);
+            stackTraces.remove(this.scrollId);
         }
     }
 }
