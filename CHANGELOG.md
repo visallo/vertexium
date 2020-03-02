@@ -1,3 +1,6 @@
+# v4.9.5
+* Fixed: ConcurrentModificationException possible when mutliple threads are iterating over the metadata of the same property instance.
+
 # v4.9.4
 * Fixed: Improved detection and logging of Elasticsearch scrolls that are not closed properly.
 
