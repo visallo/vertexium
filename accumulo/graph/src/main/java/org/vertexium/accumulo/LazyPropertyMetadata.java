@@ -3,13 +3,14 @@ package org.vertexium.accumulo;
 import org.vertexium.*;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class LazyPropertyMetadata implements Metadata {
     private static final String KEY_SEPARATOR = "\u001f";
     private transient ReadWriteLock entriesLock = new ReentrantReadWriteLock();
-    private final Map<String, Metadata.Entry> entries = new HashMap<>();
+    private final Map<String, Metadata.Entry> entries = new ConcurrentHashMap<>();
     private final List<MetadataEntry> metadataEntries;
     private int[] metadataIndexes;
     private final Set<String> removedEntries = new HashSet<>();
