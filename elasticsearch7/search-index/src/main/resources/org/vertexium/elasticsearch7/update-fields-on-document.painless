@@ -7,8 +7,13 @@ void updateFieldsToRemove(def ctx, def fieldsToRemove) {
 
 void updateFieldsToRename(def ctx, def fieldsToRename) {
     for (def fieldToRename : fieldsToRename.entrySet()) {
-        ctx._source[fieldToRename.getValue()] = ctx._source[fieldToRename.getKey()];
-        ctx._source.remove(fieldToRename.getKey());
+        if (fieldToRename.getKey() != fieldToRename.getValue()) {
+            def existingValue = ctx._source[fieldToRename.getKey()];
+            if (existingValue != null) {
+                ctx._source[fieldToRename.getValue()] = existingValue;
+                ctx._source.remove(fieldToRename.getKey());
+            }
+        }
     }
 }
 

@@ -17,6 +17,7 @@ import org.vertexium.elasticsearch7.sorting.ElasticsearchLengthOfStringSortingSt
 import org.vertexium.inmemory.InMemoryAuthorizations;
 import org.vertexium.inmemory.InMemoryGraph;
 import org.vertexium.inmemory.InMemoryGraphConfiguration;
+import org.vertexium.mutation.ExistingElementMutation;
 import org.vertexium.query.QueryResultsIterable;
 import org.vertexium.query.SortDirection;
 import org.vertexium.query.TermsAggregation;
@@ -213,6 +214,25 @@ public class Elasticsearch7SearchIndexTest extends GraphTestBase {
 
         assertResultsCount(2, 2, vertices);
         assertEquals(startingNumQueries + 6, getNumQueries());
+    }
+
+    @Test
+    public void testQueryCreateAndUpdate() {
+        graph.prepareVertex("v1", VISIBILITY_A).save(AUTHORIZATIONS_A);
+        graph.flush();
+
+        QueryResultsIterable<Vertex> vertices = graph.query(AUTHORIZATIONS_A).vertices();
+        assertResultsCount(1, 1, vertices);
+
+        Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
+        ExistingElementMutation<Vertex> m1 = v1.prepareMutation().alterElementVisibility(VISIBILITY_EMPTY);
+        ExistingElementMutation<Vertex> m2 = v1.prepareMutation().alterElementVisibility(VISIBILITY_EMPTY);
+        m1.save(AUTHORIZATIONS_A);
+        m2.save(AUTHORIZATIONS_A);
+        graph.flush();
+
+        vertices = graph.query(AUTHORIZATIONS_A).vertices();
+        assertResultsCount(1, 1, vertices);
     }
 
     @Test
