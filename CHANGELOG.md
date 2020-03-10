@@ -1,3 +1,6 @@
+# v4.9.6
+* Fixed: Threading issue when multiple threads attempt to deserialize a LazyMutableProperty value at the same time.
+
 # v4.9.5
 * Fixed: ConcurrentModificationException possible when mutliple threads are iterating over the metadata of the same property instance.
 

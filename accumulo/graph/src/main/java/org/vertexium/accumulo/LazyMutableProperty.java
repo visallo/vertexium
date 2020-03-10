@@ -48,7 +48,7 @@ public class LazyMutableProperty extends MutableProperty {
     }
 
     @Override
-    public void setValue(Object value) {
+    public synchronized void setValue(Object value) {
         this.cachedPropertyValue = value;
         this.propertyValue = null;
     }
@@ -109,13 +109,17 @@ public class LazyMutableProperty extends MutableProperty {
     @SuppressWarnings("unchecked")
     public Object getValue() {
         if (cachedPropertyValue == null) {
-            if (propertyValue == null || propertyValue.length == 0) {
-                return null;
-            }
-            cachedPropertyValue = this.vertexiumSerializer.bytesToObject(propertyValue);
-            propertyValue = null;
-            if (cachedPropertyValue instanceof StreamingPropertyValueRef) {
-                cachedPropertyValue = ((StreamingPropertyValueRef) cachedPropertyValue).toStreamingPropertyValue(this.graph, getTimestamp());
+            synchronized(this) {
+                if (cachedPropertyValue == null) {
+                    if (propertyValue == null || propertyValue.length == 0) {
+                        return null;
+                    }
+                    cachedPropertyValue = this.vertexiumSerializer.bytesToObject(propertyValue);
+                    propertyValue = null;
+                    if (cachedPropertyValue instanceof StreamingPropertyValueRef) {
+                        cachedPropertyValue = ((StreamingPropertyValueRef) cachedPropertyValue).toStreamingPropertyValue(this.graph, getTimestamp());
+                    }
+                }
             }
         }
         return cachedPropertyValue;
