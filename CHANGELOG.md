@@ -1,5 +1,6 @@
 # v4.9.6
 * Fixed: When updating a visibility on a field multiple times, it was possible to set the value of the field to null. This issue has been fixed.
+
 # v4.9.5
 * Fixed: ConcurrentModificationException possible when mutliple threads are iterating over the metadata of the same property instance.
 
