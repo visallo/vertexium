@@ -1,3 +1,6 @@
+# v4.9.7
+* Fixed: Elasticsearch: Streaming Property Values being indexed as "" after an update of the property 
+
 # v4.9.6
 * Fixed: Threading issue when multiple threads attempt to deserialize a LazyMutableProperty value at the same time.
 * Fixed: When updating a visibility on a field multiple times, it was possible to set the value of the field to null. This issue has been fixed.
