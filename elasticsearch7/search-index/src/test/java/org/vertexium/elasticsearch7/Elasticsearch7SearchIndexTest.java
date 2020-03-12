@@ -28,6 +28,11 @@ import org.vertexium.test.GraphTestBase;
 import org.vertexium.util.CloseableUtils;
 
 import java.io.IOException;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -35,6 +40,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.Assert.*;
 import static org.vertexium.test.util.VertexiumAssert.assertResultsCount;
+import static org.vertexium.test.util.VertexiumAssert.assertVertexIds;
 import static org.vertexium.util.CloseableUtils.closeQuietly;
 import static org.vertexium.util.IterableUtils.count;
 import static org.vertexium.util.IterableUtils.toList;
@@ -259,6 +265,39 @@ public class Elasticsearch7SearchIndexTest extends GraphTestBase {
         vertices = graph.query(AUTHORIZATIONS_A).vertices();
         assertResultsCount(3, vertices);
         assertEquals(startingNumQueries + 8, getNumQueries());
+    }
+
+    @Test
+    public void testESSort() {
+        graph.defineProperty("DayOfDeath").dataType(Date.class).sortable(true).define();
+
+        ZoneId zoneId = ZoneId.of("UTC+1");
+        ZonedDateTime dateVertex1 = ZonedDateTime.of(2015, 11, 30, 23, 45, 59, 1234, zoneId);
+        ZonedDateTime dateVertex2 = ZonedDateTime.of(2018, 11, 30, 23, 45, 59, 1234, zoneId);
+
+        graph.prepareVertex("v1", VISIBILITY_EMPTY)
+                .addPropertyValue("k1", "DayOfDeath", dateVertex1, VISIBILITY_A)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        graph.prepareVertex("v2", VISIBILITY_EMPTY)
+                .addPropertyValue("k2", "DayOfDeath", dateVertex1, VISIBILITY_A)
+                .addPropertyValue("k3", "DayOfDeath", dateVertex2, VISIBILITY_B)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        graph.prepareVertex("v3", VISIBILITY_EMPTY)
+                .addPropertyValue("k3", "v3", "value1", VISIBILITY_A)
+                .addPropertyValue("k2", "DayOfDeath", 1234, VISIBILITY_A)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+
+        Iterable<Vertex> query1vertices = graph.query("*", AUTHORIZATIONS_A_AND_B).sort("DayOfDeath", SortDirection.ASCENDING).vertices();
+        assertVertexIds(query1vertices, "v3", "v1", "v2");
+        Iterable<Vertex> query2vertices =graph.query("*", AUTHORIZATIONS_A_AND_B).sort("DayOfDeath", SortDirection.DESCENDING).vertices();
+        assertVertexIds(query2vertices, "v2", "v1", "v3");
+
     }
 
     @Test
