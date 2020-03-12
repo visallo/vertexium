@@ -5859,6 +5859,30 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    public void testQueryingUpdatedStreamingPropertyValues() throws Exception {
+        graph.defineProperty("fullText").dataType(String.class).textIndexHint(TextIndexHint.FULL_TEXT).define();
+
+        graph.prepareVertex("v1", VISIBILITY_A)
+                .setProperty("fullText", StreamingPropertyValue.create("Test Value"), VISIBILITY_A)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        Assert.assertEquals(1, count(graph.query(AUTHORIZATIONS_A).has("fullText", TextPredicate.CONTAINS, "Test").vertices()));
+
+        graph.prepareVertex("v1", VISIBILITY_A)
+                .setProperty("fullText", StreamingPropertyValue.create("Updated Test Value"), VISIBILITY_A)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+        Assert.assertEquals(1, count(graph.query(AUTHORIZATIONS_A).has("fullText", TextPredicate.CONTAINS, "Updated").vertices()));
+
+        Vertex v = graph.getVertex("v1", AUTHORIZATIONS_A);
+        v.prepareMutation().setProperty("fullText", StreamingPropertyValue.create("Updated Test Value - existing mutation"), VISIBILITY_A)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+        Assert.assertEquals(1, count(graph.query(AUTHORIZATIONS_A).has("fullText", TextPredicate.CONTAINS, "mutation").vertices()));
+    }
+
+    @Test
     public void testGetStreamingPropertyValueInputStreams() throws Exception {
         graph.defineProperty("a").dataType(String.class).textIndexHint(TextIndexHint.FULL_TEXT).define();
         graph.defineProperty("b").dataType(String.class).textIndexHint(TextIndexHint.FULL_TEXT).define();
