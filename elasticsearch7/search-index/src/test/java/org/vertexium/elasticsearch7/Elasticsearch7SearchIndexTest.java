@@ -268,39 +268,6 @@ public class Elasticsearch7SearchIndexTest extends GraphTestBase {
     }
 
     @Test
-    public void testESSort() {
-        graph.defineProperty("DayOfDeath").dataType(Date.class).sortable(true).define();
-
-        ZoneId zoneId = ZoneId.of("UTC+1");
-        ZonedDateTime dateVertex1 = ZonedDateTime.of(2015, 11, 30, 23, 45, 59, 1234, zoneId);
-        ZonedDateTime dateVertex2 = ZonedDateTime.of(2018, 11, 30, 23, 45, 59, 1234, zoneId);
-
-        graph.prepareVertex("v1", VISIBILITY_EMPTY)
-                .addPropertyValue("k1", "DayOfDeath", dateVertex1, VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
-        graph.flush();
-
-        graph.prepareVertex("v2", VISIBILITY_EMPTY)
-                .addPropertyValue("k2", "DayOfDeath", dateVertex1, VISIBILITY_A)
-                .addPropertyValue("k3", "DayOfDeath", dateVertex2, VISIBILITY_B)
-                .save(AUTHORIZATIONS_A_AND_B);
-        graph.flush();
-
-        graph.prepareVertex("v3", VISIBILITY_EMPTY)
-                .addPropertyValue("k3", "v3", "value1", VISIBILITY_A)
-                .addPropertyValue("k2", "DayOfDeath", 1234, VISIBILITY_A)
-                .save(AUTHORIZATIONS_A_AND_B);
-        graph.flush();
-
-
-        Iterable<Vertex> query1vertices = graph.query("*", AUTHORIZATIONS_A_AND_B).sort("DayOfDeath", SortDirection.ASCENDING).vertices();
-        assertVertexIds(query1vertices, "v3", "v1", "v2");
-        Iterable<Vertex> query2vertices =graph.query("*", AUTHORIZATIONS_A_AND_B).sort("DayOfDeath", SortDirection.DESCENDING).vertices();
-        assertVertexIds(query2vertices, "v2", "v1", "v3");
-
-    }
-
-    @Test
     public void testDisallowLeadingWildcardsInQueryString() {
         graph.prepareVertex("v1", VISIBILITY_A).setProperty("prop1", "value1", VISIBILITY_A).save(AUTHORIZATIONS_A);
         graph.flush();
