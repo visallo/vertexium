@@ -28,11 +28,6 @@ import org.vertexium.test.GraphTestBase;
 import org.vertexium.util.CloseableUtils;
 
 import java.io.IOException;
-import java.time.LocalDate;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
-import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -40,7 +35,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.Assert.*;
 import static org.vertexium.test.util.VertexiumAssert.assertResultsCount;
-import static org.vertexium.test.util.VertexiumAssert.assertVertexIds;
 import static org.vertexium.util.CloseableUtils.closeQuietly;
 import static org.vertexium.util.IterableUtils.count;
 import static org.vertexium.util.IterableUtils.toList;
