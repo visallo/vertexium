@@ -3807,7 +3807,7 @@ public abstract class GraphTestBase {
     }
 
     @Test
-    public void testESSort() {
+    public void testESSortWithDateProperties() {
         graph.defineProperty("DayOfDeath").dataType(Date.class).sortable(true).define();
 
         ZoneId zoneId = ZoneId.of("UTC+1");
