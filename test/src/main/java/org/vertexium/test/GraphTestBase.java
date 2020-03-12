@@ -3807,7 +3807,7 @@ public abstract class GraphTestBase {
     }
 
     @Test
-    public void testESSortWithDateProperties() {
+    public void testESSortWithDateProperties() throws Exception {
         graph.defineProperty("DayOfDeath").dataType(Date.class).sortable(true).define();
 
         ZoneId zoneId = ZoneId.of("UTC+1");
@@ -3833,7 +3833,7 @@ public abstract class GraphTestBase {
 
 
         Iterable<Vertex> query1vertices = graph.query("*", AUTHORIZATIONS_A_AND_B).sort("DayOfDeath", SortDirection.ASCENDING).vertices();
-        assertVertexIds(query1vertices, "v3", "v1", "v2");
+        assertVertexIds(query1vertices, "v1", "v2", "v3");
         Iterable<Vertex> query2vertices =graph.query("*", AUTHORIZATIONS_A_AND_B).sort("DayOfDeath", SortDirection.DESCENDING).vertices();
         assertVertexIds(query2vertices, "v2", "v1", "v3");
 
