@@ -405,7 +405,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
                         "if (params.esOrder == 'asc') { Collections.sort(fieldValues); } else { Collections.sort(fieldValues, Collections.reverseOrder()); }";
 
                 if (propertyDefinition.getDataType() == String.class) {
-                    scriptSrc += "return fieldValues.length > 0 ? (fieldValues[0] instanceof JodaCompatibleZonedDateTime ? fieldValues[0].getMillis() : fieldValues[0]) : (params.esOrder == 'asc' ? Character.toString(Character.MAX_VALUE) : '');";
+                    scriptSrc += "return fieldValues.length > 0 ? fieldValues[0] : (params.esOrder == 'asc' ? Character.toString(Character.MAX_VALUE) : '');";
                 } else {
                     scriptSrc += "return fieldValues.length > 0 ? (fieldValues[0] instanceof JodaCompatibleZonedDateTime ? fieldValues[0].getMillis() : fieldValues[0]) : (params.esOrder == 'asc' ? Integer.MAX_VALUE : Integer.MIN_VALUE);";
                 }
