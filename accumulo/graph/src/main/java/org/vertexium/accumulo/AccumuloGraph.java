@@ -559,6 +559,13 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         }
         for (Property property : properties) {
             elementMutationBuilder.addPropertyToMutation(this, m, element, elementRowKey, property);
+            if (property.getValue() instanceof StreamingPropertyValue) {
+                // We need to specifically update the property on the element after transformValue is called because
+                // on add or set property we are creating a DefaultStreamingPropertyValue which has been consumed at
+                // this point. The transformValue method in `addPropertyToMutation` creates a new InputSteam based
+                // on the strategy.
+                element.addPropertyInternal(property);
+            }
         }
         for (AdditionalVisibilityAddMutation additionalVisibility : additionalVisibilities) {
             elementMutationBuilder.addAdditionalVisibilityToMutation(m, additionalVisibility);
