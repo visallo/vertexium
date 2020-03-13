@@ -104,6 +104,8 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
     private final int numberOfQueryThreads;
     private final AccumuloGraphMetadataStore graphMetadataStore;
     private boolean distributedTraceEnabled;
+    private int largeValueErrorThreshold;
+    private int largeValueWarningThreshold;
 
     protected AccumuloGraph(AccumuloGraphConfiguration config, Connector connector) {
         super(config);
@@ -158,6 +160,8 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         this.metadataTableName = getMetadataTableName(getConfiguration().getTableNamePrefix());
         this.numberOfQueryThreads = getConfiguration().getNumberOfQueryThreads();
         this.historyInSeparateTable = getConfiguration().isHistoryInSeparateTable();
+        this.largeValueErrorThreshold = getConfiguration().getLargeValueErrorThreshold();
+        this.largeValueWarningThreshold = getConfiguration().getLargeValueWarningThreshold();
 
         if (isHistoryInSeparateTable()) {
             this.historyVerticesTableName = getHistoryVerticesTableName(getConfiguration().getTableNamePrefix());
@@ -738,6 +742,24 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         DeleteElementsConsumer consumer = new DeleteElementsConsumer(authorizations);
         elementIds.forEach(consumer);
         consumer.processBatches(true);
+    }
+
+    public void logLargeRow(Key key, Value value) {
+        if (value.getSize() > largeValueErrorThreshold || value.getSize() > largeValueWarningThreshold) {
+            String message = String.format(
+                "large row detected (key: %s, size: %,d\n%s",
+                key,
+                value.getSize(),
+                Arrays.stream(Thread.currentThread().getStackTrace())
+                    .map(StackTraceElement::toString)
+                    .collect(Collectors.joining("\n  "))
+            );
+            if (value.getSize() > largeValueErrorThreshold) {
+                LOGGER.error("%s", message);
+            } else if (value.getSize() > largeValueWarningThreshold) {
+                LOGGER.warn("%s", message);
+            }
+        }
     }
 
     private class DeleteElementsConsumer implements Consumer<ElementId> {
@@ -2977,10 +2999,12 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
     }
 
     private Vertex createVertexFromVertexIteratorValue(Key key, Value value, FetchHints fetchHints, Authorizations authorizations) {
+        logLargeRow(key, value);
         return AccumuloVertex.createFromIteratorValue(this, key, value, fetchHints, authorizations);
     }
 
     private Edge createEdgeFromEdgeIteratorValue(Key key, Value value, FetchHints fetchHints, Authorizations authorizations) {
+        logLargeRow(key, value);
         return AccumuloEdge.createFromIteratorValue(this, key, value, fetchHints, authorizations);
     }
 

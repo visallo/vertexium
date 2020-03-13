@@ -57,6 +57,8 @@ public class AccumuloGraphConfiguration extends GraphConfiguration {
     public static final String HDFS_CONTEXT_CLASSPATH = "hdfsContextClasspath";
     public static final String STREAMING_PROPERTY_VALUE_STORAGE_STRATEGY_PREFIX = "streamingPropertyValueStorageStrategy";
     public static final String CLIENT_CONFIGURATION_PROPERTY_CONFIG_PREFIX = "clientConfiguration.";
+    public static final String LARGE_VALUE_ERROR_THRESHOLD = "largeValueErrorThreshold";
+    public static final String LARGE_VALUE_WARNING_THRESHOLD = "largeValueWarningThreshold";
 
     public static final String DEFAULT_ACCUMULO_PASSWORD = "password";
     public static final String DEFAULT_ACCUMULO_USERNAME = "root";
@@ -78,6 +80,8 @@ public class AccumuloGraphConfiguration extends GraphConfiguration {
     public static final int DEFAULT_NUMBER_OF_QUERY_THREADS = 10;
     public static final String DEFAULT_HDFS_CONTEXT_CLASSPATH = null;
     public static final String DEFAULT_STREAMING_PROPERTY_VALUE_STORAGE_STRATEGY = OverflowIntoHdfsStreamingPropertyValueStorageStrategy.class.getName();
+    public static final int DEFAULT_LARGE_VALUE_ERROR_THRESHOLD = 500 * 1024 * 1024;
+    public static final int DEFAULT_LARGE_VALUE_WARNING_THRESHOLD = 100 * 1024 * 1024;
 
     public static final String[] HADOOP_CONF_FILENAMES = new String[]{
         "core-site.xml",
@@ -276,5 +280,13 @@ public class AccumuloGraphConfiguration extends GraphConfiguration {
 
     public boolean isHistoryInSeparateTable() {
         return getBoolean(HISTORY_IN_SEPARATE_TABLE, DEFAULT_HISTORY_IN_SEPARATE_TABLE);
+    }
+
+    public int getLargeValueErrorThreshold() {
+        return getInt(LARGE_VALUE_ERROR_THRESHOLD, DEFAULT_LARGE_VALUE_ERROR_THRESHOLD);
+    }
+
+    public int getLargeValueWarningThreshold() {
+        return getInt(LARGE_VALUE_WARNING_THRESHOLD, DEFAULT_LARGE_VALUE_WARNING_THRESHOLD);
     }
 }

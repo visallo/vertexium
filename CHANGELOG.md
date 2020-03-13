@@ -1,6 +1,7 @@
 # v4.10.0
 * Added: System property "metricRegistryStartConsoleReporter" to start the metric registry console reporter automatically
 * Added: Add fetch hint to exclude edge vertex ids or edge ids from edge references
+* Added: Accumulo: Logging of large rows coming from Accumulo custom iterators
 * Changed: Elasticsearch: Throw better exceptions when elements are missing in missing document helper
 * Fixed: Accumulo: don't queue events when no event listeners are attached
 
