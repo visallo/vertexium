@@ -192,8 +192,11 @@ public class AccumuloFindPathStrategy {
                 ranges.add(RangeUtils.createRangeFromString(vertexId));
             }
 
+            FetchHints fetchHints = new FetchHintsBuilder(FetchHints.EDGE_REFS)
+                .setIncludeEdgeIds(false)
+                .build();
             ScannerBase scanner = graph.createElementScanner(
-                FetchHints.EDGE_REFS,
+                fetchHints,
                 ElementType.VERTEX,
                 1,
                 null,
@@ -208,7 +211,7 @@ public class AccumuloFindPathStrategy {
             try {
                 Map<String, Set<String>> results = new HashMap<>();
                 for (Map.Entry<Key, Value> row : scanner) {
-                    Vertex vertex = AccumuloVertex.createFromIteratorValue(graph, row.getKey(), row.getValue(), FetchHints.EDGE_REFS, authorizations);
+                    Vertex vertex = AccumuloVertex.createFromIteratorValue(graph, row.getKey(), row.getValue(), fetchHints, authorizations);
                     Iterable<String> otherVertexIds = stream(vertex.getEdgeInfos(Direction.BOTH, authorizations))
                         .filter(edgeInfo -> {
                             if (excludeLabels != null && excludeLabels.contains(edgeInfo.getLabel())) {

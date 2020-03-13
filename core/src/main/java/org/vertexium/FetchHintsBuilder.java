@@ -14,6 +14,8 @@ public class FetchHintsBuilder {
     private boolean includeAllEdgeRefs;
     private boolean includeOutEdgeRefs;
     private boolean includeInEdgeRefs;
+    private boolean includeEdgeIds = true;
+    private boolean includeEdgeVertexIds = true;
     private Set<String> edgeLabelsOfEdgeRefsToInclude;
     private boolean includeEdgeLabelsAndCounts;
     private boolean includeExtendedDataTableNames;
@@ -33,6 +35,8 @@ public class FetchHintsBuilder {
         includeAllEdgeRefs = fetchHints.isIncludeAllEdgeRefs();
         includeOutEdgeRefs = fetchHints.isIncludeOutEdgeRefs();
         includeInEdgeRefs = fetchHints.isIncludeInEdgeRefs();
+        includeEdgeIds = fetchHints.isIncludeEdgeIds();
+        includeEdgeVertexIds = fetchHints.isIncludeEdgeVertexIds();
         edgeLabelsOfEdgeRefsToInclude = fetchHints.getEdgeLabelsOfEdgeRefsToInclude();
         includeEdgeLabelsAndCounts = fetchHints.isIncludeEdgeLabelsAndCounts();
         includeExtendedDataTableNames = fetchHints.isIncludeExtendedDataTableNames();
@@ -44,6 +48,9 @@ public class FetchHintsBuilder {
         if (!isIncludeProperties() && isIncludePropertyMetadata()) {
             includeAllProperties = true;
         }
+        if ((includeAllEdgeRefs || includeOutEdgeRefs || includeInEdgeRefs) && !includeEdgeIds && !includeEdgeVertexIds) {
+            throw new VertexiumException("Cannot exclude both includeEdgeIds and includeEdgeVertexIds. Instead exclude edge refs.");
+        }
         return new FetchHints(
             includeAllProperties,
             propertyNamesToInclude == null ? null : ImmutableSet.copyOf(propertyNamesToInclude),
@@ -53,6 +60,8 @@ public class FetchHintsBuilder {
             includeAllEdgeRefs,
             includeOutEdgeRefs || includeAllEdgeRefs,
             includeInEdgeRefs || includeAllEdgeRefs,
+            includeEdgeIds,
+            includeEdgeVertexIds,
             edgeLabelsOfEdgeRefsToInclude == null ? null : ImmutableSet.copyOf(edgeLabelsOfEdgeRefsToInclude),
             includeEdgeLabelsAndCounts,
             includeExtendedDataTableNames,
@@ -116,6 +125,16 @@ public class FetchHintsBuilder {
 
     public FetchHintsBuilder setIncludeInEdgeRefs(boolean includeInEdgeRefs) {
         this.includeInEdgeRefs = includeInEdgeRefs;
+        return this;
+    }
+
+    public FetchHintsBuilder setIncludeEdgeIds(boolean includeEdgeIds) {
+        this.includeEdgeIds = includeEdgeIds;
+        return this;
+    }
+
+    public FetchHintsBuilder setIncludeEdgeVertexIds(boolean includeEdgeVertexIds) {
+        this.includeEdgeVertexIds = includeEdgeVertexIds;
         return this;
     }
 

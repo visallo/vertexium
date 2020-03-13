@@ -17,6 +17,8 @@ public class FetchHints {
     private final boolean includeAllEdgeRefs;
     private final boolean includeOutEdgeRefs;
     private final boolean includeInEdgeRefs;
+    private final boolean includeEdgeIds;
+    private final boolean includeEdgeVertexIds;
     private final ImmutableSet<String> edgeLabelsOfEdgeRefsToInclude;
     private final boolean includeEdgeLabelsAndCounts;
     private final boolean includeExtendedDataTableNames;
@@ -63,6 +65,8 @@ public class FetchHints {
         boolean includeAllEdgeRefs,
         boolean includeOutEdgeRefs,
         boolean includeInEdgeRefs,
+        boolean includeEdgeIds,
+        boolean includeEdgeVertexIds,
         ImmutableSet<String> edgeLabelsOfEdgeRefsToInclude,
         boolean includeEdgeLabelsAndCounts,
         boolean includeExtendedDataTableNames,
@@ -77,6 +81,8 @@ public class FetchHints {
         this.includeAllEdgeRefs = includeAllEdgeRefs;
         this.includeOutEdgeRefs = includeOutEdgeRefs;
         this.includeInEdgeRefs = includeInEdgeRefs;
+        this.includeEdgeIds = includeEdgeIds;
+        this.includeEdgeVertexIds = includeEdgeVertexIds;
         this.edgeLabelsOfEdgeRefsToInclude = includeAllEdgeRefs ? null : edgeLabelsOfEdgeRefsToInclude;
         this.includeEdgeLabelsAndCounts = includeEdgeLabelsAndCounts;
         this.includeExtendedDataTableNames = includeExtendedDataTableNames;
@@ -114,6 +120,14 @@ public class FetchHints {
 
     public boolean isIncludeInEdgeRefs() {
         return includeInEdgeRefs;
+    }
+
+    public boolean isIncludeEdgeIds() {
+        return includeEdgeIds;
+    }
+
+    public boolean isIncludeEdgeVertexIds() {
+        return includeEdgeVertexIds;
     }
 
     public ImmutableSet<String> getEdgeLabelsOfEdgeRefsToInclude() {
@@ -257,6 +271,8 @@ public class FetchHints {
             && includeAllEdgeRefs == that.includeAllEdgeRefs
             && includeOutEdgeRefs == that.includeOutEdgeRefs
             && includeInEdgeRefs == that.includeInEdgeRefs
+            && includeEdgeIds == that.includeEdgeIds
+            && includeEdgeVertexIds == that.includeEdgeVertexIds
             && includeEdgeLabelsAndCounts == that.includeEdgeLabelsAndCounts
             && includeExtendedDataTableNames == that.includeExtendedDataTableNames
             && ignoreAdditionalVisibilities == that.ignoreAdditionalVisibilities
@@ -277,6 +293,8 @@ public class FetchHints {
             includeAllEdgeRefs,
             includeOutEdgeRefs,
             includeInEdgeRefs,
+            includeEdgeIds,
+            includeEdgeVertexIds,
             edgeLabelsOfEdgeRefsToInclude,
             includeEdgeLabelsAndCounts,
             includeExtendedDataTableNames,
@@ -337,6 +355,14 @@ public class FetchHints {
         }
 
         if (fetchHints.includeInEdgeRefs && !(this.includeInEdgeRefs || this.includeAllEdgeRefs)) {
+            return false;
+        }
+
+        if (fetchHints.includeEdgeIds && !this.includeEdgeIds) {
+            return false;
+        }
+
+        if (fetchHints.includeEdgeVertexIds && !this.includeEdgeVertexIds) {
             return false;
         }
 
@@ -431,6 +457,8 @@ public class FetchHints {
         boolean includeAllEdgeRefs = false;
         boolean includeOutEdgeRefs = false;
         boolean includeInEdgeRefs = false;
+        boolean includeEdgeIds = false;
+        boolean includeEdgeVertexIds = false;
         boolean includeEdgeLabelsAndCounts = false;
         boolean includeExtendedDataTableNames = false;
         Boolean ignoreAdditionalVisibilities = null;
@@ -452,6 +480,12 @@ public class FetchHints {
             }
             if (fetchHint.isIncludeInEdgeRefs()) {
                 includeInEdgeRefs = true;
+            }
+            if (fetchHint.isIncludeEdgeIds()) {
+                includeEdgeIds = true;
+            }
+            if (fetchHint.isIncludeEdgeVertexIds()) {
+                includeEdgeVertexIds = true;
             }
             if (fetchHint.isIncludeEdgeLabelsAndCounts()) {
                 includeEdgeLabelsAndCounts = true;
@@ -509,6 +543,8 @@ public class FetchHints {
             includeAllEdgeRefs,
             includeOutEdgeRefs,
             includeInEdgeRefs,
+            includeEdgeIds,
+            includeEdgeVertexIds,
             edgeLabelsOfEdgeRefsToInclude == null ? null : ImmutableSet.copyOf(edgeLabelsOfEdgeRefsToInclude),
             includeEdgeLabelsAndCounts,
             includeExtendedDataTableNames,

@@ -123,7 +123,13 @@ public class DataOutputStreamUtils {
         }
     }
 
-    public static void encodeEdges(DataOutputStream out, EdgesWithEdgeInfo edges, boolean edgeLabelsOnly) throws IOException {
+    public static void encodeEdges(
+        DataOutputStream out,
+        EdgesWithEdgeInfo edges,
+        boolean edgeLabelsOnly,
+        boolean includeEdgeIds,
+        boolean includeEdgeVertexIds
+    ) throws IOException {
         out.write(edgeLabelsOnly ? EDGE_LABEL_ONLY_MARKER : EDGE_LABEL_WITH_REFS_MARKER);
 
         Map<ByteArrayWrapper, List<Map.Entry<Text, EdgeInfo>>> edgesByLabels = getEdgesByLabel(edges);
@@ -133,9 +139,13 @@ public class DataOutputStreamUtils {
             out.writeInt(entry.getValue().size());
             if (!edgeLabelsOnly) {
                 for (Map.Entry<Text, EdgeInfo> edgeEntry : entry.getValue()) {
-                    encodeText(out, edgeEntry.getKey());
+                    if (includeEdgeIds) {
+                        encodeText(out, edgeEntry.getKey());
+                    }
                     out.writeLong(edgeEntry.getValue().getTimestamp());
-                    encodeString(out, edgeEntry.getValue().getVertexId());
+                    if (includeEdgeVertexIds) {
+                        encodeString(out, edgeEntry.getValue().getVertexId());
+                    }
                 }
             }
         }

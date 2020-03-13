@@ -17,6 +17,8 @@ public class IteratorFetchHints implements Serializable {
     private final boolean includeAllEdgeRefs;
     private final boolean includeOutEdgeRefs;
     private final boolean includeInEdgeRefs;
+    private final boolean includeEdgeIds;
+    private final boolean includeEdgeVertexIds;
     private final boolean ignoreAdditionalVisibilities;
     private final Set<String> edgeLabelsOfEdgeRefsToInclude;
     private final boolean includeEdgeLabelsAndCounts;
@@ -32,6 +34,8 @@ public class IteratorFetchHints implements Serializable {
         this.includeAllEdgeRefs = false;
         this.includeOutEdgeRefs = false;
         this.includeInEdgeRefs = false;
+        this.includeEdgeIds = true;
+        this.includeEdgeVertexIds = true;
         this.ignoreAdditionalVisibilities = false;
         this.edgeLabelsOfEdgeRefsToInclude = null;
         this.includeEdgeLabelsAndCounts = false;
@@ -48,6 +52,8 @@ public class IteratorFetchHints implements Serializable {
         boolean includeAllEdgeRefs,
         boolean includeOutEdgeRefs,
         boolean includeInEdgeRefs,
+        boolean includeEdgeIds,
+        boolean includeEdgeVertexIds,
         boolean ignoreAdditionalVisibilities,
         Set<String> edgeLabelsOfEdgeRefsToInclude,
         boolean includeEdgeLabelsAndCounts,
@@ -62,6 +68,8 @@ public class IteratorFetchHints implements Serializable {
         this.includeAllEdgeRefs = includeAllEdgeRefs;
         this.includeOutEdgeRefs = includeOutEdgeRefs;
         this.includeInEdgeRefs = includeInEdgeRefs;
+        this.includeEdgeIds = includeEdgeIds;
+        this.includeEdgeVertexIds = includeEdgeVertexIds;
         this.ignoreAdditionalVisibilities = ignoreAdditionalVisibilities;
         this.edgeLabelsOfEdgeRefsToInclude = edgeLabelsOfEdgeRefsToInclude;
         this.includeEdgeLabelsAndCounts = includeEdgeLabelsAndCounts;
@@ -101,6 +109,14 @@ public class IteratorFetchHints implements Serializable {
         return includeInEdgeRefs;
     }
 
+    public boolean isIncludeEdgeIds() {
+        return includeEdgeIds;
+    }
+
+    public boolean isIncludeEdgeVertexIds() {
+        return includeEdgeVertexIds;
+    }
+
     public Set<String> getEdgeLabelsOfEdgeRefsToInclude() {
         return edgeLabelsOfEdgeRefsToInclude;
     }
@@ -132,6 +148,8 @@ public class IteratorFetchHints implements Serializable {
             ", includeAllEdgeRefs=" + includeAllEdgeRefs +
             ", includeOutEdgeRefs=" + includeOutEdgeRefs +
             ", includeInEdgeRefs=" + includeInEdgeRefs +
+            ", includeEdgeIds=" + includeEdgeIds +
+            ", includeEdgeVertexIds=" + includeEdgeVertexIds +
             ", ignoreAdditionalVisibilities=" + ignoreAdditionalVisibilities +
             ", edgeLabelsOfEdgeRefsToInclude=" + setToString(edgeLabelsOfEdgeRefsToInclude) +
             ", includeEdgeLabelsAndCounts=" + includeEdgeLabelsAndCounts +

@@ -33,11 +33,17 @@ public class VertexElementData extends ElementData {
         DataOutputStreamUtils.encodeEdges(
             out,
             outEdges,
-            fetchHints.isIncludeEdgeLabelsAndCounts() && !(fetchHints.isIncludeAllEdgeRefs() || fetchHints.isIncludeOutEdgeRefs()));
+            fetchHints.isIncludeEdgeLabelsAndCounts() && !(fetchHints.isIncludeAllEdgeRefs() || fetchHints.isIncludeOutEdgeRefs()),
+            fetchHints.isIncludeEdgeIds(),
+            fetchHints.isIncludeEdgeVertexIds()
+        );
         DataOutputStreamUtils.encodeEdges(
             out,
             inEdges,
-            fetchHints.isIncludeEdgeLabelsAndCounts() && !(fetchHints.isIncludeAllEdgeRefs() || fetchHints.isIncludeInEdgeRefs()));
+            fetchHints.isIncludeEdgeLabelsAndCounts() && !(fetchHints.isIncludeAllEdgeRefs() || fetchHints.isIncludeInEdgeRefs()),
+            fetchHints.isIncludeEdgeIds(),
+            fetchHints.isIncludeEdgeVertexIds()
+        );
     }
 
     @Override

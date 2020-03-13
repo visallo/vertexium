@@ -80,6 +80,9 @@ public class InMemoryVertex extends InMemoryElement<InMemoryVertex> implements V
                 return new EdgeInfo() {
                     @Override
                     public String getEdgeId() {
+                        if (!getFetchHints().isIncludeEdgeIds()) {
+                            throw new VertexiumMissingFetchHintException(getFetchHints(), "includeEdgeIds");
+                        }
                         return edge.getId();
                     }
 
@@ -90,12 +93,15 @@ public class InMemoryVertex extends InMemoryElement<InMemoryVertex> implements V
 
                     @Override
                     public String getVertexId() {
+                        if (!getFetchHints().isIncludeEdgeVertexIds()) {
+                            throw new VertexiumMissingFetchHintException(getFetchHints(), "includeEdgeVertexIds");
+                        }
                         return edge.getOtherVertexId(InMemoryVertex.this.getId());
                     }
 
                     @Override
                     public Direction getDirection() {
-                        return edge.getVertexId(Direction.OUT).equals(this.getVertexId())
+                        return edge.getVertexId(Direction.OUT).equals(edge.getOtherVertexId(InMemoryVertex.this.getId()))
                             ? Direction.IN
                             : Direction.OUT;
                     }
@@ -112,6 +118,9 @@ public class InMemoryVertex extends InMemoryElement<InMemoryVertex> implements V
     @Override
     public Iterable<Edge> getEdges(final Direction direction, FetchHints fetchHints, Long endTime, Authorizations authorizations) {
         getFetchHints().validateHasEdgeFetchHints(direction);
+        if (!getFetchHints().isIncludeEdgeIds()) {
+            throw new VertexiumMissingFetchHintException(getFetchHints(), "includeEdgeIds");
+        }
         return internalGetEdges(direction, fetchHints, endTime, authorizations);
     }
 
@@ -133,6 +142,9 @@ public class InMemoryVertex extends InMemoryElement<InMemoryVertex> implements V
 
     @Override
     public Iterable<String> getEdgeIds(Direction direction, Authorizations authorizations) {
+        if (!getFetchHints().isIncludeEdgeIds()) {
+            throw new VertexiumMissingFetchHintException(getFetchHints(), "includeEdgeIds");
+        }
         return new EdgeToEdgeIdIterable(getEdges(direction, getFetchHints(), authorizations));
     }
 
@@ -148,6 +160,9 @@ public class InMemoryVertex extends InMemoryElement<InMemoryVertex> implements V
 
     @Override
     public Iterable<String> getEdgeIds(Direction direction, String label, Authorizations authorizations) {
+        if (!getFetchHints().isIncludeEdgeIds()) {
+            throw new VertexiumMissingFetchHintException(getFetchHints(), "includeEdgeIds");
+        }
         return new EdgeToEdgeIdIterable(getEdges(direction, label, authorizations));
     }
 
@@ -312,6 +327,9 @@ public class InMemoryVertex extends InMemoryElement<InMemoryVertex> implements V
 
     @Override
     public Iterable<String> getVertexIds(Direction direction, String[] labels, Authorizations authorizations) {
+        if (!getFetchHints().isIncludeEdgeVertexIds()) {
+            throw new VertexiumMissingFetchHintException(getFetchHints(), "includeEdgeVertexIds");
+        }
         return new ConvertingIterable<EdgeInfo, String>(getEdgeInfos(direction, labels, authorizations)) {
             @Override
             protected String convert(EdgeInfo e) {

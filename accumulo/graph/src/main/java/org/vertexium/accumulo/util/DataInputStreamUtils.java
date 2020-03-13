@@ -132,10 +132,10 @@ public class DataInputStreamUtils {
         );
     }
 
-    public static Edges decodeEdges(DataInputStream in, NameSubstitutionStrategy nameSubstitutionStrategy) throws IOException {
+    public static Edges decodeEdges(DataInputStream in, NameSubstitutionStrategy nameSubstitutionStrategy, FetchHints fetchHints) throws IOException {
         int edgeLabelMarker = in.readByte();
         if (edgeLabelMarker == DataOutputStreamUtils.EDGE_LABEL_WITH_REFS_MARKER) {
-            return decodeEdgesWithRefs(in, nameSubstitutionStrategy);
+            return decodeEdgesWithRefs(in, nameSubstitutionStrategy, fetchHints);
         } else if (edgeLabelMarker == DataOutputStreamUtils.EDGE_LABEL_ONLY_MARKER) {
             return decodeEdgesLabelsOnly(in, nameSubstitutionStrategy);
         } else {
@@ -154,17 +154,27 @@ public class DataInputStreamUtils {
         return edges;
     }
 
-    private static Edges decodeEdgesWithRefs(DataInputStream in, NameSubstitutionStrategy nameSubstitutionStrategy) throws IOException {
+    private static Edges decodeEdgesWithRefs(DataInputStream in, NameSubstitutionStrategy nameSubstitutionStrategy, FetchHints fetchHints) throws IOException {
         EdgesWithEdgeInfo edges = new EdgesWithEdgeInfo();
         int count = in.readInt();
         for (int i = 0; i < count; i++) {
             String label = decodeString(in);
             int edgeByLabelCount = in.readInt();
             for (int edgeByLabelIndex = 0; edgeByLabelIndex < edgeByLabelCount; edgeByLabelIndex++) {
-                Text edgeId = decodeText(in);
+                Text edgeId;
+                if (fetchHints.isIncludeEdgeIds()) {
+                    edgeId = decodeText(in);
+                } else {
+                    edgeId = null;
+                }
                 long timestamp = in.readLong();
-                String vertexId = decodeString(in);
-                EdgeInfo edgeInfo = new EdgeInfo(nameSubstitutionStrategy.inflate(label), vertexId, timestamp);
+                String vertexId;
+                if (fetchHints.isIncludeEdgeVertexIds()) {
+                    vertexId = decodeString(in);
+                } else {
+                    vertexId = null;
+                }
+                EdgeInfo edgeInfo = new EdgeInfo(nameSubstitutionStrategy.inflate(label), vertexId, timestamp, fetchHints.isIncludeEdgeVertexIds());
                 edges.add(edgeId, edgeInfo);
             }
         }
