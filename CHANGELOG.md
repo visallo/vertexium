@@ -1,5 +1,6 @@
 # v4.10.0
 * Added: System property "metricRegistryStartConsoleReporter" to start the metric registry console reporter automatically
+* Changed: Elasticsearch: Throw better exceptions when elements are missing in missing document helper
 
 # v4.9.7
 * Fixed: Sorting issue when ElasticSearch attempts to implicitly cast Date Times to Doubles in search query string
