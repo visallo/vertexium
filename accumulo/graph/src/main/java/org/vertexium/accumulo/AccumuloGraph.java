@@ -1397,6 +1397,11 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
     }
 
     @Override
+    public Stream<StreamingPropertyValueChunk> readStreamingPropertyValueChunks(Iterable<StreamingPropertyValue> streamingPropertyValues) {
+        return streamingPropertyValueStorageStrategy.readStreamingPropertyValueChunks(streamingPropertyValues);
+    }
+
+    @Override
     public Iterable<ExtendedDataRow> getExtendedData(Iterable<ExtendedDataRowId> ids, FetchHints fetchHints, Authorizations authorizations) {
         List<org.apache.accumulo.core.data.Range> ranges = extendedDataRowIdToRange(ids);
         Span trace = Trace.start("getExtendedData");
@@ -2448,13 +2453,18 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             if (property.getVisibility().equals(apv.getVisibility())) {
                 continue;
             }
+
+            // Get the property value before changing the property visibility and timestamp to prevent lazy
+            // properties from getting the wrong value
+            Object propertyValue = property.getValue();
+
             if (apv.getExistingVisibility() == null) {
                 apv.setExistingVisibility(property.getVisibility());
             }
             elementMutationBuilder.addPropertySoftDeleteToMutation(m, property, apv.getTimestamp() - 1, apv.getData());
             property.setVisibility(apv.getVisibility());
             property.setTimestamp(apv.getTimestamp());
-            elementMutationBuilder.addPropertyToMutation(this, m, element, elementRowKey, property);
+            elementMutationBuilder.addPropertyToMutation(this, m, element, elementRowKey, property, propertyValue);
 
             // Keep track of properties that need to be removed from indices
             propertyList.add(PropertyDescriptor.from(apv.getKey(), apv.getName(), apv.getExistingVisibility()));

@@ -14,6 +14,7 @@ import org.vertexium.query.MultiVertexQuery;
 import org.vertexium.query.SimilarToGraphQuery;
 import org.vertexium.util.JoinIterable;
 
+import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.util.*;
 import java.util.stream.Stream;
@@ -1337,6 +1338,46 @@ public interface Graph {
      * @return InputStreams in the same order as the input list
      */
     List<InputStream> getStreamingPropertyValueInputStreams(List<StreamingPropertyValue> streamingPropertyValues);
+
+    /**
+     * Reads multiple {@link StreamingPropertyValue}s at once. This can have performance benefits by
+     * reducing the number of queries to the underlying data source.
+     * <p>
+     * WARNING: Chunks can come interleaved.
+     *
+     * @param streamingPropertyValues list of {@link StreamingPropertyValue}s to get chunks for
+     * @return a stream of chunks
+     */
+    default Stream<StreamingPropertyValueChunk> readStreamingPropertyValueChunks(Iterable<StreamingPropertyValue> streamingPropertyValues) {
+        return StreamingPropertyValue.readChunks(streamingPropertyValues);
+    }
+
+    /**
+     * Reads multiple {@link StreamingPropertyValue}s at once. This can have performance benefits by
+     * reducing the number of queries to the underlying data source.
+     * <p>
+     * Similar to {@link #readStreamingPropertyValueChunks(Iterable)} but reads the whole {@link StreamingPropertyValue}
+     * into memory as opposed to a chunk at a time.
+     *
+     * @param streamingPropertyValues list of {@link StreamingPropertyValue}s to get data for
+     * @return a stream of values
+     */
+    default Stream<StreamingPropertyValueData> readStreamingPropertyValues(Iterable<StreamingPropertyValue> streamingPropertyValues) {
+        Map<StreamingPropertyValue, ByteArrayOutputStream> buffers = new HashMap<>();
+        return readStreamingPropertyValueChunks(streamingPropertyValues)
+            .map(chunk -> {
+                ByteArrayOutputStream buffer = buffers.computeIfAbsent(chunk.getStreamingPropertyValue(), spv -> new ByteArrayOutputStream());
+                buffer.write(chunk.getData(), 0, chunk.getChunkSize());
+                StreamingPropertyValueData result = null;
+                if (chunk.isLast()) {
+                    byte[] data = buffer.toByteArray();
+                    result = new StreamingPropertyValueData(chunk.getStreamingPropertyValue(), data, data.length);
+                    buffers.remove(chunk.getStreamingPropertyValue());
+                }
+                return result;
+            })
+            .filter(Objects::nonNull);
+    }
 
     /**
      * Gets the specified extended data rows.

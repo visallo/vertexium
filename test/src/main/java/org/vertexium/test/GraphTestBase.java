@@ -6001,6 +6001,29 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    public void testSaveExistingElementWithStreamingPropertyValue() throws Exception {
+        graph.prepareVertex("v1", VISIBILITY_A)
+            .setProperty("a", StreamingPropertyValue.create("Test Value A"), VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B);
+        v1.prepareMutation()
+            .setProperty("name", "joe", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        v1 = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B);
+        StreamingPropertyValue spvA = (StreamingPropertyValue) v1.getPropertyValue("a");
+        assertEquals(12L, (long) spvA.getLength());
+
+        List<StreamingPropertyValueData> values = graph.readStreamingPropertyValues(Lists.newArrayList(spvA)).collect(Collectors.toList());
+        assertEquals(1, values.size());
+        assertEquals(12, values.get(0).getSize());
+        assertEquals("Test Value A", IOUtils.toString(values.get(0).getInputStream()));
+    }
+
+    @Test
     public void testQueryingUpdatedStreamingPropertyValues() throws Exception {
         graph.defineProperty("fullText").dataType(String.class).textIndexHint(TextIndexHint.FULL_TEXT).define();
 
@@ -6049,6 +6072,60 @@ public abstract class GraphTestBase {
         assertEquals("Test Value A", IOUtils.toString(streams.get(0)));
         assertEquals("Test Value B", IOUtils.toString(streams.get(1)));
         assertEquals("Test Value C", IOUtils.toString(streams.get(2)));
+    }
+
+    @Test
+    public void testReadStreamingPropertyValues() {
+        graph.defineProperty("a").dataType(String.class).textIndexHint(TextIndexHint.FULL_TEXT).define();
+        graph.defineProperty("b").dataType(String.class).textIndexHint(TextIndexHint.FULL_TEXT).define();
+        graph.defineProperty("c").dataType(String.class).textIndexHint(TextIndexHint.FULL_TEXT).define();
+
+        byte[] longValue = new byte[100_000];
+        Random rand = new Random(1);
+        rand.nextBytes(longValue);
+
+        graph.prepareVertex("v1", VISIBILITY_A)
+            .setProperty("a", StreamingPropertyValue.create("Test Value A"), VISIBILITY_A)
+            .setProperty("b", StreamingPropertyValue.create(longValue), VISIBILITY_A)
+            .setProperty("c", StreamingPropertyValue.create("Test Value C"), VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        // test multiple timestamped values
+        graph.prepareVertex("v1", VISIBILITY_A)
+            .setProperty("a", StreamingPropertyValue.create("New Test Value A"), VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        Vertex v1a = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B);
+        StreamingPropertyValue spvA = (StreamingPropertyValue) v1a.getPropertyValue("a");
+        assertEquals(16L, (long) spvA.getLength());
+        StreamingPropertyValue spvB = (StreamingPropertyValue) v1a.getPropertyValue("b");
+        assertEquals(longValue.length, (long) spvB.getLength());
+        StreamingPropertyValue spvCa = (StreamingPropertyValue) v1a.getPropertyValue("c");
+        assertEquals(12L, (long) spvCa.getLength());
+
+        Vertex v1b = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B);
+        StreamingPropertyValue spvCb = (StreamingPropertyValue) v1b.getPropertyValue("c");
+        assertEquals(12L, (long) spvCb.getLength());
+
+        ArrayList<StreamingPropertyValue> spvs = Lists.newArrayList(spvA, spvB, spvCa, spvCa, spvCb); // test same SPV twice as well
+        Map<StreamingPropertyValue, byte[]> values = graph.readStreamingPropertyValues(spvs)
+            .collect(Collectors.toMap(StreamingPropertyValueData::getStreamingPropertyValue, StreamingPropertyValueData::getData));
+        assertEquals(4, values.size());
+        for (Map.Entry<StreamingPropertyValue, byte[]> entry : values.entrySet()) {
+            if (entry.getKey() == spvA) {
+                assertEquals("New Test Value A", new String(entry.getValue()));
+            } else if (entry.getKey() == spvB) {
+                assertTrue(Arrays.equals(longValue, entry.getValue()));
+            } else if (entry.getKey() == spvCa) {
+                assertEquals("Test Value C", new String(entry.getValue()));
+            } else if (entry.getKey() == spvCb) {
+                assertEquals("Test Value C", new String(entry.getValue()));
+            } else {
+                throw new VertexiumException("invalid spv: " + entry.getKey());
+            }
+        }
     }
 
     @Test
