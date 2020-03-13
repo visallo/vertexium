@@ -48,6 +48,9 @@ public class LoadAndAddDocumentMissingHelper implements Elasticsearch5ExceptionH
             default:
                 throw new VertexiumException("Invalid element type: " + bulkItem.getElementId().getElementType());
         }
+        if (element == null) {
+            throw new VertexiumException("Could not find element: " + bulkItem.getElementId().getId());
+        }
         elasticsearch5SearchIndex.addElement(
             graph,
             element,
