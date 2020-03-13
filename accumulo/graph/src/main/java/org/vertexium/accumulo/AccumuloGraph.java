@@ -534,6 +534,9 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
     }
 
     private void queueEvent(GraphEvent graphEvent) {
+        if (!hasEventListeners()) {
+            return;
+        }
         synchronized (this.graphEventQueue) {
             this.graphEventQueue.add(graphEvent);
         }
@@ -797,7 +800,9 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             for (Vertex vertex : verticesToDelete) {
                 addMutations(VertexiumObjectType.VERTEX, elementMutationBuilder.getDeleteRowMutation(vertex.getId()));
 
-                queueEvent(new DeleteVertexEvent(AccumuloGraph.this, vertex));
+                if (hasEventListeners()) {
+                    queueEvent(new DeleteVertexEvent(AccumuloGraph.this, vertex));
+                }
             }
         }
 
@@ -820,7 +825,9 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                 // Deletes everything else related to edge.
                 addMutations(VertexiumObjectType.EDGE, elementMutationBuilder.getDeleteRowMutation(edgeLocation.getId()));
 
-                queueEvent(new DeleteEdgeEvent(AccumuloGraph.this, edgeLocation));
+                if (hasEventListeners()) {
+                    queueEvent(new DeleteEdgeEvent(AccumuloGraph.this, edgeLocation));
+                }
             }
         }
 
