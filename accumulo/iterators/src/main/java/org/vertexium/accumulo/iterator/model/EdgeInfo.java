@@ -21,14 +21,14 @@ public class EdgeInfo {
     }
 
     public EdgeInfo(String label, String vertexId) {
-        this(label, vertexId, System.currentTimeMillis());
+        this(label, vertexId, System.currentTimeMillis(), true);
     }
 
-    public EdgeInfo(String label, String vertexId, long timestamp) {
+    public EdgeInfo(String label, String vertexId, long timestamp, boolean includeEdgeVertexIds) {
         if (label == null) {
             throw new IllegalArgumentException("label cannot be null");
         }
-        if (vertexId == null) {
+        if (includeEdgeVertexIds && vertexId == null) {
             throw new IllegalArgumentException("vertexId cannot be null");
         }
         this.label = label;

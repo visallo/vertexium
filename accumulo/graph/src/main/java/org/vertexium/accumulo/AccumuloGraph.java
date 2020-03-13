@@ -2000,6 +2000,8 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
             fetchHints.isIncludeAllEdgeRefs(),
             fetchHints.isIncludeOutEdgeRefs(),
             fetchHints.isIncludeInEdgeRefs(),
+            fetchHints.isIncludeEdgeIds(),
+            fetchHints.isIncludeEdgeVertexIds(),
             fetchHints.isIgnoreAdditionalVisibilities(),
             deflate(fetchHints.getEdgeLabelsOfEdgeRefsToInclude()),
             fetchHints.isIncludeEdgeLabelsAndCounts(),

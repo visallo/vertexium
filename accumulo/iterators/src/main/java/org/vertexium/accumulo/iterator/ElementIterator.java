@@ -446,6 +446,8 @@ public abstract class ElementIterator<T extends ElementData> implements SortedKe
             Boolean.parseBoolean(options.get(SETTING_FETCH_HINTS_PREFIX + "includeAllEdgeRefs")),
             Boolean.parseBoolean(options.get(SETTING_FETCH_HINTS_PREFIX + "includeOutEdgeRefs")),
             Boolean.parseBoolean(options.get(SETTING_FETCH_HINTS_PREFIX + "includeInEdgeRefs")),
+            Boolean.parseBoolean(options.get(SETTING_FETCH_HINTS_PREFIX + "includeEdgeIds")),
+            Boolean.parseBoolean(options.get(SETTING_FETCH_HINTS_PREFIX + "includeEdgeVertexIds")),
             Boolean.parseBoolean(options.get(SETTING_FETCH_HINTS_PREFIX + "ignoreAdditionalVisibilities")),
             OptionsUtils.parseSet(options.get(SETTING_FETCH_HINTS_PREFIX + "edgeLabelsOfEdgeRefsToInclude")),
             Boolean.parseBoolean(options.get(SETTING_FETCH_HINTS_PREFIX + "includeEdgeLabelsAndCounts")),
@@ -474,6 +476,8 @@ public abstract class ElementIterator<T extends ElementData> implements SortedKe
         OptionsUtils.addOption(iteratorSettings, SETTING_FETCH_HINTS_PREFIX + "includeAllEdgeRefs", Boolean.toString(fetchHints.isIncludeAllEdgeRefs()));
         OptionsUtils.addOption(iteratorSettings, SETTING_FETCH_HINTS_PREFIX + "includeOutEdgeRefs", Boolean.toString(fetchHints.isIncludeOutEdgeRefs()));
         OptionsUtils.addOption(iteratorSettings, SETTING_FETCH_HINTS_PREFIX + "includeInEdgeRefs", Boolean.toString(fetchHints.isIncludeInEdgeRefs()));
+        OptionsUtils.addOption(iteratorSettings, SETTING_FETCH_HINTS_PREFIX + "includeEdgeIds", Boolean.toString(fetchHints.isIncludeEdgeIds()));
+        OptionsUtils.addOption(iteratorSettings, SETTING_FETCH_HINTS_PREFIX + "includeEdgeVertexIds", Boolean.toString(fetchHints.isIncludeEdgeVertexIds()));
         OptionsUtils.addOption(iteratorSettings, SETTING_FETCH_HINTS_PREFIX + "ignoreAdditionalVisibilities", Boolean.toString(fetchHints.isIgnoreAdditionalVisibilities()));
         OptionsUtils.addOption(iteratorSettings, SETTING_FETCH_HINTS_PREFIX + "edgeLabelsOfEdgeRefsToInclude", OptionsUtils.setToString(fetchHints.getEdgeLabelsOfEdgeRefsToInclude()));
         OptionsUtils.addOption(iteratorSettings, SETTING_FETCH_HINTS_PREFIX + "includeEdgeLabelsAndCounts", Boolean.toString(fetchHints.isIncludeEdgeLabelsAndCounts()));
