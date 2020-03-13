@@ -3809,25 +3809,23 @@ public abstract class GraphTestBase {
     @Test
     public void testESSortWithDateProperties() throws Exception {
         graph.defineProperty("DayOfDeath").dataType(Date.class).sortable(true).define();
-
-        ZoneId zoneId = ZoneId.of("UTC+1");
-        ZonedDateTime dateVertex1 = ZonedDateTime.of(2015, 11, 30, 23, 45, 59, 1234, zoneId);
-        ZonedDateTime dateVertex2 = ZonedDateTime.of(2018, 11, 30, 23, 45, 59, 1234, zoneId);
-
+        graph.defineProperty("v3").dataType(String.class).sortable(true).define();
+        Date dateVertex1 = createDate(2020, 3, 9);
+        Date dateVertex2 = createDate(2020, 3, 11);
+        Date dateVertex3 = createDate(2020, 3, 31);
         graph.prepareVertex("v1", VISIBILITY_EMPTY)
                 .addPropertyValue("k1", "DayOfDeath", dateVertex1, VISIBILITY_A)
                 .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         graph.prepareVertex("v2", VISIBILITY_EMPTY)
-                .addPropertyValue("k2", "DayOfDeath", dateVertex1, VISIBILITY_A)
-                .addPropertyValue("k3", "DayOfDeath", dateVertex2, VISIBILITY_B)
+                .addPropertyValue("k2", "DayOfDeath", dateVertex2, VISIBILITY_A)
+                .addPropertyValue("k4", "DayOfDeath", dateVertex3, VISIBILITY_B)
                 .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
         graph.prepareVertex("v3", VISIBILITY_EMPTY)
                 .addPropertyValue("k3", "v3", "value1", VISIBILITY_A)
-                .addPropertyValue("k2", "DayOfDeath", 1234, VISIBILITY_A)
                 .save(AUTHORIZATIONS_A_AND_B);
         graph.flush();
 
