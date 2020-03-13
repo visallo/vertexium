@@ -39,10 +39,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.time.LocalDate;
-import java.time.Month;
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
+import java.time.*;
 import java.util.*;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -3807,6 +3804,37 @@ public abstract class GraphTestBase {
             .sort(genderPropertyName, SortDirection.DESCENDING)
             .vertices());
         assertVertexIds(vertices, "v4", "v3", "v1", "v2", "v6", "v5");
+    }
+
+    @Test
+    public void testESSortWithDateProperties() throws Exception {
+        graph.defineProperty("DayOfDeath").dataType(Date.class).sortable(true).define();
+        graph.defineProperty("v3").dataType(String.class).sortable(true).define();
+        Date dateVertex1 = createDate(2020, 3, 9);
+        Date dateVertex2 = createDate(2020, 3, 11);
+        Date dateVertex3 = createDate(2020, 3, 31);
+        graph.prepareVertex("v1", VISIBILITY_EMPTY)
+                .addPropertyValue("k1", "DayOfDeath", dateVertex1, VISIBILITY_A)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        graph.prepareVertex("v2", VISIBILITY_EMPTY)
+                .addPropertyValue("k2", "DayOfDeath", dateVertex2, VISIBILITY_A)
+                .addPropertyValue("k4", "DayOfDeath", dateVertex3, VISIBILITY_B)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        graph.prepareVertex("v3", VISIBILITY_EMPTY)
+                .addPropertyValue("k3", "v3", "value1", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+
+        Iterable<Vertex> query1vertices = graph.query("*", AUTHORIZATIONS_A_AND_B).sort("DayOfDeath", SortDirection.ASCENDING).vertices();
+        assertVertexIds(query1vertices, "v1", "v2", "v3");
+        Iterable<Vertex> query2vertices =graph.query("*", AUTHORIZATIONS_A_AND_B).sort("DayOfDeath", SortDirection.DESCENDING).vertices();
+        assertVertexIds(query2vertices, "v2", "v1", "v3");
+
     }
 
     @Test

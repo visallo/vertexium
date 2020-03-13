@@ -1,5 +1,7 @@
 # v4.9.7
+* Fixed: Sorting issue when ElasticSearch attempts to implicitly cast Date Times to Doubles in search query string
 * Fixed: Elasticsearch: Streaming Property Values being indexed as "" after an update of the property 
+
 
 # v4.9.6
 * Fixed: Threading issue when multiple threads attempt to deserialize a LazyMutableProperty value at the same time.

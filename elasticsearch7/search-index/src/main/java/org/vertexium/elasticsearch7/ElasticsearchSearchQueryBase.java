@@ -401,13 +401,13 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
 
             String[] propertyNames = getPropertyNames(propertyDefinition.getPropertyName());
             if (propertyNames.length > 1) {
-                String scriptSrc = "def fieldValues = []; for (def fieldName : params.fieldNames) { fieldValues.addAll(doc[fieldName]); } " +
-                    "if (params.esOrder == 'asc') { Collections.sort(fieldValues); } else { Collections.sort(fieldValues, Collections.reverseOrder()); }";
+                String scriptSrc = "def fieldValues = []; for (def fieldName : params.fieldNames) { if(doc[fieldName].size() !=0) { fieldValues.addAll(doc[fieldName]); }} " +
+                        "if (params.esOrder == 'asc') { Collections.sort(fieldValues); } else { Collections.sort(fieldValues, Collections.reverseOrder()); }";
 
                 if (propertyDefinition.getDataType() == String.class) {
                     scriptSrc += "return fieldValues.length > 0 ? fieldValues[0] : (params.esOrder == 'asc' ? Character.toString(Character.MAX_VALUE) : '');";
                 } else {
-                    scriptSrc += "return fieldValues.length > 0 ? fieldValues[0] : (params.esOrder == 'asc' ? Integer.MAX_VALUE : Integer.MIN_VALUE);";
+                    scriptSrc += "return fieldValues.length > 0 ? (fieldValues[0] instanceof JodaCompatibleZonedDateTime ? fieldValues[0].getMillis() : fieldValues[0]) : (params.esOrder == 'asc' ? Long.MAX_VALUE : Long.MIN_VALUE);";
                 }
 
                 List<String> fieldNames = Arrays.stream(propertyNames).map(propertyName ->
