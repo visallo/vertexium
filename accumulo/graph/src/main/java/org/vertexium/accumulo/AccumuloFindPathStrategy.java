@@ -211,6 +211,7 @@ public class AccumuloFindPathStrategy {
             try {
                 Map<String, Set<String>> results = new HashMap<>();
                 for (Map.Entry<Key, Value> row : scanner) {
+                    graph.logLargeRow(row.getKey(), row.getValue());
                     Vertex vertex = AccumuloVertex.createFromIteratorValue(graph, row.getKey(), row.getValue(), fetchHints, authorizations);
                     Iterable<String> otherVertexIds = stream(vertex.getEdgeInfos(Direction.BOTH, authorizations))
                         .filter(edgeInfo -> {
