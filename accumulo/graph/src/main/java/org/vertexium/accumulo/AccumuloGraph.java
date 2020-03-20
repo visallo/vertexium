@@ -102,6 +102,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
     private final String dataTableName;
     private final String metadataTableName;
     private final int numberOfQueryThreads;
+    private final boolean compressIteratorTransfers;
     private final AccumuloGraphMetadataStore graphMetadataStore;
     private boolean distributedTraceEnabled;
     private int largeValueErrorThreshold;
@@ -162,6 +163,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
         this.historyInSeparateTable = getConfiguration().isHistoryInSeparateTable();
         this.largeValueErrorThreshold = getConfiguration().getLargeValueErrorThreshold();
         this.largeValueWarningThreshold = getConfiguration().getLargeValueWarningThreshold();
+        this.compressIteratorTransfers = getConfiguration().isCompressIteratorTransfers() && SnappyUtils.testSnappySupport();
 
         if (isHistoryInSeparateTable()) {
             this.historyVerticesTableName = getHistoryVerticesTableName(getConfiguration().getTableNamePrefix());
@@ -1989,6 +1991,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                     );
                     VertexIterator.setFetchHints(vertexIteratorSettings, toIteratorFetchHints(fetchHints));
                     VertexIterator.setAuthorizations(vertexIteratorSettings, authorizations.getAuthorizations());
+                    VertexIterator.setCompressTransfer(vertexIteratorSettings, compressIteratorTransfers);
                     scanner.addScanIterator(vertexIteratorSettings);
                 } else if (elementType == ElementType.EDGE) {
                     IteratorSetting edgeIteratorSettings = new IteratorSetting(
@@ -1998,6 +2001,7 @@ public class AccumuloGraph extends GraphBaseWithSearchIndex implements Traceable
                     );
                     EdgeIterator.setFetchHints(edgeIteratorSettings, toIteratorFetchHints(fetchHints));
                     EdgeIterator.setAuthorizations(edgeIteratorSettings, authorizations.getAuthorizations());
+                    EdgeIterator.setCompressTransfer(edgeIteratorSettings, compressIteratorTransfers);
                     scanner.addScanIterator(edgeIteratorSettings);
                 } else {
                     throw new VertexiumException("Unexpected element type: " + elementType);
