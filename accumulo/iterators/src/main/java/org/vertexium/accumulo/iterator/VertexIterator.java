@@ -45,19 +45,24 @@ public class VertexIterator extends ElementIterator<VertexElementData> {
     public static final byte[] CF_IN_EDGE_SOFT_DELETE_BYTES = CF_IN_EDGE_SOFT_DELETE.getBytes();
 
     public VertexIterator() {
-        this(null, (String[]) null);
+        this(null, false, (String[]) null);
     }
 
-    public VertexIterator(IteratorFetchHints fetchHints, String[] authorizations) {
-        super(null, fetchHints, authorizations);
+    public VertexIterator(IteratorFetchHints fetchHints, boolean compressTransfer, String[] authorizations) {
+        super(null, fetchHints, compressTransfer, authorizations);
     }
 
-    public VertexIterator(IteratorFetchHints fetchHints, Authorizations authorizations) {
-        super(null, fetchHints, authorizations);
+    public VertexIterator(IteratorFetchHints fetchHints, boolean compressTransfer, Authorizations authorizations) {
+        super(null, fetchHints, compressTransfer, authorizations);
     }
 
-    public VertexIterator(SortedKeyValueIterator<Key, Value> source, IteratorFetchHints fetchHints, Authorizations authorizations) {
-        super(source, fetchHints, authorizations);
+    public VertexIterator(
+        SortedKeyValueIterator<Key, Value> source,
+        IteratorFetchHints fetchHints,
+        boolean compressTransfer,
+        Authorizations authorizations
+    ) {
+        super(source, fetchHints, compressTransfer, authorizations);
     }
 
     @Override
@@ -187,10 +192,11 @@ public class VertexIterator extends ElementIterator<VertexElementData> {
             return new VertexIterator(
                 getSourceIterator().deepCopy(env),
                 getFetchHints(),
+                isCompressTransfer(),
                 getAuthorizations()
             );
         }
-        return new VertexIterator(getFetchHints(), getAuthorizations());
+        return new VertexIterator(getFetchHints(), isCompressTransfer(), getAuthorizations());
     }
 
     @Override

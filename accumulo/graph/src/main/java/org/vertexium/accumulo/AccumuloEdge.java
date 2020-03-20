@@ -83,47 +83,47 @@ public class AccumuloEdge extends AccumuloElement implements Edge {
             long timestamp;
 
             ByteArrayInputStream bain = new ByteArrayInputStream(value.get());
-            final DataInputStream in = new DataInputStream(bain);
-            DataInputStreamUtils.decodeHeader(in, ElementData.TYPE_ID_EDGE);
-            edgeId = DataInputStreamUtils.decodeString(in);
-            timestamp = in.readLong();
-            vertexVisibility = new Visibility(DataInputStreamUtils.decodeString(in));
+            try (DataInputStream in = DataInputStreamUtils.decodeHeader(bain, ElementData.TYPE_ID_EDGE)) {
+                edgeId = DataInputStreamUtils.decodeString(in);
+                timestamp = in.readLong();
+                vertexVisibility = new Visibility(DataInputStreamUtils.decodeString(in));
 
-            hiddenVisibilities = Iterables.transform(DataInputStreamUtils.decodeStringSet(in), new Function<String, Visibility>() {
-                @Nullable
-                @Override
-                public Visibility apply(String input) {
-                    return new Visibility(input);
-                }
-            });
+                hiddenVisibilities = Iterables.transform(DataInputStreamUtils.decodeStringSet(in), new Function<String, Visibility>() {
+                    @Nullable
+                    @Override
+                    public Visibility apply(String input) {
+                        return new Visibility(input);
+                    }
+                });
 
-            ImmutableSet<String> additionalVisibilities = DataInputStreamUtils.decodeStringSet(in);
+                ImmutableSet<String> additionalVisibilities = DataInputStreamUtils.decodeStringSet(in);
 
-            List<MetadataEntry> metadataEntries = DataInputStreamUtils.decodeMetadataEntries(in);
-            properties = DataInputStreamUtils.decodeProperties(graph, in, metadataEntries, fetchHints);
-            ImmutableSet<String> extendedDataTableNames = DataInputStreamUtils.decodeStringSet(in);
-            String inVertexId = DataInputStreamUtils.decodeString(in);
-            String outVertexId = DataInputStreamUtils.decodeString(in);
-            String label = graph.getNameSubstitutionStrategy().inflate(DataInputStreamUtils.decodeString(in));
+                List<MetadataEntry> metadataEntries = DataInputStreamUtils.decodeMetadataEntries(in);
+                properties = DataInputStreamUtils.decodeProperties(graph, in, metadataEntries, fetchHints);
+                ImmutableSet<String> extendedDataTableNames = DataInputStreamUtils.decodeStringSet(in);
+                String inVertexId = DataInputStreamUtils.decodeString(in);
+                String outVertexId = DataInputStreamUtils.decodeString(in);
+                String label = graph.getNameSubstitutionStrategy().inflate(DataInputStreamUtils.decodeString(in));
 
-            return new AccumuloEdge(
-                graph,
-                edgeId,
-                outVertexId,
-                inVertexId,
-                label,
-                null,
-                vertexVisibility,
-                properties,
-                null,
-                null,
-                hiddenVisibilities,
-                additionalVisibilities,
-                extendedDataTableNames,
-                timestamp,
-                fetchHints,
-                authorizations
-            );
+                return new AccumuloEdge(
+                    graph,
+                    edgeId,
+                    outVertexId,
+                    inVertexId,
+                    label,
+                    null,
+                    vertexVisibility,
+                    properties,
+                    null,
+                    null,
+                    hiddenVisibilities,
+                    additionalVisibilities,
+                    extendedDataTableNames,
+                    timestamp,
+                    fetchHints,
+                    authorizations
+                );
+            }
         } catch (IOException ex) {
             throw new VertexiumException("Could not read vertex", ex);
         }
