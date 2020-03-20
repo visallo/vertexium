@@ -9,19 +9,26 @@ import org.apache.accumulo.core.data.Key;
 import org.apache.accumulo.core.data.Range;
 import org.apache.accumulo.core.data.Value;
 import org.apache.accumulo.core.iterators.user.TimestampFilter;
+import org.apache.accumulo.core.security.Authorizations;
 import org.apache.accumulo.core.trace.Span;
 import org.apache.accumulo.core.trace.Trace;
 import org.apache.hadoop.io.Text;
+import org.vertexium.StreamingPropertyValueChunk;
 import org.vertexium.VertexiumException;
+import org.vertexium.accumulo.iterator.RowTimestampFilter;
 import org.vertexium.accumulo.util.RangeUtils;
 import org.vertexium.property.StreamingPropertyValue;
 import org.vertexium.util.ByteRingBuffer;
+import org.vertexium.util.ClosingIterator;
+import org.vertexium.util.DelegatingStream;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Stream;
+
+import static org.vertexium.util.StreamUtils.stream;
 
 public class StreamingPropertyValueTableData extends StreamingPropertyValue {
     private static final long serialVersionUID = 1897402273830254711L;
@@ -45,6 +52,110 @@ public class StreamingPropertyValueTableData extends StreamingPropertyValue {
         this.dataRowKey = dataRowKey;
         this.length = length;
         this.timestamp = timestamp;
+    }
+
+    public static Stream<StreamingPropertyValueChunk> readChunks(AccumuloGraph graph, Set<StreamingPropertyValueTableData> spvs) {
+        if (spvs.size() == 0) {
+            return Stream.empty();
+        }
+
+        try {
+            List<Range> ranges = new ArrayList<>();
+            Map<String, Set<StreamingPropertyValueTableData>> streamingPropertyValuesByRowKey = new HashMap<>();
+            Map<Text, RowTimestampFilter.Timestamp> timestamps = new HashMap<>();
+            for (StreamingPropertyValueTableData spv : spvs) {
+                ranges.add(RangeUtils.createRangeFromString(spv.dataRowKey));
+                Set<StreamingPropertyValueTableData> list = streamingPropertyValuesByRowKey.computeIfAbsent(
+                    spv.dataRowKey,
+                    s -> new HashSet<>()
+                );
+                list.add(spv);
+                timestamps.put(
+                    new Text(spv.dataRowKey),
+                    new RowTimestampFilter.Timestamp(spv.timestamp, true, spv.timestamp, true)
+                );
+            }
+
+            ScannerBase scanner = graph.createBatchScanner(graph.getDataTableName(), ranges, new Authorizations());
+
+            IteratorSetting iteratorSetting = new IteratorSetting(
+                80,
+                RowTimestampFilter.class.getSimpleName(),
+                RowTimestampFilter.class
+            );
+            RowTimestampFilter.setTimestamps(iteratorSetting, timestamps);
+            scanner.addScanIterator(iteratorSetting);
+
+            Iterator<Map.Entry<Key, Value>> scannerIterator = scanner.iterator();
+
+            Map<String, Long> streamingPropertyValueLengthsByRowKey = new HashMap<>();
+            Map<String, Long> streamingPropertyValueReadLengthsByRowKey = new HashMap<>();
+            AtomicBoolean closeCalled = new AtomicBoolean();
+            Runnable handleClose = () -> {
+                if (closeCalled.get()) {
+                    return;
+                }
+                closeCalled.set(true);
+                if (!scannerIterator.hasNext()) {
+                    for (Map.Entry<String, Long> entry : streamingPropertyValueLengthsByRowKey.entrySet()) {
+                        String rowKey = entry.getKey();
+                        Long expectedLength = entry.getValue();
+                        Long readLength = streamingPropertyValueReadLengthsByRowKey.get(entry.getKey());
+                        if (expectedLength == 0 && readLength == null) {
+                            // no data found which is OK
+                        } else if (readLength == null || !readLength.equals(expectedLength)) {
+                            throw new VertexiumException(String.format("Expected streaming property value length of %d only read %d (rowKey: %s)", expectedLength, readLength, rowKey));
+                        }
+                    }
+                }
+                scanner.close();
+            };
+
+            Stream<StreamingPropertyValueChunk> results = stream(new ClosingIterator<>(scannerIterator, handleClose))
+                .flatMap(column -> {
+                    String rowKey = column.getKey().getRow().toString();
+                    Set<StreamingPropertyValueTableData> streamingPropertyValues = streamingPropertyValuesByRowKey.get(rowKey);
+                    if (streamingPropertyValues == null) {
+                        throw new VertexiumException(String.format("Found row with key %s but was not in ranges", rowKey));
+                    }
+
+                    if (column.getKey().getColumnFamily().equals(METADATA_COLUMN_FAMILY)) {
+                        if (column.getKey().getColumnQualifier().equals(METADATA_LENGTH_COLUMN_QUALIFIER)) {
+                            long length = Longs.fromByteArray(column.getValue().get());
+                            streamingPropertyValueLengthsByRowKey.put(rowKey, length);
+                            return Stream.empty();
+                        }
+
+                        throw new VertexiumException(String.format("unexpected metadata column qualifier: %s (row: %s)", column.getKey().getColumnQualifier(), column.getKey().getRow()));
+                    }
+
+                    if (column.getKey().getColumnFamily().equals(DATA_COLUMN_FAMILY)) {
+                        Long totalLength = streamingPropertyValueLengthsByRowKey.get(rowKey);
+                        if (totalLength == null) {
+                            throw new VertexiumException("unexpected missing length (row: " + column.getKey().getRow() + ")");
+                        }
+                        long readLength = streamingPropertyValueReadLengthsByRowKey.getOrDefault(rowKey, 0L);
+
+                        byte[] data = column.getValue().get();
+                        int chunkSize = data.length;
+                        readLength += chunkSize;
+                        if (readLength > totalLength) {
+                            throw new VertexiumException(String.format("too many bytes read. Expected %d found %d (row: %s)", totalLength, readLength, column.getKey().getRow()));
+                        }
+                        boolean isLast = readLength == totalLength;
+                        streamingPropertyValueReadLengthsByRowKey.put(rowKey, readLength);
+                        return streamingPropertyValues.stream()
+                            .map(spv -> new StreamingPropertyValueChunk(spv, data, chunkSize, isLast));
+                    }
+
+                    throw new VertexiumException(String.format("unexpected column family: %s (row: %s)", column.getKey().getColumnFamily(), column.getKey().getRow()));
+                })
+                .filter(Objects::nonNull);
+            return new DelegatingStream<>(results)
+                .onClose(handleClose);
+        } catch (TableNotFoundException ex) {
+            throw new VertexiumException("Failed to read chunks", ex);
+        }
     }
 
     @Override

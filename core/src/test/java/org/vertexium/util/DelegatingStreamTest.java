@@ -4,6 +4,7 @@ import com.google.common.collect.Lists;
 import org.junit.Test;
 
 import java.util.Iterator;
+import java.util.Set;
 import java.util.Spliterator;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
@@ -222,6 +223,21 @@ public class DelegatingStreamTest {
     @Test
     public void testUnordered() {
         assertTryWithResourceClosesStream(s -> s.unordered());
+    }
+
+    @Test
+    public void testNestedClose() throws InterruptedException {
+        AtomicBoolean closeCalled = new AtomicBoolean(false);
+        Set<String> results = new TestStream(closeCalled, "a", "b", "c")
+            .map(String::toUpperCase)
+            .collect(Collectors.toSet());
+        System.out.println(results.toString());
+        results = null;
+        for (int i = 0; i < 10 && !closeCalled.get(); i++) {
+            System.gc();
+            Thread.sleep(10);
+        }
+        assertTrue(closeCalled.get());
     }
 
     @Test

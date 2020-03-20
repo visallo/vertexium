@@ -3,6 +3,7 @@
 * Added: Add fetch hint to exclude edge vertex ids or edge ids from edge references
 * Added: Accumulo: Logging of large rows coming from Accumulo custom iterators
 * Added: Accumulo: Option to compress transfers from iterator to client
+* Added: methods to read multiple Streaming Property Values in one request
 * Changed: Elasticsearch: Throw better exceptions when elements are missing in missing document helper
 * Changed: Elasticsearch bulk to squash multiple updates to same element into a single update
 * Fixed: Accumulo: don't queue events when no event listeners are attached

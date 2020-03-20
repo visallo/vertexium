@@ -525,16 +525,27 @@ public abstract class ElementMutationBuilder {
     }
 
     public void addPropertyToMutation(AccumuloGraph graph, Mutation m, ElementId elementId, String rowKey, Property property) {
+        addPropertyToMutation(graph, m, elementId, rowKey, property, property.getValue());
+    }
+
+    public void addPropertyToMutation(
+        AccumuloGraph graph,
+        Mutation m,
+        ElementId elementId,
+        String rowKey,
+        Property property,
+        Object propertyValue
+    ) {
         Text columnQualifier = KeyHelper.getColumnQualifierFromPropertyColumnQualifier(property, getNameSubstitutionStrategy());
         ColumnVisibility columnVisibility = visibilityToAccumuloVisibility(property.getVisibility());
-        Object propertyValue = transformValue(property.getValue(), rowKey, property);
+        Object newPropertyValue = transformValue(propertyValue, rowKey, property);
 
         // graph can be null if this is running in Map Reduce. We can just assume the property is already defined.
         if (graph != null) {
-            graph.ensurePropertyDefined(property.getName(), propertyValue);
+            graph.ensurePropertyDefined(property.getName(), newPropertyValue);
         }
 
-        Value value = new Value(vertexiumSerializer.objectToBytes(propertyValue));
+        Value value = new Value(vertexiumSerializer.objectToBytes(newPropertyValue));
         m.put(AccumuloElement.CF_PROPERTY, columnQualifier, columnVisibility, property.getTimestamp(), value);
         addPropertyMetadataToMutation(m, elementId, property);
     }
