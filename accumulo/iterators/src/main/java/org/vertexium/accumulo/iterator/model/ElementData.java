@@ -4,14 +4,17 @@ import org.apache.accumulo.core.data.ByteSequence;
 import org.apache.accumulo.core.data.Value;
 import org.apache.hadoop.io.Text;
 import org.vertexium.accumulo.iterator.util.DataOutputStreamUtils;
+import org.xerial.snappy.SnappyOutputStream;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.*;
 
 public abstract class ElementData {
     public static final byte[] HEADER = new byte[]{'V', 'E', 'R', 'T', '1'};
+    public static final byte[] SNAPPY_HEADER = new byte[]{'S', 'N', 'A', 'P', '1'}; // must be same length as HEADER
     public static final byte TYPE_ID_VERTEX = 1;
     public static final byte TYPE_ID_EDGE = 2;
     public static final int PROP_START = 1;
@@ -56,11 +59,21 @@ public abstract class ElementData {
         extendedTableNames.clear();
     }
 
-    public final Value encode(IteratorFetchHints fetchHints) throws IOException {
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        DataOutputStream dout = new DataOutputStream(out);
-        encode(dout, fetchHints);
-        return new Value(out.toByteArray());
+    public final Value encode(IteratorFetchHints fetchHints, boolean compressTransfer) throws IOException {
+        ByteArrayOutputStream bout = new ByteArrayOutputStream();
+        OutputStream out;
+        if (compressTransfer) {
+            bout.write(SNAPPY_HEADER);
+            bout.flush();
+            out = new SnappyOutputStream(bout);
+        } else {
+            out = bout;
+        }
+        try (DataOutputStream dout = new DataOutputStream(out)) {
+            encode(dout, fetchHints);
+        }
+        out.close();
+        return new Value(bout.toByteArray());
     }
 
     protected void encode(DataOutputStream out, IteratorFetchHints fetchHints) throws IOException {

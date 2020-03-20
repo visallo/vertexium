@@ -12,9 +12,11 @@ import org.vertexium.accumulo.MetadataRef;
 import org.vertexium.accumulo.iterator.model.*;
 import org.vertexium.accumulo.iterator.util.DataOutputStreamUtils;
 import org.vertexium.id.NameSubstitutionStrategy;
+import org.xerial.snappy.SnappyInputStream;
 
 import java.io.DataInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -181,11 +183,14 @@ public class DataInputStreamUtils {
         return edges;
     }
 
-    public static void decodeHeader(DataInputStream in, byte expectedTypeId) throws IOException {
+    public static DataInputStream decodeHeader(InputStream in, byte expectedTypeId) throws IOException {
         byte[] header = new byte[ElementData.HEADER.length];
         int read = in.read(header);
         if (read != header.length) {
             throw new IOException("Unexpected header length. Expected " + ElementData.HEADER.length + " found " + read);
+        }
+        if (Arrays.equals(header, ElementData.SNAPPY_HEADER)) {
+            return decodeHeader(new SnappyInputStream(in), expectedTypeId);
         }
         if (!Arrays.equals(header, ElementData.HEADER)) {
             throw new IOException("Unexpected header");
@@ -194,5 +199,6 @@ public class DataInputStreamUtils {
         if (typeId != expectedTypeId) {
             throw new IOException("Unexpected type id. Expected " + expectedTypeId + " found " + typeId);
         }
+        return new DataInputStream(in);
     }
 }

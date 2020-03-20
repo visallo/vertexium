@@ -9932,6 +9932,48 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    public void benchmarkLotsOfEdges() {
+        assumeTrue(benchmarkEnabled());
+
+        int edgeCount = 100_000;
+        String sourceVertexId = "v12345678901234567890";
+
+        graph.prepareVertex(sourceVertexId, VISIBILITY_A)
+            .setProperty("name", sourceVertexId, VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
+
+        for (int i = 0; i < edgeCount; i++) {
+            if (i % 10000 == 0) {
+                System.out.println(String.format("Creating vertex %,d / %,d", i, edgeCount));
+            }
+            String vertexId = "v12345678901234567890_" + i;
+            graph.prepareVertex(vertexId, VISIBILITY_A)
+                .setProperty("name", vertexId, VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
+        }
+
+        for (int i = 0; i < edgeCount; i++) {
+            if (i % 10000 == 0) {
+                System.out.println(String.format("Creating edge %,d / %,d", i, edgeCount));
+            }
+            String vertexId = "v12345678901234567890_" + i;
+            String edgeId = "v12345678901234567890_label1_" + vertexId;
+            graph.prepareEdge(edgeId, sourceVertexId, vertexId, "label1", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
+        }
+        graph.flush();
+
+        FetchHints fetchHints = new FetchHintsBuilder(FetchHints.ALL)
+            .build();
+        graph.getVertex(sourceVertexId, fetchHints, AUTHORIZATIONS_A);
+
+        fetchHints = new FetchHintsBuilder(FetchHints.ALL)
+            .setIncludeEdgeIds(false)
+            .build();
+        graph.getVertex(sourceVertexId, fetchHints, AUTHORIZATIONS_A);
+    }
+
+    @Test
     public void benchmarkLotsOfProperties() {
         assumeTrue(benchmarkEnabled());
 
