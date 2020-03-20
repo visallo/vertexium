@@ -125,41 +125,37 @@ public class DataOutputStreamUtils {
 
     public static void encodeEdges(
         DataOutputStream out,
-        EdgesWithEdgeInfo edges,
+        IteratorEdgesWithEdgeInfo edges,
         boolean edgeLabelsOnly,
         boolean includeEdgeIds,
         boolean includeEdgeVertexIds
     ) throws IOException {
         out.write(edgeLabelsOnly ? EDGE_LABEL_ONLY_MARKER : EDGE_LABEL_WITH_REFS_MARKER);
 
-        Map<ByteArrayWrapper, List<Map.Entry<Text, EdgeInfo>>> edgesByLabels = getEdgesByLabel(edges);
+        Map<Integer, List<Map.Entry<Text, IteratorEdgeInfo>>> edgesByLabels = getEdgesByLabel(edges);
         out.writeInt(edgesByLabels.size());
-        for (Map.Entry<ByteArrayWrapper, List<Map.Entry<Text, EdgeInfo>>> entry : edgesByLabels.entrySet()) {
-            encodeByteArray(out, entry.getKey().getData());
+        for (Map.Entry<Integer, List<Map.Entry<Text, IteratorEdgeInfo>>> entry : edgesByLabels.entrySet()) {
+            encodeByteArray(out, edges.getEdgeLabels().get(entry.getKey()));
             out.writeInt(entry.getValue().size());
             if (!edgeLabelsOnly) {
-                for (Map.Entry<Text, EdgeInfo> edgeEntry : entry.getValue()) {
+                for (Map.Entry<Text, IteratorEdgeInfo> edgeEntry : entry.getValue()) {
                     if (includeEdgeIds) {
                         encodeText(out, edgeEntry.getKey());
                     }
                     out.writeLong(edgeEntry.getValue().getTimestamp());
                     if (includeEdgeVertexIds) {
-                        encodeString(out, edgeEntry.getValue().getVertexId());
+                        encodeByteArray(out, edgeEntry.getValue().getVertexIdBytes());
                     }
                 }
             }
         }
     }
 
-    private static Map<ByteArrayWrapper, List<Map.Entry<Text, EdgeInfo>>> getEdgesByLabel(EdgesWithEdgeInfo edges) throws IOException {
-        Map<ByteArrayWrapper, List<Map.Entry<Text, EdgeInfo>>> edgesByLabels = new HashMap<>();
-        for (Map.Entry<Text, EdgeInfo> edgeEntry : edges.getEntries()) {
-            ByteArrayWrapper label = new ByteArrayWrapper(edgeEntry.getValue().getLabelBytes());
-            List<Map.Entry<Text, EdgeInfo>> edgesByLabel = edgesByLabels.get(label);
-            if (edgesByLabel == null) {
-                edgesByLabel = new ArrayList<>();
-                edgesByLabels.put(label, edgesByLabel);
-            }
+    private static Map<Integer, List<Map.Entry<Text, IteratorEdgeInfo>>> getEdgesByLabel(IteratorEdgesWithEdgeInfo edges) throws IOException {
+        Map<Integer, List<Map.Entry<Text, IteratorEdgeInfo>>> edgesByLabels = new HashMap<>();
+        for (Map.Entry<Text, IteratorEdgeInfo> edgeEntry : edges.getEntries()) {
+            int labelIndex = edgeEntry.getValue().getLabelIndex();
+            List<Map.Entry<Text, IteratorEdgeInfo>> edgesByLabel = edgesByLabels.computeIfAbsent(labelIndex, k -> new ArrayList<>());
             edgesByLabel.add(edgeEntry);
         }
         return edgesByLabels;

@@ -38,8 +38,10 @@ public abstract class ElementData {
     public final Set<String> extendedTableNames = new HashSet<>();
     public boolean deleted;
     public boolean hidden;
+    public EdgeLabels edgeLabels;
 
-    public void clear() {
+    public void clear(EdgeLabels edgeLabels) {
+        this.edgeLabels = edgeLabels;
         id = null;
         visibility = null;
         timestamp = 0;

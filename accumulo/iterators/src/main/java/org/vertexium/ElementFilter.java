@@ -2,6 +2,9 @@ package org.vertexium;
 
 import java.util.EnumSet;
 
+/**
+ * This is a copy of core/ElementFilter so the iterator can use it
+ */
 public enum ElementFilter {
     ELEMENT,
     PROPERTY,

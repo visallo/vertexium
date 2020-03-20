@@ -89,6 +89,8 @@ public abstract class ElementIterator<T extends ElementData> implements SortedKe
 
     private SortedKeyValueIterator<Key, Value> sourceIterator;
     private IteratorFetchHints fetchHints;
+    private EdgeLabels startingEdgeLabels;
+    private List<Integer> edgeLabelIndicesOfEdgeRefsToInclude;
     private boolean compressTransfer;
     private Authorizations authorizations;
     private VisibilityEvaluator visibilityEvaluator;
@@ -190,7 +192,7 @@ public abstract class ElementIterator<T extends ElementData> implements SortedKe
     }
 
     protected Text loadElement() throws IOException {
-        this.elementData.clear();
+        clearElementData();
 
         KeyValue keyValue = new KeyValue();
         Text currentRow = new Text(sourceIterator.getTopKey().getRow());
@@ -220,6 +222,24 @@ public abstract class ElementIterator<T extends ElementData> implements SortedKe
         }
 
         return currentRow;
+    }
+
+    protected void clearElementData() {
+        if (startingEdgeLabels == null) {
+            EdgeLabels newEdgeLabels = new EdgeLabels();
+            List<Integer> newEdgeLabelIndicesOfEdgeRefsToInclude;
+            if (getFetchHints().getEdgeLabelsOfEdgeRefsToInclude() != null) {
+                newEdgeLabelIndicesOfEdgeRefsToInclude = new ArrayList<>();
+                for (String edgeLabel : getFetchHints().getEdgeLabelsOfEdgeRefsToInclude()) {
+                    newEdgeLabelIndicesOfEdgeRefsToInclude.add(newEdgeLabels.add(edgeLabel.getBytes()));
+                }
+            } else {
+                newEdgeLabelIndicesOfEdgeRefsToInclude = null;
+            }
+            startingEdgeLabels = newEdgeLabels;
+            edgeLabelIndicesOfEdgeRefsToInclude = newEdgeLabelIndicesOfEdgeRefsToInclude;
+        }
+        this.elementData.clear(startingEdgeLabels.cloneEdgeLabels());
     }
 
     private boolean hasAllAuthorizations(Set<Text> visibilities) {
@@ -267,7 +287,7 @@ public abstract class ElementIterator<T extends ElementData> implements SortedKe
         if (keyValue.columnFamilyEquals(DELETE_ROW_COLUMN_FAMILY_BYTES)
             && keyValue.columnQualifierEquals(DELETE_ROW_COLUMN_QUALIFIER_BYTES)
             && RowDeletingIterator.DELETE_ROW_VALUE.equals(keyValue.peekValue())) {
-            elementData.clear();
+            clearElementData();
             elementData.deleted = true;
             return;
         }
@@ -509,6 +529,10 @@ public abstract class ElementIterator<T extends ElementData> implements SortedKe
         return fetchHints;
     }
 
+    public List<Integer> getEdgeLabelIndicesOfEdgeRefsToInclude() {
+        return edgeLabelIndicesOfEdgeRefsToInclude;
+    }
+
     public boolean isCompressTransfer() {
         return compressTransfer;
     }
@@ -518,7 +542,7 @@ public abstract class ElementIterator<T extends ElementData> implements SortedKe
     }
 
     protected boolean populateElementData(List<Key> keys, List<Value> values) {
-        this.elementData.clear();
+        clearElementData();
 
         KeyValue keyValue = new KeyValue();
         for (int i = 0; i < keys.size(); i++) {

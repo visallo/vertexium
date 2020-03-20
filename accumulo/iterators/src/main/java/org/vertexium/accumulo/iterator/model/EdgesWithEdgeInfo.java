@@ -7,15 +7,15 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-public class EdgesWithEdgeInfo extends Edges {
+public abstract class EdgesWithEdgeInfo<T> extends Edges {
     // We used to use a HashMap here but that was too slow. Replaced with a List since we really don't care about duplicates anyway.
-    private List<Map.Entry<Text, EdgeInfo>> pairs = new ArrayList<>();
+    private List<Map.Entry<Text, T>> pairs = new ArrayList<>();
 
-    public void add(Text edgeId, EdgeInfo edgeInfo) {
+    public void add(Text edgeId, T edgeInfo) {
         pairs.add(new Pair(edgeId, edgeInfo));
     }
 
-    public void add(String edgeId, EdgeInfo edgeInfo) {
+    public void add(String edgeId, T edgeInfo) {
         add(new Text(edgeId), edgeInfo);
     }
 
@@ -39,11 +39,11 @@ public class EdgesWithEdgeInfo extends Edges {
         remove(new Text(edgeId));
     }
 
-    public void clear() {
+    protected void clear() {
         pairs.clear();
     }
 
-    public EdgeInfo get(Text edgeId) {
+    public T get(Text edgeId) {
         int i = indexOf(edgeId);
         if (i >= 0) {
             return pairs.get(i).getValue();
@@ -51,19 +51,19 @@ public class EdgesWithEdgeInfo extends Edges {
         return null;
     }
 
-    public Iterable<EdgeInfo> getEdgeInfos() {
-        return new Iterable<EdgeInfo>() {
+    public Iterable<T> getEdgeInfos() {
+        return new Iterable<T>() {
             @Override
-            public Iterator<EdgeInfo> iterator() {
-                final Iterator<Map.Entry<Text, EdgeInfo>> it = pairs.iterator();
-                return new Iterator<EdgeInfo>() {
+            public Iterator<T> iterator() {
+                final Iterator<Map.Entry<Text, T>> it = pairs.iterator();
+                return new Iterator<T>() {
                     @Override
                     public boolean hasNext() {
                         return it.hasNext();
                     }
 
                     @Override
-                    public EdgeInfo next() {
+                    public T next() {
                         return it.next().getValue();
                     }
 
@@ -76,15 +76,15 @@ public class EdgesWithEdgeInfo extends Edges {
         };
     }
 
-    public Iterable<Map.Entry<Text, EdgeInfo>> getEntries() {
+    public Iterable<Map.Entry<Text, T>> getEntries() {
         return pairs;
     }
 
-    private static class Pair implements Map.Entry<Text, EdgeInfo> {
+    private class Pair implements Map.Entry<Text, T> {
         private final Text edgeId;
-        private final EdgeInfo edgeInfo;
+        private final T edgeInfo;
 
-        public Pair(Text edgeId, EdgeInfo edgeInfo) {
+        public Pair(Text edgeId, T edgeInfo) {
             this.edgeId = edgeId;
             this.edgeInfo = edgeInfo;
         }
@@ -95,12 +95,12 @@ public class EdgesWithEdgeInfo extends Edges {
         }
 
         @Override
-        public EdgeInfo getValue() {
+        public T getValue() {
             return edgeInfo;
         }
 
         @Override
-        public EdgeInfo setValue(EdgeInfo value) {
+        public T setValue(T value) {
             throw new RuntimeException("not supported");
         }
     }

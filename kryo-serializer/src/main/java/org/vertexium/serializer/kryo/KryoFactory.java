@@ -57,7 +57,10 @@ public class KryoFactory {
             return;
         }
         try {
+            // EdgeInfo is deprecated. This class shouldn't be serialized/deserialized this way but instead using the
+            //   built in custom serialization (see org.vertexium.accumulo.models.AccumuloEdgeInfo)
             kryo.register(Class.forName("org.vertexium.accumulo.iterator.model.EdgeInfo"), 1000);
+
             kryo.register(Class.forName("org.vertexium.accumulo.StreamingPropertyValueTableRef"), 1004);
             kryo.register(Class.forName("org.vertexium.accumulo.StreamingPropertyValueHdfsRef"), 1005);
         } catch (ClassNotFoundException ex) {

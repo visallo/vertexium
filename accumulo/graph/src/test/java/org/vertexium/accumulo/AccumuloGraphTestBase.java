@@ -12,10 +12,9 @@ import org.apache.hadoop.io.Text;
 import org.junit.Before;
 import org.junit.Test;
 import org.vertexium.*;
-import org.vertexium.accumulo.iterator.model.EdgeInfo;
 import org.vertexium.accumulo.iterator.model.VertexiumInvalidKeyException;
 import org.vertexium.accumulo.keys.DataTableRowKey;
-import org.vertexium.accumulo.keys.KeyHelper;
+import org.vertexium.accumulo.models.AccumuloEdgeInfo;
 import org.vertexium.accumulo.tools.DeleteHistoricalLegacyStreamingPropertyValueData;
 import org.vertexium.accumulo.util.DataInDataTableStreamingPropertyValueStorageStrategy;
 import org.vertexium.property.MutablePropertyImpl;
@@ -28,7 +27,6 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static junit.framework.TestCase.fail;
 import static org.junit.Assert.*;
@@ -37,7 +35,6 @@ import static org.vertexium.accumulo.ElementMutationBuilder.EMPTY_TEXT;
 import static org.vertexium.accumulo.iterator.model.KeyBase.VALUE_SEPARATOR;
 import static org.vertexium.accumulo.keys.KeyHelper.getColumnQualifierFromPropertyColumnQualifier;
 import static org.vertexium.util.IterableUtils.toList;
-import static org.vertexium.util.StreamUtils.stream;
 
 public abstract class AccumuloGraphTestBase extends GraphTestBase {
     private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(AccumuloGraphTestBase.class);
@@ -316,12 +313,12 @@ public abstract class AccumuloGraphTestBase extends GraphTestBase {
         assertEquals(2, keyValuePairs.size());
 
         pair = keyValuePairs.get(i++);
-        org.vertexium.accumulo.iterator.model.EdgeInfo edgeInfo = new EdgeInfo(getGraph().getNameSubstitutionStrategy().deflate(LABEL_LABEL1), "v2");
+        AccumuloEdgeInfo edgeInfo = new AccumuloEdgeInfo(getGraph().getNameSubstitutionStrategy().deflate(LABEL_LABEL1), "v2");
         assertEquals(new Key(new Text("v1"), AccumuloVertex.CF_OUT_EDGE, new Text("e1"), new Text("a"), 100L), pair.getKey());
         assertEquals(edgeInfo.toValue(), pair.getValue());
 
         pair = keyValuePairs.get(i++);
-        edgeInfo = new EdgeInfo(getGraph().getNameSubstitutionStrategy().deflate(LABEL_LABEL1), "v1");
+        edgeInfo = new AccumuloEdgeInfo(getGraph().getNameSubstitutionStrategy().deflate(LABEL_LABEL1), "v1");
         assertEquals(new Key(new Text("v2"), AccumuloVertex.CF_IN_EDGE, new Text("e1"), new Text("a"), 100L), pair.getKey());
         assertEquals(edgeInfo.toValue(), pair.getValue());
     }

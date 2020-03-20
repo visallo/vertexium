@@ -1,4 +1,6 @@
-package org.vertexium.accumulo.iterator.model;
+package org.vertexium.accumulo.models;
+
+import org.vertexium.accumulo.iterator.model.Edges;
 
 import java.util.HashMap;
 import java.util.Map;
