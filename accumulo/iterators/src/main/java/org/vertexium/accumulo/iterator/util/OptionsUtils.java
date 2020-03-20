@@ -105,4 +105,49 @@ public class OptionsUtils {
             throw new VertexiumAccumuloIteratorException("Invalid SortDirection: " + str, ex);
         }
     }
+
+    public static String bytesToHex(byte[] bytes) {
+        StringBuilder result = new StringBuilder();
+        for (byte b : bytes) {
+            result.append(String.format("%02x", b));
+        }
+        return result.toString();
+    }
+
+    public static byte[] hexToBytes(String part) {
+        byte[] results = new byte[part.length() / 2];
+        for (int i = 0; i < results.length; i++) {
+            int partIndex = i * 2;
+            results[i] = Byte.parseByte(part.substring(partIndex, partIndex + 2), 16);
+        }
+        return results;
+    }
+
+    public static Long parseLong(String part) {
+        if (part.equals("null")) {
+            return null;
+        }
+        return Long.parseLong(part);
+    }
+
+    public static Boolean parseBoolean(String part) {
+        if (part.equals("null")) {
+            return null;
+        }
+        if (part.equals("true")) {
+            return true;
+        }
+        if (part.equals("false")) {
+            return false;
+        }
+        throw new IllegalArgumentException("Expected true or false, found " + part);
+    }
+
+    public static String longToString(Long l) {
+        return l == null ? "null" : Long.toString(l);
+    }
+
+    public static String booleanToString(Boolean b) {
+        return b == null ? "null" : (b ? "true" : "false");
+    }
 }

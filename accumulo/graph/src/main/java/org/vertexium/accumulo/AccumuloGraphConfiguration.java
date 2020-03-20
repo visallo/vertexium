@@ -57,6 +57,7 @@ public class AccumuloGraphConfiguration extends GraphConfiguration {
     public static final String HDFS_CONTEXT_CLASSPATH = "hdfsContextClasspath";
     public static final String STREAMING_PROPERTY_VALUE_STORAGE_STRATEGY_PREFIX = "streamingPropertyValueStorageStrategy";
     public static final String CLIENT_CONFIGURATION_PROPERTY_CONFIG_PREFIX = "clientConfiguration.";
+    public static final String COMPRESS_ITERATOR_TRANSFERS = "compressIteratorTransfers";
     public static final String LARGE_VALUE_ERROR_THRESHOLD = "largeValueErrorThreshold";
     public static final String LARGE_VALUE_WARNING_THRESHOLD = "largeValueWarningThreshold";
 
@@ -71,8 +72,8 @@ public class AccumuloGraphConfiguration extends GraphConfiguration {
     public static final String HADOOP_CONF_DIR = HDFS_CONFIG_PREFIX + ".confDir";
     public static final String DEFAULT_DATA_DIR = "/accumuloGraph";
     private static final String DEFAULT_NAME_SUBSTITUTION_STRATEGY = IdentityNameSubstitutionStrategy.class.getName();
-    public static final Long DEFAULT_BATCHWRITER_MAX_MEMORY = 50 * 1024 * 1024l;
-    public static final Long DEFAULT_BATCHWRITER_MAX_LATENCY = 2 * 60 * 1000l;
+    public static final Long DEFAULT_BATCHWRITER_MAX_MEMORY = 50 * 1024 * 1024L;
+    public static final Long DEFAULT_BATCHWRITER_MAX_LATENCY = 1000L;
     public static final Long DEFAULT_BATCHWRITER_TIMEOUT = Long.MAX_VALUE;
     public static final Integer DEFAULT_BATCHWRITER_MAX_WRITE_THREADS = 3;
     public static final Integer DEFAULT_ACCUMULO_MAX_VERSIONS = null;
@@ -80,6 +81,7 @@ public class AccumuloGraphConfiguration extends GraphConfiguration {
     public static final int DEFAULT_NUMBER_OF_QUERY_THREADS = 10;
     public static final String DEFAULT_HDFS_CONTEXT_CLASSPATH = null;
     public static final String DEFAULT_STREAMING_PROPERTY_VALUE_STORAGE_STRATEGY = OverflowIntoHdfsStreamingPropertyValueStorageStrategy.class.getName();
+    public static final boolean DEFAULT_COMPRESS_ITERATOR_TRANSFERS = true;
     public static final int DEFAULT_LARGE_VALUE_ERROR_THRESHOLD = 500 * 1024 * 1024;
     public static final int DEFAULT_LARGE_VALUE_WARNING_THRESHOLD = 100 * 1024 * 1024;
 
@@ -280,6 +282,10 @@ public class AccumuloGraphConfiguration extends GraphConfiguration {
 
     public boolean isHistoryInSeparateTable() {
         return getBoolean(HISTORY_IN_SEPARATE_TABLE, DEFAULT_HISTORY_IN_SEPARATE_TABLE);
+    }
+
+    public boolean isCompressIteratorTransfers() {
+        return getBoolean(COMPRESS_ITERATOR_TRANSFERS, DEFAULT_COMPRESS_ITERATOR_TRANSFERS);
     }
 
     public int getLargeValueErrorThreshold() {

@@ -25,7 +25,7 @@ import java.util.concurrent.TimeUnit;
 import static com.google.common.base.Preconditions.checkArgument;
 
 // Based on org.apache.accumulo.core.client.impl.TabletServerBatchReader
-public class VisalloTabletServerBatchReader extends ScannerOptions implements BatchScanner {
+public class VertexiumTabletServerBatchReader extends ScannerOptions implements BatchScanner {
     private final String tableId;
     private final int numThreads;
     private final ClientContext context;
@@ -41,7 +41,7 @@ public class VisalloTabletServerBatchReader extends ScannerOptions implements Ba
         new NamingThreadFactory("Accumulo batch scanner read ahead thread")
     );
 
-    public VisalloTabletServerBatchReader(
+    public VertexiumTabletServerBatchReader(
         Connector connector,
         String tableName,
         Authorizations authorizations,

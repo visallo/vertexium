@@ -85,8 +85,11 @@ public abstract class ElementIterator<T extends ElementData> implements SortedKe
     public static final byte[] METADATA_COLUMN_QUALIFIER_BYTES = METADATA_COLUMN_QUALIFIER.getBytes();
 
     private static final String SETTING_FETCH_HINTS_PREFIX = "fetchHints.";
+    private static final String SETTING_OPTION_COMPRESS_TRANSFER = "compressTransfer";
+
     private SortedKeyValueIterator<Key, Value> sourceIterator;
     private IteratorFetchHints fetchHints;
+    private boolean compressTransfer;
     private Authorizations authorizations;
     private VisibilityEvaluator visibilityEvaluator;
     private T elementData;
@@ -96,18 +99,26 @@ public abstract class ElementIterator<T extends ElementData> implements SortedKe
     public ElementIterator(
         SortedKeyValueIterator<Key, Value> source,
         IteratorFetchHints fetchHints,
+        boolean compressTransfer,
         String[] authorizations
     ) {
         this(
             source,
             fetchHints,
+            compressTransfer,
             authorizations == null ? new Authorizations() : new Authorizations(authorizations)
         );
     }
 
-    public ElementIterator(SortedKeyValueIterator<Key, Value> source, IteratorFetchHints fetchHints, Authorizations authorizations) {
+    public ElementIterator(
+        SortedKeyValueIterator<Key, Value> source,
+        IteratorFetchHints fetchHints,
+        boolean compressTransfer,
+        Authorizations authorizations
+    ) {
         this.sourceIterator = source;
         this.fetchHints = fetchHints;
+        this.compressTransfer = compressTransfer;
         this.authorizations = authorizations;
         this.elementData = createElementData();
         this.visibilityEvaluator = new VisibilityEvaluator(authorizations);
@@ -172,7 +183,7 @@ public abstract class ElementIterator<T extends ElementData> implements SortedKe
             Text currentRow = loadElement();
             if (currentRow != null) {
                 topKey = new Key(currentRow);
-                topValue = elementData.encode(fetchHints);
+                topValue = elementData.encode(fetchHints, compressTransfer);
                 break;
             }
         }
@@ -454,6 +465,7 @@ public abstract class ElementIterator<T extends ElementData> implements SortedKe
             Boolean.parseBoolean(options.get(SETTING_FETCH_HINTS_PREFIX + "includeExtendedDataTableNames")),
             Boolean.parseBoolean(options.get(SETTING_FETCH_HINTS_PREFIX + "includePreviousMetadata"))
         );
+        this.compressTransfer = Boolean.parseBoolean(options.get(SETTING_OPTION_COMPRESS_TRANSFER));
         String authString = options.get("authorizations").trim();
         String[] authorizationsArray = authString.length() == 0 ? new String[0] : authString.split(Pattern.quote("\u001f"));
         this.authorizations = new Authorizations(authorizationsArray);
@@ -489,8 +501,16 @@ public abstract class ElementIterator<T extends ElementData> implements SortedKe
         iteratorSettings.addOption("authorizations", String.join("\u001f", authorizations));
     }
 
+    public static void setCompressTransfer(IteratorSetting iteratorSettings, boolean compressTransfer) {
+        iteratorSettings.addOption(SETTING_OPTION_COMPRESS_TRANSFER, Boolean.toString(compressTransfer));
+    }
+
     public IteratorFetchHints getFetchHints() {
         return fetchHints;
+    }
+
+    public boolean isCompressTransfer() {
+        return compressTransfer;
     }
 
     public Authorizations getAuthorizations() {

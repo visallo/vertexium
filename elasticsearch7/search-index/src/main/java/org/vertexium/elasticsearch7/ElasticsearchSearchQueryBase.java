@@ -80,9 +80,9 @@ import static org.vertexium.util.StreamUtils.stream;
 public class ElasticsearchSearchQueryBase extends QueryBase {
     private static final VertexiumLogger LOGGER = VertexiumLoggerFactory.getLogger(ElasticsearchSearchQueryBase.class);
     public static final VertexiumLogger QUERY_LOGGER = VertexiumLoggerFactory.getQueryLogger(Query.class);
-    public static final String TOP_HITS_AGGREGATION_NAME = "__visallo_top_hits";
-    public static final String KEYWORD_UNMAPPED_TYPE = "keyword";
-    public static final String AGGREGATION_METADATA_FIELD_NAME_KEY = "fieldName";
+    static final String TOP_HITS_AGGREGATION_NAME = "__vertexium_top_hits";
+    static final String AGGREGATION_METADATA_FIELD_NAME_KEY = "fieldName";
+    private static final String KEYWORD_UNMAPPED_TYPE = "keyword";
     private final Client client;
     private final StandardAnalyzer analyzer;
     private final IndexSelectionStrategy indexSelectionStrategy;
@@ -402,7 +402,7 @@ public class ElasticsearchSearchQueryBase extends QueryBase {
             String[] propertyNames = getPropertyNames(propertyDefinition.getPropertyName());
             if (propertyNames.length > 1) {
                 String scriptSrc = "def fieldValues = []; for (def fieldName : params.fieldNames) { if(doc[fieldName].size() !=0) { fieldValues.addAll(doc[fieldName]); }} " +
-                        "if (params.esOrder == 'asc') { Collections.sort(fieldValues); } else { Collections.sort(fieldValues, Collections.reverseOrder()); }";
+                    "if (params.esOrder == 'asc') { Collections.sort(fieldValues); } else { Collections.sort(fieldValues, Collections.reverseOrder()); }";
 
                 if (propertyDefinition.getDataType() == String.class) {
                     scriptSrc += "return fieldValues.length > 0 ? fieldValues[0] : (params.esOrder == 'asc' ? Character.toString(Character.MAX_VALUE) : '');";

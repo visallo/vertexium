@@ -121,43 +121,43 @@ public class AccumuloVertex extends AccumuloElement implements Vertex {
             Edges outEdges;
             long timestamp;
 
-            ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(value.get());
-            DataInputStream in = new DataInputStream(byteArrayInputStream);
-            DataInputStreamUtils.decodeHeader(in, ElementData.TYPE_ID_VERTEX);
-            vertexId = DataInputStreamUtils.decodeString(in);
-            timestamp = in.readLong();
-            vertexVisibility = new Visibility(DataInputStreamUtils.decodeString(in));
+            ByteArrayInputStream bain = new ByteArrayInputStream(value.get());
+            try (DataInputStream in = DataInputStreamUtils.decodeHeader(bain, ElementData.TYPE_ID_VERTEX)) {
+                vertexId = DataInputStreamUtils.decodeString(in);
+                timestamp = in.readLong();
+                vertexVisibility = new Visibility(DataInputStreamUtils.decodeString(in));
 
-            ImmutableSet<String> hiddenVisibilityStrings = DataInputStreamUtils.decodeStringSet(in);
-            hiddenVisibilities = hiddenVisibilityStrings != null ?
-                hiddenVisibilityStrings.stream().map(Visibility::new).collect(Collectors.toSet()) :
-                null;
+                ImmutableSet<String> hiddenVisibilityStrings = DataInputStreamUtils.decodeStringSet(in);
+                hiddenVisibilities = hiddenVisibilityStrings != null ?
+                    hiddenVisibilityStrings.stream().map(Visibility::new).collect(Collectors.toSet()) :
+                    null;
 
-            ImmutableSet<String> additionalVisibilities = DataInputStreamUtils.decodeStringSet(in);
+                ImmutableSet<String> additionalVisibilities = DataInputStreamUtils.decodeStringSet(in);
 
-            List<MetadataEntry> metadataEntries = DataInputStreamUtils.decodeMetadataEntries(in);
-            properties = DataInputStreamUtils.decodeProperties(graph, in, metadataEntries, fetchHints);
+                List<MetadataEntry> metadataEntries = DataInputStreamUtils.decodeMetadataEntries(in);
+                properties = DataInputStreamUtils.decodeProperties(graph, in, metadataEntries, fetchHints);
 
-            ImmutableSet<String> extendedDataTableNames = DataInputStreamUtils.decodeStringSet(in);
-            outEdges = DataInputStreamUtils.decodeEdges(in, graph.getNameSubstitutionStrategy(), fetchHints);
-            inEdges = DataInputStreamUtils.decodeEdges(in, graph.getNameSubstitutionStrategy(), fetchHints);
+                ImmutableSet<String> extendedDataTableNames = DataInputStreamUtils.decodeStringSet(in);
+                outEdges = DataInputStreamUtils.decodeEdges(in, graph.getNameSubstitutionStrategy(), fetchHints);
+                inEdges = DataInputStreamUtils.decodeEdges(in, graph.getNameSubstitutionStrategy(), fetchHints);
 
-            return new AccumuloVertex(
-                graph,
-                vertexId,
-                vertexVisibility,
-                properties,
-                null,
-                null,
-                hiddenVisibilities,
-                additionalVisibilities,
-                extendedDataTableNames,
-                inEdges,
-                outEdges,
-                timestamp,
-                fetchHints,
-                authorizations
-            );
+                return new AccumuloVertex(
+                    graph,
+                    vertexId,
+                    vertexVisibility,
+                    properties,
+                    null,
+                    null,
+                    hiddenVisibilities,
+                    additionalVisibilities,
+                    extendedDataTableNames,
+                    inEdges,
+                    outEdges,
+                    timestamp,
+                    fetchHints,
+                    authorizations
+                );
+            }
         } catch (IOException ex) {
             throw new VertexiumException("Could not read vertex", ex);
         }

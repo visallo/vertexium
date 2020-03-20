@@ -23,19 +23,24 @@ public class EdgeIterator extends ElementIterator<EdgeElementData> {
     public static final byte[] CF_IN_VERTEX_BYTES = CF_IN_VERTEX.getBytes();
 
     public EdgeIterator() {
-        this(null, (String[]) null);
+        this(null, false, (String[]) null);
     }
 
-    public EdgeIterator(IteratorFetchHints fetchHints, String[] authorizations) {
-        super(null, fetchHints, authorizations);
+    public EdgeIterator(IteratorFetchHints fetchHints, boolean compressTransfer, String[] authorizations) {
+        super(null, fetchHints, compressTransfer, authorizations);
     }
 
-    public EdgeIterator(SortedKeyValueIterator<Key, Value> source, IteratorFetchHints fetchHints, Authorizations authorizations) {
-        super(source, fetchHints, authorizations);
+    public EdgeIterator(
+        SortedKeyValueIterator<Key, Value> source,
+        IteratorFetchHints fetchHints,
+        boolean compressTransfer,
+        Authorizations authorizations
+    ) {
+        super(source, fetchHints, compressTransfer, authorizations);
     }
 
-    public EdgeIterator(IteratorFetchHints fetchHints, Authorizations authorizations) {
-        super(null, fetchHints, authorizations);
+    public EdgeIterator(IteratorFetchHints fetchHints, boolean compressTransfer, Authorizations authorizations) {
+        super(null, fetchHints, compressTransfer, authorizations);
     }
 
     @Override
@@ -77,9 +82,9 @@ public class EdgeIterator extends ElementIterator<EdgeElementData> {
     @Override
     public SortedKeyValueIterator<Key, Value> deepCopy(IteratorEnvironment env) {
         if (getSourceIterator() != null) {
-            return new EdgeIterator(getSourceIterator().deepCopy(env), getFetchHints(), getAuthorizations());
+            return new EdgeIterator(getSourceIterator().deepCopy(env), getFetchHints(), isCompressTransfer(), getAuthorizations());
         }
-        return new EdgeIterator(getFetchHints(), getAuthorizations());
+        return new EdgeIterator(getFetchHints(), isCompressTransfer(), getAuthorizations());
     }
 
     @Override

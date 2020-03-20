@@ -44,6 +44,7 @@ import java.time.Month;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
@@ -158,6 +159,27 @@ public abstract class GraphTestBase {
         assertTrue(e1.equals(ElementId.edge("e1")));
         assertTrue(ElementId.edge("e1").equals(e1));
         assertEquals(e1.hashCode(), ElementId.vertex("e1").hashCode());
+    }
+
+    @Test
+    public void testElementIdAsync() {
+        CompletableFuture<Void> future = CompletableFuture.allOf(
+            graph.prepareVertex("v1", VISIBILITY_A).saveAsync(AUTHORIZATIONS_A),
+            graph.prepareVertex("v2", VISIBILITY_A).saveAsync(AUTHORIZATIONS_A),
+            graph.prepareEdge("e1", "v1", "v2", "label", VISIBILITY_A).saveAsync(AUTHORIZATIONS_A)
+        ).thenAccept((_null) -> {
+            Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_A);
+            assertTrue(v1.equals(ElementId.vertex("v1")));
+            assertTrue(ElementId.vertex("v1").equals(v1));
+            assertEquals(v1.hashCode(), ElementId.vertex("v1").hashCode());
+
+            Edge e1 = graph.getEdge("e1", AUTHORIZATIONS_A);
+            assertTrue(e1.equals(ElementId.edge("e1")));
+            assertTrue(ElementId.edge("e1").equals(e1));
+            assertEquals(e1.hashCode(), ElementId.vertex("e1").hashCode());
+        });
+        graph.flush();
+        future.join();
     }
 
     @Test
@@ -6001,6 +6023,29 @@ public abstract class GraphTestBase {
     }
 
     @Test
+    public void testSaveExistingElementWithStreamingPropertyValue() throws Exception {
+        graph.prepareVertex("v1", VISIBILITY_A)
+            .setProperty("a", StreamingPropertyValue.create("Test Value A"), VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        Vertex v1 = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B);
+        v1.prepareMutation()
+            .setProperty("name", "joe", VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        v1 = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B);
+        StreamingPropertyValue spvA = (StreamingPropertyValue) v1.getPropertyValue("a");
+        assertEquals(12L, (long) spvA.getLength());
+
+        List<StreamingPropertyValueData> values = graph.readStreamingPropertyValues(Lists.newArrayList(spvA)).collect(Collectors.toList());
+        assertEquals(1, values.size());
+        assertEquals(12, values.get(0).getSize());
+        assertEquals("Test Value A", IOUtils.toString(values.get(0).getInputStream()));
+    }
+
+    @Test
     public void testQueryingUpdatedStreamingPropertyValues() throws Exception {
         graph.defineProperty("fullText").dataType(String.class).textIndexHint(TextIndexHint.FULL_TEXT).define();
 
@@ -6049,6 +6094,60 @@ public abstract class GraphTestBase {
         assertEquals("Test Value A", IOUtils.toString(streams.get(0)));
         assertEquals("Test Value B", IOUtils.toString(streams.get(1)));
         assertEquals("Test Value C", IOUtils.toString(streams.get(2)));
+    }
+
+    @Test
+    public void testReadStreamingPropertyValues() {
+        graph.defineProperty("a").dataType(String.class).textIndexHint(TextIndexHint.FULL_TEXT).define();
+        graph.defineProperty("b").dataType(String.class).textIndexHint(TextIndexHint.FULL_TEXT).define();
+        graph.defineProperty("c").dataType(String.class).textIndexHint(TextIndexHint.FULL_TEXT).define();
+
+        byte[] longValue = new byte[100_000];
+        Random rand = new Random(1);
+        rand.nextBytes(longValue);
+
+        graph.prepareVertex("v1", VISIBILITY_A)
+            .setProperty("a", StreamingPropertyValue.create("Test Value A"), VISIBILITY_A)
+            .setProperty("b", StreamingPropertyValue.create(longValue), VISIBILITY_A)
+            .setProperty("c", StreamingPropertyValue.create("Test Value C"), VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        // test multiple timestamped values
+        graph.prepareVertex("v1", VISIBILITY_A)
+            .setProperty("a", StreamingPropertyValue.create("New Test Value A"), VISIBILITY_A)
+            .save(AUTHORIZATIONS_A_AND_B);
+        graph.flush();
+
+        Vertex v1a = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B);
+        StreamingPropertyValue spvA = (StreamingPropertyValue) v1a.getPropertyValue("a");
+        assertEquals(16L, (long) spvA.getLength());
+        StreamingPropertyValue spvB = (StreamingPropertyValue) v1a.getPropertyValue("b");
+        assertEquals(longValue.length, (long) spvB.getLength());
+        StreamingPropertyValue spvCa = (StreamingPropertyValue) v1a.getPropertyValue("c");
+        assertEquals(12L, (long) spvCa.getLength());
+
+        Vertex v1b = graph.getVertex("v1", AUTHORIZATIONS_A_AND_B);
+        StreamingPropertyValue spvCb = (StreamingPropertyValue) v1b.getPropertyValue("c");
+        assertEquals(12L, (long) spvCb.getLength());
+
+        ArrayList<StreamingPropertyValue> spvs = Lists.newArrayList(spvA, spvB, spvCa, spvCa, spvCb); // test same SPV twice as well
+        Map<StreamingPropertyValue, byte[]> values = graph.readStreamingPropertyValues(spvs)
+            .collect(Collectors.toMap(StreamingPropertyValueData::getStreamingPropertyValue, StreamingPropertyValueData::getData));
+        assertEquals(4, values.size());
+        for (Map.Entry<StreamingPropertyValue, byte[]> entry : values.entrySet()) {
+            if (entry.getKey() == spvA) {
+                assertEquals("New Test Value A", new String(entry.getValue()));
+            } else if (entry.getKey() == spvB) {
+                assertTrue(Arrays.equals(longValue, entry.getValue()));
+            } else if (entry.getKey() == spvCa) {
+                assertEquals("Test Value C", new String(entry.getValue()));
+            } else if (entry.getKey() == spvCb) {
+                assertEquals("Test Value C", new String(entry.getValue()));
+            } else {
+                throw new VertexiumException("invalid spv: " + entry.getKey());
+            }
+        }
     }
 
     @Test
@@ -10012,6 +10111,48 @@ public abstract class GraphTestBase {
         } catch (VertexiumException ex) {
             assertTrue(ex.getMessage(), ex.getMessage().contains("Invalid key"));
         }
+    }
+
+    @Test
+    public void benchmarkLotsOfEdges() {
+        assumeTrue(benchmarkEnabled());
+
+        int edgeCount = 100_000;
+        String sourceVertexId = "v12345678901234567890";
+
+        graph.prepareVertex(sourceVertexId, VISIBILITY_A)
+            .setProperty("name", sourceVertexId, VISIBILITY_A)
+            .save(AUTHORIZATIONS_A);
+
+        for (int i = 0; i < edgeCount; i++) {
+            if (i % 10000 == 0) {
+                System.out.println(String.format("Creating vertex %,d / %,d", i, edgeCount));
+            }
+            String vertexId = "v12345678901234567890_" + i;
+            graph.prepareVertex(vertexId, VISIBILITY_A)
+                .setProperty("name", vertexId, VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
+        }
+
+        for (int i = 0; i < edgeCount; i++) {
+            if (i % 10000 == 0) {
+                System.out.println(String.format("Creating edge %,d / %,d", i, edgeCount));
+            }
+            String vertexId = "v12345678901234567890_" + i;
+            String edgeId = "v12345678901234567890_label1_" + vertexId;
+            graph.prepareEdge(edgeId, sourceVertexId, vertexId, "label1", VISIBILITY_A)
+                .save(AUTHORIZATIONS_A);
+        }
+        graph.flush();
+
+        FetchHints fetchHints = new FetchHintsBuilder(FetchHints.ALL)
+            .build();
+        graph.getVertex(sourceVertexId, fetchHints, AUTHORIZATIONS_A);
+
+        fetchHints = new FetchHintsBuilder(FetchHints.ALL)
+            .setIncludeEdgeIds(false)
+            .build();
+        graph.getVertex(sourceVertexId, fetchHints, AUTHORIZATIONS_A);
     }
 
     @Test

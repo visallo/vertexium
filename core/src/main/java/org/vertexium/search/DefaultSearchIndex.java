@@ -8,6 +8,7 @@ import org.vertexium.mutation.ExtendedDataMutation;
 import org.vertexium.query.*;
 
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 
 import static org.vertexium.util.Preconditions.checkNotNull;
 
@@ -18,7 +19,7 @@ public class DefaultSearchIndex implements SearchIndex {
     }
 
     @Override
-    public void addElement(
+    public CompletableFuture<Void> addElement(
         Graph graph,
         Element element,
         Set<String> additionalVisibilities,
@@ -26,6 +27,7 @@ public class DefaultSearchIndex implements SearchIndex {
         Authorizations authorizations
     ) {
         checkNotNull(element, "element cannot be null");
+        return CompletableFuture.completedFuture(null);
     }
 
     @Override
@@ -179,7 +181,7 @@ public class DefaultSearchIndex implements SearchIndex {
     }
 
     @Override
-    public void addElementExtendedData(
+    public CompletableFuture<Void> addElementExtendedData(
         Graph graph,
         ElementLocation elementLocation,
         Iterable<ExtendedDataMutation> extendedDatas,
@@ -187,6 +189,7 @@ public class DefaultSearchIndex implements SearchIndex {
         Iterable<AdditionalExtendedDataVisibilityDeleteMutation> additionalExtendedDataVisibilityDeletes,
         Authorizations authorizations
     ) {
+        return CompletableFuture.completedFuture(null);
     }
 
     @Override
@@ -204,7 +207,7 @@ public class DefaultSearchIndex implements SearchIndex {
     }
 
     @Override
-    public void deleteExtendedData(
+    public CompletableFuture<Void> deleteExtendedData(
         Graph graph,
         ElementLocation elementLocation,
         String tableName,
@@ -219,6 +222,7 @@ public class DefaultSearchIndex implements SearchIndex {
         checkNotNull(row, "row cannot be null");
         checkNotNull(columnName, "columnName cannot be null");
         checkNotNull(visibility, "visibility cannot be null");
+        return CompletableFuture.completedFuture(null);
     }
 
     @Override
